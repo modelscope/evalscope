@@ -1,0 +1,801 @@
+{
+  "meta": {
+    "pretty_name": "SuperGPQA",
+    "dataset_id": "m-a-p/SuperGPQA",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "Electronic Science and Technology",
+      "Philosophy",
+      "Traditional Chinese Medicine",
+      "Applied Economics",
+      "Mathematics",
+      "Physics",
+      "Clinical Medicine",
+      "Computer Science and Technology",
+      "Information and Communication Engineering",
+      "Control Science and Engineering",
+      "Theoretical Economics",
+      "Law",
+      "History",
+      "Basic Medicine",
+      "Education",
+      "Materials Science and Engineering",
+      "Electrical Engineering",
+      "Systems Science",
+      "Power Engineering and Engineering Thermophysics",
+      "Military Science",
+      "Biology",
+      "Business Administration",
+      "Language and Literature",
+      "Public Health and Preventive Medicine",
+      "Political Science",
+      "Chemistry",
+      "Hydraulic Engineering",
+      "Chemical Engineering and Technology",
+      "Pharmacy",
+      "Geography",
+      "Art Studies",
+      "Architecture",
+      "Forestry Engineering",
+      "Public Administration",
+      "Oceanography",
+      "Journalism and Communication",
+      "Nuclear Science and Technology",
+      "Weapon Science and Technology",
+      "Naval Architecture and Ocean Engineering",
+      "Environmental Science and Engineering",
+      "Transportation Engineering",
+      "Geology",
+      "Physical Oceanography",
+      "Musicology",
+      "Stomatology",
+      "Aquaculture",
+      "Mechanical Engineering",
+      "Aeronautical and Astronautical Science and Technology",
+      "Civil Engineering",
+      "Mechanics",
+      "Petroleum and Natural Gas Engineering",
+      "Sociology",
+      "Food Science and Engineering",
+      "Agricultural Engineering",
+      "Surveying and Mapping Science and Technology",
+      "Metallurgical Engineering",
+      "Library, Information and Archival Management",
+      "Mining Engineering",
+      "Astronomy",
+      "Geological Resources and Geological Engineering",
+      "Atmospheric Science",
+      "Optical Engineering",
+      "Animal Husbandry",
+      "Geophysics",
+      "Crop Science",
+      "Management Science and Engineering",
+      "Psychology",
+      "Forestry",
+      "Textile Science and Engineering",
+      "Veterinary Medicine",
+      "Instrument Science and Technology",
+      "Physical Education"
+    ],
+    "description": "\n## Overview\n\nSuperGPQA is a large-scale multiple-choice question answering dataset designed to evaluate model generalization across diverse fields. It contains 26,000+ questions from 50+ fields, with each question featuring 10 answer options.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Knowledge Assessment\n- **Input**: Question with 10 answer choices (A-J)\n- **Output**: Correct answer letter\n- **Domains**: 50+ fields across Science, Engineering, Medicine, Economics, Law, etc.\n\n## Key Features\n\n- 26,000+ questions across 50+ academic fields\n- 10 options per question (more challenging than standard 4-choice)\n- Broad coverage including:\n  - Science: Mathematics, Physics, Chemistry, Biology\n  - Engineering: Computer Science, Electrical, Mechanical\n  - Medicine: Clinical, Basic Medical, Pharmacy\n  - Humanities: Philosophy, History, Literature\n  - Social Sciences: Economics, Law, Sociology\n\n## Evaluation Notes\n\n- Default evaluation uses the **train** split (only available split)\n- Primary metric: **Accuracy** on multiple-choice questions\n- Supports 0-shot or 5-shot evaluation only\n- Uses Chain-of-Thought (CoT) prompting\n- Results can be grouped by field or discipline category\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 26529,
+    "subset_stats": [
+      {
+        "name": "Electronic Science and Technology",
+        "sample_count": 246,
+        "prompt_length_mean": 994.09,
+        "prompt_length_min": 355,
+        "prompt_length_max": 6149,
+        "prompt_length_std": 688.5,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Philosophy",
+        "sample_count": 347,
+        "prompt_length_mean": 880.01,
+        "prompt_length_min": 357,
+        "prompt_length_max": 3171,
+        "prompt_length_std": 523.0,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Traditional Chinese Medicine",
+        "sample_count": 268,
+        "prompt_length_mean": 691.78,
+        "prompt_length_min": 339,
+        "prompt_length_max": 2282,
+        "prompt_length_std": 247.22,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Applied Economics",
+        "sample_count": 723,
+        "prompt_length_mean": 779.14,
+        "prompt_length_min": 348,
+        "prompt_length_max": 5407,
+        "prompt_length_std": 358.46,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Mathematics",
+        "sample_count": 2622,
+        "prompt_length_mean": 908.66,
+        "prompt_length_min": 326,
+        "prompt_length_max": 7946,
+        "prompt_length_std": 602.63,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Physics",
+        "sample_count": 2845,
+        "prompt_length_mean": 936.31,
+        "prompt_length_min": 348,
+        "prompt_length_max": 6780,
+        "prompt_length_std": 473.98,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Clinical Medicine",
+        "sample_count": 1218,
+        "prompt_length_mean": 830.98,
+        "prompt_length_min": 334,
+        "prompt_length_max": 4003,
+        "prompt_length_std": 383.63,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Computer Science and Technology",
+        "sample_count": 763,
+        "prompt_length_mean": 823.37,
+        "prompt_length_min": 331,
+        "prompt_length_max": 4409,
+        "prompt_length_std": 499.23,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Information and Communication Engineering",
+        "sample_count": 504,
+        "prompt_length_mean": 921.14,
+        "prompt_length_min": 347,
+        "prompt_length_max": 5594,
+        "prompt_length_std": 612.15,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Control Science and Engineering",
+        "sample_count": 190,
+        "prompt_length_mean": 1042.88,
+        "prompt_length_min": 354,
+        "prompt_length_max": 6016,
+        "prompt_length_std": 712.3,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Theoretical Economics",
+        "sample_count": 150,
+        "prompt_length_mean": 843.95,
+        "prompt_length_min": 363,
+        "prompt_length_max": 2432,
+        "prompt_length_std": 362.21,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Law",
+        "sample_count": 591,
+        "prompt_length_mean": 1220.98,
+        "prompt_length_min": 366,
+        "prompt_length_max": 4267,
+        "prompt_length_std": 703.46,
+        "target_length_mean": 1
+      },
+      {
+        "name": "History",
+        "sample_count": 674,
+        "prompt_length_mean": 595.18,
+        "prompt_length_min": 326,
+        "prompt_length_max": 3707,
+        "prompt_length_std": 358.45,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Basic Medicine",
+        "sample_count": 567,
+        "prompt_length_mean": 690.19,
+        "prompt_length_min": 320,
+        "prompt_length_max": 2368,
+        "prompt_length_std": 270.67,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Education",
+        "sample_count": 247,
+        "prompt_length_mean": 695.45,
+        "prompt_length_min": 355,
+        "prompt_length_max": 1728,
+        "prompt_length_std": 234.49,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Materials Science and Engineering",
+        "sample_count": 289,
+        "prompt_length_mean": 834.37,
+        "prompt_length_min": 359,
+        "prompt_length_max": 2630,
+        "prompt_length_std": 354.88,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Electrical Engineering",
+        "sample_count": 556,
+        "prompt_length_mean": 891.89,
+        "prompt_length_min": 385,
+        "prompt_length_max": 4025,
+        "prompt_length_std": 340.44,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Systems Science",
+        "sample_count": 50,
+        "prompt_length_mean": 1214.34,
+        "prompt_length_min": 403,
+        "prompt_length_max": 2676,
+        "prompt_length_std": 605.0,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Power Engineering and Engineering Thermophysics",
+        "sample_count": 684,
+        "prompt_length_mean": 885.2,
+        "prompt_length_min": 345,
+        "prompt_length_max": 3093,
+        "prompt_length_std": 349.84,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Military Science",
+        "sample_count": 205,
+        "prompt_length_mean": 709.2,
+        "prompt_length_min": 349,
+        "prompt_length_max": 2839,
+        "prompt_length_std": 348.72,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Biology",
+        "sample_count": 1120,
+        "prompt_length_mean": 786.49,
+        "prompt_length_min": 337,
+        "prompt_length_max": 4581,
+        "prompt_length_std": 426.8,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Business Administration",
+        "sample_count": 142,
+        "prompt_length_mean": 877.2,
+        "prompt_length_min": 359,
+        "prompt_length_max": 2219,
+        "prompt_length_std": 386.82,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Language and Literature",
+        "sample_count": 440,
+        "prompt_length_mean": 778.78,
+        "prompt_length_min": 313,
+        "prompt_length_max": 4331,
+        "prompt_length_std": 571.51,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Public Health and Preventive Medicine",
+        "sample_count": 292,
+        "prompt_length_mean": 670.73,
+        "prompt_length_min": 348,
+        "prompt_length_max": 3899,
+        "prompt_length_std": 388.89,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Political Science",
+        "sample_count": 65,
+        "prompt_length_mean": 700.06,
+        "prompt_length_min": 362,
+        "prompt_length_max": 2239,
+        "prompt_length_std": 362.77,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Chemistry",
+        "sample_count": 1769,
+        "prompt_length_mean": 823.53,
+        "prompt_length_min": 330,
+        "prompt_length_max": 6109,
+        "prompt_length_std": 409.08,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Hydraulic Engineering",
+        "sample_count": 218,
+        "prompt_length_mean": 840.64,
+        "prompt_length_min": 354,
+        "prompt_length_max": 2504,
+        "prompt_length_std": 365.89,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Chemical Engineering and Technology",
+        "sample_count": 410,
+        "prompt_length_mean": 1035.03,
+        "prompt_length_min": 325,
+        "prompt_length_max": 3839,
+        "prompt_length_std": 538.06,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Pharmacy",
+        "sample_count": 278,
+        "prompt_length_mean": 642.21,
+        "prompt_length_min": 355,
+        "prompt_length_max": 2629,
+        "prompt_length_std": 313.25,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Geography",
+        "sample_count": 133,
+        "prompt_length_mean": 636.14,
+        "prompt_length_min": 336,
+        "prompt_length_max": 2514,
+        "prompt_length_std": 293.54,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Art Studies",
+        "sample_count": 603,
+        "prompt_length_mean": 565.14,
+        "prompt_length_min": 338,
+        "prompt_length_max": 3552,
+        "prompt_length_std": 276.41,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Architecture",
+        "sample_count": 162,
+        "prompt_length_mean": 647.03,
+        "prompt_length_min": 345,
+        "prompt_length_max": 2684,
+        "prompt_length_std": 317.58,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Forestry Engineering",
+        "sample_count": 100,
+        "prompt_length_mean": 707.91,
+        "prompt_length_min": 366,
+        "prompt_length_max": 2676,
+        "prompt_length_std": 432.91,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Public Administration",
+        "sample_count": 151,
+        "prompt_length_mean": 730.48,
+        "prompt_length_min": 339,
+        "prompt_length_max": 4242,
+        "prompt_length_std": 390.32,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Oceanography",
+        "sample_count": 200,
+        "prompt_length_mean": 801.77,
+        "prompt_length_min": 332,
+        "prompt_length_max": 2462,
+        "prompt_length_std": 379.92,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Journalism and Communication",
+        "sample_count": 207,
+        "prompt_length_mean": 550.58,
+        "prompt_length_min": 341,
+        "prompt_length_max": 1620,
+        "prompt_length_std": 194.34,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Nuclear Science and Technology",
+        "sample_count": 107,
+        "prompt_length_mean": 850.05,
+        "prompt_length_min": 378,
+        "prompt_length_max": 3467,
+        "prompt_length_std": 508.82,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Weapon Science and Technology",
+        "sample_count": 100,
+        "prompt_length_mean": 866.71,
+        "prompt_length_min": 338,
+        "prompt_length_max": 3090,
+        "prompt_length_std": 565.92,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Naval Architecture and Ocean Engineering",
+        "sample_count": 138,
+        "prompt_length_mean": 599.32,
+        "prompt_length_min": 295,
+        "prompt_length_max": 2320,
+        "prompt_length_std": 267.39,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Environmental Science and Engineering",
+        "sample_count": 189,
+        "prompt_length_mean": 779.83,
+        "prompt_length_min": 333,
+        "prompt_length_max": 2629,
+        "prompt_length_std": 385.7,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Transportation Engineering",
+        "sample_count": 251,
+        "prompt_length_mean": 778.94,
+        "prompt_length_min": 362,
+        "prompt_length_max": 3854,
+        "prompt_length_std": 390.14,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Geology",
+        "sample_count": 341,
+        "prompt_length_mean": 810.18,
+        "prompt_length_min": 350,
+        "prompt_length_max": 3293,
+        "prompt_length_std": 465.55,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Physical Oceanography",
+        "sample_count": 50,
+        "prompt_length_mean": 933.54,
+        "prompt_length_min": 364,
+        "prompt_length_max": 2176,
+        "prompt_length_std": 487.14,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Musicology",
+        "sample_count": 426,
+        "prompt_length_mean": 540.96,
+        "prompt_length_min": 294,
+        "prompt_length_max": 2909,
+        "prompt_length_std": 314.79,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Stomatology",
+        "sample_count": 132,
+        "prompt_length_mean": 792.47,
+        "prompt_length_min": 386,
+        "prompt_length_max": 2975,
+        "prompt_length_std": 435.16,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Aquaculture",
+        "sample_count": 56,
+        "prompt_length_mean": 497.89,
+        "prompt_length_min": 339,
+        "prompt_length_max": 1457,
+        "prompt_length_std": 173.66,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Mechanical Engineering",
+        "sample_count": 176,
+        "prompt_length_mean": 863.61,
+        "prompt_length_min": 377,
+        "prompt_length_max": 3684,
+        "prompt_length_std": 438.78,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Aeronautical and Astronautical Science and Technology",
+        "sample_count": 119,
+        "prompt_length_mean": 792.2,
+        "prompt_length_min": 366,
+        "prompt_length_max": 3178,
+        "prompt_length_std": 438.21,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Civil Engineering",
+        "sample_count": 358,
+        "prompt_length_mean": 831.25,
+        "prompt_length_min": 343,
+        "prompt_length_max": 2306,
+        "prompt_length_std": 326.09,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Mechanics",
+        "sample_count": 908,
+        "prompt_length_mean": 955.85,
+        "prompt_length_min": 433,
+        "prompt_length_max": 8444,
+        "prompt_length_std": 527.73,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Petroleum and Natural Gas Engineering",
+        "sample_count": 112,
+        "prompt_length_mean": 725.53,
+        "prompt_length_min": 382,
+        "prompt_length_max": 1882,
+        "prompt_length_std": 298.9,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Sociology",
+        "sample_count": 143,
+        "prompt_length_mean": 758.95,
+        "prompt_length_min": 334,
+        "prompt_length_max": 3241,
+        "prompt_length_std": 538.13,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Food Science and Engineering",
+        "sample_count": 109,
+        "prompt_length_mean": 600.39,
+        "prompt_length_min": 343,
+        "prompt_length_max": 1383,
+        "prompt_length_std": 178.89,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Agricultural Engineering",
+        "sample_count": 104,
+        "prompt_length_mean": 960.7,
+        "prompt_length_min": 335,
+        "prompt_length_max": 3178,
+        "prompt_length_std": 621.54,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Surveying and Mapping Science and Technology",
+        "sample_count": 168,
+        "prompt_length_mean": 729.06,
+        "prompt_length_min": 340,
+        "prompt_length_max": 2648,
+        "prompt_length_std": 341.66,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Metallurgical Engineering",
+        "sample_count": 255,
+        "prompt_length_mean": 828.58,
+        "prompt_length_min": 373,
+        "prompt_length_max": 2421,
+        "prompt_length_std": 359.67,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Library, Information and Archival Management",
+        "sample_count": 150,
+        "prompt_length_mean": 806.67,
+        "prompt_length_min": 368,
+        "prompt_length_max": 3502,
+        "prompt_length_std": 470.9,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Mining Engineering",
+        "sample_count": 100,
+        "prompt_length_mean": 865.04,
+        "prompt_length_min": 379,
+        "prompt_length_max": 5785,
+        "prompt_length_std": 658.61,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Astronomy",
+        "sample_count": 405,
+        "prompt_length_mean": 810.0,
+        "prompt_length_min": 334,
+        "prompt_length_max": 2925,
+        "prompt_length_std": 351.29,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Geological Resources and Geological Engineering",
+        "sample_count": 50,
+        "prompt_length_mean": 722,
+        "prompt_length_min": 369,
+        "prompt_length_max": 1554,
+        "prompt_length_std": 242.26,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Atmospheric Science",
+        "sample_count": 203,
+        "prompt_length_mean": 732.33,
+        "prompt_length_min": 337,
+        "prompt_length_max": 2455,
+        "prompt_length_std": 362.35,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Optical Engineering",
+        "sample_count": 376,
+        "prompt_length_mean": 777.42,
+        "prompt_length_min": 366,
+        "prompt_length_max": 2718,
+        "prompt_length_std": 311.99,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Animal Husbandry",
+        "sample_count": 103,
+        "prompt_length_mean": 621.8,
+        "prompt_length_min": 361,
+        "prompt_length_max": 1913,
+        "prompt_length_std": 209.41,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Geophysics",
+        "sample_count": 100,
+        "prompt_length_mean": 927.86,
+        "prompt_length_min": 384,
+        "prompt_length_max": 7376,
+        "prompt_length_std": 825.39,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Crop Science",
+        "sample_count": 145,
+        "prompt_length_mean": 662.8,
+        "prompt_length_min": 394,
+        "prompt_length_max": 1694,
+        "prompt_length_std": 256.76,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Management Science and Engineering",
+        "sample_count": 58,
+        "prompt_length_mean": 765.22,
+        "prompt_length_min": 411,
+        "prompt_length_max": 1832,
+        "prompt_length_std": 328.64,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Psychology",
+        "sample_count": 87,
+        "prompt_length_mean": 674.59,
+        "prompt_length_min": 393,
+        "prompt_length_max": 1973,
+        "prompt_length_std": 242.34,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Forestry",
+        "sample_count": 131,
+        "prompt_length_mean": 649.55,
+        "prompt_length_min": 393,
+        "prompt_length_max": 1995,
+        "prompt_length_std": 293.53,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Textile Science and Engineering",
+        "sample_count": 100,
+        "prompt_length_mean": 723.75,
+        "prompt_length_min": 378,
+        "prompt_length_max": 2124,
+        "prompt_length_std": 264.76,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Veterinary Medicine",
+        "sample_count": 50,
+        "prompt_length_mean": 602.5,
+        "prompt_length_min": 362,
+        "prompt_length_max": 1063,
+        "prompt_length_std": 182.54,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Instrument Science and Technology",
+        "sample_count": 50,
+        "prompt_length_mean": 759.36,
+        "prompt_length_min": 375,
+        "prompt_length_max": 1820,
+        "prompt_length_std": 288.4,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Physical Education",
+        "sample_count": 150,
+        "prompt_length_mean": 687.39,
+        "prompt_length_min": 365,
+        "prompt_length_max": 2156,
+        "prompt_length_std": 286.86,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 826.04,
+      "min": 294,
+      "max": 8444,
+      "std": 469.12
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:17:01.176862"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "d0ceb797",
+          "content": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E,F,G,H,I,J. Think step by step before answering.\n\nThe commo ... [TRUNCATED] ... oduct of A1 and A2's common-mode rejection ratios\nG) the size of A2's common-mode rejection ratio\nH) the size of A1's common-mode rejection ratio\nI) The difference in the common-mode rejection ratio of A1 and A2 themselves\nJ) input resistance"
+        }
+      ],
+      "choices": [
+        "the absolute value of the difference in the common-mode rejection ratio of A1 and A2 themselves",
+        "all of the above",
+        "the average of A1 and A2's common-mode rejection ratios",
+        "the sum of A1 and A2's common-mode rejection ratios",
+        "the product of A1 and A2's common-mode rejection ratios",
+        "the square root of the product of A1 and A2's common-mode rejection ratios",
+        "the size of A2's common-mode rejection ratio",
+        "the size of A1's common-mode rejection ratio",
+        "The difference in the common-mode rejection ratio of A1 and A2 themselves",
+        "input resistance"
+      ],
+      "target": "I",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "Electronic Science and Technology",
+      "metadata": {
+        "field": "Electronic Science and Technology",
+        "discipline": "Engineering",
+        "uuid": "a8390c754538493ba59055689b4482aa",
+        "explanation": "The difference in the common-mode rejection ratio of A1 and A2 themselves"
+      }
+    },
+    "subset": "Electronic Science and Technology",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# SuperGPQA\n\n\n## Overview\n\nSuperGPQA is a large-scale multiple-choice question answering dataset designed to evaluate model generalization across diverse fields. It contains 26,000+ questions from 50+ fields, with each question featuring 10 answer options.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Knowledge Assessment\n- **Input**: Question with 10 answer choices (A-J)\n- **Output**: Correct answer letter\n- **Domains**: 50+ fields across Science, Engineering, Medicine, Economics, Law, etc.\n\n## Key Features\n\n- 26,000+ questions across 50+ academic fields\n- 10 options per question (more challenging than standard 4-choice)\n- Broad coverage including:\n  - Science: Mathematics, Physics, Chemistry, Biology\n  - Engineering: Computer Science, Electrical, Mechanical\n  - Medicine: Clinical, Basic Medical, Pharmacy\n  - Humanities: Philosophy, History, Literature\n  - Social Sciences: Economics, Law, Sociology\n\n## Evaluation Notes\n\n- Default evaluation uses the **train** split (only available split)\n- Primary metric: **Accuracy** on multiple-choice questions\n- Supports 0-shot or 5-shot evaluation only\n- Uses Chain-of-Thought (CoT) prompting\n- Results can be grouped by field or discipline category\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `super_gpqa` |\n| **Dataset ID** | [m-a-p/SuperGPQA](https://modelscope.cn/datasets/m-a-p/SuperGPQA/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 26,529 |\n| Prompt Length (Mean) | 826.04 chars |\n| Prompt Length (Min/Max) | 294 / 8444 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Electronic Science and Technology` | 246 | 994.09 | 355 | 6149 |\n| `Philosophy` | 347 | 880.01 | 357 | 3171 |\n| `Traditional Chinese Medicine` | 268 | 691.78 | 339 | 2282 |\n| `Applied Economics` | 723 | 779.14 | 348 | 5407 |\n| `Mathematics` | 2,622 | 908.66 | 326 | 7946 |\n| `Physics` | 2,845 | 936.31 | 348 | 6780 |\n| `Clinical Medicine` | 1,218 | 830.98 | 334 | 4003 |\n| `Computer Science and Technology` | 763 | 823.37 | 331 | 4409 |\n| `Information and Communication Engineering` | 504 | 921.14 | 347 | 5594 |\n| `Control Science and Engineering` | 190 | 1042.88 | 354 | 6016 |\n| `Theoretical Economics` | 150 | 843.95 | 363 | 2432 |\n| `Law` | 591 | 1220.98 | 366 | 4267 |\n| `History` | 674 | 595.18 | 326 | 3707 |\n| `Basic Medicine` | 567 | 690.19 | 320 | 2368 |\n| `Education` | 247 | 695.45 | 355 | 1728 |\n| `Materials Science and Engineering` | 289 | 834.37 | 359 | 2630 |\n| `Electrical Engineering` | 556 | 891.89 | 385 | 4025 |\n| `Systems Science` | 50 | 1214.34 | 403 | 2676 |\n| `Power Engineering and Engineering Thermophysics` | 684 | 885.2 | 345 | 3093 |\n| `Military Science` | 205 | 709.2 | 349 | 2839 |\n| `Biology` | 1,120 | 786.49 | 337 | 4581 |\n| `Business Administration` | 142 | 877.2 | 359 | 2219 |\n| `Language and Literature` | 440 | 778.78 | 313 | 4331 |\n| `Public Health and Preventive Medicine` | 292 | 670.73 | 348 | 3899 |\n| `Political Science` | 65 | 700.06 | 362 | 2239 |\n| `Chemistry` | 1,769 | 823.53 | 330 | 6109 |\n| `Hydraulic Engineering` | 218 | 840.64 | 354 | 2504 |\n| `Chemical Engineering and Technology` | 410 | 1035.03 | 325 | 3839 |\n| `Pharmacy` | 278 | 642.21 | 355 | 2629 |\n| `Geography` | 133 | 636.14 | 336 | 2514 |\n| `Art Studies` | 603 | 565.14 | 338 | 3552 |\n| `Architecture` | 162 | 647.03 | 345 | 2684 |\n| `Forestry Engineering` | 100 | 707.91 | 366 | 2676 |\n| `Public Administration` | 151 | 730.48 | 339 | 4242 |\n| `Oceanography` | 200 | 801.77 | 332 | 2462 |\n| `Journalism and Communication` | 207 | 550.58 | 341 | 1620 |\n| `Nuclear Science and Technology` | 107 | 850.05 | 378 | 3467 |\n| `Weapon Science and Technology` | 100 | 866.71 | 338 | 3090 |\n| `Naval Architecture and Ocean Engineering` | 138 | 599.32 | 295 | 2320 |\n| `Environmental Science and Engineering` | 189 | 779.83 | 333 | 2629 |\n| `Transportation Engineering` | 251 | 778.94 | 362 | 3854 |\n| `Geology` | 341 | 810.18 | 350 | 3293 |\n| `Physical Oceanography` | 50 | 933.54 | 364 | 2176 |\n| `Musicology` | 426 | 540.96 | 294 | 2909 |\n| `Stomatology` | 132 | 792.47 | 386 | 2975 |\n| `Aquaculture` | 56 | 497.89 | 339 | 1457 |\n| `Mechanical Engineering` | 176 | 863.61 | 377 | 3684 |\n| `Aeronautical and Astronautical Science and Technology` | 119 | 792.2 | 366 | 3178 |\n| `Civil Engineering` | 358 | 831.25 | 343 | 2306 |\n| `Mechanics` | 908 | 955.85 | 433 | 8444 |\n| `Petroleum and Natural Gas Engineering` | 112 | 725.53 | 382 | 1882 |\n| `Sociology` | 143 | 758.95 | 334 | 3241 |\n| `Food Science and Engineering` | 109 | 600.39 | 343 | 1383 |\n| `Agricultural Engineering` | 104 | 960.7 | 335 | 3178 |\n| `Surveying and Mapping Science and Technology` | 168 | 729.06 | 340 | 2648 |\n| `Metallurgical Engineering` | 255 | 828.58 | 373 | 2421 |\n| `Library, Information and Archival Management` | 150 | 806.67 | 368 | 3502 |\n| `Mining Engineering` | 100 | 865.04 | 379 | 5785 |\n| `Astronomy` | 405 | 810.0 | 334 | 2925 |\n| `Geological Resources and Geological Engineering` | 50 | 722 | 369 | 1554 |\n| `Atmospheric Science` | 203 | 732.33 | 337 | 2455 |\n| `Optical Engineering` | 376 | 777.42 | 366 | 2718 |\n| `Animal Husbandry` | 103 | 621.8 | 361 | 1913 |\n| `Geophysics` | 100 | 927.86 | 384 | 7376 |\n| `Crop Science` | 145 | 662.8 | 394 | 1694 |\n| `Management Science and Engineering` | 58 | 765.22 | 411 | 1832 |\n| `Psychology` | 87 | 674.59 | 393 | 1973 |\n| `Forestry` | 131 | 649.55 | 393 | 1995 |\n| `Textile Science and Engineering` | 100 | 723.75 | 378 | 2124 |\n| `Veterinary Medicine` | 50 | 602.5 | 362 | 1063 |\n| `Instrument Science and Technology` | 50 | 759.36 | 375 | 1820 |\n| `Physical Education` | 150 | 687.39 | 365 | 2156 |\n\n## Sample Example\n\n**Subset**: `Electronic Science and Technology`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d0ceb797\",\n      \"content\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E,F,G,H,I,J. Think step by step before answering.\\n\\nThe commo ... [TRUNCATED] ... oduct of A1 and A2's common-mode rejection ratios\\nG) the size of A2's common-mode rejection ratio\\nH) the size of A1's common-mode rejection ratio\\nI) The difference in the common-mode rejection ratio of A1 and A2 themselves\\nJ) input resistance\"\n    }\n  ],\n  \"choices\": [\n    \"the absolute value of the difference in the common-mode rejection ratio of A1 and A2 themselves\",\n    \"all of the above\",\n    \"the average of A1 and A2's common-mode rejection ratios\",\n    \"the sum of A1 and A2's common-mode rejection ratios\",\n    \"the product of A1 and A2's common-mode rejection ratios\",\n    \"the square root of the product of A1 and A2's common-mode rejection ratios\",\n    \"the size of A2's common-mode rejection ratio\",\n    \"the size of A1's common-mode rejection ratio\",\n    \"The difference in the common-mode rejection ratio of A1 and A2 themselves\",\n    \"input resistance\"\n  ],\n  \"target\": \"I\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Electronic Science and Technology\",\n  \"metadata\": {\n    \"field\": \"Electronic Science and Technology\",\n    \"discipline\": \"Engineering\",\n    \"uuid\": \"a8390c754538493ba59055689b4482aa\",\n    \"explanation\": \"The difference in the common-mode rejection ratio of A1 and A2 themselves\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets super_gpqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['super_gpqa'],\n    dataset_args={\n        'super_gpqa': {\n            # subset_list: ['Electronic Science and Technology', 'Philosophy', 'Traditional Chinese Medicine']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# SuperGPQA\n\n\n## 概述\n\nSuperGPQA 是一个大规模多项选择题问答数据集，旨在评估模型在不同领域的泛化能力。该数据集包含来自 50 多个领域的 26,000 多道题目，每道题提供 10 个选项。\n\n## 任务描述\n\n- **任务类型**：多项选择知识评估\n- **输入**：包含 10 个选项（A-J）的问题\n- **输出**：正确答案的字母\n- **领域**：涵盖科学、工程、医学、经济学、法学等 50 多个领域\n\n## 主要特点\n\n- 覆盖 50 多个学术领域的 26,000+ 道问题\n- 每题提供 10 个选项（比标准的 4 选项更具挑战性）\n- 广泛覆盖以下领域：\n  - 科学：数学、物理、化学、生物\n  - 工程：计算机科学、电气、机械\n  - 医学：临床医学、基础医学、药学\n  - 人文学科：哲学、历史、文学\n  - 社会科学：经济学、法学、社会学\n\n## 评估说明\n\n- 默认使用 **train** 划分进行评估（唯一可用划分）\n- 主要指标：多项选择题的 **准确率（Accuracy）**\n- 仅支持 0-shot 或 5-shot 评估\n- 使用思维链（Chain-of-Thought, CoT）提示\n- 结果可按领域或学科类别分组统计\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `super_gpqa` |\n| **数据集 ID** | [m-a-p/SuperGPQA](https://modelscope.cn/datasets/m-a-p/SuperGPQA/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ` |\n| **指标** | `acc` |\n| **默认 Shots** | 0-shot |\n| **评估划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 26,529 |\n| 提示词长度（平均） | 826.04 字符 |\n| 提示词长度（最小/最大） | 294 / 8444 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Electronic Science and Technology` | 246 | 994.09 | 355 | 6149 |\n| `Philosophy` | 347 | 880.01 | 357 | 3171 |\n| `Traditional Chinese Medicine` | 268 | 691.78 | 339 | 2282 |\n| `Applied Economics` | 723 | 779.14 | 348 | 5407 |\n| `Mathematics` | 2,622 | 908.66 | 326 | 7946 |\n| `Physics` | 2,845 | 936.31 | 348 | 6780 |\n| `Clinical Medicine` | 1,218 | 830.98 | 334 | 4003 |\n| `Computer Science and Technology` | 763 | 823.37 | 331 | 4409 |\n| `Information and Communication Engineering` | 504 | 921.14 | 347 | 5594 |\n| `Control Science and Engineering` | 190 | 1042.88 | 354 | 6016 |\n| `Theoretical Economics` | 150 | 843.95 | 363 | 2432 |\n| `Law` | 591 | 1220.98 | 366 | 4267 |\n| `History` | 674 | 595.18 | 326 | 3707 |\n| `Basic Medicine` | 567 | 690.19 | 320 | 2368 |\n| `Education` | 247 | 695.45 | 355 | 1728 |\n| `Materials Science and Engineering` | 289 | 834.37 | 359 | 2630 |\n| `Electrical Engineering` | 556 | 891.89 | 385 | 4025 |\n| `Systems Science` | 50 | 1214.34 | 403 | 2676 |\n| `Power Engineering and Engineering Thermophysics` | 684 | 885.2 | 345 | 3093 |\n| `Military Science` | 205 | 709.2 | 349 | 2839 |\n| `Biology` | 1,120 | 786.49 | 337 | 4581 |\n| `Business Administration` | 142 | 877.2 | 359 | 2219 |\n| `Language and Literature` | 440 | 778.78 | 313 | 4331 |\n| `Public Health and Preventive Medicine` | 292 | 670.73 | 348 | 3899 |\n| `Political Science` | 65 | 700.06 | 362 | 2239 |\n| `Chemistry` | 1,769 | 823.53 | 330 | 6109 |\n| `Hydraulic Engineering` | 218 | 840.64 | 354 | 2504 |\n| `Chemical Engineering and Technology` | 410 | 1035.03 | 325 | 3839 |\n| `Pharmacy` | 278 | 642.21 | 355 | 2629 |\n| `Geography` | 133 | 636.14 | 336 | 2514 |\n| `Art Studies` | 603 | 565.14 | 338 | 3552 |\n| `Architecture` | 162 | 647.03 | 345 | 2684 |\n| `Forestry Engineering` | 100 | 707.91 | 366 | 2676 |\n| `Public Administration` | 151 | 730.48 | 339 | 4242 |\n| `Oceanography` | 200 | 801.77 | 332 | 2462 |\n| `Journalism and Communication` | 207 | 550.58 | 341 | 1620 |\n| `Nuclear Science and Technology` | 107 | 850.05 | 378 | 3467 |\n| `Weapon Science and Technology` | 100 | 866.71 | 338 | 3090 |\n| `Naval Architecture and Ocean Engineering` | 138 | 599.32 | 295 | 2320 |\n| `Environmental Science and Engineering` | 189 | 779.83 | 333 | 2629 |\n| `Transportation Engineering` | 251 | 778.94 | 362 | 3854 |\n| `Geology` | 341 | 810.18 | 350 | 3293 |\n| `Physical Oceanography` | 50 | 933.54 | 364 | 2176 |\n| `Musicology` | 426 | 540.96 | 294 | 2909 |\n| `Stomatology` | 132 | 792.47 | 386 | 2975 |\n| `Aquaculture` | 56 | 497.89 | 339 | 1457 |\n| `Mechanical Engineering` | 176 | 863.61 | 377 | 3684 |\n| `Aeronautical and Astronautical Science and Technology` | 119 | 792.2 | 366 | 3178 |\n| `Civil Engineering` | 358 | 831.25 | 343 | 2306 |\n| `Mechanics` | 908 | 955.85 | 433 | 8444 |\n| `Petroleum and Natural Gas Engineering` | 112 | 725.53 | 382 | 1882 |\n| `Sociology` | 143 | 758.95 | 334 | 3241 |\n| `Food Science and Engineering` | 109 | 600.39 | 343 | 1383 |\n| `Agricultural Engineering` | 104 | 960.7 | 335 | 3178 |\n| `Surveying and Mapping Science and Technology` | 168 | 729.06 | 340 | 2648 |\n| `Metallurgical Engineering` | 255 | 828.58 | 373 | 2421 |\n| `Library, Information and Archival Management` | 150 | 806.67 | 368 | 3502 |\n| `Mining Engineering` | 100 | 865.04 | 379 | 5785 |\n| `Astronomy` | 405 | 810.0 | 334 | 2925 |\n| `Geological Resources and Geological Engineering` | 50 | 722 | 369 | 1554 |\n| `Atmospheric Science` | 203 | 732.33 | 337 | 2455 |\n| `Optical Engineering` | 376 | 777.42 | 366 | 2718 |\n| `Animal Husbandry` | 103 | 621.8 | 361 | 1913 |\n| `Geophysics` | 100 | 927.86 | 384 | 7376 |\n| `Crop Science` | 145 | 662.8 | 394 | 1694 |\n| `Management Science and Engineering` | 58 | 765.22 | 411 | 1832 |\n| `Psychology` | 87 | 674.59 | 393 | 1973 |\n| `Forestry` | 131 | 649.55 | 393 | 1995 |\n| `Textile Science and Engineering` | 100 | 723.75 | 378 | 2124 |\n| `Veterinary Medicine` | 50 | 602.5 | 362 | 1063 |\n| `Instrument Science and Technology` | 50 | 759.36 | 375 | 1820 |\n| `Physical Education` | 150 | 687.39 | 365 | 2156 |\n\n## 样例示例\n\n**子集**: `Electronic Science and Technology`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d0ceb797\",\n      \"content\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E,F,G,H,I,J. Think step by step before answering.\\n\\nThe commo ... [TRUNCATED] ... oduct of A1 and A2's common-mode rejection ratios\\nG) the size of A2's common-mode rejection ratio\\nH) the size of A1's common-mode rejection ratio\\nI) The difference in the common-mode rejection ratio of A1 and A2 themselves\\nJ) input resistance\"\n    }\n  ],\n  \"choices\": [\n    \"the absolute value of the difference in the common-mode rejection ratio of A1 and A2 themselves\",\n    \"all of the above\",\n    \"the average of A1 and A2's common-mode rejection ratios\",\n    \"the sum of A1 and A2's common-mode rejection ratios\",\n    \"the product of A1 and A2's common-mode rejection ratios\",\n    \"the square root of the product of A1 and A2's common-mode rejection ratios\",\n    \"the size of A2's common-mode rejection ratio\",\n    \"the size of A1's common-mode rejection ratio\",\n    \"The difference in the common-mode rejection ratio of A1 and A2 themselves\",\n    \"input resistance\"\n  ],\n  \"target\": \"I\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Electronic Science and Technology\",\n  \"metadata\": {\n    \"field\": \"Electronic Science and Technology\",\n    \"discipline\": \"Engineering\",\n    \"uuid\": \"a8390c754538493ba59055689b4482aa\",\n    \"explanation\": \"The difference in the common-mode rejection ratio of A1 and A2 themselves\"\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets super_gpqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['super_gpqa'],\n    dataset_args={\n        'super_gpqa': {\n            # subset_list: ['Electronic Science and Technology', 'Philosophy', 'Traditional Chinese Medicine']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "d60018ab3e95b594d9f681e3d7321f80",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.398887",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

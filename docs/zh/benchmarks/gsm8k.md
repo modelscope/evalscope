@@ -1,69 +1,65 @@
 # GSM8K
 
-GSM8K（Grade School Math 8K）是一个包含 8.5K 道高质量、语言多样化的中小学数学应用题的数据集，由人工编写而成。
 
-该数据集旨在支持对需要多步推理的基础数学问题进行问答任务。每个问题包含一个自然语言提问和一个数值答案。这些问题考察基本的算术运算，通常需要 2-8 个步骤才能解答。
+## Overview
 
-**主要特点**：
-- 高质量的人工编写题目
-- 语言表达形式多样
-- 需要多步推理
-- 答案为明确的数值
+GSM8K (Grade School Math 8K) is a high-quality dataset of 8.5K linguistically diverse grade school math word problems created by human problem writers. The dataset is specifically designed to evaluate and improve the multi-step mathematical reasoning capabilities of language models.
 
-## 概述
+## Task Description
 
-| 属性 | 值 |
+- **Task Type**: Mathematical Word Problem Solving
+- **Input**: Natural language math word problem
+- **Output**: Numerical answer derived through step-by-step reasoning
+- **Difficulty**: Grade school level (2-8 reasoning steps required)
+
+## Key Features
+
+- Problems require basic arithmetic operations (addition, subtraction, multiplication, division)
+- Solutions involve 2 to 8 sequential reasoning steps
+- High linguistic diversity in problem formulations
+- Human-written problems ensuring natural language quality
+- Clear numerical answers for objective evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **4-shot** examples with Chain-of-Thought (CoT) prompting
+- Answers should be formatted within `\boxed{}` for proper extraction
+- The metric extracts numerical values for accuracy comparison
+- Supports both zero-shot and few-shot evaluation modes
+
+
+## Properties
+
+| Property | Value |
 |----------|-------|
-| **基准测试名称** | `gsm8k` |
-| **数据集ID** | [AI-ModelScope/gsm8k](https://modelscope.cn/datasets/AI-ModelScope/gsm8k/summary) |
-| **论文** | [Paper](https://arxiv.org/abs/2110.14168) |
-| **标签** | `Math`, `Reasoning` |
-| **评估指标** | `acc` |
-| **默认示例数量** | 4-shot |
-| **评估集** | `test` |
-| **训练集** | `train` |
+| **Benchmark Name** | `gsm8k` |
+| **Dataset ID** | [AI-ModelScope/gsm8k](https://modelscope.cn/datasets/AI-ModelScope/gsm8k/summary) |
+| **Paper** | [Paper](https://arxiv.org/abs/2110.14168) |
+| **Tags** | `Math`, `Reasoning` |
+| **Metrics** | `acc` |
+| **Default Shots** | 4-shot |
+| **Evaluation Split** | `test` |
+| **Train Split** | `train` |
 
-## 数据统计
 
-| 指标 | 值 |
-|--------|-------|
-| 总样本数 | 1,319 |
-| 提示词长度（平均） | 1966.87 字符 |
-| 提示词长度（最小/最大） | 1800 / 2575 字符 |
+## Data Statistics
 
-## 样例示例
+*Statistics not available.*
 
-**子集**: `main`
+## Sample Example
 
-```json
-{
-  "input": [
-    {
-      "id": "3d025da2",
-      "content": "Here are some examples of how to solve similar problems:\n\nNatalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell altogether in April and May?\n\nReasoning:\nNatalia sold 48/ ... [TRUNCATED] ... ds every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\nPlease reason step by step, and put your final answer within \\boxed{}."
-    }
-  ],
-  "target": "18",
-  "id": 0,
-  "group_id": 0,
-  "metadata": {
-    "reasoning": "Janet sells 16 - 3 - 4 = <<16-3-4=9>>9 duck eggs a day.\nShe makes 9 * 2 = $<<9*2=18>>18 every day at the farmer’s market."
-  }
-}
-```
+*Sample example not available.*
 
-*注：部分内容因展示需要已被截断。*
+## Prompt Template
 
-## 提示模板
-
-**提示模板：**
+**Prompt Template:**
 ```text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
 ```
 
 <details>
-<summary>少样本（Few-shot）模板</summary>
+<summary>Few-shot Template</summary>
 
 ```text
 Here are some examples of how to solve similar problems:
@@ -76,13 +72,34 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 
 </details>
 
-## 使用方法
+## Usage
+
+### Using CLI
+
+```bash
+evalscope eval \
+    --model YOUR_MODEL \
+    --api-url OPENAI_API_COMPAT_URL \
+    --api-key EMPTY_TOKEN \
+    --datasets gsm8k \
+    --limit 10  # Remove this line for formal evaluation
+```
+
+### Using Python
 
 ```python
 from evalscope import run_task
+from evalscope.config import TaskConfig
 
-results = run_task(
-    model='your-model',
+task_cfg = TaskConfig(
+    model='YOUR_MODEL',
+    api_url='OPENAI_API_COMPAT_URL',
+    api_key='EMPTY_TOKEN',
     datasets=['gsm8k'],
+    limit=10,  # Remove this line for formal evaluation
 )
+
+run_task(task_cfg=task_cfg)
 ```
+
+

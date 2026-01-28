@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "pretty_name": "DrivelologyMultilabelClassification",
+    "dataset_id": "extraordinarylab/drivel-hub",
+    "paper_url": null,
+    "tags": [
+      "MCQ"
+    ],
+    "metrics": [
+      "f1_weighted",
+      "f1_micro",
+      "f1_macro",
+      "exact_match"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "multi-label-classification"
+    ],
+    "description": "## Overview\n\nDrivelology Multi-label Classification evaluates models' ability to categorize \"drivelology\" text into rhetorical technique categories: inversion, wordplay, switchbait, paradox, and misdirection. Each text may belong to multiple categories.\n\n## Task Description\n\n- **Task Type**: Multi-label Text Classification\n- **Input**: Drivelology text sample\n- **Output**: One or more technique categories\n- **Domain**: Linguistic analysis, rhetorical technique detection\n\n## Key Features\n\n- Five rhetorical technique categories\n- Multi-label classification (multiple categories per sample)\n- Tests understanding of linguistic creativity mechanisms\n- Requires recognition of humor and irony techniques\n- Detailed category definitions provided\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Metrics: F1 (weighted, micro, macro), Exact Match\n- Aggregation method: F1 weighted\n- Categories: inversion, wordplay, switchbait, paradox, misdirection",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "f1_weighted",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 600,
+    "subset_stats": [
+      {
+        "name": "multi-label-classification",
+        "sample_count": 600,
+        "prompt_length_mean": 1637.18,
+        "prompt_length_min": 1580,
+        "prompt_length_max": 2041,
+        "prompt_length_std": 54.36,
+        "target_length_mean": 1.34
+      }
+    ],
+    "prompt_length": {
+      "mean": 1637.18,
+      "min": 1580,
+      "max": 2041,
+      "std": 54.36
+    },
+    "target_length_mean": 1.34,
+    "computed_at": "2026-01-28T11:12:46.894472"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "0e8acb03",
+          "content": [
+            {
+              "text": "#Instruction#:\nClassify the given text into one or more of the following categories: inversion, wordplay, switchbait, paradox, and misdirection.\n\n#Definitions#:\n- inversion: This technique takes a well-known phrase, cliché, or social script a ... [TRUNCATED] ... e should be of the following format: 'ANSWER: [LETTERS]' (without quotes) where [LETTER]S is one or more of A,B,C,D,E.\n\nText to classify: 後天的努力比什麼都重要，所以今天和明天休息。\n\nA) A. inversion\nB) B. wordplay\nC) C. switchbait\nD) D. paradox\nE) E. misdirection"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "A. inversion",
+        "B. wordplay",
+        "C. switchbait",
+        "D. paradox",
+        "E. misdirection"
+      ],
+      "target": "AB",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "text": "後天的努力比什麼都重要，所以今天和明天休息。",
+        "label": [
+          "inversion",
+          "wordplay"
+        ],
+        "target_letters": "AB"
+      }
+    },
+    "subset": "multi-label-classification",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# DrivelologyMultilabelClassification\n\n## Overview\n\nDrivelology Multi-label Classification evaluates models' ability to categorize \"drivelology\" text into rhetorical technique categories: inversion, wordplay, switchbait, paradox, and misdirection. Each text may belong to multiple categories.\n\n## Task Description\n\n- **Task Type**: Multi-label Text Classification\n- **Input**: Drivelology text sample\n- **Output**: One or more technique categories\n- **Domain**: Linguistic analysis, rhetorical technique detection\n\n## Key Features\n\n- Five rhetorical technique categories\n- Multi-label classification (multiple categories per sample)\n- Tests understanding of linguistic creativity mechanisms\n- Requires recognition of humor and irony techniques\n- Detailed category definitions provided\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Metrics: F1 (weighted, micro, macro), Exact Match\n- Aggregation method: F1 weighted\n- Categories: inversion, wordplay, switchbait, paradox, misdirection\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `drivel_multilabel` |\n| **Dataset ID** | [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ` |\n| **Metrics** | `f1_weighted`, `f1_micro`, `f1_macro`, `exact_match` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `f1_weighted` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 600 |\n| Prompt Length (Mean) | 1637.18 chars |\n| Prompt Length (Min/Max) | 1580 / 2041 chars |\n\n## Sample Example\n\n**Subset**: `multi-label-classification`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0e8acb03\",\n      \"content\": [\n        {\n          \"text\": \"#Instruction#:\\nClassify the given text into one or more of the following categories: inversion, wordplay, switchbait, paradox, and misdirection.\\n\\n#Definitions#:\\n- inversion: This technique takes a well-known phrase, cliché, or social script a ... [TRUNCATED] ... e should be of the following format: 'ANSWER: [LETTERS]' (without quotes) where [LETTER]S is one or more of A,B,C,D,E.\\n\\nText to classify: 後天的努力比什麼都重要，所以今天和明天休息。\\n\\nA) A. inversion\\nB) B. wordplay\\nC) C. switchbait\\nD) D. paradox\\nE) E. misdirection\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"A. inversion\",\n    \"B. wordplay\",\n    \"C. switchbait\",\n    \"D. paradox\",\n    \"E. misdirection\"\n  ],\n  \"target\": \"AB\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"text\": \"後天的努力比什麼都重要，所以今天和明天休息。\",\n    \"label\": [\n      \"inversion\",\n      \"wordplay\"\n    ],\n    \"target_letters\": \"AB\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets drivel_multilabel \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['drivel_multilabel'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# DrivelologyMultilabelClassification\n\n## 概述\n\nDrivelology 多标签分类任务评估模型将“drivelology”文本归类到以下修辞技巧类别中的能力：倒置（inversion）、文字游戏（wordplay）、诱饵转换（switchbait）、悖论（paradox）和误导（misdirection）。每段文本可能属于多个类别。\n\n## 任务描述\n\n- **任务类型**：多标签文本分类\n- **输入**：Drivelology 文本样本\n- **输出**：一个或多个修辞技巧类别\n- **领域**：语言学分析、修辞技巧检测\n\n## 主要特点\n\n- 包含五种修辞技巧类别\n- 多标签分类（每个样本可对应多个类别）\n- 测试对语言创造性机制的理解能力\n- 要求识别幽默与反讽技巧\n- 提供详细的类别定义\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 评估指标：F1（加权、微观、宏观）、精确匹配（Exact Match）\n- 聚合方法：加权 F1（F1 weighted）\n- 类别：inversion、wordplay、switchbait、paradox、misdirection\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `drivel_multilabel` |\n| **数据集ID** | [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary) |\n| **论文** | N/A |\n| **标签** | `MCQ` |\n| **指标** | `f1_weighted`, `f1_micro`, `f1_macro`, `exact_match` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n| **聚合方式** | `f1_weighted` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 600 |\n| 提示词长度（平均） | 1637.18 字符 |\n| 提示词长度（最小/最大） | 1580 / 2041 字符 |\n\n## 样例示例\n\n**子集**: `multi-label-classification`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0e8acb03\",\n      \"content\": [\n        {\n          \"text\": \"#Instruction#:\\nClassify the given text into one or more of the following categories: inversion, wordplay, switchbait, paradox, and misdirection.\\n\\n#Definitions#:\\n- inversion: This technique takes a well-known phrase, cliché, or social script a ... [TRUNCATED] ... e should be of the following format: 'ANSWER: [LETTERS]' (without quotes) where [LETTER]S is one or more of A,B,C,D,E.\\n\\nText to classify: 後天的努力比什麼都重要，所以今天和明天休息。\\n\\nA) A. inversion\\nB) B. wordplay\\nC) C. switchbait\\nD) D. paradox\\nE) E. misdirection\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"A. inversion\",\n    \"B. wordplay\",\n    \"C. switchbait\",\n    \"D. paradox\",\n    \"E. misdirection\"\n  ],\n  \"target\": \"AB\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"text\": \"後天的努力比什麼都重要，所以今天和明天休息。\",\n    \"label\": [\n      \"inversion\",\n      \"wordplay\"\n    ],\n    \"target_letters\": \"AB\"\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets drivel_multilabel \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['drivel_multilabel'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "0b160106ab96bcf2a7436af8fb6f511a",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.845625",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

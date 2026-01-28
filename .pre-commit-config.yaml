@@ -40,7 +40,7 @@ repos:
       - id: check-yaml
         exclude: thirdparty/|docs/|examples
       - id: end-of-file-fixer
-        exclude: thirdparty/|docs/|examples
+        exclude: thirdparty/|docs/|examples|.*\.json
       - id: requirements-txt-fixer
         exclude: thirdparty/|docs/|examples
       - id: double-quote-string-fixer

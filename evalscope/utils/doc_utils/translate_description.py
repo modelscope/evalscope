@@ -119,26 +119,22 @@ def convert_doc_links(text: str) -> str:
 def translate_benchmarks(
     benchmark_names: Optional[List[str]] = None,
     force: bool = False,
-    workers: int = 4,
+    workers: int = 8,
     dry_run: bool = False,
 ) -> Dict[str, Any]:
     """
-    Translate README content for benchmarks.
+    Translate README content for benchmarks using parallel processing.
 
     Args:
         benchmark_names: Specific benchmarks to translate, or None for all needing translation
         force: Force re-translation even if translation exists
-        workers: Number of parallel workers for translation
+        workers: Number of parallel workers (default: 8)
         dry_run: If True, don't save changes
 
     Returns:
         Dict with translation statistics
     """
-    try:
-        from tqdm import tqdm
-        use_tqdm = True
-    except ImportError:
-        use_tqdm = False
+    from tqdm import tqdm
 
     data = load_benchmark_data()
 
@@ -206,23 +202,10 @@ def translate_benchmarks(
             return name, '', str(e)
 
     # Use thread pool for parallel translation
-    if use_tqdm:
-        with ThreadPoolExecutor(max_workers=max(1, workers)) as executor:
-            futures = {executor.submit(translate_one, item): item[0] for item in to_translate}
-            for future in tqdm(as_completed(futures), total=len(futures), desc='Translating', unit='benchmark'):
-                name, zh_content, error = future.result()
-                if error:
-                    errors.append((name, error))
-                    print(f'Error translating {name}: {error}')
-                elif zh_content:
-                    entry = data[name]
-                    entry['readme']['zh'] = zh_content
-                    entry['readme']['needs_translation'] = False
-                    entry['translation_updated_at'] = now_iso
-                    translated_count += 1
-    else:
-        for item in to_translate:
-            name, zh_content, error = translate_one(item)
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(translate_one, item): item[0] for item in to_translate}
+        for future in tqdm(as_completed(futures), total=len(futures), desc='Translating', unit='benchmark'):
+            name, zh_content, error = future.result()
             if error:
                 errors.append((name, error))
                 print(f'Error translating {name}: {error}')
@@ -231,14 +214,14 @@ def translate_benchmarks(
                 entry['readme']['zh'] = zh_content
                 entry['readme']['needs_translation'] = False
                 entry['translation_updated_at'] = now_iso
+                # Save individual file immediately
+                if not dry_run:
+                    save_benchmark_data(entry, name)
                 translated_count += 1
-                print(f'Translated: {name}')
 
-    # Save updated data
-    written = False
-    if translated_count > 0 and not dry_run:
-        save_benchmark_data(data)
-        written = True
+    # Report written status
+    written = translated_count > 0 and not dry_run
+    if written:
         print(f'Saved {translated_count} translations.')
 
     result = {

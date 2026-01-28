@@ -1,0 +1,1389 @@
+{
+  "meta": {
+    "pretty_name": "MMMU-PRO",
+    "dataset_id": "AI-ModelScope/MMMU_Pro",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Knowledge",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "Accounting",
+      "Agriculture",
+      "Architecture_and_Engineering",
+      "Art",
+      "Art_Theory",
+      "Basic_Medical_Science",
+      "Biology",
+      "Chemistry",
+      "Clinical_Medicine",
+      "Computer_Science",
+      "Design",
+      "Diagnostics_and_Laboratory_Medicine",
+      "Economics",
+      "Electronics",
+      "Energy_and_Power",
+      "Finance",
+      "Geography",
+      "History",
+      "Literature",
+      "Manage",
+      "Marketing",
+      "Materials",
+      "Math",
+      "Mechanical_Engineering",
+      "Music",
+      "Pharmacy",
+      "Physics",
+      "Psychology",
+      "Public_Health",
+      "Sociology"
+    ],
+    "description": "\n## Overview\n\nMMMU-PRO is an enhanced multimodal benchmark designed to rigorously assess the genuine understanding capabilities of advanced AI models across multiple modalities. It builds upon the original MMMU benchmark with key improvements that make evaluation more challenging and realistic.\n\n## Task Description\n\n- **Task Type**: Multimodal Academic Question Answering\n- **Input**: Images (up to 7) + multiple-choice question\n- **Output**: Correct answer choice letter\n- **Domains**: 30 academic subjects across STEM, humanities, and social sciences\n\n## Key Features\n\n- Enhanced version of MMMU with more rigorous evaluation\n- Covers 30 subjects: Accounting, Biology, Chemistry, Computer Science, Economics, Physics, etc.\n- Multiple dataset formats available:\n  - `standard (4 options)`: Traditional 4-choice format\n  - `standard (10 options)`: Extended 10-choice format for harder evaluation\n  - `vision`: Questions embedded in images\n- Tests genuine multimodal understanding, not just text shortcuts\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** on multiple-choice questions\n- Dataset format can be configured via `dataset_format` parameter\n- Uses Chain-of-Thought (CoT) prompting for reasoning\n- Rich metadata includes topic difficulty and subject information\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "dataset_format": {
+        "type": "str",
+        "description": "Dataset format variant. Choices: ['standard (4 options)', 'standard (10 options)', 'vision'].",
+        "value": "standard (4 options)",
+        "choices": [
+          "standard (4 options)",
+          "standard (10 options)",
+          "vision"
+        ]
+      }
+    },
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 1730,
+    "subset_stats": [
+      {
+        "name": "Accounting",
+        "sample_count": 58,
+        "prompt_length_mean": 518.48,
+        "prompt_length_min": 320,
+        "prompt_length_max": 899,
+        "prompt_length_std": 133.21,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 60,
+            "count_per_sample": {
+              "min": 1,
+              "max": 2,
+              "mean": 1.03
+            },
+            "resolutions": [
+              "1182x511",
+              "1215x250",
+              "1216x286",
+              "1219x217",
+              "1219x244",
+              "1222x237",
+              "1234x289",
+              "217x106",
+              "286x187",
+              "336x169"
+            ],
+            "resolution_range": {
+              "min": "217x106",
+              "max": "1182x511"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Agriculture",
+        "sample_count": 60,
+        "prompt_length_mean": 477.05,
+        "prompt_length_min": 289,
+        "prompt_length_max": 747,
+        "prompt_length_std": 123.49,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 60,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1333",
+              "1000x750",
+              "1034x566",
+              "1080x1920",
+              "1108x495",
+              "1175x900",
+              "1200x1600",
+              "1536x970",
+              "1600x1200",
+              "1708x2560"
+            ],
+            "resolution_range": {
+              "min": "280x210",
+              "max": "2560x2545"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Architecture_and_Engineering",
+        "sample_count": 60,
+        "prompt_length_mean": 592.85,
+        "prompt_length_min": 281,
+        "prompt_length_max": 1177,
+        "prompt_length_std": 177.47,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 65,
+            "count_per_sample": {
+              "min": 1,
+              "max": 2,
+              "mean": 1.08
+            },
+            "resolutions": [
+              "238x217",
+              "251x199",
+              "268x202",
+              "309x371",
+              "314x156",
+              "314x159",
+              "320x193",
+              "329x121",
+              "346x486",
+              "349x361"
+            ],
+            "resolution_range": {
+              "min": "70x67",
+              "max": "661x523"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Art",
+        "sample_count": 53,
+        "prompt_length_mean": 358.34,
+        "prompt_length_min": 297,
+        "prompt_length_max": 919,
+        "prompt_length_std": 99.36,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 53,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x812",
+              "1090x428",
+              "1092x682",
+              "1094x614",
+              "1096x380",
+              "1134x648",
+              "1180x878",
+              "1190x1062",
+              "1242x614",
+              "1330x1050"
+            ],
+            "resolution_range": {
+              "min": "452x452",
+              "max": "1330x1050"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Art_Theory",
+        "sample_count": 55,
+        "prompt_length_mean": 362.53,
+        "prompt_length_min": 289,
+        "prompt_length_max": 619,
+        "prompt_length_std": 62.75,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 65,
+            "count_per_sample": {
+              "min": 1,
+              "max": 2,
+              "mean": 1.18
+            },
+            "resolutions": [
+              "1000x562",
+              "1004x742",
+              "1020x1345",
+              "1024x324",
+              "1028x626",
+              "1070x490",
+              "1123x1159",
+              "1123x973",
+              "1144x1434",
+              "1146x764"
+            ],
+            "resolution_range": {
+              "min": "266x652",
+              "max": "1144x1434"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Basic_Medical_Science",
+        "sample_count": 52,
+        "prompt_length_mean": 401.96,
+        "prompt_length_min": 277,
+        "prompt_length_max": 867,
+        "prompt_length_std": 150.53,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 56,
+            "count_per_sample": {
+              "min": 1,
+              "max": 4,
+              "mean": 1.08
+            },
+            "resolutions": [
+              "1068x1428",
+              "1142x238",
+              "1350x208",
+              "170x186",
+              "181x260",
+              "200x133",
+              "200x153",
+              "200x174",
+              "200x196",
+              "200x331"
+            ],
+            "resolution_range": {
+              "min": "200x133",
+              "max": "1068x1428"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Biology",
+        "sample_count": 59,
+        "prompt_length_mean": 476.81,
+        "prompt_length_min": 269,
+        "prompt_length_max": 1387,
+        "prompt_length_std": 208.25,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 84,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.42
+            },
+            "resolutions": [
+              "1018x480",
+              "1030x1060",
+              "1032x1132",
+              "1040x682",
+              "1077x1113",
+              "1083x1062",
+              "1095x1113",
+              "1105x817",
+              "1134x618",
+              "1138x1094"
+            ],
+            "resolution_range": {
+              "min": "185x151",
+              "max": "1618x1148"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Chemistry",
+        "sample_count": 60,
+        "prompt_length_mean": 453.75,
+        "prompt_length_min": 264,
+        "prompt_length_max": 1217,
+        "prompt_length_std": 204.06,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 115,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.92
+            },
+            "resolutions": [
+              "103x72",
+              "1062x163",
+              "1084x600",
+              "108x145",
+              "108x168",
+              "1108x748",
+              "112x100",
+              "112x112",
+              "115x105",
+              "116x262"
+            ],
+            "resolution_range": {
+              "min": "43x50",
+              "max": "1108x748"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Clinical_Medicine",
+        "sample_count": 59,
+        "prompt_length_mean": 525.58,
+        "prompt_length_min": 311,
+        "prompt_length_max": 977,
+        "prompt_length_std": 186.93,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 65,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.1
+            },
+            "resolutions": [
+              "1008x750",
+              "1032x484",
+              "1044x504",
+              "1058x468",
+              "1062x616",
+              "1076x480",
+              "1141x1281",
+              "1178x796",
+              "1192x1276",
+              "1262x634"
+            ],
+            "resolution_range": {
+              "min": "136x240",
+              "max": "1192x1276"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Computer_Science",
+        "sample_count": 60,
+        "prompt_length_mean": 441.37,
+        "prompt_length_min": 262,
+        "prompt_length_max": 1077,
+        "prompt_length_std": 147.09,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 86,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.43
+            },
+            "resolutions": [
+              "1064x564",
+              "1094x156",
+              "1172x924",
+              "118x150",
+              "120x100",
+              "128x96",
+              "129x222",
+              "1430x196",
+              "1432x214",
+              "1440x198"
+            ],
+            "resolution_range": {
+              "min": "120x100",
+              "max": "1500x1524"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Design",
+        "sample_count": 60,
+        "prompt_length_mean": 408.25,
+        "prompt_length_min": 285,
+        "prompt_length_max": 1449,
+        "prompt_length_std": 163.67,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 60,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1148x729",
+              "1294x946",
+              "152x469",
+              "152x470",
+              "1842x812",
+              "2000x746",
+              "240x117",
+              "240x187",
+              "240x188",
+              "240x200"
+            ],
+            "resolution_range": {
+              "min": "240x117",
+              "max": "1842x812"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Diagnostics_and_Laboratory_Medicine",
+        "sample_count": 60,
+        "prompt_length_mean": 444.17,
+        "prompt_length_min": 274,
+        "prompt_length_max": 789,
+        "prompt_length_std": 106.64,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 68,
+            "count_per_sample": {
+              "min": 1,
+              "max": 4,
+              "mean": 1.13
+            },
+            "resolutions": [
+              "100x175",
+              "1038x518",
+              "1040x372",
+              "1054x780",
+              "124x175",
+              "1472x346",
+              "173x175",
+              "1776x388",
+              "1852x1604",
+              "1880x1604"
+            ],
+            "resolution_range": {
+              "min": "200x81",
+              "max": "2940x1604"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Economics",
+        "sample_count": 59,
+        "prompt_length_mean": 506.37,
+        "prompt_length_min": 284,
+        "prompt_length_max": 900,
+        "prompt_length_std": 129.18,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 63,
+            "count_per_sample": {
+              "min": 1,
+              "max": 4,
+              "mean": 1.07
+            },
+            "resolutions": [
+              "1009x472",
+              "1063x283",
+              "1222x540",
+              "1228x379",
+              "1228x499",
+              "1237x316",
+              "1243x432",
+              "304x112",
+              "308x298",
+              "309x243"
+            ],
+            "resolution_range": {
+              "min": "304x112",
+              "max": "1222x540"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Electronics",
+        "sample_count": 60,
+        "prompt_length_mean": 455.6,
+        "prompt_length_min": 314,
+        "prompt_length_max": 668,
+        "prompt_length_std": 86.6,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 61,
+            "count_per_sample": {
+              "min": 1,
+              "max": 2,
+              "mean": 1.02
+            },
+            "resolutions": [
+              "1090x495",
+              "222x184",
+              "254x129",
+              "278x237",
+              "314x179",
+              "324x252",
+              "330x215",
+              "338x262",
+              "362x198",
+              "367x315"
+            ],
+            "resolution_range": {
+              "min": "254x129",
+              "max": "1090x495"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Energy_and_Power",
+        "sample_count": 58,
+        "prompt_length_mean": 506.86,
+        "prompt_length_min": 347,
+        "prompt_length_max": 816,
+        "prompt_length_std": 114.63,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 58,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1062x855",
+              "135x124",
+              "177x198",
+              "220x169",
+              "220x303",
+              "225x202",
+              "238x292",
+              "243x229",
+              "246x219",
+              "262x144"
+            ],
+            "resolution_range": {
+              "min": "135x124",
+              "max": "1062x855"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Finance",
+        "sample_count": 60,
+        "prompt_length_mean": 637.75,
+        "prompt_length_min": 317,
+        "prompt_length_max": 1864,
+        "prompt_length_std": 248.87,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 62,
+            "count_per_sample": {
+              "min": 1,
+              "max": 2,
+              "mean": 1.03
+            },
+            "resolutions": [
+              "248x124",
+              "273x250",
+              "338x269",
+              "350x276",
+              "370x103",
+              "389x332",
+              "395x185",
+              "415x148",
+              "427x180",
+              "430x233"
+            ],
+            "resolution_range": {
+              "min": "248x124",
+              "max": "757x888"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Geography",
+        "sample_count": 52,
+        "prompt_length_mean": 409.9,
+        "prompt_length_min": 267,
+        "prompt_length_max": 929,
+        "prompt_length_std": 136.77,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 106,
+            "count_per_sample": {
+              "min": 1,
+              "max": 35,
+              "mean": 2.04
+            },
+            "resolutions": [
+              "1009x479",
+              "1034x856",
+              "1043x261",
+              "1054x669",
+              "1061x476",
+              "1061x496",
+              "1063x1213",
+              "1109x1131",
+              "1111x571",
+              "1208x912"
+            ],
+            "resolution_range": {
+              "min": "172x88",
+              "max": "1414x1171"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "History",
+        "sample_count": 56,
+        "prompt_length_mean": 611.3,
+        "prompt_length_min": 328,
+        "prompt_length_max": 1077,
+        "prompt_length_std": 168.48,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 65,
+            "count_per_sample": {
+              "min": 1,
+              "max": 2,
+              "mean": 1.16
+            },
+            "resolutions": [
+              "1000x583",
+              "1024x660",
+              "1034x758",
+              "1038x286",
+              "1094x800",
+              "1096x610",
+              "1098x646",
+              "1100x1032",
+              "1218x760",
+              "1224x892"
+            ],
+            "resolution_range": {
+              "min": "491x67",
+              "max": "1374x1531"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Literature",
+        "sample_count": 52,
+        "prompt_length_mean": 429.87,
+        "prompt_length_min": 274,
+        "prompt_length_max": 564,
+        "prompt_length_std": 67.91,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 61,
+            "count_per_sample": {
+              "min": 1,
+              "max": 4,
+              "mean": 1.17
+            },
+            "resolutions": [
+              "1080x1920",
+              "1120x825",
+              "1200x630",
+              "1200x797",
+              "1638x2048",
+              "225x225",
+              "250x226",
+              "2511x1843",
+              "260x386",
+              "267x400"
+            ],
+            "resolution_range": {
+              "min": "275x183",
+              "max": "2511x1843"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Manage",
+        "sample_count": 50,
+        "prompt_length_mean": 666.56,
+        "prompt_length_min": 282,
+        "prompt_length_max": 2198,
+        "prompt_length_std": 344.29,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 51,
+            "count_per_sample": {
+              "min": 1,
+              "max": 2,
+              "mean": 1.02
+            },
+            "resolutions": [
+              "1017x962",
+              "1022x649",
+              "1030x742",
+              "1039x1138",
+              "1039x735",
+              "1039x911",
+              "1040x1146",
+              "1049x510",
+              "1052x754",
+              "1053x736"
+            ],
+            "resolution_range": {
+              "min": "566x76",
+              "max": "915x1356"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Marketing",
+        "sample_count": 59,
+        "prompt_length_mean": 596.53,
+        "prompt_length_min": 303,
+        "prompt_length_max": 1060,
+        "prompt_length_std": 183.99,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 64,
+            "count_per_sample": {
+              "min": 1,
+              "max": 2,
+              "mean": 1.08
+            },
+            "resolutions": [
+              "1201x312",
+              "1207x171",
+              "1209x193",
+              "1215x303",
+              "1216x421",
+              "1216x616",
+              "1219x441",
+              "1219x676",
+              "1221x373",
+              "1224x309"
+            ],
+            "resolution_range": {
+              "min": "556x268",
+              "max": "1243x724"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Materials",
+        "sample_count": 60,
+        "prompt_length_mean": 484.02,
+        "prompt_length_min": 296,
+        "prompt_length_max": 1351,
+        "prompt_length_std": 151.57,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 70,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.17
+            },
+            "resolutions": [
+              "1018x186",
+              "1026x153",
+              "1045x171",
+              "138x303",
+              "144x294",
+              "147x292",
+              "148x298",
+              "157x292",
+              "160x250",
+              "240x315"
+            ],
+            "resolution_range": {
+              "min": "160x250",
+              "max": "759x603"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Math",
+        "sample_count": 60,
+        "prompt_length_mean": 511.95,
+        "prompt_length_min": 249,
+        "prompt_length_max": 1172,
+        "prompt_length_std": 185.36,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 66,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.1
+            },
+            "resolutions": [
+              "1002x721",
+              "1004x484",
+              "1004x537",
+              "1114x458",
+              "1434x250",
+              "1442x208",
+              "1498x1224",
+              "211x204",
+              "222x230",
+              "2400x2406"
+            ],
+            "resolution_range": {
+              "min": "211x204",
+              "max": "2400x2406"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Mechanical_Engineering",
+        "sample_count": 59,
+        "prompt_length_mean": 527.95,
+        "prompt_length_min": 272,
+        "prompt_length_max": 1418,
+        "prompt_length_std": 222.71,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 59,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1037x887",
+              "1078x376",
+              "1103x409",
+              "1211x726",
+              "1290x534",
+              "134x157",
+              "136x173",
+              "205x211",
+              "215x127",
+              "278x171"
+            ],
+            "resolution_range": {
+              "min": "134x157",
+              "max": "1037x887"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Music",
+        "sample_count": 60,
+        "prompt_length_mean": 336.55,
+        "prompt_length_min": 250,
+        "prompt_length_max": 672,
+        "prompt_length_std": 73.26,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 86,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.43
+            },
+            "resolutions": [
+              "1054x156",
+              "1117x143",
+              "1126x111",
+              "112x114",
+              "1188x136",
+              "1204x1554",
+              "1205x118",
+              "1207x294",
+              "124x130",
+              "124x184"
+            ],
+            "resolution_range": {
+              "min": "157x40",
+              "max": "1557x2057"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Pharmacy",
+        "sample_count": 57,
+        "prompt_length_mean": 474.7,
+        "prompt_length_min": 282,
+        "prompt_length_max": 902,
+        "prompt_length_std": 142.16,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 75,
+            "count_per_sample": {
+              "min": 1,
+              "max": 4,
+              "mean": 1.32
+            },
+            "resolutions": [
+              "106x111",
+              "145x129",
+              "171x111",
+              "174x131",
+              "182x52",
+              "183x118",
+              "192x181",
+              "205x198",
+              "213x130",
+              "219x135"
+            ],
+            "resolution_range": {
+              "min": "89x58",
+              "max": "668x572"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Physics",
+        "sample_count": 60,
+        "prompt_length_mean": 499.07,
+        "prompt_length_min": 341,
+        "prompt_length_max": 737,
+        "prompt_length_std": 104.42,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 65,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.08
+            },
+            "resolutions": [
+              "1016x224",
+              "1036x308",
+              "1186x520",
+              "190x224",
+              "2354x240",
+              "250x176",
+              "260x324",
+              "270x336",
+              "302x208",
+              "308x258"
+            ],
+            "resolution_range": {
+              "min": "190x224",
+              "max": "850x920"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Psychology",
+        "sample_count": 60,
+        "prompt_length_mean": 1355.12,
+        "prompt_length_min": 280,
+        "prompt_length_max": 3749,
+        "prompt_length_std": 1035.92,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 86,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.43
+            },
+            "resolutions": [
+              "1042x586",
+              "1046x408",
+              "1110x216",
+              "1130x224",
+              "1176x544",
+              "1184x576",
+              "1204x928",
+              "1212x636",
+              "1226x620",
+              "1248x490"
+            ],
+            "resolution_range": {
+              "min": "472x71",
+              "max": "1434x980"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Public_Health",
+        "sample_count": 58,
+        "prompt_length_mean": 716.98,
+        "prompt_length_min": 282,
+        "prompt_length_max": 2510,
+        "prompt_length_std": 425.29,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 59,
+            "count_per_sample": {
+              "min": 1,
+              "max": 2,
+              "mean": 1.02
+            },
+            "resolutions": [
+              "1180x636",
+              "1186x186",
+              "1322x744",
+              "1462x604",
+              "1466x202",
+              "1486x892",
+              "1614x918",
+              "1726x630",
+              "247x229",
+              "434x84"
+            ],
+            "resolution_range": {
+              "min": "434x84",
+              "max": "1614x918"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Sociology",
+        "sample_count": 54,
+        "prompt_length_mean": 416.48,
+        "prompt_length_min": 279,
+        "prompt_length_max": 708,
+        "prompt_length_std": 116.86,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 54,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1008x698",
+              "1011x950",
+              "1024x494",
+              "1024x538",
+              "1024x689",
+              "1052x836",
+              "1057x1204",
+              "1080x746",
+              "1166x622",
+              "1184x604"
+            ],
+            "resolution_range": {
+              "min": "300x200",
+              "max": "2000x1341"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 521.89,
+      "min": 249,
+      "max": 3749,
+      "std": 315.32
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:15:10.265278",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 2048,
+        "count_per_sample": {
+          "min": 1,
+          "max": 35,
+          "mean": 1.18
+        },
+        "resolutions": [
+          "1000x1333",
+          "1000x562",
+          "1000x583",
+          "1000x750",
+          "1000x812",
+          "1002x721",
+          "1004x484",
+          "1004x537",
+          "1004x742",
+          "1008x698"
+        ],
+        "resolution_range": {
+          "min": "43x50",
+          "max": "2560x2545"
+        },
+        "formats": [
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "bae49033",
+          "content": [
+            {
+              "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C. Think step by step before answering.\n\nPrices of zero-coupon bonds reveal the following pattern of forward rates: "
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~8.0KB]"
+            },
+            {
+              "text": " In addition to the zero-coupon bond, investors also may purchase a 3-year bond making annual payments of $60 with par value $1,000. Under the expectations hypothesis, what is the expected realized compound yield of the coupon bond?\n\nA) 6.66%\nB) 6.79%\nC) 6.91%"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "6.66%",
+        "6.79%",
+        "6.91%"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "Accounting",
+      "metadata": {
+        "id": "test_Accounting_42",
+        "explanation": "?",
+        "img_type": "['Tables']",
+        "topic_difficulty": "Hard",
+        "subject": "Accounting"
+      }
+    },
+    "subset": "Accounting",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MMMU-PRO\n\n\n## Overview\n\nMMMU-PRO is an enhanced multimodal benchmark designed to rigorously assess the genuine understanding capabilities of advanced AI models across multiple modalities. It builds upon the original MMMU benchmark with key improvements that make evaluation more challenging and realistic.\n\n## Task Description\n\n- **Task Type**: Multimodal Academic Question Answering\n- **Input**: Images (up to 7) + multiple-choice question\n- **Output**: Correct answer choice letter\n- **Domains**: 30 academic subjects across STEM, humanities, and social sciences\n\n## Key Features\n\n- Enhanced version of MMMU with more rigorous evaluation\n- Covers 30 subjects: Accounting, Biology, Chemistry, Computer Science, Economics, Physics, etc.\n- Multiple dataset formats available:\n  - `standard (4 options)`: Traditional 4-choice format\n  - `standard (10 options)`: Extended 10-choice format for harder evaluation\n  - `vision`: Questions embedded in images\n- Tests genuine multimodal understanding, not just text shortcuts\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** on multiple-choice questions\n- Dataset format can be configured via `dataset_format` parameter\n- Uses Chain-of-Thought (CoT) prompting for reasoning\n- Rich metadata includes topic difficulty and subject information\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `mmmu_pro` |\n| **Dataset ID** | [AI-ModelScope/MMMU_Pro](https://modelscope.cn/datasets/AI-ModelScope/MMMU_Pro/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `MultiModal` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,730 |\n| Prompt Length (Mean) | 521.89 chars |\n| Prompt Length (Min/Max) | 249 / 3749 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Accounting` | 58 | 518.48 | 320 | 899 |\n| `Agriculture` | 60 | 477.05 | 289 | 747 |\n| `Architecture_and_Engineering` | 60 | 592.85 | 281 | 1177 |\n| `Art` | 53 | 358.34 | 297 | 919 |\n| `Art_Theory` | 55 | 362.53 | 289 | 619 |\n| `Basic_Medical_Science` | 52 | 401.96 | 277 | 867 |\n| `Biology` | 59 | 476.81 | 269 | 1387 |\n| `Chemistry` | 60 | 453.75 | 264 | 1217 |\n| `Clinical_Medicine` | 59 | 525.58 | 311 | 977 |\n| `Computer_Science` | 60 | 441.37 | 262 | 1077 |\n| `Design` | 60 | 408.25 | 285 | 1449 |\n| `Diagnostics_and_Laboratory_Medicine` | 60 | 444.17 | 274 | 789 |\n| `Economics` | 59 | 506.37 | 284 | 900 |\n| `Electronics` | 60 | 455.6 | 314 | 668 |\n| `Energy_and_Power` | 58 | 506.86 | 347 | 816 |\n| `Finance` | 60 | 637.75 | 317 | 1864 |\n| `Geography` | 52 | 409.9 | 267 | 929 |\n| `History` | 56 | 611.3 | 328 | 1077 |\n| `Literature` | 52 | 429.87 | 274 | 564 |\n| `Manage` | 50 | 666.56 | 282 | 2198 |\n| `Marketing` | 59 | 596.53 | 303 | 1060 |\n| `Materials` | 60 | 484.02 | 296 | 1351 |\n| `Math` | 60 | 511.95 | 249 | 1172 |\n| `Mechanical_Engineering` | 59 | 527.95 | 272 | 1418 |\n| `Music` | 60 | 336.55 | 250 | 672 |\n| `Pharmacy` | 57 | 474.7 | 282 | 902 |\n| `Physics` | 60 | 499.07 | 341 | 737 |\n| `Psychology` | 60 | 1355.12 | 280 | 3749 |\n| `Public_Health` | 58 | 716.98 | 282 | 2510 |\n| `Sociology` | 54 | 416.48 | 279 | 708 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 2,048 |\n| Images per Sample | min: 1, max: 35, mean: 1.18 |\n| Resolution Range | 43x50 - 2560x2545 |\n| Formats | png |\n\n\n## Sample Example\n\n**Subset**: `Accounting`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"bae49033\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C. Think step by step before answering.\\n\\nPrices of zero-coupon bonds reveal the following pattern of forward rates: \"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~8.0KB]\"\n        },\n        {\n          \"text\": \" In addition to the zero-coupon bond, investors also may purchase a 3-year bond making annual payments of $60 with par value $1,000. Under the expectations hypothesis, what is the expected realized compound yield of the coupon bond?\\n\\nA) 6.66%\\nB) 6.79%\\nC) 6.91%\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"6.66%\",\n    \"6.79%\",\n    \"6.91%\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Accounting\",\n  \"metadata\": {\n    \"id\": \"test_Accounting_42\",\n    \"explanation\": \"?\",\n    \"img_type\": \"['Tables']\",\n    \"topic_difficulty\": \"Hard\",\n    \"subject\": \"Accounting\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `dataset_format` | `str` | `standard (4 options)` | Dataset format variant. Choices: ['standard (4 options)', 'standard (10 options)', 'vision']. Choices: ['standard (4 options)', 'standard (10 options)', 'vision'] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mmmu_pro \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mmmu_pro'],\n    dataset_args={\n        'mmmu_pro': {\n            # subset_list: ['Accounting', 'Agriculture', 'Architecture_and_Engineering']  # optional, evaluate specific subsets\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MMMU-PRO\n\n## 概述\n\nMMMU-PRO 是一个增强版的多模态基准测试，旨在严格评估先进 AI 模型在多种模态下的真实理解能力。它在原始 MMMU 基准的基础上进行了关键改进，使评估更具挑战性和现实性。\n\n## 任务描述\n\n- **任务类型**：多模态学术问答\n- **输入**：图像（最多 7 张）+ 多选题\n- **输出**：正确答案选项字母\n- **领域**：涵盖 STEM、人文和社会科学领域的 30 个学科\n\n## 主要特性\n\n- MMMU 的增强版本，提供更严格的评估\n- 覆盖 30 个学科：会计学、生物学、化学、计算机科学、经济学、物理学等\n- 提供多种数据集格式：\n  - `standard (4 options)`：传统的 4 选项格式\n  - `standard (10 options)`：扩展的 10 选项格式，用于更难的评估\n  - `vision`：问题嵌入在图像中\n- 测试真实的多模态理解能力，而非仅依赖文本捷径\n\n## 评估说明\n\n- 默认使用 **test** 数据划分进行评估\n- 主要指标：多选题的 **准确率（Accuracy）**\n- 可通过 `dataset_format` 参数配置数据集格式\n- 使用思维链（Chain-of-Thought, CoT）提示进行推理\n- 包含丰富的元数据，如题目难度和学科信息\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `mmmu_pro` |\n| **数据集 ID** | [AI-ModelScope/MMMU_Pro](https://modelscope.cn/datasets/AI-ModelScope/MMMU_Pro/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ`, `MultiModal` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,730 |\n| 提示词长度（平均） | 521.89 字符 |\n| 提示词长度（最小/最大） | 249 / 3749 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Accounting` | 58 | 518.48 | 320 | 899 |\n| `Agriculture` | 60 | 477.05 | 289 | 747 |\n| `Architecture_and_Engineering` | 60 | 592.85 | 281 | 1177 |\n| `Art` | 53 | 358.34 | 297 | 919 |\n| `Art_Theory` | 55 | 362.53 | 289 | 619 |\n| `Basic_Medical_Science` | 52 | 401.96 | 277 | 867 |\n| `Biology` | 59 | 476.81 | 269 | 1387 |\n| `Chemistry` | 60 | 453.75 | 264 | 1217 |\n| `Clinical_Medicine` | 59 | 525.58 | 311 | 977 |\n| `Computer_Science` | 60 | 441.37 | 262 | 1077 |\n| `Design` | 60 | 408.25 | 285 | 1449 |\n| `Diagnostics_and_Laboratory_Medicine` | 60 | 444.17 | 274 | 789 |\n| `Economics` | 59 | 506.37 | 284 | 900 |\n| `Electronics` | 60 | 455.6 | 314 | 668 |\n| `Energy_and_Power` | 58 | 506.86 | 347 | 816 |\n| `Finance` | 60 | 637.75 | 317 | 1864 |\n| `Geography` | 52 | 409.9 | 267 | 929 |\n| `History` | 56 | 611.3 | 328 | 1077 |\n| `Literature` | 52 | 429.87 | 274 | 564 |\n| `Manage` | 50 | 666.56 | 282 | 2198 |\n| `Marketing` | 59 | 596.53 | 303 | 1060 |\n| `Materials` | 60 | 484.02 | 296 | 1351 |\n| `Math` | 60 | 511.95 | 249 | 1172 |\n| `Mechanical_Engineering` | 59 | 527.95 | 272 | 1418 |\n| `Music` | 60 | 336.55 | 250 | 672 |\n| `Pharmacy` | 57 | 474.7 | 282 | 902 |\n| `Physics` | 60 | 499.07 | 341 | 737 |\n| `Psychology` | 60 | 1355.12 | 280 | 3749 |\n| `Public_Health` | 58 | 716.98 | 282 | 2510 |\n| `Sociology` | 54 | 416.48 | 279 | 708 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 2,048 |\n| 每样本图像数 | 最小: 1, 最大: 35, 平均: 1.18 |\n| 分辨率范围 | 43x50 - 2560x2545 |\n| 格式 | png |\n\n## 样例示例\n\n**子集**: `Accounting`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"bae49033\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C. Think step by step before answering.\\n\\nPrices of zero-coupon bonds reveal the following pattern of forward rates: \"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~8.0KB]\"\n        },\n        {\n          \"text\": \" In addition to the zero-coupon bond, investors also may purchase a 3-year bond making annual payments of $60 with par value $1,000. Under the expectations hypothesis, what is the expected realized compound yield of the coupon bond?\\n\\nA) 6.66%\\nB) 6.79%\\nC) 6.91%\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"6.66%\",\n    \"6.79%\",\n    \"6.91%\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Accounting\",\n  \"metadata\": {\n    \"id\": \"test_Accounting_42\",\n    \"explanation\": \"?\",\n    \"img_type\": \"['Tables']\",\n    \"topic_difficulty\": \"Hard\",\n    \"subject\": \"Accounting\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `dataset_format` | `str` | `standard (4 options)` | 数据集格式变体。可选值：['standard (4 options)', 'standard (10 options)', 'vision'] |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mmmu_pro \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mmmu_pro'],\n    dataset_args={\n        'mmmu_pro': {\n            # subset_list: ['Accounting', 'Agriculture', 'Architecture_and_Engineering']  # 可选，评估特定子集\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "d5c1ad664fdde9883906f6cf1cec9fea",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.995061",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

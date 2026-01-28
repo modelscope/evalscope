@@ -1,0 +1,198 @@
+{
+  "meta": {
+    "pretty_name": "MMBench",
+    "dataset_id": "lmms-lab/MMBench",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Knowledge",
+      "QA"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "dev",
+    "train_split": "",
+    "subset_list": [
+      "cn",
+      "en"
+    ],
+    "description": "\n## Overview\n\nMMBench is a systematically designed benchmark for evaluating vision-language models across 20 fine-grained ability dimensions. It uses a novel CircularEval strategy and provides both English and Chinese versions for cross-lingual evaluation.\n\n## Task Description\n\n- **Task Type**: Visual Multiple-Choice Q&A\n- **Input**: Image with question and 2-4 answer options\n- **Output**: Single correct answer letter (A, B, C, or D)\n- **Languages**: English (en) and Chinese (cn) subsets\n\n## Key Features\n\n- 20 fine-grained ability dimensions defined\n- Systematic evaluation pipeline with CircularEval strategy\n- Bilingual support (English and Chinese)\n- Questions include hints for context\n- Tests perception, reasoning, and knowledge abilities\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses Chain-of-Thought (CoT) prompting\n- Evaluates on dev split\n- Two subsets: `cn` (Chinese) and `en` (English)\n- Results include category-level breakdown\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 8658,
+    "subset_stats": [
+      {
+        "name": "cn",
+        "sample_count": 4329,
+        "prompt_length_mean": 312.28,
+        "prompt_length_min": 241,
+        "prompt_length_max": 1681,
+        "prompt_length_std": 121.99,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 4329,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "100x100",
+              "105x74",
+              "106x56",
+              "111x72",
+              "114x66",
+              "120x83",
+              "124x73",
+              "133x93",
+              "137x103",
+              "146x93"
+            ],
+            "resolution_range": {
+              "min": "106x56",
+              "max": "512x512"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "en",
+        "sample_count": 4329,
+        "prompt_length_mean": 432.33,
+        "prompt_length_min": 256,
+        "prompt_length_max": 2395,
+        "prompt_length_std": 218.99,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 4329,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "100x100",
+              "105x74",
+              "106x56",
+              "111x72",
+              "114x66",
+              "120x83",
+              "124x73",
+              "133x93",
+              "137x103",
+              "146x93"
+            ],
+            "resolution_range": {
+              "min": "106x56",
+              "max": "512x512"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 372.3,
+      "min": 241,
+      "max": 2395,
+      "std": 187.13
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:14:51.244502",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 8658,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "100x100",
+          "105x74",
+          "106x56",
+          "111x72",
+          "114x66",
+          "120x83",
+          "124x73",
+          "133x93",
+          "137x103",
+          "146x93"
+        ],
+        "resolution_range": {
+          "min": "106x56",
+          "max": "512x512"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "00b49734",
+          "content": [
+            {
+              "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B. Think step by step before answering.\n\n下面的文章描述了一个实验。阅读文章，然后按照以下说明进行操作。\n\nMadelyn在雪板的底部涂上了一层薄蜡，然后直接下坡滑行。然后，她去掉了蜡，再次直接下坡滑行。她重复了这个过程四次，每次都交替使用薄蜡或不使用薄蜡滑行。她的朋友Tucker计时每次滑行的时间。Madelyn和Tucker计算了使用薄蜡滑行和不使用薄蜡滑行时直接下坡所需的平均时间。\n图：滑雪板下坡。麦德琳和塔克的实验能最好回答哪个问题？\n\nA) 当麦德琳的雪板上有一层薄蜡或一层厚蜡时，它是否能在较短的时间内滑下山坡？\nB) 当麦德琳的雪板上有一层蜡或没有蜡时，它是否能在较短的时间内滑下山坡？"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~11.7KB]"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "当麦德琳的雪板上有一层薄蜡或一层厚蜡时，它是否能在较短的时间内滑下山坡？",
+        "当麦德琳的雪板上有一层蜡或没有蜡时，它是否能在较短的时间内滑下山坡？"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "index": 241,
+        "category": "identity_reasoning",
+        "source": "scienceqa",
+        "L2-category": "attribute_reasoning",
+        "comment": "nan",
+        "split": "dev"
+      }
+    },
+    "subset": "cn",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MMBench\n\n\n## Overview\n\nMMBench is a systematically designed benchmark for evaluating vision-language models across 20 fine-grained ability dimensions. It uses a novel CircularEval strategy and provides both English and Chinese versions for cross-lingual evaluation.\n\n## Task Description\n\n- **Task Type**: Visual Multiple-Choice Q&A\n- **Input**: Image with question and 2-4 answer options\n- **Output**: Single correct answer letter (A, B, C, or D)\n- **Languages**: English (en) and Chinese (cn) subsets\n\n## Key Features\n\n- 20 fine-grained ability dimensions defined\n- Systematic evaluation pipeline with CircularEval strategy\n- Bilingual support (English and Chinese)\n- Questions include hints for context\n- Tests perception, reasoning, and knowledge abilities\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses Chain-of-Thought (CoT) prompting\n- Evaluates on dev split\n- Two subsets: `cn` (Chinese) and `en` (English)\n- Results include category-level breakdown\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `mm_bench` |\n| **Dataset ID** | [lmms-lab/MMBench](https://modelscope.cn/datasets/lmms-lab/MMBench/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MultiModal`, `QA` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `dev` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 8,658 |\n| Prompt Length (Mean) | 372.3 chars |\n| Prompt Length (Min/Max) | 241 / 2395 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `cn` | 4,329 | 312.28 | 241 | 1681 |\n| `en` | 4,329 | 432.33 | 256 | 2395 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 8,658 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 106x56 - 512x512 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `cn`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"00b49734\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B. Think step by step before answering.\\n\\n下面的文章描述了一个实验。阅读文章，然后按照以下说明进行操作。\\n\\nMadelyn在雪板的底部涂上了一层薄蜡，然后直接下坡滑行。然后，她去掉了蜡，再次直接下坡滑行。她重复了这个过程四次，每次都交替使用薄蜡或不使用薄蜡滑行。她的朋友Tucker计时每次滑行的时间。Madelyn和Tucker计算了使用薄蜡滑行和不使用薄蜡滑行时直接下坡所需的平均时间。\\n图：滑雪板下坡。麦德琳和塔克的实验能最好回答哪个问题？\\n\\nA) 当麦德琳的雪板上有一层薄蜡或一层厚蜡时，它是否能在较短的时间内滑下山坡？\\nB) 当麦德琳的雪板上有一层蜡或没有蜡时，它是否能在较短的时间内滑下山坡？\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~11.7KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"当麦德琳的雪板上有一层薄蜡或一层厚蜡时，它是否能在较短的时间内滑下山坡？\",\n    \"当麦德琳的雪板上有一层蜡或没有蜡时，它是否能在较短的时间内滑下山坡？\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"index\": 241,\n    \"category\": \"identity_reasoning\",\n    \"source\": \"scienceqa\",\n    \"L2-category\": \"attribute_reasoning\",\n    \"comment\": \"nan\",\n    \"split\": \"dev\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mm_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mm_bench'],\n    dataset_args={\n        'mm_bench': {\n            # subset_list: ['cn', 'en']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MMBench\n\n\n## 概述\n\nMMBench 是一个系统性设计的基准测试，用于在 20 个细粒度能力维度上评估视觉-语言模型。它采用了一种新颖的 CircularEval 策略，并提供英文和中文两个版本，以支持跨语言评估。\n\n## 任务描述\n\n- **任务类型**：视觉多选问答（Visual Multiple-Choice Q&A）\n- **输入**：包含问题和 2–4 个选项的图像\n- **输出**：单个正确答案字母（A、B、C 或 D）\n- **语言**：包含英文（en）和中文（cn）子集\n\n## 主要特性\n\n- 定义了 20 个细粒度能力维度\n- 采用 CircularEval 策略的系统化评估流程\n- 支持双语（英文和中文）\n- 问题中包含上下文提示（hints）\n- 考察感知、推理和知识能力\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 使用思维链（Chain-of-Thought, CoT）提示\n- 在开发集（dev split）上进行评估\n- 包含两个子集：`cn`（中文）和 `en`（英文）\n- 结果包含按类别划分的详细指标\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `mm_bench` |\n| **数据集 ID** | [lmms-lab/MMBench](https://modelscope.cn/datasets/lmms-lab/MMBench/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MultiModal`, `QA` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `dev` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 8,658 |\n| 提示词长度（平均） | 372.3 字符 |\n| 提示词长度（最小/最大） | 241 / 2395 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `cn` | 4,329 | 312.28 | 241 | 1681 |\n| `en` | 4,329 | 432.33 | 256 | 2395 |\n\n**图像统计数据：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 8,658 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 106x56 - 512x512 |\n| 格式 | jpeg |\n\n\n## 样例示例\n\n**子集**: `cn`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"00b49734\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B. Think step by step before answering.\\n\\n下面的文章描述了一个实验。阅读文章，然后按照以下说明进行操作。\\n\\nMadelyn在雪板的底部涂上了一层薄蜡，然后直接下坡滑行。然后，她去掉了蜡，再次直接下坡滑行。她重复了这个过程四次，每次都交替使用薄蜡或不使用薄蜡滑行。她的朋友Tucker计时每次滑行的时间。Madelyn和Tucker计算了使用薄蜡滑行和不使用薄蜡滑行时直接下坡所需的平均时间。\\n图：滑雪板下坡。麦德琳和塔克的实验能最好回答哪个问题？\\n\\nA) 当麦德琳的雪板上有一层薄蜡或一层厚蜡时，它是否能在较短的时间内滑下山坡？\\nB) 当麦德琳的雪板上有一层蜡或没有蜡时，它是否能在较短的时间内滑下山坡？\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~11.7KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"当麦德琳的雪板上有一层薄蜡或一层厚蜡时，它是否能在较短的时间内滑下山坡？\",\n    \"当麦德琳的雪板上有一层蜡或没有蜡时，它是否能在较短的时间内滑下山坡？\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"index\": 241,\n    \"category\": \"identity_reasoning\",\n    \"source\": \"scienceqa\",\n    \"L2-category\": \"attribute_reasoning\",\n    \"comment\": \"nan\",\n    \"split\": \"dev\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mm_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mm_bench'],\n    dataset_args={\n        'mm_bench': {\n            # subset_list: ['cn', 'en']  # 可选，用于指定评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "c642a76301aeee656b26f7e57a67ddd2",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.960604",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

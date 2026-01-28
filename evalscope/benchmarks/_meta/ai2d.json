@@ -1,0 +1,150 @@
+{
+  "meta": {
+    "pretty_name": "AI2D",
+    "dataset_id": "lmms-lab/ai2d",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Knowledge",
+      "QA"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nAI2D (AI2 Diagrams) is a benchmark dataset for evaluating AI systems' ability to understand and reason about scientific diagrams. It contains over 5,000 diverse diagrams from science textbooks covering topics like the water cycle, food webs, and biological processes.\n\n## Task Description\n\n- **Task Type**: Diagram Understanding and Visual Reasoning\n- **Input**: Scientific diagram image + multiple-choice question\n- **Output**: Correct answer choice\n- **Domains**: Science education, visual reasoning, diagram comprehension\n\n## Key Features\n\n- Diagrams sourced from real science textbooks\n- Requires joint understanding of visual layouts, symbols, and text labels\n- Tests interpretation of relationships between diagram elements\n- Multiple-choice format with challenging distractors\n- Covers diverse scientific domains (biology, physics, earth science)\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** on multiple-choice questions\n- Uses Chain-of-Thought (CoT) prompting for reasoning\n- Requires understanding both textual labels and visual elements\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 3088,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 3088,
+        "prompt_length_mean": 324.64,
+        "prompt_length_min": 256,
+        "prompt_length_max": 1024,
+        "prompt_length_std": 47.01,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 3088,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1149",
+              "1000x750",
+              "1000x816",
+              "1000x833",
+              "1000x895",
+              "1001x817",
+              "1018x1500",
+              "1024x1024",
+              "1024x1167",
+              "1024x1326"
+            ],
+            "resolution_range": {
+              "min": "177x131",
+              "max": "1500x1500"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 324.64,
+      "min": 256,
+      "max": 1024,
+      "std": 47.01
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:12:40.639447",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 3088,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1000x1149",
+          "1000x750",
+          "1000x816",
+          "1000x833",
+          "1000x895",
+          "1001x817",
+          "1018x1500",
+          "1024x1024",
+          "1024x1167",
+          "1024x1326"
+        ],
+        "resolution_range": {
+          "min": "177x131",
+          "max": "1500x1500"
+        },
+        "formats": [
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "789e28fa",
+          "content": [
+            {
+              "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\n\nwhich of these define dairy item\n\nA) c\nB) D\nC) b\nD) a"
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~226.2KB]"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "c",
+        "D",
+        "b",
+        "a"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# AI2D\n\n\n## Overview\n\nAI2D (AI2 Diagrams) is a benchmark dataset for evaluating AI systems' ability to understand and reason about scientific diagrams. It contains over 5,000 diverse diagrams from science textbooks covering topics like the water cycle, food webs, and biological processes.\n\n## Task Description\n\n- **Task Type**: Diagram Understanding and Visual Reasoning\n- **Input**: Scientific diagram image + multiple-choice question\n- **Output**: Correct answer choice\n- **Domains**: Science education, visual reasoning, diagram comprehension\n\n## Key Features\n\n- Diagrams sourced from real science textbooks\n- Requires joint understanding of visual layouts, symbols, and text labels\n- Tests interpretation of relationships between diagram elements\n- Multiple-choice format with challenging distractors\n- Covers diverse scientific domains (biology, physics, earth science)\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** on multiple-choice questions\n- Uses Chain-of-Thought (CoT) prompting for reasoning\n- Requires understanding both textual labels and visual elements\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `ai2d` |\n| **Dataset ID** | [lmms-lab/ai2d](https://modelscope.cn/datasets/lmms-lab/ai2d/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MultiModal`, `QA` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,088 |\n| Prompt Length (Mean) | 324.64 chars |\n| Prompt Length (Min/Max) | 256 / 1024 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 3,088 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 177x131 - 1500x1500 |\n| Formats | png |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"789e28fa\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\\n\\nwhich of these define dairy item\\n\\nA) c\\nB) D\\nC) b\\nD) a\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~226.2KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"c\",\n    \"D\",\n    \"b\",\n    \"a\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ai2d \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ai2d'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# AI2D\n\n\n## 概述\n\nAI2D（AI2 Diagrams）是一个用于评估人工智能系统理解与推理科学图表能力的基准数据集。该数据集包含来自科学教科书的5,000多个多样化图表，涵盖水循环、食物网和生物过程等主题。\n\n## 任务描述\n\n- **任务类型**：图表理解与视觉推理\n- **输入**：科学图表图像 + 多选题\n- **输出**：正确选项\n- **领域**：科学教育、视觉推理、图表理解\n\n## 主要特点\n\n- 图表来源于真实的科学教科书\n- 需要结合理解视觉布局、符号和文本标签\n- 测试对图表元素之间关系的解读能力\n- 采用包含具有挑战性干扰项的多选题格式\n- 覆盖多样化的科学领域（生物学、物理学、地球科学）\n\n## 评估说明\n\n- 默认评估使用 **test** 划分\n- 主要指标：多选题的 **准确率（Accuracy）**\n- 使用思维链（Chain-of-Thought, CoT）提示进行推理\n- 需同时理解文本标签和视觉元素\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `ai2d` |\n| **数据集ID** | [lmms-lab/ai2d](https://modelscope.cn/datasets/lmms-lab/ai2d/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MultiModal`, `QA` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,088 |\n| 提示词长度（平均） | 324.64 字符 |\n| 提示词长度（最小/最大） | 256 / 1024 字符 |\n\n**图像统计：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 3,088 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 177x131 - 1500x1500 |\n| 格式 | png |\n\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"789e28fa\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\\n\\nwhich of these define dairy item\\n\\nA) c\\nB) D\\nC) b\\nD) a\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~226.2KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"c\",\n    \"D\",\n    \"b\",\n    \"a\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ai2d \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ai2d'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "553ea308739612125f4bd0e5b29fee1d",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.804482",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

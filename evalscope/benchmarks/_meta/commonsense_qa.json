@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "pretty_name": "CommonsenseQA",
+    "dataset_id": "extraordinarylab/commonsense-qa",
+    "paper_url": null,
+    "tags": [
+      "Reasoning",
+      "Commonsense",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nCommonsenseQA is a benchmark for evaluating AI models' ability to answer questions that require commonsense reasoning about the world. Questions are designed to require background knowledge not explicitly stated in the question.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Commonsense Reasoning\n- **Input**: Question requiring commonsense knowledge with 5 choices\n- **Output**: Correct answer letter (A-E)\n- **Focus**: World knowledge and commonsense inference\n\n## Key Features\n\n- Questions generated from ConceptNet knowledge graph\n- Requires different types of commonsense knowledge\n- 5 answer choices per question\n- Tests reasoning about everyday concepts and relationships\n- Human-validated questions\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses simple multiple-choice prompting\n- Evaluates on validation split\n- Simple accuracy metric",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 1221,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1221,
+        "prompt_length_mean": 326.11,
+        "prompt_length_min": 257,
+        "prompt_length_max": 537,
+        "prompt_length_std": 29.9,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 326.11,
+      "min": 257,
+      "max": 537,
+      "std": 29.9
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:12:45.559817"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "c9b96cfc",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E.\n\nA revolving door is convenient for two direction travel, but it also serves as a security measure at a what?\n\nA) bank\nB) library\nC) department store\nD) mall\nE) new york"
+        }
+      ],
+      "choices": [
+        "bank",
+        "library",
+        "department store",
+        "mall",
+        "new york"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {}
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# CommonsenseQA\n\n## Overview\n\nCommonsenseQA is a benchmark for evaluating AI models' ability to answer questions that require commonsense reasoning about the world. Questions are designed to require background knowledge not explicitly stated in the question.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Commonsense Reasoning\n- **Input**: Question requiring commonsense knowledge with 5 choices\n- **Output**: Correct answer letter (A-E)\n- **Focus**: World knowledge and commonsense inference\n\n## Key Features\n\n- Questions generated from ConceptNet knowledge graph\n- Requires different types of commonsense knowledge\n- 5 answer choices per question\n- Tests reasoning about everyday concepts and relationships\n- Human-validated questions\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses simple multiple-choice prompting\n- Evaluates on validation split\n- Simple accuracy metric\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `commonsense_qa` |\n| **Dataset ID** | [extraordinarylab/commonsense-qa](https://modelscope.cn/datasets/extraordinarylab/commonsense-qa/summary) |\n| **Paper** | N/A |\n| **Tags** | `Commonsense`, `MCQ`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,221 |\n| Prompt Length (Mean) | 326.11 chars |\n| Prompt Length (Min/Max) | 257 / 537 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"c9b96cfc\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E.\\n\\nA revolving door is convenient for two direction travel, but it also serves as a security measure at a what?\\n\\nA) bank\\nB) library\\nC) department store\\nD) mall\\nE) new york\"\n    }\n  ],\n  \"choices\": [\n    \"bank\",\n    \"library\",\n    \"department store\",\n    \"mall\",\n    \"new york\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets commonsense_qa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['commonsense_qa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# CommonsenseQA\n\n## 概述\n\nCommonsenseQA 是一个用于评估 AI 模型回答需要常识推理问题能力的基准测试。这些问题旨在考察模型是否具备问题中未明确说明的背景常识知识。\n\n## 任务描述\n\n- **任务类型**：多项选择常识推理\n- **输入**：包含 5 个选项、需要常识知识的问题\n- **输出**：正确答案的字母（A-E）\n- **重点**：世界知识与常识推理\n\n## 主要特点\n\n- 问题基于 ConceptNet 知识图谱生成\n- 需要多种类型的常识知识\n- 每个问题提供 5 个选项\n- 测试对日常概念及其关系的推理能力\n- 所有问题均经过人工验证\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 使用简单的多项选择提示方式\n- 在验证集（validation split）上进行评估\n- 使用简单准确率（accuracy）作为评估指标\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `commonsense_qa` |\n| **数据集 ID** | [extraordinarylab/commonsense-qa](https://modelscope.cn/datasets/extraordinarylab/commonsense-qa/summary) |\n| **论文** | N/A |\n| **标签** | `Commonsense`, `MCQ`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `validation` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,221 |\n| 提示词长度（平均） | 326.11 字符 |\n| 提示词长度（最小/最大） | 257 / 537 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"c9b96cfc\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E.\\n\\nA revolving door is convenient for two direction travel, but it also serves as a security measure at a what?\\n\\nA) bank\\nB) library\\nC) department store\\nD) mall\\nE) new york\"\n    }\n  ],\n  \"choices\": [\n    \"bank\",\n    \"library\",\n    \"department store\",\n    \"mall\",\n    \"new york\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets commonsense_qa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['commonsense_qa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "c445a8d6929b3df8e72be64d00b827a7",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.830953",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

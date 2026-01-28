@@ -1,0 +1,639 @@
+{
+  "meta": {
+    "pretty_name": "OmniDocBench",
+    "dataset_id": "evalscope/OmniDocBench_tsv",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Knowledge",
+      "QA"
+    ],
+    "metrics": [
+      {
+        "text_block": {
+          "metric": [
+            "Edit_dist",
+            "BLEU",
+            "METEOR"
+          ]
+        }
+      },
+      {
+        "display_formula": {
+          "metric": [
+            "Edit_dist"
+          ]
+        }
+      },
+      {
+        "table": {
+          "metric": [
+            "TEDS",
+            "Edit_dist"
+          ]
+        }
+      },
+      {
+        "reading_order": {
+          "metric": [
+            "Edit_dist"
+          ]
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nOmniDocBench is an evaluation dataset for diverse document parsing in real-world scenarios, covering 9 document types, 4 layout types, and 3 language types with 1,355 PDF pages.\n\n## Task Description\n\n- **Task Type**: Document Parsing and Understanding\n- **Input**: PDF page image\n- **Output**: Parsed document structure in Markdown format\n- **Domain**: Document understanding, OCR, layout analysis\n\n## Key Features\n\n- 1,355 PDF pages across 9 document types\n- Rich annotations: 15 block-level and 4 span-level element types\n- Over 20k block-level and 80k span-level annotations\n- Reading order annotations\n- Coverage: academic papers, financial reports, newspapers, textbooks, handwritten notes\n\n## Evaluation Notes\n\n- Implements `end2end` and `quick_match` methods from official OmniDocBench-v1.5\n- Metrics: Edit_dist, BLEU, METEOR (text), TEDS (tables)\n- Requires: apted, distance, lxml, Polygon3, zss, rapidfuzz packages\n- Output format: Markdown with LaTeX formulas and HTML tables\n",
+    "prompt_template": " You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n    1. Text Processing:\n    - Accurately recognize all text content in the PDF image without guessing or inferring.\n    - Convert the recognized text into Markdown format.\n    - Maintain the original document structure, including headings, paragraphs, lists, etc.\n\n    2. Mathematical Formula Processing:\n    - Convert all mathematical formulas to LaTeX format.\n    - Enclose inline formulas with \\( \\). For example: This is an inline formula \\( E = mc^2 \\)\n    - Enclose block formulas with \\\\[ \\\\]. For example: \\[ \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} \\]\n\n    3. Table Processing:\n    - Convert tables to HTML format.\n    - Wrap the entire table with <table> and </table>.\n\n    4. Figure Handling:\n    - Ignore figures content in the PDF image. Do not attempt to describe or convert images.\n\n    5. Output Format:\n    - Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.\n    - For complex layouts, try to maintain the original document's structure and format as closely as possible.\n\n    Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "match_method": {
+        "type": "str",
+        "description": "Scoring match method used for evaluation.",
+        "value": "quick_match",
+        "choices": [
+          "quick_match",
+          "simple_match",
+          "no_split"
+        ]
+      }
+    },
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 981,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 981,
+        "prompt_length_mean": 1408,
+        "prompt_length_min": 1408,
+        "prompt_length_max": 1408,
+        "prompt_length_std": null,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 981,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "10142x14342",
+              "1024x1457",
+              "1102x1631",
+              "1102x1646",
+              "11112x7925",
+              "1142x1654",
+              "1156x1637",
+              "1159x1639",
+              "1181x1709",
+              "1189x1701"
+            ],
+            "resolution_range": {
+              "min": "516x729",
+              "max": "10142x14342"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 1408,
+      "min": 1408,
+      "max": 1408,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T15:36:09.600555",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 981,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "10142x14342",
+          "1024x1457",
+          "1102x1631",
+          "1102x1646",
+          "11112x7925",
+          "1142x1654",
+          "1156x1637",
+          "1159x1639",
+          "1181x1709",
+          "1189x1701"
+        ],
+        "resolution_range": {
+          "min": "516x729",
+          "max": "10142x14342"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "fa523475",
+          "content": [
+            {
+              "text": " You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n    1. Text Processing:\n    - Accurately recognize all text content in the PDF image without guessing or i ... [TRUNCATED] ... sible.\n\n    Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\n"
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~321.8KB]"
+            }
+          ]
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "layout_dets": [
+          {
+            "category_type": "title",
+            "poly": [
+              102.5999912116609,
+              120.87255879760278,
+              719.3118659856144,
+              120.87255879760278,
+              719.3118659856144,
+              194.14083813380114,
+              102.5999912116609,
+              194.14083813380114
+            ],
+            "ignore": false,
+            "order": 1,
+            "anno_id": 6,
+            "text": "国资背景基金情况",
+            "line_with_spans": [
+              {
+                "category_type": "text_span",
+                "poly": [
+                  109.3333333333331,
+                  121.73651418039208,
+                  722.1022134807848,
+                  121.73651418039208,
+                  722.1022134807848,
+                  195.75809149176507,
+                  109.3333333333331,
+                  195.75809149176507
+                ],
+                "text": "国资背景基金情况"
+              }
+            ],
+            "attribute": {
+              "text_language": "text_simplified_chinese",
+              "text_background": "white",
+              "text_rotate": "normal"
+            }
+          },
+          {
+            "category_type": "text_block",
+            "poly": [
+              97.71487020898245,
+              226.92028692633914,
+              1271.9932332148471,
+              226.92028692633914,
+              1271.9932332148471,
+              264.88925750697814,
+              97.71487020898245,
+              264.88925750697814
+            ],
+            "ignore": false,
+            "order": 2,
+            "anno_id": 4,
+            "text": "2022年备案基金规模小幅回升，但仍未恢复至资管新规出台前的水平",
+            "line_with_spans": [
+              {
+                "category_type": "text_span",
+                "poly": [
+                  99.66504579139392,
+                  227.6650457913944,
+                  1269.333333333333,
+                  227.6650457913944,
+                  1269.333333333333,
+                  271.3365750838786,
+                  99.66504579139392,
+                  271.3365750838786
+                ],
+                "text": "2022年备案基金规模小幅回升，但仍未恢复至资管新规出台前的水平"
+              }
+            ],
+            "attribute": {
+              "text_language": "text_simplified_chinese",
+              "text_background": "white",
+              "text_rotate": "normal"
+            }
+          },
+          {
+            "category_type": "figure_caption",
+            "poly": [
+              246.96994018554688,
+              318.7444152832031,
+              1088.26025390625,
+              318.7444152832031,
+              1088.26025390625,
+              369.0964660644531,
+              246.96994018554688,
+              369.0964660644531
+            ],
+            "ignore": false,
+            "order": 3,
+            "anno_id": 3,
+            "text": "2014年-2023Q3国资背景基金的备案数量及规模",
+            "line_with_spans": [
+              {
+                "category_type": "text_span",
+                "poly": [
+                  253.94664201855937,
+                  321.21295194692755,
+                  1076.1203813864063,
+                  321.21295194692755,
+                  1076.1203813864063,
+                  364.93470762745034,
+                  253.94664201855937,
+                  364.93470762745034
+                ],
+                "text": "2014年-2023Q3国资背景基金的备案数量及规模"
+              }
+            ],
+            "attribute": {
+              "text_language": "text_simplified_chinese",
+              "text_background": "white",
+              "text_rotate": "normal"
+            }
+          },
+          {
+            "category_type": "figure",
+            "poly": [
+              118.08102792118407,
+              379.29373168945347,
+              1299.4279383691976,
+              379.29373168945347,
+              1299.4279383691976,
+              1028.2773128579047,
+              118.08102792118407,
+              1028.2773128579047
+            ],
+            "ignore": false,
+            "order": 4,
+            "anno_id": 2
+          },
+          {
+            "category_type": "figure_caption",
+            "poly": [
+              1497.726318359375,
+              318.7418518066406,
+              2301.80224609375,
+              318.7418518066406,
+              2301.80224609375,
+              367.1272888183594,
+              1497.726318359375,
+              367.1272888183594
+            ],
+            "ignore": false,
+            "order": 5,
+            "anno_id": 8,
+            "text": "2014年-2023Q3国资背景基金数量TOP10地区",
+            "line_with_spans": [
+              {
+                "category_type": "text_span",
+                "poly": [
+                  1509.6758069519938,
+                  324.34247361866034,
+                  2292.4771492866826,
+                  324.34247361866034,
+                  2292.4771492866826,
+                  364.8196229053426,
+                  1509.6758069519938,
+                  364.8196229053426
+                ],
+                "text": "2014年-2023Q3国资背景基金数量TOP10地区"
+              }
+            ],
+            "attribute": {
+              "text_language": "text_simplified_chinese",
+              "text_background": "white",
+              "text_rotate": "normal"
+            }
+          },
+          {
+            "category_type": "figure",
+            "poly": [
+              1370.0374839590943,
+              424.35013794251097,
+              2552.3561471143494,
+              424.35013794251097,
+              2552.3561471143494,
+              1026.8955618700252,
+              1370.0374839590943,
+              1026.8955618700252
+            ],
+            "ignore": false,
+            "order": 6,
+            "anno_id": 5
+          },
+          {
+            "category_type": "title",
+            "poly": [
+              170.92340081387997,
+              1069.7956822171332,
+              326.21460986860313,
+              1069.7956822171332,
+              326.21460986860313,
+              1111.7494049722532,
+              170.92340081387997,
+              1111.7494049722532
+            ],
+            "ignore": false,
+            "order": 7,
+            "anno_id": 9,
+            "text": "核心发现",
+            "line_with_spans": [
+              {
+                "category_type": "text_span",
+                "poly": [
+                  169.67751098302242,
+                  1071.225836994341,
+                  328.08580770628134,
+                  1071.225836994341,
+                  328.08580770628134,
+                  1111.655822350311,
+                  169.67751098302242,
+                  1111.655822350311
+                ],
+                "text": "核心发现"
+              }
+            ],
+            "attribute": {
+              "text_language": "text_simplified_chinese",
+              "text_background": "white",
+              "text_rotate": "normal"
+            }
+          },
+          {
+            "category_type": "text_block",
+            "poly": [
+              172.66793877059249,
+              1155.2640660519091,
+              2514.2408071863138,
+              1155.2640660519091,
+              2514.2408071863138,
+              1241.6284871157177,
+              172.66793877059249,
+              1241.6284871157177
+            ],
+            "ignore": false,
+            "order": 8,
+            "anno_id": 7,
+            "text": "- 2018年4月资管新规出台后，国资背景基金备案数量增速放缓且规模骤减，受新冠疫情影响，2021年新增基金规模再次下降，虽然 2022年基金规模回升至1.25万亿元，但仍未恢复至资管新规出台前的水平，2023前三季度新增规模略低于2022年同期。",
+            "line_with_spans": [
+              {
+                "category_type": "text_span",
+                "poly": [
+                  165.603649650326,
+                  1150.009124125815,
+                  2509.333333333333,
+                  1150.009124125815,
+                  2509.333333333333,
+                  1198.666666666666,
+                  165.603649650326,
+                  1198.666666666666
+                ],
+                "text": "- 2018年4月资管新规出台后，国资背景基金备案数量增速放缓且规模骤减，受新冠疫情影响，2021年新增基金规模再次下降，虽然"
+              },
+              {
+                "category_type": "text_span",
+                "poly": [
+                  219.22996126565647,
+                  1201.1457902508969,
+                  2250.770752144285,
+                  1201.1457902508969,
+                  2250.770752144285,
+                  1243.9433217869077,
+                  219.22996126565647,
+                  1243.9433217869077
+                ],
+                "text": "2022年基金规模回升至1.25万亿元，但仍未恢复至资管新规出台前的水平，2023前三季度新增规模略低于2022年同期。"
+              }
+            ],
+            "attribute": {
+              "text_language": "text_simplified_chinese",
+              "text_background": "white",
+              "text_rotate": "normal"
+            }
+          },
+          {
+            "category_type": "text_block",
+            "poly": [
+              171.69999831539863,
+              1278.820932742719,
+              2512.084408886781,
+              1278.820932742719,
+              2512.084408886781,
+              1365.690053585406,
+              171.69999831539863,
+              1365.690053585406
+            ],
+            "ignore": false,
+            "order": 9,
+            "anno_id": 1,
+            "text": "- 截至2023Q3全国国资背景基金备案数量累计9196只，基金规模累计8.91万亿元。基金注册区域集中于广东省、浙江省和江苏省，广东省国资背景基金总规模遥遥领先。备案基金数量前10的省份基金数量占全国总量的 73% ，规模占全国总量的 68%。",
+            "line_with_spans": [
+              {
+                "category_type": "text_span",
+                "poly": [
+                  161.7899369148969,
+                  1278.308761376868,
+                  2508,
+                  1278.308761376868,
+                  2508,
+                  1317.333333333333,
+                  161.7899369148969,
+                  1317.333333333333
+                ],
+                "text": "- 截至2023Q3全国国资背景基金备案数量累计9196只，基金规模累计8.91万亿元。基金注册区域集中于广东省、浙江省和江苏省，广东"
+              },
+              {
+                "category_type": "text_span",
+                "poly": [
+                  222.66666666666688,
+                  1325.3333333333335,
+                  1623.8331583485456,
+                  1325.3333333333335,
+                  1623.8331583485456,
+                  1365.333333333333,
+                  222.66666666666688,
+                  1365.333333333333
+                ],
+                "text": "省国资背景基金总规模遥遥领先。备案基金数量前10的省份基金数量占全国总量的"
+              },
+              {
+                "category_type": "equation_ignore",
+                "poly": [
+                  1624.4165959289367,
+                  1327.0154193159506,
+                  1703.7259660435407,
+                  1327.0154193159506,
+                  1703.7259660435407,
+                  1363.1237504250385,
+                  1624.4165959289367,
+                  1363.1237504250385
+                ],
+                "text": "73%"
+              },
+              {
+                "category_type": "text_span",
+                "poly": [
+                  1704.6905743174548,
+                  1322.6134268787764,
+                  2053.985160092844,
+                  1322.6134268787764,
+                  2053.985160092844,
+                  1370.6736155849724,
+                  1704.6905743174548,
+                  1370.6736155849724
+                ],
+                "text": "，规模占全国总量的"
+              },
+              {
+                "category_type": "equation_ignore",
+                "poly": [
+                  2055.1374027302004,
+                  1326.3706276890023,
+                  2149.276980264608,
+                  1326.3706276890023,
+                  2149.276980264608,
+                  1365.7029169328305,
+                  2055.1374027302004,
+                  1365.7029169328305
+                ],
+                "text": "68%。"
+              }
+            ],
+            "attribute": {
+              "text_language": "text_simplified_chinese",
+              "text_background": "white",
+              "text_rotate": "normal"
+            }
+          },
+          {
+            "category_type": "abandon",
+            "poly": [
+              114.12910090860571,
+              1403.1676953230935,
+              175.21358196554792,
+              1403.1676953230935,
+              175.21358196554792,
+              1462.6586681785502,
+              114.12910090860571,
+              1462.6586681785502
+            ],
+            "ignore": false,
+            "order": null,
+            "anno_id": 10
+          },
+          {
+            "category_type": "footer",
+            "poly": [
+              180.18207532211585,
+              1404.2778174322868,
+              289.9793827860912,
+              1404.2778174322868,
+              289.9793827860912,
+              1462.652231000048,
+              180.18207532211585,
+              1462.652231000048
+            ],
+            "ignore": false,
+            "order": null,
+            "anno_id": 0,
+            "text": "CVINFO 投中信息",
+            "line_with_spans": [
+              {
+                "category_type": "text_span",
+                "poly": [
+                  178.18192276049803,
+                  1409.8767302579377,
+                  288.0868232114207,
+                  1409.8767302579377,
+                  288.0868232114207,
+                  1467.2607048296584,
+                  178.18192276049803,
+                  1467.2607048296584
+                ],
+                "text": "CVINFO 投中信息"
+              }
+            ],
+            "attribute": {
+              "text_language": "text_en_ch_mixed",
+              "text_background": "white",
+              "text_rotate": "normal"
+            }
+          }
+        ],
+        "extra": {
+          "relation": [
+            {
+              "source_anno_id": 2,
+              "target_anno_id": 3,
+              "relation_type": "parent_son"
+            },
+            {
+              "source_anno_id": 5,
+              "target_anno_id": 8,
+              "relation_type": "parent_son"
+            }
+          ]
+        },
+        "page_info": {
+          "page_attribute": {
+            "data_source": "PPT2PDF",
+            "language": "simplified_chinese",
+            "layout": "1andmore_column",
+            "special_issue": [
+              "watermark"
+            ]
+          },
+          "page_no": 11,
+          "height": 1500,
+          "width": 2667,
+          "image_path": "eastmoney_59cde7e939acc3124df9d3f2c85b5a0ec41b9da1157d5be38e098672022b47cb.pdf_11.jpg"
+        }
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# OmniDocBench\n\n\n## Overview\n\nOmniDocBench is an evaluation dataset for diverse document parsing in real-world scenarios, covering 9 document types, 4 layout types, and 3 language types with 1,355 PDF pages.\n\n## Task Description\n\n- **Task Type**: Document Parsing and Understanding\n- **Input**: PDF page image\n- **Output**: Parsed document structure in Markdown format\n- **Domain**: Document understanding, OCR, layout analysis\n\n## Key Features\n\n- 1,355 PDF pages across 9 document types\n- Rich annotations: 15 block-level and 4 span-level element types\n- Over 20k block-level and 80k span-level annotations\n- Reading order annotations\n- Coverage: academic papers, financial reports, newspapers, textbooks, handwritten notes\n\n## Evaluation Notes\n\n- Implements `end2end` and `quick_match` methods from official OmniDocBench-v1.5\n- Metrics: Edit_dist, BLEU, METEOR (text), TEDS (tables)\n- Requires: apted, distance, lxml, Polygon3, zss, rapidfuzz packages\n- Output format: Markdown with LaTeX formulas and HTML tables\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `omni_doc_bench` |\n| **Dataset ID** | [evalscope/OmniDocBench_tsv](https://modelscope.cn/datasets/evalscope/OmniDocBench_tsv/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MultiModal`, `QA` |\n| **Metrics** | `text_block`, `display_formula`, `table`, `reading_order` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 981 |\n| Prompt Length (Mean) | 1408 chars |\n| Prompt Length (Min/Max) | 1408 / 1408 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 981 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 516x729 - 10142x14342 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"fa523475\",\n      \"content\": [\n        {\n          \"text\": \" You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\\n\\n    1. Text Processing:\\n    - Accurately recognize all text content in the PDF image without guessing or i ... [TRUNCATED] ... sible.\\n\\n    Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\\n\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~321.8KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"layout_dets\": [\n      {\n        \"category_type\": \"title\",\n        \"poly\": [\n          102.5999912116609,\n          120.87255879760278,\n          719.3118659856144,\n          120.87255879760278,\n          719.3118659856144,\n          194.14083813380114,\n          102.5999912116609,\n          194.14083813380114\n        ],\n        \"ignore\": false,\n        \"order\": 1,\n        \"anno_id\": 6,\n        \"text\": \"国资背景基金情况\",\n        \"line_with_spans\": [\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              109.3333333333331,\n              121.73651418039208,\n              722.1022134807848,\n              121.73651418039208,\n              722.1022134807848,\n              195.75809149176507,\n              109.3333333333331,\n              195.75809149176507\n            ],\n            \"text\": \"国资背景基金情况\"\n          }\n        ],\n        \"attribute\": {\n          \"text_language\": \"text_simplified_chinese\",\n          \"text_background\": \"white\",\n          \"text_rotate\": \"normal\"\n        }\n      },\n      {\n        \"category_type\": \"text_block\",\n        \"poly\": [\n          97.71487020898245,\n          226.92028692633914,\n          1271.9932332148471,\n          226.92028692633914,\n          1271.9932332148471,\n          264.88925750697814,\n          97.71487020898245,\n          264.88925750697814\n        ],\n        \"ignore\": false,\n        \"order\": 2,\n        \"anno_id\": 4,\n        \"text\": \"2022年备案基金规模小幅回升，但仍未恢复至资管新规出台前的水平\",\n        \"line_with_spans\": [\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              99.66504579139392,\n              227.6650457913944,\n              1269.333333333333,\n              227.6650457913944,\n              1269.333333333333,\n              271.3365750838786,\n              99.66504579139392,\n              271.3365750838786\n            ],\n            \"text\": \"2022年备案基金规模小幅回升，但仍未恢复至资管新规出台前的水平\"\n          }\n        ],\n        \"attribute\": {\n          \"text_language\": \"text_simplified_chinese\",\n          \"text_background\": \"white\",\n          \"text_rotate\": \"normal\"\n        }\n      },\n      {\n        \"category_type\": \"figure_caption\",\n        \"poly\": [\n          246.96994018554688,\n          318.7444152832031,\n          1088.26025390625,\n          318.7444152832031,\n          1088.26025390625,\n          369.0964660644531,\n          246.96994018554688,\n          369.0964660644531\n        ],\n        \"ignore\": false,\n        \"order\": 3,\n        \"anno_id\": 3,\n        \"text\": \"2014年-2023Q3国资背景基金的备案数量及规模\",\n        \"line_with_spans\": [\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              253.94664201855937,\n              321.21295194692755,\n              1076.1203813864063,\n              321.21295194692755,\n              1076.1203813864063,\n              364.93470762745034,\n              253.94664201855937,\n              364.93470762745034\n            ],\n            \"text\": \"2014年-2023Q3国资背景基金的备案数量及规模\"\n          }\n        ],\n        \"attribute\": {\n          \"text_language\": \"text_simplified_chinese\",\n          \"text_background\": \"white\",\n          \"text_rotate\": \"normal\"\n        }\n      },\n      {\n        \"category_type\": \"figure\",\n        \"poly\": [\n          118.08102792118407,\n          379.29373168945347,\n          1299.4279383691976,\n          379.29373168945347,\n          1299.4279383691976,\n          1028.2773128579047,\n          118.08102792118407,\n          1028.2773128579047\n        ],\n        \"ignore\": false,\n        \"order\": 4,\n        \"anno_id\": 2\n      },\n      {\n        \"category_type\": \"figure_caption\",\n        \"poly\": [\n          1497.726318359375,\n          318.7418518066406,\n          2301.80224609375,\n          318.7418518066406,\n          2301.80224609375,\n          367.1272888183594,\n          1497.726318359375,\n          367.1272888183594\n        ],\n        \"ignore\": false,\n        \"order\": 5,\n        \"anno_id\": 8,\n        \"text\": \"2014年-2023Q3国资背景基金数量TOP10地区\",\n        \"line_with_spans\": [\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              1509.6758069519938,\n              324.34247361866034,\n              2292.4771492866826,\n              324.34247361866034,\n              2292.4771492866826,\n              364.8196229053426,\n              1509.6758069519938,\n              364.8196229053426\n            ],\n            \"text\": \"2014年-2023Q3国资背景基金数量TOP10地区\"\n          }\n        ],\n        \"attribute\": {\n          \"text_language\": \"text_simplified_chinese\",\n          \"text_background\": \"white\",\n          \"text_rotate\": \"normal\"\n        }\n      },\n      {\n        \"category_type\": \"figure\",\n        \"poly\": [\n          1370.0374839590943,\n          424.35013794251097,\n          2552.3561471143494,\n          424.35013794251097,\n          2552.3561471143494,\n          1026.8955618700252,\n          1370.0374839590943,\n          1026.8955618700252\n        ],\n        \"ignore\": false,\n        \"order\": 6,\n        \"anno_id\": 5\n      },\n      {\n        \"category_type\": \"title\",\n        \"poly\": [\n          170.92340081387997,\n          1069.7956822171332,\n          326.21460986860313,\n          1069.7956822171332,\n          326.21460986860313,\n          1111.7494049722532,\n          170.92340081387997,\n          1111.7494049722532\n        ],\n        \"ignore\": false,\n        \"order\": 7,\n        \"anno_id\": 9,\n        \"text\": \"核心发现\",\n        \"line_with_spans\": [\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              169.67751098302242,\n              1071.225836994341,\n              328.08580770628134,\n              1071.225836994341,\n              328.08580770628134,\n              1111.655822350311,\n              169.67751098302242,\n              1111.655822350311\n            ],\n            \"text\": \"核心发现\"\n          }\n        ],\n        \"attribute\": {\n          \"text_language\": \"text_simplified_chinese\",\n          \"text_background\": \"white\",\n          \"text_rotate\": \"normal\"\n        }\n      },\n      {\n        \"category_type\": \"text_block\",\n        \"poly\": [\n          172.66793877059249,\n          1155.2640660519091,\n          2514.2408071863138,\n          1155.2640660519091,\n          2514.2408071863138,\n          1241.6284871157177,\n          172.66793877059249,\n          1241.6284871157177\n        ],\n        \"ignore\": false,\n        \"order\": 8,\n        \"anno_id\": 7,\n        \"text\": \"- 2018年4月资管新规出台后，国资背景基金备案数量增速放缓且规模骤减，受新冠疫情影响，2021年新增基金规模再次下降，虽然 2022年基金规模回升至1.25万亿元，但仍未恢复至资管新规出台前的水平，2023前三季度新增规模略低于2022年同期。\",\n        \"line_with_spans\": [\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              165.603649650326,\n              1150.009124125815,\n              2509.333333333333,\n              1150.009124125815,\n              2509.333333333333,\n              1198.666666666666,\n              165.603649650326,\n              1198.666666666666\n            ],\n            \"text\": \"- 2018年4月资管新规出台后，国资背景基金备案数量增速放缓且规模骤减，受新冠疫情影响，2021年新增基金规模再次下降，虽然\"\n          },\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              219.22996126565647,\n              1201.1457902508969,\n              2250.770752144285,\n              1201.1457902508969,\n              2250.770752144285,\n              1243.9433217869077,\n              219.22996126565647,\n              1243.9433217869077\n            ],\n            \"text\": \"2022年基金规模回升至1.25万亿元，但仍未恢复至资管新规出台前的水平，2023前三季度新增规模略低于2022年同期。\"\n          }\n        ],\n        \"attribute\": {\n          \"text_language\": \"text_simplified_chinese\",\n          \"text_background\": \"white\",\n          \"text_rotate\": \"normal\"\n        }\n      },\n      {\n        \"category_type\": \"text_block\",\n        \"poly\": [\n          171.69999831539863,\n          1278.820932742719,\n          2512.084408886781,\n          1278.820932742719,\n          2512.084408886781,\n          1365.690053585406,\n          171.69999831539863,\n          1365.690053585406\n        ],\n        \"ignore\": false,\n        \"order\": 9,\n        \"anno_id\": 1,\n        \"text\": \"- 截至2023Q3全国国资背景基金备案数量累计9196只，基金规模累计8.91万亿元。基金注册区域集中于广东省、浙江省和江苏省，广东省国资背景基金总规模遥遥领先。备案基金数量前10的省份基金数量占全国总量的 73% ，规模占全国总量的 68%。\",\n        \"line_with_spans\": [\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              161.7899369148969,\n              1278.308761376868,\n              2508,\n              1278.308761376868,\n              2508,\n              1317.333333333333,\n              161.7899369148969,\n              1317.333333333333\n            ],\n            \"text\": \"- 截至2023Q3全国国资背景基金备案数量累计9196只，基金规模累计8.91万亿元。基金注册区域集中于广东省、浙江省和江苏省，广东\"\n          },\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              222.66666666666688,\n              1325.3333333333335,\n              1623.8331583485456,\n              1325.3333333333335,\n              1623.8331583485456,\n              1365.333333333333,\n              222.66666666666688,\n              1365.333333333333\n            ],\n            \"text\": \"省国资背景基金总规模遥遥领先。备案基金数量前10的省份基金数量占全国总量的\"\n          },\n          {\n            \"category_type\": \"equation_ignore\",\n            \"poly\": [\n              1624.4165959289367,\n              1327.0154193159506,\n              1703.7259660435407,\n              1327.0154193159506,\n              1703.7259660435407,\n              1363.1237504250385,\n              1624.4165959289367,\n              1363.1237504250385\n            ],\n            \"text\": \"73%\"\n          },\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              1704.6905743174548,\n              1322.6134268787764,\n              2053.985160092844,\n              1322.6134268787764,\n              2053.985160092844,\n              1370.6736155849724,\n              1704.6905743174548,\n              1370.6736155849724\n            ],\n            \"text\": \"，规模占全国总量的\"\n          },\n          {\n            \"category_type\": \"equation_ignore\",\n            \"poly\": [\n              2055.1374027302004,\n              1326.3706276890023,\n              2149.276980264608,\n              1326.3706276890023,\n              2149.276980264608,\n              1365.7029169328305,\n              2055.1374027302004,\n              1365.7029169328305\n            ],\n            \"text\": \"68%。\"\n          }\n        ],\n        \"attribute\": {\n          \"text_language\": \"text_simplified_chinese\",\n          \"text_background\": \"white\",\n          \"text_rotate\": \"normal\"\n        }\n      },\n      {\n        \"category_type\": \"abandon\",\n        \"poly\": [\n          114.12910090860571,\n          1403.1676953230935,\n          175.21358196554792,\n          1403.1676953230935,\n          175.21358196554792,\n          1462.6586681785502,\n          114.12910090860571,\n          1462.6586681785502\n        ],\n        \"ignore\": false,\n        \"order\": null,\n        \"anno_id\": 10\n      },\n      {\n        \"category_type\": \"footer\",\n        \"poly\": [\n          180.18207532211585,\n          1404.2778174322868,\n          289.9793827860912,\n          1404.2778174322868,\n          289.9793827860912,\n          1462.652231000048,\n          180.18207532211585,\n          1462.652231000048\n        ],\n        \"ignore\": false,\n        \"order\": null,\n        \"anno_id\": 0,\n        \"text\": \"CVINFO 投中信息\",\n        \"line_with_spans\": [\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              178.18192276049803,\n              1409.8767302579377,\n              288.0868232114207,\n              1409.8767302579377,\n              288.0868232114207,\n              1467.2607048296584,\n              178.18192276049803,\n              1467.2607048296584\n            ],\n            \"text\": \"CVINFO 投中信息\"\n          }\n        ],\n        \"attribute\": {\n          \"text_language\": \"text_en_ch_mixed\",\n          \"text_background\": \"white\",\n          \"text_rotate\": \"normal\"\n        }\n      }\n    ],\n    \"extra\": {\n      \"relation\": [\n        {\n          \"source_anno_id\": 2,\n          \"target_anno_id\": 3,\n          \"relation_type\": \"parent_son\"\n        },\n        {\n          \"source_anno_id\": 5,\n          \"target_anno_id\": 8,\n          \"relation_type\": \"parent_son\"\n        }\n      ]\n    },\n    \"page_info\": {\n      \"page_attribute\": {\n        \"data_source\": \"PPT2PDF\",\n        \"language\": \"simplified_chinese\",\n        \"layout\": \"1andmore_column\",\n        \"special_issue\": [\n          \"watermark\"\n        ]\n      },\n      \"page_no\": 11,\n      \"height\": 1500,\n      \"width\": 2667,\n      \"image_path\": \"eastmoney_59cde7e939acc3124df9d3f2c85b5a0ec41b9da1157d5be38e098672022b47cb.pdf_11.jpg\"\n    }\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n    1. Text Processing:\n    - Accurately recognize all text content in the PDF image without guessing or inferring.\n    - Convert the recognized text into Markdown format.\n    - Maintain the original document structure, including headings, paragraphs, lists, etc.\n\n    2. Mathematical Formula Processing:\n    - Convert all mathematical formulas to LaTeX format.\n    - Enclose inline formulas with \\( \\). For example: This is an inline formula \\( E = mc^2 \\)\n    - Enclose block formulas with \\\\[ \\\\]. For example: \\[ \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} \\]\n\n    3. Table Processing:\n    - Convert tables to HTML format.\n    - Wrap the entire table with <table> and </table>.\n\n    4. Figure Handling:\n    - Ignore figures content in the PDF image. Do not attempt to describe or convert images.\n\n    5. Output Format:\n    - Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.\n    - For complex layouts, try to maintain the original document's structure and format as closely as possible.\n\n    Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\n\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `match_method` | `str` | `quick_match` | Scoring match method used for evaluation. Choices: ['quick_match', 'simple_match', 'no_split'] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets omni_doc_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['omni_doc_bench'],\n    dataset_args={\n        'omni_doc_bench': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# OmniDocBench\n\n## 概述\n\nOmniDocBench 是一个面向真实场景的多样化文档解析评测数据集，涵盖 9 种文档类型、4 种布局类型和 3 种语言类型，共包含 1,355 页 PDF 文档。\n\n## 任务描述\n\n- **任务类型**：文档解析与理解\n- **输入**：PDF 页面图像\n- **输出**：以 Markdown 格式表示的解析后文档结构\n- **领域**：文档理解、OCR、版面分析\n\n## 核心特性\n\n- 覆盖 9 类文档类型的 1,355 页 PDF\n- 丰富的标注信息：15 种块级元素类型和 4 种跨度级（span-level）元素类型\n- 超过 2 万个块级标注和 8 万个跨度级标注\n- 阅读顺序标注\n- 覆盖范围包括：学术论文、财务报告、报纸、教科书、手写笔记等\n\n## 评测说明\n\n- 实现了官方 OmniDocBench-v1.5 中的 `end2end` 和 `quick_match` 方法\n- 评测指标：Edit_dist、BLEU、METEOR（文本）、TEDS（表格）\n- 依赖包：apted、distance、lxml、Polygon3、zss、rapidfuzz\n- 输出格式：包含 LaTeX 公式和 HTML 表格的 Markdown\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `omni_doc_bench` |\n| **数据集ID** | [evalscope/OmniDocBench_tsv](https://modelscope.cn/datasets/evalscope/OmniDocBench_tsv/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MultiModal`, `QA` |\n| **指标** | `text_block`, `display_formula`, `table`, `reading_order` |\n| **默认示例数** | 0-shot |\n| **评测划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 981 |\n| 提示词长度（平均） | 1408 字符 |\n| 提示词长度（最小/最大） | 1408 / 1408 字符 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 981 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 516x729 - 10142x14342 |\n| 图像格式 | jpeg |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"fa523475\",\n      \"content\": [\n        {\n          \"text\": \" You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\\n\\n    1. Text Processing:\\n    - Accurately recognize all text content in the PDF image without guessing or i ... [TRUNCATED] ... sible.\\n\\n    Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\\n\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~321.8KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"layout_dets\": [\n      {\n        \"category_type\": \"title\",\n        \"poly\": [\n          102.5999912116609,\n          120.87255879760278,\n          719.3118659856144,\n          120.87255879760278,\n          719.3118659856144,\n          194.14083813380114,\n          102.5999912116609,\n          194.14083813380114\n        ],\n        \"ignore\": false,\n        \"order\": 1,\n        \"anno_id\": 6,\n        \"text\": \"国资背景基金情况\",\n        \"line_with_spans\": [\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              109.3333333333331,\n              121.73651418039208,\n              722.1022134807848,\n              121.73651418039208,\n              722.1022134807848,\n              195.75809149176507,\n              109.3333333333331,\n              195.75809149176507\n            ],\n            \"text\": \"国资背景基金情况\"\n          }\n        ],\n        \"attribute\": {\n          \"text_language\": \"text_simplified_chinese\",\n          \"text_background\": \"white\",\n          \"text_rotate\": \"normal\"\n        }\n      },\n      {\n        \"category_type\": \"text_block\",\n        \"poly\": [\n          97.71487020898245,\n          226.92028692633914,\n          1271.9932332148471,\n          226.92028692633914,\n          1271.9932332148471,\n          264.88925750697814,\n          97.71487020898245,\n          264.88925750697814\n        ],\n        \"ignore\": false,\n        \"order\": 2,\n        \"anno_id\": 4,\n        \"text\": \"2022年备案基金规模小幅回升，但仍未恢复至资管新规出台前的水平\",\n        \"line_with_spans\": [\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              99.66504579139392,\n              227.6650457913944,\n              1269.333333333333,\n              227.6650457913944,\n              1269.333333333333,\n              271.3365750838786,\n              99.66504579139392,\n              271.3365750838786\n            ],\n            \"text\": \"2022年备案基金规模小幅回升，但仍未恢复至资管新规出台前的水平\"\n          }\n        ],\n        \"attribute\": {\n          \"text_language\": \"text_simplified_chinese\",\n          \"text_background\": \"white\",\n          \"text_rotate\": \"normal\"\n        }\n      },\n      {\n        \"category_type\": \"figure_caption\",\n        \"poly\": [\n          246.96994018554688,\n          318.7444152832031,\n          1088.26025390625,\n          318.7444152832031,\n          1088.26025390625,\n          369.0964660644531,\n          246.96994018554688,\n          369.0964660644531\n        ],\n        \"ignore\": false,\n        \"order\": 3,\n        \"anno_id\": 3,\n        \"text\": \"2014年-2023Q3国资背景基金的备案数量及规模\",\n        \"line_with_spans\": [\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              253.94664201855937,\n              321.21295194692755,\n              1076.1203813864063,\n              321.21295194692755,\n              1076.1203813864063,\n              364.93470762745034,\n              253.94664201855937,\n              364.93470762745034\n            ],\n            \"text\": \"2014年-2023Q3国资背景基金的备案数量及规模\"\n          }\n        ],\n        \"attribute\": {\n          \"text_language\": \"text_simplified_chinese\",\n          \"text_background\": \"white\",\n          \"text_rotate\": \"normal\"\n        }\n      },\n      {\n        \"category_type\": \"figure\",\n        \"poly\": [\n          118.08102792118407,\n          379.29373168945347,\n          1299.4279383691976,\n          379.29373168945347,\n          1299.4279383691976,\n          1028.2773128579047,\n          118.08102792118407,\n          1028.2773128579047\n        ],\n        \"ignore\": false,\n        \"order\": 4,\n        \"anno_id\": 2\n      },\n      {\n        \"category_type\": \"figure_caption\",\n        \"poly\": [\n          1497.726318359375,\n          318.7418518066406,\n          2301.80224609375,\n          318.7418518066406,\n          2301.80224609375,\n          367.1272888183594,\n          1497.726318359375,\n          367.1272888183594\n        ],\n        \"ignore\": false,\n        \"order\": 5,\n        \"anno_id\": 8,\n        \"text\": \"2014年-2023Q3国资背景基金数量TOP10地区\",\n        \"line_with_spans\": [\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              1509.6758069519938,\n              324.34247361866034,\n              2292.4771492866826,\n              324.34247361866034,\n              2292.4771492866826,\n              364.8196229053426,\n              1509.6758069519938,\n              364.8196229053426\n            ],\n            \"text\": \"2014年-2023Q3国资背景基金数量TOP10地区\"\n          }\n        ],\n        \"attribute\": {\n          \"text_language\": \"text_simplified_chinese\",\n          \"text_background\": \"white\",\n          \"text_rotate\": \"normal\"\n        }\n      },\n      {\n        \"category_type\": \"figure\",\n        \"poly\": [\n          1370.0374839590943,\n          424.35013794251097,\n          2552.3561471143494,\n          424.35013794251097,\n          2552.3561471143494,\n          1026.8955618700252,\n          1370.0374839590943,\n          1026.8955618700252\n        ],\n        \"ignore\": false,\n        \"order\": 6,\n        \"anno_id\": 5\n      },\n      {\n        \"category_type\": \"title\",\n        \"poly\": [\n          170.92340081387997,\n          1069.7956822171332,\n          326.21460986860313,\n          1069.7956822171332,\n          326.21460986860313,\n          1111.7494049722532,\n          170.92340081387997,\n          1111.7494049722532\n        ],\n        \"ignore\": false,\n        \"order\": 7,\n        \"anno_id\": 9,\n        \"text\": \"核心发现\",\n        \"line_with_spans\": [\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              169.67751098302242,\n              1071.225836994341,\n              328.08580770628134,\n              1071.225836994341,\n              328.08580770628134,\n              1111.655822350311,\n              169.67751098302242,\n              1111.655822350311\n            ],\n            \"text\": \"核心发现\"\n          }\n        ],\n        \"attribute\": {\n          \"text_language\": \"text_simplified_chinese\",\n          \"text_background\": \"white\",\n          \"text_rotate\": \"normal\"\n        }\n      },\n      {\n        \"category_type\": \"text_block\",\n        \"poly\": [\n          172.66793877059249,\n          1155.2640660519091,\n          2514.2408071863138,\n          1155.2640660519091,\n          2514.2408071863138,\n          1241.6284871157177,\n          172.66793877059249,\n          1241.6284871157177\n        ],\n        \"ignore\": false,\n        \"order\": 8,\n        \"anno_id\": 7,\n        \"text\": \"- 2018年4月资管新规出台后，国资背景基金备案数量增速放缓且规模骤减，受新冠疫情影响，2021年新增基金规模再次下降，虽然 2022年基金规模回升至1.25万亿元，但仍未恢复至资管新规出台前的水平，2023前三季度新增规模略低于2022年同期。\",\n        \"line_with_spans\": [\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              165.603649650326,\n              1150.009124125815,\n              2509.333333333333,\n              1150.009124125815,\n              2509.333333333333,\n              1198.666666666666,\n              165.603649650326,\n              1198.666666666666\n            ],\n            \"text\": \"- 2018年4月资管新规出台后，国资背景基金备案数量增速放缓且规模骤减，受新冠疫情影响，2021年新增基金规模再次下降，虽然\"\n          },\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              219.22996126565647,\n              1201.1457902508969,\n              2250.770752144285,\n              1201.1457902508969,\n              2250.770752144285,\n              1243.9433217869077,\n              219.22996126565647,\n              1243.9433217869077\n            ],\n            \"text\": \"2022年基金规模回升至1.25万亿元，但仍未恢复至资管新规出台前的水平，2023前三季度新增规模略低于2022年同期。\"\n          }\n        ],\n        \"attribute\": {\n          \"text_language\": \"text_simplified_chinese\",\n          \"text_background\": \"white\",\n          \"text_rotate\": \"normal\"\n        }\n      },\n      {\n        \"category_type\": \"text_block\",\n        \"poly\": [\n          171.69999831539863,\n          1278.820932742719,\n          2512.084408886781,\n          1278.820932742719,\n          2512.084408886781,\n          1365.690053585406,\n          171.69999831539863,\n          1365.690053585406\n        ],\n        \"ignore\": false,\n        \"order\": 9,\n        \"anno_id\": 1,\n        \"text\": \"- 截至2023Q3全国国资背景基金备案数量累计9196只，基金规模累计8.91万亿元。基金注册区域集中于广东省、浙江省和江苏省，广东省国资背景基金总规模遥遥领先。备案基金数量前10的省份基金数量占全国总量的 73% ，规模占全国总量的 68%。\",\n        \"line_with_spans\": [\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              161.7899369148969,\n              1278.308761376868,\n              2508,\n              1278.308761376868,\n              2508,\n              1317.333333333333,\n              161.7899369148969,\n              1317.333333333333\n            ],\n            \"text\": \"- 截至2023Q3全国国资背景基金备案数量累计9196只，基金规模累计8.91万亿元。基金注册区域集中于广东省、浙江省和江苏省，广东\"\n          },\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              222.66666666666688,\n              1325.3333333333335,\n              1623.8331583485456,\n              1325.3333333333335,\n              1623.8331583485456,\n              1365.333333333333,\n              222.66666666666688,\n              1365.333333333333\n            ],\n            \"text\": \"省国资背景基金总规模遥遥领先。备案基金数量前10的省份基金数量占全国总量的\"\n          },\n          {\n            \"category_type\": \"equation_ignore\",\n            \"poly\": [\n              1624.4165959289367,\n              1327.0154193159506,\n              1703.7259660435407,\n              1327.0154193159506,\n              1703.7259660435407,\n              1363.1237504250385,\n              1624.4165959289367,\n              1363.1237504250385\n            ],\n            \"text\": \"73%\"\n          },\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              1704.6905743174548,\n              1322.6134268787764,\n              2053.985160092844,\n              1322.6134268787764,\n              2053.985160092844,\n              1370.6736155849724,\n              1704.6905743174548,\n              1370.6736155849724\n            ],\n            \"text\": \"，规模占全国总量的\"\n          },\n          {\n            \"category_type\": \"equation_ignore\",\n            \"poly\": [\n              2055.1374027302004,\n              1326.3706276890023,\n              2149.276980264608,\n              1326.3706276890023,\n              2149.276980264608,\n              1365.7029169328305,\n              2055.1374027302004,\n              1365.7029169328305\n            ],\n            \"text\": \"68%。\"\n          }\n        ],\n        \"attribute\": {\n          \"text_language\": \"text_simplified_chinese\",\n          \"text_background\": \"white\",\n          \"text_rotate\": \"normal\"\n        }\n      },\n      {\n        \"category_type\": \"abandon\",\n        \"poly\": [\n          114.12910090860571,\n          1403.1676953230935,\n          175.21358196554792,\n          1403.1676953230935,\n          175.21358196554792,\n          1462.6586681785502,\n          114.12910090860571,\n          1462.6586681785502\n        ],\n        \"ignore\": false,\n        \"order\": null,\n        \"anno_id\": 10\n      },\n      {\n        \"category_type\": \"footer\",\n        \"poly\": [\n          180.18207532211585,\n          1404.2778174322868,\n          289.9793827860912,\n          1404.2778174322868,\n          289.9793827860912,\n          1462.652231000048,\n          180.18207532211585,\n          1462.652231000048\n        ],\n        \"ignore\": false,\n        \"order\": null,\n        \"anno_id\": 0,\n        \"text\": \"CVINFO 投中信息\",\n        \"line_with_spans\": [\n          {\n            \"category_type\": \"text_span\",\n            \"poly\": [\n              178.18192276049803,\n              1409.8767302579377,\n              288.0868232114207,\n              1409.8767302579377,\n              288.0868232114207,\n              1467.2607048296584,\n              178.18192276049803,\n              1467.2607048296584\n            ],\n            \"text\": \"CVINFO 投中信息\"\n          }\n        ],\n        \"attribute\": {\n          \"text_language\": \"text_en_ch_mixed\",\n          \"text_background\": \"white\",\n          \"text_rotate\": \"normal\"\n        }\n      }\n    ],\n    \"extra\": {\n      \"relation\": [\n        {\n          \"source_anno_id\": 2,\n          \"target_anno_id\": 3,\n          \"relation_type\": \"parent_son\"\n        },\n        {\n          \"source_anno_id\": 5,\n          \"target_anno_id\": 8,\n          \"relation_type\": \"parent_son\"\n        }\n      ]\n    },\n    \"page_info\": {\n      \"page_attribute\": {\n        \"data_source\": \"PPT2PDF\",\n        \"language\": \"simplified_chinese\",\n        \"layout\": \"1andmore_column\",\n        \"special_issue\": [\n          \"watermark\"\n        ]\n      },\n      \"page_no\": 11,\n      \"height\": 1500,\n      \"width\": 2667,\n      \"image_path\": \"eastmoney_59cde7e939acc3124df9d3f2c85b5a0ec41b9da1157d5be38e098672022b47cb.pdf_11.jpg\"\n    }\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n    1. Text Processing:\n    - Accurately recognize all text content in the PDF image without guessing or inferring.\n    - Convert the recognized text into Markdown format.\n    - Maintain the original document structure, including headings, paragraphs, lists, etc.\n\n    2. Mathematical Formula Processing:\n    - Convert all mathematical formulas to LaTeX format.\n    - Enclose inline formulas with \\( \\). For example: This is an inline formula \\( E = mc^2 \\)\n    - Enclose block formulas with \\\\[ \\\\]. For example: \\[ \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} \\]\n\n    3. Table Processing:\n    - Convert tables to HTML format.\n    - Wrap the entire table with <table> and </table>.\n\n    4. Figure Handling:\n    - Ignore figures content in the PDF image. Do not attempt to describe or convert images.\n\n    5. Output Format:\n    - Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.\n    - For complex layouts, try to maintain the original document's structure and format as closely as possible.\n\n    Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\n\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `match_method` | `str` | `quick_match` | 评测所用的匹配方法。可选项：['quick_match', 'simple_match', 'no_split'] |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets omni_doc_bench \\\n    --limit 10  # 正式评测时请移除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['omni_doc_bench'],\n    dataset_args={\n        'omni_doc_bench': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评测时请移除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "b0d718079fc89cb0a8120591cf980bbc",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T15:36:11.098560",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

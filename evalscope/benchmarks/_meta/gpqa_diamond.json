@@ -1,0 +1,87 @@
+{
+  "meta": {
+    "pretty_name": "GPQA-Diamond",
+    "dataset_id": "AI-ModelScope/gpqa_diamond",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nGPQA (Graduate-Level Google-Proof Q&A) Diamond is a challenging benchmark of 198 multiple-choice questions written by domain experts in biology, physics, and chemistry. The questions are designed to be extremely difficult, requiring PhD-level expertise to answer correctly.\n\n## Task Description\n\n- **Task Type**: Expert-Level Multiple-Choice Q&A\n- **Input**: Graduate-level science question with 4 choices\n- **Output**: Single correct answer letter (A, B, C, or D)\n- **Domains**: Biology, Physics, Chemistry\n\n## Key Features\n\n- 198 questions written and validated by domain PhD experts\n- Questions are \"Google-proof\" - cannot be easily looked up\n- Designed to test deep domain knowledge and reasoning\n- Diamond subset represents the highest quality questions\n- Average human expert accuracy ~65%, non-expert ~34%\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** or **5-shot** evaluation\n- Supports Chain-of-Thought (CoT) prompting for improved reasoning\n- Answer choices are randomly shuffled during evaluation\n- Only uses train split (validation set is private)\n- Challenging benchmark for measuring expert-level reasoning\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 198,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 198,
+        "prompt_length_mean": 841.15,
+        "prompt_length_min": 340,
+        "prompt_length_max": 5845,
+        "prompt_length_std": 480.41,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 841.15,
+      "min": 340,
+      "max": 5845,
+      "std": 480.41
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:13:19.927574"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "82b448a9",
+          "content": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\n\nTwo quantum states wi ... [TRUNCATED] ...  and 10^-8 sec, respectively. We want to clearly distinguish these two energy levels. Which one of the following options could be their energy difference so that they can be clearly resolved?\n\n\nA) 10^-4 eV\nB) 10^-9 eV\nC) 10^-8 eV\nD) 10^-11 eV"
+        }
+      ],
+      "choices": [
+        "10^-4 eV",
+        "10^-9 eV",
+        "10^-8 eV",
+        "10^-11 eV"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "",
+      "metadata": {
+        "correct_answer": "10^-4 eV",
+        "incorrect_answers": [
+          "10^-11 eV",
+          "10^-8 eV\n",
+          "10^-9 eV"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# GPQA-Diamond\n\n\n## Overview\n\nGPQA (Graduate-Level Google-Proof Q&A) Diamond is a challenging benchmark of 198 multiple-choice questions written by domain experts in biology, physics, and chemistry. The questions are designed to be extremely difficult, requiring PhD-level expertise to answer correctly.\n\n## Task Description\n\n- **Task Type**: Expert-Level Multiple-Choice Q&A\n- **Input**: Graduate-level science question with 4 choices\n- **Output**: Single correct answer letter (A, B, C, or D)\n- **Domains**: Biology, Physics, Chemistry\n\n## Key Features\n\n- 198 questions written and validated by domain PhD experts\n- Questions are \"Google-proof\" - cannot be easily looked up\n- Designed to test deep domain knowledge and reasoning\n- Diamond subset represents the highest quality questions\n- Average human expert accuracy ~65%, non-expert ~34%\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** or **5-shot** evaluation\n- Supports Chain-of-Thought (CoT) prompting for improved reasoning\n- Answer choices are randomly shuffled during evaluation\n- Only uses train split (validation set is private)\n- Challenging benchmark for measuring expert-level reasoning\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `gpqa_diamond` |\n| **Dataset ID** | [AI-ModelScope/gpqa_diamond](https://modelscope.cn/datasets/AI-ModelScope/gpqa_diamond/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 198 |\n| Prompt Length (Mean) | 841.15 chars |\n| Prompt Length (Min/Max) | 340 / 5845 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"82b448a9\",\n      \"content\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\\n\\nTwo quantum states wi ... [TRUNCATED] ...  and 10^-8 sec, respectively. We want to clearly distinguish these two energy levels. Which one of the following options could be their energy difference so that they can be clearly resolved?\\n\\n\\nA) 10^-4 eV\\nB) 10^-9 eV\\nC) 10^-8 eV\\nD) 10^-11 eV\"\n    }\n  ],\n  \"choices\": [\n    \"10^-4 eV\",\n    \"10^-9 eV\",\n    \"10^-8 eV\",\n    \"10^-11 eV\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"\",\n  \"metadata\": {\n    \"correct_answer\": \"10^-4 eV\",\n    \"incorrect_answers\": [\n      \"10^-11 eV\",\n      \"10^-8 eV\\n\",\n      \"10^-9 eV\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets gpqa_diamond \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['gpqa_diamond'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# GPQA-Diamond\n\n\n## 概述\n\nGPQA（Graduate-Level Google-Proof Q&A）Diamond 是一个极具挑战性的基准测试，包含 198 道由生物学、物理学和化学领域的专家编写的多项选择题。这些问题设计得极为困难，需要博士级别的专业知识才能正确作答。\n\n## 任务描述\n\n- **任务类型**：专家级多项选择问答\n- **输入**：研究生水平的科学问题，附带 4 个选项\n- **输出**：单个正确答案字母（A、B、C 或 D）\n- **领域**：生物学、物理学、化学\n\n## 主要特点\n\n- 198 道题目均由相关领域的博士专家编写并验证\n- 题目“无法通过 Google 轻易查到”——难以通过简单搜索获得答案\n- 旨在测试深层次的领域知识与推理能力\n- Diamond 子集代表了最高质量的问题\n- 人类专家平均准确率约为 65%，非专家约为 34%\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 或 **5-shot** 评估\n- 支持思维链（Chain-of-Thought, CoT）提示以提升推理能力\n- 评估过程中答案选项会随机打乱\n- 仅使用训练集（验证集为私有）\n- 是衡量专家级推理能力的高难度基准测试\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `gpqa_diamond` |\n| **数据集 ID** | [AI-ModelScope/gpqa_diamond](https://modelscope.cn/datasets/AI-ModelScope/gpqa_diamond/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ` |\n| **指标** | `acc` |\n| **默认示例数（Shots）** | 0-shot |\n| **评估划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 198 |\n| 提示词长度（平均） | 841.15 字符 |\n| 提示词长度（最小/最大） | 340 / 5845 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"82b448a9\",\n      \"content\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\\n\\nTwo quantum states wi ... [TRUNCATED] ...  and 10^-8 sec, respectively. We want to clearly distinguish these two energy levels. Which one of the following options could be their energy difference so that they can be clearly resolved?\\n\\n\\nA) 10^-4 eV\\nB) 10^-9 eV\\nC) 10^-8 eV\\nD) 10^-11 eV\"\n    }\n  ],\n  \"choices\": [\n    \"10^-4 eV\",\n    \"10^-9 eV\",\n    \"10^-8 eV\",\n    \"10^-11 eV\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"\",\n  \"metadata\": {\n    \"correct_answer\": \"10^-4 eV\",\n    \"incorrect_answers\": [\n      \"10^-11 eV\",\n      \"10^-8 eV\\n\",\n      \"10^-9 eV\"\n    ]\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets gpqa_diamond \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['gpqa_diamond'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "9c1ad63f51493723271ff20b1ef2c830",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.879864",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

@@ -1,0 +1,75 @@
+{
+  "meta": {
+    "pretty_name": "ArenaHard",
+    "dataset_id": "AI-ModelScope/arena-hard-auto-v0.1",
+    "paper_url": null,
+    "tags": [
+      "InstructionFollowing",
+      "Arena"
+    ],
+    "metrics": [
+      "winrate"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nArenaHard is a challenging benchmark that evaluates language models through competitive pairwise comparison. Models are judged against a GPT-4 baseline on difficult tasks requiring reasoning, understanding, and generation capabilities.\n\n## Task Description\n\n- **Task Type**: Competitive Model Evaluation (Arena-style)\n- **Input**: Challenging instruction/question\n- **Output**: Model response compared against GPT-4-0314 baseline\n- **Scoring**: Elo-based rating from pairwise battles\n\n## Key Features\n\n- 500 challenging user prompts\n- Two-game battle system (A vs B and B vs A)\n- Elo rating calculation for model ranking\n- Tests reasoning, instruction-following, and generation\n- High correlation with Chatbot Arena rankings\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses LLM judge (default: gpt-4-1106-preview)\n- Baseline model: gpt-4-0314 outputs\n- Reports win rate and Elo-based scores\n- Note: Style-controlled win rate not currently supported\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "elo",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 500,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 500,
+        "prompt_length_mean": 406.36,
+        "prompt_length_min": 29,
+        "prompt_length_max": 9140,
+        "prompt_length_std": 878.55,
+        "target_length_mean": 1856.83
+      }
+    ],
+    "prompt_length": {
+      "mean": 406.36,
+      "min": 29,
+      "max": 9140,
+      "std": 878.55
+    },
+    "target_length_mean": 1856.83,
+    "computed_at": "2026-01-28T11:12:36.484337"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "088243c7",
+          "content": "Use ABC notation to write a melody in the style of a folk tune."
+        }
+      ],
+      "target": "X:1\nT:Untitled Folk Tune\nM:4/4\nL:1/8\nK:G\n|:G2A2|B2A2|G2E2|D4|E2F2|G2F2|E2C2|B,4|\nA2B2|c2B2|A2F2|E4|D2E2|F2E2|D2B,2|C4:|",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "capability": "ABC Sequence Puzzles & Groups"
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# ArenaHard\n\n\n## Overview\n\nArenaHard is a challenging benchmark that evaluates language models through competitive pairwise comparison. Models are judged against a GPT-4 baseline on difficult tasks requiring reasoning, understanding, and generation capabilities.\n\n## Task Description\n\n- **Task Type**: Competitive Model Evaluation (Arena-style)\n- **Input**: Challenging instruction/question\n- **Output**: Model response compared against GPT-4-0314 baseline\n- **Scoring**: Elo-based rating from pairwise battles\n\n## Key Features\n\n- 500 challenging user prompts\n- Two-game battle system (A vs B and B vs A)\n- Elo rating calculation for model ranking\n- Tests reasoning, instruction-following, and generation\n- High correlation with Chatbot Arena rankings\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses LLM judge (default: gpt-4-1106-preview)\n- Baseline model: gpt-4-0314 outputs\n- Reports win rate and Elo-based scores\n- Note: Style-controlled win rate not currently supported\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `arena_hard` |\n| **Dataset ID** | [AI-ModelScope/arena-hard-auto-v0.1](https://modelscope.cn/datasets/AI-ModelScope/arena-hard-auto-v0.1/summary) |\n| **Paper** | N/A |\n| **Tags** | `Arena`, `InstructionFollowing` |\n| **Metrics** | `winrate` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `elo` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 500 |\n| Prompt Length (Mean) | 406.36 chars |\n| Prompt Length (Min/Max) | 29 / 9140 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"088243c7\",\n      \"content\": \"Use ABC notation to write a melody in the style of a folk tune.\"\n    }\n  ],\n  \"target\": \"X:1\\nT:Untitled Folk Tune\\nM:4/4\\nL:1/8\\nK:G\\n|:G2A2|B2A2|G2E2|D4|E2F2|G2F2|E2C2|B,4|\\nA2B2|c2B2|A2F2|E4|D2E2|F2E2|D2B,2|C4:|\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"capability\": \"ABC Sequence Puzzles & Groups\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets arena_hard \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['arena_hard'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# ArenaHard\n\n## 概述\n\nArenaHard 是一个具有挑战性的基准测试，通过竞争性成对比较来评估语言模型。模型在需要推理、理解和生成能力的困难任务上与 GPT-4 基线进行对比评判。\n\n## 任务描述\n\n- **任务类型**：竞争性模型评估（竞技场风格）\n- **输入**：具有挑战性的指令/问题\n- **输出**：模型响应，与 GPT-4-0314 基线进行比较\n- **评分方式**：基于 Elo 评分的成对对战结果\n\n## 主要特性\n\n- 包含 500 个具有挑战性的用户提示\n- 采用两局对战系统（A vs B 和 B vs A）\n- 使用 Elo 评分计算模型排名\n- 测试推理能力、指令遵循能力和文本生成能力\n- 与 Chatbot Arena 排名高度相关\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 使用 LLM 作为裁判（默认：gpt-4-1106-preview）\n- 基线模型：gpt-4-0314 的输出\n- 报告胜率和基于 Elo 的得分\n- 注意：目前不支持风格控制的胜率计算\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `arena_hard` |\n| **数据集ID** | [AI-ModelScope/arena-hard-auto-v0.1](https://modelscope.cn/datasets/AI-ModelScope/arena-hard-auto-v0.1/summary) |\n| **论文** | N/A |\n| **标签** | `Arena`, `InstructionFollowing` |\n| **指标** | `winrate` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n| **聚合方式** | `elo` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 500 |\n| 提示词长度（平均） | 406.36 字符 |\n| 提示词长度（最小/最大） | 29 / 9140 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"088243c7\",\n      \"content\": \"Use ABC notation to write a melody in the style of a folk tune.\"\n    }\n  ],\n  \"target\": \"X:1\\nT:Untitled Folk Tune\\nM:4/4\\nL:1/8\\nK:G\\n|:G2A2|B2A2|G2E2|D4|E2F2|G2F2|E2C2|B,4|\\nA2B2|c2B2|A2F2|E4|D2E2|F2E2|D2B,2|C4:|\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"capability\": \"ABC Sequence Puzzles & Groups\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets arena_hard \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['arena_hard'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "13e28a9ee7bbf6a1897350bd08a780c5",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.814179",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

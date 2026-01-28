@@ -1,0 +1,104 @@
+{
+  "meta": {
+    "pretty_name": "HaluEval",
+    "dataset_id": "evalscope/HaluEval",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "Hallucination",
+      "Yes/No"
+    ],
+    "metrics": [
+      "accuracy",
+      "precision",
+      "recall",
+      "f1_score",
+      "yes_ratio"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "data",
+    "train_split": "",
+    "subset_list": [
+      "dialogue_samples",
+      "qa_samples",
+      "summarization_samples"
+    ],
+    "description": "## Overview\n\nHaluEval is a large collection of generated and human-annotated hallucinated samples for evaluating the performance of LLMs in recognizing hallucination. It provides a comprehensive benchmark for assessing model reliability and factual accuracy.\n\n## Task Description\n\n- **Task Type**: Hallucination Detection\n- **Input**: Context/knowledge + response to judge\n- **Output**: YES (hallucination) or NO (factual)\n- **Domains**: Dialogue, QA, Summarization\n\n## Key Features\n\n- Three evaluation categories:\n  - `dialogue_samples`: Hallucination in conversational responses\n  - `qa_samples`: Hallucination in question answering\n  - `summarization_samples`: Hallucination in document summaries\n- Both generated and human-annotated samples\n- Tests model's ability to detect factual inconsistencies\n- Requires reasoning about knowledge-response alignment\n\n## Evaluation Notes\n\n- Default evaluation uses **zero-shot** (no few-shot examples)\n- Multiple metrics computed:\n  - **Accuracy**: Overall correct judgments\n  - **Precision**: True positives among positive predictions\n  - **Recall**: True positives among actual positives\n  - **F1 Score**: Harmonic mean of precision and recall\n  - **Yes Ratio**: Proportion of YES predictions\n- Binary YES/NO judgment format",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 30000,
+    "subset_stats": [
+      {
+        "name": "dialogue_samples",
+        "sample_count": 10000,
+        "prompt_length_mean": 3563.69,
+        "prompt_length_min": 3169,
+        "prompt_length_max": 4200,
+        "prompt_length_std": 129.26,
+        "target_length_mean": 2.51
+      },
+      {
+        "name": "qa_samples",
+        "sample_count": 10000,
+        "prompt_length_mean": 2811.83,
+        "prompt_length_min": 2463,
+        "prompt_length_max": 4004,
+        "prompt_length_std": 165.49,
+        "target_length_mean": 2.51
+      },
+      {
+        "name": "summarization_samples",
+        "sample_count": 10000,
+        "prompt_length_mean": 8121.02,
+        "prompt_length_min": 4932,
+        "prompt_length_max": 16078,
+        "prompt_length_std": 1987.54,
+        "target_length_mean": 2.51
+      }
+    ],
+    "prompt_length": {
+      "mean": 4832.18,
+      "min": 2463,
+      "max": 16078,
+      "std": 2614.21
+    },
+    "target_length_mean": 2.51,
+    "computed_at": "2026-01-28T11:13:48.573097"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "a99406f3",
+          "content": [
+            {
+              "text": "I want you act as a response judge. Given a dialogue history and a response, your objective is to determine if the provided response contains non-factual or hallucinated information. You SHOULD give your judgement based on the following hallu ... [TRUNCATED] ...  do! Robert Downey Jr. is a favorite. [Human]: Yes i like him too did you know he also was in Zodiac a crime fiction film. \n#Response#: I'm not a fan of crime movies, but I did know that RDJ starred in Zodiac with Tom Hanks.\n#Your Judgement#:"
+            }
+          ]
+        }
+      ],
+      "target": "YES",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "answer": "yes"
+      }
+    },
+    "subset": "dialogue_samples",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# HaluEval\n\n## Overview\n\nHaluEval is a large collection of generated and human-annotated hallucinated samples for evaluating the performance of LLMs in recognizing hallucination. It provides a comprehensive benchmark for assessing model reliability and factual accuracy.\n\n## Task Description\n\n- **Task Type**: Hallucination Detection\n- **Input**: Context/knowledge + response to judge\n- **Output**: YES (hallucination) or NO (factual)\n- **Domains**: Dialogue, QA, Summarization\n\n## Key Features\n\n- Three evaluation categories:\n  - `dialogue_samples`: Hallucination in conversational responses\n  - `qa_samples`: Hallucination in question answering\n  - `summarization_samples`: Hallucination in document summaries\n- Both generated and human-annotated samples\n- Tests model's ability to detect factual inconsistencies\n- Requires reasoning about knowledge-response alignment\n\n## Evaluation Notes\n\n- Default evaluation uses **zero-shot** (no few-shot examples)\n- Multiple metrics computed:\n  - **Accuracy**: Overall correct judgments\n  - **Precision**: True positives among positive predictions\n  - **Recall**: True positives among actual positives\n  - **F1 Score**: Harmonic mean of precision and recall\n  - **Yes Ratio**: Proportion of YES predictions\n- Binary YES/NO judgment format\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `halueval` |\n| **Dataset ID** | [evalscope/HaluEval](https://modelscope.cn/datasets/evalscope/HaluEval/summary) |\n| **Paper** | N/A |\n| **Tags** | `Hallucination`, `Knowledge`, `Yes/No` |\n| **Metrics** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `data` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 30,000 |\n| Prompt Length (Mean) | 4832.18 chars |\n| Prompt Length (Min/Max) | 2463 / 16078 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `dialogue_samples` | 10,000 | 3563.69 | 3169 | 4200 |\n| `qa_samples` | 10,000 | 2811.83 | 2463 | 4004 |\n| `summarization_samples` | 10,000 | 8121.02 | 4932 | 16078 |\n\n## Sample Example\n\n**Subset**: `dialogue_samples`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a99406f3\",\n      \"content\": [\n        {\n          \"text\": \"I want you act as a response judge. Given a dialogue history and a response, your objective is to determine if the provided response contains non-factual or hallucinated information. You SHOULD give your judgement based on the following hallu ... [TRUNCATED] ...  do! Robert Downey Jr. is a favorite. [Human]: Yes i like him too did you know he also was in Zodiac a crime fiction film. \\n#Response#: I'm not a fan of crime movies, but I did know that RDJ starred in Zodiac with Tom Hanks.\\n#Your Judgement#:\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"YES\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"answer\": \"yes\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets halueval \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['halueval'],\n    dataset_args={\n        'halueval': {\n            # subset_list: ['dialogue_samples', 'qa_samples', 'summarization_samples']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# HaluEval\n\n## 概述\n\nHaluEval 是一个大规模的生成与人工标注的幻觉样本集合，用于评估大语言模型（LLM）识别幻觉的能力。它提供了一个全面的基准测试，用于衡量模型的可靠性和事实准确性。\n\n## 任务描述\n\n- **任务类型**：幻觉检测\n- **输入**：上下文/知识 + 待判断的回复\n- **输出**：YES（存在幻觉）或 NO（符合事实）\n- **领域**：对话、问答、摘要\n\n## 主要特点\n\n- 包含三个评估类别：\n  - `dialogue_samples`：对话回复中的幻觉\n  - `qa_samples`：问答中的幻觉\n  - `summarization_samples`：文档摘要中的幻觉\n- 同时包含生成样本和人工标注样本\n- 测试模型检测事实不一致性的能力\n- 要求模型对知识与回复之间的一致性进行推理\n\n## 评估说明\n\n- 默认评估采用 **零样本（zero-shot）** 设置（无少样本示例）\n- 计算多项指标：\n  - **Accuracy（准确率）**：整体判断正确的比例\n  - **Precision（精确率）**：预测为正类中真实为正的比例\n  - **Recall（召回率）**：真实为正类中被正确预测的比例\n  - **F1 Score（F1分数）**：精确率与召回率的调和平均\n  - **Yes Ratio（YES比例）**：预测为 YES 的比例\n- 采用二元 YES/NO 判断格式\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `halueval` |\n| **数据集ID** | [evalscope/HaluEval](https://modelscope.cn/datasets/evalscope/HaluEval/summary) |\n| **论文** | N/A |\n| **标签** | `Hallucination`, `Knowledge`, `Yes/No` |\n| **指标** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |\n| **默认样本数** | 0-shot |\n| **评估划分** | `data` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 30,000 |\n| 提示词长度（平均） | 4832.18 字符 |\n| 提示词长度（最小/最大） | 2463 / 16078 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `dialogue_samples` | 10,000 | 3563.69 | 3169 | 4200 |\n| `qa_samples` | 10,000 | 2811.83 | 2463 | 4004 |\n| `summarization_samples` | 10,000 | 8121.02 | 4932 | 16078 |\n\n## 样例示例\n\n**子集**：`dialogue_samples`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a99406f3\",\n      \"content\": [\n        {\n          \"text\": \"I want you act as a response judge. Given a dialogue history and a response, your objective is to determine if the provided response contains non-factual or hallucinated information. You SHOULD give your judgement based on the following hallu ... [TRUNCATED] ...  do! Robert Downey Jr. is a favorite. [Human]: Yes i like him too did you know he also was in Zodiac a crime fiction film. \\n#Response#: I'm not a fan of crime movies, but I did know that RDJ starred in Zodiac with Tom Hanks.\\n#Your Judgement#:\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"YES\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"answer\": \"yes\"\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets halueval \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['halueval'],\n    dataset_args={\n        'halueval': {\n            # subset_list: ['dialogue_samples', 'qa_samples', 'summarization_samples']  # 可选，用于指定评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "7879ccadfc07da72c34b98c98d3f3681",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.888149",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

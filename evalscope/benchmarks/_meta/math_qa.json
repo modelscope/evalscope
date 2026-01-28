@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "pretty_name": "MathQA",
+    "dataset_id": "extraordinarylab/math-qa",
+    "paper_url": null,
+    "tags": [
+      "Reasoning",
+      "Math",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nMathQA is a large-scale dataset for mathematical word problem solving, gathered by annotating the AQuA-RAT dataset with fully-specified operational programs using a new representation language. It contains diverse math problems requiring multi-step reasoning.\n\n## Task Description\n\n- **Task Type**: Mathematical Reasoning (Multiple-Choice)\n- **Input**: Math word problem with multiple answer choices\n- **Output**: Correct answer with chain-of-thought reasoning\n- **Difficulty**: Varied (elementary to intermediate level)\n\n## Key Features\n\n- Annotated with executable operational programs\n- Tests quantitative reasoning and problem-solving skills\n- Diverse mathematical topics and question formats\n- Multiple-choice format with structured solutions\n- Useful for evaluating mathematical reasoning capabilities\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses Chain-of-Thought (CoT) prompting for reasoning\n- Evaluates on test split\n- Simple accuracy metric\n- Reasoning steps available in metadata",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 2985,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 2985,
+        "prompt_length_mean": 433.02,
+        "prompt_length_min": 257,
+        "prompt_length_max": 879,
+        "prompt_length_std": 92.2,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 433.02,
+      "min": 257,
+      "max": 879,
+      "std": 92.2
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:14:25.194061"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "e77fca06",
+          "content": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E. Think step by step before answering.\n\na shopkeeper sold an article offering a discount of 5 % and earned a profit of 31.1 % . what would have been the percentage of profit earned if no discount had been offered ?\n\nA) 38\nB) 27.675\nC) 30\nD) data inadequate\nE) none of these"
+        }
+      ],
+      "choices": [
+        "38",
+        "27.675",
+        "30",
+        "data inadequate",
+        "none of these"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "reasoning": "\"giving no discount to customer implies selling the product on printed price . suppose the cost price of the article is 100 . then printed price = 100 ã — ( 100 + 31.1 ) / ( 100 â ˆ ’ 5 ) = 138 hence , required % profit = 138 â € “ 100 = 38 % answer a\""
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MathQA\n\n## Overview\n\nMathQA is a large-scale dataset for mathematical word problem solving, gathered by annotating the AQuA-RAT dataset with fully-specified operational programs using a new representation language. It contains diverse math problems requiring multi-step reasoning.\n\n## Task Description\n\n- **Task Type**: Mathematical Reasoning (Multiple-Choice)\n- **Input**: Math word problem with multiple answer choices\n- **Output**: Correct answer with chain-of-thought reasoning\n- **Difficulty**: Varied (elementary to intermediate level)\n\n## Key Features\n\n- Annotated with executable operational programs\n- Tests quantitative reasoning and problem-solving skills\n- Diverse mathematical topics and question formats\n- Multiple-choice format with structured solutions\n- Useful for evaluating mathematical reasoning capabilities\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses Chain-of-Thought (CoT) prompting for reasoning\n- Evaluates on test split\n- Simple accuracy metric\n- Reasoning steps available in metadata\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `math_qa` |\n| **Dataset ID** | [extraordinarylab/math-qa](https://modelscope.cn/datasets/extraordinarylab/math-qa/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `Math`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 2,985 |\n| Prompt Length (Mean) | 433.02 chars |\n| Prompt Length (Min/Max) | 257 / 879 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"e77fca06\",\n      \"content\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E. Think step by step before answering.\\n\\na shopkeeper sold an article offering a discount of 5 % and earned a profit of 31.1 % . what would have been the percentage of profit earned if no discount had been offered ?\\n\\nA) 38\\nB) 27.675\\nC) 30\\nD) data inadequate\\nE) none of these\"\n    }\n  ],\n  \"choices\": [\n    \"38\",\n    \"27.675\",\n    \"30\",\n    \"data inadequate\",\n    \"none of these\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"reasoning\": \"\\\"giving no discount to customer implies selling the product on printed price . suppose the cost price of the article is 100 . then printed price = 100 ã — ( 100 + 31.1 ) / ( 100 â ˆ ’ 5 ) = 138 hence , required % profit = 138 â € “ 100 = 38 % answer a\\\"\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets math_qa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['math_qa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MathQA\n\n## 概述\n\nMathQA 是一个大规模数学应用题求解数据集，通过对 AQuA-RAT 数据集进行标注而构建，使用了一种新的表示语言为每个问题提供了完整的可执行操作程序。该数据集包含多样化的数学问题，需要多步推理才能解答。\n\n## 任务描述\n\n- **任务类型**：数学推理（多项选择题）\n- **输入**：带有多个选项的数学应用题\n- **输出**：正确答案及逐步推理过程（Chain-of-Thought）\n- **难度**：多样（从小学到中级水平）\n\n## 主要特点\n\n- 标注了可执行的操作程序\n- 考察量化推理与问题解决能力\n- 涵盖多种数学主题和题型\n- 多项选择格式，附带结构化解法\n- 适用于评估模型的数学推理能力\n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估方式\n- 使用思维链（Chain-of-Thought, CoT）提示进行推理\n- 在测试集（test split）上进行评估\n- 使用简单准确率（accuracy）作为评估指标\n- 推理步骤可在元数据（metadata）中获取\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `math_qa` |\n| **数据集ID** | [extraordinarylab/math-qa](https://modelscope.cn/datasets/extraordinarylab/math-qa/summary) |\n| **论文** | N/A |\n| **标签** | `MCQ`, `Math`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 2,985 |\n| 提示词长度（平均） | 433.02 字符 |\n| 提示词长度（最小/最大） | 257 / 879 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"e77fca06\",\n      \"content\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E. Think step by step before answering.\\n\\na shopkeeper sold an article offering a discount of 5 % and earned a profit of 31.1 % . what would have been the percentage of profit earned if no discount had been offered ?\\n\\nA) 38\\nB) 27.675\\nC) 30\\nD) data inadequate\\nE) none of these\"\n    }\n  ],\n  \"choices\": [\n    \"38\",\n    \"27.675\",\n    \"30\",\n    \"data inadequate\",\n    \"none of these\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"reasoning\": \"\\\"giving no discount to customer implies selling the product on printed price . suppose the cost price of the article is 100 . then printed price = 100 ã — ( 100 + 31.1 ) / ( 100 â ˆ ’ 5 ) = 138 hence , required % profit = 138 â € “ 100 = 38 % answer a\\\"\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets math_qa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['math_qa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "4514f6cfe12bafd754ae6a422e7ba364",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.923057",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

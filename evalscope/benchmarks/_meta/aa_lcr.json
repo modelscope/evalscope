@@ -1,0 +1,84 @@
+{
+  "meta": {
+    "pretty_name": "AA-LCR",
+    "dataset_id": "evalscope/AA-LCR",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "Reasoning",
+      "LongContext"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nAA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluating long-context retrieval and reasoning capabilities of language models. It requires models to find and synthesize information across multiple documents.\n\n## Task Description\n\n- **Task Type**: Long-Context Question Answering\n- **Input**: Multiple documents + question requiring cross-document reasoning\n- **Output**: Answer synthesized from document information\n- **Context**: Very long context (multiple documents concatenated)\n\n## Key Features\n\n- Tests long-context retrieval abilities\n- Multiple document understanding\n- Cross-document reasoning required\n- LLM-based judging for answer correctness\n- Auto-download of document corpus\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **Accuracy** (via LLM judge)\n- Evaluates on **test** split\n- Documents auto-downloaded if `text_dir` not specified\n- Judge prompt compares candidate answer against reference\n",
+    "prompt_template": "\nBEGIN INPUT DOCUMENTS\n\n{documents_text}\n\nEND INPUT DOCUMENTS\n\nAnswer the following question using the input documents provided above.\n\nSTART QUESTION\n\n{question}\n\nEND QUESTION\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "text_dir": {
+        "type": "str | null",
+        "description": "Local directory containing extracted AA-LCR text files; if null will auto-download & extract.",
+        "value": null
+      }
+    },
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 100,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 100,
+        "prompt_length_mean": 414674.06,
+        "prompt_length_min": 240709,
+        "prompt_length_max": 548771,
+        "prompt_length_std": 95495.21,
+        "target_length_mean": 34.7
+      }
+    ],
+    "prompt_length": {
+      "mean": 414674.06,
+      "min": 240709,
+      "max": 548771,
+      "std": 95495.21
+    },
+    "target_length_mean": 34.7,
+    "computed_at": "2026-01-28T11:13:22.047789"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "0b26b81d",
+          "content": "\nBEGIN INPUT DOCUMENTS\n\nBEGIN DOCUMENT 1:\n[Contents lists available at ScienceDirect](https://www.elsevier.com/locate/techfore)\n\n# Technological Forecasting & Social Change\n\n[journal homepage: www.elsevier.com/locate/techfore](http://www.else ... [TRUNCATED] ...  and undertakings issued by the ACCC. Identify and rank the industries explicitly mentioned in the paragraphs, according to the number of infringements over the past three decades. Exclude Broadcasting Industry from the answer.\n\nEND QUESTION\n"
+        }
+      ],
+      "target": "1. Airline Industry (12)\\n2. Accommodation Industry (4)",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "question": "Based on the provided documents, there appears to be a correlation between industry concentration and the frequency of consumer-related infringements and undertakings issued by the ACCC. Identify and rank the industries explicitly mentioned in the paragraphs, according to the number of infringements over the past three decades. Exclude Broadcasting Industry from the answer.",
+        "data_source_urls": "https://competition-policy.ec.europa.eu/system/files/2024-06/A_taxonomy_of_industry_competition_launch.pdf;https://www.industry.gov.au/sites/default/files/2023-11/barriers-to-collaboration-and-commercialisation-iisa.pdf;https://e61.in/wp-content/uploads/2023/08/The-State-of-Competition.pdf;https://uu.diva-portal.org/smash/get/diva2:1798138/FULLTEXT01.pdf;https://one.oecd.org/document/DAF/COMP(2023)14/en/pdf",
+        "input_tokens": 94494
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# AA-LCR\n\n\n## Overview\n\nAA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluating long-context retrieval and reasoning capabilities of language models. It requires models to find and synthesize information across multiple documents.\n\n## Task Description\n\n- **Task Type**: Long-Context Question Answering\n- **Input**: Multiple documents + question requiring cross-document reasoning\n- **Output**: Answer synthesized from document information\n- **Context**: Very long context (multiple documents concatenated)\n\n## Key Features\n\n- Tests long-context retrieval abilities\n- Multiple document understanding\n- Cross-document reasoning required\n- LLM-based judging for answer correctness\n- Auto-download of document corpus\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **Accuracy** (via LLM judge)\n- Evaluates on **test** split\n- Documents auto-downloaded if `text_dir` not specified\n- Judge prompt compares candidate answer against reference\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `aa_lcr` |\n| **Dataset ID** | [evalscope/AA-LCR](https://modelscope.cn/datasets/evalscope/AA-LCR/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `LongContext`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 100 |\n| Prompt Length (Mean) | 414674.06 chars |\n| Prompt Length (Min/Max) | 240709 / 548771 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0b26b81d\",\n      \"content\": \"\\nBEGIN INPUT DOCUMENTS\\n\\nBEGIN DOCUMENT 1:\\n[Contents lists available at ScienceDirect](https://www.elsevier.com/locate/techfore)\\n\\n# Technological Forecasting & Social Change\\n\\n[journal homepage: www.elsevier.com/locate/techfore](http://www.else ... [TRUNCATED] ...  and undertakings issued by the ACCC. Identify and rank the industries explicitly mentioned in the paragraphs, according to the number of infringements over the past three decades. Exclude Broadcasting Industry from the answer.\\n\\nEND QUESTION\\n\"\n    }\n  ],\n  \"target\": \"1. Airline Industry (12)\\\\n2. Accommodation Industry (4)\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question\": \"Based on the provided documents, there appears to be a correlation between industry concentration and the frequency of consumer-related infringements and undertakings issued by the ACCC. Identify and rank the industries explicitly mentioned in the paragraphs, according to the number of infringements over the past three decades. Exclude Broadcasting Industry from the answer.\",\n    \"data_source_urls\": \"https://competition-policy.ec.europa.eu/system/files/2024-06/A_taxonomy_of_industry_competition_launch.pdf;https://www.industry.gov.au/sites/default/files/2023-11/barriers-to-collaboration-and-commercialisation-iisa.pdf;https://e61.in/wp-content/uploads/2023/08/The-State-of-Competition.pdf;https://uu.diva-portal.org/smash/get/diva2:1798138/FULLTEXT01.pdf;https://one.oecd.org/document/DAF/COMP(2023)14/en/pdf\",\n    \"input_tokens\": 94494\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n\nBEGIN INPUT DOCUMENTS\n\n{documents_text}\n\nEND INPUT DOCUMENTS\n\nAnswer the following question using the input documents provided above.\n\nSTART QUESTION\n\n{question}\n\nEND QUESTION\n\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `text_dir` | `str | null` | `None` | Local directory containing extracted AA-LCR text files; if null will auto-download & extract. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets aa_lcr \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['aa_lcr'],\n    dataset_args={\n        'aa_lcr': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# AA-LCR\n\n\n## 概述\n\nAA-LCR（Artificial Analysis Long Context Retrieval）是一个用于评估语言模型长上下文检索与推理能力的基准测试。该任务要求模型在多个文档中查找并综合信息以回答问题。\n\n## 任务描述\n\n- **任务类型**：长上下文问答（Long-Context Question Answering）\n- **输入**：多个文档 + 需要跨文档推理的问题\n- **输出**：基于文档信息综合得出的答案\n- **上下文**：非常长的上下文（多个文档拼接而成）\n\n## 核心特性\n\n- 测试长上下文检索能力\n- 多文档理解能力\n- 需要跨文档推理\n- 使用大语言模型（LLM）作为答案正确性评判器\n- 自动下载文档语料库\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估方式\n- 主要指标：**准确率（Accuracy）**（通过 LLM 评判器计算）\n- 在 **test** 数据划分上进行评估\n- 若未指定 `text_dir`，将自动下载文档\n- 评判提示词会将候选答案与参考答案进行对比\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `aa_lcr` |\n| **数据集 ID** | [evalscope/AA-LCR](https://modelscope.cn/datasets/evalscope/AA-LCR/summary) |\n| **论文** | 无 |\n| **标签** | `Knowledge`, `LongContext`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估数据划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 100 |\n| 提示词长度（平均） | 414674.06 字符 |\n| 提示词长度（最小/最大） | 240709 / 548771 字符 |\n\n## 样例示例\n\n**子集**：`default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0b26b81d\",\n      \"content\": \"\\nBEGIN INPUT DOCUMENTS\\n\\nBEGIN DOCUMENT 1:\\n[Contents lists available at ScienceDirect](https://www.elsevier.com/locate/techfore)\\n\\n# Technological Forecasting & Social Change\\n\\n[journal homepage: www.elsevier.com/locate/techfore](http://www.else ... [TRUNCATED] ...  and undertakings issued by the ACCC. Identify and rank the industries explicitly mentioned in the paragraphs, according to the number of infringements over the past three decades. Exclude Broadcasting Industry from the answer.\\n\\nEND QUESTION\\n\"\n    }\n  ],\n  \"target\": \"1. Airline Industry (12)\\\\n2. Accommodation Industry (4)\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question\": \"Based on the provided documents, there appears to be a correlation between industry concentration and the frequency of consumer-related infringements and undertakings issued by the ACCC. Identify and rank the industries explicitly mentioned in the paragraphs, according to the number of infringements over the past three decades. Exclude Broadcasting Industry from the answer.\",\n    \"data_source_urls\": \"https://competition-policy.ec.europa.eu/system/files/2024-06/A_taxonomy_of_industry_competition_launch.pdf;https://www.industry.gov.au/sites/default/files/2023-11/barriers-to-collaboration-and-commercialisation-iisa.pdf;https://e61.in/wp-content/uploads/2023/08/The-State-of-Competition.pdf;https://uu.diva-portal.org/smash/get/diva2:1798138/FULLTEXT01.pdf;https://one.oecd.org/document/DAF/COMP(2023)14/en/pdf\",\n    \"input_tokens\": 94494\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n\nBEGIN INPUT DOCUMENTS\n\n{documents_text}\n\nEND INPUT DOCUMENTS\n\nAnswer the following question using the input documents provided above.\n\nSTART QUESTION\n\n{question}\n\nEND QUESTION\n\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `text_dir` | `str | null` | `None` | 包含已提取的 AA-LCR 文本文件的本地目录；若为 null，则自动下载并解压。 |\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets aa_lcr \\\n    --limit 10  # 正式评估时请移除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['aa_lcr'],\n    dataset_args={\n        'aa_lcr': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请移除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "b3432a64b7618bb2a09e65fc791f6fa4",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.804762",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

@@ -1,0 +1,144 @@
+{
+  "meta": {
+    "pretty_name": "Needle-in-a-Haystack",
+    "dataset_id": "AI-ModelScope/Needle-in-a-Haystack-Corpus",
+    "paper_url": null,
+    "tags": [
+      "Retrieval",
+      "LongContext"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "english",
+      "chinese"
+    ],
+    "description": "\n## Overview\n\nNeedle in a Haystack is a benchmark focused on evaluating information retrieval capabilities in long-context scenarios. It tests a model's ability to find specific information (needles) within large documents (haystacks).\n\n## Task Description\n\n- **Task Type**: Long-Context Information Retrieval\n- **Input**: Long document with embedded target information + retrieval question\n- **Output**: Extracted target information (needle)\n- **Domains**: Long-context understanding, information retrieval\n\n## Key Features\n\n- Tests retrieval across varying context lengths (1K-32K+ tokens)\n- Tests retrieval at different document depths (0%-100%)\n- Supports both English and Chinese corpora\n- Generates synthetic samples with configurable parameters\n- Produces heatmap visualizations of performance\n\n## Evaluation Notes\n\n- Default context lengths: **1,000 to 32,000** tokens (configurable)\n- Default depth percentages: **0% to 100%** (configurable)\n- Primary metric: **Accuracy** on retrieval\n- Uses LLM judge for flexible answer matching\n- Configurable via extra_params: needles, context lengths, depth intervals, tokenizer\n- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/needle_haystack.html)\n",
+    "prompt_template": "Please read the following text and answer the question below.\n\n<text>\n{context}\n</text>\n\n<question>\n{question}\n</question>\n\nDon't give information outside the document or repeat your findings.",
+    "system_prompt": "You are a helpful AI bot that answers questions for a user. Keep your response short and direct",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "retrieval_question": {
+        "type": "str",
+        "description": "Question used for retrieval evaluation.",
+        "value": "What is the best thing to do in San Francisco?"
+      },
+      "needles": {
+        "type": "list[str]",
+        "description": "List of factual needle strings inserted into the context.",
+        "value": [
+          "\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n"
+        ]
+      },
+      "context_lengths_min": {
+        "type": "int",
+        "description": "Minimum context length (tokens) to generate synthetic samples.",
+        "value": 1000
+      },
+      "context_lengths_max": {
+        "type": "int",
+        "description": "Maximum context length (tokens) to generate synthetic samples.",
+        "value": 32000
+      },
+      "context_lengths_num_intervals": {
+        "type": "int",
+        "description": "Number of intervals between min and max context lengths.",
+        "value": 10
+      },
+      "document_depth_percent_min": {
+        "type": "int",
+        "description": "Minimum insertion depth percentage for needles.",
+        "value": 0
+      },
+      "document_depth_percent_max": {
+        "type": "int",
+        "description": "Maximum insertion depth percentage for needles.",
+        "value": 100
+      },
+      "document_depth_percent_intervals": {
+        "type": "int",
+        "description": "Number of intervals between min and max depth percentages.",
+        "value": 10
+      },
+      "tokenizer_path": {
+        "type": "str",
+        "description": "Tokenizer checkpoint path used for tokenization.",
+        "value": "Qwen/Qwen3-0.6B"
+      },
+      "show_score": {
+        "type": "bool",
+        "description": "Render numerical scores on heatmap output images.",
+        "value": false
+      }
+    },
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 200,
+    "subset_stats": [
+      {
+        "name": "english",
+        "sample_count": 100,
+        "prompt_length_mean": 70387.8,
+        "prompt_length_min": 3898,
+        "prompt_length_max": 137407,
+        "prompt_length_std": 42796.52,
+        "target_length_mean": 97
+      },
+      {
+        "name": "chinese",
+        "sample_count": 100,
+        "prompt_length_mean": 19739.3,
+        "prompt_length_min": 1361,
+        "prompt_length_max": 37893,
+        "prompt_length_std": 11722.21,
+        "target_length_mean": 97
+      }
+    ],
+    "prompt_length": {
+      "mean": 45063.55,
+      "min": 1361,
+      "max": 137407,
+      "std": 40299.74
+    },
+    "target_length_mean": 97,
+    "computed_at": "2026-01-28T11:18:34.696834"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "f617334d",
+          "content": "You are a helpful AI bot that answers questions for a user. Keep your response short and direct"
+        },
+        {
+          "id": "a832dc68",
+          "content": "Please read the following text and answer the question below.\n\n<text>\n\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n\n\nWant to start a startup?  Get funded by\nY Combinator.\n\n\n\n\nJuly 2004(This  ... [TRUNCATED] ... ow do you\nget them to come and work for you?  And then of course there's the\nquestion, how do\n</text>\n\n<question>\nWhat is the best thing to do in San Francisco?\n</question>\n\nDon't give information outside the document or repeat your findings."
+        }
+      ],
+      "target": "\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "context": "\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n\n\nWant to start a startup?  Get funded by\nY Combinator.\n\n\n\n\nJuly 2004(This essay is derived from a talk at Oscon 2004.)\nA few months ago I finish ... [TRUNCATED] ... m, we need to understand these\nespecially productive people.  What motivates them?  What do they\nneed to do their jobs?  How do you recognize them? How do you\nget them to come and work for you?  And then of course there's the\nquestion, how do",
+        "context_length": 1000,
+        "depth_percent": 0
+      }
+    },
+    "subset": "english",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# Needle-in-a-Haystack\n\n\n## Overview\n\nNeedle in a Haystack is a benchmark focused on evaluating information retrieval capabilities in long-context scenarios. It tests a model's ability to find specific information (needles) within large documents (haystacks).\n\n## Task Description\n\n- **Task Type**: Long-Context Information Retrieval\n- **Input**: Long document with embedded target information + retrieval question\n- **Output**: Extracted target information (needle)\n- **Domains**: Long-context understanding, information retrieval\n\n## Key Features\n\n- Tests retrieval across varying context lengths (1K-32K+ tokens)\n- Tests retrieval at different document depths (0%-100%)\n- Supports both English and Chinese corpora\n- Generates synthetic samples with configurable parameters\n- Produces heatmap visualizations of performance\n\n## Evaluation Notes\n\n- Default context lengths: **1,000 to 32,000** tokens (configurable)\n- Default depth percentages: **0% to 100%** (configurable)\n- Primary metric: **Accuracy** on retrieval\n- Uses LLM judge for flexible answer matching\n- Configurable via extra_params: needles, context lengths, depth intervals, tokenizer\n- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/needle_haystack.html)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `needle_haystack` |\n| **Dataset ID** | [AI-ModelScope/Needle-in-a-Haystack-Corpus](https://modelscope.cn/datasets/AI-ModelScope/Needle-in-a-Haystack-Corpus/summary) |\n| **Paper** | N/A |\n| **Tags** | `LongContext`, `Retrieval` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 200 |\n| Prompt Length (Mean) | 45063.55 chars |\n| Prompt Length (Min/Max) | 1361 / 137407 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `english` | 100 | 70387.8 | 3898 | 137407 |\n| `chinese` | 100 | 19739.3 | 1361 | 37893 |\n\n## Sample Example\n\n**Subset**: `english`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f617334d\",\n      \"content\": \"You are a helpful AI bot that answers questions for a user. Keep your response short and direct\"\n    },\n    {\n      \"id\": \"a832dc68\",\n      \"content\": \"Please read the following text and answer the question below.\\n\\n<text>\\n\\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\\n\\n\\nWant to start a startup?  Get funded by\\nY Combinator.\\n\\n\\n\\n\\nJuly 2004(This  ... [TRUNCATED] ... ow do you\\nget them to come and work for you?  And then of course there's the\\nquestion, how do\\n</text>\\n\\n<question>\\nWhat is the best thing to do in San Francisco?\\n</question>\\n\\nDon't give information outside the document or repeat your findings.\"\n    }\n  ],\n  \"target\": \"\\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\\n\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"context\": \"\\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\\n\\n\\nWant to start a startup?  Get funded by\\nY Combinator.\\n\\n\\n\\n\\nJuly 2004(This essay is derived from a talk at Oscon 2004.)\\nA few months ago I finish ... [TRUNCATED] ... m, we need to understand these\\nespecially productive people.  What motivates them?  What do they\\nneed to do their jobs?  How do you recognize them? How do you\\nget them to come and work for you?  And then of course there's the\\nquestion, how do\",\n    \"context_length\": 1000,\n    \"depth_percent\": 0\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**System Prompt:**\n```text\nYou are a helpful AI bot that answers questions for a user. Keep your response short and direct\n```\n\n**Prompt Template:**\n```text\nPlease read the following text and answer the question below.\n\n<text>\n{context}\n</text>\n\n<question>\n{question}\n</question>\n\nDon't give information outside the document or repeat your findings.\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `retrieval_question` | `str` | `What is the best thing to do in San Francisco?` | Question used for retrieval evaluation. |\n| `needles` | `list[str]` | `['\\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\\n']` | List of factual needle strings inserted into the context. |\n| `context_lengths_min` | `int` | `1000` | Minimum context length (tokens) to generate synthetic samples. |\n| `context_lengths_max` | `int` | `32000` | Maximum context length (tokens) to generate synthetic samples. |\n| `context_lengths_num_intervals` | `int` | `10` | Number of intervals between min and max context lengths. |\n| `document_depth_percent_min` | `int` | `0` | Minimum insertion depth percentage for needles. |\n| `document_depth_percent_max` | `int` | `100` | Maximum insertion depth percentage for needles. |\n| `document_depth_percent_intervals` | `int` | `10` | Number of intervals between min and max depth percentages. |\n| `tokenizer_path` | `str` | `Qwen/Qwen3-0.6B` | Tokenizer checkpoint path used for tokenization. |\n| `show_score` | `bool` | `False` | Render numerical scores on heatmap output images. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets needle_haystack \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['needle_haystack'],\n    dataset_args={\n        'needle_haystack': {\n            # subset_list: ['english', 'chinese']  # optional, evaluate specific subsets\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Needle-in-a-Haystack\n\n\n## 概述\n\nNeedle in a Haystack 是一个专注于评估长上下文场景中信息检索能力的基准测试。它用于测试模型在大型文档（haystacks）中查找特定信息（needles）的能力。\n\n## 任务描述\n\n- **任务类型**：长上下文信息检索\n- **输入**：包含嵌入目标信息的长文档 + 检索问题\n- **输出**：提取的目标信息（needle）\n- **领域**：长上下文理解、信息检索\n\n## 主要特性\n\n- 在不同上下文长度（1K–32K+ tokens）下测试检索能力\n- 在不同文档深度（0%–100%）下测试检索能力\n- 支持英文和中文语料库\n- 可通过配置参数生成合成样本\n- 可生成性能热力图可视化结果\n\n## 评估说明\n\n- 默认上下文长度：**1,000 至 32,000** tokens（可配置）\n- 默认深度百分比：**0% 至 100%**（可配置）\n- 主要指标：检索 **准确率（Accuracy）**\n- 使用 LLM judge 进行灵活的答案匹配\n- 可通过 `extra_params` 配置：needle 内容、上下文长度、深度间隔、分词器等\n- [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `needle_haystack` |\n| **数据集ID** | [AI-ModelScope/Needle-in-a-Haystack-Corpus](https://modelscope.cn/datasets/AI-ModelScope/Needle-in-a-Haystack-Corpus/summary) |\n| **论文** | 无 |\n| **标签** | `LongContext`, `Retrieval` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 200 |\n| 提示词长度（平均） | 45063.55 字符 |\n| 提示词长度（最小/最大） | 1361 / 137407 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `english` | 100 | 70387.8 | 3898 | 137407 |\n| `chinese` | 100 | 19739.3 | 1361 | 37893 |\n\n## 样例示例\n\n**子集**：`english`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f617334d\",\n      \"content\": \"You are a helpful AI bot that answers questions for a user. Keep your response short and direct\"\n    },\n    {\n      \"id\": \"a832dc68\",\n      \"content\": \"Please read the following text and answer the question below.\\n\\n<text>\\n\\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\\n\\n\\nWant to start a startup?  Get funded by\\nY Combinator.\\n\\n\\n\\n\\nJuly 2004(This  ... [TRUNCATED] ... ow do you\\nget them to come and work for you?  And then of course there's the\\nquestion, how do\\n</text>\\n\\n<question>\\nWhat is the best thing to do in San Francisco?\\n</question>\\n\\nDon't give information outside the document or repeat your findings.\"\n    }\n  ],\n  \"target\": \"\\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\\n\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"context\": \"\\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\\n\\n\\nWant to start a startup?  Get funded by\\nY Combinator.\\n\\n\\n\\n\\nJuly 2004(This essay is derived from a talk at Oscon 2004.)\\nA few months ago I finish ... [TRUNCATED] ... m, we need to understand these\\nespecially productive people.  What motivates them?  What do they\\nneed to do their jobs?  How do you recognize them? How do you\\nget them to come and work for you?  And then of course there's the\\nquestion, how do\",\n    \"context_length\": 1000,\n    \"depth_percent\": 0\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**系统提示（System Prompt）：**\n```text\nYou are a helpful AI bot that answers questions for a user. Keep your response short and direct\n```\n\n**提示模板（Prompt Template）：**\n```text\nPlease read the following text and answer the question below.\n\n<text>\n{context}\n</text>\n\n<question>\n{question}\n</question>\n\nDon't give information outside the document or repeat your findings.\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `retrieval_question` | `str` | `What is the best thing to do in San Francisco?` | 用于检索评估的问题。 |\n| `needles` | `list[str]` | `['\\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\\n']` | 插入上下文中的事实性 needle 字符串列表。 |\n| `context_lengths_min` | `int` | `1000` | 生成合成样本的最小上下文长度（tokens）。 |\n| `context_lengths_max` | `int` | `32000` | 生成合成样本的最大上下文长度（tokens）。 |\n| `context_lengths_num_intervals` | `int` | `10` | 最小与最大上下文长度之间的间隔数量。 |\n| `document_depth_percent_min` | `int` | `0` | needle 插入的最小深度百分比。 |\n| `document_depth_percent_max` | `int` | `100` | needle 插入的最大深度百分比。 |\n| `document_depth_percent_intervals` | `int` | `10` | 最小与最大深度百分比之间的间隔数量。 |\n| `tokenizer_path` | `str` | `Qwen/Qwen3-0.6B` | 用于分词的 tokenizer 模型路径。 |\n| `show_score` | `bool` | `False` | 是否在热力图输出图像上显示数值分数。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets needle_haystack \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['needle_haystack'],\n    dataset_args={\n        'needle_haystack': {\n            # subset_list: ['english', 'chinese']  # 可选，评估指定子集\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "a214effa7efa593b5b56ecfdb4c8ed7d",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.044913",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

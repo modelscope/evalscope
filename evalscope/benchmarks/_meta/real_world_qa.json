@@ -1,0 +1,147 @@
+{
+  "meta": {
+    "pretty_name": "RealWorldQA",
+    "dataset_id": "lmms-lab/RealWorldQA",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Knowledge",
+      "QA"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nRealWorldQA is a benchmark contributed by XAI designed to evaluate multimodal AI models' understanding of real-world spatial and physical environments. It uses authentic images from everyday scenarios to test practical visual comprehension.\n\n## Task Description\n\n- **Task Type**: Real-World Visual Question Answering\n- **Input**: Real-world image with spatial/physical question\n- **Output**: Verifiable answer about the scene\n- **Domain**: Physical environments, driving scenarios, everyday scenes\n\n## Key Features\n\n- 700+ images from real-world scenarios\n- Includes vehicle-captured images (driving scenes)\n- Questions with verifiable ground-truth answers\n- Tests spatial understanding and physical reasoning\n- Evaluates practical AI understanding capabilities\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should follow \"ANSWER: [ANSWER]\" format\n- Uses step-by-step reasoning prompting\n- Simple accuracy metric for evaluation\n- Tests models on practical, real-world scenarios\n",
+    "prompt_template": "Read the picture and solve the following problem step by step.The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\n{question}\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem, and you do not need to use a \\boxed command.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 765,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 765,
+        "prompt_length_mean": 554.79,
+        "prompt_length_min": 459,
+        "prompt_length_max": 904,
+        "prompt_length_std": 74.01,
+        "target_length_mean": 1.53,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 765,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1004x1500",
+              "1024x1536",
+              "1046x785",
+              "1066x833",
+              "1073x804",
+              "1080x1350",
+              "1092x1456",
+              "1093x1536",
+              "1097x1536",
+              "1131x1536"
+            ],
+            "resolution_range": {
+              "min": "626x418",
+              "max": "1536x1405"
+            },
+            "formats": [
+              "webp"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 554.79,
+      "min": 459,
+      "max": 904,
+      "std": 74.01
+    },
+    "target_length_mean": 1.53,
+    "computed_at": "2026-01-28T11:16:42.247192",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 765,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1004x1500",
+          "1024x1536",
+          "1046x785",
+          "1066x833",
+          "1073x804",
+          "1080x1350",
+          "1092x1456",
+          "1093x1536",
+          "1097x1536",
+          "1131x1536"
+        ],
+        "resolution_range": {
+          "min": "626x418",
+          "max": "1536x1405"
+        },
+        "formats": [
+          "webp"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "6492d8ea",
+          "content": [
+            {
+              "text": "Read the picture and solve the following problem step by step.The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\nIn which direction is the front wheel of the  ... [TRUNCATED] ... e letter of the correct option and nothing else.\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem, and you do not need to use a \\boxed command."
+            },
+            {
+              "image": "[BASE64_IMAGE: webp, ~810.4KB]"
+            }
+          ]
+        }
+      ],
+      "target": "C",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "image_path": "0.webp"
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# RealWorldQA\n\n\n## Overview\n\nRealWorldQA is a benchmark contributed by XAI designed to evaluate multimodal AI models' understanding of real-world spatial and physical environments. It uses authentic images from everyday scenarios to test practical visual comprehension.\n\n## Task Description\n\n- **Task Type**: Real-World Visual Question Answering\n- **Input**: Real-world image with spatial/physical question\n- **Output**: Verifiable answer about the scene\n- **Domain**: Physical environments, driving scenarios, everyday scenes\n\n## Key Features\n\n- 700+ images from real-world scenarios\n- Includes vehicle-captured images (driving scenes)\n- Questions with verifiable ground-truth answers\n- Tests spatial understanding and physical reasoning\n- Evaluates practical AI understanding capabilities\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should follow \"ANSWER: [ANSWER]\" format\n- Uses step-by-step reasoning prompting\n- Simple accuracy metric for evaluation\n- Tests models on practical, real-world scenarios\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `real_world_qa` |\n| **Dataset ID** | [lmms-lab/RealWorldQA](https://modelscope.cn/datasets/lmms-lab/RealWorldQA/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MultiModal`, `QA` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 765 |\n| Prompt Length (Mean) | 554.79 chars |\n| Prompt Length (Min/Max) | 459 / 904 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 765 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 626x418 - 1536x1405 |\n| Formats | webp |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"6492d8ea\",\n      \"content\": [\n        {\n          \"text\": \"Read the picture and solve the following problem step by step.The last line of your response should be of the form \\\"ANSWER: [ANSWER]\\\" (without quotes) where [ANSWER] is the answer to the problem.\\n\\nIn which direction is the front wheel of the  ... [TRUNCATED] ... e letter of the correct option and nothing else.\\n\\nRemember to put your answer on its own line at the end in the form \\\"ANSWER: [ANSWER]\\\" (without quotes) where [ANSWER] is the answer to the problem, and you do not need to use a \\\\boxed command.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: webp, ~810.4KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"image_path\": \"0.webp\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nRead the picture and solve the following problem step by step.The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\n{question}\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem, and you do not need to use a \\boxed command.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets real_world_qa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['real_world_qa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# RealWorldQA\n\n\n## 概述\n\nRealWorldQA 是由 XAI 贡献的一项基准测试，旨在评估多模态 AI 模型对现实世界空间和物理环境的理解能力。该基准使用日常场景中的真实图像来测试模型的实际视觉理解能力。\n\n## 任务描述\n\n- **任务类型**：现实世界视觉问答（Real-World Visual Question Answering）\n- **输入**：包含空间/物理问题的真实世界图像\n- **输出**：关于场景的可验证答案\n- **领域**：物理环境、驾驶场景、日常生活场景\n\n## 主要特点\n\n- 包含 700 多张来自现实场景的图像\n- 包含车载摄像头拍摄的图像（驾驶场景）\n- 问题具有可验证的标准答案\n- 测试空间理解与物理推理能力\n- 评估 AI 在实际应用中的理解能力\n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估方式\n- 答案需遵循 \"ANSWER: [ANSWER]\" 格式\n- 使用逐步推理提示（step-by-step reasoning prompting）\n- 采用简单准确率（accuracy）作为评估指标\n- 在实际、现实世界的场景中测试模型能力\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `real_world_qa` |\n| **数据集 ID** | [lmms-lab/RealWorldQA](https://modelscope.cn/datasets/lmms-lab/RealWorldQA/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MultiModal`, `QA` |\n| **指标** | `acc` |\n| **默认样本数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 765 |\n| 提示词长度（平均） | 554.79 字符 |\n| 提示词长度（最小/最大） | 459 / 904 字符 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 765 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 626x418 - 1536x1405 |\n| 格式 | webp |\n\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"6492d8ea\",\n      \"content\": [\n        {\n          \"text\": \"Read the picture and solve the following problem step by step.The last line of your response should be of the form \\\"ANSWER: [ANSWER]\\\" (without quotes) where [ANSWER] is the answer to the problem.\\n\\nIn which direction is the front wheel of the  ... [TRUNCATED] ... e letter of the correct option and nothing else.\\n\\nRemember to put your answer on its own line at the end in the form \\\"ANSWER: [ANSWER]\\\" (without quotes) where [ANSWER] is the answer to the problem, and you do not need to use a \\\\boxed command.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: webp, ~810.4KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"image_path\": \"0.webp\"\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nRead the picture and solve the following problem step by step.The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\n{question}\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem, and you do not need to use a \\boxed command.\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets real_world_qa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['real_world_qa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "894b4d008ca39ca9c689961f090e2c39",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.348697",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

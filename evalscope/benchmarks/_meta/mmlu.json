@@ -1,0 +1,642 @@
+{
+  "meta": {
+    "pretty_name": "MMLU",
+    "dataset_id": "cais/mmlu",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "dev",
+    "subset_list": [
+      "abstract_algebra",
+      "anatomy",
+      "astronomy",
+      "business_ethics",
+      "clinical_knowledge",
+      "college_biology",
+      "college_chemistry",
+      "college_computer_science",
+      "college_mathematics",
+      "college_medicine",
+      "college_physics",
+      "computer_security",
+      "conceptual_physics",
+      "econometrics",
+      "electrical_engineering",
+      "elementary_mathematics",
+      "formal_logic",
+      "global_facts",
+      "high_school_biology",
+      "high_school_chemistry",
+      "high_school_computer_science",
+      "high_school_european_history",
+      "high_school_geography",
+      "high_school_government_and_politics",
+      "high_school_macroeconomics",
+      "high_school_mathematics",
+      "high_school_microeconomics",
+      "high_school_physics",
+      "high_school_psychology",
+      "high_school_statistics",
+      "high_school_us_history",
+      "high_school_world_history",
+      "human_aging",
+      "human_sexuality",
+      "international_law",
+      "jurisprudence",
+      "logical_fallacies",
+      "machine_learning",
+      "management",
+      "marketing",
+      "medical_genetics",
+      "miscellaneous",
+      "moral_disputes",
+      "moral_scenarios",
+      "nutrition",
+      "philosophy",
+      "prehistory",
+      "professional_accounting",
+      "professional_law",
+      "professional_medicine",
+      "professional_psychology",
+      "public_relations",
+      "security_studies",
+      "sociology",
+      "us_foreign_policy",
+      "virology",
+      "world_religions"
+    ],
+    "description": "\n## Overview\n\nMMLU (Massive Multitask Language Understanding) is a comprehensive evaluation benchmark designed to measure knowledge acquired during pretraining. It covers 57 subjects across STEM, humanities, social sciences, and other domains, ranging from elementary to professional difficulty levels.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Question Answering\n- **Input**: Question with four answer choices (A, B, C, D)\n- **Output**: Single correct answer letter\n- **Subjects**: 57 subjects organized into 4 categories (STEM, Humanities, Social Sciences, Other)\n\n## Key Features\n\n- Covers diverse knowledge domains from elementary to advanced professional levels\n- Tests both factual knowledge and reasoning abilities\n- Includes subjects like abstract algebra, anatomy, astronomy, business ethics, and more\n- Standard benchmark for measuring LLM knowledge breadth\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** examples from the dev split\n- Supports Chain-of-Thought (CoT) prompting for improved reasoning\n- Results can be aggregated by subject or category (STEM, Humanities, Social Sciences, Other)\n- Use `subset_list` parameter to evaluate specific subjects\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 14042,
+    "subset_stats": [
+      {
+        "name": "abstract_algebra",
+        "sample_count": 100,
+        "prompt_length_mean": 1256.98,
+        "prompt_length_min": 1143,
+        "prompt_length_max": 1383,
+        "prompt_length_std": 70.56,
+        "target_length_mean": 1
+      },
+      {
+        "name": "anatomy",
+        "sample_count": 135,
+        "prompt_length_mean": 1446,
+        "prompt_length_min": 1306,
+        "prompt_length_max": 1783,
+        "prompt_length_std": 99.2,
+        "target_length_mean": 1
+      },
+      {
+        "name": "astronomy",
+        "sample_count": 152,
+        "prompt_length_mean": 2616.64,
+        "prompt_length_min": 2401,
+        "prompt_length_max": 3191,
+        "prompt_length_std": 139.72,
+        "target_length_mean": 1
+      },
+      {
+        "name": "business_ethics",
+        "sample_count": 100,
+        "prompt_length_mean": 2756.36,
+        "prompt_length_min": 2492,
+        "prompt_length_max": 3145,
+        "prompt_length_std": 142.97,
+        "target_length_mean": 1
+      },
+      {
+        "name": "clinical_knowledge",
+        "sample_count": 265,
+        "prompt_length_mean": 1680.76,
+        "prompt_length_min": 1510,
+        "prompt_length_max": 1995,
+        "prompt_length_std": 84.98,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_biology",
+        "sample_count": 144,
+        "prompt_length_mean": 2104.53,
+        "prompt_length_min": 1874,
+        "prompt_length_max": 2641,
+        "prompt_length_std": 178.25,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_chemistry",
+        "sample_count": 100,
+        "prompt_length_mean": 1800.19,
+        "prompt_length_min": 1641,
+        "prompt_length_max": 2239,
+        "prompt_length_std": 116.0,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_computer_science",
+        "sample_count": 100,
+        "prompt_length_mean": 3424.74,
+        "prompt_length_min": 3129,
+        "prompt_length_max": 4137,
+        "prompt_length_std": 202.2,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_mathematics",
+        "sample_count": 100,
+        "prompt_length_mean": 1972.77,
+        "prompt_length_min": 1776,
+        "prompt_length_max": 2230,
+        "prompt_length_std": 104.1,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_medicine",
+        "sample_count": 173,
+        "prompt_length_mean": 2377.62,
+        "prompt_length_min": 2005,
+        "prompt_length_max": 6779,
+        "prompt_length_std": 763.65,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_physics",
+        "sample_count": 102,
+        "prompt_length_mean": 1941.26,
+        "prompt_length_min": 1757,
+        "prompt_length_max": 2237,
+        "prompt_length_std": 95.4,
+        "target_length_mean": 1
+      },
+      {
+        "name": "computer_security",
+        "sample_count": 100,
+        "prompt_length_mean": 1598.89,
+        "prompt_length_min": 1414,
+        "prompt_length_max": 2238,
+        "prompt_length_std": 168.87,
+        "target_length_mean": 1
+      },
+      {
+        "name": "conceptual_physics",
+        "sample_count": 235,
+        "prompt_length_mean": 1340.77,
+        "prompt_length_min": 1246,
+        "prompt_length_max": 1572,
+        "prompt_length_std": 51.57,
+        "target_length_mean": 1
+      },
+      {
+        "name": "econometrics",
+        "sample_count": 114,
+        "prompt_length_mean": 2286.2,
+        "prompt_length_min": 1976,
+        "prompt_length_max": 2708,
+        "prompt_length_std": 152.95,
+        "target_length_mean": 1
+      },
+      {
+        "name": "electrical_engineering",
+        "sample_count": 145,
+        "prompt_length_mean": 1372.1,
+        "prompt_length_min": 1279,
+        "prompt_length_max": 1578,
+        "prompt_length_std": 54.13,
+        "target_length_mean": 1
+      },
+      {
+        "name": "elementary_mathematics",
+        "sample_count": 378,
+        "prompt_length_mean": 1856.81,
+        "prompt_length_min": 1724,
+        "prompt_length_max": 2322,
+        "prompt_length_std": 97.31,
+        "target_length_mean": 1
+      },
+      {
+        "name": "formal_logic",
+        "sample_count": 126,
+        "prompt_length_mean": 2338.07,
+        "prompt_length_min": 2065,
+        "prompt_length_max": 3022,
+        "prompt_length_std": 213.09,
+        "target_length_mean": 1
+      },
+      {
+        "name": "global_facts",
+        "sample_count": 100,
+        "prompt_length_mean": 1644.77,
+        "prompt_length_min": 1558,
+        "prompt_length_max": 2001,
+        "prompt_length_std": 91.47,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_biology",
+        "sample_count": 310,
+        "prompt_length_mean": 2218.56,
+        "prompt_length_min": 1971,
+        "prompt_length_max": 2737,
+        "prompt_length_std": 167.57,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_chemistry",
+        "sample_count": 203,
+        "prompt_length_mean": 1740.83,
+        "prompt_length_min": 1519,
+        "prompt_length_max": 2341,
+        "prompt_length_std": 168.8,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_computer_science",
+        "sample_count": 100,
+        "prompt_length_mean": 3595.34,
+        "prompt_length_min": 3224,
+        "prompt_length_max": 4732,
+        "prompt_length_std": 299.42,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_european_history",
+        "sample_count": 165,
+        "prompt_length_mean": 13421.12,
+        "prompt_length_min": 12392,
+        "prompt_length_max": 14626,
+        "prompt_length_std": 554.25,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_geography",
+        "sample_count": 198,
+        "prompt_length_mean": 1849.07,
+        "prompt_length_min": 1726,
+        "prompt_length_max": 2204,
+        "prompt_length_std": 80.95,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_government_and_politics",
+        "sample_count": 193,
+        "prompt_length_mean": 2355.29,
+        "prompt_length_min": 2171,
+        "prompt_length_max": 2922,
+        "prompt_length_std": 117.5,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_macroeconomics",
+        "sample_count": 390,
+        "prompt_length_mean": 1861.47,
+        "prompt_length_min": 1649,
+        "prompt_length_max": 2206,
+        "prompt_length_std": 104.14,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_mathematics",
+        "sample_count": 270,
+        "prompt_length_mean": 1731.31,
+        "prompt_length_min": 1591,
+        "prompt_length_max": 2224,
+        "prompt_length_std": 102.08,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_microeconomics",
+        "sample_count": 238,
+        "prompt_length_mean": 1849.97,
+        "prompt_length_min": 1651,
+        "prompt_length_max": 2396,
+        "prompt_length_std": 120.85,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_physics",
+        "sample_count": 151,
+        "prompt_length_mean": 2110.63,
+        "prompt_length_min": 1836,
+        "prompt_length_max": 2926,
+        "prompt_length_std": 205.21,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_psychology",
+        "sample_count": 545,
+        "prompt_length_mean": 2431.39,
+        "prompt_length_min": 2223,
+        "prompt_length_max": 3498,
+        "prompt_length_std": 160.93,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_statistics",
+        "sample_count": 216,
+        "prompt_length_mean": 3273.79,
+        "prompt_length_min": 2932,
+        "prompt_length_max": 4328,
+        "prompt_length_std": 230.04,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_us_history",
+        "sample_count": 204,
+        "prompt_length_mean": 10530.61,
+        "prompt_length_min": 9656,
+        "prompt_length_max": 11469,
+        "prompt_length_std": 350.87,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_world_history",
+        "sample_count": 237,
+        "prompt_length_mean": 6700.7,
+        "prompt_length_min": 5650,
+        "prompt_length_max": 8814,
+        "prompt_length_std": 603.15,
+        "target_length_mean": 1
+      },
+      {
+        "name": "human_aging",
+        "sample_count": 223,
+        "prompt_length_mean": 1448.65,
+        "prompt_length_min": 1335,
+        "prompt_length_max": 1725,
+        "prompt_length_std": 70.81,
+        "target_length_mean": 1
+      },
+      {
+        "name": "human_sexuality",
+        "sample_count": 131,
+        "prompt_length_mean": 1556.02,
+        "prompt_length_min": 1412,
+        "prompt_length_max": 2250,
+        "prompt_length_std": 124.61,
+        "target_length_mean": 1
+      },
+      {
+        "name": "international_law",
+        "sample_count": 121,
+        "prompt_length_mean": 3094.31,
+        "prompt_length_min": 2778,
+        "prompt_length_max": 3432,
+        "prompt_length_std": 128.14,
+        "target_length_mean": 1
+      },
+      {
+        "name": "jurisprudence",
+        "sample_count": 108,
+        "prompt_length_mean": 1851.24,
+        "prompt_length_min": 1638,
+        "prompt_length_max": 2370,
+        "prompt_length_std": 131.42,
+        "target_length_mean": 1
+      },
+      {
+        "name": "logical_fallacies",
+        "sample_count": 163,
+        "prompt_length_mean": 2114.39,
+        "prompt_length_min": 1932,
+        "prompt_length_max": 2503,
+        "prompt_length_std": 147.28,
+        "target_length_mean": 1
+      },
+      {
+        "name": "machine_learning",
+        "sample_count": 112,
+        "prompt_length_mean": 2852.01,
+        "prompt_length_min": 2659,
+        "prompt_length_max": 3150,
+        "prompt_length_std": 117.86,
+        "target_length_mean": 1
+      },
+      {
+        "name": "management",
+        "sample_count": 103,
+        "prompt_length_mean": 1326.07,
+        "prompt_length_min": 1220,
+        "prompt_length_max": 1571,
+        "prompt_length_std": 61.66,
+        "target_length_mean": 1
+      },
+      {
+        "name": "marketing",
+        "sample_count": 234,
+        "prompt_length_mean": 1984.28,
+        "prompt_length_min": 1832,
+        "prompt_length_max": 2266,
+        "prompt_length_std": 83.74,
+        "target_length_mean": 1
+      },
+      {
+        "name": "medical_genetics",
+        "sample_count": 100,
+        "prompt_length_mean": 1531.32,
+        "prompt_length_min": 1409,
+        "prompt_length_max": 1775,
+        "prompt_length_std": 76.15,
+        "target_length_mean": 1
+      },
+      {
+        "name": "miscellaneous",
+        "sample_count": 783,
+        "prompt_length_mean": 1121.57,
+        "prompt_length_min": 1004,
+        "prompt_length_max": 2096,
+        "prompt_length_std": 133.99,
+        "target_length_mean": 1
+      },
+      {
+        "name": "moral_disputes",
+        "sample_count": 346,
+        "prompt_length_mean": 2300.58,
+        "prompt_length_min": 2101,
+        "prompt_length_max": 2711,
+        "prompt_length_std": 117.76,
+        "target_length_mean": 1
+      },
+      {
+        "name": "moral_scenarios",
+        "sample_count": 895,
+        "prompt_length_mean": 2709.89,
+        "prompt_length_min": 2644,
+        "prompt_length_max": 2853,
+        "prompt_length_std": 31.86,
+        "target_length_mean": 1
+      },
+      {
+        "name": "nutrition",
+        "sample_count": 306,
+        "prompt_length_mean": 2620.9,
+        "prompt_length_min": 2408,
+        "prompt_length_max": 3111,
+        "prompt_length_std": 147.95,
+        "target_length_mean": 1
+      },
+      {
+        "name": "philosophy",
+        "sample_count": 311,
+        "prompt_length_mean": 1472.67,
+        "prompt_length_min": 1319,
+        "prompt_length_max": 2292,
+        "prompt_length_std": 149.68,
+        "target_length_mean": 1
+      },
+      {
+        "name": "prehistory",
+        "sample_count": 324,
+        "prompt_length_mean": 2388.29,
+        "prompt_length_min": 2201,
+        "prompt_length_max": 2899,
+        "prompt_length_std": 130.63,
+        "target_length_mean": 1
+      },
+      {
+        "name": "professional_accounting",
+        "sample_count": 282,
+        "prompt_length_mean": 2820.72,
+        "prompt_length_min": 2515,
+        "prompt_length_max": 3400,
+        "prompt_length_std": 161.41,
+        "target_length_mean": 1
+      },
+      {
+        "name": "professional_law",
+        "sample_count": 1534,
+        "prompt_length_mean": 8077.0,
+        "prompt_length_min": 6997,
+        "prompt_length_max": 10539,
+        "prompt_length_std": 476.42,
+        "target_length_mean": 1
+      },
+      {
+        "name": "professional_medicine",
+        "sample_count": 272,
+        "prompt_length_mean": 4832.72,
+        "prompt_length_min": 4380,
+        "prompt_length_max": 5802,
+        "prompt_length_std": 290.58,
+        "target_length_mean": 1
+      },
+      {
+        "name": "professional_psychology",
+        "sample_count": 612,
+        "prompt_length_mean": 2860.73,
+        "prompt_length_min": 2594,
+        "prompt_length_max": 3789,
+        "prompt_length_std": 172.51,
+        "target_length_mean": 1
+      },
+      {
+        "name": "public_relations",
+        "sample_count": 110,
+        "prompt_length_mean": 1991.35,
+        "prompt_length_min": 1824,
+        "prompt_length_max": 2712,
+        "prompt_length_std": 157.62,
+        "target_length_mean": 1
+      },
+      {
+        "name": "security_studies",
+        "sample_count": 245,
+        "prompt_length_mean": 6405.04,
+        "prompt_length_min": 5680,
+        "prompt_length_max": 7818,
+        "prompt_length_std": 421.17,
+        "target_length_mean": 1
+      },
+      {
+        "name": "sociology",
+        "sample_count": 201,
+        "prompt_length_mean": 2176.49,
+        "prompt_length_min": 1976,
+        "prompt_length_max": 2530,
+        "prompt_length_std": 101.7,
+        "target_length_mean": 1
+      },
+      {
+        "name": "us_foreign_policy",
+        "sample_count": 100,
+        "prompt_length_mean": 2129.28,
+        "prompt_length_min": 1944,
+        "prompt_length_max": 2393,
+        "prompt_length_std": 89.68,
+        "target_length_mean": 1
+      },
+      {
+        "name": "virology",
+        "sample_count": 166,
+        "prompt_length_mean": 1563.11,
+        "prompt_length_min": 1426,
+        "prompt_length_max": 2507,
+        "prompt_length_std": 120.52,
+        "target_length_mean": 1
+      },
+      {
+        "name": "world_religions",
+        "sample_count": 171,
+        "prompt_length_mean": 1051.68,
+        "prompt_length_min": 985,
+        "prompt_length_max": 1255,
+        "prompt_length_std": 43.46,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 3212.2,
+      "min": 985,
+      "max": 14626,
+      "std": 2524.54
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:14:45.638647"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "c7cbfbb9",
+          "content": "Here are some examples of how to answer similar questions:\n\nFind all c in Z_3 such that Z_3[x]/(x^2 + c) is a field.\nA) 0\nB) 1\nC) 2\nD) 3\nANSWER: B\n\nStatement 1 | If aH is an element of a factor group, then |aH| divides |a|. Statement 2 | If H ... [TRUNCATED] ... d be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\n\nFind the degree for the given field extension Q(sqrt(2), sqrt(3), sqrt(18)) over Q.\n\nA) 0\nB) 4\nC) 2\nD) 6"
+        }
+      ],
+      "choices": [
+        "0",
+        "4",
+        "2",
+        "6"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "abstract_algebra",
+      "metadata": {
+        "subject": "abstract_algebra"
+      }
+    },
+    "subset": "abstract_algebra",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# MMLU\n\n\n## Overview\n\nMMLU (Massive Multitask Language Understanding) is a comprehensive evaluation benchmark designed to measure knowledge acquired during pretraining. It covers 57 subjects across STEM, humanities, social sciences, and other domains, ranging from elementary to professional difficulty levels.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Question Answering\n- **Input**: Question with four answer choices (A, B, C, D)\n- **Output**: Single correct answer letter\n- **Subjects**: 57 subjects organized into 4 categories (STEM, Humanities, Social Sciences, Other)\n\n## Key Features\n\n- Covers diverse knowledge domains from elementary to advanced professional levels\n- Tests both factual knowledge and reasoning abilities\n- Includes subjects like abstract algebra, anatomy, astronomy, business ethics, and more\n- Standard benchmark for measuring LLM knowledge breadth\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** examples from the dev split\n- Supports Chain-of-Thought (CoT) prompting for improved reasoning\n- Results can be aggregated by subject or category (STEM, Humanities, Social Sciences, Other)\n- Use `subset_list` parameter to evaluate specific subjects\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `mmlu` |\n| **Dataset ID** | [cais/mmlu](https://modelscope.cn/datasets/cais/mmlu/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `dev` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 14,042 |\n| Prompt Length (Mean) | 3212.2 chars |\n| Prompt Length (Min/Max) | 985 / 14626 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `abstract_algebra` | 100 | 1256.98 | 1143 | 1383 |\n| `anatomy` | 135 | 1446 | 1306 | 1783 |\n| `astronomy` | 152 | 2616.64 | 2401 | 3191 |\n| `business_ethics` | 100 | 2756.36 | 2492 | 3145 |\n| `clinical_knowledge` | 265 | 1680.76 | 1510 | 1995 |\n| `college_biology` | 144 | 2104.53 | 1874 | 2641 |\n| `college_chemistry` | 100 | 1800.19 | 1641 | 2239 |\n| `college_computer_science` | 100 | 3424.74 | 3129 | 4137 |\n| `college_mathematics` | 100 | 1972.77 | 1776 | 2230 |\n| `college_medicine` | 173 | 2377.62 | 2005 | 6779 |\n| `college_physics` | 102 | 1941.26 | 1757 | 2237 |\n| `computer_security` | 100 | 1598.89 | 1414 | 2238 |\n| `conceptual_physics` | 235 | 1340.77 | 1246 | 1572 |\n| `econometrics` | 114 | 2286.2 | 1976 | 2708 |\n| `electrical_engineering` | 145 | 1372.1 | 1279 | 1578 |\n| `elementary_mathematics` | 378 | 1856.81 | 1724 | 2322 |\n| `formal_logic` | 126 | 2338.07 | 2065 | 3022 |\n| `global_facts` | 100 | 1644.77 | 1558 | 2001 |\n| `high_school_biology` | 310 | 2218.56 | 1971 | 2737 |\n| `high_school_chemistry` | 203 | 1740.83 | 1519 | 2341 |\n| `high_school_computer_science` | 100 | 3595.34 | 3224 | 4732 |\n| `high_school_european_history` | 165 | 13421.12 | 12392 | 14626 |\n| `high_school_geography` | 198 | 1849.07 | 1726 | 2204 |\n| `high_school_government_and_politics` | 193 | 2355.29 | 2171 | 2922 |\n| `high_school_macroeconomics` | 390 | 1861.47 | 1649 | 2206 |\n| `high_school_mathematics` | 270 | 1731.31 | 1591 | 2224 |\n| `high_school_microeconomics` | 238 | 1849.97 | 1651 | 2396 |\n| `high_school_physics` | 151 | 2110.63 | 1836 | 2926 |\n| `high_school_psychology` | 545 | 2431.39 | 2223 | 3498 |\n| `high_school_statistics` | 216 | 3273.79 | 2932 | 4328 |\n| `high_school_us_history` | 204 | 10530.61 | 9656 | 11469 |\n| `high_school_world_history` | 237 | 6700.7 | 5650 | 8814 |\n| `human_aging` | 223 | 1448.65 | 1335 | 1725 |\n| `human_sexuality` | 131 | 1556.02 | 1412 | 2250 |\n| `international_law` | 121 | 3094.31 | 2778 | 3432 |\n| `jurisprudence` | 108 | 1851.24 | 1638 | 2370 |\n| `logical_fallacies` | 163 | 2114.39 | 1932 | 2503 |\n| `machine_learning` | 112 | 2852.01 | 2659 | 3150 |\n| `management` | 103 | 1326.07 | 1220 | 1571 |\n| `marketing` | 234 | 1984.28 | 1832 | 2266 |\n| `medical_genetics` | 100 | 1531.32 | 1409 | 1775 |\n| `miscellaneous` | 783 | 1121.57 | 1004 | 2096 |\n| `moral_disputes` | 346 | 2300.58 | 2101 | 2711 |\n| `moral_scenarios` | 895 | 2709.89 | 2644 | 2853 |\n| `nutrition` | 306 | 2620.9 | 2408 | 3111 |\n| `philosophy` | 311 | 1472.67 | 1319 | 2292 |\n| `prehistory` | 324 | 2388.29 | 2201 | 2899 |\n| `professional_accounting` | 282 | 2820.72 | 2515 | 3400 |\n| `professional_law` | 1,534 | 8077.0 | 6997 | 10539 |\n| `professional_medicine` | 272 | 4832.72 | 4380 | 5802 |\n| `professional_psychology` | 612 | 2860.73 | 2594 | 3789 |\n| `public_relations` | 110 | 1991.35 | 1824 | 2712 |\n| `security_studies` | 245 | 6405.04 | 5680 | 7818 |\n| `sociology` | 201 | 2176.49 | 1976 | 2530 |\n| `us_foreign_policy` | 100 | 2129.28 | 1944 | 2393 |\n| `virology` | 166 | 1563.11 | 1426 | 2507 |\n| `world_religions` | 171 | 1051.68 | 985 | 1255 |\n\n## Sample Example\n\n**Subset**: `abstract_algebra`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"c7cbfbb9\",\n      \"content\": \"Here are some examples of how to answer similar questions:\\n\\nFind all c in Z_3 such that Z_3[x]/(x^2 + c) is a field.\\nA) 0\\nB) 1\\nC) 2\\nD) 3\\nANSWER: B\\n\\nStatement 1 | If aH is an element of a factor group, then |aH| divides |a|. Statement 2 | If H ... [TRUNCATED] ... d be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\\n\\nFind the degree for the given field extension Q(sqrt(2), sqrt(3), sqrt(18)) over Q.\\n\\nA) 0\\nB) 4\\nC) 2\\nD) 6\"\n    }\n  ],\n  \"choices\": [\n    \"0\",\n    \"4\",\n    \"2\",\n    \"6\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"abstract_algebra\",\n  \"metadata\": {\n    \"subject\": \"abstract_algebra\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mmlu \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mmlu'],\n    dataset_args={\n        'mmlu': {\n            # subset_list: ['abstract_algebra', 'anatomy', 'astronomy']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MMLU\n\n\n## 概述\n\nMMLU（Massive Multitask Language Understanding，大规模多任务语言理解）是一个综合性评估基准，旨在衡量模型在预训练阶段所获得的知识。它涵盖 STEM、人文学科、社会科学及其他领域的 57 个学科，难度从基础到专业级别不等。\n\n## 任务描述\n\n- **任务类型**：多项选择题问答（Multiple-Choice Question Answering）\n- **输入**：包含四个选项（A、B、C、D）的问题\n- **输出**：单个正确答案的字母\n- **学科范围**：57 个学科，分为 4 个类别（STEM、人文学科、社会科学、其他）\n\n## 主要特点\n\n- 覆盖从基础到高级专业水平的多样化知识领域\n- 同时考察事实性知识和推理能力\n- 包含抽象代数、解剖学、天文学、商业伦理等多个学科\n- 是衡量大语言模型知识广度的标准基准\n\n## 评估说明\n\n- 默认配置使用开发集（dev split）中的 **5-shot** 示例\n- 支持思维链（Chain-of-Thought, CoT）提示以提升推理能力\n- 结果可按学科或类别（STEM、人文学科、社会科学、其他）进行聚合\n- 使用 `subset_list` 参数可评估特定学科\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `mmlu` |\n| **数据集 ID** | [cais/mmlu](https://modelscope.cn/datasets/cais/mmlu/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ` |\n| **指标** | `acc` |\n| **默认示例数量** | 5-shot |\n| **评估集** | `test` |\n| **训练集** | `dev` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 14,042 |\n| 提示词长度（平均） | 3212.2 字符 |\n| 提示词长度（最小/最大） | 985 / 14626 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `abstract_algebra` | 100 | 1256.98 | 1143 | 1383 |\n| `anatomy` | 135 | 1446 | 1306 | 1783 |\n| `astronomy` | 152 | 2616.64 | 2401 | 3191 |\n| `business_ethics` | 100 | 2756.36 | 2492 | 3145 |\n| `clinical_knowledge` | 265 | 1680.76 | 1510 | 1995 |\n| `college_biology` | 144 | 2104.53 | 1874 | 2641 |\n| `college_chemistry` | 100 | 1800.19 | 1641 | 2239 |\n| `college_computer_science` | 100 | 3424.74 | 3129 | 4137 |\n| `college_mathematics` | 100 | 1972.77 | 1776 | 2230 |\n| `college_medicine` | 173 | 2377.62 | 2005 | 6779 |\n| `college_physics` | 102 | 1941.26 | 1757 | 2237 |\n| `computer_security` | 100 | 1598.89 | 1414 | 2238 |\n| `conceptual_physics` | 235 | 1340.77 | 1246 | 1572 |\n| `econometrics` | 114 | 2286.2 | 1976 | 2708 |\n| `electrical_engineering` | 145 | 1372.1 | 1279 | 1578 |\n| `elementary_mathematics` | 378 | 1856.81 | 1724 | 2322 |\n| `formal_logic` | 126 | 2338.07 | 2065 | 3022 |\n| `global_facts` | 100 | 1644.77 | 1558 | 2001 |\n| `high_school_biology` | 310 | 2218.56 | 1971 | 2737 |\n| `high_school_chemistry` | 203 | 1740.83 | 1519 | 2341 |\n| `high_school_computer_science` | 100 | 3595.34 | 3224 | 4732 |\n| `high_school_european_history` | 165 | 13421.12 | 12392 | 14626 |\n| `high_school_geography` | 198 | 1849.07 | 1726 | 2204 |\n| `high_school_government_and_politics` | 193 | 2355.29 | 2171 | 2922 |\n| `high_school_macroeconomics` | 390 | 1861.47 | 1649 | 2206 |\n| `high_school_mathematics` | 270 | 1731.31 | 1591 | 2224 |\n| `high_school_microeconomics` | 238 | 1849.97 | 1651 | 2396 |\n| `high_school_physics` | 151 | 2110.63 | 1836 | 2926 |\n| `high_school_psychology` | 545 | 2431.39 | 2223 | 3498 |\n| `high_school_statistics` | 216 | 3273.79 | 2932 | 4328 |\n| `high_school_us_history` | 204 | 10530.61 | 9656 | 11469 |\n| `high_school_world_history` | 237 | 6700.7 | 5650 | 8814 |\n| `human_aging` | 223 | 1448.65 | 1335 | 1725 |\n| `human_sexuality` | 131 | 1556.02 | 1412 | 2250 |\n| `international_law` | 121 | 3094.31 | 2778 | 3432 |\n| `jurisprudence` | 108 | 1851.24 | 1638 | 2370 |\n| `logical_fallacies` | 163 | 2114.39 | 1932 | 2503 |\n| `machine_learning` | 112 | 2852.01 | 2659 | 3150 |\n| `management` | 103 | 1326.07 | 1220 | 1571 |\n| `marketing` | 234 | 1984.28 | 1832 | 2266 |\n| `medical_genetics` | 100 | 1531.32 | 1409 | 1775 |\n| `miscellaneous` | 783 | 1121.57 | 1004 | 2096 |\n| `moral_disputes` | 346 | 2300.58 | 2101 | 2711 |\n| `moral_scenarios` | 895 | 2709.89 | 2644 | 2853 |\n| `nutrition` | 306 | 2620.9 | 2408 | 3111 |\n| `philosophy` | 311 | 1472.67 | 1319 | 2292 |\n| `prehistory` | 324 | 2388.29 | 2201 | 2899 |\n| `professional_accounting` | 282 | 2820.72 | 2515 | 3400 |\n| `professional_law` | 1,534 | 8077.0 | 6997 | 10539 |\n| `professional_medicine` | 272 | 4832.72 | 4380 | 5802 |\n| `professional_psychology` | 612 | 2860.73 | 2594 | 3789 |\n| `public_relations` | 110 | 1991.35 | 1824 | 2712 |\n| `security_studies` | 245 | 6405.04 | 5680 | 7818 |\n| `sociology` | 201 | 2176.49 | 1976 | 2530 |\n| `us_foreign_policy` | 100 | 2129.28 | 1944 | 2393 |\n| `virology` | 166 | 1563.11 | 1426 | 2507 |\n| `world_religions` | 171 | 1051.68 | 985 | 1255 |\n\n## 样例示例\n\n**子集**: `abstract_algebra`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"c7cbfbb9\",\n      \"content\": \"Here are some examples of how to answer similar questions:\\n\\nFind all c in Z_3 such that Z_3[x]/(x^2 + c) is a field.\\nA) 0\\nB) 1\\nC) 2\\nD) 3\\nANSWER: B\\n\\nStatement 1 | If aH is an element of a factor group, then |aH| divides |a|. Statement 2 | If H ... [TRUNCATED] ... d be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\\n\\nFind the degree for the given field extension Q(sqrt(2), sqrt(3), sqrt(18)) over Q.\\n\\nA) 0\\nB) 4\\nC) 2\\nD) 6\"\n    }\n  ],\n  \"choices\": [\n    \"0\",\n    \"4\",\n    \"2\",\n    \"6\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"abstract_algebra\",\n  \"metadata\": {\n    \"subject\": \"abstract_algebra\"\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mmlu \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mmlu'],\n    dataset_args={\n        'mmlu': {\n            # subset_list: ['abstract_algebra', 'anatomy', 'astronomy']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "11d8f2ace296d98fe15c2536758eb3bb",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.964111",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

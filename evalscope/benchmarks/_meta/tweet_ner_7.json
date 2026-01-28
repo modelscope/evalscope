@@ -1,0 +1,183 @@
+{
+  "meta": {
+    "pretty_name": "TweetNER7",
+    "dataset_id": "extraordinarylab/tweet-ner-7",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nTweetNER7 is a large-scale NER dataset featuring over 11,000 tweets from 2019-2021, annotated with seven entity types to facilitate the study of short-term temporal shifts in social media language.\n\n## Task Description\n\n- **Task Type**: Social Media Named Entity Recognition (NER)\n- **Input**: Twitter text from 2019-2021\n- **Output**: Identified entity spans with seven types\n- **Domain**: Social media, temporal language variation\n\n## Key Features\n\n- Over 11,000 annotated tweets\n- Seven diverse entity types\n- Spans 2019-2021 for temporal analysis\n- Studies language shift in social media\n- Rich entity type coverage for social content\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: CORPORATION, CREATIVE_WORK, EVENT, GROUP, LOCATION, PERSON, PRODUCT\n",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 3383,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 3383,
+        "prompt_length_mean": 3364.87,
+        "prompt_length_min": 3226,
+        "prompt_length_max": 3630,
+        "prompt_length_std": 71.45,
+        "target_length_mean": 257.84
+      }
+    ],
+    "prompt_length": {
+      "mean": 3364.87,
+      "min": 3226,
+      "max": 3630,
+      "std": 71.45
+    },
+    "target_length_mean": 257.84,
+    "computed_at": "2026-01-28T14:16:14.371523"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "cde2f5cb",
+          "content": "Here are some examples of named entity recognition:\n\nInput:\nMorning 5km run with {{USERNAME}} for breast cancer awareness # pinkoctober # breastcancerawareness # zalorafit # zalorafitxbnwrc @ The Central Park , Desa Parkcity {{URL}}\n\nOutput:\n ... [TRUNCATED] ...  it 's been an amazing experience . Afro paper : the rolling stone project and I do n't think you know Popin boyz are projects that 's gonna shake the industry . Do n't sleep on {{USERNAME}} {{USERNAME}} {{USERNAME}} Watch out for these guys\n"
+        }
+      ],
+      "target": "<response>Hanging out with the # <group>Popinboyz</group> and it 's been an amazing experience . <creative_work>Afro paper</creative_work> : <creative_work>the rolling stone project</creative_work> and I do n't think you know <group>Popin boyz</group> are projects that 's gonna shake the industry . Do n't sleep on {{USERNAME}} {{USERNAME}} {{USERNAME}} Watch out for these guys</response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "Hanging",
+          "out",
+          "with",
+          "the",
+          "#",
+          "Popinboyz",
+          "and",
+          "it",
+          "'s",
+          "been",
+          "an",
+          "amazing",
+          "experience",
+          ".",
+          "Afro",
+          "paper",
+          ":",
+          "the",
+          "rolling",
+          "stone",
+          "project",
+          "and",
+          "I",
+          "do",
+          "n't",
+          "think",
+          "you",
+          "know",
+          "Popin",
+          "boyz",
+          "are",
+          "projects",
+          "that",
+          "'s",
+          "gonna",
+          "shake",
+          "the",
+          "industry",
+          ".",
+          "Do",
+          "n't",
+          "sleep",
+          "on",
+          "{{USERNAME}}",
+          "{{USERNAME}}",
+          "{{USERNAME}}",
+          "Watch",
+          "out",
+          "for",
+          "these",
+          "guys"
+        ],
+        "ner_tags": [
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-GROUP",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-CREATIVE_WORK",
+          "I-CREATIVE_WORK",
+          "O",
+          "B-CREATIVE_WORK",
+          "I-CREATIVE_WORK",
+          "I-CREATIVE_WORK",
+          "I-CREATIVE_WORK",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-GROUP",
+          "I-GROUP",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# TweetNER7\n\n\n## Overview\n\nTweetNER7 is a large-scale NER dataset featuring over 11,000 tweets from 2019-2021, annotated with seven entity types to facilitate the study of short-term temporal shifts in social media language.\n\n## Task Description\n\n- **Task Type**: Social Media Named Entity Recognition (NER)\n- **Input**: Twitter text from 2019-2021\n- **Output**: Identified entity spans with seven types\n- **Domain**: Social media, temporal language variation\n\n## Key Features\n\n- Over 11,000 annotated tweets\n- Seven diverse entity types\n- Spans 2019-2021 for temporal analysis\n- Studies language shift in social media\n- Rich entity type coverage for social content\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: CORPORATION, CREATIVE_WORK, EVENT, GROUP, LOCATION, PERSON, PRODUCT\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `tweet_ner_7` |\n| **Dataset ID** | [extraordinarylab/tweet-ner-7](https://modelscope.cn/datasets/extraordinarylab/tweet-ner-7/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,383 |\n| Prompt Length (Mean) | 3364.87 chars |\n| Prompt Length (Min/Max) | 3226 / 3630 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"cde2f5cb\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nMorning 5km run with {{USERNAME}} for breast cancer awareness # pinkoctober # breastcancerawareness # zalorafit # zalorafitxbnwrc @ The Central Park , Desa Parkcity {{URL}}\\n\\nOutput:\\n ... [TRUNCATED] ...  it 's been an amazing experience . Afro paper : the rolling stone project and I do n't think you know Popin boyz are projects that 's gonna shake the industry . Do n't sleep on {{USERNAME}} {{USERNAME}} {{USERNAME}} Watch out for these guys\\n\"\n    }\n  ],\n  \"target\": \"<response>Hanging out with the # <group>Popinboyz</group> and it 's been an amazing experience . <creative_work>Afro paper</creative_work> : <creative_work>the rolling stone project</creative_work> and I do n't think you know <group>Popin boyz</group> are projects that 's gonna shake the industry . Do n't sleep on {{USERNAME}} {{USERNAME}} {{USERNAME}} Watch out for these guys</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"Hanging\",\n      \"out\",\n      \"with\",\n      \"the\",\n      \"#\",\n      \"Popinboyz\",\n      \"and\",\n      \"it\",\n      \"'s\",\n      \"been\",\n      \"an\",\n      \"amazing\",\n      \"experience\",\n      \".\",\n      \"Afro\",\n      \"paper\",\n      \":\",\n      \"the\",\n      \"rolling\",\n      \"stone\",\n      \"project\",\n      \"and\",\n      \"I\",\n      \"do\",\n      \"n't\",\n      \"think\",\n      \"you\",\n      \"know\",\n      \"Popin\",\n      \"boyz\",\n      \"are\",\n      \"projects\",\n      \"that\",\n      \"'s\",\n      \"gonna\",\n      \"shake\",\n      \"the\",\n      \"industry\",\n      \".\",\n      \"Do\",\n      \"n't\",\n      \"sleep\",\n      \"on\",\n      \"{{USERNAME}}\",\n      \"{{USERNAME}}\",\n      \"{{USERNAME}}\",\n      \"Watch\",\n      \"out\",\n      \"for\",\n      \"these\",\n      \"guys\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-GROUP\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-CREATIVE_WORK\",\n      \"I-CREATIVE_WORK\",\n      \"O\",\n      \"B-CREATIVE_WORK\",\n      \"I-CREATIVE_WORK\",\n      \"I-CREATIVE_WORK\",\n      \"I-CREATIVE_WORK\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-GROUP\",\n      \"I-GROUP\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tweet_ner_7 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tweet_ner_7'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# TweetNER7\n\n\n## 概述\n\nTweetNER7 是一个大规模命名实体识别（NER）数据集，包含 2019 至 2021 年间超过 11,000 条推文，标注了七种实体类型，旨在促进对社交媒体语言短期时间变化的研究。\n\n## 任务描述\n\n- **任务类型**：社交媒体命名实体识别（NER）\n- **输入**：2019–2021 年间的 Twitter 文本\n- **输出**：识别出的七类实体片段\n- **领域**：社交媒体、语言的时间变化\n\n## 主要特点\n\n- 超过 11,000 条已标注推文\n- 七种多样化的实体类型\n- 时间跨度为 2019–2021 年，支持时间维度分析\n- 研究社交媒体中的语言演变\n- 针对社交内容提供丰富的实体类型覆盖\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 评估\n- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）\n- 实体类型：CORPORATION（公司）、CREATIVE_WORK（创意作品）、EVENT（事件）、GROUP（群体）、LOCATION（地点）、PERSON（人物）、PRODUCT（产品）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `tweet_ner_7` |\n| **数据集 ID** | [extraordinarylab/tweet-ner-7](https://modelscope.cn/datasets/extraordinarylab/tweet-ner-7/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认示例数量** | 5-shot |\n| **评估划分** | `test` |\n| **训练划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,383 |\n| 提示词长度（平均） | 3364.87 字符 |\n| 提示词长度（最小/最大） | 3226 / 3630 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"cde2f5cb\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nMorning 5km run with {{USERNAME}} for breast cancer awareness # pinkoctober # breastcancerawareness # zalorafit # zalorafitxbnwrc @ The Central Park , Desa Parkcity {{URL}}\\n\\nOutput:\\n ... [TRUNCATED] ...  it 's been an amazing experience . Afro paper : the rolling stone project and I do n't think you know Popin boyz are projects that 's gonna shake the industry . Do n't sleep on {{USERNAME}} {{USERNAME}} {{USERNAME}} Watch out for these guys\\n\"\n    }\n  ],\n  \"target\": \"<response>Hanging out with the # <group>Popinboyz</group> and it 's been an amazing experience . <creative_work>Afro paper</creative_work> : <creative_work>the rolling stone project</creative_work> and I do n't think you know <group>Popin boyz</group> are projects that 's gonna shake the industry . Do n't sleep on {{USERNAME}} {{USERNAME}} {{USERNAME}} Watch out for these guys</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"Hanging\",\n      \"out\",\n      \"with\",\n      \"the\",\n      \"#\",\n      \"Popinboyz\",\n      \"and\",\n      \"it\",\n      \"'s\",\n      \"been\",\n      \"an\",\n      \"amazing\",\n      \"experience\",\n      \".\",\n      \"Afro\",\n      \"paper\",\n      \":\",\n      \"the\",\n      \"rolling\",\n      \"stone\",\n      \"project\",\n      \"and\",\n      \"I\",\n      \"do\",\n      \"n't\",\n      \"think\",\n      \"you\",\n      \"know\",\n      \"Popin\",\n      \"boyz\",\n      \"are\",\n      \"projects\",\n      \"that\",\n      \"'s\",\n      \"gonna\",\n      \"shake\",\n      \"the\",\n      \"industry\",\n      \".\",\n      \"Do\",\n      \"n't\",\n      \"sleep\",\n      \"on\",\n      \"{{USERNAME}}\",\n      \"{{USERNAME}}\",\n      \"{{USERNAME}}\",\n      \"Watch\",\n      \"out\",\n      \"for\",\n      \"these\",\n      \"guys\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-GROUP\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-CREATIVE_WORK\",\n      \"I-CREATIVE_WORK\",\n      \"O\",\n      \"B-CREATIVE_WORK\",\n      \"I-CREATIVE_WORK\",\n      \"I-CREATIVE_WORK\",\n      \"I-CREATIVE_WORK\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-GROUP\",\n      \"I-GROUP\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本（Few-shot）模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tweet_ner_7 \\\n    --limit 10  # 正式评估时请移除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tweet_ner_7'],\n    limit=10,  # 正式评估时请移除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "bc5ad07d86a2bb93e359e2001b2b1543",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.264620",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

@@ -1,0 +1,187 @@
+{
+  "meta": {
+    "pretty_name": "ChartQA",
+    "dataset_id": "lmms-lab/ChartQA",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Knowledge",
+      "QA"
+    ],
+    "metrics": [
+      "relaxed_acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "human_test",
+      "augmented_test"
+    ],
+    "description": "\n## Overview\n\nChartQA is a benchmark designed to evaluate question-answering capabilities over charts and data visualizations. It tests both visual reasoning and logical understanding of various chart types including bar charts, line graphs, and pie charts.\n\n## Task Description\n\n- **Task Type**: Chart Question Answering\n- **Input**: Chart image + natural language question\n- **Output**: Single word or numerical answer\n- **Domains**: Data visualization, visual reasoning, numerical reasoning\n\n## Key Features\n\n- Covers diverse chart types (bar, line, pie, scatter plots)\n- Includes both human-written and augmented test questions\n- Requires understanding of chart structure and data relationships\n- Tests both visual extraction and logical reasoning abilities\n- Questions range from simple data lookup to complex reasoning\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split with two subsets:\n  - `human_test`: Human-written questions\n  - `augmented_test`: Automatically generated questions\n- Primary metric: **Relaxed Accuracy** (allows minor variations in answers)\n- Answers should be in format \"ANSWER: [ANSWER]\"\n- Numerical answers may have tolerance for rounding differences\n",
+    "prompt_template": "\n{question}\n\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the a single word answer or number to the problem.\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 2500,
+    "subset_stats": [
+      {
+        "name": "human_test",
+        "sample_count": 1250,
+        "prompt_length_mean": 220.17,
+        "prompt_length_min": 178,
+        "prompt_length_max": 352,
+        "prompt_length_std": 23.66,
+        "target_length_mean": 5.26,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1250,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "184x326",
+              "185x331",
+              "186x328",
+              "199x371",
+              "199x488",
+              "200x372",
+              "200x409",
+              "200x411",
+              "200x447",
+              "200x515"
+            ],
+            "resolution_range": {
+              "min": "184x326",
+              "max": "840x1286"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "augmented_test",
+        "sample_count": 1250,
+        "prompt_length_mean": 228.49,
+        "prompt_length_min": 186,
+        "prompt_length_max": 293,
+        "prompt_length_std": 18.22,
+        "target_length_mean": 4.81,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1250,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "800x1016",
+              "800x1046",
+              "800x1076",
+              "800x1106",
+              "800x1136",
+              "800x1166",
+              "800x1196",
+              "800x1226",
+              "800x1256",
+              "800x1286"
+            ],
+            "resolution_range": {
+              "min": "800x557",
+              "max": "800x1796"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 224.33,
+      "min": 178,
+      "max": 352,
+      "std": 21.52
+    },
+    "target_length_mean": 5.04,
+    "computed_at": "2026-01-28T11:12:41.043652",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 2500,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "184x326",
+          "185x331",
+          "186x328",
+          "199x371",
+          "199x488",
+          "200x372",
+          "200x409",
+          "200x411",
+          "200x447",
+          "200x515"
+        ],
+        "resolution_range": {
+          "min": "184x326",
+          "max": "800x1796"
+        },
+        "formats": [
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "c75439e0",
+          "content": [
+            {
+              "text": "\nHow many food item is shown in the bar graph?\n\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the a single word answer or number to the problem.\n"
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~42.9KB]"
+            }
+          ]
+        }
+      ],
+      "target": "14",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "human_test"
+    },
+    "subset": "human_test",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# ChartQA\n\n\n## Overview\n\nChartQA is a benchmark designed to evaluate question-answering capabilities over charts and data visualizations. It tests both visual reasoning and logical understanding of various chart types including bar charts, line graphs, and pie charts.\n\n## Task Description\n\n- **Task Type**: Chart Question Answering\n- **Input**: Chart image + natural language question\n- **Output**: Single word or numerical answer\n- **Domains**: Data visualization, visual reasoning, numerical reasoning\n\n## Key Features\n\n- Covers diverse chart types (bar, line, pie, scatter plots)\n- Includes both human-written and augmented test questions\n- Requires understanding of chart structure and data relationships\n- Tests both visual extraction and logical reasoning abilities\n- Questions range from simple data lookup to complex reasoning\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split with two subsets:\n  - `human_test`: Human-written questions\n  - `augmented_test`: Automatically generated questions\n- Primary metric: **Relaxed Accuracy** (allows minor variations in answers)\n- Answers should be in format \"ANSWER: [ANSWER]\"\n- Numerical answers may have tolerance for rounding differences\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `chartqa` |\n| **Dataset ID** | [lmms-lab/ChartQA](https://modelscope.cn/datasets/lmms-lab/ChartQA/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MultiModal`, `QA` |\n| **Metrics** | `relaxed_acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 2,500 |\n| Prompt Length (Mean) | 224.33 chars |\n| Prompt Length (Min/Max) | 178 / 352 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `human_test` | 1,250 | 220.17 | 178 | 352 |\n| `augmented_test` | 1,250 | 228.49 | 186 | 293 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 2,500 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 184x326 - 800x1796 |\n| Formats | png |\n\n\n## Sample Example\n\n**Subset**: `human_test`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"c75439e0\",\n      \"content\": [\n        {\n          \"text\": \"\\nHow many food item is shown in the bar graph?\\n\\nThe last line of your response should be of the form \\\"ANSWER: [ANSWER]\\\" (without quotes) where [ANSWER] is the a single word answer or number to the problem.\\n\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~42.9KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"14\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"human_test\"\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n\n{question}\n\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the a single word answer or number to the problem.\n\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets chartqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['chartqa'],\n    dataset_args={\n        'chartqa': {\n            # subset_list: ['human_test', 'augmented_test']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# ChartQA\n\n\n## 概述\n\nChartQA 是一个用于评估模型在图表和数据可视化上问答能力的基准测试。它考察模型对各类图表（包括柱状图、折线图和饼图）的视觉推理与逻辑理解能力。\n\n## 任务描述\n\n- **任务类型**：图表问答（Chart Question Answering）\n- **输入**：图表图像 + 自然语言问题\n- **输出**：单个单词或数值答案\n- **领域**：数据可视化、视觉推理、数值推理\n\n## 主要特点\n\n- 涵盖多种图表类型（柱状图、折线图、饼图、散点图）\n- 包含人工编写和自动生成的测试问题\n- 要求理解图表结构和数据关系\n- 同时测试视觉信息提取与逻辑推理能力\n- 问题难度从简单数据查询到复杂推理不等\n\n## 评估说明\n\n- 默认使用 **test** 数据划分，包含两个子集：\n  - `human_test`：人工编写的问题\n  - `augmented_test`：自动生成的问题\n- 主要指标：**Relaxed Accuracy**（允许答案存在微小差异）\n- 答案格式应为 \"ANSWER: [ANSWER]\"\n- 数值答案允许存在舍入误差范围内的差异\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `chartqa` |\n| **数据集ID** | [lmms-lab/ChartQA](https://modelscope.cn/datasets/lmms-lab/ChartQA/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MultiModal`, `QA` |\n| **指标** | `relaxed_acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 2,500 |\n| 提示词长度（平均） | 224.33 字符 |\n| 提示词长度（最小/最大） | 178 / 352 字符 |\n\n**各子集统计：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `human_test` | 1,250 | 220.17 | 178 | 352 |\n| `augmented_test` | 1,250 | 228.49 | 186 | 293 |\n\n**图像统计：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 2,500 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 184x326 - 800x1796 |\n| 格式 | png |\n\n\n## 样例示例\n\n**子集**: `human_test`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"c75439e0\",\n      \"content\": [\n        {\n          \"text\": \"\\nHow many food item is shown in the bar graph?\\n\\nThe last line of your response should be of the form \\\"ANSWER: [ANSWER]\\\" (without quotes) where [ANSWER] is the a single word answer or number to the problem.\\n\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~42.9KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"14\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"human_test\"\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n\n{question}\n\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the a single word answer or number to the problem.\n\n```\n\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets chartqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['chartqa'],\n    dataset_args={\n        'chartqa': {\n            # subset_list: ['human_test', 'augmented_test']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "d67e0152b0be573440a7705abfa0e889",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.819025",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

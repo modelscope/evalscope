@@ -1,0 +1,79 @@
+{
+  "meta": {
+    "pretty_name": "SIQA",
+    "dataset_id": "extraordinarylab/siqa",
+    "paper_url": null,
+    "tags": [
+      "Commonsense",
+      "Reasoning",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nSIQA (Social Interaction QA) is a benchmark for evaluating social commonsense intelligence - understanding people's actions and their social implications. Unlike benchmarks focusing on physical knowledge, SIQA tests reasoning about human behavior.\n\n## Task Description\n\n- **Task Type**: Social Commonsense Reasoning\n- **Input**: Context about a social situation with question and 3 answer choices\n- **Output**: Most socially appropriate answer (A, B, or C)\n- **Focus**: Human behavior, motivations, and social implications\n\n## Key Features\n\n- Tests social intelligence and emotional understanding\n- Questions about people's actions and their consequences\n- Covers motivations, reactions, and social norms\n- 33K+ crowdsourced QA pairs\n- Requires reasoning about human psychology\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses simple multiple-choice prompting\n- Evaluates on validation split\n- Simple accuracy metric",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 1954,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1954,
+        "prompt_length_mean": 289.05,
+        "prompt_length_min": 242,
+        "prompt_length_max": 509,
+        "prompt_length_std": 28.36,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 289.05,
+      "min": 242,
+      "max": 509,
+      "std": 28.36
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:16:57.801284"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "8d09aab2",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C.\n\nWhat does Tracy need to do before this?\n\nA) make a new plan\nB) Go home and see Riley\nC) Find somewhere to go"
+        }
+      ],
+      "choices": [
+        "make a new plan",
+        "Go home and see Riley",
+        "Find somewhere to go"
+      ],
+      "target": "C",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {}
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# SIQA\n\n## Overview\n\nSIQA (Social Interaction QA) is a benchmark for evaluating social commonsense intelligence - understanding people's actions and their social implications. Unlike benchmarks focusing on physical knowledge, SIQA tests reasoning about human behavior.\n\n## Task Description\n\n- **Task Type**: Social Commonsense Reasoning\n- **Input**: Context about a social situation with question and 3 answer choices\n- **Output**: Most socially appropriate answer (A, B, or C)\n- **Focus**: Human behavior, motivations, and social implications\n\n## Key Features\n\n- Tests social intelligence and emotional understanding\n- Questions about people's actions and their consequences\n- Covers motivations, reactions, and social norms\n- 33K+ crowdsourced QA pairs\n- Requires reasoning about human psychology\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses simple multiple-choice prompting\n- Evaluates on validation split\n- Simple accuracy metric\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `siqa` |\n| **Dataset ID** | [extraordinarylab/siqa](https://modelscope.cn/datasets/extraordinarylab/siqa/summary) |\n| **Paper** | N/A |\n| **Tags** | `Commonsense`, `MCQ`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,954 |\n| Prompt Length (Mean) | 289.05 chars |\n| Prompt Length (Min/Max) | 242 / 509 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"8d09aab2\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C.\\n\\nWhat does Tracy need to do before this?\\n\\nA) make a new plan\\nB) Go home and see Riley\\nC) Find somewhere to go\"\n    }\n  ],\n  \"choices\": [\n    \"make a new plan\",\n    \"Go home and see Riley\",\n    \"Find somewhere to go\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets siqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['siqa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# SIQA\n\n## 概述\n\nSIQA（Social Interaction QA）是一个用于评估社会常识智能的基准测试，旨在衡量模型对人类行为及其社会影响的理解能力。与侧重于物理知识的基准不同，SIQA 专注于对人类行为的推理。\n\n## 任务描述\n\n- **任务类型**：社会常识推理\n- **输入**：包含社交情境的上下文、一个问题以及三个选项\n- **输出**：最符合社会规范的答案（A、B 或 C）\n- **重点**：人类行为、动机及其社会影响\n\n## 主要特点\n\n- 测试社会智能与情感理解能力\n- 问题围绕人类行为及其后果展开\n- 涵盖动机、反应和社会规范\n- 包含超过 33,000 个众包问答对\n- 需要对人类心理进行推理\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 使用简单的多项选择提示方式\n- 在验证集（validation split）上进行评估\n- 使用简单准确率（accuracy）作为评估指标\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `siqa` |\n| **数据集 ID** | [extraordinarylab/siqa](https://modelscope.cn/datasets/extraordinarylab/siqa/summary) |\n| **论文** | N/A |\n| **标签** | `Commonsense`, `MCQ`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `validation` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,954 |\n| 提示词长度（平均） | 289.05 字符 |\n| 提示词长度（最小/最大） | 242 / 509 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"8d09aab2\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C.\\n\\nWhat does Tracy need to do before this?\\n\\nA) make a new plan\\nB) Go home and see Riley\\nC) Find somewhere to go\"\n    }\n  ],\n  \"choices\": [\n    \"make a new plan\",\n    \"Go home and see Riley\",\n    \"Find somewhere to go\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets siqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['siqa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "196fc4ac0bf2f855c5d25ade4ff24299",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.398196",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

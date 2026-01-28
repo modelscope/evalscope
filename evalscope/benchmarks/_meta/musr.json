@@ -1,0 +1,96 @@
+{
+  "meta": {
+    "pretty_name": "MuSR",
+    "dataset_id": "AI-ModelScope/MuSR",
+    "paper_url": null,
+    "tags": [
+      "Reasoning",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "murder_mysteries",
+      "object_placements",
+      "team_allocation"
+    ],
+    "description": "\n## Overview\n\nMuSR (Multistep Soft Reasoning) is a benchmark for evaluating complex reasoning abilities through narrative-based problems. It includes murder mysteries, object placements, and team allocation scenarios requiring multi-step inference.\n\n## Task Description\n\n- **Task Type**: Complex Reasoning (Multiple-Choice)\n- **Input**: Narrative scenario with question and answer choices\n- **Output**: Correct answer letter (A-F)\n- **Domains**: Murder mysteries, object tracking, team allocation\n\n## Key Features\n\n- Narrative-based reasoning problems\n- Requires multi-step logical inference\n- Three distinct reasoning domains\n- Tests constraint satisfaction and deduction\n- Longer context requiring careful reasoning\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses Chain-of-Thought (CoT) prompting\n- Three subsets: `murder_mysteries`, `object_placements`, `team_allocation`\n- Simple accuracy metric\n- Challenging benchmark requiring careful reading\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 756,
+    "subset_stats": [
+      {
+        "name": "murder_mysteries",
+        "sample_count": 250,
+        "prompt_length_mean": 5743.1,
+        "prompt_length_min": 4056,
+        "prompt_length_max": 7537,
+        "prompt_length_std": 554.77,
+        "target_length_mean": 1
+      },
+      {
+        "name": "object_placements",
+        "sample_count": 256,
+        "prompt_length_mean": 5294.0,
+        "prompt_length_min": 3735,
+        "prompt_length_max": 7525,
+        "prompt_length_std": 746.72,
+        "target_length_mean": 1
+      },
+      {
+        "name": "team_allocation",
+        "sample_count": 250,
+        "prompt_length_mean": 3627.93,
+        "prompt_length_min": 2812,
+        "prompt_length_max": 4351,
+        "prompt_length_std": 312.1,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 4891.57,
+      "min": 2812,
+      "max": 7537,
+      "std": 1070.38
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:15:29.487040"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "5ec1a7bd",
+          "content": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B. Think step by step before answering.\n\nIn an adrenaline inducing ... [TRUNCATED] ... and wronged, over and over, at the same sight. It was quite a sight. \n\nWinston, shuffling back to the station, was left with one thought - Looks like Mackenzie had quite an eventful week.\n\nWho is the most likely murderer?\n\nA) Mackenzie\nB) Ana"
+        }
+      ],
+      "choices": [
+        "Mackenzie",
+        "Ana"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0
+    },
+    "subset": "murder_mysteries",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# MuSR\n\n\n## Overview\n\nMuSR (Multistep Soft Reasoning) is a benchmark for evaluating complex reasoning abilities through narrative-based problems. It includes murder mysteries, object placements, and team allocation scenarios requiring multi-step inference.\n\n## Task Description\n\n- **Task Type**: Complex Reasoning (Multiple-Choice)\n- **Input**: Narrative scenario with question and answer choices\n- **Output**: Correct answer letter (A-F)\n- **Domains**: Murder mysteries, object tracking, team allocation\n\n## Key Features\n\n- Narrative-based reasoning problems\n- Requires multi-step logical inference\n- Three distinct reasoning domains\n- Tests constraint satisfaction and deduction\n- Longer context requiring careful reasoning\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses Chain-of-Thought (CoT) prompting\n- Three subsets: `murder_mysteries`, `object_placements`, `team_allocation`\n- Simple accuracy metric\n- Challenging benchmark requiring careful reading\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `musr` |\n| **Dataset ID** | [AI-ModelScope/MuSR](https://modelscope.cn/datasets/AI-ModelScope/MuSR/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 756 |\n| Prompt Length (Mean) | 4891.57 chars |\n| Prompt Length (Min/Max) | 2812 / 7537 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `murder_mysteries` | 250 | 5743.1 | 4056 | 7537 |\n| `object_placements` | 256 | 5294.0 | 3735 | 7525 |\n| `team_allocation` | 250 | 3627.93 | 2812 | 4351 |\n\n## Sample Example\n\n**Subset**: `murder_mysteries`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"5ec1a7bd\",\n      \"content\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B. Think step by step before answering.\\n\\nIn an adrenaline inducing ... [TRUNCATED] ... and wronged, over and over, at the same sight. It was quite a sight. \\n\\nWinston, shuffling back to the station, was left with one thought - Looks like Mackenzie had quite an eventful week.\\n\\nWho is the most likely murderer?\\n\\nA) Mackenzie\\nB) Ana\"\n    }\n  ],\n  \"choices\": [\n    \"Mackenzie\",\n    \"Ana\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets musr \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['musr'],\n    dataset_args={\n        'musr': {\n            # subset_list: ['murder_mysteries', 'object_placements', 'team_allocation']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MuSR\n\n## 概述\n\nMuSR（Multistep Soft Reasoning，多步软推理）是一个通过基于叙事的问题来评估复杂推理能力的基准测试。它包含谋杀谜题、物品放置和团队分配等场景，要求模型进行多步推理。\n\n## 任务描述\n\n- **任务类型**：复杂推理（多项选择题）\n- **输入**：包含问题和选项的叙事场景\n- **输出**：正确答案的字母（A-F）\n- **领域**：谋杀谜题、物品追踪、团队分配\n\n## 主要特点\n\n- 基于叙事的推理问题\n- 需要多步逻辑推理\n- 三个不同的推理领域\n- 测试约束满足与演绎能力\n- 上下文较长，需仔细推理\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 使用思维链（Chain-of-Thought, CoT）提示\n- 包含三个子集：`murder_mysteries`、`object_placements`、`team_allocation`\n- 使用简单准确率（accuracy）作为指标\n- 是一个具有挑战性的基准，要求仔细阅读\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `musr` |\n| **数据集ID** | [AI-ModelScope/MuSR](https://modelscope.cn/datasets/AI-ModelScope/MuSR/summary) |\n| **论文** | N/A |\n| **标签** | `MCQ`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 756 |\n| 提示词长度（平均） | 4891.57 字符 |\n| 提示词长度（最小/最大） | 2812 / 7537 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `murder_mysteries` | 250 | 5743.1 | 4056 | 7537 |\n| `object_placements` | 256 | 5294.0 | 3735 | 7525 |\n| `team_allocation` | 250 | 3627.93 | 2812 | 4351 |\n\n## 样例示例\n\n**子集**: `murder_mysteries`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"5ec1a7bd\",\n      \"content\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B. Think step by step before answering.\\n\\nIn an adrenaline inducing ... [TRUNCATED] ... and wronged, over and over, at the same sight. It was quite a sight. \\n\\nWinston, shuffling back to the station, was left with one thought - Looks like Mackenzie had quite an eventful week.\\n\\nWho is the most likely murderer?\\n\\nA) Mackenzie\\nB) Ana\"\n    }\n  ],\n  \"choices\": [\n    \"Mackenzie\",\n    \"Ana\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets musr \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['musr'],\n    dataset_args={\n        'musr': {\n            # subset_list: ['murder_mysteries', 'object_placements', 'team_allocation']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "75049149cf3b2e9b7898b65191d0e6a7",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.038906",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

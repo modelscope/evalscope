@@ -1,0 +1,125 @@
+{
+  "meta": {
+    "pretty_name": "BC5CDR",
+    "dataset_id": "extraordinarylab/bc5cdr",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nThe BC5CDR corpus is a manually annotated resource of 1,500 PubMed articles developed for the BioCreative V challenge, containing over 4,400 chemical mentions, 5,800 disease mentions, and 3,100 chemical-disease interactions.\n\n## Task Description\n\n- **Task Type**: Biomedical Named Entity Recognition (NER)\n- **Input**: PubMed article text\n- **Output**: Identified chemical and disease entity spans\n- **Domain**: Pharmacology, medical informatics, toxicology\n\n## Key Features\n\n- 1,500 PubMed articles with expert annotations\n- 4,400+ chemical mentions\n- 5,800+ disease mentions\n- 3,100+ chemical-disease interactions\n- Benchmark from BioCreative V challenge\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: CHEMICAL, DISEASE\n",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 4797,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 4797,
+        "prompt_length_mean": 3598.18,
+        "prompt_length_min": 3455,
+        "prompt_length_max": 4087,
+        "prompt_length_std": 70.46,
+        "target_length_mean": 208.11
+      }
+    ],
+    "prompt_length": {
+      "mean": 3598.18,
+      "min": 3455,
+      "max": 4087,
+      "std": 70.46
+    },
+    "target_length_mean": 208.11,
+    "computed_at": "2026-01-28T14:13:44.496956"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "154a621d",
+          "content": "Here are some examples of named entity recognition:\n\nInput:\nSelegiline - induced postural hypotension in Parkinson ' s disease : a longitudinal study on the effects of drug withdrawal .\n\nOutput:\n<response><chemical>Selegiline</chemical> - ind ... [TRUNCATED] ... e.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\nTorsade de pointes ventricular tachycardia during low dose intermittent dobutamine treatment in a patient with dilated cardiomyopathy and congestive heart failure .\n"
+        }
+      ],
+      "target": "<response><disease>Torsade de pointes ventricular tachycardia</disease> during low dose intermittent <chemical>dobutamine</chemical> treatment in a patient with <disease>dilated cardiomyopathy</disease> and <disease>congestive heart failure</disease> .</response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "Torsade",
+          "de",
+          "pointes",
+          "ventricular",
+          "tachycardia",
+          "during",
+          "low",
+          "dose",
+          "intermittent",
+          "dobutamine",
+          "treatment",
+          "in",
+          "a",
+          "patient",
+          "with",
+          "dilated",
+          "cardiomyopathy",
+          "and",
+          "congestive",
+          "heart",
+          "failure",
+          "."
+        ],
+        "ner_tags": [
+          "B-DISEASE",
+          "I-DISEASE",
+          "I-DISEASE",
+          "I-DISEASE",
+          "I-DISEASE",
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-CHEMICAL",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-DISEASE",
+          "I-DISEASE",
+          "O",
+          "B-DISEASE",
+          "I-DISEASE",
+          "I-DISEASE",
+          "O"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# BC5CDR\n\n\n## Overview\n\nThe BC5CDR corpus is a manually annotated resource of 1,500 PubMed articles developed for the BioCreative V challenge, containing over 4,400 chemical mentions, 5,800 disease mentions, and 3,100 chemical-disease interactions.\n\n## Task Description\n\n- **Task Type**: Biomedical Named Entity Recognition (NER)\n- **Input**: PubMed article text\n- **Output**: Identified chemical and disease entity spans\n- **Domain**: Pharmacology, medical informatics, toxicology\n\n## Key Features\n\n- 1,500 PubMed articles with expert annotations\n- 4,400+ chemical mentions\n- 5,800+ disease mentions\n- 3,100+ chemical-disease interactions\n- Benchmark from BioCreative V challenge\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: CHEMICAL, DISEASE\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `bc5cdr` |\n| **Dataset ID** | [extraordinarylab/bc5cdr](https://modelscope.cn/datasets/extraordinarylab/bc5cdr/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 4,797 |\n| Prompt Length (Mean) | 3598.18 chars |\n| Prompt Length (Min/Max) | 3455 / 4087 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"154a621d\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nSelegiline - induced postural hypotension in Parkinson ' s disease : a longitudinal study on the effects of drug withdrawal .\\n\\nOutput:\\n<response><chemical>Selegiline</chemical> - ind ... [TRUNCATED] ... e.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\nTorsade de pointes ventricular tachycardia during low dose intermittent dobutamine treatment in a patient with dilated cardiomyopathy and congestive heart failure .\\n\"\n    }\n  ],\n  \"target\": \"<response><disease>Torsade de pointes ventricular tachycardia</disease> during low dose intermittent <chemical>dobutamine</chemical> treatment in a patient with <disease>dilated cardiomyopathy</disease> and <disease>congestive heart failure</disease> .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"Torsade\",\n      \"de\",\n      \"pointes\",\n      \"ventricular\",\n      \"tachycardia\",\n      \"during\",\n      \"low\",\n      \"dose\",\n      \"intermittent\",\n      \"dobutamine\",\n      \"treatment\",\n      \"in\",\n      \"a\",\n      \"patient\",\n      \"with\",\n      \"dilated\",\n      \"cardiomyopathy\",\n      \"and\",\n      \"congestive\",\n      \"heart\",\n      \"failure\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"B-DISEASE\",\n      \"I-DISEASE\",\n      \"I-DISEASE\",\n      \"I-DISEASE\",\n      \"I-DISEASE\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-CHEMICAL\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-DISEASE\",\n      \"I-DISEASE\",\n      \"O\",\n      \"B-DISEASE\",\n      \"I-DISEASE\",\n      \"I-DISEASE\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bc5cdr \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bc5cdr'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# BC5CDR\n\n\n## 概述\n\nBC5CDR 语料库是一个为 BioCreative V 挑战赛开发的手动标注资源，包含 1,500 篇 PubMed 文章，其中包含超过 4,400 个化学物质提及、5,800 个疾病提及以及 3,100 个化学-疾病相互作用。\n\n## 任务描述\n\n- **任务类型**：生物医学命名实体识别（NER）\n- **输入**：PubMed 文章文本\n- **输出**：识别出的化学物质和疾病实体范围\n- **领域**：药理学、医学信息学、毒理学\n\n## 主要特点\n\n- 1,500 篇带有专家标注的 PubMed 文章\n- 4,400+ 个化学物质提及\n- 5,800+ 个疾病提及\n- 3,100+ 个化学-疾病相互作用\n- 来自 BioCreative V 挑战赛的基准数据集\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 评估\n- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）\n- 实体类型：CHEMICAL（化学物质）、DISEASE（疾病）\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `bc5cdr` |\n| **数据集ID** | [extraordinarylab/bc5cdr](https://modelscope.cn/datasets/extraordinarylab/bc5cdr/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认示例数量** | 5-shot |\n| **评估集** | `test` |\n| **训练集** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 4,797 |\n| 提示词长度（平均） | 3598.18 字符 |\n| 提示词长度（最小/最大） | 3455 / 4087 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"154a621d\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nSelegiline - induced postural hypotension in Parkinson ' s disease : a longitudinal study on the effects of drug withdrawal .\\n\\nOutput:\\n<response><chemical>Selegiline</chemical> - ind ... [TRUNCATED] ... e.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\nTorsade de pointes ventricular tachycardia during low dose intermittent dobutamine treatment in a patient with dilated cardiomyopathy and congestive heart failure .\\n\"\n    }\n  ],\n  \"target\": \"<response><disease>Torsade de pointes ventricular tachycardia</disease> during low dose intermittent <chemical>dobutamine</chemical> treatment in a patient with <disease>dilated cardiomyopathy</disease> and <disease>congestive heart failure</disease> .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"Torsade\",\n      \"de\",\n      \"pointes\",\n      \"ventricular\",\n      \"tachycardia\",\n      \"during\",\n      \"low\",\n      \"dose\",\n      \"intermittent\",\n      \"dobutamine\",\n      \"treatment\",\n      \"in\",\n      \"a\",\n      \"patient\",\n      \"with\",\n      \"dilated\",\n      \"cardiomyopathy\",\n      \"and\",\n      \"congestive\",\n      \"heart\",\n      \"failure\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"B-DISEASE\",\n      \"I-DISEASE\",\n      \"I-DISEASE\",\n      \"I-DISEASE\",\n      \"I-DISEASE\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-CHEMICAL\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-DISEASE\",\n      \"I-DISEASE\",\n      \"O\",\n      \"B-DISEASE\",\n      \"I-DISEASE\",\n      \"I-DISEASE\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本（Few-shot）模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bc5cdr \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bc5cdr'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "d0377e51213c263cc7dc4247b2b9e464",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.172347",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

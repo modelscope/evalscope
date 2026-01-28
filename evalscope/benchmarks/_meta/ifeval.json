@@ -1,0 +1,163 @@
+{
+  "meta": {
+    "pretty_name": "IFEval",
+    "dataset_id": "opencompass/ifeval",
+    "paper_url": null,
+    "tags": [
+      "InstructionFollowing"
+    ],
+    "metrics": [
+      "prompt_level_strict",
+      "inst_level_strict",
+      "prompt_level_loose",
+      "inst_level_loose"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nIFEval (Instruction-Following Eval) is a benchmark for evaluating how well language models follow explicit, verifiable instructions. It contains prompts with specific formatting, content, or structural requirements that can be objectively verified.\n\n## Task Description\n\n- **Task Type**: Instruction Following Evaluation\n- **Input**: Prompts with explicit, verifiable constraints\n- **Output**: Response that follows all specified instructions\n- **Constraint Types**: Format, length, keywords, structure, etc.\n\n## Key Features\n\n- ~500 prompts with 25 types of verifiable instructions\n- Instructions are objectively checkable (not subjective)\n- Examples: \"write exactly 3 paragraphs\", \"include the word X\", \"use bullet points\"\n- Tests instruction comprehension and compliance\n- No ambiguity in evaluation criteria\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Four metrics available:\n  - `prompt_level_strict`: All instructions in prompt must be followed\n  - `prompt_level_loose`: Some tolerance for minor deviations\n  - `inst_level_strict`: Per-instruction accuracy (strict)\n  - `inst_level_loose`: Per-instruction accuracy (loose)\n- `prompt_level_strict` is the primary metric\n- Automatic verification of instruction compliance\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 541,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 541,
+        "prompt_length_mean": 210.75,
+        "prompt_length_min": 53,
+        "prompt_length_max": 1858,
+        "prompt_length_std": 116.86,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 210.75,
+      "min": 53,
+      "max": 1858,
+      "std": 116.86
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T11:13:55.173504"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "cb71907f",
+          "content": "Write a 300+ word summary of the wikipedia page \"https://en.wikipedia.org/wiki/Raymond_III,_Count_of_Tripoli\". Do not use any commas and highlight at least 3 sections that has titles in markdown format, for example *highlighted section part 1*, *highlighted section part 2*, *highlighted section part 3*."
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "key": 1000,
+        "prompt": "Write a 300+ word summary of the wikipedia page \"https://en.wikipedia.org/wiki/Raymond_III,_Count_of_Tripoli\". Do not use any commas and highlight at least 3 sections that has titles in markdown format, for example *highlighted section part 1*, *highlighted section part 2*, *highlighted section part 3*.",
+        "instruction_id_list": [
+          "punctuation:no_comma",
+          "detectable_format:number_highlighted_sections",
+          "length_constraints:number_words"
+        ],
+        "kwargs": [
+          {
+            "num_highlights": null,
+            "relation": null,
+            "num_words": null,
+            "num_placeholders": null,
+            "prompt_to_repeat": null,
+            "num_bullets": null,
+            "section_spliter": null,
+            "num_sections": null,
+            "capital_relation": null,
+            "capital_frequency": null,
+            "keywords": null,
+            "num_paragraphs": null,
+            "language": null,
+            "let_relation": null,
+            "letter": null,
+            "let_frequency": null,
+            "end_phrase": null,
+            "forbidden_words": null,
+            "keyword": null,
+            "frequency": null,
+            "num_sentences": null,
+            "postscript_marker": null,
+            "first_word": null,
+            "nth_paragraph": null
+          },
+          {
+            "num_highlights": 3,
+            "relation": null,
+            "num_words": null,
+            "num_placeholders": null,
+            "prompt_to_repeat": null,
+            "num_bullets": null,
+            "section_spliter": null,
+            "num_sections": null,
+            "capital_relation": null,
+            "capital_frequency": null,
+            "keywords": null,
+            "num_paragraphs": null,
+            "language": null,
+            "let_relation": null,
+            "letter": null,
+            "let_frequency": null,
+            "end_phrase": null,
+            "forbidden_words": null,
+            "keyword": null,
+            "frequency": null,
+            "num_sentences": null,
+            "postscript_marker": null,
+            "first_word": null,
+            "nth_paragraph": null
+          },
+          {
+            "num_highlights": null,
+            "relation": "at least",
+            "num_words": 300,
+            "num_placeholders": null,
+            "prompt_to_repeat": null,
+            "num_bullets": null,
+            "section_spliter": null,
+            "num_sections": null,
+            "capital_relation": null,
+            "capital_frequency": null,
+            "keywords": null,
+            "num_paragraphs": null,
+            "language": null,
+            "let_relation": null,
+            "letter": null,
+            "let_frequency": null,
+            "end_phrase": null,
+            "forbidden_words": null,
+            "keyword": null,
+            "frequency": null,
+            "num_sentences": null,
+            "postscript_marker": null,
+            "first_word": null,
+            "nth_paragraph": null
+          }
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# IFEval\n\n\n## Overview\n\nIFEval (Instruction-Following Eval) is a benchmark for evaluating how well language models follow explicit, verifiable instructions. It contains prompts with specific formatting, content, or structural requirements that can be objectively verified.\n\n## Task Description\n\n- **Task Type**: Instruction Following Evaluation\n- **Input**: Prompts with explicit, verifiable constraints\n- **Output**: Response that follows all specified instructions\n- **Constraint Types**: Format, length, keywords, structure, etc.\n\n## Key Features\n\n- ~500 prompts with 25 types of verifiable instructions\n- Instructions are objectively checkable (not subjective)\n- Examples: \"write exactly 3 paragraphs\", \"include the word X\", \"use bullet points\"\n- Tests instruction comprehension and compliance\n- No ambiguity in evaluation criteria\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Four metrics available:\n  - `prompt_level_strict`: All instructions in prompt must be followed\n  - `prompt_level_loose`: Some tolerance for minor deviations\n  - `inst_level_strict`: Per-instruction accuracy (strict)\n  - `inst_level_loose`: Per-instruction accuracy (loose)\n- `prompt_level_strict` is the primary metric\n- Automatic verification of instruction compliance\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `ifeval` |\n| **Dataset ID** | [opencompass/ifeval](https://modelscope.cn/datasets/opencompass/ifeval/summary) |\n| **Paper** | N/A |\n| **Tags** | `InstructionFollowing` |\n| **Metrics** | `prompt_level_strict`, `inst_level_strict`, `prompt_level_loose`, `inst_level_loose` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 541 |\n| Prompt Length (Mean) | 210.75 chars |\n| Prompt Length (Min/Max) | 53 / 1858 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"cb71907f\",\n      \"content\": \"Write a 300+ word summary of the wikipedia page \\\"https://en.wikipedia.org/wiki/Raymond_III,_Count_of_Tripoli\\\". Do not use any commas and highlight at least 3 sections that has titles in markdown format, for example *highlighted section part 1*, *highlighted section part 2*, *highlighted section part 3*.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"key\": 1000,\n    \"prompt\": \"Write a 300+ word summary of the wikipedia page \\\"https://en.wikipedia.org/wiki/Raymond_III,_Count_of_Tripoli\\\". Do not use any commas and highlight at least 3 sections that has titles in markdown format, for example *highlighted section part 1*, *highlighted section part 2*, *highlighted section part 3*.\",\n    \"instruction_id_list\": [\n      \"punctuation:no_comma\",\n      \"detectable_format:number_highlighted_sections\",\n      \"length_constraints:number_words\"\n    ],\n    \"kwargs\": [\n      {\n        \"num_highlights\": null,\n        \"relation\": null,\n        \"num_words\": null,\n        \"num_placeholders\": null,\n        \"prompt_to_repeat\": null,\n        \"num_bullets\": null,\n        \"section_spliter\": null,\n        \"num_sections\": null,\n        \"capital_relation\": null,\n        \"capital_frequency\": null,\n        \"keywords\": null,\n        \"num_paragraphs\": null,\n        \"language\": null,\n        \"let_relation\": null,\n        \"letter\": null,\n        \"let_frequency\": null,\n        \"end_phrase\": null,\n        \"forbidden_words\": null,\n        \"keyword\": null,\n        \"frequency\": null,\n        \"num_sentences\": null,\n        \"postscript_marker\": null,\n        \"first_word\": null,\n        \"nth_paragraph\": null\n      },\n      {\n        \"num_highlights\": 3,\n        \"relation\": null,\n        \"num_words\": null,\n        \"num_placeholders\": null,\n        \"prompt_to_repeat\": null,\n        \"num_bullets\": null,\n        \"section_spliter\": null,\n        \"num_sections\": null,\n        \"capital_relation\": null,\n        \"capital_frequency\": null,\n        \"keywords\": null,\n        \"num_paragraphs\": null,\n        \"language\": null,\n        \"let_relation\": null,\n        \"letter\": null,\n        \"let_frequency\": null,\n        \"end_phrase\": null,\n        \"forbidden_words\": null,\n        \"keyword\": null,\n        \"frequency\": null,\n        \"num_sentences\": null,\n        \"postscript_marker\": null,\n        \"first_word\": null,\n        \"nth_paragraph\": null\n      },\n      {\n        \"num_highlights\": null,\n        \"relation\": \"at least\",\n        \"num_words\": 300,\n        \"num_placeholders\": null,\n        \"prompt_to_repeat\": null,\n        \"num_bullets\": null,\n        \"section_spliter\": null,\n        \"num_sections\": null,\n        \"capital_relation\": null,\n        \"capital_frequency\": null,\n        \"keywords\": null,\n        \"num_paragraphs\": null,\n        \"language\": null,\n        \"let_relation\": null,\n        \"letter\": null,\n        \"let_frequency\": null,\n        \"end_phrase\": null,\n        \"forbidden_words\": null,\n        \"keyword\": null,\n        \"frequency\": null,\n        \"num_sentences\": null,\n        \"postscript_marker\": null,\n        \"first_word\": null,\n        \"nth_paragraph\": null\n      }\n    ]\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ifeval \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ifeval'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# IFEval\n\n\n## 概述\n\nIFEval（Instruction-Following Eval）是一个用于评估语言模型遵循明确、可验证指令能力的基准测试。它包含一系列带有特定格式、内容或结构要求的提示（prompts），这些要求可以被客观地验证。\n\n## 任务描述\n\n- **任务类型**：指令遵循评估\n- **输入**：包含明确、可验证约束条件的提示\n- **输出**：完全遵循所有指定指令的响应\n- **约束类型**：格式、长度、关键词、结构等\n\n## 主要特点\n\n- 包含约500个提示，涵盖25种可验证的指令类型\n- 指令可被客观检查（非主观判断）\n- 示例：“写恰好3段文字”、“包含单词X”、“使用项目符号列表”\n- 测试模型对指令的理解与遵守能力\n- 评估标准无歧义\n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估方式\n- 提供四种评估指标：\n  - `prompt_level_strict`：提示中的所有指令都必须被严格遵循\n  - `prompt_level_loose`：允许对轻微偏差有一定容忍度\n  - `inst_level_strict`：按每条指令计算准确率（严格）\n  - `inst_level_loose`：按每条指令计算准确率（宽松）\n- 主要指标为 `prompt_level_strict`\n- 支持自动验证指令遵循情况\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `ifeval` |\n| **数据集ID** | [opencompass/ifeval](https://modelscope.cn/datasets/opencompass/ifeval/summary) |\n| **论文** | N/A |\n| **标签** | `InstructionFollowing` |\n| **指标** | `prompt_level_strict`, `inst_level_strict`, `prompt_level_loose`, `inst_level_loose` |\n| **默认示例数（Shots）** | 0-shot |\n| **评估划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 541 |\n| 提示词长度（平均） | 210.75 字符 |\n| 提示词长度（最小/最大） | 53 / 1858 字符 |\n\n## 样例示例\n\n**子集**：`default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"cb71907f\",\n      \"content\": \"Write a 300+ word summary of the wikipedia page \\\"https://en.wikipedia.org/wiki/Raymond_III,_Count_of_Tripoli\\\". Do not use any commas and highlight at least 3 sections that has titles in markdown format, for example *highlighted section part 1*, *highlighted section part 2*, *highlighted section part 3*.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"key\": 1000,\n    \"prompt\": \"Write a 300+ word summary of the wikipedia page \\\"https://en.wikipedia.org/wiki/Raymond_III,_Count_of_Tripoli\\\". Do not use any commas and highlight at least 3 sections that has titles in markdown format, for example *highlighted section part 1*, *highlighted section part 2*, *highlighted section part 3*.\",\n    \"instruction_id_list\": [\n      \"punctuation:no_comma\",\n      \"detectable_format:number_highlighted_sections\",\n      \"length_constraints:number_words\"\n    ],\n    \"kwargs\": [\n      {\n        \"num_highlights\": null,\n        \"relation\": null,\n        \"num_words\": null,\n        \"num_placeholders\": null,\n        \"prompt_to_repeat\": null,\n        \"num_bullets\": null,\n        \"section_spliter\": null,\n        \"num_sections\": null,\n        \"capital_relation\": null,\n        \"capital_frequency\": null,\n        \"keywords\": null,\n        \"num_paragraphs\": null,\n        \"language\": null,\n        \"let_relation\": null,\n        \"letter\": null,\n        \"let_frequency\": null,\n        \"end_phrase\": null,\n        \"forbidden_words\": null,\n        \"keyword\": null,\n        \"frequency\": null,\n        \"num_sentences\": null,\n        \"postscript_marker\": null,\n        \"first_word\": null,\n        \"nth_paragraph\": null\n      },\n      {\n        \"num_highlights\": 3,\n        \"relation\": null,\n        \"num_words\": null,\n        \"num_placeholders\": null,\n        \"prompt_to_repeat\": null,\n        \"num_bullets\": null,\n        \"section_spliter\": null,\n        \"num_sections\": null,\n        \"capital_relation\": null,\n        \"capital_frequency\": null,\n        \"keywords\": null,\n        \"num_paragraphs\": null,\n        \"language\": null,\n        \"let_relation\": null,\n        \"letter\": null,\n        \"let_frequency\": null,\n        \"end_phrase\": null,\n        \"forbidden_words\": null,\n        \"keyword\": null,\n        \"frequency\": null,\n        \"num_sentences\": null,\n        \"postscript_marker\": null,\n        \"first_word\": null,\n        \"nth_paragraph\": null\n      },\n      {\n        \"num_highlights\": null,\n        \"relation\": \"at least\",\n        \"num_words\": 300,\n        \"num_placeholders\": null,\n        \"prompt_to_repeat\": null,\n        \"num_bullets\": null,\n        \"section_spliter\": null,\n        \"num_sections\": null,\n        \"capital_relation\": null,\n        \"capital_frequency\": null,\n        \"keywords\": null,\n        \"num_paragraphs\": null,\n        \"language\": null,\n        \"let_relation\": null,\n        \"letter\": null,\n        \"let_frequency\": null,\n        \"end_phrase\": null,\n        \"forbidden_words\": null,\n        \"keyword\": null,\n        \"frequency\": null,\n        \"num_sentences\": null,\n        \"postscript_marker\": null,\n        \"first_word\": null,\n        \"nth_paragraph\": null\n      }\n    ]\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ifeval \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ifeval'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "c077af5cd3d059b4c4732433277f5ab6",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.902033",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

@@ -1,0 +1,160 @@
+{
+  "meta": {
+    "pretty_name": "A-OKVQA",
+    "dataset_id": "HuggingFaceM4/A-OKVQA",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "MultiModal"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nA-OKVQA (Augmented OK-VQA) is a benchmark designed to evaluate commonsense reasoning and external world knowledge in visual question answering. It extends beyond basic VQA tasks that rely solely on image content, requiring models to leverage a broad spectrum of commonsense and factual knowledge about the world.\n\n## Task Description\n\n- **Task Type**: Visual Question Answering with Knowledge Reasoning\n- **Input**: Image + natural language question requiring external knowledge\n- **Output**: Answer (multiple-choice or open-ended)\n- **Domains**: Commonsense reasoning, factual knowledge, visual understanding\n\n## Key Features\n\n- Requires commonsense reasoning beyond direct visual observation\n- Combines visual understanding with external world knowledge\n- Includes both multiple-choice and open-ended question formats\n- Questions annotated with rationales explaining the reasoning process\n- More challenging than standard VQA benchmarks\n\n## Evaluation Notes\n\n- Default evaluation uses the **validation** split\n- Primary metric: **Accuracy** for multiple-choice questions\n- Uses Chain-of-Thought (CoT) prompting for better reasoning\n- Questions require reasoning beyond what is directly visible in images\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 1145,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1145,
+        "prompt_length_mean": 310.84,
+        "prompt_length_min": 276,
+        "prompt_length_max": 405,
+        "prompt_length_std": 18.82,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1145,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "270x360",
+              "300x451",
+              "305x229",
+              "320x240",
+              "328x500",
+              "329x640",
+              "332x500",
+              "333x500",
+              "334x500",
+              "336x500"
+            ],
+            "resolution_range": {
+              "min": "305x229",
+              "max": "640x640"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 310.84,
+      "min": 276,
+      "max": 405,
+      "std": 18.82
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:12:37.262877",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 1145,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "270x360",
+          "300x451",
+          "305x229",
+          "320x240",
+          "328x500",
+          "329x640",
+          "332x500",
+          "333x500",
+          "334x500",
+          "336x500"
+        ],
+        "resolution_range": {
+          "min": "305x229",
+          "max": "640x640"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "3d2b0351",
+          "content": [
+            {
+              "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\n\nWhat is in the motorcyclist's mouth?\n\nA) toothpick\nB) food\nC) popsicle stick\nD) cigarette"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~53.4KB]"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "toothpick",
+        "food",
+        "popsicle stick",
+        "cigarette"
+      ],
+      "target": "D",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "question_id": "22jbM6gDxdaMaunuzgrsBB",
+        "direct_answers": "['cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette']",
+        "difficult_direct_answer": false,
+        "rationales": [
+          "He's smoking while riding.",
+          "The motorcyclist has a lit cigarette in his mouth while he rides on the street.",
+          "The man is smoking."
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# A-OKVQA\n\n\n## Overview\n\nA-OKVQA (Augmented OK-VQA) is a benchmark designed to evaluate commonsense reasoning and external world knowledge in visual question answering. It extends beyond basic VQA tasks that rely solely on image content, requiring models to leverage a broad spectrum of commonsense and factual knowledge about the world.\n\n## Task Description\n\n- **Task Type**: Visual Question Answering with Knowledge Reasoning\n- **Input**: Image + natural language question requiring external knowledge\n- **Output**: Answer (multiple-choice or open-ended)\n- **Domains**: Commonsense reasoning, factual knowledge, visual understanding\n\n## Key Features\n\n- Requires commonsense reasoning beyond direct visual observation\n- Combines visual understanding with external world knowledge\n- Includes both multiple-choice and open-ended question formats\n- Questions annotated with rationales explaining the reasoning process\n- More challenging than standard VQA benchmarks\n\n## Evaluation Notes\n\n- Default evaluation uses the **validation** split\n- Primary metric: **Accuracy** for multiple-choice questions\n- Uses Chain-of-Thought (CoT) prompting for better reasoning\n- Questions require reasoning beyond what is directly visible in images\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `a_okvqa` |\n| **Dataset ID** | [HuggingFaceM4/A-OKVQA](https://modelscope.cn/datasets/HuggingFaceM4/A-OKVQA/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `MultiModal` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,145 |\n| Prompt Length (Mean) | 310.84 chars |\n| Prompt Length (Min/Max) | 276 / 405 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 1,145 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 305x229 - 640x640 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"3d2b0351\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\\n\\nWhat is in the motorcyclist's mouth?\\n\\nA) toothpick\\nB) food\\nC) popsicle stick\\nD) cigarette\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~53.4KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"toothpick\",\n    \"food\",\n    \"popsicle stick\",\n    \"cigarette\"\n  ],\n  \"target\": \"D\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question_id\": \"22jbM6gDxdaMaunuzgrsBB\",\n    \"direct_answers\": \"['cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette']\",\n    \"difficult_direct_answer\": false,\n    \"rationales\": [\n      \"He's smoking while riding.\",\n      \"The motorcyclist has a lit cigarette in his mouth while he rides on the street.\",\n      \"The man is smoking.\"\n    ]\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets a_okvqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['a_okvqa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# A-OKVQA\n\n\n## 概述\n\nA-OKVQA（Augmented OK-VQA）是一个用于评估视觉问答（VQA）中常识推理与外部世界知识能力的基准测试。它超越了仅依赖图像内容的基础VQA任务，要求模型利用广泛的世界常识和事实性知识进行推理。\n\n## 任务描述\n\n- **任务类型**：基于知识推理的视觉问答\n- **输入**：图像 + 需要外部知识的自然语言问题\n- **输出**：答案（多项选择或开放式）\n- **领域**：常识推理、事实性知识、视觉理解\n\n## 主要特点\n\n- 要求模型进行超出直接视觉观察的常识推理\n- 结合视觉理解与外部世界知识\n- 包含多项选择题和开放式问题两种格式\n- 问题附带解释推理过程的理由（rationales）\n- 相比标准VQA基准更具挑战性\n\n## 评估说明\n\n- 默认使用 **验证集（validation）** 进行评估\n- 主要指标：多项选择题的 **准确率（Accuracy）**\n- 使用思维链（Chain-of-Thought, CoT）提示以提升推理能力\n- 问题需要基于图像之外的知识进行推理\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `a_okvqa` |\n| **数据集ID** | [HuggingFaceM4/A-OKVQA](https://modelscope.cn/datasets/HuggingFaceM4/A-OKVQA/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ`, `MultiModal` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `validation` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,145 |\n| 提示词长度（平均） | 310.84 字符 |\n| 提示词长度（最小/最大） | 276 / 405 字符 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 1,145 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 305x229 - 640x640 |\n| 格式 | jpeg |\n\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"3d2b0351\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\\n\\nWhat is in the motorcyclist's mouth?\\n\\nA) toothpick\\nB) food\\nC) popsicle stick\\nD) cigarette\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~53.4KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"toothpick\",\n    \"food\",\n    \"popsicle stick\",\n    \"cigarette\"\n  ],\n  \"target\": \"D\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question_id\": \"22jbM6gDxdaMaunuzgrsBB\",\n    \"direct_answers\": \"['cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette', 'cigarette']\",\n    \"difficult_direct_answer\": false,\n    \"rationales\": [\n      \"He's smoking while riding.\",\n      \"The motorcyclist has a lit cigarette in his mouth while he rides on the street.\",\n      \"The man is smoking.\"\n    ]\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets a_okvqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['a_okvqa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "8df1822bf29ef88599cd8e14ad95e57b",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.804515",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

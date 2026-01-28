@@ -1,0 +1,333 @@
+{
+  "meta": {
+    "pretty_name": "MathVision",
+    "dataset_id": "evalscope/MathVision",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning",
+      "MCQ",
+      "MultiModal"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "level 1",
+      "level 2",
+      "level 3",
+      "level 4",
+      "level 5"
+    ],
+    "description": "\n## Overview\n\nMATH-Vision (MATH-V) is a meticulously curated dataset of 3,040 high-quality mathematical problems with visual contexts sourced from real math competitions. It evaluates mathematical reasoning abilities in multimodal settings.\n\n## Task Description\n\n- **Task Type**: Visual Mathematical Reasoning\n- **Input**: Math problem with visual context (diagram, figure, graph)\n- **Output**: Numerical answer or answer choice\n- **Domains**: Competition mathematics with visual elements\n\n## Key Features\n\n- Problems sourced from real mathematical competitions\n- 3,040 high-quality problems with visual contexts\n- Five difficulty levels (1-5) for granular analysis\n- Supports both multiple-choice and free-form answers\n- Includes detailed solutions for reference\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Subsets by difficulty: `level 1` through `level 5`\n- Primary metric: **Accuracy** with numeric comparison\n- Free-form answers use \\boxed{} format (without units)\n- Multiple-choice uses CoT prompting with letter answers\n",
+    "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}} without units.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 3040,
+    "subset_stats": [
+      {
+        "name": "level 1",
+        "sample_count": 237,
+        "prompt_length_mean": 357.8,
+        "prompt_length_min": 133,
+        "prompt_length_max": 854,
+        "prompt_length_std": 139.81,
+        "target_length_mean": 2.01,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 237,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1008x291",
+              "1009x669",
+              "1012x145",
+              "102x112",
+              "1046x355",
+              "1064x430",
+              "1108x188",
+              "1133x700",
+              "1140x1131",
+              "1165x289"
+            ],
+            "resolution_range": {
+              "min": "102x112",
+              "max": "2520x5278"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "level 2",
+        "sample_count": 738,
+        "prompt_length_mean": 397.17,
+        "prompt_length_min": 127,
+        "prompt_length_max": 885,
+        "prompt_length_std": 143.24,
+        "target_length_mean": 1.5,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 738,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1006x278",
+              "1010x310",
+              "1010x337",
+              "1016x566",
+              "1024x370",
+              "1027x672",
+              "1040x559",
+              "1043x670",
+              "1044x917",
+              "1052x612"
+            ],
+            "resolution_range": {
+              "min": "96x95",
+              "max": "2520x8526"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "level 3",
+        "sample_count": 551,
+        "prompt_length_mean": 433.46,
+        "prompt_length_min": 93,
+        "prompt_length_max": 1402,
+        "prompt_length_std": 149.07,
+        "target_length_mean": 1.51,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 551,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1020x287",
+              "1048x305",
+              "1051x585",
+              "1064x250",
+              "1070x364",
+              "1088x222",
+              "1094x639",
+              "1104x993",
+              "113x151",
+              "1141x813"
+            ],
+            "resolution_range": {
+              "min": "125x121",
+              "max": "2520x2520"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "level 4",
+        "sample_count": 830,
+        "prompt_length_mean": 434.51,
+        "prompt_length_min": 134,
+        "prompt_length_max": 946,
+        "prompt_length_std": 137.92,
+        "target_length_mean": 1.65,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 830,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1010x637",
+              "1010x710",
+              "1017x237",
+              "1024x204",
+              "1024x350",
+              "1024x430",
+              "1044x384",
+              "1054x1045",
+              "1057x724",
+              "1064x204"
+            ],
+            "resolution_range": {
+              "min": "113x112",
+              "max": "2520x3273"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "level 5",
+        "sample_count": 684,
+        "prompt_length_mean": 455.12,
+        "prompt_length_min": 129,
+        "prompt_length_max": 1581,
+        "prompt_length_std": 162.25,
+        "target_length_mean": 2.27,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 684,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1008x210",
+              "1010x404",
+              "1010x744",
+              "1020x222",
+              "1045x430",
+              "104x107",
+              "1064x444",
+              "1064x510",
+              "1076x748",
+              "1094x432"
+            ],
+            "resolution_range": {
+              "min": "54x40",
+              "max": "2520x2761"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 423.91,
+      "min": 93,
+      "max": 1581,
+      "std": 149.67
+    },
+    "target_length_mean": 1.76,
+    "computed_at": "2026-01-28T11:14:29.779416",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 3040,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1006x278",
+          "1008x210",
+          "1008x291",
+          "1009x669",
+          "1010x310",
+          "1010x337",
+          "1010x404",
+          "1010x637",
+          "1010x710",
+          "1010x744"
+        ],
+        "resolution_range": {
+          "min": "54x40",
+          "max": "2520x8526"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "606d1e5a",
+          "content": [
+            {
+              "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E. Think step by step before answering.\n\nWhich kite has the longest string?\n<image1>\n\nA) A\nB) B\nC) C\nD) D\nE) E"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpg, ~38.6KB]"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "target": "C",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "level 1",
+      "metadata": {
+        "id": "3",
+        "image": "images/3.jpg",
+        "solution": null,
+        "level": 1,
+        "question_type": "multi_choice",
+        "subject": "metric geometry - length"
+      }
+    },
+    "subset": "level 1",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MathVision\n\n\n## Overview\n\nMATH-Vision (MATH-V) is a meticulously curated dataset of 3,040 high-quality mathematical problems with visual contexts sourced from real math competitions. It evaluates mathematical reasoning abilities in multimodal settings.\n\n## Task Description\n\n- **Task Type**: Visual Mathematical Reasoning\n- **Input**: Math problem with visual context (diagram, figure, graph)\n- **Output**: Numerical answer or answer choice\n- **Domains**: Competition mathematics with visual elements\n\n## Key Features\n\n- Problems sourced from real mathematical competitions\n- 3,040 high-quality problems with visual contexts\n- Five difficulty levels (1-5) for granular analysis\n- Supports both multiple-choice and free-form answers\n- Includes detailed solutions for reference\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Subsets by difficulty: `level 1` through `level 5`\n- Primary metric: **Accuracy** with numeric comparison\n- Free-form answers use \\boxed{} format (without units)\n- Multiple-choice uses CoT prompting with letter answers\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `math_vision` |\n| **Dataset ID** | [evalscope/MathVision](https://modelscope.cn/datasets/evalscope/MathVision/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `Math`, `MultiModal`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,040 |\n| Prompt Length (Mean) | 423.91 chars |\n| Prompt Length (Min/Max) | 93 / 1581 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `level 1` | 237 | 357.8 | 133 | 854 |\n| `level 2` | 738 | 397.17 | 127 | 885 |\n| `level 3` | 551 | 433.46 | 93 | 1402 |\n| `level 4` | 830 | 434.51 | 134 | 946 |\n| `level 5` | 684 | 455.12 | 129 | 1581 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 3,040 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 54x40 - 2520x8526 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `level 1`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"606d1e5a\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E. Think step by step before answering.\\n\\nWhich kite has the longest string?\\n<image1>\\n\\nA) A\\nB) B\\nC) C\\nD) D\\nE) E\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpg, ~38.6KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"A\",\n    \"B\",\n    \"C\",\n    \"D\",\n    \"E\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"level 1\",\n  \"metadata\": {\n    \"id\": \"3\",\n    \"image\": \"images/3.jpg\",\n    \"solution\": null,\n    \"level\": 1,\n    \"question_type\": \"multi_choice\",\n    \"subject\": \"metric geometry - length\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}} without units.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets math_vision \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['math_vision'],\n    dataset_args={\n        'math_vision': {\n            # subset_list: ['level 1', 'level 2', 'level 3']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MathVision\n\n## 概述\n\nMATH-Vision（MATH-V）是一个精心整理的数据集，包含3,040道高质量的数学问题，这些问题均来自真实的数学竞赛，并配有视觉上下文（如图表、图形等），用于评估多模态环境下的数学推理能力。\n\n## 任务描述\n\n- **任务类型**：视觉数学推理\n- **输入**：带有视觉上下文（图示、图形、图表）的数学问题\n- **输出**：数值答案或选项字母\n- **领域**：包含视觉元素的竞赛数学\n\n## 主要特点\n\n- 问题源自真实的数学竞赛\n- 包含3,040道高质量、带视觉上下文的问题\n- 划分为五个难度等级（1-5），便于细粒度分析\n- 支持多项选择题和自由作答两种形式\n- 提供详细的参考解答\n\n## 评估说明\n\n- 默认使用 **test** 数据划分进行评估\n- 按难度划分子集：`level 1` 至 `level 5`\n- 主要评估指标：**准确率（Accuracy）**，采用数值比较方式\n- 自由作答题答案需使用 \\boxed{} 格式（不含单位）\n- 多项选择题采用思维链（CoT）提示，答案为选项字母\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `math_vision` |\n| **数据集ID** | [evalscope/MathVision](https://modelscope.cn/datasets/evalscope/MathVision/summary) |\n| **论文** | N/A |\n| **标签** | `MCQ`, `Math`, `MultiModal`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,040 |\n| 提示词长度（平均） | 423.91 字符 |\n| 提示词长度（最小/最大） | 93 / 1581 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `level 1` | 237 | 357.8 | 133 | 854 |\n| `level 2` | 738 | 397.17 | 127 | 885 |\n| `level 3` | 551 | 433.46 | 93 | 1402 |\n| `level 4` | 830 | 434.51 | 134 | 946 |\n| `level 5` | 684 | 455.12 | 129 | 1581 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 3,040 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 54x40 - 2520x8526 |\n| 图像格式 | jpeg |\n\n## 样例示例\n\n**子集**: `level 1`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"606d1e5a\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E. Think step by step before answering.\\n\\nWhich kite has the longest string?\\n<image1>\\n\\nA) A\\nB) B\\nC) C\\nD) D\\nE) E\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpg, ~38.6KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"A\",\n    \"B\",\n    \"C\",\n    \"D\",\n    \"E\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"level 1\",\n  \"metadata\": {\n    \"id\": \"3\",\n    \"image\": \"images/3.jpg\",\n    \"solution\": null,\n    \"level\": 1,\n    \"question_type\": \"multi_choice\",\n    \"subject\": \"metric geometry - length\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}} without units.\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets math_vision \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['math_vision'],\n    dataset_args={\n        'math_vision': {\n            # subset_list: ['level 1', 'level 2', 'level 3']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "bdea8ae1d02b3b2f75d167c39294a909",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.929696",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

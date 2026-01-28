@@ -1,0 +1,92 @@
+{
+  "meta": {
+    "pretty_name": "TriviaQA",
+    "dataset_id": "evalscope/trivia_qa",
+    "paper_url": null,
+    "tags": [
+      "QA",
+      "ReadingComprehension"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "allow_inclusion": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "rc.wikipedia"
+    ],
+    "description": "\n## Overview\n\nTriviaQA is a large-scale reading comprehension dataset containing over 650K question-answer-evidence triples. Questions are collected from trivia enthusiast websites and paired with Wikipedia articles as evidence documents.\n\n## Task Description\n\n- **Task Type**: Reading Comprehension / Question Answering\n- **Input**: Question with Wikipedia context passage\n- **Output**: Answer extracted or generated from context\n- **Domain**: General knowledge trivia questions\n\n## Key Features\n\n- 650K+ question-answer-evidence triples\n- Questions written by trivia enthusiasts (naturally challenging)\n- Multiple valid answer aliases for flexible evaluation\n- Wikipedia articles provide evidence passages\n- Tests both reading comprehension and knowledge retrieval\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses the Wikipedia reading comprehension subset (rc.wikipedia)\n- Answers should follow the format: \"ANSWER: [ANSWER]\"\n- Supports inclusion-based matching for answer comparison\n- Evaluates on validation split\n",
+    "prompt_template": "Read the content and answer the following question.\n\nContent: {content}\n\nQuestion: {question}\n\nKeep your The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 7993,
+    "subset_stats": [
+      {
+        "name": "rc.wikipedia",
+        "sample_count": 7993,
+        "prompt_length_mean": 54126.56,
+        "prompt_length_min": 339,
+        "prompt_length_max": 691325,
+        "prompt_length_std": 51613.67,
+        "target_length_mean": 463.42
+      }
+    ],
+    "prompt_length": {
+      "mean": 54126.56,
+      "min": 339,
+      "max": 691325,
+      "std": 51613.67
+    },
+    "target_length_mean": 463.42,
+    "computed_at": "2026-01-28T11:17:13.009872"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "545e4eda",
+          "content": "Read the content and answer the following question.\n\nContent: ['Andrew Lloyd Webber, Baron Lloyd-Webber   (born 22 March 1948) is an English composer and impresario of musical theatre. \\n\\nSeveral of his musicals have run for more than a deca ... [TRUNCATED] ... ening titles.']\n\nQuestion: Which Lloyd Webber musical premiered in the US on 10th December 1993?\n\nKeep your The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n"
+        }
+      ],
+      "target": [
+        "Sunset Blvd",
+        "West Sunset Boulevard",
+        "Sunset Boulevard",
+        "Sunset Bulevard",
+        "Sunset Blvd.",
+        "sunset boulevard",
+        "sunset bulevard",
+        "west sunset boulevard",
+        "sunset blvd"
+      ],
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "question_id": "tc_33",
+        "content": [
+          "Andrew Lloyd Webber, Baron Lloyd-Webber   (born 22 March 1948) is an English composer and impresario of musical theatre. \n\nSeveral of his musicals have run for more than a decade both in the West End and on Broadway. He has composed 13 musica ... [TRUNCATED] ... same name, composed the song \"Fields of Sun\". The actual song was never used on the show, nor was it available on the CD soundtrack that was released at the time. He was however still credited for the unused song in the show's opening titles."
+        ]
+      }
+    },
+    "subset": "rc.wikipedia",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# TriviaQA\n\n\n## Overview\n\nTriviaQA is a large-scale reading comprehension dataset containing over 650K question-answer-evidence triples. Questions are collected from trivia enthusiast websites and paired with Wikipedia articles as evidence documents.\n\n## Task Description\n\n- **Task Type**: Reading Comprehension / Question Answering\n- **Input**: Question with Wikipedia context passage\n- **Output**: Answer extracted or generated from context\n- **Domain**: General knowledge trivia questions\n\n## Key Features\n\n- 650K+ question-answer-evidence triples\n- Questions written by trivia enthusiasts (naturally challenging)\n- Multiple valid answer aliases for flexible evaluation\n- Wikipedia articles provide evidence passages\n- Tests both reading comprehension and knowledge retrieval\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses the Wikipedia reading comprehension subset (rc.wikipedia)\n- Answers should follow the format: \"ANSWER: [ANSWER]\"\n- Supports inclusion-based matching for answer comparison\n- Evaluates on validation split\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `trivia_qa` |\n| **Dataset ID** | [evalscope/trivia_qa](https://modelscope.cn/datasets/evalscope/trivia_qa/summary) |\n| **Paper** | N/A |\n| **Tags** | `QA`, `ReadingComprehension` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 7,993 |\n| Prompt Length (Mean) | 54126.56 chars |\n| Prompt Length (Min/Max) | 339 / 691325 chars |\n\n## Sample Example\n\n**Subset**: `rc.wikipedia`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"545e4eda\",\n      \"content\": \"Read the content and answer the following question.\\n\\nContent: ['Andrew Lloyd Webber, Baron Lloyd-Webber   (born 22 March 1948) is an English composer and impresario of musical theatre. \\\\n\\\\nSeveral of his musicals have run for more than a deca ... [TRUNCATED] ... ening titles.']\\n\\nQuestion: Which Lloyd Webber musical premiered in the US on 10th December 1993?\\n\\nKeep your The last line of your response should be of the form \\\"ANSWER: [ANSWER]\\\" (without quotes) where [ANSWER] is the answer to the problem.\\n\"\n    }\n  ],\n  \"target\": [\n    \"Sunset Blvd\",\n    \"West Sunset Boulevard\",\n    \"Sunset Boulevard\",\n    \"Sunset Bulevard\",\n    \"Sunset Blvd.\",\n    \"sunset boulevard\",\n    \"sunset bulevard\",\n    \"west sunset boulevard\",\n    \"sunset blvd\"\n  ],\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question_id\": \"tc_33\",\n    \"content\": [\n      \"Andrew Lloyd Webber, Baron Lloyd-Webber   (born 22 March 1948) is an English composer and impresario of musical theatre. \\n\\nSeveral of his musicals have run for more than a decade both in the West End and on Broadway. He has composed 13 musica ... [TRUNCATED] ... same name, composed the song \\\"Fields of Sun\\\". The actual song was never used on the show, nor was it available on the CD soundtrack that was released at the time. He was however still credited for the unused song in the show's opening titles.\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nRead the content and answer the following question.\n\nContent: {content}\n\nQuestion: {question}\n\nKeep your The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets trivia_qa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['trivia_qa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# TriviaQA\n\n\n## 概述\n\nTriviaQA 是一个大规模阅读理解数据集，包含超过 65 万个问题-答案-证据三元组。问题收集自问答爱好者网站，并与维基百科文章配对作为证据文档。\n\n## 任务描述\n\n- **任务类型**：阅读理解 / 问答\n- **输入**：带有维基百科上下文段落的问题\n- **输出**：从上下文中抽取或生成的答案\n- **领域**：通用知识类问答\n\n## 主要特点\n\n- 超过 65 万个问题-答案-证据三元组\n- 问题由问答爱好者编写（天然具有挑战性）\n- 支持多个有效答案别名，便于灵活评估\n- 维基百科文章提供证据段落\n- 同时考察阅读理解与知识检索能力\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 使用维基百科阅读理解子集（rc.wikipedia）\n- 答案格式应为：\"ANSWER: [ANSWER]\"\n- 支持基于包含关系的答案匹配\n- 在验证集（validation split）上进行评估\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `trivia_qa` |\n| **数据集ID** | [evalscope/trivia_qa](https://modelscope.cn/datasets/evalscope/trivia_qa/summary) |\n| **论文** | N/A |\n| **标签** | `QA`, `ReadingComprehension` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `validation` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 7,993 |\n| 提示词长度（平均） | 54126.56 字符 |\n| 提示词长度（最小/最大） | 339 / 691325 字符 |\n\n## 样例示例\n\n**子集**: `rc.wikipedia`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"545e4eda\",\n      \"content\": \"Read the content and answer the following question.\\n\\nContent: ['Andrew Lloyd Webber, Baron Lloyd-Webber   (born 22 March 1948) is an English composer and impresario of musical theatre. \\\\n\\\\nSeveral of his musicals have run for more than a deca ... [TRUNCATED] ... ening titles.']\\n\\nQuestion: Which Lloyd Webber musical premiered in the US on 10th December 1993?\\n\\nKeep your The last line of your response should be of the form \\\"ANSWER: [ANSWER]\\\" (without quotes) where [ANSWER] is the answer to the problem.\\n\"\n    }\n  ],\n  \"target\": [\n    \"Sunset Blvd\",\n    \"West Sunset Boulevard\",\n    \"Sunset Boulevard\",\n    \"Sunset Bulevard\",\n    \"Sunset Blvd.\",\n    \"sunset boulevard\",\n    \"sunset bulevard\",\n    \"west sunset boulevard\",\n    \"sunset blvd\"\n  ],\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question_id\": \"tc_33\",\n    \"content\": [\n      \"Andrew Lloyd Webber, Baron Lloyd-Webber   (born 22 March 1948) is an English composer and impresario of musical theatre. \\n\\nSeveral of his musicals have run for more than a decade both in the West End and on Broadway. He has composed 13 musica ... [TRUNCATED] ... same name, composed the song \\\"Fields of Sun\\\". The actual song was never used on the show, nor was it available on the CD soundtrack that was released at the time. He was however still credited for the unused song in the show's opening titles.\"\n    ]\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nRead the content and answer the following question.\n\nContent: {content}\n\nQuestion: {question}\n\nKeep your The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets trivia_qa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['trivia_qa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "9781e6776a082c49fe8e168426c315a6",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.663509",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

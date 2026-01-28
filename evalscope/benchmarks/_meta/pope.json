@@ -1,0 +1,238 @@
+{
+  "meta": {
+    "pretty_name": "POPE",
+    "dataset_id": "lmms-lab/POPE",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Hallucination",
+      "Yes/No"
+    ],
+    "metrics": [
+      "accuracy",
+      "precision",
+      "recall",
+      "f1_score",
+      "yes_ratio"
+    ],
+    "few_shot_num": 0,
+    "eval_split": null,
+    "train_split": "",
+    "subset_list": [
+      "popular",
+      "adversarial",
+      "random"
+    ],
+    "description": "\n## Overview\n\nPOPE (Polling-based Object Probing Evaluation) is a benchmark specifically designed to evaluate object hallucination in Large Vision-Language Models (LVLMs). It tests models' ability to accurately identify objects present in images through yes/no questions.\n\n## Task Description\n\n- **Task Type**: Object Hallucination Detection (Yes/No Q&A)\n- **Input**: Image with question \"Is there a [object] in the image?\"\n- **Output**: YES or NO answer\n- **Focus**: Measuring accuracy vs. hallucination rate\n\n## Key Features\n\n- Three sampling strategies: random, popular, adversarial\n- Tests for false positive object claims (hallucination)\n- Based on MSCOCO images\n- Simple yes/no question format for objective evaluation\n- Measures alignment between model responses and visual content\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Five metrics: accuracy, precision, recall, F1 score, yes_ratio\n- F1 score is the primary aggregation metric\n- Three subsets: `popular`, `adversarial`, `random`\n- \"Popular\" and \"adversarial\" subsets are more challenging\n- yes_ratio indicates model's tendency to answer \"yes\"\n",
+    "prompt_template": "{question}\nPlease answer YES or NO without an explanation.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "f1",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 9000,
+    "subset_stats": [
+      {
+        "name": "popular",
+        "sample_count": 3000,
+        "prompt_length_mean": 79.27,
+        "prompt_length_min": 75,
+        "prompt_length_max": 87,
+        "prompt_length_std": 3.17,
+        "target_length_mean": 2.5,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 3000,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "333x500",
+              "334x500",
+              "360x640",
+              "361x500",
+              "363x640",
+              "366x604",
+              "369x520",
+              "371x640",
+              "375x500",
+              "383x640"
+            ],
+            "resolution_range": {
+              "min": "500x243",
+              "max": "640x640"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "adversarial",
+        "sample_count": 3000,
+        "prompt_length_mean": 79.36,
+        "prompt_length_min": 75,
+        "prompt_length_max": 87,
+        "prompt_length_std": 3.16,
+        "target_length_mean": 2.5,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 3000,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "333x500",
+              "334x500",
+              "360x640",
+              "361x500",
+              "363x640",
+              "366x604",
+              "369x520",
+              "371x640",
+              "375x500",
+              "383x640"
+            ],
+            "resolution_range": {
+              "min": "500x243",
+              "max": "640x640"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "random",
+        "sample_count": 3000,
+        "prompt_length_mean": 79.59,
+        "prompt_length_min": 75,
+        "prompt_length_max": 87,
+        "prompt_length_std": 2.91,
+        "target_length_mean": 2.5,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 3000,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "333x500",
+              "334x500",
+              "360x640",
+              "361x500",
+              "363x640",
+              "366x604",
+              "369x520",
+              "371x640",
+              "375x500",
+              "383x640"
+            ],
+            "resolution_range": {
+              "min": "500x243",
+              "max": "640x640"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 79.4,
+      "min": 75,
+      "max": 87,
+      "std": 3.09
+    },
+    "target_length_mean": 2.5,
+    "computed_at": "2026-01-28T11:16:26.816525",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 9000,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "333x500",
+          "334x500",
+          "360x640",
+          "361x500",
+          "363x640",
+          "366x604",
+          "369x520",
+          "371x640",
+          "375x500",
+          "383x640"
+        ],
+        "resolution_range": {
+          "min": "500x243",
+          "max": "640x640"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "8847a5a3",
+          "content": [
+            {
+              "text": "Is there a snowboard in the image?\nPlease answer YES or NO without an explanation."
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~87.2KB]"
+            }
+          ]
+        }
+      ],
+      "target": "YES",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "id": "3000",
+        "answer": "YES",
+        "category": "popular",
+        "question_id": "1"
+      }
+    },
+    "subset": "popular",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# POPE\n\n\n## Overview\n\nPOPE (Polling-based Object Probing Evaluation) is a benchmark specifically designed to evaluate object hallucination in Large Vision-Language Models (LVLMs). It tests models' ability to accurately identify objects present in images through yes/no questions.\n\n## Task Description\n\n- **Task Type**: Object Hallucination Detection (Yes/No Q&A)\n- **Input**: Image with question \"Is there a [object] in the image?\"\n- **Output**: YES or NO answer\n- **Focus**: Measuring accuracy vs. hallucination rate\n\n## Key Features\n\n- Three sampling strategies: random, popular, adversarial\n- Tests for false positive object claims (hallucination)\n- Based on MSCOCO images\n- Simple yes/no question format for objective evaluation\n- Measures alignment between model responses and visual content\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Five metrics: accuracy, precision, recall, F1 score, yes_ratio\n- F1 score is the primary aggregation metric\n- Three subsets: `popular`, `adversarial`, `random`\n- \"Popular\" and \"adversarial\" subsets are more challenging\n- yes_ratio indicates model's tendency to answer \"yes\"\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `pope` |\n| **Dataset ID** | [lmms-lab/POPE](https://modelscope.cn/datasets/lmms-lab/POPE/summary) |\n| **Paper** | N/A |\n| **Tags** | `Hallucination`, `MultiModal`, `Yes/No` |\n| **Metrics** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `N/A` |\n| **Aggregation** | `f1` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 9,000 |\n| Prompt Length (Mean) | 79.4 chars |\n| Prompt Length (Min/Max) | 75 / 87 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `popular` | 3,000 | 79.27 | 75 | 87 |\n| `adversarial` | 3,000 | 79.36 | 75 | 87 |\n| `random` | 3,000 | 79.59 | 75 | 87 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 9,000 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 500x243 - 640x640 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `popular`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"8847a5a3\",\n      \"content\": [\n        {\n          \"text\": \"Is there a snowboard in the image?\\nPlease answer YES or NO without an explanation.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~87.2KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"YES\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"3000\",\n    \"answer\": \"YES\",\n    \"category\": \"popular\",\n    \"question_id\": \"1\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease answer YES or NO without an explanation.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets pope \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['pope'],\n    dataset_args={\n        'pope': {\n            # subset_list: ['popular', 'adversarial', 'random']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# POPE\n\n\n## 概述\n\nPOPE（Polling-based Object Probing Evaluation）是一个专门用于评估大视觉语言模型（LVLMs）中物体幻觉现象的基准测试。它通过是非题（yes/no questions）来检验模型能否准确识别图像中存在的物体。\n\n## 任务描述\n\n- **任务类型**：物体幻觉检测（是非问答）\n- **输入**：图像 + 问题 “图像中是否有 [物体]？”\n- **输出**：YES 或 NO\n- **重点**：衡量准确率与幻觉率\n\n## 核心特性\n\n- 三种采样策略：随机（random）、热门（popular）、对抗（adversarial）\n- 测试模型对不存在物体的错误肯定（即幻觉）\n- 基于 MSCOCO 图像构建\n- 采用简单的是非题格式，便于客观评估\n- 衡量模型回答与视觉内容的一致性\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 五个指标：准确率（accuracy）、精确率（precision）、召回率（recall）、F1 分数（F1 score）、yes_ratio\n- F1 分数为主要聚合指标\n- 包含三个子集：`popular`、`adversarial`、`random`\n- `popular` 和 `adversarial` 子集更具挑战性\n- yes_ratio 反映模型倾向于回答 “yes” 的程度\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `pope` |\n| **数据集ID** | [lmms-lab/POPE](https://modelscope.cn/datasets/lmms-lab/POPE/summary) |\n| **论文** | N/A |\n| **标签** | `Hallucination`, `MultiModal`, `Yes/No` |\n| **指标** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `N/A` |\n| **聚合方式** | `f1` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 9,000 |\n| 提示词长度（平均） | 79.4 字符 |\n| 提示词长度（最小/最大） | 75 / 87 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `popular` | 3,000 | 79.27 | 75 | 87 |\n| `adversarial` | 3,000 | 79.36 | 75 | 87 |\n| `random` | 3,000 | 79.59 | 75 | 87 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 9,000 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 500x243 - 640x640 |\n| 格式 | jpeg |\n\n\n## 样例示例\n\n**子集**: `popular`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"8847a5a3\",\n      \"content\": [\n        {\n          \"text\": \"Is there a snowboard in the image?\\nPlease answer YES or NO without an explanation.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~87.2KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"YES\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"3000\",\n    \"answer\": \"YES\",\n    \"category\": \"popular\",\n    \"question_id\": \"1\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\nPlease answer YES or NO without an explanation.\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets pope \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['pope'],\n    dataset_args={\n        'pope': {\n            # subset_list: ['popular', 'adversarial', 'random']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "1aac5fba061a3167059a3cb33442c8a2",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.322643",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

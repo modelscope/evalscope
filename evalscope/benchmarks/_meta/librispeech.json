@@ -1,0 +1,120 @@
+{
+  "meta": {
+    "pretty_name": "LibriSpeech",
+    "dataset_id": "lmms-lab/Librispeech-concat",
+    "paper_url": null,
+    "tags": [
+      "Audio",
+      "SpeechRecognition"
+    ],
+    "metrics": [
+      "wer"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test_clean",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nLibriSpeech is a large-scale corpus of approximately 1,000 hours of read English speech derived from audiobooks. It is one of the most widely used benchmarks for evaluating automatic speech recognition (ASR) systems.\n\n## Task Description\n\n- **Task Type**: Automatic Speech Recognition (ASR)\n- **Input**: Audio recordings of read English speech from audiobooks\n- **Output**: Transcribed text\n- **Language**: English\n\n## Key Features\n\n- 1,000 hours of high-quality read speech\n- Derived from LibriVox audiobooks (public domain)\n- Clean and \"other\" test sets for varying difficulty\n- Widely used baseline for ASR research\n- Standardized evaluation protocol\n\n## Evaluation Notes\n\n- Default configuration uses **test_clean** split\n- Primary metric: **Word Error Rate (WER)**\n- Text normalization applied during evaluation\n- Prompt: \"Please recognize the speech and only output the recognized content\"\n- Metadata includes audio ID and duration information\n",
+    "prompt_template": "Please recognize the speech and only output the recognized content:",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 87,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 87,
+        "prompt_length_mean": 67,
+        "prompt_length_min": 67,
+        "prompt_length_max": 67,
+        "prompt_length_std": null,
+        "target_length_mean": 3295.21,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 87,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "wav"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 67,
+      "min": 67,
+      "max": 67,
+      "std": null
+    },
+    "target_length_mean": 3295.21,
+    "computed_at": "2026-01-28T11:14:19.501508",
+    "multimodal": {
+      "has_images": false,
+      "has_audio": true,
+      "has_video": false,
+      "audio": {
+        "count_total": 87,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "duration": null,
+        "sample_rates": [],
+        "formats": [
+          "wav"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "fd0309e6",
+          "content": [
+            {
+              "text": "Please recognize the speech and only output the recognized content:"
+            },
+            {
+              "audio": "[BASE64_AUDIO: wav, ~22.7MB]",
+              "format": "wav"
+            }
+          ]
+        }
+      ],
+      "target": "Eleven o'clock had struck it was a fine clear night they were the only persons on the road and they sauntered leisurely along to avoid paying the price of fatigue for the recreation provided for the toledans in their valley or on the banks of ... [TRUNCATED] ...  less surprised than they and the better to assure himself of so wonderful a fact he begged leocadia to give him some token which should make perfectly clear to him that which indeed he did not doubt since it was authenticated by his parents.",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "audio_id": "5639-40744",
+        "audio_duration": 496.6899719238281
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# LibriSpeech\n\n\n## Overview\n\nLibriSpeech is a large-scale corpus of approximately 1,000 hours of read English speech derived from audiobooks. It is one of the most widely used benchmarks for evaluating automatic speech recognition (ASR) systems.\n\n## Task Description\n\n- **Task Type**: Automatic Speech Recognition (ASR)\n- **Input**: Audio recordings of read English speech from audiobooks\n- **Output**: Transcribed text\n- **Language**: English\n\n## Key Features\n\n- 1,000 hours of high-quality read speech\n- Derived from LibriVox audiobooks (public domain)\n- Clean and \"other\" test sets for varying difficulty\n- Widely used baseline for ASR research\n- Standardized evaluation protocol\n\n## Evaluation Notes\n\n- Default configuration uses **test_clean** split\n- Primary metric: **Word Error Rate (WER)**\n- Text normalization applied during evaluation\n- Prompt: \"Please recognize the speech and only output the recognized content\"\n- Metadata includes audio ID and duration information\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `librispeech` |\n| **Dataset ID** | [lmms-lab/Librispeech-concat](https://modelscope.cn/datasets/lmms-lab/Librispeech-concat/summary) |\n| **Paper** | N/A |\n| **Tags** | `Audio`, `SpeechRecognition` |\n| **Metrics** | `wer` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test_clean` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 87 |\n| Prompt Length (Mean) | 67 chars |\n| Prompt Length (Min/Max) | 67 / 67 chars |\n\n**Audio Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Audio Files | 87 |\n| Audio per Sample | min: 1, max: 1, mean: 1 |\n| Formats | wav |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"fd0309e6\",\n      \"content\": [\n        {\n          \"text\": \"Please recognize the speech and only output the recognized content:\"\n        },\n        {\n          \"audio\": \"[BASE64_AUDIO: wav, ~22.7MB]\",\n          \"format\": \"wav\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"Eleven o'clock had struck it was a fine clear night they were the only persons on the road and they sauntered leisurely along to avoid paying the price of fatigue for the recreation provided for the toledans in their valley or on the banks of ... [TRUNCATED] ...  less surprised than they and the better to assure himself of so wonderful a fact he begged leocadia to give him some token which should make perfectly clear to him that which indeed he did not doubt since it was authenticated by his parents.\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"audio_id\": \"5639-40744\",\n    \"audio_duration\": 496.6899719238281\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nPlease recognize the speech and only output the recognized content:\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets librispeech \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['librispeech'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# LibriSpeech\n\n\n## 概述\n\nLibriSpeech 是一个大规模语料库，包含约 1,000 小时的朗读英语语音，源自有声读物。它是评估自动语音识别（ASR）系统最广泛使用的基准测试之一。\n\n## 任务描述\n\n- **任务类型**：自动语音识别（ASR）\n- **输入**：来自有声读物的朗读英语语音录音\n- **输出**：转录文本\n- **语言**：英语\n\n## 主要特点\n\n- 1,000 小时高质量朗读语音\n- 源自 LibriVox 有声读物（公共领域）\n- 包含“clean”和“other”测试集，用于不同难度评估\n- ASR 研究中广泛使用的基线数据集\n- 标准化的评估协议\n\n## 评估说明\n\n- 默认配置使用 **test_clean** 划分\n- 主要指标：**词错误率（WER）**\n- 评估过程中应用文本归一化\n- 提示词：\"Please recognize the speech and only output the recognized content\"\n- 元数据包含音频 ID 和时长信息\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `librispeech` |\n| **数据集ID** | [lmms-lab/Librispeech-concat](https://modelscope.cn/datasets/lmms-lab/Librispeech-concat/summary) |\n| **论文** | N/A |\n| **标签** | `Audio`, `SpeechRecognition` |\n| **指标** | `wer` |\n| **默认样本数** | 0-shot |\n| **评估划分** | `test_clean` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 87 |\n| 提示词长度（平均） | 67 字符 |\n| 提示词长度（最小/最大） | 67 / 67 字符 |\n\n**音频统计：**\n\n| 指标 | 值 |\n|--------|-------|\n| 音频文件总数 | 87 |\n| 每样本音频数量 | 最小: 1, 最大: 1, 平均: 1 |\n| 格式 | wav |\n\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"fd0309e6\",\n      \"content\": [\n        {\n          \"text\": \"Please recognize the speech and only output the recognized content:\"\n        },\n        {\n          \"audio\": \"[BASE64_AUDIO: wav, ~22.7MB]\",\n          \"format\": \"wav\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"Eleven o'clock had struck it was a fine clear night they were the only persons on the road and they sauntered leisurely along to avoid paying the price of fatigue for the recreation provided for the toledans in their valley or on the banks of ... [TRUNCATED] ...  less surprised than they and the better to assure himself of so wonderful a fact he begged leocadia to give him some token which should make perfectly clear to him that which indeed he did not doubt since it was authenticated by his parents.\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"audio_id\": \"5639-40744\",\n    \"audio_duration\": 496.6899719238281\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nPlease recognize the speech and only output the recognized content:\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets librispeech \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['librispeech'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "f359c2e24b92abed0521e6340963a36e",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.911593",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

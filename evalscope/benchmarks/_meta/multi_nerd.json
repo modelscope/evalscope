@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "pretty_name": "MultiNERD",
+    "dataset_id": "extraordinarylab/multi-nerd",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nMultiNERD is a large-scale, multilingual, and multi-genre dataset for fine-grained Named Entity Recognition, automatically generated from Wikipedia and Wikinews. It covers 10 languages and 15 distinct entity categories.\n\n## Task Description\n\n- **Task Type**: Fine-grained Multilingual Named Entity Recognition (NER)\n- **Input**: Wikipedia and Wikinews text\n- **Output**: Identified entity spans with 15 fine-grained types\n- **Domain**: General knowledge, news, encyclopedic content\n\n## Key Features\n\n- Large-scale automatically generated corpus\n- 10 languages supported\n- 15 fine-grained entity categories\n- Sourced from Wikipedia and Wikinews\n- Comprehensive entity type coverage\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: PER, ORG, LOC, ANIM, BIO, CEL, DIS, EVE, FOOD, INST, MEDIA, MYTH, PLANT, TIME, VEHI\n",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 167993,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 167993,
+        "prompt_length_mean": 4016.26,
+        "prompt_length_min": 3915,
+        "prompt_length_max": 4501,
+        "prompt_length_std": 58.03,
+        "target_length_mean": 158.5
+      }
+    ],
+    "prompt_length": {
+      "mean": 4016.26,
+      "min": 3915,
+      "max": 4501,
+      "std": 58.03
+    },
+    "target_length_mean": 158.5,
+    "computed_at": "2026-01-28T14:15:52.224665"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "56cf0758",
+          "content": "Here are some examples of named entity recognition:\n\nInput:\n2002 ging er ins Ausland und wechselte für 750.000 Pfund Sterling zu Manchester City .\n\nOutput:\n<response>2002 ging er ins Ausland und wechselte für 750.000 Pfund Sterling zu <organi ... [TRUNCATED] ...  Ensure every opening tag has a matching closing tag.\n\nText to process:\nIn der Wissenschaft und dort vor allem in der Soziologie wird der Begriff Lebensführung traditionell stark mit der religionshistorischen Arbeit von Max Weber verbunden .\n"
+        }
+      ],
+      "target": "<response>In der Wissenschaft und dort vor allem in der Soziologie wird der Begriff Lebensführung traditionell stark mit der religionshistorischen Arbeit von <person>Max Weber</person> verbunden .</response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "In",
+          "der",
+          "Wissenschaft",
+          "und",
+          "dort",
+          "vor",
+          "allem",
+          "in",
+          "der",
+          "Soziologie",
+          "wird",
+          "der",
+          "Begriff",
+          "Lebensführung",
+          "traditionell",
+          "stark",
+          "mit",
+          "der",
+          "religionshistorischen",
+          "Arbeit",
+          "von",
+          "Max",
+          "Weber",
+          "verbunden",
+          "."
+        ],
+        "ner_tags": [
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-PER",
+          "I-PER",
+          "O",
+          "O"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# MultiNERD\n\n\n## Overview\n\nMultiNERD is a large-scale, multilingual, and multi-genre dataset for fine-grained Named Entity Recognition, automatically generated from Wikipedia and Wikinews. It covers 10 languages and 15 distinct entity categories.\n\n## Task Description\n\n- **Task Type**: Fine-grained Multilingual Named Entity Recognition (NER)\n- **Input**: Wikipedia and Wikinews text\n- **Output**: Identified entity spans with 15 fine-grained types\n- **Domain**: General knowledge, news, encyclopedic content\n\n## Key Features\n\n- Large-scale automatically generated corpus\n- 10 languages supported\n- 15 fine-grained entity categories\n- Sourced from Wikipedia and Wikinews\n- Comprehensive entity type coverage\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: PER, ORG, LOC, ANIM, BIO, CEL, DIS, EVE, FOOD, INST, MEDIA, MYTH, PLANT, TIME, VEHI\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `multi_nerd` |\n| **Dataset ID** | [extraordinarylab/multi-nerd](https://modelscope.cn/datasets/extraordinarylab/multi-nerd/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 167,993 |\n| Prompt Length (Mean) | 4016.26 chars |\n| Prompt Length (Min/Max) | 3915 / 4501 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"56cf0758\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\n2002 ging er ins Ausland und wechselte für 750.000 Pfund Sterling zu Manchester City .\\n\\nOutput:\\n<response>2002 ging er ins Ausland und wechselte für 750.000 Pfund Sterling zu <organi ... [TRUNCATED] ...  Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\nIn der Wissenschaft und dort vor allem in der Soziologie wird der Begriff Lebensführung traditionell stark mit der religionshistorischen Arbeit von Max Weber verbunden .\\n\"\n    }\n  ],\n  \"target\": \"<response>In der Wissenschaft und dort vor allem in der Soziologie wird der Begriff Lebensführung traditionell stark mit der religionshistorischen Arbeit von <person>Max Weber</person> verbunden .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"In\",\n      \"der\",\n      \"Wissenschaft\",\n      \"und\",\n      \"dort\",\n      \"vor\",\n      \"allem\",\n      \"in\",\n      \"der\",\n      \"Soziologie\",\n      \"wird\",\n      \"der\",\n      \"Begriff\",\n      \"Lebensführung\",\n      \"traditionell\",\n      \"stark\",\n      \"mit\",\n      \"der\",\n      \"religionshistorischen\",\n      \"Arbeit\",\n      \"von\",\n      \"Max\",\n      \"Weber\",\n      \"verbunden\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-PER\",\n      \"I-PER\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets multi_nerd \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['multi_nerd'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MultiNERD\n\n## 概述\n\nMultiNERD 是一个大规模、多语言、多体裁的细粒度命名实体识别（Named Entity Recognition, NER）数据集，通过维基百科（Wikipedia）和维基新闻（Wikinews）自动生成。该数据集涵盖 10 种语言和 15 个不同的实体类别。\n\n## 任务描述\n\n- **任务类型**：细粒度多语言命名实体识别（NER）\n- **输入**：维基百科和维基新闻文本\n- **输出**：识别出的实体片段及其对应的 15 种细粒度类型\n- **领域**：通用知识、新闻、百科类内容\n\n## 主要特性\n\n- 大规模自动构建的语料库\n- 支持 10 种语言\n- 包含 15 种细粒度实体类别\n- 数据来源为维基百科和维基新闻\n- 实体类型覆盖全面\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 评估方式\n- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）\n- 实体类型包括：PER（人物）、ORG（组织）、LOC（地点）、ANIM（动物）、BIO（生物）、CEL（细胞）、DIS（疾病）、EVE（事件）、FOOD（食物）、INST（机构）、MEDIA（媒体）、MYTH（神话）、PLANT（植物）、TIME（时间）、VEHI（交通工具）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `multi_nerd` |\n| **数据集ID** | [extraordinarylab/multi-nerd](https://modelscope.cn/datasets/extraordinarylab/multi-nerd/summary) |\n| **论文** | 无 |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认示例数量** | 5-shot |\n| **评估划分** | `test` |\n| **训练划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 167,993 |\n| 提示词长度（平均） | 4016.26 字符 |\n| 提示词长度（最小/最大） | 3915 / 4501 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"56cf0758\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\n2002 ging er ins Ausland und wechselte für 750.000 Pfund Sterling zu Manchester City .\\n\\nOutput:\\n<response>2002 ging er ins Ausland und wechselte für 750.000 Pfund Sterling zu <organi ... [TRUNCATED] ...  Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\nIn der Wissenschaft und dort vor allem in der Soziologie wird der Begriff Lebensführung traditionell stark mit der religionshistorischen Arbeit von Max Weber verbunden .\\n\"\n    }\n  ],\n  \"target\": \"<response>In der Wissenschaft und dort vor allem in der Soziologie wird der Begriff Lebensführung traditionell stark mit der religionshistorischen Arbeit von <person>Max Weber</person> verbunden .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"In\",\n      \"der\",\n      \"Wissenschaft\",\n      \"und\",\n      \"dort\",\n      \"vor\",\n      \"allem\",\n      \"in\",\n      \"der\",\n      \"Soziologie\",\n      \"wird\",\n      \"der\",\n      \"Begriff\",\n      \"Lebensführung\",\n      \"traditionell\",\n      \"stark\",\n      \"mit\",\n      \"der\",\n      \"religionshistorischen\",\n      \"Arbeit\",\n      \"von\",\n      \"Max\",\n      \"Weber\",\n      \"verbunden\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-PER\",\n      \"I-PER\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本（Few-shot）模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets multi_nerd \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['multi_nerd'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "400b67621196235dc012a59ee632393c",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.242535",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

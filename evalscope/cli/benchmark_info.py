@@ -4,7 +4,7 @@ CLI command for benchmark information and documentation management.
 
 This module provides CLI commands to:
 - Display benchmark metadata and statistics
-- Update benchmark data in the unified JSON file
+- Update benchmark data in individual JSON files per benchmark
 - Translate README content to Chinese
 - Generate documentation files
 
@@ -84,9 +84,10 @@ class BenchmarkInfoCMD(CLICommand):
 
         parser.add_argument(
             'benchmark',
-            nargs='?',
+            nargs='*',
             default=None,
-            help='Name of the benchmark (e.g., gsm8k, mmlu). Use --all for all benchmarks.',
+            help=
+            'Name(s) of the benchmark(s) (e.g., gsm8k, mmlu). Multiple benchmarks can be separated by spaces. Use --all for all benchmarks.',
         )
 
         parser.add_argument(
@@ -156,7 +157,10 @@ class BenchmarkInfoCMD(CLICommand):
 
     def execute(self):
         """Execute the benchmark-info command."""
+        import os
+
         from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
+        os.environ['BUILD_DOC'] = '1'
 
         # Handle --list flag
         if self.args.list:
@@ -186,7 +190,7 @@ class BenchmarkInfoCMD(CLICommand):
         if self.args.all:
             benchmark_names = list(BENCHMARK_REGISTRY.keys())
         else:
-            benchmark_names = [self.args.benchmark]
+            benchmark_names = self.args.benchmark if isinstance(self.args.benchmark, list) else [self.args.benchmark]
 
         # Update benchmark data if requested
         if self.args.update:
@@ -228,45 +232,25 @@ class BenchmarkInfoCMD(CLICommand):
 
     def _update_benchmark_data(self, benchmark_names: list):
         """
-        Update benchmark data in the unified JSON file.
+        Update benchmark data in individual JSON files.
 
-        This updates the benchmark_data.json file with:
+        This updates the individual JSON files in evalscope/benchmarks/_meta/ with:
         - Metadata from the adapter
         - Statistics (if --compute-stats is specified)
         - Sample example
         - Generated README content
         """
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-        from tqdm import tqdm
-
         from evalscope.utils.doc_utils.generate_dataset_md import update_benchmark_data
 
-        def update_single(name: str) -> tuple:
-            """Update a single benchmark and return (name, error or None)."""
-            try:
-                update_benchmark_data(
-                    benchmark_name=name,
-                    force=self.args.force,
-                    compute_stats=self.args.compute_stats,
-                    max_samples=self.args.max_samples,
-                )
-                return (name, None)
-            except Exception as e:
-                logger.error(f'Error updating {name}: {e}')
-                return (name, str(e))
-
-        failed_benchmarks = []
-        workers = self.args.workers
-
-        with ThreadPoolExecutor(max_workers=workers) as executor:
-            futures = {executor.submit(update_single, name): name for name in benchmark_names}
-            for future in tqdm(as_completed(futures), total=len(futures), desc='Updating benchmarks'):
-                name, error = future.result()
-                if error:
-                    failed_benchmarks.append(name)
-
-        if failed_benchmarks:
-            logger.error(f'Failed to update benchmarks: {failed_benchmarks}')
+        # Pass the list of benchmarks to update_benchmark_data
+        # It will handle parallel processing based on workers parameter
+        update_benchmark_data(
+            benchmark_name=benchmark_names,
+            force=self.args.force,
+            compute_stats=self.args.compute_stats,
+            max_samples=self.args.max_samples,
+            workers=self.args.workers,
+        )
 
     def _translate_benchmarks(self):
         """Translate README content to Chinese."""
@@ -275,7 +259,7 @@ class BenchmarkInfoCMD(CLICommand):
         # Determine which benchmarks to translate
         benchmark_names = None
         if self.args.benchmark:
-            benchmark_names = [self.args.benchmark]
+            benchmark_names = self.args.benchmark if isinstance(self.args.benchmark, list) else [self.args.benchmark]
         elif self.args.all:
             # All benchmarks that need translation
             benchmark_names = None
@@ -325,10 +309,6 @@ class BenchmarkInfoCMD(CLICommand):
 
         if meta.paper_url:
             print(f'Paper:         {meta.paper_url}')
-        if meta.homepage:
-            print(f'Homepage:      {meta.homepage}')
-        if meta.data_license:
-            print(f'License:       {meta.data_license}')
 
         if meta.description:
             print(f'\nDescription:')

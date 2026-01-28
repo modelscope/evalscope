@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "pretty_name": "JNLPBA",
+    "dataset_id": "extraordinarylab/jnlpba",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nThe JNLPBA dataset is a widely-used resource for bio-entity recognition, consisting of 2,404 MEDLINE abstracts from the GENIA corpus annotated for five key molecular biology entity types. It is a standard benchmark for biomedical NER.\n\n## Task Description\n\n- **Task Type**: Biomedical Named Entity Recognition (NER)\n- **Input**: Biomedical text from MEDLINE abstracts\n- **Output**: Identified molecular biology entity spans\n- **Domain**: Molecular biology, bioinformatics\n\n## Key Features\n\n- 2,404 MEDLINE abstracts from GENIA corpus\n- Five molecular biology entity types\n- Expert-annotated by domain specialists\n- Standard benchmark for biomedical NER\n- Comprehensive coverage of biomolecular entities\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: PROTEIN, DNA, RNA, CELL_LINE, CELL_TYPE\n",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 3856,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 3856,
+        "prompt_length_mean": 3609.26,
+        "prompt_length_min": 3450,
+        "prompt_length_max": 4664,
+        "prompt_length_std": 72.21,
+        "target_length_mean": 226.02
+      }
+    ],
+    "prompt_length": {
+      "mean": 3609.26,
+      "min": 3450,
+      "max": 4664,
+      "std": 72.21
+    },
+    "target_length_mean": 226.02,
+    "computed_at": "2026-01-28T14:14:59.095578"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "270411f4",
+          "content": "Here are some examples of named entity recognition:\n\nInput:\nIL-2 gene expression and NF-kappa B activation through CD28 requires reactive oxygen production by 5-lipoxygenase .\n\nOutput:\n<response><dna>IL-2 gene</dna> expression and <protein>NF ... [TRUNCATED] ... ged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\nNumber of glucocorticoid receptors in lymphocytes and their sensitivity to hormone action .\n"
+        }
+      ],
+      "target": "<response>Number of <protein>glucocorticoid receptors</protein> in <cell_type>lymphocytes</cell_type> and their sensitivity to hormone action .</response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "Number",
+          "of",
+          "glucocorticoid",
+          "receptors",
+          "in",
+          "lymphocytes",
+          "and",
+          "their",
+          "sensitivity",
+          "to",
+          "hormone",
+          "action",
+          "."
+        ],
+        "ner_tags": [
+          "O",
+          "O",
+          "B-PROTEIN",
+          "I-PROTEIN",
+          "O",
+          "B-CELL_TYPE",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# JNLPBA\n\n\n## Overview\n\nThe JNLPBA dataset is a widely-used resource for bio-entity recognition, consisting of 2,404 MEDLINE abstracts from the GENIA corpus annotated for five key molecular biology entity types. It is a standard benchmark for biomedical NER.\n\n## Task Description\n\n- **Task Type**: Biomedical Named Entity Recognition (NER)\n- **Input**: Biomedical text from MEDLINE abstracts\n- **Output**: Identified molecular biology entity spans\n- **Domain**: Molecular biology, bioinformatics\n\n## Key Features\n\n- 2,404 MEDLINE abstracts from GENIA corpus\n- Five molecular biology entity types\n- Expert-annotated by domain specialists\n- Standard benchmark for biomedical NER\n- Comprehensive coverage of biomolecular entities\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: PROTEIN, DNA, RNA, CELL_LINE, CELL_TYPE\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `jnlpba` |\n| **Dataset ID** | [extraordinarylab/jnlpba](https://modelscope.cn/datasets/extraordinarylab/jnlpba/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,856 |\n| Prompt Length (Mean) | 3609.26 chars |\n| Prompt Length (Min/Max) | 3450 / 4664 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"270411f4\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nIL-2 gene expression and NF-kappa B activation through CD28 requires reactive oxygen production by 5-lipoxygenase .\\n\\nOutput:\\n<response><dna>IL-2 gene</dna> expression and <protein>NF ... [TRUNCATED] ... ged text.\\n6. If entity spans overlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\nNumber of glucocorticoid receptors in lymphocytes and their sensitivity to hormone action .\\n\"\n    }\n  ],\n  \"target\": \"<response>Number of <protein>glucocorticoid receptors</protein> in <cell_type>lymphocytes</cell_type> and their sensitivity to hormone action .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"Number\",\n      \"of\",\n      \"glucocorticoid\",\n      \"receptors\",\n      \"in\",\n      \"lymphocytes\",\n      \"and\",\n      \"their\",\n      \"sensitivity\",\n      \"to\",\n      \"hormone\",\n      \"action\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"B-PROTEIN\",\n      \"I-PROTEIN\",\n      \"O\",\n      \"B-CELL_TYPE\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets jnlpba \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['jnlpba'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# JNLPBA\n\n\n## 概述\n\nJNLPBA 数据集是一个广泛使用的生物实体识别资源，包含来自 GENIA 语料库的 2,404 篇 MEDLINE 摘要，标注了五种关键的分子生物学实体类型。它是生物医学命名实体识别（NER）的标准基准测试数据集。\n\n## 任务描述\n\n- **任务类型**：生物医学命名实体识别（NER）\n- **输入**：来自 MEDLINE 摘要的生物医学文本\n- **输出**：识别出的分子生物学实体片段\n- **领域**：分子生物学、生物信息学\n\n## 主要特点\n\n- 包含 GENIA 语料库中的 2,404 篇 MEDLINE 摘要\n- 涵盖五种分子生物学实体类型\n- 由领域专家进行人工标注\n- 是生物医学 NER 的标准基准\n- 全面覆盖各类生物分子实体\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 评估\n- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）\n- 实体类型：PROTEIN（蛋白质）、DNA（脱氧核糖核酸）、RNA（核糖核酸）、CELL_LINE（细胞系）、CELL_TYPE（细胞类型）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `jnlpba` |\n| **数据集ID** | [extraordinarylab/jnlpba](https://modelscope.cn/datasets/extraordinarylab/jnlpba/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认示例数量** | 5-shot |\n| **评估分割** | `test` |\n| **训练分割** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,856 |\n| 提示词长度（平均） | 3609.26 字符 |\n| 提示词长度（最小/最大） | 3450 / 4664 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"270411f4\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nIL-2 gene expression and NF-kappa B activation through CD28 requires reactive oxygen production by 5-lipoxygenase .\\n\\nOutput:\\n<response><dna>IL-2 gene</dna> expression and <protein>NF ... [TRUNCATED] ... ged text.\\n6. If entity spans overlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\nNumber of glucocorticoid receptors in lymphocytes and their sensitivity to hormone action .\\n\"\n    }\n  ],\n  \"target\": \"<response>Number of <protein>glucocorticoid receptors</protein> in <cell_type>lymphocytes</cell_type> and their sensitivity to hormone action .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"Number\",\n      \"of\",\n      \"glucocorticoid\",\n      \"receptors\",\n      \"in\",\n      \"lymphocytes\",\n      \"and\",\n      \"their\",\n      \"sensitivity\",\n      \"to\",\n      \"hormone\",\n      \"action\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"B-PROTEIN\",\n      \"I-PROTEIN\",\n      \"O\",\n      \"B-CELL_TYPE\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本（Few-shot）模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets jnlpba \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['jnlpba'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "0b79ba029a508d622ef6b2fca4c5b3ed",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.223763",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

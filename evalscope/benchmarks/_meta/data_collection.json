@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "pretty_name": "Data-Collection",
+    "dataset_id": "",
+    "paper_url": null,
+    "tags": [
+      "Custom"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nData-Collection is a flexible framework for mixing multiple evaluation datasets into a unified evaluation suite. It enables comprehensive model assessment using carefully selected samples from various benchmarks.\n\n## Task Description\n\n- **Task Type**: Multi-Dataset Unified Evaluation\n- **Input**: Mixed samples from multiple benchmark datasets\n- **Output**: Aggregated scores across tasks, datasets, and categories\n- **Flexibility**: Supports custom dataset collections\n\n## Key Features\n\n- Mix multiple benchmarks into one evaluation\n- Hierarchical reporting (subset, dataset, task, tag, category levels)\n- Sample-level weighting support\n- Automatic adapter initialization for each dataset\n- Comprehensive aggregation (micro, macro, weighted averages)\n\n## Evaluation Notes\n\n- Dataset must be pre-compiled as a collection\n- Supports various task types (MCQ, QA, coding, etc.)\n- Generates multi-level reports for detailed analysis\n- See [Collection Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/collection/index.html) for usage\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 0,
+    "subset_stats": [],
+    "prompt_length": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T11:12:45.994037"
+  },
+  "sample_example": {},
+  "readme": {
+    "en": "# Data-Collection\n\n\n## Overview\n\nData-Collection is a flexible framework for mixing multiple evaluation datasets into a unified evaluation suite. It enables comprehensive model assessment using carefully selected samples from various benchmarks.\n\n## Task Description\n\n- **Task Type**: Multi-Dataset Unified Evaluation\n- **Input**: Mixed samples from multiple benchmark datasets\n- **Output**: Aggregated scores across tasks, datasets, and categories\n- **Flexibility**: Supports custom dataset collections\n\n## Key Features\n\n- Mix multiple benchmarks into one evaluation\n- Hierarchical reporting (subset, dataset, task, tag, category levels)\n- Sample-level weighting support\n- Automatic adapter initialization for each dataset\n- Comprehensive aggregation (micro, macro, weighted averages)\n\n## Evaluation Notes\n\n- Dataset must be pre-compiled as a collection\n- Supports various task types (MCQ, QA, coding, etc.)\n- Generates multi-level reports for detailed analysis\n- See [Collection Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/collection/index.html) for usage\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `data_collection` |\n| **Dataset ID** | N/A |\n| **Paper** | N/A |\n| **Tags** | `Custom` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets data_collection \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['data_collection'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# 数据收集（Data-Collection）\n\n## 概述\n\nData-Collection 是一个灵活的框架，用于将多个评估数据集混合成统一的评估套件。它能够通过从各类基准测试中精心挑选的样本，对模型进行全面评估。\n\n## 任务描述\n\n- **任务类型**：多数据集统一评估  \n- **输入**：来自多个基准数据集的混合样本  \n- **输出**：跨任务、数据集和类别的聚合得分  \n- **灵活性**：支持自定义数据集组合  \n\n## 核心特性\n\n- 将多个基准测试混合为单一评估  \n- 分层报告（子集、数据集、任务、标签、类别层级）  \n- 支持样本级权重  \n- 为每个数据集自动初始化适配器  \n- 全面的聚合方式（微观平均、宏观平均、加权平均）  \n\n## 评估说明\n\n- 数据集必须预先编译为集合形式  \n- 支持多种任务类型（选择题 MCQ、问答 QA、代码生成等）  \n- 生成多层级报告以支持详细分析  \n- 使用方法请参阅 [Collection Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `data_collection` |\n| **数据集ID** | N/A |\n| **论文** | N/A |\n| **标签** | `Custom` |\n| **指标** | `acc` |\n| **默认示例数量（Shots）** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n*统计数据不可用。*\n\n## 样例示例\n\n*样例示例不可用。*\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 通过命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets data_collection \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 通过 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['data_collection'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "66a3c6d80a4174b1a6f67bf10319424a",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T16:09:02.279790",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

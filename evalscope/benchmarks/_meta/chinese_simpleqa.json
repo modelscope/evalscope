@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "pretty_name": "Chinese-SimpleQA",
+    "dataset_id": "AI-ModelScope/Chinese-SimpleQA",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "QA",
+      "Chinese"
+    ],
+    "metrics": [
+      "is_correct",
+      "is_incorrect",
+      "is_not_attempted"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "中华文化",
+      "人文与社会科学",
+      "工程、技术与应用科学",
+      "生活、艺术与文化",
+      "社会",
+      "自然与自然科学"
+    ],
+    "description": "\n## Overview\n\nChinese SimpleQA is a Chinese question-answering dataset designed to evaluate the performance of language models on simple factual questions. It tests the model's ability to understand and generate correct answers in Chinese across various knowledge domains.\n\n## Task Description\n\n- **Task Type**: Chinese Factual Question Answering\n- **Input**: Simple factual question in Chinese\n- **Output**: Factual answer in Chinese\n- **Language**: Chinese\n\n## Key Features\n\n- Diverse topics covering various knowledge domains\n- Simple factual questions testing world knowledge\n- Chinese language evaluation\n- LLM-as-judge evaluation for answer correctness\n- Multiple category subsets available\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses LLM-as-judge for evaluation\n- Metrics: is_correct, is_incorrect, is_not_attempted\n- Evaluates factual accuracy without requiring exact match\n",
+    "prompt_template": "请回答问题：\n\n{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 3000,
+    "subset_stats": [
+      {
+        "name": "中华文化",
+        "sample_count": 326,
+        "prompt_length_mean": 32.09,
+        "prompt_length_min": 18,
+        "prompt_length_max": 86,
+        "prompt_length_std": 10.32,
+        "target_length_mean": 4.08
+      },
+      {
+        "name": "人文与社会科学",
+        "sample_count": 609,
+        "prompt_length_mean": 33.94,
+        "prompt_length_min": 18,
+        "prompt_length_max": 87,
+        "prompt_length_std": 9.8,
+        "target_length_mean": 8.0
+      },
+      {
+        "name": "工程、技术与应用科学",
+        "sample_count": 481,
+        "prompt_length_mean": 33.13,
+        "prompt_length_min": 18,
+        "prompt_length_max": 91,
+        "prompt_length_std": 10.45,
+        "target_length_mean": 6.89
+      },
+      {
+        "name": "生活、艺术与文化",
+        "sample_count": 601,
+        "prompt_length_mean": 32.4,
+        "prompt_length_min": 17,
+        "prompt_length_max": 76,
+        "prompt_length_std": 7.89,
+        "target_length_mean": 6.28
+      },
+      {
+        "name": "社会",
+        "sample_count": 453,
+        "prompt_length_mean": 32.33,
+        "prompt_length_min": 18,
+        "prompt_length_max": 129,
+        "prompt_length_std": 10.19,
+        "target_length_mean": 6.3
+      },
+      {
+        "name": "自然与自然科学",
+        "sample_count": 530,
+        "prompt_length_mean": 30.49,
+        "prompt_length_min": 16,
+        "prompt_length_max": 83,
+        "prompt_length_std": 9.91,
+        "target_length_mean": 7.9
+      }
+    ],
+    "prompt_length": {
+      "mean": 32.45,
+      "min": 16,
+      "max": 129,
+      "std": 9.75
+    },
+    "target_length_mean": 6.78,
+    "computed_at": "2026-01-28T11:12:40.853677"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "b6b48177",
+          "content": "请回答问题：\n\n伏兔穴所属的经脉是什么？"
+        }
+      ],
+      "target": "足阳明胃经",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "中华文化",
+      "metadata": {
+        "id": "97e7f58a3b154facaa3a5c64d678c7bf",
+        "primary_category": "中华文化",
+        "secondary_category": "中医"
+      }
+    },
+    "subset": "中华文化",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# Chinese-SimpleQA\n\n\n## Overview\n\nChinese SimpleQA is a Chinese question-answering dataset designed to evaluate the performance of language models on simple factual questions. It tests the model's ability to understand and generate correct answers in Chinese across various knowledge domains.\n\n## Task Description\n\n- **Task Type**: Chinese Factual Question Answering\n- **Input**: Simple factual question in Chinese\n- **Output**: Factual answer in Chinese\n- **Language**: Chinese\n\n## Key Features\n\n- Diverse topics covering various knowledge domains\n- Simple factual questions testing world knowledge\n- Chinese language evaluation\n- LLM-as-judge evaluation for answer correctness\n- Multiple category subsets available\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses LLM-as-judge for evaluation\n- Metrics: is_correct, is_incorrect, is_not_attempted\n- Evaluates factual accuracy without requiring exact match\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `chinese_simpleqa` |\n| **Dataset ID** | [AI-ModelScope/Chinese-SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/Chinese-SimpleQA/summary) |\n| **Paper** | N/A |\n| **Tags** | `Chinese`, `Knowledge`, `QA` |\n| **Metrics** | `is_correct`, `is_incorrect`, `is_not_attempted` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,000 |\n| Prompt Length (Mean) | 32.45 chars |\n| Prompt Length (Min/Max) | 16 / 129 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `中华文化` | 326 | 32.09 | 18 | 86 |\n| `人文与社会科学` | 609 | 33.94 | 18 | 87 |\n| `工程、技术与应用科学` | 481 | 33.13 | 18 | 91 |\n| `生活、艺术与文化` | 601 | 32.4 | 17 | 76 |\n| `社会` | 453 | 32.33 | 18 | 129 |\n| `自然与自然科学` | 530 | 30.49 | 16 | 83 |\n\n## Sample Example\n\n**Subset**: `中华文化`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"b6b48177\",\n      \"content\": \"请回答问题：\\n\\n伏兔穴所属的经脉是什么？\"\n    }\n  ],\n  \"target\": \"足阳明胃经\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"中华文化\",\n  \"metadata\": {\n    \"id\": \"97e7f58a3b154facaa3a5c64d678c7bf\",\n    \"primary_category\": \"中华文化\",\n    \"secondary_category\": \"中医\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n请回答问题：\n\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets chinese_simpleqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['chinese_simpleqa'],\n    dataset_args={\n        'chinese_simpleqa': {\n            # subset_list: ['中华文化', '人文与社会科学', '工程、技术与应用科学']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Chinese-SimpleQA\n\n\n## 概述\n\nChinese SimpleQA 是一个中文问答数据集，旨在评估语言模型在简单事实性问题上的表现。该数据集测试模型在不同知识领域中理解和生成正确中文答案的能力。\n\n## 任务描述\n\n- **任务类型**：中文事实性问答\n- **输入**：中文简单事实性问题\n- **输出**：中文事实性答案\n- **语言**：中文\n\n## 主要特点\n\n- 覆盖多个知识领域的多样化主题\n- 测试世界知识的简单事实性问题\n- 中文语言能力评估\n- 使用 LLM-as-judge 评估答案正确性\n- 提供多个类别子集\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 使用 LLM-as-judge 进行评估\n- 指标：`is_correct`、`is_incorrect`、`is_not_attempted`\n- 评估事实准确性，不要求完全匹配\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `chinese_simpleqa` |\n| **数据集ID** | [AI-ModelScope/Chinese-SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/Chinese-SimpleQA/summary) |\n| **论文** | N/A |\n| **标签** | `Chinese`, `Knowledge`, `QA` |\n| **指标** | `is_correct`, `is_incorrect`, `is_not_attempted` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,000 |\n| 提示词长度（平均） | 32.45 字符 |\n| 提示词长度（最小/最大） | 16 / 129 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `中华文化` | 326 | 32.09 | 18 | 86 |\n| `人文与社会科学` | 609 | 33.94 | 18 | 87 |\n| `工程、技术与应用科学` | 481 | 33.13 | 18 | 91 |\n| `生活、艺术与文化` | 601 | 32.4 | 17 | 76 |\n| `社会` | 453 | 32.33 | 18 | 129 |\n| `自然与自然科学` | 530 | 30.49 | 16 | 83 |\n\n## 样例示例\n\n**子集**: `中华文化`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"b6b48177\",\n      \"content\": \"请回答问题：\\n\\n伏兔穴所属的经脉是什么？\"\n    }\n  ],\n  \"target\": \"足阳明胃经\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"中华文化\",\n  \"metadata\": {\n    \"id\": \"97e7f58a3b154facaa3a5c64d678c7bf\",\n    \"primary_category\": \"中华文化\",\n    \"secondary_category\": \"中医\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n请回答问题：\n\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets chinese_simpleqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['chinese_simpleqa'],\n    dataset_args={\n        'chinese_simpleqa': {\n            # subset_list: ['中华文化', '人文与社会科学', '工程、技术与应用科学']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "88f5448c748e928a77ccd773e8412cfc",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.828688",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

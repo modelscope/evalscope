@@ -1,0 +1,738 @@
+{
+  "meta": {
+    "pretty_name": "PolyMath",
+    "dataset_id": "evalscope/PolyMath",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning",
+      "MultiLingual"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "en",
+      "zh",
+      "ar",
+      "bn",
+      "de",
+      "es",
+      "fr",
+      "id",
+      "it",
+      "ja",
+      "ko",
+      "ms",
+      "pt",
+      "ru",
+      "sw",
+      "te",
+      "th",
+      "vi"
+    ],
+    "description": "\n## Overview\n\nPolyMath is a multilingual mathematical reasoning benchmark covering 18 languages and 4 difficulty levels with 9,000 high-quality problem samples. It ensures difficulty comprehensiveness, language diversity, and high-quality translation for discriminative multilingual evaluation.\n\n## Task Description\n\n- **Task Type**: Multilingual Mathematical Reasoning\n- **Input**: Math problem in one of 18 languages\n- **Output**: Numerical answer in \\boxed{} format\n- **Domains**: Mathematics across multiple difficulty levels and languages\n\n## Key Features\n\n- 18 supported languages: en, zh, ar, bn, de, es, fr, id, it, ja, ko, ms, pt, ru, sw, te, th, vi\n- 4 difficulty levels: low, medium, high, top\n- 9,000 high-quality problems total\n- Language-specific instructions for each problem\n- High-quality human translations ensuring accuracy\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** with numeric comparison\n- Additional metric: **DW-ACC** (Difficulty-Weighted Accuracy)\n  - Weights: low=1, medium=2, high=4, top=8\n  - Provides balanced scoring across difficulty levels\n- Results reported per language and overall\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 9000,
+    "subset_stats": [
+      {
+        "name": "en-low",
+        "sample_count": 125,
+        "prompt_length_mean": 292,
+        "prompt_length_min": 142,
+        "prompt_length_max": 600,
+        "prompt_length_std": 96.16,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "zh-low",
+        "sample_count": 125,
+        "prompt_length_mean": 111.96,
+        "prompt_length_min": 63,
+        "prompt_length_max": 206,
+        "prompt_length_std": 30.55,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "ar-low",
+        "sample_count": 125,
+        "prompt_length_mean": 259.15,
+        "prompt_length_min": 138,
+        "prompt_length_max": 536,
+        "prompt_length_std": 81.37,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "bn-low",
+        "sample_count": 125,
+        "prompt_length_mean": 304.42,
+        "prompt_length_min": 160,
+        "prompt_length_max": 650,
+        "prompt_length_std": 91.96,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "de-low",
+        "sample_count": 125,
+        "prompt_length_mean": 333.42,
+        "prompt_length_min": 165,
+        "prompt_length_max": 698,
+        "prompt_length_std": 109.13,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "es-low",
+        "sample_count": 125,
+        "prompt_length_mean": 315.7,
+        "prompt_length_min": 159,
+        "prompt_length_max": 643,
+        "prompt_length_std": 105.08,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "fr-low",
+        "sample_count": 125,
+        "prompt_length_mean": 331.06,
+        "prompt_length_min": 178,
+        "prompt_length_max": 634,
+        "prompt_length_std": 99.66,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "id-low",
+        "sample_count": 125,
+        "prompt_length_mean": 332.51,
+        "prompt_length_min": 175,
+        "prompt_length_max": 691,
+        "prompt_length_std": 107.4,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "it-low",
+        "sample_count": 125,
+        "prompt_length_mean": 315.19,
+        "prompt_length_min": 164,
+        "prompt_length_max": 661,
+        "prompt_length_std": 102.87,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "ja-low",
+        "sample_count": 125,
+        "prompt_length_mean": 145.06,
+        "prompt_length_min": 82,
+        "prompt_length_max": 268,
+        "prompt_length_std": 40.57,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "ko-low",
+        "sample_count": 125,
+        "prompt_length_mean": 163.17,
+        "prompt_length_min": 89,
+        "prompt_length_max": 342,
+        "prompt_length_std": 44.27,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "ms-low",
+        "sample_count": 125,
+        "prompt_length_mean": 330.82,
+        "prompt_length_min": 165,
+        "prompt_length_max": 603,
+        "prompt_length_std": 104.85,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "pt-low",
+        "sample_count": 125,
+        "prompt_length_mean": 306.37,
+        "prompt_length_min": 160,
+        "prompt_length_max": 655,
+        "prompt_length_std": 102.15,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "ru-low",
+        "sample_count": 125,
+        "prompt_length_mean": 312.67,
+        "prompt_length_min": 161,
+        "prompt_length_max": 628,
+        "prompt_length_std": 97.03,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "sw-low",
+        "sample_count": 125,
+        "prompt_length_mean": 324.54,
+        "prompt_length_min": 169,
+        "prompt_length_max": 638,
+        "prompt_length_std": 105.37,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "te-low",
+        "sample_count": 125,
+        "prompt_length_mean": 311.38,
+        "prompt_length_min": 161,
+        "prompt_length_max": 575,
+        "prompt_length_std": 97.41,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "th-low",
+        "sample_count": 125,
+        "prompt_length_mean": 256.28,
+        "prompt_length_min": 124,
+        "prompt_length_max": 519,
+        "prompt_length_std": 80.41,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "vi-low",
+        "sample_count": 125,
+        "prompt_length_mean": 302.78,
+        "prompt_length_min": 159,
+        "prompt_length_max": 583,
+        "prompt_length_std": 92.66,
+        "target_length_mean": 2.26
+      },
+      {
+        "name": "en-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 304.88,
+        "prompt_length_min": 107,
+        "prompt_length_max": 823,
+        "prompt_length_std": 141.55,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "zh-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 182.79,
+        "prompt_length_min": 52,
+        "prompt_length_max": 503,
+        "prompt_length_std": 81.95,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "ar-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 282.52,
+        "prompt_length_min": 98,
+        "prompt_length_max": 794,
+        "prompt_length_std": 130.24,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "bn-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 323.46,
+        "prompt_length_min": 110,
+        "prompt_length_max": 761,
+        "prompt_length_std": 141.79,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "de-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 338.46,
+        "prompt_length_min": 113,
+        "prompt_length_max": 941,
+        "prompt_length_std": 155.37,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "es-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 322.59,
+        "prompt_length_min": 120,
+        "prompt_length_max": 785,
+        "prompt_length_std": 143.41,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "fr-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 330.45,
+        "prompt_length_min": 116,
+        "prompt_length_max": 766,
+        "prompt_length_std": 145.72,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "id-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 328.14,
+        "prompt_length_min": 114,
+        "prompt_length_max": 852,
+        "prompt_length_std": 152.09,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "it-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 315.01,
+        "prompt_length_min": 110,
+        "prompt_length_max": 772,
+        "prompt_length_std": 143.23,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "ja-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 210.79,
+        "prompt_length_min": 68,
+        "prompt_length_max": 548,
+        "prompt_length_std": 92.68,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "ko-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 219.33,
+        "prompt_length_min": 64,
+        "prompt_length_max": 547,
+        "prompt_length_std": 96.64,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "ms-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 314.84,
+        "prompt_length_min": 95,
+        "prompt_length_max": 829,
+        "prompt_length_std": 151.12,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "pt-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 314,
+        "prompt_length_min": 111,
+        "prompt_length_max": 767,
+        "prompt_length_std": 142.16,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "ru-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 334.75,
+        "prompt_length_min": 120,
+        "prompt_length_max": 828,
+        "prompt_length_std": 148.39,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "sw-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 335,
+        "prompt_length_min": 110,
+        "prompt_length_max": 899,
+        "prompt_length_std": 159.75,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "te-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 316.54,
+        "prompt_length_min": 102,
+        "prompt_length_max": 867,
+        "prompt_length_std": 148.23,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "th-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 276.01,
+        "prompt_length_min": 84,
+        "prompt_length_max": 658,
+        "prompt_length_std": 125.81,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "vi-medium",
+        "sample_count": 125,
+        "prompt_length_mean": 307.78,
+        "prompt_length_min": 108,
+        "prompt_length_max": 820,
+        "prompt_length_std": 139.33,
+        "target_length_mean": 15.65
+      },
+      {
+        "name": "en-high",
+        "sample_count": 125,
+        "prompt_length_mean": 391.3,
+        "prompt_length_min": 120,
+        "prompt_length_max": 1434,
+        "prompt_length_std": 207.15,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "zh-high",
+        "sample_count": 125,
+        "prompt_length_mean": 212.87,
+        "prompt_length_min": 70,
+        "prompt_length_max": 1155,
+        "prompt_length_std": 142.32,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "ar-high",
+        "sample_count": 125,
+        "prompt_length_mean": 356.49,
+        "prompt_length_min": 115,
+        "prompt_length_max": 1313,
+        "prompt_length_std": 185.65,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "bn-high",
+        "sample_count": 125,
+        "prompt_length_mean": 414.23,
+        "prompt_length_min": 132,
+        "prompt_length_max": 1464,
+        "prompt_length_std": 211.15,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "de-high",
+        "sample_count": 125,
+        "prompt_length_mean": 440.82,
+        "prompt_length_min": 138,
+        "prompt_length_max": 1483,
+        "prompt_length_std": 222.67,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "es-high",
+        "sample_count": 125,
+        "prompt_length_mean": 422.2,
+        "prompt_length_min": 134,
+        "prompt_length_max": 1469,
+        "prompt_length_std": 218.45,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "fr-high",
+        "sample_count": 125,
+        "prompt_length_mean": 428.81,
+        "prompt_length_min": 133,
+        "prompt_length_max": 1488,
+        "prompt_length_std": 216.32,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "id-high",
+        "sample_count": 125,
+        "prompt_length_mean": 437.18,
+        "prompt_length_min": 128,
+        "prompt_length_max": 1536,
+        "prompt_length_std": 221.42,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "it-high",
+        "sample_count": 125,
+        "prompt_length_mean": 408.41,
+        "prompt_length_min": 128,
+        "prompt_length_max": 1445,
+        "prompt_length_std": 212.01,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "ja-high",
+        "sample_count": 125,
+        "prompt_length_mean": 246.59,
+        "prompt_length_min": 84,
+        "prompt_length_max": 1206,
+        "prompt_length_std": 151.61,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "ko-high",
+        "sample_count": 125,
+        "prompt_length_mean": 261.16,
+        "prompt_length_min": 98,
+        "prompt_length_max": 1195,
+        "prompt_length_std": 155.26,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "ms-high",
+        "sample_count": 125,
+        "prompt_length_mean": 412.78,
+        "prompt_length_min": 55,
+        "prompt_length_max": 1454,
+        "prompt_length_std": 221.93,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "pt-high",
+        "sample_count": 125,
+        "prompt_length_mean": 408.39,
+        "prompt_length_min": 127,
+        "prompt_length_max": 1414,
+        "prompt_length_std": 207.36,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "ru-high",
+        "sample_count": 125,
+        "prompt_length_mean": 426.44,
+        "prompt_length_min": 144,
+        "prompt_length_max": 1476,
+        "prompt_length_std": 208.75,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "sw-high",
+        "sample_count": 125,
+        "prompt_length_mean": 438.1,
+        "prompt_length_min": 125,
+        "prompt_length_max": 1476,
+        "prompt_length_std": 226.71,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "te-high",
+        "sample_count": 125,
+        "prompt_length_mean": 405.18,
+        "prompt_length_min": 126,
+        "prompt_length_max": 1430,
+        "prompt_length_std": 210.01,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "th-high",
+        "sample_count": 125,
+        "prompt_length_mean": 351.18,
+        "prompt_length_min": 108,
+        "prompt_length_max": 1345,
+        "prompt_length_std": 189.76,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "vi-high",
+        "sample_count": 125,
+        "prompt_length_mean": 383.09,
+        "prompt_length_min": 124,
+        "prompt_length_max": 1442,
+        "prompt_length_std": 183.62,
+        "target_length_mean": 8.85
+      },
+      {
+        "name": "en-top",
+        "sample_count": 125,
+        "prompt_length_mean": 420.59,
+        "prompt_length_min": 141,
+        "prompt_length_max": 1346,
+        "prompt_length_std": 209.67,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "zh-top",
+        "sample_count": 125,
+        "prompt_length_mean": 220.16,
+        "prompt_length_min": 73,
+        "prompt_length_max": 876,
+        "prompt_length_std": 111.34,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "ar-top",
+        "sample_count": 125,
+        "prompt_length_mean": 378.14,
+        "prompt_length_min": 136,
+        "prompt_length_max": 1238,
+        "prompt_length_std": 179.25,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "bn-top",
+        "sample_count": 125,
+        "prompt_length_mean": 443.98,
+        "prompt_length_min": 160,
+        "prompt_length_max": 1392,
+        "prompt_length_std": 209.71,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "de-top",
+        "sample_count": 125,
+        "prompt_length_mean": 470.34,
+        "prompt_length_min": 169,
+        "prompt_length_max": 1432,
+        "prompt_length_std": 229.09,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "es-top",
+        "sample_count": 125,
+        "prompt_length_mean": 456.15,
+        "prompt_length_min": 150,
+        "prompt_length_max": 1432,
+        "prompt_length_std": 224.49,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "fr-top",
+        "sample_count": 125,
+        "prompt_length_mean": 464.7,
+        "prompt_length_min": 153,
+        "prompt_length_max": 1457,
+        "prompt_length_std": 231.91,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "id-top",
+        "sample_count": 125,
+        "prompt_length_mean": 469.23,
+        "prompt_length_min": 151,
+        "prompt_length_max": 1478,
+        "prompt_length_std": 233.89,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "it-top",
+        "sample_count": 125,
+        "prompt_length_mean": 445.74,
+        "prompt_length_min": 146,
+        "prompt_length_max": 1400,
+        "prompt_length_std": 222.51,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "ja-top",
+        "sample_count": 125,
+        "prompt_length_mean": 259.17,
+        "prompt_length_min": 85,
+        "prompt_length_max": 925,
+        "prompt_length_std": 123.62,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "ko-top",
+        "sample_count": 125,
+        "prompt_length_mean": 277.8,
+        "prompt_length_min": 89,
+        "prompt_length_max": 968,
+        "prompt_length_std": 130.11,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "ms-top",
+        "sample_count": 125,
+        "prompt_length_mean": 458.26,
+        "prompt_length_min": 144,
+        "prompt_length_max": 1521,
+        "prompt_length_std": 238.6,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "pt-top",
+        "sample_count": 125,
+        "prompt_length_mean": 444.11,
+        "prompt_length_min": 144,
+        "prompt_length_max": 1407,
+        "prompt_length_std": 218.91,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "ru-top",
+        "sample_count": 125,
+        "prompt_length_mean": 466.7,
+        "prompt_length_min": 159,
+        "prompt_length_max": 1440,
+        "prompt_length_std": 218.5,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "sw-top",
+        "sample_count": 125,
+        "prompt_length_mean": 469.38,
+        "prompt_length_min": 147,
+        "prompt_length_max": 1452,
+        "prompt_length_std": 233.7,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "te-top",
+        "sample_count": 125,
+        "prompt_length_mean": 431.14,
+        "prompt_length_min": 147,
+        "prompt_length_max": 1323,
+        "prompt_length_std": 210.7,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "th-top",
+        "sample_count": 125,
+        "prompt_length_mean": 384.58,
+        "prompt_length_min": 137,
+        "prompt_length_max": 1154,
+        "prompt_length_std": 187.11,
+        "target_length_mean": 14.95
+      },
+      {
+        "name": "vi-top",
+        "sample_count": 125,
+        "prompt_length_mean": 423.55,
+        "prompt_length_min": 154,
+        "prompt_length_max": 1352,
+        "prompt_length_std": 204.23,
+        "target_length_mean": 14.95
+      }
+    ],
+    "prompt_length": {
+      "mean": 342.15,
+      "min": 52,
+      "max": 1536,
+      "std": 185.34
+    },
+    "target_length_mean": 10.43,
+    "computed_at": "2026-01-28T11:16:31.157650"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "8ac6f5ab",
+          "content": "Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\nNote: Please put the final answer in the $\\boxed\\{\\}$."
+        }
+      ],
+      "target": "18",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "level": "low",
+        "language": "en",
+        "index": "0"
+      }
+    },
+    "subset": "en-low",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# PolyMath\n\n\n## Overview\n\nPolyMath is a multilingual mathematical reasoning benchmark covering 18 languages and 4 difficulty levels with 9,000 high-quality problem samples. It ensures difficulty comprehensiveness, language diversity, and high-quality translation for discriminative multilingual evaluation.\n\n## Task Description\n\n- **Task Type**: Multilingual Mathematical Reasoning\n- **Input**: Math problem in one of 18 languages\n- **Output**: Numerical answer in \\boxed{} format\n- **Domains**: Mathematics across multiple difficulty levels and languages\n\n## Key Features\n\n- 18 supported languages: en, zh, ar, bn, de, es, fr, id, it, ja, ko, ms, pt, ru, sw, te, th, vi\n- 4 difficulty levels: low, medium, high, top\n- 9,000 high-quality problems total\n- Language-specific instructions for each problem\n- High-quality human translations ensuring accuracy\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** with numeric comparison\n- Additional metric: **DW-ACC** (Difficulty-Weighted Accuracy)\n  - Weights: low=1, medium=2, high=4, top=8\n  - Provides balanced scoring across difficulty levels\n- Results reported per language and overall\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `poly_math` |\n| **Dataset ID** | [evalscope/PolyMath](https://modelscope.cn/datasets/evalscope/PolyMath/summary) |\n| **Paper** | N/A |\n| **Tags** | `Math`, `MultiLingual`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 9,000 |\n| Prompt Length (Mean) | 342.15 chars |\n| Prompt Length (Min/Max) | 52 / 1536 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `en-low` | 125 | 292 | 142 | 600 |\n| `zh-low` | 125 | 111.96 | 63 | 206 |\n| `ar-low` | 125 | 259.15 | 138 | 536 |\n| `bn-low` | 125 | 304.42 | 160 | 650 |\n| `de-low` | 125 | 333.42 | 165 | 698 |\n| `es-low` | 125 | 315.7 | 159 | 643 |\n| `fr-low` | 125 | 331.06 | 178 | 634 |\n| `id-low` | 125 | 332.51 | 175 | 691 |\n| `it-low` | 125 | 315.19 | 164 | 661 |\n| `ja-low` | 125 | 145.06 | 82 | 268 |\n| `ko-low` | 125 | 163.17 | 89 | 342 |\n| `ms-low` | 125 | 330.82 | 165 | 603 |\n| `pt-low` | 125 | 306.37 | 160 | 655 |\n| `ru-low` | 125 | 312.67 | 161 | 628 |\n| `sw-low` | 125 | 324.54 | 169 | 638 |\n| `te-low` | 125 | 311.38 | 161 | 575 |\n| `th-low` | 125 | 256.28 | 124 | 519 |\n| `vi-low` | 125 | 302.78 | 159 | 583 |\n| `en-medium` | 125 | 304.88 | 107 | 823 |\n| `zh-medium` | 125 | 182.79 | 52 | 503 |\n| `ar-medium` | 125 | 282.52 | 98 | 794 |\n| `bn-medium` | 125 | 323.46 | 110 | 761 |\n| `de-medium` | 125 | 338.46 | 113 | 941 |\n| `es-medium` | 125 | 322.59 | 120 | 785 |\n| `fr-medium` | 125 | 330.45 | 116 | 766 |\n| `id-medium` | 125 | 328.14 | 114 | 852 |\n| `it-medium` | 125 | 315.01 | 110 | 772 |\n| `ja-medium` | 125 | 210.79 | 68 | 548 |\n| `ko-medium` | 125 | 219.33 | 64 | 547 |\n| `ms-medium` | 125 | 314.84 | 95 | 829 |\n| `pt-medium` | 125 | 314 | 111 | 767 |\n| `ru-medium` | 125 | 334.75 | 120 | 828 |\n| `sw-medium` | 125 | 335 | 110 | 899 |\n| `te-medium` | 125 | 316.54 | 102 | 867 |\n| `th-medium` | 125 | 276.01 | 84 | 658 |\n| `vi-medium` | 125 | 307.78 | 108 | 820 |\n| `en-high` | 125 | 391.3 | 120 | 1434 |\n| `zh-high` | 125 | 212.87 | 70 | 1155 |\n| `ar-high` | 125 | 356.49 | 115 | 1313 |\n| `bn-high` | 125 | 414.23 | 132 | 1464 |\n| `de-high` | 125 | 440.82 | 138 | 1483 |\n| `es-high` | 125 | 422.2 | 134 | 1469 |\n| `fr-high` | 125 | 428.81 | 133 | 1488 |\n| `id-high` | 125 | 437.18 | 128 | 1536 |\n| `it-high` | 125 | 408.41 | 128 | 1445 |\n| `ja-high` | 125 | 246.59 | 84 | 1206 |\n| `ko-high` | 125 | 261.16 | 98 | 1195 |\n| `ms-high` | 125 | 412.78 | 55 | 1454 |\n| `pt-high` | 125 | 408.39 | 127 | 1414 |\n| `ru-high` | 125 | 426.44 | 144 | 1476 |\n| `sw-high` | 125 | 438.1 | 125 | 1476 |\n| `te-high` | 125 | 405.18 | 126 | 1430 |\n| `th-high` | 125 | 351.18 | 108 | 1345 |\n| `vi-high` | 125 | 383.09 | 124 | 1442 |\n| `en-top` | 125 | 420.59 | 141 | 1346 |\n| `zh-top` | 125 | 220.16 | 73 | 876 |\n| `ar-top` | 125 | 378.14 | 136 | 1238 |\n| `bn-top` | 125 | 443.98 | 160 | 1392 |\n| `de-top` | 125 | 470.34 | 169 | 1432 |\n| `es-top` | 125 | 456.15 | 150 | 1432 |\n| `fr-top` | 125 | 464.7 | 153 | 1457 |\n| `id-top` | 125 | 469.23 | 151 | 1478 |\n| `it-top` | 125 | 445.74 | 146 | 1400 |\n| `ja-top` | 125 | 259.17 | 85 | 925 |\n| `ko-top` | 125 | 277.8 | 89 | 968 |\n| `ms-top` | 125 | 458.26 | 144 | 1521 |\n| `pt-top` | 125 | 444.11 | 144 | 1407 |\n| `ru-top` | 125 | 466.7 | 159 | 1440 |\n| `sw-top` | 125 | 469.38 | 147 | 1452 |\n| `te-top` | 125 | 431.14 | 147 | 1323 |\n| `th-top` | 125 | 384.58 | 137 | 1154 |\n| `vi-top` | 125 | 423.55 | 154 | 1352 |\n\n## Sample Example\n\n**Subset**: `en-low`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"8ac6f5ab\",\n      \"content\": \"Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\\nNote: Please put the final answer in the $\\\\boxed\\\\{\\\\}$.\"\n    }\n  ],\n  \"target\": \"18\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"level\": \"low\",\n    \"language\": \"en\",\n    \"index\": \"0\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets poly_math \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['poly_math'],\n    dataset_args={\n        'poly_math': {\n            # subset_list: ['en-low', 'zh-low', 'ar-low']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# PolyMath\n\n\n## 概述\n\nPolyMath 是一个多语言数学推理基准测试，涵盖 18 种语言和 4 个难度级别，共包含 9,000 个高质量问题样本。该基准确保了难度的全面性、语言的多样性以及翻译的高质量，适用于具有区分度的多语言评估。\n\n## 任务描述\n\n- **任务类型**：多语言数学推理\n- **输入**：18 种语言之一的数学问题\n- **输出**：以 `\\boxed{}` 格式表示的数值答案\n- **领域**：涵盖多个难度级别和语言的数学问题\n\n## 主要特性\n\n- 支持 18 种语言：en、zh、ar、bn、de、es、fr、id、it、ja、ko、ms、pt、ru、sw、te、th、vi\n- 4 个难度级别：low（低）、medium（中）、high（高）、top（顶级）\n- 共计 9,000 个高质量问题\n- 每个问题均配有语言特定的指令\n- 高质量人工翻译，确保准确性\n\n## 评估说明\n\n- 默认评估使用 **test** 数据划分\n- 主要指标：**Accuracy**（准确率），采用数值比较方式\n- 附加指标：**DW-ACC**（难度加权准确率）\n  - 权重分配：low=1，medium=2，high=4，top=8\n  - 在不同难度级别间提供平衡的评分\n- 结果按语言分别报告，并提供总体结果\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `poly_math` |\n| **数据集 ID** | [evalscope/PolyMath](https://modelscope.cn/datasets/evalscope/PolyMath/summary) |\n| **论文** | N/A |\n| **标签** | `Math`, `MultiLingual`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 9,000 |\n| 提示词长度（平均） | 342.15 字符 |\n| 提示词长度（最小/最大） | 52 / 1536 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `en-low` | 125 | 292 | 142 | 600 |\n| `zh-low` | 125 | 111.96 | 63 | 206 |\n| `ar-low` | 125 | 259.15 | 138 | 536 |\n| `bn-low` | 125 | 304.42 | 160 | 650 |\n| `de-low` | 125 | 333.42 | 165 | 698 |\n| `es-low` | 125 | 315.7 | 159 | 643 |\n| `fr-low` | 125 | 331.06 | 178 | 634 |\n| `id-low` | 125 | 332.51 | 175 | 691 |\n| `it-low` | 125 | 315.19 | 164 | 661 |\n| `ja-low` | 125 | 145.06 | 82 | 268 |\n| `ko-low` | 125 | 163.17 | 89 | 342 |\n| `ms-low` | 125 | 330.82 | 165 | 603 |\n| `pt-low` | 125 | 306.37 | 160 | 655 |\n| `ru-low` | 125 | 312.67 | 161 | 628 |\n| `sw-low` | 125 | 324.54 | 169 | 638 |\n| `te-low` | 125 | 311.38 | 161 | 575 |\n| `th-low` | 125 | 256.28 | 124 | 519 |\n| `vi-low` | 125 | 302.78 | 159 | 583 |\n| `en-medium` | 125 | 304.88 | 107 | 823 |\n| `zh-medium` | 125 | 182.79 | 52 | 503 |\n| `ar-medium` | 125 | 282.52 | 98 | 794 |\n| `bn-medium` | 125 | 323.46 | 110 | 761 |\n| `de-medium` | 125 | 338.46 | 113 | 941 |\n| `es-medium` | 125 | 322.59 | 120 | 785 |\n| `fr-medium` | 125 | 330.45 | 116 | 766 |\n| `id-medium` | 125 | 328.14 | 114 | 852 |\n| `it-medium` | 125 | 315.01 | 110 | 772 |\n| `ja-medium` | 125 | 210.79 | 68 | 548 |\n| `ko-medium` | 125 | 219.33 | 64 | 547 |\n| `ms-medium` | 125 | 314.84 | 95 | 829 |\n| `pt-medium` | 125 | 314 | 111 | 767 |\n| `ru-medium` | 125 | 334.75 | 120 | 828 |\n| `sw-medium` | 125 | 335 | 110 | 899 |\n| `te-medium` | 125 | 316.54 | 102 | 867 |\n| `th-medium` | 125 | 276.01 | 84 | 658 |\n| `vi-medium` | 125 | 307.78 | 108 | 820 |\n| `en-high` | 125 | 391.3 | 120 | 1434 |\n| `zh-high` | 125 | 212.87 | 70 | 1155 |\n| `ar-high` | 125 | 356.49 | 115 | 1313 |\n| `bn-high` | 125 | 414.23 | 132 | 1464 |\n| `de-high` | 125 | 440.82 | 138 | 1483 |\n| `es-high` | 125 | 422.2 | 134 | 1469 |\n| `fr-high` | 125 | 428.81 | 133 | 1488 |\n| `id-high` | 125 | 437.18 | 128 | 1536 |\n| `it-high` | 125 | 408.41 | 128 | 1445 |\n| `ja-high` | 125 | 246.59 | 84 | 1206 |\n| `ko-high` | 125 | 261.16 | 98 | 1195 |\n| `ms-high` | 125 | 412.78 | 55 | 1454 |\n| `pt-high` | 125 | 408.39 | 127 | 1414 |\n| `ru-high` | 125 | 426.44 | 144 | 1476 |\n| `sw-high` | 125 | 438.1 | 125 | 1476 |\n| `te-high` | 125 | 405.18 | 126 | 1430 |\n| `th-high` | 125 | 351.18 | 108 | 1345 |\n| `vi-high` | 125 | 383.09 | 124 | 1442 |\n| `en-top` | 125 | 420.59 | 141 | 1346 |\n| `zh-top` | 125 | 220.16 | 73 | 876 |\n| `ar-top` | 125 | 378.14 | 136 | 1238 |\n| `bn-top` | 125 | 443.98 | 160 | 1392 |\n| `de-top` | 125 | 470.34 | 169 | 1432 |\n| `es-top` | 125 | 456.15 | 150 | 1432 |\n| `fr-top` | 125 | 464.7 | 153 | 1457 |\n| `id-top` | 125 | 469.23 | 151 | 1478 |\n| `it-top` | 125 | 445.74 | 146 | 1400 |\n| `ja-top` | 125 | 259.17 | 85 | 925 |\n| `ko-top` | 125 | 277.8 | 89 | 968 |\n| `ms-top` | 125 | 458.26 | 144 | 1521 |\n| `pt-top` | 125 | 444.11 | 144 | 1407 |\n| `ru-top` | 125 | 466.7 | 159 | 1440 |\n| `sw-top` | 125 | 469.38 | 147 | 1452 |\n| `te-top` | 125 | 431.14 | 147 | 1323 |\n| `th-top` | 125 | 384.58 | 137 | 1154 |\n| `vi-top` | 125 | 423.55 | 154 | 1352 |\n\n## 样例示例\n\n**子集**: `en-low`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"8ac6f5ab\",\n      \"content\": \"Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\\nNote: Please put the final answer in the $\\\\boxed\\\\{\\\\}$.\"\n    }\n  ],\n  \"target\": \"18\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"level\": \"low\",\n    \"language\": \"en\",\n    \"index\": \"0\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets poly_math \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['poly_math'],\n    dataset_args={\n        'poly_math': {\n            # subset_list: ['en-low', 'zh-low', 'ar-low']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "ac75a4df40015ff06eabfdd35b39b344",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.304795",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

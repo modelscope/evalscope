@@ -1,0 +1,155 @@
+{
+  "meta": {
+    "pretty_name": "SimpleVQA",
+    "dataset_id": "m-a-p/SimpleVQA",
+    "paper_url": null,
+    "tags": [
+      "Reasoning",
+      "MultiModal",
+      "QA"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nSimpleVQA is the first comprehensive multimodal benchmark to evaluate the factuality ability of MLLMs to answer natural language short questions. It features high-quality, challenging queries with static and timeless reference answers.\n\n## Task Description\n\n- **Task Type**: Factual Visual Question Answering\n- **Input**: Image + factual question\n- **Output**: Short factual answer\n- **Domains**: Factuality, visual reasoning, knowledge recall\n\n## Key Features\n\n- Covers multiple tasks and scenarios\n- High-quality, challenging questions\n- Static and timeless reference answers (no temporal dependencies)\n- Straightforward evaluation methodology\n- Tests genuine factual knowledge beyond pattern matching\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** with LLM judge\n- Three-grade evaluation: CORRECT, INCORRECT, NOT_ATTEMPTED\n- LLM judge uses detailed grading rubric for semantic matching\n- Rich metadata includes language, source, and atomic facts\n",
+    "prompt_template": "Answer the question:\n\n{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 2025,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 2025,
+        "prompt_length_mean": 56.22,
+        "prompt_length_min": 27,
+        "prompt_length_max": 1015,
+        "prompt_length_std": 47.31,
+        "target_length_mean": 9.13,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 2025,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1000",
+              "1000x1034",
+              "1000x1053",
+              "1000x1059",
+              "1000x1206",
+              "1000x1220",
+              "1000x1229",
+              "1000x1246",
+              "1000x1259",
+              "1000x1300"
+            ],
+            "resolution_range": {
+              "min": "106x56",
+              "max": "5119x3413"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 56.22,
+      "min": 27,
+      "max": 1015,
+      "std": 47.31
+    },
+    "target_length_mean": 9.13,
+    "computed_at": "2026-01-28T11:17:03.669420",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 2025,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1000x1000",
+          "1000x1034",
+          "1000x1053",
+          "1000x1059",
+          "1000x1206",
+          "1000x1220",
+          "1000x1229",
+          "1000x1246",
+          "1000x1259",
+          "1000x1300"
+        ],
+        "resolution_range": {
+          "min": "106x56",
+          "max": "5119x3413"
+        },
+        "formats": [
+          "jpeg",
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "4340fc24",
+          "content": [
+            {
+              "text": "Answer the question:\n\n图中所示穴位所属的经脉是什么？"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~26.5KB]"
+            }
+          ]
+        }
+      ],
+      "target": "足阳明胃经",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "data_id": 0,
+        "image_description": "",
+        "language": "CN",
+        "original_category": "中华文化_中医",
+        "source": "https://baike.baidu.com/item/%E4%BC%8F%E5%85%94%E7%A9%B4/3503684#:~:text\\u003d%E4%BA%BA%E4%BD%93%E7%A9%B4%E4%BD%8D%E5%90%8D%E4%BC%8F%E5%85%94%E7%A9%B4F%C3%BA%20t%C3%B9%EF%BC%88ST32%EF%BC%89%E5%B1%9E%E8%B6%B3%E9%98%B3%E6%98%8E%E8%83%83%E7%BB%8 ... [TRUNCATED] ... 4%BE%A7%E7%AB%AF%E7%9A%84%E8%BF%9E%E7%BA%BF%E4%B8%8A%EF%BC%8C%E9%AB%8C%E9%AA%A8%E4%B8%8A%E7%BC%98%E4%B8%8A6%E5%AF%B8%E3%80%82%E4%BC%8F%E5%85%94%E5%88%AB%E5%90%8D%E5%A4%96%E4%B8%98%E3%80%81%E5%A4%96%E5%8B%BE%EF%BC%8C%E4%BD%8D%E4%BA%8E%E5%A4%A7",
+        "atomic_question": "图中所示穴位的名称是什么？",
+        "atomic_fact": "伏兔"
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# SimpleVQA\n\n\n## Overview\n\nSimpleVQA is the first comprehensive multimodal benchmark to evaluate the factuality ability of MLLMs to answer natural language short questions. It features high-quality, challenging queries with static and timeless reference answers.\n\n## Task Description\n\n- **Task Type**: Factual Visual Question Answering\n- **Input**: Image + factual question\n- **Output**: Short factual answer\n- **Domains**: Factuality, visual reasoning, knowledge recall\n\n## Key Features\n\n- Covers multiple tasks and scenarios\n- High-quality, challenging questions\n- Static and timeless reference answers (no temporal dependencies)\n- Straightforward evaluation methodology\n- Tests genuine factual knowledge beyond pattern matching\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** with LLM judge\n- Three-grade evaluation: CORRECT, INCORRECT, NOT_ATTEMPTED\n- LLM judge uses detailed grading rubric for semantic matching\n- Rich metadata includes language, source, and atomic facts\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `simple_vqa` |\n| **Dataset ID** | [m-a-p/SimpleVQA](https://modelscope.cn/datasets/m-a-p/SimpleVQA/summary) |\n| **Paper** | N/A |\n| **Tags** | `MultiModal`, `QA`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 2,025 |\n| Prompt Length (Mean) | 56.22 chars |\n| Prompt Length (Min/Max) | 27 / 1015 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 2,025 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 106x56 - 5119x3413 |\n| Formats | jpeg, png |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"4340fc24\",\n      \"content\": [\n        {\n          \"text\": \"Answer the question:\\n\\n图中所示穴位所属的经脉是什么？\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~26.5KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"足阳明胃经\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"data_id\": 0,\n    \"image_description\": \"\",\n    \"language\": \"CN\",\n    \"original_category\": \"中华文化_中医\",\n    \"source\": \"https://baike.baidu.com/item/%E4%BC%8F%E5%85%94%E7%A9%B4/3503684#:~:text\\\\u003d%E4%BA%BA%E4%BD%93%E7%A9%B4%E4%BD%8D%E5%90%8D%E4%BC%8F%E5%85%94%E7%A9%B4F%C3%BA%20t%C3%B9%EF%BC%88ST32%EF%BC%89%E5%B1%9E%E8%B6%B3%E9%98%B3%E6%98%8E%E8%83%83%E7%BB%8 ... [TRUNCATED] ... 4%BE%A7%E7%AB%AF%E7%9A%84%E8%BF%9E%E7%BA%BF%E4%B8%8A%EF%BC%8C%E9%AB%8C%E9%AA%A8%E4%B8%8A%E7%BC%98%E4%B8%8A6%E5%AF%B8%E3%80%82%E4%BC%8F%E5%85%94%E5%88%AB%E5%90%8D%E5%A4%96%E4%B8%98%E3%80%81%E5%A4%96%E5%8B%BE%EF%BC%8C%E4%BD%8D%E4%BA%8E%E5%A4%A7\",\n    \"atomic_question\": \"图中所示穴位的名称是什么？\",\n    \"atomic_fact\": \"伏兔\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the question:\n\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets simple_vqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['simple_vqa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# SimpleVQA\n\n## 概述\n\nSimpleVQA 是首个全面的多模态基准测试，用于评估多模态大语言模型（MLLMs）回答自然语言简短问题时的事实性能力。该基准包含高质量、具有挑战性的问题，并配有静态且不受时间影响的标准答案。\n\n## 任务描述\n\n- **任务类型**：事实性视觉问答（Factual Visual Question Answering）\n- **输入**：图像 + 事实性问题\n- **输出**：简短的事实性答案\n- **领域**：事实性、视觉推理、知识回忆\n\n## 主要特点\n\n- 覆盖多种任务和场景\n- 高质量、具有挑战性的问题\n- 静态且不受时间影响的标准答案（无时间依赖性）\n- 评估方法直接明了\n- 测试模型真实的事实性知识，而非仅依赖模式匹配\n\n## 评估说明\n\n- 默认使用 **test** 数据划分进行评估\n- 主要指标：基于大语言模型（LLM）评判器的 **准确率（Accuracy）**\n- 三级评分标准：CORRECT（正确）、INCORRECT（错误）、NOT_ATTEMPTED（未作答）\n- LLM 评判器采用详细的评分规则进行语义匹配\n- 包含丰富的元数据，如语言、来源和原子事实\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `simple_vqa` |\n| **数据集ID** | [m-a-p/SimpleVQA](https://modelscope.cn/datasets/m-a-p/SimpleVQA/summary) |\n| **论文** | N/A |\n| **标签** | `MultiModal`, `QA`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 2,025 |\n| 提示词长度（平均） | 56.22 字符 |\n| 提示词长度（最小/最大） | 27 / 1015 字符 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 2,025 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 106x56 - 5119x3413 |\n| 格式 | jpeg, png |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"4340fc24\",\n      \"content\": [\n        {\n          \"text\": \"Answer the question:\\n\\n图中所示穴位所属的经脉是什么？\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~26.5KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"足阳明胃经\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"data_id\": 0,\n    \"image_description\": \"\",\n    \"language\": \"CN\",\n    \"original_category\": \"中华文化_中医\",\n    \"source\": \"https://baike.baidu.com/item/%E4%BC%8F%E5%85%94%E7%A9%B4/3503684#:~:text\\\\u003d%E4%BA%BA%E4%BD%93%E7%A9%B4%E4%BD%8D%E5%90%8D%E4%BC%8F%E5%85%94%E7%A9%B4F%C3%BA%20t%C3%B9%EF%BC%88ST32%EF%BC%89%E5%B1%9E%E8%B6%B3%E9%98%B3%E6%98%8E%E8%83%83%E7%BB%8 ... [TRUNCATED] ... 4%BE%A7%E7%AB%AF%E7%9A%84%E8%BF%9E%E7%BA%BF%E4%B8%8A%EF%BC%8C%E9%AB%8C%E9%AA%A8%E4%B8%8A%E7%BC%98%E4%B8%8A6%E5%AF%B8%E3%80%82%E4%BC%8F%E5%85%94%E5%88%AB%E5%90%8D%E5%A4%96%E4%B8%98%E3%80%81%E5%A4%96%E5%8B%BE%EF%BC%8C%E4%BD%8D%E4%BA%8E%E5%A4%A7\",\n    \"atomic_question\": \"图中所示穴位的名称是什么？\",\n    \"atomic_fact\": \"伏兔\"\n  }\n}\n```\n\n*注：部分内容因显示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the question:\n\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets simple_vqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['simple_vqa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "131873bc4b89dc0c228429e2225b4981",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.397651",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

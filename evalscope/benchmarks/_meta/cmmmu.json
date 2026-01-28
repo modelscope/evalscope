@@ -1,0 +1,1401 @@
+{
+  "meta": {
+    "pretty_name": "CMMMU",
+    "dataset_id": "lmms-lab/CMMMU",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Knowledge",
+      "QA",
+      "Chinese"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "val",
+    "train_split": "",
+    "subset_list": [
+      "设计",
+      "音乐",
+      "艺术",
+      "艺术理论",
+      "经济",
+      "会计",
+      "金融",
+      "管理",
+      "营销",
+      "物理",
+      "地理",
+      "化学",
+      "生物",
+      "数学",
+      "临床医学",
+      "公共卫生",
+      "基础医学",
+      "诊断学与实验室医学",
+      "制药",
+      "历史",
+      "心理学",
+      "文献学",
+      "社会学",
+      "计算机科学",
+      "电子学",
+      "机械工程",
+      "能源和电力",
+      "材料",
+      "建筑学",
+      "农业"
+    ],
+    "description": "\n## Overview\n\nCMMU (Chinese Massive Multi-discipline Multimodal Understanding) includes manually collected multimodal questions from college exams, quizzes, and textbooks, covering six core disciplines in Chinese. It is the Chinese counterpart to MMMU.\n\n## Task Description\n\n- **Task Type**: Chinese Multimodal Question Answering\n- **Input**: Image(s) + question in Chinese with answer choices\n- **Output**: Correct answer choice\n- **Language**: Chinese\n\n## Key Features\n\n- 30 subjects across 6 core disciplines\n- Art & Design, Business, Science, Health & Medicine, Humanities & Social Science, Tech & Engineering\n- 39 heterogeneous image types (charts, diagrams, maps, tables, etc.)\n- College-level difficulty\n- Multiple question types (multiple-choice, true/false, short answer)\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on validation split\n- Simple accuracy metric\n- Chinese language prompts used\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 900,
+    "subset_stats": [
+      {
+        "name": "设计",
+        "sample_count": 18,
+        "prompt_length_mean": 216.39,
+        "prompt_length_min": 136,
+        "prompt_length_max": 347,
+        "prompt_length_std": 70.41,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 22,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.22
+            },
+            "resolutions": [
+              "1600x1002",
+              "172x552",
+              "221x255",
+              "258x263",
+              "270x239",
+              "274x243",
+              "276x248",
+              "276x260",
+              "310x221",
+              "344x281"
+            ],
+            "resolution_range": {
+              "min": "221x255",
+              "max": "1600x1002"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "音乐",
+        "sample_count": 21,
+        "prompt_length_mean": 149.57,
+        "prompt_length_min": 110,
+        "prompt_length_max": 185,
+        "prompt_length_std": 20.06,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 24,
+            "count_per_sample": {
+              "min": 1,
+              "max": 4,
+              "mean": 1.14
+            },
+            "resolutions": [
+              "120x75",
+              "1246x648",
+              "1254x524",
+              "1265x118",
+              "1341x316",
+              "177x233",
+              "198x136",
+              "309x482",
+              "443x479",
+              "443x484"
+            ],
+            "resolution_range": {
+              "min": "120x75",
+              "max": "1246x648"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "艺术",
+        "sample_count": 16,
+        "prompt_length_mean": 166.44,
+        "prompt_length_min": 143,
+        "prompt_length_max": 240,
+        "prompt_length_std": 24.19,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 16,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1320x633",
+              "213x156",
+              "257x267",
+              "3000x747",
+              "334x182",
+              "410x542",
+              "438x323",
+              "486x325",
+              "488x261",
+              "512x602"
+            ],
+            "resolution_range": {
+              "min": "213x156",
+              "max": "3000x747"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "艺术理论",
+        "sample_count": 33,
+        "prompt_length_mean": 171.21,
+        "prompt_length_min": 118,
+        "prompt_length_max": 268,
+        "prompt_length_std": 39.33,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 36,
+            "count_per_sample": {
+              "min": 1,
+              "max": 4,
+              "mean": 1.09
+            },
+            "resolutions": [
+              "1080x491",
+              "1083x657",
+              "147x196",
+              "204x192",
+              "283x301",
+              "300x263",
+              "329x512",
+              "330x378",
+              "332x593",
+              "344x307"
+            ],
+            "resolution_range": {
+              "min": "147x196",
+              "max": "600x1649"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "经济",
+        "sample_count": 20,
+        "prompt_length_mean": 227.3,
+        "prompt_length_min": 105,
+        "prompt_length_max": 412,
+        "prompt_length_std": 83.57,
+        "target_length_mean": 1.5,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 21,
+            "count_per_sample": {
+              "min": 1,
+              "max": 2,
+              "mean": 1.05
+            },
+            "resolutions": [
+              "1079x180",
+              "1585x249",
+              "166x129",
+              "302x292",
+              "307x196",
+              "314x242",
+              "333x242",
+              "360x202",
+              "361x127",
+              "436x369"
+            ],
+            "resolution_range": {
+              "min": "166x129",
+              "max": "858x485"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "会计",
+        "sample_count": 39,
+        "prompt_length_mean": 197.05,
+        "prompt_length_min": 103,
+        "prompt_length_max": 528,
+        "prompt_length_std": 82.76,
+        "target_length_mean": 3.46,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 40,
+            "count_per_sample": {
+              "min": 1,
+              "max": 2,
+              "mean": 1.03
+            },
+            "resolutions": [
+              "1143x558",
+              "242x341",
+              "312x237",
+              "462x314",
+              "496x131",
+              "504x469",
+              "505x314",
+              "507x314",
+              "556x88",
+              "564x87"
+            ],
+            "resolution_range": {
+              "min": "577x59",
+              "max": "1143x558"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "金融",
+        "sample_count": 29,
+        "prompt_length_mean": 166,
+        "prompt_length_min": 106,
+        "prompt_length_max": 333,
+        "prompt_length_std": 49.36,
+        "target_length_mean": 3.28,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 30,
+            "count_per_sample": {
+              "min": 1,
+              "max": 2,
+              "mean": 1.03
+            },
+            "resolutions": [
+              "363x132",
+              "389x116",
+              "412x135",
+              "465x102",
+              "477x121",
+              "502x94",
+              "503x150",
+              "504x85",
+              "507x97",
+              "519x98"
+            ],
+            "resolution_range": {
+              "min": "504x85",
+              "max": "942x512"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "管理",
+        "sample_count": 22,
+        "prompt_length_mean": 236.73,
+        "prompt_length_min": 135,
+        "prompt_length_max": 423,
+        "prompt_length_std": 87.2,
+        "target_length_mean": 1.41,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 22,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "300x671",
+              "334x214",
+              "457x105",
+              "504x144",
+              "507x145",
+              "518x543",
+              "520x112",
+              "545x148",
+              "583x165",
+              "595x149"
+            ],
+            "resolution_range": {
+              "min": "457x105",
+              "max": "838x583"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "营销",
+        "sample_count": 16,
+        "prompt_length_mean": 191.62,
+        "prompt_length_min": 131,
+        "prompt_length_max": 370,
+        "prompt_length_std": 61.67,
+        "target_length_mean": 1.75,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 16,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "259x363",
+              "372x56",
+              "413x62",
+              "456x209",
+              "505x225",
+              "532x138",
+              "564x107",
+              "565x440",
+              "629x232",
+              "681x69"
+            ],
+            "resolution_range": {
+              "min": "372x56",
+              "max": "900x596"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "物理",
+        "sample_count": 35,
+        "prompt_length_mean": 266.11,
+        "prompt_length_min": 146,
+        "prompt_length_max": 497,
+        "prompt_length_std": 96.85,
+        "target_length_mean": 1.46,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 38,
+            "count_per_sample": {
+              "min": 1,
+              "max": 4,
+              "mean": 1.09
+            },
+            "resolutions": [
+              "138x116",
+              "141x85",
+              "142x237",
+              "143x87",
+              "144x125",
+              "148x109",
+              "155x155",
+              "174x169",
+              "193x118",
+              "198x139"
+            ],
+            "resolution_range": {
+              "min": "98x72",
+              "max": "462x366"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "地理",
+        "sample_count": 49,
+        "prompt_length_mean": 160.02,
+        "prompt_length_min": 93,
+        "prompt_length_max": 326,
+        "prompt_length_std": 53.88,
+        "target_length_mean": 1.71,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 53,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.08
+            },
+            "resolutions": [
+              "1010x558",
+              "125x113",
+              "139x105",
+              "148x105",
+              "149x122",
+              "1500x3000",
+              "157x96",
+              "158x123",
+              "163x167",
+              "174x157"
+            ],
+            "resolution_range": {
+              "min": "97x112",
+              "max": "1500x3000"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "化学",
+        "sample_count": 42,
+        "prompt_length_mean": 187.4,
+        "prompt_length_min": 103,
+        "prompt_length_max": 322,
+        "prompt_length_std": 56.21,
+        "target_length_mean": 1.9,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 59,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.4
+            },
+            "resolutions": [
+              "111x66",
+              "115x88",
+              "120x112",
+              "132x122",
+              "144x82",
+              "147x39",
+              "154x111",
+              "159x108",
+              "172x103",
+              "172x83"
+            ],
+            "resolution_range": {
+              "min": "147x39",
+              "max": "817x614"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "生物",
+        "sample_count": 35,
+        "prompt_length_mean": 162.49,
+        "prompt_length_min": 91,
+        "prompt_length_max": 293,
+        "prompt_length_std": 49.56,
+        "target_length_mean": 2.31,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 35,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "147x179",
+              "151x321",
+              "189x245",
+              "2000x1500",
+              "209x297",
+              "235x396",
+              "312x263",
+              "314x258",
+              "317x191",
+              "324x392"
+            ],
+            "resolution_range": {
+              "min": "147x179",
+              "max": "2000x1500"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "数学",
+        "sample_count": 43,
+        "prompt_length_mean": 188.23,
+        "prompt_length_min": 101,
+        "prompt_length_max": 370,
+        "prompt_length_std": 58.4,
+        "target_length_mean": 1.3,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 74,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.72
+            },
+            "resolutions": [
+              "1009x197",
+              "100x108",
+              "109x112",
+              "112x105",
+              "1132x316",
+              "114x107",
+              "114x231",
+              "117x121",
+              "118x111",
+              "1201x232"
+            ],
+            "resolution_range": {
+              "min": "88x85",
+              "max": "1132x316"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "临床医学",
+        "sample_count": 28,
+        "prompt_length_mean": 183.39,
+        "prompt_length_min": 94,
+        "prompt_length_max": 310,
+        "prompt_length_std": 59.03,
+        "target_length_mean": 1.36,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 28,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1059x210",
+              "170x176",
+              "240x190",
+              "327x213",
+              "328x460",
+              "342x318",
+              "343x429",
+              "344x223",
+              "347x206",
+              "349x474"
+            ],
+            "resolution_range": {
+              "min": "170x176",
+              "max": "759x579"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "公共卫生",
+        "sample_count": 46,
+        "prompt_length_mean": 183.04,
+        "prompt_length_min": 110,
+        "prompt_length_max": 271,
+        "prompt_length_std": 45.35,
+        "target_length_mean": 1.78,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 46,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "158x125",
+              "185x132",
+              "242x479",
+              "255x139",
+              "284x93",
+              "350x222",
+              "370x111",
+              "379x261",
+              "396x398",
+              "404x291"
+            ],
+            "resolution_range": {
+              "min": "158x125",
+              "max": "697x751"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "基础医学",
+        "sample_count": 32,
+        "prompt_length_mean": 146.56,
+        "prompt_length_min": 92,
+        "prompt_length_max": 219,
+        "prompt_length_std": 27.21,
+        "target_length_mean": 1.47,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 32,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "251x165",
+              "281x82",
+              "308x227",
+              "311x278",
+              "314x236",
+              "360x272",
+              "372x249",
+              "378x189",
+              "389x312",
+              "399x153"
+            ],
+            "resolution_range": {
+              "min": "281x82",
+              "max": "842x536"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "诊断学与实验室医学",
+        "sample_count": 12,
+        "prompt_length_mean": 150.08,
+        "prompt_length_min": 116,
+        "prompt_length_max": 189,
+        "prompt_length_std": 20.87,
+        "target_length_mean": 1.17,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 12,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "276x275",
+              "337x247",
+              "375x452",
+              "395x293",
+              "402x92",
+              "417x217",
+              "452x74",
+              "458x135",
+              "494x329",
+              "626x342"
+            ],
+            "resolution_range": {
+              "min": "452x74",
+              "max": "672x414"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "制药",
+        "sample_count": 35,
+        "prompt_length_mean": 181.77,
+        "prompt_length_min": 97,
+        "prompt_length_max": 413,
+        "prompt_length_std": 64.14,
+        "target_length_mean": 1.54,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 41,
+            "count_per_sample": {
+              "min": 1,
+              "max": 4,
+              "mean": 1.17
+            },
+            "resolutions": [
+              "1070x237",
+              "126x81",
+              "150x132",
+              "188x223",
+              "198x159",
+              "255x214",
+              "294x68",
+              "309x456",
+              "351x230",
+              "360x115"
+            ],
+            "resolution_range": {
+              "min": "126x81",
+              "max": "831x590"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "历史",
+        "sample_count": 25,
+        "prompt_length_mean": 185.84,
+        "prompt_length_min": 111,
+        "prompt_length_max": 264,
+        "prompt_length_std": 48.14,
+        "target_length_mean": 1.08,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 34,
+            "count_per_sample": {
+              "min": 1,
+              "max": 4,
+              "mean": 1.36
+            },
+            "resolutions": [
+              "104x100",
+              "111x100",
+              "113x110",
+              "113x123",
+              "114x111",
+              "117x119",
+              "1199x623",
+              "1254x936",
+              "147x103",
+              "195x205"
+            ],
+            "resolution_range": {
+              "min": "88x110",
+              "max": "1254x936"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "心理学",
+        "sample_count": 29,
+        "prompt_length_mean": 144.83,
+        "prompt_length_min": 96,
+        "prompt_length_max": 207,
+        "prompt_length_std": 30.39,
+        "target_length_mean": 1.28,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 37,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.28
+            },
+            "resolutions": [
+              "104x102",
+              "104x83",
+              "106x91",
+              "108x102",
+              "108x89",
+              "109x154",
+              "120x94",
+              "1300x333",
+              "1325x333",
+              "137x117"
+            ],
+            "resolution_range": {
+              "min": "74x81",
+              "max": "966x745"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "文献学",
+        "sample_count": 7,
+        "prompt_length_mean": 163.86,
+        "prompt_length_min": 109,
+        "prompt_length_max": 227,
+        "prompt_length_std": 42.8,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 7,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "209x771",
+              "298x428",
+              "344x245",
+              "422x576",
+              "500x362",
+              "640x568",
+              "752x140"
+            ],
+            "resolution_range": {
+              "min": "344x245",
+              "max": "640x568"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "社会学",
+        "sample_count": 24,
+        "prompt_length_mean": 165,
+        "prompt_length_min": 100,
+        "prompt_length_max": 249,
+        "prompt_length_std": 31.61,
+        "target_length_mean": 1.79,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 24,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "160x109",
+              "221x139",
+              "270x379",
+              "298x99",
+              "304x197",
+              "336x450",
+              "361x171",
+              "364x283",
+              "510x285",
+              "518x117"
+            ],
+            "resolution_range": {
+              "min": "160x109",
+              "max": "849x933"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "计算机科学",
+        "sample_count": 35,
+        "prompt_length_mean": 218.89,
+        "prompt_length_min": 101,
+        "prompt_length_max": 532,
+        "prompt_length_std": 91.57,
+        "target_length_mean": 1.46,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 41,
+            "count_per_sample": {
+              "min": 1,
+              "max": 4,
+              "mean": 1.17
+            },
+            "resolutions": [
+              "1048x95",
+              "1120x335",
+              "152x151",
+              "154x144",
+              "156x143",
+              "164x138",
+              "176x133",
+              "179x125",
+              "179x138",
+              "180x153"
+            ],
+            "resolution_range": {
+              "min": "189x112",
+              "max": "996x567"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "电子学",
+        "sample_count": 29,
+        "prompt_length_mean": 179.48,
+        "prompt_length_min": 110,
+        "prompt_length_max": 318,
+        "prompt_length_std": 55.16,
+        "target_length_mean": 1.17,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 32,
+            "count_per_sample": {
+              "min": 1,
+              "max": 4,
+              "mean": 1.1
+            },
+            "resolutions": [
+              "125x103",
+              "145x224",
+              "176x159",
+              "198x228",
+              "200x149",
+              "203x146",
+              "208x93",
+              "210x95",
+              "213x100",
+              "213x105"
+            ],
+            "resolution_range": {
+              "min": "125x103",
+              "max": "667x393"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "机械工程",
+        "sample_count": 40,
+        "prompt_length_mean": 196.1,
+        "prompt_length_min": 98,
+        "prompt_length_max": 817,
+        "prompt_length_std": 123.19,
+        "target_length_mean": 1.32,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 56,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.4
+            },
+            "resolutions": [
+              "107x83",
+              "109x77",
+              "113x174",
+              "117x203",
+              "124x86",
+              "130x111",
+              "130x204",
+              "131x110",
+              "131x115",
+              "133x113"
+            ],
+            "resolution_range": {
+              "min": "88x81",
+              "max": "930x482"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "能源和电力",
+        "sample_count": 32,
+        "prompt_length_mean": 186.44,
+        "prompt_length_min": 100,
+        "prompt_length_max": 330,
+        "prompt_length_std": 59.02,
+        "target_length_mean": 1.16,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 32,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "182x171",
+              "243x222",
+              "260x419",
+              "266x301",
+              "297x83",
+              "301x265",
+              "305x189",
+              "312x295",
+              "342x295",
+              "388x266"
+            ],
+            "resolution_range": {
+              "min": "297x83",
+              "max": "571x859"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "材料",
+        "sample_count": 38,
+        "prompt_length_mean": 194.5,
+        "prompt_length_min": 102,
+        "prompt_length_max": 476,
+        "prompt_length_std": 67.94,
+        "target_length_mean": 1.16,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 38,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1137x562",
+              "139x202",
+              "167x126",
+              "225x216",
+              "244x132",
+              "254x204",
+              "256x314",
+              "260x156",
+              "265x279",
+              "268x182"
+            ],
+            "resolution_range": {
+              "min": "56x90",
+              "max": "1137x562"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "建筑学",
+        "sample_count": 49,
+        "prompt_length_mean": 175.39,
+        "prompt_length_min": 97,
+        "prompt_length_max": 415,
+        "prompt_length_std": 63.89,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 56,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.14
+            },
+            "resolutions": [
+              "1004x567",
+              "1016x521",
+              "112x38",
+              "1136x532",
+              "151x83",
+              "154x193",
+              "159x179",
+              "168x215",
+              "175x214",
+              "178x179"
+            ],
+            "resolution_range": {
+              "min": "112x38",
+              "max": "1136x532"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "农业",
+        "sample_count": 21,
+        "prompt_length_mean": 215.86,
+        "prompt_length_min": 96,
+        "prompt_length_max": 1045,
+        "prompt_length_std": 196.29,
+        "target_length_mean": 1.1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 21,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x769",
+              "1225x591",
+              "206x237",
+              "260x213",
+              "273x210",
+              "280x183",
+              "317x302",
+              "320x332",
+              "324x266",
+              "327x240"
+            ],
+            "resolution_range": {
+              "min": "492x81",
+              "max": "1024x769"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 185.59,
+      "min": 91,
+      "max": 1045,
+      "std": 74.3
+    },
+    "target_length_mean": 1.55,
+    "computed_at": "2026-01-28T11:12:45.050421",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 1023,
+        "count_per_sample": {
+          "min": 1,
+          "max": 5,
+          "mean": 1.14
+        },
+        "resolutions": [
+          "1004x567",
+          "1009x197",
+          "100x108",
+          "1010x558",
+          "1016x521",
+          "1024x769",
+          "1048x95",
+          "104x100",
+          "104x102",
+          "104x83"
+        ],
+        "resolution_range": {
+          "min": "112x38",
+          "max": "1500x3000"
+        },
+        "formats": [
+          "jpeg",
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "47c0e169",
+          "content": [
+            {
+              "text": "请回答以下多项选择题，并选出正确选项。这些题目可能包括单选和多选题型。如果所提供的信息不足以确定一个明确的答案，那么请根据可用的数据和你的判断来选择最可能正确的选项。\n\n问题："
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~17.4KB]"
+            },
+            {
+              "text": "为一幅灰度图，要为它局部添加颜色以得到右图所示的效果，正确的操作步骤是（ ）。\n选项：\n(A) 先将色彩模式转为RGB，然后用工具箱中的 【画笔工具】上色\n(B) 先将色彩模式转为RGB，制作局部选区，然后打开【色相/饱和度】对话框，在其中点中【着色】项,调节色彩属性参数\n(C) 先将色彩模式转为RGB，制作局部选区，然后打开【可选颜色】对话框,调节参数\n(D) 打开【色相/饱和度】对话框，直接调节色彩属性参数\n\n正确答案：\n"
+            }
+          ]
+        }
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "设计",
+      "metadata": {
+        "id": "1900",
+        "type": "选择",
+        "source_type": "website",
+        "analysis": null,
+        "distribution": "本科",
+        "difficulty_level": "easy",
+        "subcategory": "设计",
+        "category": "艺术与设计",
+        "subfield": "['图像编辑', '色彩调整']",
+        "img_type": "['屏幕截图']",
+        "answer": "B",
+        "option1": "先将色彩模式转为RGB，然后用工具箱中的 【画笔工具】上色",
+        "option2": "先将色彩模式转为RGB，制作局部选区，然后打开【色相/饱和度】对话框，在其中点中【着色】项,调节色彩属性参数",
+        "option3": "先将色彩模式转为RGB，制作局部选区，然后打开【可选颜色】对话框,调节参数",
+        "option4": "打开【色相/饱和度】对话框，直接调节色彩属性参数"
+      }
+    },
+    "subset": "设计",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# CMMMU\n\n\n## Overview\n\nCMMU (Chinese Massive Multi-discipline Multimodal Understanding) includes manually collected multimodal questions from college exams, quizzes, and textbooks, covering six core disciplines in Chinese. It is the Chinese counterpart to MMMU.\n\n## Task Description\n\n- **Task Type**: Chinese Multimodal Question Answering\n- **Input**: Image(s) + question in Chinese with answer choices\n- **Output**: Correct answer choice\n- **Language**: Chinese\n\n## Key Features\n\n- 30 subjects across 6 core disciplines\n- Art & Design, Business, Science, Health & Medicine, Humanities & Social Science, Tech & Engineering\n- 39 heterogeneous image types (charts, diagrams, maps, tables, etc.)\n- College-level difficulty\n- Multiple question types (multiple-choice, true/false, short answer)\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on validation split\n- Simple accuracy metric\n- Chinese language prompts used\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `cmmmu` |\n| **Dataset ID** | [lmms-lab/CMMMU](https://modelscope.cn/datasets/lmms-lab/CMMMU/summary) |\n| **Paper** | N/A |\n| **Tags** | `Chinese`, `Knowledge`, `MultiModal`, `QA` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `val` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 900 |\n| Prompt Length (Mean) | 185.59 chars |\n| Prompt Length (Min/Max) | 91 / 1045 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `设计` | 18 | 216.39 | 136 | 347 |\n| `音乐` | 21 | 149.57 | 110 | 185 |\n| `艺术` | 16 | 166.44 | 143 | 240 |\n| `艺术理论` | 33 | 171.21 | 118 | 268 |\n| `经济` | 20 | 227.3 | 105 | 412 |\n| `会计` | 39 | 197.05 | 103 | 528 |\n| `金融` | 29 | 166 | 106 | 333 |\n| `管理` | 22 | 236.73 | 135 | 423 |\n| `营销` | 16 | 191.62 | 131 | 370 |\n| `物理` | 35 | 266.11 | 146 | 497 |\n| `地理` | 49 | 160.02 | 93 | 326 |\n| `化学` | 42 | 187.4 | 103 | 322 |\n| `生物` | 35 | 162.49 | 91 | 293 |\n| `数学` | 43 | 188.23 | 101 | 370 |\n| `临床医学` | 28 | 183.39 | 94 | 310 |\n| `公共卫生` | 46 | 183.04 | 110 | 271 |\n| `基础医学` | 32 | 146.56 | 92 | 219 |\n| `诊断学与实验室医学` | 12 | 150.08 | 116 | 189 |\n| `制药` | 35 | 181.77 | 97 | 413 |\n| `历史` | 25 | 185.84 | 111 | 264 |\n| `心理学` | 29 | 144.83 | 96 | 207 |\n| `文献学` | 7 | 163.86 | 109 | 227 |\n| `社会学` | 24 | 165 | 100 | 249 |\n| `计算机科学` | 35 | 218.89 | 101 | 532 |\n| `电子学` | 29 | 179.48 | 110 | 318 |\n| `机械工程` | 40 | 196.1 | 98 | 817 |\n| `能源和电力` | 32 | 186.44 | 100 | 330 |\n| `材料` | 38 | 194.5 | 102 | 476 |\n| `建筑学` | 49 | 175.39 | 97 | 415 |\n| `农业` | 21 | 215.86 | 96 | 1045 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 1,023 |\n| Images per Sample | min: 1, max: 5, mean: 1.14 |\n| Resolution Range | 112x38 - 1500x3000 |\n| Formats | jpeg, png |\n\n\n## Sample Example\n\n**Subset**: `设计`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"47c0e169\",\n      \"content\": [\n        {\n          \"text\": \"请回答以下多项选择题，并选出正确选项。这些题目可能包括单选和多选题型。如果所提供的信息不足以确定一个明确的答案，那么请根据可用的数据和你的判断来选择最可能正确的选项。\\n\\n问题：\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~17.4KB]\"\n        },\n        {\n          \"text\": \"为一幅灰度图，要为它局部添加颜色以得到右图所示的效果，正确的操作步骤是（ ）。\\n选项：\\n(A) 先将色彩模式转为RGB，然后用工具箱中的 【画笔工具】上色\\n(B) 先将色彩模式转为RGB，制作局部选区，然后打开【色相/饱和度】对话框，在其中点中【着色】项,调节色彩属性参数\\n(C) 先将色彩模式转为RGB，制作局部选区，然后打开【可选颜色】对话框,调节参数\\n(D) 打开【色相/饱和度】对话框，直接调节色彩属性参数\\n\\n正确答案：\\n\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"设计\",\n  \"metadata\": {\n    \"id\": \"1900\",\n    \"type\": \"选择\",\n    \"source_type\": \"website\",\n    \"analysis\": null,\n    \"distribution\": \"本科\",\n    \"difficulty_level\": \"easy\",\n    \"subcategory\": \"设计\",\n    \"category\": \"艺术与设计\",\n    \"subfield\": \"['图像编辑', '色彩调整']\",\n    \"img_type\": \"['屏幕截图']\",\n    \"answer\": \"B\",\n    \"option1\": \"先将色彩模式转为RGB，然后用工具箱中的 【画笔工具】上色\",\n    \"option2\": \"先将色彩模式转为RGB，制作局部选区，然后打开【色相/饱和度】对话框，在其中点中【着色】项,调节色彩属性参数\",\n    \"option3\": \"先将色彩模式转为RGB，制作局部选区，然后打开【可选颜色】对话框,调节参数\",\n    \"option4\": \"打开【色相/饱和度】对话框，直接调节色彩属性参数\"\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets cmmmu \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['cmmmu'],\n    dataset_args={\n        'cmmmu': {\n            # subset_list: ['设计', '音乐', '艺术']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# CMMMU\n\n\n## 概述\n\nCMMU（Chinese Massive Multi-discipline Multimodal Understanding，中文大规模多学科多模态理解）包含从大学考试、测验和教材中人工收集的多模态问题，涵盖中文语境下的六个核心学科。它是 MMMU 的中文对应版本。\n\n## 任务描述\n\n- **任务类型**：中文多模态问答\n- **输入**：图像 + 中文问题及选项\n- **输出**：正确选项\n- **语言**：中文\n\n## 主要特点\n\n- 覆盖6个核心学科的30个科目  \n- 艺术与设计、商业、科学、健康与医学、人文与社会科学、技术与工程  \n- 39种异构图像类型（图表、示意图、地图、表格等）  \n- 大学级别难度  \n- 多种题型（单选、多选、判断、简答）\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估  \n- 在验证集（validation split）上进行评估  \n- 使用简单准确率（accuracy）作为指标  \n- 使用中文提示词  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `cmmmu` |\n| **数据集ID** | [lmms-lab/CMMMU](https://modelscope.cn/datasets/lmms-lab/CMMMU/summary) |\n| **论文** | N/A |\n| **标签** | `Chinese`, `Knowledge`, `MultiModal`, `QA` |\n| **指标** | `acc` |\n| **默认Shots数** | 0-shot |\n| **评估划分** | `val` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 900 |\n| 提示词长度（平均） | 185.59 字符 |\n| 提示词长度（最小/最大） | 91 / 1045 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `设计` | 18 | 216.39 | 136 | 347 |\n| `音乐` | 21 | 149.57 | 110 | 185 |\n| `艺术` | 16 | 166.44 | 143 | 240 |\n| `艺术理论` | 33 | 171.21 | 118 | 268 |\n| `经济` | 20 | 227.3 | 105 | 412 |\n| `会计` | 39 | 197.05 | 103 | 528 |\n| `金融` | 29 | 166 | 106 | 333 |\n| `管理` | 22 | 236.73 | 135 | 423 |\n| `营销` | 16 | 191.62 | 131 | 370 |\n| `物理` | 35 | 266.11 | 146 | 497 |\n| `地理` | 49 | 160.02 | 93 | 326 |\n| `化学` | 42 | 187.4 | 103 | 322 |\n| `生物` | 35 | 162.49 | 91 | 293 |\n| `数学` | 43 | 188.23 | 101 | 370 |\n| `临床医学` | 28 | 183.39 | 94 | 310 |\n| `公共卫生` | 46 | 183.04 | 110 | 271 |\n| `基础医学` | 32 | 146.56 | 92 | 219 |\n| `诊断学与实验室医学` | 12 | 150.08 | 116 | 189 |\n| `制药` | 35 | 181.77 | 97 | 413 |\n| `历史` | 25 | 185.84 | 111 | 264 |\n| `心理学` | 29 | 144.83 | 96 | 207 |\n| `文献学` | 7 | 163.86 | 109 | 227 |\n| `社会学` | 24 | 165 | 100 | 249 |\n| `计算机科学` | 35 | 218.89 | 101 | 532 |\n| `电子学` | 29 | 179.48 | 110 | 318 |\n| `机械工程` | 40 | 196.1 | 98 | 817 |\n| `能源和电力` | 32 | 186.44 | 100 | 330 |\n| `材料` | 38 | 194.5 | 102 | 476 |\n| `建筑学` | 49 | 175.39 | 97 | 415 |\n| `农业` | 21 | 215.86 | 96 | 1045 |\n\n**图像统计：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 1,023 |\n| 每样本图像数 | 最小: 1, 最大: 5, 平均: 1.14 |\n| 分辨率范围 | 112x38 - 1500x3000 |\n| 格式 | jpeg, png |\n\n\n## 样例示例\n\n**子集**: `设计`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"47c0e169\",\n      \"content\": [\n        {\n          \"text\": \"请回答以下多项选择题，并选出正确选项。这些题目可能包括单选和多选题型。如果所提供的信息不足以确定一个明确的答案，那么请根据可用的数据和你的判断来选择最可能正确的选项。\\n\\n问题：\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~17.4KB]\"\n        },\n        {\n          \"text\": \"为一幅灰度图，要为它局部添加颜色以得到右图所示的效果，正确的操作步骤是（ ）。\\n选项：\\n(A) 先将色彩模式转为RGB，然后用工具箱中的 【画笔工具】上色\\n(B) 先将色彩模式转为RGB，制作局部选区，然后打开【色相/饱和度】对话框，在其中点中【着色】项,调节色彩属性参数\\n(C) 先将色彩模式转为RGB，制作局部选区，然后打开【可选颜色】对话框,调节参数\\n(D) 打开【色相/饱和度】对话框，直接调节色彩属性参数\\n\\n正确答案：\\n\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"设计\",\n  \"metadata\": {\n    \"id\": \"1900\",\n    \"type\": \"选择\",\n    \"source_type\": \"website\",\n    \"analysis\": null,\n    \"distribution\": \"本科\",\n    \"difficulty_level\": \"easy\",\n    \"subcategory\": \"设计\",\n    \"category\": \"艺术与设计\",\n    \"subfield\": \"['图像编辑', '色彩调整']\",\n    \"img_type\": \"['屏幕截图']\",\n    \"answer\": \"B\",\n    \"option1\": \"先将色彩模式转为RGB，然后用工具箱中的 【画笔工具】上色\",\n    \"option2\": \"先将色彩模式转为RGB，制作局部选区，然后打开【色相/饱和度】对话框，在其中点中【着色】项,调节色彩属性参数\",\n    \"option3\": \"先将色彩模式转为RGB，制作局部选区，然后打开【可选颜色】对话框,调节参数\",\n    \"option4\": \"打开【色相/饱和度】对话框，直接调节色彩属性参数\"\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets cmmmu \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['cmmmu'],\n    dataset_args={\n        'cmmmu': {\n            # subset_list: ['设计', '音乐', '艺术']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "5a699a991762971f3241f2eff027d283",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.828769",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

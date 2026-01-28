@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "pretty_name": "MBPP",
+    "dataset_id": "google-research-datasets/mbpp",
+    "paper_url": null,
+    "tags": [
+      "Coding"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 3,
+    "eval_split": "test",
+    "train_split": "prompt",
+    "subset_list": [
+      "full"
+    ],
+    "description": "\n## Overview\n\nMBPP (Mostly Basic Python Problems) is a benchmark consisting of approximately 1,000 crowd-sourced Python programming problems designed for entry-level programmers. It evaluates a model's ability to understand problem descriptions and generate correct Python code.\n\n## Task Description\n\n- **Task Type**: Code Generation (Python)\n- **Input**: Natural language task description with test cases\n- **Output**: Python function implementation\n- **Difficulty**: Entry-level programming problems\n\n## Key Features\n\n- ~1,000 crowd-sourced programming problems\n- Covers programming fundamentals and standard library usage\n- Each problem includes task description, solution, and 3 test cases\n- Problems are designed to be solvable by entry-level programmers\n- Automatic evaluation through test case execution\n\n## Evaluation Notes\n\n- Default configuration uses **3-shot** examples\n- **Security Warning**: Sandbox environment is required for safe code execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.\n- Supports `pass@k` metric calculation\n- Default timeout is 20 seconds per problem\n- Code is extracted from `[BEGIN]...[DONE]` blocks if present\n",
+    "prompt_template": "You are an expert Python programmer, and here is your task: {question} Your code should pass these tests:\n\n{tests}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "You are an expert Python programmer, and here is your task: Write a function to find the similar elements from the given two tuple lists. Your code should pass these tests:\n\nassert similar_elements((3, 4, 5, 6),(5, 7, 4, 10)) == (4, 5)\nassert similar_elements((1, 2, 3, 4),(5, 4, 3, 7)) == (3, 4)\nassert similar_elements((11, 12, 14, 13),(17, 15, 14, 13)) == (13, 14)\n[BEGIN]\ndef similar_elements(test_tup1, test_tup2):\r\n  res = tuple(set(test_tup1) & set(test_tup2))\r\n  return (res)\n[DONE]\nYou are an expert Python programmer, and here is your task: Write a python function to identify non-prime numbers. Your code should pass these tests:\n\nassert is_not_prime(2) == False\nassert is_not_prime(10) == True\nassert is_not_prime(35) == True\n[BEGIN]\nimport math\r\ndef is_not_prime(n):\r\n    result = False\r\n    for i in range(2,int(math.sqrt(n)) + 1):\r\n        if n % i == 0:\r\n            result = True\r\n    return result\n[DONE]\nYou are an expert Python programmer, and here is your task: Write a function to find the largest integers from a given list of numbers using heap queue algorithm. Your code should pass these tests:\n\nassert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],3)==[85, 75, 65]\nassert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],2)==[85, 75]\nassert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],5)==[85, 75, 65, 58, 35]\n[BEGIN]\nimport heapq as hq\r\ndef heap_queue_largest(nums,n):\r\n  largest_nums = hq.nlargest(n, nums)\r\n  return largest_nums\n[DONE]\nYou are an expert Python programmer, and here is your task: {question} Your code should pass these tests:\n\n{tests}\n[BEGIN]\n",
+    "aggregation": "mean_and_pass_at_k",
+    "extra_params": {},
+    "sandbox_config": {
+      "image": "python:3.11-slim",
+      "tools_config": {
+        "shell_executor": {},
+        "python_executor": {}
+      }
+    }
+  },
+  "statistics": {
+    "total_samples": 500,
+    "subset_stats": [
+      {
+        "name": "full",
+        "sample_count": 500,
+        "prompt_length_mean": 1872.34,
+        "prompt_length_min": 1727,
+        "prompt_length_max": 5896,
+        "prompt_length_std": 238.63,
+        "target_length_mean": 183.27
+      }
+    ],
+    "prompt_length": {
+      "mean": 1872.34,
+      "min": 1727,
+      "max": 5896,
+      "std": 238.63
+    },
+    "target_length_mean": 183.27,
+    "computed_at": "2026-01-28T11:14:27.797430"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "f9c5e33a",
+          "content": "You are an expert Python programmer, and here is your task: Write a function to find the similar elements from the given two tuple lists. Your code should pass these tests:\n\nassert similar_elements((3, 4, 5, 6),(5, 7, 4, 10)) == (4, 5)\nassert ... [TRUNCATED] ... unction to remove first and last occurrence of a given character from the string. Your code should pass these tests:\n\nassert remove_Occ(\"hello\",\"l\") == \"heo\"\nassert remove_Occ(\"abcda\",\"a\") == \"bcd\"\nassert remove_Occ(\"PHP\",\"P\") == \"H\"\n[BEGIN]\n"
+        }
+      ],
+      "target": "def remove_Occ(s,ch): \r\n    for i in range(len(s)): \r\n        if (s[i] == ch): \r\n            s = s[0 : i] + s[i + 1:] \r\n            break\r\n    for i in range(len(s) - 1,-1,-1):  \r\n        if (s[i] == ch): \r\n            s = s[0 : i] + s[i + 1:] \r\n            break\r\n    return s ",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "test_list": [
+          "assert remove_Occ(\"hello\",\"l\") == \"heo\"",
+          "assert remove_Occ(\"abcda\",\"a\") == \"bcd\"",
+          "assert remove_Occ(\"PHP\",\"P\") == \"H\""
+        ],
+        "task_id": 11,
+        "test_setup_code": ""
+      }
+    },
+    "subset": "full",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# MBPP\n\n\n## Overview\n\nMBPP (Mostly Basic Python Problems) is a benchmark consisting of approximately 1,000 crowd-sourced Python programming problems designed for entry-level programmers. It evaluates a model's ability to understand problem descriptions and generate correct Python code.\n\n## Task Description\n\n- **Task Type**: Code Generation (Python)\n- **Input**: Natural language task description with test cases\n- **Output**: Python function implementation\n- **Difficulty**: Entry-level programming problems\n\n## Key Features\n\n- ~1,000 crowd-sourced programming problems\n- Covers programming fundamentals and standard library usage\n- Each problem includes task description, solution, and 3 test cases\n- Problems are designed to be solvable by entry-level programmers\n- Automatic evaluation through test case execution\n\n## Evaluation Notes\n\n- Default configuration uses **3-shot** examples\n- **Security Warning**: Sandbox environment is required for safe code execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.\n- Supports `pass@k` metric calculation\n- Default timeout is 20 seconds per problem\n- Code is extracted from `[BEGIN]...[DONE]` blocks if present\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `mbpp` |\n| **Dataset ID** | [google-research-datasets/mbpp](https://modelscope.cn/datasets/google-research-datasets/mbpp/summary) |\n| **Paper** | N/A |\n| **Tags** | `Coding` |\n| **Metrics** | `acc` |\n| **Default Shots** | 3-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `prompt` |\n| **Aggregation** | `mean_and_pass_at_k` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 500 |\n| Prompt Length (Mean) | 1872.34 chars |\n| Prompt Length (Min/Max) | 1727 / 5896 chars |\n\n## Sample Example\n\n**Subset**: `full`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f9c5e33a\",\n      \"content\": \"You are an expert Python programmer, and here is your task: Write a function to find the similar elements from the given two tuple lists. Your code should pass these tests:\\n\\nassert similar_elements((3, 4, 5, 6),(5, 7, 4, 10)) == (4, 5)\\nassert ... [TRUNCATED] ... unction to remove first and last occurrence of a given character from the string. Your code should pass these tests:\\n\\nassert remove_Occ(\\\"hello\\\",\\\"l\\\") == \\\"heo\\\"\\nassert remove_Occ(\\\"abcda\\\",\\\"a\\\") == \\\"bcd\\\"\\nassert remove_Occ(\\\"PHP\\\",\\\"P\\\") == \\\"H\\\"\\n[BEGIN]\\n\"\n    }\n  ],\n  \"target\": \"def remove_Occ(s,ch): \\r\\n    for i in range(len(s)): \\r\\n        if (s[i] == ch): \\r\\n            s = s[0 : i] + s[i + 1:] \\r\\n            break\\r\\n    for i in range(len(s) - 1,-1,-1):  \\r\\n        if (s[i] == ch): \\r\\n            s = s[0 : i] + s[i + 1:] \\r\\n            break\\r\\n    return s \",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"test_list\": [\n      \"assert remove_Occ(\\\"hello\\\",\\\"l\\\") == \\\"heo\\\"\",\n      \"assert remove_Occ(\\\"abcda\\\",\\\"a\\\") == \\\"bcd\\\"\",\n      \"assert remove_Occ(\\\"PHP\\\",\\\"P\\\") == \\\"H\\\"\"\n    ],\n    \"task_id\": 11,\n    \"test_setup_code\": \"\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are an expert Python programmer, and here is your task: {question} Your code should pass these tests:\n\n{tests}\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nYou are an expert Python programmer, and here is your task: Write a function to find the similar elements from the given two tuple lists. Your code should pass these tests:\n\nassert similar_elements((3, 4, 5, 6),(5, 7, 4, 10)) == (4, 5)\nassert similar_elements((1, 2, 3, 4),(5, 4, 3, 7)) == (3, 4)\nassert similar_elements((11, 12, 14, 13),(17, 15, 14, 13)) == (13, 14)\n[BEGIN]\ndef similar_elements(test_tup1, test_tup2):\r\n  res = tuple(set(test_tup1) & set(test_tup2))\r\n  return (res)\n[DONE]\nYou are an expert Python programmer, and here is your task: Write a python function to identify non-prime numbers. Your code should pass these tests:\n\nassert is_not_prime(2) == False\nassert is_not_prime(10) == True\nassert is_not_prime(35) == True\n[BEGIN]\nimport math\r\ndef is_not_prime(n):\r\n    result = False\r\n    for i in range(2,int(math.sqrt(n)) + 1):\r\n        if n % i == 0:\r\n            result = True\r\n    return result\n[DONE]\nYou are an expert Python programmer, and here is your task: Write a function to find the largest integers from a given list of numbers using heap queue algorithm. Your code should pass these tests:\n\nassert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],3)==[85, 75, 65]\nassert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],2)==[85, 75]\nassert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],5)==[85, 75, 65, 58, 35]\n[BEGIN]\nimport heapq as hq\r\ndef heap_queue_largest(nums,n):\r\n  largest_nums = hq.nlargest(n, nums)\r\n  return largest_nums\n[DONE]\nYou are an expert Python programmer, and here is your task: {question} Your code should pass these tests:\n\n{tests}\n[BEGIN]\n\n```\n\n</details>\n\n## Sandbox Configuration\n\nThis benchmark requires a sandbox environment for code execution.\n\n```json\n{\n  \"image\": \"python:3.11-slim\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {}\n  }\n}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mbpp \\\n    --use-sandbox \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mbpp'],\n    use_sandbox=True,\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MBPP\n\n\n## 概述\n\nMBPP（Mostly Basic Python Problems）是一个包含约 1,000 个众包 Python 编程问题的基准测试，专为入门级程序员设计。它用于评估模型理解问题描述并生成正确 Python 代码的能力。\n\n## 任务描述\n\n- **任务类型**：代码生成（Python）\n- **输入**：自然语言任务描述及测试用例\n- **输出**：Python 函数实现\n- **难度**：入门级编程问题\n\n## 主要特点\n\n- 包含约 1,000 个众包编程问题\n- 覆盖编程基础和标准库使用\n- 每个问题包含任务描述、参考解答和 3 个测试用例\n- 问题设计为入门级程序员可解决\n- 通过执行测试用例进行自动评估\n\n## 评估说明\n\n- 默认配置使用 **3-shot** 示例\n- **安全警告**：必须在沙箱环境中安全执行代码。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。\n- 支持 `pass@k` 指标计算\n- 每个问题默认超时时间为 20 秒\n- 若存在 `[BEGIN]...[DONE]` 块，则从中提取代码\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `mbpp` |\n| **数据集 ID** | [google-research-datasets/mbpp](https://modelscope.cn/datasets/google-research-datasets/mbpp/summary) |\n| **论文** | N/A |\n| **标签** | `Coding` |\n| **指标** | `acc` |\n| **默认示例数** | 3-shot |\n| **评估划分** | `test` |\n| **训练划分** | `prompt` |\n| **聚合方式** | `mean_and_pass_at_k` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 500 |\n| 提示词长度（平均） | 1872.34 字符 |\n| 提示词长度（最小/最大） | 1727 / 5896 字符 |\n\n## 样例示例\n\n**子集**: `full`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f9c5e33a\",\n      \"content\": \"You are an expert Python programmer, and here is your task: Write a function to find the similar elements from the given two tuple lists. Your code should pass these tests:\\n\\nassert similar_elements((3, 4, 5, 6),(5, 7, 4, 10)) == (4, 5)\\nassert ... [TRUNCATED] ... unction to remove first and last occurrence of a given character from the string. Your code should pass these tests:\\n\\nassert remove_Occ(\\\"hello\\\",\\\"l\\\") == \\\"heo\\\"\\nassert remove_Occ(\\\"abcda\\\",\\\"a\\\") == \\\"bcd\\\"\\nassert remove_Occ(\\\"PHP\\\",\\\"P\\\") == \\\"H\\\"\\n[BEGIN]\\n\"\n    }\n  ],\n  \"target\": \"def remove_Occ(s,ch): \\r\\n    for i in range(len(s)): \\r\\n        if (s[i] == ch): \\r\\n            s = s[0 : i] + s[i + 1:] \\r\\n            break\\r\\n    for i in range(len(s) - 1,-1,-1):  \\r\\n        if (s[i] == ch): \\r\\n            s = s[0 : i] + s[i + 1:] \\r\\n            break\\r\\n    return s \",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"test_list\": [\n      \"assert remove_Occ(\\\"hello\\\",\\\"l\\\") == \\\"heo\\\"\",\n      \"assert remove_Occ(\\\"abcda\\\",\\\"a\\\") == \\\"bcd\\\"\",\n      \"assert remove_Occ(\\\"PHP\\\",\\\"P\\\") == \\\"H\\\"\"\n    ],\n    \"task_id\": 11,\n    \"test_setup_code\": \"\"\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are an expert Python programmer, and here is your task: {question} Your code should pass these tests:\n\n{tests}\n```\n\n<details>\n<summary>少样本模板</summary>\n\n```text\nYou are an expert Python programmer, and here is your task: Write a function to find the similar elements from the given two tuple lists. Your code should pass these tests:\n\nassert similar_elements((3, 4, 5, 6),(5, 7, 4, 10)) == (4, 5)\nassert similar_elements((1, 2, 3, 4),(5, 4, 3, 7)) == (3, 4)\nassert similar_elements((11, 12, 14, 13),(17, 15, 14, 13)) == (13, 14)\n[BEGIN]\ndef similar_elements(test_tup1, test_tup2):\r\n  res = tuple(set(test_tup1) & set(test_tup2))\r\n  return (res)\n[DONE]\nYou are an expert Python programmer, and here is your task: Write a python function to identify non-prime numbers. Your code should pass these tests:\n\nassert is_not_prime(2) == False\nassert is_not_prime(10) == True\nassert is_not_prime(35) == True\n[BEGIN]\nimport math\r\ndef is_not_prime(n):\r\n    result = False\r\n    for i in range(2,int(math.sqrt(n)) + 1):\r\n        if n % i == 0:\r\n            result = True\r\n    return result\n[DONE]\nYou are an expert Python programmer, and here is your task: Write a function to find the largest integers from a given list of numbers using heap queue algorithm. Your code should pass these tests:\n\nassert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],3)==[85, 75, 65]\nassert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],2)==[85, 75]\nassert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],5)==[85, 75, 65, 58, 35]\n[BEGIN]\nimport heapq as hq\r\ndef heap_queue_largest(nums,n):\r\n  largest_nums = hq.nlargest(n, nums)\r\n  return largest_nums\n[DONE]\nYou are an expert Python programmer, and here is your task: {question} Your code should pass these tests:\n\n{tests}\n[BEGIN]\n\n```\n\n</details>\n\n## 沙箱配置\n\n此基准测试需要沙箱环境来执行代码。\n\n```json\n{\n  \"image\": \"python:3.11-slim\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {}\n  }\n}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mbpp \\\n    --use-sandbox \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mbpp'],\n    use_sandbox=True,\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "641786b0e4964c05cc4d52e8b23ae681",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.934843",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

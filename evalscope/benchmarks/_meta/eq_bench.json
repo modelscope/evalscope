@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "pretty_name": "EQ-Bench",
+    "dataset_id": "evalscope/EQ-Bench",
+    "paper_url": null,
+    "tags": [
+      "InstructionFollowing"
+    ],
+    "metrics": [
+      "eq_bench_score"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nEQ-Bench is a benchmark for evaluating language models on emotional intelligence tasks. It assesses the ability to predict likely emotional responses of characters in dialogues by rating the intensity of possible emotional reactions.\n\n## Task Description\n\n- **Task Type**: Emotional Intelligence Assessment\n- **Input**: Dialogue scenario with characters\n- **Output**: Emotion intensity ratings in specific format\n- **Domains**: Emotional understanding, social cognition\n\n## Key Features\n\n- Tests ability to predict emotional responses in conversations\n- Requires rating intensity of multiple possible emotions\n- Uses official EQ-Bench v2 scoring algorithm\n- Scoring includes sigmoid scaling for small differences\n- Adjustment constant ensures random answers score 0\n\n## Evaluation Notes\n\n- Default evaluation uses the **validation** split\n- Primary metric: **EQ-Bench Score** (0-100 scale, reported as 0-1)\n- Uses zero-shot evaluation (no few-shot examples)\n- Responses must include emotion ratings in specific JSON-like format\n- Official algorithm from [Paper](https://arxiv.org/abs/2312.06281) | [Homepage](https://eqbench.com/)\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 171,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 171,
+        "prompt_length_mean": 1550.02,
+        "prompt_length_min": 922,
+        "prompt_length_max": 3737,
+        "prompt_length_std": 445.55,
+        "target_length_mean": 182.16
+      }
+    ],
+    "prompt_length": {
+      "mean": 1550.02,
+      "min": 922,
+      "max": 3737,
+      "std": 445.55
+    },
+    "target_length_mean": 182.16,
+    "computed_at": "2026-01-28T11:12:51.408640"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "97129bc9",
+          "content": "Your task is to predict the likely emotional responses of a character in this dialogue:\n\nRobert: Claudia, you've always been the idealist. But let's be practical for once, shall we?\nClaudia: Practicality, according to you, means bulldozing ev ... [TRUNCATED] ... ary:\n\nRemorseful: <score>\nIndifferent: <score>\nAffectionate: <score>\nAnnoyed: <score>\n\n\n[End of answer]\n\nRemember: zero is a valid score, meaning they are likely not feeling that emotion. You must score at least one emotion > 0.\n\nYour answer:"
+        }
+      ],
+      "target": "{'emotion1': 'Remorseful', 'emotion2': 'Indifferent', 'emotion3': 'Affectionate', 'emotion4': 'Annoyed', 'emotion1_score': 2, 'emotion2_score': 3, 'emotion3_score': 0, 'emotion4_score': 5}",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "reference_answer": {
+          "emotion1": "Remorseful",
+          "emotion2": "Indifferent",
+          "emotion3": "Affectionate",
+          "emotion4": "Annoyed",
+          "emotion1_score": 2,
+          "emotion2_score": 3,
+          "emotion3_score": 0,
+          "emotion4_score": 5
+        },
+        "reference_answer_fullscale": {
+          "emotion1": "Remorseful",
+          "emotion2": "Indifferent",
+          "emotion3": "Affectionate",
+          "emotion4": "Annoyed",
+          "emotion1_score": 0,
+          "emotion2_score": "6",
+          "emotion3_score": 0,
+          "emotion4_score": "7"
+        }
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# EQ-Bench\n\n\n## Overview\n\nEQ-Bench is a benchmark for evaluating language models on emotional intelligence tasks. It assesses the ability to predict likely emotional responses of characters in dialogues by rating the intensity of possible emotional reactions.\n\n## Task Description\n\n- **Task Type**: Emotional Intelligence Assessment\n- **Input**: Dialogue scenario with characters\n- **Output**: Emotion intensity ratings in specific format\n- **Domains**: Emotional understanding, social cognition\n\n## Key Features\n\n- Tests ability to predict emotional responses in conversations\n- Requires rating intensity of multiple possible emotions\n- Uses official EQ-Bench v2 scoring algorithm\n- Scoring includes sigmoid scaling for small differences\n- Adjustment constant ensures random answers score 0\n\n## Evaluation Notes\n\n- Default evaluation uses the **validation** split\n- Primary metric: **EQ-Bench Score** (0-100 scale, reported as 0-1)\n- Uses zero-shot evaluation (no few-shot examples)\n- Responses must include emotion ratings in specific JSON-like format\n- Official algorithm from [Paper](https://arxiv.org/abs/2312.06281) | [Homepage](https://eqbench.com/)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `eq_bench` |\n| **Dataset ID** | [evalscope/EQ-Bench](https://modelscope.cn/datasets/evalscope/EQ-Bench/summary) |\n| **Paper** | N/A |\n| **Tags** | `InstructionFollowing` |\n| **Metrics** | `eq_bench_score` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 171 |\n| Prompt Length (Mean) | 1550.02 chars |\n| Prompt Length (Min/Max) | 922 / 3737 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"97129bc9\",\n      \"content\": \"Your task is to predict the likely emotional responses of a character in this dialogue:\\n\\nRobert: Claudia, you've always been the idealist. But let's be practical for once, shall we?\\nClaudia: Practicality, according to you, means bulldozing ev ... [TRUNCATED] ... ary:\\n\\nRemorseful: <score>\\nIndifferent: <score>\\nAffectionate: <score>\\nAnnoyed: <score>\\n\\n\\n[End of answer]\\n\\nRemember: zero is a valid score, meaning they are likely not feeling that emotion. You must score at least one emotion > 0.\\n\\nYour answer:\"\n    }\n  ],\n  \"target\": \"{'emotion1': 'Remorseful', 'emotion2': 'Indifferent', 'emotion3': 'Affectionate', 'emotion4': 'Annoyed', 'emotion1_score': 2, 'emotion2_score': 3, 'emotion3_score': 0, 'emotion4_score': 5}\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"reference_answer\": {\n      \"emotion1\": \"Remorseful\",\n      \"emotion2\": \"Indifferent\",\n      \"emotion3\": \"Affectionate\",\n      \"emotion4\": \"Annoyed\",\n      \"emotion1_score\": 2,\n      \"emotion2_score\": 3,\n      \"emotion3_score\": 0,\n      \"emotion4_score\": 5\n    },\n    \"reference_answer_fullscale\": {\n      \"emotion1\": \"Remorseful\",\n      \"emotion2\": \"Indifferent\",\n      \"emotion3\": \"Affectionate\",\n      \"emotion4\": \"Annoyed\",\n      \"emotion1_score\": 0,\n      \"emotion2_score\": \"6\",\n      \"emotion3_score\": 0,\n      \"emotion4_score\": \"7\"\n    }\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets eq_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['eq_bench'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# EQ-Bench\n\n## 概述\n\nEQ-Bench 是一个用于评估语言模型在情感智能任务上表现的基准测试。它通过评估模型对对话中角色可能产生的情感反应强度进行打分，来衡量其情感理解能力。\n\n## 任务描述\n\n- **任务类型**：情感智能评估\n- **输入**：包含角色的对话场景\n- **输出**：特定格式的情感强度评分\n- **领域**：情感理解、社会认知\n\n## 主要特点\n\n- 测试模型预测对话中情感反应的能力\n- 要求对多种可能情绪的强度进行评分\n- 使用官方 EQ-Bench v2 评分算法\n- 评分包含 Sigmoid 缩放以处理微小差异\n- 引入调整常数，确保随机回答得分为 0\n\n## 评估说明\n\n- 默认评估使用 **validation**（验证）数据集划分\n- 主要指标：**EQ-Bench Score**（0-100 分制，报告为 0-1 范围）\n- 采用零样本（zero-shot）评估方式（不提供少样本示例）\n- 模型响应必须包含特定 JSON-like 格式的情感评分\n- 官方算法来源：[论文](https://arxiv.org/abs/2312.06281) | [官网](https://eqbench.com/)\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `eq_bench` |\n| **数据集 ID** | [evalscope/EQ-Bench](https://modelscope.cn/datasets/evalscope/EQ-Bench/summary) |\n| **论文** | N/A |\n| **标签** | `InstructionFollowing` |\n| **指标** | `eq_bench_score` |\n| **默认样本数** | 0-shot |\n| **评估数据划分** | `validation` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 171 |\n| 提示词长度（平均） | 1550.02 字符 |\n| 提示词长度（最小/最大） | 922 / 3737 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"97129bc9\",\n      \"content\": \"Your task is to predict the likely emotional responses of a character in this dialogue:\\n\\nRobert: Claudia, you've always been the idealist. But let's be practical for once, shall we?\\nClaudia: Practicality, according to you, means bulldozing ev ... [TRUNCATED] ... ary:\\n\\nRemorseful: <score>\\nIndifferent: <score>\\nAffectionate: <score>\\nAnnoyed: <score>\\n\\n\\n[End of answer]\\n\\nRemember: zero is a valid score, meaning they are likely not feeling that emotion. You must score at least one emotion > 0.\\n\\nYour answer:\"\n    }\n  ],\n  \"target\": \"{'emotion1': 'Remorseful', 'emotion2': 'Indifferent', 'emotion3': 'Affectionate', 'emotion4': 'Annoyed', 'emotion1_score': 2, 'emotion2_score': 3, 'emotion3_score': 0, 'emotion4_score': 5}\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"reference_answer\": {\n      \"emotion1\": \"Remorseful\",\n      \"emotion2\": \"Indifferent\",\n      \"emotion3\": \"Affectionate\",\n      \"emotion4\": \"Annoyed\",\n      \"emotion1_score\": 2,\n      \"emotion2_score\": 3,\n      \"emotion3_score\": 0,\n      \"emotion4_score\": 5\n    },\n    \"reference_answer_fullscale\": {\n      \"emotion1\": \"Remorseful\",\n      \"emotion2\": \"Indifferent\",\n      \"emotion3\": \"Affectionate\",\n      \"emotion4\": \"Annoyed\",\n      \"emotion1_score\": 0,\n      \"emotion2_score\": \"6\",\n      \"emotion3_score\": 0,\n      \"emotion4_score\": \"7\"\n    }\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets eq_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['eq_bench'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "2aa8b840cfd6126203bea6393d6e8c89",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.861319",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

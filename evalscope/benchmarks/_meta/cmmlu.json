@@ -1,0 +1,743 @@
+{
+  "meta": {
+    "pretty_name": "C-MMLU",
+    "dataset_id": "evalscope/cmmlu",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "Chinese"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "agronomy",
+      "anatomy",
+      "ancient_chinese",
+      "arts",
+      "astronomy",
+      "business_ethics",
+      "chinese_civil_service_exam",
+      "chinese_driving_rule",
+      "chinese_food_culture",
+      "chinese_foreign_policy",
+      "chinese_history",
+      "chinese_literature",
+      "chinese_teacher_qualification",
+      "college_actuarial_science",
+      "college_education",
+      "college_engineering_hydrology",
+      "college_law",
+      "college_mathematics",
+      "college_medical_statistics",
+      "clinical_knowledge",
+      "college_medicine",
+      "computer_science",
+      "computer_security",
+      "conceptual_physics",
+      "construction_project_management",
+      "economics",
+      "education",
+      "elementary_chinese",
+      "elementary_commonsense",
+      "elementary_information_and_technology",
+      "electrical_engineering",
+      "elementary_mathematics",
+      "ethnology",
+      "food_science",
+      "genetics",
+      "global_facts",
+      "high_school_biology",
+      "high_school_chemistry",
+      "high_school_geography",
+      "high_school_mathematics",
+      "high_school_physics",
+      "high_school_politics",
+      "human_sexuality",
+      "international_law",
+      "journalism",
+      "jurisprudence",
+      "legal_and_moral_basis",
+      "logical",
+      "machine_learning",
+      "management",
+      "marketing",
+      "marxist_theory",
+      "modern_chinese",
+      "nutrition",
+      "philosophy",
+      "professional_accounting",
+      "professional_law",
+      "professional_medicine",
+      "professional_psychology",
+      "public_relations",
+      "security_study",
+      "sociology",
+      "sports_science",
+      "traditional_chinese_medicine",
+      "virology",
+      "world_history",
+      "world_religions"
+    ],
+    "description": "\n## Overview\n\nC-MMLU (Chinese Massive Multitask Language Understanding) is a comprehensive Chinese evaluation benchmark covering 67 subjects across STEM, humanities, social sciences, and China-specific topics. It evaluates models' knowledge and reasoning in Chinese contexts.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Question Answering (Chinese)\n- **Input**: Chinese question with four answer choices (A, B, C, D)\n- **Output**: Single correct answer letter\n- **Subjects**: 67 subjects organized into categories including China-specific topics\n\n## Key Features\n\n- 67 subjects covering diverse Chinese knowledge domains\n- Includes China-specific topics (Chinese history, literature, civil service exam, etc.)\n- Questions from elementary to professional levels\n- Tests both general knowledge and China-specific cultural knowledge\n- Standard benchmark for Chinese language model evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses Chinese Chain-of-Thought (CoT) prompting template\n- Results can be aggregated by subject or category\n- Categories: STEM, Humanities, Social Science, China-specific, Other\n- Evaluates on test split\n",
+    "prompt_template": "回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。请在回答前进行一步步思考。\n\n问题：{question}\n选项：\n{choices}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 11582,
+    "subset_stats": [
+      {
+        "name": "agronomy",
+        "sample_count": 169,
+        "prompt_length_mean": 168.76,
+        "prompt_length_min": 142,
+        "prompt_length_max": 266,
+        "prompt_length_std": 18.6,
+        "target_length_mean": 1
+      },
+      {
+        "name": "anatomy",
+        "sample_count": 148,
+        "prompt_length_mean": 157.72,
+        "prompt_length_min": 141,
+        "prompt_length_max": 224,
+        "prompt_length_std": 15.91,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ancient_chinese",
+        "sample_count": 164,
+        "prompt_length_mean": 178.6,
+        "prompt_length_min": 144,
+        "prompt_length_max": 367,
+        "prompt_length_std": 29.1,
+        "target_length_mean": 1
+      },
+      {
+        "name": "arts",
+        "sample_count": 160,
+        "prompt_length_mean": 161.22,
+        "prompt_length_min": 141,
+        "prompt_length_max": 233,
+        "prompt_length_std": 13.32,
+        "target_length_mean": 1
+      },
+      {
+        "name": "astronomy",
+        "sample_count": 165,
+        "prompt_length_mean": 191.31,
+        "prompt_length_min": 143,
+        "prompt_length_max": 404,
+        "prompt_length_std": 43.34,
+        "target_length_mean": 1
+      },
+      {
+        "name": "business_ethics",
+        "sample_count": 209,
+        "prompt_length_mean": 175.15,
+        "prompt_length_min": 146,
+        "prompt_length_max": 291,
+        "prompt_length_std": 22.66,
+        "target_length_mean": 1
+      },
+      {
+        "name": "chinese_civil_service_exam",
+        "sample_count": 160,
+        "prompt_length_mean": 284.88,
+        "prompt_length_min": 143,
+        "prompt_length_max": 554,
+        "prompt_length_std": 85.76,
+        "target_length_mean": 1
+      },
+      {
+        "name": "chinese_driving_rule",
+        "sample_count": 131,
+        "prompt_length_mean": 181.57,
+        "prompt_length_min": 151,
+        "prompt_length_max": 250,
+        "prompt_length_std": 16.75,
+        "target_length_mean": 1
+      },
+      {
+        "name": "chinese_food_culture",
+        "sample_count": 136,
+        "prompt_length_mean": 170.49,
+        "prompt_length_min": 139,
+        "prompt_length_max": 270,
+        "prompt_length_std": 24.78,
+        "target_length_mean": 1
+      },
+      {
+        "name": "chinese_foreign_policy",
+        "sample_count": 107,
+        "prompt_length_mean": 254.16,
+        "prompt_length_min": 150,
+        "prompt_length_max": 381,
+        "prompt_length_std": 56.32,
+        "target_length_mean": 1
+      },
+      {
+        "name": "chinese_history",
+        "sample_count": 323,
+        "prompt_length_mean": 250.97,
+        "prompt_length_min": 164,
+        "prompt_length_max": 387,
+        "prompt_length_std": 36.05,
+        "target_length_mean": 1
+      },
+      {
+        "name": "chinese_literature",
+        "sample_count": 204,
+        "prompt_length_mean": 177.55,
+        "prompt_length_min": 145,
+        "prompt_length_max": 397,
+        "prompt_length_std": 34.79,
+        "target_length_mean": 1
+      },
+      {
+        "name": "chinese_teacher_qualification",
+        "sample_count": 179,
+        "prompt_length_mean": 207.4,
+        "prompt_length_min": 156,
+        "prompt_length_max": 326,
+        "prompt_length_std": 32.63,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_actuarial_science",
+        "sample_count": 106,
+        "prompt_length_mean": 270.99,
+        "prompt_length_min": 163,
+        "prompt_length_max": 558,
+        "prompt_length_std": 67.05,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_education",
+        "sample_count": 107,
+        "prompt_length_mean": 198.09,
+        "prompt_length_min": 149,
+        "prompt_length_max": 355,
+        "prompt_length_std": 39.03,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_engineering_hydrology",
+        "sample_count": 106,
+        "prompt_length_mean": 189.62,
+        "prompt_length_min": 146,
+        "prompt_length_max": 273,
+        "prompt_length_std": 25.06,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_law",
+        "sample_count": 108,
+        "prompt_length_mean": 220.14,
+        "prompt_length_min": 157,
+        "prompt_length_max": 310,
+        "prompt_length_std": 34.61,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_mathematics",
+        "sample_count": 105,
+        "prompt_length_mean": 343.1,
+        "prompt_length_min": 174,
+        "prompt_length_max": 999,
+        "prompt_length_std": 154.53,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_medical_statistics",
+        "sample_count": 106,
+        "prompt_length_mean": 212.85,
+        "prompt_length_min": 151,
+        "prompt_length_max": 450,
+        "prompt_length_std": 49.56,
+        "target_length_mean": 1
+      },
+      {
+        "name": "clinical_knowledge",
+        "sample_count": 237,
+        "prompt_length_mean": 245.74,
+        "prompt_length_min": 150,
+        "prompt_length_max": 393,
+        "prompt_length_std": 56.29,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_medicine",
+        "sample_count": 273,
+        "prompt_length_mean": 187.64,
+        "prompt_length_min": 141,
+        "prompt_length_max": 416,
+        "prompt_length_std": 43.22,
+        "target_length_mean": 1
+      },
+      {
+        "name": "computer_science",
+        "sample_count": 204,
+        "prompt_length_mean": 187.76,
+        "prompt_length_min": 143,
+        "prompt_length_max": 516,
+        "prompt_length_std": 43.02,
+        "target_length_mean": 1
+      },
+      {
+        "name": "computer_security",
+        "sample_count": 171,
+        "prompt_length_mean": 214.01,
+        "prompt_length_min": 149,
+        "prompt_length_max": 399,
+        "prompt_length_std": 49.53,
+        "target_length_mean": 1
+      },
+      {
+        "name": "conceptual_physics",
+        "sample_count": 147,
+        "prompt_length_mean": 222.4,
+        "prompt_length_min": 154,
+        "prompt_length_max": 337,
+        "prompt_length_std": 28.78,
+        "target_length_mean": 1
+      },
+      {
+        "name": "construction_project_management",
+        "sample_count": 139,
+        "prompt_length_mean": 186.58,
+        "prompt_length_min": 149,
+        "prompt_length_max": 306,
+        "prompt_length_std": 29.83,
+        "target_length_mean": 1
+      },
+      {
+        "name": "economics",
+        "sample_count": 159,
+        "prompt_length_mean": 184.19,
+        "prompt_length_min": 149,
+        "prompt_length_max": 259,
+        "prompt_length_std": 22.69,
+        "target_length_mean": 1
+      },
+      {
+        "name": "education",
+        "sample_count": 163,
+        "prompt_length_mean": 169.17,
+        "prompt_length_min": 145,
+        "prompt_length_max": 225,
+        "prompt_length_std": 18.08,
+        "target_length_mean": 1
+      },
+      {
+        "name": "elementary_chinese",
+        "sample_count": 252,
+        "prompt_length_mean": 174.84,
+        "prompt_length_min": 142,
+        "prompt_length_max": 368,
+        "prompt_length_std": 33.48,
+        "target_length_mean": 1
+      },
+      {
+        "name": "elementary_commonsense",
+        "sample_count": 198,
+        "prompt_length_mean": 163.93,
+        "prompt_length_min": 139,
+        "prompt_length_max": 247,
+        "prompt_length_std": 19.72,
+        "target_length_mean": 1
+      },
+      {
+        "name": "elementary_information_and_technology",
+        "sample_count": 238,
+        "prompt_length_mean": 181.63,
+        "prompt_length_min": 143,
+        "prompt_length_max": 275,
+        "prompt_length_std": 26.49,
+        "target_length_mean": 1
+      },
+      {
+        "name": "electrical_engineering",
+        "sample_count": 172,
+        "prompt_length_mean": 183.77,
+        "prompt_length_min": 148,
+        "prompt_length_max": 358,
+        "prompt_length_std": 33.69,
+        "target_length_mean": 1
+      },
+      {
+        "name": "elementary_mathematics",
+        "sample_count": 230,
+        "prompt_length_mean": 184.92,
+        "prompt_length_min": 145,
+        "prompt_length_max": 320,
+        "prompt_length_std": 31.08,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ethnology",
+        "sample_count": 135,
+        "prompt_length_mean": 176.41,
+        "prompt_length_min": 145,
+        "prompt_length_max": 294,
+        "prompt_length_std": 27.36,
+        "target_length_mean": 1
+      },
+      {
+        "name": "food_science",
+        "sample_count": 143,
+        "prompt_length_mean": 165.87,
+        "prompt_length_min": 141,
+        "prompt_length_max": 240,
+        "prompt_length_std": 18.54,
+        "target_length_mean": 1
+      },
+      {
+        "name": "genetics",
+        "sample_count": 176,
+        "prompt_length_mean": 187.56,
+        "prompt_length_min": 146,
+        "prompt_length_max": 283,
+        "prompt_length_std": 25.59,
+        "target_length_mean": 1
+      },
+      {
+        "name": "global_facts",
+        "sample_count": 149,
+        "prompt_length_mean": 182.32,
+        "prompt_length_min": 146,
+        "prompt_length_max": 329,
+        "prompt_length_std": 35.27,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_biology",
+        "sample_count": 169,
+        "prompt_length_mean": 267.46,
+        "prompt_length_min": 177,
+        "prompt_length_max": 486,
+        "prompt_length_std": 55.07,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_chemistry",
+        "sample_count": 132,
+        "prompt_length_mean": 260.74,
+        "prompt_length_min": 160,
+        "prompt_length_max": 395,
+        "prompt_length_std": 51.49,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_geography",
+        "sample_count": 118,
+        "prompt_length_mean": 207.08,
+        "prompt_length_min": 142,
+        "prompt_length_max": 377,
+        "prompt_length_std": 52.39,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_mathematics",
+        "sample_count": 164,
+        "prompt_length_mean": 203.72,
+        "prompt_length_min": 151,
+        "prompt_length_max": 356,
+        "prompt_length_std": 38.9,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_physics",
+        "sample_count": 110,
+        "prompt_length_mean": 223.11,
+        "prompt_length_min": 152,
+        "prompt_length_max": 353,
+        "prompt_length_std": 39.06,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_politics",
+        "sample_count": 143,
+        "prompt_length_mean": 269.18,
+        "prompt_length_min": 174,
+        "prompt_length_max": 386,
+        "prompt_length_std": 48.14,
+        "target_length_mean": 1
+      },
+      {
+        "name": "human_sexuality",
+        "sample_count": 126,
+        "prompt_length_mean": 175.63,
+        "prompt_length_min": 139,
+        "prompt_length_max": 261,
+        "prompt_length_std": 23.11,
+        "target_length_mean": 1
+      },
+      {
+        "name": "international_law",
+        "sample_count": 185,
+        "prompt_length_mean": 199.09,
+        "prompt_length_min": 150,
+        "prompt_length_max": 385,
+        "prompt_length_std": 41.92,
+        "target_length_mean": 1
+      },
+      {
+        "name": "journalism",
+        "sample_count": 172,
+        "prompt_length_mean": 172.25,
+        "prompt_length_min": 142,
+        "prompt_length_max": 234,
+        "prompt_length_std": 19.01,
+        "target_length_mean": 1
+      },
+      {
+        "name": "jurisprudence",
+        "sample_count": 411,
+        "prompt_length_mean": 226.57,
+        "prompt_length_min": 146,
+        "prompt_length_max": 514,
+        "prompt_length_std": 57.47,
+        "target_length_mean": 1
+      },
+      {
+        "name": "legal_and_moral_basis",
+        "sample_count": 214,
+        "prompt_length_mean": 205.67,
+        "prompt_length_min": 154,
+        "prompt_length_max": 317,
+        "prompt_length_std": 29.15,
+        "target_length_mean": 1
+      },
+      {
+        "name": "logical",
+        "sample_count": 123,
+        "prompt_length_mean": 181.72,
+        "prompt_length_min": 143,
+        "prompt_length_max": 427,
+        "prompt_length_std": 53.5,
+        "target_length_mean": 1
+      },
+      {
+        "name": "machine_learning",
+        "sample_count": 122,
+        "prompt_length_mean": 213.32,
+        "prompt_length_min": 155,
+        "prompt_length_max": 419,
+        "prompt_length_std": 50.57,
+        "target_length_mean": 1
+      },
+      {
+        "name": "management",
+        "sample_count": 210,
+        "prompt_length_mean": 180.32,
+        "prompt_length_min": 145,
+        "prompt_length_max": 287,
+        "prompt_length_std": 21.88,
+        "target_length_mean": 1
+      },
+      {
+        "name": "marketing",
+        "sample_count": 180,
+        "prompt_length_mean": 185.59,
+        "prompt_length_min": 144,
+        "prompt_length_max": 247,
+        "prompt_length_std": 18.92,
+        "target_length_mean": 1
+      },
+      {
+        "name": "marxist_theory",
+        "sample_count": 189,
+        "prompt_length_mean": 190.72,
+        "prompt_length_min": 145,
+        "prompt_length_max": 273,
+        "prompt_length_std": 25.67,
+        "target_length_mean": 1
+      },
+      {
+        "name": "modern_chinese",
+        "sample_count": 116,
+        "prompt_length_mean": 207.66,
+        "prompt_length_min": 142,
+        "prompt_length_max": 471,
+        "prompt_length_std": 68.47,
+        "target_length_mean": 1
+      },
+      {
+        "name": "nutrition",
+        "sample_count": 145,
+        "prompt_length_mean": 173.48,
+        "prompt_length_min": 144,
+        "prompt_length_max": 267,
+        "prompt_length_std": 24.39,
+        "target_length_mean": 1
+      },
+      {
+        "name": "philosophy",
+        "sample_count": 105,
+        "prompt_length_mean": 179.91,
+        "prompt_length_min": 143,
+        "prompt_length_max": 359,
+        "prompt_length_std": 32.6,
+        "target_length_mean": 1
+      },
+      {
+        "name": "professional_accounting",
+        "sample_count": 175,
+        "prompt_length_mean": 183.38,
+        "prompt_length_min": 147,
+        "prompt_length_max": 281,
+        "prompt_length_std": 25.51,
+        "target_length_mean": 1
+      },
+      {
+        "name": "professional_law",
+        "sample_count": 211,
+        "prompt_length_mean": 231.1,
+        "prompt_length_min": 150,
+        "prompt_length_max": 414,
+        "prompt_length_std": 50.25,
+        "target_length_mean": 1
+      },
+      {
+        "name": "professional_medicine",
+        "sample_count": 376,
+        "prompt_length_mean": 174.87,
+        "prompt_length_min": 144,
+        "prompt_length_max": 319,
+        "prompt_length_std": 22.27,
+        "target_length_mean": 1
+      },
+      {
+        "name": "professional_psychology",
+        "sample_count": 232,
+        "prompt_length_mean": 173.55,
+        "prompt_length_min": 142,
+        "prompt_length_max": 273,
+        "prompt_length_std": 18.8,
+        "target_length_mean": 1
+      },
+      {
+        "name": "public_relations",
+        "sample_count": 174,
+        "prompt_length_mean": 178.06,
+        "prompt_length_min": 144,
+        "prompt_length_max": 263,
+        "prompt_length_std": 23.26,
+        "target_length_mean": 1
+      },
+      {
+        "name": "security_study",
+        "sample_count": 135,
+        "prompt_length_mean": 186.07,
+        "prompt_length_min": 145,
+        "prompt_length_max": 302,
+        "prompt_length_std": 30.82,
+        "target_length_mean": 1
+      },
+      {
+        "name": "sociology",
+        "sample_count": 226,
+        "prompt_length_mean": 173.89,
+        "prompt_length_min": 145,
+        "prompt_length_max": 384,
+        "prompt_length_std": 20.96,
+        "target_length_mean": 1
+      },
+      {
+        "name": "sports_science",
+        "sample_count": 165,
+        "prompt_length_mean": 170.49,
+        "prompt_length_min": 141,
+        "prompt_length_max": 283,
+        "prompt_length_std": 21.48,
+        "target_length_mean": 1
+      },
+      {
+        "name": "traditional_chinese_medicine",
+        "sample_count": 185,
+        "prompt_length_mean": 165.38,
+        "prompt_length_min": 134,
+        "prompt_length_max": 240,
+        "prompt_length_std": 22.03,
+        "target_length_mean": 1
+      },
+      {
+        "name": "virology",
+        "sample_count": 169,
+        "prompt_length_mean": 176.32,
+        "prompt_length_min": 144,
+        "prompt_length_max": 266,
+        "prompt_length_std": 24.47,
+        "target_length_mean": 1
+      },
+      {
+        "name": "world_history",
+        "sample_count": 161,
+        "prompt_length_mean": 258.64,
+        "prompt_length_min": 167,
+        "prompt_length_max": 388,
+        "prompt_length_std": 33.37,
+        "target_length_mean": 1
+      },
+      {
+        "name": "world_religions",
+        "sample_count": 160,
+        "prompt_length_mean": 163.08,
+        "prompt_length_min": 142,
+        "prompt_length_max": 235,
+        "prompt_length_std": 17.01,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 197.87,
+      "min": 134,
+      "max": 999,
+      "std": 51.6
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:12:41.482257"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "4e04de48",
+          "content": "回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 A,B,C,D 中的一个。请在回答前进行一步步思考。\n\n问题：在农业生产中被当作极其重要的劳动对象发挥作用，最主要的不可替代的基本生产资料是\n选项：\nA) 农业生产工具\nB) 土地\nC) 劳动力\nD) 资金\n"
+        }
+      ],
+      "choices": [
+        "农业生产工具",
+        "土地",
+        "劳动力",
+        "资金"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "agronomy",
+      "metadata": {
+        "subject": "agronomy"
+      }
+    },
+    "subset": "agronomy",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# C-MMLU\n\n\n## Overview\n\nC-MMLU (Chinese Massive Multitask Language Understanding) is a comprehensive Chinese evaluation benchmark covering 67 subjects across STEM, humanities, social sciences, and China-specific topics. It evaluates models' knowledge and reasoning in Chinese contexts.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Question Answering (Chinese)\n- **Input**: Chinese question with four answer choices (A, B, C, D)\n- **Output**: Single correct answer letter\n- **Subjects**: 67 subjects organized into categories including China-specific topics\n\n## Key Features\n\n- 67 subjects covering diverse Chinese knowledge domains\n- Includes China-specific topics (Chinese history, literature, civil service exam, etc.)\n- Questions from elementary to professional levels\n- Tests both general knowledge and China-specific cultural knowledge\n- Standard benchmark for Chinese language model evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses Chinese Chain-of-Thought (CoT) prompting template\n- Results can be aggregated by subject or category\n- Categories: STEM, Humanities, Social Science, China-specific, Other\n- Evaluates on test split\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `cmmlu` |\n| **Dataset ID** | [evalscope/cmmlu](https://modelscope.cn/datasets/evalscope/cmmlu/summary) |\n| **Paper** | N/A |\n| **Tags** | `Chinese`, `Knowledge`, `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 11,582 |\n| Prompt Length (Mean) | 197.87 chars |\n| Prompt Length (Min/Max) | 134 / 999 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `agronomy` | 169 | 168.76 | 142 | 266 |\n| `anatomy` | 148 | 157.72 | 141 | 224 |\n| `ancient_chinese` | 164 | 178.6 | 144 | 367 |\n| `arts` | 160 | 161.22 | 141 | 233 |\n| `astronomy` | 165 | 191.31 | 143 | 404 |\n| `business_ethics` | 209 | 175.15 | 146 | 291 |\n| `chinese_civil_service_exam` | 160 | 284.88 | 143 | 554 |\n| `chinese_driving_rule` | 131 | 181.57 | 151 | 250 |\n| `chinese_food_culture` | 136 | 170.49 | 139 | 270 |\n| `chinese_foreign_policy` | 107 | 254.16 | 150 | 381 |\n| `chinese_history` | 323 | 250.97 | 164 | 387 |\n| `chinese_literature` | 204 | 177.55 | 145 | 397 |\n| `chinese_teacher_qualification` | 179 | 207.4 | 156 | 326 |\n| `college_actuarial_science` | 106 | 270.99 | 163 | 558 |\n| `college_education` | 107 | 198.09 | 149 | 355 |\n| `college_engineering_hydrology` | 106 | 189.62 | 146 | 273 |\n| `college_law` | 108 | 220.14 | 157 | 310 |\n| `college_mathematics` | 105 | 343.1 | 174 | 999 |\n| `college_medical_statistics` | 106 | 212.85 | 151 | 450 |\n| `clinical_knowledge` | 237 | 245.74 | 150 | 393 |\n| `college_medicine` | 273 | 187.64 | 141 | 416 |\n| `computer_science` | 204 | 187.76 | 143 | 516 |\n| `computer_security` | 171 | 214.01 | 149 | 399 |\n| `conceptual_physics` | 147 | 222.4 | 154 | 337 |\n| `construction_project_management` | 139 | 186.58 | 149 | 306 |\n| `economics` | 159 | 184.19 | 149 | 259 |\n| `education` | 163 | 169.17 | 145 | 225 |\n| `elementary_chinese` | 252 | 174.84 | 142 | 368 |\n| `elementary_commonsense` | 198 | 163.93 | 139 | 247 |\n| `elementary_information_and_technology` | 238 | 181.63 | 143 | 275 |\n| `electrical_engineering` | 172 | 183.77 | 148 | 358 |\n| `elementary_mathematics` | 230 | 184.92 | 145 | 320 |\n| `ethnology` | 135 | 176.41 | 145 | 294 |\n| `food_science` | 143 | 165.87 | 141 | 240 |\n| `genetics` | 176 | 187.56 | 146 | 283 |\n| `global_facts` | 149 | 182.32 | 146 | 329 |\n| `high_school_biology` | 169 | 267.46 | 177 | 486 |\n| `high_school_chemistry` | 132 | 260.74 | 160 | 395 |\n| `high_school_geography` | 118 | 207.08 | 142 | 377 |\n| `high_school_mathematics` | 164 | 203.72 | 151 | 356 |\n| `high_school_physics` | 110 | 223.11 | 152 | 353 |\n| `high_school_politics` | 143 | 269.18 | 174 | 386 |\n| `human_sexuality` | 126 | 175.63 | 139 | 261 |\n| `international_law` | 185 | 199.09 | 150 | 385 |\n| `journalism` | 172 | 172.25 | 142 | 234 |\n| `jurisprudence` | 411 | 226.57 | 146 | 514 |\n| `legal_and_moral_basis` | 214 | 205.67 | 154 | 317 |\n| `logical` | 123 | 181.72 | 143 | 427 |\n| `machine_learning` | 122 | 213.32 | 155 | 419 |\n| `management` | 210 | 180.32 | 145 | 287 |\n| `marketing` | 180 | 185.59 | 144 | 247 |\n| `marxist_theory` | 189 | 190.72 | 145 | 273 |\n| `modern_chinese` | 116 | 207.66 | 142 | 471 |\n| `nutrition` | 145 | 173.48 | 144 | 267 |\n| `philosophy` | 105 | 179.91 | 143 | 359 |\n| `professional_accounting` | 175 | 183.38 | 147 | 281 |\n| `professional_law` | 211 | 231.1 | 150 | 414 |\n| `professional_medicine` | 376 | 174.87 | 144 | 319 |\n| `professional_psychology` | 232 | 173.55 | 142 | 273 |\n| `public_relations` | 174 | 178.06 | 144 | 263 |\n| `security_study` | 135 | 186.07 | 145 | 302 |\n| `sociology` | 226 | 173.89 | 145 | 384 |\n| `sports_science` | 165 | 170.49 | 141 | 283 |\n| `traditional_chinese_medicine` | 185 | 165.38 | 134 | 240 |\n| `virology` | 169 | 176.32 | 144 | 266 |\n| `world_history` | 161 | 258.64 | 167 | 388 |\n| `world_religions` | 160 | 163.08 | 142 | 235 |\n\n## Sample Example\n\n**Subset**: `agronomy`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"4e04de48\",\n      \"content\": \"回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式：\\\"答案：[LETTER]\\\"（不带引号），其中 [LETTER] 是 A,B,C,D 中的一个。请在回答前进行一步步思考。\\n\\n问题：在农业生产中被当作极其重要的劳动对象发挥作用，最主要的不可替代的基本生产资料是\\n选项：\\nA) 农业生产工具\\nB) 土地\\nC) 劳动力\\nD) 资金\\n\"\n    }\n  ],\n  \"choices\": [\n    \"农业生产工具\",\n    \"土地\",\n    \"劳动力\",\n    \"资金\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"agronomy\",\n  \"metadata\": {\n    \"subject\": \"agronomy\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。请在回答前进行一步步思考。\n\n问题：{question}\n选项：\n{choices}\n\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets cmmlu \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['cmmlu'],\n    dataset_args={\n        'cmmlu': {\n            # subset_list: ['agronomy', 'anatomy', 'ancient_chinese']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# C-MMLU\n\n\n## 概述\n\nC-MMLU（Chinese Massive Multitask Language Understanding，中文大规模多任务语言理解）是一个全面的中文评估基准，涵盖 STEM、人文、社会科学以及中国特有主题等 67 个学科领域，用于评估模型在中文语境下的知识与推理能力。\n\n## 任务描述\n\n- **任务类型**：多项选择题问答（中文）\n- **输入**：一道包含四个选项（A、B、C、D）的中文问题\n- **输出**：单个正确答案的字母\n- **学科范围**：67 个学科，按类别组织，包括中国特有主题\n\n## 主要特点\n\n- 覆盖 67 个多样化的中文知识领域\n- 包含中国特有主题（如中国历史、文学、公务员考试等）\n- 题目难度从基础教育到专业水平不等\n- 同时考察通用知识与中国特有的文化知识\n- 是中文语言模型评估的标准基准之一\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估方式\n- 使用中文思维链（Chain-of-Thought, CoT）提示模板\n- 结果可按学科或类别进行聚合\n- 类别包括：STEM、人文、社会科学、中国特有、其他\n- 在测试集（test split）上进行评估\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `cmmlu` |\n| **数据集 ID** | [evalscope/cmmlu](https://modelscope.cn/datasets/evalscope/cmmlu/summary) |\n| **论文** | N/A |\n| **标签** | `Chinese`, `Knowledge`, `MCQ` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 11,582 |\n| 提示词长度（平均） | 197.87 字符 |\n| 提示词长度（最小/最大） | 134 / 999 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `agronomy` | 169 | 168.76 | 142 | 266 |\n| `anatomy` | 148 | 157.72 | 141 | 224 |\n| `ancient_chinese` | 164 | 178.6 | 144 | 367 |\n| `arts` | 160 | 161.22 | 141 | 233 |\n| `astronomy` | 165 | 191.31 | 143 | 404 |\n| `business_ethics` | 209 | 175.15 | 146 | 291 |\n| `chinese_civil_service_exam` | 160 | 284.88 | 143 | 554 |\n| `chinese_driving_rule` | 131 | 181.57 | 151 | 250 |\n| `chinese_food_culture` | 136 | 170.49 | 139 | 270 |\n| `chinese_foreign_policy` | 107 | 254.16 | 150 | 381 |\n| `chinese_history` | 323 | 250.97 | 164 | 387 |\n| `chinese_literature` | 204 | 177.55 | 145 | 397 |\n| `chinese_teacher_qualification` | 179 | 207.4 | 156 | 326 |\n| `college_actuarial_science` | 106 | 270.99 | 163 | 558 |\n| `college_education` | 107 | 198.09 | 149 | 355 |\n| `college_engineering_hydrology` | 106 | 189.62 | 146 | 273 |\n| `college_law` | 108 | 220.14 | 157 | 310 |\n| `college_mathematics` | 105 | 343.1 | 174 | 999 |\n| `college_medical_statistics` | 106 | 212.85 | 151 | 450 |\n| `clinical_knowledge` | 237 | 245.74 | 150 | 393 |\n| `college_medicine` | 273 | 187.64 | 141 | 416 |\n| `computer_science` | 204 | 187.76 | 143 | 516 |\n| `computer_security` | 171 | 214.01 | 149 | 399 |\n| `conceptual_physics` | 147 | 222.4 | 154 | 337 |\n| `construction_project_management` | 139 | 186.58 | 149 | 306 |\n| `economics` | 159 | 184.19 | 149 | 259 |\n| `education` | 163 | 169.17 | 145 | 225 |\n| `elementary_chinese` | 252 | 174.84 | 142 | 368 |\n| `elementary_commonsense` | 198 | 163.93 | 139 | 247 |\n| `elementary_information_and_technology` | 238 | 181.63 | 143 | 275 |\n| `electrical_engineering` | 172 | 183.77 | 148 | 358 |\n| `elementary_mathematics` | 230 | 184.92 | 145 | 320 |\n| `ethnology` | 135 | 176.41 | 145 | 294 |\n| `food_science` | 143 | 165.87 | 141 | 240 |\n| `genetics` | 176 | 187.56 | 146 | 283 |\n| `global_facts` | 149 | 182.32 | 146 | 329 |\n| `high_school_biology` | 169 | 267.46 | 177 | 486 |\n| `high_school_chemistry` | 132 | 260.74 | 160 | 395 |\n| `high_school_geography` | 118 | 207.08 | 142 | 377 |\n| `high_school_mathematics` | 164 | 203.72 | 151 | 356 |\n| `high_school_physics` | 110 | 223.11 | 152 | 353 |\n| `high_school_politics` | 143 | 269.18 | 174 | 386 |\n| `human_sexuality` | 126 | 175.63 | 139 | 261 |\n| `international_law` | 185 | 199.09 | 150 | 385 |\n| `journalism` | 172 | 172.25 | 142 | 234 |\n| `jurisprudence` | 411 | 226.57 | 146 | 514 |\n| `legal_and_moral_basis` | 214 | 205.67 | 154 | 317 |\n| `logical` | 123 | 181.72 | 143 | 427 |\n| `machine_learning` | 122 | 213.32 | 155 | 419 |\n| `management` | 210 | 180.32 | 145 | 287 |\n| `marketing` | 180 | 185.59 | 144 | 247 |\n| `marxist_theory` | 189 | 190.72 | 145 | 273 |\n| `modern_chinese` | 116 | 207.66 | 142 | 471 |\n| `nutrition` | 145 | 173.48 | 144 | 267 |\n| `philosophy` | 105 | 179.91 | 143 | 359 |\n| `professional_accounting` | 175 | 183.38 | 147 | 281 |\n| `professional_law` | 211 | 231.1 | 150 | 414 |\n| `professional_medicine` | 376 | 174.87 | 144 | 319 |\n| `professional_psychology` | 232 | 173.55 | 142 | 273 |\n| `public_relations` | 174 | 178.06 | 144 | 263 |\n| `security_study` | 135 | 186.07 | 145 | 302 |\n| `sociology` | 226 | 173.89 | 145 | 384 |\n| `sports_science` | 165 | 170.49 | 141 | 283 |\n| `traditional_chinese_medicine` | 185 | 165.38 | 134 | 240 |\n| `virology` | 169 | 176.32 | 144 | 266 |\n| `world_history` | 161 | 258.64 | 167 | 388 |\n| `world_religions` | 160 | 163.08 | 142 | 235 |\n\n## 样例示例\n\n**子集**: `agronomy`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"4e04de48\",\n      \"content\": \"回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式：\\\"答案：[LETTER]\\\"（不带引号），其中 [LETTER] 是 A,B,C,D 中的一个。请在回答前进行一步步思考。\\n\\n问题：在农业生产中被当作极其重要的劳动对象发挥作用，最主要的不可替代的基本生产资料是\\n选项：\\nA) 农业生产工具\\nB) 土地\\nC) 劳动力\\nD) 资金\\n\"\n    }\n  ],\n  \"choices\": [\n    \"农业生产工具\",\n    \"土地\",\n    \"劳动力\",\n    \"资金\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"agronomy\",\n  \"metadata\": {\n    \"subject\": \"agronomy\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。请在回答前进行一步步思考。\n\n问题：{question}\n选项：\n{choices}\n\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets cmmlu \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['cmmlu'],\n    dataset_args={\n        'cmmlu': {\n            # subset_list: ['agronomy', 'anatomy', 'ancient_chinese']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "36288b067527121361b2e152bc9ce21a",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.828747",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

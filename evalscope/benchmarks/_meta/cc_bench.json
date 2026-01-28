@@ -1,0 +1,155 @@
+{
+  "meta": {
+    "pretty_name": "CCBench",
+    "dataset_id": "lmms-lab/MMBench",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Knowledge",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "cc"
+    ],
+    "description": "\n## Overview\n\nCCBench (Chinese Culture Bench) is an extension of MMBench specifically designed to evaluate multimodal models' understanding of Chinese traditional culture. It covers various aspects of Chinese cultural heritage through visual question answering.\n\n## Task Description\n\n- **Task Type**: Visual Multiple-Choice Q&A (Chinese Culture)\n- **Input**: Image with question about Chinese culture\n- **Output**: Single correct answer letter (A, B, C, or D)\n- **Language**: Primarily Chinese content\n\n## Key Features\n\n- Questions about Chinese traditional culture\n- Categories: Calligraphy, Painting, Cultural Relics, Food & Clothes\n- Historical Figures, Scenery & Building, Sketch Reasoning, Traditional Shows\n- Tests cultural knowledge combined with visual understanding\n- Extension of the MMBench evaluation framework\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses Chain-of-Thought (CoT) prompting\n- Evaluates on test split\n- Simple accuracy metric for scoring\n- Requires both visual perception and cultural knowledge\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 2040,
+    "subset_stats": [
+      {
+        "name": "cc",
+        "sample_count": 2040,
+        "prompt_length_mean": 270.1,
+        "prompt_length_min": 254,
+        "prompt_length_max": 394,
+        "prompt_length_std": 22.22,
+        "target_length_mean": 1.0,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 2040,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "112x400",
+              "119x118",
+              "120x120",
+              "130x130",
+              "139x512",
+              "146x512",
+              "183x275",
+              "184x512",
+              "202x238",
+              "219x512"
+            ],
+            "resolution_range": {
+              "min": "119x118",
+              "max": "512x512"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 270.1,
+      "min": 254,
+      "max": 394,
+      "std": 22.22
+    },
+    "target_length_mean": 1.0,
+    "computed_at": "2026-01-28T11:14:38.472860",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 2040,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "112x400",
+          "119x118",
+          "120x120",
+          "130x130",
+          "139x512",
+          "146x512",
+          "183x275",
+          "184x512",
+          "202x238",
+          "219x512"
+        ],
+        "resolution_range": {
+          "min": "119x118",
+          "max": "512x512"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "2797f551",
+          "content": [
+            {
+              "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\n\n图中所示建筑名称为？\n\nA) 天坛\nB) 故宫\nC) 黄鹤楼\nD) 少林寺"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~22.7KB]"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "天坛",
+        "故宫",
+        "黄鹤楼",
+        "少林寺"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "index": 0,
+        "category": "scenery_building",
+        "source": "https://zh.wikipedia.org/wiki/%E5%A4%A9%E5%9D%9B"
+      }
+    },
+    "subset": "cc",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# CCBench\n\n\n## Overview\n\nCCBench (Chinese Culture Bench) is an extension of MMBench specifically designed to evaluate multimodal models' understanding of Chinese traditional culture. It covers various aspects of Chinese cultural heritage through visual question answering.\n\n## Task Description\n\n- **Task Type**: Visual Multiple-Choice Q&A (Chinese Culture)\n- **Input**: Image with question about Chinese culture\n- **Output**: Single correct answer letter (A, B, C, or D)\n- **Language**: Primarily Chinese content\n\n## Key Features\n\n- Questions about Chinese traditional culture\n- Categories: Calligraphy, Painting, Cultural Relics, Food & Clothes\n- Historical Figures, Scenery & Building, Sketch Reasoning, Traditional Shows\n- Tests cultural knowledge combined with visual understanding\n- Extension of the MMBench evaluation framework\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses Chain-of-Thought (CoT) prompting\n- Evaluates on test split\n- Simple accuracy metric for scoring\n- Requires both visual perception and cultural knowledge\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `cc_bench` |\n| **Dataset ID** | [lmms-lab/MMBench](https://modelscope.cn/datasets/lmms-lab/MMBench/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `MultiModal` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 2,040 |\n| Prompt Length (Mean) | 270.1 chars |\n| Prompt Length (Min/Max) | 254 / 394 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 2,040 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 119x118 - 512x512 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `cc`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"2797f551\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\\n\\n图中所示建筑名称为？\\n\\nA) 天坛\\nB) 故宫\\nC) 黄鹤楼\\nD) 少林寺\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~22.7KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"天坛\",\n    \"故宫\",\n    \"黄鹤楼\",\n    \"少林寺\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"index\": 0,\n    \"category\": \"scenery_building\",\n    \"source\": \"https://zh.wikipedia.org/wiki/%E5%A4%A9%E5%9D%9B\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets cc_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['cc_bench'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# CCBench\n\n\n## 概述\n\nCCBench（Chinese Culture Bench）是 MMBench 的一个扩展，专门用于评估多模态模型对中华传统文化的理解能力。它通过视觉问答的形式，涵盖中华文化遗产的多个方面。\n\n## 任务描述\n\n- **任务类型**：视觉多项选择题问答（中华文化）\n- **输入**：包含中华文化相关问题的图像\n- **输出**：单个正确答案字母（A、B、C 或 D）\n- **语言**：主要为中文内容\n\n## 主要特点\n\n- 聚焦中华传统文化相关问题\n- 类别包括：书法、绘画、文物、饮食与服饰\n- 历史人物、风景与建筑、草图推理、传统表演\n- 测试结合视觉理解与文化知识的能力\n- 基于 MMBench 评估框架的扩展\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 使用思维链（Chain-of-Thought, CoT）提示\n- 在测试集（test split）上进行评估\n- 使用简单准确率（accuracy）作为评分指标\n- 要求模型同时具备视觉感知能力和文化知识\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `cc_bench` |\n| **数据集ID** | [lmms-lab/MMBench](https://modelscope.cn/datasets/lmms-lab/MMBench/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ`, `MultiModal` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 2,040 |\n| 提示词长度（平均） | 270.1 字符 |\n| 提示词长度（最小/最大） | 254 / 394 字符 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 2,040 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 119x118 - 512x512 |\n| 格式 | jpeg |\n\n\n## 样例示例\n\n**子集**: `cc`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"2797f551\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\\n\\n图中所示建筑名称为？\\n\\nA) 天坛\\nB) 故宫\\nC) 黄鹤楼\\nD) 少林寺\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~22.7KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"天坛\",\n    \"故宫\",\n    \"黄鹤楼\",\n    \"少林寺\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"index\": 0,\n    \"category\": \"scenery_building\",\n    \"source\": \"https://zh.wikipedia.org/wiki/%E5%A4%A9%E5%9D%9B\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets cc_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['cc_bench'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "93bf773a5b93d3ac3be821e19b437677",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.955344",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

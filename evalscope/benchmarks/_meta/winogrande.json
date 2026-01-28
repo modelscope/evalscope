@@ -1,0 +1,79 @@
+{
+  "meta": {
+    "pretty_name": "Winogrande",
+    "dataset_id": "AI-ModelScope/winogrande_val",
+    "paper_url": null,
+    "tags": [
+      "Reasoning",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nWinogrande is a large-scale benchmark for commonsense reasoning, specifically designed to test pronoun resolution in the Winograd Schema Challenge format. It contains 44K problems that require understanding of physical and social commonsense.\n\n## Task Description\n\n- **Task Type**: Pronoun Resolution / Commonsense Reasoning\n- **Input**: Sentence with ambiguous pronoun and two options\n- **Output**: Correct option (A or B) that resolves the pronoun\n- **Format**: Binary choice between two noun phrases\n\n## Key Features\n\n- 44K Winograd-style pronoun resolution problems\n- Adversarially filtered to reduce dataset biases\n- Tests physical commonsense (object properties, actions)\n- Tests social commonsense (intentions, emotions)\n- Requires understanding context to resolve ambiguity\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Binary choice format (option1 vs option2)\n- Answers are converted to A/B letter format\n- Simple accuracy metric for evaluation\n- Commonly used for commonsense reasoning assessment\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 1267,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1267,
+        "prompt_length_mean": 306.58,
+        "prompt_length_min": 271,
+        "prompt_length_max": 384,
+        "prompt_length_std": 17.93,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 306.58,
+      "min": 271,
+      "max": 384,
+      "std": 17.93
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:17:21.518668"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "f64dd7e2",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\n\nSarah was a much better surgeon than Maria so _ always got the easier cases.\n\nA) Sarah\nB) Maria"
+        }
+      ],
+      "choices": [
+        "Sarah",
+        "Maria"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "id": "winogrande_xs val 0"
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# Winogrande\n\n\n## Overview\n\nWinogrande is a large-scale benchmark for commonsense reasoning, specifically designed to test pronoun resolution in the Winograd Schema Challenge format. It contains 44K problems that require understanding of physical and social commonsense.\n\n## Task Description\n\n- **Task Type**: Pronoun Resolution / Commonsense Reasoning\n- **Input**: Sentence with ambiguous pronoun and two options\n- **Output**: Correct option (A or B) that resolves the pronoun\n- **Format**: Binary choice between two noun phrases\n\n## Key Features\n\n- 44K Winograd-style pronoun resolution problems\n- Adversarially filtered to reduce dataset biases\n- Tests physical commonsense (object properties, actions)\n- Tests social commonsense (intentions, emotions)\n- Requires understanding context to resolve ambiguity\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Binary choice format (option1 vs option2)\n- Answers are converted to A/B letter format\n- Simple accuracy metric for evaluation\n- Commonly used for commonsense reasoning assessment\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `winogrande` |\n| **Dataset ID** | [AI-ModelScope/winogrande_val](https://modelscope.cn/datasets/AI-ModelScope/winogrande_val/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,267 |\n| Prompt Length (Mean) | 306.58 chars |\n| Prompt Length (Min/Max) | 271 / 384 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f64dd7e2\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\\n\\nSarah was a much better surgeon than Maria so _ always got the easier cases.\\n\\nA) Sarah\\nB) Maria\"\n    }\n  ],\n  \"choices\": [\n    \"Sarah\",\n    \"Maria\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"winogrande_xs val 0\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets winogrande \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['winogrande'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Winogrande\n\n\n## 概述\n\nWinogrande 是一个大规模的常识推理基准测试，专门用于在 Winograd Schema Challenge 格式下测试代词消歧任务。它包含 4.4 万个问题，要求模型理解物理和社交方面的常识。\n\n## 任务描述\n\n- **任务类型**：代词消歧 / 常识推理\n- **输入**：包含歧义代词的句子及两个选项\n- **输出**：正确选项（A 或 B），用于消解代词指代\n- **格式**：在两个名词短语之间进行二选一\n\n## 主要特点\n\n- 包含 4.4 万个 Winograd 风格的代词消歧问题\n- 通过对抗性过滤减少数据集偏差\n- 测试物理常识（物体属性、动作等）\n- 测试社交常识（意图、情感等）\n- 需要理解上下文以解决歧义\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 采用二选一格式（选项1 vs 选项2）\n- 答案转换为 A/B 字母格式\n- 使用简单准确率（accuracy）作为评估指标\n- 常用于常识推理能力评估\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `winogrande` |\n| **数据集ID** | [AI-ModelScope/winogrande_val](https://modelscope.cn/datasets/AI-ModelScope/winogrande_val/summary) |\n| **论文** | N/A |\n| **标签** | `MCQ`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `validation` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,267 |\n| 提示词长度（平均） | 306.58 字符 |\n| 提示词长度（最小/最大） | 271 / 384 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f64dd7e2\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\\n\\nSarah was a much better surgeon than Maria so _ always got the easier cases.\\n\\nA) Sarah\\nB) Maria\"\n    }\n  ],\n  \"choices\": [\n    \"Sarah\",\n    \"Maria\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"winogrande_xs val 0\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets winogrande \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['winogrande'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "5d2fb7b1621771de41254a0df608da47",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.721888",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

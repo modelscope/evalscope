@@ -1,0 +1,88 @@
+{
+  "meta": {
+    "pretty_name": "MBPP-Plus",
+    "dataset_id": "evalscope/mbppplus",
+    "paper_url": null,
+    "tags": [
+      "Coding"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nMBPP Plus is a fortified version of the MBPP benchmark, created to improve evaluation reliability for basic Python programming synthesis. It addresses quality issues in the original dataset and significantly increases test coverage for each problem.\n\n## Task Description\n\n- **Task Type**: Code Generation (Python)\n- **Input**: Programming task description with test assertions\n- **Output**: Python function implementation\n- **Improvements**: Sanitized data with expanded test suites\n\n## Key Features\n\n- Corrected reference code and clarified problem statements\n- Massively expanded test cases per problem (automated generation)\n- LLM-based and mutation-based test generation strategies\n- Exposes edge-case bugs missed by original MBPP\n- More rigorous and accurate code correctness evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- **Security Warning**: By default, code is executed in the local environment. We strongly recommend using sandbox execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.\n- Supports `pass@k` metric calculation\n- Default timeout is 20 seconds per problem\n- Stricter evaluation than original MBPP benchmark\n",
+    "prompt_template": "You are an expert Python programmer, and here is your task: {question} Your code should pass these tests:\n\n{tests}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean_and_pass_at_k",
+    "extra_params": {},
+    "sandbox_config": {
+      "image": "python:3.11-slim",
+      "tools_config": {
+        "shell_executor": {},
+        "python_executor": {}
+      }
+    }
+  },
+  "statistics": {
+    "total_samples": 378,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 378,
+        "prompt_length_mean": 375.53,
+        "prompt_length_min": 222,
+        "prompt_length_max": 2801,
+        "prompt_length_std": 170.22,
+        "target_length_mean": 121.15
+      }
+    ],
+    "prompt_length": {
+      "mean": 375.53,
+      "min": 222,
+      "max": 2801,
+      "std": 170.22
+    },
+    "target_length_mean": 121.15,
+    "computed_at": "2026-01-28T11:14:31.302421"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "aa126494",
+          "content": "You are an expert Python programmer, and here is your task: Write a function to find the shared elements from the given two lists. Your code should pass these tests:\n\nassert set(similar_elements((3, 4, 5, 6),(5, 7, 4, 10))) == set((4, 5))\nassert set(similar_elements((1, 2, 3, 4),(5, 4, 3, 7))) == set((3, 4))\nassert set(similar_elements((11, 12, 14, 13),(17, 15, 14, 13))) == set((13, 14))"
+        }
+      ],
+      "target": "\ndef similar_elements(test_tup1, test_tup2):\n  return tuple(set(test_tup1) & set(test_tup2))\n",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "task_id": 2,
+        "source_file": "Benchmark Questions Verification V2.ipynb",
+        "test_imports": [],
+        "test_list": [
+          "assert set(similar_elements((3, 4, 5, 6),(5, 7, 4, 10))) == set((4, 5))",
+          "assert set(similar_elements((1, 2, 3, 4),(5, 4, 3, 7))) == set((3, 4))",
+          "assert set(similar_elements((11, 12, 14, 13),(17, 15, 14, 13))) == set((13, 14))"
+        ],
+        "test": "import numpy as np\nfrom math import inf\n\ndef is_floats(x) -> bool:\n    # check if it is float; List[float]; Tuple[float]\n    if isinstance(x, float):\n        return True\n    if isinstance(x, (list, tuple)):\n        return all(isinstance(i, fl ... [TRUNCATED] ... wvS', 'tUqF', 'ITntCqEvPi', 'kx'), (1, 2, 3, 4, 5, 6, 7, 8, 9), (11, 12, 13, 14, 15, 16, 17, 19, 20), (19, 5), (1, 2, 3, 6, 7, 8, 9, 10, 12)]\nfor i, (inp, exp) in enumerate(zip(inputs, results)):\n    assertion(similar_elements(*inp), exp, 0)\n"
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# MBPP-Plus\n\n\n## Overview\n\nMBPP Plus is a fortified version of the MBPP benchmark, created to improve evaluation reliability for basic Python programming synthesis. It addresses quality issues in the original dataset and significantly increases test coverage for each problem.\n\n## Task Description\n\n- **Task Type**: Code Generation (Python)\n- **Input**: Programming task description with test assertions\n- **Output**: Python function implementation\n- **Improvements**: Sanitized data with expanded test suites\n\n## Key Features\n\n- Corrected reference code and clarified problem statements\n- Massively expanded test cases per problem (automated generation)\n- LLM-based and mutation-based test generation strategies\n- Exposes edge-case bugs missed by original MBPP\n- More rigorous and accurate code correctness evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- **Security Warning**: By default, code is executed in the local environment. We strongly recommend using sandbox execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.\n- Supports `pass@k` metric calculation\n- Default timeout is 20 seconds per problem\n- Stricter evaluation than original MBPP benchmark\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `mbpp_plus` |\n| **Dataset ID** | [evalscope/mbppplus](https://modelscope.cn/datasets/evalscope/mbppplus/summary) |\n| **Paper** | N/A |\n| **Tags** | `Coding` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `mean_and_pass_at_k` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 378 |\n| Prompt Length (Mean) | 375.53 chars |\n| Prompt Length (Min/Max) | 222 / 2801 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"aa126494\",\n      \"content\": \"You are an expert Python programmer, and here is your task: Write a function to find the shared elements from the given two lists. Your code should pass these tests:\\n\\nassert set(similar_elements((3, 4, 5, 6),(5, 7, 4, 10))) == set((4, 5))\\nassert set(similar_elements((1, 2, 3, 4),(5, 4, 3, 7))) == set((3, 4))\\nassert set(similar_elements((11, 12, 14, 13),(17, 15, 14, 13))) == set((13, 14))\"\n    }\n  ],\n  \"target\": \"\\ndef similar_elements(test_tup1, test_tup2):\\n  return tuple(set(test_tup1) & set(test_tup2))\\n\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"task_id\": 2,\n    \"source_file\": \"Benchmark Questions Verification V2.ipynb\",\n    \"test_imports\": [],\n    \"test_list\": [\n      \"assert set(similar_elements((3, 4, 5, 6),(5, 7, 4, 10))) == set((4, 5))\",\n      \"assert set(similar_elements((1, 2, 3, 4),(5, 4, 3, 7))) == set((3, 4))\",\n      \"assert set(similar_elements((11, 12, 14, 13),(17, 15, 14, 13))) == set((13, 14))\"\n    ],\n    \"test\": \"import numpy as np\\nfrom math import inf\\n\\ndef is_floats(x) -> bool:\\n    # check if it is float; List[float]; Tuple[float]\\n    if isinstance(x, float):\\n        return True\\n    if isinstance(x, (list, tuple)):\\n        return all(isinstance(i, fl ... [TRUNCATED] ... wvS', 'tUqF', 'ITntCqEvPi', 'kx'), (1, 2, 3, 4, 5, 6, 7, 8, 9), (11, 12, 13, 14, 15, 16, 17, 19, 20), (19, 5), (1, 2, 3, 6, 7, 8, 9, 10, 12)]\\nfor i, (inp, exp) in enumerate(zip(inputs, results)):\\n    assertion(similar_elements(*inp), exp, 0)\\n\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are an expert Python programmer, and here is your task: {question} Your code should pass these tests:\n\n{tests}\n```\n\n## Sandbox Configuration\n\nThis benchmark requires a sandbox environment for code execution.\n\n```json\n{\n  \"image\": \"python:3.11-slim\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {}\n  }\n}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mbpp_plus \\\n    --use-sandbox \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mbpp_plus'],\n    use_sandbox=True,\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MBPP-Plus\n\n## 概述\n\nMBPP Plus 是 MBPP 基准测试的增强版本，旨在提升对基础 Python 编程合成任务的评估可靠性。它解决了原始数据集中的质量问题，并显著增加了每个问题的测试覆盖范围。\n\n## 任务描述\n\n- **任务类型**：代码生成（Python）\n- **输入**：包含测试断言的编程任务描述\n- **输出**：Python 函数实现\n- **改进点**：经过清洗的数据与扩展的测试套件\n\n## 主要特性\n\n- 修正了参考代码并澄清了问题描述\n- 每个问题大幅扩充了测试用例（通过自动化生成）\n- 采用基于大语言模型（LLM）和基于变异（mutation-based）的测试生成策略\n- 能够暴露原始 MBPP 中遗漏的边界情况错误\n- 提供更严格、更准确的代码正确性评估\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- **安全警告**：默认情况下，代码将在本地环境中执行。我们强烈建议使用沙箱环境执行。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。\n- 支持 `pass@k` 指标计算\n- 每个问题默认超时时间为 20 秒\n- 评估标准比原始 MBPP 基准测试更为严格\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `mbpp_plus` |\n| **数据集ID** | [evalscope/mbppplus](https://modelscope.cn/datasets/evalscope/mbppplus/summary) |\n| **论文** | N/A |\n| **标签** | `Coding` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n| **聚合方式** | `mean_and_pass_at_k` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 378 |\n| 提示词长度（平均） | 375.53 字符 |\n| 提示词长度（最小/最大） | 222 / 2801 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"aa126494\",\n      \"content\": \"You are an expert Python programmer, and here is your task: Write a function to find the shared elements from the given two lists. Your code should pass these tests:\\n\\nassert set(similar_elements((3, 4, 5, 6),(5, 7, 4, 10))) == set((4, 5))\\nassert set(similar_elements((1, 2, 3, 4),(5, 4, 3, 7))) == set((3, 4))\\nassert set(similar_elements((11, 12, 14, 13),(17, 15, 14, 13))) == set((13, 14))\"\n    }\n  ],\n  \"target\": \"\\ndef similar_elements(test_tup1, test_tup2):\\n  return tuple(set(test_tup1) & set(test_tup2))\\n\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"task_id\": 2,\n    \"source_file\": \"Benchmark Questions Verification V2.ipynb\",\n    \"test_imports\": [],\n    \"test_list\": [\n      \"assert set(similar_elements((3, 4, 5, 6),(5, 7, 4, 10))) == set((4, 5))\",\n      \"assert set(similar_elements((1, 2, 3, 4),(5, 4, 3, 7))) == set((3, 4))\",\n      \"assert set(similar_elements((11, 12, 14, 13),(17, 15, 14, 13))) == set((13, 14))\"\n    ],\n    \"test\": \"import numpy as np\\nfrom math import inf\\n\\ndef is_floats(x) -> bool:\\n    # check if it is float; List[float]; Tuple[float]\\n    if isinstance(x, float):\\n        return True\\n    if isinstance(x, (list, tuple)):\\n        return all(isinstance(i, fl ... [TRUNCATED] ... wvS', 'tUqF', 'ITntCqEvPi', 'kx'), (1, 2, 3, 4, 5, 6, 7, 8, 9), (11, 12, 13, 14, 15, 16, 17, 19, 20), (19, 5), (1, 2, 3, 6, 7, 8, 9, 10, 12)]\\nfor i, (inp, exp) in enumerate(zip(inputs, results)):\\n    assertion(similar_elements(*inp), exp, 0)\\n\"\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are an expert Python programmer, and here is your task: {question} Your code should pass these tests:\n\n{tests}\n```\n\n## 沙箱配置\n\n此基准测试需要在沙箱环境中执行代码。\n\n```json\n{\n  \"image\": \"python:3.11-slim\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {}\n  }\n}\n```\n\n## 使用方法\n\n### 通过命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mbpp_plus \\\n    --use-sandbox \\\n    --limit 10  # 正式评估时请移除此行\n```\n\n### 通过 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mbpp_plus'],\n    use_sandbox=True,\n    limit=10,  # 正式评估时请移除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "87fcd988178cc28a4f612c780009f0be",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.944191",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

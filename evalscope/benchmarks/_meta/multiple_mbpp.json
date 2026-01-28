@@ -1,0 +1,259 @@
+{
+  "meta": {
+    "pretty_name": "MultiPL-E MBPP",
+    "dataset_id": "evalscope/MultiPL-E",
+    "paper_url": null,
+    "tags": [
+      "Coding"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "mbpp-cpp",
+      "mbpp-ts",
+      "mbpp-sh",
+      "mbpp-cs",
+      "mbpp-go",
+      "mbpp-java",
+      "mbpp-lua",
+      "mbpp-js",
+      "mbpp-php",
+      "mbpp-pl",
+      "mbpp-rkt",
+      "mbpp-r",
+      "mbpp-rs",
+      "mbpp-scala",
+      "mbpp-swift",
+      "mbpp-rb",
+      "mbpp-d",
+      "mbpp-jl"
+    ],
+    "description": "\n## Overview\n\nMultiPL-E MBPP is a multilingual code generation benchmark derived from MBPP (Mostly Basic Python Programming). It extends the original MBPP to 18 programming languages, enabling cross-lingual evaluation of code generation capabilities.\n\n## Task Description\n\n- **Task Type**: Multilingual Code Generation\n- **Input**: Programming problem prompt with docstring\n- **Output**: Complete code solution that passes test cases\n- **Languages**: 18 languages (C++, TypeScript, Shell, C#, Go, Java, Lua, JavaScript, PHP, Perl, Racket, R, Rust, Scala, Swift, Ruby, D, Julia)\n\n## Key Features\n\n- Multilingual evaluation across 18 programming languages\n- Execution-based evaluation with test cases\n- Supports pass@k metric for code generation\n- Docker sandbox environment for safe code execution\n- Derived from MBPP with consistent problem difficulty\n\n## Evaluation Notes\n\n- **Sandbox Required**: Requires sandbox environment for safe code execution\n- Default evaluation uses **test** split\n- Primary metric: **Accuracy** with **pass@k** aggregation\n- Timeout: 30 seconds per test case\n- See [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for setup\n",
+    "prompt_template": "{prompt}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean_and_pass_at_k",
+    "extra_params": {},
+    "sandbox_config": {
+      "image": "volcengine/sandbox-fusion:server-20250609",
+      "tools_config": {
+        "shell_executor": {},
+        "python_executor": {},
+        "multi_code_executor": {}
+      },
+      "memory_limit": "2g",
+      "cpu_limit": "2.0"
+    }
+  },
+  "statistics": {
+    "total_samples": 6987,
+    "subset_stats": [
+      {
+        "name": "mbpp-cpp",
+        "sample_count": 397,
+        "prompt_length_mean": 407.55,
+        "prompt_length_min": 317,
+        "prompt_length_max": 1002,
+        "prompt_length_std": 82.62,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-ts",
+        "sample_count": 390,
+        "prompt_length_mean": 359.57,
+        "prompt_length_min": 295,
+        "prompt_length_max": 674,
+        "prompt_length_std": 46.07,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-sh",
+        "sample_count": 382,
+        "prompt_length_mean": 362.53,
+        "prompt_length_min": 296,
+        "prompt_length_max": 696,
+        "prompt_length_std": 47.35,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-cs",
+        "sample_count": 386,
+        "prompt_length_mean": 549.09,
+        "prompt_length_min": 481,
+        "prompt_length_max": 867,
+        "prompt_length_std": 47.82,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-go",
+        "sample_count": 374,
+        "prompt_length_mean": 402.21,
+        "prompt_length_min": 332,
+        "prompt_length_max": 723,
+        "prompt_length_std": 45.26,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-java",
+        "sample_count": 386,
+        "prompt_length_mean": 553,
+        "prompt_length_min": 474,
+        "prompt_length_max": 889,
+        "prompt_length_std": 52.48,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-lua",
+        "sample_count": 397,
+        "prompt_length_mean": 332.52,
+        "prompt_length_min": 277,
+        "prompt_length_max": 651,
+        "prompt_length_std": 42.05,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-js",
+        "sample_count": 397,
+        "prompt_length_mean": 325.48,
+        "prompt_length_min": 270,
+        "prompt_length_max": 645,
+        "prompt_length_std": 42.17,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-php",
+        "sample_count": 397,
+        "prompt_length_mean": 336.17,
+        "prompt_length_min": 280,
+        "prompt_length_max": 655,
+        "prompt_length_std": 42.32,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-pl",
+        "sample_count": 396,
+        "prompt_length_mean": 337.87,
+        "prompt_length_min": 282,
+        "prompt_length_max": 657,
+        "prompt_length_std": 42.26,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-rkt",
+        "sample_count": 397,
+        "prompt_length_mean": 342.25,
+        "prompt_length_min": 287,
+        "prompt_length_max": 660,
+        "prompt_length_std": 41.53,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-r",
+        "sample_count": 397,
+        "prompt_length_mean": 326.42,
+        "prompt_length_min": 271,
+        "prompt_length_max": 644,
+        "prompt_length_std": 41.88,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-rs",
+        "sample_count": 354,
+        "prompt_length_mean": 351.9,
+        "prompt_length_min": 285,
+        "prompt_length_max": 669,
+        "prompt_length_std": 46.88,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-scala",
+        "sample_count": 396,
+        "prompt_length_mean": 434.01,
+        "prompt_length_min": 364,
+        "prompt_length_max": 750,
+        "prompt_length_std": 47.21,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-swift",
+        "sample_count": 396,
+        "prompt_length_mean": 352.64,
+        "prompt_length_min": 285,
+        "prompt_length_max": 667,
+        "prompt_length_std": 46.45,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-rb",
+        "sample_count": 397,
+        "prompt_length_mean": 321.34,
+        "prompt_length_min": 266,
+        "prompt_length_max": 641,
+        "prompt_length_std": 42.08,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-d",
+        "sample_count": 358,
+        "prompt_length_mean": 376.49,
+        "prompt_length_min": 308,
+        "prompt_length_max": 693,
+        "prompt_length_std": 46.36,
+        "target_length_mean": null
+      },
+      {
+        "name": "mbpp-jl",
+        "sample_count": 390,
+        "prompt_length_mean": 363.01,
+        "prompt_length_min": 292,
+        "prompt_length_max": 686,
+        "prompt_length_std": 47.99,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 379.32,
+      "min": 266,
+      "max": 1002,
+      "std": 82.86
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T11:15:23.886670"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "209e8d38",
+          "content": "```cpp\n#include<assert.h>\n#include<bits/stdc++.h>\n// Write a cppthon function to identify non-prime numbers.\nbool is_not_prime(long n) {\n\n```\n\nPlease complete the above code according to the requirements in the docstring. Write the complete code and wrap it in markdown fenced code. The code should not contain `Main` function."
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tests": "}\nint main() {\n    auto candidate = is_not_prime;\n    assert(candidate((2)) == (false));\n    assert(candidate((10)) == (true));\n    assert(candidate((35)) == (true));\n    assert(candidate((37)) == (false));\n}\n",
+        "stop_tokens": [
+          "\n}"
+        ],
+        "task_id": "mbpp_3_is_not_prime",
+        "language": "cpp",
+        "doctests": "transform"
+      }
+    },
+    "subset": "mbpp-cpp",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MultiPL-E MBPP\n\n\n## Overview\n\nMultiPL-E MBPP is a multilingual code generation benchmark derived from MBPP (Mostly Basic Python Programming). It extends the original MBPP to 18 programming languages, enabling cross-lingual evaluation of code generation capabilities.\n\n## Task Description\n\n- **Task Type**: Multilingual Code Generation\n- **Input**: Programming problem prompt with docstring\n- **Output**: Complete code solution that passes test cases\n- **Languages**: 18 languages (C++, TypeScript, Shell, C#, Go, Java, Lua, JavaScript, PHP, Perl, Racket, R, Rust, Scala, Swift, Ruby, D, Julia)\n\n## Key Features\n\n- Multilingual evaluation across 18 programming languages\n- Execution-based evaluation with test cases\n- Supports pass@k metric for code generation\n- Docker sandbox environment for safe code execution\n- Derived from MBPP with consistent problem difficulty\n\n## Evaluation Notes\n\n- **Sandbox Required**: Requires sandbox environment for safe code execution\n- Default evaluation uses **test** split\n- Primary metric: **Accuracy** with **pass@k** aggregation\n- Timeout: 30 seconds per test case\n- See [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for setup\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `multiple_mbpp` |\n| **Dataset ID** | [evalscope/MultiPL-E](https://modelscope.cn/datasets/evalscope/MultiPL-E/summary) |\n| **Paper** | N/A |\n| **Tags** | `Coding` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `mean_and_pass_at_k` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 6,987 |\n| Prompt Length (Mean) | 379.32 chars |\n| Prompt Length (Min/Max) | 266 / 1002 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `mbpp-cpp` | 397 | 407.55 | 317 | 1002 |\n| `mbpp-ts` | 390 | 359.57 | 295 | 674 |\n| `mbpp-sh` | 382 | 362.53 | 296 | 696 |\n| `mbpp-cs` | 386 | 549.09 | 481 | 867 |\n| `mbpp-go` | 374 | 402.21 | 332 | 723 |\n| `mbpp-java` | 386 | 553 | 474 | 889 |\n| `mbpp-lua` | 397 | 332.52 | 277 | 651 |\n| `mbpp-js` | 397 | 325.48 | 270 | 645 |\n| `mbpp-php` | 397 | 336.17 | 280 | 655 |\n| `mbpp-pl` | 396 | 337.87 | 282 | 657 |\n| `mbpp-rkt` | 397 | 342.25 | 287 | 660 |\n| `mbpp-r` | 397 | 326.42 | 271 | 644 |\n| `mbpp-rs` | 354 | 351.9 | 285 | 669 |\n| `mbpp-scala` | 396 | 434.01 | 364 | 750 |\n| `mbpp-swift` | 396 | 352.64 | 285 | 667 |\n| `mbpp-rb` | 397 | 321.34 | 266 | 641 |\n| `mbpp-d` | 358 | 376.49 | 308 | 693 |\n| `mbpp-jl` | 390 | 363.01 | 292 | 686 |\n\n## Sample Example\n\n**Subset**: `mbpp-cpp`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"209e8d38\",\n      \"content\": \"```cpp\\n#include<assert.h>\\n#include<bits/stdc++.h>\\n// Write a cppthon function to identify non-prime numbers.\\nbool is_not_prime(long n) {\\n\\n```\\n\\nPlease complete the above code according to the requirements in the docstring. Write the complete code and wrap it in markdown fenced code. The code should not contain `Main` function.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tests\": \"}\\nint main() {\\n    auto candidate = is_not_prime;\\n    assert(candidate((2)) == (false));\\n    assert(candidate((10)) == (true));\\n    assert(candidate((35)) == (true));\\n    assert(candidate((37)) == (false));\\n}\\n\",\n    \"stop_tokens\": [\n      \"\\n}\"\n    ],\n    \"task_id\": \"mbpp_3_is_not_prime\",\n    \"language\": \"cpp\",\n    \"doctests\": \"transform\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{prompt}\n```\n\n## Sandbox Configuration\n\nThis benchmark requires a sandbox environment for code execution.\n\n```json\n{\n  \"image\": \"volcengine/sandbox-fusion:server-20250609\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {},\n    \"multi_code_executor\": {}\n  },\n  \"memory_limit\": \"2g\",\n  \"cpu_limit\": \"2.0\"\n}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets multiple_mbpp \\\n    --use-sandbox \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['multiple_mbpp'],\n    use_sandbox=True,\n    dataset_args={\n        'multiple_mbpp': {\n            # subset_list: ['mbpp-cpp', 'mbpp-ts', 'mbpp-sh']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MultiPL-E MBPP\n\n\n## 概述\n\nMultiPL-E MBPP 是一个源自 MBPP（Mostly Basic Python Programming）的多语言代码生成基准测试。它将原始 MBPP 扩展至 18 种编程语言，支持对代码生成能力进行跨语言评估。\n\n## 任务描述\n\n- **任务类型**：多语言代码生成\n- **输入**：包含文档字符串（docstring）的编程问题提示\n- **输出**：能通过测试用例的完整代码解决方案\n- **语言**：18 种语言（C++、TypeScript、Shell、C#、Go、Java、Lua、JavaScript、PHP、Perl、Racket、R、Rust、Scala、Swift、Ruby、D、Julia）\n\n## 主要特性\n\n- 覆盖 18 种编程语言的多语言评估\n- 基于执行的测试用例评估\n- 支持代码生成的 pass@k 指标\n- 使用 Docker 沙箱环境实现安全代码执行\n- 源自 MBPP，保持一致的问题难度\n\n## 评估说明\n\n- **需要沙箱**：需使用沙箱环境以确保代码安全执行\n- 默认使用 **test** 数据划分进行评估\n- 主要指标：**准确率（Accuracy）**，采用 **pass@k** 聚合方式\n- 每个测试用例超时时间：30 秒\n- 沙箱环境配置详见 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `multiple_mbpp` |\n| **数据集 ID** | [evalscope/MultiPL-E](https://modelscope.cn/datasets/evalscope/MultiPL-E/summary) |\n| **论文** | N/A |\n| **标签** | `Coding` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `test` |\n| **聚合方式** | `mean_and_pass_at_k` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 6,987 |\n| 提示词长度（平均） | 379.32 字符 |\n| 提示词长度（最小/最大） | 266 / 1002 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `mbpp-cpp` | 397 | 407.55 | 317 | 1002 |\n| `mbpp-ts` | 390 | 359.57 | 295 | 674 |\n| `mbpp-sh` | 382 | 362.53 | 296 | 696 |\n| `mbpp-cs` | 386 | 549.09 | 481 | 867 |\n| `mbpp-go` | 374 | 402.21 | 332 | 723 |\n| `mbpp-java` | 386 | 553 | 474 | 889 |\n| `mbpp-lua` | 397 | 332.52 | 277 | 651 |\n| `mbpp-js` | 397 | 325.48 | 270 | 645 |\n| `mbpp-php` | 397 | 336.17 | 280 | 655 |\n| `mbpp-pl` | 396 | 337.87 | 282 | 657 |\n| `mbpp-rkt` | 397 | 342.25 | 287 | 660 |\n| `mbpp-r` | 397 | 326.42 | 271 | 644 |\n| `mbpp-rs` | 354 | 351.9 | 285 | 669 |\n| `mbpp-scala` | 396 | 434.01 | 364 | 750 |\n| `mbpp-swift` | 396 | 352.64 | 285 | 667 |\n| `mbpp-rb` | 397 | 321.34 | 266 | 641 |\n| `mbpp-d` | 358 | 376.49 | 308 | 693 |\n| `mbpp-jl` | 390 | 363.01 | 292 | 686 |\n\n## 样例示例\n\n**子集**: `mbpp-cpp`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"209e8d38\",\n      \"content\": \"```cpp\\n#include<assert.h>\\n#include<bits/stdc++.h>\\n// Write a cppthon function to identify non-prime numbers.\\nbool is_not_prime(long n) {\\n\\n```\\n\\nPlease complete the above code according to the requirements in the docstring. Write the complete code and wrap it in markdown fenced code. The code should not contain `Main` function.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tests\": \"}\\nint main() {\\n    auto candidate = is_not_prime;\\n    assert(candidate((2)) == (false));\\n    assert(candidate((10)) == (true));\\n    assert(candidate((35)) == (true));\\n    assert(candidate((37)) == (false));\\n}\\n\",\n    \"stop_tokens\": [\n      \"\\n}\"\n    ],\n    \"task_id\": \"mbpp_3_is_not_prime\",\n    \"language\": \"cpp\",\n    \"doctests\": \"transform\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{prompt}\n```\n\n## 沙箱配置\n\n此基准测试需要沙箱环境来执行代码。\n\n```json\n{\n  \"image\": \"volcengine/sandbox-fusion:server-20250609\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {},\n    \"multi_code_executor\": {}\n  },\n  \"memory_limit\": \"2g\",\n  \"cpu_limit\": \"2.0\"\n}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets multiple_mbpp \\\n    --use-sandbox \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['multiple_mbpp'],\n    use_sandbox=True,\n    dataset_args={\n        'multiple_mbpp': {\n            # subset_list: ['mbpp-cpp', 'mbpp-ts', 'mbpp-sh']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "19f269dd74a3120cc69b3466542b35ad",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.031838",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

@@ -1,0 +1,113 @@
+{
+  "meta": {
+    "pretty_name": "BroadTwitterCorpus",
+    "dataset_id": "extraordinarylab/broad-twitter-corpus",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nBroadTwitterCorpus is a dataset of tweets collected over stratified times, places, and social uses. The goal is to represent a broad range of activities, giving a dataset more representative of the language used in this hardest of social media formats to process.\n\n## Task Description\n\n- **Task Type**: Social Media Named Entity Recognition (NER)\n- **Input**: Diverse Twitter text (tweets)\n- **Output**: Identified entity spans with types\n- **Domain**: Social media, diverse contexts\n\n## Key Features\n\n- Stratified sampling across times, places, and uses\n- Representative of diverse Twitter language\n- Addresses challenges in social media NER\n- Three standard NER entity types (PER, ORG, LOC)\n- Useful for robust social media NLP evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: PER, ORG, LOC",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 2000,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 2000,
+        "prompt_length_mean": 2341.71,
+        "prompt_length_min": 2246,
+        "prompt_length_max": 2398,
+        "prompt_length_std": 38.73,
+        "target_length_mean": 164.72
+      }
+    ],
+    "prompt_length": {
+      "mean": 2341.71,
+      "min": 2246,
+      "max": 2398,
+      "std": 38.73
+    },
+    "target_length_mean": 164.72,
+    "computed_at": "2026-01-28T14:13:44.943989"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "62394bfa",
+          "content": "Here are some examples of named entity recognition:\n\nInput:\nI hate the words chunder , vomit and puke . BUUH .\n\nOutput:\n<response>I hate the words chunder , vomit and puke . BUUH .</response>\n\nInput:\n♥ . . ) ) ( ♫ . ( ړײ ) ♫ . ♥ . « ▓ » ♥ . ♫ ... [TRUNCATED] ... planations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n@ colgo hey , congrats to you and the team ! Always worth a read :)\n"
+        }
+      ],
+      "target": "<response><person>@</person> <person>colgo</person> hey , congrats to you and the team ! Always worth a read :)</response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "@",
+          "colgo",
+          "hey",
+          ",",
+          "congrats",
+          "to",
+          "you",
+          "and",
+          "the",
+          "team",
+          "!",
+          "Always",
+          "worth",
+          "a",
+          "read",
+          ":)"
+        ],
+        "ner_tags": [
+          "B-PER",
+          "B-PER",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# BroadTwitterCorpus\n\n## Overview\n\nBroadTwitterCorpus is a dataset of tweets collected over stratified times, places, and social uses. The goal is to represent a broad range of activities, giving a dataset more representative of the language used in this hardest of social media formats to process.\n\n## Task Description\n\n- **Task Type**: Social Media Named Entity Recognition (NER)\n- **Input**: Diverse Twitter text (tweets)\n- **Output**: Identified entity spans with types\n- **Domain**: Social media, diverse contexts\n\n## Key Features\n\n- Stratified sampling across times, places, and uses\n- Representative of diverse Twitter language\n- Addresses challenges in social media NER\n- Three standard NER entity types (PER, ORG, LOC)\n- Useful for robust social media NLP evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: PER, ORG, LOC\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `broad_twitter_corpus` |\n| **Dataset ID** | [extraordinarylab/broad-twitter-corpus](https://modelscope.cn/datasets/extraordinarylab/broad-twitter-corpus/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 2,000 |\n| Prompt Length (Mean) | 2341.71 chars |\n| Prompt Length (Min/Max) | 2246 / 2398 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"62394bfa\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nI hate the words chunder , vomit and puke . BUUH .\\n\\nOutput:\\n<response>I hate the words chunder , vomit and puke . BUUH .</response>\\n\\nInput:\\n♥ . . ) ) ( ♫ . ( ړײ ) ♫ . ♥ . « ▓ » ♥ . ♫ ... [TRUNCATED] ... planations, just the tagged text.\\n6. If entity spans overlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\n@ colgo hey , congrats to you and the team ! Always worth a read :)\\n\"\n    }\n  ],\n  \"target\": \"<response><person>@</person> <person>colgo</person> hey , congrats to you and the team ! Always worth a read :)</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"@\",\n      \"colgo\",\n      \"hey\",\n      \",\",\n      \"congrats\",\n      \"to\",\n      \"you\",\n      \"and\",\n      \"the\",\n      \"team\",\n      \"!\",\n      \"Always\",\n      \"worth\",\n      \"a\",\n      \"read\",\n      \":)\"\n    ],\n    \"ner_tags\": [\n      \"B-PER\",\n      \"B-PER\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets broad_twitter_corpus \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['broad_twitter_corpus'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# BroadTwitterCorpus\n\n## 概述\n\nBroadTwitterCorpus 是一个在时间、地点和社会用途上分层采样的推文数据集。其目标是涵盖广泛的活动类型，从而提供一个更能代表 Twitter 这一最难处理的社交媒体语言形式的数据集。\n\n## 任务描述\n\n- **任务类型**：社交媒体命名实体识别（NER）\n- **输入**：多样化的 Twitter 文本（推文）\n- **输出**：识别出的实体片段及其类型\n- **领域**：社交媒体，多样化上下文\n\n## 主要特点\n\n- 在时间、地点和用途上进行分层采样\n- 能代表多样化的 Twitter 语言风格\n- 针对社交媒体 NER 的挑战进行优化\n- 包含三种标准 NER 实体类型（PER、ORG、LOC）\n- 适用于鲁棒的社交媒体自然语言处理评估\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 评估\n- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）\n- 实体类型：PER、ORG、LOC\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `broad_twitter_corpus` |\n| **数据集ID** | [extraordinarylab/broad-twitter-corpus](https://modelscope.cn/datasets/extraordinarylab/broad-twitter-corpus/summary) |\n| **论文** | 无 |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认示例数量** | 5-shot |\n| **评估划分** | `test` |\n| **训练划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 2,000 |\n| 提示词长度（平均） | 2341.71 字符 |\n| 提示词长度（最小/最大） | 2246 / 2398 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"62394bfa\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nI hate the words chunder , vomit and puke . BUUH .\\n\\nOutput:\\n<response>I hate the words chunder , vomit and puke . BUUH .</response>\\n\\nInput:\\n♥ . . ) ) ( ♫ . ( ړײ ) ♫ . ♥ . « ▓ » ♥ . ♫ ... [TRUNCATED] ... planations, just the tagged text.\\n6. If entity spans overlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\n@ colgo hey , congrats to you and the team ! Always worth a read :)\\n\"\n    }\n  ],\n  \"target\": \"<response><person>@</person> <person>colgo</person> hey , congrats to you and the team ! Always worth a read :)</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"@\",\n      \"colgo\",\n      \"hey\",\n      \",\",\n      \"congrats\",\n      \"to\",\n      \"you\",\n      \"and\",\n      \"the\",\n      \"team\",\n      \"!\",\n      \"Always\",\n      \"worth\",\n      \"a\",\n      \"read\",\n      \":)\"\n    ],\n    \"ner_tags\": [\n      \"B-PER\",\n      \"B-PER\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本（Few-shot）模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets broad_twitter_corpus \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['broad_twitter_corpus'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "8f6ee08c4230d8f41fbb62303bc3ba81",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.175089",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

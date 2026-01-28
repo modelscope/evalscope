@@ -2,7 +2,7 @@
 """Documentation utilities for benchmark data management.
 
 This module provides utilities for:
-- Unified benchmark_data.json management
+- Individual benchmark metadata JSON files in evalscope/benchmarks/_meta/
 - Content hash for detecting changes and translation updates
 - README generation and translation support
 """
@@ -12,11 +12,9 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from evalscope.utils.function_utils import thread_safe
-
-# Path to the unified benchmark data file
+# Path to benchmark metadata directory (individual JSON files per benchmark)
 DOCS_DIR = Path(__file__).parent.parent.parent.parent / 'docs'
-BENCHMARK_DATA_JSON_PATH = str(DOCS_DIR / 'asset' / 'source' / 'benchmark_data.json')
+BENCHMARK_META_DIR = Path(__file__).parent.parent.parent / 'benchmarks' / '_meta'
 
 # Output directories for benchmark READMEs
 BENCHMARK_README_DIR_ZH = DOCS_DIR / 'zh' / 'benchmarks'
@@ -30,9 +28,16 @@ def compute_content_hash(content: str) -> str:
     return hashlib.md5(content.encode('utf-8')).hexdigest()
 
 
-def load_benchmark_data(path: str = BENCHMARK_DATA_JSON_PATH) -> Dict[str, Any]:
+def load_benchmark_data(benchmark_name: Optional[str] = None) -> Dict[str, Any]:
     """
-    Load unified benchmark data from JSON file.
+    Load benchmark metadata from individual JSON files.
+
+    Args:
+        benchmark_name: Specific benchmark to load, or None to load all
+
+    Returns:
+        Dict with benchmark data. If benchmark_name is specified, returns single
+        benchmark data wrapped in dict. If None, returns all benchmarks.
 
     The benchmark data structure is:
     {
@@ -70,42 +75,70 @@ def load_benchmark_data(path: str = BENCHMARK_DATA_JSON_PATH) -> Dict[str, Any]:
         }
     }
     """
-    if not Path(path).exists():
-        return {}
-    with open(path, 'r', encoding='utf-8') as f:
+    if benchmark_name:
+        # Load single benchmark
+        json_path = BENCHMARK_META_DIR / f'{benchmark_name}.json'
+        if not json_path.exists():
+            return {benchmark_name: _create_empty_entry()}
         try:
-            return json.load(f)
+            with open(json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                return {benchmark_name: data}
         except json.JSONDecodeError:
-            return {}
+            return {benchmark_name: _create_empty_entry()}
+    else:
+        # Load all benchmarks
+        result = {}
+        if not BENCHMARK_META_DIR.exists():
+            return result
+        for json_file in BENCHMARK_META_DIR.glob('*.json'):
+            name = json_file.stem
+            try:
+                with open(json_file, 'r', encoding='utf-8') as f:
+                    result[name] = json.load(f)
+            except json.JSONDecodeError:
+                continue
+        return result
 
 
-@thread_safe
-def save_benchmark_data(data: Dict[str, Any], path: str = BENCHMARK_DATA_JSON_PATH):
-    """Save unified benchmark data to JSON file."""
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+def save_benchmark_data(data: Dict[str, Any], benchmark_name: Optional[str] = None):
+    """
+    Save benchmark metadata to individual JSON files.
+
+    Args:
+        data: Benchmark data dict. If benchmark_name is None, expects dict of
+              {benchmark_name: benchmark_data}. Otherwise, expects single benchmark data.
+        benchmark_name: Name of benchmark to save. If None, saves all benchmarks in data.
+    """
+    BENCHMARK_META_DIR.mkdir(parents=True, exist_ok=True)
+
+    if benchmark_name:
+        # Save single benchmark
+        json_path = BENCHMARK_META_DIR / f'{benchmark_name}.json'
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    else:
+        # Save all benchmarks from data dict
+        for name, benchmark_data in data.items():
+            json_path = BENCHMARK_META_DIR / f'{name}.json'
+            with open(json_path, 'w', encoding='utf-8') as f:
+                json.dump(benchmark_data, f, ensure_ascii=False, indent=2)
 
 
-def get_benchmark_entry(benchmark_name: str, data: Optional[Dict] = None) -> Dict[str, Any]:
-    """Get entry for a specific benchmark, creating empty structure if not exists."""
-    if data is None:
-        data = load_benchmark_data()
-
-    if benchmark_name not in data:
-        data[benchmark_name] = {
-            'meta': {},
-            'statistics': {},
-            'sample_example': {},
-            'readme': {
-                'en': '',
-                'zh': '',
-                'content_hash': '',
-                'needs_translation': False,
-            },
-            'updated_at': '',
-        }
-    return data[benchmark_name]
+def _create_empty_entry() -> Dict[str, Any]:
+    """Create an empty benchmark entry structure."""
+    return {
+        'meta': {},
+        'statistics': {},
+        'sample_example': {},
+        'readme': {
+            'en': '',
+            'zh': '',
+            'content_hash': '',
+            'needs_translation': False,
+        },
+        'updated_at': '',
+    }
 
 
 def needs_translation_update(benchmark_name: str, current_en_content: str = None, data: Optional[Dict] = None) -> bool:
@@ -156,20 +189,3 @@ def get_benchmarks_needing_translation(data: Optional[Dict] = None) -> list:
         if en_content and needs_translation_update(name, en_content, data):
             result.append(name)
     return result
-
-
-# Export main functions
-__all__ = [
-    'BENCHMARK_DATA_JSON_PATH',
-    'BENCHMARK_README_DIR_ZH',
-    'BENCHMARK_README_DIR_EN',
-    'INDEX_DIR_ZH',
-    'INDEX_DIR_EN',
-    'DOCS_DIR',
-    'compute_content_hash',
-    'load_benchmark_data',
-    'save_benchmark_data',
-    'get_benchmark_entry',
-    'needs_translation_update',
-    'get_benchmarks_needing_translation',
-]

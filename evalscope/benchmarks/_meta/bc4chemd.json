@@ -1,0 +1,137 @@
+{
+  "meta": {
+    "pretty_name": "BC4CHEMD",
+    "dataset_id": "extraordinarylab/bc4chemd",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nThe BC4CHEMD (BioCreative IV CHEMDNER) dataset is a corpus of 10,000 PubMed abstracts with 84,355 chemical entity mentions manually annotated by experts for chemical named entity recognition.\n\n## Task Description\n\n- **Task Type**: Chemical Named Entity Recognition (NER)\n- **Input**: Scientific text from PubMed abstracts\n- **Output**: Identified chemical compound name spans\n- **Domain**: Chemistry, pharmacology, drug discovery\n\n## Key Features\n\n- 10,000 PubMed abstracts\n- 84,355 chemical entity mentions\n- Expert manual annotations\n- Benchmark from BioCreative IV challenge\n- Comprehensive chemical compound coverage\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: CHEMICAL (chemical and drug names)\n",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 26364,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 26364,
+        "prompt_length_mean": 3042.58,
+        "prompt_length_min": 2879,
+        "prompt_length_max": 3709,
+        "prompt_length_std": 78.31,
+        "target_length_mean": 207.45
+      }
+    ],
+    "prompt_length": {
+      "mean": 3042.58,
+      "min": 2879,
+      "max": 3709,
+      "std": 78.31
+    },
+    "target_length_mean": 207.45,
+    "computed_at": "2026-01-28T14:13:47.591196"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "5067e19c",
+          "content": "Here are some examples of named entity recognition:\n\nInput:\nDPP6 as a candidate gene for neuroleptic - induced tardive dyskinesia .\n\nOutput:\n<response>DPP6 as a candidate gene for neuroleptic - induced tardive dyskinesia .</response>\n\nInput:\n ... [TRUNCATED] ... ry opening tag has a matching closing tag.\n\nText to process:\nEffects of docosahexaenoic acid and methylmercury on child ' s brain development due to consumption of fish by Finnish mother during pregnancy : a probabilistic modeling approach .\n"
+        }
+      ],
+      "target": "<response>Effects of <chemical>docosahexaenoic acid</chemical> and <chemical>methylmercury</chemical> on child ' s brain development due to consumption of fish by Finnish mother during pregnancy : a probabilistic modeling approach .</response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "Effects",
+          "of",
+          "docosahexaenoic",
+          "acid",
+          "and",
+          "methylmercury",
+          "on",
+          "child",
+          "'",
+          "s",
+          "brain",
+          "development",
+          "due",
+          "to",
+          "consumption",
+          "of",
+          "fish",
+          "by",
+          "Finnish",
+          "mother",
+          "during",
+          "pregnancy",
+          ":",
+          "a",
+          "probabilistic",
+          "modeling",
+          "approach",
+          "."
+        ],
+        "ner_tags": [
+          "O",
+          "O",
+          "B-CHEMICAL",
+          "I-CHEMICAL",
+          "O",
+          "B-CHEMICAL",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# BC4CHEMD\n\n\n## Overview\n\nThe BC4CHEMD (BioCreative IV CHEMDNER) dataset is a corpus of 10,000 PubMed abstracts with 84,355 chemical entity mentions manually annotated by experts for chemical named entity recognition.\n\n## Task Description\n\n- **Task Type**: Chemical Named Entity Recognition (NER)\n- **Input**: Scientific text from PubMed abstracts\n- **Output**: Identified chemical compound name spans\n- **Domain**: Chemistry, pharmacology, drug discovery\n\n## Key Features\n\n- 10,000 PubMed abstracts\n- 84,355 chemical entity mentions\n- Expert manual annotations\n- Benchmark from BioCreative IV challenge\n- Comprehensive chemical compound coverage\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: CHEMICAL (chemical and drug names)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `bc4chemd` |\n| **Dataset ID** | [extraordinarylab/bc4chemd](https://modelscope.cn/datasets/extraordinarylab/bc4chemd/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 26,364 |\n| Prompt Length (Mean) | 3042.58 chars |\n| Prompt Length (Min/Max) | 2879 / 3709 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"5067e19c\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nDPP6 as a candidate gene for neuroleptic - induced tardive dyskinesia .\\n\\nOutput:\\n<response>DPP6 as a candidate gene for neuroleptic - induced tardive dyskinesia .</response>\\n\\nInput:\\n ... [TRUNCATED] ... ry opening tag has a matching closing tag.\\n\\nText to process:\\nEffects of docosahexaenoic acid and methylmercury on child ' s brain development due to consumption of fish by Finnish mother during pregnancy : a probabilistic modeling approach .\\n\"\n    }\n  ],\n  \"target\": \"<response>Effects of <chemical>docosahexaenoic acid</chemical> and <chemical>methylmercury</chemical> on child ' s brain development due to consumption of fish by Finnish mother during pregnancy : a probabilistic modeling approach .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"Effects\",\n      \"of\",\n      \"docosahexaenoic\",\n      \"acid\",\n      \"and\",\n      \"methylmercury\",\n      \"on\",\n      \"child\",\n      \"'\",\n      \"s\",\n      \"brain\",\n      \"development\",\n      \"due\",\n      \"to\",\n      \"consumption\",\n      \"of\",\n      \"fish\",\n      \"by\",\n      \"Finnish\",\n      \"mother\",\n      \"during\",\n      \"pregnancy\",\n      \":\",\n      \"a\",\n      \"probabilistic\",\n      \"modeling\",\n      \"approach\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"B-CHEMICAL\",\n      \"I-CHEMICAL\",\n      \"O\",\n      \"B-CHEMICAL\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bc4chemd \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bc4chemd'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# BC4CHEMD\n\n\n## 概述\n\nBC4CHEMD（BioCreative IV CHEMDNER）数据集是一个包含 10,000 篇 PubMed 摘要的语料库，其中包含 84,355 个化学实体提及，均由专家手动标注，用于化学命名实体识别任务。\n\n## 任务描述\n\n- **任务类型**：化学命名实体识别（NER）\n- **输入**：来自 PubMed 摘要的科学文本\n- **输出**：识别出的化学化合物名称片段\n- **领域**：化学、药理学、药物发现\n\n## 主要特点\n\n- 10,000 篇 PubMed 摘要\n- 84,355 个化学实体提及\n- 专家手动标注\n- 来自 BioCreative IV 挑战赛的基准数据集\n- 覆盖全面的化学化合物类型\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 评估\n- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）\n- 实体类型：CHEMICAL（化学物质和药物名称）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `bc4chemd` |\n| **数据集ID** | [extraordinarylab/bc4chemd](https://modelscope.cn/datasets/extraordinarylab/bc4chemd/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认示例数量** | 5-shot |\n| **评估分割** | `test` |\n| **训练分割** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 26,364 |\n| 提示词长度（平均） | 3042.58 字符 |\n| 提示词长度（最小/最大） | 2879 / 3709 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"5067e19c\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nDPP6 as a candidate gene for neuroleptic - induced tardive dyskinesia .\\n\\nOutput:\\n<response>DPP6 as a candidate gene for neuroleptic - induced tardive dyskinesia .</response>\\n\\nInput:\\n ... [TRUNCATED] ... ry opening tag has a matching closing tag.\\n\\nText to process:\\nEffects of docosahexaenoic acid and methylmercury on child ' s brain development due to consumption of fish by Finnish mother during pregnancy : a probabilistic modeling approach .\\n\"\n    }\n  ],\n  \"target\": \"<response>Effects of <chemical>docosahexaenoic acid</chemical> and <chemical>methylmercury</chemical> on child ' s brain development due to consumption of fish by Finnish mother during pregnancy : a probabilistic modeling approach .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"Effects\",\n      \"of\",\n      \"docosahexaenoic\",\n      \"acid\",\n      \"and\",\n      \"methylmercury\",\n      \"on\",\n      \"child\",\n      \"'\",\n      \"s\",\n      \"brain\",\n      \"development\",\n      \"due\",\n      \"to\",\n      \"consumption\",\n      \"of\",\n      \"fish\",\n      \"by\",\n      \"Finnish\",\n      \"mother\",\n      \"during\",\n      \"pregnancy\",\n      \":\",\n      \"a\",\n      \"probabilistic\",\n      \"modeling\",\n      \"approach\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"B-CHEMICAL\",\n      \"I-CHEMICAL\",\n      \"O\",\n      \"B-CHEMICAL\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本（Few-shot）模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bc4chemd \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bc4chemd'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "19d5c4deea0d60bea62dfa944da33f97",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.172034",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

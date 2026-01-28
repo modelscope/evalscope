@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "pretty_name": "AlpacaEval2.0",
+    "dataset_id": "AI-ModelScope/alpaca_eval",
+    "paper_url": null,
+    "tags": [
+      "InstructionFollowing",
+      "Arena"
+    ],
+    "metrics": [
+      "winrate"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "eval",
+    "train_split": "",
+    "subset_list": [
+      "alpaca_eval_gpt4_baseline"
+    ],
+    "description": "\n## Overview\n\nAlpacaEval 2.0 is an evaluation framework for instruction-following language models that uses an LLM judge to compare model outputs against a strong baseline. It provides win-rate metrics reflecting human preferences.\n\n## Task Description\n\n- **Task Type**: Instruction-Following Evaluation (Pairwise Comparison)\n- **Input**: User instruction/question\n- **Output**: Model response compared against GPT-4 Turbo baseline\n- **Metric**: Win rate against baseline model\n\n## Key Features\n\n- Auto-annotator for scalable evaluation\n- Compares against GPT-4 Turbo baseline outputs\n- High correlation with human preferences\n- Cost-effective evaluation method\n- Tests general instruction-following capabilities\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses LLM judge (default: gpt-4-1106-preview)\n- Baseline model: gpt-4-turbo outputs\n- Reports win rate metric\n- Note: Length-controlled win rate not currently supported\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 805,
+    "subset_stats": [
+      {
+        "name": "alpaca_eval_gpt4_baseline",
+        "sample_count": 805,
+        "prompt_length_mean": 164.92,
+        "prompt_length_min": 12,
+        "prompt_length_max": 1917,
+        "prompt_length_std": 211.94,
+        "target_length_mean": 2049.4
+      }
+    ],
+    "prompt_length": {
+      "mean": 164.92,
+      "min": 12,
+      "max": 1917,
+      "std": 211.94
+    },
+    "target_length_mean": 2049.4,
+    "computed_at": "2026-01-28T11:12:35.270351"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "95236545",
+          "content": "What are the names of some famous actors that started their careers on Broadway?"
+        }
+      ],
+      "target": "Several famous actors started their careers on Broadway before making it big in film and television. Here are a few notable examples:\n\n1. Sarah Jessica Parker - Before she was Carrie Bradshaw on \"Sex and the City,\" Sarah Jessica Parker was a  ... [TRUNCATED] ... f the many performers who have transitioned from the Broadway stage to broader fame in the entertainment industry. Broadway often serves as a proving ground for talent, and many actors continue to return to the stage throughout their careers.",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "generator": "gpt4_1106_preview",
+        "dataset": "helpful_base"
+      }
+    },
+    "subset": "alpaca_eval_gpt4_baseline",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# AlpacaEval2.0\n\n\n## Overview\n\nAlpacaEval 2.0 is an evaluation framework for instruction-following language models that uses an LLM judge to compare model outputs against a strong baseline. It provides win-rate metrics reflecting human preferences.\n\n## Task Description\n\n- **Task Type**: Instruction-Following Evaluation (Pairwise Comparison)\n- **Input**: User instruction/question\n- **Output**: Model response compared against GPT-4 Turbo baseline\n- **Metric**: Win rate against baseline model\n\n## Key Features\n\n- Auto-annotator for scalable evaluation\n- Compares against GPT-4 Turbo baseline outputs\n- High correlation with human preferences\n- Cost-effective evaluation method\n- Tests general instruction-following capabilities\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses LLM judge (default: gpt-4-1106-preview)\n- Baseline model: gpt-4-turbo outputs\n- Reports win rate metric\n- Note: Length-controlled win rate not currently supported\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `alpaca_eval` |\n| **Dataset ID** | [AI-ModelScope/alpaca_eval](https://modelscope.cn/datasets/AI-ModelScope/alpaca_eval/summary) |\n| **Paper** | N/A |\n| **Tags** | `Arena`, `InstructionFollowing` |\n| **Metrics** | `winrate` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `eval` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 805 |\n| Prompt Length (Mean) | 164.92 chars |\n| Prompt Length (Min/Max) | 12 / 1917 chars |\n\n## Sample Example\n\n**Subset**: `alpaca_eval_gpt4_baseline`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"95236545\",\n      \"content\": \"What are the names of some famous actors that started their careers on Broadway?\"\n    }\n  ],\n  \"target\": \"Several famous actors started their careers on Broadway before making it big in film and television. Here are a few notable examples:\\n\\n1. Sarah Jessica Parker - Before she was Carrie Bradshaw on \\\"Sex and the City,\\\" Sarah Jessica Parker was a  ... [TRUNCATED] ... f the many performers who have transitioned from the Broadway stage to broader fame in the entertainment industry. Broadway often serves as a proving ground for talent, and many actors continue to return to the stage throughout their careers.\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"generator\": \"gpt4_1106_preview\",\n    \"dataset\": \"helpful_base\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets alpaca_eval \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['alpaca_eval'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# AlpacaEval2.0\n\n## 概述\n\nAlpacaEval 2.0 是一个用于评估指令遵循语言模型的框架，它使用大语言模型（LLM）作为裁判，将待测模型的输出与一个强基线模型进行比较，并提供反映人类偏好的胜率（win-rate）指标。\n\n## 任务描述\n\n- **任务类型**：指令遵循评估（成对比较）\n- **输入**：用户指令/问题\n- **输出**：模型响应，与 GPT-4 Turbo 基线进行比较\n- **指标**：相对于基线模型的胜率\n\n## 主要特性\n\n- 支持自动标注，可扩展性强\n- 与 GPT-4 Turbo 基线输出进行对比\n- 与人类偏好高度相关\n- 评估成本低\n- 测试通用的指令遵循能力\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 使用 LLM 裁判（默认：gpt-4-1106-preview）\n- 基线模型：gpt-4-turbo 的输出\n- 报告胜率（win rate）指标\n- 注意：目前不支持长度控制的胜率计算\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `alpaca_eval` |\n| **数据集ID** | [AI-ModelScope/alpaca_eval](https://modelscope.cn/datasets/AI-ModelScope/alpaca_eval/summary) |\n| **论文** | N/A |\n| **标签** | `Arena`, `InstructionFollowing` |\n| **指标** | `winrate` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `eval` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 805 |\n| 提示词长度（平均） | 164.92 字符 |\n| 提示词长度（最小/最大） | 12 / 1917 字符 |\n\n## 样例示例\n\n**子集**: `alpaca_eval_gpt4_baseline`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"95236545\",\n      \"content\": \"What are the names of some famous actors that started their careers on Broadway?\"\n    }\n  ],\n  \"target\": \"Several famous actors started their careers on Broadway before making it big in film and television. Here are a few notable examples:\\n\\n1. Sarah Jessica Parker - Before she was Carrie Bradshaw on \\\"Sex and the City,\\\" Sarah Jessica Parker was a  ... [TRUNCATED] ... f the many performers who have transitioned from the Broadway stage to broader fame in the entertainment industry. Broadway often serves as a proving ground for talent, and many actors continue to return to the stage throughout their careers.\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"generator\": \"gpt4_1106_preview\",\n    \"dataset\": \"helpful_base\"\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets alpaca_eval \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['alpaca_eval'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "cedc2883c8ad7e16eecfa0edc2809c0e",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.804785",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

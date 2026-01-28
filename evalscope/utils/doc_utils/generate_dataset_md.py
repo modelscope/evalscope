@@ -10,27 +10,21 @@ This module provides functions for:
 Note: This is a library module. CLI operations are handled by evalscope benchmark-info command.
 """
 
-import json
-import os
 from collections import defaultdict
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 from . import (
-    BENCHMARK_DATA_JSON_PATH,
+    BENCHMARK_META_DIR,
     BENCHMARK_README_DIR_EN,
     BENCHMARK_README_DIR_ZH,
     INDEX_DIR_EN,
     INDEX_DIR_ZH,
     compute_content_hash,
-    get_benchmark_entry,
     load_benchmark_data,
     save_benchmark_data,
 )
 from .readme_generator import _format_sample_count, _format_tags, generate_readme_from_dict
-
-# Set BUILD_DOC to avoid heavy dependencies during doc generation
-os.environ.setdefault('BUILD_DOC', '1')
 
 # =============================================================================
 # Localization Dictionaries
@@ -134,23 +128,15 @@ def generate_index_table(
 
 def get_adapters():
     """Get all registered DataAdapters grouped by category."""
+    from tqdm import tqdm
+
     from evalscope.api.benchmark import AgentAdapter, ImageEditAdapter, Text2ImageAdapter, VisionLanguageAdapter
     from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
-
-    try:
-        from tqdm import tqdm
-        use_tqdm = True
-    except ImportError:
-        use_tqdm = False
 
     print('Loading registered benchmarks...')
     adapters = defaultdict(list)
 
-    iterator = BENCHMARK_REGISTRY.values()
-    if use_tqdm:
-        iterator = tqdm(iterator, desc='Loading Benchmarks')
-
-    for benchmark in iterator:
+    for benchmark in tqdm(BENCHMARK_REGISTRY.values(), desc='Loading Benchmarks'):
         try:
             adapter = get_benchmark(benchmark.name)
             if isinstance(adapter, (Text2ImageAdapter, ImageEditAdapter)):
@@ -225,94 +211,174 @@ def get_adapter_sample_example(adapter, max_length: int = 500) -> Dict[str, Any]
 
 
 def update_benchmark_data(
-    benchmark_name: Optional[str] = None,
+    benchmark_name: Optional[Union[str, List[str]]] = None,
     force: bool = False,
     compute_stats: bool = True,
-    max_samples: int = 5000,
+    max_samples: int = 50000,
+    workers: int = 8,
 ) -> Dict[str, Any]:
     """
-    Update benchmark data in the unified JSON file.
+    Update benchmark data in individual JSON files using parallel processing.
 
     Args:
-        benchmark_name: Specific benchmark to update, or None for all
+        benchmark_name: Specific benchmark name, list of names, or None for all
         force: Force recompute even if data exists
         compute_stats: Whether to compute statistics (requires dataset download)
         max_samples: Maximum samples per subset for statistics computation
+        workers: Number of parallel workers (default: 8)
 
     Returns:
         Updated benchmark data dict
     """
-    from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from tqdm import tqdm
 
-    data = load_benchmark_data()
+    from evalscope.api.registry import BENCHMARK_REGISTRY
 
-    if benchmark_name:
-        names = [benchmark_name]
-    else:
+    # Handle different input types
+    if benchmark_name is None:
         names = list(BENCHMARK_REGISTRY.keys())
+    elif isinstance(benchmark_name, list):
+        names = benchmark_name
+    else:
+        names = [benchmark_name]
 
-    for name in names:
-        if name not in BENCHMARK_REGISTRY:
+    # Validate benchmark names
+    valid_names = [name for name in names if name in BENCHMARK_REGISTRY]
+    invalid_names = [name for name in names if name not in BENCHMARK_REGISTRY]
+
+    if invalid_names:
+        for name in invalid_names:
             print(f'Warning: Benchmark {name} not found in registry')
-            continue
 
-        print(f'Updating {name}...')
+    if not valid_names:
+        return {}
 
+    # Process benchmarks in parallel using thread pool
+    data = {}
+    failed_benchmarks = []
+
+    def update_single(name: str) -> tuple:
+        """Update a single benchmark and return (name, result, error)."""
         try:
-            adapter = get_benchmark(name)
-            entry = get_benchmark_entry(name, data)
-
-            # Always update metadata
-            entry['meta'] = extract_adapter_meta(adapter)
-            print(f'  - Metadata updated')
-
-            # Compute statistics if requested and not exists (or forced)
-            if compute_stats and (force or not entry.get('statistics')):
-                print(f'  - Computing statistics...')
-                entry['statistics'] = compute_adapter_statistics(adapter, max_samples=max_samples)
-                entry['sample_example'] = get_adapter_sample_example(adapter)
-                print(f'  - Statistics computed')
-            elif not compute_stats:
-                print(f'  - Skipping statistics computation')
-            else:
-                print(f'  - Statistics already exist (use --force to recompute)')
-
-            # Generate English README
-            readme_en = generate_readme_from_dict(
-                name,
-                entry['meta'],
-                entry.get('statistics', {}),
-                entry.get('sample_example', {}),
-                lang='en',
-            )
-
-            # Check if translation needs update
-            old_hash = entry.get('readme', {}).get('content_hash', '')
-            new_hash = compute_content_hash(readme_en)
-
-            entry['readme'] = entry.get('readme', {})
-            entry['readme']['en'] = readme_en
-            entry['readme']['content_hash'] = new_hash
-
-            # Mark translation as needed if hash changed
-            if old_hash != new_hash:
-                entry['readme']['needs_translation'] = True
-                print(f'  - README updated (translation needed)')
-            else:
-                print(f'  - README unchanged')
-
-            entry['updated_at'] = datetime.now().isoformat()
-            data[name] = entry
-
+            result = _update_single_benchmark(name, force, compute_stats, max_samples)
+            return (name, result, None)
         except Exception as e:
-            print(f'Error updating {name}: {e}')
             import traceback
-            traceback.print_exc()
+            error_msg = f'{e}\n{traceback.format_exc()}'
+            return (name, None, error_msg)
 
-    save_benchmark_data(data)
-    print(f'Saved benchmark data to {BENCHMARK_DATA_JSON_PATH}')
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(update_single, name): name for name in valid_names}
+
+        for future in tqdm(as_completed(futures), total=len(futures), desc='Updating benchmarks'):
+            name, result, error = future.result()
+            if error:
+                print(f'Error updating {name}: {error}')
+                failed_benchmarks.append(name)
+            elif result:
+                data[name] = result
+
+    if failed_benchmarks:
+        print(f'\nFailed to update benchmarks: {failed_benchmarks}')
 
     return data
+
+
+def _update_single_benchmark(
+    name: str,
+    force: bool,
+    compute_stats: bool,
+    max_samples: int,
+) -> Optional[Dict[str, Any]]:
+    """
+    Update a single benchmark.
+
+    Args:
+        name: Benchmark name
+        force: Force recompute even if data exists
+        compute_stats: Whether to compute statistics
+        max_samples: Maximum samples per subset for statistics computation
+
+    Returns:
+        Updated benchmark entry or None if failed
+    """
+    from evalscope.api.registry import get_benchmark
+
+    try:
+        adapter = get_benchmark(name)
+        # Load single benchmark data
+        single_data = load_benchmark_data(name)
+        entry = single_data[name]
+
+        # Track if any changes were made
+        has_changes = False
+
+        # Check if metadata has changed
+        new_meta = extract_adapter_meta(adapter)
+        old_meta = entry.get('meta', {})
+        if new_meta != old_meta:
+            entry['meta'] = new_meta
+            has_changes = True
+            print(f'  [{name}] Metadata updated')
+        else:
+            print(f'  [{name}] Metadata unchanged')
+
+        # Compute statistics if requested and not exists (or forced)
+        if compute_stats and (force or not entry.get('statistics')):
+            print(f'  [{name}] Computing statistics...')
+            entry['statistics'] = compute_adapter_statistics(adapter, max_samples=max_samples)
+            entry['sample_example'] = get_adapter_sample_example(adapter)
+            has_changes = True
+            print(f'  [{name}] Statistics computed')
+        elif not compute_stats:
+            print(f'  [{name}] Skipping statistics computation')
+        else:
+            print(f'  [{name}] Statistics already exist (use --force to recompute)')
+
+        # Generate English README
+        readme_en = generate_readme_from_dict(
+            name,
+            entry['meta'],
+            entry.get('statistics', {}),
+            entry.get('sample_example', {}),
+            lang='en',
+        )
+
+        # Check if translation needs update
+        old_hash = entry.get('readme', {}).get('content_hash', '')
+        new_hash = compute_content_hash(readme_en)
+
+        entry['readme'] = entry.get('readme', {})
+        entry['readme']['en'] = readme_en
+        entry['readme']['content_hash'] = new_hash
+
+        # Mark translation as needed if hash changed
+        if old_hash != new_hash:
+            entry['readme']['needs_translation'] = True
+            has_changes = True
+            print(f'  [{name}] README updated (translation needed)')
+        else:
+            print(f'  [{name}] README unchanged')
+
+        # Only update timestamp if there were actual changes
+        if has_changes:
+            entry['updated_at'] = datetime.now().isoformat()
+            print(f'  [{name}] Updated timestamp')
+        else:
+            print(f'  [{name}] No changes detected')
+
+        # Save individual benchmark file
+        save_benchmark_data(entry, name)
+        print(f'  [{name}] Saved to {BENCHMARK_META_DIR / name}.json')
+
+        return entry
+
+    except Exception as e:
+        print(f'Error updating {name}: {e}')
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 # =============================================================================

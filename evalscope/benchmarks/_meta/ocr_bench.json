@@ -1,0 +1,527 @@
+{
+  "meta": {
+    "pretty_name": "OCRBench",
+    "dataset_id": "evalscope/OCRBench",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Knowledge",
+      "QA"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "Regular Text Recognition",
+      "Irregular Text Recognition",
+      "Artistic Text Recognition",
+      "Handwriting Recognition",
+      "Digit String Recognition",
+      "Non-Semantic Text Recognition",
+      "Scene Text-centric VQA",
+      "Doc-oriented VQA",
+      "Key Information Extraction",
+      "Handwritten Mathematical Expression Recognition"
+    ],
+    "description": "\n## Overview\n\nOCRBench is a comprehensive evaluation benchmark designed to assess the OCR (Optical Character Recognition) capabilities of Large Multimodal Models. It covers five key OCR-related tasks with 1,000 manually verified question-answer pairs.\n\n## Task Description\n\n- **Task Type**: OCR and Document Understanding\n- **Input**: Image with OCR-related question\n- **Output**: Text recognition or extraction result\n- **Components**: Text Recognition, VQA, Document VQA, Key Info Extraction, Math Expression Recognition\n\n## Key Features\n\n- 1,000 question-answer pairs across 10 categories\n- Manually verified and corrected answers\n- Categories include: Regular/Irregular/Artistic/Handwriting Text Recognition\n- Scene Text-centric VQA and Document-oriented VQA\n- Key Information Extraction\n- Handwritten Mathematical Expression Recognition (HME100k)\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Simple accuracy metric (inclusion-based matching)\n- Results broken down by question type/category\n- Different matching rules for HME100k (space-insensitive)\n- Comprehensive test of OCR capabilities in multimodal models\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 1000,
+    "subset_stats": [
+      {
+        "name": "Regular Text Recognition",
+        "sample_count": 50,
+        "prompt_length_mean": 29,
+        "prompt_length_min": 29,
+        "prompt_length_max": 29,
+        "prompt_length_std": null,
+        "target_length_mean": 10.36,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 50,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "104x27",
+              "105x36",
+              "106x37",
+              "107x37",
+              "112x34",
+              "114x54",
+              "121x39",
+              "133x49",
+              "1476x390",
+              "164x60"
+            ],
+            "resolution_range": {
+              "min": "33x20",
+              "max": "1476x390"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Irregular Text Recognition",
+        "sample_count": 50,
+        "prompt_length_mean": 29,
+        "prompt_length_min": 29,
+        "prompt_length_max": 29,
+        "prompt_length_std": null,
+        "target_length_mean": 10.58,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 50,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "101x72",
+              "110x39",
+              "114x34",
+              "114x41",
+              "119x74",
+              "119x84",
+              "121x34",
+              "126x27",
+              "129x43",
+              "132x37"
+            ],
+            "resolution_range": {
+              "min": "25x16",
+              "max": "657x132"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Artistic Text Recognition",
+        "sample_count": 50,
+        "prompt_length_mean": 29,
+        "prompt_length_min": 29,
+        "prompt_length_max": 29,
+        "prompt_length_std": null,
+        "target_length_mean": 10.24,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 50,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1010x145",
+              "1024x484",
+              "1047x477",
+              "1078x222",
+              "120x119",
+              "160x105",
+              "195x100",
+              "200x132",
+              "205x301",
+              "224x95"
+            ],
+            "resolution_range": {
+              "min": "93x62",
+              "max": "884x836"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Handwriting Recognition",
+        "sample_count": 50,
+        "prompt_length_mean": 29,
+        "prompt_length_min": 29,
+        "prompt_length_max": 29,
+        "prompt_length_std": null,
+        "target_length_mean": 10.14,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 50,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "103x82",
+              "105x44",
+              "106x64",
+              "123x55",
+              "130x47",
+              "130x54",
+              "138x112",
+              "148x118",
+              "148x60",
+              "162x55"
+            ],
+            "resolution_range": {
+              "min": "71x52",
+              "max": "352x142"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Digit String Recognition",
+        "sample_count": 50,
+        "prompt_length_mean": 32,
+        "prompt_length_min": 32,
+        "prompt_length_max": 32,
+        "prompt_length_std": null,
+        "target_length_mean": 8.4,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 50,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "101x42",
+              "102x47",
+              "104x44",
+              "109x49",
+              "109x54",
+              "112x44",
+              "116x46",
+              "117x49",
+              "117x53",
+              "117x63"
+            ],
+            "resolution_range": {
+              "min": "101x42",
+              "max": "172x66"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Non-Semantic Text Recognition",
+        "sample_count": 50,
+        "prompt_length_mean": 29,
+        "prompt_length_min": 29,
+        "prompt_length_max": 29,
+        "prompt_length_std": null,
+        "target_length_mean": 10.32,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 50,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "101x67",
+              "103x67",
+              "111x67",
+              "122x67",
+              "125x67",
+              "126x67",
+              "127x67",
+              "131x67",
+              "134x67",
+              "139x67"
+            ],
+            "resolution_range": {
+              "min": "94x67",
+              "max": "345x67"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Scene Text-centric VQA",
+        "sample_count": 200,
+        "prompt_length_mean": 34.6,
+        "prompt_length_min": 14,
+        "prompt_length_max": 101,
+        "prompt_length_std": 11.12,
+        "target_length_mean": 14.99,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 200,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x1013",
+              "1024x1024",
+              "1024x406",
+              "1024x615",
+              "1024x658",
+              "1024x668",
+              "1024x680",
+              "1024x681",
+              "1024x682",
+              "1024x683"
+            ],
+            "resolution_range": {
+              "min": "256x256",
+              "max": "3000x1686"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Doc-oriented VQA",
+        "sample_count": 200,
+        "prompt_length_mean": 59,
+        "prompt_length_min": 21,
+        "prompt_length_max": 136,
+        "prompt_length_std": 23.61,
+        "target_length_mean": 16.73,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 200,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1403",
+              "1000x2699",
+              "1000x6593",
+              "1050x6234",
+              "1100x850",
+              "1111x6944",
+              "1140x1878",
+              "1240x6969",
+              "1272x1916",
+              "1336x2151"
+            ],
+            "resolution_range": {
+              "min": "310x401",
+              "max": "2000x14495"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Key Information Extraction",
+        "sample_count": 200,
+        "prompt_length_mean": 101.58,
+        "prompt_length_min": 86,
+        "prompt_length_max": 149,
+        "prompt_length_std": 10.36,
+        "target_length_mean": 22.93,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 200,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1080x1527",
+              "159x247",
+              "1654x2338",
+              "176x266",
+              "191x290",
+              "206x346",
+              "212x175",
+              "226x262",
+              "2283x734",
+              "230x348"
+            ],
+            "resolution_range": {
+              "min": "87x159",
+              "max": "4961x7016"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Handwritten Mathematical Expression Recognition",
+        "sample_count": 100,
+        "prompt_length_mean": 79,
+        "prompt_length_min": 79,
+        "prompt_length_max": 79,
+        "prompt_length_std": null,
+        "target_length_mean": 79.22,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 100,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "100x45",
+              "102x67",
+              "1127x104",
+              "112x23",
+              "121x40",
+              "124x67",
+              "127x40",
+              "130x95",
+              "131x38",
+              "132x85"
+            ],
+            "resolution_range": {
+              "min": "57x36",
+              "max": "1333x167"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 55.78,
+      "min": 14,
+      "max": 149,
+      "std": 30.51
+    },
+    "target_length_mean": 21.86,
+    "computed_at": "2026-01-28T11:15:39.297277",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 1000,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1000x1403",
+          "1000x2699",
+          "1000x6593",
+          "100x45",
+          "1010x145",
+          "101x42",
+          "101x67",
+          "101x72",
+          "1024x1013",
+          "1024x1024"
+        ],
+        "resolution_range": {
+          "min": "25x16",
+          "max": "4961x7016"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "ff23a835",
+          "content": [
+            {
+              "text": "what is written in the image?"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~1.2KB]"
+            }
+          ]
+        }
+      ],
+      "target": "[\"CENTRE\"]",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "Regular Text Recognition",
+      "metadata": {
+        "dataset": "IIIT5K",
+        "question_type": "Regular Text Recognition"
+      }
+    },
+    "subset": "Regular Text Recognition",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# OCRBench\n\n\n## Overview\n\nOCRBench is a comprehensive evaluation benchmark designed to assess the OCR (Optical Character Recognition) capabilities of Large Multimodal Models. It covers five key OCR-related tasks with 1,000 manually verified question-answer pairs.\n\n## Task Description\n\n- **Task Type**: OCR and Document Understanding\n- **Input**: Image with OCR-related question\n- **Output**: Text recognition or extraction result\n- **Components**: Text Recognition, VQA, Document VQA, Key Info Extraction, Math Expression Recognition\n\n## Key Features\n\n- 1,000 question-answer pairs across 10 categories\n- Manually verified and corrected answers\n- Categories include: Regular/Irregular/Artistic/Handwriting Text Recognition\n- Scene Text-centric VQA and Document-oriented VQA\n- Key Information Extraction\n- Handwritten Mathematical Expression Recognition (HME100k)\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Simple accuracy metric (inclusion-based matching)\n- Results broken down by question type/category\n- Different matching rules for HME100k (space-insensitive)\n- Comprehensive test of OCR capabilities in multimodal models\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `ocr_bench` |\n| **Dataset ID** | [evalscope/OCRBench](https://modelscope.cn/datasets/evalscope/OCRBench/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MultiModal`, `QA` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,000 |\n| Prompt Length (Mean) | 55.78 chars |\n| Prompt Length (Min/Max) | 14 / 149 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Regular Text Recognition` | 50 | 29 | 29 | 29 |\n| `Irregular Text Recognition` | 50 | 29 | 29 | 29 |\n| `Artistic Text Recognition` | 50 | 29 | 29 | 29 |\n| `Handwriting Recognition` | 50 | 29 | 29 | 29 |\n| `Digit String Recognition` | 50 | 32 | 32 | 32 |\n| `Non-Semantic Text Recognition` | 50 | 29 | 29 | 29 |\n| `Scene Text-centric VQA` | 200 | 34.6 | 14 | 101 |\n| `Doc-oriented VQA` | 200 | 59 | 21 | 136 |\n| `Key Information Extraction` | 200 | 101.58 | 86 | 149 |\n| `Handwritten Mathematical Expression Recognition` | 100 | 79 | 79 | 79 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 1,000 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 25x16 - 4961x7016 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `Regular Text Recognition`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"ff23a835\",\n      \"content\": [\n        {\n          \"text\": \"what is written in the image?\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~1.2KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"[\\\"CENTRE\\\"]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Regular Text Recognition\",\n  \"metadata\": {\n    \"dataset\": \"IIIT5K\",\n    \"question_type\": \"Regular Text Recognition\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ocr_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ocr_bench'],\n    dataset_args={\n        'ocr_bench': {\n            # subset_list: ['Regular Text Recognition', 'Irregular Text Recognition', 'Artistic Text Recognition']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# OCRBench\n\n## 概述\n\nOCRBench 是一个综合评估基准，旨在评估大语言多模态模型的 OCR（光学字符识别）能力。它涵盖五个关键 OCR 相关任务，包含 1,000 个经过人工验证的问题-答案对。\n\n## 任务描述\n\n- **任务类型**：OCR 与文档理解  \n- **输入**：包含 OCR 相关问题的图像  \n- **输出**：文本识别或提取结果  \n- **组成部分**：文本识别、视觉问答（VQA）、文档导向的 VQA、关键信息提取、数学表达式识别  \n\n## 主要特点\n\n- 覆盖 10 个类别的 1,000 个问答对  \n- 答案经过人工验证和修正  \n- 类别包括：常规/不规则/艺术字体/手写文本识别  \n- 以场景文本为中心的 VQA 和面向文档的 VQA  \n- 关键信息提取  \n- 手写数学表达式识别（HME100k）\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估  \n- 使用简单准确率指标（基于包含匹配）  \n- 结果按问题类型/类别细分  \n- HME100k 使用不同的匹配规则（忽略空格）  \n- 全面测试多模态模型中的 OCR 能力  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `ocr_bench` |\n| **数据集 ID** | [evalscope/OCRBench](https://modelscope.cn/datasets/evalscope/OCRBench/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MultiModal`, `QA` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,000 |\n| 提示词长度（平均） | 55.78 字符 |\n| 提示词长度（最小/最大） | 14 / 149 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Regular Text Recognition` | 50 | 29 | 29 | 29 |\n| `Irregular Text Recognition` | 50 | 29 | 29 | 29 |\n| `Artistic Text Recognition` | 50 | 29 | 29 | 29 |\n| `Handwriting Recognition` | 50 | 29 | 29 | 29 |\n| `Digit String Recognition` | 50 | 32 | 32 | 32 |\n| `Non-Semantic Text Recognition` | 50 | 29 | 29 | 29 |\n| `Scene Text-centric VQA` | 200 | 34.6 | 14 | 101 |\n| `Doc-oriented VQA` | 200 | 59 | 21 | 136 |\n| `Key Information Extraction` | 200 | 101.58 | 86 | 149 |\n| `Handwritten Mathematical Expression Recognition` | 100 | 79 | 79 | 79 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 1,000 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 25x16 - 4961x7016 |\n| 格式 | jpeg |\n\n## 样例示例\n\n**子集**: `Regular Text Recognition`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"ff23a835\",\n      \"content\": [\n        {\n          \"text\": \"what is written in the image?\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~1.2KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"[\\\"CENTRE\\\"]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Regular Text Recognition\",\n  \"metadata\": {\n    \"dataset\": \"IIIT5K\",\n    \"question_type\": \"Regular Text Recognition\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ocr_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ocr_bench'],\n    dataset_args={\n        'ocr_bench': {\n            # subset_list: ['Regular Text Recognition', 'Irregular Text Recognition', 'Artistic Text Recognition']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "b338c5c3dc5639e7debda183a0dcf8a9",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.255437",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

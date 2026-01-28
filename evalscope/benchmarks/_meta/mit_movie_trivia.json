@@ -1,0 +1,115 @@
+{
+  "meta": {
+    "pretty_name": "MIT-Movie-Trivia",
+    "dataset_id": "extraordinarylab/mit-movie-trivia",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nThe MIT-Movie-Trivia dataset, originally created for slot filling in movie domain dialogues, has been modified for NER by merging and filtering slot types. It tests recognition of movie-related entities in conversational queries.\n\n## Task Description\n\n- **Task Type**: Movie Domain Named Entity Recognition (NER)\n- **Input**: Movie-related conversational queries\n- **Output**: Identified movie entity spans\n- **Domain**: Entertainment, movie trivia, dialogue systems\n\n## Key Features\n\n- Movie domain conversational queries\n- Rich entity type coverage for movies\n- Adapted from slot filling task\n- Twelve entity types covering movie attributes\n- Useful for entertainment domain NLP\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: ACTOR, AWARD, CHARACTER_NAME, DIRECTOR, GENRE, OPINION, ORIGIN, PLOT, QUOTE, RELATIONSHIP, SOUNDTRACK, YEAR",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 1953,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1953,
+        "prompt_length_mean": 3309.63,
+        "prompt_length_min": 3216,
+        "prompt_length_max": 3565,
+        "prompt_length_std": 29.51,
+        "target_length_mean": 176.79
+      }
+    ],
+    "prompt_length": {
+      "mean": 3309.63,
+      "min": 3216,
+      "max": 3565,
+      "std": 29.51
+    },
+    "target_length_mean": 176.79,
+    "computed_at": "2026-01-28T14:15:07.296810"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "c33a15eb",
+          "content": "Here are some examples of named entity recognition:\n\nInput:\nwhat 1995 romantic comedy film starred michael douglas as a u s head of state looking for love\n\nOutput:\n<response>what <year>1995</year> <genre>romantic comedy</genre> film starred < ... [TRUNCATED] ... If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\ni need that movie which involves aliens invading earth in a particular united states place in california\n"
+        }
+      ],
+      "target": "<response>i need that movie which involves <plot>aliens invading earth in a particular united states place in california</plot></response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "i",
+          "need",
+          "that",
+          "movie",
+          "which",
+          "involves",
+          "aliens",
+          "invading",
+          "earth",
+          "in",
+          "a",
+          "particular",
+          "united",
+          "states",
+          "place",
+          "in",
+          "california"
+        ],
+        "ner_tags": [
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-PLOT",
+          "I-PLOT",
+          "I-PLOT",
+          "I-PLOT",
+          "I-PLOT",
+          "I-PLOT",
+          "I-PLOT",
+          "I-PLOT",
+          "I-PLOT",
+          "I-PLOT",
+          "I-PLOT"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# MIT-Movie-Trivia\n\n## Overview\n\nThe MIT-Movie-Trivia dataset, originally created for slot filling in movie domain dialogues, has been modified for NER by merging and filtering slot types. It tests recognition of movie-related entities in conversational queries.\n\n## Task Description\n\n- **Task Type**: Movie Domain Named Entity Recognition (NER)\n- **Input**: Movie-related conversational queries\n- **Output**: Identified movie entity spans\n- **Domain**: Entertainment, movie trivia, dialogue systems\n\n## Key Features\n\n- Movie domain conversational queries\n- Rich entity type coverage for movies\n- Adapted from slot filling task\n- Twelve entity types covering movie attributes\n- Useful for entertainment domain NLP\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: ACTOR, AWARD, CHARACTER_NAME, DIRECTOR, GENRE, OPINION, ORIGIN, PLOT, QUOTE, RELATIONSHIP, SOUNDTRACK, YEAR\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `mit_movie_trivia` |\n| **Dataset ID** | [extraordinarylab/mit-movie-trivia](https://modelscope.cn/datasets/extraordinarylab/mit-movie-trivia/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,953 |\n| Prompt Length (Mean) | 3309.63 chars |\n| Prompt Length (Min/Max) | 3216 / 3565 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"c33a15eb\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nwhat 1995 romantic comedy film starred michael douglas as a u s head of state looking for love\\n\\nOutput:\\n<response>what <year>1995</year> <genre>romantic comedy</genre> film starred < ... [TRUNCATED] ... If entity spans overlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\ni need that movie which involves aliens invading earth in a particular united states place in california\\n\"\n    }\n  ],\n  \"target\": \"<response>i need that movie which involves <plot>aliens invading earth in a particular united states place in california</plot></response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"i\",\n      \"need\",\n      \"that\",\n      \"movie\",\n      \"which\",\n      \"involves\",\n      \"aliens\",\n      \"invading\",\n      \"earth\",\n      \"in\",\n      \"a\",\n      \"particular\",\n      \"united\",\n      \"states\",\n      \"place\",\n      \"in\",\n      \"california\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mit_movie_trivia \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mit_movie_trivia'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MIT-Movie-Trivia\n\n## 概述\n\nMIT-Movie-Trivia 数据集最初是为电影领域对话中的槽位填充任务而创建的，后经合并和过滤槽位类型，被改造用于命名实体识别（NER）。该数据集用于测试在对话式查询中识别电影相关实体的能力。\n\n## 任务描述\n\n- **任务类型**：电影领域命名实体识别（NER）\n- **输入**：与电影相关的对话式查询\n- **输出**：识别出的电影实体片段\n- **领域**：娱乐、电影冷知识、对话系统\n\n## 主要特点\n\n- 电影领域的对话式查询\n- 覆盖丰富的电影实体类型\n- 由槽位填充任务改编而来\n- 包含十二种涵盖电影属性的实体类型\n- 适用于娱乐领域的自然语言处理任务\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 评估\n- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）\n- 实体类型：ACTOR（演员）、AWARD（奖项）、CHARACTER_NAME（角色名）、DIRECTOR（导演）、GENRE（类型）、OPINION（观点）、ORIGIN（起源地）、PLOT（剧情）、QUOTE（台词）、RELATIONSHIP（关系）、SOUNDTRACK（配乐）、YEAR（年份）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `mit_movie_trivia` |\n| **数据集ID** | [extraordinarylab/mit-movie-trivia](https://modelscope.cn/datasets/extraordinarylab/mit-movie-trivia/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认示例数量** | 5-shot |\n| **评估集** | `test` |\n| **训练集** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,953 |\n| 提示词长度（平均） | 3309.63 字符 |\n| 提示词长度（最小/最大） | 3216 / 3565 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"c33a15eb\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nwhat 1995 romantic comedy film starred michael douglas as a u s head of state looking for love\\n\\nOutput:\\n<response>what <year>1995</year> <genre>romantic comedy</genre> film starred < ... [TRUNCATED] ... If entity spans overlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\ni need that movie which involves aliens invading earth in a particular united states place in california\\n\"\n    }\n  ],\n  \"target\": \"<response>i need that movie which involves <plot>aliens invading earth in a particular united states place in california</plot></response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"i\",\n      \"need\",\n      \"that\",\n      \"movie\",\n      \"which\",\n      \"involves\",\n      \"aliens\",\n      \"invading\",\n      \"earth\",\n      \"in\",\n      \"a\",\n      \"particular\",\n      \"united\",\n      \"states\",\n      \"place\",\n      \"in\",\n      \"california\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\",\n      \"I-PLOT\"\n    ]\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mit_movie_trivia \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mit_movie_trivia'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "420bdf0286a50579c479df21c52266c8",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.225865",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

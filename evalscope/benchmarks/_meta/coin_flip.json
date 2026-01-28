@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "pretty_name": "CoinFlip",
+    "dataset_id": "extraordinarylab/coin-flip",
+    "paper_url": null,
+    "tags": [
+      "Reasoning",
+      "Yes/No"
+    ],
+    "metrics": [
+      "accuracy",
+      "precision",
+      "recall",
+      "f1_score",
+      "yes_ratio"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "validation",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nCoinFlip is a symbolic reasoning benchmark that tests LLMs' ability to track binary state changes through sequences of actions. Each problem involves determining a coin's final state (heads/tails) after various flipping operations.\n\n## Task Description\n\n- **Task Type**: Symbolic Reasoning / State Tracking\n- **Input**: Description of coin flip operations by different people\n- **Output**: Final coin state (YES for heads-up, NO for tails-up)\n- **Focus**: Binary state tracking and logical inference\n\n## Key Features\n\n- Tests state tracking through action sequences\n- Binary reasoning (flip/no-flip) decisions\n- Requires careful attention to operator effects\n- Evaluates systematic logical reasoning\n- Clear, unambiguous answers\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should follow \"ANSWER: YES/NO\" format\n- Five metrics: accuracy, precision, recall, F1, yes_ratio\n- F1 score is the primary aggregation metric\n- Supports few-shot evaluation with reasoning examples",
+    "prompt_template": "\nSolve the following coin flip problem step by step. The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\n{question}\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer YES or NO to the problem.\n\nReasoning:\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of how to solve similar problems:\n\n{fewshot}\n\n\nSolve the following coin flip problem step by step. The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\n{question}\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer YES or NO to the problem.\n\nReasoning:\n",
+    "aggregation": "f1",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 3333,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 3333,
+        "prompt_length_mean": 500.15,
+        "prompt_length_min": 453,
+        "prompt_length_max": 551,
+        "prompt_length_std": 28.32,
+        "target_length_mean": 2.51
+      }
+    ],
+    "prompt_length": {
+      "mean": 500.15,
+      "min": 453,
+      "max": 551,
+      "std": 28.32
+    },
+    "target_length_mean": 2.51,
+    "computed_at": "2026-01-28T11:12:45.293311"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "05503706",
+          "content": [
+            {
+              "text": "\nSolve the following coin flip problem step by step. The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\nQ: A coin is heads up. rushawn flips the coin. yerania ... [TRUNCATED] ...  the coin. jostin does not flip the coin.  Is the coin still heads up?\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer YES or NO to the problem.\n\nReasoning:\n"
+            }
+          ]
+        }
+      ],
+      "target": "NO",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "answer": "NO"
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# CoinFlip\n\n## Overview\n\nCoinFlip is a symbolic reasoning benchmark that tests LLMs' ability to track binary state changes through sequences of actions. Each problem involves determining a coin's final state (heads/tails) after various flipping operations.\n\n## Task Description\n\n- **Task Type**: Symbolic Reasoning / State Tracking\n- **Input**: Description of coin flip operations by different people\n- **Output**: Final coin state (YES for heads-up, NO for tails-up)\n- **Focus**: Binary state tracking and logical inference\n\n## Key Features\n\n- Tests state tracking through action sequences\n- Binary reasoning (flip/no-flip) decisions\n- Requires careful attention to operator effects\n- Evaluates systematic logical reasoning\n- Clear, unambiguous answers\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should follow \"ANSWER: YES/NO\" format\n- Five metrics: accuracy, precision, recall, F1, yes_ratio\n- F1 score is the primary aggregation metric\n- Supports few-shot evaluation with reasoning examples\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `coin_flip` |\n| **Dataset ID** | [extraordinarylab/coin-flip](https://modelscope.cn/datasets/extraordinarylab/coin-flip/summary) |\n| **Paper** | N/A |\n| **Tags** | `Reasoning`, `Yes/No` |\n| **Metrics** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `validation` |\n| **Aggregation** | `f1` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,333 |\n| Prompt Length (Mean) | 500.15 chars |\n| Prompt Length (Min/Max) | 453 / 551 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"05503706\",\n      \"content\": [\n        {\n          \"text\": \"\\nSolve the following coin flip problem step by step. The last line of your response should be of the form \\\"ANSWER: [ANSWER]\\\" (without quotes) where [ANSWER] is the answer to the problem.\\n\\nQ: A coin is heads up. rushawn flips the coin. yerania ... [TRUNCATED] ...  the coin. jostin does not flip the coin.  Is the coin still heads up?\\n\\nRemember to put your answer on its own line at the end in the form \\\"ANSWER: [ANSWER]\\\" (without quotes) where [ANSWER] is the answer YES or NO to the problem.\\n\\nReasoning:\\n\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"NO\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"answer\": \"NO\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n\nSolve the following coin flip problem step by step. The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\n{question}\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer YES or NO to the problem.\n\nReasoning:\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of how to solve similar problems:\n\n{fewshot}\n\n\nSolve the following coin flip problem step by step. The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\n{question}\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer YES or NO to the problem.\n\nReasoning:\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets coin_flip \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['coin_flip'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# CoinFlip\n\n## 概述\n\nCoinFlip 是一个符号推理基准测试，用于评估大语言模型（LLMs）在一系列操作中跟踪二元状态变化的能力。每个问题都涉及确定在多次翻转操作后硬币的最终状态（正面/反面）。\n\n## 任务描述\n\n- **任务类型**：符号推理 / 状态追踪\n- **输入**：不同人员执行的硬币翻转操作描述\n- **输出**：硬币的最终状态（YES 表示正面朝上，NO 表示反面朝上）\n- **重点**：二元状态追踪与逻辑推理\n\n## 主要特点\n\n- 测试通过操作序列进行状态追踪的能力\n- 二元推理（翻转/不翻转）决策\n- 要求仔细关注操作者行为的影响\n- 评估系统性逻辑推理能力\n- 答案清晰明确、无歧义\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 答案应遵循 \"ANSWER: YES/NO\" 格式\n- 采用五项指标：准确率（accuracy）、精确率（precision）、召回率（recall）、F1 分数（F1 score）和 YES 比例（yes_ratio）\n- F1 分数为主要聚合指标\n- 支持带推理示例的 few-shot 评估\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `coin_flip` |\n| **数据集 ID** | [extraordinarylab/coin-flip](https://modelscope.cn/datasets/extraordinarylab/coin-flip/summary) |\n| **论文** | N/A |\n| **标签** | `Reasoning`, `Yes/No` |\n| **指标** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |\n| **默认示例数量** | 0-shot |\n| **评估分割** | `test` |\n| **训练分割** | `validation` |\n| **聚合方式** | `f1` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,333 |\n| 提示词长度（平均） | 500.15 字符 |\n| 提示词长度（最小/最大） | 453 / 551 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"05503706\",\n      \"content\": [\n        {\n          \"text\": \"\\nSolve the following coin flip problem step by step. The last line of your response should be of the form \\\"ANSWER: [ANSWER]\\\" (without quotes) where [ANSWER] is the answer to the problem.\\n\\nQ: A coin is heads up. rushawn flips the coin. yerania ... [TRUNCATED] ...  the coin. jostin does not flip the coin.  Is the coin still heads up?\\n\\nRemember to put your answer on its own line at the end in the form \\\"ANSWER: [ANSWER]\\\" (without quotes) where [ANSWER] is the answer YES or NO to the problem.\\n\\nReasoning:\\n\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"NO\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"answer\": \"NO\"\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n\nSolve the following coin flip problem step by step. The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\n{question}\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer YES or NO to the problem.\n\nReasoning:\n\n```\n\n<details>\n<summary>Few-shot 模板</summary>\n\n```text\nHere are some examples of how to solve similar problems:\n\n{fewshot}\n\n\nSolve the following coin flip problem step by step. The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\n{question}\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer YES or NO to the problem.\n\nReasoning:\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets coin_flip \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['coin_flip'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "2688bd67568b43bc44052ee69d92e691",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.831075",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

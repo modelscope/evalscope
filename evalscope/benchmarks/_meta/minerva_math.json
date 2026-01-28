@@ -1,0 +1,80 @@
+{
+  "meta": {
+    "pretty_name": "Minerva-Math",
+    "dataset_id": "knoveleng/Minerva-Math",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nMinerva-Math is a benchmark designed to evaluate advanced mathematical and quantitative reasoning capabilities of language models. It consists of 272 challenging problems sourced primarily from MIT OpenCourseWare courses, covering university and graduate-level STEM subjects.\n\n## Task Description\n\n- **Task Type**: Advanced STEM Problem Solving\n- **Input**: University/graduate-level mathematical or scientific problem\n- **Output**: Step-by-step solution with final answer\n- **Difficulty**: University to graduate level\n\n## Key Features\n\n- 272 challenging problems from MIT OpenCourseWare\n- Covers advanced subjects: solid-state chemistry, astronomy, differential equations, special relativity\n- University and graduate-level difficulty\n- Tests deep mathematical and scientific reasoning\n- Problems require multi-step quantitative reasoning\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Uses LLM-as-judge for complex answer evaluation\n- Problems may require domain-specific knowledge (physics, chemistry, etc.)\n- Designed to test the upper limits of model reasoning capabilities\n",
+    "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 272,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 272,
+        "prompt_length_mean": 492.27,
+        "prompt_length_min": 129,
+        "prompt_length_max": 1069,
+        "prompt_length_std": 260.41,
+        "target_length_mean": 348.22
+      }
+    ],
+    "prompt_length": {
+      "mean": 492.27,
+      "min": 129,
+      "max": 1069,
+      "std": 260.41
+    },
+    "target_length_mean": 348.22,
+    "computed_at": "2026-01-28T11:14:35.357520"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "715a0fa1",
+          "content": "Each of the two Magellan telescopes has a diameter of $6.5 \\mathrm{~m}$. In one configuration the effective focal length is $72 \\mathrm{~m}$. Find the diameter of the image of a planet (in $\\mathrm{cm}$ ) at this focus if the angular diameter of the planet at the time of the observation is $45^{\\prime \\prime}$.\nPlease reason step by step, and put your final answer within \\boxed{}."
+        }
+      ],
+      "target": "Start with:\n\\[\ns=\\alpha f \\text {, }\n\\]\nwhere $s$ is the diameter of the image, $f$ the focal length, and $\\alpha$ the angular diameter of the planet. For the values given in the problem:\n\\[\ns=\\frac{45}{3600} \\frac{\\pi}{180} 7200=\\boxed{1.6} \\mathrm{~cm}\n\\]",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "type": "Introduction to Astronomy (8.282J Spring 2006)",
+        "idx": 0
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# Minerva-Math\n\n\n## Overview\n\nMinerva-Math is a benchmark designed to evaluate advanced mathematical and quantitative reasoning capabilities of language models. It consists of 272 challenging problems sourced primarily from MIT OpenCourseWare courses, covering university and graduate-level STEM subjects.\n\n## Task Description\n\n- **Task Type**: Advanced STEM Problem Solving\n- **Input**: University/graduate-level mathematical or scientific problem\n- **Output**: Step-by-step solution with final answer\n- **Difficulty**: University to graduate level\n\n## Key Features\n\n- 272 challenging problems from MIT OpenCourseWare\n- Covers advanced subjects: solid-state chemistry, astronomy, differential equations, special relativity\n- University and graduate-level difficulty\n- Tests deep mathematical and scientific reasoning\n- Problems require multi-step quantitative reasoning\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Uses LLM-as-judge for complex answer evaluation\n- Problems may require domain-specific knowledge (physics, chemistry, etc.)\n- Designed to test the upper limits of model reasoning capabilities\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `minerva_math` |\n| **Dataset ID** | [knoveleng/Minerva-Math](https://modelscope.cn/datasets/knoveleng/Minerva-Math/summary) |\n| **Paper** | N/A |\n| **Tags** | `Math`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 272 |\n| Prompt Length (Mean) | 492.27 chars |\n| Prompt Length (Min/Max) | 129 / 1069 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"715a0fa1\",\n      \"content\": \"Each of the two Magellan telescopes has a diameter of $6.5 \\\\mathrm{~m}$. In one configuration the effective focal length is $72 \\\\mathrm{~m}$. Find the diameter of the image of a planet (in $\\\\mathrm{cm}$ ) at this focus if the angular diameter of the planet at the time of the observation is $45^{\\\\prime \\\\prime}$.\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\"\n    }\n  ],\n  \"target\": \"Start with:\\n\\\\[\\ns=\\\\alpha f \\\\text {, }\\n\\\\]\\nwhere $s$ is the diameter of the image, $f$ the focal length, and $\\\\alpha$ the angular diameter of the planet. For the values given in the problem:\\n\\\\[\\ns=\\\\frac{45}{3600} \\\\frac{\\\\pi}{180} 7200=\\\\boxed{1.6} \\\\mathrm{~cm}\\n\\\\]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"type\": \"Introduction to Astronomy (8.282J Spring 2006)\",\n    \"idx\": 0\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets minerva_math \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['minerva_math'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Minerva-Math\n\n\n## 概述\n\nMinerva-Math 是一个用于评估语言模型高级数学与定量推理能力的基准测试。该基准包含 272 道具有挑战性的问题，主要来源于 MIT OpenCourseWare 课程，涵盖大学及研究生级别的 STEM 学科。\n\n## 任务描述\n\n- **任务类型**：高级 STEM 问题求解  \n- **输入**：大学/研究生级别的数学或科学问题  \n- **输出**：包含逐步推导过程和最终答案的解答  \n- **难度**：大学至研究生级别  \n\n## 主要特点\n\n- 包含 272 道来自 MIT OpenCourseWare 的难题  \n- 涵盖高级学科：固体化学、天文学、微分方程、狭义相对论等  \n- 难度为大学及研究生级别  \n- 测试深层次的数学与科学推理能力  \n- 问题需要多步定量推理  \n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估  \n- 答案应使用 `\\boxed{}` 格式包裹，以便正确提取  \n- 使用 LLM-as-judge 对复杂答案进行评估  \n- 问题可能需要特定领域的知识（如物理、化学等）  \n- 旨在测试模型推理能力的上限  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `minerva_math` |\n| **数据集ID** | [knoveleng/Minerva-Math](https://modelscope.cn/datasets/knoveleng/Minerva-Math/summary) |\n| **论文** | N/A |\n| **标签** | `Math`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 272 |\n| 提示词长度（平均） | 492.27 字符 |\n| 提示词长度（最小/最大） | 129 / 1069 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"715a0fa1\",\n      \"content\": \"Each of the two Magellan telescopes has a diameter of $6.5 \\\\mathrm{~m}$. In one configuration the effective focal length is $72 \\\\mathrm{~m}$. Find the diameter of the image of a planet (in $\\\\mathrm{cm}$ ) at this focus if the angular diameter of the planet at the time of the observation is $45^{\\\\prime \\\\prime}$.\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\"\n    }\n  ],\n  \"target\": \"Start with:\\n\\\\[\\ns=\\\\alpha f \\\\text {, }\\n\\\\]\\nwhere $s$ is the diameter of the image, $f$ the focal length, and $\\\\alpha$ the angular diameter of the planet. For the values given in the problem:\\n\\\\[\\ns=\\\\frac{45}{3600} \\\\frac{\\\\pi}{180} 7200=\\\\boxed{1.6} \\\\mathrm{~cm}\\n\\\\]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"type\": \"Introduction to Astronomy (8.282J Spring 2006)\",\n    \"idx\": 0\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets minerva_math \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['minerva_math'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "dc852cfadb030cef74f1ec507291d776",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.950229",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

@@ -1,0 +1,85 @@
+{
+  "meta": {
+    "pretty_name": "GenAI-Bench",
+    "dataset_id": "AI-ModelScope/T2V-Eval-Prompts",
+    "paper_url": null,
+    "tags": [
+      "TextToImage"
+    ],
+    "metrics": [
+      "VQAScore"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "GenAI-Bench-1600"
+    ],
+    "description": "\n## Overview\n\nGenAI-Bench is a comprehensive text-to-image benchmark featuring 1600 prompts designed to evaluate image generation models across diverse categories and complexity levels.\n\n## Task Description\n\n- **Task Type**: Text-to-Image Generation Evaluation\n- **Input**: Text prompts with varying complexity (basic and advanced)\n- **Output**: Generated images evaluated using VQAScore\n- **Size**: 1600 prompts\n\n## Key Features\n\n- Large-scale prompt collection for thorough evaluation\n- Categorized prompts (basic vs advanced)\n- Uses VQAScore for semantic alignment assessment\n- Rich metadata including category tags\n- Supports both generation and pre-existing image evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **VQAScore** for semantic alignment\n- Evaluates images from the **test** split\n- Prompts categorized as 'basic' or 'advanced' based on complexity\n- Part of the T2V-Eval-Prompts dataset collection\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 1600,
+    "subset_stats": [
+      {
+        "name": "GenAI-Bench-1600",
+        "sample_count": 1600,
+        "prompt_length_mean": 67.42,
+        "prompt_length_min": 14,
+        "prompt_length_max": 192,
+        "prompt_length_std": 26.9,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 67.42,
+      "min": 14,
+      "max": 192,
+      "std": 26.9
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T11:17:04.167449"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "24dc1965",
+          "content": "A baker pulling freshly baked bread out of an oven in a bakery."
+        }
+      ],
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "id": "GenAI-Bench1600_0",
+        "prompt": "A baker pulling freshly baked bread out of an oven in a bakery.",
+        "category": "basic",
+        "tags": {
+          "advanced": [],
+          "basic": [
+            "Attribute",
+            "Scene",
+            "Spatial Relation",
+            "Action Relation"
+          ]
+        },
+        "image_path": ""
+      }
+    },
+    "subset": "GenAI-Bench-1600",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# GenAI-Bench\n\n\n## Overview\n\nGenAI-Bench is a comprehensive text-to-image benchmark featuring 1600 prompts designed to evaluate image generation models across diverse categories and complexity levels.\n\n## Task Description\n\n- **Task Type**: Text-to-Image Generation Evaluation\n- **Input**: Text prompts with varying complexity (basic and advanced)\n- **Output**: Generated images evaluated using VQAScore\n- **Size**: 1600 prompts\n\n## Key Features\n\n- Large-scale prompt collection for thorough evaluation\n- Categorized prompts (basic vs advanced)\n- Uses VQAScore for semantic alignment assessment\n- Rich metadata including category tags\n- Supports both generation and pre-existing image evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **VQAScore** for semantic alignment\n- Evaluates images from the **test** split\n- Prompts categorized as 'basic' or 'advanced' based on complexity\n- Part of the T2V-Eval-Prompts dataset collection\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `genai_bench` |\n| **Dataset ID** | [AI-ModelScope/T2V-Eval-Prompts](https://modelscope.cn/datasets/AI-ModelScope/T2V-Eval-Prompts/summary) |\n| **Paper** | N/A |\n| **Tags** | `TextToImage` |\n| **Metrics** | `VQAScore` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,600 |\n| Prompt Length (Mean) | 67.42 chars |\n| Prompt Length (Min/Max) | 14 / 192 chars |\n\n## Sample Example\n\n**Subset**: `GenAI-Bench-1600`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"24dc1965\",\n      \"content\": \"A baker pulling freshly baked bread out of an oven in a bakery.\"\n    }\n  ],\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"GenAI-Bench1600_0\",\n    \"prompt\": \"A baker pulling freshly baked bread out of an oven in a bakery.\",\n    \"category\": \"basic\",\n    \"tags\": {\n      \"advanced\": [],\n      \"basic\": [\n        \"Attribute\",\n        \"Scene\",\n        \"Spatial Relation\",\n        \"Action Relation\"\n      ]\n    },\n    \"image_path\": \"\"\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets genai_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['genai_bench'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# GenAI-Bench\n\n## 概述\n\nGenAI-Bench 是一个全面的文本到图像基准测试，包含 1600 个提示词，旨在评估图像生成模型在不同类别和复杂度下的表现。\n\n## 任务描述\n\n- **任务类型**：文本到图像生成评估  \n- **输入**：复杂度各异的文本提示（基础与高级）  \n- **输出**：使用 VQAScore 评估生成的图像  \n- **规模**：1600 个提示词  \n\n## 主要特性\n\n- 大规模提示词集合，支持全面评估  \n- 提示词按类别划分（基础 vs 高级）  \n- 使用 VQAScore 衡量语义对齐程度  \n- 包含丰富的元数据（如类别标签）  \n- 支持对生成图像和已有图像进行评估  \n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估方式  \n- 主要指标：**VQAScore**（用于衡量语义对齐）  \n- 评估对象为 **test** 分割中的图像  \n- 提示词根据复杂度分为“basic”或“advanced”两类  \n- 属于 T2V-Eval-Prompts 数据集集合的一部分  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `genai_bench` |\n| **数据集ID** | [AI-ModelScope/T2V-Eval-Prompts](https://modelscope.cn/datasets/AI-ModelScope/T2V-Eval-Prompts/summary) |\n| **论文** | N/A |\n| **标签** | `TextToImage` |\n| **指标** | `VQAScore` |\n| **默认Shots数** | 0-shot |\n| **评估分割** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,600 |\n| 提示词长度（平均） | 67.42 字符 |\n| 提示词长度（最小/最大） | 14 / 192 字符 |\n\n## 样例示例\n\n**子集**：`GenAI-Bench-1600`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"24dc1965\",\n      \"content\": \"A baker pulling freshly baked bread out of an oven in a bakery.\"\n    }\n  ],\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"GenAI-Bench1600_0\",\n    \"prompt\": \"A baker pulling freshly baked bread out of an oven in a bakery.\",\n    \"category\": \"basic\",\n    \"tags\": {\n      \"advanced\": [],\n      \"basic\": [\n        \"Attribute\",\n        \"Scene\",\n        \"Spatial Relation\",\n        \"Action Relation\"\n      ]\n    },\n    \"image_path\": \"\"\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets genai_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['genai_bench'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "8fdbe7059142053c90208f37a441fdd1",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.609698",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

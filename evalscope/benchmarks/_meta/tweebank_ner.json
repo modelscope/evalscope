@@ -1,0 +1,109 @@
+{
+  "meta": {
+    "pretty_name": "TweeBankNER",
+    "dataset_id": "extraordinarylab/tweebank-ner",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nTweebank-NER is an English Twitter corpus created by annotating the syntactically-parsed Tweebank V2 with four types of named entities: Person, Organization, Location, and Miscellaneous. It addresses NER challenges in informal social media text.\n\n## Task Description\n\n- **Task Type**: Social Media Named Entity Recognition (NER)\n- **Input**: Twitter text (tweets)\n- **Output**: Identified entity spans with types\n- **Domain**: Social media, informal text\n\n## Key Features\n\n- Based on Tweebank V2 syntactic annotations\n- Four standard NER entity types\n- Addresses informal language challenges\n- Handles Twitter-specific text features (hashtags, mentions)\n- Useful for social media NLP applications\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: PER, ORG, LOC, MISC\n",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 1201,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1201,
+        "prompt_length_mean": 2322.67,
+        "prompt_length_min": 2250,
+        "prompt_length_max": 2398,
+        "prompt_length_std": 37.49,
+        "target_length_mean": 115.62
+      }
+    ],
+    "prompt_length": {
+      "mean": 2322.67,
+      "min": 2250,
+      "max": 2398,
+      "std": 37.49
+    },
+    "target_length_mean": 115.62,
+    "computed_at": "2026-01-28T14:16:09.035081"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "46ad4b5f",
+          "content": "Here are some examples of named entity recognition:\n\nInput:\nRT @USER2362 : Farmall Heart Of The Holidays Tabletop Christmas Tree With Lights And Motion URL1087 #Holiday #Gifts\n\nOutput:\n<response>RT @USER2362 : <organization>Farmall</organizat ... [TRUNCATED] ... include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n@USER1812 No , I 'm not . It 's definitely not a rapper .\n"
+        }
+      ],
+      "target": "<response>@USER1812 No , I 'm not . It 's definitely not a rapper .</response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "@USER1812",
+          "No",
+          ",",
+          "I",
+          "'m",
+          "not",
+          ".",
+          "It",
+          "'s",
+          "definitely",
+          "not",
+          "a",
+          "rapper",
+          "."
+        ],
+        "ner_tags": [
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# TweeBankNER\n\n\n## Overview\n\nTweebank-NER is an English Twitter corpus created by annotating the syntactically-parsed Tweebank V2 with four types of named entities: Person, Organization, Location, and Miscellaneous. It addresses NER challenges in informal social media text.\n\n## Task Description\n\n- **Task Type**: Social Media Named Entity Recognition (NER)\n- **Input**: Twitter text (tweets)\n- **Output**: Identified entity spans with types\n- **Domain**: Social media, informal text\n\n## Key Features\n\n- Based on Tweebank V2 syntactic annotations\n- Four standard NER entity types\n- Addresses informal language challenges\n- Handles Twitter-specific text features (hashtags, mentions)\n- Useful for social media NLP applications\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: PER, ORG, LOC, MISC\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `tweebank_ner` |\n| **Dataset ID** | [extraordinarylab/tweebank-ner](https://modelscope.cn/datasets/extraordinarylab/tweebank-ner/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,201 |\n| Prompt Length (Mean) | 2322.67 chars |\n| Prompt Length (Min/Max) | 2250 / 2398 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"46ad4b5f\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nRT @USER2362 : Farmall Heart Of The Holidays Tabletop Christmas Tree With Lights And Motion URL1087 #Holiday #Gifts\\n\\nOutput:\\n<response>RT @USER2362 : <organization>Farmall</organizat ... [TRUNCATED] ... include explanations, just the tagged text.\\n6. If entity spans overlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\n@USER1812 No , I 'm not . It 's definitely not a rapper .\\n\"\n    }\n  ],\n  \"target\": \"<response>@USER1812 No , I 'm not . It 's definitely not a rapper .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"@USER1812\",\n      \"No\",\n      \",\",\n      \"I\",\n      \"'m\",\n      \"not\",\n      \".\",\n      \"It\",\n      \"'s\",\n      \"definitely\",\n      \"not\",\n      \"a\",\n      \"rapper\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tweebank_ner \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tweebank_ner'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# TweeBankNER\n\n\n## 概述\n\nTweebank-NER 是一个英文 Twitter 语料库，通过对已进行句法分析的 Tweebank V2 数据集标注四种命名实体类型（人物、组织、地点和杂项）构建而成。该数据集旨在应对社交媒体非正式文本中的命名实体识别（NER）挑战。\n\n## 任务描述\n\n- **任务类型**：社交媒体命名实体识别（NER）\n- **输入**：Twitter 文本（推文）\n- **输出**：识别出的实体片段及其类型\n- **领域**：社交媒体、非正式文本\n\n## 主要特点\n\n- 基于 Tweebank V2 的句法标注\n- 包含四种标准 NER 实体类型\n- 针对非正式语言带来的挑战\n- 处理 Twitter 特有的文本特征（如话题标签、用户提及）\n- 适用于社交媒体自然语言处理应用\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 评估\n- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）\n- 实体类型：PER（人物）、ORG（组织）、LOC（地点）、MISC（杂项）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `tweebank_ner` |\n| **数据集ID** | [extraordinarylab/tweebank-ner](https://modelscope.cn/datasets/extraordinarylab/tweebank-ner/summary) |\n| **论文** | 无 |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认样本数** | 5-shot |\n| **评估划分** | `test` |\n| **训练划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,201 |\n| 提示词长度（平均） | 2322.67 字符 |\n| 提示词长度（最小/最大） | 2250 / 2398 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"46ad4b5f\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nRT @USER2362 : Farmall Heart Of The Holidays Tabletop Christmas Tree With Lights And Motion URL1087 #Holiday #Gifts\\n\\nOutput:\\n<response>RT @USER2362 : <organization>Farmall</organizat ... [TRUNCATED] ... include explanations, just the tagged text.\\n6. If entity spans overlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\n@USER1812 No , I 'm not . It 's definitely not a rapper .\\n\"\n    }\n  ],\n  \"target\": \"<response>@USER1812 No , I 'm not . It 's definitely not a rapper .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"@USER1812\",\n      \"No\",\n      \",\",\n      \"I\",\n      \"'m\",\n      \"not\",\n      \".\",\n      \"It\",\n      \"'s\",\n      \"definitely\",\n      \"not\",\n      \"a\",\n      \"rapper\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*注：部分内容为显示目的已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本（Few-shot）模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tweebank_ner \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tweebank_ner'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "e5feb1a7bc64411e6e9f6b730fa20a02",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.266999",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

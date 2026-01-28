@@ -1,0 +1,73 @@
+{
+  "meta": {
+    "pretty_name": "SWE-bench_Verified",
+    "dataset_id": "princeton-nlp/SWE-bench_Verified",
+    "paper_url": null,
+    "tags": [
+      "Coding"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nSWE-bench Verified is a human-validated subset of 500 samples from SWE-bench, designed to test systems' ability to automatically resolve real-world GitHub issues. Each sample represents a genuine bug fix or feature implementation from popular Python repositories.\n\n## Task Description\n\n- **Task Type**: Automated Software Engineering / Bug Fixing\n- **Input**: GitHub issue description with repository context\n- **Output**: Code patch (diff format) that resolves the issue\n- **Repositories**: 12 popular Python projects (Django, Flask, Requests, etc.)\n\n## Key Features\n\n- 500 human-validated Issue-Pull Request pairs\n- Real-world bugs from production Python repositories\n- Evaluation via unit test verification\n- Docker-based isolated execution environments\n- Tests both bug understanding and code modification skills\n\n## Evaluation Notes\n\n- Requires `pip install swebench==4.1.0` before evaluation\n- Docker images are built/pulled automatically for each repository\n- Timeout of 1800 seconds (30 min) per instance\n- See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup instructions\n- Supports both local image building and remote image pulling\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "inference_dataset_id": {
+        "type": "str",
+        "description": "Oracle dataset ID used to fetch inference context.",
+        "value": "princeton-nlp/SWE-bench_oracle"
+      },
+      "build_docker_images": {
+        "type": "bool",
+        "description": "Build Docker images locally for each sample.",
+        "value": true
+      },
+      "pull_remote_images_if_available": {
+        "type": "bool",
+        "description": "Attempt to pull existing remote Docker images before building.",
+        "value": true
+      },
+      "force_arch": {
+        "type": "str",
+        "description": "Optionally force the docker images to be pulled/built for a specific architecture.",
+        "value": "",
+        "choices": [
+          "",
+          "arm64",
+          "x86_64"
+        ]
+      }
+    },
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 0,
+    "subset_stats": [],
+    "prompt_length": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T14:17:39.295308"
+  },
+  "sample_example": {},
+  "readme": {
+    "en": "# SWE-bench_Verified\n\n\n## Overview\n\nSWE-bench Verified is a human-validated subset of 500 samples from SWE-bench, designed to test systems' ability to automatically resolve real-world GitHub issues. Each sample represents a genuine bug fix or feature implementation from popular Python repositories.\n\n## Task Description\n\n- **Task Type**: Automated Software Engineering / Bug Fixing\n- **Input**: GitHub issue description with repository context\n- **Output**: Code patch (diff format) that resolves the issue\n- **Repositories**: 12 popular Python projects (Django, Flask, Requests, etc.)\n\n## Key Features\n\n- 500 human-validated Issue-Pull Request pairs\n- Real-world bugs from production Python repositories\n- Evaluation via unit test verification\n- Docker-based isolated execution environments\n- Tests both bug understanding and code modification skills\n\n## Evaluation Notes\n\n- Requires `pip install swebench==4.1.0` before evaluation\n- Docker images are built/pulled automatically for each repository\n- Timeout of 1800 seconds (30 min) per instance\n- See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup instructions\n- Supports both local image building and remote image pulling\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `swe_bench_verified` |\n| **Dataset ID** | [princeton-nlp/SWE-bench_Verified](https://modelscope.cn/datasets/princeton-nlp/SWE-bench_Verified/summary) |\n| **Paper** | N/A |\n| **Tags** | `Coding` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `inference_dataset_id` | `str` | `princeton-nlp/SWE-bench_oracle` | Oracle dataset ID used to fetch inference context. |\n| `build_docker_images` | `bool` | `True` | Build Docker images locally for each sample. |\n| `pull_remote_images_if_available` | `bool` | `True` | Attempt to pull existing remote Docker images before building. |\n| `force_arch` | `str` | `` | Optionally force the docker images to be pulled/built for a specific architecture. Choices: ['', 'arm64', 'x86_64'] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets swe_bench_verified \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['swe_bench_verified'],\n    dataset_args={\n        'swe_bench_verified': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# SWE-bench_Verified\n\n\n## 概述\n\nSWE-bench Verified 是从 SWE-bench 中人工验证筛选出的 500 个样本子集，旨在测试系统自动解决真实 GitHub 问题的能力。每个样本均来自热门 Python 仓库中的真实 bug 修复或功能实现。\n\n## 任务描述\n\n- **任务类型**：自动化软件工程 / Bug 修复\n- **输入**：包含仓库上下文的 GitHub issue 描述\n- **输出**：解决该 issue 的代码补丁（diff 格式）\n- **仓库范围**：12 个热门 Python 项目（如 Django、Flask、Requests 等）\n\n## 主要特性\n\n- 500 对经人工验证的 Issue-Pull Request 数据\n- 来自生产级 Python 仓库的真实世界 bug\n- 通过单元测试进行验证评估\n- 基于 Docker 的隔离执行环境\n- 同时考察对 bug 的理解能力与代码修改能力\n\n## 评估说明\n\n- 评估前需先安装 `pip install swebench==4.1.0`\n- 每个仓库的 Docker 镜像会自动构建或拉取\n- 每个实例超时时间为 1800 秒（30 分钟）\n- 详细设置说明请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)\n- 支持本地构建镜像和远程拉取镜像两种方式\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `swe_bench_verified` |\n| **数据集ID** | [princeton-nlp/SWE-bench_Verified](https://modelscope.cn/datasets/princeton-nlp/SWE-bench_Verified/summary) |\n| **论文** | N/A |\n| **标签** | `Coding` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n\n## 数据统计\n\n*统计数据暂不可用。*\n\n## 样例示例\n\n*样例示例暂不可用。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `inference_dataset_id` | `str` | `princeton-nlp/SWE-bench_oracle` | 用于获取推理上下文的 Oracle 数据集 ID。 |\n| `build_docker_images` | `bool` | `True` | 为每个样本在本地构建 Docker 镜像。 |\n| `pull_remote_images_if_available` | `bool` | `True` | 在构建前尝试拉取已存在的远程 Docker 镜像。 |\n| `force_arch` | `str` | `` | 可选地强制为特定架构拉取/构建 Docker 镜像。可选值：['', 'arm64', 'x86_64'] |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets swe_bench_verified \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['swe_bench_verified'],\n    dataset_args={\n        'swe_bench_verified': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "8eb4c9bb106440d07701350618b6d97a",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T16:09:05.876881",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

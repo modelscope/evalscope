@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "pretty_name": "IFBench",
+    "dataset_id": "allenai/IFBench_test",
+    "paper_url": null,
+    "tags": [
+      "InstructionFollowing"
+    ],
+    "metrics": [
+      "prompt_level_strict",
+      "inst_level_strict",
+      "prompt_level_loose",
+      "inst_level_loose"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nIFBench is a benchmark designed to evaluate how reliably AI models follow novel, challenging, and diverse verifiable instructions, with a strong focus on out-of-domain generalization. Developed by AllenAI, it addresses overfitting and data contamination issues in existing benchmarks.\n\n## Task Description\n\n- **Task Type**: Instruction Following Evaluation\n- **Input**: Prompts with verifiable constraints\n- **Output**: Responses that must satisfy specific constraints\n- **Focus**: Precise instruction-following capabilities\n\n## Key Features\n\n- 58 manually curated verifiable constraints\n- Categories: counting, formatting, word usage, etc.\n- Focus on out-of-domain generalization\n- Programmatic verification of constraint satisfaction\n- Addresses data contamination concerns\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Metrics: prompt_level_strict, inst_level_strict, prompt_level_loose, inst_level_loose\n- Requires emoji, syllapy, and spacy packages\n- Evaluates both strict and loose constraint satisfaction\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 300,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 300,
+        "prompt_length_mean": 343.41,
+        "prompt_length_min": 50,
+        "prompt_length_max": 904,
+        "prompt_length_std": 193.73,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 343.41,
+      "min": 50,
+      "max": 904,
+      "std": 193.73
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T14:35:39.433750"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "9e0a5835",
+          "content": "What should the world's smartest man, surrounded by corruption, greed, inequity, madness, inequality, an establishment who preached conspiracy theories and wild speculations over truth and an equally evil resistance funded by the mega rich, a ... [TRUNCATED] ... ad here. Include keyword kaleidoscope once in your response, keyword nebula twice in your response, keyword whisper three times in your response, keyword labyrinth five times in your response, and keyword paradox seven times in your response."
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "key": "0",
+        "prompt": "What should the world's smartest man, surrounded by corruption, greed, inequity, madness, inequality, an establishment who preached conspiracy theories and wild speculations over truth and an equally evil resistance funded by the mega rich, a ... [TRUNCATED] ... ad here. Include keyword kaleidoscope once in your response, keyword nebula twice in your response, keyword whisper three times in your response, keyword labyrinth five times in your response, and keyword paradox seven times in your response.",
+        "instruction_id_list": [
+          "count:keywords_multiple"
+        ],
+        "kwargs": [
+          {
+            "N": null,
+            "capital_frequency": null,
+            "capital_relation": null,
+            "end_phrase": null,
+            "first_word": null,
+            "forbidden_words": null,
+            "frequency": null,
+            "keyword": null,
+            "keyword1": "kaleidoscope",
+            "keyword2": "nebula",
+            "keyword3": "whisper",
+            "keyword4": "labyrinth",
+            "keyword5": "paradox",
+            "keywords": null,
+            "language": null,
+            "let_frequency": null,
+            "let_relation": null,
+            "letter": null,
+            "m": null,
+            "max_words": null,
+            "min_words": null,
+            "n": null,
+            "n_end": null,
+            "n_start": null,
+            "nth_paragraph": null,
+            "num_bullets": null,
+            "num_highlights": null,
+            "num_paragraphs": null,
+            "num_placeholders": null,
+            "num_sections": null,
+            "num_sentences": null,
+            "num_words": null,
+            "options": null,
+            "percentage": null,
+            "postscript_marker": null,
+            "prompt_to_repeat": null,
+            "reference_text": null,
+            "relation": null,
+            "section_spliter": null,
+            "sep": null,
+            "small_n": null,
+            "word": null
+          }
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# IFBench\n\n\n## Overview\n\nIFBench is a benchmark designed to evaluate how reliably AI models follow novel, challenging, and diverse verifiable instructions, with a strong focus on out-of-domain generalization. Developed by AllenAI, it addresses overfitting and data contamination issues in existing benchmarks.\n\n## Task Description\n\n- **Task Type**: Instruction Following Evaluation\n- **Input**: Prompts with verifiable constraints\n- **Output**: Responses that must satisfy specific constraints\n- **Focus**: Precise instruction-following capabilities\n\n## Key Features\n\n- 58 manually curated verifiable constraints\n- Categories: counting, formatting, word usage, etc.\n- Focus on out-of-domain generalization\n- Programmatic verification of constraint satisfaction\n- Addresses data contamination concerns\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Metrics: prompt_level_strict, inst_level_strict, prompt_level_loose, inst_level_loose\n- Requires emoji, syllapy, and spacy packages\n- Evaluates both strict and loose constraint satisfaction\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `ifbench` |\n| **Dataset ID** | [allenai/IFBench_test](https://modelscope.cn/datasets/allenai/IFBench_test/summary) |\n| **Paper** | N/A |\n| **Tags** | `InstructionFollowing` |\n| **Metrics** | `prompt_level_strict`, `inst_level_strict`, `prompt_level_loose`, `inst_level_loose` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 300 |\n| Prompt Length (Mean) | 343.41 chars |\n| Prompt Length (Min/Max) | 50 / 904 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"9e0a5835\",\n      \"content\": \"What should the world's smartest man, surrounded by corruption, greed, inequity, madness, inequality, an establishment who preached conspiracy theories and wild speculations over truth and an equally evil resistance funded by the mega rich, a ... [TRUNCATED] ... ad here. Include keyword kaleidoscope once in your response, keyword nebula twice in your response, keyword whisper three times in your response, keyword labyrinth five times in your response, and keyword paradox seven times in your response.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"key\": \"0\",\n    \"prompt\": \"What should the world's smartest man, surrounded by corruption, greed, inequity, madness, inequality, an establishment who preached conspiracy theories and wild speculations over truth and an equally evil resistance funded by the mega rich, a ... [TRUNCATED] ... ad here. Include keyword kaleidoscope once in your response, keyword nebula twice in your response, keyword whisper three times in your response, keyword labyrinth five times in your response, and keyword paradox seven times in your response.\",\n    \"instruction_id_list\": [\n      \"count:keywords_multiple\"\n    ],\n    \"kwargs\": [\n      {\n        \"N\": null,\n        \"capital_frequency\": null,\n        \"capital_relation\": null,\n        \"end_phrase\": null,\n        \"first_word\": null,\n        \"forbidden_words\": null,\n        \"frequency\": null,\n        \"keyword\": null,\n        \"keyword1\": \"kaleidoscope\",\n        \"keyword2\": \"nebula\",\n        \"keyword3\": \"whisper\",\n        \"keyword4\": \"labyrinth\",\n        \"keyword5\": \"paradox\",\n        \"keywords\": null,\n        \"language\": null,\n        \"let_frequency\": null,\n        \"let_relation\": null,\n        \"letter\": null,\n        \"m\": null,\n        \"max_words\": null,\n        \"min_words\": null,\n        \"n\": null,\n        \"n_end\": null,\n        \"n_start\": null,\n        \"nth_paragraph\": null,\n        \"num_bullets\": null,\n        \"num_highlights\": null,\n        \"num_paragraphs\": null,\n        \"num_placeholders\": null,\n        \"num_sections\": null,\n        \"num_sentences\": null,\n        \"num_words\": null,\n        \"options\": null,\n        \"percentage\": null,\n        \"postscript_marker\": null,\n        \"prompt_to_repeat\": null,\n        \"reference_text\": null,\n        \"relation\": null,\n        \"section_spliter\": null,\n        \"sep\": null,\n        \"small_n\": null,\n        \"word\": null\n      }\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ifbench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ifbench'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# IFBench\n\n## 概述\n\nIFBench 是一个用于评估 AI 模型在遵循新颖、具有挑战性且多样化的可验证指令方面可靠性的基准测试，特别强调**领域外泛化能力**。该基准由 AllenAI 开发，旨在解决现有基准中存在的过拟合和数据污染问题。\n\n## 任务描述\n\n- **任务类型**：指令遵循评估（Instruction Following Evaluation）\n- **输入**：包含可验证约束的提示（prompts）\n- **输出**：必须满足特定约束的响应\n- **重点**：精确的指令遵循能力\n\n## 核心特性\n\n- 包含 58 个人工精心整理的可验证约束\n- 约束类别涵盖：计数、格式、词汇使用等\n- 重点关注领域外泛化能力\n- 支持对约束满足情况进行程序化验证\n- 有效缓解数据污染问题\n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估方式\n- 评估指标包括：`prompt_level_strict`、`inst_level_strict`、`prompt_level_loose`、`inst_level_loose`\n- 需要安装 `emoji`、`syllapy` 和 `spacy` 等依赖包\n- 同时评估严格和宽松条件下的约束满足情况\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `ifbench` |\n| **数据集ID** | [allenai/IFBench_test](https://modelscope.cn/datasets/allenai/IFBench_test/summary) |\n| **论文** | N/A |\n| **标签** | `InstructionFollowing` |\n| **指标** | `prompt_level_strict`, `inst_level_strict`, `prompt_level_loose`, `inst_level_loose` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 300 |\n| 提示词长度（平均） | 343.41 字符 |\n| 提示词长度（最小/最大） | 50 / 904 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"9e0a5835\",\n      \"content\": \"What should the world's smartest man, surrounded by corruption, greed, inequity, madness, inequality, an establishment who preached conspiracy theories and wild speculations over truth and an equally evil resistance funded by the mega rich, a ... [TRUNCATED] ... ad here. Include keyword kaleidoscope once in your response, keyword nebula twice in your response, keyword whisper three times in your response, keyword labyrinth five times in your response, and keyword paradox seven times in your response.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"key\": \"0\",\n    \"prompt\": \"What should the world's smartest man, surrounded by corruption, greed, inequity, madness, inequality, an establishment who preached conspiracy theories and wild speculations over truth and an equally evil resistance funded by the mega rich, a ... [TRUNCATED] ... ad here. Include keyword kaleidoscope once in your response, keyword nebula twice in your response, keyword whisper three times in your response, keyword labyrinth five times in your response, and keyword paradox seven times in your response.\",\n    \"instruction_id_list\": [\n      \"count:keywords_multiple\"\n    ],\n    \"kwargs\": [\n      {\n        \"N\": null,\n        \"capital_frequency\": null,\n        \"capital_relation\": null,\n        \"end_phrase\": null,\n        \"first_word\": null,\n        \"forbidden_words\": null,\n        \"frequency\": null,\n        \"keyword\": null,\n        \"keyword1\": \"kaleidoscope\",\n        \"keyword2\": \"nebula\",\n        \"keyword3\": \"whisper\",\n        \"keyword4\": \"labyrinth\",\n        \"keyword5\": \"paradox\",\n        \"keywords\": null,\n        \"language\": null,\n        \"let_frequency\": null,\n        \"let_relation\": null,\n        \"letter\": null,\n        \"m\": null,\n        \"max_words\": null,\n        \"min_words\": null,\n        \"n\": null,\n        \"n_end\": null,\n        \"n_start\": null,\n        \"nth_paragraph\": null,\n        \"num_bullets\": null,\n        \"num_highlights\": null,\n        \"num_paragraphs\": null,\n        \"num_placeholders\": null,\n        \"num_sections\": null,\n        \"num_sentences\": null,\n        \"num_words\": null,\n        \"options\": null,\n        \"percentage\": null,\n        \"postscript_marker\": null,\n        \"prompt_to_repeat\": null,\n        \"reference_text\": null,\n        \"relation\": null,\n        \"section_spliter\": null,\n        \"sep\": null,\n        \"small_n\": null,\n        \"word\": null\n      }\n    ]\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 通过命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ifbench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 通过 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ifbench'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "84859cceea8a1bc60d240c970cd8bc62",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:35:39.459249",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

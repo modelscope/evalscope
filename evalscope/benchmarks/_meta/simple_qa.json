@@ -1,0 +1,84 @@
+{
+  "meta": {
+    "pretty_name": "SimpleQA",
+    "dataset_id": "evalscope/SimpleQA",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "QA"
+    ],
+    "metrics": [
+      "is_correct",
+      "is_incorrect",
+      "is_not_attempted"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nSimpleQA is a benchmark by OpenAI designed to evaluate language models' ability to answer short, fact-seeking questions accurately. It focuses on measuring factual accuracy with clear grading criteria for correct, incorrect, and not-attempted answers.\n\n## Task Description\n\n- **Task Type**: Factual Question Answering\n- **Input**: Simple factual question\n- **Output**: Concise factual answer\n- **Grading**: CORRECT, INCORRECT, or NOT_ATTEMPTED\n\n## Key Features\n\n- Short, fact-seeking questions with unambiguous answers\n- Clear grading criteria for accuracy evaluation\n- Distinguishes between incorrect answers and abstentions\n- Uses LLM-as-judge for semantic answer comparison\n- Tests factual knowledge and calibration\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses LLM judge for answer grading (semantic matching)\n- Three-way classification: is_correct, is_incorrect, is_not_attempted\n- Allows hedging if correct information is included\n- Tests models' ability to admit uncertainty appropriately\n",
+    "prompt_template": "Answer the question:\n\n{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 4326,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 4326,
+        "prompt_length_mean": 118.47,
+        "prompt_length_min": 48,
+        "prompt_length_max": 403,
+        "prompt_length_std": 41.12,
+        "target_length_mean": 13.03
+      }
+    ],
+    "prompt_length": {
+      "mean": 118.47,
+      "min": 48,
+      "max": 403,
+      "std": 41.12
+    },
+    "target_length_mean": 13.03,
+    "computed_at": "2026-01-28T11:16:48.079373"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "9dd57f4c",
+          "content": "Answer the question:\n\nWho received the IEEE Frank Rosenblatt Award in 2010?"
+        }
+      ],
+      "target": "Michio Sugeno",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "topic": "Science and technology",
+        "answer_type": "Person",
+        "urls": [
+          "https://en.wikipedia.org/wiki/IEEE_Frank_Rosenblatt_Award",
+          "https://ieeexplore.ieee.org/author/37271220500",
+          "https://en.wikipedia.org/wiki/IEEE_Frank_Rosenblatt_Award",
+          "https://www.nxtbook.com/nxtbooks/ieee/awards_2010/index.php?startid=21#/p/20"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# SimpleQA\n\n\n## Overview\n\nSimpleQA is a benchmark by OpenAI designed to evaluate language models' ability to answer short, fact-seeking questions accurately. It focuses on measuring factual accuracy with clear grading criteria for correct, incorrect, and not-attempted answers.\n\n## Task Description\n\n- **Task Type**: Factual Question Answering\n- **Input**: Simple factual question\n- **Output**: Concise factual answer\n- **Grading**: CORRECT, INCORRECT, or NOT_ATTEMPTED\n\n## Key Features\n\n- Short, fact-seeking questions with unambiguous answers\n- Clear grading criteria for accuracy evaluation\n- Distinguishes between incorrect answers and abstentions\n- Uses LLM-as-judge for semantic answer comparison\n- Tests factual knowledge and calibration\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses LLM judge for answer grading (semantic matching)\n- Three-way classification: is_correct, is_incorrect, is_not_attempted\n- Allows hedging if correct information is included\n- Tests models' ability to admit uncertainty appropriately\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `simple_qa` |\n| **Dataset ID** | [evalscope/SimpleQA](https://modelscope.cn/datasets/evalscope/SimpleQA/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `QA` |\n| **Metrics** | `is_correct`, `is_incorrect`, `is_not_attempted` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 4,326 |\n| Prompt Length (Mean) | 118.47 chars |\n| Prompt Length (Min/Max) | 48 / 403 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"9dd57f4c\",\n      \"content\": \"Answer the question:\\n\\nWho received the IEEE Frank Rosenblatt Award in 2010?\"\n    }\n  ],\n  \"target\": \"Michio Sugeno\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"topic\": \"Science and technology\",\n    \"answer_type\": \"Person\",\n    \"urls\": [\n      \"https://en.wikipedia.org/wiki/IEEE_Frank_Rosenblatt_Award\",\n      \"https://ieeexplore.ieee.org/author/37271220500\",\n      \"https://en.wikipedia.org/wiki/IEEE_Frank_Rosenblatt_Award\",\n      \"https://www.nxtbook.com/nxtbooks/ieee/awards_2010/index.php?startid=21#/p/20\"\n    ]\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the question:\n\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets simple_qa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['simple_qa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# SimpleQA\n\n\n## 概述\n\nSimpleQA 是由 OpenAI 设计的一个基准测试，用于评估语言模型准确回答简短事实性问题的能力。该基准专注于衡量事实准确性，并为正确、错误和未作答的答案提供了清晰的评分标准。\n\n## 任务描述\n\n- **任务类型**：事实型问答（Factual Question Answering）\n- **输入**：简短的事实性问题\n- **输出**：简洁的事实性答案\n- **评分标准**：CORRECT（正确）、INCORRECT（错误）或 NOT_ATTEMPTED（未作答）\n\n## 主要特点\n\n- 问题简短、以事实为导向，且答案明确无歧义\n- 提供清晰的评分标准用于准确性评估\n- 能区分错误回答与主动放弃回答（abstention）\n- 使用 LLM-as-judge 进行语义层面的答案比对\n- 测试模型的事实知识掌握程度及其校准能力（calibration）\n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估方式\n- 使用 LLM 作为裁判进行答案评分（基于语义匹配）\n- 采用三分类判断：is_correct（正确）、is_incorrect（错误）、is_not_attempted（未作答）\n- 若答案中包含正确信息，即使带有模糊表述（hedging）也可视为正确\n- 测试模型在不确定时是否能恰当地承认不确定性\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `simple_qa` |\n| **数据集ID** | [evalscope/SimpleQA](https://modelscope.cn/datasets/evalscope/SimpleQA/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `QA` |\n| **指标** | `is_correct`, `is_incorrect`, `is_not_attempted` |\n| **默认示例数量（Shots）** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 4,326 |\n| 提示词长度（平均） | 118.47 字符 |\n| 提示词长度（最小/最大） | 48 / 403 字符 |\n\n## 样例示例\n\n**子集**：`default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"9dd57f4c\",\n      \"content\": \"Answer the question:\\n\\nWho received the IEEE Frank Rosenblatt Award in 2010?\"\n    }\n  ],\n  \"target\": \"Michio Sugeno\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"topic\": \"Science and technology\",\n    \"answer_type\": \"Person\",\n    \"urls\": [\n      \"https://en.wikipedia.org/wiki/IEEE_Frank_Rosenblatt_Award\",\n      \"https://ieeexplore.ieee.org/author/37271220500\",\n      \"https://en.wikipedia.org/wiki/IEEE_Frank_Rosenblatt_Award\",\n      \"https://www.nxtbook.com/nxtbooks/ieee/awards_2010/index.php?startid=21#/p/20\"\n    ]\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the question:\n\n{question}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets simple_qa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['simple_qa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "6e3c1db699b8f98c67f4a475ad5412ed",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.378340",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

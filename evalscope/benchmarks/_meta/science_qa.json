@@ -1,0 +1,156 @@
+{
+  "meta": {
+    "pretty_name": "ScienceQA",
+    "dataset_id": "AI-ModelScope/ScienceQA",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "MultiModal"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nScienceQA is a multimodal benchmark consisting of multiple-choice science questions derived from elementary and high school curricula. It covers diverse subjects including natural science, social science, and language science, with questions accompanied by both image and text contexts.\n\n## Task Description\n\n- **Task Type**: Multimodal Science Question Answering\n- **Input**: Question with optional image context + multiple choices\n- **Output**: Correct answer choice letter\n- **Domains**: Natural science, social science, language science\n\n## Key Features\n\n- Questions sourced from real K-12 science curricula\n- Most questions include both image and text contexts\n- Annotated with detailed lectures and explanations\n- Supports research into chain-of-thought reasoning\n- Covers multiple grade levels and difficulty ranges\n- Rich metadata including topic, skill, and category information\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** on multiple-choice questions\n- Uses Chain-of-Thought (CoT) prompting for reasoning\n- Metadata includes solution explanations for analysis\n- Questions span grades from elementary to high school\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 4241,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 4241,
+        "prompt_length_mean": 370.49,
+        "prompt_length_min": 250,
+        "prompt_length_max": 1037,
+        "prompt_length_std": 92.09,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 2017,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "103x494",
+              "114x189",
+              "116x177",
+              "128x187",
+              "131x168",
+              "132x132",
+              "133x186",
+              "135x187",
+              "136x178",
+              "142x184"
+            ],
+            "resolution_range": {
+              "min": "170x77",
+              "max": "750x625"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 370.49,
+      "min": 250,
+      "max": 1037,
+      "std": 92.09
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:16:40.635609",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 2017,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "103x494",
+          "114x189",
+          "116x177",
+          "128x187",
+          "131x168",
+          "132x132",
+          "133x186",
+          "135x187",
+          "136x178",
+          "142x184"
+        ],
+        "resolution_range": {
+          "min": "170x77",
+          "max": "750x625"
+        },
+        "formats": [
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "7586b8fe",
+          "content": [
+            {
+              "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B. Think step by step before answering.\n\nWhich figure of speech is used in this text?\nSing, O goddess, the anger of Achilles son of Peleus, that brought countless ills upon the Achaeans.\n—Homer, The Iliad\n\nA) chiasmus\nB) apostrophe"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "chiasmus",
+        "apostrophe"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "hint": "",
+        "task": "closed choice",
+        "grade": "grade11",
+        "subject": "language science",
+        "topic": "figurative-language",
+        "category": "Literary devices",
+        "skill": "Classify the figure of speech: anaphora, antithesis, apostrophe, assonance, chiasmus, understatement",
+        "lecture": "Figures of speech are words or phrases that use language in a nonliteral or unusual way. They can make writing more expressive.\nAnaphora is the repetition of the same word or words at the beginning of several phrases or clauses.\nWe are united ... [TRUNCATED] ... but reverses the order of words.\nNever let a fool kiss you or a kiss fool you.\nUnderstatement involves deliberately representing something as less serious or important than it really is.\nAs you know, it can get a little cold in the Antarctic.",
+        "solution": "The text uses apostrophe, a direct address to an absent person or a nonhuman entity.\nO goddess is a direct address to a goddess, a nonhuman entity."
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# ScienceQA\n\n\n## Overview\n\nScienceQA is a multimodal benchmark consisting of multiple-choice science questions derived from elementary and high school curricula. It covers diverse subjects including natural science, social science, and language science, with questions accompanied by both image and text contexts.\n\n## Task Description\n\n- **Task Type**: Multimodal Science Question Answering\n- **Input**: Question with optional image context + multiple choices\n- **Output**: Correct answer choice letter\n- **Domains**: Natural science, social science, language science\n\n## Key Features\n\n- Questions sourced from real K-12 science curricula\n- Most questions include both image and text contexts\n- Annotated with detailed lectures and explanations\n- Supports research into chain-of-thought reasoning\n- Covers multiple grade levels and difficulty ranges\n- Rich metadata including topic, skill, and category information\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** on multiple-choice questions\n- Uses Chain-of-Thought (CoT) prompting for reasoning\n- Metadata includes solution explanations for analysis\n- Questions span grades from elementary to high school\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `science_qa` |\n| **Dataset ID** | [AI-ModelScope/ScienceQA](https://modelscope.cn/datasets/AI-ModelScope/ScienceQA/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `MultiModal` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 4,241 |\n| Prompt Length (Mean) | 370.49 chars |\n| Prompt Length (Min/Max) | 250 / 1037 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 2,017 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 170x77 - 750x625 |\n| Formats | png |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"7586b8fe\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B. Think step by step before answering.\\n\\nWhich figure of speech is used in this text?\\nSing, O goddess, the anger of Achilles son of Peleus, that brought countless ills upon the Achaeans.\\n—Homer, The Iliad\\n\\nA) chiasmus\\nB) apostrophe\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"chiasmus\",\n    \"apostrophe\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"hint\": \"\",\n    \"task\": \"closed choice\",\n    \"grade\": \"grade11\",\n    \"subject\": \"language science\",\n    \"topic\": \"figurative-language\",\n    \"category\": \"Literary devices\",\n    \"skill\": \"Classify the figure of speech: anaphora, antithesis, apostrophe, assonance, chiasmus, understatement\",\n    \"lecture\": \"Figures of speech are words or phrases that use language in a nonliteral or unusual way. They can make writing more expressive.\\nAnaphora is the repetition of the same word or words at the beginning of several phrases or clauses.\\nWe are united ... [TRUNCATED] ... but reverses the order of words.\\nNever let a fool kiss you or a kiss fool you.\\nUnderstatement involves deliberately representing something as less serious or important than it really is.\\nAs you know, it can get a little cold in the Antarctic.\",\n    \"solution\": \"The text uses apostrophe, a direct address to an absent person or a nonhuman entity.\\nO goddess is a direct address to a goddess, a nonhuman entity.\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets science_qa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['science_qa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# ScienceQA\n\n\n## 概述\n\nScienceQA 是一个**多模态基准测试**，包含来自小学和高中课程的多项选择题科学问题。它涵盖自然科学、社会科学和语言科学等多个学科，每个问题均配有图像和文本上下文。\n\n## 任务描述\n\n- **任务类型**：多模态科学问答\n- **输入**：带可选图像上下文的问题 + 多个选项\n- **输出**：正确答案选项字母\n- **领域**：自然科学、社会科学、语言科学\n\n## 主要特点\n\n- 问题来源于真实的 K-12 科学课程\n- 大多数问题同时包含图像和文本上下文\n- 提供详细的讲解和解释标注\n- 支持思维链（Chain-of-Thought）推理研究\n- 覆盖多个年级和难度范围\n- 包含丰富的元数据，如主题、技能和类别信息\n\n## 评估说明\n\n- 默认使用 **test** 划分进行评估\n- 主要指标：多项选择题的 **准确率（Accuracy）**\n- 使用思维链（CoT）提示进行推理\n- 元数据包含解答说明，便于分析\n- 问题覆盖从小学到高中的各个年级\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `science_qa` |\n| **数据集ID** | [AI-ModelScope/ScienceQA](https://modelscope.cn/datasets/AI-ModelScope/ScienceQA/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ`, `MultiModal` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 4,241 |\n| 提示词长度（平均） | 370.49 字符 |\n| 提示词长度（最小/最大） | 250 / 1037 字符 |\n\n**图像统计：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 2,017 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 170x77 - 750x625 |\n| 格式 | png |\n\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"7586b8fe\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B. Think step by step before answering.\\n\\nWhich figure of speech is used in this text?\\nSing, O goddess, the anger of Achilles son of Peleus, that brought countless ills upon the Achaeans.\\n—Homer, The Iliad\\n\\nA) chiasmus\\nB) apostrophe\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"chiasmus\",\n    \"apostrophe\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"hint\": \"\",\n    \"task\": \"closed choice\",\n    \"grade\": \"grade11\",\n    \"subject\": \"language science\",\n    \"topic\": \"figurative-language\",\n    \"category\": \"Literary devices\",\n    \"skill\": \"Classify the figure of speech: anaphora, antithesis, apostrophe, assonance, chiasmus, understatement\",\n    \"lecture\": \"Figures of speech are words or phrases that use language in a nonliteral or unusual way. They can make writing more expressive.\\nAnaphora is the repetition of the same word or words at the beginning of several phrases or clauses.\\nWe are united ... [TRUNCATED] ... but reverses the order of words.\\nNever let a fool kiss you or a kiss fool you.\\nUnderstatement involves deliberately representing something as less serious or important than it really is.\\nAs you know, it can get a little cold in the Antarctic.\",\n    \"solution\": \"The text uses apostrophe, a direct address to an absent person or a nonhuman entity.\\nO goddess is a direct address to a goddess, a nonhuman entity.\"\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets science_qa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['science_qa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "4b2004e34f5b4c5f8b9b089ff6d629c5",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.365165",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

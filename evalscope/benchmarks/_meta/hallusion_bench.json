@@ -1,0 +1,156 @@
+{
+  "meta": {
+    "pretty_name": "HallusionBench",
+    "dataset_id": "lmms-lab/HallusionBench",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Hallucination",
+      "Yes/No"
+    ],
+    "metrics": [
+      "aAcc",
+      "qAcc",
+      "fAcc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "image",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nHallusionBench is an advanced diagnostic benchmark designed to evaluate image-context reasoning and detect hallucination tendencies in Large Vision-Language Models (LVLMs). It specifically tests models' susceptibility to language hallucination and visual illusion.\n\n## Task Description\n\n- **Task Type**: Hallucination Detection and Visual Reasoning\n- **Input**: Image + yes/no question about image content\n- **Output**: YES or NO answer\n- **Domains**: Hallucination detection, visual reasoning, factual accuracy\n\n## Key Features\n\n- Specifically designed to probe hallucination behaviors\n- Tests both language hallucination and visual illusion\n- Organized by categories and subcategories for detailed analysis\n- Uses grouped accuracy metrics for robust evaluation\n- Questions require precise image-context reasoning\n\n## Evaluation Notes\n\n- Default evaluation uses the **image** split\n- Multiple accuracy metrics:\n  - **aAcc**: Answer-level accuracy (per-question)\n  - **fAcc**: Figure-level accuracy (all questions per figure correct)\n  - **qAcc**: Question-level accuracy (grouped by question type)\n- Requires simple YES/NO answers without explanation\n- Aggregation at subcategory, category, and overall levels\n",
+    "prompt_template": "{question}\nPlease answer YES or NO without an explanation.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "f1",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 951,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 951,
+        "prompt_length_mean": 136.78,
+        "prompt_length_min": 76,
+        "prompt_length_max": 292,
+        "prompt_length_std": 33.4,
+        "target_length_mean": 2.42,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 951,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1034",
+              "1000x393",
+              "1000x743",
+              "1030x622",
+              "1036x520",
+              "1045x709",
+              "1050x210",
+              "1056x210",
+              "1062x542",
+              "1062x604"
+            ],
+            "resolution_range": {
+              "min": "388x56",
+              "max": "5291x4536"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 136.78,
+      "min": 76,
+      "max": 292,
+      "std": 33.4
+    },
+    "target_length_mean": 2.42,
+    "computed_at": "2026-01-28T11:13:40.084951",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 951,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1000x1034",
+          "1000x393",
+          "1000x743",
+          "1030x622",
+          "1036x520",
+          "1045x709",
+          "1050x210",
+          "1056x210",
+          "1062x542",
+          "1062x604"
+        ],
+        "resolution_range": {
+          "min": "388x56",
+          "max": "5291x4536"
+        },
+        "formats": [
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "ba75d669",
+          "content": [
+            {
+              "text": "Is China, Hongkong SAR, the leading importing country of gold, silverware, and jewelry with the highest import value in 2018?\nPlease answer YES or NO without an explanation."
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~143.0KB]"
+            }
+          ]
+        }
+      ],
+      "target": "NO",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "category": "VS",
+        "subcategory": "chart",
+        "visual_input": "1",
+        "set_id": "0",
+        "figure_id": "1",
+        "question_id": "0",
+        "gt_answer": "0",
+        "gt_answer_details": "Switzerland is the leading importing country of gold, silverware, and jewelry with the highest import value in 2018?"
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# HallusionBench\n\n\n## Overview\n\nHallusionBench is an advanced diagnostic benchmark designed to evaluate image-context reasoning and detect hallucination tendencies in Large Vision-Language Models (LVLMs). It specifically tests models' susceptibility to language hallucination and visual illusion.\n\n## Task Description\n\n- **Task Type**: Hallucination Detection and Visual Reasoning\n- **Input**: Image + yes/no question about image content\n- **Output**: YES or NO answer\n- **Domains**: Hallucination detection, visual reasoning, factual accuracy\n\n## Key Features\n\n- Specifically designed to probe hallucination behaviors\n- Tests both language hallucination and visual illusion\n- Organized by categories and subcategories for detailed analysis\n- Uses grouped accuracy metrics for robust evaluation\n- Questions require precise image-context reasoning\n\n## Evaluation Notes\n\n- Default evaluation uses the **image** split\n- Multiple accuracy metrics:\n  - **aAcc**: Answer-level accuracy (per-question)\n  - **fAcc**: Figure-level accuracy (all questions per figure correct)\n  - **qAcc**: Question-level accuracy (grouped by question type)\n- Requires simple YES/NO answers without explanation\n- Aggregation at subcategory, category, and overall levels\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `hallusion_bench` |\n| **Dataset ID** | [lmms-lab/HallusionBench](https://modelscope.cn/datasets/lmms-lab/HallusionBench/summary) |\n| **Paper** | N/A |\n| **Tags** | `Hallucination`, `MultiModal`, `Yes/No` |\n| **Metrics** | `aAcc`, `qAcc`, `fAcc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `image` |\n| **Aggregation** | `f1` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 951 |\n| Prompt Length (Mean) | 136.78 chars |\n| Prompt Length (Min/Max) | 76 / 292 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 951 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 388x56 - 5291x4536 |\n| Formats | png |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"ba75d669\",\n      \"content\": [\n        {\n          \"text\": \"Is China, Hongkong SAR, the leading importing country of gold, silverware, and jewelry with the highest import value in 2018?\\nPlease answer YES or NO without an explanation.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~143.0KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"NO\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"category\": \"VS\",\n    \"subcategory\": \"chart\",\n    \"visual_input\": \"1\",\n    \"set_id\": \"0\",\n    \"figure_id\": \"1\",\n    \"question_id\": \"0\",\n    \"gt_answer\": \"0\",\n    \"gt_answer_details\": \"Switzerland is the leading importing country of gold, silverware, and jewelry with the highest import value in 2018?\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease answer YES or NO without an explanation.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets hallusion_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['hallusion_bench'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# HallusionBench\n\n## 概述\n\nHallusionBench 是一个高级诊断基准测试，旨在评估大视觉语言模型（LVLMs）的图像上下文推理能力，并检测其产生幻觉的倾向。该基准特别测试模型在语言幻觉和视觉错觉方面的敏感性。\n\n## 任务描述\n\n- **任务类型**：幻觉检测与视觉推理  \n- **输入**：图像 + 关于图像内容的是/否问题  \n- **输出**：YES 或 NO 答案  \n- **领域**：幻觉检测、视觉推理、事实准确性  \n\n## 主要特点\n\n- 专门设计用于探测幻觉行为  \n- 同时测试语言幻觉和视觉错觉  \n- 按类别和子类别组织，便于详细分析  \n- 使用分组准确率指标进行稳健评估  \n- 问题要求精确的图像上下文推理  \n\n## 评估说明\n\n- 默认评估使用 **image** 切分  \n- 多种准确率指标：\n  - **aAcc**：答案级准确率（每题）\n  - **fAcc**：图像级准确率（每张图像的所有问题均正确）\n  - **qAcc**：问题级准确率（按问题类型分组）\n- 要求仅输出 YES/NO，无需解释  \n- 在子类别、类别和整体层面进行聚合  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `hallusion_bench` |\n| **数据集ID** | [lmms-lab/HallusionBench](https://modelscope.cn/datasets/lmms-lab/HallusionBench/summary) |\n| **论文** | N/A |\n| **标签** | `Hallucination`, `MultiModal`, `Yes/No` |\n| **指标** | `aAcc`, `qAcc`, `fAcc` |\n| **默认示例数** | 0-shot |\n| **评估切分** | `image` |\n| **聚合方式** | `f1` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 951 |\n| 提示词长度（平均） | 136.78 字符 |\n| 提示词长度（最小/最大） | 76 / 292 字符 |\n\n**图像统计：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 951 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 388x56 - 5291x4536 |\n| 格式 | png |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"ba75d669\",\n      \"content\": [\n        {\n          \"text\": \"Is China, Hongkong SAR, the leading importing country of gold, silverware, and jewelry with the highest import value in 2018?\\nPlease answer YES or NO without an explanation.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~143.0KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"NO\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"category\": \"VS\",\n    \"subcategory\": \"chart\",\n    \"visual_input\": \"1\",\n    \"set_id\": \"0\",\n    \"figure_id\": \"1\",\n    \"question_id\": \"0\",\n    \"gt_answer\": \"0\",\n    \"gt_answer_details\": \"Switzerland is the leading importing country of gold, silverware, and jewelry with the highest import value in 2018?\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\nPlease answer YES or NO without an explanation.\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets hallusion_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['hallusion_bench'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "c267299ae22f30d0cc53a5ee2ee2d05f",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.888169",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

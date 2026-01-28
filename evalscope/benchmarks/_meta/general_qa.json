@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "pretty_name": "General-QA",
+    "dataset_id": "general_qa",
+    "paper_url": null,
+    "tags": [
+      "QA",
+      "Custom"
+    ],
+    "metrics": [
+      "BLEU",
+      "Rouge"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nGeneral-QA is a customizable question answering benchmark for evaluating language models on open-ended text generation tasks. It supports flexible data formats and configurable evaluation metrics.\n\n## Task Description\n\n- **Task Type**: Open-Ended Question Answering\n- **Input**: Question (with optional system prompt and conversation history)\n- **Output**: Free-form text answer\n- **Flexibility**: Supports custom datasets via local files\n\n## Key Features\n\n- Flexible input format (query/answer or messages format)\n- Optional system prompt support\n- BLEU and Rouge evaluation metrics\n- Custom dataset support via local file loading\n- Extensible for various QA use cases\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Default metrics: **BLEU**, **Rouge** (Rouge-L-R as main score)\n- Evaluates on **test** split\n- See [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa) for dataset format\n",
+    "prompt_template": "请回答问题\n{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 0,
+    "subset_stats": [],
+    "prompt_length": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T11:13:13.768957"
+  },
+  "sample_example": {},
+  "readme": {
+    "en": "# General-QA\n\n\n## Overview\n\nGeneral-QA is a customizable question answering benchmark for evaluating language models on open-ended text generation tasks. It supports flexible data formats and configurable evaluation metrics.\n\n## Task Description\n\n- **Task Type**: Open-Ended Question Answering\n- **Input**: Question (with optional system prompt and conversation history)\n- **Output**: Free-form text answer\n- **Flexibility**: Supports custom datasets via local files\n\n## Key Features\n\n- Flexible input format (query/answer or messages format)\n- Optional system prompt support\n- BLEU and Rouge evaluation metrics\n- Custom dataset support via local file loading\n- Extensible for various QA use cases\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Default metrics: **BLEU**, **Rouge** (Rouge-L-R as main score)\n- Evaluates on **test** split\n- See [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa) for dataset format\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `general_qa` |\n| **Dataset ID** | `general_qa` |\n| **Paper** | N/A |\n| **Tags** | `Custom`, `QA` |\n| **Metrics** | `BLEU`, `Rouge` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n请回答问题\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets general_qa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['general_qa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# General-QA\n\n\n## 概述\n\nGeneral-QA 是一个可自定义的问题回答基准测试，用于评估语言模型在开放式文本生成任务上的表现。它支持灵活的数据格式和可配置的评估指标。\n\n## 任务描述\n\n- **任务类型**：开放式问答（Open-Ended Question Answering）\n- **输入**：问题（可选系统提示和对话历史）\n- **输出**：自由格式的文本答案\n- **灵活性**：通过本地文件支持自定义数据集\n\n## 主要特性\n\n- 灵活的输入格式（query/answer 或 messages 格式）\n- 可选的系统提示支持\n- BLEU 和 Rouge 评估指标\n- 通过本地文件加载支持自定义数据集\n- 可扩展以适用于多种问答场景\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 默认指标：**BLEU**、**Rouge**（以 Rouge-L-R 为主评分）\n- 在 **test** 数据划分上进行评估\n- 数据集格式请参见 [用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa)\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `general_qa` |\n| **数据集ID** | `general_qa` |\n| **论文** | N/A |\n| **标签** | `Custom`, `QA` |\n| **指标** | `BLEU`, `Rouge` |\n| **默认示例数（Shots）** | 0-shot |\n| **评估数据划分** | `test` |\n\n\n## 数据统计\n\n*统计数据不可用。*\n\n## 样例示例\n\n*样例示例不可用。*\n\n## 提示模板\n\n**提示模板：**\n```text\n请回答问题\n{question}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets general_qa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['general_qa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "216e954a0f30578e550f0eecf78f9515",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T16:09:02.301568",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

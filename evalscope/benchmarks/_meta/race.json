@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "pretty_name": "RACE",
+    "dataset_id": "evalscope/race",
+    "paper_url": null,
+    "tags": [
+      "Reasoning",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 3,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "high",
+      "middle"
+    ],
+    "description": "\n## Overview\n\nRACE (ReAding Comprehension from Examinations) is a large-scale reading comprehension benchmark collected from Chinese middle school and high school English examinations. It tests comprehensive reading comprehension abilities.\n\n## Task Description\n\n- **Task Type**: Reading Comprehension (Multiple-Choice)\n- **Input**: Article passage with question and 4 answer choices\n- **Output**: Correct answer letter (A, B, C, or D)\n- **Difficulty Levels**: Middle school and High school\n\n## Key Features\n\n- 28,000+ passages with 100,000 questions\n- Real examination questions for authentic difficulty\n- Two subsets: middle (easier) and high (harder)\n- Tests various comprehension skills (inference, vocabulary, main idea, etc.)\n- Diverse article topics and question types\n\n## Evaluation Notes\n\n- Default configuration uses **3-shot** examples\n- Maximum few-shot number is 3 (context length consideration)\n- Uses Chain-of-Thought (CoT) prompting\n- Two subsets available: `high` and `middle`\n- Evaluates on test split\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 4934,
+    "subset_stats": [
+      {
+        "name": "high",
+        "sample_count": 3498,
+        "prompt_length_mean": 8279.47,
+        "prompt_length_min": 6585,
+        "prompt_length_max": 11131,
+        "prompt_length_std": 511.37,
+        "target_length_mean": 1
+      },
+      {
+        "name": "middle",
+        "sample_count": 1436,
+        "prompt_length_mean": 4630.07,
+        "prompt_length_min": 3685,
+        "prompt_length_max": 6032,
+        "prompt_length_std": 429.08,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 7217.34,
+      "min": 3685,
+      "max": 11131,
+      "std": 1728.44
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:16:26.004357"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "706382e9",
+          "content": "Here are some examples of how to answer similar questions:\n\nArticle:\nLast week I talked with some of my students about what they wanted to do after they graduated, and what kind of job prospects  they thought they had.\nGiven that I teach stud ... [TRUNCATED] ... I owe my life to her,\" said Nancy with tears.\nQuestion:\nWhat did Nancy try to do before she fell over?\n\nA) Measure the depth of the river\nB) Look for a fallen tree trunk\nC) Protect her cows from being drowned\nD) Run away from the flooded farm"
+        }
+      ],
+      "choices": [
+        "Measure the depth of the river",
+        "Look for a fallen tree trunk",
+        "Protect her cows from being drowned",
+        "Run away from the flooded farm"
+      ],
+      "target": "C",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "example_id": "high19432.txt"
+      }
+    },
+    "subset": "high",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# RACE\n\n\n## Overview\n\nRACE (ReAding Comprehension from Examinations) is a large-scale reading comprehension benchmark collected from Chinese middle school and high school English examinations. It tests comprehensive reading comprehension abilities.\n\n## Task Description\n\n- **Task Type**: Reading Comprehension (Multiple-Choice)\n- **Input**: Article passage with question and 4 answer choices\n- **Output**: Correct answer letter (A, B, C, or D)\n- **Difficulty Levels**: Middle school and High school\n\n## Key Features\n\n- 28,000+ passages with 100,000 questions\n- Real examination questions for authentic difficulty\n- Two subsets: middle (easier) and high (harder)\n- Tests various comprehension skills (inference, vocabulary, main idea, etc.)\n- Diverse article topics and question types\n\n## Evaluation Notes\n\n- Default configuration uses **3-shot** examples\n- Maximum few-shot number is 3 (context length consideration)\n- Uses Chain-of-Thought (CoT) prompting\n- Two subsets available: `high` and `middle`\n- Evaluates on test split\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `race` |\n| **Dataset ID** | [evalscope/race](https://modelscope.cn/datasets/evalscope/race/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 3-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 4,934 |\n| Prompt Length (Mean) | 7217.34 chars |\n| Prompt Length (Min/Max) | 3685 / 11131 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `high` | 3,498 | 8279.47 | 6585 | 11131 |\n| `middle` | 1,436 | 4630.07 | 3685 | 6032 |\n\n## Sample Example\n\n**Subset**: `high`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"706382e9\",\n      \"content\": \"Here are some examples of how to answer similar questions:\\n\\nArticle:\\nLast week I talked with some of my students about what they wanted to do after they graduated, and what kind of job prospects  they thought they had.\\nGiven that I teach stud ... [TRUNCATED] ... I owe my life to her,\\\" said Nancy with tears.\\nQuestion:\\nWhat did Nancy try to do before she fell over?\\n\\nA) Measure the depth of the river\\nB) Look for a fallen tree trunk\\nC) Protect her cows from being drowned\\nD) Run away from the flooded farm\"\n    }\n  ],\n  \"choices\": [\n    \"Measure the depth of the river\",\n    \"Look for a fallen tree trunk\",\n    \"Protect her cows from being drowned\",\n    \"Run away from the flooded farm\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"example_id\": \"high19432.txt\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets race \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['race'],\n    dataset_args={\n        'race': {\n            # subset_list: ['high', 'middle']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# RACE\n\n\n## 概述\n\nRACE（ReAding Comprehension from Examinations）是一个大规模阅读理解基准数据集，收集自中国初中和高中英语考试题目。该数据集用于测试综合阅读理解能力。\n\n## 任务描述\n\n- **任务类型**：阅读理解（多项选择题）\n- **输入**：文章段落、问题及4个选项\n- **输出**：正确答案字母（A、B、C 或 D）\n- **难度级别**：初中和高中\n\n## 主要特点\n\n- 包含28,000+篇文章和100,000道问题\n- 使用真实考试题目，确保难度的真实性\n- 包含两个子集：`middle`（较简单）和 `high`（较难）\n- 考察多种阅读理解技能（推理、词汇、主旨等）\n- 文章主题和题型丰富多样\n\n## 评估说明\n\n- 默认配置使用 **3-shot** 示例\n- 最大 few-shot 数量为3（受上下文长度限制）\n- 使用思维链（Chain-of-Thought, CoT）提示方法\n- 提供两个子集：`high` 和 `middle`\n- 在测试集（test split）上进行评估\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `race` |\n| **数据集ID** | [evalscope/race](https://modelscope.cn/datasets/evalscope/race/summary) |\n| **论文** | N/A |\n| **标签** | `MCQ`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 3-shot |\n| **评估划分** | `test` |\n| **训练划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 4,934 |\n| 提示词长度（平均） | 7217.34 字符 |\n| 提示词长度（最小/最大） | 3685 / 11131 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `high` | 3,498 | 8279.47 | 6585 | 11131 |\n| `middle` | 1,436 | 4630.07 | 3685 | 6032 |\n\n## 样例示例\n\n**子集**: `high`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"706382e9\",\n      \"content\": \"Here are some examples of how to answer similar questions:\\n\\nArticle:\\nLast week I talked with some of my students about what they wanted to do after they graduated, and what kind of job prospects  they thought they had.\\nGiven that I teach stud ... [TRUNCATED] ... I owe my life to her,\\\" said Nancy with tears.\\nQuestion:\\nWhat did Nancy try to do before she fell over?\\n\\nA) Measure the depth of the river\\nB) Look for a fallen tree trunk\\nC) Protect her cows from being drowned\\nD) Run away from the flooded farm\"\n    }\n  ],\n  \"choices\": [\n    \"Measure the depth of the river\",\n    \"Look for a fallen tree trunk\",\n    \"Protect her cows from being drowned\",\n    \"Run away from the flooded farm\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"example_id\": \"high19432.txt\"\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets race \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['race'],\n    dataset_args={\n        'race': {\n            # subset_list: ['high', 'middle']  # 可选，用于指定评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "9e7e752391a3434c8a5f8ce192a2093b",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:35.346430",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

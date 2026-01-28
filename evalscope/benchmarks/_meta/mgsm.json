@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "pretty_name": "MGSM",
+    "dataset_id": "evalscope/mgsm",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning",
+      "MultiLingual"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 4,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "en",
+      "es",
+      "fr",
+      "de",
+      "ru",
+      "zh",
+      "ja",
+      "th",
+      "sw",
+      "bn",
+      "te"
+    ],
+    "description": "\n## Overview\n\nMGSM (Multilingual Grade School Math) is a benchmark designed to evaluate multilingual mathematical reasoning capabilities of language models. It extends GSM8K to 11 typologically diverse languages, testing whether models can perform chain-of-thought reasoning across different languages.\n\n## Task Description\n\n- **Task Type**: Multilingual Mathematical Word Problem Solving\n- **Input**: Grade school math word problem in one of 11 languages\n- **Output**: Step-by-step reasoning with numerical answer\n- **Languages**: English, Spanish, French, German, Russian, Chinese, Japanese, Thai, Swahili, Bengali, Telugu\n\n## Key Features\n\n- 250 problems per language (translated from GSM8K)\n- 11 typologically diverse languages covering different language families\n- Tests multilingual chain-of-thought reasoning capabilities\n- Same problem content across languages for cross-lingual comparison\n- Designed to evaluate language-agnostic mathematical reasoning\n\n## Evaluation Notes\n\n- Default configuration uses **4-shot** examples\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Use `subset_list` to evaluate specific languages (e.g., `['en', 'zh', 'ja']`)\n- Cross-lingual performance comparison supported\n- Few-shot examples are drawn from the train split in the same language\n",
+    "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of how to solve similar problems:\n\n{fewshot}\n\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 2750,
+    "subset_stats": [
+      {
+        "name": "en",
+        "sample_count": 250,
+        "prompt_length_mean": 1790.71,
+        "prompt_length_min": 1637,
+        "prompt_length_max": 2165,
+        "prompt_length_std": 99.48,
+        "target_length_mean": 2.32
+      },
+      {
+        "name": "es",
+        "sample_count": 250,
+        "prompt_length_mean": 1940.02,
+        "prompt_length_min": 1773,
+        "prompt_length_max": 2371,
+        "prompt_length_std": 110.76,
+        "target_length_mean": 2.32
+      },
+      {
+        "name": "fr",
+        "sample_count": 250,
+        "prompt_length_mean": 2047,
+        "prompt_length_min": 1878,
+        "prompt_length_max": 2440,
+        "prompt_length_std": 108.43,
+        "target_length_mean": 2.32
+      },
+      {
+        "name": "de",
+        "sample_count": 250,
+        "prompt_length_mean": 1963.9,
+        "prompt_length_min": 1792,
+        "prompt_length_max": 2386,
+        "prompt_length_std": 114.61,
+        "target_length_mean": 2.32
+      },
+      {
+        "name": "ru",
+        "sample_count": 250,
+        "prompt_length_mean": 1831.66,
+        "prompt_length_min": 1667,
+        "prompt_length_max": 2214,
+        "prompt_length_std": 104.01,
+        "target_length_mean": 2.32
+      },
+      {
+        "name": "zh",
+        "sample_count": 250,
+        "prompt_length_mean": 842.16,
+        "prompt_length_min": 791,
+        "prompt_length_max": 946,
+        "prompt_length_std": 33.12,
+        "target_length_mean": 2.32
+      },
+      {
+        "name": "ja",
+        "sample_count": 250,
+        "prompt_length_mean": 1102.33,
+        "prompt_length_min": 1035,
+        "prompt_length_max": 1248,
+        "prompt_length_std": 44.16,
+        "target_length_mean": 2.32
+      },
+      {
+        "name": "th",
+        "sample_count": 250,
+        "prompt_length_mean": 1835.53,
+        "prompt_length_min": 1699,
+        "prompt_length_max": 2135,
+        "prompt_length_std": 85.72,
+        "target_length_mean": 2.32
+      },
+      {
+        "name": "sw",
+        "sample_count": 250,
+        "prompt_length_mean": 1953.48,
+        "prompt_length_min": 1780,
+        "prompt_length_max": 2354,
+        "prompt_length_std": 109.92,
+        "target_length_mean": 2.32
+      },
+      {
+        "name": "bn",
+        "sample_count": 250,
+        "prompt_length_mean": 1759.28,
+        "prompt_length_min": 1601,
+        "prompt_length_max": 2106,
+        "prompt_length_std": 100.1,
+        "target_length_mean": 2.32
+      },
+      {
+        "name": "te",
+        "sample_count": 250,
+        "prompt_length_mean": 2106.77,
+        "prompt_length_min": 1939,
+        "prompt_length_max": 2464,
+        "prompt_length_std": 106.62,
+        "target_length_mean": 2.32
+      }
+    ],
+    "prompt_length": {
+      "mean": 1742.98,
+      "min": 791,
+      "max": 2464,
+      "std": 393.07
+    },
+    "target_length_mean": 2.32,
+    "computed_at": "2026-01-28T11:15:00.327762"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "d67cb3cf",
+          "content": "Here are some examples of how to solve similar problems:\n\nQuestion: Roger has 5 tennis balls. He buys 2 more cans of tennis balls. Each can has 3 tennis balls. How many tennis balls does he have now?\n\nReasoning:\nStep-by-Step Answer: Roger sta ... [TRUNCATED] ...  every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\nPlease reason step by step, and put your final answer within \\boxed{}.\n\n"
+        }
+      ],
+      "target": "18",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "reasoning": null,
+        "equation_solution": null
+      }
+    },
+    "subset": "en",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# MGSM\n\n\n## Overview\n\nMGSM (Multilingual Grade School Math) is a benchmark designed to evaluate multilingual mathematical reasoning capabilities of language models. It extends GSM8K to 11 typologically diverse languages, testing whether models can perform chain-of-thought reasoning across different languages.\n\n## Task Description\n\n- **Task Type**: Multilingual Mathematical Word Problem Solving\n- **Input**: Grade school math word problem in one of 11 languages\n- **Output**: Step-by-step reasoning with numerical answer\n- **Languages**: English, Spanish, French, German, Russian, Chinese, Japanese, Thai, Swahili, Bengali, Telugu\n\n## Key Features\n\n- 250 problems per language (translated from GSM8K)\n- 11 typologically diverse languages covering different language families\n- Tests multilingual chain-of-thought reasoning capabilities\n- Same problem content across languages for cross-lingual comparison\n- Designed to evaluate language-agnostic mathematical reasoning\n\n## Evaluation Notes\n\n- Default configuration uses **4-shot** examples\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Use `subset_list` to evaluate specific languages (e.g., `['en', 'zh', 'ja']`)\n- Cross-lingual performance comparison supported\n- Few-shot examples are drawn from the train split in the same language\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `mgsm` |\n| **Dataset ID** | [evalscope/mgsm](https://modelscope.cn/datasets/evalscope/mgsm/summary) |\n| **Paper** | N/A |\n| **Tags** | `Math`, `MultiLingual`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 4-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 2,750 |\n| Prompt Length (Mean) | 1742.98 chars |\n| Prompt Length (Min/Max) | 791 / 2464 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `en` | 250 | 1790.71 | 1637 | 2165 |\n| `es` | 250 | 1940.02 | 1773 | 2371 |\n| `fr` | 250 | 2047 | 1878 | 2440 |\n| `de` | 250 | 1963.9 | 1792 | 2386 |\n| `ru` | 250 | 1831.66 | 1667 | 2214 |\n| `zh` | 250 | 842.16 | 791 | 946 |\n| `ja` | 250 | 1102.33 | 1035 | 1248 |\n| `th` | 250 | 1835.53 | 1699 | 2135 |\n| `sw` | 250 | 1953.48 | 1780 | 2354 |\n| `bn` | 250 | 1759.28 | 1601 | 2106 |\n| `te` | 250 | 2106.77 | 1939 | 2464 |\n\n## Sample Example\n\n**Subset**: `en`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d67cb3cf\",\n      \"content\": \"Here are some examples of how to solve similar problems:\\n\\nQuestion: Roger has 5 tennis balls. He buys 2 more cans of tennis balls. Each can has 3 tennis balls. How many tennis balls does he have now?\\n\\nReasoning:\\nStep-by-Step Answer: Roger sta ... [TRUNCATED] ...  every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\\n\\n\"\n    }\n  ],\n  \"target\": \"18\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"reasoning\": null,\n    \"equation_solution\": null\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of how to solve similar problems:\n\n{fewshot}\n\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mgsm \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mgsm'],\n    dataset_args={\n        'mgsm': {\n            # subset_list: ['en', 'es', 'fr']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MGSM\n\n## 概述\n\nMGSM（Multilingual Grade School Math，多语言小学数学）是一个用于评估语言模型多语言数学推理能力的基准测试。它将 GSM8K 扩展至 11 种类型学上多样化的语言，以检验模型是否能在不同语言中执行思维链（chain-of-thought）推理。\n\n## 任务描述\n\n- **任务类型**：多语言数学应用题求解  \n- **输入**：11 种语言之一的小学数学应用题  \n- **输出**：包含逐步推理过程和数值答案的解答  \n- **语言**：英语、西班牙语、法语、德语、俄语、中文、日语、泰语、斯瓦希里语、孟加拉语、泰卢固语  \n\n## 主要特点\n\n- 每种语言包含 250 道题目（从 GSM8K 翻译而来）  \n- 覆盖 11 种类型学上多样化的语言，涵盖不同语系  \n- 测试模型的多语言思维链推理能力  \n- 各语言使用相同的问题内容，便于跨语言比较  \n- 旨在评估与语言无关的数学推理能力  \n\n## 评估说明\n\n- 默认配置使用 **4-shot** 示例  \n- 答案应使用 `\\boxed{}` 格式包裹，以便正确提取  \n- 可通过 `subset_list` 参数指定评估特定语言（例如 `['en', 'zh', 'ja']`）  \n- 支持跨语言性能比较  \n- 少样本（few-shot）示例从同语言的训练集（train split）中抽取  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `mgsm` |\n| **数据集ID** | [evalscope/mgsm](https://modelscope.cn/datasets/evalscope/mgsm/summary) |\n| **论文** | N/A |\n| **标签** | `Math`, `MultiLingual`, `Reasoning` |\n| **指标** | `acc` |\n| **默认少样本数量** | 4-shot |\n| **评估集** | `test` |\n| **训练集** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 2,750 |\n| 提示词长度（平均） | 1742.98 字符 |\n| 提示词长度（最小/最大） | 791 / 2464 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `en` | 250 | 1790.71 | 1637 | 2165 |\n| `es` | 250 | 1940.02 | 1773 | 2371 |\n| `fr` | 250 | 2047 | 1878 | 2440 |\n| `de` | 250 | 1963.9 | 1792 | 2386 |\n| `ru` | 250 | 1831.66 | 1667 | 2214 |\n| `zh` | 250 | 842.16 | 791 | 946 |\n| `ja` | 250 | 1102.33 | 1035 | 1248 |\n| `th` | 250 | 1835.53 | 1699 | 2135 |\n| `sw` | 250 | 1953.48 | 1780 | 2354 |\n| `bn` | 250 | 1759.28 | 1601 | 2106 |\n| `te` | 250 | 2106.77 | 1939 | 2464 |\n\n## 样例示例\n\n**子集**: `en`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d67cb3cf\",\n      \"content\": \"Here are some examples of how to solve similar problems:\\n\\nQuestion: Roger has 5 tennis balls. He buys 2 more cans of tennis balls. Each can has 3 tennis balls. How many tennis balls does he have now?\\n\\nReasoning:\\nStep-by-Step Answer: Roger sta ... [TRUNCATED] ...  every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\\n\\n\"\n    }\n  ],\n  \"target\": \"18\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"reasoning\": null,\n    \"equation_solution\": null\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{}.\n\n\n```\n\n<details>\n<summary>少样本模板</summary>\n\n```text\nHere are some examples of how to solve similar problems:\n\n{fewshot}\n\n{question}\nPlease reason step by step, and put your final answer within \\boxed{}.\n\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mgsm \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mgsm'],\n    dataset_args={\n        'mgsm': {\n            # subset_list: ['en', 'es', 'fr']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "0a88d7677d909ab458aae7a173a3d84e",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.946030",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

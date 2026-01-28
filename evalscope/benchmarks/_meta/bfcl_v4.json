@@ -1,0 +1,334 @@
+{
+  "meta": {
+    "pretty_name": "BFCL-v4",
+    "dataset_id": "https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard",
+    "paper_url": null,
+    "tags": [
+      "FunctionCalling",
+      "Agent"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "simple_python",
+      "simple_java",
+      "simple_javascript",
+      "multiple",
+      "parallel",
+      "parallel_multiple",
+      "irrelevance",
+      "live_simple",
+      "live_multiple",
+      "live_parallel",
+      "live_parallel_multiple",
+      "live_irrelevance",
+      "live_relevance",
+      "multi_turn_base",
+      "multi_turn_miss_func",
+      "multi_turn_miss_param",
+      "multi_turn_long_context",
+      "memory_kv",
+      "memory_vector",
+      "memory_rec_sum",
+      "web_search_base",
+      "web_search_no_snippet"
+    ],
+    "description": "\n## Overview\n\nBFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark for evaluating agentic function-calling capabilities of LLMs. It tests web search, memory operations, and format sensitivity as building blocks for agentic applications.\n\n## Task Description\n\n- **Task Type**: Agentic Function Calling Evaluation\n- **Input**: Scenarios requiring function calls for web search, memory, etc.\n- **Output**: Correct function calls with proper arguments\n- **Capabilities**: Web search, memory read/write, format handling\n\n## Key Features\n\n- Holistic agentic evaluation framework\n- Tests building blocks for LLM agents (search, memory, formatting)\n- Multiple scoring categories for detailed analysis\n- Supports both FC models and non-FC models\n- Optional web search with SerpAPI integration\n\n## Evaluation Notes\n\n- **Installation Required**: `pip install bfcl-eval==2025.10.27.1`\n- Primary metric: **Accuracy** per category\n- Configure `is_fc_model` based on model capabilities\n- Optional: Set `SERPAPI_API_KEY` for web search tasks\n- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v4.html)\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "underscore_to_dot": {
+        "type": "bool",
+        "description": "Convert underscores to dots in function names for evaluation.",
+        "value": true
+      },
+      "is_fc_model": {
+        "type": "bool",
+        "description": "Indicates the evaluated model natively supports function calling.",
+        "value": true
+      },
+      "SERPAPI_API_KEY": {
+        "type": "str | null",
+        "description": "SerpAPI key enabling web-search capability in BFCL V4. Null disables web search.",
+        "value": null
+      }
+    },
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 5106,
+    "subset_stats": [
+      {
+        "name": "irrelevance",
+        "sample_count": 240,
+        "prompt_length_mean": 85.98,
+        "prompt_length_min": 55,
+        "prompt_length_max": 203,
+        "prompt_length_std": 20.3,
+        "target_length_mean": 2
+      },
+      {
+        "name": "live_irrelevance",
+        "sample_count": 884,
+        "prompt_length_mean": 198.72,
+        "prompt_length_min": 36,
+        "prompt_length_max": 10805,
+        "prompt_length_std": 756.02,
+        "target_length_mean": 2
+      },
+      {
+        "name": "live_multiple",
+        "sample_count": 1053,
+        "prompt_length_mean": 149.16,
+        "prompt_length_min": 42,
+        "prompt_length_max": 4828,
+        "prompt_length_std": 184.87,
+        "target_length_mean": 137.74
+      },
+      {
+        "name": "live_parallel",
+        "sample_count": 16,
+        "prompt_length_mean": 163.88,
+        "prompt_length_min": 88,
+        "prompt_length_max": 365,
+        "prompt_length_std": 91.2,
+        "target_length_mean": 262.44
+      },
+      {
+        "name": "live_parallel_multiple",
+        "sample_count": 24,
+        "prompt_length_mean": 217.67,
+        "prompt_length_min": 72,
+        "prompt_length_max": 650,
+        "prompt_length_std": 147.03,
+        "target_length_mean": 251.08
+      },
+      {
+        "name": "live_relevance",
+        "sample_count": 16,
+        "prompt_length_mean": 385.94,
+        "prompt_length_min": 71,
+        "prompt_length_max": 1830,
+        "prompt_length_std": 516.47,
+        "target_length_mean": 2
+      },
+      {
+        "name": "live_simple",
+        "sample_count": 258,
+        "prompt_length_mean": 171.91,
+        "prompt_length_min": 47,
+        "prompt_length_max": 1247,
+        "prompt_length_std": 144.47,
+        "target_length_mean": 133.18
+      },
+      {
+        "name": "memory_kv",
+        "sample_count": 155,
+        "prompt_length_mean": 646.46,
+        "prompt_length_min": 585,
+        "prompt_length_max": 826,
+        "prompt_length_std": 36.4,
+        "target_length_mean": 16.46
+      },
+      {
+        "name": "memory_rec_sum",
+        "sample_count": 155,
+        "prompt_length_mean": 646.46,
+        "prompt_length_min": 585,
+        "prompt_length_max": 826,
+        "prompt_length_std": 36.4,
+        "target_length_mean": 16.46
+      },
+      {
+        "name": "memory_vector",
+        "sample_count": 155,
+        "prompt_length_mean": 646.46,
+        "prompt_length_min": 585,
+        "prompt_length_max": 826,
+        "prompt_length_std": 36.4,
+        "target_length_mean": 16.46
+      },
+      {
+        "name": "multi_turn_base",
+        "sample_count": 200,
+        "prompt_length_mean": 808.43,
+        "prompt_length_min": 106,
+        "prompt_length_max": 1756,
+        "prompt_length_std": 336.87,
+        "target_length_mean": 351.33
+      },
+      {
+        "name": "multi_turn_long_context",
+        "sample_count": 200,
+        "prompt_length_mean": 808.41,
+        "prompt_length_min": 106,
+        "prompt_length_max": 1756,
+        "prompt_length_std": 336.8,
+        "target_length_mean": 520.68
+      },
+      {
+        "name": "multi_turn_miss_func",
+        "sample_count": 200,
+        "prompt_length_mean": 811.88,
+        "prompt_length_min": 110,
+        "prompt_length_max": 1760,
+        "prompt_length_std": 337.49,
+        "target_length_mean": 354.44
+      },
+      {
+        "name": "multi_turn_miss_param",
+        "sample_count": 200,
+        "prompt_length_mean": 863.88,
+        "prompt_length_min": 167,
+        "prompt_length_max": 1791,
+        "prompt_length_std": 334.24,
+        "target_length_mean": 354.46
+      },
+      {
+        "name": "multiple",
+        "sample_count": 200,
+        "prompt_length_mean": 120.75,
+        "prompt_length_min": 65,
+        "prompt_length_max": 229,
+        "prompt_length_std": 30.49,
+        "target_length_mean": 120.83
+      },
+      {
+        "name": "parallel",
+        "sample_count": 200,
+        "prompt_length_mean": 297.93,
+        "prompt_length_min": 69,
+        "prompt_length_max": 781,
+        "prompt_length_std": 149.59,
+        "target_length_mean": 289.58
+      },
+      {
+        "name": "parallel_multiple",
+        "sample_count": 200,
+        "prompt_length_mean": 432.17,
+        "prompt_length_min": 88,
+        "prompt_length_max": 1249,
+        "prompt_length_std": 228.08,
+        "target_length_mean": 323.56
+      },
+      {
+        "name": "simple_java",
+        "sample_count": 100,
+        "prompt_length_mean": 228.93,
+        "prompt_length_min": 138,
+        "prompt_length_max": 531,
+        "prompt_length_std": 55.07,
+        "target_length_mean": 121.18
+      },
+      {
+        "name": "simple_javascript",
+        "sample_count": 50,
+        "prompt_length_mean": 222.34,
+        "prompt_length_min": 118,
+        "prompt_length_max": 637,
+        "prompt_length_std": 79.58,
+        "target_length_mean": 108.8
+      },
+      {
+        "name": "simple_python",
+        "sample_count": 400,
+        "prompt_length_mean": 119.66,
+        "prompt_length_min": 57,
+        "prompt_length_max": 303,
+        "prompt_length_std": 31.5,
+        "target_length_mean": 113.3
+      },
+      {
+        "name": "web_search_base",
+        "sample_count": 100,
+        "prompt_length_mean": 831.01,
+        "prompt_length_min": 748,
+        "prompt_length_max": 963,
+        "prompt_length_std": 45.8,
+        "target_length_mean": 20.95
+      },
+      {
+        "name": "web_search_no_snippet",
+        "sample_count": 100,
+        "prompt_length_mean": 831.01,
+        "prompt_length_min": 748,
+        "prompt_length_max": 963,
+        "prompt_length_std": 45.8,
+        "target_length_mean": 20.95
+      }
+    ],
+    "prompt_length": {
+      "mean": 350.4,
+      "min": 36,
+      "max": 10805,
+      "std": 453.31
+    },
+    "target_length_mean": 142.89,
+    "computed_at": "2026-01-28T14:29:39.212815"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "4e05e910",
+          "content": "[[{\"role\": \"user\", \"content\": \"Calculate the area of a triangle given the base is 10 meters and height is 5 meters.\"}]]"
+        }
+      ],
+      "target": "{}",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "id": "irrelevance_0",
+        "question": [
+          [
+            {
+              "role": "user",
+              "content": "Calculate the area of a triangle given the base is 10 meters and height is 5 meters."
+            }
+          ]
+        ],
+        "function": [
+          {
+            "name": "determine_body_mass_index",
+            "description": "Calculate body mass index given weight and height.",
+            "parameters": {
+              "type": "dict",
+              "properties": {
+                "weight": {
+                  "type": "float",
+                  "description": "Weight of the individual in kilograms."
+                },
+                "height": {
+                  "type": "float",
+                  "description": "Height of the individual in meters."
+                }
+              },
+              "required": [
+                "weight",
+                "height"
+              ]
+            }
+          }
+        ],
+        "category": "irrelevance",
+        "ground_truth": {}
+      }
+    },
+    "subset": "irrelevance",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# BFCL-v4\n\n\n## Overview\n\nBFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark for evaluating agentic function-calling capabilities of LLMs. It tests web search, memory operations, and format sensitivity as building blocks for agentic applications.\n\n## Task Description\n\n- **Task Type**: Agentic Function Calling Evaluation\n- **Input**: Scenarios requiring function calls for web search, memory, etc.\n- **Output**: Correct function calls with proper arguments\n- **Capabilities**: Web search, memory read/write, format handling\n\n## Key Features\n\n- Holistic agentic evaluation framework\n- Tests building blocks for LLM agents (search, memory, formatting)\n- Multiple scoring categories for detailed analysis\n- Supports both FC models and non-FC models\n- Optional web search with SerpAPI integration\n\n## Evaluation Notes\n\n- **Installation Required**: `pip install bfcl-eval==2025.10.27.1`\n- Primary metric: **Accuracy** per category\n- Configure `is_fc_model` based on model capabilities\n- Optional: Set `SERPAPI_API_KEY` for web search tasks\n- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v4.html)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `bfcl_v4` |\n| **Dataset ID** | [berkeley-function-call-leaderboard](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard) |\n| **Paper** | N/A |\n| **Tags** | `Agent`, `FunctionCalling` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 5,106 |\n| Prompt Length (Mean) | 350.4 chars |\n| Prompt Length (Min/Max) | 36 / 10805 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `irrelevance` | 240 | 85.98 | 55 | 203 |\n| `live_irrelevance` | 884 | 198.72 | 36 | 10805 |\n| `live_multiple` | 1,053 | 149.16 | 42 | 4828 |\n| `live_parallel` | 16 | 163.88 | 88 | 365 |\n| `live_parallel_multiple` | 24 | 217.67 | 72 | 650 |\n| `live_relevance` | 16 | 385.94 | 71 | 1830 |\n| `live_simple` | 258 | 171.91 | 47 | 1247 |\n| `memory_kv` | 155 | 646.46 | 585 | 826 |\n| `memory_rec_sum` | 155 | 646.46 | 585 | 826 |\n| `memory_vector` | 155 | 646.46 | 585 | 826 |\n| `multi_turn_base` | 200 | 808.43 | 106 | 1756 |\n| `multi_turn_long_context` | 200 | 808.41 | 106 | 1756 |\n| `multi_turn_miss_func` | 200 | 811.88 | 110 | 1760 |\n| `multi_turn_miss_param` | 200 | 863.88 | 167 | 1791 |\n| `multiple` | 200 | 120.75 | 65 | 229 |\n| `parallel` | 200 | 297.93 | 69 | 781 |\n| `parallel_multiple` | 200 | 432.17 | 88 | 1249 |\n| `simple_java` | 100 | 228.93 | 138 | 531 |\n| `simple_javascript` | 50 | 222.34 | 118 | 637 |\n| `simple_python` | 400 | 119.66 | 57 | 303 |\n| `web_search_base` | 100 | 831.01 | 748 | 963 |\n| `web_search_no_snippet` | 100 | 831.01 | 748 | 963 |\n\n## Sample Example\n\n**Subset**: `irrelevance`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"4e05e910\",\n      \"content\": \"[[{\\\"role\\\": \\\"user\\\", \\\"content\\\": \\\"Calculate the area of a triangle given the base is 10 meters and height is 5 meters.\\\"}]]\"\n    }\n  ],\n  \"target\": \"{}\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"irrelevance_0\",\n    \"question\": [\n      [\n        {\n          \"role\": \"user\",\n          \"content\": \"Calculate the area of a triangle given the base is 10 meters and height is 5 meters.\"\n        }\n      ]\n    ],\n    \"function\": [\n      {\n        \"name\": \"determine_body_mass_index\",\n        \"description\": \"Calculate body mass index given weight and height.\",\n        \"parameters\": {\n          \"type\": \"dict\",\n          \"properties\": {\n            \"weight\": {\n              \"type\": \"float\",\n              \"description\": \"Weight of the individual in kilograms.\"\n            },\n            \"height\": {\n              \"type\": \"float\",\n              \"description\": \"Height of the individual in meters.\"\n            }\n          },\n          \"required\": [\n            \"weight\",\n            \"height\"\n          ]\n        }\n      }\n    ],\n    \"category\": \"irrelevance\",\n    \"ground_truth\": {}\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `underscore_to_dot` | `bool` | `True` | Convert underscores to dots in function names for evaluation. |\n| `is_fc_model` | `bool` | `True` | Indicates the evaluated model natively supports function calling. |\n| `SERPAPI_API_KEY` | `str | null` | `None` | SerpAPI key enabling web-search capability in BFCL V4. Null disables web search. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bfcl_v4 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bfcl_v4'],\n    dataset_args={\n        'bfcl_v4': {\n            # subset_list: ['irrelevance', 'live_irrelevance', 'live_multiple']  # optional, evaluate specific subsets\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# BFCL-v4\n\n\n## 概述\n\nBFCL-v4（Berkeley Function-Calling Leaderboard V4）是一个全面的基准测试，用于评估大语言模型（LLM）在智能体场景下的函数调用能力。它通过测试网络搜索、内存操作和格式敏感性等核心模块，为构建智能体应用提供基础能力评估。\n\n## 任务描述\n\n- **任务类型**：智能体函数调用评估\n- **输入**：需要调用函数完成网络搜索、内存操作等任务的场景\n- **输出**：带有正确参数的函数调用\n- **能力范围**：网络搜索、内存读写、格式处理\n\n## 核心特性\n\n- 全面的智能体评估框架\n- 测试 LLM 智能体的核心构建模块（搜索、内存、格式化）\n- 多维度评分类别，支持细粒度分析\n- 同时支持原生函数调用（FC）模型和非 FC 模型\n- 可选集成 SerpAPI 实现网络搜索功能\n\n## 评估说明\n\n- **安装要求**：`pip install bfcl-eval==2025.10.27.1`\n- 主要指标：各类别下的 **准确率（Accuracy）**\n- 根据模型能力设置 `is_fc_model` 参数\n- 可选：配置 `SERPAPI_API_KEY` 以启用网络搜索任务\n- [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v4.html)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `bfcl_v4` |\n| **数据集ID** | [berkeley-function-call-leaderboard](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard) |\n| **论文** | N/A |\n| **标签** | `Agent`, `FunctionCalling` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 5,106 |\n| 提示词长度（平均） | 350.4 字符 |\n| 提示词长度（最小/最大） | 36 / 10805 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `irrelevance` | 240 | 85.98 | 55 | 203 |\n| `live_irrelevance` | 884 | 198.72 | 36 | 10805 |\n| `live_multiple` | 1,053 | 149.16 | 42 | 4828 |\n| `live_parallel` | 16 | 163.88 | 88 | 365 |\n| `live_parallel_multiple` | 24 | 217.67 | 72 | 650 |\n| `live_relevance` | 16 | 385.94 | 71 | 1830 |\n| `live_simple` | 258 | 171.91 | 47 | 1247 |\n| `memory_kv` | 155 | 646.46 | 585 | 826 |\n| `memory_rec_sum` | 155 | 646.46 | 585 | 826 |\n| `memory_vector` | 155 | 646.46 | 585 | 826 |\n| `multi_turn_base` | 200 | 808.43 | 106 | 1756 |\n| `multi_turn_long_context` | 200 | 808.41 | 106 | 1756 |\n| `multi_turn_miss_func` | 200 | 811.88 | 110 | 1760 |\n| `multi_turn_miss_param` | 200 | 863.88 | 167 | 1791 |\n| `multiple` | 200 | 120.75 | 65 | 229 |\n| `parallel` | 200 | 297.93 | 69 | 781 |\n| `parallel_multiple` | 200 | 432.17 | 88 | 1249 |\n| `simple_java` | 100 | 228.93 | 138 | 531 |\n| `simple_javascript` | 50 | 222.34 | 118 | 637 |\n| `simple_python` | 400 | 119.66 | 57 | 303 |\n| `web_search_base` | 100 | 831.01 | 748 | 963 |\n| `web_search_no_snippet` | 100 | 831.01 | 748 | 963 |\n\n## 样例示例\n\n**子集**：`irrelevance`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"4e05e910\",\n      \"content\": \"[[{\\\"role\\\": \\\"user\\\", \\\"content\\\": \\\"Calculate the area of a triangle given the base is 10 meters and height is 5 meters.\\\"}]]\"\n    }\n  ],\n  \"target\": \"{}\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"irrelevance_0\",\n    \"question\": [\n      [\n        {\n          \"role\": \"user\",\n          \"content\": \"Calculate the area of a triangle given the base is 10 meters and height is 5 meters.\"\n        }\n      ]\n    ],\n    \"function\": [\n      {\n        \"name\": \"determine_body_mass_index\",\n        \"description\": \"Calculate body mass index given weight and height.\",\n        \"parameters\": {\n          \"type\": \"dict\",\n          \"properties\": {\n            \"weight\": {\n              \"type\": \"float\",\n              \"description\": \"Weight of the individual in kilograms.\"\n            },\n            \"height\": {\n              \"type\": \"float\",\n              \"description\": \"Height of the individual in meters.\"\n            }\n          },\n          \"required\": [\n            \"weight\",\n            \"height\"\n          ]\n        }\n      }\n    ],\n    \"category\": \"irrelevance\",\n    \"ground_truth\": {}\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `underscore_to_dot` | `bool` | `True` | 在评估时将函数名中的下划线转换为点号。 |\n| `is_fc_model` | `bool` | `True` | 指示被评估模型是否原生支持函数调用。 |\n| `SERPAPI_API_KEY` | `str | null` | `None` | 启用 BFCL V4 中网络搜索功能的 SerpAPI 密钥。设为 null 则禁用网络搜索。 |\n\n## 使用方法\n\n### 通过 CLI 使用\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bfcl_v4 \\\n    --limit 10  # 正式评估时请移除此行\n```\n\n### 通过 Python 使用\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bfcl_v4'],\n    dataset_args={\n        'bfcl_v4': {\n            # subset_list: ['irrelevance', 'live_irrelevance', 'live_multiple']  # 可选，仅评估指定子集\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请移除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "9b2116fc4db17717bd1116b2d69eaf54",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:44.639487",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

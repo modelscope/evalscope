@@ -1,0 +1,79 @@
+{
+  "meta": {
+    "pretty_name": "Med-MCQA",
+    "dataset_id": "extraordinarylab/medmcqa",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nMedMCQA is a large-scale multiple-choice question answering dataset designed to address real-world medical entrance exam questions. It contains over 194K questions covering diverse medical topics from Indian medical entrance examinations (AIIMS, NEET-PG).\n\n## Task Description\n\n- **Task Type**: Medical Knowledge Multiple-Choice QA\n- **Input**: Medical question with 4 answer choices\n- **Output**: Correct answer letter\n- **Domain**: Clinical medicine, basic sciences, healthcare\n\n## Key Features\n\n- Over 194,000 medical exam questions\n- Real questions from AIIMS and NEET-PG exams\n- 21 medical subjects covered (anatomy, pharmacology, pathology, etc.)\n- Expert-verified correct answers with explanations\n- Tests medical knowledge comprehension and clinical reasoning\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on validation split\n- Simple accuracy metric\n- Train split available for few-shot learning",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {}
+  },
+  "statistics": {
+    "total_samples": 4183,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 4183,
+        "prompt_length_mean": 374.31,
+        "prompt_length_min": 232,
+        "prompt_length_max": 1004,
+        "prompt_length_std": 88.86,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 374.31,
+      "min": 232,
+      "max": 1004,
+      "std": 88.86
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:14:33.407600"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "9bf68985",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nWhich of the following is not true for myelinated ner ... [TRUNCATED] ... ugh myelinated fibers is slower than non-myelinated fibers\nB) Membrane currents are generated at nodes of Ranvier\nC) Saltatory conduction of impulses is seen\nD) Local anesthesia is effective only when the nerve is not covered by myelin sheath"
+        }
+      ],
+      "choices": [
+        "Impulse through myelinated fibers is slower than non-myelinated fibers",
+        "Membrane currents are generated at nodes of Ranvier",
+        "Saltatory conduction of impulses is seen",
+        "Local anesthesia is effective only when the nerve is not covered by myelin sheath"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {}
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# Med-MCQA\n\n## Overview\n\nMedMCQA is a large-scale multiple-choice question answering dataset designed to address real-world medical entrance exam questions. It contains over 194K questions covering diverse medical topics from Indian medical entrance examinations (AIIMS, NEET-PG).\n\n## Task Description\n\n- **Task Type**: Medical Knowledge Multiple-Choice QA\n- **Input**: Medical question with 4 answer choices\n- **Output**: Correct answer letter\n- **Domain**: Clinical medicine, basic sciences, healthcare\n\n## Key Features\n\n- Over 194,000 medical exam questions\n- Real questions from AIIMS and NEET-PG exams\n- 21 medical subjects covered (anatomy, pharmacology, pathology, etc.)\n- Expert-verified correct answers with explanations\n- Tests medical knowledge comprehension and clinical reasoning\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on validation split\n- Simple accuracy metric\n- Train split available for few-shot learning\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `med_mcqa` |\n| **Dataset ID** | [extraordinarylab/medmcqa](https://modelscope.cn/datasets/extraordinarylab/medmcqa/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 4,183 |\n| Prompt Length (Mean) | 374.31 chars |\n| Prompt Length (Min/Max) | 232 / 1004 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"9bf68985\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nWhich of the following is not true for myelinated ner ... [TRUNCATED] ... ugh myelinated fibers is slower than non-myelinated fibers\\nB) Membrane currents are generated at nodes of Ranvier\\nC) Saltatory conduction of impulses is seen\\nD) Local anesthesia is effective only when the nerve is not covered by myelin sheath\"\n    }\n  ],\n  \"choices\": [\n    \"Impulse through myelinated fibers is slower than non-myelinated fibers\",\n    \"Membrane currents are generated at nodes of Ranvier\",\n    \"Saltatory conduction of impulses is seen\",\n    \"Local anesthesia is effective only when the nerve is not covered by myelin sheath\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets med_mcqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['med_mcqa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Med-MCQA\n\n## 概述\n\nMedMCQA 是一个大规模的多项选择题问答数据集，旨在解决真实世界中的医学入学考试题目。该数据集包含超过 19.4 万道题目，涵盖印度医学入学考试（AIIMS、NEET-PG）中的各类医学主题。\n\n## 任务描述\n\n- **任务类型**：医学知识多项选择题问答（MCQA）\n- **输入**：一道包含 4 个选项的医学问题\n- **输出**：正确答案对应的字母\n- **领域**：临床医学、基础科学、医疗保健\n\n## 主要特点\n\n- 超过 194,000 道医学考试题目\n- 来自 AIIMS 和 NEET-PG 考试的真实题目\n- 覆盖 21 个医学科目（解剖学、药理学、病理学等）\n- 专家验证的正确答案及解析\n- 考察医学知识理解与临床推理能力\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 在验证集（validation split）上进行评估\n- 使用简单准确率（accuracy）作为评估指标\n- 提供训练集（train split），可用于少样本（few-shot）学习\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `med_mcqa` |\n| **数据集 ID** | [extraordinarylab/medmcqa](https://modelscope.cn/datasets/extraordinarylab/medmcqa/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ` |\n| **指标** | `acc` |\n| **默认样本数** | 0-shot |\n| **评估集** | `validation` |\n| **训练集** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 4,183 |\n| 提示词长度（平均） | 374.31 字符 |\n| 提示词长度（最小/最大） | 232 / 1004 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"9bf68985\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nWhich of the following is not true for myelinated ner ... [TRUNCATED] ... ugh myelinated fibers is slower than non-myelinated fibers\\nB) Membrane currents are generated at nodes of Ranvier\\nC) Saltatory conduction of impulses is seen\\nD) Local anesthesia is effective only when the nerve is not covered by myelin sheath\"\n    }\n  ],\n  \"choices\": [\n    \"Impulse through myelinated fibers is slower than non-myelinated fibers\",\n    \"Membrane currents are generated at nodes of Ranvier\",\n    \"Saltatory conduction of impulses is seen\",\n    \"Local anesthesia is effective only when the nerve is not covered by myelin sheath\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets med_mcqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['med_mcqa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "63ea8cd0842962cf42163f70809f1625",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T14:29:34.945316",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}
