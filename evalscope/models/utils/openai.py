@@ -55,7 +55,7 @@ from evalscope.api.model import (
     as_stop_reason,
 )
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, parse_tool_call
-from evalscope.utils.url_utils import file_as_data_uri, is_http_url
+from evalscope.utils.url_utils import data_uri_to_base64, file_as_data_uri, is_http_url
 
 BASE_64_DATA_REMOVED = '<base64-data-removed>'
 
@@ -103,10 +103,11 @@ def openai_chat_completion_part(content: Content) -> ChatCompletionContentPartPa
             image_url=dict(url=image_url, detail=detail),
         )
     elif content.type == 'audio':
-        audio_data_uri = file_as_data_uri(content.audio)
 
+        # remove prefix
+        audio_uri = data_uri_to_base64(file_as_data_uri(content.audio))
         return ChatCompletionContentPartInputAudioParam(
-            type='input_audio', input_audio=dict(data=audio_data_uri, format=content.format)
+            type='input_audio', input_audio=dict(data=audio_uri, format=content.format)
         )
 
     else:
