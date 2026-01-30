@@ -1,0 +1,202 @@
+{
+  "meta": {
+    "pretty_name": "OmniBench",
+    "dataset_id": "m-a-p/OmniBench",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Knowledge",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nOmniBench is a pioneering universal multimodal benchmark designed to rigorously evaluate MLLMs' capability to recognize, interpret, and reason across visual, acoustic, and textual inputs simultaneously.\n\n## Task Description\n\n- **Task Type**: Universal Multimodal Understanding (Image + Audio + Text)\n- **Input**: Image, audio, and text question with choices\n- **Output**: Correct answer choice\n- **Modalities**: Visual, acoustic, and textual\n\n## Key Features\n\n- Tri-modal evaluation (image, audio, text)\n- Tests cross-modal reasoning abilities\n- Multiple-choice format\n- Configurable modality usage\n- Chain-of-thought prompting\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Simple accuracy metric\n- Extra params: use_image (bool), use_audio (bool)\n- Supports textual alternatives for image/audio\n",
+    "prompt_template": "Answer the following multiple choice question based on the image and audio content. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "use_image": {
+        "type": "bool",
+        "description": "Whether to provide the raw image. False uses textual alternative.",
+        "value": true
+      },
+      "use_audio": {
+        "type": "bool",
+        "description": "Whether to provide the raw audio. False uses textual alternative.",
+        "value": true
+      }
+    },
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 1142,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1142,
+        "prompt_length_mean": 477.61,
+        "prompt_length_min": 310,
+        "prompt_length_max": 1280,
+        "prompt_length_std": 131.65,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": true,
+          "has_video": false,
+          "image": {
+            "count_total": 1142,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x422",
+              "1001x477",
+              "1002x424",
+              "1003x643",
+              "1004x548",
+              "1004x582",
+              "1004x642",
+              "1004x691",
+              "1004x918",
+              "1005x697"
+            ],
+            "resolution_range": {
+              "min": "361x203",
+              "max": "5184x3456"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          },
+          "audio": {
+            "count_total": 1142,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "mp3"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 477.61,
+      "min": 310,
+      "max": 1280,
+      "std": 131.65
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:16:00.090250",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": true,
+      "has_video": false,
+      "image": {
+        "count_total": 1142,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1000x422",
+          "1001x477",
+          "1002x424",
+          "1003x643",
+          "1004x548",
+          "1004x582",
+          "1004x642",
+          "1004x691",
+          "1004x918",
+          "1005x697"
+        ],
+        "resolution_range": {
+          "min": "361x203",
+          "max": "5184x3456"
+        },
+        "formats": [
+          "jpeg",
+          "png"
+        ]
+      },
+      "audio": {
+        "count_total": 1142,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "duration": null,
+        "sample_rates": [],
+        "formats": [
+          "mp3"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "a5cb4fd0",
+          "content": [
+            {
+              "text": "Answer the following multiple choice question based on the image and audio content. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\n\nWhat are the men doing?\n\nA) The man in jeans is taking notes from the newspaper.\nB) The man in purple is reading the newspaper.\nC) The man in jeans is playing a crossword puzzle.\nD) The man on the table is doing a crossword puzzle."
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~3.7MB]"
+            },
+            {
+              "audio": "[BASE64_AUDIO: mp3, ~103.6KB]",
+              "format": "mp3"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "The man in jeans is taking notes from the newspaper.",
+        "The man in purple is reading the newspaper.",
+        "The man in jeans is playing a crossword puzzle.",
+        "The man on the table is doing a crossword puzzle."
+      ],
+      "target": "C",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "index": 0,
+        "task_type": "Action and Activity",
+        "audio_type": "speech",
+        "answer": "The man in jeans is playing a crossword puzzle.",
+        "image_content": "The image depicts a scene from a television show set in a cozy, well-furnished apartment. The main focus is on two individuals sitting on a couch in the foreground. The man on the left is wearing a dark blue jacket and jeans, and he is holdin ... [TRUNCATED] ... ted with a mix of modern and vintage elements, including a colorful rug, patterned curtains, and a variety of decorative items on the shelves and walls. The overall atmosphere is warm and inviting, suggesting a comfortable and lived-in space.",
+        "audio_content": "Two people talking: A: Four letters, \"circle or hoop.\" B: Ring! Damn it, ring! A: Thanks."
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# OmniBench\n\n\n## Overview\n\nOmniBench is a pioneering universal multimodal benchmark designed to rigorously evaluate MLLMs' capability to recognize, interpret, and reason across visual, acoustic, and textual inputs simultaneously.\n\n## Task Description\n\n- **Task Type**: Universal Multimodal Understanding (Image + Audio + Text)\n- **Input**: Image, audio, and text question with choices\n- **Output**: Correct answer choice\n- **Modalities**: Visual, acoustic, and textual\n\n## Key Features\n\n- Tri-modal evaluation (image, audio, text)\n- Tests cross-modal reasoning abilities\n- Multiple-choice format\n- Configurable modality usage\n- Chain-of-thought prompting\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Simple accuracy metric\n- Extra params: use_image (bool), use_audio (bool)\n- Supports textual alternatives for image/audio\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `omni_bench` |\n| **Dataset ID** | [m-a-p/OmniBench](https://modelscope.cn/datasets/m-a-p/OmniBench/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `MultiModal` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,142 |\n| Prompt Length (Mean) | 477.61 chars |\n| Prompt Length (Min/Max) | 310 / 1280 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 1,142 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 361x203 - 5184x3456 |\n| Formats | jpeg, png |\n\n**Audio Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Audio Files | 1,142 |\n| Audio per Sample | min: 1, max: 1, mean: 1 |\n| Formats | mp3 |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a5cb4fd0\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question based on the image and audio content. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\\n\\nWhat are the men doing?\\n\\nA) The man in jeans is taking notes from the newspaper.\\nB) The man in purple is reading the newspaper.\\nC) The man in jeans is playing a crossword puzzle.\\nD) The man on the table is doing a crossword puzzle.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~3.7MB]\"\n        },\n        {\n          \"audio\": \"[BASE64_AUDIO: mp3, ~103.6KB]\",\n          \"format\": \"mp3\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"The man in jeans is taking notes from the newspaper.\",\n    \"The man in purple is reading the newspaper.\",\n    \"The man in jeans is playing a crossword puzzle.\",\n    \"The man on the table is doing a crossword puzzle.\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"index\": 0,\n    \"task_type\": \"Action and Activity\",\n    \"audio_type\": \"speech\",\n    \"answer\": \"The man in jeans is playing a crossword puzzle.\",\n    \"image_content\": \"The image depicts a scene from a television show set in a cozy, well-furnished apartment. The main focus is on two individuals sitting on a couch in the foreground. The man on the left is wearing a dark blue jacket and jeans, and he is holdin ... [TRUNCATED] ... ted with a mix of modern and vintage elements, including a colorful rug, patterned curtains, and a variety of decorative items on the shelves and walls. The overall atmosphere is warm and inviting, suggesting a comfortable and lived-in space.\",\n    \"audio_content\": \"Two people talking: A: Four letters, \\\"circle or hoop.\\\" B: Ring! Damn it, ring! A: Thanks.\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question based on the image and audio content. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `use_image` | `bool` | `True` | Whether to provide the raw image. False uses textual alternative. |\n| `use_audio` | `bool` | `True` | Whether to provide the raw audio. False uses textual alternative. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets omni_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['omni_bench'],\n    dataset_args={\n        'omni_bench': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# OmniBench\n\n## 概述\n\nOmniBench 是一个开创性的通用多模态基准测试，旨在严格评估多模态大语言模型（MLLMs）在视觉、听觉和文本输入上同时进行识别、理解和推理的能力。\n\n## 任务描述\n\n- **任务类型**：通用多模态理解（图像 + 音频 + 文本）\n- **输入**：图像、音频和带选项的文本问题\n- **输出**：正确答案选项\n- **模态**：视觉、听觉和文本\n\n## 核心特性\n\n- 三模态评估（图像、音频、文本）\n- 测试跨模态推理能力\n- 多选题格式\n- 可配置模态使用方式\n- 支持思维链（Chain-of-thought）提示\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 使用简单准确率（accuracy）作为指标\n- 额外参数：`use_image`（布尔值）、`use_audio`（布尔值）\n- 支持为图像/音频提供文本替代内容\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `omni_bench` |\n| **数据集ID** | [m-a-p/OmniBench](https://modelscope.cn/datasets/m-a-p/OmniBench/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ`, `MultiModal` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,142 |\n| 提示词长度（平均） | 477.61 字符 |\n| 提示词长度（最小/最大） | 310 / 1280 字符 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 1,142 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 361x203 - 5184x3456 |\n| 格式 | jpeg, png |\n\n**音频统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 音频文件总数 | 1,142 |\n| 每样本音频数 | 最小: 1, 最大: 1, 平均: 1 |\n| 格式 | mp3 |\n\n## 样例示例\n\n**子集**：`default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a5cb4fd0\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question based on the image and audio content. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\\n\\nWhat are the men doing?\\n\\nA) The man in jeans is taking notes from the newspaper.\\nB) The man in purple is reading the newspaper.\\nC) The man in jeans is playing a crossword puzzle.\\nD) The man on the table is doing a crossword puzzle.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~3.7MB]\"\n        },\n        {\n          \"audio\": \"[BASE64_AUDIO: mp3, ~103.6KB]\",\n          \"format\": \"mp3\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"The man in jeans is taking notes from the newspaper.\",\n    \"The man in purple is reading the newspaper.\",\n    \"The man in jeans is playing a crossword puzzle.\",\n    \"The man on the table is doing a crossword puzzle.\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"index\": 0,\n    \"task_type\": \"Action and Activity\",\n    \"audio_type\": \"speech\",\n    \"answer\": \"The man in jeans is playing a crossword puzzle.\",\n    \"image_content\": \"The image depicts a scene from a television show set in a cozy, well-furnished apartment. The main focus is on two individuals sitting on a couch in the foreground. The man on the left is wearing a dark blue jacket and jeans, and he is holdin ... [TRUNCATED] ... ted with a mix of modern and vintage elements, including a colorful rug, patterned curtains, and a variety of decorative items on the shelves and walls. The overall atmosphere is warm and inviting, suggesting a comfortable and lived-in space.\",\n    \"audio_content\": \"Two people talking: A: Four letters, \\\"circle or hoop.\\\" B: Ring! Damn it, ring! A: Thanks.\"\n  }\n}\n```\n\n*注：部分内容因显示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question based on the image and audio content. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `use_image` | `bool` | `True` | 是否提供原始图像。设为 False 时使用文本替代内容。 |\n| `use_audio` | `bool` | `True` | 是否提供原始音频。设为 False 时使用文本替代内容。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets omni_bench \\\n    --limit 10  # 正式评估时请移除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['omni_bench'],\n    dataset_args={\n        'omni_bench': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请移除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "aa2276e232857799910bdc21aa2934c4",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.394498",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

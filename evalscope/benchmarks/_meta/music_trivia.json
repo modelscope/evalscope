@@ -1,0 +1,80 @@
+{
+  "meta": {
+    "pretty_name": "MusicTrivia",
+    "dataset_id": "extraordinarylab/music-trivia",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nMusicTrivia is a curated multiple-choice benchmark for evaluating AI models on music knowledge. It covers both classical and modern music topics including composers, musical periods, instruments, and popular artists.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Question Answering\n- **Input**: Music-related trivia question with multiple choice options\n- **Output**: Selected correct answer\n- **Domains**: Classical music, modern music, music history\n\n## Key Features\n\n- Comprehensive coverage of music domains\n- Questions about composers, periods, and artists\n- Tests factual recall and domain knowledge\n- Curated for quality and accuracy\n- Balanced difficulty across topics\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **Accuracy**\n- Evaluates on **test** split\n- Uses standard single-answer multiple-choice template",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 512,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 512,
+        "prompt_length_mean": 412.5,
+        "prompt_length_min": 256,
+        "prompt_length_max": 1005,
+        "prompt_length_std": 122.95,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 412.5,
+      "min": 256,
+      "max": 1005,
+      "std": 122.95
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:15:27.598610"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "d16392be",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nBeethoven's third period was distinct from his second on account of all the following factors EXCEPT\n\nA) The influence of Italian opera on his compositions\nB) The occupation of Vienna by French troops\nC) The introduction of new instruments in the orchestra\nD) The emergence of Romanticism in music"
+        }
+      ],
+      "choices": [
+        "The influence of Italian opera on his compositions",
+        "The occupation of Vienna by French troops",
+        "The introduction of new instruments in the orchestra",
+        "The emergence of Romanticism in music"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {}
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MusicTrivia\n\n## Overview\n\nMusicTrivia is a curated multiple-choice benchmark for evaluating AI models on music knowledge. It covers both classical and modern music topics including composers, musical periods, instruments, and popular artists.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Question Answering\n- **Input**: Music-related trivia question with multiple choice options\n- **Output**: Selected correct answer\n- **Domains**: Classical music, modern music, music history\n\n## Key Features\n\n- Comprehensive coverage of music domains\n- Questions about composers, periods, and artists\n- Tests factual recall and domain knowledge\n- Curated for quality and accuracy\n- Balanced difficulty across topics\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **Accuracy**\n- Evaluates on **test** split\n- Uses standard single-answer multiple-choice template\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `music_trivia` |\n| **Dataset ID** | [extraordinarylab/music-trivia](https://modelscope.cn/datasets/extraordinarylab/music-trivia/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 512 |\n| Prompt Length (Mean) | 412.5 chars |\n| Prompt Length (Min/Max) | 256 / 1005 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d16392be\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nBeethoven's third period was distinct from his second on account of all the following factors EXCEPT\\n\\nA) The influence of Italian opera on his compositions\\nB) The occupation of Vienna by French troops\\nC) The introduction of new instruments in the orchestra\\nD) The emergence of Romanticism in music\"\n    }\n  ],\n  \"choices\": [\n    \"The influence of Italian opera on his compositions\",\n    \"The occupation of Vienna by French troops\",\n    \"The introduction of new instruments in the orchestra\",\n    \"The emergence of Romanticism in music\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets music_trivia \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['music_trivia'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MusicTrivia\n\n## 概述\n\nMusicTrivia 是一个精心策划的多项选择题基准测试，用于评估 AI 模型在音乐知识方面的能力。它涵盖古典音乐和现代音乐主题，包括作曲家、音乐时期、乐器和流行艺术家等内容。\n\n## 任务描述\n\n- **任务类型**：多项选择题问答（Multiple-Choice Question Answering）\n- **输入**：与音乐相关的常识问题及多个选项\n- **输出**：选择正确答案\n- **领域**：古典音乐、现代音乐、音乐史\n\n## 主要特点\n\n- 全面覆盖各类音乐领域\n- 包含关于作曲家、音乐时期和艺术家的问题\n- 考察事实记忆与领域知识\n- 精心筛选以确保质量和准确性\n- 各主题难度均衡\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估方式\n- 主要指标：**准确率（Accuracy）**\n- 在 **test** 数据集划分上进行评估\n- 使用标准的单答案多项选择题模板\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `music_trivia` |\n| **数据集 ID** | [extraordinarylab/music-trivia](https://modelscope.cn/datasets/extraordinarylab/music-trivia/summary) |\n| **论文** | 无 |\n| **标签** | `Knowledge`, `MCQ` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估数据划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 512 |\n| 提示词长度（平均） | 412.5 字符 |\n| 提示词长度（最小/最大） | 256 / 1005 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d16392be\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nBeethoven's third period was distinct from his second on account of all the following factors EXCEPT\\n\\nA) The influence of Italian opera on his compositions\\nB) The occupation of Vienna by French troops\\nC) The introduction of new instruments in the orchestra\\nD) The emergence of Romanticism in music\"\n    }\n  ],\n  \"choices\": [\n    \"The influence of Italian opera on his compositions\",\n    \"The occupation of Vienna by French troops\",\n    \"The introduction of new instruments in the orchestra\",\n    \"The emergence of Romanticism in music\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets music_trivia \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['music_trivia'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "c53ada2294b67fb609beba46d2d947ae",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.322167",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

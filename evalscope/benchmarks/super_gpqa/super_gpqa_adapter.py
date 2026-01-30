@@ -93,8 +93,37 @@ SUBSET_MAPPING = {
         name='super_gpqa',
         pretty_name='SuperGPQA',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
-        description=
-        'SuperGPQA is a large-scale multiple-choice question answering dataset, designed to evaluate the generalization ability of models across different fields. It contains 26,000+ questions from 50+ fields, with each question having 10 options.',  # noqa: E501
+        description="""
+## Overview
+
+SuperGPQA is a large-scale multiple-choice question answering dataset designed to evaluate model generalization across diverse fields. It contains 26,000+ questions from 50+ fields, with each question featuring 10 answer options.
+
+## Task Description
+
+- **Task Type**: Multiple-Choice Knowledge Assessment
+- **Input**: Question with 10 answer choices (A-J)
+- **Output**: Correct answer letter
+- **Domains**: 50+ fields across Science, Engineering, Medicine, Economics, Law, etc.
+
+## Key Features
+
+- 26,000+ questions across 50+ academic fields
+- 10 options per question (more challenging than standard 4-choice)
+- Broad coverage including:
+  - Science: Mathematics, Physics, Chemistry, Biology
+  - Engineering: Computer Science, Electrical, Mechanical
+  - Medicine: Clinical, Basic Medical, Pharmacy
+  - Humanities: Philosophy, History, Literature
+  - Social Sciences: Economics, Law, Sociology
+
+## Evaluation Notes
+
+- Default evaluation uses the **train** split (only available split)
+- Primary metric: **Accuracy** on multiple-choice questions
+- Supports 0-shot or 5-shot evaluation only
+- Uses Chain-of-Thought (CoT) prompting
+- Results can be grouped by field or discipline category
+""",  # noqa: E501
         dataset_id='m-a-p/SuperGPQA',
         subset_list=list(SUBSET_MAPPING.keys()),
         metric_list=['acc'],

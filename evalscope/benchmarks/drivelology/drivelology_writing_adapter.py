@@ -12,11 +12,33 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-DESCRIPTION = (
-    'Drivelology, a unique linguistic phenomenon characterised as "nonsense with depth" - '
-    'utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, '
-    'or rhetorically subversive.'
-)
+DESCRIPTION = """
+## Overview
+
+Drivelology Narrative Writing evaluates models' ability to generate detailed descriptions illustrating the implicit narrative of "drivelology" text - linguistic utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.
+
+## Task Description
+
+- **Task Type**: Narrative Generation and Evaluation
+- **Input**: Drivelology text sample
+- **Output**: Generated narrative description explaining implicit meaning
+- **Domain**: Linguistic analysis, narrative generation
+
+## Key Features
+
+- Tests narrative explanation generation ability
+- Requires understanding of layered linguistic meanings
+- LLM-as-judge evaluation against reference narratives
+- Likert scale scoring (1-5) for match quality
+- Tests depth of linguistic and cultural understanding
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Uses LLM-as-judge for evaluation
+- Metrics: Average Likert score (1-5 scale)
+- Evaluates relevance, accuracy, depth, and detail of generated narratives
+"""
 
 # Keep the original generation and evaluation templates
 NARRATIVE_GENERATION_TEMPLATE = """

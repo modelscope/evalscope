@@ -1,0 +1,154 @@
+{
+  "meta": {
+    "pretty_name": "DocVQA",
+    "dataset_id": "lmms-lab/DocVQA",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Knowledge",
+      "QA"
+    ],
+    "metrics": [
+      "anls"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "DocVQA"
+    ],
+    "description": "\n## Overview\n\nDocVQA (Document Visual Question Answering) is a benchmark designed to evaluate AI systems' ability to answer questions based on document images such as scanned pages, forms, invoices, and reports. It requires understanding complex document layouts, structure, and visual elements beyond simple text extraction.\n\n## Task Description\n\n- **Task Type**: Document Visual Question Answering\n- **Input**: Document image + natural language question\n- **Output**: Single word or phrase answer extracted from document\n- **Domains**: Document understanding, OCR, layout comprehension\n\n## Key Features\n\n- Covers diverse document types (forms, invoices, letters, reports)\n- Requires understanding document layout and structure\n- Tests both text extraction and contextual reasoning\n- Questions require locating and interpreting specific information\n- Combines OCR capabilities with visual understanding\n\n## Evaluation Notes\n\n- Default evaluation uses the **validation** split\n- Primary metric: **ANLS** (Average Normalized Levenshtein Similarity)\n- Answers should be in format \"ANSWER: [ANSWER]\"\n- ANLS metric accounts for minor OCR/spelling variations\n- Multiple valid answers may be accepted for each question\n",
+    "prompt_template": "Answer the question according to the image using a single word or phrase.\n{question}\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the question.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 5349,
+    "subset_stats": [
+      {
+        "name": "DocVQA",
+        "sample_count": 5349,
+        "prompt_length_mean": 254.82,
+        "prompt_length_min": 220,
+        "prompt_length_max": 354,
+        "prompt_length_std": 19.13,
+        "target_length_mean": 29.11,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 5000,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1016x430",
+              "1024x834",
+              "1048x734",
+              "1080x682",
+              "1082x1672",
+              "1084x1683",
+              "1099x846",
+              "1108x851",
+              "1108x859",
+              "1120x1726"
+            ],
+            "resolution_range": {
+              "min": "593x294",
+              "max": "5367x7184"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 254.82,
+      "min": 220,
+      "max": 354,
+      "std": 19.13
+    },
+    "target_length_mean": 29.11,
+    "computed_at": "2026-01-28T11:13:32.844077",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 5000,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1016x430",
+          "1024x834",
+          "1048x734",
+          "1080x682",
+          "1082x1672",
+          "1084x1683",
+          "1099x846",
+          "1108x851",
+          "1108x859",
+          "1120x1726"
+        ],
+        "resolution_range": {
+          "min": "593x294",
+          "max": "5367x7184"
+        },
+        "formats": [
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "002390bd",
+          "content": [
+            {
+              "text": "Answer the question according to the image using a single word or phrase.\nWhat is the ‘actual’ value per 1000, during the year 1975?\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the question."
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~1.2MB]"
+            }
+          ]
+        }
+      ],
+      "target": "[\"0.28\"]",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "questionId": "49153",
+        "question_types": [
+          "figure/diagram"
+        ],
+        "docId": 14465,
+        "ucsf_document_id": "pybv0228",
+        "ucsf_document_page_no": "81"
+      }
+    },
+    "subset": "DocVQA",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# DocVQA\n\n\n## Overview\n\nDocVQA (Document Visual Question Answering) is a benchmark designed to evaluate AI systems' ability to answer questions based on document images such as scanned pages, forms, invoices, and reports. It requires understanding complex document layouts, structure, and visual elements beyond simple text extraction.\n\n## Task Description\n\n- **Task Type**: Document Visual Question Answering\n- **Input**: Document image + natural language question\n- **Output**: Single word or phrase answer extracted from document\n- **Domains**: Document understanding, OCR, layout comprehension\n\n## Key Features\n\n- Covers diverse document types (forms, invoices, letters, reports)\n- Requires understanding document layout and structure\n- Tests both text extraction and contextual reasoning\n- Questions require locating and interpreting specific information\n- Combines OCR capabilities with visual understanding\n\n## Evaluation Notes\n\n- Default evaluation uses the **validation** split\n- Primary metric: **ANLS** (Average Normalized Levenshtein Similarity)\n- Answers should be in format \"ANSWER: [ANSWER]\"\n- ANLS metric accounts for minor OCR/spelling variations\n- Multiple valid answers may be accepted for each question\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `docvqa` |\n| **Dataset ID** | [lmms-lab/DocVQA](https://modelscope.cn/datasets/lmms-lab/DocVQA/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MultiModal`, `QA` |\n| **Metrics** | `anls` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 5,349 |\n| Prompt Length (Mean) | 254.82 chars |\n| Prompt Length (Min/Max) | 220 / 354 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 5,000 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 593x294 - 5367x7184 |\n| Formats | png |\n\n\n## Sample Example\n\n**Subset**: `DocVQA`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"002390bd\",\n      \"content\": [\n        {\n          \"text\": \"Answer the question according to the image using a single word or phrase.\\nWhat is the ‘actual’ value per 1000, during the year 1975?\\nThe last line of your response should be of the form \\\"ANSWER: [ANSWER]\\\" (without quotes) where [ANSWER] is the answer to the question.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~1.2MB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"[\\\"0.28\\\"]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"questionId\": \"49153\",\n    \"question_types\": [\n      \"figure/diagram\"\n    ],\n    \"docId\": 14465,\n    \"ucsf_document_id\": \"pybv0228\",\n    \"ucsf_document_page_no\": \"81\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the question according to the image using a single word or phrase.\n{question}\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the question.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets docvqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['docvqa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# DocVQA\n\n\n## 概述\n\nDocVQA（Document Visual Question Answering，文档视觉问答）是一个用于评估 AI 系统根据文档图像（如扫描页面、表单、发票和报告）回答问题能力的基准测试。该任务不仅要求简单的文本提取，还需要理解复杂的文档布局、结构和视觉元素。\n\n## 任务描述\n\n- **任务类型**：文档视觉问答\n- **输入**：文档图像 + 自然语言问题\n- **输出**：从文档中提取的单个词或短语作为答案\n- **领域**：文档理解、OCR、版面理解\n\n## 主要特点\n\n- 涵盖多种文档类型（表单、发票、信函、报告）\n- 需要理解文档的版面与结构\n- 同时考察文本提取能力和上下文推理能力\n- 问题要求定位并解读特定信息\n- 结合了 OCR 能力与视觉理解能力\n\n## 评估说明\n\n- 默认使用 **验证集**（validation split）进行评估\n- 主要指标：**ANLS**（Average Normalized Levenshtein Similarity，平均归一化编辑距离相似度）\n- 答案格式应为 `\"ANSWER: [ANSWER]\"`\n- ANLS 指标可容忍轻微的 OCR 或拼写差异\n- 每个问题可能接受多个有效答案\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `docvqa` |\n| **数据集 ID** | [lmms-lab/DocVQA](https://modelscope.cn/datasets/lmms-lab/DocVQA/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MultiModal`, `QA` |\n| **指标** | `anls` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `validation` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 5,349 |\n| 提示词长度（平均） | 254.82 字符 |\n| 提示词长度（最小/最大） | 220 / 354 字符 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 5,000 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 593x294 - 5367x7184 |\n| 格式 | png |\n\n\n## 样例示例\n\n**子集**: `DocVQA`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"002390bd\",\n      \"content\": [\n        {\n          \"text\": \"Answer the question according to the image using a single word or phrase.\\nWhat is the ‘actual’ value per 1000, during the year 1975?\\nThe last line of your response should be of the form \\\"ANSWER: [ANSWER]\\\" (without quotes) where [ANSWER] is the answer to the question.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~1.2MB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"[\\\"0.28\\\"]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"questionId\": \"49153\",\n    \"question_types\": [\n      \"figure/diagram\"\n    ],\n    \"docId\": 14465,\n    \"ucsf_document_id\": \"pybv0228\",\n    \"ucsf_document_page_no\": \"81\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the question according to the image using a single word or phrase.\n{question}\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the question.\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets docvqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['docvqa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "e98849f9cabf49cff35bfaab3e25cfb4",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.214406",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

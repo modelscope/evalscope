@@ -1,0 +1,72 @@
+{
+  "meta": {
+    "pretty_name": "τ-bench",
+    "dataset_id": "https://github.com/sierra-research/tau-bench",
+    "paper_url": null,
+    "tags": [
+      "FunctionCalling",
+      "Reasoning",
+      "Agent"
+    ],
+    "metrics": [],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "airline",
+      "retail"
+    ],
+    "description": "\n## Overview\n\nτ-bench (Tau Bench) is a benchmark for evaluating conversational AI agents that interact with users through domain-specific API tools and policy guidelines. It simulates dynamic, multi-turn conversations where a language model acts as both the user and the agent.\n\n## Task Description\n\n- **Task Type**: Conversational Agent Evaluation\n- **Input**: User scenarios with specific goals and constraints\n- **Output**: Agent actions via API tool calls to complete tasks\n- **Domains**: Airline customer service, Retail customer service\n\n## Key Features\n\n- Dynamic conversation simulation with LLM-simulated users\n- Domain-specific API tools and policy guidelines\n- Realistic customer service scenarios\n- Tests multi-turn dialogue capabilities\n- Evaluates tool use and policy compliance\n\n## Evaluation Notes\n\n- **Installation Required**: `pip install git+https://github.com/sierra-research/tau-bench`\n- **User Model Configuration**: Requires setting up a user simulation model\n- Primary metric: **Accuracy** based on task completion reward\n- Supports **airline** and **retail** domains\n- Uses **pass@k** aggregation for robustness evaluation\n- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau_bench.html)\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean_and_pass_hat_k",
+    "extra_params": {
+      "user_model": {
+        "type": "str",
+        "description": "Model used to simulate the user in the environment.",
+        "value": "qwen-plus"
+      },
+      "api_key": {
+        "type": "str",
+        "description": "API key for the user model backend.",
+        "value": "EMPTY"
+      },
+      "api_base": {
+        "type": "str",
+        "description": "Base URL for the user model API requests.",
+        "value": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      },
+      "generation_config": {
+        "type": "dict",
+        "description": "Default generation config for user model simulation.",
+        "value": {
+          "temperature": 0.0
+        }
+      }
+    },
+    "sandbox_config": {},
+    "category": "agent"
+  },
+  "statistics": {
+    "total_samples": 0,
+    "subset_stats": [],
+    "prompt_length": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T14:56:53.624593"
+  },
+  "sample_example": {},
+  "readme": {
+    "en": "# τ-bench\n\n\n## Overview\n\nτ-bench (Tau Bench) is a benchmark for evaluating conversational AI agents that interact with users through domain-specific API tools and policy guidelines. It simulates dynamic, multi-turn conversations where a language model acts as both the user and the agent.\n\n## Task Description\n\n- **Task Type**: Conversational Agent Evaluation\n- **Input**: User scenarios with specific goals and constraints\n- **Output**: Agent actions via API tool calls to complete tasks\n- **Domains**: Airline customer service, Retail customer service\n\n## Key Features\n\n- Dynamic conversation simulation with LLM-simulated users\n- Domain-specific API tools and policy guidelines\n- Realistic customer service scenarios\n- Tests multi-turn dialogue capabilities\n- Evaluates tool use and policy compliance\n\n## Evaluation Notes\n\n- **Installation Required**: `pip install git+https://github.com/sierra-research/tau-bench`\n- **User Model Configuration**: Requires setting up a user simulation model\n- Primary metric: **Accuracy** based on task completion reward\n- Supports **airline** and **retail** domains\n- Uses **pass@k** aggregation for robustness evaluation\n- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau_bench.html)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `tau_bench` |\n| **Dataset ID** | [tau-bench](https://github.com/sierra-research/tau-bench) |\n| **Paper** | N/A |\n| **Tags** | `Agent`, `FunctionCalling`, `Reasoning` |\n| **Metrics** | N/A |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `mean_and_pass_hat_k` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `user_model` | `str` | `qwen-plus` | Model used to simulate the user in the environment. |\n| `api_key` | `str` | `EMPTY` | API key for the user model backend. |\n| `api_base` | `str` | `https://dashscope.aliyuncs.com/compatible-mode/v1` | Base URL for the user model API requests. |\n| `generation_config` | `dict` | `{'temperature': 0.0}` | Default generation config for user model simulation. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tau_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tau_bench'],\n    dataset_args={\n        'tau_bench': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# τ-bench\n\n## 概述\n\nτ-bench（Tau Bench）是一个用于评估通过领域特定 API 工具和政策指南与用户交互的对话式 AI 代理的基准测试。它模拟动态的多轮对话，其中语言模型同时扮演用户和代理角色。\n\n## 任务描述\n\n- **任务类型**：对话代理评估\n- **输入**：具有特定目标和约束的用户场景\n- **输出**：代理通过 API 工具调用执行操作以完成任务\n- **领域**：航空客户服务、零售客户服务\n\n## 主要特性\n\n- 使用 LLM 模拟用户的动态对话仿真\n- 领域特定的 API 工具和政策指南\n- 真实的客户服务场景\n- 测试多轮对话能力\n- 评估工具使用和政策合规性\n\n## 评估说明\n\n- **需要安装**：`pip install git+https://github.com/sierra-research/tau-bench`\n- **用户模型配置**：需设置用户模拟模型\n- 主要指标：基于任务完成奖励的 **准确率（Accuracy）**\n- 支持 **航空（airline）** 和 **零售（retail）** 领域\n- 使用 **pass@k** 聚合方法进行鲁棒性评估\n- [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau_bench.html)\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `tau_bench` |\n| **数据集 ID** | [tau-bench](https://github.com/sierra-research/tau-bench) |\n| **论文** | N/A |\n| **标签** | `Agent`, `FunctionCalling`, `Reasoning` |\n| **指标** | N/A |\n| **默认示例数量** | 0-shot |\n| **评估分割** | `test` |\n| **聚合方式** | `mean_and_pass_hat_k` |\n\n## 数据统计\n\n*统计数据不可用。*\n\n## 样例示例\n\n*样例示例不可用。*\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `user_model` | `str` | `qwen-plus` | 用于在环境中模拟用户的模型。 |\n| `api_key` | `str` | `EMPTY` | 用户模型后端的 API 密钥。 |\n| `api_base` | `str` | `https://dashscope.aliyuncs.com/compatible-mode/v1` | 用户模型 API 请求的基础 URL。 |\n| `generation_config` | `dict` | `{'temperature': 0.0}` | 用户模型模拟的默认生成配置。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tau_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tau_bench'],\n    dataset_args={\n        'tau_bench': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "3cfa02a8c369ac5248eb59b5226c2930",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:38.723828",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

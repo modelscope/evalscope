@@ -1,0 +1,74 @@
+{
+  "meta": {
+    "pretty_name": "SWE-bench_Verified_mini",
+    "dataset_id": "evalscope/swe-bench-verified-mini",
+    "paper_url": null,
+    "tags": [
+      "Coding"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nSWE-bench Verified Mini is a compact subset of SWE-bench Verified, containing 50 carefully selected samples that maintain the same distribution of performance, test pass rates, and difficulty as the full dataset while requiring only 5GB of storage instead of 130GB.\n\n## Task Description\n\n- **Task Type**: Automated Software Engineering / Bug Fixing\n- **Input**: GitHub issue description with repository context\n- **Output**: Code patch (diff format) that resolves the issue\n- **Size**: 50 samples (vs 500 in full Verified set)\n\n## Key Features\n\n- Representative 50-sample subset of SWE-bench Verified\n- Same difficulty distribution as full dataset\n- Dramatically reduced storage requirements (5GB vs 130GB)\n- Ideal for quick evaluation and development iteration\n- Maintains statistical validity for benchmarking\n\n## Evaluation Notes\n\n- Requires `pip install swebench==4.1.0` before evaluation\n- Docker images are built/pulled automatically\n- See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup\n- Good for rapid prototyping and initial model assessment\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "build_docker_images": {
+        "type": "bool",
+        "description": "Build Docker images locally for each sample.",
+        "value": true
+      },
+      "pull_remote_images_if_available": {
+        "type": "bool",
+        "description": "Attempt to pull existing remote Docker images before building.",
+        "value": true
+      },
+      "inference_dataset_id": {
+        "type": "str",
+        "description": "Oracle dataset ID used to fetch inference context.",
+        "value": "princeton-nlp/SWE-bench_oracle"
+      },
+      "force_arch": {
+        "type": "str",
+        "description": "Optionally force the docker images to be pulled/built for a specific architecture.",
+        "value": "",
+        "choices": [
+          "",
+          "arm64",
+          "x86_64"
+        ]
+      }
+    },
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 0,
+    "subset_stats": [],
+    "prompt_length": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T14:17:40.630148"
+  },
+  "sample_example": {},
+  "readme": {
+    "en": "# SWE-bench_Verified_mini\n\n\n## Overview\n\nSWE-bench Verified Mini is a compact subset of SWE-bench Verified, containing 50 carefully selected samples that maintain the same distribution of performance, test pass rates, and difficulty as the full dataset while requiring only 5GB of storage instead of 130GB.\n\n## Task Description\n\n- **Task Type**: Automated Software Engineering / Bug Fixing\n- **Input**: GitHub issue description with repository context\n- **Output**: Code patch (diff format) that resolves the issue\n- **Size**: 50 samples (vs 500 in full Verified set)\n\n## Key Features\n\n- Representative 50-sample subset of SWE-bench Verified\n- Same difficulty distribution as full dataset\n- Dramatically reduced storage requirements (5GB vs 130GB)\n- Ideal for quick evaluation and development iteration\n- Maintains statistical validity for benchmarking\n\n## Evaluation Notes\n\n- Requires `pip install swebench==4.1.0` before evaluation\n- Docker images are built/pulled automatically\n- See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup\n- Good for rapid prototyping and initial model assessment\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `swe_bench_verified_mini` |\n| **Dataset ID** | [evalscope/swe-bench-verified-mini](https://modelscope.cn/datasets/evalscope/swe-bench-verified-mini/summary) |\n| **Paper** | N/A |\n| **Tags** | `Coding` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `build_docker_images` | `bool` | `True` | Build Docker images locally for each sample. |\n| `pull_remote_images_if_available` | `bool` | `True` | Attempt to pull existing remote Docker images before building. |\n| `inference_dataset_id` | `str` | `princeton-nlp/SWE-bench_oracle` | Oracle dataset ID used to fetch inference context. |\n| `force_arch` | `str` | `` | Optionally force the docker images to be pulled/built for a specific architecture. Choices: ['', 'arm64', 'x86_64'] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets swe_bench_verified_mini \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['swe_bench_verified_mini'],\n    dataset_args={\n        'swe_bench_verified_mini': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# SWE-bench_Verified_mini\n\n\n## 概述\n\nSWE-bench Verified Mini 是 SWE-bench Verified 的一个紧凑子集，包含 50 个精心挑选的样本，在保持与完整数据集相同的性能分布、测试通过率和难度的同时，仅需 5GB 存储空间（而非 130GB）。\n\n## 任务描述\n\n- **任务类型**：自动化软件工程 / 缺陷修复\n- **输入**：带有仓库上下文的 GitHub Issue 描述\n- **输出**：解决该 Issue 的代码补丁（diff 格式）\n- **规模**：50 个样本（完整 Verified 集合为 500 个）\n\n## 主要特性\n\n- SWE-bench Verified 的代表性 50 样本子集\n- 与完整数据集具有相同的难度分布\n- 存储需求大幅降低（5GB vs 130GB）\n- 非常适合快速评估和开发迭代\n- 在基准测试中保持统计有效性\n\n## 评估说明\n\n- 评估前需先安装 `pip install swebench==4.1.0`\n- Docker 镜像会自动构建或拉取\n- 详细设置请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)\n- 适用于快速原型设计和模型初步评估\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `swe_bench_verified_mini` |\n| **数据集ID** | [evalscope/swe-bench-verified-mini](https://modelscope.cn/datasets/evalscope/swe-bench-verified-mini/summary) |\n| **论文** | N/A |\n| **标签** | `Coding` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n*统计数据不可用。*\n\n## 样例示例\n\n*样例示例不可用。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `build_docker_images` | `bool` | `True` | 为每个样本在本地构建 Docker 镜像。 |\n| `pull_remote_images_if_available` | `bool` | `True` | 在构建前尝试拉取已存在的远程 Docker 镜像。 |\n| `inference_dataset_id` | `str` | `princeton-nlp/SWE-bench_oracle` | 用于获取推理上下文的 Oracle 数据集 ID。 |\n| `force_arch` | `str` | `` | 可选地强制为特定架构拉取/构建 Docker 镜像。选项：['', 'arm64', 'x86_64'] |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets swe_bench_verified_mini \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['swe_bench_verified_mini'],\n    dataset_args={\n        'swe_bench_verified_mini': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "03e899184cf0056db153cba1cda40638",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:36.878028",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

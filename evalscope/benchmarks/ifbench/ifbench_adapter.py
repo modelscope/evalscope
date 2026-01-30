@@ -17,8 +17,33 @@ logger = get_logger()
     BenchmarkMeta(
         name='ifbench',
         pretty_name='IFBench',
-        description=
-        'IFBench is a new benchmark designed to evaluate how reliably AI models follow novel, challenging, and diverse verifiable instructions, with a strong focus on out-of-domain generalization. It comprises 58 manually curated verifiable constraints across categories such as counting, formatting, and word usage, aiming to address overfitting and data contamination issues present in existing benchmarks. Developed by AllenAI, IFBench serves as a rigorous test for precise instruction-following capabilities.',  # noqa: E501
+        description="""
+## Overview
+
+IFBench is a benchmark designed to evaluate how reliably AI models follow novel, challenging, and diverse verifiable instructions, with a strong focus on out-of-domain generalization. Developed by AllenAI, it addresses overfitting and data contamination issues in existing benchmarks.
+
+## Task Description
+
+- **Task Type**: Instruction Following Evaluation
+- **Input**: Prompts with verifiable constraints
+- **Output**: Responses that must satisfy specific constraints
+- **Focus**: Precise instruction-following capabilities
+
+## Key Features
+
+- 58 manually curated verifiable constraints
+- Categories: counting, formatting, word usage, etc.
+- Focus on out-of-domain generalization
+- Programmatic verification of constraint satisfaction
+- Addresses data contamination concerns
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Metrics: prompt_level_strict, inst_level_strict, prompt_level_loose, inst_level_loose
+- Requires emoji, syllapy, and spacy packages
+- Evaluates both strict and loose constraint satisfaction
+""",  # noqa: E501
         tags=[Tags.INSTRUCTION_FOLLOWING],
         dataset_id='allenai/IFBench_test',
         subset_list=['default'],

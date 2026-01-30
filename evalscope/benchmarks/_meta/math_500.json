@@ -1,0 +1,122 @@
+{
+  "meta": {
+    "pretty_name": "MATH-500",
+    "dataset_id": "AI-ModelScope/MATH-500",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "Level 1",
+      "Level 2",
+      "Level 3",
+      "Level 4",
+      "Level 5"
+    ],
+    "description": "\n## Overview\n\nMATH-500 is a curated subset of 500 problems from the MATH benchmark, designed to evaluate the mathematical reasoning capabilities of language models. It covers five difficulty levels across various mathematical topics including algebra, geometry, number theory, and calculus.\n\n## Task Description\n\n- **Task Type**: Mathematical Problem Solving\n- **Input**: Mathematical problem statement\n- **Output**: Step-by-step solution with final numerical answer\n- **Difficulty Levels**: Level 1 (easiest) to Level 5 (hardest)\n\n## Key Features\n\n- 500 carefully selected problems from the full MATH dataset\n- Five difficulty levels for fine-grained evaluation\n- Problems cover algebra, geometry, number theory, probability, and more\n- Each problem includes a reference solution\n- Designed for efficient yet comprehensive math evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Numeric equivalence checking for answer comparison\n- Results can be broken down by difficulty level\n- Commonly used for math reasoning benchmarking due to manageable size\n",
+    "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 500,
+    "subset_stats": [
+      {
+        "name": "Level 1",
+        "sample_count": 43,
+        "prompt_length_mean": 193.19,
+        "prompt_length_min": 100,
+        "prompt_length_max": 571,
+        "prompt_length_std": 99.62,
+        "target_length_mean": 3.67
+      },
+      {
+        "name": "Level 2",
+        "sample_count": 90,
+        "prompt_length_mean": 218.82,
+        "prompt_length_min": 91,
+        "prompt_length_max": 802,
+        "prompt_length_std": 120.27,
+        "target_length_mean": 4.91
+      },
+      {
+        "name": "Level 3",
+        "sample_count": 105,
+        "prompt_length_mean": 236,
+        "prompt_length_min": 93,
+        "prompt_length_max": 688,
+        "prompt_length_std": 129.76,
+        "target_length_mean": 6.41
+      },
+      {
+        "name": "Level 4",
+        "sample_count": 128,
+        "prompt_length_mean": 277.1,
+        "prompt_length_min": 93,
+        "prompt_length_max": 1771,
+        "prompt_length_std": 190.9,
+        "target_length_mean": 6.41
+      },
+      {
+        "name": "Level 5",
+        "sample_count": 134,
+        "prompt_length_mean": 337.28,
+        "prompt_length_min": 118,
+        "prompt_length_max": 1804,
+        "prompt_length_std": 224.79,
+        "target_length_mean": 6.51
+      }
+    ],
+    "prompt_length": {
+      "mean": 266.89,
+      "min": 91,
+      "max": 1804,
+      "std": 179.19
+    },
+    "target_length_mean": 5.93,
+    "computed_at": "2026-01-28T11:14:24.582426"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "b5d90091",
+          "content": "Suppose $\\sin D = 0.7$ in the diagram below. What is $DE$? [asy]\npair D,E,F;\nF = (0,0);\nD = (sqrt(51),7);\nE = (0,7);\ndraw(D--E--F--D);\ndraw(rightanglemark(D,E,F,15));\nlabel(\"$D$\",D,NE);\nlabel(\"$E$\",E,NW);\nlabel(\"$F$\",F,SW);\nlabel(\"$7$\",(E+F)/2,W);\n[/asy]\nPlease reason step by step, and put your final answer within \\boxed{}."
+        }
+      ],
+      "target": "\\sqrt{51}",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "Level 1",
+      "metadata": {
+        "question_id": "test/precalculus/1303.json",
+        "solution": "The triangle is a right triangle, so $\\sin D = \\frac{EF}{DF}$. Then we have that $\\sin D = 0.7 = \\frac{7}{DF}$, so $DF = 10$.\n\nUsing the Pythagorean Theorem, we find that the length of $DE$ is $\\sqrt{DF^2 - EF^2},$ or $\\sqrt{100 - 49} = \\boxed{\\sqrt{51}}$."
+      }
+    },
+    "subset": "Level 1",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MATH-500\n\n\n## Overview\n\nMATH-500 is a curated subset of 500 problems from the MATH benchmark, designed to evaluate the mathematical reasoning capabilities of language models. It covers five difficulty levels across various mathematical topics including algebra, geometry, number theory, and calculus.\n\n## Task Description\n\n- **Task Type**: Mathematical Problem Solving\n- **Input**: Mathematical problem statement\n- **Output**: Step-by-step solution with final numerical answer\n- **Difficulty Levels**: Level 1 (easiest) to Level 5 (hardest)\n\n## Key Features\n\n- 500 carefully selected problems from the full MATH dataset\n- Five difficulty levels for fine-grained evaluation\n- Problems cover algebra, geometry, number theory, probability, and more\n- Each problem includes a reference solution\n- Designed for efficient yet comprehensive math evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Numeric equivalence checking for answer comparison\n- Results can be broken down by difficulty level\n- Commonly used for math reasoning benchmarking due to manageable size\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `math_500` |\n| **Dataset ID** | [AI-ModelScope/MATH-500](https://modelscope.cn/datasets/AI-ModelScope/MATH-500/summary) |\n| **Paper** | N/A |\n| **Tags** | `Math`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 500 |\n| Prompt Length (Mean) | 266.89 chars |\n| Prompt Length (Min/Max) | 91 / 1804 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Level 1` | 43 | 193.19 | 100 | 571 |\n| `Level 2` | 90 | 218.82 | 91 | 802 |\n| `Level 3` | 105 | 236 | 93 | 688 |\n| `Level 4` | 128 | 277.1 | 93 | 1771 |\n| `Level 5` | 134 | 337.28 | 118 | 1804 |\n\n## Sample Example\n\n**Subset**: `Level 1`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"b5d90091\",\n      \"content\": \"Suppose $\\\\sin D = 0.7$ in the diagram below. What is $DE$? [asy]\\npair D,E,F;\\nF = (0,0);\\nD = (sqrt(51),7);\\nE = (0,7);\\ndraw(D--E--F--D);\\ndraw(rightanglemark(D,E,F,15));\\nlabel(\\\"$D$\\\",D,NE);\\nlabel(\\\"$E$\\\",E,NW);\\nlabel(\\\"$F$\\\",F,SW);\\nlabel(\\\"$7$\\\",(E+F)/2,W);\\n[/asy]\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\"\n    }\n  ],\n  \"target\": \"\\\\sqrt{51}\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Level 1\",\n  \"metadata\": {\n    \"question_id\": \"test/precalculus/1303.json\",\n    \"solution\": \"The triangle is a right triangle, so $\\\\sin D = \\\\frac{EF}{DF}$. Then we have that $\\\\sin D = 0.7 = \\\\frac{7}{DF}$, so $DF = 10$.\\n\\nUsing the Pythagorean Theorem, we find that the length of $DE$ is $\\\\sqrt{DF^2 - EF^2},$ or $\\\\sqrt{100 - 49} = \\\\boxed{\\\\sqrt{51}}$.\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets math_500 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['math_500'],\n    dataset_args={\n        'math_500': {\n            # subset_list: ['Level 1', 'Level 2', 'Level 3']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MATH-500\n\n## 概述\n\nMATH-500 是从 MATH 基准测试中精心挑选出的 500 道题目组成的子集，旨在评估语言模型的数学推理能力。该数据集涵盖五个难度等级，涉及代数、几何、数论、微积分等多个数学主题。\n\n## 任务描述\n\n- **任务类型**：数学问题求解  \n- **输入**：数学问题描述  \n- **输出**：包含逐步推导过程和最终数值答案的解答  \n- **难度等级**：Level 1（最简单）到 Level 5（最难）\n\n## 主要特点\n\n- 从完整的 MATH 数据集中精选出 500 道题目  \n- 提供五个难度等级，支持细粒度评估  \n- 题目覆盖代数、几何、数论、概率等多个领域  \n- 每道题均附带参考解答  \n- 在保证评估全面性的同时兼顾效率\n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估方式  \n- 答案需使用 `\\boxed{}` 格式包裹，以便正确提取  \n- 使用数值等价性检查进行答案比对  \n- 可按难度等级分别统计结果  \n- 因规模适中，常用于数学推理能力的基准测试\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `math_500` |\n| **数据集ID** | [AI-ModelScope/MATH-500](https://modelscope.cn/datasets/AI-ModelScope/MATH-500/summary) |\n| **论文** | N/A |\n| **标签** | `Math`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 500 |\n| 提示词长度（平均） | 266.89 字符 |\n| 提示词长度（最小/最大） | 91 / 1804 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Level 1` | 43 | 193.19 | 100 | 571 |\n| `Level 2` | 90 | 218.82 | 91 | 802 |\n| `Level 3` | 105 | 236 | 93 | 688 |\n| `Level 4` | 128 | 277.1 | 93 | 1771 |\n| `Level 5` | 134 | 337.28 | 118 | 1804 |\n\n## 样例示例\n\n**子集**: `Level 1`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"b5d90091\",\n      \"content\": \"Suppose $\\\\sin D = 0.7$ in the diagram below. What is $DE$? [asy]\\npair D,E,F;\\nF = (0,0);\\nD = (sqrt(51),7);\\nE = (0,7);\\ndraw(D--E--F--D);\\ndraw(rightanglemark(D,E,F,15));\\nlabel(\\\"$D$\\\",D,NE);\\nlabel(\\\"$E$\\\",E,NW);\\nlabel(\\\"$F$\\\",F,SW);\\nlabel(\\\"$7$\\\",(E+F)/2,W);\\n[/asy]\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\"\n    }\n  ],\n  \"target\": \"\\\\sqrt{51}\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Level 1\",\n  \"metadata\": {\n    \"question_id\": \"test/precalculus/1303.json\",\n    \"solution\": \"The triangle is a right triangle, so $\\\\sin D = \\\\frac{EF}{DF}$. Then we have that $\\\\sin D = 0.7 = \\\\frac{7}{DF}$, so $DF = 10$.\\n\\nUsing the Pythagorean Theorem, we find that the length of $DE$ is $\\\\sqrt{DF^2 - EF^2},$ or $\\\\sqrt{100 - 49} = \\\\boxed{\\\\sqrt{51}}$.\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets math_500 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['math_500'],\n    dataset_args={\n        'math_500': {\n            # subset_list: ['Level 1', 'Level 2', 'Level 3']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "fc705a003d3fef27909dda3177a3d75e",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.273890",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

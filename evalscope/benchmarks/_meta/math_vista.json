@@ -1,0 +1,173 @@
+{
+  "meta": {
+    "pretty_name": "MathVista",
+    "dataset_id": "evalscope/MathVista",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning",
+      "MCQ",
+      "MultiModal"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "testmini",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nMathVista is a comprehensive benchmark for mathematical reasoning in visual contexts. It combines newly created datasets with existing benchmarks to evaluate models on diverse visual mathematical reasoning tasks across multiple domains.\n\n## Task Description\n\n- **Task Type**: Visual Mathematical Reasoning\n- **Input**: Image with mathematical question (multiple-choice or free-form)\n- **Output**: Numerical answer or answer choice\n- **Domains**: Geometry, algebra, statistics, scientific reasoning\n\n## Key Features\n\n- 6,141 examples from 31 different datasets\n- Includes IQTest, FunctionQA, and PaperQA (newly created)\n- 9 MathQA and 19 VQA datasets from literature\n- Tests logical reasoning on puzzle figures\n- Tests algebraic reasoning over functional plots\n- Tests scientific reasoning with academic paper figures\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation on testmini split\n- Supports both multiple-choice and free-form questions\n- Answers should be in `\\boxed{}` format without units\n- Uses numeric equivalence checking for answer comparison\n- Chain-of-Thought (CoT) prompting for multiple-choice questions\n",
+    "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}} without units.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 1000,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1000,
+        "prompt_length_mean": 261.48,
+        "prompt_length_min": 106,
+        "prompt_length_max": 1391,
+        "prompt_length_std": 118.46,
+        "target_length_mean": 1.4,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1000,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1316",
+              "1000x650",
+              "100x110",
+              "100x92",
+              "101x127",
+              "101x68",
+              "1023x841",
+              "1024x684",
+              "1024x690",
+              "1024x768"
+            ],
+            "resolution_range": {
+              "min": "187x18",
+              "max": "5236x3491"
+            },
+            "formats": [
+              "jpeg",
+              "mpo",
+              "png",
+              "webp"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 261.48,
+      "min": 106,
+      "max": 1391,
+      "std": 118.46
+    },
+    "target_length_mean": 1.4,
+    "computed_at": "2026-01-28T11:14:31.076327",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 1000,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1000x1316",
+          "1000x650",
+          "100x110",
+          "100x92",
+          "101x127",
+          "101x68",
+          "1023x841",
+          "1024x684",
+          "1024x690",
+          "1024x768"
+        ],
+        "resolution_range": {
+          "min": "187x18",
+          "max": "5236x3491"
+        },
+        "formats": [
+          "jpeg",
+          "mpo",
+          "png",
+          "webp"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "93ec4f16",
+          "content": [
+            {
+              "text": "When a spring does work on an object, we cannot find the work by simply multiplying the spring force by the object's displacement. The reason is that there is no one value for the force-it changes. However, we can split the displacement up in ... [TRUNCATED] ... g of spring constant $k=750 \\mathrm{~N} / \\mathrm{m}$. When the canister is momentarily stopped by the spring, by what distance $d$ is the spring compressed?\nPlease reason step by step, and put your final answer within \\boxed{} without units."
+            },
+            {
+              "image": "[BASE64_IMAGE: jpg, ~185.7KB]"
+            }
+          ]
+        }
+      ],
+      "target": "1.2",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "precision": 1.0,
+        "question_type": "free_form",
+        "answer_type": "float",
+        "category": "math-targeted-vqa",
+        "context": "scientific figure",
+        "grade": "college",
+        "img_height": 720,
+        "img_width": 1514,
+        "language": "english",
+        "skills": [
+          "scientific reasoning"
+        ],
+        "source": "SciBench",
+        "split": "testmini",
+        "task": "textbook question answering"
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# MathVista\n\n\n## Overview\n\nMathVista is a comprehensive benchmark for mathematical reasoning in visual contexts. It combines newly created datasets with existing benchmarks to evaluate models on diverse visual mathematical reasoning tasks across multiple domains.\n\n## Task Description\n\n- **Task Type**: Visual Mathematical Reasoning\n- **Input**: Image with mathematical question (multiple-choice or free-form)\n- **Output**: Numerical answer or answer choice\n- **Domains**: Geometry, algebra, statistics, scientific reasoning\n\n## Key Features\n\n- 6,141 examples from 31 different datasets\n- Includes IQTest, FunctionQA, and PaperQA (newly created)\n- 9 MathQA and 19 VQA datasets from literature\n- Tests logical reasoning on puzzle figures\n- Tests algebraic reasoning over functional plots\n- Tests scientific reasoning with academic paper figures\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation on testmini split\n- Supports both multiple-choice and free-form questions\n- Answers should be in `\\boxed{}` format without units\n- Uses numeric equivalence checking for answer comparison\n- Chain-of-Thought (CoT) prompting for multiple-choice questions\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `math_vista` |\n| **Dataset ID** | [evalscope/MathVista](https://modelscope.cn/datasets/evalscope/MathVista/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `Math`, `MultiModal`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `testmini` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,000 |\n| Prompt Length (Mean) | 261.48 chars |\n| Prompt Length (Min/Max) | 106 / 1391 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 1,000 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 187x18 - 5236x3491 |\n| Formats | jpeg, mpo, png, webp |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"93ec4f16\",\n      \"content\": [\n        {\n          \"text\": \"When a spring does work on an object, we cannot find the work by simply multiplying the spring force by the object's displacement. The reason is that there is no one value for the force-it changes. However, we can split the displacement up in ... [TRUNCATED] ... g of spring constant $k=750 \\\\mathrm{~N} / \\\\mathrm{m}$. When the canister is momentarily stopped by the spring, by what distance $d$ is the spring compressed?\\nPlease reason step by step, and put your final answer within \\\\boxed{} without units.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpg, ~185.7KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"1.2\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"precision\": 1.0,\n    \"question_type\": \"free_form\",\n    \"answer_type\": \"float\",\n    \"category\": \"math-targeted-vqa\",\n    \"context\": \"scientific figure\",\n    \"grade\": \"college\",\n    \"img_height\": 720,\n    \"img_width\": 1514,\n    \"language\": \"english\",\n    \"skills\": [\n      \"scientific reasoning\"\n    ],\n    \"source\": \"SciBench\",\n    \"split\": \"testmini\",\n    \"task\": \"textbook question answering\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}} without units.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets math_vista \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['math_vista'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MathVista\n\n## 概述\n\nMathVista 是一个面向视觉上下文中的数学推理的综合性基准测试。它结合了新创建的数据集与现有基准，用于评估模型在多个领域中处理多样化视觉数学推理任务的能力。\n\n## 任务描述\n\n- **任务类型**：视觉数学推理  \n- **输入**：包含数学问题的图像（选择题或多选题/自由作答）  \n- **输出**：数值答案或选项字母  \n- **领域**：几何、代数、统计学、科学推理  \n\n## 主要特点\n\n- 包含来自 31 个不同数据集的 6,141 个示例  \n- 包含新构建的数据集 IQTest、FunctionQA 和 PaperQA  \n- 整合了文献中的 9 个 MathQA 数据集和 19 个 VQA 数据集  \n- 测试对谜题图形的逻辑推理能力  \n- 测试对函数图像的代数推理能力  \n- 测试对学术论文图表的科学推理能力  \n\n## 评估说明\n\n- 默认配置使用 **0-shot** 方式在 `testmini` 子集上进行评估  \n- 支持选择题和自由作答题两种题型  \n- 答案应以 `\\boxed{}` 格式给出，且不带单位  \n- 使用数值等价性检查进行答案比对  \n- 对选择题采用思维链（Chain-of-Thought, CoT）提示方法  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `math_vista` |\n| **数据集 ID** | [evalscope/MathVista](https://modelscope.cn/datasets/evalscope/MathVista/summary) |\n| **论文** | N/A |\n| **标签** | `MCQ`, `Math`, `MultiModal`, `Reasoning` |\n| **指标** | `acc` |\n| **默认样本数（Shots）** | 0-shot |\n| **评估子集** | `testmini` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,000 |\n| 提示词长度（平均） | 261.48 字符 |\n| 提示词长度（最小/最大） | 106 / 1391 字符 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 1,000 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 187x18 - 5236x3491 |\n| 图像格式 | jpeg, mpo, png, webp |\n\n## 样例示例\n\n**子集**：`default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"93ec4f16\",\n      \"content\": [\n        {\n          \"text\": \"When a spring does work on an object, we cannot find the work by simply multiplying the spring force by the object's displacement. The reason is that there is no one value for the force-it changes. However, we can split the displacement up in ... [TRUNCATED] ... g of spring constant $k=750 \\\\mathrm{~N} / \\\\mathrm{m}$. When the canister is momentarily stopped by the spring, by what distance $d$ is the spring compressed?\\nPlease reason step by step, and put your final answer within \\\\boxed{} without units.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpg, ~185.7KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"1.2\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"precision\": 1.0,\n    \"question_type\": \"free_form\",\n    \"answer_type\": \"float\",\n    \"category\": \"math-targeted-vqa\",\n    \"context\": \"scientific figure\",\n    \"grade\": \"college\",\n    \"img_height\": 720,\n    \"img_width\": 1514,\n    \"language\": \"english\",\n    \"skills\": [\n      \"scientific reasoning\"\n    ],\n    \"source\": \"SciBench\",\n    \"split\": \"testmini\",\n    \"task\": \"textbook question answering\"\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}} without units.\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets math_vista \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['math_vista'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "6b16f24d606e902363c2bcd9588f91f9",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.288551",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

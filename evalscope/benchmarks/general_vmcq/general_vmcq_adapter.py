@@ -19,10 +19,34 @@ logger = get_logger()
     BenchmarkMeta(
         name='general_vmcq',
         pretty_name='General-VMCQ',
-        description='A general visual multiple-choice question answering dataset for custom multimodal evaluation. '
-        'Format similar to MMMU, not OpenAI message format. Images are plain strings '
-        '(local/remote path or base64 data URL). '
-        'For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/vlm.html).',  # noqa: E501
+        description="""
+## Overview
+
+General-VMCQ is a customizable visual multiple-choice question answering benchmark for multimodal models. It uses MMMU-style format with image placeholders in text, supporting flexible image inputs.
+
+## Task Description
+
+- **Task Type**: Visual Multiple-Choice Question Answering
+- **Input**: Question with `<image N>` placeholders + choice options + images
+- **Output**: Selected answer choice
+- **Flexibility**: Supports custom datasets via local files
+
+## Key Features
+
+- MMMU-style format (not OpenAI message format)
+- Supports up to 100 images per sample
+- Flexible image input (path, URL, or base64 data URL)
+- Chain-of-thought prompt template option
+- Custom dataset support via local file loading
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Primary metric: **Accuracy**
+- Train split: **dev**, Eval split: **val**
+- Images are plain strings (do not wrap in `{{"url": ...}}`)
+- See [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/vlm.html) for dataset format
+""",  # noqa: E501
         tags=[Tags.MULTIPLE_CHOICE, Tags.CUSTOM, Tags.MULTI_MODAL],
         dataset_id='general_vmcq',
         subset_list=['default'],

@@ -45,12 +45,12 @@ class Sample(BaseModel):
     setup: Optional[str] = None
     """Setup script to run for sample (run within default SandboxEnvironment)."""
 
-    def pretty_print(self) -> str:
+    def pretty_print(self, max_length: Optional[int] = 50) -> str:
         """Return a pretty-printed string representation of the sample."""
         if isinstance(self.input, str):
-            input_text = self.input
+            input_text = self.input[:max_length] + '...' if len(self.input) > max_length else self.input
         else:
-            input_text = messages_to_markdown(self.input, max_length=50)
+            input_text = messages_to_markdown(self.input, max_length=max_length)
         return f'Sample ID: {self.id}\nInput: {input_text}\nTarget: {self.target}'
 
 

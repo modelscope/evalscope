@@ -1,0 +1,79 @@
+{
+  "meta": {
+    "pretty_name": "PIQA",
+    "dataset_id": "extraordinarylab/piqa",
+    "paper_url": null,
+    "tags": [
+      "Reasoning",
+      "Commonsense",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nPIQA (Physical Interaction QA) is a benchmark for evaluating AI models' understanding of physical commonsense - how objects interact in the physical world and what happens when we manipulate them.\n\n## Task Description\n\n- **Task Type**: Physical Commonsense Reasoning\n- **Input**: Goal/question with two possible solutions\n- **Output**: More physically plausible solution (A or B)\n- **Focus**: Physical world knowledge and intuitive physics\n\n## Key Features\n\n- Tests understanding of physical object properties\n- Binary choice between plausible/implausible solutions\n- Requires intuitive physics reasoning\n- Covers everyday physical scenarios\n- Adversarially filtered to reduce biases\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses simple multiple-choice prompting\n- Evaluates on validation split\n- Simple accuracy metric",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 1838,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1838,
+        "prompt_length_mean": 426.52,
+        "prompt_length_min": 220,
+        "prompt_length_max": 2335,
+        "prompt_length_std": 196.94,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 426.52,
+      "min": 220,
+      "max": 2335,
+      "std": 196.94
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:15:48.748482"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "a0600392",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\n\nHow do I ready a guinea pig cage for it's new occupants?\n ... [TRUNCATED] ... ps, you will also need to supply it with a water bottle and a food dish.\nB) Provide the guinea pig with a cage full of a few inches of bedding made of ripped jeans material, you will also need to supply it with a water bottle and a food dish."
+        }
+      ],
+      "choices": [
+        "Provide the guinea pig with a cage full of a few inches of bedding made of ripped paper strips, you will also need to supply it with a water bottle and a food dish.",
+        "Provide the guinea pig with a cage full of a few inches of bedding made of ripped jeans material, you will also need to supply it with a water bottle and a food dish."
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {}
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# PIQA\n\n## Overview\n\nPIQA (Physical Interaction QA) is a benchmark for evaluating AI models' understanding of physical commonsense - how objects interact in the physical world and what happens when we manipulate them.\n\n## Task Description\n\n- **Task Type**: Physical Commonsense Reasoning\n- **Input**: Goal/question with two possible solutions\n- **Output**: More physically plausible solution (A or B)\n- **Focus**: Physical world knowledge and intuitive physics\n\n## Key Features\n\n- Tests understanding of physical object properties\n- Binary choice between plausible/implausible solutions\n- Requires intuitive physics reasoning\n- Covers everyday physical scenarios\n- Adversarially filtered to reduce biases\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses simple multiple-choice prompting\n- Evaluates on validation split\n- Simple accuracy metric\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `piqa` |\n| **Dataset ID** | [extraordinarylab/piqa](https://modelscope.cn/datasets/extraordinarylab/piqa/summary) |\n| **Paper** | N/A |\n| **Tags** | `Commonsense`, `MCQ`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,838 |\n| Prompt Length (Mean) | 426.52 chars |\n| Prompt Length (Min/Max) | 220 / 2335 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a0600392\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\\n\\nHow do I ready a guinea pig cage for it's new occupants?\\n ... [TRUNCATED] ... ps, you will also need to supply it with a water bottle and a food dish.\\nB) Provide the guinea pig with a cage full of a few inches of bedding made of ripped jeans material, you will also need to supply it with a water bottle and a food dish.\"\n    }\n  ],\n  \"choices\": [\n    \"Provide the guinea pig with a cage full of a few inches of bedding made of ripped paper strips, you will also need to supply it with a water bottle and a food dish.\",\n    \"Provide the guinea pig with a cage full of a few inches of bedding made of ripped jeans material, you will also need to supply it with a water bottle and a food dish.\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets piqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['piqa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# PIQA\n\n## 概述\n\nPIQA（Physical Interaction QA）是一个用于评估 AI 模型对物理常识理解能力的基准测试，重点考察模型对物理世界中物体如何相互作用以及在人为操作下会发生什么的理解。\n\n## 任务描述\n\n- **任务类型**：物理常识推理\n- **输入**：一个目标/问题及两个可能的解决方案\n- **输出**：更符合物理常识的解决方案（A 或 B）\n- **关注点**：物理世界知识与直觉物理推理\n\n## 主要特点\n\n- 测试对物理对象属性的理解\n- 在合理与不合理方案之间进行二元选择\n- 需要直觉物理推理能力\n- 覆盖日常物理场景\n- 经过对抗性过滤以减少数据偏差\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 使用简单的多项选择提示方式\n- 在验证集（validation split）上进行评估\n- 使用简单准确率（accuracy）作为评估指标\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `piqa` |\n| **数据集ID** | [extraordinarylab/piqa](https://modelscope.cn/datasets/extraordinarylab/piqa/summary) |\n| **论文** | N/A |\n| **标签** | `Commonsense`, `MCQ`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估集** | `validation` |\n| **训练集** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,838 |\n| 提示词长度（平均） | 426.52 字符 |\n| 提示词长度（最小/最大） | 220 / 2335 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a0600392\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\\n\\nHow do I ready a guinea pig cage for it's new occupants?\\n ... [TRUNCATED] ... ps, you will also need to supply it with a water bottle and a food dish.\\nB) Provide the guinea pig with a cage full of a few inches of bedding made of ripped jeans material, you will also need to supply it with a water bottle and a food dish.\"\n    }\n  ],\n  \"choices\": [\n    \"Provide the guinea pig with a cage full of a few inches of bedding made of ripped paper strips, you will also need to supply it with a water bottle and a food dish.\",\n    \"Provide the guinea pig with a cage full of a few inches of bedding made of ripped jeans material, you will also need to supply it with a water bottle and a food dish.\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets piqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['piqa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "b1a2eae4829156e2d703888e8b329de2",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.409396",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

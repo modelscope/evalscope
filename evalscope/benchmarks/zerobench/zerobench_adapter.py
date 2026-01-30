@@ -26,8 +26,34 @@ SUBSET_LIST = ['default']
         pretty_name='ZeroBench',
         dataset_id='evalscope/zerobench',
         tags=[Tags.KNOWLEDGE, Tags.QA, Tags.MULTI_MODAL],
-        description=
-        'ZeroBench is a challenging visual reasoning benchmark for Large Multimodal Models (LMMs). It consists of a main set of 100 high-quality, manually curated questions covering numerous domains, reasoning types and image type. Questions in ZeroBench have been designed and calibrated to be beyond the capabilities of current frontier models. As such, none of the evaluated models achieves a non-zero pass@1 (with greedy decoding) or 5/5 reliability score.',
+        description="""
+## Overview
+
+ZeroBench is a challenging visual reasoning benchmark for Large Multimodal Models (LMMs). It consists of 100 high-quality, manually curated questions covering numerous domains, reasoning types, and image types designed to be beyond current model capabilities.
+
+## Task Description
+
+- **Task Type**: Advanced Visual Reasoning
+- **Input**: One or more images + challenging visual reasoning question
+- **Output**: Step-by-step reasoning with final answer in curly braces
+- **Domains**: Visual reasoning, perception, multi-step inference
+
+## Key Features
+
+- 100 manually curated high-quality questions
+- Designed to challenge frontier models (zero pass@1 with greedy decoding)
+- Covers diverse domains, reasoning types, and image types
+- No model achieves 5/5 reliability score
+- Tests limits of current visual reasoning capabilities
+
+## Evaluation Notes
+
+- Default evaluation uses the **zerobench** split
+- Primary metric: **Accuracy** with LLM judge
+- Answers must be in format: `{final answer}`
+- Includes subquestions split for detailed analysis
+- Uses image compression to handle large images
+""",
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='zerobench',

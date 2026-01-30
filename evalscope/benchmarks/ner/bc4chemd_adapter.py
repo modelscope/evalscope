@@ -3,11 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'The BC4CHEMD (BioCreative IV CHEMDNER) dataset is a corpus of 10,000 '
-    'PubMed abstracts with 84,355 chemical entity mentions manually annotated '
-    'by experts for chemical named entity recognition.'
-)  # noqa: E501
+DESCRIPTION = """
+## Overview
+
+The BC4CHEMD (BioCreative IV CHEMDNER) dataset is a corpus of 10,000 PubMed abstracts with 84,355 chemical entity mentions manually annotated by experts for chemical named entity recognition.
+
+## Task Description
+
+- **Task Type**: Chemical Named Entity Recognition (NER)
+- **Input**: Scientific text from PubMed abstracts
+- **Output**: Identified chemical compound name spans
+- **Domain**: Chemistry, pharmacology, drug discovery
+
+## Key Features
+
+- 10,000 PubMed abstracts
+- 84,355 chemical entity mentions
+- Expert manual annotations
+- Benchmark from BioCreative IV challenge
+- Comprehensive chemical compound coverage
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: CHEMICAL (chemical and drug names)
+"""  # noqa: E501
 
 
 @register_benchmark(

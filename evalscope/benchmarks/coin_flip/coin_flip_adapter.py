@@ -10,12 +10,34 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-DESCRIPTION = (
-    "CoinFlip is a symbolic reasoning dataset that tests an LLM's ability "
-    'to track binary state changes through a sequence of actions. '
-    'Each example describes whether a coin is flipped or not by different person, '
-    'requiring logical inference to determine the final state (heads or tails).'
-)  # noqa: E501
+DESCRIPTION = """
+## Overview
+
+CoinFlip is a symbolic reasoning benchmark that tests LLMs' ability to track binary state changes through sequences of actions. Each problem involves determining a coin's final state (heads/tails) after various flipping operations.
+
+## Task Description
+
+- **Task Type**: Symbolic Reasoning / State Tracking
+- **Input**: Description of coin flip operations by different people
+- **Output**: Final coin state (YES for heads-up, NO for tails-up)
+- **Focus**: Binary state tracking and logical inference
+
+## Key Features
+
+- Tests state tracking through action sequences
+- Binary reasoning (flip/no-flip) decisions
+- Requires careful attention to operator effects
+- Evaluates systematic logical reasoning
+- Clear, unambiguous answers
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Answers should follow "ANSWER: YES/NO" format
+- Five metrics: accuracy, precision, recall, F1, yes_ratio
+- F1 score is the primary aggregation metric
+- Supports few-shot evaluation with reasoning examples
+"""
 
 PROMPT_TEMPLATE = """
 Solve the following coin flip problem step by step. The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem.

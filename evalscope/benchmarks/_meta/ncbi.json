@@ -1,0 +1,118 @@
+{
+  "meta": {
+    "pretty_name": "NCBI",
+    "dataset_id": "extraordinarylab/ncbi",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nThe NCBI disease corpus is a manually annotated resource of PubMed abstracts designed for disease name recognition and normalization. It provides a gold standard for evaluating disease named entity recognition systems.\n\n## Task Description\n\n- **Task Type**: Disease Named Entity Recognition (NER)\n- **Input**: PubMed abstract text\n- **Output**: Identified disease entity spans\n- **Domain**: Medical informatics, clinical NLP\n\n## Key Features\n\n- Manually annotated disease mentions\n- PubMed abstract corpus\n- Supports disease name normalization\n- Gold standard for disease NER evaluation\n- High-quality expert annotations\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: DISEASE (diseases, disorders, syndromes)\n",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 940,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 940,
+        "prompt_length_mean": 2646.25,
+        "prompt_length_min": 2502,
+        "prompt_length_max": 2988,
+        "prompt_length_std": 69.7,
+        "target_length_mean": 187.49
+      }
+    ],
+    "prompt_length": {
+      "mean": 2646.25,
+      "min": 2502,
+      "max": 2988,
+      "std": 69.7
+    },
+    "target_length_mean": 187.49,
+    "computed_at": "2026-01-28T14:15:58.329406"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "e87ce89c",
+          "content": "Here are some examples of named entity recognition:\n\nInput:\nIdentification of APC2 , a homologue of the adenomatous polyposis coli tumour suppressor .\n\nOutput:\n<response>Identification of APC2 , a homologue of the <disease>adenomatous polypos ... [TRUNCATED] ...  If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\nClustering of missense mutations in the ataxia - telangiectasia gene in a sporadic T - cell leukaemia .\n"
+        }
+      ],
+      "target": "<response>Clustering of missense mutations in the <disease>ataxia - telangiectasia</disease> gene in a <disease>sporadic T - cell leukaemia</disease> .</response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "Clustering",
+          "of",
+          "missense",
+          "mutations",
+          "in",
+          "the",
+          "ataxia",
+          "-",
+          "telangiectasia",
+          "gene",
+          "in",
+          "a",
+          "sporadic",
+          "T",
+          "-",
+          "cell",
+          "leukaemia",
+          "."
+        ],
+        "ner_tags": [
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-DISEASE",
+          "I-DISEASE",
+          "I-DISEASE",
+          "O",
+          "O",
+          "O",
+          "B-DISEASE",
+          "I-DISEASE",
+          "I-DISEASE",
+          "I-DISEASE",
+          "I-DISEASE",
+          "O"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# NCBI\n\n\n## Overview\n\nThe NCBI disease corpus is a manually annotated resource of PubMed abstracts designed for disease name recognition and normalization. It provides a gold standard for evaluating disease named entity recognition systems.\n\n## Task Description\n\n- **Task Type**: Disease Named Entity Recognition (NER)\n- **Input**: PubMed abstract text\n- **Output**: Identified disease entity spans\n- **Domain**: Medical informatics, clinical NLP\n\n## Key Features\n\n- Manually annotated disease mentions\n- PubMed abstract corpus\n- Supports disease name normalization\n- Gold standard for disease NER evaluation\n- High-quality expert annotations\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: DISEASE (diseases, disorders, syndromes)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `ncbi` |\n| **Dataset ID** | [extraordinarylab/ncbi](https://modelscope.cn/datasets/extraordinarylab/ncbi/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 940 |\n| Prompt Length (Mean) | 2646.25 chars |\n| Prompt Length (Min/Max) | 2502 / 2988 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"e87ce89c\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nIdentification of APC2 , a homologue of the adenomatous polyposis coli tumour suppressor .\\n\\nOutput:\\n<response>Identification of APC2 , a homologue of the <disease>adenomatous polypos ... [TRUNCATED] ...  If entity spans overlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\nClustering of missense mutations in the ataxia - telangiectasia gene in a sporadic T - cell leukaemia .\\n\"\n    }\n  ],\n  \"target\": \"<response>Clustering of missense mutations in the <disease>ataxia - telangiectasia</disease> gene in a <disease>sporadic T - cell leukaemia</disease> .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"Clustering\",\n      \"of\",\n      \"missense\",\n      \"mutations\",\n      \"in\",\n      \"the\",\n      \"ataxia\",\n      \"-\",\n      \"telangiectasia\",\n      \"gene\",\n      \"in\",\n      \"a\",\n      \"sporadic\",\n      \"T\",\n      \"-\",\n      \"cell\",\n      \"leukaemia\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-DISEASE\",\n      \"I-DISEASE\",\n      \"I-DISEASE\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-DISEASE\",\n      \"I-DISEASE\",\n      \"I-DISEASE\",\n      \"I-DISEASE\",\n      \"I-DISEASE\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ncbi \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ncbi'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# NCBI\n\n\n## 概述\n\nNCBI 疾病语料库是一个人工标注的 PubMed 摘要资源，专为疾病名称识别与标准化而设计。它为评估疾病命名实体识别（NER）系统提供了黄金标准。\n\n## 任务描述\n\n- **任务类型**：疾病命名实体识别（Disease Named Entity Recognition, NER）\n- **输入**：PubMed 摘要文本\n- **输出**：识别出的疾病实体范围（spans）\n- **领域**：医学信息学、临床自然语言处理（Clinical NLP）\n\n## 主要特性\n\n- 人工标注的疾病提及\n- 基于 PubMed 摘要的语料库\n- 支持疾病名称标准化\n- 疾病 NER 评估的黄金标准\n- 高质量的专家标注\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 评估\n- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）\n- 实体类型：DISEASE（包括疾病、障碍、综合征等）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `ncbi` |\n| **数据集 ID** | [extraordinarylab/ncbi](https://modelscope.cn/datasets/extraordinarylab/ncbi/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认示例数量** | 5-shot |\n| **评估划分** | `test` |\n| **训练划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 940 |\n| 提示词长度（平均） | 2646.25 字符 |\n| 提示词长度（最小/最大） | 2502 / 2988 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"e87ce89c\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nIdentification of APC2 , a homologue of the adenomatous polyposis coli tumour suppressor .\\n\\nOutput:\\n<response>Identification of APC2 , a homologue of the <disease>adenomatous polypos ... [TRUNCATED] ...  If entity spans overlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\nClustering of missense mutations in the ataxia - telangiectasia gene in a sporadic T - cell leukaemia .\\n\"\n    }\n  ],\n  \"target\": \"<response>Clustering of missense mutations in the <disease>ataxia - telangiectasia</disease> gene in a <disease>sporadic T - cell leukaemia</disease> .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"Clustering\",\n      \"of\",\n      \"missense\",\n      \"mutations\",\n      \"in\",\n      \"the\",\n      \"ataxia\",\n      \"-\",\n      \"telangiectasia\",\n      \"gene\",\n      \"in\",\n      \"a\",\n      \"sporadic\",\n      \"T\",\n      \"-\",\n      \"cell\",\n      \"leukaemia\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-DISEASE\",\n      \"I-DISEASE\",\n      \"I-DISEASE\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-DISEASE\",\n      \"I-DISEASE\",\n      \"I-DISEASE\",\n      \"I-DISEASE\",\n      \"I-DISEASE\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本（Few-shot）模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ncbi \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ncbi'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "b2d3cb679b3b626c32bcb49301f96e1a",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.372008",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

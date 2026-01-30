@@ -28,9 +28,34 @@ LANGUAGE_LIST = ['en', 'cn']
         name='gedit',
         pretty_name='GEdit-Bench',
         dataset_id='stepfun-ai/GEdit-Bench',
-        description='GEdit-Bench Image Editing Benchmark, grounded in real-world '
-        'usages is developed to support more authentic and '
-        'comprehensive evaluation of image editing models.',
+        description="""
+## Overview
+
+GEdit-Bench (Grounded Edit Benchmark) is an image editing benchmark grounded in real-world usage scenarios. It provides comprehensive evaluation of image editing models across diverse editing tasks with LLM-based judging.
+
+## Task Description
+
+- **Task Type**: Image Editing Evaluation
+- **Input**: Source image + editing instruction
+- **Output**: Edited image evaluated by LLM judge
+- **Languages**: English (en) and Chinese (cn)
+
+## Key Features
+
+- Real-world editing scenarios (background change, color alter, style transfer, etc.)
+- 11 editing task categories
+- LLM-based evaluation for semantic consistency and perceptual quality
+- Supports both English and Chinese instructions
+- Comprehensive scoring: Semantic Consistency, Perceptual Quality, Overall
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Evaluates on **train** split (contains test samples)
+- Metrics: **Semantic Consistency**, **Perceptual Similarity** (via LLM judge)
+- Overall score: geometric mean of SC and PQ scores
+- Configure language via `extra_params['language']` (en/cn)
+""",
         tags=[Tags.IMAGE_EDITING],
         subset_list=SUBSET_LIST,
         metric_list=['Semantic Consistency', 'Perceptual Similarity'],

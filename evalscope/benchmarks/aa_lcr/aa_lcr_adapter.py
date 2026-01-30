@@ -56,8 +56,34 @@ DEFAULT_EXTRACTED_DIR_NAME: str = 'lcr'
         name='aa_lcr',
         pretty_name='AA-LCR',
         tags=[Tags.KNOWLEDGE, Tags.REASONING, Tags.LONG_CONTEXT],
-        description='AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluating long-context '
-        'retrieval and reasoning capabilities of language models across multiple documents.',  # noqa: E501
+        description="""
+## Overview
+
+AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluating long-context retrieval and reasoning capabilities of language models. It requires models to find and synthesize information across multiple documents.
+
+## Task Description
+
+- **Task Type**: Long-Context Question Answering
+- **Input**: Multiple documents + question requiring cross-document reasoning
+- **Output**: Answer synthesized from document information
+- **Context**: Very long context (multiple documents concatenated)
+
+## Key Features
+
+- Tests long-context retrieval abilities
+- Multiple document understanding
+- Cross-document reasoning required
+- LLM-based judging for answer correctness
+- Auto-download of document corpus
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Primary metric: **Accuracy** (via LLM judge)
+- Evaluates on **test** split
+- Documents auto-downloaded if `text_dir` not specified
+- Judge prompt compares candidate answer against reference
+""",  # noqa: E501
         dataset_id='evalscope/AA-LCR',
         metric_list=['acc'],
         few_shot_num=0,

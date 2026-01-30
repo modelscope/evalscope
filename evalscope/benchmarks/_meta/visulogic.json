@@ -1,0 +1,373 @@
+{
+  "meta": {
+    "pretty_name": "VisuLogic",
+    "dataset_id": "evalscope/VisuLogic",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning",
+      "MCQ",
+      "MultiModal"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "Quantitative Reasoning",
+      "Other",
+      "Positional Reasoning",
+      "Stylistic Reasoning",
+      "Spatial Reasoning",
+      "Attribute Reasoning"
+    ],
+    "description": "\n## Overview\n\nVisuLogic is a benchmark for evaluating visual reasoning capabilities of Multimodal Large Language Models (MLLMs), independent of textual reasoning. It features carefully constructed visual reasoning tasks that are inherently difficult to articulate using language alone.\n\n## Task Description\n\n- **Task Type**: Visual Reasoning (Multiple-Choice)\n- **Input**: Image + visual reasoning question with 4 choices\n- **Output**: Answer letter (A/B/C/D)\n- **Domains**: Pure visual reasoning without text-based shortcuts\n\n## Key Features\n\n- Six reasoning skill categories:\n  - **Quantitative Reasoning**: Understanding quantity changes in images\n  - **Positional Reasoning**: Understanding spatial positions\n  - **Spatial Reasoning**: Understanding 3D spatial relationships\n  - **Attribute Reasoning**: Understanding visual attributes\n  - **Stylistic Reasoning**: Understanding visual styles\n  - **Other**: Miscellaneous visual reasoning tasks\n- Tests genuine visual understanding beyond language shortcuts\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** on multiple-choice questions\n- Uses Chain-of-Thought (CoT) prompting with \"ANSWER: [LETTER]\" format\n- Results grouped by reasoning skill category\n",
+    "prompt_template": "\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.\n\n{question}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 1000,
+    "subset_stats": [
+      {
+        "name": "Quantitative Reasoning",
+        "sample_count": 353,
+        "prompt_length_mean": 399.15,
+        "prompt_length_min": 308,
+        "prompt_length_max": 697,
+        "prompt_length_std": 39.48,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 353,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "313x240",
+              "337x173",
+              "339x158",
+              "357x420",
+              "377x411",
+              "378x197",
+              "380x206",
+              "387x326",
+              "392x409",
+              "393x355"
+            ],
+            "resolution_range": {
+              "min": "339x158",
+              "max": "663x736"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Other",
+        "sample_count": 108,
+        "prompt_length_mean": 399.08,
+        "prompt_length_min": 285,
+        "prompt_length_max": 560,
+        "prompt_length_std": 42.12,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 108,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "200x290",
+              "393x324",
+              "400x469",
+              "400x481",
+              "425x500",
+              "430x356",
+              "450x359",
+              "473x387",
+              "473x408",
+              "475x399"
+            ],
+            "resolution_range": {
+              "min": "200x290",
+              "max": "700x610"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Positional Reasoning",
+        "sample_count": 136,
+        "prompt_length_mean": 372.37,
+        "prompt_length_min": 295,
+        "prompt_length_max": 448,
+        "prompt_length_std": 22.93,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 136,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "288x125",
+              "363x428",
+              "400x460",
+              "433x243",
+              "448x517",
+              "450x513",
+              "453x503",
+              "456x532",
+              "458x418",
+              "459x242"
+            ],
+            "resolution_range": {
+              "min": "288x125",
+              "max": "700x683"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Stylistic Reasoning",
+        "sample_count": 90,
+        "prompt_length_mean": 375.32,
+        "prompt_length_min": 303,
+        "prompt_length_max": 483,
+        "prompt_length_std": 23.89,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 90,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "331x379",
+              "333x400",
+              "356x400",
+              "362x418",
+              "369x413",
+              "372x358",
+              "376x434",
+              "400x419",
+              "400x460",
+              "400x463"
+            ],
+            "resolution_range": {
+              "min": "331x379",
+              "max": "700x825"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Spatial Reasoning",
+        "sample_count": 231,
+        "prompt_length_mean": 401.91,
+        "prompt_length_min": 314,
+        "prompt_length_max": 537,
+        "prompt_length_std": 47.43,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 231,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "406x111",
+              "439x370",
+              "459x188",
+              "460x142",
+              "468x289",
+              "480x305",
+              "480x396",
+              "500x161",
+              "500x166",
+              "500x177"
+            ],
+            "resolution_range": {
+              "min": "406x111",
+              "max": "700x470"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Attribute Reasoning",
+        "sample_count": 82,
+        "prompt_length_mean": 401.15,
+        "prompt_length_min": 295,
+        "prompt_length_max": 458,
+        "prompt_length_std": 36.68,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 82,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "381x326",
+              "397x320",
+              "400x366",
+              "400x459",
+              "414x362",
+              "415x334",
+              "425x340",
+              "446x356",
+              "480x381",
+              "486x322"
+            ],
+            "resolution_range": {
+              "min": "600x124",
+              "max": "700x566"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 394.16,
+      "min": 285,
+      "max": 697,
+      "std": 40.17
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:17:15.316208",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 1000,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "200x290",
+          "288x125",
+          "313x240",
+          "331x379",
+          "333x400",
+          "337x173",
+          "339x158",
+          "356x400",
+          "357x420",
+          "362x418"
+        ],
+        "resolution_range": {
+          "min": "288x125",
+          "max": "700x825"
+        },
+        "formats": [
+          "jpeg",
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "1a6407d8",
+          "content": [
+            {
+              "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.\n\nFrom the four given options, select the most suitable one to fill in the question mark, so that a certain regularity is presented:\n\n\n\nA: A  \nB: B  \nC: C  \nD: D"
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~44.9KB]"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "Quantitative Reasoning",
+      "metadata": {
+        "id": "00000"
+      }
+    },
+    "subset": "Quantitative Reasoning",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# VisuLogic\n\n\n## Overview\n\nVisuLogic is a benchmark for evaluating visual reasoning capabilities of Multimodal Large Language Models (MLLMs), independent of textual reasoning. It features carefully constructed visual reasoning tasks that are inherently difficult to articulate using language alone.\n\n## Task Description\n\n- **Task Type**: Visual Reasoning (Multiple-Choice)\n- **Input**: Image + visual reasoning question with 4 choices\n- **Output**: Answer letter (A/B/C/D)\n- **Domains**: Pure visual reasoning without text-based shortcuts\n\n## Key Features\n\n- Six reasoning skill categories:\n  - **Quantitative Reasoning**: Understanding quantity changes in images\n  - **Positional Reasoning**: Understanding spatial positions\n  - **Spatial Reasoning**: Understanding 3D spatial relationships\n  - **Attribute Reasoning**: Understanding visual attributes\n  - **Stylistic Reasoning**: Understanding visual styles\n  - **Other**: Miscellaneous visual reasoning tasks\n- Tests genuine visual understanding beyond language shortcuts\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** on multiple-choice questions\n- Uses Chain-of-Thought (CoT) prompting with \"ANSWER: [LETTER]\" format\n- Results grouped by reasoning skill category\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `visulogic` |\n| **Dataset ID** | [evalscope/VisuLogic](https://modelscope.cn/datasets/evalscope/VisuLogic/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `Math`, `MultiModal`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,000 |\n| Prompt Length (Mean) | 394.16 chars |\n| Prompt Length (Min/Max) | 285 / 697 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Quantitative Reasoning` | 353 | 399.15 | 308 | 697 |\n| `Other` | 108 | 399.08 | 285 | 560 |\n| `Positional Reasoning` | 136 | 372.37 | 295 | 448 |\n| `Stylistic Reasoning` | 90 | 375.32 | 303 | 483 |\n| `Spatial Reasoning` | 231 | 401.91 | 314 | 537 |\n| `Attribute Reasoning` | 82 | 401.15 | 295 | 458 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 1,000 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 288x125 - 700x825 |\n| Formats | jpeg, png |\n\n\n## Sample Example\n\n**Subset**: `Quantitative Reasoning`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"1a6407d8\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.\\n\\nFrom the four given options, select the most suitable one to fill in the question mark, so that a certain regularity is presented:\\n\\n\\n\\nA: A  \\nB: B  \\nC: C  \\nD: D\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~44.9KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"A\",\n    \"B\",\n    \"C\",\n    \"D\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Quantitative Reasoning\",\n  \"metadata\": {\n    \"id\": \"00000\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.\n\n{question}\n\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets visulogic \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['visulogic'],\n    dataset_args={\n        'visulogic': {\n            # subset_list: ['Quantitative Reasoning', 'Other', 'Positional Reasoning']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# VisuLogic\n\n\n## 概述\n\nVisuLogic 是一个用于评估多模态大语言模型（MLLMs）视觉推理能力的基准测试，其设计独立于文本推理。该基准包含精心构建的视觉推理任务，这些任务本质上难以仅通过语言进行描述。\n\n## 任务描述\n\n- **任务类型**：视觉推理（多项选择题）\n- **输入**：图像 + 视觉推理问题（含4个选项）\n- **输出**：答案字母（A/B/C/D）\n- **领域**：纯视觉推理，不依赖基于文本的捷径\n\n## 主要特点\n\n- 六类推理技能：\n  - **数量推理（Quantitative Reasoning）**：理解图像中数量的变化\n  - **位置推理（Positional Reasoning）**：理解空间位置关系\n  - **空间推理（Spatial Reasoning）**：理解三维空间关系\n  - **属性推理（Attribute Reasoning）**：理解视觉属性\n  - **风格推理（Stylistic Reasoning）**：理解视觉风格\n  - **其他（Other）**：其他类型的视觉推理任务\n- 测试模型真实的视觉理解能力，而非依赖语言捷径\n\n## 评估说明\n\n- 默认使用 **test** 数据划分进行评估\n- 主要指标：多项选择题的 **准确率（Accuracy）**\n- 使用思维链（Chain-of-Thought, CoT）提示，并要求以 \"ANSWER: [LETTER]\" 格式作答\n- 结果按推理技能类别分组统计\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `visulogic` |\n| **数据集ID** | [evalscope/VisuLogic](https://modelscope.cn/datasets/evalscope/VisuLogic/summary) |\n| **论文** | N/A |\n| **标签** | `MCQ`, `Math`, `MultiModal`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,000 |\n| 提示词长度（平均） | 394.16 字符 |\n| 提示词长度（最小/最大） | 285 / 697 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Quantitative Reasoning` | 353 | 399.15 | 308 | 697 |\n| `Other` | 108 | 399.08 | 285 | 560 |\n| `Positional Reasoning` | 136 | 372.37 | 295 | 448 |\n| `Stylistic Reasoning` | 90 | 375.32 | 303 | 483 |\n| `Spatial Reasoning` | 231 | 401.91 | 314 | 537 |\n| `Attribute Reasoning` | 82 | 401.15 | 295 | 458 |\n\n**图像统计数据：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 1,000 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 288x125 - 700x825 |\n| 格式 | jpeg, png |\n\n\n## 样例示例\n\n**子集**: `Quantitative Reasoning`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"1a6407d8\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.\\n\\nFrom the four given options, select the most suitable one to fill in the question mark, so that a certain regularity is presented:\\n\\n\\n\\nA: A  \\nB: B  \\nC: C  \\nD: D\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~44.9KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"A\",\n    \"B\",\n    \"C\",\n    \"D\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Quantitative Reasoning\",\n  \"metadata\": {\n    \"id\": \"00000\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.\n\n{question}\n\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets visulogic \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['visulogic'],\n    dataset_args={\n        'visulogic': {\n            # subset_list: ['Quantitative Reasoning', 'Other', 'Positional Reasoning']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "fd08b8cacca7611e540196ee3da26994",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.655910",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

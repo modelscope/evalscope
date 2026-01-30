@@ -1,0 +1,84 @@
+{
+  "meta": {
+    "pretty_name": "HumanEval",
+    "dataset_id": "opencompass/humaneval",
+    "paper_url": null,
+    "tags": [
+      "Coding"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "openai_humaneval"
+    ],
+    "description": "\n## Overview\n\nHumanEval is a benchmark for evaluating the code generation capabilities of language models. It consists of 164 hand-written Python programming problems with function signatures, docstrings, and comprehensive test cases.\n\n## Task Description\n\n- **Task Type**: Code Generation (Python)\n- **Input**: Function signature with docstring describing the expected behavior\n- **Output**: Complete Python function implementation\n- **Languages**: Python only\n\n## Key Features\n\n- 164 hand-crafted programming problems\n- Each problem includes a function signature, docstring, and test cases\n- Problems range from simple string manipulation to complex algorithms\n- Canonical solutions provided for reference\n- Automatic correctness verification through test execution\n\n## Evaluation Notes\n\n- **Security Warning**: By default, code is executed in the local environment. We strongly recommend using sandbox execution for safety. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.\n- Supports `pass@k` metric calculation for measuring generation quality\n- Default timeout is 4 seconds per problem\n- Code is extracted from markdown code blocks if present\n",
+    "prompt_template": "Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean_and_pass_at_k",
+    "extra_params": {},
+    "sandbox_config": {
+      "image": "python:3.11-slim",
+      "tools_config": {
+        "shell_executor": {},
+        "python_executor": {}
+      }
+    },
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 164,
+    "subset_stats": [
+      {
+        "name": "openai_humaneval",
+        "sample_count": 164,
+        "prompt_length_mean": 609.6,
+        "prompt_length_min": 274,
+        "prompt_length_max": 1519,
+        "prompt_length_std": 230.3,
+        "target_length_mean": 180.87
+      }
+    ],
+    "prompt_length": {
+      "mean": 609.6,
+      "min": 274,
+      "max": 1519,
+      "std": 230.3
+    },
+    "target_length_mean": 180.87,
+    "computed_at": "2026-01-28T11:13:54.523308"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "5f652252",
+          "content": "Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\nfrom typing import List\n\n\ndef has_close_elements(numbers: List[float], threshold: f ... [TRUNCATED] ... Check if in given list of numbers, are any two numbers closer to each other than\n    given threshold.\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\n    False\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\n    True\n    \"\"\"\n"
+        }
+      ],
+      "target": "    for idx, elem in enumerate(numbers):\n        for idx2, elem2 in enumerate(numbers):\n            if idx != idx2:\n                distance = abs(elem - elem2)\n                if distance < threshold:\n                    return True\n\n    return False\n",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "task_id": "HumanEval/0",
+        "entry_point": "has_close_elements",
+        "prompt": "from typing import List\n\n\ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\n    \"\"\" Check if in given list of numbers, are any two numbers closer to each other than\n    given threshold.\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\n    False\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\n    True\n    \"\"\"\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.3) == True\n    assert candidate([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.05) == False\n    assert candidate([1.0 ... [TRUNCATED] ...  candidate([1.0, 2.0, 5.9, 4.0, 5.0], 0.8) == False\n    assert candidate([1.0, 2.0, 3.0, 4.0, 5.0, 2.0], 0.1) == True\n    assert candidate([1.1, 2.2, 3.1, 4.1, 5.1], 1.0) == True\n    assert candidate([1.1, 2.2, 3.1, 4.1, 5.1], 0.5) == False\n\n"
+      }
+    },
+    "subset": "openai_humaneval",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# HumanEval\n\n\n## Overview\n\nHumanEval is a benchmark for evaluating the code generation capabilities of language models. It consists of 164 hand-written Python programming problems with function signatures, docstrings, and comprehensive test cases.\n\n## Task Description\n\n- **Task Type**: Code Generation (Python)\n- **Input**: Function signature with docstring describing the expected behavior\n- **Output**: Complete Python function implementation\n- **Languages**: Python only\n\n## Key Features\n\n- 164 hand-crafted programming problems\n- Each problem includes a function signature, docstring, and test cases\n- Problems range from simple string manipulation to complex algorithms\n- Canonical solutions provided for reference\n- Automatic correctness verification through test execution\n\n## Evaluation Notes\n\n- **Security Warning**: By default, code is executed in the local environment. We strongly recommend using sandbox execution for safety. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.\n- Supports `pass@k` metric calculation for measuring generation quality\n- Default timeout is 4 seconds per problem\n- Code is extracted from markdown code blocks if present\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `humaneval` |\n| **Dataset ID** | [opencompass/humaneval](https://modelscope.cn/datasets/opencompass/humaneval/summary) |\n| **Paper** | N/A |\n| **Tags** | `Coding` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `mean_and_pass_at_k` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 164 |\n| Prompt Length (Mean) | 609.6 chars |\n| Prompt Length (Min/Max) | 274 / 1519 chars |\n\n## Sample Example\n\n**Subset**: `openai_humaneval`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"5f652252\",\n      \"content\": \"Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\\nfrom typing import List\\n\\n\\ndef has_close_elements(numbers: List[float], threshold: f ... [TRUNCATED] ... Check if in given list of numbers, are any two numbers closer to each other than\\n    given threshold.\\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\\n    False\\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\\n    True\\n    \\\"\\\"\\\"\\n\"\n    }\n  ],\n  \"target\": \"    for idx, elem in enumerate(numbers):\\n        for idx2, elem2 in enumerate(numbers):\\n            if idx != idx2:\\n                distance = abs(elem - elem2)\\n                if distance < threshold:\\n                    return True\\n\\n    return False\\n\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"task_id\": \"HumanEval/0\",\n    \"entry_point\": \"has_close_elements\",\n    \"prompt\": \"from typing import List\\n\\n\\ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\\n    \\\"\\\"\\\" Check if in given list of numbers, are any two numbers closer to each other than\\n    given threshold.\\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\\n    False\\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\\n    True\\n    \\\"\\\"\\\"\\n\",\n    \"test\": \"\\n\\nMETADATA = {\\n    'author': 'jt',\\n    'dataset': 'test'\\n}\\n\\n\\ndef check(candidate):\\n    assert candidate([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.3) == True\\n    assert candidate([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.05) == False\\n    assert candidate([1.0 ... [TRUNCATED] ...  candidate([1.0, 2.0, 5.9, 4.0, 5.0], 0.8) == False\\n    assert candidate([1.0, 2.0, 3.0, 4.0, 5.0, 2.0], 0.1) == True\\n    assert candidate([1.1, 2.2, 3.1, 4.1, 5.1], 1.0) == True\\n    assert candidate([1.1, 2.2, 3.1, 4.1, 5.1], 0.5) == False\\n\\n\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nRead the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}\n```\n\n## Sandbox Configuration\n\nThis benchmark requires a sandbox environment for code execution.\n\n```json\n{\n  \"image\": \"python:3.11-slim\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {}\n  }\n}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets humaneval \\\n    --use-sandbox \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['humaneval'],\n    use_sandbox=True,\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# HumanEval\n\n\n## 概述\n\nHumanEval 是一个用于评估语言模型代码生成能力的基准测试。它包含 164 个手工编写的 Python 编程问题，每个问题都提供了函数签名、文档字符串（docstring）和完整的测试用例。\n\n## 任务描述\n\n- **任务类型**：代码生成（Python）\n- **输入**：带有文档字符串的函数签名，描述期望的行为\n- **输出**：完整的 Python 函数实现\n- **语言**：仅限 Python\n\n## 主要特性\n\n- 包含 164 个精心设计的编程问题\n- 每个问题均包含函数签名、文档字符串和测试用例\n- 问题难度从简单的字符串操作到复杂的算法不等\n- 提供标准参考解答\n- 通过执行测试用例自动验证正确性\n\n## 评估说明\n\n- **安全警告**：默认情况下，代码将在本地环境中执行。我们强烈建议使用沙箱（sandbox）环境以确保安全。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。\n- 支持 `pass@k` 指标计算，用于衡量生成质量\n- 每个问题默认超时时间为 4 秒\n- 若响应中包含 Markdown 代码块，则从中提取代码\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `humaneval` |\n| **数据集 ID** | [opencompass/humaneval](https://modelscope.cn/datasets/opencompass/humaneval/summary) |\n| **论文** | 无 |\n| **标签** | `Coding` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `test` |\n| **聚合方式** | `mean_and_pass_at_k` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 164 |\n| 提示词长度（平均） | 609.6 字符 |\n| 提示词长度（最小/最大） | 274 / 1519 字符 |\n\n## 样例示例\n\n**子集**: `openai_humaneval`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"5f652252\",\n      \"content\": \"Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\\nfrom typing import List\\n\\n\\ndef has_close_elements(numbers: List[float], threshold: f ... [TRUNCATED] ... Check if in given list of numbers, are any two numbers closer to each other than\\n    given threshold.\\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\\n    False\\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\\n    True\\n    \\\"\\\"\\\"\\n\"\n    }\n  ],\n  \"target\": \"    for idx, elem in enumerate(numbers):\\n        for idx2, elem2 in enumerate(numbers):\\n            if idx != idx2:\\n                distance = abs(elem - elem2)\\n                if distance < threshold:\\n                    return True\\n\\n    return False\\n\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"task_id\": \"HumanEval/0\",\n    \"entry_point\": \"has_close_elements\",\n    \"prompt\": \"from typing import List\\n\\n\\ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\\n    \\\"\\\"\\\" Check if in given list of numbers, are any two numbers closer to each other than\\n    given threshold.\\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\\n    False\\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\\n    True\\n    \\\"\\\"\\\"\\n\",\n    \"test\": \"\\n\\nMETADATA = {\\n    'author': 'jt',\\n    'dataset': 'test'\\n}\\n\\n\\ndef check(candidate):\\n    assert candidate([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.3) == True\\n    assert candidate([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.05) == False\\n    assert candidate([1.0 ... [TRUNCATED] ...  candidate([1.0, 2.0, 5.9, 4.0, 5.0], 0.8) == False\\n    assert candidate([1.0, 2.0, 3.0, 4.0, 5.0, 2.0], 0.1) == True\\n    assert candidate([1.1, 2.2, 3.1, 4.1, 5.1], 1.0) == True\\n    assert candidate([1.1, 2.2, 3.1, 4.1, 5.1], 0.5) == False\\n\\n\"\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nRead the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}\n```\n\n## 沙箱配置\n\n此基准测试需要沙箱环境来执行代码。\n\n```json\n{\n  \"image\": \"python:3.11-slim\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {}\n  }\n}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets humaneval \\\n    --use-sandbox \\\n    --limit 10  # 正式评估时请移除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['humaneval'],\n    use_sandbox=True,\n    limit=10,  # 正式评估时请移除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "807fd218fdcc66cb984d20f6c39d9eff",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.253976",
+  "translation_updated_at": "2026-01-28T17:40:59Z"
+}

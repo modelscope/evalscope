@@ -1,0 +1,195 @@
+{
+  "meta": {
+    "pretty_name": "MicroVQA",
+    "dataset_id": "evalscope/MicroVQA",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "MultiModal",
+      "Medical"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nMicroVQA is an expert-curated benchmark for multimodal reasoning in microscopy-based scientific research. It evaluates AI models' ability to understand and reason about microscopy images across various scientific domains.\n\n## Task Description\n\n- **Task Type**: Scientific Microscopy Visual Question Answering\n- **Input**: Microscopy image(s) + scientific question with choices\n- **Output**: Correct answer choice\n- **Domain**: Microscopy, scientific research, medical imaging\n\n## Key Features\n\n- Expert-curated microscopy questions\n- Multiple microscopy image types\n- Tests scientific visual reasoning\n- Medical and biological imaging focus\n- Multiple-choice format with CoT prompting\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on test split\n- Simple accuracy metric\n- Uses Chain-of-Thought (CoT) prompting\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 1042,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1042,
+        "prompt_length_mean": 884.16,
+        "prompt_length_min": 414,
+        "prompt_length_max": 1704,
+        "prompt_length_std": 201.73,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1977,
+            "count_per_sample": {
+              "min": 1,
+              "max": 8,
+              "mean": 1.9
+            },
+            "resolutions": [
+              "1000x704",
+              "1002x700",
+              "1018x1019",
+              "1019x1019",
+              "1019x1020",
+              "1024x1024",
+              "1025x495",
+              "1030x374",
+              "1040x470",
+              "1048x406"
+            ],
+            "resolution_range": {
+              "min": "78x70",
+              "max": "2782x3533"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 884.16,
+      "min": 414,
+      "max": 1704,
+      "std": 201.73
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:15:23.923034",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 1977,
+        "count_per_sample": {
+          "min": 1,
+          "max": 8,
+          "mean": 1.9
+        },
+        "resolutions": [
+          "1000x704",
+          "1002x700",
+          "1018x1019",
+          "1019x1019",
+          "1019x1020",
+          "1024x1024",
+          "1025x495",
+          "1030x374",
+          "1040x470",
+          "1048x406"
+        ],
+        "resolution_range": {
+          "min": "78x70",
+          "max": "2782x3533"
+        },
+        "formats": [
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "9bca1e27",
+          "content": [
+            {
+              "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E. Think step by step before answering.\n\nA cryo-electron tom ... [TRUNCATED] ... Facilitation of mitochondrial biogenesis to support increased cell growth\nD) Influence on mitochondrial calcium buffering capacity to maintain cellular homeostasis\nE) Modification of mitochondrial lipid composition affecting membrane fluidity"
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~188.3KB]"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "Regulation of mitochondrial metabolism to meet high ATP demand",
+        "Enhancement of oxidative phosphorylation efficiency under varying energy demands",
+        "Facilitation of mitochondrial biogenesis to support increased cell growth",
+        "Influence on mitochondrial calcium buffering capacity to maintain cellular homeostasis",
+        "Modification of mitochondrial lipid composition affecting membrane fluidity"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "key_question": 644,
+        "key_image": 125,
+        "correct_answer": "Regulation of mitochondrial metabolism to meet high ATP demand",
+        "question_0": "The mitochondria in the tomographic slice are shown in dark blue, with calcium granules highlighted in yellow. How might the presence of calcium granules within the mitochondria affect their function?",
+        "answer_0": "The presence of calcium granules within mitochondria can regulate mitochondrial metabolism and energy production, potentially indicating a high demand for ATP in the neuron.",
+        "comments_0": null,
+        "incorrect_answer_0": "The calcium granules within the mitochondria lead to their structural destabilization, causing the mitochondria to fragment.",
+        "question_1": "A cryo-electron tomography (cryo-ET) image displays primary *Drosophila melanogaster* neurons cultured on a micropatterned grid that directs cytoskeletal growth. In the tomographic slice, mitochondria are shown in dark blue, and calcium granules are highlighted in yellow. How might the presence of calcium granules within the mitochondria affect their function?",
+        "choices_1": [
+          "Inhibition of the electron transport chain, reducing ATP production",
+          "Regulation of mitochondrial metabolism to meet high ATP demand",
+          "Promotion of mitochondrial fission, leading to fragmented mitochondria",
+          "Induction of apoptosis through the release of cytochrome c"
+        ],
+        "correct_index_1": 1,
+        "question_2": "A cryo-electron tomography (cryo-ET) image showcases primary eukaryotic neurons cultured on a specialized substrate that guides cytoskeletal organization. In the tomographic slice, mitochondria appear in deep blue, and calcium granules are depicted in bright yellow. What potential impact could the accumulation of calcium granules within the mitochondria have on their function?",
+        "choices_2": [
+          "Facilitation of mitochondrial biogenesis to support increased cell growth",
+          "Enhancement of oxidative phosphorylation efficiency under varying energy demands",
+          "Regulation of mitochondrial metabolism to meet high ATP demand",
+          "Modification of mitochondrial lipid composition affecting membrane fluidity",
+          "Influence on mitochondrial calcium buffering capacity to maintain cellular homeostasis"
+        ],
+        "correct_index_2": 2,
+        "question_3": "A cryo-electron tomography (cryo-ET) image showcases primary eukaryotic neurons cultured on a specialized substrate that guides cytoskeletal organization. In the tomographic slice, mitochondria appear in deep blue, and calcium granules are depicted in bright yellow. What potential impact could the accumulation of calcium granules within the mitochondria have on their function?",
+        "choices_3": [
+          "Facilitation of mitochondrial biogenesis to support increased cell growth",
+          "Enhancement of oxidative phosphorylation efficiency under varying energy demands",
+          "Regulation of mitochondrial metabolism to meet high ATP demand",
+          "Modification of mitochondrial lipid composition affecting membrane fluidity",
+          "Influence on mitochondrial calcium buffering capacity to maintain cellular homeostasis"
+        ],
+        "correct_index_3": 2,
+        "task": 2,
+        "task_str": "hypothesis_gen",
+        "context_image_generation": "This image was generated using cryo-ET, where a 3 × 4 montage tomogram was reconstructed from primary Drosophila melanogaster neurons cultured on a micropatterned grid designed to guide cytoskeleton growth. The grid provides a straight-line p ... [TRUNCATED] ... he organization of cellular structures such as microtubules. The tomographic slice was then segmented, with specific cellular components like microtubules, mitochondria, and ribosomes identified and highlighted using color coding for clarity.",
+        "context_motivation": "The motivation behind generating these images was to study the organization of the cytoskeleton and associated cellular structures in primary Drosophila melanogaster neurons. By culturing the neurons on a straight-line micropatterned grid, th ... [TRUNCATED] ... ly microtubules. This approach helps in understanding how physical cues from the environment can influence the spatial arrangement and interactions of cellular organelles, which is crucial for insights into cellular architecture and function.",
+        "images_source": "https://www.nature.com/articles/s41592-023-02000-z",
+        "image_caption": "The image shows a tomographic slice with a cross-section of a Drosophila melanogaster neuron with various cellular structures visible. The image is a fully stitched montage, providing a comprehensive view of the neuron's internal organization ... [TRUNCATED] ... distribution and alignment within the neuron, Mitochondria are depicted in dark blue, with yellow indicating the presence of calcium granules within them, Ribosomes are shown in light pink, with associated vesicles represented in darker cyan.",
+        "key_person": 0
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# MicroVQA\n\n\n## Overview\n\nMicroVQA is an expert-curated benchmark for multimodal reasoning in microscopy-based scientific research. It evaluates AI models' ability to understand and reason about microscopy images across various scientific domains.\n\n## Task Description\n\n- **Task Type**: Scientific Microscopy Visual Question Answering\n- **Input**: Microscopy image(s) + scientific question with choices\n- **Output**: Correct answer choice\n- **Domain**: Microscopy, scientific research, medical imaging\n\n## Key Features\n\n- Expert-curated microscopy questions\n- Multiple microscopy image types\n- Tests scientific visual reasoning\n- Medical and biological imaging focus\n- Multiple-choice format with CoT prompting\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on test split\n- Simple accuracy metric\n- Uses Chain-of-Thought (CoT) prompting\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `micro_vqa` |\n| **Dataset ID** | [evalscope/MicroVQA](https://modelscope.cn/datasets/evalscope/MicroVQA/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `Medical`, `MultiModal` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,042 |\n| Prompt Length (Mean) | 884.16 chars |\n| Prompt Length (Min/Max) | 414 / 1704 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 1,977 |\n| Images per Sample | min: 1, max: 8, mean: 1.9 |\n| Resolution Range | 78x70 - 2782x3533 |\n| Formats | png |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"9bca1e27\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E. Think step by step before answering.\\n\\nA cryo-electron tom ... [TRUNCATED] ... Facilitation of mitochondrial biogenesis to support increased cell growth\\nD) Influence on mitochondrial calcium buffering capacity to maintain cellular homeostasis\\nE) Modification of mitochondrial lipid composition affecting membrane fluidity\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~188.3KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"Regulation of mitochondrial metabolism to meet high ATP demand\",\n    \"Enhancement of oxidative phosphorylation efficiency under varying energy demands\",\n    \"Facilitation of mitochondrial biogenesis to support increased cell growth\",\n    \"Influence on mitochondrial calcium buffering capacity to maintain cellular homeostasis\",\n    \"Modification of mitochondrial lipid composition affecting membrane fluidity\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"key_question\": 644,\n    \"key_image\": 125,\n    \"correct_answer\": \"Regulation of mitochondrial metabolism to meet high ATP demand\",\n    \"question_0\": \"The mitochondria in the tomographic slice are shown in dark blue, with calcium granules highlighted in yellow. How might the presence of calcium granules within the mitochondria affect their function?\",\n    \"answer_0\": \"The presence of calcium granules within mitochondria can regulate mitochondrial metabolism and energy production, potentially indicating a high demand for ATP in the neuron.\",\n    \"comments_0\": null,\n    \"incorrect_answer_0\": \"The calcium granules within the mitochondria lead to their structural destabilization, causing the mitochondria to fragment.\",\n    \"question_1\": \"A cryo-electron tomography (cryo-ET) image displays primary *Drosophila melanogaster* neurons cultured on a micropatterned grid that directs cytoskeletal growth. In the tomographic slice, mitochondria are shown in dark blue, and calcium granules are highlighted in yellow. How might the presence of calcium granules within the mitochondria affect their function?\",\n    \"choices_1\": [\n      \"Inhibition of the electron transport chain, reducing ATP production\",\n      \"Regulation of mitochondrial metabolism to meet high ATP demand\",\n      \"Promotion of mitochondrial fission, leading to fragmented mitochondria\",\n      \"Induction of apoptosis through the release of cytochrome c\"\n    ],\n    \"correct_index_1\": 1,\n    \"question_2\": \"A cryo-electron tomography (cryo-ET) image showcases primary eukaryotic neurons cultured on a specialized substrate that guides cytoskeletal organization. In the tomographic slice, mitochondria appear in deep blue, and calcium granules are depicted in bright yellow. What potential impact could the accumulation of calcium granules within the mitochondria have on their function?\",\n    \"choices_2\": [\n      \"Facilitation of mitochondrial biogenesis to support increased cell growth\",\n      \"Enhancement of oxidative phosphorylation efficiency under varying energy demands\",\n      \"Regulation of mitochondrial metabolism to meet high ATP demand\",\n      \"Modification of mitochondrial lipid composition affecting membrane fluidity\",\n      \"Influence on mitochondrial calcium buffering capacity to maintain cellular homeostasis\"\n    ],\n    \"correct_index_2\": 2,\n    \"question_3\": \"A cryo-electron tomography (cryo-ET) image showcases primary eukaryotic neurons cultured on a specialized substrate that guides cytoskeletal organization. In the tomographic slice, mitochondria appear in deep blue, and calcium granules are depicted in bright yellow. What potential impact could the accumulation of calcium granules within the mitochondria have on their function?\",\n    \"choices_3\": [\n      \"Facilitation of mitochondrial biogenesis to support increased cell growth\",\n      \"Enhancement of oxidative phosphorylation efficiency under varying energy demands\",\n      \"Regulation of mitochondrial metabolism to meet high ATP demand\",\n      \"Modification of mitochondrial lipid composition affecting membrane fluidity\",\n      \"Influence on mitochondrial calcium buffering capacity to maintain cellular homeostasis\"\n    ],\n    \"correct_index_3\": 2,\n    \"task\": 2,\n    \"task_str\": \"hypothesis_gen\",\n    \"context_image_generation\": \"This image was generated using cryo-ET, where a 3 × 4 montage tomogram was reconstructed from primary Drosophila melanogaster neurons cultured on a micropatterned grid designed to guide cytoskeleton growth. The grid provides a straight-line p ... [TRUNCATED] ... he organization of cellular structures such as microtubules. The tomographic slice was then segmented, with specific cellular components like microtubules, mitochondria, and ribosomes identified and highlighted using color coding for clarity.\",\n    \"context_motivation\": \"The motivation behind generating these images was to study the organization of the cytoskeleton and associated cellular structures in primary Drosophila melanogaster neurons. By culturing the neurons on a straight-line micropatterned grid, th ... [TRUNCATED] ... ly microtubules. This approach helps in understanding how physical cues from the environment can influence the spatial arrangement and interactions of cellular organelles, which is crucial for insights into cellular architecture and function.\",\n    \"images_source\": \"https://www.nature.com/articles/s41592-023-02000-z\",\n    \"image_caption\": \"The image shows a tomographic slice with a cross-section of a Drosophila melanogaster neuron with various cellular structures visible. The image is a fully stitched montage, providing a comprehensive view of the neuron's internal organization ... [TRUNCATED] ... distribution and alignment within the neuron, Mitochondria are depicted in dark blue, with yellow indicating the presence of calcium granules within them, Ribosomes are shown in light pink, with associated vesicles represented in darker cyan.\",\n    \"key_person\": 0\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets micro_vqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['micro_vqa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MicroVQA\n\n## 概述\n\nMicroVQA 是一个由专家精心策划的基准测试，用于评估人工智能模型在基于显微镜的科学研究中的多模态推理能力。该基准测试评估模型对各类科学领域中显微镜图像的理解与推理能力。\n\n## 任务描述\n\n- **任务类型**：科学显微镜视觉问答（Visual Question Answering）\n- **输入**：显微镜图像 + 带选项的科学问题\n- **输出**：正确答案选项\n- **领域**：显微镜技术、科学研究、医学影像\n\n## 主要特点\n\n- 由专家精心设计的显微镜相关问题\n- 包含多种类型的显微镜图像\n- 测试科学视觉推理能力\n- 聚焦医学与生物学成像\n- 采用多项选择题格式，并结合思维链（Chain-of-Thought, CoT）提示\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估方式\n- 在测试集（test split）上进行评估\n- 使用简单准确率（accuracy）作为评估指标\n- 采用思维链（CoT）提示方法\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `micro_vqa` |\n| **数据集 ID** | [evalscope/MicroVQA](https://modelscope.cn/datasets/evalscope/MicroVQA/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ`, `Medical`, `MultiModal` |\n| **指标** | `acc` |\n| **默认示例数（Shots）** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,042 |\n| 提示词长度（平均） | 884.16 字符 |\n| 提示词长度（最小/最大） | 414 / 1704 字符 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 1,977 |\n| 每样本图像数 | 最小: 1，最大: 8，平均: 1.9 |\n| 分辨率范围 | 78x70 - 2782x3533 |\n| 图像格式 | png |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"9bca1e27\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E. Think step by step before answering.\\n\\nA cryo-electron tom ... [TRUNCATED] ... Facilitation of mitochondrial biogenesis to support increased cell growth\\nD) Influence on mitochondrial calcium buffering capacity to maintain cellular homeostasis\\nE) Modification of mitochondrial lipid composition affecting membrane fluidity\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~188.3KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"Regulation of mitochondrial metabolism to meet high ATP demand\",\n    \"Enhancement of oxidative phosphorylation efficiency under varying energy demands\",\n    \"Facilitation of mitochondrial biogenesis to support increased cell growth\",\n    \"Influence on mitochondrial calcium buffering capacity to maintain cellular homeostasis\",\n    \"Modification of mitochondrial lipid composition affecting membrane fluidity\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"key_question\": 644,\n    \"key_image\": 125,\n    \"correct_answer\": \"Regulation of mitochondrial metabolism to meet high ATP demand\",\n    \"question_0\": \"The mitochondria in the tomographic slice are shown in dark blue, with calcium granules highlighted in yellow. How might the presence of calcium granules within the mitochondria affect their function?\",\n    \"answer_0\": \"The presence of calcium granules within mitochondria can regulate mitochondrial metabolism and energy production, potentially indicating a high demand for ATP in the neuron.\",\n    \"comments_0\": null,\n    \"incorrect_answer_0\": \"The calcium granules within the mitochondria lead to their structural destabilization, causing the mitochondria to fragment.\",\n    \"question_1\": \"A cryo-electron tomography (cryo-ET) image displays primary *Drosophila melanogaster* neurons cultured on a micropatterned grid that directs cytoskeletal growth. In the tomographic slice, mitochondria are shown in dark blue, and calcium granules are highlighted in yellow. How might the presence of calcium granules within the mitochondria affect their function?\",\n    \"choices_1\": [\n      \"Inhibition of the electron transport chain, reducing ATP production\",\n      \"Regulation of mitochondrial metabolism to meet high ATP demand\",\n      \"Promotion of mitochondrial fission, leading to fragmented mitochondria\",\n      \"Induction of apoptosis through the release of cytochrome c\"\n    ],\n    \"correct_index_1\": 1,\n    \"question_2\": \"A cryo-electron tomography (cryo-ET) image showcases primary eukaryotic neurons cultured on a specialized substrate that guides cytoskeletal organization. In the tomographic slice, mitochondria appear in deep blue, and calcium granules are depicted in bright yellow. What potential impact could the accumulation of calcium granules within the mitochondria have on their function?\",\n    \"choices_2\": [\n      \"Facilitation of mitochondrial biogenesis to support increased cell growth\",\n      \"Enhancement of oxidative phosphorylation efficiency under varying energy demands\",\n      \"Regulation of mitochondrial metabolism to meet high ATP demand\",\n      \"Modification of mitochondrial lipid composition affecting membrane fluidity\",\n      \"Influence on mitochondrial calcium buffering capacity to maintain cellular homeostasis\"\n    ],\n    \"correct_index_2\": 2,\n    \"question_3\": \"A cryo-electron tomography (cryo-ET) image showcases primary eukaryotic neurons cultured on a specialized substrate that guides cytoskeletal organization. In the tomographic slice, mitochondria appear in deep blue, and calcium granules are depicted in bright yellow. What potential impact could the accumulation of calcium granules within the mitochondria have on their function?\",\n    \"choices_3\": [\n      \"Facilitation of mitochondrial biogenesis to support increased cell growth\",\n      \"Enhancement of oxidative phosphorylation efficiency under varying energy demands\",\n      \"Regulation of mitochondrial metabolism to meet high ATP demand\",\n      \"Modification of mitochondrial lipid composition affecting membrane fluidity\",\n      \"Influence on mitochondrial calcium buffering capacity to maintain cellular homeostasis\"\n    ],\n    \"correct_index_3\": 2,\n    \"task\": 2,\n    \"task_str\": \"hypothesis_gen\",\n    \"context_image_generation\": \"This image was generated using cryo-ET, where a 3 × 4 montage tomogram was reconstructed from primary Drosophila melanogaster neurons cultured on a micropatterned grid designed to guide cytoskeleton growth. The grid provides a straight-line p ... [TRUNCATED] ... he organization of cellular structures such as microtubules. The tomographic slice was then segmented, with specific cellular components like microtubules, mitochondria, and ribosomes identified and highlighted using color coding for clarity.\",\n    \"context_motivation\": \"The motivation behind generating these images was to study the organization of the cytoskeleton and associated cellular structures in primary Drosophila melanogaster neurons. By culturing the neurons on a straight-line micropatterned grid, th ... [TRUNCATED] ... ly microtubules. This approach helps in understanding how physical cues from the environment can influence the spatial arrangement and interactions of cellular organelles, which is crucial for insights into cellular architecture and function.\",\n    \"images_source\": \"https://www.nature.com/articles/s41592-023-02000-z\",\n    \"image_caption\": \"The image shows a tomographic slice with a cross-section of a Drosophila melanogaster neuron with various cellular structures visible. The image is a fully stitched montage, providing a comprehensive view of the neuron's internal organization ... [TRUNCATED] ... distribution and alignment within the neuron, Mitochondria are depicted in dark blue, with yellow indicating the presence of calcium granules within them, Ribosomes are shown in light pink, with associated vesicles represented in darker cyan.\",\n    \"key_person\": 0\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets micro_vqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['micro_vqa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "8baa62a3508606596c5c61ec03d44bcf",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.296242",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

@@ -31,8 +31,33 @@ SUBSET_LIST = [
         name='ocr_bench_v2',
         pretty_name='OCRBench-v2',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
-        description=
-        'OCRBench v2 is a large-scale bilingual text-centric benchmark with currently the most comprehensive set of tasks (4x more tasks than the previous multi-scene benchmark OCRBench), the widest coverage of scenarios (31 diverse scenarios including street scene, receipt, formula, diagram, and so on), and thorough evaluation metrics, with a total of 10, 000 human-verified question-answering pairs and a high proportion of difficult samples.',  # noqa: E501
+        description="""
+## Overview
+
+OCRBench v2 is a large-scale bilingual text-centric benchmark with the most comprehensive set of OCR tasks (4x more than OCRBench v1), covering 31 diverse scenarios including street scenes, receipts, formulas, diagrams, and more.
+
+## Task Description
+
+- **Task Type**: Optical Character Recognition and Document Understanding
+- **Input**: Image + OCR/document question
+- **Output**: Text recognition, extraction, or analysis result
+- **Languages**: English and Chinese (bilingual)
+
+## Key Features
+
+- 10,000 human-verified question-answering pairs
+- 31 diverse scenarios (street scene, receipt, formula, diagram, etc.)
+- High proportion of difficult samples
+- Comprehensive OCR task coverage
+- Bilingual (English and Chinese) evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Evaluates on test split
+- Requires: apted, distance, Levenshtein, lxml, Polygon3, zss packages
+- Simple accuracy metric
+""",  # noqa: E501
         dataset_id='evalscope/OCRBench_v2',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],

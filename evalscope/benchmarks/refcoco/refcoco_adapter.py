@@ -34,8 +34,37 @@ This rule must be strictly followed. Please provide the bounding box coordinate 
     BenchmarkMeta(
         name='refcoco',
         pretty_name='RefCOCO',
-        description=
-        'The RefCOCO dataset is a collection of images, object bounding boxes, and free-form natural-language referring expressions intended for training and evaluating models on the task of Referring Expression Comprehension (REC). It was created by collecting expressions on Amazon Mechanical Turk that uniquely describe a target object inside a MSCOCO image, and then asking other Turkers to click on the corresponding object.',  # noqa: E501
+        description="""
+## Overview
+
+RefCOCO is a dataset for training and evaluating models on Referring Expression Comprehension (REC). It contains images, object bounding boxes, and free-form natural-language expressions that uniquely describe target objects within MSCOCO images.
+
+## Task Description
+
+- **Task Type**: Referring Expression Comprehension / Image Captioning
+- **Input**: Image (with visualization) + referring expression
+- **Output**: Bounding box coordinates or caption
+- **Domains**: Visual grounding, object localization, image understanding
+
+## Key Features
+
+- Created via Amazon Mechanical Turk annotations
+- Three evaluation modes:
+  - `bbox`: Image captioning with bounding box visualization
+  - `seg`: Image captioning with segmentation visualization
+  - `bbox_rec`: Grounding task - output normalized bounding box coordinates
+- Expressions uniquely identify target objects in complex scenes
+- Multiple subsets: test, val, testA, testB
+
+## Evaluation Notes
+
+- Evaluation mode configurable via `eval_mode` parameter
+- Multiple metrics for comprehensive evaluation:
+  - Grounding: IoU, ACC@0.1/0.3/0.5/0.7/0.9, Center_ACC
+  - Captioning: BLEU (1-4), METEOR, ROUGE_L, CIDEr
+- Bounding boxes output as normalized coordinates [x1/W, y1/H, x2/W, y2/H]
+- Requires pycocoevalcap for caption metrics
+""",  # noqa: E501
         tags=[Tags.KNOWLEDGE, Tags.MULTI_MODAL, Tags.GROUNDING, Tags.IMAGE_CAPTIONING],
         dataset_id='lmms-lab/RefCOCO',
         metric_list=[

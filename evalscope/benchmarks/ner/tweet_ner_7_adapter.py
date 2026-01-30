@@ -3,11 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'TweetNER7 is a large-scale NER dataset featuring over 11,000 tweets from '
-    '2019-2021, annotated with seven entity types to facilitate the study of '
-    'short-term temporal shifts in social media language.'
-)  # noqa: E501
+DESCRIPTION = """
+## Overview
+
+TweetNER7 is a large-scale NER dataset featuring over 11,000 tweets from 2019-2021, annotated with seven entity types to facilitate the study of short-term temporal shifts in social media language.
+
+## Task Description
+
+- **Task Type**: Social Media Named Entity Recognition (NER)
+- **Input**: Twitter text from 2019-2021
+- **Output**: Identified entity spans with seven types
+- **Domain**: Social media, temporal language variation
+
+## Key Features
+
+- Over 11,000 annotated tweets
+- Seven diverse entity types
+- Spans 2019-2021 for temporal analysis
+- Studies language shift in social media
+- Rich entity type coverage for social content
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: CORPORATION, CREATIVE_WORK, EVENT, GROUP, LOCATION, PERSON, PRODUCT
+"""  # noqa: E501
 
 
 @register_benchmark(

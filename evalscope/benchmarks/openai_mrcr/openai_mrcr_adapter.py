@@ -18,9 +18,36 @@ logger = get_logger()
         name='openai_mrcr',
         pretty_name='OpenAI MRCR',
         tags=[Tags.LONG_CONTEXT, Tags.RETRIEVAL],
-        description='Memory-Recall with Contextual Retrieval (MRCR). '
-        'Evaluates retrieval and recall in long contexts by placing 2, 4 or 8 needles in the prompt. '
-        'Measures whether the model can correctly extract and use them. ',
+        description="""
+## Overview
+
+MRCR (Memory-Recall with Contextual Retrieval) is OpenAI's benchmark for evaluating retrieval and recall capabilities in long-context scenarios. It tests whether models can correctly extract and use specific information (needles) embedded in long prompts.
+
+## Task Description
+
+- **Task Type**: Long-Context Memory and Retrieval
+- **Input**: Long chat conversation with 2, 4, or 8 embedded needles
+- **Output**: Exact retrieval of needle content
+- **Domains**: Long-context understanding, information retrieval
+
+## Key Features
+
+- Tests retrieval with varying needle counts (2, 4, or 8)
+- Evaluates across multiple context length bins (4K to 1M tokens)
+- Measures exact recall of embedded information
+- Uses sequence ratio scoring for precise matching
+- Supports configurable context size filtering
+
+## Evaluation Notes
+
+- Default evaluation uses the **train** split
+- Primary metric: **MRCR Score** (sequence ratio)
+- Results bucketed by token count:
+  - 4K-8K, 8K-16K, 16K-32K, 32K-64K
+  - 64K-128K, 128K-256K, 256K-512K, 512K-1M
+- Configurable via extra_params: max/min_context_size, needle_count, tokenizer
+- Uses tiktoken for accurate token counting
+""",
         dataset_id='openai-mirror/mrcr',
         metric_list=['mrcr_score'],
         few_shot_num=0,

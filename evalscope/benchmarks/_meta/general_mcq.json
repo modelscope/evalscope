@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "pretty_name": "General-MCQ",
+    "dataset_id": "general_mcq",
+    "paper_url": null,
+    "tags": [
+      "MCQ",
+      "Custom"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "val",
+    "train_split": "dev",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nGeneral-MCQ is a customizable multiple-choice question answering benchmark for evaluating language models. It supports flexible data formats and variable number of answer choices.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Question Answering\n- **Input**: Question with 2-10 answer choices (A through J)\n- **Output**: Selected answer choice\n- **Flexibility**: Supports custom datasets via local files\n\n## Key Features\n\n- Flexible number of choices (A through J)\n- Custom dataset support via local file loading\n- Chinese single-answer prompt template\n- Configurable few-shot examples\n- Accuracy-based evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **Accuracy**\n- Train split: **dev**, Eval split: **val**\n- See [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#mcq) for dataset format\n",
+    "prompt_template": "回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。\n\n问题：{question}\n选项：\n{choices}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 0,
+    "subset_stats": [],
+    "prompt_length": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T11:13:11.536286"
+  },
+  "sample_example": {},
+  "readme": {
+    "en": "# General-MCQ\n\n\n## Overview\n\nGeneral-MCQ is a customizable multiple-choice question answering benchmark for evaluating language models. It supports flexible data formats and variable number of answer choices.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Question Answering\n- **Input**: Question with 2-10 answer choices (A through J)\n- **Output**: Selected answer choice\n- **Flexibility**: Supports custom datasets via local files\n\n## Key Features\n\n- Flexible number of choices (A through J)\n- Custom dataset support via local file loading\n- Chinese single-answer prompt template\n- Configurable few-shot examples\n- Accuracy-based evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **Accuracy**\n- Train split: **dev**, Eval split: **val**\n- See [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#mcq) for dataset format\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `general_mcq` |\n| **Dataset ID** | `general_mcq` |\n| **Paper** | N/A |\n| **Tags** | `Custom`, `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `val` |\n| **Train Split** | `dev` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。\n\n问题：{question}\n选项：\n{choices}\n\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets general_mcq \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['general_mcq'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# General-MCQ\n\n\n## 概述\n\nGeneral-MCQ 是一个可自定义的多项选择题问答基准测试，用于评估语言模型。它支持灵活的数据格式和可变数量的答案选项。\n\n## 任务描述\n\n- **任务类型**：多项选择题问答\n- **输入**：包含 2 到 10 个答案选项（A 到 J）的问题\n- **输出**：所选的答案选项\n- **灵活性**：通过本地文件支持自定义数据集\n\n## 主要特性\n\n- 灵活的选项数量（A 到 J）\n- 通过本地文件加载支持自定义数据集\n- 中文单选题提示模板\n- 可配置的少样本（few-shot）示例\n- 基于准确率的评估\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 主要指标：**准确率（Accuracy）**\n- 训练集划分：**dev**，评估集划分：**val**\n- 数据集格式详见 [用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#mcq)\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `general_mcq` |\n| **数据集ID** | `general_mcq` |\n| **论文** | 无 |\n| **标签** | `Custom`, `MCQ` |\n| **指标** | `acc` |\n| **默认样本数（Shots）** | 0-shot |\n| **评估集划分** | `val` |\n| **训练集划分** | `dev` |\n\n\n## 数据统计\n\n*统计数据不可用。*\n\n## 样例示例\n\n*样例示例不可用。*\n\n## 提示模板\n\n**提示模板：**\n```text\n回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。\n\n问题：{question}\n选项：\n{choices}\n\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets general_mcq \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['general_mcq'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "d42f20790790dae569e090f3597abd2e",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.237922",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

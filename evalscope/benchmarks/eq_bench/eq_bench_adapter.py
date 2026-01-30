@@ -38,10 +38,34 @@ PROMPT_TEMPLATE = """{question}"""
         name='eq_bench',
         pretty_name='EQ-Bench',
         tags=[Tags.INSTRUCTION_FOLLOWING],
-        description='EQ-Bench is a benchmark for evaluating language models on emotional intelligence tasks. '
-        'It assesses the ability to predict the likely emotional responses of characters in dialogues '
-        'by rating the intensity of possible emotional responses. '
-        '[Paper](https://arxiv.org/abs/2312.06281) | [Homepage](https://eqbench.com/)',
+        description="""
+## Overview
+
+EQ-Bench is a benchmark for evaluating language models on emotional intelligence tasks. It assesses the ability to predict likely emotional responses of characters in dialogues by rating the intensity of possible emotional reactions.
+
+## Task Description
+
+- **Task Type**: Emotional Intelligence Assessment
+- **Input**: Dialogue scenario with characters
+- **Output**: Emotion intensity ratings in specific format
+- **Domains**: Emotional understanding, social cognition
+
+## Key Features
+
+- Tests ability to predict emotional responses in conversations
+- Requires rating intensity of multiple possible emotions
+- Uses official EQ-Bench v2 scoring algorithm
+- Scoring includes sigmoid scaling for small differences
+- Adjustment constant ensures random answers score 0
+
+## Evaluation Notes
+
+- Default evaluation uses the **validation** split
+- Primary metric: **EQ-Bench Score** (0-100 scale, reported as 0-1)
+- Uses zero-shot evaluation (no few-shot examples)
+- Responses must include emotion ratings in specific JSON-like format
+- Official algorithm from [Paper](https://arxiv.org/abs/2312.06281) | [Homepage](https://eqbench.com/)
+""",
         dataset_id='evalscope/EQ-Bench',  # ModelScope dataset ID, falls back to local if not found
         metric_list=['eq_bench_score'],  # Official v2 full-scale scoring
         few_shot_num=0,

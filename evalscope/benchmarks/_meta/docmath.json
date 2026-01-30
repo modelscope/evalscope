@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "pretty_name": "DocMath",
+    "dataset_id": "yale-nlp/DocMath-Eval",
+    "paper_url": null,
+    "tags": [
+      "Reasoning",
+      "Math",
+      "LongContext"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "complong_testmini",
+      "compshort_testmini",
+      "simplong_testmini",
+      "simpshort_testmini"
+    ],
+    "description": "\n## Overview\n\nDocMath-Eval is a comprehensive benchmark focused on numerical reasoning within specialized domains. It requires models to comprehend long and specialized documents and perform numerical reasoning to answer questions.\n\n## Task Description\n\n- **Task Type**: Document-based Mathematical Reasoning\n- **Input**: Long document context + numerical reasoning question\n- **Output**: Numerical answer with reasoning\n- **Focus**: Long-context comprehension and quantitative reasoning\n\n## Key Features\n\n- Long specialized documents requiring comprehension\n- Numerical reasoning within document context\n- Multiple complexity levels (comp/simp, long/short)\n- Tests real-world document understanding\n- Requires both reading comprehension and math skills\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses LLM-as-judge for answer evaluation\n- Subsets: complong_testmini, compshort_testmini, simplong_testmini, simpshort_testmini\n- Answer format: \"Therefore, the answer is (answer)\"\n",
+    "prompt_template": "Please read the following text and answer the question below.\n\n<text>\n{context}\n</text>\n\n{question}\n\nFormat your response as follows: \"Therefore, the answer is (insert answer here)\".",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 800,
+    "subset_stats": [
+      {
+        "name": "complong_testmini",
+        "sample_count": 300,
+        "prompt_length_mean": 175355.17,
+        "prompt_length_min": 18687,
+        "prompt_length_max": 1009038,
+        "prompt_length_std": 148492.17,
+        "target_length_mean": 12.64
+      },
+      {
+        "name": "compshort_testmini",
+        "sample_count": 200,
+        "prompt_length_mean": 1990.74,
+        "prompt_length_min": 505,
+        "prompt_length_max": 9460,
+        "prompt_length_std": 1193.2,
+        "target_length_mean": 10.99
+      },
+      {
+        "name": "simplong_testmini",
+        "sample_count": 100,
+        "prompt_length_mean": 13972.84,
+        "prompt_length_min": 6870,
+        "prompt_length_max": 24001,
+        "prompt_length_std": 3433.66,
+        "target_length_mean": 10.86
+      },
+      {
+        "name": "simpshort_testmini",
+        "sample_count": 200,
+        "prompt_length_mean": 3154.2,
+        "prompt_length_min": 560,
+        "prompt_length_max": 9600,
+        "prompt_length_std": 1779.72,
+        "target_length_mean": 12.34
+      }
+    ],
+    "prompt_length": {
+      "mean": 68791.03,
+      "min": 505,
+      "max": 1009038,
+      "std": 122838.66
+    },
+    "target_length_mean": 11.93,
+    "computed_at": "2026-01-28T17:20:20.177138"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "a07cbfcf",
+          "content": "Please read the following text and answer the question below.\n\n<text>\nDELTA AIR LINES, INC.\nConsolidated Balance Sheets\n| (in millions, except share data) | March 31, 2018 | December 31, 2017 |\n| ASSETS |\n| Current Assets: |\n| Cash and cash e ... [TRUNCATED] ... comprehensive income for foreign currency exchange contracts in 2017 and 2018, and the changes in value for derivative contracts and other in 2018, in million?\n\nFormat your response as follows: \"Therefore, the answer is (insert answer here)\"."
+        }
+      ],
+      "target": "-31.0",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "question_id": "complong-testmini-0",
+        "answer_type": "float"
+      }
+    },
+    "subset": "complong_testmini",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# DocMath\n\n\n## Overview\n\nDocMath-Eval is a comprehensive benchmark focused on numerical reasoning within specialized domains. It requires models to comprehend long and specialized documents and perform numerical reasoning to answer questions.\n\n## Task Description\n\n- **Task Type**: Document-based Mathematical Reasoning\n- **Input**: Long document context + numerical reasoning question\n- **Output**: Numerical answer with reasoning\n- **Focus**: Long-context comprehension and quantitative reasoning\n\n## Key Features\n\n- Long specialized documents requiring comprehension\n- Numerical reasoning within document context\n- Multiple complexity levels (comp/simp, long/short)\n- Tests real-world document understanding\n- Requires both reading comprehension and math skills\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses LLM-as-judge for answer evaluation\n- Subsets: complong_testmini, compshort_testmini, simplong_testmini, simpshort_testmini\n- Answer format: \"Therefore, the answer is (answer)\"\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `docmath` |\n| **Dataset ID** | [yale-nlp/DocMath-Eval](https://modelscope.cn/datasets/yale-nlp/DocMath-Eval/summary) |\n| **Paper** | N/A |\n| **Tags** | `LongContext`, `Math`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 800 |\n| Prompt Length (Mean) | 68791.03 chars |\n| Prompt Length (Min/Max) | 505 / 1009038 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `complong_testmini` | 300 | 175355.17 | 18687 | 1009038 |\n| `compshort_testmini` | 200 | 1990.74 | 505 | 9460 |\n| `simplong_testmini` | 100 | 13972.84 | 6870 | 24001 |\n| `simpshort_testmini` | 200 | 3154.2 | 560 | 9600 |\n\n## Sample Example\n\n**Subset**: `complong_testmini`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a07cbfcf\",\n      \"content\": \"Please read the following text and answer the question below.\\n\\n<text>\\nDELTA AIR LINES, INC.\\nConsolidated Balance Sheets\\n| (in millions, except share data) | March 31, 2018 | December 31, 2017 |\\n| ASSETS |\\n| Current Assets: |\\n| Cash and cash e ... [TRUNCATED] ... comprehensive income for foreign currency exchange contracts in 2017 and 2018, and the changes in value for derivative contracts and other in 2018, in million?\\n\\nFormat your response as follows: \\\"Therefore, the answer is (insert answer here)\\\".\"\n    }\n  ],\n  \"target\": \"-31.0\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question_id\": \"complong-testmini-0\",\n    \"answer_type\": \"float\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nPlease read the following text and answer the question below.\n\n<text>\n{context}\n</text>\n\n{question}\n\nFormat your response as follows: \"Therefore, the answer is (insert answer here)\".\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets docmath \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['docmath'],\n    dataset_args={\n        'docmath': {\n            # subset_list: ['complong_testmini', 'compshort_testmini', 'simplong_testmini']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# DocMath\n\n## 概述\n\nDocMath-Eval 是一个专注于特定领域内数值推理的综合性基准测试。该基准要求模型理解长篇且专业的文档，并基于文档内容进行数值推理以回答问题。\n\n## 任务描述\n\n- **任务类型**：基于文档的数学推理\n- **输入**：长文档上下文 + 数值推理问题\n- **输出**：带推理过程的数值答案\n- **重点**：长上下文理解与定量推理能力\n\n## 主要特点\n\n- 需要理解长篇专业文档\n- 在文档上下文中进行数值推理\n- 多种复杂度级别（复杂/简单，长/短）\n- 测试真实场景下的文档理解能力\n- 同时考察阅读理解与数学技能\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 使用 LLM-as-judge 进行答案评估\n- 子集包括：`complong_testmini`、`compshort_testmini`、`simplong_testmini`、`simpshort_testmini`\n- 答案格式：`\"Therefore, the answer is (answer)\"`\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `docmath` |\n| **数据集ID** | [yale-nlp/DocMath-Eval](https://modelscope.cn/datasets/yale-nlp/DocMath-Eval/summary) |\n| **论文** | N/A |\n| **标签** | `LongContext`, `Math`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 800 |\n| 提示词长度（平均） | 68791.03 字符 |\n| 提示词长度（最小/最大） | 505 / 1009038 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `complong_testmini` | 300 | 175355.17 | 18687 | 1009038 |\n| `compshort_testmini` | 200 | 1990.74 | 505 | 9460 |\n| `simplong_testmini` | 100 | 13972.84 | 6870 | 24001 |\n| `simpshort_testmini` | 200 | 3154.2 | 560 | 9600 |\n\n## 样例示例\n\n**子集**: `complong_testmini`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a07cbfcf\",\n      \"content\": \"Please read the following text and answer the question below.\\n\\n<text>\\nDELTA AIR LINES, INC.\\nConsolidated Balance Sheets\\n| (in millions, except share data) | March 31, 2018 | December 31, 2017 |\\n| ASSETS |\\n| Current Assets: |\\n| Cash and cash e ... [TRUNCATED] ... comprehensive income for foreign currency exchange contracts in 2017 and 2018, and the changes in value for derivative contracts and other in 2018, in million?\\n\\nFormat your response as follows: \\\"Therefore, the answer is (insert answer here)\\\".\"\n    }\n  ],\n  \"target\": \"-31.0\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question_id\": \"complong-testmini-0\",\n    \"answer_type\": \"float\"\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nPlease read the following text and answer the question below.\n\n<text>\n{context}\n</text>\n\n{question}\n\nFormat your response as follows: \"Therefore, the answer is (insert answer here)\".\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets docmath \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['docmath'],\n    dataset_args={\n        'docmath': {\n            # subset_list: ['complong_testmini', 'compshort_testmini', 'simplong_testmini']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "35f81d34d3aa95de63a017b08fc4120f",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.213621",
+  "translation_updated_at": "2026-01-28T17:21:59Z"
+}

@@ -1,0 +1,78 @@
+{
+  "meta": {
+    "pretty_name": "TIFA-160",
+    "dataset_id": "AI-ModelScope/T2V-Eval-Prompts",
+    "paper_url": null,
+    "tags": [
+      "TextToImage"
+    ],
+    "metrics": [
+      "PickScore"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "TIFA-160"
+    ],
+    "description": "\n## Overview\n\nTIFA-160 is a text-to-image benchmark with 160 carefully curated prompts designed to evaluate the faithfulness and quality of generated images using automated VQA-based evaluation.\n\n## Task Description\n\n- **Task Type**: Text-to-Image Generation Evaluation\n- **Input**: Text prompt for image generation\n- **Output**: Generated image evaluated using PickScore metric\n- **Size**: 160 prompts\n\n## Key Features\n\n- Compact, high-quality prompt set for efficient evaluation\n- Uses PickScore for human preference alignment\n- Tests diverse image generation capabilities\n- Supports both new generation and pre-existing image evaluation\n- Reproducible evaluation pipeline\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **PickScore** for human preference alignment\n- Evaluates images from the **test** split\n- Part of the T2V-Eval-Prompts dataset collection\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "aigc"
+  },
+  "statistics": {
+    "total_samples": 160,
+    "subset_stats": [
+      {
+        "name": "TIFA-160",
+        "sample_count": 160,
+        "prompt_length_mean": 56.13,
+        "prompt_length_min": 13,
+        "prompt_length_max": 182,
+        "prompt_length_std": 26.98,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 56.13,
+      "min": 13,
+      "max": 182,
+      "std": 26.98
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T11:17:04.848208"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "9de3e3b1",
+          "content": "A Christmas tree with lights and teddy bear"
+        }
+      ],
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "prompt": "A Christmas tree with lights and teddy bear",
+        "category": "",
+        "tags": {},
+        "id": "TIFA160_0",
+        "image_path": ""
+      }
+    },
+    "subset": "TIFA-160",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# TIFA-160\n\n\n## Overview\n\nTIFA-160 is a text-to-image benchmark with 160 carefully curated prompts designed to evaluate the faithfulness and quality of generated images using automated VQA-based evaluation.\n\n## Task Description\n\n- **Task Type**: Text-to-Image Generation Evaluation\n- **Input**: Text prompt for image generation\n- **Output**: Generated image evaluated using PickScore metric\n- **Size**: 160 prompts\n\n## Key Features\n\n- Compact, high-quality prompt set for efficient evaluation\n- Uses PickScore for human preference alignment\n- Tests diverse image generation capabilities\n- Supports both new generation and pre-existing image evaluation\n- Reproducible evaluation pipeline\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **PickScore** for human preference alignment\n- Evaluates images from the **test** split\n- Part of the T2V-Eval-Prompts dataset collection\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `tifa160` |\n| **Dataset ID** | [AI-ModelScope/T2V-Eval-Prompts](https://modelscope.cn/datasets/AI-ModelScope/T2V-Eval-Prompts/summary) |\n| **Paper** | N/A |\n| **Tags** | `TextToImage` |\n| **Metrics** | `PickScore` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 160 |\n| Prompt Length (Mean) | 56.13 chars |\n| Prompt Length (Min/Max) | 13 / 182 chars |\n\n## Sample Example\n\n**Subset**: `TIFA-160`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"9de3e3b1\",\n      \"content\": \"A Christmas tree with lights and teddy bear\"\n    }\n  ],\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"prompt\": \"A Christmas tree with lights and teddy bear\",\n    \"category\": \"\",\n    \"tags\": {},\n    \"id\": \"TIFA160_0\",\n    \"image_path\": \"\"\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tifa160 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tifa160'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# TIFA-160\n\n## 概述\n\nTIFA-160 是一个文本到图像的基准测试，包含 160 个精心策划的提示词，旨在通过基于视觉问答（VQA）的自动化评估方法，衡量生成图像的忠实度与质量。\n\n## 任务描述\n\n- **任务类型**：文本到图像生成评估  \n- **输入**：用于图像生成的文本提示  \n- **输出**：使用 PickScore 指标评估生成的图像  \n- **规模**：160 个提示词  \n\n## 主要特性\n\n- 精简且高质量的提示词集合，支持高效评估  \n- 使用 PickScore 指标对齐人类偏好  \n- 覆盖多样化的图像生成能力  \n- 支持评估新生成图像和已有图像  \n- 提供可复现的评估流程  \n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估方式  \n- 主要指标：**PickScore**（用于对齐人类偏好）  \n- 评估对象来自 **test** 数据划分  \n- 属于 T2V-Eval-Prompts 数据集集合的一部分  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `tifa160` |\n| **数据集 ID** | [AI-ModelScope/T2V-Eval-Prompts](https://modelscope.cn/datasets/AI-ModelScope/T2V-Eval-Prompts/summary) |\n| **论文** | N/A |\n| **标签** | `TextToImage` |\n| **指标** | `PickScore` |\n| **默认样本数（Shots）** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 160 |\n| 提示词长度（平均） | 56.13 字符 |\n| 提示词长度（最小/最大） | 13 / 182 字符 |\n\n## 样例示例\n\n**子集**：`TIFA-160`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"9de3e3b1\",\n      \"content\": \"A Christmas tree with lights and teddy bear\"\n    }\n  ],\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"prompt\": \"A Christmas tree with lights and teddy bear\",\n    \"category\": \"\",\n    \"tags\": {},\n    \"id\": \"TIFA160_0\",\n    \"image_path\": \"\"\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tifa160 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tifa160'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "cf47139f4c78a6f8bb7c15ecfa1bb302",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.560824",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

@@ -1,0 +1,314 @@
+{
+  "meta": {
+    "pretty_name": "RefCOCO",
+    "dataset_id": "lmms-lab/RefCOCO",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MultiModal",
+      "Grounding",
+      "ImageCaptioning"
+    ],
+    "metrics": [
+      "IoU",
+      "ACC@0.1",
+      "ACC@0.3",
+      "ACC@0.5",
+      "ACC@0.7",
+      "ACC@0.9",
+      "Center_ACC",
+      "Bleu_1",
+      "Bleu_2",
+      "Bleu_3",
+      "Bleu_4",
+      "METEOR",
+      "ROUGE_L",
+      "CIDEr"
+    ],
+    "few_shot_num": 0,
+    "eval_split": null,
+    "train_split": "",
+    "subset_list": [
+      "test",
+      "val",
+      "testA",
+      "testB"
+    ],
+    "description": "\n## Overview\n\nRefCOCO is a dataset for training and evaluating models on Referring Expression Comprehension (REC). It contains images, object bounding boxes, and free-form natural-language expressions that uniquely describe target objects within MSCOCO images.\n\n## Task Description\n\n- **Task Type**: Referring Expression Comprehension / Image Captioning\n- **Input**: Image (with visualization) + referring expression\n- **Output**: Bounding box coordinates or caption\n- **Domains**: Visual grounding, object localization, image understanding\n\n## Key Features\n\n- Created via Amazon Mechanical Turk annotations\n- Three evaluation modes:\n  - `bbox`: Image captioning with bounding box visualization\n  - `seg`: Image captioning with segmentation visualization\n  - `bbox_rec`: Grounding task - output normalized bounding box coordinates\n- Expressions uniquely identify target objects in complex scenes\n- Multiple subsets: test, val, testA, testB\n\n## Evaluation Notes\n\n- Evaluation mode configurable via `eval_mode` parameter\n- Multiple metrics for comprehensive evaluation:\n  - Grounding: IoU, ACC@0.1/0.3/0.5/0.7/0.9, Center_ACC\n  - Captioning: BLEU (1-4), METEOR, ROUGE_L, CIDEr\n- Bounding boxes output as normalized coordinates [x1/W, y1/H, x2/W, y2/H]\n- Requires pycocoevalcap for caption metrics\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "eval_mode": {
+        "type": "str",
+        "description": "Control the evaluation mode used by RefCOCO. bbox: image caption task, visualize the original image with bounding box; seg: image caption task, visualize the original image with segmentation; bbox_rec: grounding task, recognize bounding box coordinates.",
+        "value": "bbox",
+        "choices": [
+          "bbox",
+          "seg",
+          "bbox_rec"
+        ]
+      }
+    },
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 17596,
+    "subset_stats": [
+      {
+        "name": "test",
+        "sample_count": 5000,
+        "prompt_length_mean": 146,
+        "prompt_length_min": 146,
+        "prompt_length_max": 146,
+        "prompt_length_std": null,
+        "target_length_mean": 62.02,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 5000,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "281x500",
+              "281x640",
+              "287x432",
+              "299x409",
+              "300x176",
+              "300x450",
+              "304x640",
+              "319x235",
+              "319x500",
+              "320x213"
+            ],
+            "resolution_range": {
+              "min": "300x176",
+              "max": "640x640"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "val",
+        "sample_count": 8811,
+        "prompt_length_mean": 146,
+        "prompt_length_min": 146,
+        "prompt_length_max": 146,
+        "prompt_length_std": null,
+        "target_length_mean": 62.56,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 5000,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "299x409",
+              "300x176",
+              "309x500",
+              "320x213",
+              "326x500",
+              "327x500",
+              "331x500",
+              "332x500",
+              "333x500",
+              "334x500"
+            ],
+            "resolution_range": {
+              "min": "300x176",
+              "max": "640x640"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "testA",
+        "sample_count": 1975,
+        "prompt_length_mean": 146,
+        "prompt_length_min": 146,
+        "prompt_length_max": 146,
+        "prompt_length_std": null,
+        "target_length_mean": 60.36,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1975,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "281x640",
+              "333x500",
+              "334x500",
+              "337x500",
+              "354x640",
+              "357x500",
+              "360x640",
+              "363x640",
+              "370x500",
+              "374x640"
+            ],
+            "resolution_range": {
+              "min": "500x232",
+              "max": "640x640"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "testB",
+        "sample_count": 1810,
+        "prompt_length_mean": 146,
+        "prompt_length_min": 146,
+        "prompt_length_max": 146,
+        "prompt_length_std": null,
+        "target_length_mean": 64.28,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1810,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "280x268",
+              "333x500",
+              "344x640",
+              "360x640",
+              "364x640",
+              "375x500",
+              "389x640",
+              "395x500",
+              "400x289",
+              "400x300"
+            ],
+            "resolution_range": {
+              "min": "280x268",
+              "max": "640x640"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 146,
+      "min": 146,
+      "max": 146,
+      "std": null
+    },
+    "target_length_mean": 62.27,
+    "computed_at": "2026-01-28T15:08:27.019600",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 13785,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "280x268",
+          "281x500",
+          "281x640",
+          "287x432",
+          "299x409",
+          "300x176",
+          "300x450",
+          "304x640",
+          "309x500",
+          "319x235"
+        ],
+        "resolution_range": {
+          "min": "300x176",
+          "max": "640x640"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "53a494fc",
+          "content": [
+            {
+              "text": "Please carefully observe the area circled in the image and come up with a caption for the area.\nAnswer the question using a single word or phrase."
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~57.6KB]"
+            }
+          ]
+        }
+      ],
+      "target": "['guy petting elephant', 'foremost person', 'green shirt']",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "question_id": "469306",
+        "iscrowd": 0,
+        "file_name": "COCO_train2014_000000296747_0.jpg",
+        "answer": [
+          "guy petting elephant",
+          "foremost person",
+          "green shirt"
+        ],
+        "original_bbox": [
+          59.04999923706055,
+          93.23999786376953,
+          375.0199890136719,
+          362.5799865722656
+        ],
+        "bbox": [],
+        "eval_mode": "bbox"
+      }
+    },
+    "subset": "test",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# RefCOCO\n\n\n## Overview\n\nRefCOCO is a dataset for training and evaluating models on Referring Expression Comprehension (REC). It contains images, object bounding boxes, and free-form natural-language expressions that uniquely describe target objects within MSCOCO images.\n\n## Task Description\n\n- **Task Type**: Referring Expression Comprehension / Image Captioning\n- **Input**: Image (with visualization) + referring expression\n- **Output**: Bounding box coordinates or caption\n- **Domains**: Visual grounding, object localization, image understanding\n\n## Key Features\n\n- Created via Amazon Mechanical Turk annotations\n- Three evaluation modes:\n  - `bbox`: Image captioning with bounding box visualization\n  - `seg`: Image captioning with segmentation visualization\n  - `bbox_rec`: Grounding task - output normalized bounding box coordinates\n- Expressions uniquely identify target objects in complex scenes\n- Multiple subsets: test, val, testA, testB\n\n## Evaluation Notes\n\n- Evaluation mode configurable via `eval_mode` parameter\n- Multiple metrics for comprehensive evaluation:\n  - Grounding: IoU, ACC@0.1/0.3/0.5/0.7/0.9, Center_ACC\n  - Captioning: BLEU (1-4), METEOR, ROUGE_L, CIDEr\n- Bounding boxes output as normalized coordinates [x1/W, y1/H, x2/W, y2/H]\n- Requires pycocoevalcap for caption metrics\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `refcoco` |\n| **Dataset ID** | [lmms-lab/RefCOCO](https://modelscope.cn/datasets/lmms-lab/RefCOCO/summary) |\n| **Paper** | N/A |\n| **Tags** | `Grounding`, `ImageCaptioning`, `Knowledge`, `MultiModal` |\n| **Metrics** | `IoU`, `ACC@0.1`, `ACC@0.3`, `ACC@0.5`, `ACC@0.7`, `ACC@0.9`, `Center_ACC`, `Bleu_1`, `Bleu_2`, `Bleu_3`, `Bleu_4`, `METEOR`, `ROUGE_L`, `CIDEr` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `N/A` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 17,596 |\n| Prompt Length (Mean) | 146 chars |\n| Prompt Length (Min/Max) | 146 / 146 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `test` | 5,000 | 146 | 146 | 146 |\n| `val` | 8,811 | 146 | 146 | 146 |\n| `testA` | 1,975 | 146 | 146 | 146 |\n| `testB` | 1,810 | 146 | 146 | 146 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 13,785 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 300x176 - 640x640 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `test`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"53a494fc\",\n      \"content\": [\n        {\n          \"text\": \"Please carefully observe the area circled in the image and come up with a caption for the area.\\nAnswer the question using a single word or phrase.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~57.6KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"['guy petting elephant', 'foremost person', 'green shirt']\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question_id\": \"469306\",\n    \"iscrowd\": 0,\n    \"file_name\": \"COCO_train2014_000000296747_0.jpg\",\n    \"answer\": [\n      \"guy petting elephant\",\n      \"foremost person\",\n      \"green shirt\"\n    ],\n    \"original_bbox\": [\n      59.04999923706055,\n      93.23999786376953,\n      375.0199890136719,\n      362.5799865722656\n    ],\n    \"bbox\": [],\n    \"eval_mode\": \"bbox\"\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `eval_mode` | `str` | `bbox` | Control the evaluation mode used by RefCOCO. bbox: image caption task, visualize the original image with bounding box; seg: image caption task, visualize the original image with segmentation; bbox_rec: grounding task, recognize bounding box coordinates. Choices: ['bbox', 'seg', 'bbox_rec'] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets refcoco \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['refcoco'],\n    dataset_args={\n        'refcoco': {\n            # subset_list: ['test', 'val', 'testA']  # optional, evaluate specific subsets\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# RefCOCO\n\n## 概述\n\nRefCOCO 是一个用于训练和评估指代表达理解（Referring Expression Comprehension, REC）模型的数据集。它包含图像、目标物体的边界框，以及用自然语言自由形式描述 MSCOCO 图像中特定目标的表达。\n\n## 任务描述\n\n- **任务类型**：指代表达理解 / 图像描述生成\n- **输入**：图像（含可视化）+ 指代表达\n- **输出**：边界框坐标或描述文本\n- **领域**：视觉定位、目标定位、图像理解\n\n## 主要特性\n\n- 通过 Amazon Mechanical Turk 标注创建\n- 支持三种评估模式：\n  - `bbox`：带边界框可视化的图像描述任务\n  - `seg`：带分割掩码可视化的图像描述任务\n  - `bbox_rec`：定位任务 —— 输出归一化的边界框坐标\n- 表达式在复杂场景中唯一标识目标对象\n- 包含多个子集：test、val、testA、testB\n\n## 评估说明\n\n- 通过 `eval_mode` 参数配置评估模式\n- 提供多种指标进行综合评估：\n  - 定位任务：IoU、ACC@0.1/0.3/0.5/0.7/0.9、Center_ACC\n  - 描述生成任务：BLEU (1-4)、METEOR、ROUGE_L、CIDEr\n- 边界框以归一化坐标输出：[x1/W, y1/H, x2/W, y2/H]\n- 描述生成指标需依赖 pycocoevalcap 库\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `refcoco` |\n| **数据集ID** | [lmms-lab/RefCOCO](https://modelscope.cn/datasets/lmms-lab/RefCOCO/summary) |\n| **论文** | N/A |\n| **标签** | `Grounding`, `ImageCaptioning`, `Knowledge`, `MultiModal` |\n| **指标** | `IoU`, `ACC@0.1`, `ACC@0.3`, `ACC@0.5`, `ACC@0.7`, `ACC@0.9`, `Center_ACC`, `Bleu_1`, `Bleu_2`, `Bleu_3`, `Bleu_4`, `METEOR`, `ROUGE_L`, `CIDEr` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `N/A` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 17,596 |\n| 提示词长度（平均） | 146 字符 |\n| 提示词长度（最小/最大） | 146 / 146 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `test` | 5,000 | 146 | 146 | 146 |\n| `val` | 8,811 | 146 | 146 | 146 |\n| `testA` | 1,975 | 146 | 146 | 146 |\n| `testB` | 1,810 | 146 | 146 | 146 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 13,785 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 300x176 - 640x640 |\n| 格式 | jpeg |\n\n## 样例示例\n\n**子集**: `test`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"53a494fc\",\n      \"content\": [\n        {\n          \"text\": \"Please carefully observe the area circled in the image and come up with a caption for the area.\\nAnswer the question using a single word or phrase.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~57.6KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"['guy petting elephant', 'foremost person', 'green shirt']\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question_id\": \"469306\",\n    \"iscrowd\": 0,\n    \"file_name\": \"COCO_train2014_000000296747_0.jpg\",\n    \"answer\": [\n      \"guy petting elephant\",\n      \"foremost person\",\n      \"green shirt\"\n    ],\n    \"original_bbox\": [\n      59.04999923706055,\n      93.23999786376953,\n      375.0199890136719,\n      362.5799865722656\n    ],\n    \"bbox\": [],\n    \"eval_mode\": \"bbox\"\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `eval_mode` | `str` | `bbox` | 控制 RefCOCO 使用的评估模式。bbox：图像描述任务，可视化原始图像与边界框；seg：图像描述任务，可视化原始图像与分割掩码；bbox_rec：定位任务，识别边界框坐标。可选值：['bbox', 'seg', 'bbox_rec'] |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets refcoco \\\n    --limit 10  # 正式评估时请移除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['refcoco'],\n    dataset_args={\n        'refcoco': {\n            # subset_list: ['test', 'val', 'testA']  # 可选，评估指定子集\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请移除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "fc59cd602a70e4a7a36fc5147a601699",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.447199",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

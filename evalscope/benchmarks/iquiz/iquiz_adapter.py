@@ -10,8 +10,35 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate
         name='iquiz',
         pretty_name='IQuiz',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.CHINESE],
-        description=
-        'IQuiz is a benchmark for evaluating AI models on IQ and EQ questions. It consists of multiple-choice questions where the model must select the correct answer and provide an explanation.',  # noqa: E501
+        description="""
+## Overview
+
+IQuiz is a Chinese benchmark for evaluating AI models on intelligence quotient (IQ) and emotional quotient (EQ) questions. It tests logical reasoning, pattern recognition, and social-emotional understanding through multiple-choice questions.
+
+## Task Description
+
+- **Task Type**: Multiple-Choice Question Answering
+- **Input**: Question in Chinese with multiple choice options
+- **Output**: Selected answer with explanation (Chain-of-Thought)
+- **Language**: Chinese
+
+## Key Features
+
+- Dual evaluation of IQ and EQ capabilities
+- Chinese-language cognitive assessment
+- Multiple difficulty levels
+- Requires explanation alongside answer selection
+- Tests logical reasoning and emotional understanding
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Primary metric: **Accuracy**
+- Subsets: **IQ** (logical reasoning) and **EQ** (emotional intelligence)
+- Uses Chinese Chain-of-Thought prompt template
+- Evaluates on **test** split
+- Metadata includes difficulty level information
+""",  # noqa: E501
         dataset_id='AI-ModelScope/IQuiz',
         metric_list=['acc'],
         subset_list=['IQ', 'EQ'],

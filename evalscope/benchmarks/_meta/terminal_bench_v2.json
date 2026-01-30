@@ -1,0 +1,85 @@
+{
+  "meta": {
+    "pretty_name": "Terminal-Bench-2.0",
+    "dataset_id": "https://github.com/laude-institute/terminal-bench-2.git",
+    "paper_url": null,
+    "tags": [
+      "Coding"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nTerminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 89 real-world, multi-step terminal tasks. Tasks range from compiling and debugging to system administration, running within isolated containers with rigorous validation.\n\n## Task Description\n\n- **Task Type**: Command-Line Agent Evaluation\n- **Input**: Terminal task specification\n- **Output**: Task completion via agent actions\n- **Domains**: System administration, compilation, debugging, file operations\n\n## Key Features\n\n- 89 real-world terminal tasks\n- Multi-step task completion requirements\n- Isolated container execution environment\n- Binary scoring (0/1) with auto-validation\n- Multiple agent types supported (terminus-2, claude-code, codex, etc.)\n\n## Evaluation Notes\n\n- Requires **Python>=3.12** and `pip install harbor==0.1.28`\n- Environment options: docker, daytona, e2b, modal\n- Configurable agent types and timeout settings\n- Maximum turns configurable (default: 200)\n- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "environment_type": {
+        "type": "str",
+        "description": "Environment type for running the benchmark.",
+        "value": "docker",
+        "choices": [
+          "docker",
+          "daytona",
+          "e2b",
+          "modal"
+        ]
+      },
+      "agent_name": {
+        "type": "str",
+        "description": "Agent type to be used in Harbor.",
+        "value": "terminus-2",
+        "choices": [
+          "oracle",
+          "terminus-2",
+          "claude-code",
+          "codex",
+          "qwen-coder",
+          "openhands",
+          "opencode",
+          "mini-swe-agent"
+        ]
+      },
+      "timeout_multiplier": {
+        "type": "float",
+        "description": "Timeout multiplier. If timeout errors occur, consider increasing this value.",
+        "value": 1.0
+      },
+      "max_turns": {
+        "type": "int",
+        "description": "Maximum number of turns for the agent to complete the task.",
+        "value": 200
+      }
+    },
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 0,
+    "subset_stats": [],
+    "prompt_length": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T14:56:53.647076"
+  },
+  "sample_example": {},
+  "readme": {
+    "en": "# Terminal-Bench-2.0\n\n\n## Overview\n\nTerminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 89 real-world, multi-step terminal tasks. Tasks range from compiling and debugging to system administration, running within isolated containers with rigorous validation.\n\n## Task Description\n\n- **Task Type**: Command-Line Agent Evaluation\n- **Input**: Terminal task specification\n- **Output**: Task completion via agent actions\n- **Domains**: System administration, compilation, debugging, file operations\n\n## Key Features\n\n- 89 real-world terminal tasks\n- Multi-step task completion requirements\n- Isolated container execution environment\n- Binary scoring (0/1) with auto-validation\n- Multiple agent types supported (terminus-2, claude-code, codex, etc.)\n\n## Evaluation Notes\n\n- Requires **Python>=3.12** and `pip install harbor==0.1.28`\n- Environment options: docker, daytona, e2b, modal\n- Configurable agent types and timeout settings\n- Maximum turns configurable (default: 200)\n- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `terminal_bench_v2` |\n| **Dataset ID** | [terminal-bench-2.git](https://github.com/laude-institute/terminal-bench-2.git) |\n| **Paper** | N/A |\n| **Tags** | `Coding` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `environment_type` | `str` | `docker` | Environment type for running the benchmark. Choices: ['docker', 'daytona', 'e2b', 'modal'] |\n| `agent_name` | `str` | `terminus-2` | Agent type to be used in Harbor. Choices: ['oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode', 'mini-swe-agent'] |\n| `timeout_multiplier` | `float` | `1.0` | Timeout multiplier. If timeout errors occur, consider increasing this value. |\n| `max_turns` | `int` | `200` | Maximum number of turns for the agent to complete the task. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets terminal_bench_v2 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['terminal_bench_v2'],\n    dataset_args={\n        'terminal_bench_v2': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Terminal-Bench-2.0\n\n## 概述\n\nTerminal-Bench v2 是一套命令行基准测试套件，用于评估 AI 代理在 89 个真实世界的多步骤终端任务中的表现。这些任务涵盖编译、调试到系统管理等多个方面，并在隔离的容器环境中运行，配有严格的验证机制。\n\n## 任务描述\n\n- **任务类型**：命令行代理评估  \n- **输入**：终端任务说明  \n- **输出**：通过代理操作完成任务  \n- **领域**：系统管理、编译、调试、文件操作  \n\n## 主要特性\n\n- 包含 89 个真实世界的终端任务  \n- 要求完成多步骤任务  \n- 在隔离的容器环境中执行  \n- 采用二值评分（0/1）并支持自动验证  \n- 支持多种代理类型（如 terminus-2、claude-code、codex 等）\n\n## 评估说明\n\n- 需要 **Python>=3.12** 并安装 `pip install harbor==0.1.28`  \n- 支持的环境选项：docker、daytona、e2b、modal  \n- 可配置代理类型和超时设置  \n- 最大交互轮数可配置（默认：200）  \n- [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `terminal_bench_v2` |\n| **数据集 ID** | [terminal-bench-2.git](https://github.com/laude-institute/terminal-bench-2.git) |\n| **论文** | N/A |\n| **标签** | `Coding` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n*统计数据不可用。*\n\n## 样例示例\n\n*样例示例不可用。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `environment_type` | `str` | `docker` | 运行基准测试的环境类型。可选值：['docker', 'daytona', 'e2b', 'modal'] |\n| `agent_name` | `str` | `terminus-2` | Harbor 中使用的代理类型。可选值：['oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode', 'mini-swe-agent'] |\n| `timeout_multiplier` | `float` | `1.0` | 超时倍数。如果出现超时错误，可考虑增大该值。 |\n| `max_turns` | `int` | `200` | 代理完成任务的最大交互轮数。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets terminal_bench_v2 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['terminal_bench_v2'],\n    dataset_args={\n        'terminal_bench_v2': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "8a33cf930a53fd4344e1b6199fa9c05b",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.499002",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

@@ -1,0 +1,106 @@
+{
+  "meta": {
+    "pretty_name": "CoNLL2003",
+    "dataset_id": "extraordinarylab/conll2003",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nCoNLL-2003 is a classic Named Entity Recognition (NER) benchmark introduced at the Conference on Computational Natural Language Learning 2003. It contains news articles annotated with four entity types.\n\n## Task Description\n\n- **Task Type**: Named Entity Recognition (NER)\n- **Input**: Text with entities to identify\n- **Output**: Entity spans with type labels\n- **Entity Types**: Person (PER), Organization (ORG), Location (LOC), Miscellaneous (MISC)\n\n## Key Features\n\n- Standard NER benchmark with well-defined entity types\n- News domain text with high annotation quality\n- Four entity categories with clear definitions\n- Supports few-shot evaluation\n- Comprehensive metrics (precision, recall, F1, accuracy)\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: **Precision**, **Recall**, **F1 Score**, **Accuracy**\n- Train split: **train**, Eval split: **test**\n- Entity types mapped to human-readable names\n",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 3453,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 3453,
+        "prompt_length_mean": 2733.98,
+        "prompt_length_min": 2663,
+        "prompt_length_max": 3275,
+        "prompt_length_std": 64.42,
+        "target_length_mean": 131.34
+      }
+    ],
+    "prompt_length": {
+      "mean": 2733.98,
+      "min": 2663,
+      "max": 3275,
+      "std": 64.42
+    },
+    "target_length_mean": 131.34,
+    "computed_at": "2026-01-28T14:13:43.130207"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "c8d2b130",
+          "content": "Here are some examples of named entity recognition:\n\nInput:\nEU rejects German call to boycott British lamb .\n\nOutput:\n<response><organization>EU</organization> rejects <miscellaneous>German</miscellaneous> call to boycott <miscellaneous>Briti ... [TRUNCATED] ... include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\nSOCCER - JAPAN GET LUCKY WIN , CHINA IN SURPRISE DEFEAT .\n"
+        }
+      ],
+      "target": "<response>SOCCER - <location>JAPAN</location> GET LUCKY WIN , <person>CHINA</person> IN SURPRISE DEFEAT .</response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "SOCCER",
+          "-",
+          "JAPAN",
+          "GET",
+          "LUCKY",
+          "WIN",
+          ",",
+          "CHINA",
+          "IN",
+          "SURPRISE",
+          "DEFEAT",
+          "."
+        ],
+        "ner_tags": [
+          "O",
+          "O",
+          "B-LOC",
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-PER",
+          "O",
+          "O",
+          "O",
+          "O"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# CoNLL2003\n\n\n## Overview\n\nCoNLL-2003 is a classic Named Entity Recognition (NER) benchmark introduced at the Conference on Computational Natural Language Learning 2003. It contains news articles annotated with four entity types.\n\n## Task Description\n\n- **Task Type**: Named Entity Recognition (NER)\n- **Input**: Text with entities to identify\n- **Output**: Entity spans with type labels\n- **Entity Types**: Person (PER), Organization (ORG), Location (LOC), Miscellaneous (MISC)\n\n## Key Features\n\n- Standard NER benchmark with well-defined entity types\n- News domain text with high annotation quality\n- Four entity categories with clear definitions\n- Supports few-shot evaluation\n- Comprehensive metrics (precision, recall, F1, accuracy)\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: **Precision**, **Recall**, **F1 Score**, **Accuracy**\n- Train split: **train**, Eval split: **test**\n- Entity types mapped to human-readable names\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `conll2003` |\n| **Dataset ID** | [extraordinarylab/conll2003](https://modelscope.cn/datasets/extraordinarylab/conll2003/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,453 |\n| Prompt Length (Mean) | 2733.98 chars |\n| Prompt Length (Min/Max) | 2663 / 3275 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"c8d2b130\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nEU rejects German call to boycott British lamb .\\n\\nOutput:\\n<response><organization>EU</organization> rejects <miscellaneous>German</miscellaneous> call to boycott <miscellaneous>Briti ... [TRUNCATED] ... include explanations, just the tagged text.\\n6. If entity spans overlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\nSOCCER - JAPAN GET LUCKY WIN , CHINA IN SURPRISE DEFEAT .\\n\"\n    }\n  ],\n  \"target\": \"<response>SOCCER - <location>JAPAN</location> GET LUCKY WIN , <person>CHINA</person> IN SURPRISE DEFEAT .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"SOCCER\",\n      \"-\",\n      \"JAPAN\",\n      \"GET\",\n      \"LUCKY\",\n      \"WIN\",\n      \",\",\n      \"CHINA\",\n      \"IN\",\n      \"SURPRISE\",\n      \"DEFEAT\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"B-LOC\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-PER\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets conll2003 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['conll2003'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# CoNLL2003\n\n\n## 概述\n\nCoNLL-2003 是在 2003 年计算自然语言学习会议（Conference on Computational Natural Language Learning）上提出的经典命名实体识别（NER）基准数据集。该数据集包含标注了四种实体类型的新闻文章。\n\n## 任务描述\n\n- **任务类型**：命名实体识别（NER）\n- **输入**：待识别实体的文本\n- **输出**：带有类型标签的实体片段\n- **实体类型**：人物（PER）、组织（ORG）、地点（LOC）、其他（MISC）\n\n## 主要特点\n\n- 标准 NER 基准，实体类型定义清晰\n- 新闻领域文本，标注质量高\n- 四类实体，定义明确\n- 支持少样本（few-shot）评估\n- 提供全面的评估指标（精确率、召回率、F1 分数、准确率）\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 评估\n- 评估指标：**精确率（Precision）**、**召回率（Recall）**、**F1 分数（F1 Score）**、**准确率（Accuracy）**\n- 训练集划分：**train**，评估集划分：**test**\n- 实体类型映射为人类可读的名称\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `conll2003` |\n| **数据集ID** | [extraordinarylab/conll2003](https://modelscope.cn/datasets/extraordinarylab/conll2003/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认样本数** | 5-shot |\n| **评估集划分** | `test` |\n| **训练集划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,453 |\n| 提示词长度（平均） | 2733.98 字符 |\n| 提示词长度（最小/最大） | 2663 / 3275 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"c8d2b130\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nEU rejects German call to boycott British lamb .\\n\\nOutput:\\n<response><organization>EU</organization> rejects <miscellaneous>German</miscellaneous> call to boycott <miscellaneous>Briti ... [TRUNCATED] ... include explanations, just the tagged text.\\n6. If entity spans overlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\nSOCCER - JAPAN GET LUCKY WIN , CHINA IN SURPRISE DEFEAT .\\n\"\n    }\n  ],\n  \"target\": \"<response>SOCCER - <location>JAPAN</location> GET LUCKY WIN , <person>CHINA</person> IN SURPRISE DEFEAT .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"SOCCER\",\n      \"-\",\n      \"JAPAN\",\n      \"GET\",\n      \"LUCKY\",\n      \"WIN\",\n      \",\",\n      \"CHINA\",\n      \"IN\",\n      \"SURPRISE\",\n      \"DEFEAT\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"B-LOC\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-PER\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets conll2003 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['conll2003'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "cf7b9f54703ac4cc6623158b3de51452",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.340919",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

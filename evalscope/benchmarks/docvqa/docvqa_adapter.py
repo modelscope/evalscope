@@ -22,8 +22,34 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
         name='docvqa',
         pretty_name='DocVQA',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
-        description=
-        'DocVQA (Document Visual Question Answering) is a benchmark designed to evaluate AI systems on their ability to answer questions based on the content of document images, such as scanned pages, forms, or invoices. Unlike general visual question answering, it requires understanding not just the text extracted by OCR, but also the complex layout, structure, and visual elements of a document.',  # noqa: E501
+        description="""
+## Overview
+
+DocVQA (Document Visual Question Answering) is a benchmark designed to evaluate AI systems' ability to answer questions based on document images such as scanned pages, forms, invoices, and reports. It requires understanding complex document layouts, structure, and visual elements beyond simple text extraction.
+
+## Task Description
+
+- **Task Type**: Document Visual Question Answering
+- **Input**: Document image + natural language question
+- **Output**: Single word or phrase answer extracted from document
+- **Domains**: Document understanding, OCR, layout comprehension
+
+## Key Features
+
+- Covers diverse document types (forms, invoices, letters, reports)
+- Requires understanding document layout and structure
+- Tests both text extraction and contextual reasoning
+- Questions require locating and interpreting specific information
+- Combines OCR capabilities with visual understanding
+
+## Evaluation Notes
+
+- Default evaluation uses the **validation** split
+- Primary metric: **ANLS** (Average Normalized Levenshtein Similarity)
+- Answers should be in format "ANSWER: [ANSWER]"
+- ANLS metric accounts for minor OCR/spelling variations
+- Multiple valid answers may be accepted for each question
+""",  # noqa: E501
         dataset_id='lmms-lab/DocVQA',
         subset_list=['DocVQA'],
         metric_list=['anls'],

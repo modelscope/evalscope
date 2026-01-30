@@ -1,0 +1,650 @@
+{
+  "meta": {
+    "pretty_name": "MMLU-Redux",
+    "dataset_id": "AI-ModelScope/mmlu-redux-2.0",
+    "paper_url": null,
+    "tags": [
+      "MCQ",
+      "Knowledge"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "allow_inclusion": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "abstract_algebra",
+      "anatomy",
+      "astronomy",
+      "business_ethics",
+      "clinical_knowledge",
+      "college_biology",
+      "college_chemistry",
+      "college_computer_science",
+      "college_mathematics",
+      "college_medicine",
+      "college_physics",
+      "computer_security",
+      "conceptual_physics",
+      "econometrics",
+      "electrical_engineering",
+      "elementary_mathematics",
+      "formal_logic",
+      "global_facts",
+      "high_school_biology",
+      "high_school_chemistry",
+      "high_school_computer_science",
+      "high_school_european_history",
+      "high_school_geography",
+      "high_school_government_and_politics",
+      "high_school_macroeconomics",
+      "high_school_mathematics",
+      "high_school_microeconomics",
+      "high_school_physics",
+      "high_school_psychology",
+      "high_school_statistics",
+      "high_school_us_history",
+      "high_school_world_history",
+      "human_aging",
+      "human_sexuality",
+      "international_law",
+      "jurisprudence",
+      "logical_fallacies",
+      "machine_learning",
+      "management",
+      "marketing",
+      "medical_genetics",
+      "miscellaneous",
+      "moral_disputes",
+      "moral_scenarios",
+      "nutrition",
+      "philosophy",
+      "prehistory",
+      "professional_accounting",
+      "professional_law",
+      "professional_medicine",
+      "professional_psychology",
+      "public_relations",
+      "security_studies",
+      "sociology",
+      "us_foreign_policy",
+      "virology",
+      "world_religions"
+    ],
+    "description": "\n## Overview\n\nMMLU-Redux is an improved version of the MMLU benchmark with corrected answers. It addresses known errors in the original MMLU dataset by fixing incorrect ground truth labels, missing correct options, and ambiguous questions.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Knowledge Assessment\n- **Input**: Question with four answer choices\n- **Output**: Correct answer letter (A/B/C/D)\n- **Domains**: 57 subjects across STEM, Humanities, Social Sciences, and Other\n\n## Key Features\n\n- Corrects errors in original MMLU benchmark\n- Error types fixed include:\n  - `no_correct_answer`: Questions with missing correct options\n  - `wrong_groundtruth`: Questions with incorrect ground truth\n  - `multiple_correct_answers`: Questions with ambiguous answers\n- Same 57-subject coverage as original MMLU\n- Maintains compatibility with MMLU evaluation frameworks\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** (with inclusion flag for multi-answer questions)\n- Uses Chain-of-Thought (CoT) prompting\n- Zero-shot evaluation only (few-shot not supported)\n- Results aggregated by subject and category (STEM, Humanities, Social Science, Other)\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 5700,
+    "subset_stats": [
+      {
+        "name": "abstract_algebra",
+        "sample_count": 100,
+        "prompt_length_mean": 399.13,
+        "prompt_length_min": 285,
+        "prompt_length_max": 525,
+        "prompt_length_std": 70.56,
+        "target_length_mean": 1
+      },
+      {
+        "name": "anatomy",
+        "sample_count": 100,
+        "prompt_length_mean": 454.09,
+        "prompt_length_min": 323,
+        "prompt_length_max": 788,
+        "prompt_length_std": 98.47,
+        "target_length_mean": 1
+      },
+      {
+        "name": "astronomy",
+        "sample_count": 100,
+        "prompt_length_mean": 516.53,
+        "prompt_length_min": 297,
+        "prompt_length_max": 1087,
+        "prompt_length_std": 156.16,
+        "target_length_mean": 1
+      },
+      {
+        "name": "business_ethics",
+        "sample_count": 100,
+        "prompt_length_mean": 538.35,
+        "prompt_length_min": 274,
+        "prompt_length_max": 927,
+        "prompt_length_std": 142.98,
+        "target_length_mean": 1
+      },
+      {
+        "name": "clinical_knowledge",
+        "sample_count": 100,
+        "prompt_length_mean": 453.01,
+        "prompt_length_min": 303,
+        "prompt_length_max": 757,
+        "prompt_length_std": 86.8,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_biology",
+        "sample_count": 100,
+        "prompt_length_mean": 550.59,
+        "prompt_length_min": 343,
+        "prompt_length_max": 1081,
+        "prompt_length_std": 185.78,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_chemistry",
+        "sample_count": 100,
+        "prompt_length_mean": 451.35,
+        "prompt_length_min": 292,
+        "prompt_length_max": 890,
+        "prompt_length_std": 116.16,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_computer_science",
+        "sample_count": 100,
+        "prompt_length_mean": 631.74,
+        "prompt_length_min": 336,
+        "prompt_length_max": 1344,
+        "prompt_length_std": 202.2,
+        "target_length_mean": 1.01
+      },
+      {
+        "name": "college_mathematics",
+        "sample_count": 100,
+        "prompt_length_mean": 451.77,
+        "prompt_length_min": 255,
+        "prompt_length_max": 709,
+        "prompt_length_std": 104.1,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_medicine",
+        "sample_count": 100,
+        "prompt_length_mean": 669.42,
+        "prompt_length_min": 308,
+        "prompt_length_max": 5082,
+        "prompt_length_std": 785.95,
+        "target_length_mean": 1
+      },
+      {
+        "name": "college_physics",
+        "sample_count": 100,
+        "prompt_length_mean": 500.71,
+        "prompt_length_min": 317,
+        "prompt_length_max": 797,
+        "prompt_length_std": 96.26,
+        "target_length_mean": 1
+      },
+      {
+        "name": "computer_security",
+        "sample_count": 100,
+        "prompt_length_mean": 476.01,
+        "prompt_length_min": 291,
+        "prompt_length_max": 1115,
+        "prompt_length_std": 169.07,
+        "target_length_mean": 1
+      },
+      {
+        "name": "conceptual_physics",
+        "sample_count": 100,
+        "prompt_length_mean": 372.72,
+        "prompt_length_min": 284,
+        "prompt_length_max": 539,
+        "prompt_length_std": 42.34,
+        "target_length_mean": 1.01
+      },
+      {
+        "name": "econometrics",
+        "sample_count": 100,
+        "prompt_length_mean": 610.01,
+        "prompt_length_min": 304,
+        "prompt_length_max": 1036,
+        "prompt_length_std": 148.71,
+        "target_length_mean": 1
+      },
+      {
+        "name": "electrical_engineering",
+        "sample_count": 100,
+        "prompt_length_mean": 373.01,
+        "prompt_length_min": 286,
+        "prompt_length_max": 585,
+        "prompt_length_std": 52.94,
+        "target_length_mean": 1
+      },
+      {
+        "name": "elementary_mathematics",
+        "sample_count": 100,
+        "prompt_length_mean": 403.98,
+        "prompt_length_min": 264,
+        "prompt_length_max": 797,
+        "prompt_length_std": 105.3,
+        "target_length_mean": 1
+      },
+      {
+        "name": "formal_logic",
+        "sample_count": 100,
+        "prompt_length_mean": 598.04,
+        "prompt_length_min": 318,
+        "prompt_length_max": 1275,
+        "prompt_length_std": 225.99,
+        "target_length_mean": 1.04
+      },
+      {
+        "name": "global_facts",
+        "sample_count": 100,
+        "prompt_length_mean": 389.82,
+        "prompt_length_min": 303,
+        "prompt_length_max": 746,
+        "prompt_length_std": 91.44,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_biology",
+        "sample_count": 100,
+        "prompt_length_mean": 574.54,
+        "prompt_length_min": 328,
+        "prompt_length_max": 1078,
+        "prompt_length_std": 171.86,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_chemistry",
+        "sample_count": 100,
+        "prompt_length_mean": 496.56,
+        "prompt_length_min": 271,
+        "prompt_length_max": 1093,
+        "prompt_length_std": 174.71,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_computer_science",
+        "sample_count": 100,
+        "prompt_length_mean": 649.34,
+        "prompt_length_min": 278,
+        "prompt_length_max": 1786,
+        "prompt_length_std": 299.42,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_european_history",
+        "sample_count": 100,
+        "prompt_length_mean": 1840.88,
+        "prompt_length_min": 855,
+        "prompt_length_max": 3045,
+        "prompt_length_std": 559.4,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_geography",
+        "sample_count": 100,
+        "prompt_length_mean": 417.76,
+        "prompt_length_min": 306,
+        "prompt_length_max": 616,
+        "prompt_length_std": 71.01,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_government_and_politics",
+        "sample_count": 100,
+        "prompt_length_mean": 539.42,
+        "prompt_length_min": 384,
+        "prompt_length_max": 864,
+        "prompt_length_std": 114.46,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_macroeconomics",
+        "sample_count": 100,
+        "prompt_length_mean": 509.35,
+        "prompt_length_min": 319,
+        "prompt_length_max": 756,
+        "prompt_length_std": 103.47,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_mathematics",
+        "sample_count": 100,
+        "prompt_length_mean": 409.45,
+        "prompt_length_min": 282,
+        "prompt_length_max": 846,
+        "prompt_length_std": 100.47,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_microeconomics",
+        "sample_count": 100,
+        "prompt_length_mean": 508.99,
+        "prompt_length_min": 325,
+        "prompt_length_max": 1070,
+        "prompt_length_std": 124.05,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_physics",
+        "sample_count": 100,
+        "prompt_length_mean": 600.82,
+        "prompt_length_min": 324,
+        "prompt_length_max": 1414,
+        "prompt_length_std": 209.26,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_psychology",
+        "sample_count": 100,
+        "prompt_length_mean": 476.49,
+        "prompt_length_min": 309,
+        "prompt_length_max": 1055,
+        "prompt_length_std": 139.9,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_statistics",
+        "sample_count": 100,
+        "prompt_length_mean": 736.04,
+        "prompt_length_min": 376,
+        "prompt_length_max": 1772,
+        "prompt_length_std": 238.51,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_us_history",
+        "sample_count": 100,
+        "prompt_length_mean": 1643.04,
+        "prompt_length_min": 782,
+        "prompt_length_max": 2595,
+        "prompt_length_std": 364.75,
+        "target_length_mean": 1
+      },
+      {
+        "name": "high_school_world_history",
+        "sample_count": 100,
+        "prompt_length_mean": 1749.59,
+        "prompt_length_min": 749,
+        "prompt_length_max": 3834,
+        "prompt_length_std": 641.45,
+        "target_length_mean": 1
+      },
+      {
+        "name": "human_aging",
+        "sample_count": 100,
+        "prompt_length_mean": 416.87,
+        "prompt_length_min": 323,
+        "prompt_length_max": 689,
+        "prompt_length_std": 72.59,
+        "target_length_mean": 1
+      },
+      {
+        "name": "human_sexuality",
+        "sample_count": 100,
+        "prompt_length_mean": 457.5,
+        "prompt_length_min": 307,
+        "prompt_length_max": 1145,
+        "prompt_length_std": 130.43,
+        "target_length_mean": 1.01
+      },
+      {
+        "name": "international_law",
+        "sample_count": 100,
+        "prompt_length_mean": 636.61,
+        "prompt_length_min": 332,
+        "prompt_length_max": 986,
+        "prompt_length_std": 127.74,
+        "target_length_mean": 1.09
+      },
+      {
+        "name": "jurisprudence",
+        "sample_count": 100,
+        "prompt_length_mean": 518.24,
+        "prompt_length_min": 307,
+        "prompt_length_max": 1039,
+        "prompt_length_std": 130.3,
+        "target_length_mean": 1
+      },
+      {
+        "name": "logical_fallacies",
+        "sample_count": 100,
+        "prompt_length_mean": 516.62,
+        "prompt_length_min": 333,
+        "prompt_length_max": 902,
+        "prompt_length_std": 148.28,
+        "target_length_mean": 1
+      },
+      {
+        "name": "machine_learning",
+        "sample_count": 100,
+        "prompt_length_mean": 513.09,
+        "prompt_length_min": 315,
+        "prompt_length_max": 806,
+        "prompt_length_std": 117.93,
+        "target_length_mean": 1.01
+      },
+      {
+        "name": "management",
+        "sample_count": 100,
+        "prompt_length_mean": 399.38,
+        "prompt_length_min": 294,
+        "prompt_length_max": 645,
+        "prompt_length_std": 61.17,
+        "target_length_mean": 1
+      },
+      {
+        "name": "marketing",
+        "sample_count": 100,
+        "prompt_length_mean": 474.85,
+        "prompt_length_min": 335,
+        "prompt_length_max": 757,
+        "prompt_length_std": 77.06,
+        "target_length_mean": 1
+      },
+      {
+        "name": "medical_genetics",
+        "sample_count": 100,
+        "prompt_length_mean": 414.32,
+        "prompt_length_min": 292,
+        "prompt_length_max": 658,
+        "prompt_length_std": 76.15,
+        "target_length_mean": 1
+      },
+      {
+        "name": "miscellaneous",
+        "sample_count": 100,
+        "prompt_length_mean": 388.56,
+        "prompt_length_min": 277,
+        "prompt_length_max": 1268,
+        "prompt_length_std": 145.4,
+        "target_length_mean": 1.01
+      },
+      {
+        "name": "moral_disputes",
+        "sample_count": 100,
+        "prompt_length_mean": 534.28,
+        "prompt_length_min": 325,
+        "prompt_length_max": 872,
+        "prompt_length_std": 117.04,
+        "target_length_mean": 1
+      },
+      {
+        "name": "moral_scenarios",
+        "sample_count": 100,
+        "prompt_length_mean": 620.62,
+        "prompt_length_min": 563,
+        "prompt_length_max": 767,
+        "prompt_length_std": 33.76,
+        "target_length_mean": 1
+      },
+      {
+        "name": "nutrition",
+        "sample_count": 100,
+        "prompt_length_mean": 505.6,
+        "prompt_length_min": 318,
+        "prompt_length_max": 926,
+        "prompt_length_std": 145.84,
+        "target_length_mean": 1
+      },
+      {
+        "name": "philosophy",
+        "sample_count": 100,
+        "prompt_length_mean": 462.44,
+        "prompt_length_min": 319,
+        "prompt_length_max": 1155,
+        "prompt_length_std": 161.58,
+        "target_length_mean": 1
+      },
+      {
+        "name": "prehistory",
+        "sample_count": 100,
+        "prompt_length_mean": 468.62,
+        "prompt_length_min": 320,
+        "prompt_length_max": 943,
+        "prompt_length_std": 117.32,
+        "target_length_mean": 1
+      },
+      {
+        "name": "professional_accounting",
+        "sample_count": 100,
+        "prompt_length_mean": 650.46,
+        "prompt_length_min": 341,
+        "prompt_length_max": 1226,
+        "prompt_length_std": 175.1,
+        "target_length_mean": 1
+      },
+      {
+        "name": "professional_law",
+        "sample_count": 100,
+        "prompt_length_mean": 1370.21,
+        "prompt_length_min": 359,
+        "prompt_length_max": 2928,
+        "prompt_length_std": 448.47,
+        "target_length_mean": 1.2
+      },
+      {
+        "name": "professional_medicine",
+        "sample_count": 100,
+        "prompt_length_mean": 1003.93,
+        "prompt_length_min": 610,
+        "prompt_length_max": 1735,
+        "prompt_length_std": 291.62,
+        "target_length_mean": 1
+      },
+      {
+        "name": "professional_psychology",
+        "sample_count": 100,
+        "prompt_length_mean": 577.98,
+        "prompt_length_min": 317,
+        "prompt_length_max": 1502,
+        "prompt_length_std": 194.95,
+        "target_length_mean": 1
+      },
+      {
+        "name": "public_relations",
+        "sample_count": 100,
+        "prompt_length_mean": 472.39,
+        "prompt_length_min": 300,
+        "prompt_length_max": 1188,
+        "prompt_length_std": 162.78,
+        "target_length_mean": 1.03
+      },
+      {
+        "name": "security_studies",
+        "sample_count": 100,
+        "prompt_length_mean": 1029.35,
+        "prompt_length_min": 317,
+        "prompt_length_max": 2066,
+        "prompt_length_std": 449.28,
+        "target_length_mean": 1
+      },
+      {
+        "name": "sociology",
+        "sample_count": 100,
+        "prompt_length_mean": 530.23,
+        "prompt_length_min": 335,
+        "prompt_length_max": 834,
+        "prompt_length_std": 100.83,
+        "target_length_mean": 1
+      },
+      {
+        "name": "us_foreign_policy",
+        "sample_count": 100,
+        "prompt_length_mean": 490.28,
+        "prompt_length_min": 305,
+        "prompt_length_max": 754,
+        "prompt_length_std": 89.68,
+        "target_length_mean": 1
+      },
+      {
+        "name": "virology",
+        "sample_count": 100,
+        "prompt_length_mean": 447.81,
+        "prompt_length_min": 302,
+        "prompt_length_max": 1383,
+        "prompt_length_std": 136.39,
+        "target_length_mean": 1.05
+      },
+      {
+        "name": "world_religions",
+        "sample_count": 100,
+        "prompt_length_mean": 353.31,
+        "prompt_length_min": 287,
+        "prompt_length_max": 557,
+        "prompt_length_std": 48.26,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 600.81,
+      "min": 255,
+      "max": 5082,
+      "std": 389.92
+    },
+    "target_length_mean": 1.01,
+    "computed_at": "2026-01-28T11:15:19.853837"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "f937b8b4",
+          "content": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\n\nStatement 1 | If T: V -> W is a linear transformation and dim(V ) < dim(W) < 1, then T must be injective. Statement 2 | Let dim(V) = n and suppose that T: V -> V is linear. If T is injective, then it is a bijection.\n\nA) True, True\nB) False, False\nC) True, False\nD) False, True"
+        }
+      ],
+      "choices": [
+        "True, True",
+        "False, False",
+        "True, False",
+        "False, True"
+      ],
+      "target": [
+        "A"
+      ],
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "error_type": "bad_question_clarity",
+        "correct_answer": "0",
+        "potential_reason": "Statement 2 is true and well defined. \r\nHowever, statement 1 is not well defined: The dimension of a vector space is a nonnegative number, and since dim(V) < dim(W) < 1, this means dim(V) has to be negative. Taking this statement literally, the implication is vacuously true as the premise cannot be satisfed, but I doubt that was what the question is trying to test. "
+      }
+    },
+    "subset": "abstract_algebra",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MMLU-Redux\n\n\n## Overview\n\nMMLU-Redux is an improved version of the MMLU benchmark with corrected answers. It addresses known errors in the original MMLU dataset by fixing incorrect ground truth labels, missing correct options, and ambiguous questions.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Knowledge Assessment\n- **Input**: Question with four answer choices\n- **Output**: Correct answer letter (A/B/C/D)\n- **Domains**: 57 subjects across STEM, Humanities, Social Sciences, and Other\n\n## Key Features\n\n- Corrects errors in original MMLU benchmark\n- Error types fixed include:\n  - `no_correct_answer`: Questions with missing correct options\n  - `wrong_groundtruth`: Questions with incorrect ground truth\n  - `multiple_correct_answers`: Questions with ambiguous answers\n- Same 57-subject coverage as original MMLU\n- Maintains compatibility with MMLU evaluation frameworks\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** (with inclusion flag for multi-answer questions)\n- Uses Chain-of-Thought (CoT) prompting\n- Zero-shot evaluation only (few-shot not supported)\n- Results aggregated by subject and category (STEM, Humanities, Social Science, Other)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `mmlu_redux` |\n| **Dataset ID** | [AI-ModelScope/mmlu-redux-2.0](https://modelscope.cn/datasets/AI-ModelScope/mmlu-redux-2.0/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 5,700 |\n| Prompt Length (Mean) | 600.81 chars |\n| Prompt Length (Min/Max) | 255 / 5082 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `abstract_algebra` | 100 | 399.13 | 285 | 525 |\n| `anatomy` | 100 | 454.09 | 323 | 788 |\n| `astronomy` | 100 | 516.53 | 297 | 1087 |\n| `business_ethics` | 100 | 538.35 | 274 | 927 |\n| `clinical_knowledge` | 100 | 453.01 | 303 | 757 |\n| `college_biology` | 100 | 550.59 | 343 | 1081 |\n| `college_chemistry` | 100 | 451.35 | 292 | 890 |\n| `college_computer_science` | 100 | 631.74 | 336 | 1344 |\n| `college_mathematics` | 100 | 451.77 | 255 | 709 |\n| `college_medicine` | 100 | 669.42 | 308 | 5082 |\n| `college_physics` | 100 | 500.71 | 317 | 797 |\n| `computer_security` | 100 | 476.01 | 291 | 1115 |\n| `conceptual_physics` | 100 | 372.72 | 284 | 539 |\n| `econometrics` | 100 | 610.01 | 304 | 1036 |\n| `electrical_engineering` | 100 | 373.01 | 286 | 585 |\n| `elementary_mathematics` | 100 | 403.98 | 264 | 797 |\n| `formal_logic` | 100 | 598.04 | 318 | 1275 |\n| `global_facts` | 100 | 389.82 | 303 | 746 |\n| `high_school_biology` | 100 | 574.54 | 328 | 1078 |\n| `high_school_chemistry` | 100 | 496.56 | 271 | 1093 |\n| `high_school_computer_science` | 100 | 649.34 | 278 | 1786 |\n| `high_school_european_history` | 100 | 1840.88 | 855 | 3045 |\n| `high_school_geography` | 100 | 417.76 | 306 | 616 |\n| `high_school_government_and_politics` | 100 | 539.42 | 384 | 864 |\n| `high_school_macroeconomics` | 100 | 509.35 | 319 | 756 |\n| `high_school_mathematics` | 100 | 409.45 | 282 | 846 |\n| `high_school_microeconomics` | 100 | 508.99 | 325 | 1070 |\n| `high_school_physics` | 100 | 600.82 | 324 | 1414 |\n| `high_school_psychology` | 100 | 476.49 | 309 | 1055 |\n| `high_school_statistics` | 100 | 736.04 | 376 | 1772 |\n| `high_school_us_history` | 100 | 1643.04 | 782 | 2595 |\n| `high_school_world_history` | 100 | 1749.59 | 749 | 3834 |\n| `human_aging` | 100 | 416.87 | 323 | 689 |\n| `human_sexuality` | 100 | 457.5 | 307 | 1145 |\n| `international_law` | 100 | 636.61 | 332 | 986 |\n| `jurisprudence` | 100 | 518.24 | 307 | 1039 |\n| `logical_fallacies` | 100 | 516.62 | 333 | 902 |\n| `machine_learning` | 100 | 513.09 | 315 | 806 |\n| `management` | 100 | 399.38 | 294 | 645 |\n| `marketing` | 100 | 474.85 | 335 | 757 |\n| `medical_genetics` | 100 | 414.32 | 292 | 658 |\n| `miscellaneous` | 100 | 388.56 | 277 | 1268 |\n| `moral_disputes` | 100 | 534.28 | 325 | 872 |\n| `moral_scenarios` | 100 | 620.62 | 563 | 767 |\n| `nutrition` | 100 | 505.6 | 318 | 926 |\n| `philosophy` | 100 | 462.44 | 319 | 1155 |\n| `prehistory` | 100 | 468.62 | 320 | 943 |\n| `professional_accounting` | 100 | 650.46 | 341 | 1226 |\n| `professional_law` | 100 | 1370.21 | 359 | 2928 |\n| `professional_medicine` | 100 | 1003.93 | 610 | 1735 |\n| `professional_psychology` | 100 | 577.98 | 317 | 1502 |\n| `public_relations` | 100 | 472.39 | 300 | 1188 |\n| `security_studies` | 100 | 1029.35 | 317 | 2066 |\n| `sociology` | 100 | 530.23 | 335 | 834 |\n| `us_foreign_policy` | 100 | 490.28 | 305 | 754 |\n| `virology` | 100 | 447.81 | 302 | 1383 |\n| `world_religions` | 100 | 353.31 | 287 | 557 |\n\n## Sample Example\n\n**Subset**: `abstract_algebra`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f937b8b4\",\n      \"content\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\\n\\nStatement 1 | If T: V -> W is a linear transformation and dim(V ) < dim(W) < 1, then T must be injective. Statement 2 | Let dim(V) = n and suppose that T: V -> V is linear. If T is injective, then it is a bijection.\\n\\nA) True, True\\nB) False, False\\nC) True, False\\nD) False, True\"\n    }\n  ],\n  \"choices\": [\n    \"True, True\",\n    \"False, False\",\n    \"True, False\",\n    \"False, True\"\n  ],\n  \"target\": [\n    \"A\"\n  ],\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"error_type\": \"bad_question_clarity\",\n    \"correct_answer\": \"0\",\n    \"potential_reason\": \"Statement 2 is true and well defined. \\r\\nHowever, statement 1 is not well defined: The dimension of a vector space is a nonnegative number, and since dim(V) < dim(W) < 1, this means dim(V) has to be negative. Taking this statement literally, the implication is vacuously true as the premise cannot be satisfed, but I doubt that was what the question is trying to test. \"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mmlu_redux \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mmlu_redux'],\n    dataset_args={\n        'mmlu_redux': {\n            # subset_list: ['abstract_algebra', 'anatomy', 'astronomy']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MMLU-Redux\n\n\n## 概述\n\nMMLU-Redux 是 MMLU 基准测试的一个改进版本，修正了原始数据集中的错误答案。它通过修复不正确的标准答案标签、缺失的正确选项以及存在歧义的问题，解决了原始 MMLU 数据集中已知的错误。\n\n## 任务描述\n\n- **任务类型**：多项选择知识评估\n- **输入**：包含四个选项的问题\n- **输出**：正确答案的字母（A/B/C/D）\n- **领域**：涵盖 STEM、人文学科、社会科学及其他领域的 57 个学科\n\n## 主要特性\n\n- 修正了原始 MMLU 基准测试中的错误\n- 修复的错误类型包括：\n  - `no_correct_answer`：缺少正确选项的问题\n  - `wrong_groundtruth`：标准答案错误的问题\n  - `multiple_correct_answers`：答案存在歧义的问题\n- 与原始 MMLU 保持相同的 57 个学科覆盖范围\n- 与 MMLU 评估框架兼容\n\n## 评估说明\n\n- 默认使用 **test** 数据划分进行评估\n- 主要指标：**准确率（Accuracy）**（对多答案问题使用包含标志）\n- 使用思维链（Chain-of-Thought, CoT）提示\n- 仅支持零样本（zero-shot）评估（不支持少样本）\n- 结果按学科和类别（STEM、人文学科、社会科学、其他）汇总\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `mmlu_redux` |\n| **数据集 ID** | [AI-ModelScope/mmlu-redux-2.0](https://modelscope.cn/datasets/AI-ModelScope/mmlu-redux-2.0/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ` |\n| **指标** | `acc` |\n| **默认样本数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 5,700 |\n| 提示词长度（平均） | 600.81 字符 |\n| 提示词长度（最小/最大） | 255 / 5082 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `abstract_algebra` | 100 | 399.13 | 285 | 525 |\n| `anatomy` | 100 | 454.09 | 323 | 788 |\n| `astronomy` | 100 | 516.53 | 297 | 1087 |\n| `business_ethics` | 100 | 538.35 | 274 | 927 |\n| `clinical_knowledge` | 100 | 453.01 | 303 | 757 |\n| `college_biology` | 100 | 550.59 | 343 | 1081 |\n| `college_chemistry` | 100 | 451.35 | 292 | 890 |\n| `college_computer_science` | 100 | 631.74 | 336 | 1344 |\n| `college_mathematics` | 100 | 451.77 | 255 | 709 |\n| `college_medicine` | 100 | 669.42 | 308 | 5082 |\n| `college_physics` | 100 | 500.71 | 317 | 797 |\n| `computer_security` | 100 | 476.01 | 291 | 1115 |\n| `conceptual_physics` | 100 | 372.72 | 284 | 539 |\n| `econometrics` | 100 | 610.01 | 304 | 1036 |\n| `electrical_engineering` | 100 | 373.01 | 286 | 585 |\n| `elementary_mathematics` | 100 | 403.98 | 264 | 797 |\n| `formal_logic` | 100 | 598.04 | 318 | 1275 |\n| `global_facts` | 100 | 389.82 | 303 | 746 |\n| `high_school_biology` | 100 | 574.54 | 328 | 1078 |\n| `high_school_chemistry` | 100 | 496.56 | 271 | 1093 |\n| `high_school_computer_science` | 100 | 649.34 | 278 | 1786 |\n| `high_school_european_history` | 100 | 1840.88 | 855 | 3045 |\n| `high_school_geography` | 100 | 417.76 | 306 | 616 |\n| `high_school_government_and_politics` | 100 | 539.42 | 384 | 864 |\n| `high_school_macroeconomics` | 100 | 509.35 | 319 | 756 |\n| `high_school_mathematics` | 100 | 409.45 | 282 | 846 |\n| `high_school_microeconomics` | 100 | 508.99 | 325 | 1070 |\n| `high_school_physics` | 100 | 600.82 | 324 | 1414 |\n| `high_school_psychology` | 100 | 476.49 | 309 | 1055 |\n| `high_school_statistics` | 100 | 736.04 | 376 | 1772 |\n| `high_school_us_history` | 100 | 1643.04 | 782 | 2595 |\n| `high_school_world_history` | 100 | 1749.59 | 749 | 3834 |\n| `human_aging` | 100 | 416.87 | 323 | 689 |\n| `human_sexuality` | 100 | 457.5 | 307 | 1145 |\n| `international_law` | 100 | 636.61 | 332 | 986 |\n| `jurisprudence` | 100 | 518.24 | 307 | 1039 |\n| `logical_fallacies` | 100 | 516.62 | 333 | 902 |\n| `machine_learning` | 100 | 513.09 | 315 | 806 |\n| `management` | 100 | 399.38 | 294 | 645 |\n| `marketing` | 100 | 474.85 | 335 | 757 |\n| `medical_genetics` | 100 | 414.32 | 292 | 658 |\n| `miscellaneous` | 100 | 388.56 | 277 | 1268 |\n| `moral_disputes` | 100 | 534.28 | 325 | 872 |\n| `moral_scenarios` | 100 | 620.62 | 563 | 767 |\n| `nutrition` | 100 | 505.6 | 318 | 926 |\n| `philosophy` | 100 | 462.44 | 319 | 1155 |\n| `prehistory` | 100 | 468.62 | 320 | 943 |\n| `professional_accounting` | 100 | 650.46 | 341 | 1226 |\n| `professional_law` | 100 | 1370.21 | 359 | 2928 |\n| `professional_medicine` | 100 | 1003.93 | 610 | 1735 |\n| `professional_psychology` | 100 | 577.98 | 317 | 1502 |\n| `public_relations` | 100 | 472.39 | 300 | 1188 |\n| `security_studies` | 100 | 1029.35 | 317 | 2066 |\n| `sociology` | 100 | 530.23 | 335 | 834 |\n| `us_foreign_policy` | 100 | 490.28 | 305 | 754 |\n| `virology` | 100 | 447.81 | 302 | 1383 |\n| `world_religions` | 100 | 353.31 | 287 | 557 |\n\n## 样例示例\n\n**子集**: `abstract_algebra`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f937b8b4\",\n      \"content\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\\n\\nStatement 1 | If T: V -> W is a linear transformation and dim(V ) < dim(W) < 1, then T must be injective. Statement 2 | Let dim(V) = n and suppose that T: V -> V is linear. If T is injective, then it is a bijection.\\n\\nA) True, True\\nB) False, False\\nC) True, False\\nD) False, True\"\n    }\n  ],\n  \"choices\": [\n    \"True, True\",\n    \"False, False\",\n    \"True, False\",\n    \"False, True\"\n  ],\n  \"target\": [\n    \"A\"\n  ],\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"error_type\": \"bad_question_clarity\",\n    \"correct_answer\": \"0\",\n    \"potential_reason\": \"Statement 2 is true and well defined. \\r\\nHowever, statement 1 is not well defined: The dimension of a vector space is a nonnegative number, and since dim(V) < dim(W) < 1, this means dim(V) has to be negative. Taking this statement literally, the implication is vacuously true as the premise cannot be satisfed, but I doubt that was what the question is trying to test. \"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mmlu_redux \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mmlu_redux'],\n    dataset_args={\n        'mmlu_redux': {\n            # subset_list: ['abstract_algebra', 'anatomy', 'astronomy']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "54f9c413011cd1d834cf51691f143743",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.309800",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

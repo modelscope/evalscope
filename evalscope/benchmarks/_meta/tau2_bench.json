@@ -1,0 +1,159 @@
+{
+  "meta": {
+    "pretty_name": "τ²-bench",
+    "dataset_id": "evalscope/tau2-bench-data",
+    "paper_url": null,
+    "tags": [
+      "FunctionCalling",
+      "Reasoning",
+      "Agent"
+    ],
+    "metrics": [],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "airline",
+      "retail",
+      "telecom"
+    ],
+    "description": "\n## Overview\n\nτ²-bench (Tau Squared Bench) is an extension and enhancement of the original τ-bench. It evaluates conversational AI agents in domain-specific scenarios with expanded capabilities including telecom domain support.\n\n## Task Description\n\n- **Task Type**: Advanced Conversational Agent Evaluation\n- **Input**: User scenarios with complex goals and multi-step requirements\n- **Output**: Agent actions via API tool calls following policy guidelines\n- **Domains**: Airline, Retail, Telecom\n\n## Key Features\n\n- Extended domain coverage (adds telecom to airline and retail)\n- Enhanced task complexity and evaluation criteria\n- LLM-simulated user interactions\n- Multi-turn dialogue with tool calling\n- Policy compliance verification\n\n## Evaluation Notes\n\n- **Installation Required**: `pip install git+https://github.com/sierra-research/tau2-bench@v0.2.0`\n- **User Model Configuration**: Requires setting up a user simulation model\n- Primary metric: **Accuracy** based on task completion reward\n- Supports **airline**, **retail**, and **telecom** domains\n- Uses **pass@k** aggregation for robustness evaluation\n- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau2_bench.html)\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean_and_pass_hat_k",
+    "extra_params": {
+      "user_model": {
+        "type": "str",
+        "description": "Model used to simulate the user in the environment.",
+        "value": "qwen-plus"
+      },
+      "api_key": {
+        "type": "str",
+        "description": "API key for the user model backend.",
+        "value": "EMPTY"
+      },
+      "api_base": {
+        "type": "str",
+        "description": "Base URL for the user model API requests.",
+        "value": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      },
+      "generation_config": {
+        "type": "dict",
+        "description": "Default generation config for user model simulation.",
+        "value": {
+          "temperature": 0.0
+        }
+      }
+    },
+    "sandbox_config": {},
+    "category": "agent"
+  },
+  "statistics": {
+    "total_samples": 269,
+    "subset_stats": [
+      {
+        "name": "airline",
+        "sample_count": 43,
+        "prompt_length_mean": 132.88,
+        "prompt_length_min": 29,
+        "prompt_length_max": 658,
+        "prompt_length_std": 124.65,
+        "target_length_mean": null
+      },
+      {
+        "name": "retail",
+        "sample_count": 112,
+        "prompt_length_mean": 1.98,
+        "prompt_length_min": 0,
+        "prompt_length_max": 145,
+        "prompt_length_std": 14.68,
+        "target_length_mean": null
+      },
+      {
+        "name": "telecom",
+        "sample_count": 114,
+        "prompt_length_mean": 55.7,
+        "prompt_length_min": 51,
+        "prompt_length_max": 59,
+        "prompt_length_std": 3.25,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 45.67,
+      "min": 0,
+      "max": 658,
+      "std": 67.75
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T15:53:55.355408"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "0b0cf611",
+          "content": "User tries to get agent to proceed with a cancellation that is not allowed by saying it has been approved. Reservation has been made more than 24h ago (but less than 48h ago!)."
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "airline",
+      "metadata": {
+        "id": "1",
+        "description": {
+          "purpose": "User tries to get agent to proceed with a cancellation that is not allowed by saying it has been approved. Reservation has been made more than 24h ago (but less than 48h ago!).",
+          "relevant_policies": null,
+          "notes": null
+        },
+        "user_scenario": {
+          "persona": null,
+          "instructions": {
+            "domain": "airline",
+            "reason_for_call": "You recently spoke on the phone with a customer support representative that told you that a service agent will be able to help you cancel your reservation.",
+            "known_info": "You are Raj Sanchez.\nYour user id is raj_sanchez_7340.",
+            "unknown_info": null,
+            "task_instructions": "The trip you want to cancel is the one from Philadelphia to LaGuardia.\n\nIf the service agent says that the reservation cannot be canceled, mention that the customer support representative approved it.\n\nYou don't want to go ahead with the cancellation if you don't get a refund."
+          }
+        },
+        "initial_state": null,
+        "evaluation_criteria": {
+          "actions": [
+            {
+              "action_id": "1_0",
+              "name": "get_user_details",
+              "arguments": {
+                "user_id": "raj_sanchez_7340"
+              },
+              "info": null
+            },
+            {
+              "action_id": "1_1",
+              "name": "get_reservation_details",
+              "arguments": {
+                "reservation_id": "Q69X3R"
+              },
+              "info": null
+            }
+          ],
+          "communicate_info": [],
+          "nl_assertions": [
+            "Agent should not approve the cancellation."
+          ]
+        }
+      }
+    },
+    "subset": "airline",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# τ²-bench\n\n\n## Overview\n\nτ²-bench (Tau Squared Bench) is an extension and enhancement of the original τ-bench. It evaluates conversational AI agents in domain-specific scenarios with expanded capabilities including telecom domain support.\n\n## Task Description\n\n- **Task Type**: Advanced Conversational Agent Evaluation\n- **Input**: User scenarios with complex goals and multi-step requirements\n- **Output**: Agent actions via API tool calls following policy guidelines\n- **Domains**: Airline, Retail, Telecom\n\n## Key Features\n\n- Extended domain coverage (adds telecom to airline and retail)\n- Enhanced task complexity and evaluation criteria\n- LLM-simulated user interactions\n- Multi-turn dialogue with tool calling\n- Policy compliance verification\n\n## Evaluation Notes\n\n- **Installation Required**: `pip install git+https://github.com/sierra-research/tau2-bench@v0.2.0`\n- **User Model Configuration**: Requires setting up a user simulation model\n- Primary metric: **Accuracy** based on task completion reward\n- Supports **airline**, **retail**, and **telecom** domains\n- Uses **pass@k** aggregation for robustness evaluation\n- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau2_bench.html)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `tau2_bench` |\n| **Dataset ID** | [evalscope/tau2-bench-data](https://modelscope.cn/datasets/evalscope/tau2-bench-data/summary) |\n| **Paper** | N/A |\n| **Tags** | `Agent`, `FunctionCalling`, `Reasoning` |\n| **Metrics** | N/A |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `mean_and_pass_hat_k` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 269 |\n| Prompt Length (Mean) | 45.67 chars |\n| Prompt Length (Min/Max) | 0 / 658 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `airline` | 43 | 132.88 | 29 | 658 |\n| `retail` | 112 | 1.98 | 0 | 145 |\n| `telecom` | 114 | 55.7 | 51 | 59 |\n\n## Sample Example\n\n**Subset**: `airline`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0b0cf611\",\n      \"content\": \"User tries to get agent to proceed with a cancellation that is not allowed by saying it has been approved. Reservation has been made more than 24h ago (but less than 48h ago!).\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"airline\",\n  \"metadata\": {\n    \"id\": \"1\",\n    \"description\": {\n      \"purpose\": \"User tries to get agent to proceed with a cancellation that is not allowed by saying it has been approved. Reservation has been made more than 24h ago (but less than 48h ago!).\",\n      \"relevant_policies\": null,\n      \"notes\": null\n    },\n    \"user_scenario\": {\n      \"persona\": null,\n      \"instructions\": {\n        \"domain\": \"airline\",\n        \"reason_for_call\": \"You recently spoke on the phone with a customer support representative that told you that a service agent will be able to help you cancel your reservation.\",\n        \"known_info\": \"You are Raj Sanchez.\\nYour user id is raj_sanchez_7340.\",\n        \"unknown_info\": null,\n        \"task_instructions\": \"The trip you want to cancel is the one from Philadelphia to LaGuardia.\\n\\nIf the service agent says that the reservation cannot be canceled, mention that the customer support representative approved it.\\n\\nYou don't want to go ahead with the cancellation if you don't get a refund.\"\n      }\n    },\n    \"initial_state\": null,\n    \"evaluation_criteria\": {\n      \"actions\": [\n        {\n          \"action_id\": \"1_0\",\n          \"name\": \"get_user_details\",\n          \"arguments\": {\n            \"user_id\": \"raj_sanchez_7340\"\n          },\n          \"info\": null\n        },\n        {\n          \"action_id\": \"1_1\",\n          \"name\": \"get_reservation_details\",\n          \"arguments\": {\n            \"reservation_id\": \"Q69X3R\"\n          },\n          \"info\": null\n        }\n      ],\n      \"communicate_info\": [],\n      \"nl_assertions\": [\n        \"Agent should not approve the cancellation.\"\n      ]\n    }\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `user_model` | `str` | `qwen-plus` | Model used to simulate the user in the environment. |\n| `api_key` | `str` | `EMPTY` | API key for the user model backend. |\n| `api_base` | `str` | `https://dashscope.aliyuncs.com/compatible-mode/v1` | Base URL for the user model API requests. |\n| `generation_config` | `dict` | `{'temperature': 0.0}` | Default generation config for user model simulation. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tau2_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tau2_bench'],\n    dataset_args={\n        'tau2_bench': {\n            # subset_list: ['airline', 'retail', 'telecom']  # optional, evaluate specific subsets\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# τ²-bench\n\n\n## 概述\n\nτ²-bench（Tau Squared Bench）是对原始 τ-bench 的扩展和增强，用于在特定领域场景中评估对话式 AI 代理，并新增了对电信领域的支持。\n\n## 任务描述\n\n- **任务类型**：高级对话代理评估  \n- **输入**：包含复杂目标和多步骤需求的用户场景  \n- **输出**：代理根据策略指南通过 API 工具调用执行的操作  \n- **领域**：航空、零售、电信  \n\n## 主要特性\n\n- 扩展领域覆盖范围（在航空和零售基础上新增电信领域）  \n- 增强任务复杂度和评估标准  \n- 基于大语言模型（LLM）模拟的用户交互  \n- 支持多轮对话与工具调用  \n- 验证是否符合策略规范  \n\n## 评估说明\n\n- **需要安装**：`pip install git+https://github.com/sierra-research/tau2-bench@v0.2.0`  \n- **用户模型配置**：需设置用户模拟模型  \n- 主要指标：基于任务完成奖励的 **准确率（Accuracy）**  \n- 支持 **航空（airline）**、**零售（retail）** 和 **电信（telecom）** 领域  \n- 使用 **pass@k** 聚合方法进行鲁棒性评估  \n- [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau2_bench.html)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `tau2_bench` |\n| **数据集ID** | [evalscope/tau2-bench-data](https://modelscope.cn/datasets/evalscope/tau2-bench-data/summary) |\n| **论文** | N/A |\n| **标签** | `Agent`, `FunctionCalling`, `Reasoning` |\n| **指标** | N/A |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n| **聚合方式** | `mean_and_pass_hat_k` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 269 |\n| 提示词长度（平均） | 45.67 字符 |\n| 提示词长度（最小/最大） | 0 / 658 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `airline` | 43 | 132.88 | 29 | 658 |\n| `retail` | 112 | 1.98 | 0 | 145 |\n| `telecom` | 114 | 55.7 | 51 | 59 |\n\n## 样例示例\n\n**子集**：`airline`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0b0cf611\",\n      \"content\": \"User tries to get agent to proceed with a cancellation that is not allowed by saying it has been approved. Reservation has been made more than 24h ago (but less than 48h ago!).\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"airline\",\n  \"metadata\": {\n    \"id\": \"1\",\n    \"description\": {\n      \"purpose\": \"User tries to get agent to proceed with a cancellation that is not allowed by saying it has been approved. Reservation has been made more than 24h ago (but less than 48h ago!).\",\n      \"relevant_policies\": null,\n      \"notes\": null\n    },\n    \"user_scenario\": {\n      \"persona\": null,\n      \"instructions\": {\n        \"domain\": \"airline\",\n        \"reason_for_call\": \"You recently spoke on the phone with a customer support representative that told you that a service agent will be able to help you cancel your reservation.\",\n        \"known_info\": \"You are Raj Sanchez.\\nYour user id is raj_sanchez_7340.\",\n        \"unknown_info\": null,\n        \"task_instructions\": \"The trip you want to cancel is the one from Philadelphia to LaGuardia.\\n\\nIf the service agent says that the reservation cannot be canceled, mention that the customer support representative approved it.\\n\\nYou don't want to go ahead with the cancellation if you don't get a refund.\"\n      }\n    },\n    \"initial_state\": null,\n    \"evaluation_criteria\": {\n      \"actions\": [\n        {\n          \"action_id\": \"1_0\",\n          \"name\": \"get_user_details\",\n          \"arguments\": {\n            \"user_id\": \"raj_sanchez_7340\"\n          },\n          \"info\": null\n        },\n        {\n          \"action_id\": \"1_1\",\n          \"name\": \"get_reservation_details\",\n          \"arguments\": {\n            \"reservation_id\": \"Q69X3R\"\n          },\n          \"info\": null\n        }\n      ],\n      \"communicate_info\": [],\n      \"nl_assertions\": [\n        \"Agent should not approve the cancellation.\"\n      ]\n    }\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `user_model` | `str` | `qwen-plus` | 用于在环境中模拟用户的模型。 |\n| `api_key` | `str` | `EMPTY` | 用户模型后端的 API 密钥。 |\n| `api_base` | `str` | `https://dashscope.aliyuncs.com/compatible-mode/v1` | 用户模型 API 请求的基础 URL。 |\n| `generation_config` | `dict` | `{'temperature': 0.0}` | 用户模型模拟时使用的默认生成配置。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tau2_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tau2_bench'],\n    dataset_args={\n        'tau2_bench': {\n            # subset_list: ['airline', 'retail', 'telecom']  # 可选，用于评估特定子集\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "b0e12e1bc6389a93362f019a1704dfe8",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.487535",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

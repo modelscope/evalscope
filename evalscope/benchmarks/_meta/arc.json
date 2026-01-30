@@ -1,0 +1,92 @@
+{
+  "meta": {
+    "pretty_name": "ARC",
+    "dataset_id": "allenai/ai2_arc",
+    "paper_url": null,
+    "tags": [
+      "Reasoning",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "ARC-Easy",
+      "ARC-Challenge"
+    ],
+    "description": "\n## Overview\n\nARC (AI2 Reasoning Challenge) is a benchmark designed to evaluate science question answering capabilities of AI models. It consists of multiple-choice science questions from grade 3 to grade 9, divided into an Easy set and a Challenge set based on difficulty.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Science Question Answering\n- **Input**: Science question with 3-5 answer choices\n- **Output**: Correct answer letter (A, B, C, D, or E)\n- **Difficulty Levels**: ARC-Easy and ARC-Challenge\n\n## Key Features\n\n- 7,787 science questions from standardized tests (grades 3-9)\n- ARC-Easy: Questions answerable by retrieval or word co-occurrence\n- ARC-Challenge: Questions requiring deeper reasoning\n- Questions cover physics, chemistry, biology, and earth science\n- Designed to test both factual knowledge and reasoning\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Two subsets available: `ARC-Easy` and `ARC-Challenge`\n- Challenge set is commonly used for leaderboard comparisons\n- Supports few-shot evaluation with train split examples\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 3548,
+    "subset_stats": [
+      {
+        "name": "ARC-Easy",
+        "sample_count": 2376,
+        "prompt_length_mean": 409.9,
+        "prompt_length_min": 253,
+        "prompt_length_max": 1157,
+        "prompt_length_std": 103.78,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ARC-Challenge",
+        "sample_count": 1172,
+        "prompt_length_mean": 453.91,
+        "prompt_length_min": 253,
+        "prompt_length_max": 1111,
+        "prompt_length_std": 119.93,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 424.43,
+      "min": 253,
+      "max": 1157,
+      "std": 111.3
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:12:36.331210"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "76edd7a5",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nWhich statement best explains why photosynthesis is the foundation of most food webs?\n\nA) Sunlight is the source of energy for nearly all ecosystems.\nB) Most ecosystems are found on land instead of in water.\nC) Carbon dioxide is more available than other gases.\nD) The producers in all ecosystems are plants."
+        }
+      ],
+      "choices": [
+        "Sunlight is the source of energy for nearly all ecosystems.",
+        "Most ecosystems are found on land instead of in water.",
+        "Carbon dioxide is more available than other gases.",
+        "The producers in all ecosystems are plants."
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "id": "Mercury_417466"
+      }
+    },
+    "subset": "ARC-Easy",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# ARC\n\n\n## Overview\n\nARC (AI2 Reasoning Challenge) is a benchmark designed to evaluate science question answering capabilities of AI models. It consists of multiple-choice science questions from grade 3 to grade 9, divided into an Easy set and a Challenge set based on difficulty.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Science Question Answering\n- **Input**: Science question with 3-5 answer choices\n- **Output**: Correct answer letter (A, B, C, D, or E)\n- **Difficulty Levels**: ARC-Easy and ARC-Challenge\n\n## Key Features\n\n- 7,787 science questions from standardized tests (grades 3-9)\n- ARC-Easy: Questions answerable by retrieval or word co-occurrence\n- ARC-Challenge: Questions requiring deeper reasoning\n- Questions cover physics, chemistry, biology, and earth science\n- Designed to test both factual knowledge and reasoning\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Two subsets available: `ARC-Easy` and `ARC-Challenge`\n- Challenge set is commonly used for leaderboard comparisons\n- Supports few-shot evaluation with train split examples\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `arc` |\n| **Dataset ID** | [allenai/ai2_arc](https://modelscope.cn/datasets/allenai/ai2_arc/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,548 |\n| Prompt Length (Mean) | 424.43 chars |\n| Prompt Length (Min/Max) | 253 / 1157 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `ARC-Easy` | 2,376 | 409.9 | 253 | 1157 |\n| `ARC-Challenge` | 1,172 | 453.91 | 253 | 1111 |\n\n## Sample Example\n\n**Subset**: `ARC-Easy`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"76edd7a5\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nWhich statement best explains why photosynthesis is the foundation of most food webs?\\n\\nA) Sunlight is the source of energy for nearly all ecosystems.\\nB) Most ecosystems are found on land instead of in water.\\nC) Carbon dioxide is more available than other gases.\\nD) The producers in all ecosystems are plants.\"\n    }\n  ],\n  \"choices\": [\n    \"Sunlight is the source of energy for nearly all ecosystems.\",\n    \"Most ecosystems are found on land instead of in water.\",\n    \"Carbon dioxide is more available than other gases.\",\n    \"The producers in all ecosystems are plants.\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"Mercury_417466\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets arc \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['arc'],\n    dataset_args={\n        'arc': {\n            # subset_list: ['ARC-Easy', 'ARC-Challenge']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# ARC\n\n\n## 概述\n\nARC（AI2 Reasoning Challenge）是一个用于评估 AI 模型科学问答能力的基准测试。它包含来自 3 至 9 年级的多项选择题科学问题，并根据难度分为 Easy（简单）集和 Challenge（挑战）集。\n\n## 任务描述\n\n- **任务类型**：多项选择科学问答\n- **输入**：一道包含 3-5 个选项的科学问题\n- **输出**：正确答案的字母（A、B、C、D 或 E）\n- **难度级别**：ARC-Easy 和 ARC-Challenge\n\n## 主要特点\n\n- 包含 7,787 道来自标准化考试的科学问题（年级 3-9）\n- ARC-Easy：可通过检索或词语共现回答的问题\n- ARC-Challenge：需要更深层次推理的问题\n- 问题涵盖物理、化学、生物和地球科学\n- 旨在测试事实性知识与推理能力\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 提供两个子集：`ARC-Easy` 和 `ARC-Challenge`\n- Challenge 子集常用于排行榜比较\n- 支持使用训练集样例进行 few-shot 评估\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `arc` |\n| **数据集 ID** | [allenai/ai2_arc](https://modelscope.cn/datasets/allenai/ai2_arc/summary) |\n| **论文** | N/A |\n| **标签** | `MCQ`, `Reasoning` |\n| **指标** | `acc` |\n| **默认 Shots** | 0-shot |\n| **评估分割** | `test` |\n| **训练分割** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,548 |\n| 提示词长度（平均） | 424.43 字符 |\n| 提示词长度（最小/最大） | 253 / 1157 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `ARC-Easy` | 2,376 | 409.9 | 253 | 1157 |\n| `ARC-Challenge` | 1,172 | 453.91 | 253 | 1111 |\n\n## 样例示例\n\n**子集**: `ARC-Easy`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"76edd7a5\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nWhich statement best explains why photosynthesis is the foundation of most food webs?\\n\\nA) Sunlight is the source of energy for nearly all ecosystems.\\nB) Most ecosystems are found on land instead of in water.\\nC) Carbon dioxide is more available than other gases.\\nD) The producers in all ecosystems are plants.\"\n    }\n  ],\n  \"choices\": [\n    \"Sunlight is the source of energy for nearly all ecosystems.\",\n    \"Most ecosystems are found on land instead of in water.\",\n    \"Carbon dioxide is more available than other gases.\",\n    \"The producers in all ecosystems are plants.\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"Mercury_417466\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets arc \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['arc'],\n    dataset_args={\n        'arc': {\n            # subset_list: ['ARC-Easy', 'ARC-Challenge']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "79d42608eee580b0c3e3f3f1a7f11631",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.181351",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

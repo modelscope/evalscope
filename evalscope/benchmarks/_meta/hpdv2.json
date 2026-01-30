@@ -1,0 +1,80 @@
+{
+  "meta": {
+    "pretty_name": "HPD-v2",
+    "dataset_id": "AI-ModelScope/T2V-Eval-Prompts",
+    "paper_url": null,
+    "tags": [
+      "TextToImage"
+    ],
+    "metrics": [
+      "HPSv2.1Score"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "HPDv2"
+    ],
+    "description": "\n## Overview\n\nHPD-v2 (Human Preference Dataset v2) is a text-to-image benchmark that evaluates generated images based on human preferences. It uses the HPSv2.1 score metric trained on large-scale human preference data.\n\n## Task Description\n\n- **Task Type**: Text-to-Image Generation Evaluation\n- **Input**: Text prompt for image generation\n- **Output**: Generated image evaluated against human preferences\n- **Metric**: HPSv2.1 Score\n\n## Key Features\n\n- Human preference-aligned evaluation metric\n- Trained on large-scale human preference data\n- Tests aesthetic quality and prompt alignment\n- Supports diverse prompt categories\n- Objective, reproducible scoring\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- HPSv2.1 Score metric measures human preference alignment\n- Supports local prompt files\n- Category tags available in metadata\n- Can evaluate existing images or generate new ones\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "aigc"
+  },
+  "statistics": {
+    "total_samples": 3200,
+    "subset_stats": [
+      {
+        "name": "HPDv2",
+        "sample_count": 3200,
+        "prompt_length_mean": 81.71,
+        "prompt_length_min": 9,
+        "prompt_length_max": 404,
+        "prompt_length_std": 44.33,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 81.71,
+      "min": 9,
+      "max": 404,
+      "std": 44.33
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T11:17:04.545585"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "c971b3c7",
+          "content": "Spongebob depicted in the style of Dragon Ball Z."
+        }
+      ],
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "id": "HPDv2_0",
+        "prompt": "Spongebob depicted in the style of Dragon Ball Z.",
+        "category": "Animation",
+        "tags": {
+          "category": "Animation"
+        },
+        "image_path": ""
+      }
+    },
+    "subset": "HPDv2",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# HPD-v2\n\n\n## Overview\n\nHPD-v2 (Human Preference Dataset v2) is a text-to-image benchmark that evaluates generated images based on human preferences. It uses the HPSv2.1 score metric trained on large-scale human preference data.\n\n## Task Description\n\n- **Task Type**: Text-to-Image Generation Evaluation\n- **Input**: Text prompt for image generation\n- **Output**: Generated image evaluated against human preferences\n- **Metric**: HPSv2.1 Score\n\n## Key Features\n\n- Human preference-aligned evaluation metric\n- Trained on large-scale human preference data\n- Tests aesthetic quality and prompt alignment\n- Supports diverse prompt categories\n- Objective, reproducible scoring\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- HPSv2.1 Score metric measures human preference alignment\n- Supports local prompt files\n- Category tags available in metadata\n- Can evaluate existing images or generate new ones\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `hpdv2` |\n| **Dataset ID** | [AI-ModelScope/T2V-Eval-Prompts](https://modelscope.cn/datasets/AI-ModelScope/T2V-Eval-Prompts/summary) |\n| **Paper** | N/A |\n| **Tags** | `TextToImage` |\n| **Metrics** | `HPSv2.1Score` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,200 |\n| Prompt Length (Mean) | 81.71 chars |\n| Prompt Length (Min/Max) | 9 / 404 chars |\n\n## Sample Example\n\n**Subset**: `HPDv2`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"c971b3c7\",\n      \"content\": \"Spongebob depicted in the style of Dragon Ball Z.\"\n    }\n  ],\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"HPDv2_0\",\n    \"prompt\": \"Spongebob depicted in the style of Dragon Ball Z.\",\n    \"category\": \"Animation\",\n    \"tags\": {\n      \"category\": \"Animation\"\n    },\n    \"image_path\": \"\"\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets hpdv2 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['hpdv2'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# HPD-v2\n\n## 概述\n\nHPD-v2（Human Preference Dataset v2）是一个文本到图像的基准测试，用于根据人类偏好评估生成的图像。它使用在大规模人类偏好数据上训练的 HPSv2.1 评分指标。\n\n## 任务描述\n\n- **任务类型**：文本到图像生成评估\n- **输入**：用于图像生成的文本提示\n- **输出**：根据人类偏好评估生成的图像\n- **指标**：HPSv2.1 Score\n\n## 主要特性\n\n- 与人类偏好对齐的评估指标\n- 在大规模人类偏好数据上训练\n- 测试图像的美学质量和提示对齐程度\n- 支持多样化的提示类别\n- 客观、可复现的评分机制\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- HPSv2.1 Score 指标衡量与人类偏好的对齐程度\n- 支持本地提示文件\n- 元数据中包含类别标签\n- 可评估已有图像或生成新图像\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `hpdv2` |\n| **数据集ID** | [AI-ModelScope/T2V-Eval-Prompts](https://modelscope.cn/datasets/AI-ModelScope/T2V-Eval-Prompts/summary) |\n| **论文** | N/A |\n| **标签** | `TextToImage` |\n| **指标** | `HPSv2.1Score` |\n| **默认 Shots** | 0-shot |\n| **评估分割** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,200 |\n| 提示词长度（平均） | 81.71 字符 |\n| 提示词长度（最小/最大） | 9 / 404 字符 |\n\n## 样例示例\n\n**子集**：`HPDv2`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"c971b3c7\",\n      \"content\": \"Spongebob depicted in the style of Dragon Ball Z.\"\n    }\n  ],\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"HPDv2_0\",\n    \"prompt\": \"Spongebob depicted in the style of Dragon Ball Z.\",\n    \"category\": \"Animation\",\n    \"tags\": {\n      \"category\": \"Animation\"\n    },\n    \"image_path\": \"\"\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets hpdv2 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['hpdv2'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "9a0acf2c064538d549eaf937fb440d2c",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.552031",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

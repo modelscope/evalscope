@@ -8,7 +8,7 @@
 - 异地使用：在远程服务器上搭建沙箱环境，并通过API接口进行评测，需远端机器支持Docker。
 
 ```{tip}
-- 数据集默认的**沙箱环境配置**可以在数据集配置中查看，例如[HumanEval](../get_started/supported_dataset/llm.md#humaneval)。
+- 数据集默认的**沙箱环境配置**可以在数据集配置中查看，例如[HumanEval](../benchmarks/humaneval.md)。
 - **沙箱工作进程数** 需要根据本地机器的资源情况进行调整，建议设置为不超过本地CPU核心数的一半，例如本地有8核CPU，则建议设置为4，尤其是多语言镜像(`volcengine/sandbox-fusion`)，其消耗资源更多，建议适当减少工作进程数。
 ```
 

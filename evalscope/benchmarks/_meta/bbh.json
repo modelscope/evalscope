@@ -1,0 +1,336 @@
+{
+  "meta": {
+    "pretty_name": "BBH",
+    "dataset_id": "evalscope/bbh",
+    "paper_url": null,
+    "tags": [
+      "Reasoning"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 3,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "temporal_sequences",
+      "disambiguation_qa",
+      "date_understanding",
+      "tracking_shuffled_objects_three_objects",
+      "penguins_in_a_table",
+      "geometric_shapes",
+      "snarks",
+      "ruin_names",
+      "tracking_shuffled_objects_seven_objects",
+      "tracking_shuffled_objects_five_objects",
+      "logical_deduction_three_objects",
+      "hyperbaton",
+      "logical_deduction_five_objects",
+      "logical_deduction_seven_objects",
+      "movie_recommendation",
+      "salient_translation_error_detection",
+      "reasoning_about_colored_objects",
+      "multistep_arithmetic_two",
+      "navigate",
+      "dyck_languages",
+      "word_sorting",
+      "sports_understanding",
+      "boolean_expressions",
+      "object_counting",
+      "formal_fallacies",
+      "causal_judgement",
+      "web_of_lies"
+    ],
+    "description": "\n## Overview\n\nBBH (BIG-Bench Hard) is a subset of 23 challenging tasks from the BIG-Bench benchmark that are specifically selected because language models initially struggled with them. These tasks require complex reasoning abilities that benefit from Chain-of-Thought (CoT) prompting.\n\n## Task Description\n\n- **Task Type**: Mixed (Multiple-Choice and Free-Form)\n- **Input**: Task-specific questions requiring reasoning\n- **Output**: Answers in specified format\n- **Subsets**: 27 reasoning tasks divided into multiple-choice (17) and free-form (10)\n\n## Key Features\n\n- 27 challenging reasoning tasks from BIG-Bench\n- Multiple-choice tasks: temporal sequences, disambiguation, logical deduction, etc.\n- Free-form tasks: arithmetic, navigation, boolean expressions, etc.\n- Each task comes with curated Chain-of-Thought examples\n- Designed to test advanced reasoning capabilities\n\n## Evaluation Notes\n\n- Default configuration uses **3-shot** with CoT prompting (recommended)\n- CoT prompts are pre-defined for each subset in `cot_prompts/` directory\n- Answers should follow the format: \"So the answer is [ANSWER]\"\n- Setting `few_shot_num=0` disables few-shot examples\n- Multiple-choice answers are normalized to single letters (A, B, C, etc.)\n",
+    "prompt_template": "Q: {question}\nA: Let's think step by step. Put your final answer in the format of \"So the answer is [ANSWER]\" (without quotes and markdown) where [ANSWER] is the answer to the problem.\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "{fewshot}\n\nQ: {question}\nA: Let's think step by step. Put your final answer in the format of \"So the answer is [ANSWER]\" (without quotes and markdown) where [ANSWER] is the answer to the problem.\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 6511,
+    "subset_stats": [
+      {
+        "name": "temporal_sequences",
+        "sample_count": 250,
+        "prompt_length_mean": 3746.18,
+        "prompt_length_min": 3646,
+        "prompt_length_max": 3876,
+        "prompt_length_std": 56.62,
+        "target_length_mean": 1
+      },
+      {
+        "name": "disambiguation_qa",
+        "sample_count": 250,
+        "prompt_length_mean": 4047.48,
+        "prompt_length_min": 3993,
+        "prompt_length_max": 4099,
+        "prompt_length_std": 22.6,
+        "target_length_mean": 1
+      },
+      {
+        "name": "date_understanding",
+        "sample_count": 250,
+        "prompt_length_mean": 1550.66,
+        "prompt_length_min": 1491,
+        "prompt_length_max": 1641,
+        "prompt_length_std": 30.43,
+        "target_length_mean": 1
+      },
+      {
+        "name": "tracking_shuffled_objects_three_objects",
+        "sample_count": 250,
+        "prompt_length_mean": 3257.42,
+        "prompt_length_min": 3195,
+        "prompt_length_max": 3316,
+        "prompt_length_std": 34.59,
+        "target_length_mean": 1
+      },
+      {
+        "name": "penguins_in_a_table",
+        "sample_count": 146,
+        "prompt_length_mean": 3030.88,
+        "prompt_length_min": 2922,
+        "prompt_length_max": 3201,
+        "prompt_length_std": 78.07,
+        "target_length_mean": 1
+      },
+      {
+        "name": "geometric_shapes",
+        "sample_count": 250,
+        "prompt_length_mean": 5270.24,
+        "prompt_length_min": 5201,
+        "prompt_length_max": 5384,
+        "prompt_length_std": 36.37,
+        "target_length_mean": 1
+      },
+      {
+        "name": "snarks",
+        "sample_count": 178,
+        "prompt_length_mean": 3493.68,
+        "prompt_length_min": 3339,
+        "prompt_length_max": 3693,
+        "prompt_length_std": 62.47,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ruin_names",
+        "sample_count": 250,
+        "prompt_length_mean": 3832.01,
+        "prompt_length_min": 3781,
+        "prompt_length_max": 3948,
+        "prompt_length_std": 29.16,
+        "target_length_mean": 1.16
+      },
+      {
+        "name": "tracking_shuffled_objects_seven_objects",
+        "sample_count": 250,
+        "prompt_length_mean": 3598.1,
+        "prompt_length_min": 3506,
+        "prompt_length_max": 3682,
+        "prompt_length_std": 52.14,
+        "target_length_mean": 1
+      },
+      {
+        "name": "tracking_shuffled_objects_five_objects",
+        "sample_count": 250,
+        "prompt_length_mean": 3419.36,
+        "prompt_length_min": 3338,
+        "prompt_length_max": 3489,
+        "prompt_length_std": 42.7,
+        "target_length_mean": 1
+      },
+      {
+        "name": "logical_deduction_three_objects",
+        "sample_count": 250,
+        "prompt_length_mean": 3093.32,
+        "prompt_length_min": 3014,
+        "prompt_length_max": 3165,
+        "prompt_length_std": 41.19,
+        "target_length_mean": 1
+      },
+      {
+        "name": "hyperbaton",
+        "sample_count": 250,
+        "prompt_length_mean": 3433.3,
+        "prompt_length_min": 3386,
+        "prompt_length_max": 3486,
+        "prompt_length_std": 22.57,
+        "target_length_mean": 1
+      },
+      {
+        "name": "logical_deduction_five_objects",
+        "sample_count": 250,
+        "prompt_length_mean": 3264.38,
+        "prompt_length_min": 3118,
+        "prompt_length_max": 3379,
+        "prompt_length_std": 77.79,
+        "target_length_mean": 1
+      },
+      {
+        "name": "logical_deduction_seven_objects",
+        "sample_count": 250,
+        "prompt_length_mean": 3434.09,
+        "prompt_length_min": 3217,
+        "prompt_length_max": 3633,
+        "prompt_length_std": 115.95,
+        "target_length_mean": 1
+      },
+      {
+        "name": "movie_recommendation",
+        "sample_count": 250,
+        "prompt_length_mean": 2489.85,
+        "prompt_length_min": 2436,
+        "prompt_length_max": 2613,
+        "prompt_length_std": 29.0,
+        "target_length_mean": 1.05
+      },
+      {
+        "name": "salient_translation_error_detection",
+        "sample_count": 250,
+        "prompt_length_mean": 7401.64,
+        "prompt_length_min": 7223,
+        "prompt_length_max": 7885,
+        "prompt_length_std": 106.37,
+        "target_length_mean": 1
+      },
+      {
+        "name": "reasoning_about_colored_objects",
+        "sample_count": 250,
+        "prompt_length_mean": 2818.32,
+        "prompt_length_min": 2572,
+        "prompt_length_max": 3102,
+        "prompt_length_std": 98.39,
+        "target_length_mean": 1
+      },
+      {
+        "name": "multistep_arithmetic_two",
+        "sample_count": 250,
+        "prompt_length_mean": 2596.98,
+        "prompt_length_min": 2594,
+        "prompt_length_max": 2600,
+        "prompt_length_std": 1.39,
+        "target_length_mean": 2.79
+      },
+      {
+        "name": "navigate",
+        "sample_count": 250,
+        "prompt_length_mean": 2508.7,
+        "prompt_length_min": 2452,
+        "prompt_length_max": 2626,
+        "prompt_length_std": 37.81,
+        "target_length_mean": 2.42
+      },
+      {
+        "name": "dyck_languages",
+        "sample_count": 250,
+        "prompt_length_mean": 2723.8,
+        "prompt_length_min": 2680,
+        "prompt_length_max": 2874,
+        "prompt_length_std": 49.73,
+        "target_length_mean": 2.0
+      },
+      {
+        "name": "word_sorting",
+        "sample_count": 250,
+        "prompt_length_mean": 2481.34,
+        "prompt_length_min": 2397,
+        "prompt_length_max": 2569,
+        "prompt_length_std": 47.53,
+        "target_length_mean": 94.34
+      },
+      {
+        "name": "sports_understanding",
+        "sample_count": 250,
+        "prompt_length_mean": 1077.42,
+        "prompt_length_min": 1060,
+        "prompt_length_max": 1122,
+        "prompt_length_std": 12.73,
+        "target_length_mean": 2.46
+      },
+      {
+        "name": "boolean_expressions",
+        "sample_count": 250,
+        "prompt_length_mean": 1991.7,
+        "prompt_length_min": 1980,
+        "prompt_length_max": 1998,
+        "prompt_length_std": 3.51,
+        "target_length_mean": 4.46
+      },
+      {
+        "name": "object_counting",
+        "sample_count": 250,
+        "prompt_length_mean": 1706.66,
+        "prompt_length_min": 1647,
+        "prompt_length_max": 1787,
+        "prompt_length_std": 34.13,
+        "target_length_mean": 1.37
+      },
+      {
+        "name": "formal_fallacies",
+        "sample_count": 250,
+        "prompt_length_mean": 5185.5,
+        "prompt_length_min": 4918,
+        "prompt_length_max": 5514,
+        "prompt_length_std": 118.1,
+        "target_length_mean": 5.94
+      },
+      {
+        "name": "causal_judgement",
+        "sample_count": 187,
+        "prompt_length_mean": 4877.42,
+        "prompt_length_min": 4194,
+        "prompt_length_max": 6311,
+        "prompt_length_std": 503.06,
+        "target_length_mean": 2.52
+      },
+      {
+        "name": "web_of_lies",
+        "sample_count": 250,
+        "prompt_length_mean": 3300.84,
+        "prompt_length_min": 3267,
+        "prompt_length_max": 3340,
+        "prompt_length_std": 13.84,
+        "target_length_mean": 2.49
+      }
+    ],
+    "prompt_length": {
+      "mean": 3307.29,
+      "min": 1060,
+      "max": 7885,
+      "std": 1284.26
+    },
+    "target_length_mean": 5.25,
+    "computed_at": "2026-01-28T11:17:33.562712"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "7d1767c8",
+          "content": "Task description: Answer questions about which times certain events could have occurred.\n\nQ: Today, Emily went to the museum. Between what times could they have gone?\nWe know that:\nEmily woke up at 1pm.\nElizabeth saw Emily reading at the libr ... [TRUNCATED] ... \nOptions:\n(A) 6pm to 9pm\n(B) 7am to 11am\n(C) 1pm to 2pm\n(D) 2pm to 6pm\nA: Let's think step by step. Put your final answer in the format of \"So the answer is [ANSWER]\" (without quotes and markdown) where [ANSWER] is the answer to the problem.\n"
+        }
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "temporal_sequences",
+      "metadata": {
+        "task_type": "multiple_choice"
+      }
+    },
+    "subset": "temporal_sequences",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# BBH\n\n\n## Overview\n\nBBH (BIG-Bench Hard) is a subset of 23 challenging tasks from the BIG-Bench benchmark that are specifically selected because language models initially struggled with them. These tasks require complex reasoning abilities that benefit from Chain-of-Thought (CoT) prompting.\n\n## Task Description\n\n- **Task Type**: Mixed (Multiple-Choice and Free-Form)\n- **Input**: Task-specific questions requiring reasoning\n- **Output**: Answers in specified format\n- **Subsets**: 27 reasoning tasks divided into multiple-choice (17) and free-form (10)\n\n## Key Features\n\n- 27 challenging reasoning tasks from BIG-Bench\n- Multiple-choice tasks: temporal sequences, disambiguation, logical deduction, etc.\n- Free-form tasks: arithmetic, navigation, boolean expressions, etc.\n- Each task comes with curated Chain-of-Thought examples\n- Designed to test advanced reasoning capabilities\n\n## Evaluation Notes\n\n- Default configuration uses **3-shot** with CoT prompting (recommended)\n- CoT prompts are pre-defined for each subset in `cot_prompts/` directory\n- Answers should follow the format: \"So the answer is [ANSWER]\"\n- Setting `few_shot_num=0` disables few-shot examples\n- Multiple-choice answers are normalized to single letters (A, B, C, etc.)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `bbh` |\n| **Dataset ID** | [evalscope/bbh](https://modelscope.cn/datasets/evalscope/bbh/summary) |\n| **Paper** | N/A |\n| **Tags** | `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 3-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 6,511 |\n| Prompt Length (Mean) | 3307.29 chars |\n| Prompt Length (Min/Max) | 1060 / 7885 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `temporal_sequences` | 250 | 3746.18 | 3646 | 3876 |\n| `disambiguation_qa` | 250 | 4047.48 | 3993 | 4099 |\n| `date_understanding` | 250 | 1550.66 | 1491 | 1641 |\n| `tracking_shuffled_objects_three_objects` | 250 | 3257.42 | 3195 | 3316 |\n| `penguins_in_a_table` | 146 | 3030.88 | 2922 | 3201 |\n| `geometric_shapes` | 250 | 5270.24 | 5201 | 5384 |\n| `snarks` | 178 | 3493.68 | 3339 | 3693 |\n| `ruin_names` | 250 | 3832.01 | 3781 | 3948 |\n| `tracking_shuffled_objects_seven_objects` | 250 | 3598.1 | 3506 | 3682 |\n| `tracking_shuffled_objects_five_objects` | 250 | 3419.36 | 3338 | 3489 |\n| `logical_deduction_three_objects` | 250 | 3093.32 | 3014 | 3165 |\n| `hyperbaton` | 250 | 3433.3 | 3386 | 3486 |\n| `logical_deduction_five_objects` | 250 | 3264.38 | 3118 | 3379 |\n| `logical_deduction_seven_objects` | 250 | 3434.09 | 3217 | 3633 |\n| `movie_recommendation` | 250 | 2489.85 | 2436 | 2613 |\n| `salient_translation_error_detection` | 250 | 7401.64 | 7223 | 7885 |\n| `reasoning_about_colored_objects` | 250 | 2818.32 | 2572 | 3102 |\n| `multistep_arithmetic_two` | 250 | 2596.98 | 2594 | 2600 |\n| `navigate` | 250 | 2508.7 | 2452 | 2626 |\n| `dyck_languages` | 250 | 2723.8 | 2680 | 2874 |\n| `word_sorting` | 250 | 2481.34 | 2397 | 2569 |\n| `sports_understanding` | 250 | 1077.42 | 1060 | 1122 |\n| `boolean_expressions` | 250 | 1991.7 | 1980 | 1998 |\n| `object_counting` | 250 | 1706.66 | 1647 | 1787 |\n| `formal_fallacies` | 250 | 5185.5 | 4918 | 5514 |\n| `causal_judgement` | 187 | 4877.42 | 4194 | 6311 |\n| `web_of_lies` | 250 | 3300.84 | 3267 | 3340 |\n\n## Sample Example\n\n**Subset**: `temporal_sequences`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"7d1767c8\",\n      \"content\": \"Task description: Answer questions about which times certain events could have occurred.\\n\\nQ: Today, Emily went to the museum. Between what times could they have gone?\\nWe know that:\\nEmily woke up at 1pm.\\nElizabeth saw Emily reading at the libr ... [TRUNCATED] ... \\nOptions:\\n(A) 6pm to 9pm\\n(B) 7am to 11am\\n(C) 1pm to 2pm\\n(D) 2pm to 6pm\\nA: Let's think step by step. Put your final answer in the format of \\\"So the answer is [ANSWER]\\\" (without quotes and markdown) where [ANSWER] is the answer to the problem.\\n\"\n    }\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"temporal_sequences\",\n  \"metadata\": {\n    \"task_type\": \"multiple_choice\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nQ: {question}\nA: Let's think step by step. Put your final answer in the format of \"So the answer is [ANSWER]\" (without quotes and markdown) where [ANSWER] is the answer to the problem.\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\n{fewshot}\n\nQ: {question}\nA: Let's think step by step. Put your final answer in the format of \"So the answer is [ANSWER]\" (without quotes and markdown) where [ANSWER] is the answer to the problem.\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bbh \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bbh'],\n    dataset_args={\n        'bbh': {\n            # subset_list: ['temporal_sequences', 'disambiguation_qa', 'date_understanding']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# BBH\n\n\n## 概述\n\nBBH（BIG-Bench Hard）是从 BIG-Bench 基准测试中精选出的 23 项具有挑战性的任务子集，这些任务之所以被选中，是因为语言模型在最初尝试时表现不佳。这些任务需要复杂的推理能力，并且能从思维链（Chain-of-Thought, CoT）提示中显著受益。\n\n## 任务描述\n\n- **任务类型**：混合型（多项选择题和自由形式）\n- **输入**：需要推理的任务特定问题\n- **输出**：按指定格式给出的答案\n- **子集**：27 项推理任务，分为多项选择题（17 项）和自由形式（10 项）\n\n## 主要特点\n\n- 来自 BIG-Bench 的 27 项具有挑战性的推理任务\n- 多项选择题任务：时间序列、歧义消解、逻辑推理等\n- 自由形式任务：算术、导航、布尔表达式等\n- 每项任务均配有精心设计的思维链（CoT）示例\n- 旨在评估高级推理能力\n\n## 评估说明\n\n- 默认配置使用 **3-shot** 并配合 CoT 提示（推荐）\n- 每个子集的 CoT 提示已预定义在 `cot_prompts/` 目录中\n- 答案应遵循格式：\"So the answer is [ANSWER]\"\n- 设置 `few_shot_num=0` 可禁用少样本示例\n- 多项选择题答案将被标准化为单个字母（A、B、C 等）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `bbh` |\n| **数据集ID** | [evalscope/bbh](https://modelscope.cn/datasets/evalscope/bbh/summary) |\n| **论文** | N/A |\n| **标签** | `Reasoning` |\n| **指标** | `acc` |\n| **默认少样本数量** | 3-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 6,511 |\n| 提示词长度（平均） | 3307.29 字符 |\n| 提示词长度（最小/最大） | 1060 / 7885 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `temporal_sequences` | 250 | 3746.18 | 3646 | 3876 |\n| `disambiguation_qa` | 250 | 4047.48 | 3993 | 4099 |\n| `date_understanding` | 250 | 1550.66 | 1491 | 1641 |\n| `tracking_shuffled_objects_three_objects` | 250 | 3257.42 | 3195 | 3316 |\n| `penguins_in_a_table` | 146 | 3030.88 | 2922 | 3201 |\n| `geometric_shapes` | 250 | 5270.24 | 5201 | 5384 |\n| `snarks` | 178 | 3493.68 | 3339 | 3693 |\n| `ruin_names` | 250 | 3832.01 | 3781 | 3948 |\n| `tracking_shuffled_objects_seven_objects` | 250 | 3598.1 | 3506 | 3682 |\n| `tracking_shuffled_objects_five_objects` | 250 | 3419.36 | 3338 | 3489 |\n| `logical_deduction_three_objects` | 250 | 3093.32 | 3014 | 3165 |\n| `hyperbaton` | 250 | 3433.3 | 3386 | 3486 |\n| `logical_deduction_five_objects` | 250 | 3264.38 | 3118 | 3379 |\n| `logical_deduction_seven_objects` | 250 | 3434.09 | 3217 | 3633 |\n| `movie_recommendation` | 250 | 2489.85 | 2436 | 2613 |\n| `salient_translation_error_detection` | 250 | 7401.64 | 7223 | 7885 |\n| `reasoning_about_colored_objects` | 250 | 2818.32 | 2572 | 3102 |\n| `multistep_arithmetic_two` | 250 | 2596.98 | 2594 | 2600 |\n| `navigate` | 250 | 2508.7 | 2452 | 2626 |\n| `dyck_languages` | 250 | 2723.8 | 2680 | 2874 |\n| `word_sorting` | 250 | 2481.34 | 2397 | 2569 |\n| `sports_understanding` | 250 | 1077.42 | 1060 | 1122 |\n| `boolean_expressions` | 250 | 1991.7 | 1980 | 1998 |\n| `object_counting` | 250 | 1706.66 | 1647 | 1787 |\n| `formal_fallacies` | 250 | 5185.5 | 4918 | 5514 |\n| `causal_judgement` | 187 | 4877.42 | 4194 | 6311 |\n| `web_of_lies` | 250 | 3300.84 | 3267 | 3340 |\n\n## 样例示例\n\n**子集**: `temporal_sequences`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"7d1767c8\",\n      \"content\": \"Task description: Answer questions about which times certain events could have occurred.\\n\\nQ: Today, Emily went to the museum. Between what times could they have gone?\\nWe know that:\\nEmily woke up at 1pm.\\nElizabeth saw Emily reading at the libr ... [TRUNCATED] ... \\nOptions:\\n(A) 6pm to 9pm\\n(B) 7am to 11am\\n(C) 1pm to 2pm\\n(D) 2pm to 6pm\\nA: Let's think step by step. Put your final answer in the format of \\\"So the answer is [ANSWER]\\\" (without quotes and markdown) where [ANSWER] is the answer to the problem.\\n\"\n    }\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"temporal_sequences\",\n  \"metadata\": {\n    \"task_type\": \"multiple_choice\"\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nQ: {question}\nA: Let's think step by step. Put your final answer in the format of \"So the answer is [ANSWER]\" (without quotes and markdown) where [ANSWER] is the answer to the problem.\n\n```\n\n<details>\n<summary>少样本模板</summary>\n\n```text\n{fewshot}\n\nQ: {question}\nA: Let's think step by step. Put your final answer in the format of \"So the answer is [ANSWER]\" (without quotes and markdown) where [ANSWER] is the answer to the problem.\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用命令行接口（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bbh \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bbh'],\n    dataset_args={\n        'bbh': {\n            # subset_list: ['temporal_sequences', 'disambiguation_qa', 'date_understanding']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "c12b41bf2f07782921fdce72ad48cb9b",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.191108",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

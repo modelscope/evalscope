@@ -4,11 +4,33 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
-DESCRIPTION = (
-    'The SciQ dataset contains crowdsourced science exam questions about Physics, '
-    'Chemistry and Biology, among others. For the majority of the questions, '
-    'an additional paragraph with supporting evidence for the correct answer is provided.'
-)  # noqa: E501
+DESCRIPTION = """
+## Overview
+
+SciQ is a crowdsourced science exam question dataset covering Physics, Chemistry, Biology, and other scientific domains. Most questions include supporting evidence paragraphs.
+
+## Task Description
+
+- **Task Type**: Science Question Answering (Multiple-Choice)
+- **Input**: Science question with 4 answer choices
+- **Output**: Correct answer letter (A, B, C, or D)
+- **Domains**: Physics, Chemistry, Biology, Earth Science, etc.
+
+## Key Features
+
+- Crowdsourced science exam questions
+- Multiple scientific domains covered
+- Supporting evidence paragraphs available
+- Tests scientific knowledge and reasoning
+- Suitable for science comprehension evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Uses simple multiple-choice prompting
+- Evaluates on test split
+- Simple accuracy metric
+"""
 
 
 @register_benchmark(

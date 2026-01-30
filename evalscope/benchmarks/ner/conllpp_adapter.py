@@ -3,10 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'The CoNLL++ dataset is a corrected and cleaner version of the '
-    'test set from the widely-used CoNLL2003 NER benchmark.'
-)  # noqa: E501
+DESCRIPTION = """
+## Overview
+
+The CoNLL++ dataset is a corrected and cleaner version of the test set from the widely-used CoNLL2003 NER benchmark. It provides improved annotation quality for evaluating named entity recognition systems on news text.
+
+## Task Description
+
+- **Task Type**: Named Entity Recognition (NER)
+- **Input**: News article text
+- **Output**: Identified entity spans with types
+- **Domain**: News articles, general domain
+
+## Key Features
+
+- Corrected version of CoNLL2003 test set
+- Higher annotation quality than original
+- Standard NER entity types (PER, ORG, LOC, MISC)
+- Widely used benchmark for NER evaluation
+- Comparable results with original CoNLL2003
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: PER, ORG, LOC, MISC
+"""  # noqa: E501
 
 
 @register_benchmark(

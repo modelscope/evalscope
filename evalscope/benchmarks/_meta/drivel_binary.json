@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "pretty_name": "DrivelologyBinaryClassification",
+    "dataset_id": "extraordinarylab/drivel-hub",
+    "paper_url": null,
+    "tags": [
+      "Yes/No"
+    ],
+    "metrics": [
+      "accuracy",
+      "precision",
+      "recall",
+      "f1_score",
+      "yes_ratio"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "binary-classification"
+    ],
+    "description": "## Overview\n\nDrivelology Binary Classification evaluates models' ability to identify \"drivelology\" - a unique linguistic phenomenon characterized as \"nonsense with depth.\" These are utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.\n\n## Task Description\n\n- **Task Type**: Binary Text Classification (Yes/No)\n- **Input**: Text sample to classify\n- **Output**: \"Yes\" if drivelology, \"No\" otherwise\n- **Domain**: Linguistic analysis, humor detection, pragmatics\n\n## Key Features\n\n- Tests understanding of layered linguistic meanings\n- Distinguishes nonsense-with-depth from pure nonsense and normal text\n- Requires contextual understanding and emotional insight\n- Covers humor, irony, sarcasm detection\n- Multiple difficulty levels available\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Metrics: Accuracy, Precision, Recall, F1-Score\n- Subsets: binary-english-easy, binary-english-hard, binary-chinese-easy, binary-chinese-hard",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "{question}",
+    "aggregation": "f1",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 1200,
+    "subset_stats": [
+      {
+        "name": "binary-classification",
+        "sample_count": 1200,
+        "prompt_length_mean": 1056.08,
+        "prompt_length_min": 984,
+        "prompt_length_max": 1449,
+        "prompt_length_std": 70.93,
+        "target_length_mean": 2.5
+      }
+    ],
+    "prompt_length": {
+      "mean": 1056.08,
+      "min": 984,
+      "max": 1449,
+      "std": 70.93
+    },
+    "target_length_mean": 2.5,
+    "computed_at": "2026-01-28T11:12:46.443538"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "ddbda8da",
+          "content": [
+            {
+              "text": "#Instruction#:\nClassify whether the given text is a Drivelology sample or not.\n\n#Definition#:\n- Drivelology: Statements that appear logically coherent but contain deeper, often paradoxical meanings.\nThese challenge conventional interpretation ... [TRUNCATED] ... ology.\n\n#Output Format#:\nYou should try your best to answer \"Yes\" if the given input text is Drivelology, otherwise specify \"No\".\nThe answer you give MUST be \"Yes\" or \"No\"\".\n\n#Input Text#: A: Name? B: Henry. A: Age? B: E-N-R-Y.\n#Your Answer#:"
+            }
+          ]
+        }
+      ],
+      "target": "YES",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "answer": "YES"
+      }
+    },
+    "subset": "binary-classification",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# DrivelologyBinaryClassification\n\n## Overview\n\nDrivelology Binary Classification evaluates models' ability to identify \"drivelology\" - a unique linguistic phenomenon characterized as \"nonsense with depth.\" These are utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.\n\n## Task Description\n\n- **Task Type**: Binary Text Classification (Yes/No)\n- **Input**: Text sample to classify\n- **Output**: \"Yes\" if drivelology, \"No\" otherwise\n- **Domain**: Linguistic analysis, humor detection, pragmatics\n\n## Key Features\n\n- Tests understanding of layered linguistic meanings\n- Distinguishes nonsense-with-depth from pure nonsense and normal text\n- Requires contextual understanding and emotional insight\n- Covers humor, irony, sarcasm detection\n- Multiple difficulty levels available\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Metrics: Accuracy, Precision, Recall, F1-Score\n- Subsets: binary-english-easy, binary-english-hard, binary-chinese-easy, binary-chinese-hard\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `drivel_binary` |\n| **Dataset ID** | [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary) |\n| **Paper** | N/A |\n| **Tags** | `Yes/No` |\n| **Metrics** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `f1` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,200 |\n| Prompt Length (Mean) | 1056.08 chars |\n| Prompt Length (Min/Max) | 984 / 1449 chars |\n\n## Sample Example\n\n**Subset**: `binary-classification`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"ddbda8da\",\n      \"content\": [\n        {\n          \"text\": \"#Instruction#:\\nClassify whether the given text is a Drivelology sample or not.\\n\\n#Definition#:\\n- Drivelology: Statements that appear logically coherent but contain deeper, often paradoxical meanings.\\nThese challenge conventional interpretation ... [TRUNCATED] ... ology.\\n\\n#Output Format#:\\nYou should try your best to answer \\\"Yes\\\" if the given input text is Drivelology, otherwise specify \\\"No\\\".\\nThe answer you give MUST be \\\"Yes\\\" or \\\"No\\\"\\\".\\n\\n#Input Text#: A: Name? B: Henry. A: Age? B: E-N-R-Y.\\n#Your Answer#:\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"YES\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"answer\": \"YES\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\n{question}\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets drivel_binary \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['drivel_binary'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# DrivelologyBinaryClassification\n\n## 概述\n\nDrivelology 二分类任务评估模型识别“drivelology”的能力——这是一种独特的语言现象，其特征是“有深度的胡言乱语”。这类话语在句法上连贯，但在语用层面具有悖论性、情感负载性或修辞颠覆性。\n\n## 任务描述\n\n- **任务类型**：二分类文本分类（是/否）\n- **输入**：待分类的文本样本\n- **输出**：若为 drivelology 则输出 \"Yes\"，否则输出 \"No\"\n- **领域**：语言学分析、幽默检测、语用学\n\n## 主要特点\n\n- 测试对多层次语言含义的理解能力\n- 能区分“有深度的胡言乱语”、纯粹的胡言乱语和正常文本\n- 需要上下文理解与情感洞察力\n- 涵盖幽默、反讽、讽刺等检测\n- 提供多个难度级别\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 评估指标：准确率（Accuracy）、精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）\n- 子集：binary-english-easy、binary-english-hard、binary-chinese-easy、binary-chinese-hard\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `drivel_binary` |\n| **数据集ID** | [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary) |\n| **论文** | N/A |\n| **标签** | `Yes/No` |\n| **指标** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `test` |\n| **聚合方式** | `f1` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,200 |\n| 提示词长度（平均） | 1056.08 字符 |\n| 提示词长度（最小/最大） | 984 / 1449 字符 |\n\n## 样例示例\n\n**子集**: `binary-classification`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"ddbda8da\",\n      \"content\": [\n        {\n          \"text\": \"#Instruction#:\\nClassify whether the given text is a Drivelology sample or not.\\n\\n#Definition#:\\n- Drivelology: Statements that appear logically coherent but contain deeper, often paradoxical meanings.\\nThese challenge conventional interpretation ... [TRUNCATED] ... ology.\\n\\n#Output Format#:\\nYou should try your best to answer \\\"Yes\\\" if the given input text is Drivelology, otherwise specify \\\"No\\\".\\nThe answer you give MUST be \\\"Yes\\\" or \\\"No\\\"\\\".\\n\\n#Input Text#: A: Name? B: Henry. A: Age? B: E-N-R-Y.\\n#Your Answer#:\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"YES\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"answer\": \"YES\"\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n<details>\n<summary>少样本（Few-shot）模板</summary>\n\n```text\n{question}\n```\n\n</details>\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets drivel_binary \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['drivel_binary'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "9b9395d2e75d24100725619f98f27061",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.222850",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

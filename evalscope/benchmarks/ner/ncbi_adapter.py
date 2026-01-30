@@ -3,10 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'The NCBI disease corpus is a manually annotated resource of '
-    'PubMed abstracts designed for disease name recognition and normalization.'
-)  # noqa: E501
+DESCRIPTION = """
+## Overview
+
+The NCBI disease corpus is a manually annotated resource of PubMed abstracts designed for disease name recognition and normalization. It provides a gold standard for evaluating disease named entity recognition systems.
+
+## Task Description
+
+- **Task Type**: Disease Named Entity Recognition (NER)
+- **Input**: PubMed abstract text
+- **Output**: Identified disease entity spans
+- **Domain**: Medical informatics, clinical NLP
+
+## Key Features
+
+- Manually annotated disease mentions
+- PubMed abstract corpus
+- Supports disease name normalization
+- Gold standard for disease NER evaluation
+- High-quality expert annotations
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: DISEASE (diseases, disorders, syndromes)
+"""  # noqa: E501
 
 
 @register_benchmark(

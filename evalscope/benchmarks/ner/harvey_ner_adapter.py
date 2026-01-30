@@ -3,11 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'HarveyNER is a dataset with fine-grained locations annotated in tweets. This dataset '
-    'presents unique challenges and characterizes many complex and long location mentions '
-    'in informal descriptions.'
-)
+DESCRIPTION = """
+## Overview
+
+HarveyNER is a dataset with fine-grained locations annotated in tweets, collected during Hurricane Harvey. It presents unique challenges with complex and long location mentions in informal crisis-related descriptions.
+
+## Task Description
+
+- **Task Type**: Crisis-Domain Location Named Entity Recognition (NER)
+- **Input**: Hurricane Harvey-related tweets
+- **Output**: Fine-grained location entity spans
+- **Domain**: Crisis communication, disaster response
+
+## Key Features
+
+- Fine-grained location annotations in tweets
+- Complex and long location mentions
+- Informal crisis-related text
+- Four location entity types (AREA, POINT, RIVER, ROAD)
+- Useful for disaster response NLP applications
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: AREA, POINT, RIVER, ROAD
+"""
 
 
 @register_benchmark(

@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "pretty_name": "TORGO",
+    "dataset_id": "extraordinarylab/torgo",
+    "paper_url": null,
+    "tags": [
+      "Audio",
+      "SpeechRecognition"
+    ],
+    "metrics": [
+      "cer",
+      "wer",
+      "sem_score"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "mild",
+      "moderate",
+      "severe"
+    ],
+    "description": "\n## Overview\n\nTORGO is a specialized database of dysarthric speech designed for evaluating ASR systems on speakers with motor speech disorders. It contains aligned acoustic and articulatory data from speakers with cerebral palsy (CP) or amyotrophic lateral sclerosis (ALS).\n\n## Task Description\n\n- **Task Type**: Dysarthric Speech Recognition\n- **Input**: Audio recordings from speakers with speech disorders\n- **Output**: Transcribed text\n- **Focus**: Accessibility and inclusive ASR evaluation\n\n## Key Features\n\n- Specialized dataset for dysarthric speech\n- Speakers with cerebral palsy (CP) or ALS\n- Intelligibility-based subsets (mild, moderate, severe)\n- 3D articulatory feature alignment\n- Important for accessibility research\n\n## Evaluation Notes\n\n- Default configuration uses **test** split\n- Subsets by intelligibility: **mild**, **moderate**, **severe**\n- Metrics: **CER** (Character Error Rate), **WER** (Word Error Rate), **SemScore**\n- Requires `jiwer` package for CER/WER metrics\n- Requires `jellyfish` package for SemScore metric\n- Supports batch scoring for efficiency\n",
+    "prompt_template": "Please recognize the speech and only output the recognized content:",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 5553,
+    "subset_stats": [
+      {
+        "name": "mild",
+        "sample_count": 1479,
+        "prompt_length_mean": 67,
+        "prompt_length_min": 67,
+        "prompt_length_max": 67,
+        "prompt_length_std": null,
+        "target_length_mean": 12.66,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 1479,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "wav"
+            ]
+          }
+        }
+      },
+      {
+        "name": "moderate",
+        "sample_count": 1666,
+        "prompt_length_mean": 67,
+        "prompt_length_min": 67,
+        "prompt_length_max": 67,
+        "prompt_length_std": null,
+        "target_length_mean": 12.72,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 1666,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "wav"
+            ]
+          }
+        }
+      },
+      {
+        "name": "severe",
+        "sample_count": 2408,
+        "prompt_length_mean": 67,
+        "prompt_length_min": 67,
+        "prompt_length_max": 67,
+        "prompt_length_std": null,
+        "target_length_mean": 12.22,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 2408,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "wav"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 67,
+      "min": 67,
+      "max": 67,
+      "std": null
+    },
+    "target_length_mean": 12.49,
+    "computed_at": "2026-01-28T15:13:34.414908",
+    "multimodal": {
+      "has_images": false,
+      "has_audio": true,
+      "has_video": false,
+      "audio": {
+        "count_total": 5553,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "duration": null,
+        "sample_rates": [],
+        "formats": [
+          "wav"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "1220f252",
+          "content": [
+            {
+              "text": "Please recognize the speech and only output the recognized content:"
+            },
+            {
+              "audio": "[BASE64_AUDIO: wav, ~89.1KB]",
+              "format": "wav"
+            }
+          ]
+        }
+      ],
+      "target": "FEE",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "mild",
+      "metadata": {
+        "transcript": "FEE",
+        "intelligibility": "mild",
+        "duration": 2.8499999046325684
+      }
+    },
+    "subset": "mild",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# TORGO\n\n\n## Overview\n\nTORGO is a specialized database of dysarthric speech designed for evaluating ASR systems on speakers with motor speech disorders. It contains aligned acoustic and articulatory data from speakers with cerebral palsy (CP) or amyotrophic lateral sclerosis (ALS).\n\n## Task Description\n\n- **Task Type**: Dysarthric Speech Recognition\n- **Input**: Audio recordings from speakers with speech disorders\n- **Output**: Transcribed text\n- **Focus**: Accessibility and inclusive ASR evaluation\n\n## Key Features\n\n- Specialized dataset for dysarthric speech\n- Speakers with cerebral palsy (CP) or ALS\n- Intelligibility-based subsets (mild, moderate, severe)\n- 3D articulatory feature alignment\n- Important for accessibility research\n\n## Evaluation Notes\n\n- Default configuration uses **test** split\n- Subsets by intelligibility: **mild**, **moderate**, **severe**\n- Metrics: **CER** (Character Error Rate), **WER** (Word Error Rate), **SemScore**\n- Requires `jiwer` package for CER/WER metrics\n- Requires `jellyfish` package for SemScore metric\n- Supports batch scoring for efficiency\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `torgo` |\n| **Dataset ID** | [extraordinarylab/torgo](https://modelscope.cn/datasets/extraordinarylab/torgo/summary) |\n| **Paper** | N/A |\n| **Tags** | `Audio`, `SpeechRecognition` |\n| **Metrics** | `cer`, `wer`, `sem_score` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 5,553 |\n| Prompt Length (Mean) | 67 chars |\n| Prompt Length (Min/Max) | 67 / 67 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `mild` | 1,479 | 67 | 67 | 67 |\n| `moderate` | 1,666 | 67 | 67 | 67 |\n| `severe` | 2,408 | 67 | 67 | 67 |\n\n**Audio Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Audio Files | 5,553 |\n| Audio per Sample | min: 1, max: 1, mean: 1 |\n| Formats | wav |\n\n\n## Sample Example\n\n**Subset**: `mild`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"1220f252\",\n      \"content\": [\n        {\n          \"text\": \"Please recognize the speech and only output the recognized content:\"\n        },\n        {\n          \"audio\": \"[BASE64_AUDIO: wav, ~89.1KB]\",\n          \"format\": \"wav\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"FEE\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"mild\",\n  \"metadata\": {\n    \"transcript\": \"FEE\",\n    \"intelligibility\": \"mild\",\n    \"duration\": 2.8499999046325684\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nPlease recognize the speech and only output the recognized content:\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets torgo \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['torgo'],\n    dataset_args={\n        'torgo': {\n            # subset_list: ['mild', 'moderate', 'severe']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# TORGO\n\n## 概述\n\nTORGO 是一个专门用于评估自动语音识别（ASR）系统在运动性言语障碍患者上的表现的数据库。它包含来自脑瘫（CP）或肌萎缩侧索硬化症（ALS）患者的对齐声学与发音数据。\n\n## 任务描述\n\n- **任务类型**：运动性构音障碍语音识别  \n- **输入**：言语障碍者的音频录音  \n- **输出**：转录文本  \n- **重点**：无障碍与包容性 ASR 评估  \n\n## 主要特性\n\n- 针对运动性构音障碍语音的专用数据集  \n- 包含脑瘫（CP）或 ALS 患者的数据  \n- 基于可懂度划分的子集（轻度、中度、重度）  \n- 3D 发音特征对齐  \n- 对无障碍研究具有重要意义  \n\n## 评估说明\n\n- 默认配置使用 **test** 数据划分  \n- 按可懂度划分的子集：**mild**（轻度）、**moderate**（中度）、**severe**（重度）  \n- 评估指标：**CER**（字符错误率）、**WER**（词错误率）、**SemScore**  \n- CER/WER 指标需安装 `jiwer` 包  \n- SemScore 指标需安装 `jellyfish` 包  \n- 支持批量评分以提升效率  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `torgo` |\n| **数据集ID** | [extraordinarylab/torgo](https://modelscope.cn/datasets/extraordinarylab/torgo/summary) |\n| **论文** | N/A |\n| **标签** | `Audio`, `SpeechRecognition` |\n| **指标** | `cer`, `wer`, `sem_score` |\n| **默认提示方式** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 5,553 |\n| 提示词长度（平均） | 67 字符 |\n| 提示词长度（最小/最大） | 67 / 67 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `mild` | 1,479 | 67 | 67 | 67 |\n| `moderate` | 1,666 | 67 | 67 | 67 |\n| `severe` | 2,408 | 67 | 67 | 67 |\n\n**音频统计：**\n\n| 指标 | 值 |\n|--------|-------|\n| 音频文件总数 | 5,553 |\n| 每样本音频数量 | 最小: 1, 最大: 1, 平均: 1 |\n| 格式 | wav |\n\n## 样例示例\n\n**子集**: `mild`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"1220f252\",\n      \"content\": [\n        {\n          \"text\": \"Please recognize the speech and only output the recognized content:\"\n        },\n        {\n          \"audio\": \"[BASE64_AUDIO: wav, ~89.1KB]\",\n          \"format\": \"wav\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"FEE\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"mild\",\n  \"metadata\": {\n    \"transcript\": \"FEE\",\n    \"intelligibility\": \"mild\",\n    \"duration\": 2.8499999046325684\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nPlease recognize the speech and only output the recognized content:\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets torgo \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['torgo'],\n    dataset_args={\n        'torgo': {\n            # subset_list: ['mild', 'moderate', 'severe']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "e347b878043f753f1aad707542b6c9e0",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.629384",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

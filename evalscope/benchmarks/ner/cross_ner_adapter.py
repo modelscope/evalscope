@@ -7,10 +7,33 @@ from evalscope.benchmarks.ner.cross_ner_entities import ai, literature, music, p
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE, create_target_text
 
-DESCRIPTION = (
-    'CrossNER is a fully-labelled collected of named entity recognition (NER) data '
-    'spanning over five diverse domains (AI, Literature, Music, Politics, Science).'
-)
+DESCRIPTION = """
+## Overview
+
+CrossNER is a fully-labeled collection of named entity recognition (NER) data spanning over five diverse domains: AI, Literature, Music, Politics, and Science. It enables cross-domain NER evaluation and domain adaptation research.
+
+## Task Description
+
+- **Task Type**: Cross-Domain Named Entity Recognition (NER)
+- **Input**: Text from five specialized domains
+- **Output**: Domain-specific entity spans
+- **Domain**: AI, Literature, Music, Politics, Science
+
+## Key Features
+
+- Five diverse domain subsets
+- Domain-specific entity types per subset
+- Enables cross-domain transfer evaluation
+- Fully labeled with expert annotations
+- Useful for domain adaptation research
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Subsets: ai, literature, music, politics, science
+- Entity types vary by domain subset
+"""
 
 
 @register_benchmark(

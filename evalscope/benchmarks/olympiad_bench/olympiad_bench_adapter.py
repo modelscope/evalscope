@@ -40,17 +40,39 @@ SUBSET_LIST = [
         name='olympiad_bench',
         pretty_name='OlympiadBench',
         tags=[Tags.MATH, Tags.REASONING],
-        description='OlympiadBench is an Olympiad-level bilingual multimodal '
-        'scientific benchmark, featuring 8,476 problems from '
-        'Olympiad-level mathematics and physics competitions, '
-        'including the Chinese college entrance exam. '
-        'In the subsets: `OE` stands for `Open-Ended`, '
-        '`TP` stands for `Theorem Proving`, '
-        '`MM` stands for `Multimodal`, '
-        '`TO` stands for `Text-Only`, '
-        '`CEE` stands for `Chinese Entrance Exam`, '
-        '`COMP` stands for `Comprehensive`. '
-        '**Note: The `TP` subsets can\'t be evaluated with auto-judge for now**.',
+        description="""
+## Overview
+
+OlympiadBench is an Olympiad-level bilingual multimodal scientific benchmark featuring 8,476 problems from mathematics and physics competitions, including the Chinese college entrance exam (CEE). It provides rigorous evaluation of advanced scientific reasoning.
+
+## Task Description
+
+- **Task Type**: Olympiad-Level Math/Physics Problem Solving
+- **Input**: Problem text with optional images (up to 9)
+- **Output**: Mathematical answer or proof
+- **Domains**: Mathematics, Physics (bilingual: English and Chinese)
+
+## Key Features
+
+- 8,476 Olympiad-level problems
+- Bilingual support (English and Chinese)
+- Covers both Mathematics and Physics
+- Subset naming convention:
+  - `OE`: Open-Ended problems
+  - `TP`: Theorem Proving problems
+  - `MM`: Multimodal (with images)
+  - `TO`: Text-Only
+  - `CEE`: Chinese Entrance Exam
+  - `COMP`: Comprehensive competition problems
+
+## Evaluation Notes
+
+- Default evaluation uses the **train** split
+- Primary metric: **Accuracy** with mathematical judging
+- Answers should be in \\boxed{} format
+- **Note**: `TP` (Theorem Proving) subsets cannot be auto-evaluated currently
+- Supports numerical precision/error thresholds for approximate answers
+""",
         dataset_id='AI-ModelScope/OlympiadBench',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],

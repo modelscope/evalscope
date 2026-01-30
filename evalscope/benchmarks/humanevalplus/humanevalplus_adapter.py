@@ -15,8 +15,33 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-DESCRIPTION = """HumanEval Plus is a rigorous extension of OpenAI's original HumanEval dataset, designed to address the high false-positive rates found in code generation benchmarks. While the original HumanEval uses a limited number of test cases per problem, HumanEval+ augments these with tens of thousands of automatically generated inputs (using LLM-based and mutation-based strategies). This massively expanded test suite exposes edge-case bugs and functional errors that previously went undetected, making it a much stricter and more accurate standard for evaluating the correctness of AI-generated code.
-**By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**'
+DESCRIPTION = """
+## Overview
+
+HumanEval Plus is a rigorous extension of OpenAI's HumanEval benchmark, designed to address high false-positive rates in code generation evaluation. It augments the original test cases with tens of thousands of automatically generated inputs to expose edge-case bugs and functional errors.
+
+## Task Description
+
+- **Task Type**: Code Generation (Python)
+- **Input**: Function signature with docstring describing expected behavior
+- **Output**: Complete Python function implementation
+- **Test Coverage**: Massively expanded compared to original HumanEval
+
+## Key Features
+
+- 164 problems from original HumanEval with enhanced test suites
+- Tens of thousands of additional test cases per problem
+- LLM-based and mutation-based test input generation
+- Exposes edge cases and bugs missed by original HumanEval
+- Much stricter and more accurate correctness evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- **Security Warning**: By default, code is executed in the local environment. We strongly recommend using sandbox execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.
+- Supports `pass@k` metric calculation
+- Default timeout is 300 seconds to accommodate extensive test suites
+- Uses custom Docker image with numpy pre-installed
 """  # noqa: E501
 
 

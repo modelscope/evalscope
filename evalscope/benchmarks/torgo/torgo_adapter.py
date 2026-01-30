@@ -20,11 +20,35 @@ logger = get_logger()
         pretty_name='TORGO',
         dataset_id='extraordinarylab/torgo',
         tags=[Tags.AUDIO, Tags.SPEECH_RECOGNITION],
-        description=(
-            'The TORGO database of dysarthric articulation consists of aligned acoustics and '
-            'measured 3D articulatory features from speakers with either cerebral palsy (CP) '
-            'or amyotrophic lateral sclerosis (ALS).'
-        ),
+        description="""
+## Overview
+
+TORGO is a specialized database of dysarthric speech designed for evaluating ASR systems on speakers with motor speech disorders. It contains aligned acoustic and articulatory data from speakers with cerebral palsy (CP) or amyotrophic lateral sclerosis (ALS).
+
+## Task Description
+
+- **Task Type**: Dysarthric Speech Recognition
+- **Input**: Audio recordings from speakers with speech disorders
+- **Output**: Transcribed text
+- **Focus**: Accessibility and inclusive ASR evaluation
+
+## Key Features
+
+- Specialized dataset for dysarthric speech
+- Speakers with cerebral palsy (CP) or ALS
+- Intelligibility-based subsets (mild, moderate, severe)
+- 3D articulatory feature alignment
+- Important for accessibility research
+
+## Evaluation Notes
+
+- Default configuration uses **test** split
+- Subsets by intelligibility: **mild**, **moderate**, **severe**
+- Metrics: **CER** (Character Error Rate), **WER** (Word Error Rate), **SemScore**
+- Requires `jiwer` package for CER/WER metrics
+- Requires `jellyfish` package for SemScore metric
+- Supports batch scoring for efficiency
+""",
         eval_split='test',
         subset_list=['mild', 'moderate', 'severe'],
         few_shot_num=0,

@@ -207,6 +207,26 @@ class TestPerf(unittest.TestCase):
         print(metrics_result)
         print(percentile_result)
 
+    def test_run_perf_vl(self):
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=[1, 2],
+            number=[2, 4],
+            model='qwen-vl-max',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai',
+            dataset='flickr8k',
+            min_tokens=100,
+            max_tokens=100,
+            tokenizer_path='Qwen/Qwen2.5-VL-7B-Instruct',
+            seed=None,
+            extra_args={'ignore_eos': True}
+        )
+        metrics_result, percentile_result = run_perf_benchmark(task_cfg)
+        print(metrics_result)
+        print(percentile_result)
+
     def test_run_two_perfs(self):
         from evalscope.perf.arguments import Arguments
         task_cfg1 = Arguments(

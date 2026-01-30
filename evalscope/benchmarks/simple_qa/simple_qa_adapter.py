@@ -99,8 +99,34 @@ Just return the letters "A", "B", or "C", with no text around it.
         name='simple_qa',
         pretty_name='SimpleQA',
         tags=[Tags.KNOWLEDGE, Tags.QA],
-        description=
-        'SimpleQA is a benchmark designed to evaluate the performance of language models on simple question-answering tasks. It includes a set of straightforward questions that require basic reasoning and understanding capabilities.',  # noqa: E501
+        description="""
+## Overview
+
+SimpleQA is a benchmark by OpenAI designed to evaluate language models' ability to answer short, fact-seeking questions accurately. It focuses on measuring factual accuracy with clear grading criteria for correct, incorrect, and not-attempted answers.
+
+## Task Description
+
+- **Task Type**: Factual Question Answering
+- **Input**: Simple factual question
+- **Output**: Concise factual answer
+- **Grading**: CORRECT, INCORRECT, or NOT_ATTEMPTED
+
+## Key Features
+
+- Short, fact-seeking questions with unambiguous answers
+- Clear grading criteria for accuracy evaluation
+- Distinguishes between incorrect answers and abstentions
+- Uses LLM-as-judge for semantic answer comparison
+- Tests factual knowledge and calibration
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Uses LLM judge for answer grading (semantic matching)
+- Three-way classification: is_correct, is_incorrect, is_not_attempted
+- Allows hedging if correct information is included
+- Tests models' ability to admit uncertainty appropriately
+""",
         dataset_id='evalscope/SimpleQA',
         metric_list=['is_correct', 'is_incorrect', 'is_not_attempted'],
         few_shot_num=0,

@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "pretty_name": "AIME-2024",
+    "dataset_id": "HuggingFaceH4/aime_2024",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nAIME 2024 (American Invitational Mathematics Examination 2024) is a benchmark based on problems from the prestigious AIME competition. These problems represent some of the most challenging high school mathematics problems, requiring creative problem-solving and advanced mathematical reasoning.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: AIME-level mathematical problem\n- **Output**: Integer answer (0-999) with step-by-step reasoning\n- **Difficulty**: Advanced high school / early undergraduate level\n\n## Key Features\n\n- Problems from the 2024 AIME I and AIME II competitions\n- Answers are always integers between 0 and 999\n- Requires creative mathematical reasoning and problem-solving\n- Topics: algebra, geometry, number theory, combinatorics, probability\n- Represents top-tier high school mathematics competition difficulty\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Only integer answers are accepted (matching AIME format)\n- Problems are significantly harder than GSM8K or standard MATH benchmark\n- Reference solutions available in metadata for analysis\n",
+    "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 30,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 30,
+        "prompt_length_mean": 405.33,
+        "prompt_length_min": 185,
+        "prompt_length_max": 1009,
+        "prompt_length_std": 169.61,
+        "target_length_mean": 3
+      }
+    ],
+    "prompt_length": {
+      "mean": 405.33,
+      "min": 185,
+      "max": 1009,
+      "std": 169.61
+    },
+    "target_length_mean": 3,
+    "computed_at": "2026-01-28T11:12:35.214988"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "2f896eed",
+          "content": "Every morning Aya goes for a $9$-kilometer-long walk and stops at a coffee shop afterwards. When she walks at a constant speed of $s$ kilometers per hour, the walk takes her 4 hours, including $t$ minutes spent in the coffee shop. When she wa ... [TRUNCATED] ... e coffee shop. Suppose Aya walks at $s+\\frac{1}{2}$ kilometers per hour. Find the number of minutes the walk takes her, including the $t$ minutes spent in the coffee shop.\nPlease reason step by step, and put your final answer within \\boxed{}."
+        }
+      ],
+      "target": "204",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "problem_id": 60,
+        "solution": "$\\frac{9}{s} + t = 4$ in hours and $\\frac{9}{s+2} + t = 2.4$ in hours.\nSubtracting the second equation from the first, we get, \n$\\frac{9}{s} - \\frac{9}{s+2} = 1.6$\nMultiplying by $(s)(s+2)$, we get \n$9s+18-9s=18=1.6s^{2} + 3.2s$\nMultiplying b ... [TRUNCATED] ... s = 2.5$. Now, $2.5+0.5 = 3$. Taking $\\frac{9}{3} = 3$, we find that it will take three hours for the 9 kilometers to be traveled. The t minutes spent at the coffeeshop can be written as $144-48(2.5)$, so t = 24. $180 + 24 = 204$. -sepehr2010"
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# AIME-2024\n\n\n## Overview\n\nAIME 2024 (American Invitational Mathematics Examination 2024) is a benchmark based on problems from the prestigious AIME competition. These problems represent some of the most challenging high school mathematics problems, requiring creative problem-solving and advanced mathematical reasoning.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: AIME-level mathematical problem\n- **Output**: Integer answer (0-999) with step-by-step reasoning\n- **Difficulty**: Advanced high school / early undergraduate level\n\n## Key Features\n\n- Problems from the 2024 AIME I and AIME II competitions\n- Answers are always integers between 0 and 999\n- Requires creative mathematical reasoning and problem-solving\n- Topics: algebra, geometry, number theory, combinatorics, probability\n- Represents top-tier high school mathematics competition difficulty\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Only integer answers are accepted (matching AIME format)\n- Problems are significantly harder than GSM8K or standard MATH benchmark\n- Reference solutions available in metadata for analysis\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `aime24` |\n| **Dataset ID** | [HuggingFaceH4/aime_2024](https://modelscope.cn/datasets/HuggingFaceH4/aime_2024/summary) |\n| **Paper** | N/A |\n| **Tags** | `Math`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 30 |\n| Prompt Length (Mean) | 405.33 chars |\n| Prompt Length (Min/Max) | 185 / 1009 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"2f896eed\",\n      \"content\": \"Every morning Aya goes for a $9$-kilometer-long walk and stops at a coffee shop afterwards. When she walks at a constant speed of $s$ kilometers per hour, the walk takes her 4 hours, including $t$ minutes spent in the coffee shop. When she wa ... [TRUNCATED] ... e coffee shop. Suppose Aya walks at $s+\\\\frac{1}{2}$ kilometers per hour. Find the number of minutes the walk takes her, including the $t$ minutes spent in the coffee shop.\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\"\n    }\n  ],\n  \"target\": \"204\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"problem_id\": 60,\n    \"solution\": \"$\\\\frac{9}{s} + t = 4$ in hours and $\\\\frac{9}{s+2} + t = 2.4$ in hours.\\nSubtracting the second equation from the first, we get, \\n$\\\\frac{9}{s} - \\\\frac{9}{s+2} = 1.6$\\nMultiplying by $(s)(s+2)$, we get \\n$9s+18-9s=18=1.6s^{2} + 3.2s$\\nMultiplying b ... [TRUNCATED] ... s = 2.5$. Now, $2.5+0.5 = 3$. Taking $\\\\frac{9}{3} = 3$, we find that it will take three hours for the 9 kilometers to be traveled. The t minutes spent at the coffeeshop can be written as $144-48(2.5)$, so t = 24. $180 + 24 = 204$. -sepehr2010\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets aime24 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['aime24'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# AIME-2024\n\n## 概述\n\nAIME 2024（2024年美国数学邀请赛）是一个基于著名AIME竞赛题目的基准测试。这些题目代表了最具挑战性的高中数学问题，要求具备创造性的问题解决能力和高级数学推理能力。\n\n## 任务描述\n\n- **任务类型**：竞赛数学问题求解  \n- **输入**：AIME级别的数学问题  \n- **输出**：整数答案（0-999），附带逐步推理过程  \n- **难度**：高级高中 / 初级大学水平  \n\n## 主要特点\n\n- 题目来自2024年AIME I和AIME II竞赛  \n- 答案始终为0到999之间的整数  \n- 需要创造性数学推理与问题解决能力  \n- 涉及主题：代数、几何、数论、组合数学、概率  \n- 代表顶尖高中数学竞赛难度  \n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估  \n- 答案应使用 `\\boxed{}` 格式以便正确提取  \n- 仅接受整数答案（符合AIME格式）  \n- 题目难度显著高于GSM8K或标准MATH基准  \n- 元数据中提供参考解答用于分析  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `aime24` |\n| **数据集ID** | [HuggingFaceH4/aime_2024](https://modelscope.cn/datasets/HuggingFaceH4/aime_2024/summary) |\n| **论文** | N/A |\n| **标签** | `Math`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 30 |\n| 提示词长度（平均） | 405.33 字符 |\n| 提示词长度（最小/最大） | 185 / 1009 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"2f896eed\",\n      \"content\": \"Every morning Aya goes for a $9$-kilometer-long walk and stops at a coffee shop afterwards. When she walks at a constant speed of $s$ kilometers per hour, the walk takes her 4 hours, including $t$ minutes spent in the coffee shop. When she wa ... [TRUNCATED] ... e coffee shop. Suppose Aya walks at $s+\\\\frac{1}{2}$ kilometers per hour. Find the number of minutes the walk takes her, including the $t$ minutes spent in the coffee shop.\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\"\n    }\n  ],\n  \"target\": \"204\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"problem_id\": 60,\n    \"solution\": \"$\\\\frac{9}{s} + t = 4$ in hours and $\\\\frac{9}{s+2} + t = 2.4$ in hours.\\nSubtracting the second equation from the first, we get, \\n$\\\\frac{9}{s} - \\\\frac{9}{s+2} = 1.6$\\nMultiplying by $(s)(s+2)$, we get \\n$9s+18-9s=18=1.6s^{2} + 3.2s$\\nMultiplying b ... [TRUNCATED] ... s = 2.5$. Now, $2.5+0.5 = 3$. Taking $\\\\frac{9}{3} = 3$, we find that it will take three hours for the 9 kilometers to be traveled. The t minutes spent at the coffeeshop can be written as $144-48(2.5)$, so t = 24. $180 + 24 = 204$. -sepehr2010\"\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n```\n\n## 使用方法\n\n### 使用CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets aime24 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['aime24'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "41d9c1d0a97eeee8fd4cd35445fcba0b",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.180894",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

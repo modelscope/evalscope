@@ -1,0 +1,149 @@
+{
+  "meta": {
+    "pretty_name": "GSM8K-V",
+    "dataset_id": "evalscope/GSM8K-V",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning",
+      "MultiModal"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nGSM8K-V is a purely visual multi-image mathematical reasoning benchmark that systematically transforms each GSM8K math word problem into its visual counterpart. It enables clean within-item comparison across modalities for multimodal math evaluation.\n\n## Task Description\n\n- **Task Type**: Visual Mathematical Word Problem Solving\n- **Input**: Multiple images representing a math problem + question\n- **Output**: Numerical answer in \\boxed{} format\n- **Domains**: Visual math reasoning, scene understanding, arithmetic\n\n## Key Features\n\n- Visual transformation of GSM8K text problems\n- Multi-image input format for complete problem representation\n- Enables text-vs-visual modality comparisons\n- Categorized by problem type and subcategory\n- Preserves original problem difficulty levels\n\n## Evaluation Notes\n\n- Default evaluation uses the **train** split\n- Primary metric: **Accuracy** with numeric comparison\n- Answers should be in \\boxed{} format with number only\n- Step-by-step reasoning encouraged before final answer\n- Metadata includes original text question for comparison\n",
+    "prompt_template": "You are an expert at solving mathematical word problems. Please solve the following problem step by step, showing your reasoning.\n\nWhen providing your final answer:\n- If the answer can be expressed as a whole number (integer), provide it as an integer\nProblem: {question}\n\nPlease think step by step. After your reasoning, put your final answer within \\boxed{{}} with the number only.\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 1319,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1319,
+        "prompt_length_mean": 492.4,
+        "prompt_length_min": 410,
+        "prompt_length_max": 789,
+        "prompt_length_std": 44.79,
+        "target_length_mean": 4.28,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 5344,
+            "count_per_sample": {
+              "min": 2,
+              "max": 11,
+              "mean": 4.05
+            },
+            "resolutions": [
+              "1024x1024"
+            ],
+            "resolution_range": {
+              "min": "1024x1024",
+              "max": "1024x1024"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 492.4,
+      "min": 410,
+      "max": 789,
+      "std": 44.79
+    },
+    "target_length_mean": 4.28,
+    "computed_at": "2026-01-28T11:13:37.263280",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 5344,
+        "count_per_sample": {
+          "min": 2,
+          "max": 11,
+          "mean": 4.05
+        },
+        "resolutions": [
+          "1024x1024"
+        ],
+        "resolution_range": {
+          "min": "1024x1024",
+          "max": "1024x1024"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "9e0072fd",
+          "content": [
+            {
+              "text": "You are an expert at solving mathematical word problems. Please solve the following problem step by step, showing your reasoning.\n\nWhen providing your final answer:\n- If the answer can be expressed as a whole number (integer), provide it as a ... [TRUNCATED] ... s Janet (white woman, shoulder-length brown hair, wearing a light blue blouse and khaki pants) make each day at the farmers' market?\n\nPlease think step by step. After your reasoning, put your final answer within \\boxed{} with the number only."
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~153.1KB]"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~175.1KB]"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~124.7KB]"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~172.8KB]"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~117.4KB]"
+            }
+          ]
+        }
+      ],
+      "target": "18.0",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "index": 1,
+        "category": "other",
+        "subcategory": "count",
+        "original_question": "Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?"
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# GSM8K-V\n\n\n## Overview\n\nGSM8K-V is a purely visual multi-image mathematical reasoning benchmark that systematically transforms each GSM8K math word problem into its visual counterpart. It enables clean within-item comparison across modalities for multimodal math evaluation.\n\n## Task Description\n\n- **Task Type**: Visual Mathematical Word Problem Solving\n- **Input**: Multiple images representing a math problem + question\n- **Output**: Numerical answer in \\boxed{} format\n- **Domains**: Visual math reasoning, scene understanding, arithmetic\n\n## Key Features\n\n- Visual transformation of GSM8K text problems\n- Multi-image input format for complete problem representation\n- Enables text-vs-visual modality comparisons\n- Categorized by problem type and subcategory\n- Preserves original problem difficulty levels\n\n## Evaluation Notes\n\n- Default evaluation uses the **train** split\n- Primary metric: **Accuracy** with numeric comparison\n- Answers should be in \\boxed{} format with number only\n- Step-by-step reasoning encouraged before final answer\n- Metadata includes original text question for comparison\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `gsm8k_v` |\n| **Dataset ID** | [evalscope/GSM8K-V](https://modelscope.cn/datasets/evalscope/GSM8K-V/summary) |\n| **Paper** | N/A |\n| **Tags** | `Math`, `MultiModal`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,319 |\n| Prompt Length (Mean) | 492.4 chars |\n| Prompt Length (Min/Max) | 410 / 789 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 5,344 |\n| Images per Sample | min: 2, max: 11, mean: 4.05 |\n| Resolution Range | 1024x1024 - 1024x1024 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"9e0072fd\",\n      \"content\": [\n        {\n          \"text\": \"You are an expert at solving mathematical word problems. Please solve the following problem step by step, showing your reasoning.\\n\\nWhen providing your final answer:\\n- If the answer can be expressed as a whole number (integer), provide it as a ... [TRUNCATED] ... s Janet (white woman, shoulder-length brown hair, wearing a light blue blouse and khaki pants) make each day at the farmers' market?\\n\\nPlease think step by step. After your reasoning, put your final answer within \\\\boxed{} with the number only.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~153.1KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~175.1KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~124.7KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~172.8KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~117.4KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"18.0\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"index\": 1,\n    \"category\": \"other\",\n    \"subcategory\": \"count\",\n    \"original_question\": \"Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are an expert at solving mathematical word problems. Please solve the following problem step by step, showing your reasoning.\n\nWhen providing your final answer:\n- If the answer can be expressed as a whole number (integer), provide it as an integer\nProblem: {question}\n\nPlease think step by step. After your reasoning, put your final answer within \\boxed{{}} with the number only.\n\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets gsm8k_v \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['gsm8k_v'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# GSM8K-V\n\n## 概述\n\nGSM8K-V 是一个纯视觉的多图像数学推理基准测试，它将每个 GSM8K 数学文字题系统性地转化为其视觉对应形式。该基准支持在多模态数学评估中对同一问题的不同模态进行清晰的对比。\n\n## 任务描述\n\n- **任务类型**：视觉数学文字题求解\n- **输入**：表示数学问题的多张图像 + 问题\n- **输出**：以 \\boxed{} 格式给出的数值答案\n- **领域**：视觉数学推理、场景理解、算术\n\n## 主要特点\n\n- 将 GSM8K 文本问题转化为视觉形式\n- 采用多图像输入格式完整呈现问题\n- 支持文本与视觉模态之间的对比\n- 按问题类型和子类别进行分类\n- 保留原始问题的难度等级\n\n## 评估说明\n\n- 默认评估使用 **train** 划分\n- 主要指标：**准确率（Accuracy）**，通过数值比较计算\n- 答案应仅包含数字，并置于 \\boxed{} 中\n- 鼓励在最终答案前提供逐步推理过程\n- 元数据包含原始文本问题以供对比\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `gsm8k_v` |\n| **数据集ID** | [evalscope/GSM8K-V](https://modelscope.cn/datasets/evalscope/GSM8K-V/summary) |\n| **论文** | N/A |\n| **标签** | `Math`, `MultiModal`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,319 |\n| 提示词长度（平均） | 492.4 字符 |\n| 提示词长度（最小/最大） | 410 / 789 字符 |\n\n**图像统计：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 5,344 |\n| 每样本图像数 | 最小: 2, 最大: 11, 平均: 4.05 |\n| 分辨率范围 | 1024x1024 - 1024x1024 |\n| 格式 | jpeg |\n\n## 样例示例\n\n**子集**：`default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"9e0072fd\",\n      \"content\": [\n        {\n          \"text\": \"You are an expert at solving mathematical word problems. Please solve the following problem step by step, showing your reasoning.\\n\\nWhen providing your final answer:\\n- If the answer can be expressed as a whole number (integer), provide it as a ... [TRUNCATED] ... s Janet (white woman, shoulder-length brown hair, wearing a light blue blouse and khaki pants) make each day at the farmers' market?\\n\\nPlease think step by step. After your reasoning, put your final answer within \\\\boxed{} with the number only.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~153.1KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~175.1KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~124.7KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~172.8KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~117.4KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"18.0\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"index\": 1,\n    \"category\": \"other\",\n    \"subcategory\": \"count\",\n    \"original_question\": \"Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\"\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are an expert at solving mathematical word problems. Please solve the following problem step by step, showing your reasoning.\n\nWhen providing your final answer:\n- If the answer can be expressed as a whole number (integer), provide it as an integer\nProblem: {question}\n\nPlease think step by step. After your reasoning, put your final answer within \\boxed{} with the number only.\n\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets gsm8k_v \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['gsm8k_v'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "6dc27763079b665a6fc6a6db880aa5f8",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.243835",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

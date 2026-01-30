@@ -1,0 +1,178 @@
+{
+  "meta": {
+    "pretty_name": "Multi-IF",
+    "dataset_id": "facebook/Multi-IF",
+    "paper_url": null,
+    "tags": [
+      "InstructionFollowing",
+      "MultiLingual",
+      "MultiTurn"
+    ],
+    "metrics": [
+      "prompt_level_strict",
+      "inst_level_strict",
+      "prompt_level_loose",
+      "inst_level_loose"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "Chinese",
+      "English",
+      "German",
+      "Italian",
+      "Vietnamese",
+      "Spanish",
+      "Hindi",
+      "Portuguese",
+      "French",
+      "Thai",
+      "Russian"
+    ],
+    "description": "\n## Overview\n\nMulti-IF is a benchmark designed to evaluate LLM capabilities in multi-turn instruction following within a multilingual environment. It tests the ability to follow complex instructions across multiple conversation turns in different languages.\n\n## Task Description\n\n- **Task Type**: Multi-Turn Multilingual Instruction Following\n- **Input**: Multi-turn conversation with instructions\n- **Output**: Responses following given instructions\n- **Domains**: Instruction following, multilingual understanding\n\n## Key Features\n\n- 11 supported languages: Chinese, English, German, Italian, Vietnamese, Spanish, Hindi, Portuguese, French, Thai, Russian\n- Multi-turn conversation evaluation (up to 3 turns)\n- Tests instruction following in multilingual contexts\n- Both strict and loose evaluation metrics\n- Prompt-level and instruction-level scoring\n\n## Evaluation Notes\n\n- Default evaluation uses the **train** split\n- Configurable max_turns (1-3, default: 3)\n- Four metrics tracked:\n  - `prompt_level_strict/loose`: Strict/loose prompt-level accuracy\n  - `inst_level_strict/loose`: Strict/loose instruction-level accuracy\n- Requires: nltk, langdetect, emoji (for Chinese), pythainlp (for Thai)\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "max_turns": {
+        "type": "int",
+        "description": "Maximum number of interactive turns to evaluate (1-3).",
+        "value": 3,
+        "choices": [
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 4501,
+    "subset_stats": [
+      {
+        "name": "Chinese",
+        "sample_count": 454,
+        "prompt_length_mean": 0,
+        "prompt_length_min": 0,
+        "prompt_length_max": 0,
+        "prompt_length_std": null,
+        "target_length_mean": null
+      },
+      {
+        "name": "English",
+        "sample_count": 909,
+        "prompt_length_mean": 0,
+        "prompt_length_min": 0,
+        "prompt_length_max": 0,
+        "prompt_length_std": null,
+        "target_length_mean": null
+      },
+      {
+        "name": "Italian",
+        "sample_count": 493,
+        "prompt_length_mean": 0,
+        "prompt_length_min": 0,
+        "prompt_length_max": 0,
+        "prompt_length_std": null,
+        "target_length_mean": null
+      },
+      {
+        "name": "Spanish",
+        "sample_count": 516,
+        "prompt_length_mean": 0,
+        "prompt_length_min": 0,
+        "prompt_length_max": 0,
+        "prompt_length_std": null,
+        "target_length_mean": null
+      },
+      {
+        "name": "Hindi",
+        "sample_count": 542,
+        "prompt_length_mean": 0,
+        "prompt_length_min": 0,
+        "prompt_length_max": 0,
+        "prompt_length_std": null,
+        "target_length_mean": null
+      },
+      {
+        "name": "Portuguese",
+        "sample_count": 524,
+        "prompt_length_mean": 0,
+        "prompt_length_min": 0,
+        "prompt_length_max": 0,
+        "prompt_length_std": null,
+        "target_length_mean": null
+      },
+      {
+        "name": "French",
+        "sample_count": 548,
+        "prompt_length_mean": 0,
+        "prompt_length_min": 0,
+        "prompt_length_max": 0,
+        "prompt_length_std": null,
+        "target_length_mean": null
+      },
+      {
+        "name": "Russian",
+        "sample_count": 515,
+        "prompt_length_mean": 0,
+        "prompt_length_min": 0,
+        "prompt_length_max": 0,
+        "prompt_length_std": null,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T14:37:21.685249"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "cb0c68fe",
+          "content": ""
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "Chinese",
+      "metadata": {
+        "turns": null,
+        "responses": null,
+        "turn_1_prompt": "{\"role\": \"user\", \"content\": \"\\u5199\\u4e00\\u4e2a300+\\u5b57\\u7684\\u603b\\u7ed3\\u5173\\u4e8e\\u7ef4\\u57fa\\u767e\\u79d1\\u9875\\u9762\\\"https://en.wikipedia.org/wiki/Raymond_III,_Count_of_Tripoli\\\"\\uff0c\\u4e0d\\u8981\\u4f7f\\u7528\\u4efb\\u4f55\\u9017\\u53f7\\uff0c\\u5e76\\u4e14\\u81f3\\u5c11\\u7528markdown\\u683c\\u5f0f\\u7a81\\u51fa3\\u4e2a\\u6709\\u6807\\u9898\\u7684\\u90e8\\u5206\\uff0c\\u4f8b\\u5982*\\u7a81\\u51fa\\u90e8\\u52061*\\uff0c*\\u7a81\\u51fa\\u90e8\\u52062*\\uff0c*\\u7a81\\u51fa\\u90e8\\u52063*\\u3002\"}",
+        "turn_1_instruction_id_list": "[\"punctuation:no_comma\", \"detectable_format:number_highlighted_sections\", \"length_constraints:number_words\"]",
+        "turn_1_kwargs": "[\"{}\", \"{\\\"num_highlights\\\": 3}\", \"{\\\"relation\\\": \\\"at least\\\", \\\"num_words\\\": 300}\"]",
+        "turn_2_prompt": "{\"role\": \"user\", \"content\": \"\\u4f60\\u7684\\u56de\\u7b54\\u5e94\\u8be5\\u5305\\u542b\\u4ee5\\u4e0b\\u5173\\u952e\\u8bcd\\uff1a\\u5341\\u5b57\\u519b\\uff0c\\u9ece\\u5df4\\u5ae9\\uff0c\\u7a46\\u65af\\u6797\\u3002\"}",
+        "turn_2_instruction_id_list": "[\"punctuation:no_comma\", \"detectable_format:number_highlighted_sections\", \"length_constraints:number_words\", \"keywords:existence\"]",
+        "turn_2_kwargs": "[\"{}\", \"{\\\"num_highlights\\\": 3}\", \"{\\\"relation\\\": \\\"at least\\\", \\\"num_words\\\": 300}\", \"{\\\"keywords\\\": [\\\"\\\\u5341\\\\u5b57\\\\u519b\\\", \\\"\\\\u9ece\\\\u5df4\\\\u5ae9\\\", \\\"\\\\u7a46\\\\u65af\\\\u6797\\\"]}\"]",
+        "turn_3_prompt": "{\"role\": \"user\", \"content\": \"\\u4f60\\u7684\\u56de\\u7b54\\u5e94\\u8be5\\u4ee5\\u201c\\u8fd9\\u4e2a\\u6982\\u8ff0\\u63d0\\u4f9b\\u4e86\\u5341\\u5b57\\u519b\\u65f6\\u4ee3\\u653f\\u6cbb\\u548c\\u6218\\u4e89\\u7684\\u590d\\u6742\\u6027\\u548c\\u9634\\u8c0b\\u7684\\u6982\\u89c8\\u3002\\u201d\\u8fd9\\u4e2a\\u786e\\u5207\\u7684\\u77ed\\u8bed\\u7ed3\\u5c3e\\uff0c\\u4e0d\\u5141\\u8bb8\\u6709\\u5176\\u4ed6\\u6587\\u5b57\\u51fa\\u73b0\\u5728\\u8fd9\\u4e2a\\u77ed\\u8bed\\u540e\\u9762\\u3002\"}",
+        "turn_3_instruction_id_list": "[\"punctuation:no_comma\", \"detectable_format:number_highlighted_sections\", \"length_constraints:number_words\", \"keywords:existence\", \"startend:end_checker\"]",
+        "turn_3_kwargs": "[\"{}\", \"{\\\"num_highlights\\\": 3}\", \"{\\\"relation\\\": \\\"at least\\\", \\\"num_words\\\": 300}\", \"{\\\"keywords\\\": [\\\"\\\\u5341\\\\u5b57\\\\u519b\\\", \\\"\\\\u9ece\\\\u5df4\\\\u5ae9\\\", \\\"\\\\u7a46\\\\u65af\\\\u6797\\\"]}\", \"{\\\"end_phrase\\\": \\\"\\\\u8fd9\\\\u4e2a\\\\u6982\\\\u8ff0\\\\u63d0\\\\u4f9b\\\\u4e86\\\\u5341\\\\u5b57\\\\u519b\\\\u65f6\\\\u4ee3\\\\u653f\\\\u6cbb\\\\u548c\\\\u6218\\\\u4e89\\\\u7684\\\\u590d\\\\u6742\\\\u6027\\\\u548c\\\\u9634\\\\u8c0b\\\\u7684\\\\u6982\\\\u89c8\\\\u3002\\\"}\"]",
+        "key": "1000:1:zh",
+        "turn_index": 0,
+        "language": "Chinese"
+      }
+    },
+    "subset": "Chinese",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# Multi-IF\n\n\n## Overview\n\nMulti-IF is a benchmark designed to evaluate LLM capabilities in multi-turn instruction following within a multilingual environment. It tests the ability to follow complex instructions across multiple conversation turns in different languages.\n\n## Task Description\n\n- **Task Type**: Multi-Turn Multilingual Instruction Following\n- **Input**: Multi-turn conversation with instructions\n- **Output**: Responses following given instructions\n- **Domains**: Instruction following, multilingual understanding\n\n## Key Features\n\n- 11 supported languages: Chinese, English, German, Italian, Vietnamese, Spanish, Hindi, Portuguese, French, Thai, Russian\n- Multi-turn conversation evaluation (up to 3 turns)\n- Tests instruction following in multilingual contexts\n- Both strict and loose evaluation metrics\n- Prompt-level and instruction-level scoring\n\n## Evaluation Notes\n\n- Default evaluation uses the **train** split\n- Configurable max_turns (1-3, default: 3)\n- Four metrics tracked:\n  - `prompt_level_strict/loose`: Strict/loose prompt-level accuracy\n  - `inst_level_strict/loose`: Strict/loose instruction-level accuracy\n- Requires: nltk, langdetect, emoji (for Chinese), pythainlp (for Thai)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `multi_if` |\n| **Dataset ID** | [facebook/Multi-IF](https://modelscope.cn/datasets/facebook/Multi-IF/summary) |\n| **Paper** | N/A |\n| **Tags** | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |\n| **Metrics** | `prompt_level_strict`, `inst_level_strict`, `prompt_level_loose`, `inst_level_loose` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 4,501 |\n| Prompt Length (Mean) | 0 chars |\n| Prompt Length (Min/Max) | 0 / 0 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Chinese` | 454 | 0 | 0 | 0 |\n| `English` | 909 | 0 | 0 | 0 |\n| `Italian` | 493 | 0 | 0 | 0 |\n| `Spanish` | 516 | 0 | 0 | 0 |\n| `Hindi` | 542 | 0 | 0 | 0 |\n| `Portuguese` | 524 | 0 | 0 | 0 |\n| `French` | 548 | 0 | 0 | 0 |\n| `Russian` | 515 | 0 | 0 | 0 |\n\n## Sample Example\n\n**Subset**: `Chinese`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"cb0c68fe\",\n      \"content\": \"\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Chinese\",\n  \"metadata\": {\n    \"turns\": null,\n    \"responses\": null,\n    \"turn_1_prompt\": \"{\\\"role\\\": \\\"user\\\", \\\"content\\\": \\\"\\\\u5199\\\\u4e00\\\\u4e2a300+\\\\u5b57\\\\u7684\\\\u603b\\\\u7ed3\\\\u5173\\\\u4e8e\\\\u7ef4\\\\u57fa\\\\u767e\\\\u79d1\\\\u9875\\\\u9762\\\\\\\"https://en.wikipedia.org/wiki/Raymond_III,_Count_of_Tripoli\\\\\\\"\\\\uff0c\\\\u4e0d\\\\u8981\\\\u4f7f\\\\u7528\\\\u4efb\\\\u4f55\\\\u9017\\\\u53f7\\\\uff0c\\\\u5e76\\\\u4e14\\\\u81f3\\\\u5c11\\\\u7528markdown\\\\u683c\\\\u5f0f\\\\u7a81\\\\u51fa3\\\\u4e2a\\\\u6709\\\\u6807\\\\u9898\\\\u7684\\\\u90e8\\\\u5206\\\\uff0c\\\\u4f8b\\\\u5982*\\\\u7a81\\\\u51fa\\\\u90e8\\\\u52061*\\\\uff0c*\\\\u7a81\\\\u51fa\\\\u90e8\\\\u52062*\\\\uff0c*\\\\u7a81\\\\u51fa\\\\u90e8\\\\u52063*\\\\u3002\\\"}\",\n    \"turn_1_instruction_id_list\": \"[\\\"punctuation:no_comma\\\", \\\"detectable_format:number_highlighted_sections\\\", \\\"length_constraints:number_words\\\"]\",\n    \"turn_1_kwargs\": \"[\\\"{}\\\", \\\"{\\\\\\\"num_highlights\\\\\\\": 3}\\\", \\\"{\\\\\\\"relation\\\\\\\": \\\\\\\"at least\\\\\\\", \\\\\\\"num_words\\\\\\\": 300}\\\"]\",\n    \"turn_2_prompt\": \"{\\\"role\\\": \\\"user\\\", \\\"content\\\": \\\"\\\\u4f60\\\\u7684\\\\u56de\\\\u7b54\\\\u5e94\\\\u8be5\\\\u5305\\\\u542b\\\\u4ee5\\\\u4e0b\\\\u5173\\\\u952e\\\\u8bcd\\\\uff1a\\\\u5341\\\\u5b57\\\\u519b\\\\uff0c\\\\u9ece\\\\u5df4\\\\u5ae9\\\\uff0c\\\\u7a46\\\\u65af\\\\u6797\\\\u3002\\\"}\",\n    \"turn_2_instruction_id_list\": \"[\\\"punctuation:no_comma\\\", \\\"detectable_format:number_highlighted_sections\\\", \\\"length_constraints:number_words\\\", \\\"keywords:existence\\\"]\",\n    \"turn_2_kwargs\": \"[\\\"{}\\\", \\\"{\\\\\\\"num_highlights\\\\\\\": 3}\\\", \\\"{\\\\\\\"relation\\\\\\\": \\\\\\\"at least\\\\\\\", \\\\\\\"num_words\\\\\\\": 300}\\\", \\\"{\\\\\\\"keywords\\\\\\\": [\\\\\\\"\\\\\\\\u5341\\\\\\\\u5b57\\\\\\\\u519b\\\\\\\", \\\\\\\"\\\\\\\\u9ece\\\\\\\\u5df4\\\\\\\\u5ae9\\\\\\\", \\\\\\\"\\\\\\\\u7a46\\\\\\\\u65af\\\\\\\\u6797\\\\\\\"]}\\\"]\",\n    \"turn_3_prompt\": \"{\\\"role\\\": \\\"user\\\", \\\"content\\\": \\\"\\\\u4f60\\\\u7684\\\\u56de\\\\u7b54\\\\u5e94\\\\u8be5\\\\u4ee5\\\\u201c\\\\u8fd9\\\\u4e2a\\\\u6982\\\\u8ff0\\\\u63d0\\\\u4f9b\\\\u4e86\\\\u5341\\\\u5b57\\\\u519b\\\\u65f6\\\\u4ee3\\\\u653f\\\\u6cbb\\\\u548c\\\\u6218\\\\u4e89\\\\u7684\\\\u590d\\\\u6742\\\\u6027\\\\u548c\\\\u9634\\\\u8c0b\\\\u7684\\\\u6982\\\\u89c8\\\\u3002\\\\u201d\\\\u8fd9\\\\u4e2a\\\\u786e\\\\u5207\\\\u7684\\\\u77ed\\\\u8bed\\\\u7ed3\\\\u5c3e\\\\uff0c\\\\u4e0d\\\\u5141\\\\u8bb8\\\\u6709\\\\u5176\\\\u4ed6\\\\u6587\\\\u5b57\\\\u51fa\\\\u73b0\\\\u5728\\\\u8fd9\\\\u4e2a\\\\u77ed\\\\u8bed\\\\u540e\\\\u9762\\\\u3002\\\"}\",\n    \"turn_3_instruction_id_list\": \"[\\\"punctuation:no_comma\\\", \\\"detectable_format:number_highlighted_sections\\\", \\\"length_constraints:number_words\\\", \\\"keywords:existence\\\", \\\"startend:end_checker\\\"]\",\n    \"turn_3_kwargs\": \"[\\\"{}\\\", \\\"{\\\\\\\"num_highlights\\\\\\\": 3}\\\", \\\"{\\\\\\\"relation\\\\\\\": \\\\\\\"at least\\\\\\\", \\\\\\\"num_words\\\\\\\": 300}\\\", \\\"{\\\\\\\"keywords\\\\\\\": [\\\\\\\"\\\\\\\\u5341\\\\\\\\u5b57\\\\\\\\u519b\\\\\\\", \\\\\\\"\\\\\\\\u9ece\\\\\\\\u5df4\\\\\\\\u5ae9\\\\\\\", \\\\\\\"\\\\\\\\u7a46\\\\\\\\u65af\\\\\\\\u6797\\\\\\\"]}\\\", \\\"{\\\\\\\"end_phrase\\\\\\\": \\\\\\\"\\\\\\\\u8fd9\\\\\\\\u4e2a\\\\\\\\u6982\\\\\\\\u8ff0\\\\\\\\u63d0\\\\\\\\u4f9b\\\\\\\\u4e86\\\\\\\\u5341\\\\\\\\u5b57\\\\\\\\u519b\\\\\\\\u65f6\\\\\\\\u4ee3\\\\\\\\u653f\\\\\\\\u6cbb\\\\\\\\u548c\\\\\\\\u6218\\\\\\\\u4e89\\\\\\\\u7684\\\\\\\\u590d\\\\\\\\u6742\\\\\\\\u6027\\\\\\\\u548c\\\\\\\\u9634\\\\\\\\u8c0b\\\\\\\\u7684\\\\\\\\u6982\\\\\\\\u89c8\\\\\\\\u3002\\\\\\\"}\\\"]\",\n    \"key\": \"1000:1:zh\",\n    \"turn_index\": 0,\n    \"language\": \"Chinese\"\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `max_turns` | `int` | `3` | Maximum number of interactive turns to evaluate (1-3). Choices: [1, 2, 3] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets multi_if \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['multi_if'],\n    dataset_args={\n        'multi_if': {\n            # subset_list: ['Chinese', 'English', 'Italian']  # optional, evaluate specific subsets\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Multi-IF\n\n\n## 概述\n\nMulti-IF 是一个用于评估大语言模型（LLM）在多语言环境下执行多轮指令能力的基准测试。它检验模型在不同语言的多轮对话中遵循复杂指令的能力。\n\n## 任务描述\n\n- **任务类型**：多轮多语言指令遵循\n- **输入**：包含指令的多轮对话\n- **输出**：遵循给定指令的回复\n- **领域**：指令遵循、多语言理解\n\n## 主要特性\n\n- 支持 11 种语言：中文、英语、德语、意大利语、越南语、西班牙语、印地语、葡萄牙语、法语、泰语、俄语\n- 多轮对话评估（最多 3 轮）\n- 在多语言上下文中测试指令遵循能力\n- 提供严格和宽松两种评估指标\n- 支持提示词级别和指令级别的评分\n\n## 评估说明\n\n- 默认使用 **train** 数据划分进行评估\n- 可配置 `max_turns`（1-3，默认为 3）\n- 跟踪四项指标：\n  - `prompt_level_strict/loose`：提示词级别的严格/宽松准确率\n  - `inst_level_strict/loose`：指令级别的严格/宽松准确率\n- 依赖库：nltk、langdetect、emoji（用于中文）、pythainlp（用于泰语）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `multi_if` |\n| **数据集 ID** | [facebook/Multi-IF](https://modelscope.cn/datasets/facebook/Multi-IF/summary) |\n| **论文** | N/A |\n| **标签** | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |\n| **指标** | `prompt_level_strict`, `inst_level_strict`, `prompt_level_loose`, `inst_level_loose` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 4,501 |\n| 提示词长度（平均） | 0 字符 |\n| 提示词长度（最小/最大） | 0 / 0 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Chinese` | 454 | 0 | 0 | 0 |\n| `English` | 909 | 0 | 0 | 0 |\n| `Italian` | 493 | 0 | 0 | 0 |\n| `Spanish` | 516 | 0 | 0 | 0 |\n| `Hindi` | 542 | 0 | 0 | 0 |\n| `Portuguese` | 524 | 0 | 0 | 0 |\n| `French` | 548 | 0 | 0 | 0 |\n| `Russian` | 515 | 0 | 0 | 0 |\n\n## 样例示例\n\n**子集**: `Chinese`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"cb0c68fe\",\n      \"content\": \"\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Chinese\",\n  \"metadata\": {\n    \"turns\": null,\n    \"responses\": null,\n    \"turn_1_prompt\": \"{\\\"role\\\": \\\"user\\\", \\\"content\\\": \\\"\\\\u5199\\\\u4e00\\\\u4e2a300+\\\\u5b57\\\\u7684\\\\u603b\\\\u7ed3\\\\u5173\\\\u4e8e\\\\u7ef4\\\\u57fa\\\\u767e\\\\u79d1\\\\u9875\\\\u9762\\\\\\\"https://en.wikipedia.org/wiki/Raymond_III,_Count_of_Tripoli\\\\\\\"\\\\uff0c\\\\u4e0d\\\\u8981\\\\u4f7f\\\\u7528\\\\u4efb\\\\u4f55\\\\u9017\\\\u53f7\\\\uff0c\\\\u5e76\\\\u4e14\\\\u81f3\\\\u5c11\\\\u7528markdown\\\\u683c\\\\u5f0f\\\\u7a81\\\\u51fa3\\\\u4e2a\\\\u6709\\\\u6807\\\\u9898\\\\u7684\\\\u90e8\\\\u5206\\\\uff0c\\\\u4f8b\\\\u5982*\\\\u7a81\\\\u51fa\\\\u90e8\\\\u52061*\\\\uff0c*\\\\u7a81\\\\u51fa\\\\u90e8\\\\u52062*\\\\uff0c*\\\\u7a81\\\\u51fa\\\\u90e8\\\\u52063*\\\\u3002\\\"}\",\n    \"turn_1_instruction_id_list\": \"[\\\"punctuation:no_comma\\\", \\\"detectable_format:number_highlighted_sections\\\", \\\"length_constraints:number_words\\\"]\",\n    \"turn_1_kwargs\": \"[\\\"{}\\\", \\\"{\\\\\\\"num_highlights\\\\\\\": 3}\\\", \\\"{\\\\\\\"relation\\\\\\\": \\\\\\\"at least\\\\\\\", \\\\\\\"num_words\\\\\\\": 300}\\\"]\",\n    \"turn_2_prompt\": \"{\\\"role\\\": \\\"user\\\", \\\"content\\\": \\\"\\\\u4f60\\\\u7684\\\\u56de\\\\u7b54\\\\u5e94\\\\u8be5\\\\u5305\\\\u542b\\\\u4ee5\\\\u4e0b\\\\u5173\\\\u952e\\\\u8bcd\\\\uff1a\\\\u5341\\\\u5b57\\\\u519b\\\\uff0c\\\\u9ece\\\\u5df4\\\\u5ae9\\\\uff0c\\\\u7a46\\\\u65af\\\\u6797\\\\u3002\\\"}\",\n    \"turn_2_instruction_id_list\": \"[\\\"punctuation:no_comma\\\", \\\"detectable_format:number_highlighted_sections\\\", \\\"length_constraints:number_words\\\", \\\"keywords:existence\\\"]\",\n    \"turn_2_kwargs\": \"[\\\"{}\\\", \\\"{\\\\\\\"num_highlights\\\\\\\": 3}\\\", \\\"{\\\\\\\"relation\\\\\\\": \\\\\\\"at least\\\\\\\", \\\\\\\"num_words\\\\\\\": 300}\\\", \\\"{\\\\\\\"keywords\\\\\\\": [\\\\\\\"\\\\\\\\u5341\\\\\\\\u5b57\\\\\\\\u519b\\\\\\\", \\\\\\\"\\\\\\\\u9ece\\\\\\\\u5df4\\\\\\\\u5ae9\\\\\\\", \\\\\\\"\\\\\\\\u7a46\\\\\\\\u65af\\\\\\\\u6797\\\\\\\"]}\\\"]\",\n    \"turn_3_prompt\": \"{\\\"role\\\": \\\"user\\\", \\\"content\\\": \\\"\\\\u4f60\\\\u7684\\\\u56de\\\\u7b54\\\\u5e94\\\\u8be5\\\\u4ee5\\\\u201c\\\\u8fd9\\\\u4e2a\\\\u6982\\\\u8ff0\\\\u63d0\\\\u4f9b\\\\u4e86\\\\u5341\\\\u5b57\\\\u519b\\\\u65f6\\\\u4ee3\\\\u653f\\\\u6cbb\\\\u548c\\\\u6218\\\\u4e89\\\\u7684\\\\u590d\\\\u6742\\\\u6027\\\\u548c\\\\u9634\\\\u8c0b\\\\u7684\\\\u6982\\\\u89c8\\\\u3002\\\\u201d\\\\u8fd9\\\\u4e2a\\\\u786e\\\\u5207\\\\u7684\\\\u77ed\\\\u8bed\\\\u7ed3\\\\u5c3e\\\\uff0c\\\\u4e0d\\\\u5141\\\\u8bb8\\\\u6709\\\\u5176\\\\u4ed6\\\\u6587\\\\u5b57\\\\u51fa\\\\u73b0\\\\u5728\\\\u8fd9\\\\u4e2a\\\\u77ed\\\\u8bed\\\\u540e\\\\u9762\\\\u3002\\\"}\",\n    \"turn_3_instruction_id_list\": \"[\\\"punctuation:no_comma\\\", \\\"detectable_format:number_highlighted_sections\\\", \\\"length_constraints:number_words\\\", \\\"keywords:existence\\\", \\\"startend:end_checker\\\"]\",\n    \"turn_3_kwargs\": \"[\\\"{}\\\", \\\"{\\\\\\\"num_highlights\\\\\\\": 3}\\\", \\\"{\\\\\\\"relation\\\\\\\": \\\\\\\"at least\\\\\\\", \\\\\\\"num_words\\\\\\\": 300}\\\", \\\"{\\\\\\\"keywords\\\\\\\": [\\\\\\\"\\\\\\\\u5341\\\\\\\\u5b57\\\\\\\\u519b\\\\\\\", \\\\\\\"\\\\\\\\u9ece\\\\\\\\u5df4\\\\\\\\u5ae9\\\\\\\", \\\\\\\"\\\\\\\\u7a46\\\\\\\\u65af\\\\\\\\u6797\\\\\\\"]}\\\", \\\"{\\\\\\\"end_phrase\\\\\\\": \\\\\\\"\\\\\\\\u8fd9\\\\\\\\u4e2a\\\\\\\\u6982\\\\\\\\u8ff0\\\\\\\\u63d0\\\\\\\\u4f9b\\\\\\\\u4e86\\\\\\\\u5341\\\\\\\\u5b57\\\\\\\\u519b\\\\\\\\u65f6\\\\\\\\u4ee3\\\\\\\\u653f\\\\\\\\u6cbb\\\\\\\\u548c\\\\\\\\u6218\\\\\\\\u4e89\\\\\\\\u7684\\\\\\\\u590d\\\\\\\\u6742\\\\\\\\u6027\\\\\\\\u548c\\\\\\\\u9634\\\\\\\\u8c0b\\\\\\\\u7684\\\\\\\\u6982\\\\\\\\u89c8\\\\\\\\u3002\\\\\\\"}\\\"]\",\n    \"key\": \"1000:1:zh\",\n    \"turn_index\": 0,\n    \"language\": \"Chinese\"\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `max_turns` | `int` | `3` | 要评估的最大交互轮数（1-3）。可选值：[1, 2, 3] |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets multi_if \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['multi_if'],\n    dataset_args={\n        'multi_if': {\n            # subset_list: ['Chinese', 'English', 'Italian']  # 可选，评估指定子集\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "29d48108c5b3c5d203e8a97d3e6c5448",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:41.521333",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

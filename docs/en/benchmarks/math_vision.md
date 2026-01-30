@@ -1,0 +1,157 @@
+# MathVision
+
+
+## Overview
+
+MATH-Vision (MATH-V) is a meticulously curated dataset of 3,040 high-quality mathematical problems with visual contexts sourced from real math competitions. It evaluates mathematical reasoning abilities in multimodal settings.
+
+## Task Description
+
+- **Task Type**: Visual Mathematical Reasoning
+- **Input**: Math problem with visual context (diagram, figure, graph)
+- **Output**: Numerical answer or answer choice
+- **Domains**: Competition mathematics with visual elements
+
+## Key Features
+
+- Problems sourced from real mathematical competitions
+- 3,040 high-quality problems with visual contexts
+- Five difficulty levels (1-5) for granular analysis
+- Supports both multiple-choice and free-form answers
+- Includes detailed solutions for reference
+
+## Evaluation Notes
+
+- Default evaluation uses the **test** split
+- Subsets by difficulty: `level 1` through `level 5`
+- Primary metric: **Accuracy** with numeric comparison
+- Free-form answers use \boxed{} format (without units)
+- Multiple-choice uses CoT prompting with letter answers
+
+
+## Properties
+
+| Property | Value |
+|----------|-------|
+| **Benchmark Name** | `math_vision` |
+| **Dataset ID** | [evalscope/MathVision](https://modelscope.cn/datasets/evalscope/MathVision/summary) |
+| **Paper** | N/A |
+| **Tags** | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
+| **Metrics** | `acc` |
+| **Default Shots** | 0-shot |
+| **Evaluation Split** | `test` |
+
+
+## Data Statistics
+
+| Metric | Value |
+|--------|-------|
+| Total Samples | 3,040 |
+| Prompt Length (Mean) | 423.91 chars |
+| Prompt Length (Min/Max) | 93 / 1581 chars |
+
+**Per-Subset Statistics:**
+
+| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
+|--------|---------|-------------|------------|------------|
+| `level 1` | 237 | 357.8 | 133 | 854 |
+| `level 2` | 738 | 397.17 | 127 | 885 |
+| `level 3` | 551 | 433.46 | 93 | 1402 |
+| `level 4` | 830 | 434.51 | 134 | 946 |
+| `level 5` | 684 | 455.12 | 129 | 1581 |
+
+**Image Statistics:**
+
+| Metric | Value |
+|--------|-------|
+| Total Images | 3,040 |
+| Images per Sample | min: 1, max: 1, mean: 1 |
+| Resolution Range | 54x40 - 2520x8526 |
+| Formats | jpeg |
+
+
+## Sample Example
+
+**Subset**: `level 1`
+
+```json
+{
+  "input": [
+    {
+      "id": "606d1e5a",
+      "content": [
+        {
+          "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E. Think step by step before answering.\n\nWhich kite has the longest string?\n<image1>\n\nA) A\nB) B\nC) C\nD) D\nE) E"
+        },
+        {
+          "image": "[BASE64_IMAGE: jpg, ~38.6KB]"
+        }
+      ]
+    }
+  ],
+  "choices": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+  ],
+  "target": "C",
+  "id": 0,
+  "group_id": 0,
+  "subset_key": "level 1",
+  "metadata": {
+    "id": "3",
+    "image": "images/3.jpg",
+    "solution": null,
+    "level": 1,
+    "question_type": "multi_choice",
+    "subject": "metric geometry - length"
+  }
+}
+```
+
+## Prompt Template
+
+**Prompt Template:**
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}} without units.
+```
+
+## Usage
+
+### Using CLI
+
+```bash
+evalscope eval \
+    --model YOUR_MODEL \
+    --api-url OPENAI_API_COMPAT_URL \
+    --api-key EMPTY_TOKEN \
+    --datasets math_vision \
+    --limit 10  # Remove this line for formal evaluation
+```
+
+### Using Python
+
+```python
+from evalscope import run_task
+from evalscope.config import TaskConfig
+
+task_cfg = TaskConfig(
+    model='YOUR_MODEL',
+    api_url='OPENAI_API_COMPAT_URL',
+    api_key='EMPTY_TOKEN',
+    datasets=['math_vision'],
+    dataset_args={
+        'math_vision': {
+            # subset_list: ['level 1', 'level 2', 'level 3']  # optional, evaluate specific subsets
+        }
+    },
+    limit=10,  # Remove this line for formal evaluation
+)
+
+run_task(task_cfg=task_cfg)
+```
+
+

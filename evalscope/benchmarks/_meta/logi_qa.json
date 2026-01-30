@@ -1,0 +1,80 @@
+{
+  "meta": {
+    "pretty_name": "LogiQA",
+    "dataset_id": "extraordinarylab/logiqa",
+    "paper_url": null,
+    "tags": [
+      "Reasoning",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "validation",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nLogiQA is a benchmark for evaluating logical reasoning abilities, sourced from expert-written questions originally designed for testing human logical reasoning skills in standardized examinations.\n\n## Task Description\n\n- **Task Type**: Logical Reasoning (Multiple-Choice)\n- **Input**: Context passage, question, and 4 answer choices\n- **Output**: Correct answer letter (A, B, C, or D)\n- **Focus**: Deductive reasoning, logical inference\n\n## Key Features\n\n- Expert-written logical reasoning questions\n- Requires formal logical analysis\n- Tests various reasoning patterns (syllogisms, conditionals, etc.)\n- Questions from standardized examinations\n- Challenging for both humans and models\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should follow \"ANSWER: [LETTER]\" format\n- Evaluates on test split\n- Simple accuracy metric",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 651,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 651,
+        "prompt_length_mean": 1052.17,
+        "prompt_length_min": 389,
+        "prompt_length_max": 1911,
+        "prompt_length_std": 251.13,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 1052.17,
+      "min": 389,
+      "max": 1911,
+      "std": 251.13
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:14:22.002040"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "a7ac2424",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nIn the planning of a new district in a township, it w ... [TRUNCATED] ... ) Civic Park is north of the administrative service area.\nB) The leisure area is southwest of the cultural area.\nC) The cultural district is in the northeast of the business district.\nD) The business district is southeast of the leisure area."
+        }
+      ],
+      "choices": [
+        "Civic Park is north of the administrative service area.",
+        "The leisure area is southwest of the cultural area.",
+        "The cultural district is in the northeast of the business district.",
+        "The business district is southeast of the leisure area."
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {}
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# LogiQA\n\n## Overview\n\nLogiQA is a benchmark for evaluating logical reasoning abilities, sourced from expert-written questions originally designed for testing human logical reasoning skills in standardized examinations.\n\n## Task Description\n\n- **Task Type**: Logical Reasoning (Multiple-Choice)\n- **Input**: Context passage, question, and 4 answer choices\n- **Output**: Correct answer letter (A, B, C, or D)\n- **Focus**: Deductive reasoning, logical inference\n\n## Key Features\n\n- Expert-written logical reasoning questions\n- Requires formal logical analysis\n- Tests various reasoning patterns (syllogisms, conditionals, etc.)\n- Questions from standardized examinations\n- Challenging for both humans and models\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should follow \"ANSWER: [LETTER]\" format\n- Evaluates on test split\n- Simple accuracy metric\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `logi_qa` |\n| **Dataset ID** | [extraordinarylab/logiqa](https://modelscope.cn/datasets/extraordinarylab/logiqa/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 651 |\n| Prompt Length (Mean) | 1052.17 chars |\n| Prompt Length (Min/Max) | 389 / 1911 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a7ac2424\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nIn the planning of a new district in a township, it w ... [TRUNCATED] ... ) Civic Park is north of the administrative service area.\\nB) The leisure area is southwest of the cultural area.\\nC) The cultural district is in the northeast of the business district.\\nD) The business district is southeast of the leisure area.\"\n    }\n  ],\n  \"choices\": [\n    \"Civic Park is north of the administrative service area.\",\n    \"The leisure area is southwest of the cultural area.\",\n    \"The cultural district is in the northeast of the business district.\",\n    \"The business district is southeast of the leisure area.\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets logi_qa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['logi_qa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# LogiQA\n\n## 概述\n\nLogiQA 是一个用于评估逻辑推理能力的基准测试，其题目来源于专家编写的标准化考试试题，最初用于测试人类的逻辑推理能力。\n\n## 任务描述\n\n- **任务类型**：逻辑推理（多项选择题）\n- **输入**：上下文段落、问题和 4 个选项\n- **输出**：正确答案的字母（A、B、C 或 D）\n- **重点**：演绎推理、逻辑推断\n\n## 主要特点\n\n- 由专家编写的逻辑推理题目\n- 需要形式化的逻辑分析\n- 考察多种推理模式（如三段论、条件推理等）\n- 题目源自标准化考试\n- 对人类和模型均具有挑战性\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 答案应遵循 \"ANSWER: [LETTER]\" 格式\n- 在测试集（test split）上进行评估\n- 使用简单准确率（accuracy）作为评估指标\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `logi_qa` |\n| **数据集 ID** | [extraordinarylab/logiqa](https://modelscope.cn/datasets/extraordinarylab/logiqa/summary) |\n| **论文** | N/A |\n| **标签** | `MCQ`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估集** | `test` |\n| **训练集** | `validation` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 651 |\n| 提示词长度（平均） | 1052.17 字符 |\n| 提示词长度（最小/最大） | 389 / 1911 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a7ac2424\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nIn the planning of a new district in a township, it w ... [TRUNCATED] ... ) Civic Park is north of the administrative service area.\\nB) The leisure area is southwest of the cultural area.\\nC) The cultural district is in the northeast of the business district.\\nD) The business district is southeast of the leisure area.\"\n    }\n  ],\n  \"choices\": [\n    \"Civic Park is north of the administrative service area.\",\n    \"The leisure area is southwest of the cultural area.\",\n    \"The cultural district is in the northeast of the business district.\",\n    \"The business district is southeast of the leisure area.\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets logi_qa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['logi_qa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "651d1eff510a22ff542c215cdb561856",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.267330",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

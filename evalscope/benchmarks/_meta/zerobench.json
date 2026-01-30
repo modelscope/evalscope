@@ -1,0 +1,154 @@
+{
+  "meta": {
+    "pretty_name": "ZeroBench",
+    "dataset_id": "evalscope/zerobench",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "QA",
+      "MultiModal"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "zerobench",
+    "train_split": "zerobench_subquestions",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nZeroBench is a challenging visual reasoning benchmark for Large Multimodal Models (LMMs). It consists of 100 high-quality, manually curated questions covering numerous domains, reasoning types, and image types designed to be beyond current model capabilities.\n\n## Task Description\n\n- **Task Type**: Advanced Visual Reasoning\n- **Input**: One or more images + challenging visual reasoning question\n- **Output**: Step-by-step reasoning with final answer in curly braces\n- **Domains**: Visual reasoning, perception, multi-step inference\n\n## Key Features\n\n- 100 manually curated high-quality questions\n- Designed to challenge frontier models (zero pass@1 with greedy decoding)\n- Covers diverse domains, reasoning types, and image types\n- No model achieves 5/5 reliability score\n- Tests limits of current visual reasoning capabilities\n\n## Evaluation Notes\n\n- Default evaluation uses the **zerobench** split\n- Primary metric: **Accuracy** with LLM judge\n- Answers must be in format: `{final answer}`\n- Includes subquestions split for detailed analysis\n- Uses image compression to handle large images\n",
+    "prompt_template": "{question}\n\n\n\nLet's think step by step and give the final answer in curly braces,\nlike this: {{final answer}}\"\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 100,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 100,
+        "prompt_length_mean": 645.72,
+        "prompt_length_min": 139,
+        "prompt_length_max": 1998,
+        "prompt_length_std": 364.03,
+        "target_length_mean": 10.51,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 108,
+            "count_per_sample": {
+              "min": 1,
+              "max": 3,
+              "mean": 1.08
+            },
+            "resolutions": [
+              "1004x752",
+              "1015x805",
+              "1046x746",
+              "1089x964",
+              "1107x988",
+              "1109x693",
+              "1126x849",
+              "1150x1206",
+              "1153x1536",
+              "1200x1600"
+            ],
+            "resolution_range": {
+              "min": "512x297",
+              "max": "5559x4070"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 645.72,
+      "min": 139,
+      "max": 1998,
+      "std": 364.03
+    },
+    "target_length_mean": 10.51,
+    "computed_at": "2026-01-28T11:17:28.591910",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 108,
+        "count_per_sample": {
+          "min": 1,
+          "max": 3,
+          "mean": 1.08
+        },
+        "resolutions": [
+          "1004x752",
+          "1015x805",
+          "1046x746",
+          "1089x964",
+          "1107x988",
+          "1109x693",
+          "1126x849",
+          "1150x1206",
+          "1153x1536",
+          "1200x1600"
+        ],
+        "resolution_range": {
+          "min": "512x297",
+          "max": "5559x4070"
+        },
+        "formats": [
+          "jpeg",
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "f3276b25",
+          "content": [
+            {
+              "text": "I want to purchase all the Montellier bottles from the top three shelves. How much do I save by purchasing the bottles with a loyalty card? Give your final answer in dollars.\n\n\n\nLet's think step by step and give the final answer in curly braces,\nlike this: {final answer}\"\n"
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~462.4KB]"
+            }
+          ]
+        }
+      ],
+      "target": "11.90",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "question_id": "1",
+        "question_images": [
+          "images/1_0.png"
+        ],
+        "image_attribution": "Own"
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# ZeroBench\n\n\n## Overview\n\nZeroBench is a challenging visual reasoning benchmark for Large Multimodal Models (LMMs). It consists of 100 high-quality, manually curated questions covering numerous domains, reasoning types, and image types designed to be beyond current model capabilities.\n\n## Task Description\n\n- **Task Type**: Advanced Visual Reasoning\n- **Input**: One or more images + challenging visual reasoning question\n- **Output**: Step-by-step reasoning with final answer in curly braces\n- **Domains**: Visual reasoning, perception, multi-step inference\n\n## Key Features\n\n- 100 manually curated high-quality questions\n- Designed to challenge frontier models (zero pass@1 with greedy decoding)\n- Covers diverse domains, reasoning types, and image types\n- No model achieves 5/5 reliability score\n- Tests limits of current visual reasoning capabilities\n\n## Evaluation Notes\n\n- Default evaluation uses the **zerobench** split\n- Primary metric: **Accuracy** with LLM judge\n- Answers must be in format: `{final answer}`\n- Includes subquestions split for detailed analysis\n- Uses image compression to handle large images\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `zerobench` |\n| **Dataset ID** | [evalscope/zerobench](https://modelscope.cn/datasets/evalscope/zerobench/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MultiModal`, `QA` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `zerobench` |\n| **Train Split** | `zerobench_subquestions` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 100 |\n| Prompt Length (Mean) | 645.72 chars |\n| Prompt Length (Min/Max) | 139 / 1998 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 108 |\n| Images per Sample | min: 1, max: 3, mean: 1.08 |\n| Resolution Range | 512x297 - 5559x4070 |\n| Formats | jpeg, png |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f3276b25\",\n      \"content\": [\n        {\n          \"text\": \"I want to purchase all the Montellier bottles from the top three shelves. How much do I save by purchasing the bottles with a loyalty card? Give your final answer in dollars.\\n\\n\\n\\nLet's think step by step and give the final answer in curly braces,\\nlike this: {final answer}\\\"\\n\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~462.4KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"11.90\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question_id\": \"1\",\n    \"question_images\": [\n      \"images/1_0.png\"\n    ],\n    \"image_attribution\": \"Own\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n\n\n\nLet's think step by step and give the final answer in curly braces,\nlike this: {{final answer}}\"\n\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets zerobench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['zerobench'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# ZeroBench\n\n## 概述\n\nZeroBench 是一个面向大语言多模态模型（LMMs）的高难度视觉推理基准测试。它包含 100 个高质量、人工精心筛选的问题，涵盖多个领域、多种推理类型和图像类型，旨在超越当前模型的能力边界。\n\n## 任务描述\n\n- **任务类型**：高级视觉推理  \n- **输入**：一张或多张图像 + 高难度视觉推理问题  \n- **输出**：逐步推理过程，并在最后用花括号给出最终答案  \n- **领域**：视觉推理、感知、多步推理  \n\n## 核心特点\n\n- 包含 100 个高质量、人工精心筛选的问题  \n- 专为挑战前沿模型而设计（使用贪心解码时，零样本准确率为 0）  \n- 覆盖多样化的领域、推理类型和图像类型  \n- 目前尚无模型能达到 5/5 的可靠性评分  \n- 用于测试当前视觉推理能力的极限  \n\n## 评估说明\n\n- 默认评估使用 **zerobench** 划分  \n- 主要指标：由 LLM 评判的 **准确率（Accuracy）**  \n- 答案格式必须为：`{final answer}`  \n- 包含子问题划分，便于详细分析  \n- 使用图像压缩以处理大尺寸图像  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `zerobench` |\n| **数据集 ID** | [evalscope/zerobench](https://modelscope.cn/datasets/evalscope/zerobench/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MultiModal`, `QA` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `zerobench` |\n| **训练划分** | `zerobench_subquestions` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 100 |\n| 提示词长度（平均） | 645.72 字符 |\n| 提示词长度（最小/最大） | 139 / 1998 字符 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 108 |\n| 每样本图像数 | 最小: 1, 最大: 3, 平均: 1.08 |\n| 分辨率范围 | 512x297 - 5559x4070 |\n| 图像格式 | jpeg, png |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f3276b25\",\n      \"content\": [\n        {\n          \"text\": \"I want to purchase all the Montellier bottles from the top three shelves. How much do I save by purchasing the bottles with a loyalty card? Give your final answer in dollars.\\n\\n\\n\\nLet's think step by step and give the final answer in curly braces,\\nlike this: {final answer}\\\"\\n\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~462.4KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"11.90\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question_id\": \"1\",\n    \"question_images\": [\n      \"images/1_0.png\"\n    ],\n    \"image_attribution\": \"Own\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n\n\n\nLet's think step by step and give the final answer in curly braces,\nlike this: {{final answer}}\"\n\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets zerobench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['zerobench'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "27eca28895d17b681ae11242a50d7788",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.686469",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

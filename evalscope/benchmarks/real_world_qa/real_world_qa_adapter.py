@@ -30,8 +30,34 @@ OPEN_PROMPT = (
         name='real_world_qa',
         pretty_name='RealWorldQA',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
-        description=
-        'RealWorldQA is a benchmark designed to evaluate the real-world spatial understanding capabilities of multimodal AI models, contributed by XAI. It assesses how well these models comprehend physical environments. The benchmark consists of 700+ images, each accompanied by a question and a verifiable answer. These images are drawn from real-world scenarios, including those captured from vehicles. The goal is to advance AI models\' understanding of our physical world.',  # noqa: E501
+        description="""
+## Overview
+
+RealWorldQA is a benchmark contributed by XAI designed to evaluate multimodal AI models' understanding of real-world spatial and physical environments. It uses authentic images from everyday scenarios to test practical visual comprehension.
+
+## Task Description
+
+- **Task Type**: Real-World Visual Question Answering
+- **Input**: Real-world image with spatial/physical question
+- **Output**: Verifiable answer about the scene
+- **Domain**: Physical environments, driving scenarios, everyday scenes
+
+## Key Features
+
+- 700+ images from real-world scenarios
+- Includes vehicle-captured images (driving scenes)
+- Questions with verifiable ground-truth answers
+- Tests spatial understanding and physical reasoning
+- Evaluates practical AI understanding capabilities
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Answers should follow "ANSWER: [ANSWER]" format
+- Uses step-by-step reasoning prompting
+- Simple accuracy metric for evaluation
+- Tests models on practical, real-world scenarios
+""",
         dataset_id='lmms-lab/RealWorldQA',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],

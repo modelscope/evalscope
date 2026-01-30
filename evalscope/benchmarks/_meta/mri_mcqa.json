@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "pretty_name": "MRI-MCQA",
+    "dataset_id": "extraordinarylab/mri-mcqa",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "Medical"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nMRI-MCQA is a specialized benchmark composed of multiple-choice questions related to Magnetic Resonance Imaging (MRI). It evaluates AI models' understanding of MRI physics, protocols, image acquisition, and clinical applications.\n\n## Task Description\n\n- **Task Type**: Medical Imaging Knowledge Multiple-Choice QA\n- **Input**: MRI-related question with multiple answer choices\n- **Output**: Correct answer letter\n- **Domain**: Medical imaging, MRI physics, radiology\n\n## Key Features\n\n- Specialized focus on MRI technology and applications\n- Tests understanding of MRI physics and protocols\n- Covers clinical MRI applications and sequences\n- Designed for evaluating medical imaging AI systems\n- Multiple-choice format for standardized evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on test split\n- Simple accuracy metric\n- No training split available",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 563,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 563,
+        "prompt_length_mean": 457.23,
+        "prompt_length_min": 259,
+        "prompt_length_max": 888,
+        "prompt_length_std": 116.94,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 457.23,
+      "min": 259,
+      "max": 888,
+      "std": 116.94
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:14:58.026871"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "84f179d7",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nWhich cardiac chambers are typically imaged on the short-axis view?\n\nA) RA and RV\nB) RA and LA\nC) LA and LV\nD) RV and LV"
+        }
+      ],
+      "choices": [
+        "RA and RV",
+        "RA and LA",
+        "LA and LV",
+        "RV and LV"
+      ],
+      "target": "D",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {}
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MRI-MCQA\n\n## Overview\n\nMRI-MCQA is a specialized benchmark composed of multiple-choice questions related to Magnetic Resonance Imaging (MRI). It evaluates AI models' understanding of MRI physics, protocols, image acquisition, and clinical applications.\n\n## Task Description\n\n- **Task Type**: Medical Imaging Knowledge Multiple-Choice QA\n- **Input**: MRI-related question with multiple answer choices\n- **Output**: Correct answer letter\n- **Domain**: Medical imaging, MRI physics, radiology\n\n## Key Features\n\n- Specialized focus on MRI technology and applications\n- Tests understanding of MRI physics and protocols\n- Covers clinical MRI applications and sequences\n- Designed for evaluating medical imaging AI systems\n- Multiple-choice format for standardized evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on test split\n- Simple accuracy metric\n- No training split available\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `mri_mcqa` |\n| **Dataset ID** | [extraordinarylab/mri-mcqa](https://modelscope.cn/datasets/extraordinarylab/mri-mcqa/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `Medical` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 563 |\n| Prompt Length (Mean) | 457.23 chars |\n| Prompt Length (Min/Max) | 259 / 888 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"84f179d7\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nWhich cardiac chambers are typically imaged on the short-axis view?\\n\\nA) RA and RV\\nB) RA and LA\\nC) LA and LV\\nD) RV and LV\"\n    }\n  ],\n  \"choices\": [\n    \"RA and RV\",\n    \"RA and LA\",\n    \"LA and LV\",\n    \"RV and LV\"\n  ],\n  \"target\": \"D\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mri_mcqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mri_mcqa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MRI-MCQA\n\n## 概述\n\nMRI-MCQA 是一个专门针对磁共振成像（MRI）的多项选择题基准测试，用于评估 AI 模型对 MRI 物理原理、扫描协议、图像采集及临床应用的理解能力。\n\n## 任务描述\n\n- **任务类型**：医学影像知识多项选择问答\n- **输入**：与 MRI 相关的问题及其多个选项\n- **输出**：正确答案的字母\n- **领域**：医学影像、MRI 物理、放射学\n\n## 主要特点\n\n- 专注于 MRI 技术及其应用\n- 考察对 MRI 物理原理和扫描协议的理解\n- 涵盖临床 MRI 应用和序列\n- 专为评估医学影像 AI 系统而设计\n- 采用多项选择格式以实现标准化评估\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 在测试集（test split）上进行评估\n- 使用简单准确率（accuracy）作为评估指标\n- 无训练集可用\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `mri_mcqa` |\n| **数据集 ID** | [extraordinarylab/mri-mcqa](https://modelscope.cn/datasets/extraordinarylab/mri-mcqa/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ`, `Medical` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 563 |\n| 提示词长度（平均） | 457.23 字符 |\n| 提示词长度（最小/最大） | 259 / 888 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"84f179d7\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nWhich cardiac chambers are typically imaged on the short-axis view?\\n\\nA) RA and RV\\nB) RA and LA\\nC) LA and LV\\nD) RV and LV\"\n    }\n  ],\n  \"choices\": [\n    \"RA and RV\",\n    \"RA and LA\",\n    \"LA and LV\",\n    \"RV and LV\"\n  ],\n  \"target\": \"D\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mri_mcqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mri_mcqa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "18649a5812759a55209ee0ff1f0865a2",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.312287",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

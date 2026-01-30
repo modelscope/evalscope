@@ -31,8 +31,38 @@ SUBSET_LIST = ['Text Dominant', 'Text Lite', 'Vision Intensive', 'Vision Dominan
         pretty_name='MathVerse',
         dataset_id='evalscope/MathVerse',
         tags=[Tags.MATH, Tags.REASONING, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
-        description=
-        'MathVerse, an all-around visual math benchmark designed for an equitable and in-depth evaluation of MLLMs. 2,612 high-quality, multi-subject math problems with diagrams from publicly available sources. Each problem is then transformed by human annotators into six distinct versions, each offering varying degrees of information content in multi-modality, contributing to 15K test samples in total. This approach allows MathVerse to comprehensively assess whether and how much MLLMs can truly understand the visual diagrams for mathematical reasoning.',
+        description="""
+## Overview
+
+MathVerse is an all-around visual math benchmark designed for equitable and in-depth evaluation of Multimodal Large Language Models (MLLMs). It contains 2,612 high-quality, multi-subject math problems with diagrams, transformed into 15K test samples across varying information modalities.
+
+## Task Description
+
+- **Task Type**: Visual Mathematical Reasoning
+- **Input**: Math problem with diagram + question (multi-choice or free-form)
+- **Output**: Answer (letter for multi-choice, numerical/expression for free-form)
+- **Domains**: Multi-subject mathematics with visual diagrams
+
+## Key Features
+
+- 2,612 problems transformed into 6 versions each (15K total samples)
+- Tests whether MLLMs truly understand visual diagrams for math reasoning
+- Problem versions vary by visual information dependency:
+  - **Text Dominant**: Most info in text
+  - **Text Lite**: Balanced text/visual
+  - **Vision Intensive**: More visual reliance
+  - **Vision Dominant**: Primarily visual
+  - **Vision Only**: All info in diagram
+- Supports both multiple-choice and free-form answers
+
+## Evaluation Notes
+
+- Default evaluation uses the **testmini** split
+- Primary metric: **Accuracy** with numeric comparison
+- Free-form answers use \\boxed{} format
+- Uses LLM judge for answer verification
+- Results reported per problem version for detailed analysis
+""",
         subset_list=SUBSET_LIST,
         metric_list=[{
             'acc': {

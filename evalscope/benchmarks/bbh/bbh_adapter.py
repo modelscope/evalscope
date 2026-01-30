@@ -71,8 +71,34 @@ FEWSHOT_TEMPLATE = """
         pretty_name='BBH',
         dataset_id='evalscope/bbh',
         tags=[Tags.REASONING],
-        description=
-        'The BBH (Big Bench Hard) benchmark is a collection of challenging tasks designed to evaluate the reasoning capabilities of AI models. It includes both free-form and multiple-choice tasks, covering a wide range of reasoning skills.',  # noqa: E501
+        description="""
+## Overview
+
+BBH (BIG-Bench Hard) is a subset of 23 challenging tasks from the BIG-Bench benchmark that are specifically selected because language models initially struggled with them. These tasks require complex reasoning abilities that benefit from Chain-of-Thought (CoT) prompting.
+
+## Task Description
+
+- **Task Type**: Mixed (Multiple-Choice and Free-Form)
+- **Input**: Task-specific questions requiring reasoning
+- **Output**: Answers in specified format
+- **Subsets**: 27 reasoning tasks divided into multiple-choice (17) and free-form (10)
+
+## Key Features
+
+- 27 challenging reasoning tasks from BIG-Bench
+- Multiple-choice tasks: temporal sequences, disambiguation, logical deduction, etc.
+- Free-form tasks: arithmetic, navigation, boolean expressions, etc.
+- Each task comes with curated Chain-of-Thought examples
+- Designed to test advanced reasoning capabilities
+
+## Evaluation Notes
+
+- Default configuration uses **3-shot** with CoT prompting (recommended)
+- CoT prompts are pre-defined for each subset in `cot_prompts/` directory
+- Answers should follow the format: "So the answer is [ANSWER]"
+- Setting `few_shot_num=0` disables few-shot examples
+- Multiple-choice answers are normalized to single letters (A, B, C, etc.)
+""",
         subset_list=SUBSET_LIST,
         few_shot_num=3,
         train_split=None,

@@ -34,9 +34,35 @@ Don't give information outside the document or repeat your findings."""
         name='needle_haystack',
         pretty_name='Needle-in-a-Haystack',
         tags=[Tags.RETRIEVAL, Tags.LONG_CONTEXT],
-        description='Needle in a Haystack is a benchmark focused on information retrieval tasks. '
-        'It requires the model to find specific information within a large corpus of text. '
-        '[Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/needle_haystack.html)',  # noqa: E501
+        description="""
+## Overview
+
+Needle in a Haystack is a benchmark focused on evaluating information retrieval capabilities in long-context scenarios. It tests a model's ability to find specific information (needles) within large documents (haystacks).
+
+## Task Description
+
+- **Task Type**: Long-Context Information Retrieval
+- **Input**: Long document with embedded target information + retrieval question
+- **Output**: Extracted target information (needle)
+- **Domains**: Long-context understanding, information retrieval
+
+## Key Features
+
+- Tests retrieval across varying context lengths (1K-32K+ tokens)
+- Tests retrieval at different document depths (0%-100%)
+- Supports both English and Chinese corpora
+- Generates synthetic samples with configurable parameters
+- Produces heatmap visualizations of performance
+
+## Evaluation Notes
+
+- Default context lengths: **1,000 to 32,000** tokens (configurable)
+- Default depth percentages: **0% to 100%** (configurable)
+- Primary metric: **Accuracy** on retrieval
+- Uses LLM judge for flexible answer matching
+- Configurable via extra_params: needles, context lengths, depth intervals, tokenizer
+- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/needle_haystack.html)
+""",  # noqa: E501
         dataset_id='AI-ModelScope/Needle-in-a-Haystack-Corpus',
         metric_list=['acc'],
         subset_list=['english', 'chinese'],

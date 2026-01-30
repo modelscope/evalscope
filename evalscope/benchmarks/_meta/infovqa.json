@@ -1,0 +1,153 @@
+{
+  "meta": {
+    "pretty_name": "InfoVQA",
+    "dataset_id": "lmms-lab/DocVQA",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Knowledge",
+      "QA"
+    ],
+    "metrics": [
+      "anls"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "InfographicVQA"
+    ],
+    "description": "\n## Overview\n\nInfoVQA (Infographic Visual Question Answering) is a benchmark designed to evaluate AI models' ability to answer questions based on information-dense images such as charts, graphs, diagrams, maps, and infographics. It focuses on understanding complex visual information presentations.\n\n## Task Description\n\n- **Task Type**: Infographic Question Answering\n- **Input**: Infographic image + natural language question\n- **Output**: Single word or phrase answer\n- **Domains**: Data visualization, information graphics, visual reasoning\n\n## Key Features\n\n- Focuses on information-dense visual content\n- Covers charts, graphs, diagrams, maps, and infographics\n- Requires understanding visual layouts and data representations\n- Tests information extraction and reasoning abilities\n- Questions vary in complexity from direct lookup to inference\n\n## Evaluation Notes\n\n- Default evaluation uses the **validation** split\n- Primary metric: **ANLS** (Average Normalized Levenshtein Similarity)\n- Answers should be in format \"ANSWER: [ANSWER]\"\n- Includes OCR text extraction as metadata for analysis\n- Uses same dataset source as DocVQA (InfographicVQA subset)\n",
+    "prompt_template": "Answer the question according to the image using a single word or phrase.\n{question}\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the question.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 2801,
+    "subset_stats": [
+      {
+        "name": "InfographicVQA",
+        "sample_count": 2801,
+        "prompt_length_mean": 273.38,
+        "prompt_length_min": 222,
+        "prompt_length_max": 390,
+        "prompt_length_std": 22.18,
+        "target_length_mean": 15.39,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 2801,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1000",
+              "1000x1125",
+              "1000x1293",
+              "1000x1403",
+              "1000x1413",
+              "1000x1500",
+              "1000x1816",
+              "1000x1913",
+              "1000x2002",
+              "1000x2442"
+            ],
+            "resolution_range": {
+              "min": "600x340",
+              "max": "6250x9375"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 273.38,
+      "min": 222,
+      "max": 390,
+      "std": 22.18
+    },
+    "target_length_mean": 15.39,
+    "computed_at": "2026-01-28T11:14:26.385869",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 2801,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1000x1000",
+          "1000x1125",
+          "1000x1293",
+          "1000x1403",
+          "1000x1413",
+          "1000x1500",
+          "1000x1816",
+          "1000x1913",
+          "1000x2002",
+          "1000x2442"
+        ],
+        "resolution_range": {
+          "min": "600x340",
+          "max": "6250x9375"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "03ab3147",
+          "content": [
+            {
+              "text": "Answer the question according to the image using a single word or phrase.\nWhich social platform has heavy female audience?\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the question."
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~249.7KB]"
+            }
+          ]
+        }
+      ],
+      "target": "[\"pinterest\"]",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "questionId": "98313",
+        "answer_type": [
+          "single span"
+        ],
+        "image_url": "https://blogs.constantcontact.com/wp-content/uploads/2019/03/Social-Media-Infographic.png",
+        "ocr": "['{\"PAGE\": [{\"BlockType\": \"PAGE\", \"Geometry\": {\"BoundingBox\": {\"Width\": 0.9994840025901794, \"Height\": 0.9997748732566833, \"Left\": 0.0, \"Top\": 0.0}, \"Polygon\": [{\"X\": 0.0, \"Y\": 0.0}, {\"X\": 0.9994840025901794, \"Y\": 0.0}, {\"X\": 0.999484002590179 ... [TRUNCATED] ... 184143, \"Y\": 0.9778721332550049}, {\"X\": 0.5701684951782227, \"Y\": 0.9778721332550049}, {\"X\": 0.5701684951782227, \"Y\": 0.9896419048309326}, {\"X\": 0.47732439637184143, \"Y\": 0.9896419048309326}]}, \"Id\": \"43af6e92-c2ef-483c-b947-8b2d2073d756\"}]}']"
+      }
+    },
+    "subset": "InfographicVQA",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# InfoVQA\n\n\n## Overview\n\nInfoVQA (Infographic Visual Question Answering) is a benchmark designed to evaluate AI models' ability to answer questions based on information-dense images such as charts, graphs, diagrams, maps, and infographics. It focuses on understanding complex visual information presentations.\n\n## Task Description\n\n- **Task Type**: Infographic Question Answering\n- **Input**: Infographic image + natural language question\n- **Output**: Single word or phrase answer\n- **Domains**: Data visualization, information graphics, visual reasoning\n\n## Key Features\n\n- Focuses on information-dense visual content\n- Covers charts, graphs, diagrams, maps, and infographics\n- Requires understanding visual layouts and data representations\n- Tests information extraction and reasoning abilities\n- Questions vary in complexity from direct lookup to inference\n\n## Evaluation Notes\n\n- Default evaluation uses the **validation** split\n- Primary metric: **ANLS** (Average Normalized Levenshtein Similarity)\n- Answers should be in format \"ANSWER: [ANSWER]\"\n- Includes OCR text extraction as metadata for analysis\n- Uses same dataset source as DocVQA (InfographicVQA subset)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `infovqa` |\n| **Dataset ID** | [lmms-lab/DocVQA](https://modelscope.cn/datasets/lmms-lab/DocVQA/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MultiModal`, `QA` |\n| **Metrics** | `anls` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 2,801 |\n| Prompt Length (Mean) | 273.38 chars |\n| Prompt Length (Min/Max) | 222 / 390 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 2,801 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 600x340 - 6250x9375 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `InfographicVQA`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"03ab3147\",\n      \"content\": [\n        {\n          \"text\": \"Answer the question according to the image using a single word or phrase.\\nWhich social platform has heavy female audience?\\nThe last line of your response should be of the form \\\"ANSWER: [ANSWER]\\\" (without quotes) where [ANSWER] is the answer to the question.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~249.7KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"[\\\"pinterest\\\"]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"questionId\": \"98313\",\n    \"answer_type\": [\n      \"single span\"\n    ],\n    \"image_url\": \"https://blogs.constantcontact.com/wp-content/uploads/2019/03/Social-Media-Infographic.png\",\n    \"ocr\": \"['{\\\"PAGE\\\": [{\\\"BlockType\\\": \\\"PAGE\\\", \\\"Geometry\\\": {\\\"BoundingBox\\\": {\\\"Width\\\": 0.9994840025901794, \\\"Height\\\": 0.9997748732566833, \\\"Left\\\": 0.0, \\\"Top\\\": 0.0}, \\\"Polygon\\\": [{\\\"X\\\": 0.0, \\\"Y\\\": 0.0}, {\\\"X\\\": 0.9994840025901794, \\\"Y\\\": 0.0}, {\\\"X\\\": 0.999484002590179 ... [TRUNCATED] ... 184143, \\\"Y\\\": 0.9778721332550049}, {\\\"X\\\": 0.5701684951782227, \\\"Y\\\": 0.9778721332550049}, {\\\"X\\\": 0.5701684951782227, \\\"Y\\\": 0.9896419048309326}, {\\\"X\\\": 0.47732439637184143, \\\"Y\\\": 0.9896419048309326}]}, \\\"Id\\\": \\\"43af6e92-c2ef-483c-b947-8b2d2073d756\\\"}]}']\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the question according to the image using a single word or phrase.\n{question}\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the question.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets infovqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['infovqa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# InfoVQA\n\n\n## 概述\n\nInfoVQA（信息图视觉问答）是一个用于评估 AI 模型基于信息密集型图像（如图表、图形、示意图、地图和信息图）回答问题能力的基准测试。该基准侧重于理解复杂的视觉信息呈现方式。\n\n## 任务描述\n\n- **任务类型**：信息图问答\n- **输入**：信息图图像 + 自然语言问题\n- **输出**：单个单词或短语形式的答案\n- **领域**：数据可视化、信息图形、视觉推理\n\n## 主要特点\n\n- 聚焦于信息密集型视觉内容\n- 涵盖图表、图形、示意图、地图和信息图\n- 需要理解视觉布局和数据表示方式\n- 测试信息提取与推理能力\n- 问题复杂度从直接查找到推理不等\n\n## 评估说明\n\n- 默认使用 **验证集**（validation split）进行评估\n- 主要指标：**ANLS**（Average Normalized Levenshtein Similarity，平均归一化编辑距离相似度）\n- 答案格式应为 `\"ANSWER: [ANSWER]\"`\n- 包含 OCR 文本提取结果作为元数据供分析使用\n- 使用与 DocVQA 相同的数据源（InfographicVQA 子集）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `infovqa` |\n| **数据集 ID** | [lmms-lab/DocVQA](https://modelscope.cn/datasets/lmms-lab/DocVQA/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MultiModal`, `QA` |\n| **指标** | `anls` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `validation` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 2,801 |\n| 提示词长度（平均） | 273.38 字符 |\n| 提示词长度（最小/最大） | 222 / 390 字符 |\n\n**图像统计：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 2,801 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 600x340 - 6250x9375 |\n| 格式 | jpeg |\n\n\n## 样例示例\n\n**子集**：`InfographicVQA`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"03ab3147\",\n      \"content\": [\n        {\n          \"text\": \"Answer the question according to the image using a single word or phrase.\\nWhich social platform has heavy female audience?\\nThe last line of your response should be of the form \\\"ANSWER: [ANSWER]\\\" (without quotes) where [ANSWER] is the answer to the question.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~249.7KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"[\\\"pinterest\\\"]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"questionId\": \"98313\",\n    \"answer_type\": [\n      \"single span\"\n    ],\n    \"image_url\": \"https://blogs.constantcontact.com/wp-content/uploads/2019/03/Social-Media-Infographic.png\",\n    \"ocr\": \"['{\\\"PAGE\\\": [{\\\"BlockType\\\": \\\"PAGE\\\", \\\"Geometry\\\": {\\\"BoundingBox\\\": {\\\"Width\\\": 0.9994840025901794, \\\"Height\\\": 0.9997748732566833, \\\"Left\\\": 0.0, \\\"Top\\\": 0.0}, \\\"Polygon\\\": [{\\\"X\\\": 0.0, \\\"Y\\\": 0.0}, {\\\"X\\\": 0.9994840025901794, \\\"Y\\\": 0.0}, {\\\"X\\\": 0.999484002590179 ... [TRUNCATED] ... 184143, \\\"Y\\\": 0.9778721332550049}, {\\\"X\\\": 0.5701684951782227, \\\"Y\\\": 0.9778721332550049}, {\\\"X\\\": 0.5701684951782227, \\\"Y\\\": 0.9896419048309326}, {\\\"X\\\": 0.47732439637184143, \\\"Y\\\": 0.9896419048309326}]}, \\\"Id\\\": \\\"43af6e92-c2ef-483c-b947-8b2d2073d756\\\"}]}']\"\n  }\n}\n```\n\n*注：部分内容因显示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the question according to the image using a single word or phrase.\n{question}\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the question.\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets infovqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['infovqa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "d2e1a3f13a401f09bcb9ac92a984fa33",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.263399",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

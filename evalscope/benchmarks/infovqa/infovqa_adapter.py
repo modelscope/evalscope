@@ -22,8 +22,34 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
         name='infovqa',
         pretty_name='InfoVQA',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
-        description=
-        'InfoVQA (Information Visual Question Answering) is a benchmark designed to evaluate how well AI models can answer questions based on information-dense images, such as charts, graphs, diagrams, maps, and infographics.',  # noqa: E501
+        description="""
+## Overview
+
+InfoVQA (Infographic Visual Question Answering) is a benchmark designed to evaluate AI models' ability to answer questions based on information-dense images such as charts, graphs, diagrams, maps, and infographics. It focuses on understanding complex visual information presentations.
+
+## Task Description
+
+- **Task Type**: Infographic Question Answering
+- **Input**: Infographic image + natural language question
+- **Output**: Single word or phrase answer
+- **Domains**: Data visualization, information graphics, visual reasoning
+
+## Key Features
+
+- Focuses on information-dense visual content
+- Covers charts, graphs, diagrams, maps, and infographics
+- Requires understanding visual layouts and data representations
+- Tests information extraction and reasoning abilities
+- Questions vary in complexity from direct lookup to inference
+
+## Evaluation Notes
+
+- Default evaluation uses the **validation** split
+- Primary metric: **ANLS** (Average Normalized Levenshtein Similarity)
+- Answers should be in format "ANSWER: [ANSWER]"
+- Includes OCR text extraction as metadata for analysis
+- Uses same dataset source as DocVQA (InfographicVQA subset)
+""",  # noqa: E501
         dataset_id='lmms-lab/DocVQA',
         subset_list=['InfographicVQA'],
         metric_list=['anls'],

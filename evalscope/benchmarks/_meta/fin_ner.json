@@ -1,0 +1,150 @@
+{
+  "meta": {
+    "pretty_name": "FinNER",
+    "dataset_id": "extraordinarylab/fin-ner",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nThe FinNER dataset is a corpus of financial agreements from public U.S. Security and Exchange Commission (SEC) filings, annotated with Person, Organization, Location, and Miscellaneous entities to support information extraction for credit risk assessment.\n\n## Task Description\n\n- **Task Type**: Financial Named Entity Recognition (NER)\n- **Input**: Financial agreement text from SEC filings\n- **Output**: Identified entity spans with types\n- **Domain**: Finance, legal documents, credit risk\n\n## Key Features\n\n- Financial agreements from SEC filings\n- Annotated for credit risk assessment applications\n- Standard NER entity types adapted for finance\n- Specialized for financial document processing\n- Useful for legal and financial AI applications\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: PER, ORG, LOC, MISC\n",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 305,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 305,
+        "prompt_length_mean": 2891.13,
+        "prompt_length_min": 2663,
+        "prompt_length_max": 6149,
+        "prompt_length_std": 344.19,
+        "target_length_mean": 272.68
+      }
+    ],
+    "prompt_length": {
+      "mean": 2891.13,
+      "min": 2663,
+      "max": 6149,
+      "std": 344.19
+    },
+    "target_length_mean": 272.68,
+    "computed_at": "2026-01-28T14:14:51.455155"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "d8a8baf8",
+          "content": "Here are some examples of named entity recognition:\n\nInput:\n( l ) \" Tranche A Shares \" has the meaning as defined in the Subscription Agreement .\n\nOutput:\n<response>( l ) \" Tranche A Shares \" has the meaning as defined in the Subscription Agr ... [TRUNCATED] ... osing tag.\n\nText to process:\nSubordinated Loan Agreement - Silicium de Provence SAS and Evergreen Solar Inc . 7 - December 2007 [ HERBERT SMITH LOGO ] ................................ 2007 SILICIUM DE PROVENCE SAS and EVERGREEN SOLAR , INC .\n"
+        }
+      ],
+      "target": "<response>Subordinated Loan Agreement - <organization>Silicium de Provence SAS</organization> and <organization>Evergreen Solar Inc</organization> . 7 - December 2007 [ <person>HERBERT SMITH</person> LOGO ] ................................ 2007 <organization>SILICIUM DE PROVENCE SAS</organization> and <organization>EVERGREEN SOLAR</organization> , INC .</response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "Subordinated",
+          "Loan",
+          "Agreement",
+          "-",
+          "Silicium",
+          "de",
+          "Provence",
+          "SAS",
+          "and",
+          "Evergreen",
+          "Solar",
+          "Inc",
+          ".",
+          "7",
+          "-",
+          "December",
+          "2007",
+          "[",
+          "HERBERT",
+          "SMITH",
+          "LOGO",
+          "]",
+          "................................",
+          "2007",
+          "SILICIUM",
+          "DE",
+          "PROVENCE",
+          "SAS",
+          "and",
+          "EVERGREEN",
+          "SOLAR",
+          ",",
+          "INC",
+          "."
+        ],
+        "ner_tags": [
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-ORG",
+          "I-ORG",
+          "I-ORG",
+          "I-ORG",
+          "O",
+          "B-ORG",
+          "I-ORG",
+          "I-ORG",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-PER",
+          "I-PER",
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-ORG",
+          "I-ORG",
+          "I-ORG",
+          "I-ORG",
+          "O",
+          "B-ORG",
+          "I-ORG",
+          "O",
+          "O",
+          "O"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# FinNER\n\n\n## Overview\n\nThe FinNER dataset is a corpus of financial agreements from public U.S. Security and Exchange Commission (SEC) filings, annotated with Person, Organization, Location, and Miscellaneous entities to support information extraction for credit risk assessment.\n\n## Task Description\n\n- **Task Type**: Financial Named Entity Recognition (NER)\n- **Input**: Financial agreement text from SEC filings\n- **Output**: Identified entity spans with types\n- **Domain**: Finance, legal documents, credit risk\n\n## Key Features\n\n- Financial agreements from SEC filings\n- Annotated for credit risk assessment applications\n- Standard NER entity types adapted for finance\n- Specialized for financial document processing\n- Useful for legal and financial AI applications\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: PER, ORG, LOC, MISC\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `fin_ner` |\n| **Dataset ID** | [extraordinarylab/fin-ner](https://modelscope.cn/datasets/extraordinarylab/fin-ner/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 305 |\n| Prompt Length (Mean) | 2891.13 chars |\n| Prompt Length (Min/Max) | 2663 / 6149 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d8a8baf8\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\n( l ) \\\" Tranche A Shares \\\" has the meaning as defined in the Subscription Agreement .\\n\\nOutput:\\n<response>( l ) \\\" Tranche A Shares \\\" has the meaning as defined in the Subscription Agr ... [TRUNCATED] ... osing tag.\\n\\nText to process:\\nSubordinated Loan Agreement - Silicium de Provence SAS and Evergreen Solar Inc . 7 - December 2007 [ HERBERT SMITH LOGO ] ................................ 2007 SILICIUM DE PROVENCE SAS and EVERGREEN SOLAR , INC .\\n\"\n    }\n  ],\n  \"target\": \"<response>Subordinated Loan Agreement - <organization>Silicium de Provence SAS</organization> and <organization>Evergreen Solar Inc</organization> . 7 - December 2007 [ <person>HERBERT SMITH</person> LOGO ] ................................ 2007 <organization>SILICIUM DE PROVENCE SAS</organization> and <organization>EVERGREEN SOLAR</organization> , INC .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"Subordinated\",\n      \"Loan\",\n      \"Agreement\",\n      \"-\",\n      \"Silicium\",\n      \"de\",\n      \"Provence\",\n      \"SAS\",\n      \"and\",\n      \"Evergreen\",\n      \"Solar\",\n      \"Inc\",\n      \".\",\n      \"7\",\n      \"-\",\n      \"December\",\n      \"2007\",\n      \"[\",\n      \"HERBERT\",\n      \"SMITH\",\n      \"LOGO\",\n      \"]\",\n      \"................................\",\n      \"2007\",\n      \"SILICIUM\",\n      \"DE\",\n      \"PROVENCE\",\n      \"SAS\",\n      \"and\",\n      \"EVERGREEN\",\n      \"SOLAR\",\n      \",\",\n      \"INC\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-ORG\",\n      \"I-ORG\",\n      \"I-ORG\",\n      \"I-ORG\",\n      \"O\",\n      \"B-ORG\",\n      \"I-ORG\",\n      \"I-ORG\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-PER\",\n      \"I-PER\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-ORG\",\n      \"I-ORG\",\n      \"I-ORG\",\n      \"I-ORG\",\n      \"O\",\n      \"B-ORG\",\n      \"I-ORG\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets fin_ner \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['fin_ner'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# FinNER\n\n\n## 概述\n\nFinNER 数据集是一个来自美国证券交易委员会（SEC）公开文件中的金融协议语料库，标注了人物（Person）、组织（Organization）、地点（Location）和杂项（Miscellaneous）实体，用于支持信用风险评估中的信息抽取任务。\n\n## 任务描述\n\n- **任务类型**：金融命名实体识别（NER）\n- **输入**：来自 SEC 文件的金融协议文本\n- **输出**：识别出的实体片段及其类型\n- **领域**：金融、法律文档、信用风险\n\n## 主要特点\n\n- 来自 SEC 文件的金融协议\n- 针对信用风险评估应用进行标注\n- 采用适用于金融领域的标准 NER 实体类型\n- 专为金融文档处理设计\n- 适用于法律与金融领域的 AI 应用\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 评估\n- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）\n- 实体类型：PER（人物）、ORG（组织）、LOC（地点）、MISC（杂项）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `fin_ner` |\n| **数据集 ID** | [extraordinarylab/fin-ner](https://modelscope.cn/datasets/extraordinarylab/fin-ner/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认示例数量** | 5-shot |\n| **评估集** | `test` |\n| **训练集** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 305 |\n| 提示词长度（平均） | 2891.13 字符 |\n| 提示词长度（最小/最大） | 2663 / 6149 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d8a8baf8\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\n( l ) \\\" Tranche A Shares \\\" has the meaning as defined in the Subscription Agreement .\\n\\nOutput:\\n<response>( l ) \\\" Tranche A Shares \\\" has the meaning as defined in the Subscription Agr ... [TRUNCATED] ... osing tag.\\n\\nText to process:\\nSubordinated Loan Agreement - Silicium de Provence SAS and Evergreen Solar Inc . 7 - December 2007 [ HERBERT SMITH LOGO ] ................................ 2007 SILICIUM DE PROVENCE SAS and EVERGREEN SOLAR , INC .\\n\"\n    }\n  ],\n  \"target\": \"<response>Subordinated Loan Agreement - <organization>Silicium de Provence SAS</organization> and <organization>Evergreen Solar Inc</organization> . 7 - December 2007 [ <person>HERBERT SMITH</person> LOGO ] ................................ 2007 <organization>SILICIUM DE PROVENCE SAS</organization> and <organization>EVERGREEN SOLAR</organization> , INC .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"Subordinated\",\n      \"Loan\",\n      \"Agreement\",\n      \"-\",\n      \"Silicium\",\n      \"de\",\n      \"Provence\",\n      \"SAS\",\n      \"and\",\n      \"Evergreen\",\n      \"Solar\",\n      \"Inc\",\n      \".\",\n      \"7\",\n      \"-\",\n      \"December\",\n      \"2007\",\n      \"[\",\n      \"HERBERT\",\n      \"SMITH\",\n      \"LOGO\",\n      \"]\",\n      \"................................\",\n      \"2007\",\n      \"SILICIUM\",\n      \"DE\",\n      \"PROVENCE\",\n      \"SAS\",\n      \"and\",\n      \"EVERGREEN\",\n      \"SOLAR\",\n      \",\",\n      \"INC\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-ORG\",\n      \"I-ORG\",\n      \"I-ORG\",\n      \"I-ORG\",\n      \"O\",\n      \"B-ORG\",\n      \"I-ORG\",\n      \"I-ORG\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-PER\",\n      \"I-PER\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-ORG\",\n      \"I-ORG\",\n      \"I-ORG\",\n      \"I-ORG\",\n      \"O\",\n      \"B-ORG\",\n      \"I-ORG\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本（Few-shot）模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets fin_ner \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['fin_ner'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "9ce78da39656a2920de85373581889d9",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.356575",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

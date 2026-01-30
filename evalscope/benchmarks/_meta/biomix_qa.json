@@ -1,0 +1,82 @@
+{
+  "meta": {
+    "pretty_name": "BioMixQA",
+    "dataset_id": "extraordinarylab/biomix-qa",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "Medical"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nBiomixQA is a curated biomedical question-answering dataset designed to evaluate AI models on biomedical knowledge and reasoning. It has been utilized to validate the Knowledge Graph based Retrieval-Augmented Generation (KG-RAG) framework across different LLMs.\n\n## Task Description\n\n- **Task Type**: Biomedical Multiple-Choice Question Answering\n- **Input**: Biomedical question with multiple answer choices\n- **Output**: Correct answer letter\n- **Domain**: Biomedical sciences, healthcare, life sciences\n\n## Key Features\n\n- Curated biomedical questions from diverse sources\n- Tests medical and biological knowledge comprehension\n- Validates RAG framework effectiveness for biomedical domain\n- Multiple-choice format for standardized evaluation\n- Useful for evaluating healthcare AI systems\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Simple accuracy metric for performance measurement\n- Evaluates on test split\n- No few-shot examples provided",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 306,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 306,
+        "prompt_length_mean": 344.93,
+        "prompt_length_min": 316,
+        "prompt_length_max": 393,
+        "prompt_length_std": 14.45,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 344.93,
+      "min": 316,
+      "max": 393,
+      "std": 14.45
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:12:38.386063"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "5e830918",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E.\n\nOut of the given list, which Gene is associated with head and neck cancer and uveal melanoma.\n\nA) ABO\nB) CACNA2D1\nC) PSCA\nD) TERT\nE) SULT1B1"
+        }
+      ],
+      "choices": [
+        "ABO",
+        "CACNA2D1",
+        "PSCA",
+        "TERT",
+        "SULT1B1"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {}
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# BioMixQA\n\n## Overview\n\nBiomixQA is a curated biomedical question-answering dataset designed to evaluate AI models on biomedical knowledge and reasoning. It has been utilized to validate the Knowledge Graph based Retrieval-Augmented Generation (KG-RAG) framework across different LLMs.\n\n## Task Description\n\n- **Task Type**: Biomedical Multiple-Choice Question Answering\n- **Input**: Biomedical question with multiple answer choices\n- **Output**: Correct answer letter\n- **Domain**: Biomedical sciences, healthcare, life sciences\n\n## Key Features\n\n- Curated biomedical questions from diverse sources\n- Tests medical and biological knowledge comprehension\n- Validates RAG framework effectiveness for biomedical domain\n- Multiple-choice format for standardized evaluation\n- Useful for evaluating healthcare AI systems\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Simple accuracy metric for performance measurement\n- Evaluates on test split\n- No few-shot examples provided\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `biomix_qa` |\n| **Dataset ID** | [extraordinarylab/biomix-qa](https://modelscope.cn/datasets/extraordinarylab/biomix-qa/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `Medical` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 306 |\n| Prompt Length (Mean) | 344.93 chars |\n| Prompt Length (Min/Max) | 316 / 393 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"5e830918\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E.\\n\\nOut of the given list, which Gene is associated with head and neck cancer and uveal melanoma.\\n\\nA) ABO\\nB) CACNA2D1\\nC) PSCA\\nD) TERT\\nE) SULT1B1\"\n    }\n  ],\n  \"choices\": [\n    \"ABO\",\n    \"CACNA2D1\",\n    \"PSCA\",\n    \"TERT\",\n    \"SULT1B1\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets biomix_qa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['biomix_qa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# BioMixQA\n\n## 概述\n\nBioMixQA 是一个精心整理的生物医学问答数据集，旨在评估 AI 模型在生物医学知识与推理方面的能力。该数据集已被用于验证基于知识图谱的检索增强生成（KG-RAG）框架在不同大语言模型（LLMs）上的有效性。\n\n## 任务描述\n\n- **任务类型**：生物医学多选题问答\n- **输入**：包含多个选项的生物医学问题\n- **输出**：正确答案对应的字母\n- **领域**：生物医学、医疗健康、生命科学\n\n## 主要特点\n\n- 问题来源于多样化的生物医学资源\n- 考察对医学与生物学知识的理解能力\n- 验证 RAG 框架在生物医学领域的有效性\n- 采用多选题格式以实现标准化评估\n- 适用于评估医疗健康领域的 AI 系统\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估方式\n- 使用简单准确率（accuracy）作为性能指标\n- 在测试集（test split）上进行评估\n- 未提供 few-shot 示例\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `biomix_qa` |\n| **数据集ID** | [extraordinarylab/biomix-qa](https://modelscope.cn/datasets/extraordinarylab/biomix-qa/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ`, `Medical` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 306 |\n| 提示词长度（平均） | 344.93 字符 |\n| 提示词长度（最小/最大） | 316 / 393 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"5e830918\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E.\\n\\nOut of the given list, which Gene is associated with head and neck cancer and uveal melanoma.\\n\\nA) ABO\\nB) CACNA2D1\\nC) PSCA\\nD) TERT\\nE) SULT1B1\"\n    }\n  ],\n  \"choices\": [\n    \"ABO\",\n    \"CACNA2D1\",\n    \"PSCA\",\n    \"TERT\",\n    \"SULT1B1\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets biomix_qa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['biomix_qa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "c178d2dfecd02f7c00c02e626e08050b",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.192148",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

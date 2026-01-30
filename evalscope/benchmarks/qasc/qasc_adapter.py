@@ -4,10 +4,33 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
-DESCRIPTION = (
-    'QASC is a question-answering dataset with a focus on sentence composition. '
-    'It consists of 9,980 8-way multiple-choice questions about grade school science.'
-)
+DESCRIPTION = """
+## Overview
+
+QASC (Question Answering via Sentence Composition) is a question-answering dataset with a focus on multi-hop sentence composition. It consists of 9,980 8-way multiple-choice questions about grade school science, requiring models to combine multiple facts to arrive at the correct answer.
+
+## Task Description
+
+- **Task Type**: Multi-hop Science Question Answering (Multiple-Choice)
+- **Input**: Science question with 8 answer choices
+- **Output**: Correct answer letter
+- **Focus**: Sentence composition and multi-hop reasoning
+
+## Key Features
+
+- 9,980 grade school science questions
+- 8-way multiple-choice format
+- Requires composing two facts to answer
+- Tests multi-hop reasoning over scientific knowledge
+- Annotated with supporting facts for each question
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Evaluates on validation split
+- Simple accuracy metric
+- Useful for evaluating compositional reasoning
+"""
 
 
 @register_benchmark(

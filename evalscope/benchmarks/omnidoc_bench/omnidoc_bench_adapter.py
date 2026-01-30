@@ -46,11 +46,32 @@ PROMPT_TEMPLATE = r""" You are an AI assistant specialized in converting PDF ima
         name='omni_doc_bench',
         pretty_name='OmniDocBench',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
-        description=
-        """OmniDocBench is an evaluation dataset for diverse document parsing in real-world scenarios, with the following characteristics:
-- Diverse Document Types: The evaluation set contains 1355 PDF pages, covering 9 document types, 4 layout types and 3 language types. It has broad coverage including academic papers, financial reports, newspapers, textbooks, handwritten notes, etc.
-- Rich Annotations: Contains location information for 15 block-level (text paragraphs, titles, tables, etc., over 20k in total) and 4 span-level (text lines, inline formulas, superscripts/subscripts, etc., over 80k in total) document elements, as well as recognition results for each element region (text annotations, LaTeX formula annotations, tables with both LaTeX and HTML annotations). OmniDocBench also provides reading order annotations for document components. Additionally, it includes various attribute labels at page and block levels, with 5 page attribute labels, 3 text attribute labels and 6 table attribute labels.
-**The evaluation in EvalScope implements the `end2end` and `quick_match` methods from the official [OmniDocBench-v1.5 repository](https://github.com/opendatalab/OmniDocBench).**
+        description="""
+## Overview
+
+OmniDocBench is an evaluation dataset for diverse document parsing in real-world scenarios, covering 9 document types, 4 layout types, and 3 language types with 1,355 PDF pages.
+
+## Task Description
+
+- **Task Type**: Document Parsing and Understanding
+- **Input**: PDF page image
+- **Output**: Parsed document structure in Markdown format
+- **Domain**: Document understanding, OCR, layout analysis
+
+## Key Features
+
+- 1,355 PDF pages across 9 document types
+- Rich annotations: 15 block-level and 4 span-level element types
+- Over 20k block-level and 80k span-level annotations
+- Reading order annotations
+- Coverage: academic papers, financial reports, newspapers, textbooks, handwritten notes
+
+## Evaluation Notes
+
+- Implements `end2end` and `quick_match` methods from official OmniDocBench-v1.5
+- Metrics: Edit_dist, BLEU, METEOR (text), TEDS (tables)
+- Requires: apted, distance, lxml, Polygon3, zss, rapidfuzz packages
+- Output format: Markdown with LaTeX formulas and HTML tables
 """,  # noqa: E501
         dataset_id='evalscope/OmniDocBench_tsv',
         metric_list=[

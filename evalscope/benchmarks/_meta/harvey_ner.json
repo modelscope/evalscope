@@ -1,0 +1,124 @@
+{
+  "meta": {
+    "pretty_name": "HarveyNER",
+    "dataset_id": "extraordinarylab/harvey-ner",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nHarveyNER is a dataset with fine-grained locations annotated in tweets, collected during Hurricane Harvey. It presents unique challenges with complex and long location mentions in informal crisis-related descriptions.\n\n## Task Description\n\n- **Task Type**: Crisis-Domain Location Named Entity Recognition (NER)\n- **Input**: Hurricane Harvey-related tweets\n- **Output**: Fine-grained location entity spans\n- **Domain**: Crisis communication, disaster response\n\n## Key Features\n\n- Fine-grained location annotations in tweets\n- Complex and long location mentions\n- Informal crisis-related text\n- Four location entity types (AREA, POINT, RIVER, ROAD)\n- Useful for disaster response NLP applications\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: AREA, POINT, RIVER, ROAD",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 1303,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1303,
+        "prompt_length_mean": 3018.97,
+        "prompt_length_min": 2909,
+        "prompt_length_max": 3199,
+        "prompt_length_std": 44.14,
+        "target_length_mean": 147.31
+      }
+    ],
+    "prompt_length": {
+      "mean": 3018.97,
+      "min": 2909,
+      "max": 3199,
+      "std": 44.14
+    },
+    "target_length_mean": 147.31,
+    "computed_at": "2026-01-28T14:14:57.360318"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "629de70e",
+          "content": "Here are some examples of named entity recognition:\n\nInput:\nJust received word that UHVictoria and Bayou Oaks residents are in need of blankets , pillows , and clothes ( men & amp ; women ) . ( PT1 )\n\nOutput:\n<response>Just received word that ... [TRUNCATED] ... lap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\nBREAKING : One firefighter injured after a fire / apparent explosion at the Lone Star Legal Aid Services in Downtown Houston\n"
+        }
+      ],
+      "target": "<response>BREAKING : One firefighter injured after a fire / apparent explosion at the <point>Lone Star Legal Aid Services in Downtown Houston</point></response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "BREAKING",
+          ":",
+          "One",
+          "firefighter",
+          "injured",
+          "after",
+          "a",
+          "fire",
+          "/",
+          "apparent",
+          "explosion",
+          "at",
+          "the",
+          "Lone",
+          "Star",
+          "Legal",
+          "Aid",
+          "Services",
+          "in",
+          "Downtown",
+          "Houston"
+        ],
+        "ner_tags": [
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-POINT",
+          "I-POINT",
+          "I-POINT",
+          "I-POINT",
+          "I-POINT",
+          "I-POINT",
+          "I-POINT",
+          "I-POINT"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# HarveyNER\n\n## Overview\n\nHarveyNER is a dataset with fine-grained locations annotated in tweets, collected during Hurricane Harvey. It presents unique challenges with complex and long location mentions in informal crisis-related descriptions.\n\n## Task Description\n\n- **Task Type**: Crisis-Domain Location Named Entity Recognition (NER)\n- **Input**: Hurricane Harvey-related tweets\n- **Output**: Fine-grained location entity spans\n- **Domain**: Crisis communication, disaster response\n\n## Key Features\n\n- Fine-grained location annotations in tweets\n- Complex and long location mentions\n- Informal crisis-related text\n- Four location entity types (AREA, POINT, RIVER, ROAD)\n- Useful for disaster response NLP applications\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: AREA, POINT, RIVER, ROAD\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `harvey_ner` |\n| **Dataset ID** | [extraordinarylab/harvey-ner](https://modelscope.cn/datasets/extraordinarylab/harvey-ner/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,303 |\n| Prompt Length (Mean) | 3018.97 chars |\n| Prompt Length (Min/Max) | 2909 / 3199 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"629de70e\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nJust received word that UHVictoria and Bayou Oaks residents are in need of blankets , pillows , and clothes ( men & amp ; women ) . ( PT1 )\\n\\nOutput:\\n<response>Just received word that ... [TRUNCATED] ... lap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\nBREAKING : One firefighter injured after a fire / apparent explosion at the Lone Star Legal Aid Services in Downtown Houston\\n\"\n    }\n  ],\n  \"target\": \"<response>BREAKING : One firefighter injured after a fire / apparent explosion at the <point>Lone Star Legal Aid Services in Downtown Houston</point></response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"BREAKING\",\n      \":\",\n      \"One\",\n      \"firefighter\",\n      \"injured\",\n      \"after\",\n      \"a\",\n      \"fire\",\n      \"/\",\n      \"apparent\",\n      \"explosion\",\n      \"at\",\n      \"the\",\n      \"Lone\",\n      \"Star\",\n      \"Legal\",\n      \"Aid\",\n      \"Services\",\n      \"in\",\n      \"Downtown\",\n      \"Houston\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-POINT\",\n      \"I-POINT\",\n      \"I-POINT\",\n      \"I-POINT\",\n      \"I-POINT\",\n      \"I-POINT\",\n      \"I-POINT\",\n      \"I-POINT\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets harvey_ner \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['harvey_ner'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# HarveyNER\n\n## 概述\n\nHarveyNER 是一个在飓风哈维（Hurricane Harvey）期间收集的推文数据集，其中标注了细粒度的位置信息。该数据集在非正式的危机相关描述中包含复杂且较长的位置提及，带来了独特的挑战。\n\n## 任务描述\n\n- **任务类型**：危机领域位置命名实体识别（NER）\n- **输入**：与飓风哈维相关的推文\n- **输出**：细粒度的位置实体片段\n- **领域**：危机通信、灾害响应\n\n## 主要特点\n\n- 推文中包含细粒度的位置标注\n- 位置提及复杂且长度较长\n- 非正式的危机相关文本\n- 四种位置实体类型（AREA、POINT、RIVER、ROAD）\n- 适用于灾害响应相关的自然语言处理应用\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 评估\n- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）\n- 实体类型：AREA、POINT、RIVER、ROAD\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `harvey_ner` |\n| **数据集ID** | [extraordinarylab/harvey-ner](https://modelscope.cn/datasets/extraordinarylab/harvey-ner/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认示例数量** | 5-shot |\n| **评估划分** | `test` |\n| **训练划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,303 |\n| 提示词长度（平均） | 3018.97 字符 |\n| 提示词长度（最小/最大） | 2909 / 3199 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"629de70e\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nJust received word that UHVictoria and Bayou Oaks residents are in need of blankets , pillows , and clothes ( men & amp ; women ) . ( PT1 )\\n\\nOutput:\\n<response>Just received word that ... [TRUNCATED] ... lap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\nBREAKING : One firefighter injured after a fire / apparent explosion at the Lone Star Legal Aid Services in Downtown Houston\\n\"\n    }\n  ],\n  \"target\": \"<response>BREAKING : One firefighter injured after a fire / apparent explosion at the <point>Lone Star Legal Aid Services in Downtown Houston</point></response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"BREAKING\",\n      \":\",\n      \"One\",\n      \"firefighter\",\n      \"injured\",\n      \"after\",\n      \"a\",\n      \"fire\",\n      \"/\",\n      \"apparent\",\n      \"explosion\",\n      \"at\",\n      \"the\",\n      \"Lone\",\n      \"Star\",\n      \"Legal\",\n      \"Aid\",\n      \"Services\",\n      \"in\",\n      \"Downtown\",\n      \"Houston\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-POINT\",\n      \"I-POINT\",\n      \"I-POINT\",\n      \"I-POINT\",\n      \"I-POINT\",\n      \"I-POINT\",\n      \"I-POINT\",\n      \"I-POINT\"\n    ]\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets harvey_ner \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['harvey_ner'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "6cfda6091549113babcba43dd00ae322",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.357175",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

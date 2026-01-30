@@ -16,8 +16,33 @@ PROMPT = """You are an expert Python programmer, and here is your task: {questio
 
 {tests}"""  # noqa: E501
 
-DESCRIPTION = """MBPP Plus is a fortified version of the Mostly Basic Python Problems (MBPP) benchmark, created to improve the reliability of evaluating basic programming synthesis. It addresses quality issues in the original dataset—such as incorrect reference code or ambiguous problem statements—and significantly increases the test coverage for each problem. By combining sanitized data with a vast array of rigorous, automated test cases, MBPP Plus ensures that models are assessed on their ability to produce robust, functionally correct solutions rather than code that simply passes a few trivial checks.
-**By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
+DESCRIPTION = """
+## Overview
+
+MBPP Plus is a fortified version of the MBPP benchmark, created to improve evaluation reliability for basic Python programming synthesis. It addresses quality issues in the original dataset and significantly increases test coverage for each problem.
+
+## Task Description
+
+- **Task Type**: Code Generation (Python)
+- **Input**: Programming task description with test assertions
+- **Output**: Python function implementation
+- **Improvements**: Sanitized data with expanded test suites
+
+## Key Features
+
+- Corrected reference code and clarified problem statements
+- Massively expanded test cases per problem (automated generation)
+- LLM-based and mutation-based test generation strategies
+- Exposes edge-case bugs missed by original MBPP
+- More rigorous and accurate code correctness evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- **Security Warning**: By default, code is executed in the local environment. We strongly recommend using sandbox execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.
+- Supports `pass@k` metric calculation
+- Default timeout is 20 seconds per problem
+- Stricter evaluation than original MBPP benchmark
 """  # noqa: E501
 
 

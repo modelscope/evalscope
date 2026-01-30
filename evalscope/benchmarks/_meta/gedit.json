@@ -1,0 +1,581 @@
+{
+  "meta": {
+    "pretty_name": "GEdit-Bench",
+    "dataset_id": "stepfun-ai/GEdit-Bench",
+    "paper_url": null,
+    "tags": [
+      "ImageEditing"
+    ],
+    "metrics": [
+      "Semantic Consistency",
+      "Perceptual Similarity"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "background_change",
+      "color_alter",
+      "material_alter",
+      "motion_change",
+      "ps_human",
+      "style_change",
+      "subject-add",
+      "subject-remove",
+      "subject-replace",
+      "text_change",
+      "tone_transfer"
+    ],
+    "description": "\n## Overview\n\nGEdit-Bench (Grounded Edit Benchmark) is an image editing benchmark grounded in real-world usage scenarios. It provides comprehensive evaluation of image editing models across diverse editing tasks with LLM-based judging.\n\n## Task Description\n\n- **Task Type**: Image Editing Evaluation\n- **Input**: Source image + editing instruction\n- **Output**: Edited image evaluated by LLM judge\n- **Languages**: English (en) and Chinese (cn)\n\n## Key Features\n\n- Real-world editing scenarios (background change, color alter, style transfer, etc.)\n- 11 editing task categories\n- LLM-based evaluation for semantic consistency and perceptual quality\n- Supports both English and Chinese instructions\n- Comprehensive scoring: Semantic Consistency, Perceptual Quality, Overall\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on **train** split (contains test samples)\n- Metrics: **Semantic Consistency**, **Perceptual Similarity** (via LLM judge)\n- Overall score: geometric mean of SC and PQ scores\n- Configure language via `extra_params['language']` (en/cn)\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "language": {
+        "type": "str",
+        "description": "Language of the instruction. Choices: ['en', 'cn'].",
+        "value": "en",
+        "choices": [
+          "en",
+          "cn"
+        ]
+      }
+    },
+    "sandbox_config": {},
+    "category": "aigc"
+  },
+  "statistics": {
+    "total_samples": 606,
+    "subset_stats": [
+      {
+        "name": "background_change",
+        "sample_count": 40,
+        "prompt_length_mean": 50.2,
+        "prompt_length_min": 29,
+        "prompt_length_max": 158,
+        "prompt_length_std": 26.66,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 40,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "384x640",
+              "416x608",
+              "416x672",
+              "448x576",
+              "480x576",
+              "512x512",
+              "608x416",
+              "608x448",
+              "704x384",
+              "736x352"
+            ],
+            "resolution_range": {
+              "min": "384x640",
+              "max": "416x672"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "color_alter",
+        "sample_count": 40,
+        "prompt_length_mean": 41.5,
+        "prompt_length_min": 23,
+        "prompt_length_max": 143,
+        "prompt_length_std": 19.96,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 40,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "320x768",
+              "384x640",
+              "480x576",
+              "512x512",
+              "544x480",
+              "576x448",
+              "576x480",
+              "608x416",
+              "608x448",
+              "640x416"
+            ],
+            "resolution_range": {
+              "min": "384x640",
+              "max": "480x576"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "material_alter",
+        "sample_count": 40,
+        "prompt_length_mean": 40.8,
+        "prompt_length_min": 18,
+        "prompt_length_max": 60,
+        "prompt_length_std": 9.37,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 40,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "384x640",
+              "416x672",
+              "480x576",
+              "512x512",
+              "512x544",
+              "608x416",
+              "608x448",
+              "704x384"
+            ],
+            "resolution_range": {
+              "min": "384x640",
+              "max": "416x672"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "motion_change",
+        "sample_count": 40,
+        "prompt_length_mean": 44.05,
+        "prompt_length_min": 20,
+        "prompt_length_max": 87,
+        "prompt_length_std": 14.38,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 40,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "384x640",
+              "416x608",
+              "416x672",
+              "480x576",
+              "512x512",
+              "512x544",
+              "576x448",
+              "576x480",
+              "608x416",
+              "608x448"
+            ],
+            "resolution_range": {
+              "min": "384x640",
+              "max": "416x672"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "ps_human",
+        "sample_count": 70,
+        "prompt_length_mean": 34.17,
+        "prompt_length_min": 16,
+        "prompt_length_max": 89,
+        "prompt_length_std": 16.15,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 70,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "320x768",
+              "384x640",
+              "416x608",
+              "448x576",
+              "448x608",
+              "480x576",
+              "512x512",
+              "512x544",
+              "576x448",
+              "576x480"
+            ],
+            "resolution_range": {
+              "min": "384x640",
+              "max": "512x544"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "style_change",
+        "sample_count": 60,
+        "prompt_length_mean": 46.27,
+        "prompt_length_min": 20,
+        "prompt_length_max": 116,
+        "prompt_length_std": 18.58,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 60,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "320x768",
+              "384x640",
+              "416x672",
+              "480x576",
+              "512x512",
+              "512x544",
+              "576x448",
+              "608x416",
+              "608x448",
+              "640x416"
+            ],
+            "resolution_range": {
+              "min": "384x640",
+              "max": "416x672"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "subject-add",
+        "sample_count": 60,
+        "prompt_length_mean": 51.13,
+        "prompt_length_min": 14,
+        "prompt_length_max": 148,
+        "prompt_length_std": 29.55,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 60,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "384x640",
+              "416x672",
+              "448x608",
+              "480x576",
+              "512x512",
+              "512x544",
+              "576x448",
+              "576x480",
+              "608x416",
+              "608x448"
+            ],
+            "resolution_range": {
+              "min": "384x640",
+              "max": "416x672"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "subject-remove",
+        "sample_count": 57,
+        "prompt_length_mean": 37.3,
+        "prompt_length_min": 15,
+        "prompt_length_max": 110,
+        "prompt_length_std": 19.43,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 57,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "384x640",
+              "448x608",
+              "480x576",
+              "512x512",
+              "512x544",
+              "576x448",
+              "576x480",
+              "608x416",
+              "608x448",
+              "640x416"
+            ],
+            "resolution_range": {
+              "min": "384x640",
+              "max": "512x544"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "subject-replace",
+        "sample_count": 60,
+        "prompt_length_mean": 48.95,
+        "prompt_length_min": 27,
+        "prompt_length_max": 96,
+        "prompt_length_std": 17.72,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 60,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "384x640",
+              "416x672",
+              "448x576",
+              "448x608",
+              "480x576",
+              "512x512",
+              "512x544",
+              "576x480",
+              "608x416",
+              "608x448"
+            ],
+            "resolution_range": {
+              "min": "384x640",
+              "max": "416x672"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "text_change",
+        "sample_count": 99,
+        "prompt_length_mean": 39.71,
+        "prompt_length_min": 11,
+        "prompt_length_max": 116,
+        "prompt_length_std": 15.22,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 99,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "320x768",
+              "384x640",
+              "416x608",
+              "416x672",
+              "448x608",
+              "480x576",
+              "512x512",
+              "512x544",
+              "608x416",
+              "608x448"
+            ],
+            "resolution_range": {
+              "min": "384x640",
+              "max": "416x672"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "tone_transfer",
+        "sample_count": 40,
+        "prompt_length_mean": 36,
+        "prompt_length_min": 21,
+        "prompt_length_max": 63,
+        "prompt_length_std": 11.91,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 40,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "384x640",
+              "416x608",
+              "416x672",
+              "448x608",
+              "480x576",
+              "512x512",
+              "576x448",
+              "608x416",
+              "608x448",
+              "640x416"
+            ],
+            "resolution_range": {
+              "min": "384x640",
+              "max": "416x672"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 42.46,
+      "min": 11,
+      "max": 158,
+      "std": 19.58
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T11:14:15.722414",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 606,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "320x768",
+          "384x640",
+          "416x608",
+          "416x672",
+          "448x576",
+          "448x608",
+          "480x576",
+          "512x512",
+          "512x544",
+          "544x480"
+        ],
+        "resolution_range": {
+          "min": "384x640",
+          "max": "416x672"
+        },
+        "formats": [
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "4c309b59",
+          "content": [
+            {
+              "text": "Change the background to a city street."
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~495.7KB]"
+            }
+          ]
+        }
+      ],
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "background_change",
+      "metadata": {
+        "task_type": "background_change",
+        "key": "4a7d36259ad94d238a6e7e7e0bd6b643",
+        "instruction": "Change the background to a city street.",
+        "instruction_language": "en",
+        "input_image": "[BASE64_IMAGE: png, ~495.7KB]",
+        "Intersection_exist": true,
+        "id": "4a7d36259ad94d238a6e7e7e0bd6b643"
+      }
+    },
+    "subset": "background_change",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# GEdit-Bench\n\n\n## Overview\n\nGEdit-Bench (Grounded Edit Benchmark) is an image editing benchmark grounded in real-world usage scenarios. It provides comprehensive evaluation of image editing models across diverse editing tasks with LLM-based judging.\n\n## Task Description\n\n- **Task Type**: Image Editing Evaluation\n- **Input**: Source image + editing instruction\n- **Output**: Edited image evaluated by LLM judge\n- **Languages**: English (en) and Chinese (cn)\n\n## Key Features\n\n- Real-world editing scenarios (background change, color alter, style transfer, etc.)\n- 11 editing task categories\n- LLM-based evaluation for semantic consistency and perceptual quality\n- Supports both English and Chinese instructions\n- Comprehensive scoring: Semantic Consistency, Perceptual Quality, Overall\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on **train** split (contains test samples)\n- Metrics: **Semantic Consistency**, **Perceptual Similarity** (via LLM judge)\n- Overall score: geometric mean of SC and PQ scores\n- Configure language via `extra_params['language']` (en/cn)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `gedit` |\n| **Dataset ID** | [stepfun-ai/GEdit-Bench](https://modelscope.cn/datasets/stepfun-ai/GEdit-Bench/summary) |\n| **Paper** | N/A |\n| **Tags** | `ImageEditing` |\n| **Metrics** | `Semantic Consistency`, `Perceptual Similarity` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 606 |\n| Prompt Length (Mean) | 42.46 chars |\n| Prompt Length (Min/Max) | 11 / 158 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `background_change` | 40 | 50.2 | 29 | 158 |\n| `color_alter` | 40 | 41.5 | 23 | 143 |\n| `material_alter` | 40 | 40.8 | 18 | 60 |\n| `motion_change` | 40 | 44.05 | 20 | 87 |\n| `ps_human` | 70 | 34.17 | 16 | 89 |\n| `style_change` | 60 | 46.27 | 20 | 116 |\n| `subject-add` | 60 | 51.13 | 14 | 148 |\n| `subject-remove` | 57 | 37.3 | 15 | 110 |\n| `subject-replace` | 60 | 48.95 | 27 | 96 |\n| `text_change` | 99 | 39.71 | 11 | 116 |\n| `tone_transfer` | 40 | 36 | 21 | 63 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 606 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 384x640 - 416x672 |\n| Formats | png |\n\n\n## Sample Example\n\n**Subset**: `background_change`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"4c309b59\",\n      \"content\": [\n        {\n          \"text\": \"Change the background to a city street.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~495.7KB]\"\n        }\n      ]\n    }\n  ],\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"background_change\",\n  \"metadata\": {\n    \"task_type\": \"background_change\",\n    \"key\": \"4a7d36259ad94d238a6e7e7e0bd6b643\",\n    \"instruction\": \"Change the background to a city street.\",\n    \"instruction_language\": \"en\",\n    \"input_image\": \"[BASE64_IMAGE: png, ~495.7KB]\",\n    \"Intersection_exist\": true,\n    \"id\": \"4a7d36259ad94d238a6e7e7e0bd6b643\"\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `language` | `str` | `en` | Language of the instruction. Choices: ['en', 'cn']. Choices: ['en', 'cn'] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets gedit \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['gedit'],\n    dataset_args={\n        'gedit': {\n            # subset_list: ['background_change', 'color_alter', 'material_alter']  # optional, evaluate specific subsets\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# GEdit-Bench\n\n## 概述\n\nGEdit-Bench（Grounded Edit Benchmark）是一个基于真实世界使用场景的图像编辑基准测试。它通过基于大语言模型（LLM）的评判机制，对图像编辑模型在多种编辑任务上的表现进行全面评估。\n\n## 任务描述\n\n- **任务类型**：图像编辑评估\n- **输入**：源图像 + 编辑指令\n- **输出**：由 LLM 评判器评估后的编辑图像\n- **语言**：英语（en）和中文（cn）\n\n## 核心特性\n\n- 真实世界的编辑场景（背景替换、颜色调整、风格迁移等）\n- 11 类编辑任务\n- 基于 LLM 的评估，衡量语义一致性和感知质量\n- 支持英文和中文指令\n- 综合评分：语义一致性（Semantic Consistency）、感知质量（Perceptual Quality）、总体得分（Overall）\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 在 **train** 划分上进行评估（包含测试样本）\n- 评估指标：**语义一致性**（Semantic Consistency）、**感知相似性**（Perceptual Similarity，通过 LLM 评判）\n- 总体得分：语义一致性与感知质量得分的几何平均值\n- 通过 `extra_params['language']` 配置语言（en/cn）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `gedit` |\n| **数据集 ID** | [stepfun-ai/GEdit-Bench](https://modelscope.cn/datasets/stepfun-ai/GEdit-Bench/summary) |\n| **论文** | N/A |\n| **标签** | `ImageEditing` |\n| **指标** | `Semantic Consistency`, `Perceptual Similarity` |\n| **默认 Shots** | 0-shot |\n| **评估划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 606 |\n| 提示词长度（平均） | 42.46 字符 |\n| 提示词长度（最小/最大） | 11 / 158 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `background_change` | 40 | 50.2 | 29 | 158 |\n| `color_alter` | 40 | 41.5 | 23 | 143 |\n| `material_alter` | 40 | 40.8 | 18 | 60 |\n| `motion_change` | 40 | 44.05 | 20 | 87 |\n| `ps_human` | 70 | 34.17 | 16 | 89 |\n| `style_change` | 60 | 46.27 | 20 | 116 |\n| `subject-add` | 60 | 51.13 | 14 | 148 |\n| `subject-remove` | 57 | 37.3 | 15 | 110 |\n| `subject-replace` | 60 | 48.95 | 27 | 96 |\n| `text_change` | 99 | 39.71 | 11 | 116 |\n| `tone_transfer` | 40 | 36 | 21 | 63 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 606 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 384x640 - 416x672 |\n| 格式 | png |\n\n## 样例示例\n\n**子集**: `background_change`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"4c309b59\",\n      \"content\": [\n        {\n          \"text\": \"Change the background to a city street.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~495.7KB]\"\n        }\n      ]\n    }\n  ],\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"background_change\",\n  \"metadata\": {\n    \"task_type\": \"background_change\",\n    \"key\": \"4a7d36259ad94d238a6e7e7e0bd6b643\",\n    \"instruction\": \"Change the background to a city street.\",\n    \"instruction_language\": \"en\",\n    \"input_image\": \"[BASE64_IMAGE: png, ~495.7KB]\",\n    \"Intersection_exist\": true,\n    \"id\": \"4a7d36259ad94d238a6e7e7e0bd6b643\"\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `language` | `str` | `en` | 指令语言。选项：['en', 'cn']。选项：['en', 'cn'] |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets gedit \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['gedit'],\n    dataset_args={\n        'gedit': {\n            # subset_list: ['background_change', 'color_alter', 'material_alter']  # 可选，评估特定子集\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "24c81acebd2a24952d701702c1dc1bf6",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.267117",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

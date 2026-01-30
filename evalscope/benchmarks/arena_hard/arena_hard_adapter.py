@@ -22,11 +22,34 @@ GRADER_TEMPLATE = """<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's
         name='arena_hard',
         pretty_name='ArenaHard',
         tags=[Tags.INSTRUCTION_FOLLOWING, Tags.ARENA],
-        description=
-        'ArenaHard is a benchmark designed to evaluate the performance of large language models in a competitive setting, '
-        'where models are pitted against each other in a series of tasks to determine their relative strengths and weaknesses. '
-        'It includes a set of challenging tasks that require reasoning, understanding, and generation capabilities. '
-        'Currently not support `style-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-0314`.',
+        description="""
+## Overview
+
+ArenaHard is a challenging benchmark that evaluates language models through competitive pairwise comparison. Models are judged against a GPT-4 baseline on difficult tasks requiring reasoning, understanding, and generation capabilities.
+
+## Task Description
+
+- **Task Type**: Competitive Model Evaluation (Arena-style)
+- **Input**: Challenging instruction/question
+- **Output**: Model response compared against GPT-4-0314 baseline
+- **Scoring**: Elo-based rating from pairwise battles
+
+## Key Features
+
+- 500 challenging user prompts
+- Two-game battle system (A vs B and B vs A)
+- Elo rating calculation for model ranking
+- Tests reasoning, instruction-following, and generation
+- High correlation with Chatbot Arena rankings
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Uses LLM judge (default: gpt-4-1106-preview)
+- Baseline model: gpt-4-0314 outputs
+- Reports win rate and Elo-based scores
+- Note: Style-controlled win rate not currently supported
+""",
         dataset_id='AI-ModelScope/arena-hard-auto-v0.1',
         metric_list=['winrate'],
         aggregation='elo',

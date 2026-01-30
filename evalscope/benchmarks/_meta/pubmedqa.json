@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "pretty_name": "PubMedQA",
+    "dataset_id": "extraordinarylab/pubmed-qa",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "Yes/No"
+    ],
+    "metrics": [
+      "accuracy",
+      "precision",
+      "recall",
+      "f1_score",
+      "yes_ratio",
+      "maybe_ratio"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nPubMedQA is a biomedical question answering dataset designed to evaluate models' ability to reason over biomedical research texts. It contains questions derived from PubMed abstracts with yes/no/maybe answers.\n\n## Task Description\n\n- **Task Type**: Biomedical Question Answering (Yes/No/Maybe)\n- **Input**: PubMed abstract with a research question\n- **Output**: Answer (YES, NO, or MAYBE)\n- **Domain**: Biomedical research, scientific literature\n\n## Key Features\n\n- Questions from real PubMed research abstracts\n- Three-way classification (YES/NO/MAYBE)\n- Tests scientific reasoning and comprehension\n- Expert-annotated with reasoning explanations\n- Useful for biomedical AI evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Metrics: Accuracy, Precision, Recall, F1-Score, Yes Ratio, Maybe Ratio\n- Aggregation method: F1-score (macro average)\n- Answers should be YES, NO, or MAYBE without explanation",
+    "prompt_template": "{question}\nPlease answer YES or NO or MAYBE without an explanation.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "f1",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 1000,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1000,
+        "prompt_length_mean": 1514.46,
+        "prompt_length_min": 451,
+        "prompt_length_max": 2883,
+        "prompt_length_std": 349.91,
+        "target_length_mean": 2.88
+      }
+    ],
+    "prompt_length": {
+      "mean": 1514.46,
+      "min": 451,
+      "max": 2883,
+      "std": 349.91
+    },
+    "target_length_mean": 2.88,
+    "computed_at": "2026-01-28T11:16:17.499156"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "f17dedfd",
+          "content": [
+            {
+              "text": "Abstract: Programmed cell death (PCD) is the regulated death of cells within an organism. The lace plant (Aponogeton madagascariensis) produces perforations in its leaves through PCD. The leaves of the plant consist of a latticework of longit ... [TRUNCATED] ... ntrols, and that displayed mitochondrial dynamics similar to that of non-PCD cells.\n\nQuestion: Do mitochondria play a role in remodelling lace plant leaves during programmed cell death?\nPlease answer YES or NO or MAYBE without an explanation."
+            }
+          ]
+        }
+      ],
+      "target": "YES",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "answer": "yes",
+        "reasoning": "Results depicted mitochondrial dynamics in vivo as PCD progresses within the lace plant, and highlight the correlation of this organelle with other organelles during developmental PCD. To the best of our knowledge, this is the first report of ... [TRUNCATED] ... PCD. Also, for the first time, we have shown the feasibility for the use of CsA in a whole plant system. Overall, our findings implicate the mitochondria as playing a critical and early role in developmentally regulated PCD in the lace plant."
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# PubMedQA\n\n## Overview\n\nPubMedQA is a biomedical question answering dataset designed to evaluate models' ability to reason over biomedical research texts. It contains questions derived from PubMed abstracts with yes/no/maybe answers.\n\n## Task Description\n\n- **Task Type**: Biomedical Question Answering (Yes/No/Maybe)\n- **Input**: PubMed abstract with a research question\n- **Output**: Answer (YES, NO, or MAYBE)\n- **Domain**: Biomedical research, scientific literature\n\n## Key Features\n\n- Questions from real PubMed research abstracts\n- Three-way classification (YES/NO/MAYBE)\n- Tests scientific reasoning and comprehension\n- Expert-annotated with reasoning explanations\n- Useful for biomedical AI evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Metrics: Accuracy, Precision, Recall, F1-Score, Yes Ratio, Maybe Ratio\n- Aggregation method: F1-score (macro average)\n- Answers should be YES, NO, or MAYBE without explanation\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `pubmedqa` |\n| **Dataset ID** | [extraordinarylab/pubmed-qa](https://modelscope.cn/datasets/extraordinarylab/pubmed-qa/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `Yes/No` |\n| **Metrics** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio`, `maybe_ratio` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `f1` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,000 |\n| Prompt Length (Mean) | 1514.46 chars |\n| Prompt Length (Min/Max) | 451 / 2883 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f17dedfd\",\n      \"content\": [\n        {\n          \"text\": \"Abstract: Programmed cell death (PCD) is the regulated death of cells within an organism. The lace plant (Aponogeton madagascariensis) produces perforations in its leaves through PCD. The leaves of the plant consist of a latticework of longit ... [TRUNCATED] ... ntrols, and that displayed mitochondrial dynamics similar to that of non-PCD cells.\\n\\nQuestion: Do mitochondria play a role in remodelling lace plant leaves during programmed cell death?\\nPlease answer YES or NO or MAYBE without an explanation.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"YES\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"answer\": \"yes\",\n    \"reasoning\": \"Results depicted mitochondrial dynamics in vivo as PCD progresses within the lace plant, and highlight the correlation of this organelle with other organelles during developmental PCD. To the best of our knowledge, this is the first report of ... [TRUNCATED] ... PCD. Also, for the first time, we have shown the feasibility for the use of CsA in a whole plant system. Overall, our findings implicate the mitochondria as playing a critical and early role in developmentally regulated PCD in the lace plant.\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease answer YES or NO or MAYBE without an explanation.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets pubmedqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['pubmedqa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# PubMedQA\n\n## 概述\n\nPubMedQA 是一个生物医学问答数据集，旨在评估模型在生物医学研究文本上的推理能力。该数据集包含从 PubMed 摘要中提取的问题，并提供 yes/no/maybe 三类答案。\n\n## 任务描述\n\n- **任务类型**：生物医学问答（Yes/No/Maybe）\n- **输入**：包含研究问题的 PubMed 摘要\n- **输出**：答案（YES、NO 或 MAYBE）\n- **领域**：生物医学研究、科学文献\n\n## 主要特点\n\n- 问题来源于真实的 PubMed 研究摘要\n- 三分类任务（YES/NO/MAYBE）\n- 考察科学推理与理解能力\n- 由专家标注并附带推理解释\n- 适用于生物医学 AI 的评估\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 评估指标：准确率（Accuracy）、精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、YES 比例（Yes Ratio）、MAYBE 比例（Maybe Ratio）\n- 聚合方法：F1 分数（宏平均）\n- 答案应仅为 YES、NO 或 MAYBE，无需附加解释\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `pubmedqa` |\n| **数据集ID** | [extraordinarylab/pubmed-qa](https://modelscope.cn/datasets/extraordinarylab/pubmed-qa/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `Yes/No` |\n| **指标** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio`, `maybe_ratio` |\n| **默认示例数量** | 0-shot |\n| **评估分割** | `test` |\n| **聚合方式** | `f1` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,000 |\n| 提示词长度（平均） | 1514.46 字符 |\n| 提示词长度（最小/最大） | 451 / 2883 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f17dedfd\",\n      \"content\": [\n        {\n          \"text\": \"Abstract: Programmed cell death (PCD) is the regulated death of cells within an organism. The lace plant (Aponogeton madagascariensis) produces perforations in its leaves through PCD. The leaves of the plant consist of a latticework of longit ... [TRUNCATED] ... ntrols, and that displayed mitochondrial dynamics similar to that of non-PCD cells.\\n\\nQuestion: Do mitochondria play a role in remodelling lace plant leaves during programmed cell death?\\nPlease answer YES or NO or MAYBE without an explanation.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"YES\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"answer\": \"yes\",\n    \"reasoning\": \"Results depicted mitochondrial dynamics in vivo as PCD progresses within the lace plant, and highlight the correlation of this organelle with other organelles during developmental PCD. To the best of our knowledge, this is the first report of ... [TRUNCATED] ... PCD. Also, for the first time, we have shown the feasibility for the use of CsA in a whole plant system. Overall, our findings implicate the mitochondria as playing a critical and early role in developmentally regulated PCD in the lace plant.\"\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\nPlease answer YES or NO or MAYBE without an explanation.\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets pubmedqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['pubmedqa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "e0668b713896bd6b8fa4faf5dcaa8917",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.433353",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

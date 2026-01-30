@@ -22,8 +22,33 @@ MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
         name='ai2d',
         pretty_name='AI2D',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
-        description=
-        'AI2D is a benchmark dataset for researching the understanding of diagrams by AI. It contains over 5,000 diverse diagrams from science textbooks (e.g., the water cycle, food webs). Each diagram is accompanied by multiple-choice questions that test an AI\'s ability to interpret visual elements, text labels, and their relationships. The benchmark is challenging because it requires jointly understanding the layout, symbols, and text to answer questions correctly.',  # noqa: E501
+        description="""
+## Overview
+
+AI2D (AI2 Diagrams) is a benchmark dataset for evaluating AI systems' ability to understand and reason about scientific diagrams. It contains over 5,000 diverse diagrams from science textbooks covering topics like the water cycle, food webs, and biological processes.
+
+## Task Description
+
+- **Task Type**: Diagram Understanding and Visual Reasoning
+- **Input**: Scientific diagram image + multiple-choice question
+- **Output**: Correct answer choice
+- **Domains**: Science education, visual reasoning, diagram comprehension
+
+## Key Features
+
+- Diagrams sourced from real science textbooks
+- Requires joint understanding of visual layouts, symbols, and text labels
+- Tests interpretation of relationships between diagram elements
+- Multiple-choice format with challenging distractors
+- Covers diverse scientific domains (biology, physics, earth science)
+
+## Evaluation Notes
+
+- Default evaluation uses the **test** split
+- Primary metric: **Accuracy** on multiple-choice questions
+- Uses Chain-of-Thought (CoT) prompting for reasoning
+- Requires understanding both textual labels and visual elements
+""",  # noqa: E501
         dataset_id='lmms-lab/ai2d',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],

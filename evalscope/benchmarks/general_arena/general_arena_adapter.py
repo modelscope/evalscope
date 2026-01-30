@@ -27,11 +27,34 @@ GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's A
         name='general_arena',
         pretty_name='GeneralArena',
         tags=[Tags.CUSTOM, Tags.ARENA],
-        description=
-        'GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, '
-        'where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should '
-        'provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path. '
-        'For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html).',
+        description="""
+## Overview
+
+GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses.
+
+## Task Description
+
+- **Task Type**: Model vs Model Arena Evaluation
+- **Input**: User prompts with responses from multiple models
+- **Output**: Pairwise comparison judgments and ELO ratings
+- **Focus**: Comparative model evaluation
+
+## Key Features
+
+- LLM-as-judge for pairwise comparisons
+- ELO rating calculation for model ranking
+- Supports custom model pairs for comparison
+- Winrate and ranking metrics
+- Configurable baseline model
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Requires model outputs from previous evaluations
+- Uses LLM-as-judge for quality assessment
+- Aggregation: ELO rating calculation
+- See [Arena User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html) for details
+""",
         dataset_id='general_arena',
         metric_list=['winrate'],
         aggregation='elo',

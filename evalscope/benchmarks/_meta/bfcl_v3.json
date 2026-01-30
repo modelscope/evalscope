@@ -1,0 +1,339 @@
+{
+  "meta": {
+    "pretty_name": "BFCL-v3",
+    "dataset_id": "AI-ModelScope/bfcl_v3",
+    "paper_url": null,
+    "tags": [
+      "FunctionCalling",
+      "Agent"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "simple",
+      "multiple",
+      "parallel",
+      "parallel_multiple",
+      "java",
+      "javascript",
+      "live_simple",
+      "live_multiple",
+      "live_parallel",
+      "live_parallel_multiple",
+      "irrelevance",
+      "live_relevance",
+      "live_irrelevance",
+      "multi_turn_base",
+      "multi_turn_miss_func",
+      "multi_turn_miss_param",
+      "multi_turn_long_context"
+    ],
+    "description": "\n## Overview\n\nBFCL (Berkeley Function Calling Leaderboard) v3 is the first comprehensive and executable function call evaluation benchmark for assessing LLMs' ability to invoke functions. It evaluates various forms of function calls, diverse scenarios, and executability.\n\n## Task Description\n\n- **Task Type**: Function Calling / Tool Use Evaluation\n- **Input**: User query with available function definitions\n- **Output**: Correct function call with parameters\n- **Categories**: AST_NON_LIVE, AST_LIVE, RELEVANCE, MULTI_TURN\n\n## Key Features\n\n- Comprehensive function call evaluation\n- Tests simple, multiple, and parallel function calls\n- Multi-language support (Python, Java, JavaScript)\n- Relevance detection (irrelevance handling)\n- Multi-turn conversation function calling\n- Live API endpoints for execution testing\n\n## Evaluation Notes\n\n- Requires `pip install bfcl-eval==2025.10.27.1` before evaluation\n- Set `is_fc_model=True` for models with native function calling support\n- `underscore_to_dot` parameter controls function name formatting\n- See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v3.html) for detailed setup\n- Results broken down by category (AST, Relevance, Multi-turn)\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "underscore_to_dot": {
+        "type": "bool",
+        "description": "Convert underscores to dots in function names for evaluation.",
+        "value": true
+      },
+      "is_fc_model": {
+        "type": "bool",
+        "description": "Indicates the evaluated model natively supports function calling.",
+        "value": true
+      }
+    },
+    "sandbox_config": {},
+    "category": "agent"
+  },
+  "statistics": {
+    "total_samples": 4441,
+    "subset_stats": [
+      {
+        "name": "simple",
+        "sample_count": 400,
+        "prompt_length_mean": 119.66,
+        "prompt_length_min": 57,
+        "prompt_length_max": 303,
+        "prompt_length_std": 31.5,
+        "target_length_mean": 113.3
+      },
+      {
+        "name": "multiple",
+        "sample_count": 200,
+        "prompt_length_mean": 120.75,
+        "prompt_length_min": 65,
+        "prompt_length_max": 229,
+        "prompt_length_std": 30.49,
+        "target_length_mean": 120.83
+      },
+      {
+        "name": "parallel",
+        "sample_count": 200,
+        "prompt_length_mean": 298.92,
+        "prompt_length_min": 69,
+        "prompt_length_max": 781,
+        "prompt_length_std": 151.36,
+        "target_length_mean": 289.08
+      },
+      {
+        "name": "parallel_multiple",
+        "sample_count": 200,
+        "prompt_length_mean": 432.17,
+        "prompt_length_min": 88,
+        "prompt_length_max": 1249,
+        "prompt_length_std": 228.08,
+        "target_length_mean": 323.56
+      },
+      {
+        "name": "java",
+        "sample_count": 100,
+        "prompt_length_mean": 228.93,
+        "prompt_length_min": 138,
+        "prompt_length_max": 531,
+        "prompt_length_std": 55.07,
+        "target_length_mean": 121.18
+      },
+      {
+        "name": "javascript",
+        "sample_count": 50,
+        "prompt_length_mean": 222.34,
+        "prompt_length_min": 118,
+        "prompt_length_max": 637,
+        "prompt_length_std": 79.58,
+        "target_length_mean": 108.8
+      },
+      {
+        "name": "live_simple",
+        "sample_count": 258,
+        "prompt_length_mean": 161.74,
+        "prompt_length_min": 47,
+        "prompt_length_max": 1247,
+        "prompt_length_std": 129.66,
+        "target_length_mean": 133.18
+      },
+      {
+        "name": "live_multiple",
+        "sample_count": 1053,
+        "prompt_length_mean": 138.76,
+        "prompt_length_min": 42,
+        "prompt_length_max": 4828,
+        "prompt_length_std": 155.13,
+        "target_length_mean": 137.71
+      },
+      {
+        "name": "live_parallel",
+        "sample_count": 16,
+        "prompt_length_mean": 150.44,
+        "prompt_length_min": 88,
+        "prompt_length_max": 365,
+        "prompt_length_std": 73.76,
+        "target_length_mean": 262.44
+      },
+      {
+        "name": "live_parallel_multiple",
+        "sample_count": 24,
+        "prompt_length_mean": 217.67,
+        "prompt_length_min": 72,
+        "prompt_length_max": 650,
+        "prompt_length_std": 147.03,
+        "target_length_mean": 251.08
+      },
+      {
+        "name": "irrelevance",
+        "sample_count": 240,
+        "prompt_length_mean": 85.96,
+        "prompt_length_min": 55,
+        "prompt_length_max": 203,
+        "prompt_length_std": 20.27,
+        "target_length_mean": 2
+      },
+      {
+        "name": "live_relevance",
+        "sample_count": 18,
+        "prompt_length_mean": 263.83,
+        "prompt_length_min": 71,
+        "prompt_length_max": 1214,
+        "prompt_length_std": 328.9,
+        "target_length_mean": 2
+      },
+      {
+        "name": "live_irrelevance",
+        "sample_count": 882,
+        "prompt_length_mean": 188.26,
+        "prompt_length_min": 36,
+        "prompt_length_max": 10805,
+        "prompt_length_std": 754.3,
+        "target_length_mean": 2
+      },
+      {
+        "name": "multi_turn_base",
+        "sample_count": 200,
+        "prompt_length_mean": 803.33,
+        "prompt_length_min": 106,
+        "prompt_length_max": 1756,
+        "prompt_length_std": 331.66,
+        "target_length_mean": 354.69
+      },
+      {
+        "name": "multi_turn_miss_func",
+        "sample_count": 200,
+        "prompt_length_mean": 806.75,
+        "prompt_length_min": 110,
+        "prompt_length_max": 1760,
+        "prompt_length_std": 332.05,
+        "target_length_mean": 358.23
+      },
+      {
+        "name": "multi_turn_miss_param",
+        "sample_count": 200,
+        "prompt_length_mean": 858.2,
+        "prompt_length_min": 167,
+        "prompt_length_max": 1791,
+        "prompt_length_std": 328.74,
+        "target_length_mean": 358.36
+      },
+      {
+        "name": "multi_turn_long_context",
+        "sample_count": 200,
+        "prompt_length_mean": 803.29,
+        "prompt_length_min": 106,
+        "prompt_length_max": 1756,
+        "prompt_length_std": 331.39,
+        "target_length_mean": 524.7
+      }
+    ],
+    "prompt_length": {
+      "mean": 291.25,
+      "min": 36,
+      "max": 10805,
+      "std": 457.66
+    },
+    "target_length_mean": 162.27,
+    "computed_at": "2026-01-28T14:30:17.036299"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "15e84989",
+          "content": "[[{\"role\": \"user\", \"content\": \"Find the area of a triangle with a base of 10 units and height of 5 units.\"}]]"
+        }
+      ],
+      "target": "[{\"calculate_triangle_area\": {\"base\": [10], \"height\": [5], \"unit\": [\"units\", \"\"]}}]",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "simple",
+      "metadata": {
+        "id": "simple_0",
+        "multi_turn": false,
+        "functions": [
+          {
+            "name": "calculate_triangle_area",
+            "description": "Calculate the area of a triangle given its base and height.",
+            "parameters": {
+              "type": "dict",
+              "properties": {
+                "base": {
+                  "type": "integer",
+                  "description": "The base of the triangle."
+                },
+                "height": {
+                  "type": "integer",
+                  "description": "The height of the triangle."
+                },
+                "unit": {
+                  "type": "string",
+                  "description": "The unit of measure (defaults to 'units' if not specified)"
+                }
+              },
+              "required": [
+                "base",
+                "height"
+              ]
+            }
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "calculate_triangle_area",
+              "description": "Calculate the area of a triangle given its base and height. Note that the provided function is in Python 3 syntax.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "base": {
+                    "type": "integer",
+                    "description": "The base of the triangle."
+                  },
+                  "height": {
+                    "type": "integer",
+                    "description": "The height of the triangle."
+                  },
+                  "unit": {
+                    "type": "string",
+                    "description": "The unit of measure (defaults to 'units' if not specified)"
+                  }
+                },
+                "required": [
+                  "base",
+                  "height"
+                ]
+              }
+            }
+          }
+        ],
+        "missed_functions": "{}",
+        "initial_config": {},
+        "involved_classes": [],
+        "turns": [
+          [
+            {
+              "role": "user",
+              "content": "Find the area of a triangle with a base of 10 units and height of 5 units."
+            }
+          ]
+        ],
+        "language": "Python",
+        "test_category": "simple",
+        "subset": "simple",
+        "ground_truth": [
+          {
+            "calculate_triangle_area": {
+              "base": [
+                10
+              ],
+              "height": [
+                5
+              ],
+              "unit": [
+                "units",
+                ""
+              ]
+            }
+          }
+        ],
+        "should_execute_tool_calls": false,
+        "missing_functions": {},
+        "is_fc_model": true
+      }
+    },
+    "subset": "simple",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# BFCL-v3\n\n\n## Overview\n\nBFCL (Berkeley Function Calling Leaderboard) v3 is the first comprehensive and executable function call evaluation benchmark for assessing LLMs' ability to invoke functions. It evaluates various forms of function calls, diverse scenarios, and executability.\n\n## Task Description\n\n- **Task Type**: Function Calling / Tool Use Evaluation\n- **Input**: User query with available function definitions\n- **Output**: Correct function call with parameters\n- **Categories**: AST_NON_LIVE, AST_LIVE, RELEVANCE, MULTI_TURN\n\n## Key Features\n\n- Comprehensive function call evaluation\n- Tests simple, multiple, and parallel function calls\n- Multi-language support (Python, Java, JavaScript)\n- Relevance detection (irrelevance handling)\n- Multi-turn conversation function calling\n- Live API endpoints for execution testing\n\n## Evaluation Notes\n\n- Requires `pip install bfcl-eval==2025.10.27.1` before evaluation\n- Set `is_fc_model=True` for models with native function calling support\n- `underscore_to_dot` parameter controls function name formatting\n- See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v3.html) for detailed setup\n- Results broken down by category (AST, Relevance, Multi-turn)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `bfcl_v3` |\n| **Dataset ID** | [AI-ModelScope/bfcl_v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3/summary) |\n| **Paper** | N/A |\n| **Tags** | `Agent`, `FunctionCalling` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 4,441 |\n| Prompt Length (Mean) | 291.25 chars |\n| Prompt Length (Min/Max) | 36 / 10805 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `simple` | 400 | 119.66 | 57 | 303 |\n| `multiple` | 200 | 120.75 | 65 | 229 |\n| `parallel` | 200 | 298.92 | 69 | 781 |\n| `parallel_multiple` | 200 | 432.17 | 88 | 1249 |\n| `java` | 100 | 228.93 | 138 | 531 |\n| `javascript` | 50 | 222.34 | 118 | 637 |\n| `live_simple` | 258 | 161.74 | 47 | 1247 |\n| `live_multiple` | 1,053 | 138.76 | 42 | 4828 |\n| `live_parallel` | 16 | 150.44 | 88 | 365 |\n| `live_parallel_multiple` | 24 | 217.67 | 72 | 650 |\n| `irrelevance` | 240 | 85.96 | 55 | 203 |\n| `live_relevance` | 18 | 263.83 | 71 | 1214 |\n| `live_irrelevance` | 882 | 188.26 | 36 | 10805 |\n| `multi_turn_base` | 200 | 803.33 | 106 | 1756 |\n| `multi_turn_miss_func` | 200 | 806.75 | 110 | 1760 |\n| `multi_turn_miss_param` | 200 | 858.2 | 167 | 1791 |\n| `multi_turn_long_context` | 200 | 803.29 | 106 | 1756 |\n\n## Sample Example\n\n**Subset**: `simple`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"15e84989\",\n      \"content\": \"[[{\\\"role\\\": \\\"user\\\", \\\"content\\\": \\\"Find the area of a triangle with a base of 10 units and height of 5 units.\\\"}]]\"\n    }\n  ],\n  \"target\": \"[{\\\"calculate_triangle_area\\\": {\\\"base\\\": [10], \\\"height\\\": [5], \\\"unit\\\": [\\\"units\\\", \\\"\\\"]}}]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"simple\",\n  \"metadata\": {\n    \"id\": \"simple_0\",\n    \"multi_turn\": false,\n    \"functions\": [\n      {\n        \"name\": \"calculate_triangle_area\",\n        \"description\": \"Calculate the area of a triangle given its base and height.\",\n        \"parameters\": {\n          \"type\": \"dict\",\n          \"properties\": {\n            \"base\": {\n              \"type\": \"integer\",\n              \"description\": \"The base of the triangle.\"\n            },\n            \"height\": {\n              \"type\": \"integer\",\n              \"description\": \"The height of the triangle.\"\n            },\n            \"unit\": {\n              \"type\": \"string\",\n              \"description\": \"The unit of measure (defaults to 'units' if not specified)\"\n            }\n          },\n          \"required\": [\n            \"base\",\n            \"height\"\n          ]\n        }\n      }\n    ],\n    \"tools\": [\n      {\n        \"type\": \"function\",\n        \"function\": {\n          \"name\": \"calculate_triangle_area\",\n          \"description\": \"Calculate the area of a triangle given its base and height. Note that the provided function is in Python 3 syntax.\",\n          \"parameters\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"base\": {\n                \"type\": \"integer\",\n                \"description\": \"The base of the triangle.\"\n              },\n              \"height\": {\n                \"type\": \"integer\",\n                \"description\": \"The height of the triangle.\"\n              },\n              \"unit\": {\n                \"type\": \"string\",\n                \"description\": \"The unit of measure (defaults to 'units' if not specified)\"\n              }\n            },\n            \"required\": [\n              \"base\",\n              \"height\"\n            ]\n          }\n        }\n      }\n    ],\n    \"missed_functions\": \"{}\",\n    \"initial_config\": {},\n    \"involved_classes\": [],\n    \"turns\": [\n      [\n        {\n          \"role\": \"user\",\n          \"content\": \"Find the area of a triangle with a base of 10 units and height of 5 units.\"\n        }\n      ]\n    ],\n    \"language\": \"Python\",\n    \"test_category\": \"simple\",\n    \"subset\": \"simple\",\n    \"ground_truth\": [\n      {\n        \"calculate_triangle_area\": {\n          \"base\": [\n            10\n          ],\n          \"height\": [\n            5\n          ],\n          \"unit\": [\n            \"units\",\n            \"\"\n          ]\n        }\n      }\n    ],\n    \"should_execute_tool_calls\": false,\n    \"missing_functions\": {},\n    \"is_fc_model\": true\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `underscore_to_dot` | `bool` | `True` | Convert underscores to dots in function names for evaluation. |\n| `is_fc_model` | `bool` | `True` | Indicates the evaluated model natively supports function calling. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bfcl_v3 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bfcl_v3'],\n    dataset_args={\n        'bfcl_v3': {\n            # subset_list: ['simple', 'multiple', 'parallel']  # optional, evaluate specific subsets\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# BFCL-v3\n\n\n## 概述\n\nBFCL（Berkeley Function Calling Leaderboard）v3 是首个全面且可执行的函数调用评估基准，用于评估大语言模型（LLM）调用函数的能力。它评估了多种形式的函数调用、多样化的场景以及可执行性。\n\n## 任务描述\n\n- **任务类型**：函数调用 / 工具使用评估\n- **输入**：包含可用函数定义的用户查询\n- **输出**：带有正确参数的函数调用\n- **类别**：AST_NON_LIVE、AST_LIVE、RELEVANCE、MULTI_TURN\n\n## 主要特性\n\n- 全面的函数调用评估\n- 测试简单、多重和并行函数调用\n- 多语言支持（Python、Java、JavaScript）\n- 相关性检测（处理无关查询）\n- 多轮对话中的函数调用\n- 提供实时 API 端点用于执行测试\n\n## 评估说明\n\n- 评估前需安装 `pip install bfcl-eval==2025.10.27.1`\n- 对于原生支持函数调用的模型，请设置 `is_fc_model=True`\n- `underscore_to_dot` 参数控制函数名称的格式化方式\n- 详细设置请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)\n- 结果按类别（AST、相关性、多轮）细分\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `bfcl_v3` |\n| **数据集ID** | [AI-ModelScope/bfcl_v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3/summary) |\n| **论文** | N/A |\n| **标签** | `Agent`, `FunctionCalling` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 4,441 |\n| 提示词长度（平均） | 291.25 字符 |\n| 提示词长度（最小/最大） | 36 / 10805 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `simple` | 400 | 119.66 | 57 | 303 |\n| `multiple` | 200 | 120.75 | 65 | 229 |\n| `parallel` | 200 | 298.92 | 69 | 781 |\n| `parallel_multiple` | 200 | 432.17 | 88 | 1249 |\n| `java` | 100 | 228.93 | 138 | 531 |\n| `javascript` | 50 | 222.34 | 118 | 637 |\n| `live_simple` | 258 | 161.74 | 47 | 1247 |\n| `live_multiple` | 1,053 | 138.76 | 42 | 4828 |\n| `live_parallel` | 16 | 150.44 | 88 | 365 |\n| `live_parallel_multiple` | 24 | 217.67 | 72 | 650 |\n| `irrelevance` | 240 | 85.96 | 55 | 203 |\n| `live_relevance` | 18 | 263.83 | 71 | 1214 |\n| `live_irrelevance` | 882 | 188.26 | 36 | 10805 |\n| `multi_turn_base` | 200 | 803.33 | 106 | 1756 |\n| `multi_turn_miss_func` | 200 | 806.75 | 110 | 1760 |\n| `multi_turn_miss_param` | 200 | 858.2 | 167 | 1791 |\n| `multi_turn_long_context` | 200 | 803.29 | 106 | 1756 |\n\n## 样例示例\n\n**子集**：`simple`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"15e84989\",\n      \"content\": \"[[{\\\"role\\\": \\\"user\\\", \\\"content\\\": \\\"Find the area of a triangle with a base of 10 units and height of 5 units.\\\"}]]\"\n    }\n  ],\n  \"target\": \"[{\\\"calculate_triangle_area\\\": {\\\"base\\\": [10], \\\"height\\\": [5], \\\"unit\\\": [\\\"units\\\", \\\"\\\"]}}]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"simple\",\n  \"metadata\": {\n    \"id\": \"simple_0\",\n    \"multi_turn\": false,\n    \"functions\": [\n      {\n        \"name\": \"calculate_triangle_area\",\n        \"description\": \"Calculate the area of a triangle given its base and height.\",\n        \"parameters\": {\n          \"type\": \"dict\",\n          \"properties\": {\n            \"base\": {\n              \"type\": \"integer\",\n              \"description\": \"The base of the triangle.\"\n            },\n            \"height\": {\n              \"type\": \"integer\",\n              \"description\": \"The height of the triangle.\"\n            },\n            \"unit\": {\n              \"type\": \"string\",\n              \"description\": \"The unit of measure (defaults to 'units' if not specified)\"\n            }\n          },\n          \"required\": [\n            \"base\",\n            \"height\"\n          ]\n        }\n      }\n    ],\n    \"tools\": [\n      {\n        \"type\": \"function\",\n        \"function\": {\n          \"name\": \"calculate_triangle_area\",\n          \"description\": \"Calculate the area of a triangle given its base and height. Note that the provided function is in Python 3 syntax.\",\n          \"parameters\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"base\": {\n                \"type\": \"integer\",\n                \"description\": \"The base of the triangle.\"\n              },\n              \"height\": {\n                \"type\": \"integer\",\n                \"description\": \"The height of the triangle.\"\n              },\n              \"unit\": {\n                \"type\": \"string\",\n                \"description\": \"The unit of measure (defaults to 'units' if not specified)\"\n              }\n            },\n            \"required\": [\n              \"base\",\n              \"height\"\n            ]\n          }\n        }\n      }\n    ],\n    \"missed_functions\": \"{}\",\n    \"initial_config\": {},\n    \"involved_classes\": [],\n    \"turns\": [\n      [\n        {\n          \"role\": \"user\",\n          \"content\": \"Find the area of a triangle with a base of 10 units and height of 5 units.\"\n        }\n      ]\n    ],\n    \"language\": \"Python\",\n    \"test_category\": \"simple\",\n    \"subset\": \"simple\",\n    \"ground_truth\": [\n      {\n        \"calculate_triangle_area\": {\n          \"base\": [\n            10\n          ],\n          \"height\": [\n            5\n          ],\n          \"unit\": [\n            \"units\",\n            \"\"\n          ]\n        }\n      }\n    ],\n    \"should_execute_tool_calls\": false,\n    \"missing_functions\": {},\n    \"is_fc_model\": true\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `underscore_to_dot` | `bool` | `True` | 在评估时将函数名中的下划线转换为点号。 |\n| `is_fc_model` | `bool` | `True` | 表示被评估的模型原生支持函数调用。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bfcl_v3 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bfcl_v3'],\n    dataset_args={\n        'bfcl_v3': {\n            # subset_list: ['simple', 'multiple', 'parallel']  # 可选，评估特定子集\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "a59b61d6916cb47ae9d18d2a5c381e30",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.200319",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

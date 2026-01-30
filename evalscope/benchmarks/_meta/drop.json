@@ -1,0 +1,123 @@
+{
+  "meta": {
+    "pretty_name": "DROP",
+    "dataset_id": "AI-ModelScope/DROP",
+    "paper_url": null,
+    "tags": [
+      "Reasoning"
+    ],
+    "metrics": [
+      "em",
+      "f1"
+    ],
+    "few_shot_num": 3,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nDROP (Discrete Reasoning Over Paragraphs) is a challenging reading comprehension benchmark that requires models to perform discrete reasoning operations over text passages. Unlike simple extractive QA, DROP questions require numerical reasoning, counting, and comparison operations.\n\n## Task Description\n\n- **Task Type**: Reading Comprehension with Discrete Reasoning\n- **Input**: Passage and question requiring reasoning\n- **Output**: Numerical answer, span, or date\n- **Reasoning Types**: Addition, subtraction, counting, comparison, sorting\n\n## Key Features\n\n- 96,567 questions requiring discrete reasoning over text\n- Questions based on NFL game summaries, Wikipedia articles, etc.\n- Requires multi-step reasoning and arithmetic operations\n- Multiple valid answer formats (numbers, spans, dates)\n- Tests compositional reasoning abilities\n\n## Evaluation Notes\n\n- Default configuration uses **3-shot** examples\n- Metrics include Exact Match (EM) and token-level F1 score\n- Answers should follow the format: \"Answer: [ANSWER]\"\n- F1 score is the primary metric for comparison\n- Validates answers against multiple reference answers\n",
+    "prompt_template": "You will be asked to read a passage and answer a question. {drop_examples}\n# Your Task\n\n---\n{query}\n\nThink step by step, then write a line of the form \"Answer: [ANSWER]\" at the end of your response.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 9536,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 9536,
+        "prompt_length_mean": 5454.05,
+        "prompt_length_min": 4638,
+        "prompt_length_max": 9893,
+        "prompt_length_std": 518.03,
+        "target_length_mean": 24.05
+      }
+    ],
+    "prompt_length": {
+      "mean": 5454.05,
+      "min": 4638,
+      "max": 9893,
+      "std": 518.03
+    },
+    "target_length_mean": 24.05,
+    "computed_at": "2026-01-28T11:12:54.869898"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "d4ab7ff6",
+          "content": "You will be asked to read a passage and answer a question. Some examples of passages and Q&A are provided below.\n\n# Examples\n---\nPassage: Trunajaya rebellion  or Trunajaya War was the ultimately unsuccessful rebellion waged by the Madurese pr ... [TRUNCATED] ... iled a 40-yard field goal, yet the Raiders' defense would shut down any possible attempt.\nQuestion: Who scored the first touchdown of the game?\n\nThink step by step, then write a line of the form \"Answer: [ANSWER]\" at the end of your response."
+        }
+      ],
+      "target": "[('Chaz Schilens',), ('JaMarcus Russell',)]",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "passage": " Hoping to rebound from their loss to the Patriots, the Raiders stayed at home for a Week 16 duel with the Houston Texans.  Oakland would get the early lead in the first quarter as quarterback JaMarcus Russell completed a 20-yard touchdown pa ... [TRUNCATED] ...  29-yard touchdown pass from Russell, followed up by an 80-yard punt return for a touchdown.  The Texans tried to rally in the fourth quarter as Brown nailed a 40-yard field goal, yet the Raiders' defense would shut down any possible attempt.",
+        "answer": {
+          "number": "",
+          "date": {
+            "day": "",
+            "month": "",
+            "year": ""
+          },
+          "spans": [
+            "Chaz Schilens"
+          ],
+          "worker_id": "",
+          "hit_id": ""
+        },
+        "validated_answers": {
+          "number": [
+            "",
+            ""
+          ],
+          "date": [
+            {
+              "day": "",
+              "month": "",
+              "year": ""
+            },
+            {
+              "day": "",
+              "month": "",
+              "year": ""
+            }
+          ],
+          "spans": [
+            [
+              "Chaz Schilens"
+            ],
+            [
+              "JaMarcus Russell"
+            ]
+          ],
+          "worker_id": [
+            "",
+            ""
+          ],
+          "hit_id": [
+            "",
+            ""
+          ]
+        }
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# DROP\n\n\n## Overview\n\nDROP (Discrete Reasoning Over Paragraphs) is a challenging reading comprehension benchmark that requires models to perform discrete reasoning operations over text passages. Unlike simple extractive QA, DROP questions require numerical reasoning, counting, and comparison operations.\n\n## Task Description\n\n- **Task Type**: Reading Comprehension with Discrete Reasoning\n- **Input**: Passage and question requiring reasoning\n- **Output**: Numerical answer, span, or date\n- **Reasoning Types**: Addition, subtraction, counting, comparison, sorting\n\n## Key Features\n\n- 96,567 questions requiring discrete reasoning over text\n- Questions based on NFL game summaries, Wikipedia articles, etc.\n- Requires multi-step reasoning and arithmetic operations\n- Multiple valid answer formats (numbers, spans, dates)\n- Tests compositional reasoning abilities\n\n## Evaluation Notes\n\n- Default configuration uses **3-shot** examples\n- Metrics include Exact Match (EM) and token-level F1 score\n- Answers should follow the format: \"Answer: [ANSWER]\"\n- F1 score is the primary metric for comparison\n- Validates answers against multiple reference answers\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `drop` |\n| **Dataset ID** | [AI-ModelScope/DROP](https://modelscope.cn/datasets/AI-ModelScope/DROP/summary) |\n| **Paper** | N/A |\n| **Tags** | `Reasoning` |\n| **Metrics** | `em`, `f1` |\n| **Default Shots** | 3-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 9,536 |\n| Prompt Length (Mean) | 5454.05 chars |\n| Prompt Length (Min/Max) | 4638 / 9893 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d4ab7ff6\",\n      \"content\": \"You will be asked to read a passage and answer a question. Some examples of passages and Q&A are provided below.\\n\\n# Examples\\n---\\nPassage: Trunajaya rebellion  or Trunajaya War was the ultimately unsuccessful rebellion waged by the Madurese pr ... [TRUNCATED] ... iled a 40-yard field goal, yet the Raiders' defense would shut down any possible attempt.\\nQuestion: Who scored the first touchdown of the game?\\n\\nThink step by step, then write a line of the form \\\"Answer: [ANSWER]\\\" at the end of your response.\"\n    }\n  ],\n  \"target\": \"[('Chaz Schilens',), ('JaMarcus Russell',)]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"passage\": \" Hoping to rebound from their loss to the Patriots, the Raiders stayed at home for a Week 16 duel with the Houston Texans.  Oakland would get the early lead in the first quarter as quarterback JaMarcus Russell completed a 20-yard touchdown pa ... [TRUNCATED] ...  29-yard touchdown pass from Russell, followed up by an 80-yard punt return for a touchdown.  The Texans tried to rally in the fourth quarter as Brown nailed a 40-yard field goal, yet the Raiders' defense would shut down any possible attempt.\",\n    \"answer\": {\n      \"number\": \"\",\n      \"date\": {\n        \"day\": \"\",\n        \"month\": \"\",\n        \"year\": \"\"\n      },\n      \"spans\": [\n        \"Chaz Schilens\"\n      ],\n      \"worker_id\": \"\",\n      \"hit_id\": \"\"\n    },\n    \"validated_answers\": {\n      \"number\": [\n        \"\",\n        \"\"\n      ],\n      \"date\": [\n        {\n          \"day\": \"\",\n          \"month\": \"\",\n          \"year\": \"\"\n        },\n        {\n          \"day\": \"\",\n          \"month\": \"\",\n          \"year\": \"\"\n        }\n      ],\n      \"spans\": [\n        [\n          \"Chaz Schilens\"\n        ],\n        [\n          \"JaMarcus Russell\"\n        ]\n      ],\n      \"worker_id\": [\n        \"\",\n        \"\"\n      ],\n      \"hit_id\": [\n        \"\",\n        \"\"\n      ]\n    }\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou will be asked to read a passage and answer a question. {drop_examples}\n# Your Task\n\n---\n{query}\n\nThink step by step, then write a line of the form \"Answer: [ANSWER]\" at the end of your response.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets drop \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['drop'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# DROP\n\n## 概述\n\nDROP（Discrete Reasoning Over Paragraphs，段落离散推理）是一个具有挑战性的阅读理解基准测试，要求模型在文本段落上执行离散推理操作。与简单的抽取式问答不同，DROP 的问题需要进行数值推理、计数和比较等操作。\n\n## 任务描述\n\n- **任务类型**：带离散推理的阅读理解  \n- **输入**：需要推理的段落和问题  \n- **输出**：数值答案、文本片段（span）或日期  \n- **推理类型**：加法、减法、计数、比较、排序  \n\n## 主要特点\n\n- 包含 96,567 个需要对文本进行离散推理的问题  \n- 问题基于 NFL 比赛摘要、维基百科文章等  \n- 需要多步推理和算术运算  \n- 支持多种有效答案格式（数字、文本片段、日期）  \n- 测试模型的组合推理能力  \n\n## 评估说明\n\n- 默认配置使用 **3-shot** 示例  \n- 评估指标包括精确匹配（Exact Match, EM）和 token 级别的 F1 分数  \n- 答案应遵循格式：\"Answer: [ANSWER]\"  \n- F1 分数是主要的比较指标  \n- 答案会与多个参考答案进行比对验证  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `drop` |\n| **数据集ID** | [AI-ModelScope/DROP](https://modelscope.cn/datasets/AI-ModelScope/DROP/summary) |\n| **论文** | N/A |\n| **标签** | `Reasoning` |\n| **指标** | `em`, `f1` |\n| **默认示例数量** | 3-shot |\n| **评估划分** | `validation` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 9,536 |\n| 提示词长度（平均） | 5454.05 字符 |\n| 提示词长度（最小/最大） | 4638 / 9893 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d4ab7ff6\",\n      \"content\": \"You will be asked to read a passage and answer a question. Some examples of passages and Q&A are provided below.\\n\\n# Examples\\n---\\nPassage: Trunajaya rebellion  or Trunajaya War was the ultimately unsuccessful rebellion waged by the Madurese pr ... [TRUNCATED] ... iled a 40-yard field goal, yet the Raiders' defense would shut down any possible attempt.\\nQuestion: Who scored the first touchdown of the game?\\n\\nThink step by step, then write a line of the form \\\"Answer: [ANSWER]\\\" at the end of your response.\"\n    }\n  ],\n  \"target\": \"[('Chaz Schilens',), ('JaMarcus Russell',)]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"passage\": \" Hoping to rebound from their loss to the Patriots, the Raiders stayed at home for a Week 16 duel with the Houston Texans.  Oakland would get the early lead in the first quarter as quarterback JaMarcus Russell completed a 20-yard touchdown pa ... [TRUNCATED] ...  29-yard touchdown pass from Russell, followed up by an 80-yard punt return for a touchdown.  The Texans tried to rally in the fourth quarter as Brown nailed a 40-yard field goal, yet the Raiders' defense would shut down any possible attempt.\",\n    \"answer\": {\n      \"number\": \"\",\n      \"date\": {\n        \"day\": \"\",\n        \"month\": \"\",\n        \"year\": \"\"\n      },\n      \"spans\": [\n        \"Chaz Schilens\"\n      ],\n      \"worker_id\": \"\",\n      \"hit_id\": \"\"\n    },\n    \"validated_answers\": {\n      \"number\": [\n        \"\",\n        \"\"\n      ],\n      \"date\": [\n        {\n          \"day\": \"\",\n          \"month\": \"\",\n          \"year\": \"\"\n        },\n        {\n          \"day\": \"\",\n          \"month\": \"\",\n          \"year\": \"\"\n        }\n      ],\n      \"spans\": [\n        [\n          \"Chaz Schilens\"\n        ],\n        [\n          \"JaMarcus Russell\"\n        ]\n      ],\n      \"worker_id\": [\n        \"\",\n        \"\"\n      ],\n      \"hit_id\": [\n        \"\",\n        \"\"\n      ]\n    }\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou will be asked to read a passage and answer a question. {drop_examples}\n# Your Task\n\n---\n{query}\n\nThink step by step, then write a line of the form \"Answer: [ANSWER]\" at the end of your response.\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets drop \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['drop'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "9a59d4fe8477d87751ed5b7064c4f2a6",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.227072",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

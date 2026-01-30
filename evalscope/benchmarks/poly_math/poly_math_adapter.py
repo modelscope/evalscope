@@ -24,8 +24,35 @@ LEVEL_LIST = ['low', 'medium', 'high', 'top']
         name='poly_math',
         pretty_name='PolyMath',
         tags=[Tags.MATH, Tags.REASONING, Tags.MULTI_LINGUAL],
-        description=
-        'PolyMath is a multilingual mathematical reasoning benchmark covering 18 languages and 4 easy-to-hard difficulty levels, with 9,000 high-quality problem samples. Our benchmark ensures difficulty comprehensiveness, language diversity, and high-quality translation, making it a highly discriminative multilingual mathematical benchmark in the era of reasoning LLMs.',  # noqa: E501
+        description="""
+## Overview
+
+PolyMath is a multilingual mathematical reasoning benchmark covering 18 languages and 4 difficulty levels with 9,000 high-quality problem samples. It ensures difficulty comprehensiveness, language diversity, and high-quality translation for discriminative multilingual evaluation.
+
+## Task Description
+
+- **Task Type**: Multilingual Mathematical Reasoning
+- **Input**: Math problem in one of 18 languages
+- **Output**: Numerical answer in \\boxed{} format
+- **Domains**: Mathematics across multiple difficulty levels and languages
+
+## Key Features
+
+- 18 supported languages: en, zh, ar, bn, de, es, fr, id, it, ja, ko, ms, pt, ru, sw, te, th, vi
+- 4 difficulty levels: low, medium, high, top
+- 9,000 high-quality problems total
+- Language-specific instructions for each problem
+- High-quality human translations ensuring accuracy
+
+## Evaluation Notes
+
+- Default evaluation uses the **test** split
+- Primary metric: **Accuracy** with numeric comparison
+- Additional metric: **DW-ACC** (Difficulty-Weighted Accuracy)
+  - Weights: low=1, medium=2, high=4, top=8
+  - Provides balanced scoring across difficulty levels
+- Results reported per language and overall
+""",  # noqa: E501
         dataset_id='evalscope/PolyMath',
         subset_list=SUBSET_LIST,
         metric_list=[{

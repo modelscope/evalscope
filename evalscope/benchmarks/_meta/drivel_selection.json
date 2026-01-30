@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "pretty_name": "DrivelologyNarrativeSelection",
+    "dataset_id": "extraordinarylab/drivel-hub",
+    "paper_url": null,
+    "tags": [
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "multiple-choice-english-easy",
+      "multiple-choice-english-hard"
+    ],
+    "description": "## Overview\n\nDrivelology Narrative Selection evaluates models' ability to understand the underlying narrative of \"drivelology\" text - linguistic utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Narrative Understanding\n- **Input**: Drivelology text with multiple narrative interpretation options\n- **Output**: Best option representing the underlying narrative\n- **Domain**: Linguistic analysis, narrative comprehension\n\n## Key Features\n\n- Tests deep narrative understanding\n- Requires interpretation of layered meanings\n- Multiple-choice format with challenging distractors\n- Easy and hard difficulty levels\n- Tests cultural and contextual understanding\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Simple accuracy metric\n- Subsets: multiple-choice-english-easy, multiple-choice-english-hard",
+    "prompt_template": "Tell me the best option in the following options which represents the underlying narrative of the text?\nThe entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 1200,
+    "subset_stats": [
+      {
+        "name": "multiple-choice-english-easy",
+        "sample_count": 600,
+        "prompt_length_mean": 1563.53,
+        "prompt_length_min": 908,
+        "prompt_length_max": 2865,
+        "prompt_length_std": 366.61,
+        "target_length_mean": 1
+      },
+      {
+        "name": "multiple-choice-english-hard",
+        "sample_count": 600,
+        "prompt_length_mean": 1262.98,
+        "prompt_length_min": 754,
+        "prompt_length_max": 2348,
+        "prompt_length_std": 318.72,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 1413.26,
+      "min": 754,
+      "max": 2865,
+      "std": 374.83
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:12:48.840154"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "44908073",
+          "content": "Tell me the best option in the following options which represents the underlying narrative of the text?\nThe entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C, ... [TRUNCATED] ...  be achieved by simply resting today and tomorrow. It humorously implies that diligence is overrated and taking breaks is the key to progress. This narrative undermines the importance of effort, presenting relaxation as the ultimate solution."
+        }
+      ],
+      "choices": [
+        "The passage reflects on the inevitability of fate, stating that what happens the day after tomorrow is beyond our control. Therefore, it encourages living in the moment and enjoying today and tomorrow. It conveys a message of mindfulness and acceptance.",
+        "This creates a paradoxical tone, as it acknowledges the value of diligence but simultaneously advocates for procrastination. The underlying message could reflect a lighthearted take on balancing work and rest or even poking fun at the tendency to delay responsibilities.",
+        "The text discusses the cyclical nature of time, arguing that the day after tomorrow holds the key to breaking free from monotony. It proposes resting today and tomorrow to prepare for this transformative moment. This symbolizes renewal and the anticipation of change.",
+        "The text emphasizes the importance of teamwork, suggesting that collective effort tomorrow will yield the best results. It then humorously advises everyone to take a break today to gather energy. This highlights the value of preparation over immediate action.",
+        "The text suggests that hard work is unnecessary, as success can be achieved by simply resting today and tomorrow. It humorously implies that diligence is overrated and taking breaks is the key to progress. This narrative undermines the importance of effort, presenting relaxation as the ultimate solution."
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {}
+    },
+    "subset": "multiple-choice-english-easy",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# DrivelologyNarrativeSelection\n\n## Overview\n\nDrivelology Narrative Selection evaluates models' ability to understand the underlying narrative of \"drivelology\" text - linguistic utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Narrative Understanding\n- **Input**: Drivelology text with multiple narrative interpretation options\n- **Output**: Best option representing the underlying narrative\n- **Domain**: Linguistic analysis, narrative comprehension\n\n## Key Features\n\n- Tests deep narrative understanding\n- Requires interpretation of layered meanings\n- Multiple-choice format with challenging distractors\n- Easy and hard difficulty levels\n- Tests cultural and contextual understanding\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Simple accuracy metric\n- Subsets: multiple-choice-english-easy, multiple-choice-english-hard\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `drivel_selection` |\n| **Dataset ID** | [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,200 |\n| Prompt Length (Mean) | 1413.26 chars |\n| Prompt Length (Min/Max) | 754 / 2865 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `multiple-choice-english-easy` | 600 | 1563.53 | 908 | 2865 |\n| `multiple-choice-english-hard` | 600 | 1262.98 | 754 | 2348 |\n\n## Sample Example\n\n**Subset**: `multiple-choice-english-easy`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"44908073\",\n      \"content\": \"Tell me the best option in the following options which represents the underlying narrative of the text?\\nThe entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C, ... [TRUNCATED] ...  be achieved by simply resting today and tomorrow. It humorously implies that diligence is overrated and taking breaks is the key to progress. This narrative undermines the importance of effort, presenting relaxation as the ultimate solution.\"\n    }\n  ],\n  \"choices\": [\n    \"The passage reflects on the inevitability of fate, stating that what happens the day after tomorrow is beyond our control. Therefore, it encourages living in the moment and enjoying today and tomorrow. It conveys a message of mindfulness and acceptance.\",\n    \"This creates a paradoxical tone, as it acknowledges the value of diligence but simultaneously advocates for procrastination. The underlying message could reflect a lighthearted take on balancing work and rest or even poking fun at the tendency to delay responsibilities.\",\n    \"The text discusses the cyclical nature of time, arguing that the day after tomorrow holds the key to breaking free from monotony. It proposes resting today and tomorrow to prepare for this transformative moment. This symbolizes renewal and the anticipation of change.\",\n    \"The text emphasizes the importance of teamwork, suggesting that collective effort tomorrow will yield the best results. It then humorously advises everyone to take a break today to gather energy. This highlights the value of preparation over immediate action.\",\n    \"The text suggests that hard work is unnecessary, as success can be achieved by simply resting today and tomorrow. It humorously implies that diligence is overrated and taking breaks is the key to progress. This narrative undermines the importance of effort, presenting relaxation as the ultimate solution.\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nTell me the best option in the following options which represents the underlying narrative of the text?\nThe entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets drivel_selection \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['drivel_selection'],\n    dataset_args={\n        'drivel_selection': {\n            # subset_list: ['multiple-choice-english-easy', 'multiple-choice-english-hard']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# DrivelologyNarrativeSelection\n\n## 概述\n\nDrivelology 叙事选择（Drivelology Narrative Selection）用于评估模型理解“drivelology”文本底层叙事的能力——这类语言表达在句法上连贯，但在语用层面具有悖论性、情感负载强烈或修辞上具有颠覆性。\n\n## 任务描述\n\n- **任务类型**：多项选择式叙事理解\n- **输入**：包含多个叙事解释选项的 drivelology 文本\n- **输出**：最能代表文本底层叙事的最佳选项\n- **领域**：语言分析、叙事理解\n\n## 核心特点\n\n- 考察深层叙事理解能力\n- 要求解读多层次含义\n- 多项选择格式，干扰项具有挑战性\n- 包含简单和困难两个难度级别\n- 考察文化与语境理解能力\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 使用简单准确率（accuracy）作为指标\n- 子集：`multiple-choice-english-easy`、`multiple-choice-english-hard`\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `drivel_selection` |\n| **数据集ID** | [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary) |\n| **论文** | N/A |\n| **标签** | `MCQ` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,200 |\n| 提示词长度（平均） | 1413.26 字符 |\n| 提示词长度（最小/最大） | 754 / 2865 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `multiple-choice-english-easy` | 600 | 1563.53 | 908 | 2865 |\n| `multiple-choice-english-hard` | 600 | 1262.98 | 754 | 2348 |\n\n## 样例示例\n\n**子集**: `multiple-choice-english-easy`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"44908073\",\n      \"content\": \"Tell me the best option in the following options which represents the underlying narrative of the text?\\nThe entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C, ... [TRUNCATED] ...  be achieved by simply resting today and tomorrow. It humorously implies that diligence is overrated and taking breaks is the key to progress. This narrative undermines the importance of effort, presenting relaxation as the ultimate solution.\"\n    }\n  ],\n  \"choices\": [\n    \"The passage reflects on the inevitability of fate, stating that what happens the day after tomorrow is beyond our control. Therefore, it encourages living in the moment and enjoying today and tomorrow. It conveys a message of mindfulness and acceptance.\",\n    \"This creates a paradoxical tone, as it acknowledges the value of diligence but simultaneously advocates for procrastination. The underlying message could reflect a lighthearted take on balancing work and rest or even poking fun at the tendency to delay responsibilities.\",\n    \"The text discusses the cyclical nature of time, arguing that the day after tomorrow holds the key to breaking free from monotony. It proposes resting today and tomorrow to prepare for this transformative moment. This symbolizes renewal and the anticipation of change.\",\n    \"The text emphasizes the importance of teamwork, suggesting that collective effort tomorrow will yield the best results. It then humorously advises everyone to take a break today to gather energy. This highlights the value of preparation over immediate action.\",\n    \"The text suggests that hard work is unnecessary, as success can be achieved by simply resting today and tomorrow. It humorously implies that diligence is overrated and taking breaks is the key to progress. This narrative undermines the importance of effort, presenting relaxation as the ultimate solution.\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nTell me the best option in the following options which represents the underlying narrative of the text?\nThe entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets drivel_selection \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['drivel_selection'],\n    dataset_args={\n        'drivel_selection': {\n            # subset_list: ['multiple-choice-english-easy', 'multiple-choice-english-hard']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "ff7ebb03b2b0c47217cea39d09ca7d7a",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.225038",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

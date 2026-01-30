@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "pretty_name": "HMMT25",
+    "dataset_id": "evalscope/hmmt_feb_2025",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nHMMT February 2025 (MathArena) is a challenging evaluation benchmark derived from the Harvard-MIT Mathematics Tournament (HMMT) February 2025 competition, one of the most prestigious and difficult high school math contests globally.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: HMMT-level mathematical problem\n- **Output**: Answer with step-by-step reasoning\n- **Difficulty**: Advanced high school competition level\n\n## Key Features\n\n- Problems from HMMT February 2025 competition\n- Four primary domains: Algebra, Combinatorics, Geometry, Number Theory\n- Highly challenging competition-level problems\n- Tests advanced mathematical reasoning\n- Represents elite high school mathematics difficulty\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Numeric accuracy metric\n- Problems span multiple mathematical domains\n",
+    "prompt_template": "Problem:\n{question}\n\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 30,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 30,
+        "prompt_length_mean": 410.53,
+        "prompt_length_min": 173,
+        "prompt_length_max": 1594,
+        "prompt_length_std": 243.57,
+        "target_length_mean": 10.13
+      }
+    ],
+    "prompt_length": {
+      "mean": 410.53,
+      "min": 173,
+      "max": 1594,
+      "std": 243.57
+    },
+    "target_length_mean": 10.13,
+    "computed_at": "2026-01-28T11:13:54.015102"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "fb6fb4e8",
+          "content": "Problem:\nCompute the sum of the positive divisors (including $1$) of $9!$ that have units digit $1$.\n\nPlease reason step by step, and put your final answer within \\boxed{}.\n"
+        }
+      ],
+      "target": "103",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "problem_idx": 1,
+        "problem_type": [
+          "Number Theory"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# HMMT25\n\n\n## Overview\n\nHMMT February 2025 (MathArena) is a challenging evaluation benchmark derived from the Harvard-MIT Mathematics Tournament (HMMT) February 2025 competition, one of the most prestigious and difficult high school math contests globally.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: HMMT-level mathematical problem\n- **Output**: Answer with step-by-step reasoning\n- **Difficulty**: Advanced high school competition level\n\n## Key Features\n\n- Problems from HMMT February 2025 competition\n- Four primary domains: Algebra, Combinatorics, Geometry, Number Theory\n- Highly challenging competition-level problems\n- Tests advanced mathematical reasoning\n- Represents elite high school mathematics difficulty\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Numeric accuracy metric\n- Problems span multiple mathematical domains\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `hmmt25` |\n| **Dataset ID** | [evalscope/hmmt_feb_2025](https://modelscope.cn/datasets/evalscope/hmmt_feb_2025/summary) |\n| **Paper** | N/A |\n| **Tags** | `Math`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 30 |\n| Prompt Length (Mean) | 410.53 chars |\n| Prompt Length (Min/Max) | 173 / 1594 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"fb6fb4e8\",\n      \"content\": \"Problem:\\nCompute the sum of the positive divisors (including $1$) of $9!$ that have units digit $1$.\\n\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\\n\"\n    }\n  ],\n  \"target\": \"103\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"problem_idx\": 1,\n    \"problem_type\": [\n      \"Number Theory\"\n    ]\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nProblem:\n{question}\n\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets hmmt25 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['hmmt25'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# HMMT25\n\n## 概述\n\nHMMT February 2025（MathArena）是一个具有挑战性的评测基准，源自2025年2月举办的哈佛-麻省理工数学竞赛（Harvard-MIT Mathematics Tournament, HMMT），这是全球最负盛名且难度最高的高中数学竞赛之一。\n\n## 任务描述\n\n- **任务类型**：竞赛数学问题求解  \n- **输入**：HMMT级别的数学问题  \n- **输出**：包含逐步推理过程的答案  \n- **难度**：高级高中竞赛水平  \n\n## 主要特点\n\n- 题目来自 HMMT 2025 年 2 月竞赛  \n- 四大核心领域：代数（Algebra）、组合数学（Combinatorics）、几何（Geometry）、数论（Number Theory）  \n- 高难度的竞赛级题目  \n- 考察高级数学推理能力  \n- 代表顶尖高中数学竞赛难度  \n\n## 评测说明\n\n- 默认配置使用 **0-shot** 评测  \n- 答案应使用 `\\boxed{}` 格式包裹，以便正确提取  \n- 使用数值准确率（numeric accuracy）作为评估指标  \n- 题目覆盖多个数学领域  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `hmmt25` |\n| **数据集ID** | [evalscope/hmmt_feb_2025](https://modelscope.cn/datasets/evalscope/hmmt_feb_2025/summary) |\n| **论文** | N/A |\n| **标签** | `Math`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评测划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 30 |\n| 提示词长度（平均） | 410.53 字符 |\n| 提示词长度（最小/最大） | 173 / 1594 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"fb6fb4e8\",\n      \"content\": \"Problem:\\nCompute the sum of the positive divisors (including $1$) of $9!$ that have units digit $1$.\\n\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\\n\"\n    }\n  ],\n  \"target\": \"103\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"problem_idx\": 1,\n    \"problem_type\": [\n      \"Number Theory\"\n    ]\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nProblem:\n{question}\n\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets hmmt25 \\\n    --limit 10  # 正式评测时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['hmmt25'],\n    limit=10,  # 正式评测时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "a58c28d695a6ec41ec144a38a295875c",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.251564",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

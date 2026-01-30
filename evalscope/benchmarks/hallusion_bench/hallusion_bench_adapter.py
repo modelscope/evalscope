@@ -19,8 +19,36 @@ logger = get_logger()
         name='hallusion_bench',
         pretty_name='HallusionBench',
         tags=[Tags.MULTI_MODAL, Tags.HALLUCINATION, Tags.YES_NO],
-        description=
-        'HallusionBench is an advanced diagnostic benchmark designed to evaluate image-context reasoning, analyze models\' tendencies for language hallucination and visual illusion in large vision-language models (LVLMs).',  # noqa: E501
+        description="""
+## Overview
+
+HallusionBench is an advanced diagnostic benchmark designed to evaluate image-context reasoning and detect hallucination tendencies in Large Vision-Language Models (LVLMs). It specifically tests models' susceptibility to language hallucination and visual illusion.
+
+## Task Description
+
+- **Task Type**: Hallucination Detection and Visual Reasoning
+- **Input**: Image + yes/no question about image content
+- **Output**: YES or NO answer
+- **Domains**: Hallucination detection, visual reasoning, factual accuracy
+
+## Key Features
+
+- Specifically designed to probe hallucination behaviors
+- Tests both language hallucination and visual illusion
+- Organized by categories and subcategories for detailed analysis
+- Uses grouped accuracy metrics for robust evaluation
+- Questions require precise image-context reasoning
+
+## Evaluation Notes
+
+- Default evaluation uses the **image** split
+- Multiple accuracy metrics:
+  - **aAcc**: Answer-level accuracy (per-question)
+  - **fAcc**: Figure-level accuracy (all questions per figure correct)
+  - **qAcc**: Question-level accuracy (grouped by question type)
+- Requires simple YES/NO answers without explanation
+- Aggregation at subcategory, category, and overall levels
+""",  # noqa: E501
         dataset_id='lmms-lab/HallusionBench',
         metric_list=['aAcc', 'qAcc', 'fAcc'],
         aggregation='f1',

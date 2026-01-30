@@ -1,0 +1,116 @@
+{
+  "meta": {
+    "pretty_name": "JNLPBA-Rare",
+    "dataset_id": "extraordinarylab/jnlpba-rare",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nThe JNLPBA-Rare dataset is a specialized subset of the JNLPBA test set created to evaluate zero-shot performance on its least frequent entity types: RNA and cell line. It tests model ability to recognize rare biomedical entities.\n\n## Task Description\n\n- **Task Type**: Rare Biomedical Named Entity Recognition (NER)\n- **Input**: Biomedical text from MEDLINE abstracts\n- **Output**: Identified RNA and cell line entity spans\n- **Domain**: Molecular biology, bioinformatics\n\n## Key Features\n\n- Focuses on rare entity types (RNA, cell line)\n- Subset of JNLPBA for zero-shot evaluation\n- Tests handling of infrequent biomedical entities\n- Challenging benchmark for entity recognition\n- Useful for evaluating long-tail performance\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: RNA, CELL_LINE\n",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 465,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 465,
+        "prompt_length_mean": 1111.66,
+        "prompt_length_min": 976,
+        "prompt_length_max": 1403,
+        "prompt_length_std": 72.2,
+        "target_length_mean": 236.18
+      }
+    ],
+    "prompt_length": {
+      "mean": 1111.66,
+      "min": 976,
+      "max": 1403,
+      "std": 72.2
+    },
+    "target_length_mean": 236.18,
+    "computed_at": "2026-01-28T14:14:37.472083"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "11496ce5",
+          "content": "You are a named entity recognition system that identifies the following entity types:\nrna (Names of RNA molecules), cell_line (Names of specific, cultured cell lines)\n\nProcess the provided text and mark all named entities with XML-style tags. ... [TRUNCATED] ... rlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\nOctamer-binding proteins from B or HeLa cells stimulate transcription of the immunoglobulin heavy-chain promoter in vitro .\n"
+        }
+      ],
+      "target": "<response>Octamer-binding proteins from <cell_line>B or HeLa cells</cell_line> stimulate transcription of the immunoglobulin heavy-chain promoter in vitro .</response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "Octamer-binding",
+          "proteins",
+          "from",
+          "B",
+          "or",
+          "HeLa",
+          "cells",
+          "stimulate",
+          "transcription",
+          "of",
+          "the",
+          "immunoglobulin",
+          "heavy-chain",
+          "promoter",
+          "in",
+          "vitro",
+          "."
+        ],
+        "ner_tags": [
+          "O",
+          "O",
+          "O",
+          "B-CELL_LINE",
+          "I-CELL_LINE",
+          "I-CELL_LINE",
+          "I-CELL_LINE",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# JNLPBA-Rare\n\n\n## Overview\n\nThe JNLPBA-Rare dataset is a specialized subset of the JNLPBA test set created to evaluate zero-shot performance on its least frequent entity types: RNA and cell line. It tests model ability to recognize rare biomedical entities.\n\n## Task Description\n\n- **Task Type**: Rare Biomedical Named Entity Recognition (NER)\n- **Input**: Biomedical text from MEDLINE abstracts\n- **Output**: Identified RNA and cell line entity spans\n- **Domain**: Molecular biology, bioinformatics\n\n## Key Features\n\n- Focuses on rare entity types (RNA, cell line)\n- Subset of JNLPBA for zero-shot evaluation\n- Tests handling of infrequent biomedical entities\n- Challenging benchmark for entity recognition\n- Useful for evaluating long-tail performance\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: RNA, CELL_LINE\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `jnlpba_rare` |\n| **Dataset ID** | [extraordinarylab/jnlpba-rare](https://modelscope.cn/datasets/extraordinarylab/jnlpba-rare/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 465 |\n| Prompt Length (Mean) | 1111.66 chars |\n| Prompt Length (Min/Max) | 976 / 1403 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"11496ce5\",\n      \"content\": \"You are a named entity recognition system that identifies the following entity types:\\nrna (Names of RNA molecules), cell_line (Names of specific, cultured cell lines)\\n\\nProcess the provided text and mark all named entities with XML-style tags. ... [TRUNCATED] ... rlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\nOctamer-binding proteins from B or HeLa cells stimulate transcription of the immunoglobulin heavy-chain promoter in vitro .\\n\"\n    }\n  ],\n  \"target\": \"<response>Octamer-binding proteins from <cell_line>B or HeLa cells</cell_line> stimulate transcription of the immunoglobulin heavy-chain promoter in vitro .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"Octamer-binding\",\n      \"proteins\",\n      \"from\",\n      \"B\",\n      \"or\",\n      \"HeLa\",\n      \"cells\",\n      \"stimulate\",\n      \"transcription\",\n      \"of\",\n      \"the\",\n      \"immunoglobulin\",\n      \"heavy-chain\",\n      \"promoter\",\n      \"in\",\n      \"vitro\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-CELL_LINE\",\n      \"I-CELL_LINE\",\n      \"I-CELL_LINE\",\n      \"I-CELL_LINE\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets jnlpba_rare \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['jnlpba_rare'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# JNLPBA-Rare\n\n## 概述\n\nJNLPBA-Rare 数据集是 JNLPBA 测试集的一个专门子集，用于评估模型在最不常见的实体类型（RNA 和细胞系）上的零样本（zero-shot）性能。该数据集用于测试模型识别稀有生物医学实体的能力。\n\n## 任务描述\n\n- **任务类型**：稀有生物医学命名实体识别（NER）\n- **输入**：来自 MEDLINE 摘要的生物医学文本\n- **输出**：识别出的 RNA 和细胞系实体范围\n- **领域**：分子生物学、生物信息学\n\n## 主要特点\n\n- 聚焦于稀有实体类型（RNA、细胞系）\n- 作为 JNLPBA 的子集，专用于零样本评估\n- 测试模型对低频生物医学实体的处理能力\n- 是命名实体识别任务中具有挑战性的基准\n- 适用于评估模型在长尾分布上的表现\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）\n- 实体类型：RNA、CELL_LINE\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `jnlpba_rare` |\n| **数据集ID** | [extraordinarylab/jnlpba-rare](https://modelscope.cn/datasets/extraordinarylab/jnlpba-rare/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认样本数** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 465 |\n| 提示词长度（平均） | 1111.66 字符 |\n| 提示词长度（最小/最大） | 976 / 1403 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"11496ce5\",\n      \"content\": \"You are a named entity recognition system that identifies the following entity types:\\nrna (Names of RNA molecules), cell_line (Names of specific, cultured cell lines)\\n\\nProcess the provided text and mark all named entities with XML-style tags. ... [TRUNCATED] ... rlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\nOctamer-binding proteins from B or HeLa cells stimulate transcription of the immunoglobulin heavy-chain promoter in vitro .\\n\"\n    }\n  ],\n  \"target\": \"<response>Octamer-binding proteins from <cell_line>B or HeLa cells</cell_line> stimulate transcription of the immunoglobulin heavy-chain promoter in vitro .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"Octamer-binding\",\n      \"proteins\",\n      \"from\",\n      \"B\",\n      \"or\",\n      \"HeLa\",\n      \"cells\",\n      \"stimulate\",\n      \"transcription\",\n      \"of\",\n      \"the\",\n      \"immunoglobulin\",\n      \"heavy-chain\",\n      \"promoter\",\n      \"in\",\n      \"vitro\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-CELL_LINE\",\n      \"I-CELL_LINE\",\n      \"I-CELL_LINE\",\n      \"I-CELL_LINE\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本（Few-shot）模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets jnlpba_rare \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['jnlpba_rare'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "d351c2685c0cd313a2bd052446a8ba35",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.362074",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

@@ -1,0 +1,84 @@
+{
+  "meta": {
+    "pretty_name": "ZebraLogicBench",
+    "dataset_id": "allenai/ZebraLogicBench-private",
+    "paper_url": null,
+    "tags": [
+      "Reasoning"
+    ],
+    "metrics": [
+      "puzzle_acc",
+      "cell_acc",
+      "easy_puzzle_acc",
+      "hard_puzzle_acc",
+      "small_puzzle_acc",
+      "medium_puzzle_acc",
+      "large_puzzle_acc",
+      "xl_puzzle_acc",
+      "avg_reason_lens",
+      "no_answer_num"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "grid_mode"
+    ],
+    "description": "\n## Overview\n\nZebraLogicBench is a comprehensive evaluation framework for assessing LLM reasoning performance on logic grid puzzles derived from constraint satisfaction problems (CSPs). It tests systematic logical reasoning abilities.\n\n## Task Description\n\n- **Task Type**: Logic Grid Puzzle Solving\n- **Input**: Logic puzzle with houses, attributes, and clues\n- **Output**: JSON solution with reasoning explanation\n- **Domains**: Constraint satisfaction, logical deduction\n\n## Key Features\n\n- Puzzles derived from constraint satisfaction problems\n- Requires systematic step-by-step logical reasoning\n- Varying difficulty levels (Easy/Hard) and sizes (Small/Medium/Large/XL)\n- Tests ability to process multiple interdependent clues\n- Solutions must be valid JSON format\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split with **zero-shot**\n- Multiple metrics tracked:\n  - `puzzle_acc`: Correctly solved complete puzzles\n  - `cell_acc`: Correctly identified individual cells\n  - Difficulty-based: `easy_puzzle_acc`, `hard_puzzle_acc`\n  - Size-based: `small`, `medium`, `large`, `xl_puzzle_acc`\n  - `avg_reason_lens`: Average reasoning length\n- Output must include reasoning and solution in JSON format\n",
+    "prompt_template": "# Example Puzzle\n\nThere are 3 houses, numbered 1 to 3 from left to right, as seen from across the street. Each house is occupied by a different person. Each house has a unique attribute for each of the following characteristics:\n - Each person has a unique name: `Peter`, `Eric`, `Arnold`.\n - Each person has a unique favorite drink: `tea`, `water`, `milk`\n\n## Clues for the Example Puzzle\n\n1. Peter is in the second house.\n2. Arnold is directly left of the one who only drinks water.\n3. The one who only drinks water is directly left of the person who likes milk.\n\n## Answer to the Example Puzzle\n\n{{\n    \"reasoning\": \"Given Clue 1, we know Peter is in House 2. According to Clue 2, Arnold is directly left of the one who only drinks water. The person in House 3 cannot be on the left of anyone, so Arnold must be in House 1. Thus, Peter drinks water, and Eric lives in House 3. Then, according to Clue 3, Eric drinks milk. Therefore, Arnold drinks tea.\",\n    \"solution\": {{\n        \"House 1\": {{\n            \"Name\": \"Arnold\",\n            \"Drink\": \"tea\"\n        }},\n        \"House 2\": {{\n            \"Name\": \"Peter\",\n            \"Drink\": \"water\"\n        }},\n        \"House 3\": {{\n            \"Name\": \"Eric\",\n            \"Drink\": \"milk\"\n        }}\n    }}\n}}\n\n# Puzzle to Solve\n\n{question}\n\n\n# Instruction\n\nNow please solve the above puzzle. Present your reasoning and solution in the following json format:\n\n{json_template}\n\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 1000,
+    "subset_stats": [
+      {
+        "name": "grid_mode",
+        "sample_count": 1000,
+        "prompt_length_mean": 3262.38,
+        "prompt_length_min": 2011,
+        "prompt_length_max": 5658,
+        "prompt_length_std": 852.8,
+        "target_length_mean": 268.25
+      }
+    ],
+    "prompt_length": {
+      "mean": 3262.38,
+      "min": 2011,
+      "max": 5658,
+      "std": 852.8
+    },
+    "target_length_mean": 268.25,
+    "computed_at": "2026-01-28T11:17:24.856012"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "e6c901c7",
+          "content": "# Example Puzzle\n\nThere are 3 houses, numbered 1 to 3 from left to right, as seen from across the street. Each house is occupied by a different person. Each house has a unique attribute for each of the following characteristics:\n - Each perso ... [TRUNCATED] ... Animal\": \"___\"\n        },\n        \"House 5\": {\n            \"Name\": \"___\",\n            \"Nationality\": \"___\",\n            \"BookGenre\": \"___\",\n            \"Food\": \"___\",\n            \"Color\": \"___\",\n            \"Animal\": \"___\"\n        }\n    }\n}\n\n"
+        }
+      ],
+      "target": "{\"header\": [\"House\", \"Name\", \"Nationality\", \"BookGenre\", \"Food\", \"Color\", \"Animal\"], \"rows\": [[\"1\", \"Bob\", \"german\", \"mystery\", \"grilled cheese\", \"yellow\", \"dog\"], [\"2\", \"Eric\", \"norwegian\", \"fantasy\", \"stew\", \"blue\", \"fish\"], [\"3\", \"Peter\", \"dane\", \"science fiction\", \"spaghetti\", \"green\", \"cat\"], [\"4\", \"Arnold\", \"swede\", \"biography\", \"stir fry\", \"red\", \"bird\"], [\"5\", \"Alice\", \"brit\", \"romance\", \"pizza\", \"white\", \"horse\"]]}",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "created_at": "2024-07-03T21:21:29.209499"
+      }
+    },
+    "subset": "grid_mode",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# ZebraLogicBench\n\n\n## Overview\n\nZebraLogicBench is a comprehensive evaluation framework for assessing LLM reasoning performance on logic grid puzzles derived from constraint satisfaction problems (CSPs). It tests systematic logical reasoning abilities.\n\n## Task Description\n\n- **Task Type**: Logic Grid Puzzle Solving\n- **Input**: Logic puzzle with houses, attributes, and clues\n- **Output**: JSON solution with reasoning explanation\n- **Domains**: Constraint satisfaction, logical deduction\n\n## Key Features\n\n- Puzzles derived from constraint satisfaction problems\n- Requires systematic step-by-step logical reasoning\n- Varying difficulty levels (Easy/Hard) and sizes (Small/Medium/Large/XL)\n- Tests ability to process multiple interdependent clues\n- Solutions must be valid JSON format\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split with **zero-shot**\n- Multiple metrics tracked:\n  - `puzzle_acc`: Correctly solved complete puzzles\n  - `cell_acc`: Correctly identified individual cells\n  - Difficulty-based: `easy_puzzle_acc`, `hard_puzzle_acc`\n  - Size-based: `small`, `medium`, `large`, `xl_puzzle_acc`\n  - `avg_reason_lens`: Average reasoning length\n- Output must include reasoning and solution in JSON format\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `zebralogicbench` |\n| **Dataset ID** | [allenai/ZebraLogicBench-private](https://modelscope.cn/datasets/allenai/ZebraLogicBench-private/summary) |\n| **Paper** | N/A |\n| **Tags** | `Reasoning` |\n| **Metrics** | `puzzle_acc`, `cell_acc`, `easy_puzzle_acc`, `hard_puzzle_acc`, `small_puzzle_acc`, `medium_puzzle_acc`, `large_puzzle_acc`, `xl_puzzle_acc`, `avg_reason_lens`, `no_answer_num` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,000 |\n| Prompt Length (Mean) | 3262.38 chars |\n| Prompt Length (Min/Max) | 2011 / 5658 chars |\n\n## Sample Example\n\n**Subset**: `grid_mode`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"e6c901c7\",\n      \"content\": \"# Example Puzzle\\n\\nThere are 3 houses, numbered 1 to 3 from left to right, as seen from across the street. Each house is occupied by a different person. Each house has a unique attribute for each of the following characteristics:\\n - Each perso ... [TRUNCATED] ... Animal\\\": \\\"___\\\"\\n        },\\n        \\\"House 5\\\": {\\n            \\\"Name\\\": \\\"___\\\",\\n            \\\"Nationality\\\": \\\"___\\\",\\n            \\\"BookGenre\\\": \\\"___\\\",\\n            \\\"Food\\\": \\\"___\\\",\\n            \\\"Color\\\": \\\"___\\\",\\n            \\\"Animal\\\": \\\"___\\\"\\n        }\\n    }\\n}\\n\\n\"\n    }\n  ],\n  \"target\": \"{\\\"header\\\": [\\\"House\\\", \\\"Name\\\", \\\"Nationality\\\", \\\"BookGenre\\\", \\\"Food\\\", \\\"Color\\\", \\\"Animal\\\"], \\\"rows\\\": [[\\\"1\\\", \\\"Bob\\\", \\\"german\\\", \\\"mystery\\\", \\\"grilled cheese\\\", \\\"yellow\\\", \\\"dog\\\"], [\\\"2\\\", \\\"Eric\\\", \\\"norwegian\\\", \\\"fantasy\\\", \\\"stew\\\", \\\"blue\\\", \\\"fish\\\"], [\\\"3\\\", \\\"Peter\\\", \\\"dane\\\", \\\"science fiction\\\", \\\"spaghetti\\\", \\\"green\\\", \\\"cat\\\"], [\\\"4\\\", \\\"Arnold\\\", \\\"swede\\\", \\\"biography\\\", \\\"stir fry\\\", \\\"red\\\", \\\"bird\\\"], [\\\"5\\\", \\\"Alice\\\", \\\"brit\\\", \\\"romance\\\", \\\"pizza\\\", \\\"white\\\", \\\"horse\\\"]]}\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"created_at\": \"2024-07-03T21:21:29.209499\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n# Example Puzzle\n\nThere are 3 houses, numbered 1 to 3 from left to right, as seen from across the street. Each house is occupied by a different person. Each house has a unique attribute for each of the following characteristics:\n - Each person has a unique name: `Peter`, `Eric`, `Arnold`.\n - Each person has a unique favorite drink: `tea`, `water`, `milk`\n\n## Clues for the Example Puzzle\n\n1. Peter is in the second house.\n2. Arnold is directly left of the one who only drinks water.\n3. The one who only drinks water is directly left of the person who likes milk.\n\n## Answer to the Example Puzzle\n\n{{\n    \"reasoning\": \"Given Clue 1, we know Peter is in House 2. According to Clue 2, Arnold is directly left of the one who only drinks water. The person in House 3 cannot be on the left of anyone, so Arnold must be in House 1. Thus, Peter drinks water, and Eric lives in House 3. Then, according to Clue 3, Eric drinks milk. Therefore, Arnold drinks tea.\",\n    \"solution\": {{\n        \"House 1\": {{\n            \"Name\": \"Arnold\",\n            \"Drink\": \"tea\"\n        }},\n        \"House 2\": {{\n            \"Name\": \"Peter\",\n            \"Drink\": \"water\"\n        }},\n        \"House 3\": {{\n            \"Name\": \"Eric\",\n            \"Drink\": \"milk\"\n        }}\n    }}\n}}\n\n# Puzzle to Solve\n\n{question}\n\n\n# Instruction\n\nNow please solve the above puzzle. Present your reasoning and solution in the following json format:\n\n{json_template}\n\n\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets zebralogicbench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['zebralogicbench'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# ZebraLogicBench\n\n## 概述\n\nZebraLogicBench 是一个全面的评估框架，用于评估大语言模型（LLM）在源自约束满足问题（CSPs）的逻辑网格谜题上的推理能力。该基准测试重点考察系统性的逻辑推理能力。\n\n## 任务描述\n\n- **任务类型**：逻辑网格谜题求解\n- **输入**：包含房屋、属性和线索的逻辑谜题\n- **输出**：包含推理过程解释的 JSON 格式解答\n- **领域**：约束满足、逻辑演绎\n\n## 主要特点\n\n- 谜题源自约束满足问题（CSP）\n- 要求进行系统性的逐步逻辑推理\n- 难度等级多样（简单/困难）且规模各异（小型/中型/大型/XL）\n- 测试模型处理多个相互依赖线索的能力\n- 解答必须为有效的 JSON 格式\n\n## 评估说明\n\n- 默认评估使用 **test** 数据集划分，并采用 **零样本（zero-shot）** 设置\n- 跟踪多项指标：\n  - `puzzle_acc`：完整正确解答的谜题比例\n  - `cell_acc`：正确识别的单个单元格比例\n  - 按难度划分：`easy_puzzle_acc`、`hard_puzzle_acc`\n  - 按规模划分：`small_puzzle_acc`、`medium_puzzle_acc`、`large_puzzle_acc`、`xl_puzzle_acc`\n  - `avg_reason_lens`：平均推理长度\n- 输出必须包含推理过程和解答，且格式为 JSON\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `zebralogicbench` |\n| **数据集ID** | [allenai/ZebraLogicBench-private](https://modelscope.cn/datasets/allenai/ZebraLogicBench-private/summary) |\n| **论文** | N/A |\n| **标签** | `Reasoning` |\n| **指标** | `puzzle_acc`, `cell_acc`, `easy_puzzle_acc`, `hard_puzzle_acc`, `small_puzzle_acc`, `medium_puzzle_acc`, `large_puzzle_acc`, `xl_puzzle_acc`, `avg_reason_lens`, `no_answer_num` |\n| **默认样本数** | 0-shot |\n| **评估数据划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,000 |\n| 提示词长度（平均） | 3262.38 字符 |\n| 提示词长度（最小/最大） | 2011 / 5658 字符 |\n\n## 样例示例\n\n**子集**: `grid_mode`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"e6c901c7\",\n      \"content\": \"# Example Puzzle\\n\\nThere are 3 houses, numbered 1 to 3 from left to right, as seen from across the street. Each house is occupied by a different person. Each house has a unique attribute for each of the following characteristics:\\n - Each perso ... [TRUNCATED] ... Animal\\\": \\\"___\\\"\\n        },\\n        \\\"House 5\\\": {\\n            \\\"Name\\\": \\\"___\\\",\\n            \\\"Nationality\\\": \\\"___\\\",\\n            \\\"BookGenre\\\": \\\"___\\\",\\n            \\\"Food\\\": \\\"___\\\",\\n            \\\"Color\\\": \\\"___\\\",\\n            \\\"Animal\\\": \\\"___\\\"\\n        }\\n    }\\n}\\n\\n\"\n    }\n  ],\n  \"target\": \"{\\\"header\\\": [\\\"House\\\", \\\"Name\\\", \\\"Nationality\\\", \\\"BookGenre\\\", \\\"Food\\\", \\\"Color\\\", \\\"Animal\\\"], \\\"rows\\\": [[\\\"1\\\", \\\"Bob\\\", \\\"german\\\", \\\"mystery\\\", \\\"grilled cheese\\\", \\\"yellow\\\", \\\"dog\\\"], [\\\"2\\\", \\\"Eric\\\", \\\"norwegian\\\", \\\"fantasy\\\", \\\"stew\\\", \\\"blue\\\", \\\"fish\\\"], [\\\"3\\\", \\\"Peter\\\", \\\"dane\\\", \\\"science fiction\\\", \\\"spaghetti\\\", \\\"green\\\", \\\"cat\\\"], [\\\"4\\\", \\\"Arnold\\\", \\\"swede\\\", \\\"biography\\\", \\\"stir fry\\\", \\\"red\\\", \\\"bird\\\"], [\\\"5\\\", \\\"Alice\\\", \\\"brit\\\", \\\"romance\\\", \\\"pizza\\\", \\\"white\\\", \\\"horse\\\"]]}\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"created_at\": \"2024-07-03T21:21:29.209499\"\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n# Example Puzzle\n\nThere are 3 houses, numbered 1 to 3 from left to right, as seen from across the street. Each house is occupied by a different person. Each house has a unique attribute for each of the following characteristics:\n - Each person has a unique name: `Peter`, `Eric`, `Arnold`.\n - Each person has a unique favorite drink: `tea`, `water`, `milk`\n\n## Clues for the Example Puzzle\n\n1. Peter is in the second house.\n2. Arnold is directly left of the one who only drinks water.\n3. The one who only drinks water is directly left of the person who likes milk.\n\n## Answer to the Example Puzzle\n\n{{\n    \"reasoning\": \"Given Clue 1, we know Peter is in House 2. According to Clue 2, Arnold is directly left of the one who only drinks water. The person in House 3 cannot be on the left of anyone, so Arnold must be in House 1. Thus, Peter drinks water, and Eric lives in House 3. Then, according to Clue 3, Eric drinks milk. Therefore, Arnold drinks tea.\",\n    \"solution\": {{\n        \"House 1\": {{\n            \"Name\": \"Arnold\",\n            \"Drink\": \"tea\"\n        }},\n        \"House 2\": {{\n            \"Name\": \"Peter\",\n            \"Drink\": \"water\"\n        }},\n        \"House 3\": {{\n            \"Name\": \"Eric\",\n            \"Drink\": \"milk\"\n        }}\n    }}\n}}\n\n# Puzzle to Solve\n\n{question}\n\n\n# Instruction\n\nNow please solve the above puzzle. Present your reasoning and solution in the following json format:\n\n{json_template}\n\n\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets zebralogicbench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['zebralogicbench'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "da48d7f3123a49cf3ca30d3654741882",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.676289",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

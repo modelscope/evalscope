@@ -1,0 +1,155 @@
+{
+  "meta": {
+    "pretty_name": "V*Bench",
+    "dataset_id": "lmms-lab/vstar-bench",
+    "paper_url": null,
+    "tags": [
+      "MCQ",
+      "MultiModal",
+      "Grounding"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nV*Bench is a benchmark designed for evaluating visual search capabilities within multimodal reasoning systems. It focuses on actively locating and identifying specific visual information in high-resolution images, crucial for fine-grained visual understanding.\n\n## Task Description\n\n- **Task Type**: Visual Search and Reasoning (Multiple-Choice)\n- **Input**: High-resolution image + targeted visual query\n- **Output**: Answer letter (A/B/C/D)\n- **Domains**: Visual search, fine-grained recognition, visual grounding\n\n## Key Features\n\n- Tests targeted visual query capabilities\n- Focuses on high-resolution image understanding\n- Requires finding and reasoning about specific visual elements\n- Questions guided by natural language instructions\n- Evaluates fine-grained visual understanding in complex scenes\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** on multiple-choice questions\n- Uses Chain-of-Thought (CoT) prompting with \"ANSWER: [LETTER]\" format\n- Metadata includes category and question ID for analysis\n",
+    "prompt_template": "\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.\n\n{question}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 191,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 191,
+        "prompt_length_mean": 366.07,
+        "prompt_length_min": 332,
+        "prompt_length_max": 402,
+        "prompt_length_std": 9.41,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 191,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1500x1827",
+              "1500x2000",
+              "1500x2001",
+              "1500x2031",
+              "1500x2148",
+              "1500x2218",
+              "1500x2241",
+              "1500x2246",
+              "1500x2250",
+              "1500x2254"
+            ],
+            "resolution_range": {
+              "min": "1690x1500",
+              "max": "5759x1440"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 366.07,
+      "min": 332,
+      "max": 402,
+      "std": 9.41
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:17:25.714299",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 191,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1500x1827",
+          "1500x2000",
+          "1500x2001",
+          "1500x2031",
+          "1500x2148",
+          "1500x2218",
+          "1500x2241",
+          "1500x2246",
+          "1500x2250",
+          "1500x2254"
+        ],
+        "resolution_range": {
+          "min": "1690x1500",
+          "max": "5759x1440"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "d0b9c304",
+          "content": [
+            {
+              "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.\n\nWhat is the material of the glove?\n(A) rubber\n(B) cotton\n(C) kevlar\n(D) leather\nAnswer with the option's letter from the given choices directly."
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~1.2MB]"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "category": "direct_attributes",
+        "question_id": "0"
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# V*Bench\n\n\n## Overview\n\nV*Bench is a benchmark designed for evaluating visual search capabilities within multimodal reasoning systems. It focuses on actively locating and identifying specific visual information in high-resolution images, crucial for fine-grained visual understanding.\n\n## Task Description\n\n- **Task Type**: Visual Search and Reasoning (Multiple-Choice)\n- **Input**: High-resolution image + targeted visual query\n- **Output**: Answer letter (A/B/C/D)\n- **Domains**: Visual search, fine-grained recognition, visual grounding\n\n## Key Features\n\n- Tests targeted visual query capabilities\n- Focuses on high-resolution image understanding\n- Requires finding and reasoning about specific visual elements\n- Questions guided by natural language instructions\n- Evaluates fine-grained visual understanding in complex scenes\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** on multiple-choice questions\n- Uses Chain-of-Thought (CoT) prompting with \"ANSWER: [LETTER]\" format\n- Metadata includes category and question ID for analysis\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `vstar_bench` |\n| **Dataset ID** | [lmms-lab/vstar-bench](https://modelscope.cn/datasets/lmms-lab/vstar-bench/summary) |\n| **Paper** | N/A |\n| **Tags** | `Grounding`, `MCQ`, `MultiModal` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 191 |\n| Prompt Length (Mean) | 366.07 chars |\n| Prompt Length (Min/Max) | 332 / 402 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 191 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 1690x1500 - 5759x1440 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d0b9c304\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.\\n\\nWhat is the material of the glove?\\n(A) rubber\\n(B) cotton\\n(C) kevlar\\n(D) leather\\nAnswer with the option's letter from the given choices directly.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~1.2MB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"A\",\n    \"B\",\n    \"C\",\n    \"D\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"category\": \"direct_attributes\",\n    \"question_id\": \"0\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.\n\n{question}\n\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets vstar_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['vstar_bench'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# V*Bench\n\n## 概述\n\nV*Bench 是一个用于评估多模态推理系统中视觉搜索能力的基准测试。它专注于在高分辨率图像中主动定位和识别特定的视觉信息，这对于细粒度的视觉理解至关重要。\n\n## 任务描述\n\n- **任务类型**：视觉搜索与推理（多项选择题）\n- **输入**：高分辨率图像 + 针对性的视觉查询\n- **输出**：答案选项字母（A/B/C/D）\n- **领域**：视觉搜索、细粒度识别、视觉定位（Visual Grounding）\n\n## 主要特点\n\n- 测试针对性视觉查询能力\n- 聚焦高分辨率图像理解\n- 要求查找并推理特定视觉元素\n- 问题由自然语言指令引导\n- 在复杂场景中评估细粒度视觉理解能力\n\n## 评估说明\n\n- 默认使用 **test** 数据划分进行评估\n- 主要指标：多项选择题的 **准确率（Accuracy）**\n- 使用思维链（Chain-of-Thought, CoT）提示，并以 \"ANSWER: [LETTER]\" 格式输出答案\n- 元数据包含类别和问题 ID，便于分析\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `vstar_bench` |\n| **数据集ID** | [lmms-lab/vstar-bench](https://modelscope.cn/datasets/lmms-lab/vstar-bench/summary) |\n| **论文** | N/A |\n| **标签** | `Grounding`, `MCQ`, `MultiModal` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 191 |\n| 提示词长度（平均） | 366.07 字符 |\n| 提示词长度（最小/最大） | 332 / 402 字符 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 191 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 1690x1500 - 5759x1440 |\n| 格式 | jpeg |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d0b9c304\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.\\n\\nWhat is the material of the glove?\\n(A) rubber\\n(B) cotton\\n(C) kevlar\\n(D) leather\\nAnswer with the option's letter from the given choices directly.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~1.2MB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"A\",\n    \"B\",\n    \"C\",\n    \"D\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"category\": \"direct_attributes\",\n    \"question_id\": \"0\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.\n\n{question}\n\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets vstar_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['vstar_bench'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "0ad63b03cdcd481f9160fa624116cdf6",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.665543",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

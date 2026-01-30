@@ -1,0 +1,102 @@
+{
+  "meta": {
+    "pretty_name": "AMC",
+    "dataset_id": "evalscope/amc_22-24",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": null,
+    "train_split": "",
+    "subset_list": [
+      "amc22",
+      "amc23",
+      "amc24"
+    ],
+    "description": "\n## Overview\n\nAMC (American Mathematics Competitions) is a benchmark based on problems from the AMC 10/12 competitions from 2022-2024. These multiple-choice problems test mathematical problem-solving skills at the high school level and serve as qualifiers for the AIME competition.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics (Multiple Choice)\n- **Input**: AMC-level mathematical problem\n- **Output**: Correct answer with step-by-step reasoning\n- **Years Covered**: 2022, 2023, 2024\n\n## Key Features\n\n- Problems from AMC 10 and AMC 12 competitions (2022-2024)\n- Multiple-choice format with 5 answer options\n- Topics: algebra, geometry, number theory, combinatorics\n- Difficulty ranges from accessible to challenging\n- Official competition problems with verified solutions\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Three subsets available: `amc22`, `amc23`, `amc24`\n- Problems include original URLs for reference\n- Solutions available in metadata for verification\n",
+    "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 134,
+    "subset_stats": [
+      {
+        "name": "amc22",
+        "sample_count": 43,
+        "prompt_length_mean": 337.42,
+        "prompt_length_min": 129,
+        "prompt_length_max": 934,
+        "prompt_length_std": 154.46,
+        "target_length_mean": 4.02
+      },
+      {
+        "name": "amc23",
+        "sample_count": 46,
+        "prompt_length_mean": 337.98,
+        "prompt_length_min": 143,
+        "prompt_length_max": 1218,
+        "prompt_length_std": 186.73,
+        "target_length_mean": 5.33
+      },
+      {
+        "name": "amc24",
+        "sample_count": 45,
+        "prompt_length_mean": 298.62,
+        "prompt_length_min": 98,
+        "prompt_length_max": 882,
+        "prompt_length_std": 142.25,
+        "target_length_mean": 5.78
+      }
+    ],
+    "prompt_length": {
+      "mean": 324.58,
+      "min": 98,
+      "max": 1218,
+      "std": 162.39
+    },
+    "target_length_mean": 5.06,
+    "computed_at": "2026-01-28T11:12:36.036871"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "54851a8f",
+          "content": "What is the value of\\[3+\\frac{1}{3+\\frac{1}{3+\\frac13}}?\\]\nPlease reason step by step, and put your final answer within \\boxed{}."
+        }
+      ],
+      "target": "\\frac{109}{33}",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "year": 2022,
+        "url": "https://artofproblemsolving.com/wiki/index.php/2022_AMC_12A_Problems/Problem_1",
+        "solution": "We have\\begin{align*} 3+\\frac{1}{3+\\frac{1}{3+\\frac13}} &= 3+\\frac{1}{3+\\frac{1}{\\left(\\frac{10}{3}\\right)}} \\\\ &= 3+\\frac{1}{3+\\frac{3}{10}} \\\\ &= 3+\\frac{1}{\\left(\\frac{33}{10}\\right)} \\\\ &= 3+\\frac{10}{33} \\\\ &= \\boxed{\\textbf{(D)}\\ \\frac{109}{33}}. \\end{align*}"
+      }
+    },
+    "subset": "amc22",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# AMC\n\n\n## Overview\n\nAMC (American Mathematics Competitions) is a benchmark based on problems from the AMC 10/12 competitions from 2022-2024. These multiple-choice problems test mathematical problem-solving skills at the high school level and serve as qualifiers for the AIME competition.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics (Multiple Choice)\n- **Input**: AMC-level mathematical problem\n- **Output**: Correct answer with step-by-step reasoning\n- **Years Covered**: 2022, 2023, 2024\n\n## Key Features\n\n- Problems from AMC 10 and AMC 12 competitions (2022-2024)\n- Multiple-choice format with 5 answer options\n- Topics: algebra, geometry, number theory, combinatorics\n- Difficulty ranges from accessible to challenging\n- Official competition problems with verified solutions\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Three subsets available: `amc22`, `amc23`, `amc24`\n- Problems include original URLs for reference\n- Solutions available in metadata for verification\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `amc` |\n| **Dataset ID** | [evalscope/amc_22-24](https://modelscope.cn/datasets/evalscope/amc_22-24/summary) |\n| **Paper** | N/A |\n| **Tags** | `Math`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `N/A` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 134 |\n| Prompt Length (Mean) | 324.58 chars |\n| Prompt Length (Min/Max) | 98 / 1218 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `amc22` | 43 | 337.42 | 129 | 934 |\n| `amc23` | 46 | 337.98 | 143 | 1218 |\n| `amc24` | 45 | 298.62 | 98 | 882 |\n\n## Sample Example\n\n**Subset**: `amc22`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"54851a8f\",\n      \"content\": \"What is the value of\\\\[3+\\\\frac{1}{3+\\\\frac{1}{3+\\\\frac13}}?\\\\]\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\"\n    }\n  ],\n  \"target\": \"\\\\frac{109}{33}\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"year\": 2022,\n    \"url\": \"https://artofproblemsolving.com/wiki/index.php/2022_AMC_12A_Problems/Problem_1\",\n    \"solution\": \"We have\\\\begin{align*} 3+\\\\frac{1}{3+\\\\frac{1}{3+\\\\frac13}} &= 3+\\\\frac{1}{3+\\\\frac{1}{\\\\left(\\\\frac{10}{3}\\\\right)}} \\\\\\\\ &= 3+\\\\frac{1}{3+\\\\frac{3}{10}} \\\\\\\\ &= 3+\\\\frac{1}{\\\\left(\\\\frac{33}{10}\\\\right)} \\\\\\\\ &= 3+\\\\frac{10}{33} \\\\\\\\ &= \\\\boxed{\\\\textbf{(D)}\\\\ \\\\frac{109}{33}}. \\\\end{align*}\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets amc \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['amc'],\n    dataset_args={\n        'amc': {\n            # subset_list: ['amc22', 'amc23', 'amc24']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# AMC\n\n\n## 概述\n\nAMC（美国数学竞赛）是一个基于2022-2024年AMC 10/12竞赛题目的基准测试。这些选择题考察高中阶段的数学解题能力，并作为晋级AIME竞赛的资格赛。\n\n## 任务描述\n\n- **任务类型**：竞赛数学（选择题）\n- **输入**：AMC级别的数学问题\n- **输出**：带逐步推理过程的正确答案\n- **涵盖年份**：2022、2023、2024\n\n## 主要特点\n\n- 题目来自2022-2024年的AMC 10和AMC 12竞赛\n- 五选一的多项选择题格式\n- 考察主题：代数、几何、数论、组合数学\n- 难度从基础到高阶不等\n- 使用官方竞赛题目，配有已验证的解答\n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估\n- 答案需用 `\\boxed{}` 格式包裹以便正确提取\n- 提供三个子集：`amc22`、`amc23`、`amc24`\n- 题目包含原始URL供参考\n- 元数据中提供解答用于验证\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `amc` |\n| **数据集ID** | [evalscope/amc_22-24](https://modelscope.cn/datasets/evalscope/amc_22-24/summary) |\n| **论文** | N/A |\n| **标签** | `Math`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `N/A` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 134 |\n| 提示词长度（平均） | 324.58 字符 |\n| 提示词长度（最小/最大） | 98 / 1218 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `amc22` | 43 | 337.42 | 129 | 934 |\n| `amc23` | 46 | 337.98 | 143 | 1218 |\n| `amc24` | 45 | 298.62 | 98 | 882 |\n\n## 样例示例\n\n**子集**: `amc22`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"54851a8f\",\n      \"content\": \"What is the value of\\\\[3+\\\\frac{1}{3+\\\\frac{1}{3+\\\\frac13}}?\\\\]\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\"\n    }\n  ],\n  \"target\": \"\\\\frac{109}{33}\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"year\": 2022,\n    \"url\": \"https://artofproblemsolving.com/wiki/index.php/2022_AMC_12A_Problems/Problem_1\",\n    \"solution\": \"We have\\\\begin{align*} 3+\\\\frac{1}{3+\\\\frac{1}{3+\\\\frac13}} &= 3+\\\\frac{1}{3+\\\\frac{1}{\\\\left(\\\\frac{10}{3}\\\\right)}} \\\\\\\\ &= 3+\\\\frac{1}{3+\\\\frac{3}{10}} \\\\\\\\ &= 3+\\\\frac{1}{\\\\left(\\\\frac{33}{10}\\\\right)} \\\\\\\\ &= 3+\\\\frac{10}{33} \\\\\\\\ &= \\\\boxed{\\\\textbf{(D)}\\\\ \\\\frac{109}{33}}. \\\\end{align*}\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets amc \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['amc'],\n    dataset_args={\n        'amc': {\n            # subset_list: ['amc22', 'amc23', 'amc24']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "375667ac6fa65443bb2e7fc4bf46f703",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.181373",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

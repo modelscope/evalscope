@@ -1,0 +1,84 @@
+{
+  "meta": {
+    "pretty_name": "HumanEvalPlus",
+    "dataset_id": "evalscope/humanevalplus",
+    "paper_url": null,
+    "tags": [
+      "Coding"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nHumanEval Plus is a rigorous extension of OpenAI's HumanEval benchmark, designed to address high false-positive rates in code generation evaluation. It augments the original test cases with tens of thousands of automatically generated inputs to expose edge-case bugs and functional errors.\n\n## Task Description\n\n- **Task Type**: Code Generation (Python)\n- **Input**: Function signature with docstring describing expected behavior\n- **Output**: Complete Python function implementation\n- **Test Coverage**: Massively expanded compared to original HumanEval\n\n## Key Features\n\n- 164 problems from original HumanEval with enhanced test suites\n- Tens of thousands of additional test cases per problem\n- LLM-based and mutation-based test input generation\n- Exposes edge cases and bugs missed by original HumanEval\n- Much stricter and more accurate correctness evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- **Security Warning**: By default, code is executed in the local environment. We strongly recommend using sandbox execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.\n- Supports `pass@k` metric calculation\n- Default timeout is 300 seconds to accommodate extensive test suites\n- Uses custom Docker image with numpy pre-installed\n",
+    "prompt_template": "Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean_and_pass_at_k",
+    "extra_params": {},
+    "sandbox_config": {
+      "image": "python3.11-numpy",
+      "tools_config": {
+        "shell_executor": {},
+        "python_executor": {}
+      }
+    },
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 164,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 164,
+        "prompt_length_mean": 609.57,
+        "prompt_length_min": 274,
+        "prompt_length_max": 1519,
+        "prompt_length_std": 230.24,
+        "target_length_mean": 166.93
+      }
+    ],
+    "prompt_length": {
+      "mean": 609.57,
+      "min": 274,
+      "max": 1519,
+      "std": 230.24
+    },
+    "target_length_mean": 166.93,
+    "computed_at": "2026-01-28T11:13:54.886318"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "dcff8346",
+          "content": "Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\nfrom typing import List\n\n\ndef has_close_elements(numbers: List[float], threshold: f ... [TRUNCATED] ... Check if in given list of numbers, are any two numbers closer to each other than\n    given threshold.\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\n    False\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\n    True\n    \"\"\"\n"
+        }
+      ],
+      "target": "\n\n    sorted_numbers = sorted(numbers)\n    for i in range(len(sorted_numbers) - 1):\n        if sorted_numbers[i + 1] - sorted_numbers[i] < threshold:\n            return True\n    return False\n\n",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "task_id": "HumanEval/0",
+        "entry_point": "has_close_elements",
+        "prompt": "from typing import List\n\n\ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\n    \"\"\" Check if in given list of numbers, are any two numbers closer to each other than\n    given threshold.\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\n    False\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\n    True\n    \"\"\"\n",
+        "test": "\n\nimport numpy as np\n\ndef is_floats(x) -> bool:\n    # check if it is float; List[float]; Tuple[float]\n    if isinstance(x, float):\n        return True\n    if isinstance(x, (list, tuple)):\n        return all(isinstance(i, float) for i in x)\n   ... [TRUNCATED] ...  True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, False, True, True]\n    for i, (inp, exp) in enumerate(zip(inputs, results)):\n        assertion(candidate(*inp), exp, 0)\n"
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# HumanEvalPlus\n\n\n## Overview\n\nHumanEval Plus is a rigorous extension of OpenAI's HumanEval benchmark, designed to address high false-positive rates in code generation evaluation. It augments the original test cases with tens of thousands of automatically generated inputs to expose edge-case bugs and functional errors.\n\n## Task Description\n\n- **Task Type**: Code Generation (Python)\n- **Input**: Function signature with docstring describing expected behavior\n- **Output**: Complete Python function implementation\n- **Test Coverage**: Massively expanded compared to original HumanEval\n\n## Key Features\n\n- 164 problems from original HumanEval with enhanced test suites\n- Tens of thousands of additional test cases per problem\n- LLM-based and mutation-based test input generation\n- Exposes edge cases and bugs missed by original HumanEval\n- Much stricter and more accurate correctness evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- **Security Warning**: By default, code is executed in the local environment. We strongly recommend using sandbox execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.\n- Supports `pass@k` metric calculation\n- Default timeout is 300 seconds to accommodate extensive test suites\n- Uses custom Docker image with numpy pre-installed\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `humaneval_plus` |\n| **Dataset ID** | [evalscope/humanevalplus](https://modelscope.cn/datasets/evalscope/humanevalplus/summary) |\n| **Paper** | N/A |\n| **Tags** | `Coding` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `mean_and_pass_at_k` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 164 |\n| Prompt Length (Mean) | 609.57 chars |\n| Prompt Length (Min/Max) | 274 / 1519 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"dcff8346\",\n      \"content\": \"Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\\nfrom typing import List\\n\\n\\ndef has_close_elements(numbers: List[float], threshold: f ... [TRUNCATED] ... Check if in given list of numbers, are any two numbers closer to each other than\\n    given threshold.\\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\\n    False\\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\\n    True\\n    \\\"\\\"\\\"\\n\"\n    }\n  ],\n  \"target\": \"\\n\\n    sorted_numbers = sorted(numbers)\\n    for i in range(len(sorted_numbers) - 1):\\n        if sorted_numbers[i + 1] - sorted_numbers[i] < threshold:\\n            return True\\n    return False\\n\\n\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"task_id\": \"HumanEval/0\",\n    \"entry_point\": \"has_close_elements\",\n    \"prompt\": \"from typing import List\\n\\n\\ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\\n    \\\"\\\"\\\" Check if in given list of numbers, are any two numbers closer to each other than\\n    given threshold.\\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\\n    False\\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\\n    True\\n    \\\"\\\"\\\"\\n\",\n    \"test\": \"\\n\\nimport numpy as np\\n\\ndef is_floats(x) -> bool:\\n    # check if it is float; List[float]; Tuple[float]\\n    if isinstance(x, float):\\n        return True\\n    if isinstance(x, (list, tuple)):\\n        return all(isinstance(i, float) for i in x)\\n   ... [TRUNCATED] ...  True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, False, True, True]\\n    for i, (inp, exp) in enumerate(zip(inputs, results)):\\n        assertion(candidate(*inp), exp, 0)\\n\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nRead the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}\n```\n\n## Sandbox Configuration\n\nThis benchmark requires a sandbox environment for code execution.\n\n```json\n{\n  \"image\": \"python3.11-numpy\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {}\n  }\n}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets humaneval_plus \\\n    --use-sandbox \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['humaneval_plus'],\n    use_sandbox=True,\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# HumanEvalPlus\n\n\n## 概述\n\nHumanEval Plus 是 OpenAI 的 HumanEval 基准测试的一个严格扩展版本，旨在解决代码生成评估中较高的假阳性率问题。它在原始测试用例的基础上，增加了数万个自动生成的输入，以暴露边界情况下的 bug 和功能错误。\n\n## 任务描述\n\n- **任务类型**：代码生成（Python）\n- **输入**：包含文档字符串（docstring）的函数签名，描述预期行为\n- **输出**：完整的 Python 函数实现\n- **测试覆盖**：相比原始 HumanEval 大幅增强\n\n## 主要特性\n\n- 包含原始 HumanEval 的 164 个问题，并配备增强版测试套件\n- 每个问题额外增加数万个测试用例\n- 基于大语言模型（LLM）和变异（mutation）技术生成测试输入\n- 能够发现原始 HumanEval 遗漏的边界情况和 bug\n- 正确性评估更加严格且准确\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- **安全警告**：默认情况下，代码将在本地环境中执行。我们强烈建议使用沙箱（sandbox）执行。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。\n- 支持 `pass@k` 指标计算\n- 默认超时时间为 300 秒，以适应庞大的测试套件\n- 使用预装 numpy 的自定义 Docker 镜像\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `humaneval_plus` |\n| **数据集ID** | [evalscope/humanevalplus](https://modelscope.cn/datasets/evalscope/humanevalplus/summary) |\n| **论文** | N/A |\n| **标签** | `Coding` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `test` |\n| **聚合方式** | `mean_and_pass_at_k` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 164 |\n| 提示词长度（平均） | 609.57 字符 |\n| 提示词长度（最小/最大） | 274 / 1519 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"dcff8346\",\n      \"content\": \"Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\\nfrom typing import List\\n\\n\\ndef has_close_elements(numbers: List[float], threshold: f ... [TRUNCATED] ... Check if in given list of numbers, are any two numbers closer to each other than\\n    given threshold.\\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\\n    False\\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\\n    True\\n    \\\"\\\"\\\"\\n\"\n    }\n  ],\n  \"target\": \"\\n\\n    sorted_numbers = sorted(numbers)\\n    for i in range(len(sorted_numbers) - 1):\\n        if sorted_numbers[i + 1] - sorted_numbers[i] < threshold:\\n            return True\\n    return False\\n\\n\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"task_id\": \"HumanEval/0\",\n    \"entry_point\": \"has_close_elements\",\n    \"prompt\": \"from typing import List\\n\\n\\ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\\n    \\\"\\\"\\\" Check if in given list of numbers, are any two numbers closer to each other than\\n    given threshold.\\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\\n    False\\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\\n    True\\n    \\\"\\\"\\\"\\n\",\n    \"test\": \"\\n\\nimport numpy as np\\n\\ndef is_floats(x) -> bool:\\n    # check if it is float; List[float]; Tuple[float]\\n    if isinstance(x, float):\\n        return True\\n    if isinstance(x, (list, tuple)):\\n        return all(isinstance(i, float) for i in x)\\n   ... [TRUNCATED] ...  True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, False, True, True]\\n    for i, (inp, exp) in enumerate(zip(inputs, results)):\\n        assertion(candidate(*inp), exp, 0)\\n\"\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nRead the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}\n```\n\n## 沙箱配置\n\n此基准测试需要沙箱环境来执行代码。\n\n```json\n{\n  \"image\": \"python3.11-numpy\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {}\n  }\n}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets humaneval_plus \\\n    --use-sandbox \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['humaneval_plus'],\n    use_sandbox=True,\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "32eaa9c1ac238414e1a50cf4c87b2c67",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.255063",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

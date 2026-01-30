@@ -1,0 +1,370 @@
+{
+  "meta": {
+    "pretty_name": "MMStar",
+    "dataset_id": "evalscope/MMStar",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Knowledge",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "val",
+    "train_split": "",
+    "subset_list": [
+      "coarse perception",
+      "fine-grained perception",
+      "instance reasoning",
+      "logical reasoning",
+      "math",
+      "science & technology"
+    ],
+    "description": "\n## Overview\n\nMMStar is an elite vision-indispensable multimodal benchmark designed to ensure genuine visual dependency in evaluation. Each sample is carefully curated to require actual visual understanding, minimizing data leakage and testing advanced multimodal capabilities.\n\n## Task Description\n\n- **Task Type**: Vision-Dependent Multiple-Choice QA\n- **Input**: Image + multiple-choice question requiring visual understanding\n- **Output**: Single answer letter (A/B/C/D)\n- **Domains**: Perception, reasoning, math, science & technology\n\n## Key Features\n\n- Ensures visual dependency - questions cannot be answered without images\n- Minimal data leakage from training corpora\n- Tests advanced multimodal reasoning capabilities\n- Six categories: coarse perception, fine-grained perception, instance reasoning, logical reasoning, math, science & technology\n- High-quality curated samples with verified visual necessity\n\n## Evaluation Notes\n\n- Default evaluation uses the **val** split\n- Primary metric: **Accuracy** on multiple-choice questions\n- Uses Chain-of-Thought (CoT) prompting with \"ANSWER: [LETTER]\" format\n- Results reported per category and overall\n",
+    "prompt_template": "Answer the following multiple choice question.\nThe last line of your response should be of the following format:\n'ANSWER: [LETTER]' (without quotes)\nwhere [LETTER] is one of A,B,C,D. Think step by step before answering.\n\n{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 1500,
+    "subset_stats": [
+      {
+        "name": "coarse perception",
+        "sample_count": 250,
+        "prompt_length_mean": 350.8,
+        "prompt_length_min": 282,
+        "prompt_length_max": 784,
+        "prompt_length_std": 61.85,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 250,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x660",
+              "1350x1015",
+              "160x160",
+              "212x237",
+              "220x360",
+              "225x225",
+              "231x218",
+              "231x315",
+              "242x312",
+              "256x256"
+            ],
+            "resolution_range": {
+              "min": "160x160",
+              "max": "1350x1015"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "fine-grained perception",
+        "sample_count": 250,
+        "prompt_length_mean": 334.98,
+        "prompt_length_min": 277,
+        "prompt_length_max": 608,
+        "prompt_length_std": 47.59,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 250,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x690",
+              "209x241",
+              "246x390",
+              "256x256",
+              "288x512",
+              "301x512",
+              "319x512",
+              "323x512",
+              "325x217",
+              "327x512"
+            ],
+            "resolution_range": {
+              "min": "209x241",
+              "max": "1024x690"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "instance reasoning",
+        "sample_count": 250,
+        "prompt_length_mean": 379.02,
+        "prompt_length_min": 273,
+        "prompt_length_max": 684,
+        "prompt_length_std": 64.04,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 250,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "100x100",
+              "1136x720",
+              "180x270",
+              "181x248",
+              "2048x1365",
+              "225x225",
+              "231x249",
+              "236x199",
+              "242x209",
+              "244x512"
+            ],
+            "resolution_range": {
+              "min": "100x100",
+              "max": "2480x1738"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "logical reasoning",
+        "sample_count": 250,
+        "prompt_length_mean": 427.22,
+        "prompt_length_min": 284,
+        "prompt_length_max": 2023,
+        "prompt_length_std": 141.51,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 250,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1316",
+              "1030x742",
+              "1109x700",
+              "1268x650",
+              "131x136",
+              "1458x1356",
+              "1472x496",
+              "1500x1020",
+              "1500x1076",
+              "1500x1326"
+            ],
+            "resolution_range": {
+              "min": "95x95",
+              "max": "2142x1176"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "math",
+        "sample_count": 250,
+        "prompt_length_mean": 467.36,
+        "prompt_length_min": 292,
+        "prompt_length_max": 891,
+        "prompt_length_std": 89.51,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 250,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x768",
+              "102x103",
+              "102x114",
+              "103x165",
+              "105x74",
+              "1065x748",
+              "109x146",
+              "110x144",
+              "110x95",
+              "1116x700"
+            ],
+            "resolution_range": {
+              "min": "114x66",
+              "max": "3160x2136"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "science & technology",
+        "sample_count": 250,
+        "prompt_length_mean": 381.98,
+        "prompt_length_min": 272,
+        "prompt_length_max": 1173,
+        "prompt_length_std": 127.51,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 250,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1001x817",
+              "1024x1024",
+              "1024x1326",
+              "1024x768",
+              "1036x308",
+              "1116x581",
+              "1148x568",
+              "1262x634",
+              "1277x746",
+              "1290x534"
+            ],
+            "resolution_range": {
+              "min": "148x97",
+              "max": "1920x2560"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 390.23,
+      "min": 272,
+      "max": 2023,
+      "std": 105.22
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:14:39.645329",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 1500,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1000x1316",
+          "1001x817",
+          "100x100",
+          "1024x1024",
+          "1024x1326",
+          "1024x660",
+          "1024x690",
+          "1024x768",
+          "102x103",
+          "102x114"
+        ],
+        "resolution_range": {
+          "min": "114x66",
+          "max": "3160x2136"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "57e256b8",
+          "content": [
+            {
+              "text": "Answer the following multiple choice question.\nThe last line of your response should be of the following format:\n'ANSWER: [LETTER]' (without quotes)\nwhere [LETTER] is one of A,B,C,D. Think step by step before answering.\n\nWhich option describe the object relationship in the image correctly?\nOptions: A: The suitcase is on the book., B: The suitcase is beneath the cat., C: The suitcase is beneath the bed., D: The suitcase is beneath the book."
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~37.2KB]"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "coarse perception",
+      "metadata": {
+        "index": 0,
+        "category": "coarse perception",
+        "l2_category": "image scene and topic",
+        "source": "MMBench",
+        "split": "val",
+        "image_path": "images/0.jpg"
+      }
+    },
+    "subset": "coarse perception",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MMStar\n\n\n## Overview\n\nMMStar is an elite vision-indispensable multimodal benchmark designed to ensure genuine visual dependency in evaluation. Each sample is carefully curated to require actual visual understanding, minimizing data leakage and testing advanced multimodal capabilities.\n\n## Task Description\n\n- **Task Type**: Vision-Dependent Multiple-Choice QA\n- **Input**: Image + multiple-choice question requiring visual understanding\n- **Output**: Single answer letter (A/B/C/D)\n- **Domains**: Perception, reasoning, math, science & technology\n\n## Key Features\n\n- Ensures visual dependency - questions cannot be answered without images\n- Minimal data leakage from training corpora\n- Tests advanced multimodal reasoning capabilities\n- Six categories: coarse perception, fine-grained perception, instance reasoning, logical reasoning, math, science & technology\n- High-quality curated samples with verified visual necessity\n\n## Evaluation Notes\n\n- Default evaluation uses the **val** split\n- Primary metric: **Accuracy** on multiple-choice questions\n- Uses Chain-of-Thought (CoT) prompting with \"ANSWER: [LETTER]\" format\n- Results reported per category and overall\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `mm_star` |\n| **Dataset ID** | [evalscope/MMStar](https://modelscope.cn/datasets/evalscope/MMStar/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `MultiModal` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `val` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,500 |\n| Prompt Length (Mean) | 390.23 chars |\n| Prompt Length (Min/Max) | 272 / 2023 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `coarse perception` | 250 | 350.8 | 282 | 784 |\n| `fine-grained perception` | 250 | 334.98 | 277 | 608 |\n| `instance reasoning` | 250 | 379.02 | 273 | 684 |\n| `logical reasoning` | 250 | 427.22 | 284 | 2023 |\n| `math` | 250 | 467.36 | 292 | 891 |\n| `science & technology` | 250 | 381.98 | 272 | 1173 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 1,500 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 114x66 - 3160x2136 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `coarse perception`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"57e256b8\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question.\\nThe last line of your response should be of the following format:\\n'ANSWER: [LETTER]' (without quotes)\\nwhere [LETTER] is one of A,B,C,D. Think step by step before answering.\\n\\nWhich option describe the object relationship in the image correctly?\\nOptions: A: The suitcase is on the book., B: The suitcase is beneath the cat., C: The suitcase is beneath the bed., D: The suitcase is beneath the book.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~37.2KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"A\",\n    \"B\",\n    \"C\",\n    \"D\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"coarse perception\",\n  \"metadata\": {\n    \"index\": 0,\n    \"category\": \"coarse perception\",\n    \"l2_category\": \"image scene and topic\",\n    \"source\": \"MMBench\",\n    \"split\": \"val\",\n    \"image_path\": \"images/0.jpg\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question.\nThe last line of your response should be of the following format:\n'ANSWER: [LETTER]' (without quotes)\nwhere [LETTER] is one of A,B,C,D. Think step by step before answering.\n\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mm_star \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mm_star'],\n    dataset_args={\n        'mm_star': {\n            # subset_list: ['coarse perception', 'fine-grained perception', 'instance reasoning']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MMStar\n\n## 概述\n\nMMStar 是一个精英级的视觉不可或缺型多模态基准测试，旨在确保评估过程中真正依赖视觉信息。每个样本都经过精心筛选，必须依靠实际的视觉理解才能作答，从而最大限度地减少数据泄露，并测试高级多模态能力。\n\n## 任务描述\n\n- **任务类型**：视觉依赖型多项选择问答（Vision-Dependent Multiple-Choice QA）  \n- **输入**：图像 + 需要视觉理解的多项选择题  \n- **输出**：单个答案字母（A/B/C/D）  \n- **领域**：感知、推理、数学、科学技术  \n\n## 核心特性\n\n- 确保视觉依赖性 —— 无图像则无法回答问题  \n- 最小化训练语料中的数据泄露  \n- 测试高级多模态推理能力  \n- 六大类别：粗粒度感知、细粒度感知、实例推理、逻辑推理、数学、科学技术  \n- 高质量人工筛选样本，经验证确需视觉信息  \n\n## 评估说明\n\n- 默认使用 **val** 划分进行评估  \n- 主要指标：多项选择题的 **准确率（Accuracy）**  \n- 使用思维链（Chain-of-Thought, CoT）提示，格式为 \"ANSWER: [LETTER]\"  \n- 结果按类别和整体分别报告  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `mm_star` |\n| **数据集ID** | [evalscope/MMStar](https://modelscope.cn/datasets/evalscope/MMStar/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ`, `MultiModal` |\n| **指标** | `acc` |\n| **默认示例数（Shots）** | 0-shot |\n| **评估划分** | `val` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,500 |\n| 提示词长度（平均） | 390.23 字符 |\n| 提示词长度（最小/最大） | 272 / 2023 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `coarse perception` | 250 | 350.8 | 282 | 784 |\n| `fine-grained perception` | 250 | 334.98 | 277 | 608 |\n| `instance reasoning` | 250 | 379.02 | 273 | 684 |\n| `logical reasoning` | 250 | 427.22 | 284 | 2023 |\n| `math` | 250 | 467.36 | 292 | 891 |\n| `science & technology` | 250 | 381.98 | 272 | 1173 |\n\n**图像统计数据：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 1,500 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 114x66 - 3160x2136 |\n| 格式 | jpeg |\n\n## 样例示例\n\n**子集**: `coarse perception`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"57e256b8\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question.\\nThe last line of your response should be of the following format:\\n'ANSWER: [LETTER]' (without quotes)\\nwhere [LETTER] is one of A,B,C,D. Think step by step before answering.\\n\\nWhich option describe the object relationship in the image correctly?\\nOptions: A: The suitcase is on the book., B: The suitcase is beneath the cat., C: The suitcase is beneath the bed., D: The suitcase is beneath the book.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~37.2KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"A\",\n    \"B\",\n    \"C\",\n    \"D\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"coarse perception\",\n  \"metadata\": {\n    \"index\": 0,\n    \"category\": \"coarse perception\",\n    \"l2_category\": \"image scene and topic\",\n    \"source\": \"MMBench\",\n    \"split\": \"val\",\n    \"image_path\": \"images/0.jpg\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question.\nThe last line of your response should be of the following format:\n'ANSWER: [LETTER]' (without quotes)\nwhere [LETTER] is one of A,B,C,D. Think step by step before answering.\n\n{question}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mm_star \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mm_star'],\n    dataset_args={\n        'mm_star': {\n            # subset_list: ['coarse perception', 'fine-grained perception', 'instance reasoning']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "9fd61c667357394200bdabb174fe7b2a",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.303664",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

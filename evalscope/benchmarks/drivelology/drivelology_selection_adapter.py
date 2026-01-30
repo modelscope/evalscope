@@ -3,11 +3,32 @@ from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 
-DESCRIPTION = (
-    'Drivelology, a unique linguistic phenomenon characterised as "nonsense with depth" - '
-    'utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, '
-    'or rhetorically subversive.'
-)
+DESCRIPTION = """
+## Overview
+
+Drivelology Narrative Selection evaluates models' ability to understand the underlying narrative of "drivelology" text - linguistic utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.
+
+## Task Description
+
+- **Task Type**: Multiple-Choice Narrative Understanding
+- **Input**: Drivelology text with multiple narrative interpretation options
+- **Output**: Best option representing the underlying narrative
+- **Domain**: Linguistic analysis, narrative comprehension
+
+## Key Features
+
+- Tests deep narrative understanding
+- Requires interpretation of layered meanings
+- Multiple-choice format with challenging distractors
+- Easy and hard difficulty levels
+- Tests cultural and contextual understanding
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Simple accuracy metric
+- Subsets: multiple-choice-english-easy, multiple-choice-english-hard
+"""
 
 PROMPT_TEMPLATE = r"""
 Tell me the best option in the following options which represents the underlying narrative of the text?

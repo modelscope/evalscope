@@ -1,0 +1,219 @@
+{
+  "meta": {
+    "pretty_name": "MMLU-Pro",
+    "dataset_id": "TIGER-Lab/MMLU-Pro",
+    "paper_url": null,
+    "tags": [
+      "MCQ",
+      "Knowledge"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "validation",
+    "subset_list": [
+      "computer science",
+      "math",
+      "chemistry",
+      "engineering",
+      "law",
+      "biology",
+      "health",
+      "physics",
+      "business",
+      "philosophy",
+      "economics",
+      "other",
+      "psychology",
+      "history"
+    ],
+    "description": "\n## Overview\n\nMMLU-Pro is an enhanced version of MMLU with increased difficulty and reasoning requirements. It features 10 answer choices instead of 4 and includes more challenging questions requiring deeper reasoning across 14 diverse domains.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Question Answering (10 options)\n- **Input**: Question with up to 10 answer choices\n- **Output**: Single correct answer letter (A-J)\n- **Domains**: 14 subjects including science, law, engineering, psychology\n\n## Key Features\n\n- 10 answer choices per question (vs 4 in original MMLU)\n- More challenging questions requiring reasoning\n- Includes Chain-of-Thought (CoT) explanations\n- 14 diverse subjects covered\n- Reduced impact of random guessing (10% vs 25%)\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** examples\n- Answers should follow \"ANSWER: [LETTER]\" format\n- Uses subject-specific few-shot examples\n- Step-by-step reasoning encouraged\n- Evaluates on test split with validation for few-shot\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\nQuestion:\n{question}\nOptions:\n{choices}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "The following are multiple choice questions (with answers) about {subject}. Think step by step and then finish your answer with 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the correct letter choice.\n\n{examples}\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\nQuestion:\n{question}\nOptions:\n{choices}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 12032,
+    "subset_stats": [
+      {
+        "name": "computer science",
+        "sample_count": 410,
+        "prompt_length_mean": 5184.05,
+        "prompt_length_min": 4696,
+        "prompt_length_max": 7303,
+        "prompt_length_std": 391.13,
+        "target_length_mean": 1
+      },
+      {
+        "name": "math",
+        "sample_count": 1351,
+        "prompt_length_mean": 4853.54,
+        "prompt_length_min": 4574,
+        "prompt_length_max": 7519,
+        "prompt_length_std": 260.15,
+        "target_length_mean": 1
+      },
+      {
+        "name": "chemistry",
+        "sample_count": 1132,
+        "prompt_length_mean": 4567.2,
+        "prompt_length_min": 4182,
+        "prompt_length_max": 5975,
+        "prompt_length_std": 253.6,
+        "target_length_mean": 1
+      },
+      {
+        "name": "engineering",
+        "sample_count": 969,
+        "prompt_length_mean": 3595.66,
+        "prompt_length_min": 3048,
+        "prompt_length_max": 5775,
+        "prompt_length_std": 388.86,
+        "target_length_mean": 1
+      },
+      {
+        "name": "law",
+        "sample_count": 1101,
+        "prompt_length_mean": 7001.35,
+        "prompt_length_min": 5581,
+        "prompt_length_max": 9200,
+        "prompt_length_std": 621.26,
+        "target_length_mean": 1
+      },
+      {
+        "name": "biology",
+        "sample_count": 717,
+        "prompt_length_mean": 5881.08,
+        "prompt_length_min": 5179,
+        "prompt_length_max": 7850,
+        "prompt_length_std": 412.62,
+        "target_length_mean": 1
+      },
+      {
+        "name": "health",
+        "sample_count": 818,
+        "prompt_length_mean": 4624.44,
+        "prompt_length_min": 4134,
+        "prompt_length_max": 9310,
+        "prompt_length_std": 416.4,
+        "target_length_mean": 1
+      },
+      {
+        "name": "physics",
+        "sample_count": 1299,
+        "prompt_length_mean": 4389.59,
+        "prompt_length_min": 4004,
+        "prompt_length_max": 6511,
+        "prompt_length_std": 275.35,
+        "target_length_mean": 1
+      },
+      {
+        "name": "business",
+        "sample_count": 789,
+        "prompt_length_mean": 4646.01,
+        "prompt_length_min": 4316,
+        "prompt_length_max": 6915,
+        "prompt_length_std": 268.9,
+        "target_length_mean": 1
+      },
+      {
+        "name": "philosophy",
+        "sample_count": 499,
+        "prompt_length_mean": 3760.1,
+        "prompt_length_min": 3360,
+        "prompt_length_max": 5289,
+        "prompt_length_std": 294.77,
+        "target_length_mean": 1
+      },
+      {
+        "name": "economics",
+        "sample_count": 844,
+        "prompt_length_mean": 4680.21,
+        "prompt_length_min": 4118,
+        "prompt_length_max": 6907,
+        "prompt_length_std": 336.35,
+        "target_length_mean": 1
+      },
+      {
+        "name": "other",
+        "sample_count": 924,
+        "prompt_length_mean": 3730.86,
+        "prompt_length_min": 3316,
+        "prompt_length_max": 6108,
+        "prompt_length_std": 388.7,
+        "target_length_mean": 1
+      },
+      {
+        "name": "psychology",
+        "sample_count": 798,
+        "prompt_length_mean": 5274.19,
+        "prompt_length_min": 4656,
+        "prompt_length_max": 6942,
+        "prompt_length_std": 400.02,
+        "target_length_mean": 1
+      },
+      {
+        "name": "history",
+        "sample_count": 381,
+        "prompt_length_mean": 9919.94,
+        "prompt_length_min": 8711,
+        "prompt_length_max": 12100,
+        "prompt_length_std": 787.12,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 4959.66,
+      "min": 3048,
+      "max": 12100,
+      "std": 1330.35
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:14:46.981003"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "79336f87",
+          "content": "The following are multiple choice questions (with answers) about computer science. Think step by step and then finish your answer with 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the correct letter choice.\n\nQuestion:\nA certain pipel ... [TRUNCATED] ...  random index of a larger value.\nG) The method should be written to return the largest index among larger values.\nH) The method should be written on the assumption that there is only one value in the array that is larger than the given item.\n"
+        }
+      ],
+      "choices": [
+        "The method should return an error if more than one larger value is found.",
+        "The specification should be modified to indicate what should be done if there is more than one index of larger values.",
+        "The method should be written to output a message if more than one larger value is found.",
+        "The method should be written so as to return the index of every occurrence of a larger value.",
+        "The method should be written to return the last occurrence of a larger value.",
+        "The method should return a random index of a larger value.",
+        "The method should be written to return the largest index among larger values.",
+        "The method should be written on the assumption that there is only one value in the array that is larger than the given item."
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "computer science",
+      "metadata": {
+        "cot_content": "",
+        "subject": "computer science",
+        "question_id": 10356
+      }
+    },
+    "subset": "computer science",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# MMLU-Pro\n\n\n## Overview\n\nMMLU-Pro is an enhanced version of MMLU with increased difficulty and reasoning requirements. It features 10 answer choices instead of 4 and includes more challenging questions requiring deeper reasoning across 14 diverse domains.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Question Answering (10 options)\n- **Input**: Question with up to 10 answer choices\n- **Output**: Single correct answer letter (A-J)\n- **Domains**: 14 subjects including science, law, engineering, psychology\n\n## Key Features\n\n- 10 answer choices per question (vs 4 in original MMLU)\n- More challenging questions requiring reasoning\n- Includes Chain-of-Thought (CoT) explanations\n- 14 diverse subjects covered\n- Reduced impact of random guessing (10% vs 25%)\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** examples\n- Answers should follow \"ANSWER: [LETTER]\" format\n- Uses subject-specific few-shot examples\n- Step-by-step reasoning encouraged\n- Evaluates on test split with validation for few-shot\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `mmlu_pro` |\n| **Dataset ID** | [TIGER-Lab/MMLU-Pro](https://modelscope.cn/datasets/TIGER-Lab/MMLU-Pro/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 12,032 |\n| Prompt Length (Mean) | 4959.66 chars |\n| Prompt Length (Min/Max) | 3048 / 12100 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `computer science` | 410 | 5184.05 | 4696 | 7303 |\n| `math` | 1,351 | 4853.54 | 4574 | 7519 |\n| `chemistry` | 1,132 | 4567.2 | 4182 | 5975 |\n| `engineering` | 969 | 3595.66 | 3048 | 5775 |\n| `law` | 1,101 | 7001.35 | 5581 | 9200 |\n| `biology` | 717 | 5881.08 | 5179 | 7850 |\n| `health` | 818 | 4624.44 | 4134 | 9310 |\n| `physics` | 1,299 | 4389.59 | 4004 | 6511 |\n| `business` | 789 | 4646.01 | 4316 | 6915 |\n| `philosophy` | 499 | 3760.1 | 3360 | 5289 |\n| `economics` | 844 | 4680.21 | 4118 | 6907 |\n| `other` | 924 | 3730.86 | 3316 | 6108 |\n| `psychology` | 798 | 5274.19 | 4656 | 6942 |\n| `history` | 381 | 9919.94 | 8711 | 12100 |\n\n## Sample Example\n\n**Subset**: `computer science`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"79336f87\",\n      \"content\": \"The following are multiple choice questions (with answers) about computer science. Think step by step and then finish your answer with 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the correct letter choice.\\n\\nQuestion:\\nA certain pipel ... [TRUNCATED] ...  random index of a larger value.\\nG) The method should be written to return the largest index among larger values.\\nH) The method should be written on the assumption that there is only one value in the array that is larger than the given item.\\n\"\n    }\n  ],\n  \"choices\": [\n    \"The method should return an error if more than one larger value is found.\",\n    \"The specification should be modified to indicate what should be done if there is more than one index of larger values.\",\n    \"The method should be written to output a message if more than one larger value is found.\",\n    \"The method should be written so as to return the index of every occurrence of a larger value.\",\n    \"The method should be written to return the last occurrence of a larger value.\",\n    \"The method should return a random index of a larger value.\",\n    \"The method should be written to return the largest index among larger values.\",\n    \"The method should be written on the assumption that there is only one value in the array that is larger than the given item.\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"computer science\",\n  \"metadata\": {\n    \"cot_content\": \"\",\n    \"subject\": \"computer science\",\n    \"question_id\": 10356\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\nQuestion:\n{question}\nOptions:\n{choices}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nThe following are multiple choice questions (with answers) about {subject}. Think step by step and then finish your answer with 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the correct letter choice.\n\n{examples}\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\nQuestion:\n{question}\nOptions:\n{choices}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mmlu_pro \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mmlu_pro'],\n    dataset_args={\n        'mmlu_pro': {\n            # subset_list: ['computer science', 'math', 'chemistry']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MMLU-Pro\n\n## 概述\n\nMMLU-Pro 是 MMLU 的增强版本，具有更高的难度和更强的推理要求。它将每道题的答案选项从 4 个增加到 10 个，并包含更具挑战性的问题，需要在 14 个不同领域中进行更深入的推理。\n\n## 任务描述\n\n- **任务类型**：多项选择题问答（10 个选项）\n- **输入**：包含最多 10 个答案选项的问题\n- **输出**：单个正确答案字母（A-J）\n- **领域**：涵盖科学、法律、工程、心理学等 14 个学科\n\n## 主要特点\n\n- 每道题提供 10 个答案选项（原始 MMLU 为 4 个）\n- 问题更具挑战性，需要更强的推理能力\n- 包含思维链（Chain-of-Thought, CoT）解释\n- 覆盖 14 个多样化主题\n- 随机猜测的正确率显著降低（10% 对比 25%）\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 示例\n- 答案应遵循 \"ANSWER: [LETTER]\" 格式\n- 使用特定学科的 few-shot 示例\n- 鼓励逐步推理\n- 在测试集上评估，并使用验证集提供 few-shot 示例\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `mmlu_pro` |\n| **数据集ID** | [TIGER-Lab/MMLU-Pro](https://modelscope.cn/datasets/TIGER-Lab/MMLU-Pro/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ` |\n| **指标** | `acc` |\n| **默认示例数** | 5-shot |\n| **评估分割** | `test` |\n| **训练分割** | `validation` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 12,032 |\n| 提示词长度（平均） | 4959.66 字符 |\n| 提示词长度（最小/最大） | 3048 / 12100 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `computer science` | 410 | 5184.05 | 4696 | 7303 |\n| `math` | 1,351 | 4853.54 | 4574 | 7519 |\n| `chemistry` | 1,132 | 4567.2 | 4182 | 5975 |\n| `engineering` | 969 | 3595.66 | 3048 | 5775 |\n| `law` | 1,101 | 7001.35 | 5581 | 9200 |\n| `biology` | 717 | 5881.08 | 5179 | 7850 |\n| `health` | 818 | 4624.44 | 4134 | 9310 |\n| `physics` | 1,299 | 4389.59 | 4004 | 6511 |\n| `business` | 789 | 4646.01 | 4316 | 6915 |\n| `philosophy` | 499 | 3760.1 | 3360 | 5289 |\n| `economics` | 844 | 4680.21 | 4118 | 6907 |\n| `other` | 924 | 3730.86 | 3316 | 6108 |\n| `psychology` | 798 | 5274.19 | 4656 | 6942 |\n| `history` | 381 | 9919.94 | 8711 | 12100 |\n\n## 样例示例\n\n**子集**: `computer science`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"79336f87\",\n      \"content\": \"The following are multiple choice questions (with answers) about computer science. Think step by step and then finish your answer with 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the correct letter choice.\\n\\nQuestion:\\nA certain pipel ... [TRUNCATED] ...  random index of a larger value.\\nG) The method should be written to return the largest index among larger values.\\nH) The method should be written on the assumption that there is only one value in the array that is larger than the given item.\\n\"\n    }\n  ],\n  \"choices\": [\n    \"The method should return an error if more than one larger value is found.\",\n    \"The specification should be modified to indicate what should be done if there is more than one index of larger values.\",\n    \"The method should be written to output a message if more than one larger value is found.\",\n    \"The method should be written so as to return the index of every occurrence of a larger value.\",\n    \"The method should be written to return the last occurrence of a larger value.\",\n    \"The method should return a random index of a larger value.\",\n    \"The method should be written to return the largest index among larger values.\",\n    \"The method should be written on the assumption that there is only one value in the array that is larger than the given item.\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"computer science\",\n  \"metadata\": {\n    \"cot_content\": \"\",\n    \"subject\": \"computer science\",\n    \"question_id\": 10356\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\nQuestion:\n{question}\nOptions:\n{choices}\n\n```\n\n<details>\n<summary>Few-shot 模板</summary>\n\n```text\nThe following are multiple choice questions (with answers) about {subject}. Think step by step and then finish your answer with 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the correct letter choice.\n\n{examples}\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\nQuestion:\n{question}\nOptions:\n{choices}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mmlu_pro \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mmlu_pro'],\n    dataset_args={\n        'mmlu_pro': {\n            # subset_list: ['computer science', 'math', 'chemistry']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "44c14dd1cc4a0ab32c64ed9822a2c889",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.309146",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

@@ -1,0 +1,122 @@
+{
+  "meta": {
+    "pretty_name": "Competition-MATH",
+    "dataset_id": "evalscope/competition_math",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 4,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "Level 1",
+      "Level 2",
+      "Level 3",
+      "Level 4",
+      "Level 5"
+    ],
+    "description": "\n## Overview\n\nCompetition-MATH is a comprehensive benchmark of 12,500 challenging competition mathematics problems collected from AMC, AIME, and other prestigious math competitions. It is designed to evaluate the advanced mathematical reasoning capabilities of language models.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: Mathematical problem from competitions\n- **Output**: Step-by-step solution with final answer in \\boxed{}\n- **Difficulty Levels**: Level 1 (easiest) to Level 5 (hardest)\n\n## Key Features\n\n- 12,500 problems from mathematics competitions\n- Five difficulty levels for comprehensive evaluation\n- Topics: Algebra, Counting & Probability, Geometry, Intermediate Algebra, Number Theory, Prealgebra, Precalculus\n- Each problem includes human-written solutions\n- Designed for evaluating advanced mathematical reasoning\n\n## Evaluation Notes\n\n- Default configuration uses **4-shot** examples with Chain-of-Thought prompting\n- Answers are extracted from `\\boxed{}` format\n- Numeric equivalence checking for answer comparison\n- Results can be analyzed by level and problem type\n- Uses math_parser for robust answer extraction\n",
+    "prompt_template": "Problem:\n{question}\n\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of how to solve similar problems:\n\n{fewshot}\nProblem:\n{question}\n\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 5000,
+    "subset_stats": [
+      {
+        "name": "Level 1",
+        "sample_count": 437,
+        "prompt_length_mean": 947.84,
+        "prompt_length_min": 842,
+        "prompt_length_max": 2757,
+        "prompt_length_std": 167.64,
+        "target_length_mean": 3.9
+      },
+      {
+        "name": "Level 2",
+        "sample_count": 894,
+        "prompt_length_mean": 816.87,
+        "prompt_length_min": 682,
+        "prompt_length_max": 2328,
+        "prompt_length_std": 160.49,
+        "target_length_mean": 4.63
+      },
+      {
+        "name": "Level 3",
+        "sample_count": 1131,
+        "prompt_length_mean": 822.14,
+        "prompt_length_min": 675,
+        "prompt_length_max": 2470,
+        "prompt_length_std": 146.19,
+        "target_length_mean": 5.29
+      },
+      {
+        "name": "Level 4",
+        "sample_count": 1214,
+        "prompt_length_mean": 949.04,
+        "prompt_length_min": 768,
+        "prompt_length_max": 2871,
+        "prompt_length_std": 174.13,
+        "target_length_mean": 5.7
+      },
+      {
+        "name": "Level 5",
+        "sample_count": 1324,
+        "prompt_length_mean": 1411.41,
+        "prompt_length_min": 1187,
+        "prompt_length_max": 3991,
+        "prompt_length_std": 222.04,
+        "target_length_mean": 6.61
+      }
+    ],
+    "prompt_length": {
+      "mean": 1019.03,
+      "min": 675,
+      "max": 3991,
+      "std": 301.29
+    },
+    "target_length_mean": 5.5,
+    "computed_at": "2026-01-28T11:13:54.899593"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "3848cf6a",
+          "content": "Here are some examples of how to solve similar problems:\n\nProblem:\nWhen Joyce counts the pennies in her bank by fives, she has one left over. When she counts them by threes, there are two left over. What is the least possible number of pennie ... [TRUNCATED] ... of 12, how many eggs will be left over if all cartons are sold?\nSolution:\n4\nProblem:\nHow many of the six integers 1 through 6 are divisors of the four-digit number 1452?\n\nPlease reason step by step, and put your final answer within \\boxed{}.\n"
+        }
+      ],
+      "target": "5",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "Level 1",
+      "metadata": {
+        "reasoning": "All numbers are divisible by $1$. The last two digits, $52$, form a multiple of 4, so the number is divisible by $4$, and thus $2$. $1+4+5+2=12$, which is a multiple of $3$, so $1452$ is divisible by $3$.  Since it is divisible by $2$ and $3$, it is divisible by $6$.  But it is not divisible by $5$ as it does not end in $5$ or $0$.  So the total is $\\boxed{5}$.",
+        "type": "Number Theory"
+      }
+    },
+    "subset": "Level 1",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# Competition-MATH\n\n\n## Overview\n\nCompetition-MATH is a comprehensive benchmark of 12,500 challenging competition mathematics problems collected from AMC, AIME, and other prestigious math competitions. It is designed to evaluate the advanced mathematical reasoning capabilities of language models.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: Mathematical problem from competitions\n- **Output**: Step-by-step solution with final answer in \\boxed{}\n- **Difficulty Levels**: Level 1 (easiest) to Level 5 (hardest)\n\n## Key Features\n\n- 12,500 problems from mathematics competitions\n- Five difficulty levels for comprehensive evaluation\n- Topics: Algebra, Counting & Probability, Geometry, Intermediate Algebra, Number Theory, Prealgebra, Precalculus\n- Each problem includes human-written solutions\n- Designed for evaluating advanced mathematical reasoning\n\n## Evaluation Notes\n\n- Default configuration uses **4-shot** examples with Chain-of-Thought prompting\n- Answers are extracted from `\\boxed{}` format\n- Numeric equivalence checking for answer comparison\n- Results can be analyzed by level and problem type\n- Uses math_parser for robust answer extraction\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `competition_math` |\n| **Dataset ID** | [evalscope/competition_math](https://modelscope.cn/datasets/evalscope/competition_math/summary) |\n| **Paper** | N/A |\n| **Tags** | `Math`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 4-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 5,000 |\n| Prompt Length (Mean) | 1019.03 chars |\n| Prompt Length (Min/Max) | 675 / 3991 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Level 1` | 437 | 947.84 | 842 | 2757 |\n| `Level 2` | 894 | 816.87 | 682 | 2328 |\n| `Level 3` | 1,131 | 822.14 | 675 | 2470 |\n| `Level 4` | 1,214 | 949.04 | 768 | 2871 |\n| `Level 5` | 1,324 | 1411.41 | 1187 | 3991 |\n\n## Sample Example\n\n**Subset**: `Level 1`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"3848cf6a\",\n      \"content\": \"Here are some examples of how to solve similar problems:\\n\\nProblem:\\nWhen Joyce counts the pennies in her bank by fives, she has one left over. When she counts them by threes, there are two left over. What is the least possible number of pennie ... [TRUNCATED] ... of 12, how many eggs will be left over if all cartons are sold?\\nSolution:\\n4\\nProblem:\\nHow many of the six integers 1 through 6 are divisors of the four-digit number 1452?\\n\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\\n\"\n    }\n  ],\n  \"target\": \"5\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Level 1\",\n  \"metadata\": {\n    \"reasoning\": \"All numbers are divisible by $1$. The last two digits, $52$, form a multiple of 4, so the number is divisible by $4$, and thus $2$. $1+4+5+2=12$, which is a multiple of $3$, so $1452$ is divisible by $3$.  Since it is divisible by $2$ and $3$, it is divisible by $6$.  But it is not divisible by $5$ as it does not end in $5$ or $0$.  So the total is $\\\\boxed{5}$.\",\n    \"type\": \"Number Theory\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nProblem:\n{question}\n\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of how to solve similar problems:\n\n{fewshot}\nProblem:\n{question}\n\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets competition_math \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['competition_math'],\n    dataset_args={\n        'competition_math': {\n            # subset_list: ['Level 1', 'Level 2', 'Level 3']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Competition-MATH\n\n## 概述\n\nCompetition-MATH 是一个包含 12,500 道高难度竞赛数学题目的综合性基准测试数据集，题目来源于 AMC、AIME 等知名数学竞赛。该基准旨在评估语言模型在高级数学推理方面的能力。\n\n## 任务描述\n\n- **任务类型**：竞赛数学问题求解  \n- **输入**：来自数学竞赛的数学问题  \n- **输出**：包含逐步推导过程的解答，并将最终答案置于 `\\boxed{}` 中  \n- **难度等级**：Level 1（最简单）到 Level 5（最难）\n\n## 主要特点\n\n- 包含 12,500 道数学竞赛题目  \n- 提供五个难度等级，支持全面评估  \n- 涵盖主题：代数、计数与概率、几何、中级代数、数论、预代数、微积分预备  \n- 每道题目均附有人工撰写的解答  \n- 专为评估高级数学推理能力而设计  \n\n## 评估说明\n\n- 默认配置使用 **4-shot** 示例并结合 Chain-of-Thought（思维链）提示  \n- 从 `\\boxed{}` 格式中提取答案  \n- 使用数值等价性检查进行答案比对  \n- 支持按难度等级和问题类型分析结果  \n- 使用 math_parser 进行鲁棒的答案提取  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `competition_math` |\n| **数据集ID** | [evalscope/competition_math](https://modelscope.cn/datasets/evalscope/competition_math/summary) |\n| **论文** | N/A |\n| **标签** | `Math`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数量** | 4-shot |\n| **评估划分** | `test` |\n| **训练划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 5,000 |\n| 提示词长度（平均） | 1019.03 字符 |\n| 提示词长度（最小/最大） | 675 / 3991 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Level 1` | 437 | 947.84 | 842 | 2757 |\n| `Level 2` | 894 | 816.87 | 682 | 2328 |\n| `Level 3` | 1,131 | 822.14 | 675 | 2470 |\n| `Level 4` | 1,214 | 949.04 | 768 | 2871 |\n| `Level 5` | 1,324 | 1411.41 | 1187 | 3991 |\n\n## 样例示例\n\n**子集**: `Level 1`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"3848cf6a\",\n      \"content\": \"Here are some examples of how to solve similar problems:\\n\\nProblem:\\nWhen Joyce counts the pennies in her bank by fives, she has one left over. When she counts them by threes, there are two left over. What is the least possible number of pennie ... [TRUNCATED] ... of 12, how many eggs will be left over if all cartons are sold?\\nSolution:\\n4\\nProblem:\\nHow many of the six integers 1 through 6 are divisors of the four-digit number 1452?\\n\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\\n\"\n    }\n  ],\n  \"target\": \"5\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Level 1\",\n  \"metadata\": {\n    \"reasoning\": \"All numbers are divisible by $1$. The last two digits, $52$, form a multiple of 4, so the number is divisible by $4$, and thus $2$. $1+4+5+2=12$, which is a multiple of $3$, so $1452$ is divisible by $3$.  Since it is divisible by $2$ and $3$, it is divisible by $6$.  But it is not divisible by $5$ as it does not end in $5$ or $0$.  So the total is $\\\\boxed{5}$.\",\n    \"type\": \"Number Theory\"\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nProblem:\n{question}\n\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n\n```\n\n<details>\n<summary>少样本（Few-shot）模板</summary>\n\n```text\nHere are some examples of how to solve similar problems:\n\n{fewshot}\nProblem:\n{question}\n\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets competition_math \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['competition_math'],\n    dataset_args={\n        'competition_math': {\n            # subset_list: ['Level 1', 'Level 2', 'Level 3']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "47de0e39a90e72b1348d2a8b9cf88cbe",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.213604",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

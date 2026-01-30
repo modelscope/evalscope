@@ -20,11 +20,33 @@ logger = get_logger()
         name='humaneval',
         pretty_name='HumanEval',
         tags=[Tags.CODING],
-        description='HumanEval is a benchmark for evaluating the ability of code '
-        'generation models to write Python functions based on given '
-        'specifications. It consists of programming tasks with a '
-        'defined input-output behavior. '
-        '**By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',  # noqa: E501
+        description="""
+## Overview
+
+HumanEval is a benchmark for evaluating the code generation capabilities of language models. It consists of 164 hand-written Python programming problems with function signatures, docstrings, and comprehensive test cases.
+
+## Task Description
+
+- **Task Type**: Code Generation (Python)
+- **Input**: Function signature with docstring describing the expected behavior
+- **Output**: Complete Python function implementation
+- **Languages**: Python only
+
+## Key Features
+
+- 164 hand-crafted programming problems
+- Each problem includes a function signature, docstring, and test cases
+- Problems range from simple string manipulation to complex algorithms
+- Canonical solutions provided for reference
+- Automatic correctness verification through test execution
+
+## Evaluation Notes
+
+- **Security Warning**: By default, code is executed in the local environment. We strongly recommend using sandbox execution for safety. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.
+- Supports `pass@k` metric calculation for measuring generation quality
+- Default timeout is 4 seconds per problem
+- Code is extracted from markdown code blocks if present
+""",
         dataset_id='opencompass/humaneval',
         subset_list=['openai_humaneval'],
         metric_list=['acc'],

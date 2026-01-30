@@ -41,7 +41,9 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
 
         # Load dataset messages into memory (limited by args.number)
         # We catch StopIteration implicitly via the loop
-        with tqdm(message_generator.build_messages(), desc='Generating datasets', total=args.number, initial=1) as pbar:
+        with tqdm(
+            message_generator.build_messages(), desc='Generating datasets', total=args.number, initial=1, logger=logger
+        ) as pbar:
             for messages in pbar:
                 dataset_messages.append(messages)
                 if len(dataset_messages) >= args.number:

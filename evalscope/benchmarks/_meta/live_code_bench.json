@@ -1,0 +1,98 @@
+{
+  "meta": {
+    "pretty_name": "Live-Code-Bench",
+    "dataset_id": "AI-ModelScope/code_generation_lite",
+    "paper_url": null,
+    "tags": [
+      "Coding"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "release_latest"
+    ],
+    "description": "\n## Overview\n\nLiveCodeBench is a contamination-free benchmark for evaluating code generation models on real-world competitive programming problems. It continuously collects new problems from coding platforms to ensure models haven't seen the test data during training.\n\n## Task Description\n\n- **Task Type**: Competitive Programming / Code Generation\n- **Input**: Programming problem description with input/output format\n- **Output**: Complete solution code\n- **Source**: Problems from LeetCode, Codeforces, and AtCoder\n\n## Key Features\n\n- Continuously updated with new problems post model training cutoff\n- Problems from major competitive programming platforms\n- Multiple test cases per problem for thorough evaluation\n- Date-based filtering to control for data contamination\n- Supports both local and sandbox code execution\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- **Security Warning**: By default, code is executed in the local environment. We recommend using sandbox execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.\n- Use `start_date` and `end_date` parameters to filter problems by date\n- Default timeout is 6 seconds per test case\n- Supports `pass@k` metric calculation\n",
+    "prompt_template": "### Question:\n{question_content}\n\n{format_prompt} ### Answer: (use the provided format with backticks)\n\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean_and_pass_at_k",
+    "extra_params": {
+      "start_date": {
+        "type": "str | null",
+        "description": "Filter problems starting from this date (YYYY-MM-DD). Null keeps all.",
+        "value": null
+      },
+      "end_date": {
+        "type": "str | null",
+        "description": "Filter problems up to this date (YYYY-MM-DD). Null keeps all.",
+        "value": null
+      },
+      "debug": {
+        "type": "bool",
+        "description": "Enable verbose debug logging and bypass certain safety checks.",
+        "value": false
+      }
+    },
+    "sandbox_config": {
+      "image": "python:3.11-slim",
+      "tools_config": {
+        "shell_executor": {},
+        "python_executor": {}
+      }
+    },
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 1055,
+    "subset_stats": [
+      {
+        "name": "release_latest",
+        "sample_count": 1055,
+        "prompt_length_mean": 1700.76,
+        "prompt_length_min": 717,
+        "prompt_length_max": 4234,
+        "prompt_length_std": 584.38,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 1700.76,
+      "min": 717,
+      "max": 4234,
+      "std": 584.38
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T11:17:15.321874"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "6b6a6121",
+          "content": "### Question:\nThere are three cards with letters $\\texttt{a}$, $\\texttt{b}$, $\\texttt{c}$ placed in a row in some order. You can do the following operation at most once: \n\n \n-  Pick two cards, and swap them.  Is it possible that the row becom ... [TRUNCATED] ... s from stdin solve the problem and write the answer to stdout (do not directly test on the sample inputs). Enclose your code within delimiters as follows.\n```python\n# YOUR CODE HERE\n```\n\n ### Answer: (use the provided format with backticks)\n\n"
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "evaluation_sample": "{\"inputs\": [\"6\\nabc\\nacb\\nbac\\nbca\\ncab\\ncba\\n\", \"1\\nabc\\n\", \"3\\nabc\\nabc\\nabc\\n\", \"5\\ncab\\nacb\\ncba\\nbac\\nbca\\n\", \"6\\nabc\\nabc\\nabc\\nabc\\nabc\\nabc\\n\"], \"outputs\": [\"YES\\nYES\\nYES\\nNO\\nNO\\nYES\\n\", \"YES\\n\", \"YES\\nYES\\nYES\\n\", \"NO\\nYES\\nYES\\nYES\\nNO\\n\", \"YES\\nYES\\nYES\\nYES\\nYES\\nYES\\n\"], \"fn_name\": null}",
+        "contest_date": "2023-08-21T00:00:00"
+      }
+    },
+    "subset": "release_latest",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# Live-Code-Bench\n\n\n## Overview\n\nLiveCodeBench is a contamination-free benchmark for evaluating code generation models on real-world competitive programming problems. It continuously collects new problems from coding platforms to ensure models haven't seen the test data during training.\n\n## Task Description\n\n- **Task Type**: Competitive Programming / Code Generation\n- **Input**: Programming problem description with input/output format\n- **Output**: Complete solution code\n- **Source**: Problems from LeetCode, Codeforces, and AtCoder\n\n## Key Features\n\n- Continuously updated with new problems post model training cutoff\n- Problems from major competitive programming platforms\n- Multiple test cases per problem for thorough evaluation\n- Date-based filtering to control for data contamination\n- Supports both local and sandbox code execution\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- **Security Warning**: By default, code is executed in the local environment. We recommend using sandbox execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.\n- Use `start_date` and `end_date` parameters to filter problems by date\n- Default timeout is 6 seconds per test case\n- Supports `pass@k` metric calculation\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `live_code_bench` |\n| **Dataset ID** | [AI-ModelScope/code_generation_lite](https://modelscope.cn/datasets/AI-ModelScope/code_generation_lite/summary) |\n| **Paper** | N/A |\n| **Tags** | `Coding` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `mean_and_pass_at_k` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,055 |\n| Prompt Length (Mean) | 1700.76 chars |\n| Prompt Length (Min/Max) | 717 / 4234 chars |\n\n## Sample Example\n\n**Subset**: `release_latest`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"6b6a6121\",\n      \"content\": \"### Question:\\nThere are three cards with letters $\\\\texttt{a}$, $\\\\texttt{b}$, $\\\\texttt{c}$ placed in a row in some order. You can do the following operation at most once: \\n\\n \\n-  Pick two cards, and swap them.  Is it possible that the row becom ... [TRUNCATED] ... s from stdin solve the problem and write the answer to stdout (do not directly test on the sample inputs). Enclose your code within delimiters as follows.\\n```python\\n# YOUR CODE HERE\\n```\\n\\n ### Answer: (use the provided format with backticks)\\n\\n\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"evaluation_sample\": \"{\\\"inputs\\\": [\\\"6\\\\nabc\\\\nacb\\\\nbac\\\\nbca\\\\ncab\\\\ncba\\\\n\\\", \\\"1\\\\nabc\\\\n\\\", \\\"3\\\\nabc\\\\nabc\\\\nabc\\\\n\\\", \\\"5\\\\ncab\\\\nacb\\\\ncba\\\\nbac\\\\nbca\\\\n\\\", \\\"6\\\\nabc\\\\nabc\\\\nabc\\\\nabc\\\\nabc\\\\nabc\\\\n\\\"], \\\"outputs\\\": [\\\"YES\\\\nYES\\\\nYES\\\\nNO\\\\nNO\\\\nYES\\\\n\\\", \\\"YES\\\\n\\\", \\\"YES\\\\nYES\\\\nYES\\\\n\\\", \\\"NO\\\\nYES\\\\nYES\\\\nYES\\\\nNO\\\\n\\\", \\\"YES\\\\nYES\\\\nYES\\\\nYES\\\\nYES\\\\nYES\\\\n\\\"], \\\"fn_name\\\": null}\",\n    \"contest_date\": \"2023-08-21T00:00:00\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n### Question:\n{question_content}\n\n{format_prompt} ### Answer: (use the provided format with backticks)\n\n\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `start_date` | `str | null` | `None` | Filter problems starting from this date (YYYY-MM-DD). Null keeps all. |\n| `end_date` | `str | null` | `None` | Filter problems up to this date (YYYY-MM-DD). Null keeps all. |\n| `debug` | `bool` | `False` | Enable verbose debug logging and bypass certain safety checks. |\n\n## Sandbox Configuration\n\nThis benchmark requires a sandbox environment for code execution.\n\n```json\n{\n  \"image\": \"python:3.11-slim\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {}\n  }\n}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets live_code_bench \\\n    --use-sandbox \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['live_code_bench'],\n    use_sandbox=True,\n    dataset_args={\n        'live_code_bench': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Live-Code-Bench\n\n## 概述\n\nLiveCodeBench 是一个无数据污染的基准测试，用于评估代码生成模型在真实世界竞赛编程问题上的表现。它持续从编程平台收集新问题，以确保模型在训练期间未见过测试数据。\n\n## 任务描述\n\n- **任务类型**：竞赛编程 / 代码生成\n- **输入**：包含输入/输出格式的编程问题描述\n- **输出**：完整的解决方案代码\n- **来源**：LeetCode、Codeforces 和 AtCoder 的题目\n\n## 主要特性\n\n- 持续更新模型训练截止日期之后的新问题\n- 题目来自主流竞赛编程平台\n- 每道题包含多个测试用例，以进行全面评估\n- 支持基于日期的过滤，防止数据污染\n- 支持本地和沙箱环境中的代码执行\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- **安全警告**：默认情况下，代码在本地环境中执行。我们建议使用沙箱执行。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。\n- 使用 `start_date` 和 `end_date` 参数按日期筛选题目\n- 每个测试用例默认超时时间为 6 秒\n- 支持 `pass@k` 指标计算\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `live_code_bench` |\n| **数据集ID** | [AI-ModelScope/code_generation_lite](https://modelscope.cn/datasets/AI-ModelScope/code_generation_lite/summary) |\n| **论文** | N/A |\n| **标签** | `Coding` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n| **聚合方式** | `mean_and_pass_at_k` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,055 |\n| 提示词长度（平均） | 1700.76 字符 |\n| 提示词长度（最小/最大） | 717 / 4234 字符 |\n\n## 样例示例\n\n**子集**: `release_latest`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"6b6a6121\",\n      \"content\": \"### Question:\\nThere are three cards with letters $\\\\texttt{a}$, $\\\\texttt{b}$, $\\\\texttt{c}$ placed in a row in some order. You can do the following operation at most once: \\n\\n \\n-  Pick two cards, and swap them.  Is it possible that the row becom ... [TRUNCATED] ... s from stdin solve the problem and write the answer to stdout (do not directly test on the sample inputs). Enclose your code within delimiters as follows.\\n```python\\n# YOUR CODE HERE\\n```\\n\\n ### Answer: (use the provided format with backticks)\\n\\n\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"evaluation_sample\": \"{\\\"inputs\\\": [\\\"6\\\\nabc\\\\nacb\\\\nbac\\\\nbca\\\\ncab\\\\ncba\\\\n\\\", \\\"1\\\\nabc\\\\n\\\", \\\"3\\\\nabc\\\\nabc\\\\nabc\\\\n\\\", \\\"5\\\\ncab\\\\nacb\\\\ncba\\\\nbac\\\\nbca\\\\n\\\", \\\"6\\\\nabc\\\\nabc\\\\nabc\\\\nabc\\\\nabc\\\\nabc\\\\n\\\"], \\\"outputs\\\": [\\\"YES\\\\nYES\\\\nYES\\\\nNO\\\\nNO\\\\nYES\\\\n\\\", \\\"YES\\\\n\\\", \\\"YES\\\\nYES\\\\nYES\\\\n\\\", \\\"NO\\\\nYES\\\\nYES\\\\nYES\\\\nNO\\\\n\\\", \\\"YES\\\\nYES\\\\nYES\\\\nYES\\\\nYES\\\\nYES\\\\n\\\"], \\\"fn_name\\\": null}\",\n    \"contest_date\": \"2023-08-21T00:00:00\"\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n### Question:\n{question_content}\n\n{format_prompt} ### Answer: (use the provided format with backticks)\n\n\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `start_date` | `str | null` | `None` | 从该日期（YYYY-MM-DD）开始筛选题目。设为 null 则保留全部。 |\n| `end_date` | `str | null` | `None` | 筛选截至该日期（YYYY-MM-DD）的题目。设为 null 则保留全部。 |\n| `debug` | `bool` | `False` | 启用详细调试日志并绕过某些安全检查。 |\n\n## 沙箱配置\n\n此基准测试需要沙箱环境来执行代码。\n\n```json\n{\n  \"image\": \"python:3.11-slim\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {}\n  }\n}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets live_code_bench \\\n    --use-sandbox \\\n    --limit 10  # 正式评估时请移除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['live_code_bench'],\n    use_sandbox=True,\n    dataset_args={\n        'live_code_bench': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请移除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "9235a61b4501a737cc53533ca9a21b91",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.265877",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

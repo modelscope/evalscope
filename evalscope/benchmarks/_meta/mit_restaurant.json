@@ -1,0 +1,96 @@
+{
+  "meta": {
+    "pretty_name": "MIT-Restaurant",
+    "dataset_id": "extraordinarylab/mit-restaurant",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nThe MIT-Restaurant dataset is a collection of restaurant review text specifically curated for training and testing NLP models for Named Entity Recognition. It contains sentences from real reviews with annotations in BIO format.\n\n## Task Description\n\n- **Task Type**: Restaurant Domain Named Entity Recognition (NER)\n- **Input**: Restaurant review text and queries\n- **Output**: Identified restaurant-related entity spans\n- **Domain**: Food service, restaurant reviews, dialogue systems\n\n## Key Features\n\n- Real restaurant review sentences\n- BIO format annotations\n- Eight restaurant-specific entity types\n- Useful for food service domain NLP\n- Adapted for conversational AI applications\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: AMENITY, CUISINE, DISH, HOURS, LOCATION, PRICE, RATING, RESTAURANT_NAME",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 1521,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1521,
+        "prompt_length_mean": 2383.97,
+        "prompt_length_min": 2338,
+        "prompt_length_max": 2474,
+        "prompt_length_std": 18.21,
+        "target_length_mean": 112.22
+      }
+    ],
+    "prompt_length": {
+      "mean": 2383.97,
+      "min": 2338,
+      "max": 2474,
+      "std": 18.21
+    },
+    "target_length_mean": 112.22,
+    "computed_at": "2026-01-28T14:15:07.183118"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "9d5a77f1",
+          "content": "Here are some examples of named entity recognition:\n\nInput:\ncan you find me the cheapest mexican restaurant nearby\n\nOutput:\n<response>can you find me the <price>cheapest</price> <cuisine>mexican</cuisine> restaurant <location>nearby</location ... [TRUNCATED] ... mes provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\na four star restaurant with a bar\n"
+        }
+      ],
+      "target": "<response>a <rating>four star</rating> restaurant <location>with a</location> <amenity>bar</amenity></response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "a",
+          "four",
+          "star",
+          "restaurant",
+          "with",
+          "a",
+          "bar"
+        ],
+        "ner_tags": [
+          "O",
+          "B-RATING",
+          "I-RATING",
+          "O",
+          "B-LOCATION",
+          "I-LOCATION",
+          "B-AMENITY"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# MIT-Restaurant\n\n## Overview\n\nThe MIT-Restaurant dataset is a collection of restaurant review text specifically curated for training and testing NLP models for Named Entity Recognition. It contains sentences from real reviews with annotations in BIO format.\n\n## Task Description\n\n- **Task Type**: Restaurant Domain Named Entity Recognition (NER)\n- **Input**: Restaurant review text and queries\n- **Output**: Identified restaurant-related entity spans\n- **Domain**: Food service, restaurant reviews, dialogue systems\n\n## Key Features\n\n- Real restaurant review sentences\n- BIO format annotations\n- Eight restaurant-specific entity types\n- Useful for food service domain NLP\n- Adapted for conversational AI applications\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: AMENITY, CUISINE, DISH, HOURS, LOCATION, PRICE, RATING, RESTAURANT_NAME\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `mit_restaurant` |\n| **Dataset ID** | [extraordinarylab/mit-restaurant](https://modelscope.cn/datasets/extraordinarylab/mit-restaurant/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,521 |\n| Prompt Length (Mean) | 2383.97 chars |\n| Prompt Length (Min/Max) | 2338 / 2474 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"9d5a77f1\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\ncan you find me the cheapest mexican restaurant nearby\\n\\nOutput:\\n<response>can you find me the <price>cheapest</price> <cuisine>mexican</cuisine> restaurant <location>nearby</location ... [TRUNCATED] ... mes provided.\\n5. Do not include explanations, just the tagged text.\\n6. If entity spans overlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\na four star restaurant with a bar\\n\"\n    }\n  ],\n  \"target\": \"<response>a <rating>four star</rating> restaurant <location>with a</location> <amenity>bar</amenity></response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"a\",\n      \"four\",\n      \"star\",\n      \"restaurant\",\n      \"with\",\n      \"a\",\n      \"bar\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"B-RATING\",\n      \"I-RATING\",\n      \"O\",\n      \"B-LOCATION\",\n      \"I-LOCATION\",\n      \"B-AMENITY\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mit_restaurant \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mit_restaurant'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MIT-Restaurant\n\n## 概述\n\nMIT-Restaurant 数据集是一组专门用于训练和测试命名实体识别（NER）自然语言处理（NLP）模型的餐厅评论文本。该数据集包含来自真实评论的句子，并采用 BIO 格式进行标注。\n\n## 任务描述\n\n- **任务类型**：餐厅领域命名实体识别（NER）\n- **输入**：餐厅评论文本和查询\n- **输出**：识别出的与餐厅相关的实体片段\n- **领域**：餐饮服务、餐厅评论、对话系统\n\n## 主要特点\n\n- 真实的餐厅评论句子\n- 采用 BIO 格式标注\n- 包含八种餐厅特定的实体类型\n- 适用于餐饮服务领域的 NLP 任务\n- 适配于对话式 AI 应用\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 评估\n- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）\n- 实体类型：AMENITY（设施）、CUISINE（菜系）、DISH（菜品）、HOURS（营业时间）、LOCATION（位置）、PRICE（价格）、RATING（评分）、RESTAURANT_NAME（餐厅名称）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `mit_restaurant` |\n| **数据集ID** | [extraordinarylab/mit-restaurant](https://modelscope.cn/datasets/extraordinarylab/mit-restaurant/summary) |\n| **论文** | 无 |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认示例数** | 5-shot |\n| **评估分割** | `test` |\n| **训练分割** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,521 |\n| 提示词长度（平均） | 2383.97 字符 |\n| 提示词长度（最小/最大） | 2338 / 2474 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"9d5a77f1\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\ncan you find me the cheapest mexican restaurant nearby\\n\\nOutput:\\n<response>can you find me the <price>cheapest</price> <cuisine>mexican</cuisine> restaurant <location>nearby</location ... [TRUNCATED] ... mes provided.\\n5. Do not include explanations, just the tagged text.\\n6. If entity spans overlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\na four star restaurant with a bar\\n\"\n    }\n  ],\n  \"target\": \"<response>a <rating>four star</rating> restaurant <location>with a</location> <amenity>bar</amenity></response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"a\",\n      \"four\",\n      \"star\",\n      \"restaurant\",\n      \"with\",\n      \"a\",\n      \"bar\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"B-RATING\",\n      \"I-RATING\",\n      \"O\",\n      \"B-LOCATION\",\n      \"I-LOCATION\",\n      \"B-AMENITY\"\n    ]\n  }\n}\n```\n\n*注：部分内容因显示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本（Few-shot）模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mit_restaurant \\\n    --limit 10  # 正式评估时请移除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mit_restaurant'],\n    limit=10,  # 正式评估时请移除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "2ef2b73b215ce2f170843a92d7b57931",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.367847",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

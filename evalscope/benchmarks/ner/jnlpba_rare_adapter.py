@@ -3,11 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'The JNLPBA-Rare dataset is a specialized subset of the JNLPBA test set '
-    'created to evaluate zero-shot performance on its least frequent entity types, '
-    'RNA and cell line.'
-)  # noqa: E501
+DESCRIPTION = """
+## Overview
+
+The JNLPBA-Rare dataset is a specialized subset of the JNLPBA test set created to evaluate zero-shot performance on its least frequent entity types: RNA and cell line. It tests model ability to recognize rare biomedical entities.
+
+## Task Description
+
+- **Task Type**: Rare Biomedical Named Entity Recognition (NER)
+- **Input**: Biomedical text from MEDLINE abstracts
+- **Output**: Identified RNA and cell line entity spans
+- **Domain**: Molecular biology, bioinformatics
+
+## Key Features
+
+- Focuses on rare entity types (RNA, cell line)
+- Subset of JNLPBA for zero-shot evaluation
+- Tests handling of infrequent biomedical entities
+- Challenging benchmark for entity recognition
+- Useful for evaluating long-tail performance
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: RNA, CELL_LINE
+"""  # noqa: E501
 
 
 @register_benchmark(

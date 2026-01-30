@@ -4,9 +4,33 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
-DESCRIPTION = (
-    'MRI-MCQA is a benchmark composed by multiple-choice questions related to Magnetic Resonance Imaging (MRI).'
-)
+DESCRIPTION = """
+## Overview
+
+MRI-MCQA is a specialized benchmark composed of multiple-choice questions related to Magnetic Resonance Imaging (MRI). It evaluates AI models' understanding of MRI physics, protocols, image acquisition, and clinical applications.
+
+## Task Description
+
+- **Task Type**: Medical Imaging Knowledge Multiple-Choice QA
+- **Input**: MRI-related question with multiple answer choices
+- **Output**: Correct answer letter
+- **Domain**: Medical imaging, MRI physics, radiology
+
+## Key Features
+
+- Specialized focus on MRI technology and applications
+- Tests understanding of MRI physics and protocols
+- Covers clinical MRI applications and sequences
+- Designed for evaluating medical imaging AI systems
+- Multiple-choice format for standardized evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Evaluates on test split
+- Simple accuracy metric
+- No training split available
+"""
 
 
 @register_benchmark(

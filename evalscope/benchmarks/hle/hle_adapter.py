@@ -50,16 +50,34 @@ Your judgment must focus only on if there are meaningful differences between [co
         name='hle',
         pretty_name="Humanity's-Last-Exam",
         tags=[Tags.KNOWLEDGE, Tags.QA],
-        description='Humanity\'s Last Exam (HLE) is a language model benchmark consisting of 2,500 '
-        'questions across a broad range of subjects. It was created jointly by the Center '
-        'for AI Safety and Scale AI. The benchmark classifies the questions into the '
-        'following broad subjects: mathematics (41%), physics (9%), biology/medicine (11%), '
-        'humanities/social science (9%), computer science/artificial intelligence (10%), '
-        'engineering (4%), chemistry (7%), and other (9%). Around 14% of the questions '
-        'require the ability to understand both text and images, i.e., multi-modality. '
-        '24% of the questions are multiple-choice; the rest are short-answer, exact-match questions. \n'
-        '**To evaluate the performance of model without multi-modality capabilities, '
-        'please set the `extra_params["include_multi_modal"]` to `False`.**',  # noqa: E501
+        description="""
+## Overview
+
+Humanity's Last Exam (HLE) is a comprehensive language model benchmark consisting of 2,500 questions across a broad range of subjects. Created jointly by the Center for AI Safety and Scale AI, it represents one of the most challenging academic benchmarks available.
+
+## Task Description
+
+- **Task Type**: Expert-Level Question Answering
+- **Input**: Question with optional image (14% multimodal)
+- **Output**: Answer with explanation and confidence score
+- **Domains**: Mathematics (41%), Physics (9%), Biology/Medicine (11%), Computer Science/AI (10%), Humanities (9%), Engineering (4%), Chemistry (7%), Other (9%)
+
+## Key Features
+
+- 2,500 expert-level questions across multiple disciplines
+- 14% of questions require multimodal understanding
+- 24% multiple-choice, 76% short-answer exact-match
+- Questions from various academic and professional domains
+- Includes confidence scoring in response format
+
+## Evaluation Notes
+
+- Default evaluation uses the **test** split
+- Primary metric: **Accuracy** with LLM judge
+- Response format includes: Explanation, Answer, and Confidence (0-100%)
+- **Note**: Set `extra_params["include_multi_modal"]` to `False` for text-only models
+- Uses GRADE: C/I format for LLM judge scoring
+""",  # noqa: E501
         dataset_id='cais/hle',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],

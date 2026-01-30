@@ -5,11 +5,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'MultiNERD is a large-scale, multilingual, and multi-genre dataset for '
-    'fine-grained Named Entity Recognition, automatically generated from '
-    'Wikipedia and Wikinews, covering 10 languages and 15 distinct entity categories.'
-)
+DESCRIPTION = """
+## Overview
+
+MultiNERD is a large-scale, multilingual, and multi-genre dataset for fine-grained Named Entity Recognition, automatically generated from Wikipedia and Wikinews. It covers 10 languages and 15 distinct entity categories.
+
+## Task Description
+
+- **Task Type**: Fine-grained Multilingual Named Entity Recognition (NER)
+- **Input**: Wikipedia and Wikinews text
+- **Output**: Identified entity spans with 15 fine-grained types
+- **Domain**: General knowledge, news, encyclopedic content
+
+## Key Features
+
+- Large-scale automatically generated corpus
+- 10 languages supported
+- 15 fine-grained entity categories
+- Sourced from Wikipedia and Wikinews
+- Comprehensive entity type coverage
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: PER, ORG, LOC, ANIM, BIO, CEL, DIS, EVE, FOOD, INST, MEDIA, MYTH, PLANT, TIME, VEHI
+"""
 
 
 @register_benchmark(

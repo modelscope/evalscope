@@ -15,7 +15,34 @@ logger = get_logger()
     BenchmarkMeta(
         name='general_t2i',
         dataset_id='general_t2i',
-        description='General Text-to-Image Benchmark',
+        description="""
+## Overview
+
+General Text-to-Image is a customizable benchmark adapter for evaluating text-to-image generation models with user-provided prompts and images.
+
+## Task Description
+
+- **Task Type**: Custom Text-to-Image Evaluation
+- **Input**: User-provided text prompts
+- **Output**: Generated images evaluated using configurable metrics
+- **Flexibility**: Supports local prompt files
+
+## Key Features
+
+- Flexible custom evaluation framework
+- Supports local prompt file loading
+- Configurable metrics (default: PickScore)
+- User-defined subset naming from file path
+- Compatible with pre-generated images
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Primary metric: **PickScore** (configurable)
+- Supports custom dataset paths and prompt files
+- Automatically extracts subset name from file path
+- Can evaluate existing images via `image_path` field
+""",
         tags=[Tags.TEXT_TO_IMAGE, Tags.CUSTOM],
         subset_list=['default'],
         metric_list=['PickScore'],

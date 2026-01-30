@@ -1,0 +1,136 @@
+{
+  "meta": {
+    "pretty_name": "WNUT2017",
+    "dataset_id": "extraordinarylab/wnut2017",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nThe WNUT2017 dataset is a collection of user-generated text from various social media platforms, like Twitter and YouTube, specifically designed for named entity recognition tasks focusing on emerging and unusual entities.\n\n## Task Description\n\n- **Task Type**: Emerging Entity Named Entity Recognition (NER)\n- **Input**: User-generated social media text\n- **Output**: Identified entity spans with types\n- **Domain**: Social media, emerging entities\n\n## Key Features\n\n- User-generated text from multiple platforms\n- Focus on emerging and unusual named entities\n- Six entity types for diverse coverage\n- Challenging informal text processing\n- From WNUT 2017 shared task\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: CORPORATION, CREATIVE-WORK, GROUP, LOCATION, PERSON, PRODUCT",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 1287,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1287,
+        "prompt_length_mean": 2665.65,
+        "prompt_length_min": 2570,
+        "prompt_length_max": 3093,
+        "prompt_length_std": 70.32,
+        "target_length_mean": 136.36
+      }
+    ],
+    "prompt_length": {
+      "mean": 2665.65,
+      "min": 2570,
+      "max": 3093,
+      "std": 70.32
+    },
+    "target_length_mean": 136.36,
+    "computed_at": "2026-01-28T14:16:27.709789"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "f1e6b117",
+          "content": "Here are some examples of named entity recognition:\n\nInput:\n@paulwalk It 's the view from where I 'm living for two weeks . Empire State Building = ESB . Pretty bad storm here last evening .\n\nOutput:\n<response>@paulwalk It 's the view from wh ... [TRUNCATED] ... he most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n& gt ; * The soldier was killed when another avalanche hit an army barracks in the northern area of Sonmarg , said a military spokesman .\n"
+        }
+      ],
+      "target": "<response>& gt ; * The soldier was killed when another avalanche hit an army barracks in the northern area of <location>Sonmarg</location> , said a military spokesman .</response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "&",
+          "gt",
+          ";",
+          "*",
+          "The",
+          "soldier",
+          "was",
+          "killed",
+          "when",
+          "another",
+          "avalanche",
+          "hit",
+          "an",
+          "army",
+          "barracks",
+          "in",
+          "the",
+          "northern",
+          "area",
+          "of",
+          "Sonmarg",
+          ",",
+          "said",
+          "a",
+          "military",
+          "spokesman",
+          "."
+        ],
+        "ner_tags": [
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-LOCATION",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# WNUT2017\n\n## Overview\n\nThe WNUT2017 dataset is a collection of user-generated text from various social media platforms, like Twitter and YouTube, specifically designed for named entity recognition tasks focusing on emerging and unusual entities.\n\n## Task Description\n\n- **Task Type**: Emerging Entity Named Entity Recognition (NER)\n- **Input**: User-generated social media text\n- **Output**: Identified entity spans with types\n- **Domain**: Social media, emerging entities\n\n## Key Features\n\n- User-generated text from multiple platforms\n- Focus on emerging and unusual named entities\n- Six entity types for diverse coverage\n- Challenging informal text processing\n- From WNUT 2017 shared task\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: CORPORATION, CREATIVE-WORK, GROUP, LOCATION, PERSON, PRODUCT\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `wnut2017` |\n| **Dataset ID** | [extraordinarylab/wnut2017](https://modelscope.cn/datasets/extraordinarylab/wnut2017/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,287 |\n| Prompt Length (Mean) | 2665.65 chars |\n| Prompt Length (Min/Max) | 2570 / 3093 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f1e6b117\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\n@paulwalk It 's the view from where I 'm living for two weeks . Empire State Building = ESB . Pretty bad storm here last evening .\\n\\nOutput:\\n<response>@paulwalk It 's the view from wh ... [TRUNCATED] ... he most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\n& gt ; * The soldier was killed when another avalanche hit an army barracks in the northern area of Sonmarg , said a military spokesman .\\n\"\n    }\n  ],\n  \"target\": \"<response>& gt ; * The soldier was killed when another avalanche hit an army barracks in the northern area of <location>Sonmarg</location> , said a military spokesman .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"&\",\n      \"gt\",\n      \";\",\n      \"*\",\n      \"The\",\n      \"soldier\",\n      \"was\",\n      \"killed\",\n      \"when\",\n      \"another\",\n      \"avalanche\",\n      \"hit\",\n      \"an\",\n      \"army\",\n      \"barracks\",\n      \"in\",\n      \"the\",\n      \"northern\",\n      \"area\",\n      \"of\",\n      \"Sonmarg\",\n      \",\",\n      \"said\",\n      \"a\",\n      \"military\",\n      \"spokesman\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-LOCATION\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets wnut2017 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['wnut2017'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# WNUT2017\n\n## 概述\n\nWNUT2017 数据集收集了来自 Twitter 和 YouTube 等多个社交媒体平台的用户生成文本，专门用于命名实体识别（NER）任务，重点关注新兴和非常规实体。\n\n## 任务描述\n\n- **任务类型**：新兴实体命名实体识别（NER）\n- **输入**：用户生成的社交媒体文本\n- **输出**：带类型的已识别实体片段\n- **领域**：社交媒体、新兴实体\n\n## 主要特点\n\n- 来自多个平台的用户生成文本\n- 聚焦于新兴和非常规命名实体\n- 包含六种实体类型，覆盖多样\n- 非正式文本处理具有挑战性\n- 源自 WNUT 2017 共享任务\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 评估\n- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）\n- 实体类型：CORPORATION（公司）、CREATIVE-WORK（创意作品）、GROUP（群体）、LOCATION（地点）、PERSON（人物）、PRODUCT（产品）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `wnut2017` |\n| **数据集ID** | [extraordinarylab/wnut2017](https://modelscope.cn/datasets/extraordinarylab/wnut2017/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认样本数** | 5-shot |\n| **评估划分** | `test` |\n| **训练划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,287 |\n| 提示词长度（平均） | 2665.65 字符 |\n| 提示词长度（最小/最大） | 2570 / 3093 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f1e6b117\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\n@paulwalk It 's the view from where I 'm living for two weeks . Empire State Building = ESB . Pretty bad storm here last evening .\\n\\nOutput:\\n<response>@paulwalk It 's the view from wh ... [TRUNCATED] ... he most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\n& gt ; * The soldier was killed when another avalanche hit an army barracks in the northern area of Sonmarg , said a military spokesman .\\n\"\n    }\n  ],\n  \"target\": \"<response>& gt ; * The soldier was killed when another avalanche hit an army barracks in the northern area of <location>Sonmarg</location> , said a military spokesman .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"&\",\n      \"gt\",\n      \";\",\n      \"*\",\n      \"The\",\n      \"soldier\",\n      \"was\",\n      \"killed\",\n      \"when\",\n      \"another\",\n      \"avalanche\",\n      \"hit\",\n      \"an\",\n      \"army\",\n      \"barracks\",\n      \"in\",\n      \"the\",\n      \"northern\",\n      \"area\",\n      \"of\",\n      \"Sonmarg\",\n      \",\",\n      \"said\",\n      \"a\",\n      \"military\",\n      \"spokesman\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-LOCATION\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*注：部分内容为显示目的已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本（Few-shot）模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets wnut2017 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['wnut2017'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "524f16d4d323ab754bd0a67a162b98f3",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.382969",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

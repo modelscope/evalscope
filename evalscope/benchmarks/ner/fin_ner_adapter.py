@@ -3,12 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'The FinNER dataset is a corpus of financial agreements from public '
-    'U.S. Security and Exchange Commission (SEC) filings, annotated with '
-    'Person, Organization, Location, and Miscellaneous entities to support '
-    'information extraction for credit risk assessment.'
-)  # noqa: E501
+DESCRIPTION = """
+## Overview
+
+The FinNER dataset is a corpus of financial agreements from public U.S. Security and Exchange Commission (SEC) filings, annotated with Person, Organization, Location, and Miscellaneous entities to support information extraction for credit risk assessment.
+
+## Task Description
+
+- **Task Type**: Financial Named Entity Recognition (NER)
+- **Input**: Financial agreement text from SEC filings
+- **Output**: Identified entity spans with types
+- **Domain**: Finance, legal documents, credit risk
+
+## Key Features
+
+- Financial agreements from SEC filings
+- Annotated for credit risk assessment applications
+- Standard NER entity types adapted for finance
+- Specialized for financial document processing
+- Useful for legal and financial AI applications
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: PER, ORG, LOC, MISC
+"""  # noqa: E501
 
 
 @register_benchmark(

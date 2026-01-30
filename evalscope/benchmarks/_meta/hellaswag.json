@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "pretty_name": "HellaSwag",
+    "dataset_id": "evalscope/hellaswag",
+    "paper_url": null,
+    "tags": [
+      "Commonsense",
+      "MCQ",
+      "Knowledge"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nHellaSwag is a benchmark for evaluating commonsense natural language inference, specifically testing a model's ability to complete sentences describing everyday situations. The dataset uses adversarial filtering to create challenging distractors that are grammatically correct but semantically implausible.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Sentence Completion\n- **Input**: Context describing an activity or situation\n- **Output**: Most plausible continuation from 4 choices (A, B, C, D)\n- **Domain**: Everyday activities and commonsense scenarios\n\n## Key Features\n\n- 70,000+ questions testing grounded commonsense inference\n- Contexts derived from ActivityNet and WikiHow\n- Adversarially-filtered incorrect endings\n- Requires understanding of typical event sequences\n- Tests physical and social commonsense reasoning\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on the validation split\n- Endings are preprocessed to clean formatting artifacts\n- Context combines `ctx_a` and `ctx_b` fields\n- Activity labels available in metadata for analysis\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 10042,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 10042,
+        "prompt_length_mean": 767.6,
+        "prompt_length_min": 329,
+        "prompt_length_max": 1655,
+        "prompt_length_std": 300.19,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 767.6,
+      "min": 329,
+      "max": 1655,
+      "std": 300.19
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:13:52.420847"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "18df47e2",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nA man is sitting on a roof. He\n\nA) is using wrap to wrap a pair of skis.\nB) is ripping level tiles off.\nC) is holding a rubik's cube.\nD) starts pulling up roofing on a roof."
+        }
+      ],
+      "choices": [
+        "is using wrap to wrap a pair of skis.",
+        "is ripping level tiles off.",
+        "is holding a rubik's cube.",
+        "starts pulling up roofing on a roof."
+      ],
+      "target": "D",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "activity_label": "Roof shingle removal"
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# HellaSwag\n\n\n## Overview\n\nHellaSwag is a benchmark for evaluating commonsense natural language inference, specifically testing a model's ability to complete sentences describing everyday situations. The dataset uses adversarial filtering to create challenging distractors that are grammatically correct but semantically implausible.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Sentence Completion\n- **Input**: Context describing an activity or situation\n- **Output**: Most plausible continuation from 4 choices (A, B, C, D)\n- **Domain**: Everyday activities and commonsense scenarios\n\n## Key Features\n\n- 70,000+ questions testing grounded commonsense inference\n- Contexts derived from ActivityNet and WikiHow\n- Adversarially-filtered incorrect endings\n- Requires understanding of typical event sequences\n- Tests physical and social commonsense reasoning\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on the validation split\n- Endings are preprocessed to clean formatting artifacts\n- Context combines `ctx_a` and `ctx_b` fields\n- Activity labels available in metadata for analysis\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `hellaswag` |\n| **Dataset ID** | [evalscope/hellaswag](https://modelscope.cn/datasets/evalscope/hellaswag/summary) |\n| **Paper** | N/A |\n| **Tags** | `Commonsense`, `Knowledge`, `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 10,042 |\n| Prompt Length (Mean) | 767.6 chars |\n| Prompt Length (Min/Max) | 329 / 1655 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"18df47e2\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nA man is sitting on a roof. He\\n\\nA) is using wrap to wrap a pair of skis.\\nB) is ripping level tiles off.\\nC) is holding a rubik's cube.\\nD) starts pulling up roofing on a roof.\"\n    }\n  ],\n  \"choices\": [\n    \"is using wrap to wrap a pair of skis.\",\n    \"is ripping level tiles off.\",\n    \"is holding a rubik's cube.\",\n    \"starts pulling up roofing on a roof.\"\n  ],\n  \"target\": \"D\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"activity_label\": \"Roof shingle removal\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets hellaswag \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['hellaswag'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# HellaSwag\n\n\n## 概述\n\nHellaSwag 是一个用于评估常识性自然语言推理的基准测试，专门测试模型完成描述日常情境句子的能力。该数据集采用对抗性过滤（adversarial filtering）方法生成具有挑战性的干扰项，这些干扰项在语法上正确但在语义上不合理。\n\n## 任务描述\n\n- **任务类型**：多项选择题句子补全\n- **输入**：描述某项活动或情境的上下文\n- **输出**：从 4 个选项（A、B、C、D）中选择最合理的后续内容\n- **领域**：日常活动与常识场景\n\n## 主要特点\n\n- 包含 70,000 多个问题，用于测试基于现实情境的常识推理能力\n- 上下文来源于 ActivityNet 和 WikiHow\n- 错误选项经过对抗性过滤处理\n- 要求理解典型事件序列\n- 测试物理常识与社会常识推理能力\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估方式\n- 在验证集（validation split）上进行评估\n- 已对选项结尾进行预处理，清除格式化伪影\n- 上下文由 `ctx_a` 和 `ctx_b` 字段拼接而成\n- 元数据中包含活动标签，可用于分析\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `hellaswag` |\n| **数据集ID** | [evalscope/hellaswag](https://modelscope.cn/datasets/evalscope/hellaswag/summary) |\n| **论文** | N/A |\n| **标签** | `Commonsense`, `Knowledge`, `MCQ` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `validation` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 10,042 |\n| 提示词长度（平均） | 767.6 字符 |\n| 提示词长度（最小/最大） | 329 / 1655 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"18df47e2\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nA man is sitting on a roof. He\\n\\nA) is using wrap to wrap a pair of skis.\\nB) is ripping level tiles off.\\nC) is holding a rubik's cube.\\nD) starts pulling up roofing on a roof.\"\n    }\n  ],\n  \"choices\": [\n    \"is using wrap to wrap a pair of skis.\",\n    \"is ripping level tiles off.\",\n    \"is holding a rubik's cube.\",\n    \"starts pulling up roofing on a roof.\"\n  ],\n  \"target\": \"D\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"activity_label\": \"Roof shingle removal\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets hellaswag \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['hellaswag'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "4d8bf2c34cc9250f0e1d296f05f05ce6",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.251375",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

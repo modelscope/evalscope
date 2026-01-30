@@ -3,13 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'OntoNotes Release 5.0 is a large, multilingual corpus containing text in English, '
-    'Chinese, and Arabic across various genres like news, weblogs, and broadcast '
-    'conversations. It is richly annotated with multiple layers of linguistic information, '
-    'including syntax, predicate-argument structure, word sense, named entities, and '
-    'coreference to support research and development in natural language processing.'
-)
+DESCRIPTION = """
+## Overview
+
+OntoNotes Release 5.0 is a large, multilingual corpus containing text in English, Chinese, and Arabic across various genres. It is richly annotated with multiple layers of linguistic information including syntax, predicate-argument structure, word sense, named entities, and coreference.
+
+## Task Description
+
+- **Task Type**: Multi-genre Named Entity Recognition (NER)
+- **Input**: Text from news, weblogs, broadcast conversations
+- **Output**: Fine-grained named entity spans
+- **Languages**: English, Chinese, Arabic
+
+## Key Features
+
+- Large-scale multilingual corpus
+- Multiple genres (news, weblogs, broadcast)
+- 18 fine-grained entity types
+- Rich linguistic annotations
+- Standard benchmark for NER evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: PERSON, NORP, FAC, ORG, GPE, LOC, PRODUCT, EVENT, WORK_OF_ART, LAW, LANGUAGE, DATE, TIME, PERCENT, MONEY, QUANTITY, ORDINAL, CARDINAL
+"""
 
 
 @register_benchmark(

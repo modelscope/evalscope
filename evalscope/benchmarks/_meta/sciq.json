@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "pretty_name": "SciQ",
+    "dataset_id": "extraordinarylab/sciq",
+    "paper_url": null,
+    "tags": [
+      "ReadingComprehension",
+      "Knowledge",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nSciQ is a crowdsourced science exam question dataset covering Physics, Chemistry, Biology, and other scientific domains. Most questions include supporting evidence paragraphs.\n\n## Task Description\n\n- **Task Type**: Science Question Answering (Multiple-Choice)\n- **Input**: Science question with 4 answer choices\n- **Output**: Correct answer letter (A, B, C, or D)\n- **Domains**: Physics, Chemistry, Biology, Earth Science, etc.\n\n## Key Features\n\n- Crowdsourced science exam questions\n- Multiple scientific domains covered\n- Supporting evidence paragraphs available\n- Tests scientific knowledge and reasoning\n- Suitable for science comprehension evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses simple multiple-choice prompting\n- Evaluates on test split\n- Simple accuracy metric",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 1000,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1000,
+        "prompt_length_mean": 322.68,
+        "prompt_length_min": 244,
+        "prompt_length_max": 505,
+        "prompt_length_std": 36.08,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 322.68,
+      "min": 244,
+      "max": 505,
+      "std": 36.08
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:16:43.058592"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "a30097af",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nCompounds that are capable of accepting electrons, such as o 2 or f2, are called what?\n\nA) antioxidants\nB) Oxygen\nC) residues\nD) oxidants"
+        }
+      ],
+      "choices": [
+        "antioxidants",
+        "Oxygen",
+        "residues",
+        "oxidants"
+      ],
+      "target": "D",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {}
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# SciQ\n\n## Overview\n\nSciQ is a crowdsourced science exam question dataset covering Physics, Chemistry, Biology, and other scientific domains. Most questions include supporting evidence paragraphs.\n\n## Task Description\n\n- **Task Type**: Science Question Answering (Multiple-Choice)\n- **Input**: Science question with 4 answer choices\n- **Output**: Correct answer letter (A, B, C, or D)\n- **Domains**: Physics, Chemistry, Biology, Earth Science, etc.\n\n## Key Features\n\n- Crowdsourced science exam questions\n- Multiple scientific domains covered\n- Supporting evidence paragraphs available\n- Tests scientific knowledge and reasoning\n- Suitable for science comprehension evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses simple multiple-choice prompting\n- Evaluates on test split\n- Simple accuracy metric\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `sciq` |\n| **Dataset ID** | [extraordinarylab/sciq](https://modelscope.cn/datasets/extraordinarylab/sciq/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `ReadingComprehension` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,000 |\n| Prompt Length (Mean) | 322.68 chars |\n| Prompt Length (Min/Max) | 244 / 505 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a30097af\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nCompounds that are capable of accepting electrons, such as o 2 or f2, are called what?\\n\\nA) antioxidants\\nB) Oxygen\\nC) residues\\nD) oxidants\"\n    }\n  ],\n  \"choices\": [\n    \"antioxidants\",\n    \"Oxygen\",\n    \"residues\",\n    \"oxidants\"\n  ],\n  \"target\": \"D\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets sciq \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['sciq'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# SciQ\n\n## 概述\n\nSciQ 是一个众包的科学考试题目数据集，涵盖物理、化学、生物及其他科学领域。大多数题目包含支持性的证据段落。\n\n## 任务描述\n\n- **任务类型**：科学问答（多项选择题）\n- **输入**：一道包含 4 个选项的科学问题\n- **输出**：正确答案的字母（A、B、C 或 D）\n- **领域**：物理、化学、生物、地球科学等\n\n## 主要特点\n\n- 众包收集的科学考试题目  \n- 覆盖多个科学领域  \n- 提供支持性证据段落  \n- 考察科学知识与推理能力  \n- 适用于科学理解能力评估  \n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估  \n- 使用简单的多项选择提示方式  \n- 在测试集（test split）上进行评估  \n- 使用简单准确率（accuracy）作为评估指标  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `sciq` |\n| **数据集ID** | [extraordinarylab/sciq](https://modelscope.cn/datasets/extraordinarylab/sciq/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ`, `ReadingComprehension` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,000 |\n| 提示词长度（平均） | 322.68 字符 |\n| 提示词长度（最小/最大） | 244 / 505 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a30097af\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nCompounds that are capable of accepting electrons, such as o 2 or f2, are called what?\\n\\nA) antioxidants\\nB) Oxygen\\nC) residues\\nD) oxidants\"\n    }\n  ],\n  \"choices\": [\n    \"antioxidants\",\n    \"Oxygen\",\n    \"residues\",\n    \"oxidants\"\n  ],\n  \"target\": \"D\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets sciq \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['sciq'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "e5ad4197bd8ea94ba22eb5801b420931",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.447367",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

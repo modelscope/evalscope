@@ -1,0 +1,80 @@
+{
+  "meta": {
+    "pretty_name": "MaritimeBench",
+    "dataset_id": "HiDolphin/MaritimeBench",
+    "paper_url": null,
+    "tags": [
+      "Chinese",
+      "MCQ",
+      "Knowledge"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nMaritimeBench is a benchmark for evaluating AI models on maritime-related multiple-choice questions in Chinese. It consists of specialized questions related to maritime knowledge, navigation, marine engineering, and seafaring operations.\n\n## Task Description\n\n- **Task Type**: Maritime Knowledge Multiple-Choice QA (Chinese)\n- **Input**: Maritime-related question with 4 answer choices (A-D)\n- **Output**: Correct answer letter in brackets [A/B/C/D]\n- **Language**: Chinese\n\n## Key Features\n\n- Specialized maritime domain questions\n- Chinese language evaluation\n- Multiple subsets covering different maritime topics\n- Tests professional maritime knowledge\n- Standardized Chinese exam format\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on test split\n- Simple accuracy metric\n- Answers extracted using regex for bracketed format [A/B/C/D]",
+    "prompt_template": "请回答单选题。要求只输出选项，不输出解释，将选项放在[]里，直接输出答案。示例：\n\n题目：在船舶主推进动力装置中，传动轴系在运转中承受以下复杂的应力和负荷，但不包括______。\n选项：\nA. 电磁力\nB. 压拉应力\nC. 弯曲应力\nD. 扭应力\n答：[A]\n 当前题目\n {question}\n选项：\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 1888,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1888,
+        "prompt_length_mean": 259.04,
+        "prompt_length_min": 173,
+        "prompt_length_max": 717,
+        "prompt_length_std": 75.39,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 259.04,
+      "min": 173,
+      "max": 717,
+      "std": 75.39
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:14:24.658227"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "0b8c5f63",
+          "content": "请回答单选题。要求只输出选项，不输出解释，将选项放在[]里，直接输出答案。示例：\n\n题目：在船舶主推进动力装置中，传动轴系在运转中承受以下复杂的应力和负荷，但不包括______。\n选项：\nA. 电磁力\nB. 压拉应力\nC. 弯曲应力\nD. 扭应力\n答：[A]\n 当前题目\n 船舶电力系统供电网络中，放射形网络的特点是______。①发散形传输②环形传输③缺乏冗余④冗余性能好\n选项：\nA. ②③\nB. ①③\nC. ②④\nD. ①④"
+        }
+      ],
+      "choices": [
+        "②③",
+        "①③",
+        "②④",
+        "①④"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MaritimeBench\n\n## Overview\n\nMaritimeBench is a benchmark for evaluating AI models on maritime-related multiple-choice questions in Chinese. It consists of specialized questions related to maritime knowledge, navigation, marine engineering, and seafaring operations.\n\n## Task Description\n\n- **Task Type**: Maritime Knowledge Multiple-Choice QA (Chinese)\n- **Input**: Maritime-related question with 4 answer choices (A-D)\n- **Output**: Correct answer letter in brackets [A/B/C/D]\n- **Language**: Chinese\n\n## Key Features\n\n- Specialized maritime domain questions\n- Chinese language evaluation\n- Multiple subsets covering different maritime topics\n- Tests professional maritime knowledge\n- Standardized Chinese exam format\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on test split\n- Simple accuracy metric\n- Answers extracted using regex for bracketed format [A/B/C/D]\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `maritime_bench` |\n| **Dataset ID** | [HiDolphin/MaritimeBench](https://modelscope.cn/datasets/HiDolphin/MaritimeBench/summary) |\n| **Paper** | N/A |\n| **Tags** | `Chinese`, `Knowledge`, `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,888 |\n| Prompt Length (Mean) | 259.04 chars |\n| Prompt Length (Min/Max) | 173 / 717 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0b8c5f63\",\n      \"content\": \"请回答单选题。要求只输出选项，不输出解释，将选项放在[]里，直接输出答案。示例：\\n\\n题目：在船舶主推进动力装置中，传动轴系在运转中承受以下复杂的应力和负荷，但不包括______。\\n选项：\\nA. 电磁力\\nB. 压拉应力\\nC. 弯曲应力\\nD. 扭应力\\n答：[A]\\n 当前题目\\n 船舶电力系统供电网络中，放射形网络的特点是______。①发散形传输②环形传输③缺乏冗余④冗余性能好\\n选项：\\nA. ②③\\nB. ①③\\nC. ②④\\nD. ①④\"\n    }\n  ],\n  \"choices\": [\n    \"②③\",\n    \"①③\",\n    \"②④\",\n    \"①④\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n请回答单选题。要求只输出选项，不输出解释，将选项放在[]里，直接输出答案。示例：\n\n题目：在船舶主推进动力装置中，传动轴系在运转中承受以下复杂的应力和负荷，但不包括______。\n选项：\nA. 电磁力\nB. 压拉应力\nC. 弯曲应力\nD. 扭应力\n答：[A]\n 当前题目\n {question}\n选项：\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets maritime_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['maritime_bench'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MaritimeBench\n\n## 概述\n\nMaritimeBench 是一个用于评估 AI 模型在中文海事相关多项选择题上表现的基准测试。该基准包含与海事知识、航海、船舶工程及海上作业相关的专业问题。\n\n## 任务描述\n\n- **任务类型**：海事知识多项选择问答（中文）\n- **输入**：一道包含 4 个选项（A-D）的海事相关问题\n- **输出**：正确答案的字母，格式为方括号内 [A/B/C/D]\n- **语言**：中文\n\n## 主要特点\n\n- 面向海事领域的专业问题\n- 中文语言评估\n- 包含多个覆盖不同海事主题的子集\n- 考察专业的海事知识\n- 采用标准化的中文考试格式\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 在测试集（test split）上进行评估\n- 使用简单准确率（accuracy）作为评估指标\n- 通过正则表达式提取方括号格式的答案 [A/B/C/D]\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `maritime_bench` |\n| **数据集 ID** | [HiDolphin/MaritimeBench](https://modelscope.cn/datasets/HiDolphin/MaritimeBench/summary) |\n| **论文** | N/A |\n| **标签** | `Chinese`, `Knowledge`, `MCQ` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,888 |\n| 提示词长度（平均） | 259.04 字符 |\n| 提示词长度（最小/最大） | 173 / 717 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0b8c5f63\",\n      \"content\": \"请回答单选题。要求只输出选项，不输出解释，将选项放在[]里，直接输出答案。示例：\\n\\n题目：在船舶主推进动力装置中，传动轴系在运转中承受以下复杂的应力和负荷，但不包括______。\\n选项：\\nA. 电磁力\\nB. 压拉应力\\nC. 弯曲应力\\nD. 扭应力\\n答：[A]\\n 当前题目\\n 船舶电力系统供电网络中，放射形网络的特点是______。①发散形传输②环形传输③缺乏冗余④冗余性能好\\n选项：\\nA. ②③\\nB. ①③\\nC. ②④\\nD. ①④\"\n    }\n  ],\n  \"choices\": [\n    \"②③\",\n    \"①③\",\n    \"②④\",\n    \"①④\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n请回答单选题。要求只输出选项，不输出解释，将选项放在[]里，直接输出答案。示例：\n\n题目：在船舶主推进动力装置中，传动轴系在运转中承受以下复杂的应力和负荷，但不包括______。\n选项：\nA. 电磁力\nB. 压拉应力\nC. 弯曲应力\nD. 扭应力\n答：[A]\n 当前题目\n {question}\n选项：\n{choices}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets maritime_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['maritime_bench'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "00e07458ee4982a54c838c94cccdca4f",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.272066",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

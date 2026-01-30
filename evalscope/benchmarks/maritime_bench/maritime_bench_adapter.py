@@ -7,14 +7,41 @@ from evalscope.constants import Tags
 
 MARITIME_PROMPT_TEMPLATE = '请回答单选题。要求只输出选项，不输出解释，将选项放在[]里，直接输出答案。示例：\n\n题目：在船舶主推进动力装置中，传动轴系在运转中承受以下复杂的应力和负荷，但不包括______。\n选项：\nA. 电磁力\nB. 压拉应力\nC. 弯曲应力\nD. 扭应力\n答：[A]\n 当前题目\n {question}\n选项：\n{choices}'  # noqa: E501
 
+DESCRIPTION = """
+## Overview
+
+MaritimeBench is a benchmark for evaluating AI models on maritime-related multiple-choice questions in Chinese. It consists of specialized questions related to maritime knowledge, navigation, marine engineering, and seafaring operations.
+
+## Task Description
+
+- **Task Type**: Maritime Knowledge Multiple-Choice QA (Chinese)
+- **Input**: Maritime-related question with 4 answer choices (A-D)
+- **Output**: Correct answer letter in brackets [A/B/C/D]
+- **Language**: Chinese
+
+## Key Features
+
+- Specialized maritime domain questions
+- Chinese language evaluation
+- Multiple subsets covering different maritime topics
+- Tests professional maritime knowledge
+- Standardized Chinese exam format
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Evaluates on test split
+- Simple accuracy metric
+- Answers extracted using regex for bracketed format [A/B/C/D]
+"""
+
 
 @register_benchmark(
     BenchmarkMeta(
         name='maritime_bench',
         pretty_name='MaritimeBench',
         tags=[Tags.CHINESE, Tags.MULTIPLE_CHOICE, Tags.KNOWLEDGE],
-        description=
-        'MaritimeBench is a benchmark for evaluating AI models on maritime-related multiple-choice questions. It consists of questions related to maritime knowledge, where the model must select the correct answer from given options.',  # noqa: E501
+        description=DESCRIPTION.strip(),
         dataset_id='HiDolphin/MaritimeBench',
         metric_list=['acc'],
         few_shot_num=0,

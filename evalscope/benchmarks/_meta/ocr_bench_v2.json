@@ -1,0 +1,1363 @@
+{
+  "meta": {
+    "pretty_name": "OCRBench-v2",
+    "dataset_id": "evalscope/OCRBench_v2",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Knowledge",
+      "QA"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "APP agent en",
+      "ASCII art classification en",
+      "key information extraction cn",
+      "key information extraction en",
+      "key information mapping en",
+      "VQA with position en",
+      "chart parsing en",
+      "cognition VQA cn",
+      "cognition VQA en",
+      "diagram QA en",
+      "document classification en",
+      "document parsing cn",
+      "document parsing en",
+      "formula recognition cn",
+      "formula recognition en",
+      "handwritten answer extraction cn",
+      "math QA en",
+      "full-page OCR cn",
+      "full-page OCR en",
+      "reasoning VQA en",
+      "reasoning VQA cn",
+      "fine-grained text recognition en",
+      "science QA en",
+      "table parsing cn",
+      "table parsing en",
+      "text counting en",
+      "text grounding en",
+      "text recognition en",
+      "text spotting en",
+      "text translation cn"
+    ],
+    "description": "\n## Overview\n\nOCRBench v2 is a large-scale bilingual text-centric benchmark with the most comprehensive set of OCR tasks (4x more than OCRBench v1), covering 31 diverse scenarios including street scenes, receipts, formulas, diagrams, and more.\n\n## Task Description\n\n- **Task Type**: Optical Character Recognition and Document Understanding\n- **Input**: Image + OCR/document question\n- **Output**: Text recognition, extraction, or analysis result\n- **Languages**: English and Chinese (bilingual)\n\n## Key Features\n\n- 10,000 human-verified question-answering pairs\n- 31 diverse scenarios (street scene, receipt, formula, diagram, etc.)\n- High proportion of difficult samples\n- Comprehensive OCR task coverage\n- Bilingual (English and Chinese) evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on test split\n- Requires: apted, distance, Levenshtein, lxml, Polygon3, zss packages\n- Simple accuracy metric\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 10000,
+    "subset_stats": [
+      {
+        "name": "APP agent en",
+        "sample_count": 300,
+        "prompt_length_mean": 36.9,
+        "prompt_length_min": 16,
+        "prompt_length_max": 84,
+        "prompt_length_std": 12.46,
+        "target_length_mean": 67.63,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 300,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1080x1920",
+              "540x960"
+            ],
+            "resolution_range": {
+              "min": "540x960",
+              "max": "1080x1920"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "ASCII art classification en",
+        "sample_count": 200,
+        "prompt_length_mean": 174.62,
+        "prompt_length_min": 162,
+        "prompt_length_max": 193,
+        "prompt_length_std": 6.53,
+        "target_length_mean": 10.26,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 200,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "105x185",
+              "106x98",
+              "109x64",
+              "110x144",
+              "116x109",
+              "116x408",
+              "116x66",
+              "125x180",
+              "131x155",
+              "136x102"
+            ],
+            "resolution_range": {
+              "min": "109x64",
+              "max": "839x1200"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "key information extraction cn",
+        "sample_count": 400,
+        "prompt_length_mean": 32.45,
+        "prompt_length_min": 9,
+        "prompt_length_max": 162,
+        "prompt_length_std": 23.73,
+        "target_length_mean": 72.55,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 400,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1004x1212",
+              "1007x883",
+              "1008x860",
+              "1012x663",
+              "1014x1199",
+              "1014x828",
+              "1015x647",
+              "1015x953",
+              "1018x820",
+              "1020x843"
+            ],
+            "resolution_range": {
+              "min": "303x156",
+              "max": "3968x2976"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "key information extraction en",
+        "sample_count": 400,
+        "prompt_length_mean": 506.23,
+        "prompt_length_min": 327,
+        "prompt_length_max": 1261,
+        "prompt_length_std": 152.12,
+        "target_length_mean": 191.56,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 400,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1027x2069",
+              "1035x2155",
+              "1072x1920",
+              "1080x1527",
+              "1080x1920",
+              "121x204",
+              "1305x601",
+              "135x207",
+              "1380x1616",
+              "1388x2355"
+            ],
+            "resolution_range": {
+              "min": "378x57",
+              "max": "4961x7016"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "key information mapping en",
+        "sample_count": 300,
+        "prompt_length_mean": 664.02,
+        "prompt_length_min": 429,
+        "prompt_length_max": 1647,
+        "prompt_length_std": 185.39,
+        "target_length_mean": 313.83,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 300,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1004x1751",
+              "1014x1385",
+              "1071x577",
+              "1122x1260",
+              "121x204",
+              "1257x405",
+              "135x207",
+              "1386x654",
+              "1394x2484",
+              "141x176"
+            ],
+            "resolution_range": {
+              "min": "87x159",
+              "max": "2006x2737"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "VQA with position en",
+        "sample_count": 300,
+        "prompt_length_mean": 557.69,
+        "prompt_length_min": 539,
+        "prompt_length_max": 612,
+        "prompt_length_std": 12.22,
+        "target_length_mean": 15.04,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 300,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1023x1024",
+              "1024x1000",
+              "1024x1024",
+              "1024x404",
+              "1024x408",
+              "1024x427",
+              "1024x501",
+              "1024x516",
+              "1024x542",
+              "1024x573"
+            ],
+            "resolution_range": {
+              "min": "395x498",
+              "max": "3585x2625"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "chart parsing en",
+        "sample_count": 400,
+        "prompt_length_mean": 67,
+        "prompt_length_min": 67,
+        "prompt_length_max": 67,
+        "prompt_length_std": null,
+        "target_length_mean": 506.75,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 400,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1013x736",
+              "1015x758",
+              "1017x767",
+              "1019x702",
+              "1029x692",
+              "1029x785",
+              "1029x797",
+              "1031x783",
+              "1034x649",
+              "1034x823"
+            ],
+            "resolution_range": {
+              "min": "763x541",
+              "max": "2392x1509"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "cognition VQA cn",
+        "sample_count": 200,
+        "prompt_length_mean": 15.91,
+        "prompt_length_min": 6,
+        "prompt_length_max": 48,
+        "prompt_length_std": 6.85,
+        "target_length_mean": 12.53,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 200,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x752",
+              "1080x1080",
+              "1388x2036",
+              "1388x2038",
+              "1388x2057",
+              "1388x2107",
+              "1388x2120",
+              "1388x2132",
+              "1388x2196",
+              "1536x1152"
+            ],
+            "resolution_range": {
+              "min": "852x166",
+              "max": "4003x6448"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "cognition VQA en",
+        "sample_count": 800,
+        "prompt_length_mean": 44.73,
+        "prompt_length_min": 14,
+        "prompt_length_max": 179,
+        "prompt_length_std": 18.81,
+        "target_length_mean": 25.23,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 800,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1293",
+              "1000x1500",
+              "1000x777",
+              "1000x786",
+              "1024x1024",
+              "1024x1448",
+              "1024x1840",
+              "1024x406",
+              "1024x615",
+              "1024x668"
+            ],
+            "resolution_range": {
+              "min": "89x140",
+              "max": "6919x5388"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "diagram QA en",
+        "sample_count": 300,
+        "prompt_length_mean": 118.23,
+        "prompt_length_min": 54,
+        "prompt_length_max": 356,
+        "prompt_length_std": 48.11,
+        "target_length_mean": 15.23,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 300,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x508",
+              "1024x737",
+              "1024x768",
+              "1024x843",
+              "1024x954",
+              "1100x628",
+              "1116x1500",
+              "1131x527",
+              "1146x1500",
+              "1152x1080"
+            ],
+            "resolution_range": {
+              "min": "116x353",
+              "max": "1500x1500"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "document classification en",
+        "sample_count": 200,
+        "prompt_length_mean": 314,
+        "prompt_length_min": 314,
+        "prompt_length_max": 314,
+        "prompt_length_std": null,
+        "target_length_mean": 14.05,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 200,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "649x1000",
+              "713x1000",
+              "730x1000",
+              "754x1000",
+              "757x1000",
+              "762x1000",
+              "766x1000",
+              "767x1000",
+              "769x1000",
+              "771x1000"
+            ],
+            "resolution_range": {
+              "min": "649x1000",
+              "max": "865x1000"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "document parsing cn",
+        "sample_count": 300,
+        "prompt_length_mean": 43,
+        "prompt_length_min": 43,
+        "prompt_length_max": 43,
+        "prompt_length_std": null,
+        "target_length_mean": 1233.26,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 300,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1045x1521",
+              "1080x1527",
+              "1080x1550",
+              "1080x1558",
+              "1080x1565",
+              "1080x1580",
+              "1080x1589",
+              "1080x1599",
+              "1080x1603",
+              "1080x1604"
+            ],
+            "resolution_range": {
+              "min": "474x674",
+              "max": "5016x6966"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "document parsing en",
+        "sample_count": 400,
+        "prompt_length_mean": 51,
+        "prompt_length_min": 51,
+        "prompt_length_max": 51,
+        "prompt_length_std": null,
+        "target_length_mean": 3219.35,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 400,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "794x1044",
+              "794x1056",
+              "794x1123",
+              "816x1056"
+            ],
+            "resolution_range": {
+              "min": "794x1044",
+              "max": "794x1123"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "formula recognition cn",
+        "sample_count": 200,
+        "prompt_length_mean": 19,
+        "prompt_length_min": 19,
+        "prompt_length_max": 19,
+        "prompt_length_std": null,
+        "target_length_mean": 136.24,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 200,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1001x69",
+              "1016x107",
+              "1022x133",
+              "1036x372",
+              "1066x69",
+              "1081x146",
+              "1094x155",
+              "1101x137",
+              "1107x76",
+              "1109x227"
+            ],
+            "resolution_range": {
+              "min": "150x27",
+              "max": "2078x712"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "formula recognition en",
+        "sample_count": 400,
+        "prompt_length_mean": 58.39,
+        "prompt_length_min": 53,
+        "prompt_length_max": 60,
+        "prompt_length_std": 2.95,
+        "target_length_mean": 76.72,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 400,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1010x359",
+              "1015x364",
+              "101x55",
+              "102x71",
+              "103x36",
+              "1041x459",
+              "1044x298",
+              "1048x130",
+              "1055x300",
+              "1066x367"
+            ],
+            "resolution_range": {
+              "min": "45x46",
+              "max": "2011x697"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "handwritten answer extraction cn",
+        "sample_count": 200,
+        "prompt_length_mean": 39.75,
+        "prompt_length_min": 22,
+        "prompt_length_max": 60,
+        "prompt_length_std": 10.99,
+        "target_length_mean": 28.8,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 200,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "2469x1756",
+              "2469x1757",
+              "2471x1756",
+              "2472x1756",
+              "2472x1757",
+              "2472x1758",
+              "2472x1759",
+              "2473x1755",
+              "2473x1756",
+              "2473x1757"
+            ],
+            "resolution_range": {
+              "min": "2469x1756",
+              "max": "2483x1759"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "math QA en",
+        "sample_count": 300,
+        "prompt_length_mean": 119,
+        "prompt_length_min": 119,
+        "prompt_length_max": 119,
+        "prompt_length_std": null,
+        "target_length_mean": 7.15,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 300,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1002x97",
+              "1031x77",
+              "1033x77",
+              "1044x77",
+              "1059x813",
+              "1076x77",
+              "1096x77",
+              "1102x657",
+              "1102x77",
+              "1115x75"
+            ],
+            "resolution_range": {
+              "min": "131x126",
+              "max": "900x5246"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "full-page OCR cn",
+        "sample_count": 200,
+        "prompt_length_mean": 31,
+        "prompt_length_min": 31,
+        "prompt_length_max": 31,
+        "prompt_length_std": null,
+        "target_length_mean": 740.14,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 200,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1002x418",
+              "1007x405",
+              "1045x1521",
+              "1080x1527",
+              "1080x1550",
+              "1080x1576",
+              "1080x1603",
+              "1080x1612",
+              "1080x1661",
+              "1080x1920"
+            ],
+            "resolution_range": {
+              "min": "790x191",
+              "max": "4300x5960"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "full-page OCR en",
+        "sample_count": 200,
+        "prompt_length_mean": 91,
+        "prompt_length_min": 91,
+        "prompt_length_max": 91,
+        "prompt_length_std": null,
+        "target_length_mean": 2240.16,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 200,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1281",
+              "1013x682",
+              "1051x755",
+              "1062x1600",
+              "1066x1600",
+              "1078x668",
+              "1083x496",
+              "1109x857",
+              "1110x1200",
+              "1112x777"
+            ],
+            "resolution_range": {
+              "min": "312x264",
+              "max": "1600x1600"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "reasoning VQA en",
+        "sample_count": 600,
+        "prompt_length_mean": 80.45,
+        "prompt_length_min": 26,
+        "prompt_length_max": 256,
+        "prompt_length_std": 50.77,
+        "target_length_mean": 28.83,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 600,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1000",
+              "1000x754",
+              "1000x800",
+              "1001x700",
+              "1004x650",
+              "1009x417",
+              "1011x700",
+              "1024x682",
+              "1024x768",
+              "1032x700"
+            ],
+            "resolution_range": {
+              "min": "238x114",
+              "max": "3912x21253"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "reasoning VQA cn",
+        "sample_count": 400,
+        "prompt_length_mean": 163.96,
+        "prompt_length_min": 62,
+        "prompt_length_max": 633,
+        "prompt_length_std": 72.4,
+        "target_length_mean": 5.12,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 400,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "100x118",
+              "103x100",
+              "1173x513",
+              "1181x1092",
+              "121x128",
+              "124x182",
+              "1280x1024",
+              "130x105",
+              "133x120",
+              "134x248"
+            ],
+            "resolution_range": {
+              "min": "152x57",
+              "max": "2327x1809"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "fine-grained text recognition en",
+        "sample_count": 200,
+        "prompt_length_mean": 155.63,
+        "prompt_length_min": 152,
+        "prompt_length_max": 156,
+        "prompt_length_std": 0.67,
+        "target_length_mean": 322.69,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 200,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1000",
+              "1004x1280",
+              "1024x768",
+              "1068x1424",
+              "1280x720",
+              "1280x960",
+              "1423x757",
+              "213x320",
+              "240x238",
+              "240x320"
+            ],
+            "resolution_range": {
+              "min": "255x197",
+              "max": "2592x1936"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "science QA en",
+        "sample_count": 300,
+        "prompt_length_mean": 387.54,
+        "prompt_length_min": 159,
+        "prompt_length_max": 1863,
+        "prompt_length_std": 232.7,
+        "target_length_mean": 15.04,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 300,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1018x186",
+              "1026x153",
+              "1034x856",
+              "1038x286",
+              "1045x171",
+              "1090x495",
+              "1096x610",
+              "1100x1032",
+              "1108x495",
+              "1108x748"
+            ],
+            "resolution_range": {
+              "min": "185x151",
+              "max": "2492x2124"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "table parsing cn",
+        "sample_count": 300,
+        "prompt_length_mean": 139.4,
+        "prompt_length_min": 79,
+        "prompt_length_max": 211,
+        "prompt_length_std": 55.85,
+        "target_length_mean": 615.76,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 300,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1008x408",
+              "1024x1363",
+              "1024x1558",
+              "1024x452",
+              "1024x472",
+              "1024x768",
+              "1036x775",
+              "1068x300",
+              "1080x1398",
+              "1080x1527"
+            ],
+            "resolution_range": {
+              "min": "250x56",
+              "max": "4032x3024"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "table parsing en",
+        "sample_count": 400,
+        "prompt_length_mean": 65.39,
+        "prompt_length_min": 57,
+        "prompt_length_max": 134,
+        "prompt_length_std": 17.98,
+        "target_length_mean": 1323.46,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 400,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1016x487",
+              "1043x419",
+              "1047x493",
+              "1085x127",
+              "1143x118",
+              "1145x181",
+              "1255x255",
+              "1420x233",
+              "1444x439",
+              "1466x756"
+            ],
+            "resolution_range": {
+              "min": "181x39",
+              "max": "1609x6319"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "text counting en",
+        "sample_count": 200,
+        "prompt_length_mean": 113.87,
+        "prompt_length_min": 101,
+        "prompt_length_max": 127,
+        "prompt_length_std": 13.03,
+        "target_length_mean": 13.96,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 200,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x728",
+              "1024x742",
+              "1024x768",
+              "1040x1352",
+              "1059x789",
+              "1062x1600",
+              "1066x1600",
+              "1067x1600",
+              "106x33",
+              "1079x1600"
+            ],
+            "resolution_range": {
+              "min": "60x18",
+              "max": "4000x3000"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "text grounding en",
+        "sample_count": 200,
+        "prompt_length_mean": 361.5,
+        "prompt_length_min": 357,
+        "prompt_length_max": 379,
+        "prompt_length_std": 2.85,
+        "target_length_mean": 27.75,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 200,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1008x567",
+              "1024x768",
+              "114x320",
+              "1280x720",
+              "1280x771",
+              "1280x960",
+              "173x240",
+              "180x320",
+              "190x320",
+              "192x240"
+            ],
+            "resolution_range": {
+              "min": "114x320",
+              "max": "2610x4640"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "text recognition en",
+        "sample_count": 800,
+        "prompt_length_mean": 37.26,
+        "prompt_length_min": 29,
+        "prompt_length_max": 104,
+        "prompt_length_std": 22.9,
+        "target_length_mean": 11.45,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 800,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1007x480",
+              "100x40",
+              "1010x145",
+              "1018x306",
+              "101x42",
+              "101x48",
+              "101x67",
+              "101x72",
+              "1024x484",
+              "102x46"
+            ],
+            "resolution_range": {
+              "min": "19x10",
+              "max": "3018x898"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "text spotting en",
+        "sample_count": 200,
+        "prompt_length_mean": 446,
+        "prompt_length_min": 446,
+        "prompt_length_max": 446,
+        "prompt_length_std": null,
+        "target_length_mean": 328.49,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 200,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x731",
+              "1024x768",
+              "1280x720",
+              "1280x960",
+              "1500x950",
+              "1600x1064",
+              "1600x1200",
+              "184x274",
+              "1936x2592",
+              "211x320"
+            ],
+            "resolution_range": {
+              "min": "240x165",
+              "max": "5184x3456"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "text translation cn",
+        "sample_count": 400,
+        "prompt_length_mean": 230.88,
+        "prompt_length_min": 96,
+        "prompt_length_max": 291,
+        "prompt_length_std": 49.68,
+        "target_length_mean": 40.67,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 400,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x563",
+              "1002x97",
+              "1022x1465",
+              "1024x768",
+              "1024x797",
+              "1028x4430",
+              "1034x1500",
+              "1046x1551",
+              "1058x140",
+              "1059x813"
+            ],
+            "resolution_range": {
+              "min": "88x60",
+              "max": "4167x6667"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 155.62,
+      "min": 6,
+      "max": 1863,
+      "std": 183.27
+    },
+    "target_length_mean": 368.1,
+    "computed_at": "2026-01-28T14:56:07.632789",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 10000,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1000x1000",
+          "1000x1281",
+          "1000x1293",
+          "1000x1500",
+          "1000x563",
+          "1000x752",
+          "1000x754",
+          "1000x777",
+          "1000x786",
+          "1000x800"
+        ],
+        "resolution_range": {
+          "min": "19x10",
+          "max": "3912x21253"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "51292e32",
+          "content": [
+            {
+              "text": "What is the wrong answer 2?"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~121.7KB]"
+            }
+          ]
+        }
+      ],
+      "target": "[\"enabled\", \"on\"]",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "APP agent en",
+      "metadata": {
+        "question": "What is the wrong answer 2?",
+        "answers": [
+          "enabled",
+          "on"
+        ],
+        "eval": "None",
+        "dataset_name": "rico",
+        "type": "APP agent en",
+        "bbox": null,
+        "bbox_list": null,
+        "content": null
+      }
+    },
+    "subset": "APP agent en",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# OCRBench-v2\n\n\n## Overview\n\nOCRBench v2 is a large-scale bilingual text-centric benchmark with the most comprehensive set of OCR tasks (4x more than OCRBench v1), covering 31 diverse scenarios including street scenes, receipts, formulas, diagrams, and more.\n\n## Task Description\n\n- **Task Type**: Optical Character Recognition and Document Understanding\n- **Input**: Image + OCR/document question\n- **Output**: Text recognition, extraction, or analysis result\n- **Languages**: English and Chinese (bilingual)\n\n## Key Features\n\n- 10,000 human-verified question-answering pairs\n- 31 diverse scenarios (street scene, receipt, formula, diagram, etc.)\n- High proportion of difficult samples\n- Comprehensive OCR task coverage\n- Bilingual (English and Chinese) evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on test split\n- Requires: apted, distance, Levenshtein, lxml, Polygon3, zss packages\n- Simple accuracy metric\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `ocr_bench_v2` |\n| **Dataset ID** | [evalscope/OCRBench_v2](https://modelscope.cn/datasets/evalscope/OCRBench_v2/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MultiModal`, `QA` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 10,000 |\n| Prompt Length (Mean) | 155.62 chars |\n| Prompt Length (Min/Max) | 6 / 1863 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `APP agent en` | 300 | 36.9 | 16 | 84 |\n| `ASCII art classification en` | 200 | 174.62 | 162 | 193 |\n| `key information extraction cn` | 400 | 32.45 | 9 | 162 |\n| `key information extraction en` | 400 | 506.23 | 327 | 1261 |\n| `key information mapping en` | 300 | 664.02 | 429 | 1647 |\n| `VQA with position en` | 300 | 557.69 | 539 | 612 |\n| `chart parsing en` | 400 | 67 | 67 | 67 |\n| `cognition VQA cn` | 200 | 15.91 | 6 | 48 |\n| `cognition VQA en` | 800 | 44.73 | 14 | 179 |\n| `diagram QA en` | 300 | 118.23 | 54 | 356 |\n| `document classification en` | 200 | 314 | 314 | 314 |\n| `document parsing cn` | 300 | 43 | 43 | 43 |\n| `document parsing en` | 400 | 51 | 51 | 51 |\n| `formula recognition cn` | 200 | 19 | 19 | 19 |\n| `formula recognition en` | 400 | 58.39 | 53 | 60 |\n| `handwritten answer extraction cn` | 200 | 39.75 | 22 | 60 |\n| `math QA en` | 300 | 119 | 119 | 119 |\n| `full-page OCR cn` | 200 | 31 | 31 | 31 |\n| `full-page OCR en` | 200 | 91 | 91 | 91 |\n| `reasoning VQA en` | 600 | 80.45 | 26 | 256 |\n| `reasoning VQA cn` | 400 | 163.96 | 62 | 633 |\n| `fine-grained text recognition en` | 200 | 155.63 | 152 | 156 |\n| `science QA en` | 300 | 387.54 | 159 | 1863 |\n| `table parsing cn` | 300 | 139.4 | 79 | 211 |\n| `table parsing en` | 400 | 65.39 | 57 | 134 |\n| `text counting en` | 200 | 113.87 | 101 | 127 |\n| `text grounding en` | 200 | 361.5 | 357 | 379 |\n| `text recognition en` | 800 | 37.26 | 29 | 104 |\n| `text spotting en` | 200 | 446 | 446 | 446 |\n| `text translation cn` | 400 | 230.88 | 96 | 291 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 10,000 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 19x10 - 3912x21253 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `APP agent en`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"51292e32\",\n      \"content\": [\n        {\n          \"text\": \"What is the wrong answer 2?\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~121.7KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"[\\\"enabled\\\", \\\"on\\\"]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"APP agent en\",\n  \"metadata\": {\n    \"question\": \"What is the wrong answer 2?\",\n    \"answers\": [\n      \"enabled\",\n      \"on\"\n    ],\n    \"eval\": \"None\",\n    \"dataset_name\": \"rico\",\n    \"type\": \"APP agent en\",\n    \"bbox\": null,\n    \"bbox_list\": null,\n    \"content\": null\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ocr_bench_v2 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ocr_bench_v2'],\n    dataset_args={\n        'ocr_bench_v2': {\n            # subset_list: ['APP agent en', 'ASCII art classification en', 'key information extraction cn']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# OCRBench-v2\n\n## 概述\n\nOCRBench v2 是一个大规模双语文本中心基准测试，包含最全面的 OCR 任务（比 OCRBench v1 多出 4 倍），涵盖 31 种多样化场景，包括街景、收据、公式、图表等。\n\n## 任务描述\n\n- **任务类型**：光学字符识别与文档理解\n- **输入**：图像 + OCR/文档问题\n- **输出**：文本识别、提取或分析结果\n- **语言**：英语和中文（双语）\n\n## 核心特性\n\n- 10,000 个人工验证的问题-答案对\n- 31 种多样化场景（街景、收据、公式、图表等）\n- 高比例的困难样本\n- 全面的 OCR 任务覆盖\n- 支持双语（英语和中文）评估\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 在测试集上进行评估\n- 依赖包：apted、distance、Levenshtein、lxml、Polygon3、zss\n- 使用简单准确率（accuracy）作为评估指标\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `ocr_bench_v2` |\n| **数据集ID** | [evalscope/OCRBench_v2](https://modelscope.cn/datasets/evalscope/OCRBench_v2/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MultiModal`, `QA` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 10,000 |\n| 提示词长度（平均） | 155.62 字符 |\n| 提示词长度（最小/最大） | 6 / 1863 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `APP agent en` | 300 | 36.9 | 16 | 84 |\n| `ASCII art classification en` | 200 | 174.62 | 162 | 193 |\n| `key information extraction cn` | 400 | 32.45 | 9 | 162 |\n| `key information extraction en` | 400 | 506.23 | 327 | 1261 |\n| `key information mapping en` | 300 | 664.02 | 429 | 1647 |\n| `VQA with position en` | 300 | 557.69 | 539 | 612 |\n| `chart parsing en` | 400 | 67 | 67 | 67 |\n| `cognition VQA cn` | 200 | 15.91 | 6 | 48 |\n| `cognition VQA en` | 800 | 44.73 | 14 | 179 |\n| `diagram QA en` | 300 | 118.23 | 54 | 356 |\n| `document classification en` | 200 | 314 | 314 | 314 |\n| `document parsing cn` | 300 | 43 | 43 | 43 |\n| `document parsing en` | 400 | 51 | 51 | 51 |\n| `formula recognition cn` | 200 | 19 | 19 | 19 |\n| `formula recognition en` | 400 | 58.39 | 53 | 60 |\n| `handwritten answer extraction cn` | 200 | 39.75 | 22 | 60 |\n| `math QA en` | 300 | 119 | 119 | 119 |\n| `full-page OCR cn` | 200 | 31 | 31 | 31 |\n| `full-page OCR en` | 200 | 91 | 91 | 91 |\n| `reasoning VQA en` | 600 | 80.45 | 26 | 256 |\n| `reasoning VQA cn` | 400 | 163.96 | 62 | 633 |\n| `fine-grained text recognition en` | 200 | 155.63 | 152 | 156 |\n| `science QA en` | 300 | 387.54 | 159 | 1863 |\n| `table parsing cn` | 300 | 139.4 | 79 | 211 |\n| `table parsing en` | 400 | 65.39 | 57 | 134 |\n| `text counting en` | 200 | 113.87 | 101 | 127 |\n| `text grounding en` | 200 | 361.5 | 357 | 379 |\n| `text recognition en` | 800 | 37.26 | 29 | 104 |\n| `text spotting en` | 200 | 446 | 446 | 446 |\n| `text translation cn` | 400 | 230.88 | 96 | 291 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 10,000 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 19x10 - 3912x21253 |\n| 格式 | jpeg |\n\n## 样例示例\n\n**子集**: `APP agent en`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"51292e32\",\n      \"content\": [\n        {\n          \"text\": \"What is the wrong answer 2?\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~121.7KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"[\\\"enabled\\\", \\\"on\\\"]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"APP agent en\",\n  \"metadata\": {\n    \"question\": \"What is the wrong answer 2?\",\n    \"answers\": [\n      \"enabled\",\n      \"on\"\n    ],\n    \"eval\": \"None\",\n    \"dataset_name\": \"rico\",\n    \"type\": \"APP agent en\",\n    \"bbox\": null,\n    \"bbox_list\": null,\n    \"content\": null\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ocr_bench_v2 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ocr_bench_v2'],\n    dataset_args={\n        'ocr_bench_v2': {\n            # subset_list: ['APP agent en', 'ASCII art classification en', 'key information extraction cn']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "1307b5ad8af64cfc21995c6f960ea622",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.424696",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

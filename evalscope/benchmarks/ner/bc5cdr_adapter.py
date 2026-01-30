@@ -3,11 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'The BC5CDR corpus is a manually annotated resource of 1,500 PubMed articles '
-    'developed for the BioCreative V challenge, containing over 4,400 chemical mentions, '
-    '5,800 disease mentions, and 3,100 chemical-disease interactions.'
-)  # noqa: E501
+DESCRIPTION = """
+## Overview
+
+The BC5CDR corpus is a manually annotated resource of 1,500 PubMed articles developed for the BioCreative V challenge, containing over 4,400 chemical mentions, 5,800 disease mentions, and 3,100 chemical-disease interactions.
+
+## Task Description
+
+- **Task Type**: Biomedical Named Entity Recognition (NER)
+- **Input**: PubMed article text
+- **Output**: Identified chemical and disease entity spans
+- **Domain**: Pharmacology, medical informatics, toxicology
+
+## Key Features
+
+- 1,500 PubMed articles with expert annotations
+- 4,400+ chemical mentions
+- 5,800+ disease mentions
+- 3,100+ chemical-disease interactions
+- Benchmark from BioCreative V challenge
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: CHEMICAL, DISEASE
+"""  # noqa: E501
 
 
 @register_benchmark(

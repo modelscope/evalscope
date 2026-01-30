@@ -38,11 +38,33 @@ FILL_IN_BLANK_TYPE = 'fill-in-the-blank'
         pretty_name='CMMU',
         dataset_id='evalscope/CMMU',
         tags=[Tags.KNOWLEDGE, Tags.QA, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
-        description=(
-            'CMMU is a novel multi-modal benchmark designed to evaluate domain-specific '
-            'knowledge across seven foundational subjects: math, biology, physics, chemistry, '
-            'geography, politics, and history.'
-        ),
+        description="""
+## Overview
+
+CMMU is a novel Chinese multi-modal benchmark designed to evaluate domain-specific knowledge across seven foundational subjects: math, biology, physics, chemistry, geography, politics, and history. It tests multimodal understanding in Chinese educational contexts.
+
+## Task Description
+
+- **Task Type**: Chinese Multimodal Educational QA
+- **Input**: Image + question in Chinese
+- **Output**: Answer (multiple-choice, multiple-response, or fill-in-blank)
+- **Language**: Chinese
+
+## Key Features
+
+- Seven foundational subjects
+- Multiple question types (multiple-choice, multiple-response, fill-in-blank)
+- Chinese K-12 educational content
+- Tests domain-specific visual reasoning
+- Diverse question formats
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Evaluates on validation split
+- Numeric accuracy metric
+- Chain-of-thought prompting for reasoning
+""",
         subset_list=SUBSET_LIST,
         metric_list=[{
             'acc': {

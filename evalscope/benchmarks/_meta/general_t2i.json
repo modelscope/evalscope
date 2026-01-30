@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "pretty_name": "general_t2i",
+    "dataset_id": "general_t2i",
+    "paper_url": null,
+    "tags": [
+      "TextToImage",
+      "Custom"
+    ],
+    "metrics": [
+      "PickScore"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nGeneral Text-to-Image is a customizable benchmark adapter for evaluating text-to-image generation models with user-provided prompts and images.\n\n## Task Description\n\n- **Task Type**: Custom Text-to-Image Evaluation\n- **Input**: User-provided text prompts\n- **Output**: Generated images evaluated using configurable metrics\n- **Flexibility**: Supports local prompt files\n\n## Key Features\n\n- Flexible custom evaluation framework\n- Supports local prompt file loading\n- Configurable metrics (default: PickScore)\n- User-defined subset naming from file path\n- Compatible with pre-generated images\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **PickScore** (configurable)\n- Supports custom dataset paths and prompt files\n- Automatically extracts subset name from file path\n- Can evaluate existing images via `image_path` field\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "aigc"
+  },
+  "statistics": {
+    "total_samples": 0,
+    "subset_stats": [],
+    "prompt_length": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T11:17:04.963833"
+  },
+  "sample_example": {},
+  "readme": {
+    "en": "# general_t2i\n\n\n## Overview\n\nGeneral Text-to-Image is a customizable benchmark adapter for evaluating text-to-image generation models with user-provided prompts and images.\n\n## Task Description\n\n- **Task Type**: Custom Text-to-Image Evaluation\n- **Input**: User-provided text prompts\n- **Output**: Generated images evaluated using configurable metrics\n- **Flexibility**: Supports local prompt files\n\n## Key Features\n\n- Flexible custom evaluation framework\n- Supports local prompt file loading\n- Configurable metrics (default: PickScore)\n- User-defined subset naming from file path\n- Compatible with pre-generated images\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **PickScore** (configurable)\n- Supports custom dataset paths and prompt files\n- Automatically extracts subset name from file path\n- Can evaluate existing images via `image_path` field\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `general_t2i` |\n| **Dataset ID** | `general_t2i` |\n| **Paper** | N/A |\n| **Tags** | `Custom`, `TextToImage` |\n| **Metrics** | `PickScore` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets general_t2i \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['general_t2i'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# general_t2i\n\n## 概述\n\nGeneral Text-to-Image 是一个可自定义的基准测试适配器，用于通过用户提供的提示词和图像来评估文本到图像生成模型。\n\n## 任务描述\n\n- **任务类型**：自定义文本到图像评估\n- **输入**：用户提供的文本提示词\n- **输出**：使用可配置指标评估生成的图像\n- **灵活性**：支持本地提示词文件\n\n## 主要特性\n\n- 灵活的自定义评估框架\n- 支持加载本地提示词文件\n- 可配置的评估指标（默认：PickScore）\n- 从文件路径自动推导子集名称\n- 兼容预生成的图像\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 主要指标：**PickScore**（可配置）\n- 支持自定义数据集路径和提示词文件\n- 自动从文件路径提取子集名称\n- 可通过 `image_path` 字段评估已有图像\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `general_t2i` |\n| **数据集ID** | `general_t2i` |\n| **论文** | N/A |\n| **标签** | `Custom`, `TextToImage` |\n| **指标** | `PickScore` |\n| **默认Shots数** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n*统计数据不可用。*\n\n## 样例示例\n\n*样例示例不可用。*\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets general_t2i \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['general_t2i'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "f2d7ba285eda192d29c87a29932c5854",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.522755",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

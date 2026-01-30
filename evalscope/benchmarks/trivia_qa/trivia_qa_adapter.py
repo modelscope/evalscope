@@ -30,8 +30,34 @@ Keep your The last line of your response should be of the form "ANSWER: [ANSWER]
         pretty_name='TriviaQA',
         dataset_id='evalscope/trivia_qa',
         tags=[Tags.QA, Tags.READING_COMPREHENSION],
-        description=
-        'TriviaQA is a large-scale reading comprehension dataset consisting of question-answer pairs collected from trivia websites. It includes questions with multiple possible answers, making it suitable for evaluating the ability of models to understand and generate answers based on context.',  # noqa: E501
+        description="""
+## Overview
+
+TriviaQA is a large-scale reading comprehension dataset containing over 650K question-answer-evidence triples. Questions are collected from trivia enthusiast websites and paired with Wikipedia articles as evidence documents.
+
+## Task Description
+
+- **Task Type**: Reading Comprehension / Question Answering
+- **Input**: Question with Wikipedia context passage
+- **Output**: Answer extracted or generated from context
+- **Domain**: General knowledge trivia questions
+
+## Key Features
+
+- 650K+ question-answer-evidence triples
+- Questions written by trivia enthusiasts (naturally challenging)
+- Multiple valid answer aliases for flexible evaluation
+- Wikipedia articles provide evidence passages
+- Tests both reading comprehension and knowledge retrieval
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Uses the Wikipedia reading comprehension subset (rc.wikipedia)
+- Answers should follow the format: "ANSWER: [ANSWER]"
+- Supports inclusion-based matching for answer comparison
+- Evaluates on validation split
+""",
         subset_list=['rc.wikipedia'],
         few_shot_num=0,
         train_split=None,

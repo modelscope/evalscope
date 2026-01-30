@@ -3,6 +3,7 @@ from typing import Any, Dict
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
@@ -26,8 +27,33 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
         name='docmath',
         pretty_name='DocMath',
         tags=[Tags.REASONING, Tags.MATH, Tags.LONG_CONTEXT],
-        description=
-        'DocMath-Eval is a comprehensive benchmark focused on numerical reasoning within specialized domains. It requires the model to comprehend long and specialized documents and perform numerical reasoning to answer the given question.',  # noqa: E501
+        description="""
+## Overview
+
+DocMath-Eval is a comprehensive benchmark focused on numerical reasoning within specialized domains. It requires models to comprehend long and specialized documents and perform numerical reasoning to answer questions.
+
+## Task Description
+
+- **Task Type**: Document-based Mathematical Reasoning
+- **Input**: Long document context + numerical reasoning question
+- **Output**: Numerical answer with reasoning
+- **Focus**: Long-context comprehension and quantitative reasoning
+
+## Key Features
+
+- Long specialized documents requiring comprehension
+- Numerical reasoning within document context
+- Multiple complexity levels (comp/simp, long/short)
+- Tests real-world document understanding
+- Requires both reading comprehension and math skills
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Uses LLM-as-judge for answer evaluation
+- Subsets: complong_testmini, compshort_testmini, simplong_testmini, simpshort_testmini
+- Answer format: "Therefore, the answer is (answer)"
+""",  # noqa: E501
         dataset_id='yale-nlp/DocMath-Eval',
         metric_list=['acc'],
         subset_list=['complong_testmini', 'compshort_testmini', 'simplong_testmini', 'simpshort_testmini'],
@@ -53,21 +79,17 @@ class DocMathAdapter(DefaultDataAdapter):
             Sample: Sample object with input, target, and metadata.
         """
         ground_truth = record['ground_truth']
-
+        context = '\n'.join(record['paragraphs'])
+        question = record['question']
+        message = self.prompt_template.format(context=context, question=question)
         return Sample(
-            input=record['question'],
+            input=[ChatMessageUser(content=message)],
             target=str(ground_truth),
             metadata={
                 'question_id': record.get('question_id', ''),
-                'paragraphs': record['paragraphs'],
                 'answer_type': type(ground_truth).__name__
             }
         )
-
-    def format_prompt_template(self, sample):
-        context = '\n'.join(sample.metadata['paragraphs'])
-        question = sample.input
-        return self.prompt_template.format(context=context, question=question)
 
     def extract_answer(self, prediction: str, task_state: TaskState):
         """

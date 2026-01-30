@@ -18,8 +18,33 @@ logger = get_logger()
         name='evalmuse',
         pretty_name='EvalMuse',
         dataset_id='AI-ModelScope/T2V-Eval-Prompts',
-        description='EvalMuse Text-to-Image Benchmark. Used for evaluating the quality '
-        'and semantic alignment of finely generated images',
+        description="""
+## Overview
+
+EvalMuse is a text-to-image benchmark that evaluates the quality and semantic alignment of generated images using fine-grained analysis with the FGA-BLIP2Score metric.
+
+## Task Description
+
+- **Task Type**: Text-to-Image Generation Evaluation
+- **Input**: Text prompt for image generation
+- **Output**: Generated image evaluated for quality and semantic fidelity
+- **Metric**: FGA-BLIP2Score (Fine-Grained Analysis with BLIP-2)
+
+## Key Features
+
+- Fine-grained semantic alignment evaluation
+- Uses BLIP-2 vision-language model for scoring
+- Evaluates both image quality and prompt adherence
+- Supports diverse prompt categories
+- Objective, reproducible metrics
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Only **FGA_BLIP2Score** metric is supported
+- Evaluates images from the **test** split
+- Can evaluate pre-generated images or generate new ones
+""",
         tags=[Tags.TEXT_TO_IMAGE],
         subset_list=['EvalMuse'],
         metric_list=['FGA_BLIP2Score'],

@@ -3,11 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'The WNUT2017 dataset is a collection of user-generated text from various social '
-    'media platforms, like Twitter and YouTube, specifically designed for a named-entity '
-    'recognition task.'
-)
+DESCRIPTION = """
+## Overview
+
+The WNUT2017 dataset is a collection of user-generated text from various social media platforms, like Twitter and YouTube, specifically designed for named entity recognition tasks focusing on emerging and unusual entities.
+
+## Task Description
+
+- **Task Type**: Emerging Entity Named Entity Recognition (NER)
+- **Input**: User-generated social media text
+- **Output**: Identified entity spans with types
+- **Domain**: Social media, emerging entities
+
+## Key Features
+
+- User-generated text from multiple platforms
+- Focus on emerging and unusual named entities
+- Six entity types for diverse coverage
+- Challenging informal text processing
+- From WNUT 2017 shared task
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: CORPORATION, CREATIVE-WORK, GROUP, LOCATION, PERSON, PRODUCT
+"""
 
 
 @register_benchmark(

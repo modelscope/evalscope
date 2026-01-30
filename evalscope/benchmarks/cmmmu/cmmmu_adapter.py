@@ -71,8 +71,33 @@ PROMPT = {
         name='cmmmu',
         pretty_name='CMMMU',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA, Tags.CHINESE],
-        description=
-        'CMMMU includes manually collected multimodal questions from college exams, quizzes, and textbooks, covering six core disciplines: Art & Design, Business, Science, Health & Medicine, Humanities & Social Science, and Tech & Engineering, like its companion, MMMU. These questions span 30 subjects and comprise 39 highly heterogeneous image types, such as charts, diagrams, maps, tables, music sheets, and chemical structures.',  # noqa: E501
+        description="""
+## Overview
+
+CMMU (Chinese Massive Multi-discipline Multimodal Understanding) includes manually collected multimodal questions from college exams, quizzes, and textbooks, covering six core disciplines in Chinese. It is the Chinese counterpart to MMMU.
+
+## Task Description
+
+- **Task Type**: Chinese Multimodal Question Answering
+- **Input**: Image(s) + question in Chinese with answer choices
+- **Output**: Correct answer choice
+- **Language**: Chinese
+
+## Key Features
+
+- 30 subjects across 6 core disciplines
+- Art & Design, Business, Science, Health & Medicine, Humanities & Social Science, Tech & Engineering
+- 39 heterogeneous image types (charts, diagrams, maps, tables, etc.)
+- College-level difficulty
+- Multiple question types (multiple-choice, true/false, short answer)
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Evaluates on validation split
+- Simple accuracy metric
+- Chinese language prompts used
+""",  # noqa: E501
         dataset_id='lmms-lab/CMMMU',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],

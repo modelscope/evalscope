@@ -20,8 +20,33 @@ MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
         pretty_name='MicroVQA',
         dataset_id='evalscope/MicroVQA',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL, Tags.MEDICAL],
-        description=
-        'MicroVQA is expert-curated benchmark for multimodal reasoning for microscopy-based scientific research',
+        description="""
+## Overview
+
+MicroVQA is an expert-curated benchmark for multimodal reasoning in microscopy-based scientific research. It evaluates AI models' ability to understand and reason about microscopy images across various scientific domains.
+
+## Task Description
+
+- **Task Type**: Scientific Microscopy Visual Question Answering
+- **Input**: Microscopy image(s) + scientific question with choices
+- **Output**: Correct answer choice
+- **Domain**: Microscopy, scientific research, medical imaging
+
+## Key Features
+
+- Expert-curated microscopy questions
+- Multiple microscopy image types
+- Tests scientific visual reasoning
+- Medical and biological imaging focus
+- Multiple-choice format with CoT prompting
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Evaluates on test split
+- Simple accuracy metric
+- Uses Chain-of-Thought (CoT) prompting
+""",
         metric_list=['acc'],
         eval_split='test',
         prompt_template=MULT_CHOICE_PROMPT,

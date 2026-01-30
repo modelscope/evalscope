@@ -1,0 +1,593 @@
+{
+  "meta": {
+    "pretty_name": "OlympiadBench",
+    "dataset_id": "AI-ModelScope/OlympiadBench",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "OE_MM_maths_en_COMP",
+      "OE_MM_maths_zh_CEE",
+      "OE_MM_maths_zh_COMP",
+      "OE_MM_physics_en_COMP",
+      "OE_MM_physics_zh_CEE",
+      "OE_TO_maths_en_COMP",
+      "OE_TO_maths_zh_CEE",
+      "OE_TO_maths_zh_COMP",
+      "OE_TO_physics_en_COMP",
+      "OE_TO_physics_zh_CEE",
+      "TP_MM_maths_en_COMP",
+      "TP_MM_maths_zh_CEE",
+      "TP_MM_maths_zh_COMP",
+      "TP_MM_physics_en_COMP",
+      "TP_TO_maths_en_COMP",
+      "TP_TO_maths_zh_CEE",
+      "TP_TO_maths_zh_COMP",
+      "TP_TO_physics_en_COMP"
+    ],
+    "description": "\n## Overview\n\nOlympiadBench is an Olympiad-level bilingual multimodal scientific benchmark featuring 8,476 problems from mathematics and physics competitions, including the Chinese college entrance exam (CEE). It provides rigorous evaluation of advanced scientific reasoning.\n\n## Task Description\n\n- **Task Type**: Olympiad-Level Math/Physics Problem Solving\n- **Input**: Problem text with optional images (up to 9)\n- **Output**: Mathematical answer or proof\n- **Domains**: Mathematics, Physics (bilingual: English and Chinese)\n\n## Key Features\n\n- 8,476 Olympiad-level problems\n- Bilingual support (English and Chinese)\n- Covers both Mathematics and Physics\n- Subset naming convention:\n  - `OE`: Open-Ended problems\n  - `TP`: Theorem Proving problems\n  - `MM`: Multimodal (with images)\n  - `TO`: Text-Only\n  - `CEE`: Chinese Entrance Exam\n  - `COMP`: Comprehensive competition problems\n\n## Evaluation Notes\n\n- Default evaluation uses the **train** split\n- Primary metric: **Accuracy** with mathematical judging\n- Answers should be in \\boxed{} format\n- **Note**: `TP` (Theorem Proving) subsets cannot be auto-evaluated currently\n- Supports numerical precision/error thresholds for approximate answers\n",
+    "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 8476,
+    "subset_stats": [
+      {
+        "name": "OE_MM_maths_en_COMP",
+        "sample_count": 150,
+        "prompt_length_mean": 1118.59,
+        "prompt_length_min": 575,
+        "prompt_length_max": 3943,
+        "prompt_length_std": 699.22,
+        "target_length_mean": 9.64,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 172,
+            "count_per_sample": {
+              "min": 1,
+              "max": 4,
+              "mean": 1.15
+            },
+            "resolutions": [
+              "1106x306",
+              "1152x412",
+              "1174x414",
+              "1201x420",
+              "1283x449",
+              "1510x400",
+              "1544x620",
+              "263x252",
+              "279x274",
+              "284x385"
+            ],
+            "resolution_range": {
+              "min": "575x78",
+              "max": "1544x620"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "OE_MM_maths_zh_CEE",
+        "sample_count": 1910,
+        "prompt_length_mean": 343.89,
+        "prompt_length_min": 182,
+        "prompt_length_max": 1566,
+        "prompt_length_std": 141.58,
+        "target_length_mean": 18.08,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 2005,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.05
+            },
+            "resolutions": [
+              "1002x818",
+              "1004x494",
+              "1006x697",
+              "1008x414",
+              "1010x528",
+              "1011x726",
+              "1012x604",
+              "1013x634",
+              "1014x657",
+              "1016x565"
+            ],
+            "resolution_range": {
+              "min": "64x46",
+              "max": "1765x1947"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "OE_MM_maths_zh_COMP",
+        "sample_count": 56,
+        "prompt_length_mean": 379.07,
+        "prompt_length_min": 201,
+        "prompt_length_max": 608,
+        "prompt_length_std": 96.47,
+        "target_length_mean": 18.16,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 60,
+            "count_per_sample": {
+              "min": 1,
+              "max": 3,
+              "mean": 1.07
+            },
+            "resolutions": [
+              "1008x747",
+              "1024x285",
+              "1168x346",
+              "1313x847",
+              "234x231",
+              "256x350",
+              "260x363",
+              "274x280",
+              "302x294",
+              "303x348"
+            ],
+            "resolution_range": {
+              "min": "234x231",
+              "max": "1313x847"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "OE_MM_physics_en_COMP",
+        "sample_count": 456,
+        "prompt_length_mean": 863.57,
+        "prompt_length_min": 556,
+        "prompt_length_max": 2793,
+        "prompt_length_std": 322.13,
+        "target_length_mean": 42.38,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 977,
+            "count_per_sample": {
+              "min": 1,
+              "max": 9,
+              "mean": 2.14
+            },
+            "resolutions": [
+              "1002x836",
+              "1004x409",
+              "1005x463",
+              "1006x192",
+              "1008x745",
+              "1008x776",
+              "1014x437",
+              "1017x434",
+              "1027x845",
+              "1037x591"
+            ],
+            "resolution_range": {
+              "min": "204x241",
+              "max": "1106x1900"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "OE_MM_physics_zh_CEE",
+        "sample_count": 1483,
+        "prompt_length_mean": 425.68,
+        "prompt_length_min": 214,
+        "prompt_length_max": 901,
+        "prompt_length_std": 98.88,
+        "target_length_mean": 16.89,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1778,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.2
+            },
+            "resolutions": [
+              "1000x408",
+              "1003x441",
+              "1003x530",
+              "1010x670",
+              "1011x496",
+              "1011x729",
+              "1013x578",
+              "1015x1001",
+              "1015x532",
+              "1021x672"
+            ],
+            "resolution_range": {
+              "min": "97x97",
+              "max": "1805x1314"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "OE_TO_maths_en_COMP",
+        "sample_count": 674,
+        "prompt_length_mean": 825.93,
+        "prompt_length_min": 545,
+        "prompt_length_max": 4924,
+        "prompt_length_std": 351.57,
+        "target_length_mean": 9.36
+      },
+      {
+        "name": "OE_TO_maths_zh_CEE",
+        "sample_count": 1240,
+        "prompt_length_mean": 297.26,
+        "prompt_length_min": 171,
+        "prompt_length_max": 1098,
+        "prompt_length_std": 134.83,
+        "target_length_mean": 17.91
+      },
+      {
+        "name": "OE_TO_maths_zh_COMP",
+        "sample_count": 408,
+        "prompt_length_mean": 322.72,
+        "prompt_length_min": 173,
+        "prompt_length_max": 1583,
+        "prompt_length_std": 133.91,
+        "target_length_mean": 20.9
+      },
+      {
+        "name": "OE_TO_physics_en_COMP",
+        "sample_count": 236,
+        "prompt_length_mean": 949.1,
+        "prompt_length_min": 548,
+        "prompt_length_max": 3112,
+        "prompt_length_std": 358.85,
+        "target_length_mean": 39.01
+      },
+      {
+        "name": "OE_TO_physics_zh_CEE",
+        "sample_count": 115,
+        "prompt_length_mean": 329.56,
+        "prompt_length_min": 203,
+        "prompt_length_max": 503,
+        "prompt_length_std": 69.18,
+        "target_length_mean": 16.38
+      },
+      {
+        "name": "TP_MM_maths_en_COMP",
+        "sample_count": 62,
+        "prompt_length_mean": 2044.19,
+        "prompt_length_min": 475,
+        "prompt_length_max": 4617,
+        "prompt_length_std": 1262.42,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 94,
+            "count_per_sample": {
+              "min": 1,
+              "max": 3,
+              "mean": 1.52
+            },
+            "resolutions": [
+              "1008x691",
+              "1152x412",
+              "1174x414",
+              "1201x420",
+              "1283x449",
+              "1366x214",
+              "1548x174",
+              "274x208",
+              "307x301",
+              "312x163"
+            ],
+            "resolution_range": {
+              "min": "312x163",
+              "max": "1008x691"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "TP_MM_maths_zh_CEE",
+        "sample_count": 652,
+        "prompt_length_mean": 241.05,
+        "prompt_length_min": 165,
+        "prompt_length_max": 674,
+        "prompt_length_std": 53.38,
+        "target_length_mean": 1.42,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 677,
+            "count_per_sample": {
+              "min": 1,
+              "max": 2,
+              "mean": 1.04
+            },
+            "resolutions": [
+              "1004x494",
+              "1014x657",
+              "1016x565",
+              "1023x1187",
+              "1029x772",
+              "1029x787",
+              "1034x717",
+              "1034x949",
+              "1036x797",
+              "1037x605"
+            ],
+            "resolution_range": {
+              "min": "437x122",
+              "max": "1846x1173"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "TP_MM_maths_zh_COMP",
+        "sample_count": 81,
+        "prompt_length_mean": 304.7,
+        "prompt_length_min": 206,
+        "prompt_length_max": 512,
+        "prompt_length_std": 54.43,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 82,
+            "count_per_sample": {
+              "min": 1,
+              "max": 2,
+              "mean": 1.01
+            },
+            "resolutions": [
+              "1024x285",
+              "1037x933",
+              "1050x496",
+              "1100x486",
+              "1148x340",
+              "1378x528",
+              "218x477",
+              "274x280",
+              "280x320",
+              "297x246"
+            ],
+            "resolution_range": {
+              "min": "297x246",
+              "max": "1037x933"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "TP_MM_physics_en_COMP",
+        "sample_count": 19,
+        "prompt_length_mean": 677.79,
+        "prompt_length_min": 432,
+        "prompt_length_max": 1602,
+        "prompt_length_std": 275.31,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 30,
+            "count_per_sample": {
+              "min": 1,
+              "max": 6,
+              "mean": 1.58
+            },
+            "resolutions": [
+              "1037x591",
+              "1145x640",
+              "1145x994",
+              "1146x446",
+              "1151x956",
+              "1156x1159",
+              "341x488",
+              "440x389",
+              "460x506",
+              "468x471"
+            ],
+            "resolution_range": {
+              "min": "831x163",
+              "max": "1156x1159"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "TP_TO_maths_en_COMP",
+        "sample_count": 503,
+        "prompt_length_mean": 933.44,
+        "prompt_length_min": 449,
+        "prompt_length_max": 5032,
+        "prompt_length_std": 681.73,
+        "target_length_mean": null
+      },
+      {
+        "name": "TP_TO_maths_zh_CEE",
+        "sample_count": 207,
+        "prompt_length_mean": 242.79,
+        "prompt_length_min": 141,
+        "prompt_length_max": 947,
+        "prompt_length_std": 105.46,
+        "target_length_mean": 0.66
+      },
+      {
+        "name": "TP_TO_maths_zh_COMP",
+        "sample_count": 199,
+        "prompt_length_mean": 285.43,
+        "prompt_length_min": 129,
+        "prompt_length_max": 522,
+        "prompt_length_std": 81.56,
+        "target_length_mean": null
+      },
+      {
+        "name": "TP_TO_physics_en_COMP",
+        "sample_count": 25,
+        "prompt_length_mean": 740.48,
+        "prompt_length_min": 475,
+        "prompt_length_max": 1262,
+        "prompt_length_std": 195.98,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 484.46,
+      "min": 129,
+      "max": 5032,
+      "std": 395.73
+    },
+    "target_length_mean": 15.4,
+    "computed_at": "2026-01-28T11:15:59.630000",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 5875,
+        "count_per_sample": {
+          "min": 1,
+          "max": 9,
+          "mean": 1.21
+        },
+        "resolutions": [
+          "1000x408",
+          "1002x818",
+          "1002x836",
+          "1003x441",
+          "1003x530",
+          "1004x409",
+          "1004x494",
+          "1005x463",
+          "1006x192",
+          "1006x697"
+        ],
+        "resolution_range": {
+          "min": "64x46",
+          "max": "1765x1947"
+        },
+        "formats": [
+          "jpeg",
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "d7b44a52",
+          "content": [
+            {
+              "text": "The following is an open-ended problem from an International Math competition. The answer of The problem should be a numerical value. Please calculate the answer according to the given requirements and the information provided. Please use LaT ... [TRUNCATED] ... c_{3}, \\ldots$ with $c_{i}<C$ for all $i$, Turbo can (after studying the sequence) ensure that there is some point on the circle that it will never visit or crawl across.\n\nPlease reason step by step, and put your final answer within \\boxed{}."
+            },
+            {
+              "image": "[BASE64_IMAGE: jpg, ~27.4KB]"
+            }
+          ]
+        }
+      ],
+      "target": "$\\frac{1}{2}$",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "id": 2231,
+        "subfield": "Geometry",
+        "context": null,
+        "solution": [
+          "The largest possible $C$ is $C=\\frac{1}{2}$.\n\nFor $0<C \\leqslant \\frac{1}{2}$, Turbo can simply choose an arbitrary point $P$ (different from its starting point) to avoid. When Turbo is at an arbitrary point $A$ different from $P$, the two ar ... [TRUNCATED] ... Note: Every sequence of the form $c_{i}=x$ if $i$ is odd, and $c_{i}=y$ if $i$ is even, where $0<x, y<C$, such that $x+y \\geqslant 1$, and $x \\neq y$ satisfies the conditions with the same argument. There might be even more possible examples.",
+          "To show that $C\\le \\frac12$\n\nWe consider the following related problem:\n\nWe assume instead that the snail Chet is moving left and right on the real line. Find the size $M$ of the smallest (closed) interval, that we cannot force Chet out of, u ... [TRUNCATED] ... n, 1-\\varepsilon]$. Indeed the absolute value of the final position is at least $1-\\frac{5}{6} \\varepsilon$. This contradicts the assumption, that we cannot force Chet out of $[-1+\\varepsilon, 1-\\varepsilon]$. Hence $M \\geqslant 2$ as needed."
+        ],
+        "final_answer": [
+          "$\\frac{1}{2}$"
+        ],
+        "is_multiple_answer": false,
+        "unit": null,
+        "answer_type": "Numerical",
+        "question_type": "Open-ended",
+        "language": "English",
+        "subject": "Math",
+        "error": null
+      }
+    },
+    "subset": "OE_MM_maths_en_COMP",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# OlympiadBench\n\n\n## Overview\n\nOlympiadBench is an Olympiad-level bilingual multimodal scientific benchmark featuring 8,476 problems from mathematics and physics competitions, including the Chinese college entrance exam (CEE). It provides rigorous evaluation of advanced scientific reasoning.\n\n## Task Description\n\n- **Task Type**: Olympiad-Level Math/Physics Problem Solving\n- **Input**: Problem text with optional images (up to 9)\n- **Output**: Mathematical answer or proof\n- **Domains**: Mathematics, Physics (bilingual: English and Chinese)\n\n## Key Features\n\n- 8,476 Olympiad-level problems\n- Bilingual support (English and Chinese)\n- Covers both Mathematics and Physics\n- Subset naming convention:\n  - `OE`: Open-Ended problems\n  - `TP`: Theorem Proving problems\n  - `MM`: Multimodal (with images)\n  - `TO`: Text-Only\n  - `CEE`: Chinese Entrance Exam\n  - `COMP`: Comprehensive competition problems\n\n## Evaluation Notes\n\n- Default evaluation uses the **train** split\n- Primary metric: **Accuracy** with mathematical judging\n- Answers should be in \\boxed{} format\n- **Note**: `TP` (Theorem Proving) subsets cannot be auto-evaluated currently\n- Supports numerical precision/error thresholds for approximate answers\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `olympiad_bench` |\n| **Dataset ID** | [AI-ModelScope/OlympiadBench](https://modelscope.cn/datasets/AI-ModelScope/OlympiadBench/summary) |\n| **Paper** | N/A |\n| **Tags** | `Math`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 8,476 |\n| Prompt Length (Mean) | 484.46 chars |\n| Prompt Length (Min/Max) | 129 / 5032 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `OE_MM_maths_en_COMP` | 150 | 1118.59 | 575 | 3943 |\n| `OE_MM_maths_zh_CEE` | 1,910 | 343.89 | 182 | 1566 |\n| `OE_MM_maths_zh_COMP` | 56 | 379.07 | 201 | 608 |\n| `OE_MM_physics_en_COMP` | 456 | 863.57 | 556 | 2793 |\n| `OE_MM_physics_zh_CEE` | 1,483 | 425.68 | 214 | 901 |\n| `OE_TO_maths_en_COMP` | 674 | 825.93 | 545 | 4924 |\n| `OE_TO_maths_zh_CEE` | 1,240 | 297.26 | 171 | 1098 |\n| `OE_TO_maths_zh_COMP` | 408 | 322.72 | 173 | 1583 |\n| `OE_TO_physics_en_COMP` | 236 | 949.1 | 548 | 3112 |\n| `OE_TO_physics_zh_CEE` | 115 | 329.56 | 203 | 503 |\n| `TP_MM_maths_en_COMP` | 62 | 2044.19 | 475 | 4617 |\n| `TP_MM_maths_zh_CEE` | 652 | 241.05 | 165 | 674 |\n| `TP_MM_maths_zh_COMP` | 81 | 304.7 | 206 | 512 |\n| `TP_MM_physics_en_COMP` | 19 | 677.79 | 432 | 1602 |\n| `TP_TO_maths_en_COMP` | 503 | 933.44 | 449 | 5032 |\n| `TP_TO_maths_zh_CEE` | 207 | 242.79 | 141 | 947 |\n| `TP_TO_maths_zh_COMP` | 199 | 285.43 | 129 | 522 |\n| `TP_TO_physics_en_COMP` | 25 | 740.48 | 475 | 1262 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 5,875 |\n| Images per Sample | min: 1, max: 9, mean: 1.21 |\n| Resolution Range | 64x46 - 1765x1947 |\n| Formats | jpeg, png |\n\n\n## Sample Example\n\n**Subset**: `OE_MM_maths_en_COMP`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d7b44a52\",\n      \"content\": [\n        {\n          \"text\": \"The following is an open-ended problem from an International Math competition. The answer of The problem should be a numerical value. Please calculate the answer according to the given requirements and the information provided. Please use LaT ... [TRUNCATED] ... c_{3}, \\\\ldots$ with $c_{i}<C$ for all $i$, Turbo can (after studying the sequence) ensure that there is some point on the circle that it will never visit or crawl across.\\n\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpg, ~27.4KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"$\\\\frac{1}{2}$\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": 2231,\n    \"subfield\": \"Geometry\",\n    \"context\": null,\n    \"solution\": [\n      \"The largest possible $C$ is $C=\\\\frac{1}{2}$.\\n\\nFor $0<C \\\\leqslant \\\\frac{1}{2}$, Turbo can simply choose an arbitrary point $P$ (different from its starting point) to avoid. When Turbo is at an arbitrary point $A$ different from $P$, the two ar ... [TRUNCATED] ... Note: Every sequence of the form $c_{i}=x$ if $i$ is odd, and $c_{i}=y$ if $i$ is even, where $0<x, y<C$, such that $x+y \\\\geqslant 1$, and $x \\\\neq y$ satisfies the conditions with the same argument. There might be even more possible examples.\",\n      \"To show that $C\\\\le \\\\frac12$\\n\\nWe consider the following related problem:\\n\\nWe assume instead that the snail Chet is moving left and right on the real line. Find the size $M$ of the smallest (closed) interval, that we cannot force Chet out of, u ... [TRUNCATED] ... n, 1-\\\\varepsilon]$. Indeed the absolute value of the final position is at least $1-\\\\frac{5}{6} \\\\varepsilon$. This contradicts the assumption, that we cannot force Chet out of $[-1+\\\\varepsilon, 1-\\\\varepsilon]$. Hence $M \\\\geqslant 2$ as needed.\"\n    ],\n    \"final_answer\": [\n      \"$\\\\frac{1}{2}$\"\n    ],\n    \"is_multiple_answer\": false,\n    \"unit\": null,\n    \"answer_type\": \"Numerical\",\n    \"question_type\": \"Open-ended\",\n    \"language\": \"English\",\n    \"subject\": \"Math\",\n    \"error\": null\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets olympiad_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['olympiad_bench'],\n    dataset_args={\n        'olympiad_bench': {\n            # subset_list: ['OE_MM_maths_en_COMP', 'OE_MM_maths_zh_CEE', 'OE_MM_maths_zh_COMP']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# OlympiadBench\n\n## 概述\n\nOlympiadBench 是一个奥林匹克级别的双语多模态科学基准测试，包含 8,476 道来自数学和物理竞赛的问题（包括中国高考），用于严格评估高级科学推理能力。\n\n## 任务描述\n\n- **任务类型**：奥林匹克级别数学/物理问题求解\n- **输入**：问题文本（可选附带最多 9 张图片）\n- **输出**：数学答案或证明\n- **领域**：数学、物理（双语：英文和中文）\n\n## 主要特点\n\n- 包含 8,476 道奥林匹克级别问题\n- 支持双语（英文和中文）\n- 覆盖数学与物理两个学科\n- 子集命名规则：\n  - `OE`：开放性问题（Open-Ended）\n  - `TP`：定理证明问题（Theorem Proving）\n  - `MM`：多模态（含图片）\n  - `TO`：纯文本（Text-Only）\n  - `CEE`：中国高考（Chinese Entrance Exam）\n  - `COMP`：综合竞赛题（Comprehensive competition problems）\n\n## 评估说明\n\n- 默认使用 **train** 数据划分进行评估\n- 主要指标：基于数学判断的 **准确率（Accuracy）**\n- 答案需使用 `\\boxed{}` 格式\n- **注意**：目前 `TP`（定理证明）子集无法自动评估\n- 支持对近似答案设置数值精度/误差阈值\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `olympiad_bench` |\n| **数据集 ID** | [AI-ModelScope/OlympiadBench](https://modelscope.cn/datasets/AI-ModelScope/OlympiadBench/summary) |\n| **论文** | N/A |\n| **标签** | `Math`, `Reasoning` |\n| **指标** | `acc` |\n| **默认提示方式** | 0-shot |\n| **评估划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 8,476 |\n| 提示词长度（平均） | 484.46 字符 |\n| 提示词长度（最小/最大） | 129 / 5032 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `OE_MM_maths_en_COMP` | 150 | 1118.59 | 575 | 3943 |\n| `OE_MM_maths_zh_CEE` | 1,910 | 343.89 | 182 | 1566 |\n| `OE_MM_maths_zh_COMP` | 56 | 379.07 | 201 | 608 |\n| `OE_MM_physics_en_COMP` | 456 | 863.57 | 556 | 2793 |\n| `OE_MM_physics_zh_CEE` | 1,483 | 425.68 | 214 | 901 |\n| `OE_TO_maths_en_COMP` | 674 | 825.93 | 545 | 4924 |\n| `OE_TO_maths_zh_CEE` | 1,240 | 297.26 | 171 | 1098 |\n| `OE_TO_maths_zh_COMP` | 408 | 322.72 | 173 | 1583 |\n| `OE_TO_physics_en_COMP` | 236 | 949.1 | 548 | 3112 |\n| `OE_TO_physics_zh_CEE` | 115 | 329.56 | 203 | 503 |\n| `TP_MM_maths_en_COMP` | 62 | 2044.19 | 475 | 4617 |\n| `TP_MM_maths_zh_CEE` | 652 | 241.05 | 165 | 674 |\n| `TP_MM_maths_zh_COMP` | 81 | 304.7 | 206 | 512 |\n| `TP_MM_physics_en_COMP` | 19 | 677.79 | 432 | 1602 |\n| `TP_TO_maths_en_COMP` | 503 | 933.44 | 449 | 5032 |\n| `TP_TO_maths_zh_CEE` | 207 | 242.79 | 141 | 947 |\n| `TP_TO_maths_zh_COMP` | 199 | 285.43 | 129 | 522 |\n| `TP_TO_physics_en_COMP` | 25 | 740.48 | 475 | 1262 |\n\n**图片统计数据：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图片总数 | 5,875 |\n| 每样本图片数 | 最小: 1，最大: 9，平均: 1.21 |\n| 分辨率范围 | 64x46 - 1765x1947 |\n| 图片格式 | jpeg, png |\n\n## 样例示例\n\n**子集**: `OE_MM_maths_en_COMP`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d7b44a52\",\n      \"content\": [\n        {\n          \"text\": \"The following is an open-ended problem from an International Math competition. The answer of The problem should be a numerical value. Please calculate the answer according to the given requirements and the information provided. Please use LaT ... [TRUNCATED] ... c_{3}, \\\\ldots$ with $c_{i}<C$ for all $i$, Turbo can (after studying the sequence) ensure that there is some point on the circle that it will never visit or crawl across.\\n\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpg, ~27.4KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"$\\\\frac{1}{2}$\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": 2231,\n    \"subfield\": \"Geometry\",\n    \"context\": null,\n    \"solution\": [\n      \"The largest possible $C$ is $C=\\\\frac{1}{2}$.\\n\\nFor $0<C \\\\leqslant \\\\frac{1}{2}$, Turbo can simply choose an arbitrary point $P$ (different from its starting point) to avoid. When Turbo is at an arbitrary point $A$ different from $P$, the two ar ... [TRUNCATED] ... Note: Every sequence of the form $c_{i}=x$ if $i$ is odd, and $c_{i}=y$ if $i$ is even, where $0<x, y<C$, such that $x+y \\\\geqslant 1$, and $x \\\\neq y$ satisfies the conditions with the same argument. There might be even more possible examples.\",\n      \"To show that $C\\\\le \\\\frac12$\\n\\nWe consider the following related problem:\\n\\nWe assume instead that the snail Chet is moving left and right on the real line. Find the size $M$ of the smallest (closed) interval, that we cannot force Chet out of, u ... [TRUNCATED] ... n, 1-\\\\varepsilon]$. Indeed the absolute value of the final position is at least $1-\\\\frac{5}{6} \\\\varepsilon$. This contradicts the assumption, that we cannot force Chet out of $[-1+\\\\varepsilon, 1-\\\\varepsilon]$. Hence $M \\\\geqslant 2$ as needed.\"\n    ],\n    \"final_answer\": [\n      \"$\\\\frac{1}{2}$\"\n    ],\n    \"is_multiple_answer\": false,\n    \"unit\": null,\n    \"answer_type\": \"Numerical\",\n    \"question_type\": \"Open-ended\",\n    \"language\": \"English\",\n    \"subject\": \"Math\",\n    \"error\": null\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets olympiad_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['olympiad_bench'],\n    dataset_args={\n        'olympiad_bench': {\n            # subset_list: ['OE_MM_maths_en_COMP', 'OE_MM_maths_zh_CEE', 'OE_MM_maths_zh_COMP']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "2129fa3801e407ce1b8455460d604c8d",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.393195",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

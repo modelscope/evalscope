@@ -1,0 +1,674 @@
+{
+  "meta": {
+    "pretty_name": "BLINK",
+    "dataset_id": "evalscope/BLINK",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Knowledge",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "val",
+    "train_split": "",
+    "subset_list": [
+      "Art_Style",
+      "Counting",
+      "Forensic_Detection",
+      "Functional_Correspondence",
+      "IQ_Test",
+      "Jigsaw",
+      "Multi-view_Reasoning",
+      "Object_Localization",
+      "Relative_Depth",
+      "Relative_Reflectance",
+      "Semantic_Correspondence",
+      "Spatial_Relation",
+      "Visual_Correspondence",
+      "Visual_Similarity"
+    ],
+    "description": "\n## Overview\n\nBLINK is a benchmark designed to evaluate the core visual perception abilities of Multimodal Large Language Models (MLLMs). It transforms 14 classic computer vision tasks into 3,807 multiple-choice questions with single or multiple images and visual prompts.\n\n## Task Description\n\n- **Task Type**: Visual Perception Multiple-Choice QA\n- **Input**: One or more images + multiple-choice question\n- **Output**: Single answer letter\n- **Domains**: Visual perception, correspondence, reasoning, detection\n\n## Key Features\n\n- Covers 14 diverse visual perception tasks\n- Supports single and multi-image inputs (up to 4 images)\n- Tests fundamental visual understanding capabilities\n- Categories include: Art Style, Counting, Forensic Detection, IQ Test, Jigsaw, Multi-view Reasoning, Object Localization, and more\n- Questions derived from classic computer vision benchmarks\n\n## Evaluation Notes\n\n- Default evaluation uses the **val** split\n- Primary metric: **Accuracy** on multiple-choice questions\n- Uses \"ANSWER: [LETTER]\" format for responses\n- Results can be analyzed across 14 different perception categories\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format:\n'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 1901,
+    "subset_stats": [
+      {
+        "name": "Art_Style",
+        "sample_count": 117,
+        "prompt_length_mean": 553,
+        "prompt_length_min": 553,
+        "prompt_length_max": 553,
+        "prompt_length_std": null,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 351,
+            "count_per_sample": {
+              "min": 3,
+              "max": 3,
+              "mean": 3
+            },
+            "resolutions": [
+              "1381x1623",
+              "1381x1786",
+              "1381x1812",
+              "1381x2187",
+              "1381x2877",
+              "1382x1382",
+              "1382x1383",
+              "1382x1395",
+              "1382x1414",
+              "1382x1462"
+            ],
+            "resolution_range": {
+              "min": "1382x1382",
+              "max": "5687x1382"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Counting",
+        "sample_count": 120,
+        "prompt_length_mean": 285.21,
+        "prompt_length_min": 270,
+        "prompt_length_max": 317,
+        "prompt_length_std": 9.6,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 120,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x768",
+              "261x500",
+              "301x500",
+              "331x500",
+              "333x500",
+              "334x500",
+              "354x500",
+              "362x500",
+              "368x500",
+              "375x500"
+            ],
+            "resolution_range": {
+              "min": "500x184",
+              "max": "768x1024"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Forensic_Detection",
+        "sample_count": 132,
+        "prompt_length_mean": 480,
+        "prompt_length_min": 480,
+        "prompt_length_max": 480,
+        "prompt_length_std": null,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 528,
+            "count_per_sample": {
+              "min": 4,
+              "max": 4,
+              "mean": 4
+            },
+            "resolutions": [
+              "512x512"
+            ],
+            "resolution_range": {
+              "min": "512x512",
+              "max": "512x512"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Functional_Correspondence",
+        "sample_count": 130,
+        "prompt_length_mean": 1118.34,
+        "prompt_length_min": 1113,
+        "prompt_length_max": 1125,
+        "prompt_length_std": 4.33,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 260,
+            "count_per_sample": {
+              "min": 2,
+              "max": 2,
+              "mean": 2
+            },
+            "resolutions": [
+              "1023x1024",
+              "1024x1024",
+              "1026x1024",
+              "1029x1024",
+              "1032x1024",
+              "1064x1024",
+              "1066x1024",
+              "1108x1024",
+              "1115x1024",
+              "1117x1024"
+            ],
+            "resolution_range": {
+              "min": "287x1024",
+              "max": "4266x1024"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "IQ_Test",
+        "sample_count": 150,
+        "prompt_length_mean": 884.6,
+        "prompt_length_min": 548,
+        "prompt_length_max": 922,
+        "prompt_length_std": 112.58,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 150,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1238x326",
+              "1332x238",
+              "1332x578",
+              "1336x480",
+              "1340x300",
+              "1340x492",
+              "1340x498",
+              "1340x500",
+              "1348x494",
+              "1418x243"
+            ],
+            "resolution_range": {
+              "min": "283x64",
+              "max": "3072x4096"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Jigsaw",
+        "sample_count": 150,
+        "prompt_length_mean": 543,
+        "prompt_length_min": 543,
+        "prompt_length_max": 543,
+        "prompt_length_std": null,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 450,
+            "count_per_sample": {
+              "min": 3,
+              "max": 3,
+              "mean": 3
+            },
+            "resolutions": [
+              "127x166",
+              "200x100",
+              "200x104",
+              "200x105",
+              "200x106",
+              "200x107",
+              "200x108",
+              "200x109",
+              "200x110",
+              "200x111"
+            ],
+            "resolution_range": {
+              "min": "200x83",
+              "max": "400x266"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Multi-view_Reasoning",
+        "sample_count": 133,
+        "prompt_length_mean": 549,
+        "prompt_length_min": 549,
+        "prompt_length_max": 549,
+        "prompt_length_std": null,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 266,
+            "count_per_sample": {
+              "min": 2,
+              "max": 2,
+              "mean": 2
+            },
+            "resolutions": [
+              "480x640"
+            ],
+            "resolution_range": {
+              "min": "480x640",
+              "max": "480x640"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Object_Localization",
+        "sample_count": 122,
+        "prompt_length_mean": 531.86,
+        "prompt_length_min": 527,
+        "prompt_length_max": 548,
+        "prompt_length_std": 4.85,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 122,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "288x307",
+              "334x500",
+              "358x640",
+              "359x500",
+              "375x500",
+              "394x500",
+              "400x600",
+              "409x640",
+              "421x640",
+              "425x640"
+            ],
+            "resolution_range": {
+              "min": "288x307",
+              "max": "640x640"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Relative_Depth",
+        "sample_count": 124,
+        "prompt_length_mean": 359,
+        "prompt_length_min": 359,
+        "prompt_length_max": 359,
+        "prompt_length_std": null,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 124,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "480x500",
+              "482x500",
+              "500x250",
+              "500x280",
+              "500x281",
+              "500x282",
+              "500x289",
+              "500x303",
+              "500x317",
+              "500x321"
+            ],
+            "resolution_range": {
+              "min": "500x250",
+              "max": "500x500"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Relative_Reflectance",
+        "sample_count": 134,
+        "prompt_length_mean": 498,
+        "prompt_length_min": 498,
+        "prompt_length_max": 498,
+        "prompt_length_std": null,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 134,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1011x1024",
+              "1088x1024",
+              "1365x1024",
+              "1404x1024",
+              "1427x1024",
+              "1492x1024",
+              "1521x1024",
+              "1529x1024",
+              "1535x1024",
+              "1536x1024"
+            ],
+            "resolution_range": {
+              "min": "575x1024",
+              "max": "1820x1024"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Semantic_Correspondence",
+        "sample_count": 139,
+        "prompt_length_mean": 952,
+        "prompt_length_min": 952,
+        "prompt_length_max": 952,
+        "prompt_length_std": null,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 278,
+            "count_per_sample": {
+              "min": 2,
+              "max": 2,
+              "mean": 2
+            },
+            "resolutions": [
+              "1024x1024",
+              "1124x1024",
+              "1221x1024",
+              "1224x1024",
+              "1230x1024",
+              "1251x1024",
+              "1273x1024",
+              "1280x1024",
+              "1283x1024",
+              "1306x1024"
+            ],
+            "resolution_range": {
+              "min": "620x1024",
+              "max": "1706x1024"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Spatial_Relation",
+        "sample_count": 143,
+        "prompt_length_mean": 263.97,
+        "prompt_length_min": 252,
+        "prompt_length_max": 282,
+        "prompt_length_std": 6.19,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 143,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "375x500",
+              "383x640",
+              "401x500",
+              "425x640",
+              "426x640",
+              "427x640",
+              "428x640",
+              "431x640",
+              "448x600",
+              "450x607"
+            ],
+            "resolution_range": {
+              "min": "500x334",
+              "max": "640x640"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Visual_Correspondence",
+        "sample_count": 172,
+        "prompt_length_mean": 587,
+        "prompt_length_min": 587,
+        "prompt_length_max": 587,
+        "prompt_length_std": null,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 344,
+            "count_per_sample": {
+              "min": 2,
+              "max": 2,
+              "mean": 2
+            },
+            "resolutions": [
+              "1024x1024",
+              "1157x1024",
+              "1280x1024",
+              "1364x1024",
+              "1365x1024",
+              "1366x1024",
+              "1370x1024",
+              "1385x1024",
+              "1394x1024",
+              "1420x1024"
+            ],
+            "resolution_range": {
+              "min": "466x1024",
+              "max": "2851x1024"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Visual_Similarity",
+        "sample_count": 135,
+        "prompt_length_mean": 414,
+        "prompt_length_min": 414,
+        "prompt_length_max": 414,
+        "prompt_length_std": null,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 405,
+            "count_per_sample": {
+              "min": 3,
+              "max": 3,
+              "mean": 3
+            },
+            "resolutions": [
+              "768x768"
+            ],
+            "resolution_range": {
+              "min": "768x768",
+              "max": "768x768"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 577.53,
+      "min": 252,
+      "max": 1125,
+      "std": 240.77
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:12:50.049393",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 3675,
+        "count_per_sample": {
+          "min": 1,
+          "max": 4,
+          "mean": 1.93
+        },
+        "resolutions": [
+          "1011x1024",
+          "1023x1024",
+          "1024x1024",
+          "1024x768",
+          "1026x1024",
+          "1029x1024",
+          "1032x1024",
+          "1064x1024",
+          "1066x1024",
+          "1088x1024"
+        ],
+        "resolution_range": {
+          "min": "200x83",
+          "max": "3072x4096"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "a522940e",
+          "content": [
+            {
+              "text": "Answer the following multiple choice question. The last line of your response should be of the following format:\n'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\n\nSome most common art painting styles include Realism, Impressi ... [TRUNCATED] ...  of art paintings, use the first image as the reference image, and determine which one of the second or the third image shares the same style as the reference image?\nSelect from the following choices.\n(A) the second image\n(B) the third image\n"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~477.8KB]"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~876.1KB]"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~329.2KB]"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "the second image",
+        "the third image"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0
+    },
+    "subset": "Art_Style",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# BLINK\n\n\n## Overview\n\nBLINK is a benchmark designed to evaluate the core visual perception abilities of Multimodal Large Language Models (MLLMs). It transforms 14 classic computer vision tasks into 3,807 multiple-choice questions with single or multiple images and visual prompts.\n\n## Task Description\n\n- **Task Type**: Visual Perception Multiple-Choice QA\n- **Input**: One or more images + multiple-choice question\n- **Output**: Single answer letter\n- **Domains**: Visual perception, correspondence, reasoning, detection\n\n## Key Features\n\n- Covers 14 diverse visual perception tasks\n- Supports single and multi-image inputs (up to 4 images)\n- Tests fundamental visual understanding capabilities\n- Categories include: Art Style, Counting, Forensic Detection, IQ Test, Jigsaw, Multi-view Reasoning, Object Localization, and more\n- Questions derived from classic computer vision benchmarks\n\n## Evaluation Notes\n\n- Default evaluation uses the **val** split\n- Primary metric: **Accuracy** on multiple-choice questions\n- Uses \"ANSWER: [LETTER]\" format for responses\n- Results can be analyzed across 14 different perception categories\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `blink` |\n| **Dataset ID** | [evalscope/BLINK](https://modelscope.cn/datasets/evalscope/BLINK/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `MultiModal` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `val` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,901 |\n| Prompt Length (Mean) | 577.53 chars |\n| Prompt Length (Min/Max) | 252 / 1125 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Art_Style` | 117 | 553 | 553 | 553 |\n| `Counting` | 120 | 285.21 | 270 | 317 |\n| `Forensic_Detection` | 132 | 480 | 480 | 480 |\n| `Functional_Correspondence` | 130 | 1118.34 | 1113 | 1125 |\n| `IQ_Test` | 150 | 884.6 | 548 | 922 |\n| `Jigsaw` | 150 | 543 | 543 | 543 |\n| `Multi-view_Reasoning` | 133 | 549 | 549 | 549 |\n| `Object_Localization` | 122 | 531.86 | 527 | 548 |\n| `Relative_Depth` | 124 | 359 | 359 | 359 |\n| `Relative_Reflectance` | 134 | 498 | 498 | 498 |\n| `Semantic_Correspondence` | 139 | 952 | 952 | 952 |\n| `Spatial_Relation` | 143 | 263.97 | 252 | 282 |\n| `Visual_Correspondence` | 172 | 587 | 587 | 587 |\n| `Visual_Similarity` | 135 | 414 | 414 | 414 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 3,675 |\n| Images per Sample | min: 1, max: 4, mean: 1.93 |\n| Resolution Range | 200x83 - 3072x4096 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `Art_Style`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a522940e\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format:\\n'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\\n\\nSome most common art painting styles include Realism, Impressi ... [TRUNCATED] ...  of art paintings, use the first image as the reference image, and determine which one of the second or the third image shares the same style as the reference image?\\nSelect from the following choices.\\n(A) the second image\\n(B) the third image\\n\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~477.8KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~876.1KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~329.2KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"the second image\",\n    \"the third image\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format:\n'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets blink \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['blink'],\n    dataset_args={\n        'blink': {\n            # subset_list: ['Art_Style', 'Counting', 'Forensic_Detection']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# BLINK\n\n\n## 概述\n\nBLINK 是一个用于评估多模态大语言模型（MLLMs）核心视觉感知能力的基准测试。它将 14 个经典的计算机视觉任务转化为 3,807 道包含单张或多张图像及视觉提示的多项选择题。\n\n## 任务描述\n\n- **任务类型**：视觉感知多项选择问答\n- **输入**：一张或多张图像 + 多项选择题\n- **输出**：单个答案字母\n- **领域**：视觉感知、对应关系、推理、检测\n\n## 主要特点\n\n- 覆盖 14 种多样化的视觉感知任务\n- 支持单图和多图输入（最多 4 张图像）\n- 测试基础的视觉理解能力\n- 类别包括：艺术风格、计数、取证检测、智商测试、拼图、多视角推理、物体定位等\n- 题目源自经典计算机视觉基准数据集\n\n## 评估说明\n\n- 默认使用 **val** 划分进行评估\n- 主要指标：多项选择题的 **准确率（Accuracy）**\n- 响应格式为 \"ANSWER: [LETTER]\"\n- 结果可按 14 个不同的感知类别进行分析\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `blink` |\n| **数据集ID** | [evalscope/BLINK](https://modelscope.cn/datasets/evalscope/BLINK/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ`, `MultiModal` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `val` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,901 |\n| 提示词长度（平均） | 577.53 字符 |\n| 提示词长度（最小/最大） | 252 / 1125 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Art_Style` | 117 | 553 | 553 | 553 |\n| `Counting` | 120 | 285.21 | 270 | 317 |\n| `Forensic_Detection` | 132 | 480 | 480 | 480 |\n| `Functional_Correspondence` | 130 | 1118.34 | 1113 | 1125 |\n| `IQ_Test` | 150 | 884.6 | 548 | 922 |\n| `Jigsaw` | 150 | 543 | 543 | 543 |\n| `Multi-view_Reasoning` | 133 | 549 | 549 | 549 |\n| `Object_Localization` | 122 | 531.86 | 527 | 548 |\n| `Relative_Depth` | 124 | 359 | 359 | 359 |\n| `Relative_Reflectance` | 134 | 498 | 498 | 498 |\n| `Semantic_Correspondence` | 139 | 952 | 952 | 952 |\n| `Spatial_Relation` | 143 | 263.97 | 252 | 282 |\n| `Visual_Correspondence` | 172 | 587 | 587 | 587 |\n| `Visual_Similarity` | 135 | 414 | 414 | 414 |\n\n**图像统计数据：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 3,675 |\n| 每样本图像数 | 最小: 1, 最大: 4, 平均: 1.93 |\n| 分辨率范围 | 200x83 - 3072x4096 |\n| 格式 | jpeg |\n\n\n## 样例示例\n\n**子集**: `Art_Style`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a522940e\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format:\\n'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\\n\\nSome most common art painting styles include Realism, Impressi ... [TRUNCATED] ...  of art paintings, use the first image as the reference image, and determine which one of the second or the third image shares the same style as the reference image?\\nSelect from the following choices.\\n(A) the second image\\n(B) the third image\\n\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~477.8KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~876.1KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~329.2KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"the second image\",\n    \"the third image\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format:\n'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets blink \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['blink'],\n    dataset_args={\n        'blink': {\n            # subset_list: ['Art_Style', 'Counting', 'Forensic_Detection']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "93291cee3c7924fbb60c93f0b1e96989",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.192814",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

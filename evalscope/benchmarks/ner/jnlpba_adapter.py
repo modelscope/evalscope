@@ -3,11 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'The JNLPBA dataset is a widely-used resource for bio-entity recognition, '
-    'consisting of 2,404 MEDLINE abstracts from the GENIA corpus annotated for '
-    'five key molecular biology entity types.'
-)  # noqa: E501
+DESCRIPTION = """
+## Overview
+
+The JNLPBA dataset is a widely-used resource for bio-entity recognition, consisting of 2,404 MEDLINE abstracts from the GENIA corpus annotated for five key molecular biology entity types. It is a standard benchmark for biomedical NER.
+
+## Task Description
+
+- **Task Type**: Biomedical Named Entity Recognition (NER)
+- **Input**: Biomedical text from MEDLINE abstracts
+- **Output**: Identified molecular biology entity spans
+- **Domain**: Molecular biology, bioinformatics
+
+## Key Features
+
+- 2,404 MEDLINE abstracts from GENIA corpus
+- Five molecular biology entity types
+- Expert-annotated by domain specialists
+- Standard benchmark for biomedical NER
+- Comprehensive coverage of biomolecular entities
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: PROTEIN, DNA, RNA, CELL_LINE, CELL_TYPE
+"""  # noqa: E501
 
 
 @register_benchmark(

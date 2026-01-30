@@ -22,6 +22,35 @@ Here are some examples of how to solve similar problems:
 
 """.lstrip() + PROMPT_TEMPLATE
 
+# GSM8K Description with standard format
+GSM8K_DESCRIPTION = """
+## Overview
+
+GSM8K (Grade School Math 8K) is a high-quality dataset of 8.5K linguistically diverse grade school math word problems created by human problem writers. The dataset is specifically designed to evaluate and improve the multi-step mathematical reasoning capabilities of language models.
+
+## Task Description
+
+- **Task Type**: Mathematical Word Problem Solving
+- **Input**: Natural language math word problem
+- **Output**: Numerical answer derived through step-by-step reasoning
+- **Difficulty**: Grade school level (2-8 reasoning steps required)
+
+## Key Features
+
+- Problems require basic arithmetic operations (addition, subtraction, multiplication, division)
+- Solutions involve 2 to 8 sequential reasoning steps
+- High linguistic diversity in problem formulations
+- Human-written problems ensuring natural language quality
+- Clear numerical answers for objective evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **4-shot** examples with Chain-of-Thought (CoT) prompting
+- Answers should be formatted within `\\boxed{}` for proper extraction
+- The metric extracts numerical values for accuracy comparison
+- Supports both zero-shot and few-shot evaluation modes
+"""
+
 
 @register_benchmark(
     BenchmarkMeta(
@@ -29,8 +58,8 @@ Here are some examples of how to solve similar problems:
         pretty_name='GSM8K',
         dataset_id='AI-ModelScope/gsm8k',
         tags=[Tags.MATH, Tags.REASONING],
-        description=
-        'GSM8K (Grade School Math 8K) is a dataset of grade school math problems, designed to evaluate the mathematical reasoning abilities of AI models.',  # noqa: E501
+        description=GSM8K_DESCRIPTION,
+        paper_url='https://arxiv.org/abs/2110.14168',
         subset_list=['main'],
         few_shot_num=4,
         train_split='train',

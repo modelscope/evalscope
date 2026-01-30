@@ -18,10 +18,34 @@ logger = get_logger()
         name='tool_bench',
         pretty_name='ToolBench-Static',
         tags=[Tags.REASONING, Tags.FUNCTION_CALLING],
-        description='ToolBench is a benchmark for evaluating AI models on tool use tasks. '
-        'It includes various subsets such as in-domain and out-of-domain, '
-        'each with its own set of problems that require step-by-step reasoning to arrive at the correct answer. '
-        '[Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html)',
+        description="""
+## Overview
+
+ToolBench-Static is a benchmark for evaluating AI models' ability to use tools and execute function calls in a static evaluation setting. It tests models on realistic tool-use scenarios with ground-truth comparisons.
+
+## Task Description
+
+- **Task Type**: Tool Use / Function Calling Evaluation
+- **Input**: Conversation with available tools and context
+- **Output**: Correct tool/function call sequence
+- **Subsets**: In-domain (seen tools) and Out-of-domain (unseen tools)
+
+## Key Features
+
+- Static evaluation (no actual tool execution)
+- Tests both tool selection and parameter generation
+- In-domain and out-of-domain evaluation splits
+- Multiple evaluation metrics for comprehensive assessment
+- Tests planning and action execution capabilities
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Five metrics: Act.EM, Plan.EM, F1, HalluRate, Rouge-L
+- F1 score is the primary metric
+- HalluRate measures tool hallucination frequency
+- See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html) for detailed setup
+""",
         dataset_id='AI-ModelScope/ToolBench-Static',
         subset_list=['in_domain', 'out_of_domain'],
         metric_list=['Act.EM', 'Plan.EM', 'F1', 'HalluRate', 'Rouge-L'],

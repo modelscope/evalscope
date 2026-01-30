@@ -22,10 +22,35 @@ logger = get_logger()
         name='tau_bench',
         pretty_name='τ-bench',
         tags=[Tags.FUNCTION_CALLING, Tags.REASONING, Tags.AGENT],
-        description='A benchmark emulating dynamic conversations between a user (simulated by language models) '
-        'and a language agent provided with domain-specific API tools and policy guidelines. '
-        'Please install it with `pip install git+https://github.com/sierra-research/tau-bench` '
-        'before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau_bench.html)',  # noqa: E501
+        description="""
+## Overview
+
+τ-bench (Tau Bench) is a benchmark for evaluating conversational AI agents that interact with users through domain-specific API tools and policy guidelines. It simulates dynamic, multi-turn conversations where a language model acts as both the user and the agent.
+
+## Task Description
+
+- **Task Type**: Conversational Agent Evaluation
+- **Input**: User scenarios with specific goals and constraints
+- **Output**: Agent actions via API tool calls to complete tasks
+- **Domains**: Airline customer service, Retail customer service
+
+## Key Features
+
+- Dynamic conversation simulation with LLM-simulated users
+- Domain-specific API tools and policy guidelines
+- Realistic customer service scenarios
+- Tests multi-turn dialogue capabilities
+- Evaluates tool use and policy compliance
+
+## Evaluation Notes
+
+- **Installation Required**: `pip install git+https://github.com/sierra-research/tau-bench`
+- **User Model Configuration**: Requires setting up a user simulation model
+- Primary metric: **Accuracy** based on task completion reward
+- Supports **airline** and **retail** domains
+- Uses **pass@k** aggregation for robustness evaluation
+- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau_bench.html)
+""",  # noqa: E501
         dataset_id='https://github.com/sierra-research/tau-bench',
         subset_list=['airline', 'retail'],
         aggregation='mean_and_pass_hat_k',

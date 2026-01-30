@@ -1,0 +1,69 @@
+{
+  "meta": {
+    "pretty_name": "GeneralArena",
+    "dataset_id": "general_arena",
+    "paper_url": null,
+    "tags": [
+      "Custom",
+      "Arena"
+    ],
+    "metrics": [
+      "winrate"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nGeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses.\n\n## Task Description\n\n- **Task Type**: Model vs Model Arena Evaluation\n- **Input**: User prompts with responses from multiple models\n- **Output**: Pairwise comparison judgments and ELO ratings\n- **Focus**: Comparative model evaluation\n\n## Key Features\n\n- LLM-as-judge for pairwise comparisons\n- ELO rating calculation for model ranking\n- Supports custom model pairs for comparison\n- Winrate and ranking metrics\n- Configurable baseline model\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Requires model outputs from previous evaluations\n- Uses LLM-as-judge for quality assessment\n- Aggregation: ELO rating calculation\n- See [Arena User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html) for details\n",
+    "prompt_template": "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's Answer|>\n{answer_1}\n<|The End of Assistant A's Answer|>\n\n<|The Start of Assistant B's Answer|>\n{answer_2}\n<|The End of Assistant B's Answer|>",
+    "system_prompt": "Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user prompt displayed below. You will be given assistant A's answer and assistant B's answer. Your job is to evaluate which assistant's answer is better.\n\nBegin your evaluation by generating your own answer to the prompt. You must provide your answers before judging any answers.\n\nWhen evaluating the assistants' answers, compare both assistants' answers with your answer. You must identify and correct any mistakes or inaccurate information.\n\nThen consider if the assistant's answers are helpful, relevant, and concise. Helpful means the answer correctly responds to the prompt or follows the instructions. Note when user prompt has any ambiguity or more than one interpretation, it is more helpful and appropriate to ask for clarifications or more information from the user than providing an answer based on assumptions. Relevant means all parts of the response closely connect or are appropriate to what is being asked. Concise means the response is clear and not verbose or excessive.\n\nThen consider the creativity and novelty of the assistant's answers when needed. Finally, identify any missing important information in the assistants' answers that would be beneficial to include when responding to the user prompt.\n\nAfter providing your explanation, you must output only one of the following choices as your final verdict with a label:\n\n1. Assistant A is significantly better: [[A>>B]]\n2. Assistant A is slightly better: [[A>B]]\n3. Tie, relatively the same: [[A=B]]\n4. Assistant B is slightly better: [[B>A]]\n5. Assistant B is significantly better: [[B>>A]]\n\nExample output: \"My final verdict is tie: [[A=B]]\".",
+    "few_shot_prompt_template": "",
+    "aggregation": "elo",
+    "extra_params": {
+      "models": {
+        "type": "list[dict]",
+        "description": "List of model entries with name and report_path for arena comparison.",
+        "value": [
+          {
+            "name": "qwen-plus",
+            "report_path": "outputs/20250627_172550/reports/qwen-plus"
+          },
+          {
+            "name": "qwen2.5-7b",
+            "report_path": "outputs/20250627_172817/reports/qwen2.5-7b-instruct"
+          }
+        ]
+      },
+      "baseline": {
+        "type": "str",
+        "description": "Baseline model name used for ELO and winrate comparisons.",
+        "value": "qwen2.5-7b"
+      }
+    },
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 0,
+    "subset_stats": [],
+    "prompt_length": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T11:13:00.400471"
+  },
+  "sample_example": {},
+  "readme": {
+    "en": "# GeneralArena\n\n\n## Overview\n\nGeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses.\n\n## Task Description\n\n- **Task Type**: Model vs Model Arena Evaluation\n- **Input**: User prompts with responses from multiple models\n- **Output**: Pairwise comparison judgments and ELO ratings\n- **Focus**: Comparative model evaluation\n\n## Key Features\n\n- LLM-as-judge for pairwise comparisons\n- ELO rating calculation for model ranking\n- Supports custom model pairs for comparison\n- Winrate and ranking metrics\n- Configurable baseline model\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Requires model outputs from previous evaluations\n- Uses LLM-as-judge for quality assessment\n- Aggregation: ELO rating calculation\n- See [Arena User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html) for details\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `general_arena` |\n| **Dataset ID** | `general_arena` |\n| **Paper** | N/A |\n| **Tags** | `Arena`, `Custom` |\n| **Metrics** | `winrate` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `elo` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**System Prompt:**\n```text\nPlease act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user prompt displayed below. You will be given assistant A's answer and assistant B's answer. Your job is to evaluate which assistant's answer is better.\n\nBegin your evaluation by generating your own answer to the prompt. You must provide your answers before judging any answers.\n\nWhen evaluating the assistants' answers, compare both assistants' answers with your answer. You must identify and correct any mistakes or inaccurate information.\n\nThen consider if the assistant's answers are helpful, relevant, and concise. Helpful means the answer correctly responds to the prompt or follows the instructions. Note when user prompt has any ambiguity or more than one interpretation, it is more helpful and appropriate to ask for clarifications or more information from the user than providing an answer based on assumptions. Relevant means all parts of the response closely connect or are appropriate to what is being asked. Concise means the response is clear and not verbose or excessive.\n\nThen consider the creativity and novelty of the assistant's answers when needed. Finally, identify any missing important information in the assistants' answers that would be beneficial to include when responding to the user prompt.\n\nAfter providing your explanation, you must output only one of the following choices as your final verdict with a label:\n\n1. Assistant A is significantly better: [[A>>B]]\n2. Assistant A is slightly better: [[A>B]]\n3. Tie, relatively the same: [[A=B]]\n4. Assistant B is slightly better: [[B>A]]\n5. Assistant B is significantly better: [[B>>A]]\n\nExample output: \"My final verdict is tie: [[A=B]]\".\n```\n\n**Prompt Template:**\n```text\n<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's Answer|>\n{answer_1}\n<|The End of Assistant A's Answer|>\n\n<|The Start of Assistant B's Answer|>\n{answer_2}\n<|The End of Assistant B's Answer|>\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `models` | `list[dict]` | `[{'name': 'qwen-plus', 'report_path': 'outputs/20250627_172550/reports/qwen-plus'}, {'name': 'qwen2.5-7b', 'report_path': 'outputs/20250627_172817/reports/qwen2.5-7b-instruct'}]` | List of model entries with name and report_path for arena comparison. |\n| `baseline` | `str` | `qwen2.5-7b` | Baseline model name used for ELO and winrate comparisons. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets general_arena \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['general_arena'],\n    dataset_args={\n        'general_arena': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# GeneralArena\n\n## 概述\n\nGeneralArena 是一个自定义基准测试，旨在通过竞争性场景评估大语言模型的性能。在该基准中，多个模型将在自定义任务中相互对战，以确定各自的相对优势与劣势。\n\n## 任务描述\n\n- **任务类型**：模型对战竞技场评估（Model vs Model Arena Evaluation）\n- **输入**：包含多个模型回复的用户提示\n- **输出**：成对比较判断结果和 ELO 评分\n- **重点**：模型间的对比评估\n\n## 主要特性\n\n- 使用 LLM 作为裁判进行成对比较\n- 通过 ELO 评分计算模型排名\n- 支持自定义模型对进行比较\n- 提供胜率（winrate）和排名指标\n- 可配置基线模型\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估方式\n- 需要预先生成的模型输出结果\n- 使用 LLM 作为裁判进行质量评估\n- 聚合方式：ELO 评分计算\n- 详情请参阅 [Arena 用户指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html)\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `general_arena` |\n| **数据集ID** | `general_arena` |\n| **论文** | N/A |\n| **标签** | `Arena`, `Custom` |\n| **指标** | `winrate` |\n| **默认示例数量** | 0-shot |\n| **评估分割** | `test` |\n| **聚合方式** | `elo` |\n\n## 数据统计\n\n*统计数据不可用。*\n\n## 样例示例\n\n*样例示例不可用。*\n\n## 提示模板\n\n**系统提示（System Prompt）：**\n```text\nPlease act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user prompt displayed below. You will be given assistant A's answer and assistant B's answer. Your job is to evaluate which assistant's answer is better.\n\nBegin your evaluation by generating your own answer to the prompt. You must provide your answers before judging any answers.\n\nWhen evaluating the assistants' answers, compare both assistants' answers with your answer. You must identify and correct any mistakes or inaccurate information.\n\nThen consider if the assistant's answers are helpful, relevant, and concise. Helpful means the answer correctly responds to the prompt or follows the instructions. Note when user prompt has any ambiguity or more than one interpretation, it is more helpful and appropriate to ask for clarifications or more information from the user than providing an answer based on assumptions. Relevant means all parts of the response closely connect or are appropriate to what is being asked. Concise means the response is clear and not verbose or excessive.\n\nThen consider the creativity and novelty of the assistant's answers when needed. Finally, identify any missing important information in the assistants' answers that would be beneficial to include when responding to the user prompt.\n\nAfter providing your explanation, you must output only one of the following choices as your final verdict with a label:\n\n1. Assistant A is significantly better: [[A>>B]]\n2. Assistant A is slightly better: [[A>B]]\n3. Tie, relatively the same: [[A=B]]\n4. Assistant B is slightly better: [[B>A]]\n5. Assistant B is significantly better: [[B>>A]]\n\nExample output: \"My final verdict is tie: [[A=B]]\".\n```\n\n**提示模板（Prompt Template）：**\n```text\n<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's Answer|>\n{answer_1}\n<|The End of Assistant A's Answer|>\n\n<|The Start of Assistant B's Answer|>\n{answer_2}\n<|The End of Assistant B's Answer|>\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `models` | `list[dict]` | `[{'name': 'qwen-plus', 'report_path': 'outputs/20250627_172550/reports/qwen-plus'}, {'name': 'qwen2.5-7b', 'report_path': 'outputs/20250627_172817/reports/qwen2.5-7b-instruct'}]` | 用于竞技场比较的模型列表，每个条目包含模型名称和报告路径。 |\n| `baseline` | `str` | `qwen2.5-7b` | 用于 ELO 和胜率比较的基线模型名称。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets general_arena \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['general_arena'],\n    dataset_args={\n        'general_arena': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "58f142fab71edc1255e157c3a015578c",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.233958",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

@@ -1,0 +1,146 @@
+{
+  "meta": {
+    "pretty_name": "OntoNotes5",
+    "dataset_id": "extraordinarylab/ontonotes5",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nOntoNotes Release 5.0 is a large, multilingual corpus containing text in English, Chinese, and Arabic across various genres. It is richly annotated with multiple layers of linguistic information including syntax, predicate-argument structure, word sense, named entities, and coreference.\n\n## Task Description\n\n- **Task Type**: Multi-genre Named Entity Recognition (NER)\n- **Input**: Text from news, weblogs, broadcast conversations\n- **Output**: Fine-grained named entity spans\n- **Languages**: English, Chinese, Arabic\n\n## Key Features\n\n- Large-scale multilingual corpus\n- Multiple genres (news, weblogs, broadcast)\n- 18 fine-grained entity types\n- Rich linguistic annotations\n- Standard benchmark for NER evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: PERSON, NORP, FAC, ORG, GPE, LOC, PRODUCT, EVENT, WORK_OF_ART, LAW, LANGUAGE, DATE, TIME, PERCENT, MONEY, QUANTITY, ORDINAL, CARDINAL",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 8262,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 8262,
+        "prompt_length_mean": 3364.28,
+        "prompt_length_min": 3253,
+        "prompt_length_max": 4171,
+        "prompt_length_std": 79.53,
+        "target_length_mean": 186.69
+      }
+    ],
+    "prompt_length": {
+      "mean": 3364.28,
+      "min": 3253,
+      "max": 4171,
+      "std": 79.53
+    },
+    "target_length_mean": 186.69,
+    "computed_at": "2026-01-28T14:16:11.729775"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "6215273c",
+          "content": "Here are some examples of named entity recognition:\n\nInput:\nPeople start their own businesses for many reasons .\n\nOutput:\n<response>People start their own businesses for many reasons .</response>\n\nInput:\nBut a chance to fill out sales - tax r ... [TRUNCATED] ... ening tag has a matching closing tag.\n\nText to process:\nThe following were among Friday 's offerings and pricings in the U.S. and non-U.S. capital markets , with terms and syndicate manager , as compiled by Dow Jones Capital Markets Report :\n"
+        }
+      ],
+      "target": "<response>The following were among <date>Friday</date> 's offerings and pricings in the <geopolitical_entity>U.S.</geopolitical_entity> and <geopolitical_entity>non-U.S.</geopolitical_entity> capital markets , with terms and syndicate manager , as compiled by <organization>Dow Jones Capital Markets Report</organization> :</response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "The",
+          "following",
+          "were",
+          "among",
+          "Friday",
+          "'s",
+          "offerings",
+          "and",
+          "pricings",
+          "in",
+          "the",
+          "U.S.",
+          "and",
+          "non-U.S.",
+          "capital",
+          "markets",
+          ",",
+          "with",
+          "terms",
+          "and",
+          "syndicate",
+          "manager",
+          ",",
+          "as",
+          "compiled",
+          "by",
+          "Dow",
+          "Jones",
+          "Capital",
+          "Markets",
+          "Report",
+          ":"
+        ],
+        "ner_tags": [
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-DATE",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-GPE",
+          "O",
+          "B-GPE",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "B-ORG",
+          "I-ORG",
+          "I-ORG",
+          "I-ORG",
+          "I-ORG",
+          "O"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# OntoNotes5\n\n## Overview\n\nOntoNotes Release 5.0 is a large, multilingual corpus containing text in English, Chinese, and Arabic across various genres. It is richly annotated with multiple layers of linguistic information including syntax, predicate-argument structure, word sense, named entities, and coreference.\n\n## Task Description\n\n- **Task Type**: Multi-genre Named Entity Recognition (NER)\n- **Input**: Text from news, weblogs, broadcast conversations\n- **Output**: Fine-grained named entity spans\n- **Languages**: English, Chinese, Arabic\n\n## Key Features\n\n- Large-scale multilingual corpus\n- Multiple genres (news, weblogs, broadcast)\n- 18 fine-grained entity types\n- Rich linguistic annotations\n- Standard benchmark for NER evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: PERSON, NORP, FAC, ORG, GPE, LOC, PRODUCT, EVENT, WORK_OF_ART, LAW, LANGUAGE, DATE, TIME, PERCENT, MONEY, QUANTITY, ORDINAL, CARDINAL\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `ontonotes5` |\n| **Dataset ID** | [extraordinarylab/ontonotes5](https://modelscope.cn/datasets/extraordinarylab/ontonotes5/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 8,262 |\n| Prompt Length (Mean) | 3364.28 chars |\n| Prompt Length (Min/Max) | 3253 / 4171 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"6215273c\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nPeople start their own businesses for many reasons .\\n\\nOutput:\\n<response>People start their own businesses for many reasons .</response>\\n\\nInput:\\nBut a chance to fill out sales - tax r ... [TRUNCATED] ... ening tag has a matching closing tag.\\n\\nText to process:\\nThe following were among Friday 's offerings and pricings in the U.S. and non-U.S. capital markets , with terms and syndicate manager , as compiled by Dow Jones Capital Markets Report :\\n\"\n    }\n  ],\n  \"target\": \"<response>The following were among <date>Friday</date> 's offerings and pricings in the <geopolitical_entity>U.S.</geopolitical_entity> and <geopolitical_entity>non-U.S.</geopolitical_entity> capital markets , with terms and syndicate manager , as compiled by <organization>Dow Jones Capital Markets Report</organization> :</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"The\",\n      \"following\",\n      \"were\",\n      \"among\",\n      \"Friday\",\n      \"'s\",\n      \"offerings\",\n      \"and\",\n      \"pricings\",\n      \"in\",\n      \"the\",\n      \"U.S.\",\n      \"and\",\n      \"non-U.S.\",\n      \"capital\",\n      \"markets\",\n      \",\",\n      \"with\",\n      \"terms\",\n      \"and\",\n      \"syndicate\",\n      \"manager\",\n      \",\",\n      \"as\",\n      \"compiled\",\n      \"by\",\n      \"Dow\",\n      \"Jones\",\n      \"Capital\",\n      \"Markets\",\n      \"Report\",\n      \":\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-DATE\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-GPE\",\n      \"O\",\n      \"B-GPE\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-ORG\",\n      \"I-ORG\",\n      \"I-ORG\",\n      \"I-ORG\",\n      \"I-ORG\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ontonotes5 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ontonotes5'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# OntoNotes5\n\n## 概述\n\nOntoNotes Release 5.0 是一个大规模、多语言语料库，包含英语、中文和阿拉伯语文本，涵盖多种体裁。该语料库包含丰富的多层次语言学标注信息，包括句法、谓词-论元结构、词义、命名实体和共指关系。\n\n## 任务描述\n\n- **任务类型**：多体裁命名实体识别（NER）\n- **输入**：来自新闻、博客、广播对话的文本\n- **输出**：细粒度命名实体片段\n- **语言**：英语、中文、阿拉伯语\n\n## 主要特点\n\n- 大规模多语言语料库\n- 多种体裁（新闻、博客、广播）\n- 18 种细粒度实体类型\n- 丰富的语言学标注\n- 命名实体识别评估的标准基准\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 评估\n- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）\n- 实体类型：PERSON（人物）、NORP（民族/宗教/政治团体）、FAC（设施）、ORG（组织）、GPE（地缘政治实体）、LOC（地点）、PRODUCT（产品）、EVENT（事件）、WORK_OF_ART（艺术作品）、LAW（法律）、LANGUAGE（语言）、DATE（日期）、TIME（时间）、PERCENT（百分比）、MONEY（货币）、QUANTITY（数量）、ORDINAL（序数）、CARDINAL（基数）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `ontonotes5` |\n| **数据集ID** | [extraordinarylab/ontonotes5](https://modelscope.cn/datasets/extraordinarylab/ontonotes5/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认示例数** | 5-shot |\n| **评估分割** | `test` |\n| **训练分割** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 8,262 |\n| 提示词长度（平均） | 3364.28 字符 |\n| 提示词长度（最小/最大） | 3253 / 4171 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"6215273c\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nPeople start their own businesses for many reasons .\\n\\nOutput:\\n<response>People start their own businesses for many reasons .</response>\\n\\nInput:\\nBut a chance to fill out sales - tax r ... [TRUNCATED] ... ening tag has a matching closing tag.\\n\\nText to process:\\nThe following were among Friday 's offerings and pricings in the U.S. and non-U.S. capital markets , with terms and syndicate manager , as compiled by Dow Jones Capital Markets Report :\\n\"\n    }\n  ],\n  \"target\": \"<response>The following were among <date>Friday</date> 's offerings and pricings in the <geopolitical_entity>U.S.</geopolitical_entity> and <geopolitical_entity>non-U.S.</geopolitical_entity> capital markets , with terms and syndicate manager , as compiled by <organization>Dow Jones Capital Markets Report</organization> :</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"The\",\n      \"following\",\n      \"were\",\n      \"among\",\n      \"Friday\",\n      \"'s\",\n      \"offerings\",\n      \"and\",\n      \"pricings\",\n      \"in\",\n      \"the\",\n      \"U.S.\",\n      \"and\",\n      \"non-U.S.\",\n      \"capital\",\n      \"markets\",\n      \",\",\n      \"with\",\n      \"terms\",\n      \"and\",\n      \"syndicate\",\n      \"manager\",\n      \",\",\n      \"as\",\n      \"compiled\",\n      \"by\",\n      \"Dow\",\n      \"Jones\",\n      \"Capital\",\n      \"Markets\",\n      \"Report\",\n      \":\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-DATE\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-GPE\",\n      \"O\",\n      \"B-GPE\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"B-ORG\",\n      \"I-ORG\",\n      \"I-ORG\",\n      \"I-ORG\",\n      \"I-ORG\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本提示模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用命令行接口（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ontonotes5 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ontonotes5'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "37960add257369e99af2cd5b1a3bf8e6",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.371262",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

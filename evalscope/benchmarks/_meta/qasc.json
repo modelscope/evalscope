@@ -1,0 +1,84 @@
+{
+  "meta": {
+    "pretty_name": "QASC",
+    "dataset_id": "extraordinarylab/qasc",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nQASC (Question Answering via Sentence Composition) is a question-answering dataset with a focus on multi-hop sentence composition. It consists of 9,980 8-way multiple-choice questions about grade school science, requiring models to combine multiple facts to arrive at the correct answer.\n\n## Task Description\n\n- **Task Type**: Multi-hop Science Question Answering (Multiple-Choice)\n- **Input**: Science question with 8 answer choices\n- **Output**: Correct answer letter\n- **Focus**: Sentence composition and multi-hop reasoning\n\n## Key Features\n\n- 9,980 grade school science questions\n- 8-way multiple-choice format\n- Requires composing two facts to answer\n- Tests multi-hop reasoning over scientific knowledge\n- Annotated with supporting facts for each question\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on validation split\n- Simple accuracy metric\n- Useful for evaluating compositional reasoning",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 926,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 926,
+        "prompt_length_mean": 362.58,
+        "prompt_length_min": 283,
+        "prompt_length_max": 505,
+        "prompt_length_std": 40.98,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 362.58,
+      "min": 283,
+      "max": 505,
+      "std": 40.98
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:16:19.460153"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "d92a545e",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E,F,G,H.\n\nClimate is generally described in terms of what?\n\nA) sand\nB) occurs over a wide range\nC) forests\nD) Global warming\nE) rapid changes occur\nF) local weather conditions\nG) measure of motion\nH) city life"
+        }
+      ],
+      "choices": [
+        "sand",
+        "occurs over a wide range",
+        "forests",
+        "Global warming",
+        "rapid changes occur",
+        "local weather conditions",
+        "measure of motion",
+        "city life"
+      ],
+      "target": "F",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {}
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# QASC\n\n## Overview\n\nQASC (Question Answering via Sentence Composition) is a question-answering dataset with a focus on multi-hop sentence composition. It consists of 9,980 8-way multiple-choice questions about grade school science, requiring models to combine multiple facts to arrive at the correct answer.\n\n## Task Description\n\n- **Task Type**: Multi-hop Science Question Answering (Multiple-Choice)\n- **Input**: Science question with 8 answer choices\n- **Output**: Correct answer letter\n- **Focus**: Sentence composition and multi-hop reasoning\n\n## Key Features\n\n- 9,980 grade school science questions\n- 8-way multiple-choice format\n- Requires composing two facts to answer\n- Tests multi-hop reasoning over scientific knowledge\n- Annotated with supporting facts for each question\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on validation split\n- Simple accuracy metric\n- Useful for evaluating compositional reasoning\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `qasc` |\n| **Dataset ID** | [extraordinarylab/qasc](https://modelscope.cn/datasets/extraordinarylab/qasc/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 926 |\n| Prompt Length (Mean) | 362.58 chars |\n| Prompt Length (Min/Max) | 283 / 505 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d92a545e\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E,F,G,H.\\n\\nClimate is generally described in terms of what?\\n\\nA) sand\\nB) occurs over a wide range\\nC) forests\\nD) Global warming\\nE) rapid changes occur\\nF) local weather conditions\\nG) measure of motion\\nH) city life\"\n    }\n  ],\n  \"choices\": [\n    \"sand\",\n    \"occurs over a wide range\",\n    \"forests\",\n    \"Global warming\",\n    \"rapid changes occur\",\n    \"local weather conditions\",\n    \"measure of motion\",\n    \"city life\"\n  ],\n  \"target\": \"F\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets qasc \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['qasc'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# QASC\n\n## 概述\n\nQASC（Question Answering via Sentence Composition，基于句子组合的问题回答）是一个专注于多跳句子组合的问题回答数据集。它包含 9,980 个面向小学科学的 8 选 1 多项选择题，要求模型组合多个事实才能得出正确答案。\n\n## 任务描述\n\n- **任务类型**：多跳科学问答（多项选择）\n- **输入**：包含 8 个选项的科学问题\n- **输出**：正确答案对应的字母\n- **重点**：句子组合与多跳推理\n\n## 主要特点\n\n- 包含 9,980 个小学科学问题\n- 采用 8 选 1 的多项选择格式\n- 需要组合两个事实才能作答\n- 测试模型在科学知识上的多跳推理能力\n- 每个问题均标注了支持性事实\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 在验证集（validation split）上进行评估\n- 使用简单准确率（accuracy）作为评估指标\n- 适用于评估组合推理能力\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `qasc` |\n| **数据集ID** | [extraordinarylab/qasc](https://modelscope.cn/datasets/extraordinarylab/qasc/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `validation` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 926 |\n| 提示词长度（平均） | 362.58 字符 |\n| 提示词长度（最小/最大） | 283 / 505 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d92a545e\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E,F,G,H.\\n\\nClimate is generally described in terms of what?\\n\\nA) sand\\nB) occurs over a wide range\\nC) forests\\nD) Global warming\\nE) rapid changes occur\\nF) local weather conditions\\nG) measure of motion\\nH) city life\"\n    }\n  ],\n  \"choices\": [\n    \"sand\",\n    \"occurs over a wide range\",\n    \"forests\",\n    \"Global warming\",\n    \"rapid changes occur\",\n    \"local weather conditions\",\n    \"measure of motion\",\n    \"city life\"\n  ],\n  \"target\": \"F\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {}\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets qasc \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['qasc'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "949658fa4e561303a944ab7ffea0070f",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.434105",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

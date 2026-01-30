@@ -23,8 +23,33 @@ MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
         pretty_name='A-OKVQA',
         dataset_id='HuggingFaceM4/A-OKVQA',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
-        description=
-        'A-OKVQA is a benchmark designed to probe commonsense reasoning and outside knowledge in visual question answering. Unlike basic VQA tasks that rely solely on the image content, A-OKVQA requires models to utilize a broad spectrum of commonsense and factual knowledge about the world to answer its questions. It includes both multiple-choice and open-ended questions, making it a particularly challenging test for assessing the reasoning capabilities of AI systems.',  # noqa: E501
+        description="""
+## Overview
+
+A-OKVQA (Augmented OK-VQA) is a benchmark designed to evaluate commonsense reasoning and external world knowledge in visual question answering. It extends beyond basic VQA tasks that rely solely on image content, requiring models to leverage a broad spectrum of commonsense and factual knowledge about the world.
+
+## Task Description
+
+- **Task Type**: Visual Question Answering with Knowledge Reasoning
+- **Input**: Image + natural language question requiring external knowledge
+- **Output**: Answer (multiple-choice or open-ended)
+- **Domains**: Commonsense reasoning, factual knowledge, visual understanding
+
+## Key Features
+
+- Requires commonsense reasoning beyond direct visual observation
+- Combines visual understanding with external world knowledge
+- Includes both multiple-choice and open-ended question formats
+- Questions annotated with rationales explaining the reasoning process
+- More challenging than standard VQA benchmarks
+
+## Evaluation Notes
+
+- Default evaluation uses the **validation** split
+- Primary metric: **Accuracy** for multiple-choice questions
+- Uses Chain-of-Thought (CoT) prompting for better reasoning
+- Questions require reasoning beyond what is directly visible in images
+""",  # noqa: E501
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         default_subset='default',

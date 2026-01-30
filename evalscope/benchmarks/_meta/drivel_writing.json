@@ -1,0 +1,89 @@
+{
+  "meta": {
+    "pretty_name": "DrivelologyNarrativeWriting",
+    "dataset_id": "extraordinarylab/drivel-hub",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "Reasoning"
+    ],
+    "metrics": [
+      {
+        "bert_score": {
+          "model_id_or_path": "AI-ModelScope/roberta-large",
+          "model_type": "roberta-large"
+        }
+      },
+      {
+        "gpt_score": {}
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "narrative-writing-english"
+    ],
+    "description": "## Overview\n\nDrivelology Narrative Writing evaluates models' ability to generate detailed descriptions illustrating the implicit narrative of \"drivelology\" text - linguistic utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.\n\n## Task Description\n\n- **Task Type**: Narrative Generation and Evaluation\n- **Input**: Drivelology text sample\n- **Output**: Generated narrative description explaining implicit meaning\n- **Domain**: Linguistic analysis, narrative generation\n\n## Key Features\n\n- Tests narrative explanation generation ability\n- Requires understanding of layered linguistic meanings\n- LLM-as-judge evaluation against reference narratives\n- Likert scale scoring (1-5) for match quality\n- Tests depth of linguistic and cultural understanding\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses LLM-as-judge for evaluation\n- Metrics: Average Likert score (1-5 scale)\n- Evaluates relevance, accuracy, depth, and detail of generated narratives",
+    "prompt_template": "You need to first read and understand the text given. Generate a detailed description to illustrate the implicit narrative of the text.\n\nPlease provide your response in English, with a clear and comprehensive explanation of the narrative.\n\nText: {text}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 600,
+    "subset_stats": [
+      {
+        "name": "narrative-writing-english",
+        "sample_count": 600,
+        "prompt_length_mean": 313.18,
+        "prompt_length_min": 256,
+        "prompt_length_max": 717,
+        "prompt_length_std": 54.36,
+        "target_length_mean": 318.55
+      }
+    ],
+    "prompt_length": {
+      "mean": 313.18,
+      "min": 256,
+      "max": 717,
+      "std": 54.36
+    },
+    "target_length_mean": 318.55,
+    "computed_at": "2026-01-28T11:12:50.268073"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "f47953a9",
+          "content": [
+            {
+              "text": "You need to first read and understand the text given. Generate a detailed description to illustrate the implicit narrative of the text.\n\nPlease provide your response in English, with a clear and comprehensive explanation of the narrative.\n\nText: 後天的努力比什麼都重要，所以今天和明天休息。"
+            }
+          ]
+        }
+      ],
+      "target": "This creates a paradoxical tone, as it acknowledges the value of diligence but simultaneously advocates for procrastination. The underlying message could reflect a lighthearted take on balancing work and rest or even poking fun at the tendency to delay responsibilities.",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "text": "後天的努力比什麼都重要，所以今天和明天休息。",
+        "reference_narrative": "This creates a paradoxical tone, as it acknowledges the value of diligence but simultaneously advocates for procrastination. The underlying message could reflect a lighthearted take on balancing work and rest or even poking fun at the tendency to delay responsibilities."
+      }
+    },
+    "subset": "narrative-writing-english",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# DrivelologyNarrativeWriting\n\n## Overview\n\nDrivelology Narrative Writing evaluates models' ability to generate detailed descriptions illustrating the implicit narrative of \"drivelology\" text - linguistic utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.\n\n## Task Description\n\n- **Task Type**: Narrative Generation and Evaluation\n- **Input**: Drivelology text sample\n- **Output**: Generated narrative description explaining implicit meaning\n- **Domain**: Linguistic analysis, narrative generation\n\n## Key Features\n\n- Tests narrative explanation generation ability\n- Requires understanding of layered linguistic meanings\n- LLM-as-judge evaluation against reference narratives\n- Likert scale scoring (1-5) for match quality\n- Tests depth of linguistic and cultural understanding\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Uses LLM-as-judge for evaluation\n- Metrics: Average Likert score (1-5 scale)\n- Evaluates relevance, accuracy, depth, and detail of generated narratives\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `drivel_writing` |\n| **Dataset ID** | [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `Reasoning` |\n| **Metrics** | `bert_score`, `gpt_score` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 600 |\n| Prompt Length (Mean) | 313.18 chars |\n| Prompt Length (Min/Max) | 256 / 717 chars |\n\n## Sample Example\n\n**Subset**: `narrative-writing-english`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f47953a9\",\n      \"content\": [\n        {\n          \"text\": \"You need to first read and understand the text given. Generate a detailed description to illustrate the implicit narrative of the text.\\n\\nPlease provide your response in English, with a clear and comprehensive explanation of the narrative.\\n\\nText: 後天的努力比什麼都重要，所以今天和明天休息。\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"This creates a paradoxical tone, as it acknowledges the value of diligence but simultaneously advocates for procrastination. The underlying message could reflect a lighthearted take on balancing work and rest or even poking fun at the tendency to delay responsibilities.\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"text\": \"後天的努力比什麼都重要，所以今天和明天休息。\",\n    \"reference_narrative\": \"This creates a paradoxical tone, as it acknowledges the value of diligence but simultaneously advocates for procrastination. The underlying message could reflect a lighthearted take on balancing work and rest or even poking fun at the tendency to delay responsibilities.\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou need to first read and understand the text given. Generate a detailed description to illustrate the implicit narrative of the text.\n\nPlease provide your response in English, with a clear and comprehensive explanation of the narrative.\n\nText: {text}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets drivel_writing \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['drivel_writing'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# DrivelologyNarrativeWriting\n\n## 概述\n\nDrivelology 叙事写作评估模型生成详细描述的能力，以阐释“drivelology”文本中隐含的叙事——这类语言表达在句法上连贯，但在语用上却具有悖论性、情感负载性或修辞颠覆性。\n\n## 任务描述\n\n- **任务类型**：叙事生成与评估  \n- **输入**：Drivelology 文本样本  \n- **输出**：生成的叙事描述，解释文本的隐含意义  \n- **领域**：语言学分析、叙事生成  \n\n## 核心特点\n\n- 测试模型生成叙事解释的能力  \n- 要求理解多层次的语言含义  \n- 使用 LLM-as-judge 方法与参考叙事进行对比评估  \n- 采用李克特量表（1-5 分）对匹配质量评分  \n- 考察模型在语言和文化理解方面的深度  \n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估  \n- 采用 LLM-as-judge 进行评估  \n- 指标：平均李克特得分（1-5 分制）  \n- 评估生成叙事的相关性、准确性、深度和细节  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `drivel_writing` |\n| **数据集ID** | [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `Reasoning` |\n| **指标** | `bert_score`, `gpt_score` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 600 |\n| 提示词长度（平均） | 313.18 字符 |\n| 提示词长度（最小/最大） | 256 / 717 字符 |\n\n## 样例示例\n\n**子集**: `narrative-writing-english`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f47953a9\",\n      \"content\": [\n        {\n          \"text\": \"You need to first read and understand the text given. Generate a detailed description to illustrate the implicit narrative of the text.\\n\\nPlease provide your response in English, with a clear and comprehensive explanation of the narrative.\\n\\nText: 後天的努力比什麼都重要，所以今天和明天休息。\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"This creates a paradoxical tone, as it acknowledges the value of diligence but simultaneously advocates for procrastination. The underlying message could reflect a lighthearted take on balancing work and rest or even poking fun at the tendency to delay responsibilities.\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"text\": \"後天的努力比什麼都重要，所以今天和明天休息。\",\n    \"reference_narrative\": \"This creates a paradoxical tone, as it acknowledges the value of diligence but simultaneously advocates for procrastination. The underlying message could reflect a lighthearted take on balancing work and rest or even poking fun at the tendency to delay responsibilities.\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nYou need to first read and understand the text given. Generate a detailed description to illustrate the implicit narrative of the text.\n\nPlease provide your response in English, with a clear and comprehensive explanation of the narrative.\n\nText: {text}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets drivel_writing \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['drivel_writing'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "9415737e1713d22662a966e016b5f57a",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.225015",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

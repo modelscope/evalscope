@@ -1,0 +1,260 @@
+{
+  "meta": {
+    "pretty_name": "MultiPL-E HumanEval",
+    "dataset_id": "evalscope/MultiPL-E",
+    "paper_url": null,
+    "tags": [
+      "Coding"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "humaneval-cpp",
+      "humaneval-ts",
+      "humaneval-sh",
+      "humaneval-cs",
+      "humaneval-go",
+      "humaneval-java",
+      "humaneval-lua",
+      "humaneval-js",
+      "humaneval-php",
+      "humaneval-pl",
+      "humaneval-rkt",
+      "humaneval-r",
+      "humaneval-rs",
+      "humaneval-scala",
+      "humaneval-swift",
+      "humaneval-rb",
+      "humaneval-d",
+      "humaneval-jl"
+    ],
+    "description": "\n## Overview\n\nMultiPL-E HumanEval is a multilingual code generation benchmark derived from OpenAI's HumanEval. It extends the original HumanEval to 18 programming languages, enabling cross-lingual evaluation of code generation capabilities.\n\n## Task Description\n\n- **Task Type**: Multilingual Code Generation\n- **Input**: Programming problem prompt with function signature and docstring\n- **Output**: Complete function implementation that passes test cases\n- **Languages**: 18 languages (C++, TypeScript, Shell, C#, Go, Java, Lua, JavaScript, PHP, Perl, Racket, R, Rust, Scala, Swift, Ruby, D, Julia)\n\n## Key Features\n\n- Multilingual evaluation across 18 programming languages\n- Execution-based evaluation with test cases\n- Supports pass@k metric for code generation\n- Docker sandbox environment for safe code execution\n- Derived from HumanEval with consistent problem difficulty\n\n## Evaluation Notes\n\n- **Sandbox Required**: Requires sandbox environment for safe code execution\n- Default evaluation uses **test** split\n- Primary metric: **Accuracy** with **pass@k** aggregation\n- Timeout: 30 seconds per test case\n- See [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for setup\n",
+    "prompt_template": "{prompt}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean_and_pass_at_k",
+    "extra_params": {},
+    "sandbox_config": {
+      "image": "volcengine/sandbox-fusion:server-20250609",
+      "tools_config": {
+        "shell_executor": {},
+        "python_executor": {},
+        "multi_code_executor": {}
+      },
+      "memory_limit": "2g",
+      "cpu_limit": "2.0"
+    },
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 2864,
+    "subset_stats": [
+      {
+        "name": "humaneval-cpp",
+        "sample_count": 161,
+        "prompt_length_mean": 797.74,
+        "prompt_length_min": 351,
+        "prompt_length_max": 2057,
+        "prompt_length_std": 324.18,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-ts",
+        "sample_count": 159,
+        "prompt_length_mean": 639.27,
+        "prompt_length_min": 320,
+        "prompt_length_max": 1529,
+        "prompt_length_std": 221.34,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-sh",
+        "sample_count": 158,
+        "prompt_length_mean": 648.14,
+        "prompt_length_min": 325,
+        "prompt_length_max": 1534,
+        "prompt_length_std": 218.58,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-cs",
+        "sample_count": 158,
+        "prompt_length_mean": 983.67,
+        "prompt_length_min": 538,
+        "prompt_length_max": 2335,
+        "prompt_length_std": 324.64,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-go",
+        "sample_count": 154,
+        "prompt_length_mean": 701.14,
+        "prompt_length_min": 351,
+        "prompt_length_max": 1616,
+        "prompt_length_std": 233.65,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-java",
+        "sample_count": 158,
+        "prompt_length_mean": 1009.53,
+        "prompt_length_min": 531,
+        "prompt_length_max": 2463,
+        "prompt_length_std": 353.35,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-lua",
+        "sample_count": 161,
+        "prompt_length_mean": 620.31,
+        "prompt_length_min": 294,
+        "prompt_length_max": 1497,
+        "prompt_length_std": 224.18,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-js",
+        "sample_count": 161,
+        "prompt_length_mean": 611.34,
+        "prompt_length_min": 287,
+        "prompt_length_max": 1490,
+        "prompt_length_std": 220.06,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-php",
+        "sample_count": 161,
+        "prompt_length_mean": 632.01,
+        "prompt_length_min": 298,
+        "prompt_length_max": 1551,
+        "prompt_length_std": 226.08,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-pl",
+        "sample_count": 161,
+        "prompt_length_mean": 611.27,
+        "prompt_length_min": 296,
+        "prompt_length_max": 1481,
+        "prompt_length_std": 215.81,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-rkt",
+        "sample_count": 161,
+        "prompt_length_mean": 634.22,
+        "prompt_length_min": 304,
+        "prompt_length_max": 1537,
+        "prompt_length_std": 226.11,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-r",
+        "sample_count": 161,
+        "prompt_length_mean": 607.78,
+        "prompt_length_min": 285,
+        "prompt_length_max": 1484,
+        "prompt_length_std": 221.53,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-rs",
+        "sample_count": 156,
+        "prompt_length_mean": 686.67,
+        "prompt_length_min": 313,
+        "prompt_length_max": 1591,
+        "prompt_length_std": 253.72,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-scala",
+        "sample_count": 160,
+        "prompt_length_mean": 832.81,
+        "prompt_length_min": 423,
+        "prompt_length_max": 1998,
+        "prompt_length_std": 285.96,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-swift",
+        "sample_count": 158,
+        "prompt_length_mean": 660.88,
+        "prompt_length_min": 323,
+        "prompt_length_max": 1556,
+        "prompt_length_std": 232.27,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-rb",
+        "sample_count": 161,
+        "prompt_length_mean": 611.55,
+        "prompt_length_min": 289,
+        "prompt_length_max": 1474,
+        "prompt_length_std": 217.42,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-d",
+        "sample_count": 156,
+        "prompt_length_mean": 640.72,
+        "prompt_length_min": 328,
+        "prompt_length_max": 1501,
+        "prompt_length_std": 219.0,
+        "target_length_mean": null
+      },
+      {
+        "name": "humaneval-jl",
+        "sample_count": 159,
+        "prompt_length_mean": 616.4,
+        "prompt_length_min": 303,
+        "prompt_length_max": 1478,
+        "prompt_length_std": 216.1,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 696.59,
+      "min": 285,
+      "max": 2463,
+      "std": 277.57
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-01-28T11:15:18.702585"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "8f096947",
+          "content": "```cpp\n#include<assert.h>\n#include<bits/stdc++.h>\n// Check if in given vector of numbers, are any two numbers closer to each other than\n// given threshold.\n// >>> has_close_elements((std::vector<float>({(float)1.0f, (float)2.0f, (float)3.0f}) ... [TRUNCATED] ... ents(std::vector<float> numbers, float threshold) {\n\n```\n\nPlease complete the above code according to the requirements in the docstring. Write the complete code and wrap it in markdown fenced code. The code should not contain `Main` function."
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tests": "}\nint main() {\n    auto candidate = has_close_elements;\n    assert(candidate((std::vector<float>({(float)1.0f, (float)2.0f, (float)3.9f, (float)4.0f, (float)5.0f, (float)2.2f})), (0.3f)) == (true));\n    assert(candidate((std::vector<float>({( ... [TRUNCATED] ... (std::vector<float>({(float)1.1f, (float)2.2f, (float)3.1f, (float)4.1f, (float)5.1f})), (1.0f)) == (true));\n    assert(candidate((std::vector<float>({(float)1.1f, (float)2.2f, (float)3.1f, (float)4.1f, (float)5.1f})), (0.5f)) == (false));\n}\n",
+        "stop_tokens": [
+          "\n}"
+        ],
+        "task_id": "HumanEval_0_has_close_elements",
+        "language": "cpp",
+        "doctests": "transform"
+      }
+    },
+    "subset": "humaneval-cpp",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# MultiPL-E HumanEval\n\n\n## Overview\n\nMultiPL-E HumanEval is a multilingual code generation benchmark derived from OpenAI's HumanEval. It extends the original HumanEval to 18 programming languages, enabling cross-lingual evaluation of code generation capabilities.\n\n## Task Description\n\n- **Task Type**: Multilingual Code Generation\n- **Input**: Programming problem prompt with function signature and docstring\n- **Output**: Complete function implementation that passes test cases\n- **Languages**: 18 languages (C++, TypeScript, Shell, C#, Go, Java, Lua, JavaScript, PHP, Perl, Racket, R, Rust, Scala, Swift, Ruby, D, Julia)\n\n## Key Features\n\n- Multilingual evaluation across 18 programming languages\n- Execution-based evaluation with test cases\n- Supports pass@k metric for code generation\n- Docker sandbox environment for safe code execution\n- Derived from HumanEval with consistent problem difficulty\n\n## Evaluation Notes\n\n- **Sandbox Required**: Requires sandbox environment for safe code execution\n- Default evaluation uses **test** split\n- Primary metric: **Accuracy** with **pass@k** aggregation\n- Timeout: 30 seconds per test case\n- See [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for setup\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `multiple_humaneval` |\n| **Dataset ID** | [evalscope/MultiPL-E](https://modelscope.cn/datasets/evalscope/MultiPL-E/summary) |\n| **Paper** | N/A |\n| **Tags** | `Coding` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `mean_and_pass_at_k` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 2,864 |\n| Prompt Length (Mean) | 696.59 chars |\n| Prompt Length (Min/Max) | 285 / 2463 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `humaneval-cpp` | 161 | 797.74 | 351 | 2057 |\n| `humaneval-ts` | 159 | 639.27 | 320 | 1529 |\n| `humaneval-sh` | 158 | 648.14 | 325 | 1534 |\n| `humaneval-cs` | 158 | 983.67 | 538 | 2335 |\n| `humaneval-go` | 154 | 701.14 | 351 | 1616 |\n| `humaneval-java` | 158 | 1009.53 | 531 | 2463 |\n| `humaneval-lua` | 161 | 620.31 | 294 | 1497 |\n| `humaneval-js` | 161 | 611.34 | 287 | 1490 |\n| `humaneval-php` | 161 | 632.01 | 298 | 1551 |\n| `humaneval-pl` | 161 | 611.27 | 296 | 1481 |\n| `humaneval-rkt` | 161 | 634.22 | 304 | 1537 |\n| `humaneval-r` | 161 | 607.78 | 285 | 1484 |\n| `humaneval-rs` | 156 | 686.67 | 313 | 1591 |\n| `humaneval-scala` | 160 | 832.81 | 423 | 1998 |\n| `humaneval-swift` | 158 | 660.88 | 323 | 1556 |\n| `humaneval-rb` | 161 | 611.55 | 289 | 1474 |\n| `humaneval-d` | 156 | 640.72 | 328 | 1501 |\n| `humaneval-jl` | 159 | 616.4 | 303 | 1478 |\n\n## Sample Example\n\n**Subset**: `humaneval-cpp`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"8f096947\",\n      \"content\": \"```cpp\\n#include<assert.h>\\n#include<bits/stdc++.h>\\n// Check if in given vector of numbers, are any two numbers closer to each other than\\n// given threshold.\\n// >>> has_close_elements((std::vector<float>({(float)1.0f, (float)2.0f, (float)3.0f}) ... [TRUNCATED] ... ents(std::vector<float> numbers, float threshold) {\\n\\n```\\n\\nPlease complete the above code according to the requirements in the docstring. Write the complete code and wrap it in markdown fenced code. The code should not contain `Main` function.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tests\": \"}\\nint main() {\\n    auto candidate = has_close_elements;\\n    assert(candidate((std::vector<float>({(float)1.0f, (float)2.0f, (float)3.9f, (float)4.0f, (float)5.0f, (float)2.2f})), (0.3f)) == (true));\\n    assert(candidate((std::vector<float>({( ... [TRUNCATED] ... (std::vector<float>({(float)1.1f, (float)2.2f, (float)3.1f, (float)4.1f, (float)5.1f})), (1.0f)) == (true));\\n    assert(candidate((std::vector<float>({(float)1.1f, (float)2.2f, (float)3.1f, (float)4.1f, (float)5.1f})), (0.5f)) == (false));\\n}\\n\",\n    \"stop_tokens\": [\n      \"\\n}\"\n    ],\n    \"task_id\": \"HumanEval_0_has_close_elements\",\n    \"language\": \"cpp\",\n    \"doctests\": \"transform\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{prompt}\n```\n\n## Sandbox Configuration\n\nThis benchmark requires a sandbox environment for code execution.\n\n```json\n{\n  \"image\": \"volcengine/sandbox-fusion:server-20250609\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {},\n    \"multi_code_executor\": {}\n  },\n  \"memory_limit\": \"2g\",\n  \"cpu_limit\": \"2.0\"\n}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets multiple_humaneval \\\n    --use-sandbox \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['multiple_humaneval'],\n    use_sandbox=True,\n    dataset_args={\n        'multiple_humaneval': {\n            # subset_list: ['humaneval-cpp', 'humaneval-ts', 'humaneval-sh']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MultiPL-E HumanEval\n\n\n## 概述\n\nMultiPL-E HumanEval 是一个源自 OpenAI HumanEval 的多语言代码生成基准测试。它将原始 HumanEval 扩展至 18 种编程语言，支持对代码生成能力进行跨语言评估。\n\n## 任务描述\n\n- **任务类型**：多语言代码生成\n- **输入**：包含函数签名和文档字符串的编程问题提示\n- **输出**：能通过测试用例的完整函数实现\n- **语言**：18 种语言（C++、TypeScript、Shell、C#、Go、Java、Lua、JavaScript、PHP、Perl、Racket、R、Rust、Scala、Swift、Ruby、D、Julia）\n\n## 主要特性\n\n- 覆盖 18 种编程语言的多语言评估\n- 基于执行的测试用例评估\n- 支持代码生成的 pass@k 指标\n- 使用 Docker 沙箱环境确保安全执行\n- 源自 HumanEval，保持一致的问题难度\n\n## 评估说明\n\n- **需要沙箱**：需使用沙箱环境以确保代码安全执行\n- 默认使用 **test** 切分进行评估\n- 主要指标：**Accuracy**，采用 **pass@k** 聚合方式\n- 每个测试用例超时时间：30 秒\n- 沙箱环境设置请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `multiple_humaneval` |\n| **数据集ID** | [evalscope/MultiPL-E](https://modelscope.cn/datasets/evalscope/MultiPL-E/summary) |\n| **论文** | N/A |\n| **标签** | `Coding` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估切分** | `test` |\n| **聚合方式** | `mean_and_pass_at_k` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 2,864 |\n| 提示词长度（平均） | 696.59 字符 |\n| 提示词长度（最小/最大） | 285 / 2463 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `humaneval-cpp` | 161 | 797.74 | 351 | 2057 |\n| `humaneval-ts` | 159 | 639.27 | 320 | 1529 |\n| `humaneval-sh` | 158 | 648.14 | 325 | 1534 |\n| `humaneval-cs` | 158 | 983.67 | 538 | 2335 |\n| `humaneval-go` | 154 | 701.14 | 351 | 1616 |\n| `humaneval-java` | 158 | 1009.53 | 531 | 2463 |\n| `humaneval-lua` | 161 | 620.31 | 294 | 1497 |\n| `humaneval-js` | 161 | 611.34 | 287 | 1490 |\n| `humaneval-php` | 161 | 632.01 | 298 | 1551 |\n| `humaneval-pl` | 161 | 611.27 | 296 | 1481 |\n| `humaneval-rkt` | 161 | 634.22 | 304 | 1537 |\n| `humaneval-r` | 161 | 607.78 | 285 | 1484 |\n| `humaneval-rs` | 156 | 686.67 | 313 | 1591 |\n| `humaneval-scala` | 160 | 832.81 | 423 | 1998 |\n| `humaneval-swift` | 158 | 660.88 | 323 | 1556 |\n| `humaneval-rb` | 161 | 611.55 | 289 | 1474 |\n| `humaneval-d` | 156 | 640.72 | 328 | 1501 |\n| `humaneval-jl` | 159 | 616.4 | 303 | 1478 |\n\n## 样例示例\n\n**子集**: `humaneval-cpp`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"8f096947\",\n      \"content\": \"```cpp\\n#include<assert.h>\\n#include<bits/stdc++.h>\\n// Check if in given vector of numbers, are any two numbers closer to each other than\\n// given threshold.\\n// >>> has_close_elements((std::vector<float>({(float)1.0f, (float)2.0f, (float)3.0f}) ... [TRUNCATED] ... ents(std::vector<float> numbers, float threshold) {\\n\\n```\\n\\nPlease complete the above code according to the requirements in the docstring. Write the complete code and wrap it in markdown fenced code. The code should not contain `Main` function.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tests\": \"}\\nint main() {\\n    auto candidate = has_close_elements;\\n    assert(candidate((std::vector<float>({(float)1.0f, (float)2.0f, (float)3.9f, (float)4.0f, (float)5.0f, (float)2.2f})), (0.3f)) == (true));\\n    assert(candidate((std::vector<float>({( ... [TRUNCATED] ... (std::vector<float>({(float)1.1f, (float)2.2f, (float)3.1f, (float)4.1f, (float)5.1f})), (1.0f)) == (true));\\n    assert(candidate((std::vector<float>({(float)1.1f, (float)2.2f, (float)3.1f, (float)4.1f, (float)5.1f})), (0.5f)) == (false));\\n}\\n\",\n    \"stop_tokens\": [\n      \"\\n}\"\n    ],\n    \"task_id\": \"HumanEval_0_has_close_elements\",\n    \"language\": \"cpp\",\n    \"doctests\": \"transform\"\n  }\n}\n```\n\n*注：部分内容因展示需要已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{prompt}\n```\n\n## 沙箱配置\n\n此基准测试需要沙箱环境来执行代码。\n\n```json\n{\n  \"image\": \"volcengine/sandbox-fusion:server-20250609\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {},\n    \"multi_code_executor\": {}\n  },\n  \"memory_limit\": \"2g\",\n  \"cpu_limit\": \"2.0\"\n}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets multiple_humaneval \\\n    --use-sandbox \\\n    --limit 10  # 正式评估时请移除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['multiple_humaneval'],\n    use_sandbox=True,\n    dataset_args={\n        'multiple_humaneval': {\n            # subset_list: ['humaneval-cpp', 'humaneval-ts', 'humaneval-sh']  # 可选，用于指定评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请移除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "b16642e3037a9d0e9dfdb0717ef60f74",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.321874",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

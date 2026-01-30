@@ -98,8 +98,40 @@ VERSION_FILE = {
         name='health_bench',
         pretty_name='HealthBench',
         tags=[Tags.KNOWLEDGE, Tags.QA, Tags.MEDICAL],
-        description=
-        'HealthBench: a new benchmark designed to better measure capabilities of AI systems for health. Built in partnership with 262 physicians who have practiced in 60 countries, HealthBench includes 5,000 realistic health conversations, each with a custom physician-created rubric to grade model responses.',  # noqa: E501
+        description="""
+## Overview
+
+HealthBench is a comprehensive benchmark designed to measure AI capabilities for health-related tasks. Built in partnership with 262 physicians from 60 countries, it includes 5,000 realistic health conversations with custom physician-created rubrics.
+
+## Task Description
+
+- **Task Type**: Medical Conversation Evaluation
+- **Input**: Health-related conversation with patient queries
+- **Output**: Medical advice/response evaluated against physician rubrics
+- **Domains**: Medical advice, health communication, clinical knowledge
+
+## Key Features
+
+- 5,000 realistic health conversations
+- Custom rubrics created by 262 physicians
+- Seven evaluation categories:
+  - `emergency_referrals`: Urgent medical situations
+  - `communication`: Patient interaction quality
+  - `complex_responses`: Detailed medical scenarios
+  - `hedging`: Appropriate uncertainty expression
+  - `health_data_tasks`: Health data analysis
+  - `global_health`: Cross-cultural considerations
+  - `context_seeking`: Information gathering ability
+
+## Evaluation Notes
+
+- Default version: **Consensus** (also available: Hard, All)
+- Multiple evaluation metrics:
+  - Communication Quality, Instruction Following, Accuracy
+  - Context Awareness, Completeness
+- Uses LLM judge with physician-designed rubric items
+- Aggregation: **clipped_mean** for robust scoring
+""",  # noqa: E501
         dataset_id='openai-mirror/healthbench',
         subset_list=SUBSET_LIST,
         metric_list=[

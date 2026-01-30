@@ -72,9 +72,37 @@ Now please solve the above puzzle. Present your reasoning and solution in the fo
         pretty_name='ZebraLogicBench',
         dataset_id='allenai/ZebraLogicBench-private',
         tags=[Tags.REASONING],
-        description='ZebraLogic, a comprehensive evaluation framework for '
-        'assessing LLM reasoning performance on logic grid puzzles '
-        'derived from constraint satisfaction problems (CSPs).',
+        description="""
+## Overview
+
+ZebraLogicBench is a comprehensive evaluation framework for assessing LLM reasoning performance on logic grid puzzles derived from constraint satisfaction problems (CSPs). It tests systematic logical reasoning abilities.
+
+## Task Description
+
+- **Task Type**: Logic Grid Puzzle Solving
+- **Input**: Logic puzzle with houses, attributes, and clues
+- **Output**: JSON solution with reasoning explanation
+- **Domains**: Constraint satisfaction, logical deduction
+
+## Key Features
+
+- Puzzles derived from constraint satisfaction problems
+- Requires systematic step-by-step logical reasoning
+- Varying difficulty levels (Easy/Hard) and sizes (Small/Medium/Large/XL)
+- Tests ability to process multiple interdependent clues
+- Solutions must be valid JSON format
+
+## Evaluation Notes
+
+- Default evaluation uses the **test** split with **zero-shot**
+- Multiple metrics tracked:
+  - `puzzle_acc`: Correctly solved complete puzzles
+  - `cell_acc`: Correctly identified individual cells
+  - Difficulty-based: `easy_puzzle_acc`, `hard_puzzle_acc`
+  - Size-based: `small`, `medium`, `large`, `xl_puzzle_acc`
+  - `avg_reason_lens`: Average reasoning length
+- Output must include reasoning and solution in JSON format
+""",
         subset_list=['grid_mode'],
         few_shot_num=0,
         eval_split='test',

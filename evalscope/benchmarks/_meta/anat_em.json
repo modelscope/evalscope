@@ -1,0 +1,102 @@
+{
+  "meta": {
+    "pretty_name": "AnatEM",
+    "dataset_id": "extraordinarylab/anat-em",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "NER"
+    ],
+    "metrics": [
+      "precision",
+      "recall",
+      "f1_score",
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nThe AnatEM corpus is an extensive resource for anatomical entity recognition, created by extending and combining previous corpora. It includes over 13,000 annotations across 1,212 biomedical documents, focusing on identifying anatomical structures from subcellular components to organ systems.\n\n## Task Description\n\n- **Task Type**: Biomedical Named Entity Recognition (NER)\n- **Input**: Biomedical text from PubMed abstracts\n- **Output**: Identified anatomical entity spans with types\n- **Domain**: Anatomy, biomedical literature\n\n## Key Features\n\n- Over 13,000 anatomical entity annotations\n- 1,212 biomedical documents from PubMed\n- Comprehensive anatomical coverage (cells to organs)\n- Manual expert annotation\n- Useful for biomedical text mining\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: ANATOMY (subcellular structures, cells, tissues, organs)\n",
+    "prompt_template": "You are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 3830,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 3830,
+        "prompt_length_mean": 3007.08,
+        "prompt_length_min": 2861,
+        "prompt_length_max": 3652,
+        "prompt_length_std": 82.35,
+        "target_length_mean": 190.88
+      }
+    ],
+    "prompt_length": {
+      "mean": 3007.08,
+      "min": 2861,
+      "max": 3652,
+      "std": 82.35
+    },
+    "target_length_mean": 190.88,
+    "computed_at": "2026-01-28T14:13:44.930108"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "64b20a23",
+          "content": "Here are some examples of named entity recognition:\n\nInput:\nImmunostaining and confocal analysis\n\nOutput:\n<response>Immunostaining and confocal analysis</response>\n\nInput:\nDNA labelling and staining with 5 - bromo - 2 ' - deoxyuridine ( BrdU  ... [TRUNCATED] ... Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n( a ) Schematic drawing of the magnetic tweezers .\n"
+        }
+      ],
+      "target": "<response>( a ) Schematic drawing of the magnetic tweezers .</response>",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "tokens": [
+          "(",
+          "a",
+          ")",
+          "Schematic",
+          "drawing",
+          "of",
+          "the",
+          "magnetic",
+          "tweezers",
+          "."
+        ],
+        "ner_tags": [
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O",
+          "O"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# AnatEM\n\n\n## Overview\n\nThe AnatEM corpus is an extensive resource for anatomical entity recognition, created by extending and combining previous corpora. It includes over 13,000 annotations across 1,212 biomedical documents, focusing on identifying anatomical structures from subcellular components to organ systems.\n\n## Task Description\n\n- **Task Type**: Biomedical Named Entity Recognition (NER)\n- **Input**: Biomedical text from PubMed abstracts\n- **Output**: Identified anatomical entity spans with types\n- **Domain**: Anatomy, biomedical literature\n\n## Key Features\n\n- Over 13,000 anatomical entity annotations\n- 1,212 biomedical documents from PubMed\n- Comprehensive anatomical coverage (cells to organs)\n- Manual expert annotation\n- Useful for biomedical text mining\n\n## Evaluation Notes\n\n- Default configuration uses **5-shot** evaluation\n- Metrics: Precision, Recall, F1-Score, Accuracy\n- Entity types: ANATOMY (subcellular structures, cells, tissues, organs)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `anat_em` |\n| **Dataset ID** | [extraordinarylab/anat-em](https://modelscope.cn/datasets/extraordinarylab/anat-em/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `NER` |\n| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,830 |\n| Prompt Length (Mean) | 3007.08 chars |\n| Prompt Length (Min/Max) | 2861 / 3652 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"64b20a23\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nImmunostaining and confocal analysis\\n\\nOutput:\\n<response>Immunostaining and confocal analysis</response>\\n\\nInput:\\nDNA labelling and staining with 5 - bromo - 2 ' - deoxyuridine ( BrdU  ... [TRUNCATED] ... Do not include explanations, just the tagged text.\\n6. If entity spans overlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\n( a ) Schematic drawing of the magnetic tweezers .\\n\"\n    }\n  ],\n  \"target\": \"<response>( a ) Schematic drawing of the magnetic tweezers .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"(\",\n      \"a\",\n      \")\",\n      \"Schematic\",\n      \"drawing\",\n      \"of\",\n      \"the\",\n      \"magnetic\",\n      \"tweezers\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets anat_em \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['anat_em'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# AnatEM\n\n\n## 概述\n\nAnatEM 语料库是一个用于解剖学实体识别的丰富资源，通过扩展和整合先前的语料库构建而成。该语料库包含来自 1,212 篇生物医学文献的超过 13,000 个标注，专注于识别从亚细胞组分到器官系统的各类解剖结构。\n\n## 任务描述\n\n- **任务类型**：生物医学命名实体识别（NER）\n- **输入**：来自 PubMed 摘要的生物医学文本\n- **输出**：识别出的解剖学实体片段及其类型\n- **领域**：解剖学、生物医学文献\n\n## 主要特点\n\n- 超过 13,000 个解剖学实体标注\n- 来自 PubMed 的 1,212 篇生物医学文献\n- 全面覆盖解剖结构（从细胞到器官）\n- 由专家人工标注\n- 适用于生物医学文本挖掘\n\n## 评估说明\n\n- 默认配置使用 **5-shot** 评估\n- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）\n- 实体类型：ANATOMY（包括亚细胞结构、细胞、组织、器官）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `anat_em` |\n| **数据集 ID** | [extraordinarylab/anat-em](https://modelscope.cn/datasets/extraordinarylab/anat-em/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `NER` |\n| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |\n| **默认示例数量** | 5-shot |\n| **评估划分** | `test` |\n| **训练划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,830 |\n| 提示词长度（平均） | 3007.08 字符 |\n| 提示词长度（最小/最大） | 2861 / 3652 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"64b20a23\",\n      \"content\": \"Here are some examples of named entity recognition:\\n\\nInput:\\nImmunostaining and confocal analysis\\n\\nOutput:\\n<response>Immunostaining and confocal analysis</response>\\n\\nInput:\\nDNA labelling and staining with 5 - bromo - 2 ' - deoxyuridine ( BrdU  ... [TRUNCATED] ... Do not include explanations, just the tagged text.\\n6. If entity spans overlap, choose the most specific entity type.\\n7. Ensure every opening tag has a matching closing tag.\\n\\nText to process:\\n( a ) Schematic drawing of the magnetic tweezers .\\n\"\n    }\n  ],\n  \"target\": \"<response>( a ) Schematic drawing of the magnetic tweezers .</response>\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"tokens\": [\n      \"(\",\n      \"a\",\n      \")\",\n      \"Schematic\",\n      \"drawing\",\n      \"of\",\n      \"the\",\n      \"magnetic\",\n      \"tweezers\",\n      \".\"\n    ],\n    \"ner_tags\": [\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\",\n      \"O\"\n    ]\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n<details>\n<summary>少样本（Few-shot）模板</summary>\n\n```text\nHere are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets anat_em \\\n    --limit 10  # 正式评估时请移除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['anat_em'],\n    limit=10,  # 正式评估时请移除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "4ff685d0a99ed24b4413e0ffdde503b1",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.334291",
+  "translation_updated_at": "2026-01-28T15:56:15Z"
+}

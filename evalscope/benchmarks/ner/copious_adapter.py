@@ -3,11 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'Copious corpus is a gold standard corpus that covers a wide range of biodiversity '
-    'entities, consisting of 668 documents downloaded from the Biodiversity Heritage '
-    'Library with over 26K sentences and more than 28K entities.'
-)
+DESCRIPTION = """
+## Overview
+
+Copious corpus is a gold standard corpus for biodiversity entity recognition, consisting of 668 documents downloaded from the Biodiversity Heritage Library with over 26K sentences and more than 28K entities covering taxonomic and ecological information.
+
+## Task Description
+
+- **Task Type**: Biodiversity Named Entity Recognition (NER)
+- **Input**: Biodiversity literature text
+- **Output**: Identified biodiversity entity spans
+- **Domain**: Biodiversity, ecology, taxonomy
+
+## Key Features
+
+- 668 documents from Biodiversity Heritage Library
+- Over 26,000 sentences
+- More than 28,000 entity annotations
+- Five biodiversity-specific entity types
+- Gold standard for biodiversity NLP
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: TAXON, GEOGRAPHICAL_LOCATION, HABITAT, PERSON, TEMPORAL_EXPRESSION
+"""
 
 
 @register_benchmark(

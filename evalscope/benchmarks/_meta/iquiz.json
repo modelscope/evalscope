@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "pretty_name": "IQuiz",
+    "dataset_id": "AI-ModelScope/IQuiz",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "Chinese"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "IQ",
+      "EQ"
+    ],
+    "description": "\n## Overview\n\nIQuiz is a Chinese benchmark for evaluating AI models on intelligence quotient (IQ) and emotional quotient (EQ) questions. It tests logical reasoning, pattern recognition, and social-emotional understanding through multiple-choice questions.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Question Answering\n- **Input**: Question in Chinese with multiple choice options\n- **Output**: Selected answer with explanation (Chain-of-Thought)\n- **Language**: Chinese\n\n## Key Features\n\n- Dual evaluation of IQ and EQ capabilities\n- Chinese-language cognitive assessment\n- Multiple difficulty levels\n- Requires explanation alongside answer selection\n- Tests logical reasoning and emotional understanding\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **Accuracy**\n- Subsets: **IQ** (logical reasoning) and **EQ** (emotional intelligence)\n- Uses Chinese Chain-of-Thought prompt template\n- Evaluates on **test** split\n- Metadata includes difficulty level information\n",
+    "prompt_template": "回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。请在回答前进行一步步思考。\n\n问题：{question}\n选项：\n{choices}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 120,
+    "subset_stats": [
+      {
+        "name": "IQ",
+        "sample_count": 40,
+        "prompt_length_mean": 194.5,
+        "prompt_length_min": 146,
+        "prompt_length_max": 323,
+        "prompt_length_std": 46.05,
+        "target_length_mean": 1
+      },
+      {
+        "name": "EQ",
+        "sample_count": 80,
+        "prompt_length_mean": 275.21,
+        "prompt_length_min": 219,
+        "prompt_length_max": 394,
+        "prompt_length_std": 38.9,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 248.31,
+      "min": 146,
+      "max": 394,
+      "std": 56.21
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-01-28T11:13:57.612834"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "748f2700",
+          "content": "回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 A,B,C,D 中的一个。请在回答前进行一步步思考。\n\n问题：天气预报说本周星期三会下雨，昨天果然下雨了，今天星期几？\n选项：\nA) 星期一\nB) 星期二\nC) 星期三\nD) 星期四\n"
+        }
+      ],
+      "choices": [
+        "星期一",
+        "星期二",
+        "星期三",
+        "星期四"
+      ],
+      "target": "D",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "level": 1
+      }
+    },
+    "subset": "IQ",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# IQuiz\n\n\n## Overview\n\nIQuiz is a Chinese benchmark for evaluating AI models on intelligence quotient (IQ) and emotional quotient (EQ) questions. It tests logical reasoning, pattern recognition, and social-emotional understanding through multiple-choice questions.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Question Answering\n- **Input**: Question in Chinese with multiple choice options\n- **Output**: Selected answer with explanation (Chain-of-Thought)\n- **Language**: Chinese\n\n## Key Features\n\n- Dual evaluation of IQ and EQ capabilities\n- Chinese-language cognitive assessment\n- Multiple difficulty levels\n- Requires explanation alongside answer selection\n- Tests logical reasoning and emotional understanding\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **Accuracy**\n- Subsets: **IQ** (logical reasoning) and **EQ** (emotional intelligence)\n- Uses Chinese Chain-of-Thought prompt template\n- Evaluates on **test** split\n- Metadata includes difficulty level information\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `iquiz` |\n| **Dataset ID** | [AI-ModelScope/IQuiz](https://modelscope.cn/datasets/AI-ModelScope/IQuiz/summary) |\n| **Paper** | N/A |\n| **Tags** | `Chinese`, `Knowledge`, `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 120 |\n| Prompt Length (Mean) | 248.31 chars |\n| Prompt Length (Min/Max) | 146 / 394 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `IQ` | 40 | 194.5 | 146 | 323 |\n| `EQ` | 80 | 275.21 | 219 | 394 |\n\n## Sample Example\n\n**Subset**: `IQ`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"748f2700\",\n      \"content\": \"回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式：\\\"答案：[LETTER]\\\"（不带引号），其中 [LETTER] 是 A,B,C,D 中的一个。请在回答前进行一步步思考。\\n\\n问题：天气预报说本周星期三会下雨，昨天果然下雨了，今天星期几？\\n选项：\\nA) 星期一\\nB) 星期二\\nC) 星期三\\nD) 星期四\\n\"\n    }\n  ],\n  \"choices\": [\n    \"星期一\",\n    \"星期二\",\n    \"星期三\",\n    \"星期四\"\n  ],\n  \"target\": \"D\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"level\": 1\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。请在回答前进行一步步思考。\n\n问题：{question}\n选项：\n{choices}\n\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets iquiz \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['iquiz'],\n    dataset_args={\n        'iquiz': {\n            # subset_list: ['IQ', 'EQ']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# IQuiz\n\n## 概述\n\nIQuiz 是一个中文基准测试，用于评估 AI 模型在智商（IQ）和情商（EQ）问题上的表现。它通过多项选择题来测试逻辑推理、模式识别以及社会情感理解能力。\n\n## 任务描述\n\n- **任务类型**：多项选择题问答\n- **输入**：中文问题及多个选项\n- **输出**：所选答案及解释（思维链，Chain-of-Thought）\n- **语言**：中文\n\n## 主要特点\n\n- 同时评估 IQ 和 EQ 能力\n- 中文认知能力测评\n- 多种难度级别\n- 要求在选择答案的同时提供解释\n- 测试逻辑推理与情感理解能力\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 主要指标：**准确率（Accuracy）**\n- 子集：**IQ**（逻辑推理）和 **EQ**（情感智能）\n- 使用中文思维链（Chain-of-Thought）提示模板\n- 在 **test** 数据划分上进行评估\n- 元数据包含难度级别信息\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `iquiz` |\n| **数据集 ID** | [AI-ModelScope/IQuiz](https://modelscope.cn/datasets/AI-ModelScope/IQuiz/summary) |\n| **论文** | N/A |\n| **标签** | `Chinese`, `Knowledge`, `MCQ` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估数据划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 120 |\n| 提示词长度（平均） | 248.31 字符 |\n| 提示词长度（最小/最大） | 146 / 394 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `IQ` | 40 | 194.5 | 146 | 323 |\n| `EQ` | 80 | 275.21 | 219 | 394 |\n\n## 样例示例\n\n**子集**: `IQ`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"748f2700\",\n      \"content\": \"回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式：\\\"答案：[LETTER]\\\"（不带引号），其中 [LETTER] 是 A,B,C,D 中的一个。请在回答前进行一步步思考。\\n\\n问题：天气预报说本周星期三会下雨，昨天果然下雨了，今天星期几？\\n选项：\\nA) 星期一\\nB) 星期二\\nC) 星期三\\nD) 星期四\\n\"\n    }\n  ],\n  \"choices\": [\n    \"星期一\",\n    \"星期二\",\n    \"星期三\",\n    \"星期四\"\n  ],\n  \"target\": \"D\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"level\": 1\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。请在回答前进行一步步思考。\n\n问题：{question}\n选项：\n{choices}\n\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets iquiz \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['iquiz'],\n    dataset_args={\n        'iquiz': {\n            # subset_list: ['IQ', 'EQ']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "28cd32de00c105530b9528a26a840594",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.263903",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

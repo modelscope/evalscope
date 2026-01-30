@@ -1,0 +1,333 @@
+{
+  "meta": {
+    "pretty_name": "MathVerse",
+    "dataset_id": "evalscope/MathVerse",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning",
+      "MCQ",
+      "MultiModal"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "testmini",
+    "train_split": "",
+    "subset_list": [
+      "Text Dominant",
+      "Text Lite",
+      "Vision Intensive",
+      "Vision Dominant",
+      "Vision Only"
+    ],
+    "description": "\n## Overview\n\nMathVerse is an all-around visual math benchmark designed for equitable and in-depth evaluation of Multimodal Large Language Models (MLLMs). It contains 2,612 high-quality, multi-subject math problems with diagrams, transformed into 15K test samples across varying information modalities.\n\n## Task Description\n\n- **Task Type**: Visual Mathematical Reasoning\n- **Input**: Math problem with diagram + question (multi-choice or free-form)\n- **Output**: Answer (letter for multi-choice, numerical/expression for free-form)\n- **Domains**: Multi-subject mathematics with visual diagrams\n\n## Key Features\n\n- 2,612 problems transformed into 6 versions each (15K total samples)\n- Tests whether MLLMs truly understand visual diagrams for math reasoning\n- Problem versions vary by visual information dependency:\n  - **Text Dominant**: Most info in text\n  - **Text Lite**: Balanced text/visual\n  - **Vision Intensive**: More visual reliance\n  - **Vision Dominant**: Primarily visual\n  - **Vision Only**: All info in diagram\n- Supports both multiple-choice and free-form answers\n\n## Evaluation Notes\n\n- Default evaluation uses the **testmini** split\n- Primary metric: **Accuracy** with numeric comparison\n- Free-form answers use \\boxed{} format\n- Uses LLM judge for answer verification\n- Results reported per problem version for detailed analysis\n",
+    "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 3940,
+    "subset_stats": [
+      {
+        "name": "Text Dominant",
+        "sample_count": 788,
+        "prompt_length_mean": 369.63,
+        "prompt_length_min": 122,
+        "prompt_length_max": 1535,
+        "prompt_length_std": 145.84,
+        "target_length_mean": 8.98,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 788,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1004x696",
+              "100x125",
+              "100x135",
+              "101x101",
+              "101x127",
+              "101x204",
+              "102x108",
+              "102x112",
+              "103x111",
+              "103x113"
+            ],
+            "resolution_range": {
+              "min": "63x70",
+              "max": "1270x1016"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Text Lite",
+        "sample_count": 788,
+        "prompt_length_mean": 294.77,
+        "prompt_length_min": 78,
+        "prompt_length_max": 1397,
+        "prompt_length_std": 138.98,
+        "target_length_mean": 8.98,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 788,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1004x696",
+              "100x125",
+              "100x135",
+              "101x101",
+              "101x127",
+              "101x204",
+              "102x108",
+              "102x112",
+              "103x111",
+              "103x113"
+            ],
+            "resolution_range": {
+              "min": "63x70",
+              "max": "1270x1016"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Vision Intensive",
+        "sample_count": 788,
+        "prompt_length_mean": 280.39,
+        "prompt_length_min": 78,
+        "prompt_length_max": 1350,
+        "prompt_length_std": 134.11,
+        "target_length_mean": 8.98,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 788,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1004x696",
+              "100x125",
+              "100x135",
+              "101x101",
+              "101x127",
+              "101x204",
+              "102x108",
+              "102x112",
+              "103x111",
+              "103x113"
+            ],
+            "resolution_range": {
+              "min": "63x70",
+              "max": "1270x1016"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Vision Dominant",
+        "sample_count": 788,
+        "prompt_length_mean": 272.11,
+        "prompt_length_min": 78,
+        "prompt_length_max": 1356,
+        "prompt_length_std": 130.59,
+        "target_length_mean": 8.98,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 788,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1015",
+              "1000x706",
+              "1000x892",
+              "1005x960",
+              "1009x1035",
+              "101x204",
+              "1030x888",
+              "1038x969",
+              "1041x395",
+              "1041x970"
+            ],
+            "resolution_range": {
+              "min": "138x81",
+              "max": "3636x1832"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Vision Only",
+        "sample_count": 788,
+        "prompt_length_mean": 154.1,
+        "prompt_length_min": 70,
+        "prompt_length_max": 222,
+        "prompt_length_std": 75.61,
+        "target_length_mean": 8.98,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 788,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1002x896",
+              "1002x912",
+              "1003x911",
+              "1006x513",
+              "1011x663",
+              "1011x988",
+              "1012x750",
+              "1014x912",
+              "1019x396",
+              "1019x927"
+            ],
+            "resolution_range": {
+              "min": "647x388",
+              "max": "6840x3549"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 274.2,
+      "min": 70,
+      "max": 1535,
+      "std": 145.1
+    },
+    "target_length_mean": 8.98,
+    "computed_at": "2026-01-28T11:14:32.066877",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 3940,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1000x1015",
+          "1000x706",
+          "1000x892",
+          "1002x896",
+          "1002x912",
+          "1003x911",
+          "1004x696",
+          "1005x960",
+          "1006x513",
+          "1009x1035"
+        ],
+        "resolution_range": {
+          "min": "63x70",
+          "max": "6840x3549"
+        },
+        "formats": [
+          "jpeg",
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "a3189330",
+          "content": [
+            {
+              "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.\n\nAs shown in the figure, in triangle ABC, it is known that angle A = 80.0, angle B = 60.0, point D is on AB and point E is on AC, DE parallel BC, then the size of angle CED is ()\nChoices:\nA:40°\nB:60°\nC:120°\nD:140°"
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~1.6KB]"
+            }
+          ]
+        }
+      ],
+      "target": "D",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "Text Dominant",
+      "metadata": {
+        "sample_index": "1",
+        "problem_index": "1",
+        "problem_version": "Text Dominant",
+        "question_type": "multi-choice",
+        "query_wo": "Please directly answer the question and provide the correct option letter, e.g., A, B, C, D.\nQuestion: As shown in the figure, in triangle ABC, it is known that angle A = 80.0, angle B = 60.0, point D is on AB and point E is on AC, DE parallel BC, then the size of angle CED is ()\nChoices:\nA:40°\nB:60°\nC:120°\nD:140°",
+        "query_cot": "Please first conduct reasoning, and then answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: As shown in the figure, in triangle ABC, it is known that angle A = 80.0, angle B = 60.0, point D is on AB and point E is on AC, DE parallel BC, then the size of angle CED is ()\nChoices:\nA:40°\nB:60°\nC:120°\nD:140°",
+        "question_for_eval": "As shown in the figure, in triangle ABC, it is known that angle A = 80.0, angle B = 60.0, point D is on AB and point E is on AC, DE parallel BC, then the size of angle CED is ()\nChoices:\nA:40°\nB:60°\nC:120°\nD:140°"
+      }
+    },
+    "subset": "Text Dominant",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MathVerse\n\n\n## Overview\n\nMathVerse is an all-around visual math benchmark designed for equitable and in-depth evaluation of Multimodal Large Language Models (MLLMs). It contains 2,612 high-quality, multi-subject math problems with diagrams, transformed into 15K test samples across varying information modalities.\n\n## Task Description\n\n- **Task Type**: Visual Mathematical Reasoning\n- **Input**: Math problem with diagram + question (multi-choice or free-form)\n- **Output**: Answer (letter for multi-choice, numerical/expression for free-form)\n- **Domains**: Multi-subject mathematics with visual diagrams\n\n## Key Features\n\n- 2,612 problems transformed into 6 versions each (15K total samples)\n- Tests whether MLLMs truly understand visual diagrams for math reasoning\n- Problem versions vary by visual information dependency:\n  - **Text Dominant**: Most info in text\n  - **Text Lite**: Balanced text/visual\n  - **Vision Intensive**: More visual reliance\n  - **Vision Dominant**: Primarily visual\n  - **Vision Only**: All info in diagram\n- Supports both multiple-choice and free-form answers\n\n## Evaluation Notes\n\n- Default evaluation uses the **testmini** split\n- Primary metric: **Accuracy** with numeric comparison\n- Free-form answers use \\boxed{} format\n- Uses LLM judge for answer verification\n- Results reported per problem version for detailed analysis\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `math_verse` |\n| **Dataset ID** | [evalscope/MathVerse](https://modelscope.cn/datasets/evalscope/MathVerse/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `Math`, `MultiModal`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `testmini` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,940 |\n| Prompt Length (Mean) | 274.2 chars |\n| Prompt Length (Min/Max) | 70 / 1535 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Text Dominant` | 788 | 369.63 | 122 | 1535 |\n| `Text Lite` | 788 | 294.77 | 78 | 1397 |\n| `Vision Intensive` | 788 | 280.39 | 78 | 1350 |\n| `Vision Dominant` | 788 | 272.11 | 78 | 1356 |\n| `Vision Only` | 788 | 154.1 | 70 | 222 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 3,940 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 63x70 - 6840x3549 |\n| Formats | jpeg, png |\n\n\n## Sample Example\n\n**Subset**: `Text Dominant`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a3189330\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.\\n\\nAs shown in the figure, in triangle ABC, it is known that angle A = 80.0, angle B = 60.0, point D is on AB and point E is on AC, DE parallel BC, then the size of angle CED is ()\\nChoices:\\nA:40°\\nB:60°\\nC:120°\\nD:140°\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~1.6KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"D\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Text Dominant\",\n  \"metadata\": {\n    \"sample_index\": \"1\",\n    \"problem_index\": \"1\",\n    \"problem_version\": \"Text Dominant\",\n    \"question_type\": \"multi-choice\",\n    \"query_wo\": \"Please directly answer the question and provide the correct option letter, e.g., A, B, C, D.\\nQuestion: As shown in the figure, in triangle ABC, it is known that angle A = 80.0, angle B = 60.0, point D is on AB and point E is on AC, DE parallel BC, then the size of angle CED is ()\\nChoices:\\nA:40°\\nB:60°\\nC:120°\\nD:140°\",\n    \"query_cot\": \"Please first conduct reasoning, and then answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\\nQuestion: As shown in the figure, in triangle ABC, it is known that angle A = 80.0, angle B = 60.0, point D is on AB and point E is on AC, DE parallel BC, then the size of angle CED is ()\\nChoices:\\nA:40°\\nB:60°\\nC:120°\\nD:140°\",\n    \"question_for_eval\": \"As shown in the figure, in triangle ABC, it is known that angle A = 80.0, angle B = 60.0, point D is on AB and point E is on AC, DE parallel BC, then the size of angle CED is ()\\nChoices:\\nA:40°\\nB:60°\\nC:120°\\nD:140°\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets math_verse \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['math_verse'],\n    dataset_args={\n        'math_verse': {\n            # subset_list: ['Text Dominant', 'Text Lite', 'Vision Intensive']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MathVerse\n\n## 概述\n\nMathVerse 是一个全面的视觉数学基准测试，旨在对多模态大语言模型（MLLMs）进行公平且深入的评估。它包含 2,612 道高质量、多学科的带图数学题，并根据不同信息模态转换为 15K 个测试样本。\n\n## 任务描述\n\n- **任务类型**：视觉数学推理\n- **输入**：带图的数学问题 + 问题（多选题或自由作答）\n- **输出**：答案（多选题为选项字母，自由作答为数值或表达式）\n- **领域**：带视觉图表的多学科数学\n\n## 核心特性\n\n- 2,612 道题目，每道题生成 6 个版本（共 15K 个样本）\n- 测试 MLLM 是否真正理解用于数学推理的视觉图表\n- 题目版本根据对视觉信息的依赖程度划分：\n  - **Text Dominant（文本主导）**：大部分信息在文本中\n  - **Text Lite（文本轻量）**：文本与视觉信息均衡\n  - **Vision Intensive（视觉密集）**：更依赖视觉信息\n  - **Vision Dominant（视觉主导）**：主要依赖视觉信息\n  - **Vision Only（纯视觉）**：所有信息均在图表中\n- 支持多选题和自由作答两种形式\n\n## 评估说明\n\n- 默认评估使用 **testmini** 划分\n- 主要指标：**准确率（Accuracy）**，采用数值比较\n- 自由作答答案使用 \\boxed{} 格式\n- 使用 LLM 作为裁判进行答案验证\n- 按题目版本分别报告结果，便于深入分析\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `math_verse` |\n| **数据集ID** | [evalscope/MathVerse](https://modelscope.cn/datasets/evalscope/MathVerse/summary) |\n| **论文** | N/A |\n| **标签** | `MCQ`, `Math`, `MultiModal`, `Reasoning` |\n| **指标** | `acc` |\n| **默认提示数量** | 0-shot |\n| **评估划分** | `testmini` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,940 |\n| 提示词长度（平均） | 274.2 字符 |\n| 提示词长度（最小/最大） | 70 / 1535 字符 |\n\n**各子集统计：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Text Dominant` | 788 | 369.63 | 122 | 1535 |\n| `Text Lite` | 788 | 294.77 | 78 | 1397 |\n| `Vision Intensive` | 788 | 280.39 | 78 | 1350 |\n| `Vision Dominant` | 788 | 272.11 | 78 | 1356 |\n| `Vision Only` | 788 | 154.1 | 70 | 222 |\n\n**图像统计：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 3,940 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 63x70 - 6840x3549 |\n| 格式 | jpeg, png |\n\n## 样例示例\n\n**子集**: `Text Dominant`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a3189330\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.\\n\\nAs shown in the figure, in triangle ABC, it is known that angle A = 80.0, angle B = 60.0, point D is on AB and point E is on AC, DE parallel BC, then the size of angle CED is ()\\nChoices:\\nA:40°\\nB:60°\\nC:120°\\nD:140°\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~1.6KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"D\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Text Dominant\",\n  \"metadata\": {\n    \"sample_index\": \"1\",\n    \"problem_index\": \"1\",\n    \"problem_version\": \"Text Dominant\",\n    \"question_type\": \"multi-choice\",\n    \"query_wo\": \"Please directly answer the question and provide the correct option letter, e.g., A, B, C, D.\\nQuestion: As shown in the figure, in triangle ABC, it is known that angle A = 80.0, angle B = 60.0, point D is on AB and point E is on AC, DE parallel BC, then the size of angle CED is ()\\nChoices:\\nA:40°\\nB:60°\\nC:120°\\nD:140°\",\n    \"query_cot\": \"Please first conduct reasoning, and then answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\\nQuestion: As shown in the figure, in triangle ABC, it is known that angle A = 80.0, angle B = 60.0, point D is on AB and point E is on AC, DE parallel BC, then the size of angle CED is ()\\nChoices:\\nA:40°\\nB:60°\\nC:120°\\nD:140°\",\n    \"question_for_eval\": \"As shown in the figure, in triangle ABC, it is known that angle A = 80.0, angle B = 60.0, point D is on AB and point E is on AC, DE parallel BC, then the size of angle CED is ()\\nChoices:\\nA:40°\\nB:60°\\nC:120°\\nD:140°\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets math_verse \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['math_verse'],\n    dataset_args={\n        'math_verse': {\n            # subset_list: ['Text Dominant', 'Text Lite', 'Vision Intensive']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "ce840c991bdc7de71ae101b22cbb79c3",
+    "needs_translation": false
+  },
+  "updated_at": "2026-01-28T17:31:32.274414",
+  "translation_updated_at": "2026-01-28T16:09:53Z"
+}

@@ -19,8 +19,34 @@ logger = get_logger()
         name='multiple_mbpp',
         pretty_name='MultiPL-E MBPP',
         tags=[Tags.CODING],
-        description='This multilingual MBPP was from MultiPL-E. 18 languages were implemented and tested. '
-        '**Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',  # noqa: E501
+        description="""
+## Overview
+
+MultiPL-E MBPP is a multilingual code generation benchmark derived from MBPP (Mostly Basic Python Programming). It extends the original MBPP to 18 programming languages, enabling cross-lingual evaluation of code generation capabilities.
+
+## Task Description
+
+- **Task Type**: Multilingual Code Generation
+- **Input**: Programming problem prompt with docstring
+- **Output**: Complete code solution that passes test cases
+- **Languages**: 18 languages (C++, TypeScript, Shell, C#, Go, Java, Lua, JavaScript, PHP, Perl, Racket, R, Rust, Scala, Swift, Ruby, D, Julia)
+
+## Key Features
+
+- Multilingual evaluation across 18 programming languages
+- Execution-based evaluation with test cases
+- Supports pass@k metric for code generation
+- Docker sandbox environment for safe code execution
+- Derived from MBPP with consistent problem difficulty
+
+## Evaluation Notes
+
+- **Sandbox Required**: Requires sandbox environment for safe code execution
+- Default evaluation uses **test** split
+- Primary metric: **Accuracy** with **pass@k** aggregation
+- Timeout: 30 seconds per test case
+- See [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for setup
+""",  # noqa: E501
         dataset_id='evalscope/MultiPL-E',
         subset_list=[
             'mbpp-cpp',

@@ -17,8 +17,34 @@ logger = get_logger()
         name='race',
         pretty_name='RACE',
         tags=[Tags.REASONING, Tags.MULTIPLE_CHOICE],
-        description=
-        'RACE is a benchmark for testing reading comprehension and reasoning abilities of neural models. It is constructed from Chinese middle and high school examinations.',  # noqa: E501
+        description="""
+## Overview
+
+RACE (ReAding Comprehension from Examinations) is a large-scale reading comprehension benchmark collected from Chinese middle school and high school English examinations. It tests comprehensive reading comprehension abilities.
+
+## Task Description
+
+- **Task Type**: Reading Comprehension (Multiple-Choice)
+- **Input**: Article passage with question and 4 answer choices
+- **Output**: Correct answer letter (A, B, C, or D)
+- **Difficulty Levels**: Middle school and High school
+
+## Key Features
+
+- 28,000+ passages with 100,000 questions
+- Real examination questions for authentic difficulty
+- Two subsets: middle (easier) and high (harder)
+- Tests various comprehension skills (inference, vocabulary, main idea, etc.)
+- Diverse article topics and question types
+
+## Evaluation Notes
+
+- Default configuration uses **3-shot** examples
+- Maximum few-shot number is 3 (context length consideration)
+- Uses Chain-of-Thought (CoT) prompting
+- Two subsets available: `high` and `middle`
+- Evaluates on test split
+""",
         dataset_id='evalscope/race',
         metric_list=['acc'],
         subset_list=['high', 'middle'],
