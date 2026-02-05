@@ -60,7 +60,7 @@ The `--generation-config` parameter supports the following options (comma-separa
 --generation-config do_sample=true,temperature=0.5
 
 # JSON string format (supports more complex parameters)
---generation-config '{"do_sample":true,"temperature":0.5,"chat_template_kwargs":{"enable_thinking":false}}'
+--generation-config '{"do_sample":true,"temperature":0.5,"extra_body": {"chat_template_kwargs":{"enable_thinking": false}}}'
 ```
 
 ## Dataset Parameters

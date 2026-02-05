@@ -60,7 +60,7 @@
 --generation-config do_sample=true,temperature=0.5
 
 # JSON字符串形式（支持更复杂参数）
---generation-config '{"do_sample":true,"temperature":0.5,"chat_template_kwargs":{"enable_thinking":false}}'
+--generation-config '{"do_sample":true,"temperature":0.5,"extra_body": {"chat_template_kwargs":{"enable_thinking": false}}}'
 ```
 
 ## 数据集参数
