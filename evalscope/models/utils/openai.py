@@ -48,10 +48,12 @@ from evalscope.api.messages import (
 from evalscope.api.model import (
     ChatCompletionChoice,
     GenerateConfig,
+    Logprob,
     Logprobs,
     ModelOutput,
     ModelUsage,
     StopReason,
+    TopLogprob,
     as_stop_reason,
 )
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, parse_tool_call
@@ -157,6 +159,42 @@ def openai_chat_messages(
     return [openai_chat_message(message, system_role) for message in messages]
 
 
+def _get_attr(obj: Any, key: str, default: Any = None) -> Any:
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
+
+def openai_prompt_from_messages(messages: List[ChatMessage]) -> str:
+    """Convert chat messages into a plain-text prompt for text completion endpoints."""
+    if not messages:
+        return ''
+
+    # Preserve simple single-turn prompts as-is.
+    if len(messages) == 1 and messages[0].role == 'user' and isinstance(messages[0].content, str):
+        return messages[0].content
+
+    parts: List[str] = []
+    for message in messages:
+        # Completion endpoints only support text content.
+        if isinstance(message.content, list):
+            for content in message.content:
+                if content.type not in ('text', 'reasoning'):
+                    raise ValueError('Completion endpoint only supports text content.')
+            content_text = message.text
+        else:
+            content_text = message.content
+
+        role = message.role.capitalize()
+        parts.append(f'{role}: {content_text}')
+
+    # Add a cue for the assistant if the last message isn't an assistant reply.
+    if messages[-1].role != 'assistant':
+        parts.append('Assistant:')
+
+    return '\n\n'.join([part for part in parts if str(part).strip() != ''])
+
+
 def openai_completion_params(model: str, config: GenerateConfig, tools: bool) -> Dict[str, Any]:
     params: Dict[str, Any] = dict(model=model)
     # handle stream option
@@ -216,6 +254,51 @@ def openai_completion_params(model: str, config: GenerateConfig, tools: bool) ->
     return params
 
 
+def _completion_logprobs_to_model(logprobs_data: Any) -> Optional[Logprobs]:
+    if not logprobs_data:
+        return None
+
+    if hasattr(logprobs_data, 'model_dump'):
+        logprobs_data = logprobs_data.model_dump()
+    elif not isinstance(logprobs_data, dict):
+        logprobs_data = {
+            'tokens': _get_attr(logprobs_data, 'tokens'),
+            'token_logprobs': _get_attr(logprobs_data, 'token_logprobs'),
+            'top_logprobs': _get_attr(logprobs_data, 'top_logprobs'),
+        }
+
+    tokens = logprobs_data.get('tokens') or []
+    token_logprobs = logprobs_data.get('token_logprobs') or []
+    top_logprobs = logprobs_data.get('top_logprobs') or []
+
+    if not tokens or not token_logprobs:
+        return None
+
+    content: List[Logprob] = []
+    for idx, token in enumerate(tokens):
+        if idx >= len(token_logprobs):
+            continue
+        logprob_value = token_logprobs[idx]
+        if logprob_value is None:
+            continue
+
+        top_logprobs_list: Optional[List[TopLogprob]] = None
+        if isinstance(top_logprobs, list) and idx < len(top_logprobs) and isinstance(top_logprobs[idx], dict):
+            top_logprobs_list = [
+                TopLogprob(token=tok, logprob=val) for tok, val in top_logprobs[idx].items()
+            ]
+
+        content.append(
+            Logprob(
+                token=token,
+                logprob=float(logprob_value),
+                top_logprobs=top_logprobs_list,
+            )
+        )
+
+    return Logprobs(content=content) if content else None
+
+
 def openai_assistant_content(message: ChatMessageAssistant, include_reasoning=True) -> str:
     # In agent bridge scenarios, we could encounter concepts such as reasoning and
     # .internal use in the ChatMessageAssistant that are not supported by the OpenAI
@@ -269,6 +352,29 @@ def openai_chat_choices(choices: List[ChatCompletionChoice], include_reasoning: 
         )
 
     return oai_choices
+
+
+def completion_choices_from_openai(response: Any) -> List[ChatCompletionChoice]:
+    choices = list(_get_attr(response, 'choices', []))
+    choices.sort(key=lambda c: _get_attr(c, 'index', 0))
+
+    model_name = _get_attr(response, 'model', '')
+
+    completion_choices: List[ChatCompletionChoice] = []
+    for choice in choices:
+        text = _get_attr(choice, 'text', '') or ''
+        finish_reason = _get_attr(choice, 'finish_reason', None)
+        logprobs = _completion_logprobs_to_model(_get_attr(choice, 'logprobs', None))
+
+        completion_choices.append(
+            ChatCompletionChoice(
+                message=ChatMessageAssistant(content=text, model=model_name, source='generate'),
+                stop_reason=as_stop_reason(finish_reason),
+                logprobs=logprobs,
+            )
+        )
+
+    return completion_choices
 
 
 def openai_completion_usage(usage: ModelUsage) -> CompletionUsage:
@@ -530,6 +636,40 @@ def model_output_from_openai(
     )
 
 
+def model_output_from_openai_completion(
+    completion: Any,
+    choices: list[ChatCompletionChoice],
+) -> ModelOutput:
+    usage_data = _get_attr(completion, 'usage', None)
+    usage: Optional[ModelUsage] = None
+    if usage_data is not None:
+        if hasattr(usage_data, 'model_dump'):
+            usage_data = usage_data.model_dump(exclude_none=True)
+        if isinstance(usage_data, dict):
+            prompt_tokens = usage_data.get('prompt_tokens', 0) or 0
+            completion_tokens = usage_data.get('completion_tokens', 0) or 0
+            total_tokens = usage_data.get('total_tokens')
+        else:
+            prompt_tokens = _get_attr(usage_data, 'prompt_tokens', 0) or 0
+            completion_tokens = _get_attr(usage_data, 'completion_tokens', 0) or 0
+            total_tokens = _get_attr(usage_data, 'total_tokens', None)
+
+        if total_tokens is None:
+            total_tokens = prompt_tokens + completion_tokens
+
+        usage = ModelUsage(
+            input_tokens=prompt_tokens,
+            output_tokens=completion_tokens,
+            total_tokens=total_tokens,
+        )
+
+    return ModelOutput(
+        model=_get_attr(completion, 'model', ''),
+        choices=choices,
+        usage=usage,
+    )
+
+
 def chat_choices_from_openai(response: ChatCompletion, tools: List[ToolInfo]) -> List[ChatCompletionChoice]:
     choices = list(response.choices)
     choices.sort(key=lambda c: c.index)
@@ -567,6 +707,65 @@ def openai_handle_bad_request(model_name: str, e: APIStatusError) -> Union[Model
         return ModelOutput.from_content(model=model_name, content=content, stop_reason=stop_reason)
     else:
         raise e
+
+
+def collect_text_stream_response(response_stream: Any) -> Dict[str, Any]:
+    collected_chunks: List[Any] = []
+    collected_text = defaultdict(list)
+    last_usage: Optional[Any] = None
+
+    for chunk in response_stream:
+        if chunk in ('[DONE]', b'[DONE]'):
+            continue
+        collected_chunks.append(chunk)
+
+        for choice in _get_attr(chunk, 'choices', []) or []:
+            index = _get_attr(choice, 'index', 0)
+            text = _get_attr(choice, 'text', None)
+            if text is None:
+                delta = _get_attr(choice, 'delta', None)
+                text = _get_attr(delta, 'content', None) or _get_attr(delta, 'text', None)
+            if text:
+                collected_text[index].append(text)
+
+        usage = _get_attr(chunk, 'usage', None)
+        if usage:
+            last_usage = usage
+
+    if not collected_chunks:
+        return dict(model='', choices=[], usage=last_usage)
+
+    choices = []
+    for index, chunks in collected_text.items():
+        finish_reason = None
+        for chunk in reversed(collected_chunks):
+            for choice in _get_attr(chunk, 'choices', []) or []:
+                if _get_attr(choice, 'index', None) == index:
+                    finish_reason = _get_attr(choice, 'finish_reason', None)
+                    if finish_reason:
+                        break
+            if finish_reason:
+                break
+
+        choices.append(
+            dict(
+                index=index,
+                text=''.join(chunks),
+                finish_reason=finish_reason or 'stop',
+                logprobs=None,
+            )
+        )
+
+    choices.sort(key=lambda c: c.get('index', 0))
+
+    return dict(
+        id=_get_attr(collected_chunks[0], 'id', None),
+        choices=choices,
+        created=_get_attr(collected_chunks[0], 'created', None),
+        model=_get_attr(collected_chunks[0], 'model', ''),
+        object='text_completion',
+        usage=last_usage,
+    )
 
 
 def openai_media_filter(key: Optional[JsonValue], value: JsonValue) -> JsonValue:
