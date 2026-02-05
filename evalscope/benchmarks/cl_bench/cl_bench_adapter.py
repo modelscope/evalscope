@@ -1,8 +1,9 @@
 # align with official CL-bench eval.py(https://github.com/Tencent-Hunyuan/CL-bench/blob/main/eval.py)
 import json
-from typing import Any, Dict, List 
+from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import dict_to_chat_message
@@ -13,6 +14,7 @@ from evalscope.utils.logger import get_logger
 from .utils import build_rubrics_text, extract_json_block
 
 logger = get_logger()
+
 
 @register_benchmark(
     BenchmarkMeta(
@@ -118,7 +120,7 @@ class CLBenchAdapter(DefaultDataAdapter):
             '  "Overall Score": 0 or 1\n'
             '}\n'
         )
-        messages = [{'role': 'user', 'content': grading_prompt}]
+        messages = [ChatMessageUser(content=grading_prompt)]
 
         judge_response = self.llm_judge.judge(messages=messages)
 
