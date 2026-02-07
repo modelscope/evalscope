@@ -27,19 +27,19 @@ class TestNativeBenchmark(TestBenchmark):
             'eval_batch_size': 5,
             'limit': 5,
             'generation_config': {
-                'max_tokens': 4096,
+                # 'max_tokens': 4096,
                 'temperature': 0.7,
                 'parallel_tool_calls': True
             },
             'judge_strategy': JudgeStrategy.AUTO,
             'judge_worker_num': 5,
             'judge_model_args': {
-                'model_id': 'qwen3-235b-a22b',
+                'model_id': 'qwen3-max',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
                     'temperature': 0.0,
-                    'max_tokens': 4096,
+                    # 'max_tokens': 4096,
                     'extra_body': {'enable_thinking': False}
                 }
             },
@@ -727,6 +727,12 @@ class TestNativeBenchmark(TestBenchmark):
             'few_shot_num': 0,
         }
         self._run_dataset_test('hmmt25', dataset_args, limit=10)
+
+    def test_cl_bench(self):
+        """Test CL-bench dataset."""
+        dataset_args = {
+        }
+        self._run_dataset_test('cl_bench', dataset_args, limit=10)
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k

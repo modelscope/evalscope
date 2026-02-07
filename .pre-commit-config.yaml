@@ -44,7 +44,7 @@ repos:
       - id: requirements-txt-fixer
         exclude: thirdparty/|docs/|examples
       - id: double-quote-string-fixer
-        exclude: thirdparty/|docs/|examples
+        exclude: thirdparty/|docs/|examples|.*\.json|cl_bench_adapter.py
       - id: check-merge-conflict
         exclude: thirdparty/|docs/|examples
       - id: mixed-line-ending
