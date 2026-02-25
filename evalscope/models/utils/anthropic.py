@@ -466,7 +466,9 @@ def collect_stream_response(response_stream: Any) -> Message:
         if isinstance(event, MessageStartEvent):
             message_id = event.message.id
             model = event.message.model
-            role = event.message.role
+            # Only update role if it's not None
+            if event.message.role is not None:
+                role = event.message.role
             if event.message.usage:
                 usage_input_tokens = event.message.usage.input_tokens
 

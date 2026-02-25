@@ -55,6 +55,10 @@ class AnthropicCompatibleAPI(ModelAPI):
         # Remove trailing slash from base_url if present
         if self.base_url:
             self.base_url = self.base_url.rstrip('/')
+            # Anthropic SDK automatically appends /v1/messages, so we need to remove /v1 suffix
+            # to avoid double /v1 in the URL (e.g., /v1/v1/messages)
+            if self.base_url.endswith('/v1'):
+                self.base_url = self.base_url[:-3]
 
         # Create Anthropic client
         client_kwargs: Dict[str, Any] = {
