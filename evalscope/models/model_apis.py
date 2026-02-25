@@ -18,6 +18,15 @@ def openai_api() -> type[ModelAPI]:
     return OpenAICompatibleAPI
 
 
+@register_model_api(name='anthropic_api')
+def anthropic_api() -> type[ModelAPI]:
+    check_import('anthropic', package='anthropic', raise_error=True, feature_name='anthropic_api')
+
+    from .anthropic_compatible import AnthropicCompatibleAPI
+
+    return AnthropicCompatibleAPI
+
+
 @register_model_api(name='server')
 @deprecated(since='1.0.0', remove_in='1.1.0', alternative='openai_api')
 def server() -> type[ModelAPI]:

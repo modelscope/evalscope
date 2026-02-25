@@ -72,6 +72,8 @@ class EvalType:
     SERVICE = 'openai_api'  # model service
     TEXT2IMAGE = 'text2image'  # image generation service
     IMAGE_EDITING = 'image_editing'  # image editing service
+    OPENAI_API = 'openai_api'
+    ANTHROPIC_API = 'anthropic_api'
 
 
 class OutputType:
