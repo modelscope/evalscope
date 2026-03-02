@@ -68,7 +68,7 @@ Whether you want to evaluate the general capabilities of models, conduct multi-m
 >
 > Version 1.0 introduces a major overhaul of the evaluation framework, establishing a new, more modular and extensible API layer under `evalscope/api`. Key improvements include standardized data models for benchmarks, samples, and results; a registry-based design for components such as benchmarks and metrics; and a rewritten core evaluator that orchestrates the new architecture. Existing benchmark adapters have been migrated to this API, resulting in cleaner, more consistent, and easier-to-maintain implementations.
 
-
+- 🔥 **[2026.03.02]** Added support for Anthropic Claude API evaluation. Use `--eval-type anthropic_api` to evaluate models via Anthropic API service.
 - 🔥 **[2026.02.03]** Comprehensive update to dataset documentation, adding data statistics, data samples, usage instructions and more. Refer to [Supported Datasets](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset/llm.html)
 - 🔥 **[2026.01.13]** Added support for Embedding and Rerank model service stress testing. Refer to the [usage documentation](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/examples.html#embedding).
 - 🔥 **[2025.12.26]** Added support for Terminal-Bench-2.0, which evaluates AI Agent performance on 89 real-world multi-step terminal tasks. Refer to the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html).
