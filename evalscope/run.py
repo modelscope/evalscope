@@ -116,6 +116,7 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     from evalscope.api.registry import get_benchmark
     from evalscope.evaluator import DefaultEvaluator
     from evalscope.report import gen_table
+    from evalscope.report.renderer import gen_markdown_report
 
     # Initialize evaluator
     eval_results = {}
@@ -153,6 +154,14 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
         logger.info(f'Overall report table: \n{report_table} \n')
     except Exception:
         logger.error('Failed to generate report table.')
+
+    # Generate model-wise markdown report if enabled
+    if getattr(task_config, 'generate_markdown_report', True):
+        try:
+            md_path = gen_markdown_report(outputs.reports_dir)
+            logger.info(f'Markdown report generated: {md_path}')
+        except Exception as e:
+            logger.error(f'Failed to generate markdown report: {e}')
     # Clean up
     if model is not None:
         import gc
