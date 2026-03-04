@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify, request
 
 from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.utils.logger import get_logger
-from ..utils import OUTPUT_DIR, get_log_content, handle_exceptions, run_in_subprocess, run_perf_wrapper
+from ..utils import OUTPUT_DIR, get_log_content, run_in_subprocess, run_perf_wrapper, task_handler
 
 logger = get_logger()
 
@@ -11,8 +11,8 @@ bp_perf = Blueprint('perf', __name__, url_prefix='/api/v1/perf')
 
 
 @bp_perf.route('', methods=['POST'])
-@handle_exceptions(log_subpath=os.path.join('perf', 'benchmark.log'))
-def run_performance_test(request_id: str):
+@task_handler(log_subpath=os.path.join('perf', 'benchmark.log'))
+def run_performance_test(task_id: str):
     """Run performance benchmark."""
     data = request.get_json()
     if not data:
@@ -29,11 +29,11 @@ def run_performance_test(request_id: str):
 
     perf_args = PerfArguments.from_dict(data)
     perf_args.no_timestamp = True
-    perf_args.outputs_dir = os.path.join(OUTPUT_DIR, request_id)
+    perf_args.outputs_dir = os.path.join(OUTPUT_DIR, task_id)
     perf_args.name = 'perf'
 
-    logger.info(f'[{request_id}] Starting performance benchmark for model: {perf_args.model}')
-    logger.info(f'[{request_id}] URL: {perf_args.url}')
+    logger.info(f'[{task_id}] Starting performance benchmark for model: {perf_args.model}')
+    logger.info(f'[{task_id}] URL: {perf_args.url}')
 
     result = run_in_subprocess(run_perf_wrapper, perf_args)
 
@@ -41,7 +41,7 @@ def run_performance_test(request_id: str):
         'status': 'success',
         'message': 'Performance test completed',
         'results': result,
-        'request_id': request_id
+        'task_id': task_id
     })
 
 
@@ -49,10 +49,10 @@ def run_performance_test(request_id: str):
 def get_performance_log():
     """Get performance test log."""
     try:
-        request_id = request.args.get('request_id')
+        task_id = request.args.get('task_id')
         start_line = request.args.get('start_line', 0, type=int)
 
-        content = get_log_content(request_id, os.path.join('perf', 'benchmark.log'), start_line)
+        content = get_log_content(task_id, os.path.join('perf', 'benchmark.log'), start_line)
         return content, 200, {'Content-Type': 'text/plain; charset=utf-8'}
     except FileNotFoundError as e:
         return jsonify({'error': str(e)}), 404

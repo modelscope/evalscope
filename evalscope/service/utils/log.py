@@ -37,12 +37,16 @@ class LogManager:
         LogManager.append(log_file, content)
 
 
-def get_log_content(request_id: str, sub_path: str, start_line: int = 0):
+def get_log_content(task_id: str, sub_path: str, start_line: int = 0):
     """Helper to read log content."""
-    if not request_id:
-        raise ValueError('request_id is required')
+    if not task_id:
+        raise ValueError('task_id is required')
 
-    log_file = os.path.join(OUTPUT_DIR, request_id, sub_path)
+    # Ensure task_id is a valid, not .. / etc
+    if not os.path.basename(task_id) == task_id:
+        raise ValueError('Invalid task_id')
+
+    log_file = os.path.join(OUTPUT_DIR, task_id, sub_path)
     if not os.path.exists(log_file):
         raise FileNotFoundError(f'Log file not found: {log_file}')
 

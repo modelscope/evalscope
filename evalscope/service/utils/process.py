@@ -61,22 +61,24 @@ def run_in_subprocess(func, *args, **kwargs):
         raise Exception(f'Subprocess terminated unexpectedly with exit code {p.exitcode}')
 
 
-def handle_exceptions(log_subpath: str = 'error.log'):
+def task_handler(log_subpath: str = 'error.log'):
     """Decorator to handle exceptions in route handlers."""
 
     def decorator(f):
 
         @wraps(f)
         def wrapper(*args, **kwargs):
-            request_id = request.headers.get('X-Fc-Request-Id', uuid.uuid4().hex)
+            task_id = request.headers.get('EvalScope-Task-Id', uuid.uuid4().hex)
 
             try:
-                return f(*args, request_id=request_id, **kwargs)
+                result = f(*args, task_id=task_id, **kwargs)
+                LogManager.append(log_subpath, TASK_FINISH_MARKER.format(datetime.now().isoformat()))
+                return result
             except Exception as e:
                 logger.error(f'Request failed: {str(e)}')
                 logger.error(traceback.format_exc())
 
-                work_dir = os.path.join(OUTPUT_DIR, request_id)
+                work_dir = os.path.join(OUTPUT_DIR, task_id)
                 LogManager.log_error(work_dir, log_subpath, traceback.format_exc())
                 LogManager.log_error(work_dir, log_subpath, TASK_FINISH_MARKER.format(datetime.now().isoformat()))
 
@@ -84,7 +86,7 @@ def handle_exceptions(log_subpath: str = 'error.log'):
                     'status': 'error',
                     'error': str(e),
                     'traceback': traceback.format_exc(),
-                    'request_id': request_id
+                    'task_id': task_id
                 }), 500
 
         return wrapper
