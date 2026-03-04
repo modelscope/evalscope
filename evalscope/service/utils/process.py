@@ -1,43 +1,66 @@
 import multiprocessing
-import os
+import threading
 import traceback
-import uuid
 from datetime import datetime
-from flask import jsonify, request
-from functools import wraps
 
 from evalscope.config import TaskConfig
 from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.perf.main import run_perf_benchmark
 from evalscope.run import run_task
 from evalscope.utils.logger import get_logger
-from .log import OUTPUT_DIR, TASK_FINISH_MARKER, TASK_START_MARKER, LogManager
 
 logger = get_logger()
 
-
-def run_eval_wrapper(task_config: TaskConfig):
-    """Wrapper to run evaluation task with log markers."""
-    log_file = os.path.join(task_config.work_dir, 'logs', 'eval_log.log')
-    LogManager.append(log_file, TASK_START_MARKER.format(datetime.now().isoformat()))
-    try:
-        return run_task(task_config)
-    finally:
-        LogManager.append(log_file, TASK_FINISH_MARKER.format(datetime.now().isoformat()))
+# ---------------------------------------------------------------------------
+# Task store
+# ---------------------------------------------------------------------------
 
 
-def run_perf_wrapper(perf_args: PerfArguments):
-    """Wrapper to run performance test with log markers."""
-    log_file = os.path.join(perf_args.outputs_dir, 'perf', 'benchmark.log')
-    LogManager.append(log_file, TASK_START_MARKER.format(datetime.now().isoformat()))
-    try:
-        return run_perf_benchmark(perf_args)
-    finally:
-        LogManager.append(log_file, TASK_FINISH_MARKER.format(datetime.now().isoformat()))
+class TaskStore:
+    """Thread-safe in-memory store for tracking async task states.
+
+    Each entry is a dict with at least the following keys:
+        status      : 'running' | 'completed' | 'error'
+        submitted_at: ISO-8601 timestamp
+        finished_at : ISO-8601 timestamp (present when status != 'running')
+        result      : task return value (present when status == 'completed')
+        error       : error message string (present when status == 'error')
+    """
+
+    def __init__(self):
+        self._tasks: dict = {}
+        self._lock = threading.Lock()
+
+    def set(self, task_id: str, data: dict):
+        with self._lock:
+            self._tasks[task_id] = data
+
+    def update(self, task_id: str, data: dict):
+        with self._lock:
+            if task_id in self._tasks:
+                self._tasks[task_id].update(data)
+            else:
+                self._tasks[task_id] = data
+
+    def get(self, task_id: str) -> dict | None:
+        with self._lock:
+            return dict(self._tasks[task_id]) if task_id in self._tasks else None
+
+    def all(self) -> dict:
+        with self._lock:
+            return {k: dict(v) for k, v in self._tasks.items()}
+
+
+# Singleton shared across the whole process
+task_store = TaskStore()
+
+# ---------------------------------------------------------------------------
+# Subprocess helpers
+# ---------------------------------------------------------------------------
 
 
 def _process_worker(func, queue, *args, **kwargs):
-    """Worker function to run task in a separate process."""
+    """Target for multiprocessing.Process — executes *func* and posts result."""
     try:
         result = func(*args, **kwargs)
         queue.put({'status': 'success', 'result': result})
@@ -46,7 +69,10 @@ def _process_worker(func, queue, *args, **kwargs):
 
 
 def run_in_subprocess(func, *args, **kwargs):
-    """Run a function in a subprocess and return the result."""
+    """Run *func* in a child process and return its result (blocks caller).
+
+    Returns the function's return value on success; raises on error.
+    """
     queue = multiprocessing.Queue()
     p = multiprocessing.Process(target=_process_worker, args=(func, queue, *args), kwargs=kwargs)
     p.start()
@@ -55,40 +81,64 @@ def run_in_subprocess(func, *args, **kwargs):
     if not queue.empty():
         res = queue.get()
         if res['status'] == 'error':
-            raise Exception(f"Subprocess error: {res['error']}\n{res.get('traceback', '')}")
+            raise RuntimeError(f"Subprocess error: {res['error']}\n{res.get('traceback', '')}")
         return res['result']
     else:
-        raise Exception(f'Subprocess terminated unexpectedly with exit code {p.exitcode}')
+        raise RuntimeError(f'Subprocess terminated unexpectedly (exit code {p.exitcode})')
 
 
-def task_handler(log_subpath: str = 'error.log'):
-    """Decorator to handle exceptions in route handlers."""
+# ---------------------------------------------------------------------------
+# Async task submission
+# ---------------------------------------------------------------------------
 
-    def decorator(f):
 
-        @wraps(f)
-        def wrapper(*args, **kwargs):
-            task_id = request.headers.get('EvalScope-Task-Id', uuid.uuid4().hex)
+def submit_task(task_id: str, func, *args, **kwargs) -> str:
+    """Submit *func* to run asynchronously in a background subprocess.
 
-            try:
-                result = f(*args, task_id=task_id, **kwargs)
-                LogManager.append(log_subpath, TASK_FINISH_MARKER.format(datetime.now().isoformat()))
-                return result
-            except Exception as e:
-                logger.error(f'Request failed: {str(e)}')
-                logger.error(traceback.format_exc())
+    Returns *task_id* immediately.  Poll ``task_store.get(task_id)`` for
+    the current status / result.
+    """
+    task_store.set(task_id, {
+        'status': 'running',
+        'submitted_at': datetime.now().isoformat(),
+    })
 
-                work_dir = os.path.join(OUTPUT_DIR, task_id)
-                LogManager.log_error(work_dir, log_subpath, traceback.format_exc())
-                LogManager.log_error(work_dir, log_subpath, TASK_FINISH_MARKER.format(datetime.now().isoformat()))
-
-                return jsonify({
+    def _run():
+        try:
+            result = run_in_subprocess(func, *args, **kwargs)
+            task_store.update(
+                task_id, {
+                    'status': 'completed',
+                    'result': result,
+                    'finished_at': datetime.now().isoformat(),
+                }
+            )
+            logger.info(f'[{task_id}] Task completed successfully')
+        except Exception as e:
+            task_store.update(
+                task_id, {
                     'status': 'error',
                     'error': str(e),
-                    'traceback': traceback.format_exc(),
-                    'task_id': task_id
-                }), 500
+                    'finished_at': datetime.now().isoformat(),
+                }
+            )
+            logger.error(f'[{task_id}] Task failed: {e}')
 
-        return wrapper
+    thread = threading.Thread(target=_run, daemon=True, name=f'task-{task_id}')
+    thread.start()
+    return task_id
 
-    return decorator
+
+# ---------------------------------------------------------------------------
+# Task wrappers (thin shims kept for clarity / future extension)
+# ---------------------------------------------------------------------------
+
+
+def run_eval_wrapper(task_config: TaskConfig):
+    """Run an evaluation task and return the result."""
+    return run_task(task_config)
+
+
+def run_perf_wrapper(perf_args: PerfArguments):
+    """Run a performance benchmark and return the result."""
+    return run_perf_benchmark(perf_args)
