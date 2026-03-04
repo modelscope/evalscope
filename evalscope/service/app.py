@@ -13,7 +13,7 @@ try:
     from .utils import task_store
 except ImportError:
     from blueprints import bp_eval, bp_perf  # type: ignore[no-redef]
-    from utils import task_store             # type: ignore[no-redef]
+    from utils import task_store  # type: ignore[no-redef]
 
 logger = get_logger()
 

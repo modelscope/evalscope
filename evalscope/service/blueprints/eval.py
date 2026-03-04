@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify, request
 from evalscope.config import TaskConfig
 from evalscope.constants import EvalType
 from evalscope.utils.logger import get_logger
+
 try:
     from ..utils import OUTPUT_DIR, get_log_content, run_eval_wrapper, submit_task, task_store
 except ImportError:

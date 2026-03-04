@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request
 
 from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.utils.logger import get_logger
+
 try:
     from ..utils import OUTPUT_DIR, get_log_content, run_perf_wrapper, submit_task, task_store
 except ImportError:
