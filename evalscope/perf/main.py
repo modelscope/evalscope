@@ -115,10 +115,7 @@ def run_perf_benchmark(args):
         server.start()
 
     # Start benchmark
-    if len(args.number) == 1:
-        return run_one_benchmark(args, output_path=output_path)
-    else:
-        return run_multi_benchmark(args, output_path=output_path)
+    return run_multi_benchmark(args, output_path=output_path)
 
 
 if __name__ == '__main__':
