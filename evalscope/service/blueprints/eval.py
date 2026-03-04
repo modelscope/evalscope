@@ -7,9 +7,15 @@ from evalscope.constants import EvalType
 from evalscope.utils.logger import get_logger
 
 try:
-    from ..utils import OUTPUT_DIR, get_log_content, run_eval_wrapper, run_in_subprocess
+    from ..utils import OUTPUT_DIR, create_log_file, get_log_content, run_eval_wrapper, run_in_subprocess
 except ImportError:
-    from utils import OUTPUT_DIR, get_log_content, run_eval_wrapper, run_in_subprocess  # type: ignore[no-redef]
+    from utils import (  # type: ignore[no-redef]
+        OUTPUT_DIR,
+        create_log_file,
+        get_log_content,
+        run_eval_wrapper,
+        run_in_subprocess,
+    )
 
 logger = get_logger()
 
@@ -31,7 +37,7 @@ def run_evaluation():
         if field not in data:
             return jsonify({'error': f'{field} is required'}), 400
 
-    task_id = request.headers.get('X-Fc-Async-Task-Id', uuid.uuid4().hex)
+    task_id = request.headers.get('EvalScope-Task-Id')
 
     # Default to OpenAI API compatible models
     if not data.get('eval_type'):
@@ -43,6 +49,8 @@ def run_evaluation():
 
     logger.info(f'[{task_id}] Running evaluation task for model: {task_config.model}')
     logger.info(f'[{task_id}] Datasets: {task_config.datasets}')
+
+    create_log_file(task_id, os.path.join('logs', 'eval_log.log'))
 
     try:
         result = run_in_subprocess(run_eval_wrapper, task_config)
@@ -68,7 +76,7 @@ def resume_evaluation():
         if field not in data:
             return jsonify({'error': f'{field} is required'}), 400
 
-    task_id = request.headers.get('X-Fc-Async-Task-Id', uuid.uuid4().hex)
+    task_id = request.headers.get('EvalScope-Task-Id', uuid.uuid4().hex)
     resume_task_id = data.pop('resume_task_id')
     resume_work_dir = os.path.join(OUTPUT_DIR, resume_task_id)
 
@@ -86,6 +94,8 @@ def resume_evaluation():
 
     logger.info(f'[{task_id}] Running resume task for resume_task_id: {resume_task_id}')
     logger.info(f'[{task_id}] Model: {task_config.model}, Datasets: {task_config.datasets}')
+
+    create_log_file(task_id, os.path.join('logs', 'eval_log.log'))
 
     try:
         result = run_in_subprocess(run_eval_wrapper, task_config)

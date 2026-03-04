@@ -6,9 +6,15 @@ from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.utils.logger import get_logger
 
 try:
-    from ..utils import OUTPUT_DIR, get_log_content, run_in_subprocess, run_perf_wrapper
+    from ..utils import OUTPUT_DIR, create_log_file, get_log_content, run_in_subprocess, run_perf_wrapper
 except ImportError:
-    from utils import OUTPUT_DIR, get_log_content, run_in_subprocess, run_perf_wrapper  # type: ignore[no-redef]
+    from utils import (  # type: ignore[no-redef]
+        OUTPUT_DIR,
+        create_log_file,
+        get_log_content,
+        run_in_subprocess,
+        run_perf_wrapper,
+    )
 
 logger = get_logger()
 
@@ -30,7 +36,7 @@ def run_performance_test():
         if field not in data:
             return jsonify({'error': f'{field} is required'}), 400
 
-    task_id = request.headers.get('X-Fc-Async-Task-Id', uuid.uuid4().hex)
+    task_id = request.headers.get('EvalScope-Task-Id')
 
     # Default to openai API
     if 'api' not in data:
@@ -43,6 +49,8 @@ def run_performance_test():
 
     logger.info(f'[{task_id}] Running performance benchmark for model: {perf_args.model}')
     logger.info(f'[{task_id}] URL: {perf_args.url}')
+
+    create_log_file(task_id, os.path.join('perf', 'benchmark.log'))
 
     try:
         result = run_in_subprocess(run_perf_wrapper, perf_args)

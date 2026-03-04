@@ -43,7 +43,12 @@ class AsyncEvalClient:
         """
         url = f'{self.base_url}/api/v1/{task_type}'
         task_id = uuid4().hex
-        headers = {'Content-Type': 'application/json', 'X-Fc-Invocation-Type': 'Async', 'X-Fc-Async-Task-Id': task_id}
+        headers = {
+            'Content-Type': 'application/json',
+            'X-Fc-Invocation-Type': 'Async',
+            'EvalScope-Task-Id': task_id,
+            'X-Fc-Async-Task-Id': task_id
+        }
 
         print(f'[Submit Task] Sending request to: {url}')
         print(f'[Submit Task] Payload: {json.dumps(payload, indent=2, ensure_ascii=False)}')
