@@ -4,8 +4,16 @@ from datetime import datetime
 from flask import Flask, jsonify
 
 from evalscope.utils.logger import get_logger
-from .blueprints import bp_eval, bp_perf
-from .utils import task_store
+
+# Support two deployment modes:
+#   1. Installed package  → relative imports work (evalscope.service.*)
+#   2. Flat /code/ copy   → no parent package; sibling dirs are on sys.path
+try:
+    from .blueprints import bp_eval, bp_perf
+    from .utils import task_store
+except ImportError:
+    from blueprints import bp_eval, bp_perf  # type: ignore[no-redef]
+    from utils import task_store             # type: ignore[no-redef]
 
 logger = get_logger()
 
