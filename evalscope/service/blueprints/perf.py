@@ -6,20 +6,20 @@ from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.utils.logger import get_logger
 
 try:
-    from ..utils import OUTPUT_DIR, get_log_content, run_perf_wrapper, submit_task, task_store
+    from ..utils import OUTPUT_DIR, get_log_content, run_in_subprocess, run_perf_wrapper
 except ImportError:
-    from utils import OUTPUT_DIR, get_log_content, run_perf_wrapper, submit_task, task_store  # type: ignore[no-redef]
+    from utils import OUTPUT_DIR, get_log_content, run_in_subprocess, run_perf_wrapper  # type: ignore[no-redef]
 
 logger = get_logger()
 
 bp_perf = Blueprint('perf', __name__, url_prefix='/api/v1/perf')
 
 
-@bp_perf.route('', methods=['POST'])
+@bp_perf.route('/invoke', methods=['POST'])
 def run_performance_test():
-    """Submit a performance benchmark task (non-blocking).
+    """Run a performance benchmark task (blocking).
 
-    Returns task_id immediately; poll GET /api/v1/perf/status?task_id=<id> for progress.
+    Returns the benchmark result when the task completes.
     """
     data = request.get_json()
     if not data:
@@ -30,7 +30,7 @@ def run_performance_test():
         if field not in data:
             return jsonify({'error': f'{field} is required'}), 400
 
-    task_id = request.headers.get('EvalScope-Task-Id', uuid.uuid4().hex)
+    task_id = request.headers.get('X-Fc-Async-Task-Id', uuid.uuid4().hex)
 
     # Default to openai API
     if 'api' not in data:
@@ -41,30 +41,16 @@ def run_performance_test():
     perf_args.outputs_dir = os.path.join(OUTPUT_DIR, task_id)
     perf_args.name = 'perf'
 
-    logger.info(f'[{task_id}] Submitting performance benchmark for model: {perf_args.model}')
+    logger.info(f'[{task_id}] Running performance benchmark for model: {perf_args.model}')
     logger.info(f'[{task_id}] URL: {perf_args.url}')
 
-    submit_task(task_id, run_perf_wrapper, perf_args)
-
-    return jsonify({'status': 'submitted', 'message': 'Performance test submitted', 'task_id': task_id})
-
-
-@bp_perf.route('/status', methods=['GET'])
-def get_performance_status():
-    """Get the current status of a performance benchmark task.
-
-    Query params:
-        task_id (str): the task identifier returned by POST /api/v1/perf
-    """
-    task_id = request.args.get('task_id')
-    if not task_id:
-        return jsonify({'error': 'task_id is required'}), 400
-
-    task = task_store.get(task_id)
-    if task is None:
-        return jsonify({'error': f'Task not found: {task_id}'}), 404
-
-    return jsonify({'task_id': task_id, **task})
+    try:
+        result = run_in_subprocess(run_perf_wrapper, perf_args)
+        logger.info(f'[{task_id}] Task completed successfully')
+        return jsonify({'status': 'completed', 'task_id': task_id, 'result': result})
+    except Exception as e:
+        logger.error(f'[{task_id}] Task failed: {e}')
+        return jsonify({'status': 'error', 'task_id': task_id, 'error': str(e)}), 500
 
 
 @bp_perf.route('/log', methods=['GET'])

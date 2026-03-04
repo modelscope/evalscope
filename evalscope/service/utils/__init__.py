@@ -2,15 +2,12 @@
 """Utility modules for EvalScope service."""
 
 from .log import OUTPUT_DIR, get_log_content
-from .process import TaskStore, run_eval_wrapper, run_in_subprocess, run_perf_wrapper, submit_task, task_store
+from .process import run_eval_wrapper, run_in_subprocess, run_perf_wrapper
 
 __all__ = [
     'OUTPUT_DIR',
     'get_log_content',
-    'TaskStore',
-    'task_store',
     'run_eval_wrapper',
     'run_perf_wrapper',
     'run_in_subprocess',
-    'submit_task',
 ]

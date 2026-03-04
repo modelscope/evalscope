@@ -386,4 +386,3 @@ def _flush(lines: List[str], reports_dir: str, output_md_name: str) -> None:
     md_path = os.path.join(reports_dir, output_md_name)
     with open(md_path, 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines))
-    logger.info(f'Markdown report generated at: {md_path}')

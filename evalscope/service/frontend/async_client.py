@@ -43,7 +43,7 @@ class AsyncEvalClient:
         """
         url = f'{self.base_url}/api/v1/{task_type}'
         task_id = uuid4().hex
-        headers = {'Content-Type': 'application/json', 'X-Fc-Invocation-Type': 'Async', 'EvalScope-Task-Id': task_id}
+        headers = {'Content-Type': 'application/json', 'X-Fc-Invocation-Type': 'Async', 'X-Fc-Async-Task-Id': task_id}
 
         print(f'[Submit Task] Sending request to: {url}')
         print(f'[Submit Task] Payload: {json.dumps(payload, indent=2, ensure_ascii=False)}')
@@ -57,15 +57,7 @@ class AsyncEvalClient:
             for key, value in response_headers.items():
                 print(f'  {key}: {value}')
 
-            if response.status == 202:
-                fc_task_id = response_headers.get('X-Fc-Async-Task-Id')
-
-                print('[Submit Task] Task submitted successfully!')
-                print(f'[Submit Task] Request ID: {task_id}')
-                print(f'[Submit Task] Task ID: {fc_task_id}')
-
-                return {'task_id': task_id, 'fc_task_id': fc_task_id, 'headers': response_headers}
-            elif response.status == 200:
+            if response.status == 202 or response.status == 200:
                 print('[Submit Task] Task completed synchronously.')
                 print(f'[Submit Task] Request ID: {task_id}')
                 return {'task_id': task_id, 'headers': response_headers, 'status': 'finished'}

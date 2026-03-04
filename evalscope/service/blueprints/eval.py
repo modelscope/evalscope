@@ -7,20 +7,20 @@ from evalscope.constants import EvalType
 from evalscope.utils.logger import get_logger
 
 try:
-    from ..utils import OUTPUT_DIR, get_log_content, run_eval_wrapper, submit_task, task_store
+    from ..utils import OUTPUT_DIR, get_log_content, run_eval_wrapper, run_in_subprocess
 except ImportError:
-    from utils import OUTPUT_DIR, get_log_content, run_eval_wrapper, submit_task, task_store  # type: ignore[no-redef]
+    from utils import OUTPUT_DIR, get_log_content, run_eval_wrapper, run_in_subprocess  # type: ignore[no-redef]
 
 logger = get_logger()
 
 bp_eval = Blueprint('eval', __name__, url_prefix='/api/v1/eval')
 
 
-@bp_eval.route('', methods=['POST'])
+@bp_eval.route('/invoke', methods=['POST'])
 def run_evaluation():
-    """Submit a model evaluation task (non-blocking).
+    """Run a model evaluation task (blocking).
 
-    Returns task_id immediately; poll GET /api/v1/eval/status?task_id=<id> for progress.
+    Returns the evaluation result when the task completes.
     """
     data = request.get_json()
     if not data:
@@ -31,47 +31,33 @@ def run_evaluation():
         if field not in data:
             return jsonify({'error': f'{field} is required'}), 400
 
-    task_id = request.headers.get('EvalScope-Task-Id', uuid.uuid4().hex)
+    task_id = request.headers.get('X-Fc-Async-Task-Id', uuid.uuid4().hex)
 
     # Default to OpenAI API compatible models
     if not data.get('eval_type'):
-        data['eval_type'] = EvalType.OPENAI_API
+        data['eval_type'] = EvalType.SERVICE
 
     task_config = TaskConfig.from_dict(data)
     task_config.no_timestamp = True
     task_config.work_dir = os.path.join(OUTPUT_DIR, task_id)
 
-    logger.info(f'[{task_id}] Submitting evaluation task for model: {task_config.model}')
+    logger.info(f'[{task_id}] Running evaluation task for model: {task_config.model}')
     logger.info(f'[{task_id}] Datasets: {task_config.datasets}')
 
-    submit_task(task_id, run_eval_wrapper, task_config)
-
-    return jsonify({'status': 'submitted', 'message': 'Evaluation task submitted', 'task_id': task_id})
-
-
-@bp_eval.route('/status', methods=['GET'])
-def get_evaluation_status():
-    """Get the current status of an evaluation task.
-
-    Query params:
-        task_id (str): the task identifier returned by POST /api/v1/eval
-    """
-    task_id = request.args.get('task_id')
-    if not task_id:
-        return jsonify({'error': 'task_id is required'}), 400
-
-    task = task_store.get(task_id)
-    if task is None:
-        return jsonify({'error': f'Task not found: {task_id}'}), 404
-
-    return jsonify({'task_id': task_id, **task})
+    try:
+        result = run_in_subprocess(run_eval_wrapper, task_config)
+        logger.info(f'[{task_id}] Task completed successfully')
+        return jsonify({'status': 'completed', 'task_id': task_id, 'result': result})
+    except Exception as e:
+        logger.error(f'[{task_id}] Task failed: {e}')
+        return jsonify({'status': 'error', 'task_id': task_id, 'error': str(e)}), 500
 
 
-@bp_eval.route('/resume', methods=['POST'])
+@bp_eval.route('/resume/invoke', methods=['POST'])
 def resume_evaluation():
-    """Submit a resume task for a previously interrupted evaluation (non-blocking).
+    """Resume a previously interrupted evaluation task (blocking).
 
-    Returns task_id immediately; poll GET /api/v1/eval/status?task_id=<id> for progress.
+    Returns the evaluation result when the task completes.
     """
     data = request.get_json()
     if not data:
@@ -82,7 +68,7 @@ def resume_evaluation():
         if field not in data:
             return jsonify({'error': f'{field} is required'}), 400
 
-    task_id = request.headers.get('EvalScope-Task-Id', uuid.uuid4().hex)
+    task_id = request.headers.get('X-Fc-Async-Task-Id', uuid.uuid4().hex)
     resume_task_id = data.pop('resume_task_id')
     resume_work_dir = os.path.join(OUTPUT_DIR, resume_task_id)
 
@@ -91,24 +77,33 @@ def resume_evaluation():
 
     # Default to OpenAI API compatible models
     if not data.get('eval_type'):
-        data['eval_type'] = EvalType.OPENAI_API
+        data['eval_type'] = EvalType.SERVICE
 
     task_config = TaskConfig.from_dict(data)
     task_config.no_timestamp = True
     task_config.use_cache = resume_work_dir
     task_config.rerun_review = True
 
-    logger.info(f'[{task_id}] Submitting resume task for resume_task_id: {resume_task_id}')
+    logger.info(f'[{task_id}] Running resume task for resume_task_id: {resume_task_id}')
     logger.info(f'[{task_id}] Model: {task_config.model}, Datasets: {task_config.datasets}')
 
-    submit_task(task_id, run_eval_wrapper, task_config)
-
-    return jsonify({
-        'status': 'submitted',
-        'message': 'Evaluation resume task submitted',
-        'task_id': task_id,
-        'resume_task_id': resume_task_id,
-    })
+    try:
+        result = run_in_subprocess(run_eval_wrapper, task_config)
+        logger.info(f'[{task_id}] Resume task completed successfully')
+        return jsonify({
+            'status': 'completed',
+            'task_id': task_id,
+            'resume_task_id': resume_task_id,
+            'result': result,
+        })
+    except Exception as e:
+        logger.error(f'[{task_id}] Resume task failed: {e}')
+        return jsonify({
+            'status': 'error',
+            'task_id': task_id,
+            'resume_task_id': resume_task_id,
+            'error': str(e),
+        }), 500
 
 
 @bp_eval.route('/log', methods=['GET'])
