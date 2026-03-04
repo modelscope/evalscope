@@ -24,8 +24,9 @@ def run_evaluation(request_id: str):
         if field not in data:
             return jsonify({'error': f'{field} is required'}), 400
 
-    # This service only supports OpenAI API compatible models
-    data['eval_type'] = EvalType.SERVICE
+    # Default to OpenAI API compatible models
+    if not data.get('eval_type'):
+        data['eval_type'] = EvalType.OPENAI_API
 
     task_config = TaskConfig.from_dict(data)
     task_config.no_timestamp = True
@@ -64,8 +65,9 @@ def resume_evaluation(request_id: str):
     if not os.path.isdir(resume_work_dir):
         return jsonify({'error': f'Output directory not found for resume_request_id: {resume_request_id}'}), 404
 
-    # This service only supports OpenAI API compatible models
-    data['eval_type'] = EvalType.SERVICE
+    # Default to OpenAI API compatible models
+    if not data.get('eval_type'):
+        data['eval_type'] = EvalType.OPENAI_API
 
     task_config = TaskConfig.from_dict(data)
     task_config.no_timestamp = True
