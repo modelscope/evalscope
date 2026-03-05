@@ -1,5 +1,4 @@
 import os
-import uuid
 from flask import Blueprint, jsonify, request
 
 from evalscope.config import TaskConfig
@@ -21,6 +20,52 @@ logger = get_logger()
 
 bp_eval = Blueprint('eval', __name__, url_prefix='/api/v1/eval')
 
+_REQUIRED_FIELDS = ['model', 'datasets', 'api_url']
+
+
+def _parse_request():
+    """Validate the request body and return (data, task_id) or a Flask error response.
+
+    Returns:
+        (dict, str)  on success.
+        Flask response on validation failure.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Request body is required'}), 400
+
+    for field in _REQUIRED_FIELDS:
+        if field not in data:
+            return jsonify({'error': f'{field} is required'}), 400
+
+    task_id = request.headers.get('EvalScope-Task-Id')
+    if not task_id:
+        return jsonify({'error': 'EvalScope-Task-Id header is required'}), 400
+
+    return data, task_id
+
+
+def _build_task_config(data: dict) -> TaskConfig:
+    """Build a TaskConfig from request data with common defaults applied."""
+    if not data.get('eval_type'):
+        data['eval_type'] = EvalType.SERVICE
+
+    task_config = TaskConfig.from_dict(data)
+    task_config.no_timestamp = True
+    return task_config
+
+
+def _execute_task(task_id: str, task_config: TaskConfig, label: str = 'Task'):
+    """Run the evaluation subprocess and return a Flask response."""
+    create_log_file(task_id, os.path.join('logs', 'eval_log.log'))
+    try:
+        result = run_in_subprocess(run_eval_wrapper, task_config)
+        logger.info(f'[{task_id}] {label} completed successfully')
+        return jsonify({'status': 'completed', 'task_id': task_id, 'result': result})
+    except Exception as e:
+        logger.error(f'[{task_id}] {label} failed: {e}')
+        return jsonify({'status': 'error', 'task_id': task_id, 'error': str(e)}), 500
+
 
 @bp_eval.route('/invoke', methods=['POST'])
 def run_evaluation():
@@ -28,37 +73,18 @@ def run_evaluation():
 
     Returns the evaluation result when the task completes.
     """
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'Request body is required'}), 400
+    parsed = _parse_request()
+    if not isinstance(parsed, tuple) or not isinstance(parsed[0], dict):
+        return parsed  # error response
+    data, task_id = parsed
 
-    required_fields = ['model', 'datasets', 'api_url']
-    for field in required_fields:
-        if field not in data:
-            return jsonify({'error': f'{field} is required'}), 400
-
-    task_id = request.headers.get('EvalScope-Task-Id')
-
-    # Default to OpenAI API compatible models
-    if not data.get('eval_type'):
-        data['eval_type'] = EvalType.SERVICE
-
-    task_config = TaskConfig.from_dict(data)
-    task_config.no_timestamp = True
+    task_config = _build_task_config(data)
     task_config.work_dir = os.path.join(OUTPUT_DIR, task_id)
 
     logger.info(f'[{task_id}] Running evaluation task for model: {task_config.model}')
     logger.info(f'[{task_id}] Datasets: {task_config.datasets}')
 
-    create_log_file(task_id, os.path.join('logs', 'eval_log.log'))
-
-    try:
-        result = run_in_subprocess(run_eval_wrapper, task_config)
-        logger.info(f'[{task_id}] Task completed successfully')
-        return jsonify({'status': 'completed', 'task_id': task_id, 'result': result})
-    except Exception as e:
-        logger.error(f'[{task_id}] Task failed: {e}')
-        return jsonify({'status': 'error', 'task_id': task_id, 'error': str(e)}), 500
+    return _execute_task(task_id, task_config, label='Task')
 
 
 @bp_eval.route('/resume/invoke', methods=['POST'])
@@ -67,53 +93,23 @@ def resume_evaluation():
 
     Returns the evaluation result when the task completes.
     """
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'Request body is required'}), 400
+    parsed = _parse_request()
+    if not isinstance(parsed, tuple) or not isinstance(parsed[0], dict):
+        return parsed  # error response
+    data, task_id = parsed
 
-    required_fields = ['model', 'datasets', 'api_url', 'resume_task_id']
-    for field in required_fields:
-        if field not in data:
-            return jsonify({'error': f'{field} is required'}), 400
+    work_dir = os.path.join(OUTPUT_DIR, task_id)
+    if not os.path.isdir(work_dir):
+        return jsonify({'error': f'Output directory not found for task_id: {task_id}'}), 404
 
-    task_id = request.headers.get('EvalScope-Task-Id', uuid.uuid4().hex)
-    resume_task_id = data.pop('resume_task_id')
-    resume_work_dir = os.path.join(OUTPUT_DIR, resume_task_id)
-
-    if not os.path.isdir(resume_work_dir):
-        return jsonify({'error': f'Output directory not found for resume_task_id: {resume_task_id}'}), 404
-
-    # Default to OpenAI API compatible models
-    if not data.get('eval_type'):
-        data['eval_type'] = EvalType.SERVICE
-
-    task_config = TaskConfig.from_dict(data)
-    task_config.no_timestamp = True
-    task_config.use_cache = resume_work_dir
+    task_config = _build_task_config(data)
+    task_config.use_cache = work_dir
     task_config.rerun_review = True
 
-    logger.info(f'[{task_id}] Running resume task for resume_task_id: {resume_task_id}')
+    logger.info(f'[{task_id}] Running resume task, work_dir: {work_dir}')
     logger.info(f'[{task_id}] Model: {task_config.model}, Datasets: {task_config.datasets}')
 
-    create_log_file(task_id, os.path.join('logs', 'eval_log.log'))
-
-    try:
-        result = run_in_subprocess(run_eval_wrapper, task_config)
-        logger.info(f'[{task_id}] Resume task completed successfully')
-        return jsonify({
-            'status': 'completed',
-            'task_id': task_id,
-            'resume_task_id': resume_task_id,
-            'result': result,
-        })
-    except Exception as e:
-        logger.error(f'[{task_id}] Resume task failed: {e}')
-        return jsonify({
-            'status': 'error',
-            'task_id': task_id,
-            'resume_task_id': resume_task_id,
-            'error': str(e),
-        }), 500
+    return _execute_task(task_id, task_config, label='Resume task')
 
 
 @bp_eval.route('/log', methods=['GET'])

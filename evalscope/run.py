@@ -18,21 +18,19 @@ logger = get_logger()
 
 def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig], Namespace]) -> Union[dict, List[dict]]:
     """Run evaluation task(s) based on the provided configuration."""
-    run_time = datetime.now().strftime('%Y%m%d_%H%M%S')
-
     # If task_cfg is a list, run each task individually
     if isinstance(task_cfg, list):
-        return [run_single_task(cfg, run_time) for cfg in task_cfg]
+        return [run_task(cfg) for cfg in task_cfg]
 
     task_cfg = parse_task_config(task_cfg)
-    return run_single_task(task_cfg, run_time)
+    return run_single_task(task_cfg)
 
 
-def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
+def run_single_task(task_cfg: TaskConfig) -> dict:
     """Run a single evaluation task."""
     if task_cfg.seed is not None:
         seed_everything(task_cfg.seed)
-    outputs = setup_work_directory(task_cfg, run_time)
+    outputs = setup_work_directory(task_cfg)
     configure_logging(task_cfg.debug, os.path.join(outputs.logs_dir, 'eval_log.log'))
 
     if task_cfg.eval_backend != EvalBackend.NATIVE:
@@ -47,8 +45,10 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     return result
 
 
-def setup_work_directory(task_cfg: TaskConfig, run_time: str):
+def setup_work_directory(task_cfg: TaskConfig):
     """Set the working directory for the task."""
+    # Get current time
+    run_time = datetime.now().strftime('%Y%m%d_%H%M%S')
     # use cache
     if task_cfg.use_cache:
         task_cfg.work_dir = task_cfg.use_cache
@@ -156,7 +156,7 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
         logger.error('Failed to generate report table.')
 
     # Generate model-wise markdown report if enabled
-    if getattr(task_config, 'generate_markdown_report', True):
+    if task_config.generate_markdown_report:
         try:
             md_path = gen_markdown_report(outputs.reports_dir)
             logger.info(f'Markdown report generated: {md_path}')

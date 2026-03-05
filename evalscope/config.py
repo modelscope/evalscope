@@ -313,14 +313,26 @@ class TaskConfig(BaseArgument):
         else:
             raise ValueError('eval_config should be a dict or a file path string.')
 
+    @staticmethod
+    def _deep_merge(base: dict, override: dict) -> dict:
+        """Recursively merge override into base, returning a new dict."""
+        result = copy.deepcopy(base)
+        for key, value in override.items():
+            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                result[key] = TaskConfig._deep_merge(result[key], value)
+            else:
+                result[key] = copy.deepcopy(value)
+        return result
+
     def update(self, other: Union['TaskConfig', dict]):
         if isinstance(other, TaskConfig):
             other = other.to_dict()
-        self.__dict__.update(other)
+        merged = self._deep_merge(self.__dict__, other)
+        self.__dict__.update(merged)
 
     def dump_yaml(self, output_dir: str):
         """Dump the task configuration to a YAML file."""
-        task_cfg_file = os.path.join(output_dir, f'task_config_{gen_hash(str(self), bits=6)}.yaml')
+        task_cfg_file = os.path.join(output_dir, f'task_config.yaml')
         try:
             logger.info(f'Dump task config to {task_cfg_file}')
             dict_to_yaml(self.to_dict(), task_cfg_file)

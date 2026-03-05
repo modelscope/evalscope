@@ -1,5 +1,4 @@
 import os
-import uuid
 from flask import Blueprint, jsonify, request
 
 from evalscope.perf.arguments import Arguments as PerfArguments
@@ -37,6 +36,8 @@ def run_performance_test():
             return jsonify({'error': f'{field} is required'}), 400
 
     task_id = request.headers.get('EvalScope-Task-Id')
+    if not task_id:
+        return jsonify({'error': 'EvalScope-Task-Id header is required'}), 400
 
     # Default to openai API
     if 'api' not in data:
