@@ -6,8 +6,10 @@ import threading
 import time
 from argparse import Namespace
 
+from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
+from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 from .arguments import Arguments, parse_args
 from .benchmark import benchmark
 from .sla.sla_run import run_sla_auto_tune
@@ -55,12 +57,20 @@ def run_multi_benchmark(args: Arguments, output_path: str = None):
     number_list = copy.deepcopy(args.number)
     parallel_list = copy.deepcopy(args.parallel)
 
-    for i, (number, parallel) in enumerate(zip(number_list, parallel_list)):
+    pbar = tqdm(
+        enumerate(zip(number_list, parallel_list)),
+        total=len(number_list),
+        logger=logger,
+        log_interval=HEARTBEAT_INTERVAL_SEC
+    )
+    for i, (number, parallel) in pbar:
         args.number = number
         args.parallel = parallel
 
+        cur_run_name = f'parallel_{parallel}_number_{number}'
+        pbar.set_description(f'Running {cur_run_name}')
         # Set up output path for each run
-        cur_output_path = os.path.join(output_path, f'parallel_{parallel}_number_{number}')
+        cur_output_path = os.path.join(output_path, cur_run_name)
         os.makedirs(cur_output_path, exist_ok=True)
 
         # Start the benchmark
