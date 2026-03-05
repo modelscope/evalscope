@@ -57,12 +57,12 @@ def run_service(host: str = '0.0.0.0', port: int = 9000, debug: bool = False):
 
     logger.info(f'Starting EvalScope service on {host}:{port}')
     logger.info('Available endpoints:')
-    logger.info('  GET  /health                  - Health check')
-    logger.info('  POST /api/v1/eval             - Run model evaluation task (blocking)')
-    logger.info('  GET  /api/v1/eval/log         - Get evaluation log')
-    logger.info('  POST /api/v1/eval/resume      - Resume a previous evaluation (blocking)')
-    logger.info('  POST /api/v1/perf             - Run performance benchmark task (blocking)')
-    logger.info('  GET  /api/v1/perf/log         - Get performance benchmark log')
+    logger.info('  GET  /health                         - Health check')
+    logger.info('  POST /api/v1/eval/invoke             - Run model evaluation task (blocking)')
+    logger.info('  GET  /api/v1/eval/log                - Get evaluation log')
+    logger.info('  POST /api/v1/eval/resume/invoke      - Resume a previous evaluation (blocking)')
+    logger.info('  POST /api/v1/perf/invoke             - Run performance benchmark task (blocking)')
+    logger.info('  GET  /api/v1/perf/log                - Get performance benchmark log')
     logger.info('Refer to docs for parameters: https://evalscope.readthedocs.io/en/latest/user_guides/service.html')
 
     app.run(host=host, port=port, debug=debug)
