@@ -18,18 +18,22 @@ class ProgressTracker:
         {
           "status":   "running" | "completed" | "error",
           "pipeline": "eval" | "perf",
-          "stages": [
-            {"depth": 0, "name": "Evaluating", "label": "mmlu",
-             "current": 1, "total": 3, "status": "running"},
-            {"depth": 1, "name": "Predicting", "label": "mmlu@test",
-             "current": 1000, "total": 1000, "status": "completed"},
-            {"depth": 1, "name": "Reviewing",  "label": "mmlu@test",
-             "current": 320,  "total": 1000, "status": "running"}
-          ],
+          "stage": {
+            "name": "Evaluating", "label": "mmlu",
+            "current": 1, "total": 3, "status": "running",
+            "children": [
+              {"name": "Predicting", "label": "mmlu@test",
+               "current": 1000, "total": 1000, "status": "completed",
+               "children": []},
+              {"name": "Reviewing",  "label": "mmlu@test",
+               "current": 320,  "total": 1000, "status": "running",
+               "children": []}
+            ]
+          },
           "updated_at": "2026-03-05T10:05:42Z"
         }
 
-    ``depth`` reflects nesting level; list order is chronological.
+    Nesting is encoded by the tree structure; ``depth`` is used only internally.
 
     ``write_interval`` controls how often incremental progress updates are
     flushed to disk (in seconds).  Structural events (stage enter/exit, status
@@ -127,6 +131,42 @@ class ProgressTracker:
     # Internal
     # ------------------------------------------------------------------
 
+    def _build_tree(self, stages: List[dict]) -> Optional[dict]:
+        """Convert the flat *stages* list (with depth integers) into a nested tree.
+
+        Each node gains a ``children`` list; the ``depth`` key is dropped from
+        the serialised output since the nesting itself encodes the hierarchy.
+        """
+        if not stages:
+            return None
+
+        root: Optional[dict] = None
+        stack: List[dict] = []  # stack entries: {'_depth': int, 'node': dict}
+
+        for stage in stages:
+            node = {
+                'name': stage['name'],
+                'label': stage['label'],
+                'current': stage['current'],
+                'total': stage['total'],
+                'status': stage['status'],
+                'children': [],
+            }
+            depth = stage['depth']
+
+            # Pop deeper-or-equal entries so the top of the stack is the parent.
+            while stack and stack[-1]['_depth'] >= depth:
+                stack.pop()
+
+            if stack:
+                stack[-1]['node']['children'].append(node)
+            else:
+                root = node
+
+            stack.append({'_depth': depth, 'node': node})
+
+        return root
+
     def _write(self, force: bool = True) -> None:
         """Write progress state to disk.
 
@@ -141,8 +181,8 @@ class ProgressTracker:
         state = {
             'status': self._status,
             'pipeline': self._pipeline,
-            'stages': list(self._stages),
-            'updated_at': datetime.now(timezone.utc).isoformat(),
+            'stage': self._build_tree(self._stages),
+            'updated_at': datetime.now().isoformat(),
         }
         tmp = self._path + '.tmp'
         with open(tmp, 'w') as f:
