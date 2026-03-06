@@ -1,3 +1,4 @@
+import json
 import os
 from flask import Blueprint, jsonify, request
 
@@ -47,6 +48,7 @@ def run_performance_test():
     perf_args.no_timestamp = True
     perf_args.outputs_dir = os.path.join(OUTPUT_DIR, task_id)
     perf_args.name = 'perf'
+    perf_args.enable_progress_tracker = True
 
     logger.info(f'[{task_id}] Running performance benchmark for model: {perf_args.model}')
     logger.info(f'[{task_id}] URL: {perf_args.url}')
@@ -80,4 +82,27 @@ def get_performance_log():
         return jsonify({'error': str(e)}), 404
     except Exception as e:
         logger.error(f'Failed to get performance log: {str(e)}')
+        return jsonify({'error': str(e)}), 500
+
+
+@bp_perf.route('/progress', methods=['GET'])
+def get_performance_progress():
+    """Get the real-time hierarchical progress of a running perf benchmark task.
+
+    Query params:
+        task_id (str): the task identifier
+    """
+    task_id = request.args.get('task_id')
+    if not task_id:
+        return jsonify({'error': 'task_id is required'}), 400
+
+    progress_file = os.path.join(OUTPUT_DIR, task_id, 'progress.json')
+    try:
+        with open(progress_file, 'r') as f:
+            progress = json.load(f)
+        return jsonify(progress), 200
+    except FileNotFoundError:
+        return jsonify({'error': f'Progress not found for task_id: {task_id}'}), 404
+    except Exception as e:
+        logger.error(f'Failed to get progress for task {task_id}: {e}')
         return jsonify({'error': str(e)}), 500

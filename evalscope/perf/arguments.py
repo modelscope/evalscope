@@ -102,6 +102,9 @@ class Arguments(BaseArgument):
     debug: bool = False
     """Debug mode."""
 
+    enable_progress_tracker: bool = False
+    """Whether to write a progress.json file tracking hierarchical benchmark progress."""
+
     visualizer: Optional[str] = None
     """Visualizer for logging, supports 'swanlab' or 'wandb'."""
 
@@ -329,6 +332,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--wandb-api-key', type=str, default=None, help='The wandb API key')
     parser.add_argument('--swanlab-api-key', type=str, default=None, help='The swanlab API key')
     parser.add_argument('--name', type=str, help='The wandb/swanlab/clearml result name and result db name')
+    parser.add_argument('--enable-progress-tracker', action='store_true', default=False, help='Enable progress tracker')
 
     # Prompt settings
     parser.add_argument('--max-prompt-length', type=int, default=sys.maxsize, help='Maximum input prompt length')

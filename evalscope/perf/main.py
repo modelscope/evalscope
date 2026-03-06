@@ -60,6 +60,7 @@ def run_multi_benchmark(args: Arguments, output_path: str = None):
     pbar = tqdm(
         enumerate(zip(number_list, parallel_list)),
         total=len(number_list),
+        desc='Running[perf]',
         logger=logger,
         log_interval=HEARTBEAT_INTERVAL_SEC
     )
@@ -68,7 +69,6 @@ def run_multi_benchmark(args: Arguments, output_path: str = None):
         args.parallel = parallel
 
         cur_run_name = f'parallel_{parallel}_number_{number}'
-        pbar.set_description(f'Running {cur_run_name}')
         # Set up output path for each run
         cur_output_path = os.path.join(output_path, cur_run_name)
         os.makedirs(cur_output_path, exist_ok=True)
@@ -124,8 +124,19 @@ def run_perf_benchmark(args):
         server = threading.Thread(target=start_app, args=(copy.deepcopy(args), ), daemon=True)
         server.start()
 
+    # Build context: real ProgressTracker when enabled, no-op nullcontext otherwise
+    if args.enable_progress_tracker:
+        from evalscope.utils.progress_tracker import ProgressTracker
+        tracker_ctx = ProgressTracker(work_dir=output_path, pipeline='perf')
+    else:
+        from contextlib import nullcontext
+        tracker_ctx = nullcontext()
+
     # Start benchmark
-    return run_multi_benchmark(args, output_path=output_path)
+    with tracker_ctx:
+        results = run_multi_benchmark(args, output_path=output_path)
+
+    return results
 
 
 if __name__ == '__main__':

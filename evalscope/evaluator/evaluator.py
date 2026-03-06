@@ -100,7 +100,7 @@ class DefaultEvaluator(Evaluator):
         subset_list = list(dataset_dict.keys())
         logger.info(f'Start evaluating {len(dataset_dict)} subsets of the {self.benchmark_name}: {subset_list}')
         for subset, dataset in tqdm(
-            dataset_dict.items(), desc=f'Evaluating [{self.benchmark_name}]', unit='subset', logger=logger
+            dataset_dict.items(), desc=f'Evaluating[{self.benchmark_name}]', unit='subset', logger=logger
         ):
             if len(dataset) == 0:
                 logger.info(f'No samples found in subset: {subset}, skipping.')
@@ -204,7 +204,7 @@ class DefaultEvaluator(Evaluator):
         finished_task_states = run_in_threads_with_progress(
             dataset_list,
             worker,
-            desc=f'Predicting[{self.benchmark_name}@{subset}]: ',
+            desc=f'Predicting[{self.benchmark_name}@{subset}]',
             max_workers=self.task_config.eval_batch_size,
             log_interval=HEARTBEAT_INTERVAL_SEC,
             on_result=on_result,
@@ -285,7 +285,7 @@ class DefaultEvaluator(Evaluator):
         reviewed_scores = run_in_threads_with_progress(
             task_states,
             worker,
-            desc=f'Reviewing[{self.benchmark_name}@{subset}]: ',
+            desc=f'Reviewing[{self.benchmark_name}@{subset}]',
             max_workers=self.task_config.judge_worker_num,
             log_interval=HEARTBEAT_INTERVAL_SEC,
             on_error=on_error,
@@ -332,7 +332,7 @@ class DefaultEvaluator(Evaluator):
         all_reviewed_scores = []
         total = len(task_states)
         batch_size = self.task_config.judge_worker_num
-        with tqdm(total=total, desc='Scoring (batch)', unit='sample', logger=logger) as pbar:
+        with tqdm(total=total, desc='Scoring[batch]', unit='sample', logger=logger) as pbar:
             for start in range(0, total, batch_size):
                 # Process batch
                 end = min(start + batch_size, total)

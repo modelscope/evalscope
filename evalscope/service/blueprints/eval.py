@@ -1,3 +1,4 @@
+import json
 import os
 from flask import Blueprint, jsonify, request
 
@@ -52,6 +53,7 @@ def _build_task_config(data: dict) -> TaskConfig:
 
     task_config = TaskConfig.from_dict(data)
     task_config.no_timestamp = True
+    task_config.enable_progress_tracker = True
     return task_config
 
 
@@ -110,6 +112,29 @@ def resume_evaluation():
     logger.info(f'[{task_id}] Model: {task_config.model}, Datasets: {task_config.datasets}')
 
     return _execute_task(task_id, task_config, label='Resume task')
+
+
+@bp_eval.route('/progress', methods=['GET'])
+def get_evaluation_progress():
+    """Get the real-time hierarchical progress of a running evaluation task.
+
+    Query params:
+        task_id (str): the task identifier
+    """
+    task_id = request.args.get('task_id')
+    if not task_id:
+        return jsonify({'error': 'task_id is required'}), 400
+
+    progress_file = os.path.join(OUTPUT_DIR, task_id, 'progress.json')
+    try:
+        with open(progress_file, 'r') as f:
+            progress = json.load(f)
+        return jsonify(progress), 200
+    except FileNotFoundError:
+        return jsonify({'error': f'Progress not found for task_id: {task_id}'}), 404
+    except Exception as e:
+        logger.error(f'Failed to get progress for task {task_id}: {e}')
+        return jsonify({'error': str(e)}), 500
 
 
 @bp_eval.route('/log', methods=['GET'])

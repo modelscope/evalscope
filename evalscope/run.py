@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, List, Optional, Union
 
 from evalscope.config import TaskConfig, parse_task_config
 from evalscope.constants import DEFAULT_WORK_DIR, DataCollection, EvalBackend
-from evalscope.utils.io_utils import OutputsStructure, are_paths_same
+from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
 
@@ -117,6 +117,7 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     from evalscope.evaluator import DefaultEvaluator
     from evalscope.report import gen_table
     from evalscope.report.renderer import gen_markdown_report
+    from evalscope.utils.tqdm_utils import TqdmLogging
 
     # Initialize evaluator
     eval_results = {}
@@ -143,10 +144,26 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     task_config.dump_yaml(outputs.configs_dir)
     logger.info(task_config)
 
-    # Run evaluation for each evaluator
-    for evaluator in evaluators:
-        res_dict = evaluator.eval()
-        eval_results[evaluator.benchmark.name] = res_dict
+    # Build context: real ProgressTracker when enabled, no-op nullcontext otherwise
+    if task_config.enable_progress_tracker:
+        from evalscope.utils.progress_tracker import ProgressTracker
+        tracker_ctx = ProgressTracker(work_dir=outputs.outputs_dir, pipeline='eval')
+    else:
+        from contextlib import nullcontext
+        tracker_ctx = nullcontext()
+
+    # Run evaluation for each evaluator (outermost progress stage)
+    with tracker_ctx:
+        with TqdmLogging(
+            evaluators,
+            desc='Running[eval]',
+            total=len(evaluators),
+            unit='benchmark',
+            logger=logger,
+        ) as pbar:
+            for evaluator in pbar:
+                res_dict = evaluator.eval()
+                eval_results[evaluator.benchmark_name] = res_dict
 
     # Make overall report
     try:
