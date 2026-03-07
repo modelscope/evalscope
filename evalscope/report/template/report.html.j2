@@ -7,84 +7,191 @@
   <style>
 {% include 'report.css' %}
   </style>
-  <!-- Plotly.js via CDN — must load before any inline chart scripts -->
+  <!-- Plotly.js via CDN -->
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
 </head>
 <body>
-<div class="container">
 
-  <!-- ── Header ─────────────────────────────────────────── -->
-  <header class="report-header">
-    <h1>Evaluation Report</h1>
-    <ul class="meta-list">
-      <li><strong>Model(s):</strong> {{ models | join(", ") if models else "N/A" }}</li>
-      <li><strong>Datasets:</strong> {{ datasets | join(", ") if datasets else "N/A" }}</li>
-      <li><strong>Generated at:</strong> {{ generated_at }}</li>
-      <li><a href="https://github.com/modelscope/evalscope" target="_blank" rel="noopener">EvalScope v{{ evalscope_version }}</a></li>
+<!-- ── Floating Table of Contents ────────────────────────────── -->
+<nav class="toc" id="toc">
+  <button class="toc-toggle-btn" id="toc-toggle" title="Toggle table of contents" aria-label="Toggle table of contents">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <line x1="3" y1="12" x2="15" y2="12"/>
+      <line x1="3" y1="18" x2="18" y2="18"/>
+    </svg>
+  </button>
+  <div class="toc-panel" id="toc-panel" role="navigation" aria-label="Page contents">
+    <div class="toc-heading">Contents</div>
+    <ul class="toc-list">
+      <li>
+        <a href="#section-overview" class="toc-link" data-section="section-overview">
+          <span class="toc-dot"></span>Overview
+        </a>
+      </li>
+      <li>
+        <a href="#section-results" class="toc-link" data-section="section-results">
+          <span class="toc-dot"></span>Results by Dataset
+        </a>
+        {% if dataset_sections %}
+        <ul class="toc-sub">
+          {% for ds in dataset_sections %}
+          <li>
+            <a href="#ds-{{ loop.index }}" class="toc-link toc-sub-link" data-section="ds-{{ loop.index }}" title="{{ ds.pretty_name }}">
+              <span class="toc-dot"></span>{{ ds.pretty_name }}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </li>
     </ul>
+  </div>
+</nav>
+
+<!-- ── Back to top ────────────────────────────────────────────── -->
+<a href="#top" class="back-to-top" id="back-to-top" aria-label="Back to top">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+    <polyline points="18 15 12 9 6 15"/>
+  </svg>
+</a>
+
+<div class="container" id="top">
+
+  <!-- ── Header ──────────────────────────────────────────────── -->
+  <header class="report-header">
+    <div class="header-inner">
+      <div class="header-eyebrow">
+        <span class="header-badge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          <a href="https://github.com/modelscope/evalscope" target="_blank" rel="noopener">EvalScope v{{ evalscope_version }}</a>
+        </span>
+      </div>
+      <h1 class="report-title">Evaluation Report</h1>
+      <div class="meta-chips">
+        <div class="meta-chip">
+          <span class="meta-chip-label">Model(s)</span>
+          <span class="meta-chip-value" title="{{ models | join(', ') if models else 'N/A' }}">{{ models | join(", ") if models else "N/A" }}</span>
+        </div>
+        <div class="meta-chip">
+          <span class="meta-chip-label">Datasets</span>
+          <span class="meta-chip-value" title="{{ datasets | join(', ') if datasets else 'N/A' }}">{{ datasets | join(", ") if datasets else "N/A" }}</span>
+        </div>
+        <div class="meta-chip">
+          <span class="meta-chip-label">Generated at</span>
+          <span class="meta-chip-value">{{ generated_at }}</span>
+        </div>
+      </div>
+    </div>
   </header>
 
-  <!-- ── Overview ───────────────────────────────────────── -->
-  <section class="section">
-    <h2 class="section-title">Overview</h2>
+  <!-- ── Overview ────────────────────────────────────────────── -->
+  <section class="section" id="section-overview">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+        </svg>
+      </div>
+      <h2 class="section-title">Overview</h2>
+    </div>
 
     {% if summary_rows %}
-    <p class="sub-title">Score Summary</p>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Dataset</th>
-            <th>Model</th>
-            <th>Metric</th>
-            <th>Score</th>
-            <th>Num</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in summary_rows %}
-          <tr>
-            <td>{{ row.dataset }}</td>
-            <td>{{ row.model }}</td>
-            <td>{{ row.metric }}</td>
-            <td class="score-cell">{{ "%.4f" | format(row.score) }}</td>
-            <td>{{ row.num }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Score Summary</span>
+        <span class="card-badge">{{ summary_rows | length }} entries</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Dataset</th>
+              <th>Model</th>
+              <th>Metric</th>
+              <th>Score</th>
+              <th>Num</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in summary_rows %}
+            <tr>
+              <td><span class="tag">{{ row.dataset }}</span></td>
+              <td>{{ row.model }}</td>
+              <td><span class="metric-tag">{{ row.metric }}</span></td>
+              <td class="score-cell">{{ "%.4f" | format(row.score) }}</td>
+              <td class="num-cell">{{ row.num }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
     {% endif %}
 
     {% if overview_chart_div %}
-    <p class="sub-title">Overall Score Chart</p>
-    <div class="chart-card">{{ overview_chart_div | safe }}</div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Overall Score Chart</span>
+      </div>
+      <div class="chart-wrap">{{ overview_chart_div | safe }}</div>
+    </div>
     {% endif %}
 
     {% if sunburst_chart_div %}
-    <p class="sub-title">Score Distribution</p>
-    <div class="chart-card">{{ sunburst_chart_div | safe }}</div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Score Distribution</span>
+      </div>
+      <div class="chart-wrap">{{ sunburst_chart_div | safe }}</div>
+    </div>
     {% endif %}
 
   </section>
 
-  <hr />
-
-  <!-- ── Results by dataset ─────────────────────────────── -->
-  <section class="section">
-    <h2 class="section-title">Results by Dataset</h2>
+  <!-- ── Results by Dataset ───────────────────────────────────── -->
+  <section class="section" id="section-results">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 11l3 3L22 4"/>
+          <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+        </svg>
+      </div>
+      <h2 class="section-title">Results by Dataset</h2>
+    </div>
 
     {% for ds in dataset_sections %}
-    <details class="ds-item" {% if loop.first %}open{% endif %}>
-      <summary>
-        {{ ds.pretty_name }}
-        <span class="score-badge">{{ "%.4f" | format(ds.overall_score) }}</span>
+    <details class="ds-card" id="ds-{{ loop.index }}" {% if loop.first %}open{% endif %}>
+      <summary class="ds-summary">
+        <div class="ds-summary-left">
+          <span class="ds-arrow">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </span>
+          <span class="ds-name">{{ ds.pretty_name }}</span>
+        </div>
+        <div class="ds-summary-right">
+          <span class="score-pill" data-score="{{ ds.overall_score }}">{{ "%.4f" | format(ds.overall_score) }}</span>
+        </div>
       </summary>
+
       <div class="ds-body">
 
         {% if ds.description %}
-        <details class="desc-toggle">
-          <summary>Description</summary>
+        <details class="inner-toggle">
+          <summary>
+            <span class="inner-arrow">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </span>
+            Description
+          </summary>
           <div class="ds-description">{{ ds.description | safe }}</div>
         </details>
         {% endif %}
@@ -92,37 +199,55 @@
         {% for msec in ds.model_sections %}
 
           {% if ds.multi_model %}
-          <div class="model-heading">Model: {{ msec.model_name }}</div>
+          <div class="model-tag">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+            </svg>
+            {{ msec.model_name }}
+          </div>
           {% endif %}
 
           {% if msec.subset_rows %}
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr><th>Subset</th><th>Metric</th><th>Score</th><th>Num</th></tr>
-              </thead>
-              <tbody>
-                {% for row in msec.subset_rows %}
-                <tr>
-                  <td>{{ row.subset }}</td>
-                  <td>{{ row.metric }}</td>
-                  <td class="score-cell">{{ "%.4f" | format(row.score) }}</td>
-                  <td>{{ row.num }}</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+          <div class="card" style="margin-bottom:1rem;">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Subset</th><th>Metric</th><th>Score</th><th>Num</th></tr>
+                </thead>
+                <tbody>
+                  {% for row in msec.subset_rows %}
+                  <tr>
+                    <td>{{ row.subset }}</td>
+                    <td><span class="metric-tag">{{ row.metric }}</span></td>
+                    <td class="score-cell">{{ "%.4f" | format(row.score) }}</td>
+                    <td class="num-cell">{{ row.num }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
           </div>
           {% endif %}
 
           {% if msec.chart_div %}
-          <p class="sub-title">{{ ds.pretty_name }} &ndash; Subset Scores{% if ds.multi_model %} ({{ msec.model_name }}){% endif %}</p>
-          <div class="chart-card">{{ msec.chart_div | safe }}</div>
+          <div class="sub-card">
+            <div class="sub-card-header">
+              {{ ds.pretty_name }}{% if ds.multi_model %} &mdash; {{ msec.model_name }}{% endif %} &middot; Subset Scores
+            </div>
+            <div class="chart-wrap">{{ msec.chart_div | safe }}</div>
+          </div>
           {% endif %}
 
           {% if msec.analysis_html %}
-          <details class="analysis-toggle" open>
-            <summary>Analysis</summary>
+          <details class="inner-toggle" open>
+            <summary>
+              <span class="inner-arrow">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </span>
+              Analysis
+            </summary>
             <div class="analysis-section">{{ msec.analysis_html | safe }}</div>
           </details>
           {% endif %}
@@ -135,32 +260,138 @@
 
   </section>
 
-  <!-- ── Footer ─────────────────────────────────────────── -->
+  <!-- ── Footer ──────────────────────────────────────────────── -->
   <footer class="report-footer">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
     Generated by
     <a href="https://github.com/modelscope/evalscope" target="_blank" rel="noopener">EvalScope v{{ evalscope_version }}</a>
   </footer>
 
-</div>
+</div><!-- /container -->
 
-<!-- Trigger Plotly resize when a closed accordion is opened, ensuring correct chart sizing -->
 <script>
-  document.querySelectorAll('details.ds-item').forEach(function (el) {
+(function () {
+  'use strict';
+
+  /* ── Score cell gradient colouring ──────────────────────────── */
+  function scoreHue(val) {
+    var c = Math.max(0, Math.min(1, val));
+    return Math.round(c * 120); // 0=red, 60=yellow, 120=green
+  }
+
+  document.querySelectorAll('td.score-cell').forEach(function (cell) {
+    var val = parseFloat(cell.textContent);
+    if (isNaN(val)) return;
+    cell.style.color = 'hsl(' + scoreHue(val) + ', 72%, 62%)';
+  });
+
+  /* ── Score pill dynamic colour ───────────────────────────────── */
+  document.querySelectorAll('.score-pill[data-score]').forEach(function (pill) {
+    var val = parseFloat(pill.dataset.score);
+    if (isNaN(val)) return;
+    var h = scoreHue(val);
+    pill.style.background   = 'hsla(' + h + ', 60%, 30%, 0.32)';
+    pill.style.color         = 'hsl(' + h + ', 72%, 65%)';
+    pill.style.borderColor   = 'hsla(' + h + ', 60%, 50%, 0.35)';
+  });
+
+  /* ── Dataset accordion arrow ─────────────────────────────────── */
+  document.querySelectorAll('details.ds-card').forEach(function (el) {
+    var arrow = el.querySelector('.ds-arrow');
+    function sync() {
+      if (arrow) arrow.style.transform = el.open ? 'rotate(90deg)' : 'rotate(0deg)';
+    }
+    sync();
     el.addEventListener('toggle', function () {
-      if (el.open) {
-        window.dispatchEvent(new Event('resize'));
+      sync();
+      /* Plotly responsive resize */
+      if (el.open) window.dispatchEvent(new Event('resize'));
+    });
+  });
+
+  /* ── Inner toggle arrow ──────────────────────────────────────── */
+  document.querySelectorAll('details.inner-toggle').forEach(function (el) {
+    var arrow = el.querySelector('.inner-arrow');
+    function sync() {
+      if (arrow) arrow.style.transform = el.open ? 'rotate(90deg)' : 'rotate(0deg)';
+    }
+    sync();
+    el.addEventListener('toggle', sync);
+  });
+
+  /* ── Floating TOC toggle ─────────────────────────────────────── */
+  var toc       = document.getElementById('toc');
+  var tocToggle = document.getElementById('toc-toggle');
+
+  /* Auto-expand on wide screens */
+  if (window.innerWidth >= 1320) toc.classList.add('expanded');
+
+  tocToggle.addEventListener('click', function () {
+    toc.classList.toggle('expanded');
+  });
+
+  /* Close TOC when clicking outside */
+  document.addEventListener('click', function (e) {
+    if (!toc.contains(e.target)) toc.classList.remove('expanded');
+  });
+
+  /* ── TOC smooth scroll + mobile close ───────────────────────── */
+  document.querySelectorAll('.toc-link').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      var href = link.getAttribute('href');
+      if (!href || !href.startsWith('#')) return;
+      e.preventDefault();
+      var target = document.getElementById(href.slice(1));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (window.innerWidth < 1320) toc.classList.remove('expanded');
       }
     });
   });
 
-  // Colour each score cell on a red→yellow→green gradient (0=red, 1=green)
-  document.querySelectorAll('td.score-cell').forEach(function (cell) {
-    var val = parseFloat(cell.textContent);
-    if (isNaN(val)) return;
-    var clamped = Math.max(0, Math.min(1, val));
-    var hue = Math.round(clamped * 120); // 0 → red, 60 → yellow, 120 → green
-    cell.style.color = 'hsl(' + hue + ', 75%, 62%)';
+  /* ── TOC active section via IntersectionObserver ─────────────── */
+  var tocSections = [];
+  document.querySelectorAll('.toc-link[data-section]').forEach(function (link) {
+    var id = link.dataset.section;
+    var el = document.getElementById(id);
+    if (el) tocSections.push({ id: id, el: el, link: link });
   });
+
+  var currentActive = null;
+  function setActive(id) {
+    if (currentActive === id) return;
+    currentActive = id;
+    tocSections.forEach(function (s) {
+      s.link.classList.toggle('active', s.id === id);
+    });
+  }
+
+  if ('IntersectionObserver' in window && tocSections.length) {
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) setActive(entry.target.id);
+      });
+    }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+
+    tocSections.forEach(function (s) { obs.observe(s.el); });
+  }
+
+  /* ── Back-to-top visibility ──────────────────────────────────── */
+  var btt = document.getElementById('back-to-top');
+  if (btt) {
+    window.addEventListener('scroll', function () {
+      btt.classList.toggle('visible', window.scrollY > 300);
+    }, { passive: true });
+
+    btt.addEventListener('click', function (e) {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+})();
 </script>
 
 </body>
