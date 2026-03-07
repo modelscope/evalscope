@@ -115,7 +115,7 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     from evalscope.api.model.lazy_model import LazyModel
     from evalscope.api.registry import get_benchmark
     from evalscope.evaluator import DefaultEvaluator
-    from evalscope.report import gen_table, gen_report_file
+    from evalscope.report import gen_report_file, gen_table
     from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
     from evalscope.utils.tqdm_utils import make_tracker
 
