@@ -2,6 +2,17 @@
 
 Run `evalscope eval --help` to get the full list of parameters.
 
+## Environment Variables
+
+The following environment variables can be set before launch to control global default behavior:
+
+| Environment Variable | Description | Default |
+|----------------------|-------------|---------|
+| `EVALSCOPE_CACHE` | Root cache directory for EvalScope, used to store datasets, intermediate evaluation files, etc. | `~/.cache/evalscope` |
+| `EVALSCOPE_LANGUAGE` | Global default language, affects output language for reports, etc. (`en` or `zh`) | `en` |
+| `EVALSCOPE_HEARTBEAT_INTERVAL` | Heartbeat reporting interval (seconds) | `60` |
+| `MODELSCOPE_CACHE` | Root cache directory for ModelScope models and datasets | `~/.cache/modelscope/hub` |
+
 ## Model Parameters
 
 | Parameter | Type | Description | Default |

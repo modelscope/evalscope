@@ -160,7 +160,7 @@ class TestNativeBenchmark(TestBenchmark):
             # 'few_shot_num': 0,
         }
         # self._run_dataset_load_test('ceval')
-        self._run_dataset_test('ceval', dataset_args=dataset_args, enable_progress_tracker=True, use_cache='outputs/20260306_151542')
+        self._run_dataset_test('ceval', dataset_args=dataset_args, enable_progress_tracker=True, use_cache='outputs/20260307_150855', analysis_report=True)
 
     def test_super_gpqa(self):
         """Test Super GPQA dataset."""

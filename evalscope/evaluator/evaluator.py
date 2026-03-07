@@ -384,7 +384,7 @@ class DefaultEvaluator(Evaluator):
         # Generate detailed analysis if requested in configuration
         if self.task_config.analysis_report:
             logger.info('Generating report analysis, please wait ...')
-            analysis = report.generate_analysis(self.task_config.judge_model_args)
+            analysis = report.generate_analysis(self.task_config)
             logger.info(f'Report analysis:\n{analysis}')
         else:
             logger.info('Skipping report analysis (`analysis_report=False`).')

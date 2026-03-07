@@ -1,12 +1,19 @@
 import os
 import pandas as pd
+import re
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from evalscope.app.utils.visualization import plot_single_dataset_scores, plot_single_report_scores
+from evalscope.app.utils.visualization import (
+    plot_single_dataset_scores,
+    plot_single_report_scores,
+    plot_single_report_sunburst,
+)
+from evalscope.constants import DEFAULT_LANGUAGE
 from evalscope.report.combinator import get_report_list
 from evalscope.report.report import Report, ReportKey
 from evalscope.utils.logger import get_logger
+from evalscope.version import __version__ as _evalscope_version
 
 logger = get_logger()
 
@@ -16,6 +23,46 @@ _PLOTLY_CDN_CONFIG = {'responsive': True}
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+
+def _process_readme_content(content: str) -> str:
+    """Strip the H1 heading and the last H2 section from README markdown."""
+    lines = content.splitlines()
+
+    # Remove the first H1 heading line
+    for i, line in enumerate(lines):
+        if re.match(r'^#\s', line):
+            lines.pop(i)
+            break
+        elif line.strip():  # Non-blank, non-H1 line encountered first – stop
+            break
+
+    # Remove the last H2 section (heading + everything after it)
+    last_h2 = None
+    for i, line in enumerate(lines):
+        if re.match(r'^##\s', line):
+            last_h2 = i
+    if last_h2 is not None:
+        lines = lines[:last_h2]
+
+    return '\n'.join(lines).strip()
+
+
+def _load_meta_readme(ds: str, lang: str = DEFAULT_LANGUAGE) -> str:
+    """Load README from *_meta/{ds}.json*, select the requested language variant,
+    and process the content (strip H1 + last H2 section).
+
+    Falls back to the ``en`` variant when the requested language is unavailable.
+    Returns an empty string when the meta file does not exist or has no readme.
+    """
+    from evalscope.utils.resource_utils import load_benchmark_data
+    try:
+        entry = load_benchmark_data(ds).get(ds, {})
+    except Exception:
+        return ''
+    readme = entry.get('readme', {})
+    content = readme.get(lang) or readme.get('en') or ''
+    return _process_readme_content(content) if content else ''
 
 
 def _safe_filename(name: str) -> str:
@@ -43,13 +90,32 @@ def _build_dataset_info(report_list: List[Report]) -> Dict[str, dict]:
     for report in report_list:
         ds = report.dataset_name
         if ds not in dataset_info:
+            # Prefer the richer README from _meta; fall back to the description
+            # embedded in the report when no meta file is available.
+            readme_content = _load_meta_readme(ds)
+            if not readme_content:
+                readme_content = (report.dataset_description or '').strip()
             dataset_info[ds] = {
                 'pretty_name': report.dataset_pretty_name or ds,
-                'description': _md_to_html((report.dataset_description or '').strip()),
+                'description': _md_to_html(readme_content),
                 'model_reports': {},
             }
         dataset_info[ds]['model_reports'][report.model_name] = report
     return dataset_info
+
+
+def _sunburst_chart_div(report_list: List) -> str:
+    """Return a Plotly HTML div for the overview sunburst chart, or empty string."""
+    if not report_list:
+        return ''
+    try:
+        fig = plot_single_report_sunburst(report_list)
+    except Exception:
+        logger.debug('Sunburst chart generation failed', exc_info=True)
+        return ''
+    if fig is None:
+        return ''
+    return fig.to_html(full_html=False, include_plotlyjs=False, config=_PLOTLY_CDN_CONFIG)
 
 
 def _overview_chart_div(labels: List[str], scores: List[float]) -> str:
@@ -63,7 +129,6 @@ def _overview_chart_div(labels: List[str], scores: List[float]) -> str:
     fig = plot_single_report_scores(overview_df)
     if fig is None:
         return ''
-    fig.update_layout(title='Overall Score by Dataset', height=400)
     return fig.to_html(full_html=False, include_plotlyjs=False, config=_PLOTLY_CDN_CONFIG)
 
 
@@ -87,9 +152,7 @@ def _subset_chart_div(
     fig = plot_single_dataset_scores(subset_df)
     if fig is None:
         return ''
-    chart_title = f'{pretty} \u2013 Subset Scores' + (f' ({model})' if multi_model else '')
     div_id = f'chart-{_safe_filename(ds)}-{_safe_filename(model)}'
-    fig.update_layout(title=chart_title, height=380)
     return fig.to_html(full_html=False, include_plotlyjs=False, config=_PLOTLY_CDN_CONFIG, div_id=div_id)
 
 
@@ -167,6 +230,7 @@ def gen_html_report_file(
             overview_scores.append(first.score)
 
     overview_chart_div = _overview_chart_div(overview_labels, overview_scores)
+    sunburst_chart_div = _sunburst_chart_div(report_list)
 
     # ------------------------------------------------------------------
     # Per-dataset sections
@@ -186,7 +250,7 @@ def gen_html_report_file(
             overall_score = rpt.score
 
             if not rpt.metrics:
-                model_sections.append(dict(model_name=model, subset_rows=[], chart_div=''))
+                model_sections.append(dict(model_name=model, subset_rows=[], chart_div='', analysis_html=''))
                 continue
 
             main_metric = rpt.metrics[0]
@@ -211,7 +275,11 @@ def gen_html_report_file(
                 subset_scores=subset_scores,
                 multi_model=multi_model,
             )
-            model_sections.append(dict(model_name=model, subset_rows=subset_rows, chart_div=chart_div))
+            analysis_raw = rpt.analysis if rpt.analysis and rpt.analysis.strip() not in ('', 'N/A') else ''
+            analysis_html = _md_to_html(analysis_raw) if analysis_raw else ''
+            model_sections.append(
+                dict(model_name=model, subset_rows=subset_rows, chart_div=chart_div, analysis_html=analysis_html)
+            )
 
         dataset_sections.append(
             dict(
@@ -232,8 +300,10 @@ def gen_html_report_file(
         models=all_models,
         datasets=all_datasets,
         generated_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        evalscope_version=_evalscope_version,
         summary_rows=summary_rows,
         overview_chart_div=overview_chart_div,
+        sunburst_chart_div=sunburst_chart_div,
         dataset_sections=dataset_sections,
     )
 

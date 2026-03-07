@@ -2,6 +2,17 @@
 
 执行 `evalscope eval --help` 可获取全部参数说明。
 
+## 环境变量
+
+以下环境变量可在启动前设置，用于控制全局默认行为：
+
+| 环境变量 | 说明 | 默认值 |
+|----------|------|--------|
+| `EVALSCOPE_CACHE` | EvalScope 缓存根目录，用于存放数据集、评测中间文件等 | `~/.cache/evalscope` |
+| `EVALSCOPE_LANGUAGE` | 全局默认语言，影响报告等输出语言（`en` 或 `zh`） | `en` |
+| `EVALSCOPE_HEARTBEAT_INTERVAL` | 评测进度心跳上报间隔（秒） | `60` |
+| `MODELSCOPE_CACHE` | ModelScope 模型与数据集缓存根目录 | `~/.cache/modelscope/hub` |
+
 ## 模型参数
 
 | 参数 | 类型 | 说明 | 默认值 |

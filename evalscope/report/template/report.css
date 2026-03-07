@@ -135,7 +135,6 @@ tbody tr:hover td { background: var(--bg-hover); }
 
 .score-cell {
   font-weight: 700;
-  color: var(--green);
   font-variant-numeric: tabular-nums;
 }
 
@@ -148,6 +147,7 @@ tbody tr:hover td { background: var(--bg-hover); }
   margin-bottom: 1.5rem;
   box-shadow: var(--shadow);
   overflow: hidden;
+  min-height: 350px;
 }
 
 .chart-card > div { width: 100% !important; }
@@ -162,7 +162,7 @@ tbody tr:hover td { background: var(--bg-hover); }
   box-shadow: var(--shadow);
 }
 
-.ds-item summary {
+.ds-item > summary {
   padding: 0.9rem 1.25rem;
   cursor: pointer;
   font-weight: 600;
@@ -175,9 +175,9 @@ tbody tr:hover td { background: var(--bg-hover); }
   user-select: none;
 }
 
-.ds-item summary::-webkit-details-marker { display: none; }
+.ds-item > summary::-webkit-details-marker { display: none; }
 
-.ds-item summary::before {
+.ds-item > summary::before {
   content: "▶";
   font-size: 0.65rem;
   color: var(--accent);
@@ -185,8 +185,8 @@ tbody tr:hover td { background: var(--bg-hover); }
   flex-shrink: 0;
 }
 
-.ds-item[open] summary::before { transform: rotate(90deg); }
-.ds-item summary:hover { background: var(--bg-hover); }
+.ds-item[open] > summary::before { transform: rotate(90deg); }
+.ds-item > summary:hover { background: var(--bg-hover); }
 
 .score-badge {
   background: var(--accent-dark);
@@ -214,21 +214,6 @@ tbody tr:hover td { background: var(--bg-hover); }
 }
 
 /* Rendered markdown elements inside the description ── */
-.ds-description h2,
-.ds-description h3 {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--accent);
-  margin: 1rem 0 0.35rem;
-  padding-bottom: 0.2rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.ds-description h2:first-child,
-.ds-description h3:first-child {
-  margin-top: 0;
-}
-
 .ds-description p {
   margin-bottom: 0.6rem;
 }
@@ -305,6 +290,149 @@ tbody tr:hover td { background: var(--bg-hover); }
   padding: 0.35rem 0.7rem;
 }
 
+/* ── Analysis section ────────────────────────────────────── */
+
+/* Inline collapsible toggles: description & analysis */
+.desc-toggle,
+.analysis-toggle {
+  margin-bottom: 1rem;
+}
+
+.desc-toggle > summary,
+.analysis-toggle > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 1.25rem 0 0.5rem;
+  user-select: none;
+}
+
+.desc-toggle > summary::-webkit-details-marker,
+.analysis-toggle > summary::-webkit-details-marker { display: none; }
+
+.desc-toggle > summary::before,
+.analysis-toggle > summary::before {
+  content: "\25B6";
+  font-size: 0.55rem;
+  color: var(--accent);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.desc-toggle[open] > summary::before,
+.analysis-toggle[open] > summary::before { transform: rotate(90deg); }
+
+.analysis-section {
+  font-size: 0.875rem;
+  color: var(--text);
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-deep);
+  border-radius: 6px;
+  border-left: 3px solid var(--green);
+  word-break: break-word;
+  line-height: 1.7;
+}
+
+.ds-description h2,
+.ds-description h3,
+.analysis-section h2,
+.analysis-section h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 1rem 0 0.35rem;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.analysis-section h2:first-child,
+.analysis-section h3:first-child { margin-top: 0; }
+
+.analysis-section p { margin-bottom: 0.6rem; }
+.analysis-section p:last-child { margin-bottom: 0; }
+
+.analysis-section ul,
+.analysis-section ol {
+  padding-left: 1.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.analysis-section li { margin-bottom: 0.2rem; }
+
+.analysis-section strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.analysis-section em {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.analysis-section code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 0.82rem;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.1em 0.35em;
+  color: #f6c90e;
+}
+
+.analysis-section pre {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  margin-bottom: 0.6rem;
+}
+
+.analysis-section pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
+.analysis-section blockquote {
+  border-left: 3px solid var(--border);
+  margin: 0.5rem 0 0.6rem;
+  padding: 0.3rem 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.analysis-section hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.75rem 0;
+}
+
+.analysis-section table {
+  font-size: 0.82rem;
+  margin-bottom: 0.6rem;
+  background: transparent;
+}
+
+.analysis-section th {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.7rem;
+}
+
+.analysis-section td { padding: 0.35rem 0.7rem; }
+
+/* ── Model heading ────────────────────────────────────────── */
 .model-heading {
   display: inline-block;
   font-size: 0.85rem;

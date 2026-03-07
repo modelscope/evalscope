@@ -54,6 +54,7 @@ def _build_task_config(data: dict) -> TaskConfig:
     task_config = TaskConfig.from_dict(data)
     task_config.no_timestamp = True
     task_config.enable_progress_tracker = True
+    task_config.analysis_report = True
     return task_config
 
 

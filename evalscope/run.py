@@ -2,7 +2,6 @@
 """
 Run evaluation for LLMs.
 """
-import json
 import os
 from argparse import Namespace
 from datetime import datetime
@@ -124,23 +123,16 @@ def compute_eval_total_count(task_config: 'TaskConfig') -> Optional[int]:
         contribution = effective * repeats    # then multiply by repeats
 
     """
-    meta_dir = os.path.join(os.path.dirname(__file__), 'benchmarks', '_meta')
+    from evalscope.utils.resource_utils import load_benchmark_data
     total = 0
 
     for dataset_name in task_config.datasets:
-        meta_path = os.path.join(meta_dir, f'{dataset_name}.json')
-        if not os.path.exists(meta_path):
+        entry = load_benchmark_data(dataset_name).get(dataset_name, {})
+        if not entry.get('statistics'):
             logger.debug(f'No meta file found for dataset "{dataset_name}", skipping total_count estimate.')
             return None
 
-        try:
-            with open(meta_path, encoding='utf-8') as f:
-                meta = json.load(f)
-        except Exception as e:
-            logger.debug(f'Failed to load meta for "{dataset_name}": {e}')
-            return None
-
-        subset_stats = meta.get('statistics', {}).get('subset_stats', [])
+        subset_stats = entry.get('statistics', {}).get('subset_stats', [])
         if not subset_stats:
             logger.debug(f'No subset_stats in meta for "{dataset_name}", skipping total_count estimate.')
             return None
@@ -151,7 +143,7 @@ def compute_eval_total_count(task_config: 'TaskConfig') -> Optional[int]:
         dataset_args = task_config.dataset_args.get(dataset_name, {})
         active_subsets = dataset_args.get('subset_list', None)
         if active_subsets is None:
-            active_subsets = meta.get('meta', {}).get('subset_list', list(subset_count_map.keys()))
+            active_subsets = entry.get('meta', {}).get('subset_list', list(subset_count_map.keys()))
 
         limit = task_config.limit
         repeats = task_config.repeats
