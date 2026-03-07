@@ -180,7 +180,7 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     from evalscope.api.model.lazy_model import LazyModel
     from evalscope.api.registry import get_benchmark
     from evalscope.evaluator import DefaultEvaluator
-    from evalscope.report import gen_report_file, gen_table
+    from evalscope.report import gen_html_report_file, gen_table
     from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
     from evalscope.utils.tqdm_utils import make_tracker
 
@@ -235,13 +235,13 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     except Exception:
         logger.error('Failed to generate report table.')
 
-    # Generate model-wise markdown report if enabled
-    if task_config.generate_markdown_report:
+    # Generate interactive HTML report if enabled
+    if task_config.generate_html_report:
         try:
-            md_path = gen_report_file(outputs.reports_dir)
-            logger.info(f'Markdown report generated: {md_path}')
+            html_path = gen_html_report_file(outputs.reports_dir)
+            logger.info(f'HTML report generated: {html_path}')
         except Exception as e:
-            logger.error(f'Failed to generate markdown report: {e}')
+            logger.error(f'Failed to generate HTML report: {e}')
     # Clean up
     if model is not None:
         import gc

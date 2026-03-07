@@ -214,18 +214,11 @@ class Report:
         return df_categories
 
     def generate_analysis(self, judge_llm_config: dict) -> str:
-        import locale
-
+        from evalscope.constants import DEFAULT_LANGUAGE
         from evalscope.metrics import LLMJudge
 
         try:
-            # get the default locale
-            lang, _ = locale.getlocale()
-
-            if lang is None:
-                language = '中文'
-            else:
-                language = 'en' if lang.startswith('en') else '中文'
+            language = 'en' if DEFAULT_LANGUAGE == 'en' else '中文'
 
             prompt = ANALYSIS_PROMPT.format(language=language, report_str=self.to_json_str())
             judge_llm = LLMJudge(**judge_llm_config)

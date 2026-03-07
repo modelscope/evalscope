@@ -161,8 +161,8 @@ class TaskConfig(BaseArgument):
     analysis_report: bool = False
     """Whether to generate detailed analysis reports after evaluation."""
 
-    generate_markdown_report: bool = True
-    """Whether to generate a model-wise markdown report and assets after evaluation."""
+    generate_html_report: bool = True
+    """Whether to generate a self-contained interactive HTML report after evaluation."""
 
     # Sandbox configuration arguments
     use_sandbox: bool = False

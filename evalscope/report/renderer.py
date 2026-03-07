@@ -10,30 +10,12 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
+_TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), 'template')
+_PLOTLY_CDN_CONFIG = {'responsive': True}
+
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
-
-
-def _format_markdown_table(headers: List[str], rows: List[List]) -> str:
-    """Render a GitHub-flavoured Markdown table."""
-    if not headers:
-        return ''
-    header_line = '| ' + ' | '.join(str(h) for h in headers) + ' |'
-    sep_line = '| ' + ' | '.join(['---'] * len(headers)) + ' |'
-    data_lines = ['| ' + ' | '.join(str(c) for c in row) + ' |' for row in rows]
-    return '\n'.join([header_line, sep_line] + data_lines)
-
-
-def _save_plotly_html(fig, html_path: str) -> bool:
-    """Save a Plotly figure as a self-contained HTML file.  Returns True on success."""
-    try:
-        os.makedirs(os.path.dirname(html_path), exist_ok=True)
-        fig.write_html(html_path, include_plotlyjs='cdn', full_html=False)
-        return True
-    except Exception as e:
-        logger.warning(f'Failed to save chart to {html_path}: {e}')
-        return False
 
 
 def _safe_filename(name: str) -> str:
@@ -41,9 +23,74 @@ def _safe_filename(name: str) -> str:
     return ''.join(c if c.isalnum() or c in ('-', '_') else '_' for c in name)
 
 
-def _iframe(rel_path: str, height: int = 420) -> str:
-    """Return a Markdown-embeddable iframe tag for a relative HTML chart path."""
-    return f'<iframe src="{rel_path}" width="100%" height="{height}" frameborder="0"></iframe>'
+def _md_to_html(text: str) -> str:
+    """Convert Markdown text to HTML for display in the report.
+
+    Uses the ``markdown`` package (with ``extra`` extensions for tables and
+    fenced code blocks).  If the package is unavailable the text is returned
+    HTML-escaped inside a ``<p>`` element so the report still renders safely.
+    """
+    if not text:
+        return ''
+
+    import markdown as md_lib
+    return md_lib.markdown(text, extensions=['extra'])
+
+
+def _build_dataset_info(report_list: List[Report]) -> Dict[str, dict]:
+    """Group reports by dataset, collecting model reports for each."""
+    dataset_info: Dict[str, dict] = {}
+    for report in report_list:
+        ds = report.dataset_name
+        if ds not in dataset_info:
+            dataset_info[ds] = {
+                'pretty_name': report.dataset_pretty_name or ds,
+                'description': _md_to_html((report.dataset_description or '').strip()),
+                'model_reports': {},
+            }
+        dataset_info[ds]['model_reports'][report.model_name] = report
+    return dataset_info
+
+
+def _overview_chart_div(labels: List[str], scores: List[float]) -> str:
+    """Return a Plotly HTML div for the overview bar chart, or empty string."""
+    if not labels:
+        return ''
+    overview_df = pd.DataFrame({
+        ReportKey.dataset_name: labels,
+        ReportKey.score: scores,
+    })
+    fig = plot_single_report_scores(overview_df)
+    if fig is None:
+        return ''
+    fig.update_layout(title='Overall Score by Dataset', height=400)
+    return fig.to_html(full_html=False, include_plotlyjs=False, config=_PLOTLY_CDN_CONFIG)
+
+
+def _subset_chart_div(
+    ds: str,
+    model: str,
+    pretty: str,
+    metric_name: str,
+    subset_labels: List[str],
+    subset_scores: List[float],
+    multi_model: bool,
+) -> str:
+    """Return a Plotly HTML div for a per-dataset subset bar chart, or empty string."""
+    if not subset_labels:
+        return ''
+    subset_df = pd.DataFrame({
+        ReportKey.subset_name: subset_labels,
+        ReportKey.metric_name: [metric_name] * len(subset_labels),
+        ReportKey.score: subset_scores,
+    })
+    fig = plot_single_dataset_scores(subset_df)
+    if fig is None:
+        return ''
+    chart_title = f'{pretty} \u2013 Subset Scores' + (f' ({model})' if multi_model else '')
+    div_id = f'chart-{_safe_filename(ds)}-{_safe_filename(model)}'
+    fig.update_layout(title=chart_title, height=380)
+    return fig.to_html(full_html=False, include_plotlyjs=False, config=_PLOTLY_CDN_CONFIG, div_id=div_id)
 
 
 # ---------------------------------------------------------------------------
@@ -51,36 +98,39 @@ def _iframe(rel_path: str, height: int = 420) -> str:
 # ---------------------------------------------------------------------------
 
 
-def gen_report_file(
+def gen_html_report_file(
     reports_dir: str,
-    output_md_name: str = 'report.md',
-    assets_dir_name: str = '_assets',
+    output_html_name: str = 'report.html',
 ) -> str:
-    """Generate a dataset-wise Markdown evaluation report.
+    """Generate a self-contained interactive HTML evaluation report.
 
-    The report covers **all** JSON reports found (recursively) under
-    *reports_dir* and is organised by dataset.  It contains:
+    The report is organised by dataset and contains:
 
     1. Title & metadata (models, datasets, timestamp)
     2. **Overview** – score-summary table + overall-score bar chart
-    3. **Results by dataset** – dataset description, subset-score table
-       and subset-score bar chart for each dataset
+    3. **Results by dataset** – description, subset-score table and
+       subset-score bar chart per dataset (collapsible accordion)
     4. Footer with EvalScope branding
 
-    Charts are saved as interactive Plotly HTML files under
-    ``reports_dir/_assets/`` (by default) and embedded via ``<iframe>``
-    so that the Markdown file and its assets can be opened anywhere that
-    renders HTML (GitHub Pages, VS Code preview, Jupyter, etc.).
+    Charts are Plotly interactive figures (hover, zoom, pan) rendered
+    client-side via the Plotly.js CDN.  The CSS lives in a separate
+    template file and is inlined into the output, producing a single
+    fully self-contained HTML file with no external asset dependencies
+    beyond the Plotly CDN.
 
     Args:
-        reports_dir:     Root directory that contains the per-dataset JSON
-                         report files (may be nested by model sub-directory).
-        output_md_name:  Name of the Markdown file written into *reports_dir*.
-        assets_dir_name: Name of the sub-directory for chart assets.
+        reports_dir:      Root directory containing per-dataset JSON report
+                          files (may be nested by model sub-directory).
+        output_html_name: Name of the HTML file written into *reports_dir*.
 
     Returns:
-        Absolute path to the generated Markdown file.
+        Absolute path to the generated HTML file.
     """
+    try:
+        from jinja2 import Environment, FileSystemLoader
+    except ImportError as exc:
+        raise ImportError('jinja2 is required to generate HTML reports: pip install jinja2') from exc
+
     reports_dir = os.path.abspath(reports_dir)
     if not os.path.isdir(reports_dir):
         raise ValueError(f'reports_dir does not exist or is not a directory: {reports_dir}')
@@ -89,63 +139,15 @@ def gen_report_file(
     if not report_list:
         logger.warning(f'No reports found under {reports_dir}. Generating an empty report.')
 
-    assets_dir = os.path.join(reports_dir, assets_dir_name)
-
-    # -------------------------------------------------------------------
-    # Build lookup: dataset_name → { pretty_name, description,
-    #                                 model_reports: {model_name: Report} }
-    # -------------------------------------------------------------------
-    dataset_info: Dict[str, dict] = {}
-    for report in report_list:
-        ds = report.dataset_name
-        if ds not in dataset_info:
-            dataset_info[ds] = {
-                'pretty_name': report.dataset_pretty_name or ds,
-                'description': (report.dataset_description or '').strip(),
-                'model_reports': {},
-            }
-        dataset_info[ds]['model_reports'][report.model_name] = report
-
+    dataset_info = _build_dataset_info(report_list)
     all_models: List[str] = sorted({r.model_name for r in report_list})
     all_datasets: List[str] = sorted(dataset_info.keys())
     multi_model = len(all_models) > 1
 
-    lines: List[str] = []
-
-    # ===================================================================
-    # 1. Title & metadata
-    # ===================================================================
-    lines += [
-        '# EvalScope Evaluation Report',
-        '',
-        f'- **Model(s):** {", ".join(all_models) if all_models else "N/A"}',
-        f'- **Datasets:** {", ".join(all_datasets) if all_datasets else "N/A"}',
-        f'- **Generated at:** {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}',
-        '- **Generated by:** [EvalScope](https://github.com/modelscope/evalscope)',
-        '',
-        '---',
-        '',
-    ]
-
-    if not report_list:
-        lines.append('No evaluation reports were found under the specified directory.')
-        _flush(lines, reports_dir, output_md_name)
-        return os.path.join(reports_dir, output_md_name)
-
-    # ===================================================================
-    # 2. Overview
-    # ===================================================================
-    lines += [
-        '## Overview',
-        '',
-        'Summary of overall scores across all evaluated datasets.',
-        '',
-        '### Score Summary',
-        '',
-    ]
-
-    # Summary table rows and data for the overview bar chart
-    summary_table_rows: List[List] = []
+    # ------------------------------------------------------------------
+    # Overview data
+    # ------------------------------------------------------------------
+    summary_rows: List[dict] = []
     overview_labels: List[str] = []
     overview_scores: List[float] = []
 
@@ -153,97 +155,42 @@ def gen_report_file(
         info = dataset_info[ds]
         pretty = info['pretty_name']
         for model in all_models:
-            report = info['model_reports'].get(model)
-            if report is None:
+            rpt: Optional[Report] = info['model_reports'].get(model)
+            if rpt is None:
                 continue
-            main_metric_name = report.metrics[0].name if report.metrics else 'N/A'
-            num = sum(cat.num for cat in report.metrics[0].categories) if report.metrics else 0
-            summary_table_rows.append([pretty, model, main_metric_name, f'{report.score:.4f}', str(num)])
-
-        # Overview chart: use first model only (or aggregate for multi-model later)
-        first_report: Optional[Report] = next(iter(info['model_reports'].values()), None)
-        if first_report is not None:
+            main_metric_name = rpt.metrics[0].name if rpt.metrics else 'N/A'
+            num = sum(cat.num for cat in rpt.metrics[0].categories) if rpt.metrics else 0
+            summary_rows.append(dict(dataset=pretty, model=model, metric=main_metric_name, score=rpt.score, num=num))
+        first: Optional[Report] = next(iter(info['model_reports'].values()), None)
+        if first is not None:
             overview_labels.append(pretty)
-            overview_scores.append(first_report.score)
+            overview_scores.append(first.score)
 
-    if summary_table_rows:
-        lines.append(
-            _format_markdown_table(
-                headers=['Dataset', 'Model', 'Metric', 'Score', 'Num'],
-                rows=summary_table_rows,
-            )
-        )
-        lines.append('')
+    overview_chart_div = _overview_chart_div(overview_labels, overview_scores)
 
-    # Overview bar chart (overall score per dataset)
-    if overview_labels:
-        html_path = os.path.join(assets_dir, 'overview_scores.html')
-        overview_df = pd.DataFrame({
-            ReportKey.dataset_name: overview_labels,
-            ReportKey.score: overview_scores,
-        })
-        fig = plot_single_report_scores(overview_df)
-        if fig is not None:
-            fig.update_layout(title='Overall Score by Dataset')
-            ok = _save_plotly_html(fig, html_path)
-            if ok:
-                rel = os.path.relpath(html_path, start=reports_dir)
-                lines += [
-                    '### Overall Score Chart',
-                    '',
-                    _iframe(rel),
-                    '',
-                ]
-
-    lines += ['---', '']
-
-    # ===================================================================
-    # 3. Results by dataset
-    # ===================================================================
-    lines += [
-        '## Results by Dataset',
-        '',
-    ]
+    # ------------------------------------------------------------------
+    # Per-dataset sections
+    # ------------------------------------------------------------------
+    dataset_sections: List[dict] = []
 
     for ds in all_datasets:
         info = dataset_info[ds]
         pretty = info['pretty_name']
-        description = info['description']
+        model_sections: List[dict] = []
+        overall_score = 0.0
 
-        lines += [
-            f'### {pretty}',
-            '',
-        ]
-
-        # Dataset description (collapsed by default)
-        if description:
-            lines += [
-                '<details>',
-                '<summary>Dataset Description</summary>',
-                '',
-                description,
-                '',
-                '</details>',
-                '',
-            ]
-
-        # Per-model breakdown
         for model in all_models:
-            report = info['model_reports'].get(model)
-            if report is None:
+            rpt = info['model_reports'].get(model)
+            if rpt is None:
+                continue
+            overall_score = rpt.score
+
+            if not rpt.metrics:
+                model_sections.append(dict(model_name=model, subset_rows=[], chart_div=''))
                 continue
 
-            if multi_model:
-                lines += [f'#### Model: {model}', '']
-
-            if not report.metrics:
-                lines += ['_No metrics available._', '']
-                continue
-
-            main_metric = report.metrics[0]
-
-            # Collect subset rows (skip the synthetic OVERALL row)
-            subset_rows: List[List] = []
+            main_metric = rpt.metrics[0]
+            subset_rows: List[dict] = []
             subset_labels: List[str] = []
             subset_scores: List[float] = []
 
@@ -251,55 +198,48 @@ def gen_report_file(
                 for sub in cat.subsets:
                     if sub.name == ReportKey.overall_score:
                         continue
-                    subset_rows.append([sub.name, main_metric.name, f'{sub.score:.4f}', str(sub.num)])
+                    subset_rows.append(dict(subset=sub.name, metric=main_metric.name, score=sub.score, num=sub.num))
                     subset_labels.append(sub.name)
                     subset_scores.append(sub.score)
 
-            # Subset table
-            if subset_rows:
-                lines.append(_format_markdown_table(
-                    headers=['Subset', 'Metric', 'Score', 'Num'],
-                    rows=subset_rows,
-                ))
-                lines.append('')
+            chart_div = _subset_chart_div(
+                ds=ds,
+                model=model,
+                pretty=pretty,
+                metric_name=main_metric.name,
+                subset_labels=subset_labels,
+                subset_scores=subset_scores,
+                multi_model=multi_model,
+            )
+            model_sections.append(dict(model_name=model, subset_rows=subset_rows, chart_div=chart_div))
 
-            # Subset bar chart
-            if subset_labels:
-                safe_ds = _safe_filename(ds)
-                safe_m = _safe_filename(model)
-                html_path = os.path.join(assets_dir, f'{safe_ds}_{safe_m}_subsets.html')
-                chart_title = (f'{pretty} – Subset Scores ({model})' if multi_model else f'{pretty} – Subset Scores')
-                subset_df = pd.DataFrame({
-                    ReportKey.subset_name: subset_labels,
-                    ReportKey.metric_name: [main_metric.name] * len(subset_labels),
-                    ReportKey.score: subset_scores,
-                })
-                fig = plot_single_dataset_scores(subset_df)
-                if fig is not None:
-                    fig.update_layout(title=chart_title)
-                    ok = _save_plotly_html(fig, html_path)
-                    if ok:
-                        rel = os.path.relpath(html_path, start=reports_dir)
-                        lines += [
-                            _iframe(rel),
-                            '',
-                        ]
+        dataset_sections.append(
+            dict(
+                pretty_name=pretty,
+                description=info['description'],
+                overall_score=overall_score,
+                model_sections=model_sections,
+                multi_model=multi_model,
+            )
+        )
 
-        lines += ['', '---', '']
+    # ------------------------------------------------------------------
+    # Render template
+    # ------------------------------------------------------------------
+    env = Environment(loader=FileSystemLoader(_TEMPLATE_DIR), autoescape=False)
+    template = env.get_template('report.html.j2')
+    html_content = template.render(
+        models=all_models,
+        datasets=all_datasets,
+        generated_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        summary_rows=summary_rows,
+        overview_chart_div=overview_chart_div,
+        dataset_sections=dataset_sections,
+    )
 
-    # ===================================================================
-    # 4. Footer
-    # ===================================================================
-    lines += [
-        '_Report generated by **[EvalScope](https://github.com/modelscope/evalscope)**._',
-        '',
-    ]
+    out_path = os.path.join(reports_dir, output_html_name)
+    with open(out_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
 
-    _flush(lines, reports_dir, output_md_name)
-    return os.path.join(reports_dir, output_md_name)
-
-
-def _flush(lines: List[str], reports_dir: str, output_md_name: str) -> None:
-    md_path = os.path.join(reports_dir, output_md_name)
-    with open(md_path, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(lines))
+    logger.info(f'HTML report generated: {out_path}')
+    return out_path
