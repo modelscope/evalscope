@@ -1,46 +1,18 @@
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
 import os
+import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Optional
 
+from evalscope.app.utils.visualization import plot_single_dataset_scores, plot_single_report_scores
 from evalscope.report.combinator import get_report_list
 from evalscope.report.report import Report, ReportKey
 from evalscope.utils.logger import get_logger
 
-# Non-interactive backend, suitable for headless API / CLI environments
-matplotlib.use('Agg')
-
 logger = get_logger()
-
-# ---------------------------------------------------------------------------
-# Colour / style constants
-# ---------------------------------------------------------------------------
-_BAR_COLOR = '#4C72B0'  # default single-series bar colour (muted blue)
-_GRID_COLOR = '#EBEBEB'  # light grid lines
-_SCORE_FONTSIZE = 9
-_AXIS_FONTSIZE = 10
-_TITLE_FONTSIZE = 12
-
-try:
-    # matplotlib >= 3.5
-    _RDYLGN = matplotlib.colormaps['RdYlGn']
-except Exception:
-    _RDYLGN = matplotlib.cm.get_cmap('RdYlGn')  # type: ignore[attr-defined]
 
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
-
-
-def _fig_width(n: int, min_w: float = 4.0, per_item: float = 1.5, max_w: float = 14.0) -> float:
-    """Return a sensible figure width (inches) for *n* bars.
-
-    A fixed per-item scaling prevents a single bar from ballooning into a
-    full-width colour block.
-    """
-    return max(min_w, min(per_item * n + 1.5, max_w))
 
 
 def _format_markdown_table(headers: List[str], rows: List[List]) -> str:
@@ -53,84 +25,25 @@ def _format_markdown_table(headers: List[str], rows: List[List]) -> str:
     return '\n'.join([header_line, sep_line] + data_lines)
 
 
-def _save_bar_chart(
-    labels: List[str],
-    scores: List[float],
-    title: str,
-    img_path: str,
-    use_score_colors: bool = False,
-) -> bool:
-    """Draw a bar chart and save to *img_path*.  Returns True on success.
-
-    Key aesthetics
-    --------------
-    - Bar width is **fixed at 0.4** data units so a single bar never fills the
-      whole figure – it stays at 40 % of the unit interval regardless of how
-      wide the figure is.
-    - Figure width scales linearly with the number of bars (capped at 14 in.).
-    - When *use_score_colors* is True, bars are coloured red → yellow → green
-      according to their score value.
-    """
-    if not labels:
+def _save_plotly_html(fig, html_path: str) -> bool:
+    """Save a Plotly figure as a self-contained HTML file.  Returns True on success."""
+    try:
+        os.makedirs(os.path.dirname(html_path), exist_ok=True)
+        fig.write_html(html_path, include_plotlyjs='cdn', full_html=False)
+        return True
+    except Exception as e:
+        logger.warning(f'Failed to save chart to {html_path}: {e}')
         return False
-
-    n = len(labels)
-    bar_width = 0.4
-    fig_w = _fig_width(n)
-
-    fig, ax = plt.subplots(figsize=(fig_w, 4.2))
-
-    x = np.arange(n)
-
-    if use_score_colors and n > 1:
-        bar_colors = [_RDYLGN(float(s)) for s in scores]
-    else:
-        bar_colors = _BAR_COLOR
-
-    bars = ax.bar(x, scores, width=bar_width, color=bar_colors, zorder=2)
-
-    # Value annotations above each bar
-    for bar, score in zip(bars, scores):
-        try:
-            s = float(score)
-        except Exception:
-            continue
-        ax.text(
-            bar.get_x() + bar.get_width() / 2,
-            s + 0.015,
-            f'{s:.3f}',
-            ha='center',
-            va='bottom',
-            fontsize=_SCORE_FONTSIZE,
-            fontweight='bold',
-            color='#333333',
-        )
-
-    ax.set_xticks(x)
-    ax.set_xticklabels(
-        labels,
-        rotation=20 if n > 5 else 0,
-        ha='right' if n > 5 else 'center',
-        fontsize=_AXIS_FONTSIZE,
-    )
-    ax.set_ylim(0.0, 1.15)
-    ax.set_ylabel('Score', fontsize=_AXIS_FONTSIZE)
-    ax.set_title(title, fontsize=_TITLE_FONTSIZE, pad=10)
-    ax.yaxis.grid(True, color=_GRID_COLOR, linewidth=0.8, zorder=0)
-    ax.set_axisbelow(True)
-    for spine in ('top', 'right'):
-        ax.spines[spine].set_visible(False)
-
-    os.makedirs(os.path.dirname(img_path), exist_ok=True)
-    fig.tight_layout()
-    fig.savefig(img_path, dpi=130)
-    plt.close(fig)
-    return True
 
 
 def _safe_filename(name: str) -> str:
     """Strip unsafe characters from *name* for use as a file name component."""
     return ''.join(c if c.isalnum() or c in ('-', '_') else '_' for c in name)
+
+
+def _iframe(rel_path: str, height: int = 420) -> str:
+    """Return a Markdown-embeddable iframe tag for a relative HTML chart path."""
+    return f'<iframe src="{rel_path}" width="100%" height="{height}" frameborder="0"></iframe>'
 
 
 # ---------------------------------------------------------------------------
@@ -154,15 +67,16 @@ def gen_markdown_report(
        and subset-score bar chart for each dataset
     4. Footer with EvalScope branding
 
-    Images are saved under ``reports_dir/_assets/`` (by default) using
-    relative paths so that the Markdown file and its assets can be zipped
-    and opened anywhere.
+    Charts are saved as interactive Plotly HTML files under
+    ``reports_dir/_assets/`` (by default) and embedded via ``<iframe>``
+    so that the Markdown file and its assets can be opened anywhere that
+    renders HTML (GitHub Pages, VS Code preview, Jupyter, etc.).
 
     Args:
         reports_dir:     Root directory that contains the per-dataset JSON
                          report files (may be nested by model sub-directory).
         output_md_name:  Name of the Markdown file written into *reports_dir*.
-        assets_dir_name: Name of the sub-directory for image assets.
+        assets_dir_name: Name of the sub-directory for chart assets.
 
     Returns:
         Absolute path to the generated Markdown file.
@@ -263,22 +177,23 @@ def gen_markdown_report(
 
     # Overview bar chart (overall score per dataset)
     if overview_labels:
-        img_path = os.path.join(assets_dir, 'overview_scores.png')
-        ok = _save_bar_chart(
-            labels=overview_labels,
-            scores=overview_scores,
-            title='Overall Score by Dataset',
-            img_path=img_path,
-            use_score_colors=False,
-        )
-        if ok:
-            rel = os.path.relpath(img_path, start=reports_dir)
-            lines += [
-                '### Overall Score Chart',
-                '',
-                f'![Overall Score by Dataset]({rel})',
-                '',
-            ]
+        html_path = os.path.join(assets_dir, 'overview_scores.html')
+        overview_df = pd.DataFrame({
+            ReportKey.dataset_name: overview_labels,
+            ReportKey.score: overview_scores,
+        })
+        fig = plot_single_report_scores(overview_df)
+        if fig is not None:
+            fig.update_layout(title='Overall Score by Dataset')
+            ok = _save_plotly_html(fig, html_path)
+            if ok:
+                rel = os.path.relpath(html_path, start=reports_dir)
+                lines += [
+                    '### Overall Score Chart',
+                    '',
+                    _iframe(rel),
+                    '',
+                ]
 
     lines += ['---', '']
 
@@ -352,21 +267,23 @@ def gen_markdown_report(
             if subset_labels:
                 safe_ds = _safe_filename(ds)
                 safe_m = _safe_filename(model)
-                img_path = os.path.join(assets_dir, f'{safe_ds}_{safe_m}_subsets.png')
+                html_path = os.path.join(assets_dir, f'{safe_ds}_{safe_m}_subsets.html')
                 chart_title = (f'{pretty} – Subset Scores ({model})' if multi_model else f'{pretty} – Subset Scores')
-                ok = _save_bar_chart(
-                    labels=subset_labels,
-                    scores=subset_scores,
-                    title=chart_title,
-                    img_path=img_path,
-                    use_score_colors=(len(subset_labels) > 1),
-                )
-                if ok:
-                    rel = os.path.relpath(img_path, start=reports_dir)
-                    lines += [
-                        f'![{pretty} subset scores]({rel})',
-                        '',
-                    ]
+                subset_df = pd.DataFrame({
+                    ReportKey.subset_name: subset_labels,
+                    ReportKey.metric_name: [main_metric.name] * len(subset_labels),
+                    ReportKey.score: subset_scores,
+                })
+                fig = plot_single_dataset_scores(subset_df)
+                if fig is not None:
+                    fig.update_layout(title=chart_title)
+                    ok = _save_plotly_html(fig, html_path)
+                    if ok:
+                        rel = os.path.relpath(html_path, start=reports_dir)
+                        lines += [
+                            _iframe(rel),
+                            '',
+                        ]
 
         lines += ['', '---', '']
 

@@ -16,6 +16,7 @@ openai
 overrides
 pandas
 pillow
+plotly
 pydantic
 pylatexenc
 pyyaml>=5.1
