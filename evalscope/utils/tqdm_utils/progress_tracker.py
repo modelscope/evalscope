@@ -2,8 +2,9 @@ import json
 import os
 import threading
 import time
+from contextlib import nullcontext
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 
 class ProgressTracker:
@@ -59,13 +60,13 @@ class ProgressTracker:
 
     def __enter__(self) -> 'ProgressTracker':
         """Attach this tracker to TqdmLogging and return self."""
-        from evalscope.utils.tqdm_utils import TqdmLogging
+        from evalscope.utils.tqdm_utils.tqdm_logging import TqdmLogging
         TqdmLogging.set_tracker(self)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         """Detach tracker and finalise status based on whether an exception occurred."""
-        from evalscope.utils.tqdm_utils import TqdmLogging
+        from evalscope.utils.tqdm_utils.tqdm_logging import TqdmLogging
         self.set_status('error' if exc_type is not None else 'completed')
         TqdmLogging.set_tracker(None)
         return False  # never suppress exceptions
@@ -188,3 +189,21 @@ class ProgressTracker:
         with open(tmp, 'w') as f:
             json.dump(state, f, indent=2, ensure_ascii=False)
         os.replace(tmp, self._path)
+
+
+def make_tracker(
+    enabled: bool,
+    work_dir: str,
+    pipeline: str = '',
+    write_interval: float = 1.0,
+) -> Union['ProgressTracker', 'nullcontext']:
+    """Return a ``ProgressTracker`` context manager when *enabled*, otherwise a no-op ``nullcontext``.
+
+    Example::
+
+        with make_tracker(task_config.enable_progress_tracker, outputs.outputs_dir, pipeline='eval') as tracker:
+            ...
+    """
+    if enabled:
+        return ProgressTracker(work_dir=work_dir, pipeline=pipeline, write_interval=write_interval)
+    return nullcontext()

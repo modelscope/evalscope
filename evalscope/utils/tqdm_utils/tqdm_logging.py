@@ -6,7 +6,7 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from evalscope.utils.progress_tracker import ProgressTracker
+    from .progress_tracker import ProgressTracker
 
 
 class TqdmLogging(tqdm):

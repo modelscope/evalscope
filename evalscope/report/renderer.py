@@ -51,7 +51,7 @@ def _iframe(rel_path: str, height: int = 420) -> str:
 # ---------------------------------------------------------------------------
 
 
-def gen_markdown_report(
+def gen_report_file(
     reports_dir: str,
     output_md_name: str = 'report.md',
     assets_dir_name: str = '_assets',

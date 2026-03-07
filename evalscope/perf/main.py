@@ -124,13 +124,8 @@ def run_perf_benchmark(args):
         server = threading.Thread(target=start_app, args=(copy.deepcopy(args), ), daemon=True)
         server.start()
 
-    # Build context: real ProgressTracker when enabled, no-op nullcontext otherwise
-    if args.enable_progress_tracker:
-        from evalscope.utils.progress_tracker import ProgressTracker
-        tracker_ctx = ProgressTracker(work_dir=output_path, pipeline='perf')
-    else:
-        from contextlib import nullcontext
-        tracker_ctx = nullcontext()
+    from evalscope.utils.tqdm_utils import make_tracker
+    tracker_ctx = make_tracker(args.enable_progress_tracker, work_dir=output_path, pipeline='perf')
 
     # Start benchmark
     with tracker_ctx:

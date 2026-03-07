@@ -115,9 +115,9 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     from evalscope.api.model.lazy_model import LazyModel
     from evalscope.api.registry import get_benchmark
     from evalscope.evaluator import DefaultEvaluator
-    from evalscope.report import gen_table
-    from evalscope.report.renderer import gen_markdown_report
-    from evalscope.utils.tqdm_utils import TqdmLogging
+    from evalscope.report import gen_table, gen_report_file
+    from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
+    from evalscope.utils.tqdm_utils import make_tracker
 
     # Initialize evaluator
     eval_results = {}
@@ -144,17 +144,10 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     task_config.dump_yaml(outputs.configs_dir)
     logger.info(task_config)
 
-    # Build context: real ProgressTracker when enabled, no-op nullcontext otherwise
-    if task_config.enable_progress_tracker:
-        from evalscope.utils.progress_tracker import ProgressTracker
-        tracker_ctx = ProgressTracker(work_dir=outputs.outputs_dir, pipeline='eval')
-    else:
-        from contextlib import nullcontext
-        tracker_ctx = nullcontext()
-
+    tracker_ctx = make_tracker(task_config.enable_progress_tracker, work_dir=outputs.outputs_dir, pipeline='eval')
     # Run evaluation for each evaluator (outermost progress stage)
     with tracker_ctx:
-        with TqdmLogging(
+        with tqdm(
             evaluators,
             desc='Running[eval]',
             total=len(evaluators),
@@ -175,7 +168,7 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     # Generate model-wise markdown report if enabled
     if task_config.generate_markdown_report:
         try:
-            md_path = gen_markdown_report(outputs.reports_dir)
+            md_path = gen_report_file(outputs.reports_dir)
             logger.info(f'Markdown report generated: {md_path}')
         except Exception as e:
             logger.error(f'Failed to generate markdown report: {e}')

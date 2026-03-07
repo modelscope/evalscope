@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     )
     from .generator import ReportGenerator
     from .report import Category, Metric, Report, ReportKey, Subset
+    from .renderer import gen_report_file
 
 else:
     _import_structure = {
@@ -34,6 +35,9 @@ else:
             'ReportKey',
             'Subset',
             'Metric',
+        ],
+        'renderer': [
+            'gen_report_file',
         ],
     }
 
