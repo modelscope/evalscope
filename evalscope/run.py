@@ -2,6 +2,7 @@
 """
 Run evaluation for LLMs.
 """
+import json
 import os
 from argparse import Namespace
 from datetime import datetime
@@ -109,6 +110,70 @@ def get_backend_manager_class(eval_backend: EvalBackend):
         raise NotImplementedError(f'Not implemented for evaluation backend {eval_backend}')
 
 
+def compute_eval_total_count(task_config: 'TaskConfig') -> Optional[int]:
+    """Estimate the total number of evaluation samples for a task configuration.
+
+    Reads per-subset ``sample_count`` values from the bundled ``_meta`` JSON
+    files and applies ``limit`` (per-subset cap) and ``repeats`` (multiplier).
+    Returns ``None`` if the count cannot be determined (e.g. missing meta file
+    or unknown dataset).
+
+    Calculation per dataset::
+
+        effective = min(sample_count, limit)  # apply limit first
+        contribution = effective * repeats    # then multiply by repeats
+
+    """
+    meta_dir = os.path.join(os.path.dirname(__file__), 'benchmarks', '_meta')
+    total = 0
+
+    for dataset_name in task_config.datasets:
+        meta_path = os.path.join(meta_dir, f'{dataset_name}.json')
+        if not os.path.exists(meta_path):
+            logger.debug(f'No meta file found for dataset "{dataset_name}", skipping total_count estimate.')
+            return None
+
+        try:
+            with open(meta_path, encoding='utf-8') as f:
+                meta = json.load(f)
+        except Exception as e:
+            logger.debug(f'Failed to load meta for "{dataset_name}": {e}')
+            return None
+
+        subset_stats = meta.get('statistics', {}).get('subset_stats', [])
+        if not subset_stats:
+            logger.debug(f'No subset_stats in meta for "{dataset_name}", skipping total_count estimate.')
+            return None
+
+        subset_count_map = {s['name']: s['sample_count'] for s in subset_stats}
+
+        # Determine which subsets are active (user override or full list)
+        dataset_args = task_config.dataset_args.get(dataset_name, {})
+        active_subsets = dataset_args.get('subset_list', None)
+        if active_subsets is None:
+            active_subsets = meta.get('meta', {}).get('subset_list', list(subset_count_map.keys()))
+
+        limit = task_config.limit
+        repeats = task_config.repeats
+
+        for subset in active_subsets:
+            sample_count = subset_count_map.get(subset)
+            if sample_count is None:
+                continue
+            # Apply limit per subset first
+            if limit is not None:
+                if isinstance(limit, float):
+                    effective = int(sample_count * limit)
+                else:
+                    effective = min(sample_count, int(limit))
+            else:
+                effective = sample_count
+            # Then multiply by repeats
+            total += effective * repeats
+
+    return total if total > 0 else None
+
+
 def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     """Evaluate the model based on the provided task configuration."""
     from evalscope.api.evaluator import Evaluator
@@ -144,7 +209,12 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     task_config.dump_yaml(outputs.configs_dir)
     logger.info(task_config)
 
-    tracker_ctx = make_tracker(task_config.enable_progress_tracker, work_dir=outputs.outputs_dir, pipeline='eval')
+    tracker_ctx = make_tracker(
+        task_config.enable_progress_tracker,
+        work_dir=outputs.outputs_dir,
+        pipeline='eval',
+        total_count=compute_eval_total_count(task_config),
+    )
     # Run evaluation for each evaluator (outermost progress stage)
     with tracker_ctx:
         with tqdm(

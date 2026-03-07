@@ -125,7 +125,10 @@ def run_perf_benchmark(args):
         server.start()
 
     from evalscope.utils.tqdm_utils import make_tracker
-    tracker_ctx = make_tracker(args.enable_progress_tracker, work_dir=output_path, pipeline='perf')
+    total_count = sum(args.number) if isinstance(args.number, list) else args.number
+    tracker_ctx = make_tracker(
+        args.enable_progress_tracker, work_dir=output_path, pipeline='perf', total_count=total_count
+    )
 
     # Start benchmark
     with tracker_ctx:
