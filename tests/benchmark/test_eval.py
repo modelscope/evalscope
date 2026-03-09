@@ -286,7 +286,7 @@ class TestNativeBenchmark(TestBenchmark):
 
     def test_arena_hard(self):
         """Test Arena Hard dataset."""
-        self._run_dataset_test('arena_hard', use_cache='outputs/20250818_211353')
+        self._run_dataset_test('arena_hard')
 
     def test_frames(self):
         """Test Frames dataset."""

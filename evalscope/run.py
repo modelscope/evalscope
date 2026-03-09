@@ -227,13 +227,12 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     except Exception:
         logger.error('Failed to generate report table.')
 
-    # Generate interactive HTML report if enabled
-    if task_config.generate_html_report:
-        try:
-            html_path = gen_html_report_file(outputs.reports_dir)
-            logger.info(f'HTML report generated: {html_path}')
-        except Exception as e:
-            logger.error(f'Failed to generate HTML report: {e}')
+    # Generate interactive HTML report
+    try:
+        html_path = gen_html_report_file(outputs.reports_dir)
+        logger.info(f'HTML report generated: {html_path}')
+    except Exception as e:
+        logger.error(f'Failed to generate HTML report: {e}')
     # Clean up
     if model is not None:
         import gc
