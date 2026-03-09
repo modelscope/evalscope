@@ -10,12 +10,15 @@ and report generation.
 import os
 import traceback
 from collections import defaultdict
-from typing import TYPE_CHECKING, Callable, Dict, List
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from evalscope.api.dataset import Dataset, Sample
 from evalscope.api.evaluator import CacheManager, Evaluator, TaskState
 from evalscope.api.metric import AggScore, SampleScore
+from evalscope.api.registry import register_evaluator
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
+from evalscope.evaluator.batch_reviewer import BatchReviewer
 from evalscope.report import Report, gen_table
 from evalscope.utils.function_utils import run_in_threads_with_progress
 from evalscope.utils.logger import get_logger
@@ -30,16 +33,69 @@ if TYPE_CHECKING:
 logger = get_logger()
 
 
+@dataclass
+class _WorkItem:
+    """
+    A work item for the unified evaluation pool.
+
+    Represents a single unit of work in the evaluation pipeline:
+    - If ``task_state`` is None: run full predict + review for ``sample``.
+    - If ``task_state`` is provided: prediction is already cached; run review only.
+    """
+
+    subset: str
+    """Subset this item belongs to."""
+
+    sample: Optional[Sample] = None
+    """Sample to predict. Set when prediction is required."""
+
+    task_state: Optional[TaskState] = None
+    """Cached task state. Set when only review is required."""
+
+    @property
+    def needs_predict(self) -> bool:
+        """True when prediction has not yet been computed."""
+        return self.task_state is None
+
+
+@dataclass
+class _PoolContext:
+    """
+    Carries state from :meth:`~DefaultEvaluator._collect_work_items` through
+    the evaluation phases, acting as the shared data contract between phases.
+
+    Attributes:
+        work_items: Work items to process in the unified pool.
+        cached_scores_by_subset: Fully cached (predict + review) scores per subset.
+        review_pending_by_subset: TaskStates whose prediction is cached but review
+            is still needed; populated only for ``use_batch_scoring`` benchmarks.
+        model_prediction_dir: Shared parent directory for prediction JSONL files.
+        total_cached: Number of samples already fully cached (skipped in pool).
+    """
+
+    work_items: List[_WorkItem]
+    cached_scores_by_subset: Dict[str, List[SampleScore]]
+    review_pending_by_subset: Dict[str, List[TaskState]]
+    model_prediction_dir: str
+    total_cached: int
+
+    @property
+    def grand_total(self) -> int:
+        """Total sample count across all subsets: cached + work-pool items."""
+        return self.total_cached + len(self.work_items)
+
+
+@register_evaluator('default')
 class DefaultEvaluator(Evaluator):
     """
     Default Evaluator for running evaluations on benchmarks.
 
     This evaluator handles the complete evaluation pipeline:
-    1. Loading datasets from benchmarks
-    2. Running model inference on samples
-    3. Calculating evaluation metrics
-    4. Generating and saving reports
-    5. Managing caching for predictions and reviews
+    1. Loading datasets from all subsets
+    2. Flattening all subsets into a single unified work pool
+    3. Running model inference and metric calculation atomically per sample
+    4. Writing results to per-subset JSONL cache as each sample completes
+    5. Aggregating scores and generating the final report
 
     Args:
         benchmark: The data adapter for loading and processing data.
@@ -78,37 +134,52 @@ class DefaultEvaluator(Evaluator):
             benchmark_name=self.benchmark_name,
         )
 
+        # Initialize batch reviewer for benchmarks that use batch scoring
+        self.batch_reviewer = BatchReviewer(
+            benchmark=benchmark,
+            cache_manager=self.cache_manager,
+            task_config=task_config,
+        )
+
     def eval(self) -> Report:
         """
         Run the complete evaluation process.
 
-        This is the main entry point that orchestrates the entire evaluation:
-        1. Load dataset from benchmark
-        2. Evaluate each subset independently
-        3. Aggregate scores across subsets
-        4. Generate final evaluation report
+        All subsets are merged into a **single unified work pool** so slow
+        samples in one subset never block samples in another.  Each sample is
+        predicted and reviewed atomically; results are persisted to per-subset
+        JSONL caches as they complete.
 
         Returns:
-            Report: The complete evaluation report containing all metrics and results.
+            Report: The complete evaluation report.
         """
-        # Load the dataset and evaluate each subset
         logger.info(f'Start loading benchmark dataset: {self.benchmark_name}')
-        dataset_dict = self.benchmark.load_dataset()
-        agg_score_dict = defaultdict(list)
+        dataset_dict = {k: v for k, v in self.benchmark.load_dataset().items() if len(v) > 0}
 
-        # Process each subset (e.g., test, validation) independently
+        if not dataset_dict:
+            logger.warning(f'No samples found in any subset of {self.benchmark_name}. Skipping.')
+            self.finalize()
+            return {}
+
         subset_list = list(dataset_dict.keys())
-        logger.info(f'Start evaluating {len(dataset_dict)} subsets of the {self.benchmark_name}: {subset_list}')
-        for subset, dataset in tqdm(
-            dataset_dict.items(), desc=f'Evaluating[{self.benchmark_name}]', unit='subset', logger=logger
-        ):
-            if len(dataset) == 0:
-                logger.info(f'No samples found in subset: {subset}, skipping.')
-                continue
-            logger.info(f'Evaluating subset: {subset}')
-            subset_score = self.evaluate_subset(subset, dataset)
-            agg_score_dict[subset] = subset_score
+        logger.info(f'Start evaluating {len(dataset_dict)} subsets of {self.benchmark_name}: {subset_list}')
 
+        # Phase 1 – build unified work pool from all subsets
+        context = self._collect_work_items(dataset_dict)
+        logger.info(
+            f'Unified pool: {len(context.work_items)} items to process, '
+            f'{context.total_cached} already fully cached '
+            f'({context.grand_total} total across all subsets).'
+        )
+
+        # Phase 2 – execute unified thread pool (single progress bar)
+        results_by_subset = self._run_pool(context)
+        logger.info(f'Unified pool finished for {self.benchmark_name}.')
+
+        # Phase 3 – aggregate scores per subset (batch review happens here too)
+        agg_score_dict = self._aggregate_scores(dataset_dict, context, results_by_subset)
+
+        # Phase 4 – generate report
         if not agg_score_dict:
             logger.warning(
                 f'No valid scores generated for {self.benchmark_name} '
@@ -116,106 +187,239 @@ class DefaultEvaluator(Evaluator):
             )
             report = {}
         else:
-            # Generate the report based on aggregated scores
             logger.info('Generating report...')
             report = self.get_report(agg_score_dict)
 
-        # Finalize the evaluation process
         self.finalize()
         logger.info(f'Benchmark {self.benchmark_name} evaluation finished.')
         return report
 
-    def evaluate_subset(self, subset: str, dataset: Dataset) -> List[AggScore]:
-        """
-        Evaluate a single subset of the dataset.
+    # ------------------------------------------------------------------ #
+    # Phase helpers                                                        #
+    # ------------------------------------------------------------------ #
 
-        This method processes one subset through the complete evaluation pipeline:
-        1. Get model predictions for all samples
-        2. Calculate evaluation metrics for predictions
-        3. Aggregate individual sample scores
+    def _collect_work_items(self, dataset_dict: Dict[str, Dataset]) -> _PoolContext:
+        """
+        Phase 1 – classify every sample across all subsets into a work tier.
+
+        Each sample falls into exactly one of three tiers:
+
+        1. **Fully cached** (predict + review on disk) → skipped; its score is
+           stored in ``cached_scores_by_subset``.
+        2. **Predict cached, review pending** → review-only :class:`_WorkItem`
+           (or placed in ``review_pending_by_subset`` for batch-scoring).
+        3. **Uncached** → full predict + review :class:`_WorkItem`.
 
         Args:
-            subset: Name of the subset being evaluated (e.g., 'test', 'validation').
-            dataset: The dataset subset containing samples to evaluate.
+            dataset_dict: Mapping of subset name → dataset.
 
         Returns:
-            List[AggScore]: Aggregated scores for this subset.
+            A :class:`_PoolContext` ready for :meth:`_run_pool` and
+            :meth:`_aggregate_scores`.
         """
-        # Get model predictions for all samples in the subset
-        logger.info(f'Getting predictions for subset: {subset}')
-        task_states = self.get_answers(subset, dataset)
+        work_items: List[_WorkItem] = []
+        cached_scores_by_subset: Dict[str, List[SampleScore]] = defaultdict(list)
+        review_pending_by_subset: Dict[str, List[TaskState]] = defaultdict(list)
 
-        # Calculate evaluation metrics for each prediction
-        logger.info(f'Getting reviews for subset: {subset}')
-        sample_scores = self.get_reviews(subset, task_states)
+        for subset, dataset in dataset_dict.items():
+            cached_pred_states, remaining_dataset = (
+                self.cache_manager.filter_prediction_cache(subset, dataset) if self.use_cache else ([], dataset)
+            )
 
-        # Aggregate individual sample scores into subset-level metrics
-        logger.info(f'Aggregating scores for subset: {subset}')
-        agg_scores = self.benchmark.aggregate_scores(sample_scores=sample_scores)
-        return agg_scores
+            if self.benchmark.use_batch_scoring:
+                # Prediction runs in the pool; review is deferred until all
+                # task_states for this subset are available (after pool).
+                for sample in remaining_dataset:
+                    work_items.append(_WorkItem(subset=subset, sample=sample))
 
-    def get_answers(self, subset: str, dataset: Dataset) -> List[TaskState]:
+                if self.use_cache and not self.task_config.rerun_review:
+                    cached_scores, need_review = self.cache_manager.filter_review_cache(subset, cached_pred_states)
+                    cached_scores_by_subset[subset].extend(cached_scores)
+                    review_pending_by_subset[subset].extend(need_review)
+                else:
+                    self.cache_manager.delete_review_cache(subset)
+                    review_pending_by_subset[subset].extend(cached_pred_states)
+
+            else:
+                # Predict + review happen atomically per sample inside the pool.
+                if self.use_cache and not self.task_config.rerun_review:
+                    cached_scores, need_review = self.cache_manager.filter_review_cache(subset, cached_pred_states)
+                    cached_scores_by_subset[subset].extend(cached_scores)
+                    for ts in need_review:  # Tier 2: review-only items
+                        work_items.append(_WorkItem(subset=subset, task_state=ts))
+                else:
+                    self.cache_manager.delete_review_cache(subset)
+                    for ts in cached_pred_states:  # Prediction cached, review cleared
+                        work_items.append(_WorkItem(subset=subset, task_state=ts))
+
+                for sample in remaining_dataset:  # Tier 3: full predict+review
+                    work_items.append(_WorkItem(subset=subset, sample=sample))
+
+        model_prediction_dir = os.path.dirname(self.cache_manager.get_prediction_cache_path(next(iter(dataset_dict))))
+        total_cached = sum(len(v) for v in cached_scores_by_subset.values())
+
+        return _PoolContext(
+            work_items=work_items,
+            cached_scores_by_subset=cached_scores_by_subset,
+            review_pending_by_subset=review_pending_by_subset,
+            model_prediction_dir=model_prediction_dir,
+            total_cached=total_cached,
+        )
+
+    def _run_pool(self, context: _PoolContext) -> Dict[str, List[Tuple[TaskState, Optional[SampleScore]]]]:
         """
-        Get model predictions for all samples in the dataset subset.
+        Phase 2 – execute the unified work pool under a single progress bar.
 
-        This method handles:
-        1. Loading cached predictions if available and caching is enabled
-        2. Running model inference on remaining samples in parallel
-        3. Saving new predictions to cache
+        Each item is processed by :meth:`_process_work_item`; results are
+        immediately persisted by :meth:`_persist_result` and accumulated
+        into a per-subset bucket for downstream aggregation.
 
         Args:
-            subset: Name of the subset being processed.
-            dataset: The dataset subset containing samples for prediction.
+            context: Pool context produced by :meth:`_collect_work_items`.
 
         Returns:
-            List[TaskState]: Task states containing model predictions for each sample.
+            Mapping of subset name → ``(task_state, sample_score)`` pairs in
+            completion order.  ``sample_score`` is ``None`` for batch-scoring
+            benchmarks (review is deferred to :meth:`_aggregate_scores`).
         """
-        # Initialize task state list and filter cached predictions if caching is enabled
-        if self.use_cache:
-            cached_task_state_list, dataset = self.cache_manager.filter_prediction_cache(subset, dataset)
-        else:
-            cached_task_state_list = []
+        results_by_subset: Dict[str, List[Tuple[TaskState, Optional[SampleScore]]]] = \
+            defaultdict(list)
 
-        # Get output directory for storing model predictions
-        model_prediction_dir = os.path.dirname(self.cache_manager.get_prediction_cache_path(subset))
+        def worker(item: _WorkItem) -> Tuple[TaskState, Optional[SampleScore]]:
+            return self._process_work_item(item, context.model_prediction_dir)
 
-        # Convert dataset to list for parallel processing
-        dataset_list = list(dataset)
+        def on_result(item: _WorkItem, result: Tuple[TaskState, Optional[SampleScore]]) -> None:
+            self._persist_result(item, *result)
+            results_by_subset[item.subset].append(result)
 
-        def worker(sample: Sample) -> TaskState:
-            return self._predict_sample(sample, model_prediction_dir)
-
-        def on_result(sample: Sample, task_state: TaskState) -> None:
-            model_result = self.cache_manager.save_prediction_cache(subset, task_state, self.benchmark.save_metadata)
-            logger.debug(f'Model result: \n{model_result.pretty_print()}')
-
-        def on_error(sample: Sample, exc: Exception) -> None:
+        def on_error(item: _WorkItem, exc: Exception) -> None:
             tb_str = traceback.format_exc()
-            logger.error(f'{sample.model_dump_json(indent=2)} prediction failed: due to {exc}\nTraceback:\n{tb_str}')
+            logger.error(f'Processing item in subset={item.subset!r} failed: {exc}\nTraceback:\n{tb_str}')
             if self.task_config.ignore_errors:
                 logger.warning('Error ignored, continuing with next sample.')
                 return
             raise exc
 
-        finished_task_states = run_in_threads_with_progress(
-            dataset_list,
+        run_in_threads_with_progress(
+            context.work_items,
             worker,
-            desc=f'Predicting[{self.benchmark_name}@{subset}]',
+            desc=f'Evaluating[{self.benchmark_name}]',
             max_workers=self.task_config.eval_batch_size,
             log_interval=HEARTBEAT_INTERVAL_SEC,
             on_result=on_result,
             on_error=on_error,
             filter_none_results=True,
-            initial=len(cached_task_state_list),
-            total=len(cached_task_state_list) + len(dataset_list),
+            initial=context.total_cached,
+            total=context.grand_total,
         )
+        return results_by_subset
 
-        logger.info(f'Finished getting predictions for subset: {subset}.')
-        return cached_task_state_list + finished_task_states
+    def _process_work_item(self, item: _WorkItem, model_prediction_dir: str) -> Tuple[TaskState, Optional[SampleScore]]:
+        """
+        Process a single work item: predict (if needed) then review.
+
+        Called concurrently inside the thread pool by :meth:`_run_pool`.
+        Override this method to inject custom logic around inference or scoring.
+
+        Args:
+            item: The work item to process.
+            model_prediction_dir: Directory for storing prediction output files.
+
+        Returns:
+            ``(task_state, sample_score)`` where ``sample_score`` is ``None``
+            for batch-scoring benchmarks (review deferred).
+        """
+        task_state = (
+            self._predict_sample(item.sample, model_prediction_dir) if item.needs_predict else item.task_state
+        )
+        sample_score = (None if self.benchmark.use_batch_scoring else self._review_task_state(task_state))
+        return task_state, sample_score
+
+    def _persist_result(
+        self,
+        item: _WorkItem,
+        task_state: TaskState,
+        sample_score: Optional[SampleScore],
+    ) -> None:
+        """
+        Persist a completed item’s results to the on-disk cache.
+
+        Called in the **main thread** by :meth:`_run_pool` immediately after
+        each item completes (no concurrent writes).  Override to add custom
+        persistence logic.
+
+        Args:
+            item: The originating work item.
+            task_state: The completed task state (prediction output).
+            sample_score: The review score, or ``None`` for batch-scoring.
+        """
+        if item.needs_predict:
+            model_result = self.cache_manager.save_prediction_cache(
+                item.subset, task_state, self.benchmark.save_metadata
+            )
+            logger.debug(f'Model result: \n{model_result.pretty_print()}')
+
+        if sample_score is not None:
+            review_result = self.cache_manager.save_review_cache(
+                subset=item.subset,
+                task_state=task_state,
+                sample_score=sample_score,
+                save_metadata=self.benchmark.save_metadata,
+            )
+            logger.debug(f'Review result: \n{review_result.pretty_print()}')
+
+    def _aggregate_scores(
+        self,
+        dataset_dict: Dict[str, Dataset],
+        context: _PoolContext,
+        results_by_subset: Dict[str, List[Tuple[TaskState, Optional[SampleScore]]]],
+    ) -> Dict[str, List[AggScore]]:
+        """
+        Phase 3 – aggregate per-sample scores into subset-level metrics.
+
+        For standard benchmarks the pool scores are combined with cached scores
+        and passed directly to ``benchmark.aggregate_scores``.
+
+        For batch-scoring benchmarks :meth:`BatchReviewer.review_subset` is invoked
+        first to produce final per-sample scores from all collected task states.
+
+        Args:
+            dataset_dict: Subset iteration order.
+            context: Pool context from :meth:`_collect_work_items`.
+            results_by_subset: Per-subset pool results from :meth:`_run_pool`.
+
+        Returns:
+            Mapping of subset name → aggregated scores.  Empty subsets omitted.
+        """
+        agg_score_dict: Dict[str, List[AggScore]] = {}
+
+        for subset in dataset_dict:
+            cached_scores = context.cached_scores_by_subset.get(subset, [])
+            pool_results = results_by_subset.get(subset, [])
+
+            if self.benchmark.use_batch_scoring:
+                pending = context.review_pending_by_subset.get(subset, [])
+                new_task_states = [ts for ts, _ in pool_results]
+                batch_scores = self.batch_reviewer.review_subset(
+                    subset, pending + new_task_states, review_fn=self._review_task_state
+                )
+                all_scores = cached_scores + batch_scores
+            else:
+                new_scores = [sc for _, sc in pool_results if sc is not None]
+                all_scores = cached_scores + new_scores
+
+            if not all_scores:
+                logger.info(f'No valid scores generated for subset: {subset}, skipping.')
+                continue
+
+            logger.info(f'Aggregating scores for subset: {subset}')
+            agg_score_dict[subset] = self.benchmark.aggregate_scores(sample_scores=all_scores)
+
+        return agg_score_dict
 
     def _predict_sample(self, sample: Sample, model_prediction_dir: str) -> TaskState:
         """
-        Helper method to predict a single sample.
+        Run model inference on a single sample.
 
         Args:
             sample: The sample to predict.
@@ -225,82 +429,12 @@ class DefaultEvaluator(Evaluator):
             TaskState: The task state containing the prediction result.
         """
         logger.debug(f'\n{sample.pretty_print()}')
-
-        # Run model inference on the current sample
         task_state = self.benchmark.run_inference(model=self.model, sample=sample, output_dir=model_prediction_dir)
         return task_state
 
-    def get_reviews(self, subset: str, task_states: List[TaskState]) -> List[SampleScore]:
-        """
-        Calculate evaluation metrics for model predictions.
-
-        This method handles:
-        1. Loading cached review results if available and caching is enabled
-        2. Computing metrics for remaining task states in parallel
-        3. Saving new review results to cache
-
-        Args:
-            subset: Name of the subset being reviewed.
-            task_states: List of task states containing model predictions.
-
-        Returns:
-            List[SampleScore]: Evaluation scores for each sample.
-        """
-        # Initialize sample score list and filter cached reviews if caching is enabled
-        if self.use_cache and not self.task_config.rerun_review:
-            cached_score_list, task_states = self.cache_manager.filter_review_cache(subset, task_states)
-        else:
-            # Init a clean sample score list
-            cached_score_list = []
-            self.cache_manager.delete_review_cache(subset)
-
-        def worker(task_state: TaskState) -> SampleScore:
-            return self._review_task_state(task_state)
-
-        def on_result(task_state: TaskState, sample_score: SampleScore) -> None:
-            review_result = self.cache_manager.save_review_cache(
-                subset=subset,
-                task_state=task_state,
-                sample_score=sample_score,
-                save_metadata=self.benchmark.save_metadata
-            )
-            logger.debug(f'Review result: \n{review_result.pretty_print()}')
-
-        def on_error(task_state: TaskState, exc: Exception) -> None:
-            tb_str = traceback.format_exc()
-            logger.error(f'Error when review sample {task_state.sample_id}: due to {exc}\nTraceback:\n{tb_str}')
-            if self.task_config.ignore_errors:
-                logger.warning('Error ignored, continuing with next sample.')
-                return
-            raise exc
-
-        # Run reviews in parallel
-        reviewed_scores = run_in_threads_with_progress(
-            task_states,
-            worker,
-            desc=f'Reviewing[{self.benchmark_name}@{subset}]',
-            max_workers=self.task_config.judge_worker_num,
-            log_interval=HEARTBEAT_INTERVAL_SEC,
-            on_error=on_error,
-            # Do not persist interim results when batch scoring is enabled
-            on_result=None if self.benchmark.use_batch_scoring else on_result,
-            filter_none_results=False,
-            initial=len(cached_score_list),
-            total=len(cached_score_list) + len(task_states),
-        )
-
-        # Batch calculate metrics if supported by the benchmark
-        if self.benchmark.use_batch_scoring:
-            reviewed_scores = self._batch_review_task_states(
-                task_states=task_states, reviewed_scores=reviewed_scores, on_result=on_result
-            )
-
-        logger.info(f'Finished reviewing subset: {subset}. Total reviewed: {len(reviewed_scores)}')
-        return cached_score_list + reviewed_scores
-
     def _review_task_state(self, task_state: TaskState) -> SampleScore:
         """
-        Helper method to review a single task state.
+        Compute evaluation metrics for a single task state.
 
         Args:
             task_state: The task state to review.
@@ -308,43 +442,8 @@ class DefaultEvaluator(Evaluator):
         Returns:
             SampleScore: The evaluation score for the task state.
         """
-        # Compute evaluation metrics using the benchmark's metric calculation
         sample_score = self.benchmark.calculate_metrics(task_state=task_state)
         return sample_score
-
-    def _batch_review_task_states(
-        self, task_states: List[TaskState], reviewed_scores: List[SampleScore],
-        on_result: Callable[[TaskState, SampleScore], None]
-    ) -> List[SampleScore]:
-        valid_indices = [i for i, score in enumerate(reviewed_scores) if score is not None]
-        if not valid_indices:
-            return reviewed_scores
-
-        task_states = [task_states[i] for i in valid_indices]
-        reviewed_scores = [reviewed_scores[i] for i in valid_indices]
-
-        # Iterate in batches with progress bar
-        all_reviewed_scores = []
-        total = len(task_states)
-        batch_size = self.task_config.judge_worker_num
-        with tqdm(total=total, desc='Scoring[batch]', unit='sample', logger=logger) as pbar:
-            for start in range(0, total, batch_size):
-                # Process batch
-                end = min(start + batch_size, total)
-                batch_task_states = task_states[start:end]
-                batch_scores = reviewed_scores[start:end]
-                # Batch calculate metrics
-                updated_reviewed_scores = self.benchmark.batch_calculate_metrics(
-                    task_states=batch_task_states, sample_scores=batch_scores
-                )
-                # Append results
-                all_reviewed_scores.extend(updated_reviewed_scores)
-                # Save each result to cache
-                for task_state, sample_score in zip(batch_task_states, updated_reviewed_scores):
-                    on_result(task_state, sample_score)
-
-                pbar.update(len(batch_task_states))
-        return all_reviewed_scores
 
     def get_report(self, agg_score_dict: Dict[str, List[AggScore]]) -> Report:
         """

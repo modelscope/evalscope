@@ -1,9 +1,7 @@
 import abc
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING
 
-from evalscope.api.metric import SampleScore
 from evalscope.report import Report
-from .state import TaskState
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
@@ -38,16 +36,6 @@ class Evaluator(abc.ABC):
     @abc.abstractmethod
     def eval(self, *args, **kwargs) -> Report:
         """Run the evaluation process."""
-        pass
-
-    @abc.abstractmethod
-    def get_answers(self, *args, **kwargs) -> List[TaskState]:
-        """Get the evaluation answers."""
-        pass
-
-    @abc.abstractmethod
-    def get_reviews(self, *args, **kwargs) -> List[SampleScore]:
-        """Get the review results."""
         pass
 
     @abc.abstractmethod
