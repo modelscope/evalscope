@@ -95,13 +95,12 @@ dump_jsonl_data(mixed_data, 'outputs/qwen3_vl_test.jsonl')
 from dotenv import dotenv_values
 env = dotenv_values('.env')
 from evalscope import TaskConfig, run_task
-from evalscope.constants import EvalType
 
 task_cfg = TaskConfig(
     model='qwen-vl-plus-latest',
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
     api_key=env.get('DASHSCOPE_API_KEY'),
-    eval_type=EvalType.SERVICE,
+    eval_type='openai_api',
     datasets=[
         'data_collection',
     ],

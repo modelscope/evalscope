@@ -69,7 +69,7 @@ def build_model(agent_model, adapter_instance):
 
     user_server = get_model(
         model=adapter_instance.user_model,
-        eval_type=EvalType.SERVICE,
+        eval_type=EvalType.OPENAI_API,
         base_url=adapter_instance.api_base,
         api_key=adapter_instance.api_key,
         config=GenerateConfig(**adapter_instance.generation_config)

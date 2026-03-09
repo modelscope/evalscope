@@ -1,12 +1,13 @@
 import os
 
 from evalscope import TaskConfig, run_task
+from evalscope.constants import EvalType
 
 task_cfg = TaskConfig(
     model='qwen-plus',
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
     api_key=os.getenv('DASHSCOPE_API_KEY'),
-    eval_type='openai_api',  # 使用API模型服务
+    eval_type=EvalType.OPENAI_API,  # 使用API模型服务
     datasets=['swe_bench_verified'], # 选择评测数据集, 也可以选择'swe_bench_verified_mini'或'swe_bench_lite'
     dataset_args={
         'swe_bench_verified': {

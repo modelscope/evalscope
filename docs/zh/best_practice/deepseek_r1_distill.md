@@ -126,13 +126,12 @@ Percentile results:
 
 ```python
 from evalscope import TaskConfig, run_task
-from evalscope.constants import EvalType
 
 task_cfg = TaskConfig(
     model='DeepSeek-R1-Distill-Qwen-1.5B',   # 模型名称 (需要与部署时的模型名称一致)
     api_url='http://127.0.0.1:8801/v1',  # 推理服务地址
     api_key='EMPTY',
-    eval_type=EvalType.SERVICE,   # 评测类型，SERVICE表示评测推理服务
+    eval_type='openai_api',   # 评测类型，openai_api表示评测推理服务
     datasets=[
         'data_collection',  # 数据集名称(固定为data_collection表示使用混合数据集)
     ],
