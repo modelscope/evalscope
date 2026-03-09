@@ -52,8 +52,10 @@ def _load_meta_readme(ds: str, lang: str = DEFAULT_LANGUAGE) -> str:
     """Load README from *_meta/{ds}.json*, select the requested language variant,
     and process the content (strip H1 + last H2 section).
 
-    Falls back to the ``en`` variant when the requested language is unavailable.
-    Returns an empty string when the meta file does not exist or has no readme.
+    Returns an empty string when the meta file does not exist, has no readme,
+    or does not contain the requested language variant.  No cross-language
+    fallback is performed so callers can distinguish "has content" from
+    "no content for this language".
     """
     from evalscope.utils.resource_utils import load_benchmark_data
     try:
@@ -61,7 +63,7 @@ def _load_meta_readme(ds: str, lang: str = DEFAULT_LANGUAGE) -> str:
     except Exception:
         return ''
     readme = entry.get('readme', {})
-    content = readme.get(lang) or readme.get('en') or ''
+    content = readme.get(lang, '')
     return _process_readme_content(content) if content else ''
 
 
@@ -90,14 +92,19 @@ def _build_dataset_info(report_list: List[Report]) -> Dict[str, dict]:
     for report in report_list:
         ds = report.dataset_name
         if ds not in dataset_info:
-            # Prefer the richer README from _meta; fall back to the description
-            # embedded in the report when no meta file is available.
-            readme_content = _load_meta_readme(ds)
-            if not readme_content:
-                readme_content = (report.dataset_description or '').strip()
+            # Load both language variants from _meta so the HTML report can
+            # switch between them when the user toggles EN / 中文.
+            readme_en = _load_meta_readme(ds, lang='en')
+            readme_zh = _load_meta_readme(ds, lang='zh')
+            # Fall back to the description embedded in the report when no meta
+            # file is available for either language.
+            if not readme_en and not readme_zh:
+                fallback = (report.dataset_description or '').strip()
+                readme_en = fallback
             dataset_info[ds] = {
                 'pretty_name': report.dataset_pretty_name or ds,
-                'description': _md_to_html(readme_content),
+                'description_en': _md_to_html(readme_en),
+                'description_zh': _md_to_html(readme_zh),
                 'model_reports': {},
             }
         dataset_info[ds]['model_reports'][report.model_name] = report
@@ -284,7 +291,8 @@ def gen_html_report_file(
         dataset_sections.append(
             dict(
                 pretty_name=pretty,
-                description=info['description'],
+                description_en=info['description_en'],
+                description_zh=info['description_zh'],
                 overall_score=overall_score,
                 model_sections=model_sections,
                 multi_model=multi_model,

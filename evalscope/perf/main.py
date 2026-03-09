@@ -10,6 +10,7 @@ from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
+from evalscope.utils.tqdm_utils import make_tracker
 from .arguments import Arguments, parse_args
 from .benchmark import benchmark
 from .sla.sla_run import run_sla_auto_tune
@@ -17,6 +18,7 @@ from .utils.db_util import get_output_path
 from .utils.handler import add_signal_handlers
 from .utils.local_server import start_app
 from .utils.log_utils import init_visualizer
+from .utils.report.generate_report import gen_perf_html_report
 from .utils.rich_display import print_summary
 
 logger = get_logger()
@@ -124,7 +126,6 @@ def run_perf_benchmark(args):
         server = threading.Thread(target=start_app, args=(copy.deepcopy(args), ), daemon=True)
         server.start()
 
-    from evalscope.utils.tqdm_utils import make_tracker
     total_count = sum(args.number) if isinstance(args.number, list) else args.number
     tracker_ctx = make_tracker(
         args.enable_progress_tracker, work_dir=output_path, pipeline='perf', total_count=total_count
@@ -133,6 +134,15 @@ def run_perf_benchmark(args):
     # Start benchmark
     with tracker_ctx:
         results = run_multi_benchmark(args, output_path=output_path)
+
+    # Generate HTML report
+
+    try:
+        report_path = gen_perf_html_report(output_path, results, args)
+        if report_path:
+            logger.info(f'HTML report generated: {report_path}')
+    except Exception as e:
+        logger.warning(f'Failed to generate HTML report: {e}')
 
     return results
 

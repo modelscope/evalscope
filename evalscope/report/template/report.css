@@ -216,7 +216,12 @@ body {
 }
 .header-inner { position: relative; z-index: 1; }
 
-.header-eyebrow { margin-bottom: 1rem; }
+.header-eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
 .header-badge {
   display: inline-flex;
   align-items: center;
@@ -628,6 +633,30 @@ tbody tr:hover td { background: rgba(99,179,237,0.04); }
 }
 .report-footer a { color: var(--accent); text-decoration: none; }
 .report-footer a:hover { text-decoration: underline; }
+
+/* ── Language switcher (shared: eval + perf reports) ────────── */
+.lang-switcher {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border-md);
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.lang-btn {
+  padding: 0.28rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+}
+.lang-btn:hover  { background: rgba(255,255,255,0.06); color: var(--text); }
+.lang-btn.active { background: var(--accent); color: #0d1117; }
 
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 900px) {
