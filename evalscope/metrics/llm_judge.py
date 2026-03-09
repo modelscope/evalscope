@@ -3,7 +3,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
-from evalscope.constants import EvalType, JudgeScoreType
+from evalscope.constants import JudgeScoreType
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -82,7 +82,7 @@ class LLMJudge:
         self.api_key = api_key or os.environ.get('MODELSCOPE_SDK_TOKEN', 'EMPTY')
         self.api_url = api_url or os.environ.get('MODELSCOPE_API_BASE', DEFAULT_API_URL)
         self.model_id = model_id or os.environ.get('MODELSCOPE_JUDGE_LLM', DEFAULT_JUDGE_MODEL)
-        self.eval_type = eval_type or EvalType.SERVICE
+        self.eval_type = eval_type or 'openai_api'
         self.system_prompt = system_prompt or os.environ.get('JUDGE_SYSTEM_PROMPT', None)
         self.generation_config = generation_config or {'temperature': 0.0, 'max_tokens': 1024}
 

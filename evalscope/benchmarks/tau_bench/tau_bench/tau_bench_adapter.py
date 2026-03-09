@@ -106,11 +106,10 @@ class TauBenchAdapter(AgentAdapter):
         def new_generate_next_message(self, messages):
             from evalscope.api.messages import dict_to_chat_message
             from evalscope.api.model import GenerateConfig, get_model
-            from evalscope.constants import EvalType
 
             user_server = get_model(
                 model=adapter_instance.user_model,
-                eval_type=EvalType.SERVICE,
+                eval_type='openai_api',
                 base_url=adapter_instance.api_base,
                 api_key=adapter_instance.api_key,
                 config=GenerateConfig(**adapter_instance.generation_config)

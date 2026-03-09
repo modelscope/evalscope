@@ -70,7 +70,7 @@ class EvalType:
     CUSTOM = 'custom'
     MOCK_LLM = 'mock_llm'
     CHECKPOINT = 'llm_ckpt'  # native model checkpoint
-    SERVICE = 'openai_api'  # model service
+    SERVICE = 'openai_api'  # model service (deprecated)
     TEXT2IMAGE = 'text2image'  # image generation service
     IMAGE_EDITING = 'image_editing'  # image editing service
     OPENAI_API = 'openai_api'

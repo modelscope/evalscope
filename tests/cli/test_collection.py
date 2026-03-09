@@ -6,7 +6,7 @@ import os
 import unittest
 
 from evalscope.collections import CollectionSchema, DatasetInfo, StratifiedSampler, UniformSampler, WeightedSampler
-from evalscope.constants import EvalType, JudgeStrategy
+from evalscope.constants import JudgeStrategy
 from evalscope.utils.io_utils import dump_jsonl_data
 from tests.common import TestBenchmark
 from tests.utils import test_level_list
@@ -19,7 +19,7 @@ class TestCollection(TestBenchmark):
             'model': 'qwen-vl-plus',
             'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'api_key': env.get('DASHSCOPE_API_KEY'),
-            'eval_type': EvalType.SERVICE,
+            'eval_type': 'openai_api',
             'eval_batch_size': 5,
             'limit': 5,
             'generation_config': {

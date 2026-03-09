@@ -192,10 +192,10 @@ class TaskConfig(BaseArgument):
             self.model = self.model_task
             self.eval_type = EvalType.MOCK_LLM
 
-        # Set eval_type to SERVICE if api_url is provided
+        # Set eval_type to openai_api if api_url is provided
         if self.api_url is not None and self.eval_type is None:
-            logger.info('api_url is provided, setting eval_type to SERVICE.')
-            self.eval_type = EvalType.SERVICE
+            logger.info("api_url is provided, setting eval_type to 'openai_api'.")
+            self.eval_type = EvalType.OPENAI_API
 
         # Set eval_type to CHECKPOINT if model is a string path and eval_type is not set
         if self.model and self.eval_type is None:
@@ -245,7 +245,7 @@ class TaskConfig(BaseArgument):
         elif self.model_task == ModelTask.TEXT_GENERATION:
             if self.eval_type == EvalType.CHECKPOINT:
                 return DEFAULT_TEXT_GEN_CHECKPOINT_CONFIG.copy()
-            elif self.eval_type == EvalType.SERVICE:
+            elif self.eval_type == EvalType.OPENAI_API:
                 return DEFAULT_TEXT_GEN_SERVICE_CONFIG.copy()
 
         return {}

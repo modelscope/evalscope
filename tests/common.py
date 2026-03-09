@@ -7,7 +7,7 @@ import unittest
 from unittest import TestCase
 
 from evalscope.config import TaskConfig
-from evalscope.constants import EvalType, JudgeStrategy
+from evalscope.constants import JudgeStrategy
 from evalscope.run import run_task
 from evalscope.utils.logger import get_logger
 
@@ -23,7 +23,7 @@ class TestBenchmark(TestCase):
             'model': 'qwen-plus',
             'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'api_key': env.get('DASHSCOPE_API_KEY'),
-            'eval_type': EvalType.SERVICE,
+            'eval_type': 'openai_api',
             'eval_batch_size': 5,
             'limit': 5,
             'generation_config': {

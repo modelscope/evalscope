@@ -14,7 +14,6 @@ from evalscope.api.model import GenerateConfig, get_model
 from evalscope.api.model.model import Model
 from evalscope.api.model.model_output import ChatCompletionChoice, ModelOutput
 from evalscope.api.tool.tool_info import ToolInfo
-from evalscope.constants import EvalType
 from evalscope.models.utils.openai import openai_chat_choices
 from evalscope.utils.function_utils import run_once
 
@@ -69,7 +68,7 @@ def build_model(agent_model, adapter_instance):
 
     user_server = get_model(
         model=adapter_instance.user_model,
-        eval_type=EvalType.SERVICE,
+        eval_type='openai_api',
         base_url=adapter_instance.api_base,
         api_key=adapter_instance.api_key,
         config=GenerateConfig(**adapter_instance.generation_config)
