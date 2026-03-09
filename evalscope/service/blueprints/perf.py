@@ -131,7 +131,7 @@ def get_performance_progress():
     if not task_id:
         return jsonify({'error': 'task_id is required'}), 400
 
-    progress_file = os.path.join(OUTPUT_DIR, task_id, 'progress.json')
+    progress_file = os.path.join(OUTPUT_DIR, task_id, 'perf', 'progress.json')
     try:
         with open(progress_file, 'r') as f:
             progress = json.load(f)
