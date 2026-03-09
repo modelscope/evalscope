@@ -3,7 +3,7 @@ import os
 
 from evalscope.constants import DEFAULT_WORK_DIR
 
-OUTPUT_DIR = os.getenv('EVALSCOPE_OUTPUT_DIR', DEFAULT_WORK_DIR)
+OUTPUT_DIR = os.path.abspath(os.getenv('EVALSCOPE_OUTPUT_DIR', DEFAULT_WORK_DIR))
 
 
 def validate_task_id(task_id: str) -> None:

@@ -313,6 +313,7 @@ def gen_html_report_file(
         overview_chart_div=overview_chart_div,
         sunburst_chart_div=sunburst_chart_div,
         dataset_sections=dataset_sections,
+        default_lang=DEFAULT_LANGUAGE,
     )
 
     out_path = os.path.join(reports_dir, output_html_name)

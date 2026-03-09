@@ -10,8 +10,8 @@
       </span>
       <!-- Language toggle: EN / 中文 -->
       <div class="lang-switcher" role="group" aria-label="Language selection">
-        <button class="lang-btn active" data-lang="en">EN</button>
-        <button class="lang-btn" data-lang="zh">中文</button>
+        <button class="lang-btn{% if default_lang == 'en' %} active{% endif %}" data-lang="en">EN</button>
+        <button class="lang-btn{% if default_lang == 'zh' %} active{% endif %}" data-lang="zh">中文</button>
       </div>
     </div>
     <h1 class="report-title" data-i18n="header.title">Performance Benchmark Report</h1>

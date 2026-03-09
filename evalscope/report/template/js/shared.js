@@ -46,12 +46,15 @@ document.querySelectorAll('.lang-btn').forEach(function (btn) {
   btn.addEventListener('click', function () { setLang(btn.dataset.lang); });
 });
 
-/* Restore the last-selected language on page load */
+/* Restore the last-selected language on page load,
+   falling back to the server-side DEFAULT_LANG when no stored preference exists */
 (function initLang() {
   try {
     var saved = localStorage.getItem('evalscope-lang');
-    if (saved && I18N[saved]) { setLang(saved); }
-  } catch (e) { /* ignore */ }
+    setLang((saved && I18N[saved]) ? saved : (DEFAULT_LANG || 'en'));
+  } catch (e) {
+    setLang(DEFAULT_LANG || 'en');
+  }
 }());
 
 /* ── Dataset / run accordion arrow ───────────────────────────── */

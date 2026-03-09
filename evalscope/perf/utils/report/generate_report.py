@@ -16,6 +16,7 @@ from collections import OrderedDict
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from evalscope.constants import DEFAULT_LANGUAGE
 from evalscope.utils.logger import get_logger
 from evalscope.version import __version__ as _evalscope_version
 
@@ -313,6 +314,7 @@ def gen_perf_html_report(
         latency_tabs=latency_tabs,
         throughput_tabs=throughput_tabs,
         run_sections=[_build_run_section(r, is_emb) for r in runs],
+        default_lang=DEFAULT_LANGUAGE,
     )
 
     out_path = os.path.join(output_dir, output_html_name)
