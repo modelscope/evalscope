@@ -70,6 +70,7 @@ Whether you want to evaluate the general capabilities of models, conduct multi-m
 
 
 - 🔥 **[2026.03.09]** Added support for evaluation progress tracking and HTML format visualization report generation.
+- 🔥 **[2026.03.02]** Added support for Anthropic Claude API evaluation. Use `--eval-type anthropic_api` to evaluate models via Anthropic API service.
 - 🔥 **[2026.02.03]** Comprehensive update to dataset documentation, adding data statistics, data samples, usage instructions and more. Refer to [Supported Datasets](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset/llm.html)
 - 🔥 **[2026.01.13]** Added support for Embedding and Rerank model service stress testing. Refer to the [usage documentation](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/examples.html#embedding).
 - 🔥 **[2025.12.26]** Added support for Terminal-Bench-2.0, which evaluates AI Agent performance on 89 real-world multi-step terminal tasks. Refer to the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html).

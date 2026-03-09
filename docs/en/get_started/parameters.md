@@ -144,7 +144,7 @@ The `--generation-config` parameter supports the following options (comma-separa
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `--eval-type` | `str` | Evaluation type<br>• `llm_ckpt`: Local model inference (transformers)<br>• `openai_api`: OpenAI-compatible API service<br>• `text2image`: Text-to-image model (diffusers)<br>• `mock_llm`: Simulated inference (for verification) | `None` (auto-detect) |
+| `--eval-type` | `str` | Evaluation type<br>• `llm_ckpt`: Local model inference (transformers)<br>• `openai_api`: OpenAI-compatible API service<br>• `anthropic_api`: Anthropic Claude API service<br>• `text2image`: Text-to-image model (diffusers)<br>• `mock_llm`: Simulated inference (for verification) | `None` (auto-detect) |
 | `--eval-batch-size` | `int` | Evaluation batch size<br>For `eval-type=service`, means concurrent requests | `1` (service mode: `8`) |
 | `--eval-backend` | `str` | Evaluation backend<br>• `Native`: Default backend<br>• `OpenCompass`: LLM evaluation<br>• `VLMEvalKit`: Multimodal model evaluation<br>• `RAGEval`: RAG/Embedding/Reranker/CLIP evaluation<br>• `ThirdParty`: Special task evaluation | `Native` |
 | `--eval-config` | `str` | Configuration file path for non-Native backends | - |

@@ -144,7 +144,7 @@
 
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
-| `--eval-type` | `str` | 评测类型<br>• `llm_ckpt`: 本地模型推理（transformers）<br>• `openai_api`: OpenAI兼容API服务<br>• `text2image`: 文本转图像模型（diffusers）<br>• `mock_llm`: 模拟推理（功能验证） | `None`（自动判断） |
+| `--eval-type` | `str` | 评测类型<br>• `llm_ckpt`: 本地模型推理（transformers）<br>• `openai_api`: OpenAI兼容API服务<br>• `anthropic_api`: Anthropic Claude API服务<br>• `text2image`: 文本转图像模型（diffusers）<br>• `mock_llm`: 模拟推理（功能验证） | `None`（自动判断） |
 | `--eval-batch-size` | `int` | 评测批量大小<br>`eval-type=service`时表示并发请求数 | `1`（service模式为`8`） |
 | `--eval-backend` | `str` | 评测后端<br>• `Native`: 默认后端<br>• `OpenCompass`: 大语言模型评测<br>• `VLMEvalKit`: 多模态模型评测<br>• `RAGEval`: RAG/Embedding/Reranker/CLIP评测<br>• `ThirdParty`: 特殊任务评测 | `Native` |
 | `--eval-config` | `str` | 非Native后端的配置文件路径 | - |
