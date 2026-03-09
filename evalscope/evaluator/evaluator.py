@@ -11,12 +11,14 @@ import os
 import traceback
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from evalscope.api.dataset import Dataset, Sample
 from evalscope.api.evaluator import CacheManager, Evaluator, TaskState
 from evalscope.api.metric import AggScore, SampleScore
+from evalscope.api.registry import register_evaluator
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
+from evalscope.evaluator.batch_reviewer import BatchReviewer
 from evalscope.report import Report, gen_table
 from evalscope.utils.function_utils import run_in_threads_with_progress
 from evalscope.utils.logger import get_logger
@@ -83,6 +85,7 @@ class _PoolContext:
         return self.total_cached + len(self.work_items)
 
 
+@register_evaluator('default')
 class DefaultEvaluator(Evaluator):
     """
     Default Evaluator for running evaluations on benchmarks.
@@ -129,6 +132,13 @@ class DefaultEvaluator(Evaluator):
             outputs=outputs,
             model_name=self.model_name,
             benchmark_name=self.benchmark_name,
+        )
+
+        # Initialize batch reviewer for benchmarks that use batch scoring
+        self.batch_reviewer = BatchReviewer(
+            benchmark=benchmark,
+            cache_manager=self.cache_manager,
+            task_config=task_config,
         )
 
     def eval(self) -> Report:
@@ -370,7 +380,7 @@ class DefaultEvaluator(Evaluator):
         For standard benchmarks the pool scores are combined with cached scores
         and passed directly to ``benchmark.aggregate_scores``.
 
-        For batch-scoring benchmarks :meth:`_batch_review_subset` is invoked
+        For batch-scoring benchmarks :meth:`BatchReviewer.review_subset` is invoked
         first to produce final per-sample scores from all collected task states.
 
         Args:
@@ -390,7 +400,9 @@ class DefaultEvaluator(Evaluator):
             if self.benchmark.use_batch_scoring:
                 pending = context.review_pending_by_subset.get(subset, [])
                 new_task_states = [ts for ts, _ in pool_results]
-                batch_scores = self._batch_review_subset(subset, pending + new_task_states)
+                batch_scores = self.batch_reviewer.review_subset(
+                    subset, pending + new_task_states, review_fn=self._review_task_state
+                )
                 all_scores = cached_scores + batch_scores
             else:
                 new_scores = [sc for _, sc in pool_results if sc is not None]
@@ -404,43 +416,6 @@ class DefaultEvaluator(Evaluator):
             agg_score_dict[subset] = self.benchmark.aggregate_scores(sample_scores=all_scores)
 
         return agg_score_dict
-
-    def _batch_review_subset(self, subset: str, task_states: List[TaskState]) -> List[SampleScore]:
-        """
-        Run batch scoring for a single subset.
-
-        First computes per-sample metrics via :meth:`_review_task_state`
-        (a prerequisite for :meth:`_batch_review_task_states`), then refines
-        them using the benchmark’s ``batch_calculate_metrics``.  Each final
-        score is persisted to the review cache immediately.
-
-        Args:
-            subset: Subset name used for cache routing.
-            task_states: All task states to review for this subset.
-
-        Returns:
-            Final :class:`SampleScore` list in input order.
-        """
-        if not task_states:
-            return []
-
-        logger.info(f'Batch reviewing {len(task_states)} task states for subset: {subset}')
-
-        pre_scores = [self._review_task_state(ts) for ts in task_states]
-
-        def on_result(ts: TaskState, score: SampleScore) -> None:
-            self.cache_manager.save_review_cache(
-                subset=subset,
-                task_state=ts,
-                sample_score=score,
-                save_metadata=self.benchmark.save_metadata,
-            )
-
-        return self._batch_review_task_states(
-            task_states=task_states,
-            reviewed_scores=pre_scores,
-            on_result=on_result,
-        )
 
     def _predict_sample(self, sample: Sample, model_prediction_dir: str) -> TaskState:
         """
@@ -469,40 +444,6 @@ class DefaultEvaluator(Evaluator):
         """
         sample_score = self.benchmark.calculate_metrics(task_state=task_state)
         return sample_score
-
-    def _batch_review_task_states(
-        self, task_states: List[TaskState], reviewed_scores: List[SampleScore],
-        on_result: Callable[[TaskState, SampleScore], None]
-    ) -> List[SampleScore]:
-        valid_indices = [i for i, score in enumerate(reviewed_scores) if score is not None]
-        if not valid_indices:
-            return reviewed_scores
-
-        task_states = [task_states[i] for i in valid_indices]
-        reviewed_scores = [reviewed_scores[i] for i in valid_indices]
-
-        # Iterate in batches with progress bar
-        all_reviewed_scores = []
-        total = len(task_states)
-        batch_size = self.task_config.judge_worker_num
-        with tqdm(total=total, desc='Scoring[batch]', unit='sample', logger=logger) as pbar:
-            for start in range(0, total, batch_size):
-                # Process batch
-                end = min(start + batch_size, total)
-                batch_task_states = task_states[start:end]
-                batch_scores = reviewed_scores[start:end]
-                # Batch calculate metrics
-                updated_reviewed_scores = self.benchmark.batch_calculate_metrics(
-                    task_states=batch_task_states, sample_scores=batch_scores
-                )
-                # Append results
-                all_reviewed_scores.extend(updated_reviewed_scores)
-                # Save each result to cache
-                for task_state, sample_score in zip(batch_task_states, updated_reviewed_scores):
-                    on_result(task_state, sample_score)
-
-                pbar.update(len(batch_task_states))
-        return all_reviewed_scores
 
     def get_report(self, agg_score_dict: Dict[str, List[AggScore]]) -> Report:
         """

@@ -170,8 +170,7 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     """Evaluate the model based on the provided task configuration."""
     from evalscope.api.evaluator import Evaluator
     from evalscope.api.model.lazy_model import LazyModel
-    from evalscope.api.registry import get_benchmark
-    from evalscope.evaluator import DefaultEvaluator
+    from evalscope.api.registry import create_evaluator, get_benchmark
     from evalscope.report import gen_html_report_file, gen_table
     from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
     from evalscope.utils.tqdm_utils import make_tracker
@@ -185,11 +184,11 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     for dataset_name in task_config.datasets:
         # Create evaluator for each dataset
         benchmark = get_benchmark(dataset_name, task_config)
-        evaluator = DefaultEvaluator(
-            task_config=task_config,
-            model=model,
+        evaluator = create_evaluator(
             benchmark=benchmark,
+            model=model,
             outputs=outputs,
+            task_config=task_config,
         )
         evaluators.append(evaluator)
 

@@ -3,10 +3,12 @@ from typing import TYPE_CHECKING, Callable, Dict, Optional, Type, Union
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta, DataAdapter
+    from evalscope.api.evaluator import Evaluator
     from evalscope.api.filter import Filter
     from evalscope.api.metric import Aggregator, Metric
     from evalscope.api.model.model import ModelAPI
     from evalscope.config import TaskConfig
+    from evalscope.utils.io_utils import OutputsStructure
 
 # BEGIN: Registry for benchmarks
 # Registry for benchmarks, allowing dynamic registration and retrieval of benchmark metadata and data adapters.
@@ -180,3 +182,63 @@ def get_aggregation(name: str) -> Type['Aggregator']:
 
 
 # END: Registry for aggregation functions
+
+# BEGIN: Registry for evaluators
+# Registry for evaluators, allowing benchmarks to register a custom Evaluator class.
+# Concrete evaluator classes self-register via @register_evaluator('name').
+EVALUATOR_REGISTRY: Dict[str, Type['Evaluator']] = {}
+
+
+def register_evaluator(name: str):
+    """
+    Decorator to register an Evaluator class under a given name.
+
+    Usage::
+
+        @register_evaluator('default')
+        class DefaultEvaluator(Evaluator):
+            ...
+
+    :param name: Registry key (e.g. ``'default'`` or a benchmark name).
+    """
+
+    def decorator(cls: Type['Evaluator']) -> Type['Evaluator']:
+        if name in EVALUATOR_REGISTRY:
+            raise ValueError(f"Evaluator '{name}' is already registered.")
+        EVALUATOR_REGISTRY[name] = cls
+        return cls
+
+    return decorator
+
+
+def create_evaluator(
+    benchmark: 'DataAdapter',
+    model,
+    outputs: 'OutputsStructure',
+    task_config: 'TaskConfig',
+) -> 'Evaluator':
+    """
+    Instantiate the appropriate :class:`Evaluator` for the given benchmark.
+
+    Looks up ``benchmark.name`` in :data:`EVALUATOR_REGISTRY`; if not found,
+    falls back to the ``'default'`` entry (i.e. :class:`DefaultEvaluator`).
+
+    Args:
+        benchmark: The data adapter for the benchmark to evaluate.
+        model: The model to be evaluated.
+        outputs: Output directory structure for saving results.
+        task_config: The task configuration.
+
+    Returns:
+        A fully initialised :class:`Evaluator` instance.
+    """
+    evaluator_cls = EVALUATOR_REGISTRY.get(benchmark.name) or EVALUATOR_REGISTRY['default']
+    return evaluator_cls(
+        benchmark=benchmark,
+        model=model,
+        outputs=outputs,
+        task_config=task_config,
+    )
+
+
+# END: Registry for evaluators
