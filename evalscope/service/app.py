@@ -38,10 +38,12 @@ def create_app():
                 'POST /api/v1/eval/invoke': 'Run model evaluation task (blocking)',
                 'GET  /api/v1/eval/log': 'Get evaluation log',
                 'GET  /api/v1/eval/progress': 'Get real-time evaluation progress',
+                'GET  /api/v1/eval/report': 'Get HTML evaluation report',
                 'POST /api/v1/eval/resume/invoke': 'Resume a previous evaluation (blocking)',
                 'POST /api/v1/perf/invoke': 'Run performance benchmark task (blocking)',
                 'GET  /api/v1/perf/log': 'Get performance benchmark log',
-                'GET  /api/v1/perf/progress': 'Get real-time performance benchmark progress'
+                'GET  /api/v1/perf/progress': 'Get real-time performance benchmark progress',
+                'GET  /api/v1/perf/report': 'Get HTML performance benchmark report'
             }
         }), 404
 
@@ -63,10 +65,12 @@ def run_service(host: str = '0.0.0.0', port: int = 9000, debug: bool = False):
     logger.info('  POST /api/v1/eval/invoke             - Run model evaluation task (blocking)')
     logger.info('  GET  /api/v1/eval/log                - Get evaluation log')
     logger.info('  GET  /api/v1/eval/progress           - Get real-time evaluation progress')
+    logger.info('  GET  /api/v1/eval/report             - Get HTML evaluation report')
     logger.info('  POST /api/v1/eval/resume/invoke      - Resume a previous evaluation (blocking)')
     logger.info('  POST /api/v1/perf/invoke             - Run performance benchmark task (blocking)')
     logger.info('  GET  /api/v1/perf/log                - Get performance benchmark log')
     logger.info('  GET  /api/v1/perf/progress           - Get real-time performance benchmark progress')
+    logger.info('  GET  /api/v1/perf/report             - Get HTML performance benchmark report')
     logger.info('Refer to docs for parameters: https://evalscope.readthedocs.io/en/latest/user_guides/service.html')
 
     app.run(host=host, port=port, debug=debug)

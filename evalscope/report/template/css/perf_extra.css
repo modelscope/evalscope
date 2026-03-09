@@ -1,0 +1,55 @@
+/* ── Tab group (perf-report specific) ───────────────────────── */
+.tab-group { overflow: hidden; }
+
+.tab-nav {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border-md);
+  padding: 0 0.75rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: rgba(255,255,255,0.015);
+}
+.tab-nav::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  padding: 0.65rem 1.15rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--transition), border-color var(--transition);
+  margin-bottom: -1px;
+  letter-spacing: 0.02em;
+}
+.tab-btn:hover  { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.tab-pane        { display: none; }
+.tab-pane.active { display: block; }
+
+/* ── Per-run summary stat grid ───────────────────────────────── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.55rem 1.5rem;
+  padding: 0.9rem 1.25rem 1.1rem;
+}
+.stat-item { display: flex; flex-direction: column; gap: 0.1rem; }
+.stat-key {
+  font-size: 0.67rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.stat-val {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}

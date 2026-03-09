@@ -1,13 +1,20 @@
 import json
 import os
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file
 
 from evalscope.config import TaskConfig
 from evalscope.constants import EvalType
 from evalscope.utils.logger import get_logger
 
 try:
-    from ..utils import OUTPUT_DIR, create_log_file, get_log_content, run_eval_wrapper, run_in_subprocess
+    from ..utils import (
+        OUTPUT_DIR,
+        create_log_file,
+        get_log_content,
+        run_eval_wrapper,
+        run_in_subprocess,
+        validate_task_id,
+    )
 except ImportError:
     from utils import (  # type: ignore[no-redef]
         OUTPUT_DIR,
@@ -15,6 +22,7 @@ except ImportError:
         get_log_content,
         run_eval_wrapper,
         run_in_subprocess,
+        validate_task_id,
     )
 
 logger = get_logger()
@@ -136,6 +144,29 @@ def get_evaluation_progress():
     except Exception as e:
         logger.error(f'Failed to get progress for task {task_id}: {e}')
         return jsonify({'error': str(e)}), 500
+
+
+@bp_eval.route('/report', methods=['GET'])
+def get_evaluation_report():
+    """Get the HTML evaluation report for a completed task.
+
+    Query params:
+        task_id (str): the task identifier
+    """
+    task_id = request.args.get('task_id')
+    if not task_id:
+        return jsonify({'error': 'task_id is required'}), 400
+
+    try:
+        validate_task_id(task_id)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+
+    report_file = os.path.join(OUTPUT_DIR, task_id, 'reports', 'report.html')
+    if not os.path.exists(report_file):
+        return jsonify({'error': f'Report not found for task_id: {task_id}'}), 404
+
+    return send_file(report_file, mimetype='text/html')
 
 
 @bp_eval.route('/log', methods=['GET'])
