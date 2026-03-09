@@ -47,6 +47,10 @@ def run_performance_test():
     task_id = request.headers.get('EvalScope-Task-Id')
     if not task_id:
         return jsonify({'error': 'EvalScope-Task-Id header is required'}), 400
+    try:
+        validate_task_id(task_id)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
 
     # Default to openai API
     if 'api' not in data:

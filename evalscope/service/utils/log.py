@@ -28,7 +28,8 @@ def create_log_file(task_id: str, sub_path: str) -> str:
     log_file = os.path.join(OUTPUT_DIR, task_id, sub_path)
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
     if not os.path.exists(log_file):
-        open(log_file, 'w', encoding='utf-8').close()
+        with open(log_file, 'w', encoding='utf-8'):
+            pass
     return log_file
 
 

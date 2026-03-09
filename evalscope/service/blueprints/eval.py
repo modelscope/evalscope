@@ -32,24 +32,43 @@ bp_eval = Blueprint('eval', __name__, url_prefix='/api/v1/eval')
 _REQUIRED_FIELDS = ['model', 'datasets', 'api_url']
 
 
-def _parse_request():
-    """Validate the request body and return (data, task_id) or a Flask error response.
+class RequestValidationError(Exception):
+    """Raised by _parse_request when the incoming request is invalid."""
 
-    Returns:
-        (dict, str)  on success.
-        Flask response on validation failure.
+    def __init__(self, message: str, status_code: int = 400):
+        super().__init__(message)
+        self.message = message
+        self.status_code = status_code
+
+
+@bp_eval.errorhandler(RequestValidationError)
+def _handle_validation_error(exc: RequestValidationError):
+    return jsonify({'error': exc.message}), exc.status_code
+
+
+def _parse_request() -> tuple[dict, str]:
+    """Validate the request body and return (data, task_id).
+
+    Raises:
+        RequestValidationError: when the request is missing required fields or
+            the ``EvalScope-Task-Id`` header is absent or malformed.
     """
     data = request.get_json()
     if not data:
-        return jsonify({'error': 'Request body is required'}), 400
+        raise RequestValidationError('Request body is required')
 
     for field in _REQUIRED_FIELDS:
         if field not in data:
-            return jsonify({'error': f'{field} is required'}), 400
+            raise RequestValidationError(f'{field} is required')
 
     task_id = request.headers.get('EvalScope-Task-Id')
     if not task_id:
-        return jsonify({'error': 'EvalScope-Task-Id header is required'}), 400
+        raise RequestValidationError('EvalScope-Task-Id header is required')
+
+    try:
+        validate_task_id(task_id)
+    except ValueError as e:
+        raise RequestValidationError(str(e)) from e
 
     return data, task_id
 
@@ -84,10 +103,7 @@ def run_evaluation():
 
     Returns the evaluation result when the task completes.
     """
-    parsed = _parse_request()
-    if not isinstance(parsed, tuple) or not isinstance(parsed[0], dict):
-        return parsed  # error response
-    data, task_id = parsed
+    data, task_id = _parse_request()
 
     task_config = _build_task_config(data)
     task_config.work_dir = os.path.join(OUTPUT_DIR, task_id)
@@ -104,10 +120,7 @@ def resume_evaluation():
 
     Returns the evaluation result when the task completes.
     """
-    parsed = _parse_request()
-    if not isinstance(parsed, tuple) or not isinstance(parsed[0], dict):
-        return parsed  # error response
-    data, task_id = parsed
+    data, task_id = _parse_request()
 
     work_dir = os.path.join(OUTPUT_DIR, task_id)
     if not os.path.isdir(work_dir):

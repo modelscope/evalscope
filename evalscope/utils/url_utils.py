@@ -64,8 +64,8 @@ def file_as_data_uri(file: str) -> str:
     if is_data_uri(file):
         return file
     else:
-        bytes, mime_type = file_as_data(file)
-        base64_file = base64.b64encode(bytes).decode('utf-8')
+        file_bytes, mime_type = file_as_data(file)
+        base64_file = base64.b64encode(file_bytes).decode('utf-8')
         file = f'data:{mime_type};base64,{base64_file}'
         return file
 
@@ -85,16 +85,23 @@ def download_url(url: str, save_path: str, num_retries: int = 3):
 
     save_path = os.path.abspath(save_path)
 
+    # Check if the file already exists before opening any network connection.
+    # A lightweight HEAD request is used to fetch content-length for size verification.
+    if os.path.exists(save_path):
+        try:
+            head = requests.head(url, timeout=10, allow_redirects=True)
+            remote_size = int(head.headers.get('content-length', 0))
+            if remote_size > 0 and os.path.getsize(save_path) == remote_size:
+                logger.info(f'File {save_path} already exists and is complete. Skipping download.')
+                return
+        except Exception as e:
+            logger.warning(f'HEAD request failed for {url}, will attempt full download: {e}')
+
     for attempt in range(num_retries):
         try:
             with requests.get(url, stream=True, timeout=30) as response:
                 response.raise_for_status()
                 total_size = int(response.headers.get('content-length', 0))
-
-                if os.path.exists(save_path):
-                    if total_size > 0 and os.path.getsize(save_path) == total_size:
-                        logger.info(f'File {save_path} already exists and is complete. Skipping download.')
-                        return
 
                 logger.info(f'Downloading {url} to {save_path} (attempt {attempt + 1}/{num_retries})...')
 
