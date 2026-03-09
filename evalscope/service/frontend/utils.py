@@ -111,10 +111,10 @@ async def submit_and_poll(
                 yield ''.join(logs), current_progress_status
                 return
 
-            request_id = resp.get('request_id')
-            logs.append(f'✅ 任务提交成功。请求ID: {request_id}\n')
+            task_id = resp.get('task_id')
+            logs.append(f'✅ 任务提交成功。请求ID: {task_id}\n')
             logs.append('等待日志输出...\n')
-            current_progress_status = f'✅ 任务提交成功，请求ID: {request_id}。正在等待日志...'
+            current_progress_status = f'✅ 任务提交成功，请求ID: {task_id}。正在等待日志...'
             yield ''.join(logs), current_progress_status
 
             # 2. Poll logs
@@ -133,7 +133,7 @@ async def submit_and_poll(
 
                 # Fetch logs
                 try:
-                    new_content = await client.get_task_log(request_id, current_line, task_type)
+                    new_content = await client.get_task_log(task_id, current_line, task_type)
                 except Exception as fetch_err:
                     logs.append(f'\n ⚠️ 获取日志失败: {fetch_err}')
                     current_progress_status = f'⚠️ 获取日志失败: {fetch_err}'

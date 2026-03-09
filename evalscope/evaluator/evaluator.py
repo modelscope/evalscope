@@ -100,7 +100,7 @@ class DefaultEvaluator(Evaluator):
         subset_list = list(dataset_dict.keys())
         logger.info(f'Start evaluating {len(dataset_dict)} subsets of the {self.benchmark_name}: {subset_list}')
         for subset, dataset in tqdm(
-            dataset_dict.items(), desc=f'Evaluating [{self.benchmark_name}]', unit='subset', logger=logger
+            dataset_dict.items(), desc=f'Evaluating[{self.benchmark_name}]', unit='subset', logger=logger
         ):
             if len(dataset) == 0:
                 logger.info(f'No samples found in subset: {subset}, skipping.')
@@ -181,10 +181,6 @@ class DefaultEvaluator(Evaluator):
 
         # Convert dataset to list for parallel processing
         dataset_list = list(dataset)
-        if not dataset_list:
-            return cached_task_state_list
-
-        logger.info(f'Processing {len(dataset_list)} samples, if data is large, it may take a while.')
 
         def worker(sample: Sample) -> TaskState:
             return self._predict_sample(sample, model_prediction_dir)
@@ -204,12 +200,14 @@ class DefaultEvaluator(Evaluator):
         finished_task_states = run_in_threads_with_progress(
             dataset_list,
             worker,
-            desc=f'Predicting[{self.benchmark_name}@{subset}]: ',
+            desc=f'Predicting[{self.benchmark_name}@{subset}]',
             max_workers=self.task_config.eval_batch_size,
             log_interval=HEARTBEAT_INTERVAL_SEC,
             on_result=on_result,
             on_error=on_error,
             filter_none_results=True,
+            initial=len(cached_task_state_list),
+            total=len(cached_task_state_list) + len(dataset_list),
         )
 
         logger.info(f'Finished getting predictions for subset: {subset}.')
@@ -256,11 +254,6 @@ class DefaultEvaluator(Evaluator):
             cached_score_list = []
             self.cache_manager.delete_review_cache(subset)
 
-        if not task_states:
-            return cached_score_list
-
-        logger.info(f'Reviewing {len(task_states)} samples, if data is large, it may take a while.')
-
         def worker(task_state: TaskState) -> SampleScore:
             return self._review_task_state(task_state)
 
@@ -285,13 +278,15 @@ class DefaultEvaluator(Evaluator):
         reviewed_scores = run_in_threads_with_progress(
             task_states,
             worker,
-            desc=f'Reviewing[{self.benchmark_name}@{subset}]: ',
+            desc=f'Reviewing[{self.benchmark_name}@{subset}]',
             max_workers=self.task_config.judge_worker_num,
             log_interval=HEARTBEAT_INTERVAL_SEC,
             on_error=on_error,
             # Do not persist interim results when batch scoring is enabled
             on_result=None if self.benchmark.use_batch_scoring else on_result,
             filter_none_results=False,
+            initial=len(cached_score_list),
+            total=len(cached_score_list) + len(task_states),
         )
 
         # Batch calculate metrics if supported by the benchmark
@@ -332,7 +327,7 @@ class DefaultEvaluator(Evaluator):
         all_reviewed_scores = []
         total = len(task_states)
         batch_size = self.task_config.judge_worker_num
-        with tqdm(total=total, desc='Scoring (batch)', unit='sample', logger=logger) as pbar:
+        with tqdm(total=total, desc='Scoring[batch]', unit='sample', logger=logger) as pbar:
             for start in range(0, total, batch_size):
                 # Process batch
                 end = min(start + batch_size, total)
@@ -389,7 +384,7 @@ class DefaultEvaluator(Evaluator):
         # Generate detailed analysis if requested in configuration
         if self.task_config.analysis_report:
             logger.info('Generating report analysis, please wait ...')
-            analysis = report.generate_analysis(self.task_config.judge_model_args)
+            analysis = report.generate_analysis(self.task_config)
             logger.info(f'Report analysis:\n{analysis}')
         else:
             logger.info('Skipping report analysis (`analysis_report=False`).')

@@ -3,6 +3,7 @@ import asyncio
 import json
 from dotenv import dotenv_values
 from typing import Any, Dict, Optional
+from uuid import uuid4
 
 env = dotenv_values('.env')
 
@@ -38,10 +39,16 @@ class AsyncEvalClient:
         Submit asynchronous task (eval or perf).
 
         Returns:
-            Dictionary containing request_id and other headers.
+            Dictionary containing task_id and other headers.
         """
         url = f'{self.base_url}/api/v1/{task_type}'
-        headers = {'Content-Type': 'application/json', 'X-Fc-Invocation-Type': 'Async'}
+        task_id = uuid4().hex
+        headers = {
+            'Content-Type': 'application/json',
+            'X-Fc-Invocation-Type': 'Async',
+            'EvalScope-Task-Id': task_id,
+            'X-Fc-Async-Task-Id': task_id
+        }
 
         print(f'[Submit Task] Sending request to: {url}')
         print(f'[Submit Task] Payload: {json.dumps(payload, indent=2, ensure_ascii=False)}')
@@ -55,32 +62,20 @@ class AsyncEvalClient:
             for key, value in response_headers.items():
                 print(f'  {key}: {value}')
 
-            if response.status == 202:
-                request_id = response_headers.get('X-Fc-Request-Id')
-                task_id = response_headers.get('X-Fc-Async-Task-Id')
-
-                print('[Submit Task] Task submitted successfully!')
-                print(f'[Submit Task] Request ID: {request_id}')
-                print(f'[Submit Task] Task ID: {task_id}')
-
-                return {'request_id': request_id, 'task_id': task_id, 'headers': response_headers}
-            elif response.status == 200:
-                # Handle synchronous response (e.g. local server)
-                resp_json = await response.json()
-                request_id = resp_json.get('request_id')
+            if response.status == 202 or response.status == 200:
                 print('[Submit Task] Task completed synchronously.')
-                print(f'[Submit Task] Request ID: {request_id}')
-                return {'request_id': request_id, 'headers': response_headers, 'status': 'finished'}
+                print(f'[Submit Task] Request ID: {task_id}')
+                return {'task_id': task_id, 'headers': response_headers, 'status': 'finished'}
             else:
                 error_text = await response.text()
                 raise Exception(f'Task submission failed: {response.status}, {error_text}')
 
-    async def get_task_log(self, request_id: str, start_line: int = 0, task_type: str = 'eval') -> str:
+    async def get_task_log(self, task_id: str, start_line: int = 0, task_type: str = 'eval') -> str:
         """
         Get task logs.
         """
         url = f'{self.base_url}/api/v1/{task_type}/log'
-        params = {'request_id': request_id, 'start_line': start_line}
+        params = {'task_id': task_id, 'start_line': start_line}
 
         try:
             async with self.session.get(url, params=params) as response:
@@ -91,18 +86,18 @@ class AsyncEvalClient:
         return ''
 
     async def poll_task_result(
-        self, request_id: str, max_attempts: int = 60, interval: float = 5.0, task_type: str = 'eval'
+        self, task_id: str, max_attempts: int = 60, interval: float = 5.0, task_type: str = 'eval'
     ) -> None:
         """
         Poll task logs until completion.
 
         Args:
-            request_id: Task ID
+            task_id: Task ID
             max_attempts: Maximum polling attempts
             interval: Polling interval (seconds)
             task_type: Task type (eval/perf)
         """
-        print(f'\n[Poll Logs] Start polling task: {request_id}')
+        print(f'\n[Poll Logs] Start polling task: {task_id}')
         print(f'[Poll Logs] Max attempts: {max_attempts}, Interval: {interval}s')
 
         current_log_line = 0
@@ -110,7 +105,7 @@ class AsyncEvalClient:
 
         for attempt in range(1, max_attempts + 1):
             # 1. Get and print new logs
-            new_logs = await self.get_task_log(request_id, current_log_line, task_type)
+            new_logs = await self.get_task_log(task_id, current_log_line, task_type)
             if new_logs:
                 print(new_logs, end='')
                 current_log_line += new_logs.count('\n')
@@ -147,12 +142,12 @@ async def main():
     async with AsyncEvalClient(base_url) as client:
         # 1. Submit task
         task_info = await client.submit_eval_task(payload)
-        request_id = task_info['request_id']
+        task_id = task_info['task_id']
 
         # 2. Poll logs
         try:
             await client.poll_task_result(
-                request_id=request_id,
+                task_id=task_id,
                 max_attempts=60,  # Max 60 attempts
                 interval=5  # Poll every 10 seconds
             )

@@ -6,8 +6,11 @@ import threading
 import time
 from argparse import Namespace
 
+from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
+from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
+from evalscope.utils.tqdm_utils import make_tracker
 from .arguments import Arguments, parse_args
 from .benchmark import benchmark
 from .sla.sla_run import run_sla_auto_tune
@@ -15,6 +18,7 @@ from .utils.db_util import get_output_path
 from .utils.handler import add_signal_handlers
 from .utils.local_server import start_app
 from .utils.log_utils import init_visualizer
+from .utils.report.generate_report import gen_perf_html_report
 from .utils.rich_display import print_summary
 
 logger = get_logger()
@@ -55,12 +59,20 @@ def run_multi_benchmark(args: Arguments, output_path: str = None):
     number_list = copy.deepcopy(args.number)
     parallel_list = copy.deepcopy(args.parallel)
 
-    for i, (number, parallel) in enumerate(zip(number_list, parallel_list)):
+    pbar = tqdm(
+        enumerate(zip(number_list, parallel_list)),
+        total=len(number_list),
+        desc='Running[perf]',
+        logger=logger,
+        log_interval=HEARTBEAT_INTERVAL_SEC
+    )
+    for i, (number, parallel) in pbar:
         args.number = number
         args.parallel = parallel
 
+        cur_run_name = f'parallel_{parallel}_number_{number}'
         # Set up output path for each run
-        cur_output_path = os.path.join(output_path, f'parallel_{parallel}_number_{number}')
+        cur_output_path = os.path.join(output_path, cur_run_name)
         os.makedirs(cur_output_path, exist_ok=True)
 
         # Start the benchmark
@@ -114,11 +126,25 @@ def run_perf_benchmark(args):
         server = threading.Thread(target=start_app, args=(copy.deepcopy(args), ), daemon=True)
         server.start()
 
+    total_count = sum(args.number) if isinstance(args.number, list) else args.number
+    tracker_ctx = make_tracker(
+        args.enable_progress_tracker, work_dir=output_path, pipeline='perf', total_count=total_count
+    )
+
     # Start benchmark
-    if len(args.number) == 1:
-        return run_one_benchmark(args, output_path=output_path)
-    else:
-        return run_multi_benchmark(args, output_path=output_path)
+    with tracker_ctx:
+        results = run_multi_benchmark(args, output_path=output_path)
+
+    # Generate HTML report
+
+    try:
+        report_path = gen_perf_html_report(output_path, results, args)
+        if report_path:
+            logger.info(f'HTML report generated: {report_path}')
+    except Exception as e:
+        logger.warning(f'Failed to generate HTML report: {e}')
+
+    return results
 
 
 if __name__ == '__main__':

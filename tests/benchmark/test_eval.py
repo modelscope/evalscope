@@ -53,7 +53,7 @@ class TestNativeBenchmark(TestBenchmark):
         dataset_args = {
             'few_shot_num': 0,
         }
-        self._run_dataset_test('gsm8k', dataset_args=dataset_args, limit=5, model='qwen2.5-0.5b-instruct', debug=False, eval_batch_size=1)
+        self._run_dataset_test('gsm8k', dataset_args=dataset_args, limit=5, debug=False, eval_batch_size=5)
 
     def test_gsm8k_pass_at_k(self):
         """Test GSM8K math reasoning dataset with Pass@k metric."""
@@ -160,7 +160,7 @@ class TestNativeBenchmark(TestBenchmark):
             # 'few_shot_num': 0,
         }
         # self._run_dataset_load_test('ceval')
-        self._run_dataset_test('ceval', dataset_args=dataset_args)
+        self._run_dataset_test('ceval', dataset_args=dataset_args, enable_progress_tracker=True, use_cache='outputs/20260307_150855', analysis_report=True)
 
     def test_super_gpqa(self):
         """Test Super GPQA dataset."""
@@ -286,7 +286,7 @@ class TestNativeBenchmark(TestBenchmark):
 
     def test_arena_hard(self):
         """Test Arena Hard dataset."""
-        self._run_dataset_test('arena_hard', use_cache='outputs/20250818_211353')
+        self._run_dataset_test('arena_hard')
 
     def test_frames(self):
         """Test Frames dataset."""

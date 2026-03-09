@@ -122,6 +122,7 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
 | `--visualizer` | `str` | 可视化工具<br>可选：`wandb`、`swanlab`、`clearml`<br>设置后指标将保存到指定工具 | `None` |
+| `--enable-progress-tracker` | `bool` | 是否开启进度追踪，将层级压测进度实时写入`progress.json`，可通过服务接口查询 | `False` |
 | `--wandb-api-key` | `str` | wandb API密钥<br>**已废弃**，请使用`--visualizer wandb` | - |
 | `--swanlab-api-key` | `str` | swanlab API密钥<br>**已废弃**，请使用`--visualizer swanlab` | - |
 | `--outputs-dir` | `str` | 输出文件路径 | `./outputs` |

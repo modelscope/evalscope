@@ -174,6 +174,8 @@ def run_in_threads_with_progress(
     on_result: Optional[Callable[[T, R], None]] = None,
     on_error: Optional[Callable[[T, Exception], None]] = None,
     filter_none_results: bool = False,
+    initial: int = 0,
+    total: Optional[int] = None,
 ) -> List[R]:
     """
     Execute a collection of tasks concurrently with a ThreadPoolExecutor while
@@ -197,11 +199,14 @@ def run_in_threads_with_progress(
         worker: A callable executed in threads to process a single item and return a result.
         desc: A short text shown as the tqdm progress bar description.
         max_workers: Upper bound on the number of concurrent threads.
-        heartbeat_sec: Interval (in seconds) to wait before emitting a heartbeat log if
+        log_interval: Interval (in seconds) to wait before emitting a heartbeat log if
             no tasks complete in that window.
         on_result: Optional callback invoked as on_result(item, result) after success.
         on_error: Optional callback invoked as on_error(item, exception) on failure. If omitted,
             the exception is propagated and the function terminates early.
+        initial: Number of already-completed items (e.g. loaded from cache). The progress
+            bar will start at this offset so the full work is visible.
+        total: Override the displayed total.  Defaults to ``initial + len(items)``.
 
     Returns:
         A list of results collected as tasks complete (completion order).
@@ -217,23 +222,22 @@ def run_in_threads_with_progress(
         - Use `on_error` to implement "best-effort" processing where failures are logged
           and the rest continue.
     """
-    # Defensive copy to avoid consuming a generator multiple times and to compute pool size.
-    pending_items: List[T] = list(items)
-    if not pending_items:
-        return []
-
     # Include indices to ensure results are returned in input order
     indexed_items = list(enumerate(items))
     results: List[Optional[R]] = [None] * len(items)  # Preallocate results list
 
+    # Resolve display total: default to initial + actual workload size
+    display_total = total if total is not None else initial + len(indexed_items)
+
     # Bound the pool by actual workload size for efficiency.
-    with ThreadPoolExecutor(max_workers=min(len(indexed_items), max_workers)) as executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Submit all tasks up-front and map futures back to their originating item.
         future_to_index = {executor.submit(worker, item): index for index, item in indexed_items}
 
         # Progress bar reflects total number of submitted tasks; updated per finished future.
         with tqdm(
-            total=len(indexed_items),
+            total=display_total,
+            initial=initial,
             desc=desc,
             mininterval=1,
             dynamic_ncols=True,

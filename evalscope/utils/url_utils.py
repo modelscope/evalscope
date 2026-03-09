@@ -1,7 +1,12 @@
 import base64
 import httpx
 import mimetypes
+import os
 import re
+
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 def is_http_url(url: str) -> bool:
@@ -59,7 +64,63 @@ def file_as_data_uri(file: str) -> str:
     if is_data_uri(file):
         return file
     else:
-        bytes, mime_type = file_as_data(file)
-        base64_file = base64.b64encode(bytes).decode('utf-8')
+        file_bytes, mime_type = file_as_data(file)
+        base64_file = base64.b64encode(file_bytes).decode('utf-8')
         file = f'data:{mime_type};base64,{base64_file}'
         return file
+
+
+def download_url(url: str, save_path: str, num_retries: int = 3):
+    """
+    Download a file from a URL to a local path with retries.
+
+    Args:
+        url (str): The URL to download from.
+        save_path (str): The local file path to save the downloaded file.
+        num_retries (int): Number of times to retry on failure.
+    """
+    import requests
+    from time import sleep
+    from tqdm import tqdm
+
+    save_path = os.path.abspath(save_path)
+
+    # Check if the file already exists before opening any network connection.
+    # A lightweight HEAD request is used to fetch content-length for size verification.
+    if os.path.exists(save_path):
+        try:
+            head = requests.head(url, timeout=10, allow_redirects=True)
+            remote_size = int(head.headers.get('content-length', 0))
+            if remote_size > 0 and os.path.getsize(save_path) == remote_size:
+                logger.info(f'File {save_path} already exists and is complete. Skipping download.')
+                return
+        except Exception as e:
+            logger.warning(f'HEAD request failed for {url}, will attempt full download: {e}')
+
+    for attempt in range(num_retries):
+        try:
+            with requests.get(url, stream=True, timeout=30) as response:
+                response.raise_for_status()
+                total_size = int(response.headers.get('content-length', 0))
+
+                logger.info(f'Downloading {url} to {save_path} (attempt {attempt + 1}/{num_retries})...')
+
+                with open(save_path, 'wb') as f, tqdm(
+                    desc=os.path.basename(save_path),
+                    total=total_size,
+                    unit='iB',
+                    unit_scale=True,
+                    unit_divisor=1024,
+                ) as bar:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            size = f.write(chunk)
+                            bar.update(size)
+            logger.info(f'Downloaded {url} to {save_path}')
+            return
+        except Exception as e:
+            logger.warning(f'Attempt {attempt + 1} failed to download {url}: {e}')
+            if attempt < num_retries - 1:
+                sleep(2**attempt)  # Exponential backoff
+
+    raise RuntimeError(f'Failed to download {url} after {num_retries} attempts.')

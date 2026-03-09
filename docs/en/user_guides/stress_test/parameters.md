@@ -121,6 +121,7 @@ For details on using the SLA auto-tuning feature, see the [Auto-tuning Guide](./
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `--visualizer` | `str` | Visualizer to use<br>Options: `wandb`, `swanlab`, `clearml`<br>If set, metrics will be saved to the specified visualizer | `None` |
+| `--enable-progress-tracker` | `bool` | Whether to enable progress tracking, writing hierarchical stress-test progress to `progress.json` in real time, queryable via the service API | `False` |
 | `--wandb-api-key` | `str` | wandb API key for logging metrics to wandb<br>**Deprecated**, please use `--visualizer wandb` instead | - |
 | `--swanlab-api-key` | `str` | swanlab API key for logging metrics to swanlab<br>**Deprecated**, please use `--visualizer swanlab` instead | - |
 | `--outputs-dir` | `str` | Output file path | `./outputs` |

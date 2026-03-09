@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Performance Report — {{ model }}</title>
+  <style>
+{% include 'css/base.css' %}
+{% include 'css/perf_extra.css' %}
+  </style>
+  <!-- Plotly.js via CDN -->
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+
+{% include 'partials/toc_perf.html' %}
+
+<!-- ── Back to top ──────────────────────────────────────────── -->
+<a href="#top" class="back-to-top" id="back-to-top" aria-label="Back to top">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+    <polyline points="18 15 12 9 6 15"/>
+  </svg>
+</a>
+
+<div class="container" id="top">
+
+  {% include 'partials/header_perf.html' %}
+
+  <!-- ── Overview ───────────────────────────────────────────── -->
+  <section class="section" id="section-overview">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+        </svg>
+      </div>
+      <h2 class="section-title" data-i18n="section.overview">Overview</h2>
+    </div>
+
+    {% if basic_info %}
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title" data-i18n="card.basic_info">Basic Information</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            {% for key, value in basic_info.items() %}
+            <tr>
+              <td style="font-weight:600; color:var(--accent); width:35%;">{{ key }}</td>
+              <td>{{ value }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if summary_rows %}
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title" data-i18n="card.perf_metrics">Detailed Performance Metrics</span>
+        <span class="card-badge">{{ summary_rows | length }} <span data-i18n="badge.runs">runs</span></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>{% for col in summary_columns %}<th>{{ col }}</th>{% endfor %}</tr>
+          </thead>
+          <tbody>
+            {% for row in summary_rows %}
+            <tr>{% for val in row %}<td class="num-cell">{{ val }}</td>{% endfor %}</tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if best_config %}
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title" data-i18n="card.best_config">Best Performance Configuration</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            {% for key, value in best_config.items() %}
+            <tr>
+              <td style="font-weight:600; color:var(--accent); width:35%;">{{ key }}</td>
+              <td style="color:var(--green);">{{ value }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if recommendations %}
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title" data-i18n="card.recommendations">Performance Recommendations</span>
+      </div>
+      <div style="padding:1rem 1.25rem;">
+        {% for rec in recommendations %}
+        <div style="display:flex; align-items:flex-start; gap:0.5rem; margin-bottom:0.5rem; color:var(--yellow); font-size:0.875rem;">
+          <span style="flex-shrink:0;">&#8226;</span>
+          <span>{{ rec }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- ── Latency Analysis ───────────────────────────────────── -->
+  <section class="section" id="section-latency">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <h2 class="section-title" data-i18n="section.latency">Latency Analysis</h2>
+    </div>
+
+    {% if latency_tabs %}
+    <div class="card">
+      <div class="tab-group" data-tabgroup="latency">
+        <div class="tab-nav">
+          {% for tab in latency_tabs %}
+          <button class="tab-btn {% if loop.first %}active{% endif %}"
+                  data-tab="latency-tab-{{ loop.index0 }}"
+                  data-i18n="{{ tab.label }}">{{ tab.label }}</button>
+          {% endfor %}
+        </div>
+        {% for tab in latency_tabs %}
+        <div class="tab-pane {% if loop.first %}active{% endif %}"
+             id="latency-tab-{{ loop.index0 }}">
+          <div class="chart-wrap">{{ tab.chart | safe }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- ── Throughput Analysis ────────────────────────────────── -->
+  <section class="section" id="section-throughput">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      </div>
+      <h2 class="section-title" data-i18n="section.throughput">Throughput Analysis</h2>
+    </div>
+
+    {% if throughput_tabs %}
+    <div class="card">
+      <div class="tab-group" data-tabgroup="throughput">
+        <div class="tab-nav">
+          {% for tab in throughput_tabs %}
+          <button class="tab-btn {% if loop.first %}active{% endif %}"
+                  data-tab="throughput-tab-{{ loop.index0 }}"
+                  data-i18n="{{ tab.label }}">{{ tab.label }}</button>
+          {% endfor %}
+        </div>
+        {% for tab in throughput_tabs %}
+        <div class="tab-pane {% if loop.first %}active{% endif %}"
+             id="throughput-tab-{{ loop.index0 }}">
+          <div class="chart-wrap">{{ tab.chart | safe }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- ── Per-Run Details ────────────────────────────────────── -->
+  <section class="section" id="section-runs">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 11l3 3L22 4"/>
+          <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+        </svg>
+      </div>
+      <h2 class="section-title" data-i18n="section.runs">Per-Run Details</h2>
+    </div>
+
+    {% for run in run_sections %}
+    <details class="ds-card" id="run-{{ loop.index }}" {% if loop.first %}open{% endif %}>
+      <summary class="ds-summary">
+        <div class="ds-summary-left">
+          <span class="ds-arrow">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.5" stroke-linecap="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </span>
+          <span class="ds-name">{{ run.name }}</span>
+        </div>
+        <div class="ds-summary-right">
+          <span class="card-badge">{{ run.total_requests }} <span data-i18n="badge.requests">requests</span></span>
+        </div>
+      </summary>
+
+      <div class="ds-body">
+
+        <!-- Run Summary (benchmark_summary.json) -->
+        {% if run.summary_items %}
+        <div class="sub-card" style="margin-bottom:1rem;">
+          <div class="sub-card-header" data-i18n="card.run_summary">Run Summary</div>
+          <div class="stat-grid">
+            {% for item in run.summary_items %}
+            <div class="stat-item">
+              <span class="stat-key">{{ item.key }}</span>
+              <span class="stat-val">{{ item.value }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Percentile Table -->
+        {% if run.percentile_rows %}
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-header">
+            <span class="card-title" data-i18n="card.percentile_dist">Percentile Distribution</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>{% for col in run.percentile_columns %}<th>{{ col }}</th>{% endfor %}</tr>
+              </thead>
+              <tbody>
+                {% for row in run.percentile_rows %}
+                <tr>{% for val in row %}<td class="num-cell">{{ val }}</td>{% endfor %}</tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Percentile Curves -->
+        {% if run.percentile_chart %}
+        <div class="sub-card">
+          <div class="sub-card-header" data-i18n="card.percentile_curves">Percentile Curves</div>
+          <div class="chart-wrap">{{ run.percentile_chart | safe }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Per-Request Detail Charts -->
+        {% if run.request_detail_tabs %}
+        {% set run_idx = loop.index %}
+        <div class="sub-card" style="margin-top:1rem;">
+          <div class="sub-card-header" data-i18n="card.per_request">Per-Request Details</div>
+          <div class="tab-group" data-tabgroup="req-{{ run_idx }}">
+            <div class="tab-nav">
+              {% for tab in run.request_detail_tabs %}
+              <button class="tab-btn {% if loop.first %}active{% endif %}"
+                      data-tab="req-{{ run_idx }}-tab-{{ loop.index0 }}"
+                      data-i18n="{{ tab.label }}">{{ tab.label }}</button>
+              {% endfor %}
+            </div>
+            {% for tab in run.request_detail_tabs %}
+            <div class="tab-pane {% if loop.first %}active{% endif %}"
+                 id="req-{{ run_idx }}-tab-{{ loop.index0 }}">
+              <div class="chart-wrap">{{ tab.chart | safe }}</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
+    </details>
+    {% endfor %}
+
+  </section>
+
+  {% include 'partials/footer.html' %}
+
+</div><!-- /container -->
+
+<script>
+(function () {
+  'use strict';
+
+var DEFAULT_LANG = '{{ default_lang }}';
+
+{% include 'js/i18n_perf.js' %}
+{% include 'js/shared.js' %}
+{% include 'js/perf_extra.js' %}
+
+}());
+</script>
+
+</body>
+</html>

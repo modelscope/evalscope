@@ -42,7 +42,11 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         # Load dataset messages into memory (limited by args.number)
         # We catch StopIteration implicitly via the loop
         with tqdm(
-            message_generator.build_messages(), desc='Generating datasets', total=args.number, initial=1, logger=logger
+            message_generator.build_messages(),
+            desc='Generating[requests]',
+            total=args.number,
+            initial=1,
+            logger=logger
         ) as pbar:
             for messages in pbar:
                 dataset_messages.append(messages)
@@ -108,7 +112,10 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
         cursor = con.cursor()
         create_result_table(cursor)
 
-        with tqdm(desc='Processing', total=args.number, logger=logger, log_interval=HEARTBEAT_INTERVAL_SEC) as pbar:
+        cur_run_name = f'parallel_{args.parallel}_number_{args.number}'
+        with tqdm(
+            desc=f'Processing[{cur_run_name}]', total=args.number, logger=logger, log_interval=HEARTBEAT_INTERVAL_SEC
+        ) as pbar:
             while not (data_process_completed_event.is_set() and benchmark_data_queue.empty()):
                 try:
                     benchmark_data = await asyncio.wait_for(benchmark_data_queue.get(), timeout=0.1)

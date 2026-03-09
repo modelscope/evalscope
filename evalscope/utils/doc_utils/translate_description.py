@@ -74,6 +74,7 @@ Guidelines:
 5. For code blocks, only translate comments if any
 6. Keep URLs unchanged
 7. Return ONLY the translated markdown content, no explanations
+8. Do not translate the first level header
 
 Example translations:
 - "Overview" -> "概述"
