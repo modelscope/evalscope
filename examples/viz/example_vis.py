@@ -5,11 +5,12 @@ env = dotenv_values('.env')
 
 def run_test(model_name: str):
     from evalscope import TaskConfig, run_task
+    from evalscope.constants import EvalType
     task_cfg = TaskConfig(
         model=model_name,
         api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
         api_key=env.get('DASHSCOPE_API_KEY'),
-        eval_type='openai_api',
+        eval_type=EvalType.OPENAI_API,
         datasets=[
             'gsm8k',
             'iquiz',

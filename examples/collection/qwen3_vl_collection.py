@@ -23,12 +23,13 @@ from dotenv import dotenv_values
 
 env = dotenv_values('.env')
 from evalscope import TaskConfig, run_task
+from evalscope.constants import EvalType
 
 task_cfg = TaskConfig(
     model='qwen-vl-plus-latest',
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
     api_key=env.get('DASHSCOPE_API_KEY'),
-    eval_type='openai_api',
+    eval_type=EvalType.OPENAI_API,
     datasets=[
         'data_collection',
     ],

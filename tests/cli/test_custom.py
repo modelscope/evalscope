@@ -8,7 +8,7 @@ env = dotenv_values('.env')
 import os
 import unittest
 
-from evalscope.constants import JudgeStrategy
+from evalscope.constants import EvalType, JudgeStrategy
 from evalscope.utils.logger import get_logger
 from tests.common import TestBenchmark
 
@@ -23,7 +23,7 @@ class TestRunCustom(TestBenchmark):
         self.base_config = {
             'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'api_key': env.get('DASHSCOPE_API_KEY'),
-            'eval_type': 'openai_api',
+            'eval_type': EvalType.OPENAI_API,
             'eval_batch_size': 10,
             'debug': True,
             'stream': True,

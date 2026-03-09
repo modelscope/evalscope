@@ -3,6 +3,7 @@ import os
 from flask import Blueprint, jsonify, request, send_file
 
 from evalscope.config import TaskConfig
+from evalscope.constants import EvalType
 from evalscope.utils.logger import get_logger
 
 try:
@@ -75,7 +76,7 @@ def _parse_request() -> tuple[dict, str]:
 def _build_task_config(data: dict) -> TaskConfig:
     """Build a TaskConfig from request data with common defaults applied."""
     if not data.get('eval_type'):
-        data['eval_type'] = 'openai_api'
+        data['eval_type'] = EvalType.OPENAI_API
 
     task_config = TaskConfig.from_dict(data)
     task_config.no_timestamp = True
