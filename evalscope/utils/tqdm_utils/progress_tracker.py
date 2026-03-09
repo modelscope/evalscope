@@ -27,13 +27,13 @@ class ProgressTracker:
           "processed_count": 5200,
           "percent": 37.03,
           "stage": {
-            "name": "Evaluating", "label": "mmlu",
+            "name": "Running", "label": "eval",
             "current": 1, "total": 3, "status": "running",
             "children": [
-              {"name": "Predicting", "label": "mmlu@test",
+              {"name": "Evaluating", "label": "mmlu",
                "current": 1000, "total": 1000, "status": "completed",
                "children": []},
-              {"name": "Reviewing",  "label": "mmlu@test",
+              {"name": "Evaluating", "label": "ceval",
                "current": 320,  "total": 1000, "status": "running",
                "children": []}
             ]
@@ -56,7 +56,7 @@ class ProgressTracker:
 
     # Stage-name prefix used to identify the 'work' stage for each pipeline.
     _PROCESSED_STAGE_NAMES: Dict[str, str] = {
-        'eval': 'Predicting',
+        'eval': 'Evaluating',
         'perf': 'Processing',
     }
 
