@@ -99,7 +99,12 @@ class OpenaiPlugin(DefaultApiPlugin):
         if param.top_k is not None:
             payload['top_k'] = param.top_k
         if param.extra_args is not None:
-            payload.update(param.extra_args)
+            extra = param.extra_args
+            if isinstance(extra, str):
+                extra = json.loads(extra)
+            if not isinstance(extra, dict):
+                raise ValueError(f'extra_args must be a JSON object (dict), got {type(extra).__name__}: {extra!r}')
+            payload.update(extra)
         return payload
 
     def parse_responses(self, responses: List[Dict], request: str = None, **kwargs) -> tuple[int, int]:

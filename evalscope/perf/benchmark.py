@@ -31,6 +31,11 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         prompt = load_prompt(args.prompt)
         messages = [{'role': 'user', 'content': prompt}] if args.apply_chat_template else prompt
         request = api_plugin.build_request(messages)
+        if request is None:
+            raise RuntimeError(
+                'build_request returned None for the prompt. '
+                'Check the error logs above for the root cause (e.g. invalid extra_args).'
+            )
         for _ in range(args.number):
             yield request
 
@@ -60,13 +65,22 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         count = 0
         dataset_index = 0
         num_messages = len(dataset_messages)
+        consecutive_failures = 0
 
         while count < args.number:
             messages = dataset_messages[dataset_index]
             request = api_plugin.build_request(messages)
             if request is not None:
+                consecutive_failures = 0
                 yield request
                 count += 1
+            else:
+                consecutive_failures += 1
+                if consecutive_failures >= num_messages:
+                    raise RuntimeError(
+                        f'build_request failed for all {num_messages} dataset sample(s) in a row. '
+                        'Check the error logs above for the root cause (e.g. invalid extra_args).'
+                    )
             dataset_index = (dataset_index + 1) % num_messages
 
     # Dispatch based on arguments

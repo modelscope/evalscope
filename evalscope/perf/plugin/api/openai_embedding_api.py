@@ -93,7 +93,12 @@ class OpenaiEmbeddingPlugin(ApiPluginBase):
 
             # Add optional parameters if specified
             if param.extra_args:
-                payload.update(param.extra_args)
+                extra = param.extra_args
+                if isinstance(extra, str):
+                    extra = json.loads(extra)
+                if not isinstance(extra, dict):
+                    raise ValueError(f'extra_args must be a JSON object (dict), got {type(extra).__name__}: {extra!r}')
+                payload.update(extra)
 
             return payload
 
