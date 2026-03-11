@@ -1,5 +1,6 @@
 # flake8: noqa: E501
 import argparse
+import ast
 import json
 
 from evalscope.constants import EvalBackend, JudgeStrategy, ModelTask
@@ -23,10 +24,10 @@ class ParseStrArgsAction(argparse.Action):
         for arg in values.strip().split(','):
             key, value = map(str.strip, arg.split('=', 1))  # Use maxsplit=1 to handle multiple '='
             try:
-                # Safely evaluate the value using eval
-                arg_dict[key] = eval(value)
-            except Exception:
-                # If eval fails, check if it's a boolean value
+                # Safely evaluate the value using ast.literal_eval
+                arg_dict[key] = ast.literal_eval(value)
+            except (ValueError, SyntaxError):
+                # If ast.literal_eval fails, check if it's a boolean value
                 value_lower = value.lower()
                 if value_lower == 'true':
                     arg_dict[key] = True
