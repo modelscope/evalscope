@@ -165,6 +165,9 @@ class Arguments(BaseArgument):
 
     dataset_path: Optional[str] = None
     """Path to the dataset."""
+    
+    same_request: bool = False
+    """When enabled, all concurrent requests will send the same prompt (only for dataset mode)."""
 
     # Response settings
     frequency_penalty: Optional[float] = None
@@ -356,6 +359,7 @@ def add_argument(parser: argparse.ArgumentParser):
     # Dataset settings
     parser.add_argument('--dataset', type=str, default='openqa', help='Specify the dataset')
     parser.add_argument('--dataset-path', type=str, required=False, help='Path to the dataset file')
+    parser.add_argument('--same-request', action='store_true', default=False, help='Use the same prompt for all iterations(only for dataset mode)')
 
     # Response settings
     parser.add_argument('--frequency-penalty', type=float, help='The frequency_penalty value', default=None)
