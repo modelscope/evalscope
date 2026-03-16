@@ -136,9 +136,17 @@ class SLAAutoTuner:
         logger.info(f'SLA Range: [{self.lower_bound}, {self.upper_bound}]')
         logger.info(f'SLA Params: {self.args.sla_params}')
 
-        # Flatten SLA criteria to check each metric independently
-        target_criteria_list = [{k: v} for group in sla_params for k, v in group.items()]
-
+        # sla_params is a list of criterion groups.
+        # Within one group (dict): ALL metrics must pass → AND logic.
+        # Across groups (list):   ANY group passing is sufficient → OR logic.
+        #
+        # Examples:
+        #   AND: [{"avg_ttft": "<=2", "avg_tpot": "<=0.05"}]          → single group, both required
+        #   OR:  [{"avg_ttft": "<=2"}, {"avg_tpot": "<=0.05"}]         → two groups, either is ok
+        #
+        # All groups are passed together to a single tuning job so that check_sla
+        # evaluates them with the correct AND/OR semantics in one binary-search pass.
+        # Special case: a single-metric max/min group triggers optimization mode.
         current_val = self.args.parallel if self.sla_variable == 'parallel' else self.args.rate
         if isinstance(current_val, list):
             current_val = current_val[0]
@@ -146,23 +154,25 @@ class SLAAutoTuner:
         # Ensure current_val is within bounds
         current_val = max(self.lower_bound, min(current_val, self.upper_bound))
 
-        for criteria in target_criteria_list:
-            logger.info(f'Auto-tuning for criteria: {criteria}')
-
-            # Identify optimization mode
-            opt_metric, opt_mode = self._get_optimization_mode(criteria)
-
+        # Check if this is a single-group single-metric optimization (max/min)
+        if len(sla_params) == 1 and len(sla_params[0]) == 1:
+            opt_metric, opt_mode = self._get_optimization_mode(sla_params[0])
             if opt_mode:
+                logger.info(f'Optimization mode: {opt_mode} for {opt_metric}')
                 self._tune_optimization(current_val, opt_metric, opt_mode)
-            else:
-                self._tune_constraint(current_val, criteria)
+                return self._finalize_results()
 
+        # General case: run a single tuning job with all groups (AND-within / OR-across)
+        criteria_desc = ' OR '.join('(' + ' AND '.join(f'{k} {v}' for k, v in g.items()) + ')' for g in sla_params)
+        logger.info(f'Auto-tuning with combined criteria: {criteria_desc}')
+        self._tune_constraint(current_val, sla_params, combined=True)
+        return self._finalize_results()
+
+    def _finalize_results(self) -> Dict[str, Any]:
         results = self._save_summary()
         print_summary(results, self.args)
-
         if self.sla_results_table:
             logger.info('SLA Auto-tune Summary:\n' + tabulate(self.sla_results_table, headers='keys', tablefmt='grid'))
-
         return results
 
     def _get_optimization_mode(self, criteria: Dict[str, SLACriterionBase]) -> Tuple[Optional[str], Optional[str]]:
@@ -172,6 +182,17 @@ class SLAAutoTuner:
             if isinstance(c, SLAMin):
                 return m, 'min'
         return None, None
+
+    def _compute_number(self, val: int) -> int:
+        """Compute the number of requests based on val and sla_number_multiplier.
+
+        If sla_number_multiplier is set, number = round(val * sla_number_multiplier).
+        Defaults to val * 2 if not set.
+        """
+        multiplier = self.args.sla_number_multiplier
+        if multiplier is None:
+            return val * 2
+        return max(1, round(val * multiplier))
 
     def _get_result(self, val: int) -> Dict[str, Any]:
         if val in self.results_cache:
@@ -184,11 +205,11 @@ class SLAAutoTuner:
 
             if self.sla_variable == 'parallel':
                 run_args.parallel = val
-                run_args.number = val * 2
+                run_args.number = self._compute_number(val)
                 run_args.rate = -1
             elif self.sla_variable == 'rate':
                 run_args.rate = val
-                run_args.number = val * 2
+                run_args.number = self._compute_number(val)
                 run_args.parallel = self.upper_bound
             else:
                 raise ValueError(f'Unsupported SLA variable: {self.sla_variable}')
@@ -279,10 +300,33 @@ class SLAAutoTuner:
             'Note': f'Best {opt_metric}: {best_metric_val:.4f}'
         })
 
-    def _tune_constraint(self, start_val: int, criteria: Dict[str, SLACriterionBase]):
+    def _tune_constraint(
+        self,
+        start_val: int,
+        criteria: Union[Dict[str, SLACriterionBase], List[Dict[str, SLACriterionBase]]],
+        combined: bool = False,
+    ):
+        """Tune for the maximum variable value that satisfies the given SLA criteria.
+
+        Args:
+            start_val:  Starting value for the tuning variable.
+            criteria:   When combined=True, a list of criterion groups (AND-within / OR-across).
+                        When combined=False, a single criterion dict (backward-compatible).
+            combined:   If True, criteria is already a list and is passed directly to check_sla.
+        """
+        # Normalise to the list-of-groups form that check_sla expects
+        sla_criteria: List[Dict[str, SLACriterionBase]] = criteria if combined else [criteria]
+
+        # Human-readable description of the combined criteria for logging/reporting
+        if combined:
+            criteria_desc = ' OR '.join(
+                '(' + ' AND '.join(f'{k} {v}' for k, v in g.items()) + ')' for g in sla_criteria
+            )
+        else:
+            criteria_desc = ', '.join(f'{k} {v}' for k, v in criteria.items())
 
         def check(val):
-            return check_sla(self._get_result(val), [criteria], f'{self.sla_variable}={val}')
+            return check_sla(self._get_result(val), sla_criteria, f'{self.sla_variable}={val}')
 
         passed = check(start_val)
         lower, upper = start_val, start_val
@@ -317,9 +361,9 @@ class SLAAutoTuner:
                 lower = max(lower // 2, self.lower_bound)
 
             if not found_valid:
-                logger.warning(f'Even {self.sla_variable}={self.lower_bound} failed SLA for {criteria}.')
+                logger.warning(f'Even {self.sla_variable}={self.lower_bound} failed SLA for {criteria_desc}.')
                 self.sla_results_table.append({
-                    'Criteria': ', '.join([f'{k} {v}' for k, v in criteria.items()]),
+                    'Criteria': criteria_desc,
                     'Variable': self.sla_variable,
                     'Max Satisfied': 'None',
                     'Note': f'Failed at lower bound ({self.lower_bound})'
@@ -345,9 +389,9 @@ class SLAAutoTuner:
             else:
                 right = mid - 1
 
-        logger.info(f'SLA Auto-tune finished for {criteria}. Max {self.sla_variable}: {best_val}')
+        logger.info(f'SLA Auto-tune finished. Criteria: {criteria_desc}. Max {self.sla_variable}: {best_val}')
         self.sla_results_table.append({
-            'Criteria': ', '.join([f'{k} {v}' for k, v in criteria.items()]),
+            'Criteria': criteria_desc,
             'Variable': self.sla_variable,
             'Max Satisfied': best_val,
             'Note': 'Satisfied'
