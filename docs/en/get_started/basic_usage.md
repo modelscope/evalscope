@@ -187,13 +187,13 @@ For certain subjective or open-ended tasks (such as `simple_qa`), you can specif
 ```python
 import os
 from evalscope import TaskConfig, run_task
-from evalscope.constants import EvalType, JudgeStrategy
+from evalscope.constants import JudgeStrategy
 
 task_cfg = TaskConfig(
     model='qwen2.5-7b-instruct',
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
     api_key=os.getenv('DASHSCOPE_API_KEY'),
-    eval_type=EvalType.SERVICE,
+    eval_type='openai_api',
     datasets=['chinese_simpleqa'],
     limit=5,
     judge_strategy=JudgeStrategy.AUTO,

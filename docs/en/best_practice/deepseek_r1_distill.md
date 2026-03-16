@@ -126,13 +126,12 @@ You can evaluate the performance of the DeepSeek-R1-Distill-Qwen-1.5B model on t
 
 ```python
 from evalscope import TaskConfig, run_task
-from evalscope.constants import EvalType
 
 task_cfg = TaskConfig(
     model='DeepSeek-R1-Distill-Qwen-1.5B',   # Model name (must match the name used during deployment)
     api_url='http://127.0.0.1:8801/v1',  # Inference service address
     api_key='EMPTY',
-    eval_type=EvalType.SERVICE,   # Evaluation type, SERVICE indicates evaluation of inference service
+    eval_type='openai_api',   # Evaluation type, openai_api indicates evaluation of inference service
     datasets=[
         'data_collection',  # Dataset name (fixed as data_collection indicates mixed dataset usage)
     ],

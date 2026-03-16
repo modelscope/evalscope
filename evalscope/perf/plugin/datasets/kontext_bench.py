@@ -21,7 +21,7 @@ class KontextDatasetPlugin(DatasetPluginBase):
 
         for item in dataset:
             pil_image = item['image']
-            text = item['instruction']
+            text = item.get('instruction') or 'Describe the image'
             base64_image = PIL_to_base64(pil_image, add_header=True)
 
             message = self.create_message(text=text, image_urls=base64_image)

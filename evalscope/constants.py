@@ -16,6 +16,7 @@ DEFAULT_EVALSCOPE_CACHE_DIR = os.path.expanduser(
     os.getenv('EVALSCOPE_CACHE', '~/.cache/evalscope')
 )  # ~/.cache/evalscope
 HEARTBEAT_INTERVAL_SEC = int(os.getenv('EVALSCOPE_HEARTBEAT_INTERVAL', '60'))  # 60 seconds
+DEFAULT_LANGUAGE = os.getenv('EVALSCOPE_LANGUAGE', 'en')  # default language: 'en' or 'zh'
 
 
 class HubType:
@@ -69,7 +70,7 @@ class EvalType:
     CUSTOM = 'custom'
     MOCK_LLM = 'mock_llm'
     CHECKPOINT = 'llm_ckpt'  # native model checkpoint
-    SERVICE = 'openai_api'  # model service
+    SERVICE = 'openai_api'  # model service (deprecated)
     TEXT2IMAGE = 'text2image'  # image generation service
     IMAGE_EDITING = 'image_editing'  # image editing service
     OPENAI_API = 'openai_api'

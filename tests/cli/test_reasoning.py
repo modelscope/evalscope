@@ -23,7 +23,7 @@ class TestReasoning(TestCase):
             'model': 'Qwen3-0.6B',
             'api_url': 'http://0.0.0.0:8801/v1',
             'api_key': env.get('DASHSCOPE_API_KEY'),
-            'eval_type': EvalType.SERVICE,
+            'eval_type': EvalType.OPENAI_API,
             'eval_batch_size': 5,
             'limit': 5,
             'generation_config': {

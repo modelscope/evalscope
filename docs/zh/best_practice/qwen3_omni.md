@@ -83,13 +83,12 @@ evalscope perf \
 
 ```python
 from evalscope import TaskConfig, run_task
-from evalscope.constants import EvalType
 
 task_cfg = TaskConfig(
     model='Qwen3-Omni-30B-A3B-Instruct',
     api_url='http://localhost:8801/v1',
     api_key='EMPTY',
-    eval_type=EvalType.SERVICE,
+    eval_type='openai_api',
     datasets=[
         'omni_bench',
     ],

@@ -38,6 +38,9 @@ def plot_single_report_sunburst(report_list: List[Report]):
         path = [ReportKey.dataset_name] + categories + [ReportKey.subset_name]
     logger.debug(f'df: \n{df}')
     df[categories] = df[categories].fillna('default')  # NOTE: fillna for empty categories
+    df = df[df[ReportKey.num] > 0]  # NOTE: filter out zero-num rows to avoid ZeroDivisionError in plotly
+    if df.empty:
+        return None
 
     plot = px.sunburst(
         df,
@@ -45,7 +48,8 @@ def plot_single_report_sunburst(report_list: List[Report]):
         values=ReportKey.num,
         color=ReportKey.score,
         color_continuous_scale='RdYlGn',  # see https://plotly.com/python/builtin-colorscales/
-        color_continuous_midpoint=np.average(df[ReportKey.score], weights=df[ReportKey.num]),
+        color_continuous_midpoint=np.average(df[ReportKey.score], weights=df[ReportKey.num])
+        if df[ReportKey.num].sum() > 0 else df[ReportKey.score].mean(),
         template=PLOTLY_THEME,
         maxdepth=4
     )
@@ -55,7 +59,6 @@ def plot_single_report_sunburst(report_list: List[Report]):
 
 
 def plot_single_dataset_scores(df: pd.DataFrame):
-    # TODO: add metric radio and replace category name
     plot = px.bar(
         df,
         x=df[ReportKey.metric_name],

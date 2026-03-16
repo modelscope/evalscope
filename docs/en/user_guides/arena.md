@@ -36,7 +36,6 @@ Run the following code:
 ```python
 import os
 from evalscope import TaskConfig, run_task
-from evalscope.constants import EvalType
 
 models = ['qwen2.5-72b-instruct', 'qwen2.5-7b-instruct', 'qwen2.5-0.5b-instruct']
 
@@ -44,7 +43,7 @@ task_list = [TaskConfig(
     model=model,
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
     api_key=os.getenv('DASHSCOPE_API_KEY'),
-    eval_type=EvalType.SERVICE,
+    eval_type='openai_api',
     datasets=[
         'general_qa',
     ],

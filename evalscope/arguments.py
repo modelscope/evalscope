@@ -1,5 +1,6 @@
 # flake8: noqa: E501
 import argparse
+import ast
 import json
 
 from evalscope.constants import EvalBackend, JudgeStrategy, ModelTask
@@ -23,10 +24,10 @@ class ParseStrArgsAction(argparse.Action):
         for arg in values.strip().split(','):
             key, value = map(str.strip, arg.split('=', 1))  # Use maxsplit=1 to handle multiple '='
             try:
-                # Safely evaluate the value using eval
-                arg_dict[key] = eval(value)
-            except Exception:
-                # If eval fails, check if it's a boolean value
+                # Safely evaluate the value using ast.literal_eval
+                arg_dict[key] = ast.literal_eval(value)
+            except (ValueError, SyntaxError):
+                # If ast.literal_eval fails, check if it's a boolean value
                 value_lower = value.lower()
                 if value_lower == 'true':
                     arg_dict[key] = True
@@ -73,6 +74,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--rerun-review', action='store_true', default=False, help='Rerun the review process when use_cache.')
     parser.add_argument('--work-dir', type=str, help='The root cache dir.')
     parser.add_argument('--no-timestamp', action='store_true', default=False, help='Do not add timestamp to work_dir to avoid overwriting previous results.')  # noqa: E501
+    parser.add_argument('--enable-progress-tracker', action='store_true', default=False, help='Enable progress tracker.')
 
     # Debug and runtime mode arguments
     parser.add_argument('--ignore-errors', action='store_true', default=False, help='Ignore errors during evaluation.')

@@ -26,7 +26,7 @@ python -m vllm.entrypoints.openai.api_server \
 ```bash
 vllm bench serve \
   --max-concurrency 50 \
-  --num-prompts 500 \
+  --num-prompts 1000 \
   --host 127.0.0.1 \
   --port 8801 \
   --backend openai-chat \
@@ -43,8 +43,8 @@ vllm bench serve \
 ```bash
 evalscope perf \
   --parallel 50 \
-  --number 500 \
-  --log-every-n-query 500 \
+  --number 1000 \
+  --log-every-n-query 1000 \
   --model Qwen2.5-0.5B-Instruct \
   --url http://127.0.0.1:8801/v1/chat/completions \
   --api openai \
@@ -63,11 +63,8 @@ evalscope perf \
 
 - Hardware: A100 80GB GPU
 - Versions:
-  - vLLM: v0.11.0
-  - evalscope: `main` branch (2025-10-20)
-- Installation Recommendations:
-  - Follow official documentation for vLLM and `evalscope[perf]` installation.
-  - For development, install Evalscope with `pip install -e .[perf]`.
+  - vLLM: v0.17.0
+  - evalscope: v1.5.0
 
 Notes:
 - When using ModelScope weights, set `VLLM_USE_MODELSCOPE=True` and provide the corresponding tokenizer path.
@@ -172,13 +169,13 @@ Comparison Results: Both tools produce consistent request parameters (metric met
 
 ---
 
-## Full Load Test: 50 Concurrency / 500 Requests
+## Full Load Test: 50 Concurrency / 1000 Requests
 
 **vLLM:**
 ```bash
 vllm bench serve \
   --max-concurrency 50 \
-  --num-prompts 500 \
+  --num-prompts 1000 \
   --host 127.0.0.1 \
   --port 8801 \
   --backend openai-chat \
@@ -195,8 +192,8 @@ vllm bench serve \
 ```bash
 evalscope perf \
   --parallel 50 \
-  --number 500 \
-  --log-every-n-query 500 \
+  --number 1000 \
+  --log-every-n-query 1000 \
   --model Qwen2.5-0.5B-Instruct \
   --url http://127.0.0.1:8801/v1/chat/completions \
   --api openai \
@@ -209,7 +206,88 @@ evalscope perf \
   --extra-args '{"ignore_eos": true}'
 ```
 
-Both tools produce highly consistent metrics within a tolerable 3% difference, despite accounting for timing overhead, system jitter, and connection/scheduling differences.
+vLLM Output:
+```text
+============ Serving Benchmark Result ============
+Successful requests:                     1000      
+Failed requests:                         0         
+Maximum request concurrency:             50        
+Benchmark duration (s):                  9.25      
+Total input tokens:                      100000    
+Total generated tokens:                  100000    
+Request throughput (req/s):              108.08    
+Output token throughput (tok/s):         10808.22  
+Peak output token throughput (tok/s):    11399.00  
+Peak concurrent requests:                176.00    
+Total token throughput (tok/s):          21616.43  
+---------------Time to First Token----------------
+Mean TTFT (ms):                          73.18     
+Median TTFT (ms):                        74.81     
+P99 TTFT (ms):                           144.48    
+-----Time per Output Token (excl. 1st token)------
+Mean TPOT (ms):                          3.85      
+Median TPOT (ms):                        3.85      
+P99 TPOT (ms):                           4.14      
+---------------Inter-token Latency----------------
+Mean ITL (ms):                           3.86      
+Median ITL (ms):                         3.63      
+P99 ITL (ms):                            12.26     
+==================================================
+```
+
+Evalscope Output:
+```text
+Benchmarking summary:
++-----------------------------------+------------+
+| Key                               |      Value |
++===================================+============+
+| Time taken for tests (s)          |     9.4961 |
++-----------------------------------+------------+
+| Number of concurrency             |    50      |
++-----------------------------------+------------+
+| Request rate (req/s)              |    -1      |
++-----------------------------------+------------+
+| Total requests                    |  1000      |
++-----------------------------------+------------+
+| Succeed requests                  |  1000      |
++-----------------------------------+------------+
+| Failed requests                   |     0      |
++-----------------------------------+------------+
+| Output token throughput (tok/s)   | 10530.7    |
++-----------------------------------+------------+
+| Total token throughput (tok/s)    | 21061.2    |
++-----------------------------------+------------+
+| Request throughput (req/s)        |   105.307  |
++-----------------------------------+------------+
+| Average latency (s)               |     0.4663 |
++-----------------------------------+------------+
+| Average time to first token (s)   |     0.1131 |
++-----------------------------------+------------+
+| Average time per output token (s) |     0.0036 |
++-----------------------------------+------------+
+| Average inter-token latency (s)   |     0.0037 |
++-----------------------------------+------------+
+| Average input tokens per request  |    99.999  |
++-----------------------------------+------------+
+| Average output tokens per request |   100      |
++-----------------------------------+------------+
+Percentile results:
++-------------+----------+---------+----------+-------------+--------------+---------------+----------------+---------------+
+| Percentiles | TTFT (s) | ITL (s) | TPOT (s) | Latency (s) | Input tokens | Output tokens | Output (tok/s) | Total (tok/s) |
++-------------+----------+---------+----------+-------------+--------------+---------------+----------------+---------------+
+|     10%     |  0.0532  |   0.0   |  0.003   |   0.3699    |     100      |      100      |    167.0738    |   334.1475    |
+|     25%     |  0.0802  | 0.0025  |  0.003   |   0.3836    |     100      |      100      |    190.1434    |   380.2868    |
+|     50%     |  0.0949  | 0.0029  |  0.0032  |   0.4225    |     100      |      100      |    236.7219    |   473.4438    |
+|     66%     |  0.1054  | 0.0031  |  0.0039  |   0.4846    |     100      |      100      |    253.8581    |   507.7162    |
+|     75%     |  0.1136  | 0.0033  |  0.004   |    0.526    |     100      |      100      |    260.8281    |   521.6561    |
+|     80%     |  0.1398  | 0.0036  |  0.0041  |   0.5509    |     100      |      100      |    264.4042    |   528.8084    |
+|     90%     |  0.163   | 0.0052  |  0.0043  |   0.5985    |     100      |      100      |    270.4783    |   540.9567    |
+|     95%     |  0.4063  | 0.0067  |  0.005   |    0.738    |     100      |      100      |    276.9653    |   553.9306    |
+|     98%     |  0.4287  | 0.0108  |  0.0055  |   0.8134    |     100      |      100      |    287.3055    |   574.6111    |
+|     99%     |  0.4302  | 0.0141  |  0.0059  |   0.8161    |     100      |      100      |    293.9073    |   587.8146    |
++-------------+----------+---------+----------+-------------+--------------+---------------+----------------+---------------+
+```
+
 
 ---
 

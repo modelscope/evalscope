@@ -2,6 +2,17 @@
 
 执行 `evalscope eval --help` 可获取全部参数说明。
 
+## 环境变量
+
+以下环境变量可在启动前设置，用于控制全局默认行为：
+
+| 环境变量 | 说明 | 默认值 |
+|----------|------|--------|
+| `EVALSCOPE_CACHE` | EvalScope 缓存根目录，用于存放数据集、评测中间文件等 | `~/.cache/evalscope` |
+| `EVALSCOPE_LANGUAGE` | 全局默认语言，影响报告等输出语言（`en` 或 `zh`） | `en` |
+| `EVALSCOPE_HEARTBEAT_INTERVAL` | 评测进度心跳上报间隔（秒） | `60` |
+| `MODELSCOPE_CACHE` | ModelScope 模型与数据集缓存根目录 | `~/.cache/modelscope/hub` |
+
 ## 模型参数
 
 | 参数 | 类型 | 说明 | 默认值 |
@@ -223,6 +234,7 @@ After providing your explanation, you must rate the response on a scale of 0 (wo
 | `--no-timestamp` | `bool` | 是否不在工作目录中添加时间戳 | `false` |
 | `--use-cache` | `str` | 复用本地缓存路径（如`outputs/20241210_194434`）<br>重用推理结果和评测结果 | `None` |
 | `--rerun-review` | `bool` | 只重新运行评测（重用推理结果） | `false` |
+| `--enable-progress-tracker` | `bool` | 是否开启进度追踪，将层级评测进度实时写入`progress.json`，可通过服务接口查询 | `false` |
 | `--seed` | `int` | 随机种子 | `42` |
 | `--debug` | `bool` | 是否开启调试模式 | `false` |
 | `--ignore-errors` | `bool` | 是否忽略生成过程中的错误 | `false` |
@@ -242,7 +254,29 @@ After providing your explanation, you must rate the response on a scale of 0 (wo
 ├── reports/
 │   └── {model_id}/
 │       └── {dataset}.json           # 评测报告
-└── reviews/
-    └── {model_id}/
-        └── {dataset}.jsonl          # 评测结果详情
+├── reviews/
+│   └── {model_id}/
+│       └── {dataset}.jsonl          # 评测结果详情
+└── progress.json                    # 进度追踪文件（启用--enable-progress-tracker时生成）
+```
+
+`progress.json` 文件格式示例：
+
+```json
+{
+  "status": "running",
+  "pipeline": "eval",
+  "total_count": 14042,
+  "processed_count": 5200,
+  "percent": 37.03,
+  "stage": {
+    "name": "Evaluating", "label": "mmlu",
+    "current": 1, "total": 3, "status": "running",
+    "children": [
+      {"name": "Predicting", "label": "mmlu@test", "current": 1000, "total": 1000, "status": "completed", "children": []},
+      {"name": "Reviewing",  "label": "mmlu@test", "current": 320,  "total": 1000, "status": "running",  "children": []}
+    ]
+  },
+  "updated_at": "2026-03-09T10:05:42Z"
+}
 ```

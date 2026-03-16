@@ -22,7 +22,7 @@ from evalscope.utils.deprecation_utils import deprecated_warning
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.io_utils import dict_to_yaml, gen_hash, json_to_dict, safe_filename, yaml_to_dict
 from evalscope.utils.logger import get_logger
-from evalscope.version import __version__ as evalscope_version
+from evalscope.version import __version__ as _evalscope_version
 
 logger = get_logger()
 
@@ -121,6 +121,11 @@ class TaskConfig(BaseArgument):
     no_timestamp: bool = False
     """Do not add timestamp to the work_dir to avoid overwriting previous results."""
 
+    enable_progress_tracker: bool = False
+    """Whether to write a progress.json file tracking hierarchical evaluation progress.
+    When True, each TqdmLogging instance auto-reports its stage to the file-backed
+    ProgressTracker so the service layer can expose a real-time /progress endpoint."""
+
     # Debug and runtime mode arguments
     ignore_errors: bool = False
     """Whether to continue evaluation when encountering errors."""
@@ -166,7 +171,7 @@ class TaskConfig(BaseArgument):
     sandbox_manager_config: Optional[Dict] = field(default_factory=dict)
     """Configuration for the sandbox manager. Default is local manager. If url is provided, it will use remote manager."""
 
-    evalscope_version: Optional[str] = evalscope_version
+    evalscope_version: Optional[str] = _evalscope_version
     """EvalScope version used for the evaluation."""
 
     def __post_init__(self):
@@ -187,10 +192,10 @@ class TaskConfig(BaseArgument):
             self.model = self.model_task
             self.eval_type = EvalType.MOCK_LLM
 
-        # Set eval_type to SERVICE if api_url is provided
+        # Set eval_type to openai_api if api_url is provided
         if self.api_url is not None and self.eval_type is None:
-            logger.info('api_url is provided, setting eval_type to SERVICE.')
-            self.eval_type = EvalType.SERVICE
+            logger.info("api_url is provided, setting eval_type to 'openai_api'.")
+            self.eval_type = EvalType.OPENAI_API
 
         # Set eval_type to CHECKPOINT if model is a string path and eval_type is not set
         if self.model and self.eval_type is None:
@@ -240,7 +245,7 @@ class TaskConfig(BaseArgument):
         elif self.model_task == ModelTask.TEXT_GENERATION:
             if self.eval_type == EvalType.CHECKPOINT:
                 return DEFAULT_TEXT_GEN_CHECKPOINT_CONFIG.copy()
-            elif self.eval_type == EvalType.SERVICE:
+            elif self.eval_type == EvalType.OPENAI_API:
                 return DEFAULT_TEXT_GEN_SERVICE_CONFIG.copy()
 
         return {}
@@ -310,14 +315,26 @@ class TaskConfig(BaseArgument):
         else:
             raise ValueError('eval_config should be a dict or a file path string.')
 
+    @staticmethod
+    def _deep_merge(base: dict, override: dict) -> dict:
+        """Recursively merge override into base, returning a new dict."""
+        result = copy.deepcopy(base)
+        for key, value in override.items():
+            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                result[key] = TaskConfig._deep_merge(result[key], value)
+            else:
+                result[key] = copy.deepcopy(value)
+        return result
+
     def update(self, other: Union['TaskConfig', dict]):
         if isinstance(other, TaskConfig):
             other = other.to_dict()
-        self.__dict__.update(other)
+        merged = self._deep_merge(self.__dict__, other)
+        self.__dict__.update(merged)
 
     def dump_yaml(self, output_dir: str):
         """Dump the task configuration to a YAML file."""
-        task_cfg_file = os.path.join(output_dir, f'task_config_{gen_hash(str(self), bits=6)}.yaml')
+        task_cfg_file = os.path.join(output_dir, f'task_config.yaml')
         try:
             logger.info(f'Dump task config to {task_cfg_file}')
             dict_to_yaml(self.to_dict(), task_cfg_file)

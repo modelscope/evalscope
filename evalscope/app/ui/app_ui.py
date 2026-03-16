@@ -15,7 +15,8 @@ logger = get_logger()
 
 
 def create_app_ui(args: argparse.Namespace):
-    lang = args.lang
+    from evalscope.constants import DEFAULT_LANGUAGE
+    lang = args.lang if args.lang is not None else DEFAULT_LANGUAGE
     locale_dict = get_app_locale(lang)
 
     with gr.Blocks(title='Evalscope Dashboard') as demo:

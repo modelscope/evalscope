@@ -51,7 +51,7 @@ datasets=[
     'frames',
     'docmath',
     'needle_haystack',
-    'bfcl_v3',
+    # 'bfcl_v3',
     'hle',
     'tau_bench',
 ]
@@ -153,7 +153,7 @@ class TestRun(unittest.TestCase):
             model='qwen-plus',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
-            eval_type=EvalType.SERVICE,
+            eval_type=EvalType.OPENAI_API,
             datasets=datasets,
             dataset_args=dataset_args,
             eval_batch_size=1,
@@ -182,7 +182,7 @@ class TestRun(unittest.TestCase):
             model='qwen-vl-plus',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
-            eval_type=EvalType.SERVICE,
+            eval_type=EvalType.OPENAI_API,
             datasets=[
                 'mmmu',
                 'math_vista',
@@ -226,7 +226,7 @@ class TestRun(unittest.TestCase):
             model='qwen-plus',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key=api_key,
-            eval_type=EvalType.SERVICE if api_key else EvalType.MOCK_LLM,
+            eval_type=EvalType.OPENAI_API if api_key else EvalType.MOCK_LLM,
             datasets=[
                 'general_mcq',
                 'iquiz',

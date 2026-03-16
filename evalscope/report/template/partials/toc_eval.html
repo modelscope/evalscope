@@ -1,0 +1,36 @@
+<!-- ── Floating Table of Contents ────────────────────────────── -->
+<nav class="toc" id="toc">
+  <button class="toc-toggle-btn" id="toc-toggle" title="Toggle table of contents" aria-label="Toggle table of contents">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <line x1="3" y1="12" x2="15" y2="12"/>
+      <line x1="3" y1="18" x2="18" y2="18"/>
+    </svg>
+  </button>
+  <div class="toc-panel" id="toc-panel" role="navigation" aria-label="Page contents">
+    <div class="toc-heading" data-i18n="toc.title">Contents</div>
+    <ul class="toc-list">
+      <li>
+        <a href="#section-overview" class="toc-link" data-section="section-overview">
+          <span class="toc-dot"></span><span data-i18n="nav.overview">Overview</span>
+        </a>
+      </li>
+      <li>
+        <a href="#section-results" class="toc-link" data-section="section-results">
+          <span class="toc-dot"></span><span data-i18n="nav.results">Results by Dataset</span>
+        </a>
+        {% if dataset_sections %}
+        <ul class="toc-sub">
+          {% for ds in dataset_sections %}
+          <li>
+            <a href="#ds-{{ loop.index }}" class="toc-link toc-sub-link" data-section="ds-{{ loop.index }}" title="{{ ds.pretty_name }}">
+              <span class="toc-dot"></span>{{ ds.pretty_name }}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </li>
+    </ul>
+  </div>
+</nav>

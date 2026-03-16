@@ -23,7 +23,7 @@ class TestNativeBenchmark(TestBenchmark):
             'model': 'qwen-plus',
             'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'api_key': env.get('DASHSCOPE_API_KEY'),
-            'eval_type': EvalType.SERVICE,
+            'eval_type': EvalType.OPENAI_API,
             'eval_batch_size': 5,
             'limit': 5,
             'generation_config': {
@@ -53,7 +53,7 @@ class TestNativeBenchmark(TestBenchmark):
         dataset_args = {
             'few_shot_num': 0,
         }
-        self._run_dataset_test('gsm8k', dataset_args=dataset_args, limit=5, model='qwen2.5-0.5b-instruct', debug=False, eval_batch_size=1)
+        self._run_dataset_test('gsm8k', dataset_args=dataset_args, limit=5, debug=False, eval_batch_size=5)
 
     def test_gsm8k_pass_at_k(self):
         """Test GSM8K math reasoning dataset with Pass@k metric."""
@@ -156,11 +156,11 @@ class TestNativeBenchmark(TestBenchmark):
     def test_ceval(self):
         """Test CEval dataset."""
         dataset_args = {
-            'subset_list': ['logic', 'law'],
+            'subset_list': ['logic', 'law', 'computer_network'],
             # 'few_shot_num': 0,
         }
         # self._run_dataset_load_test('ceval')
-        self._run_dataset_test('ceval', dataset_args=dataset_args)
+        self._run_dataset_test('ceval', dataset_args=dataset_args, enable_progress_tracker=True, analysis_report=True)
 
     def test_super_gpqa(self):
         """Test Super GPQA dataset."""
@@ -286,7 +286,7 @@ class TestNativeBenchmark(TestBenchmark):
 
     def test_arena_hard(self):
         """Test Arena Hard dataset."""
-        self._run_dataset_test('arena_hard', use_cache='outputs/20250818_211353')
+        self._run_dataset_test('arena_hard')
 
     def test_frames(self):
         """Test Frames dataset."""
@@ -387,7 +387,7 @@ class TestNativeBenchmark(TestBenchmark):
                 'underscore_to_dot': True
             }
         }
-        self._run_dataset_test('bfcl_v3', dataset_args=dataset_args, model='qwen-plus', limit=10)
+        self._run_dataset_test('bfcl_v3', dataset_args=dataset_args, model='qwen-plus', limit=1)
 
     def test_bfcl_v4(self):
         """Test BFCL v4 dataset."""

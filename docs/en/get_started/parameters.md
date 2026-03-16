@@ -2,6 +2,17 @@
 
 Run `evalscope eval --help` to get the full list of parameters.
 
+## Environment Variables
+
+The following environment variables can be set before launch to control global default behavior:
+
+| Environment Variable | Description | Default |
+|----------------------|-------------|---------|
+| `EVALSCOPE_CACHE` | Root cache directory for EvalScope, used to store datasets, intermediate evaluation files, etc. | `~/.cache/evalscope` |
+| `EVALSCOPE_LANGUAGE` | Global default language, affects output language for reports, etc. (`en` or `zh`) | `en` |
+| `EVALSCOPE_HEARTBEAT_INTERVAL` | Heartbeat reporting interval (seconds) | `60` |
+| `MODELSCOPE_CACHE` | Root cache directory for ModelScope models and datasets | `~/.cache/modelscope/hub` |
+
 ## Model Parameters
 
 | Parameter | Type | Description | Default |
@@ -227,6 +238,7 @@ After providing your explanation, you must rate the response on a scale of 0 (wo
 | `--no-timestamp` | `bool` | Do not add timestamp to work_dir | `false` |
 | `--use-cache` | `str` | Reuse local cache path (e.g., `outputs/20241210_194434`)<br>Reuses inference and evaluation results | `None` |
 | `--rerun-review` | `bool` | Only rerun evaluation (reuses inference results) | `false` |
+| `--enable-progress-tracker` | `bool` | Whether to enable progress tracking, writing hierarchical evaluation progress to `progress.json` in real time, queryable via the service API | `false` |
 | `--seed` | `int` | Random seed | `42` |
 | `--debug` | `bool` | Whether to enable debug mode | `false` |
 | `--ignore-errors` | `bool` | Whether to ignore errors during generation | `false` |
@@ -246,7 +258,29 @@ After providing your explanation, you must rate the response on a scale of 0 (wo
 ├── reports/
 │   └── {model_id}/
 │       └── {dataset}.json           # Evaluation report
-└── reviews/
-    └── {model_id}/
-        └── {dataset}.jsonl          # Evaluation result details
+├── reviews/
+│   └── {model_id}/
+│       └── {dataset}.jsonl          # Evaluation result details
+└── progress.json                    # Progress tracking file (generated when --enable-progress-tracker is enabled)
+```
+
+Example `progress.json` format:
+
+```json
+{
+  "status": "running",
+  "pipeline": "eval",
+  "total_count": 14042,
+  "processed_count": 5200,
+  "percent": 37.03,
+  "stage": {
+    "name": "Evaluating", "label": "mmlu",
+    "current": 1, "total": 3, "status": "running",
+    "children": [
+      {"name": "Predicting", "label": "mmlu@test", "current": 1000, "total": 1000, "status": "completed", "children": []},
+      {"name": "Reviewing",  "label": "mmlu@test", "current": 320,  "total": 1000, "status": "running",  "children": []}
+    ]
+  },
+  "updated_at": "2026-03-09T10:05:42Z"
+}
 ```

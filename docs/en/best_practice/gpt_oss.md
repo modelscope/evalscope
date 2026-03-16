@@ -115,13 +115,12 @@ We use EvalScope’s benchmark testing function to evaluate the model’s abilit
 
 Run the test script:
 ```python
-from evalscope.constants import EvalType
 from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
     model='gpt-oss-20b',  # Model name
     api_url='http://127.0.0.1:8801/v1',  # Model service address
-    eval_type=EvalType.SERVICE, # Evaluation type, here using service evaluation
+    eval_type='openai_api', # Evaluation type, here using openai_api evaluation
     datasets=['aime25'],  # Dataset to test
     generation_config={
         'extra_body': {"reasoning_effort": "high"}  # Model generation parameters, set to high reasoning level

@@ -4,10 +4,12 @@ docstring_parser
 dotenv
 editdistance
 jieba
+jinja2
 jsonlines
 jsonschema
 langdetect
 latex2sympy2_extended[antlr4_9_3]
+Markdown
 matplotlib
 modelscope[framework,datasets]>=1.27
 more_itertools
@@ -16,6 +18,7 @@ openai
 overrides
 pandas
 pillow
+plotly
 pydantic
 pylatexenc
 pyyaml>=5.1

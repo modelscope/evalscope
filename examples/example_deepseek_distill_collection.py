@@ -16,15 +16,15 @@ mixed_data = WeightedSampler(schema).sample(100000)  # set a large number to ens
 dump_jsonl_data(mixed_data, 'outputs/deepseek_distill_test.jsonl')
 
 from evalscope import TaskConfig, run_task
+from evalscope.constants import EvalType
 
 #  start the task
-from evalscope.constants import EvalType
 
 task_cfg = TaskConfig(
     model='DeepSeek-R1-Distill-Qwen-1.5B',
     api_url='http://127.0.0.1:8801/v1/chat/completions',
     api_key='EMPTY',
-    eval_type=EvalType.SERVICE,
+    eval_type=EvalType.OPENAI_API,
     datasets=[
         'data_collection',
     ],
