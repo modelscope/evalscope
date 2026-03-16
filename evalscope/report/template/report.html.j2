@@ -158,6 +158,9 @@
               <table>
                 <thead>
                   <tr>
+                    {% if msec.show_category %}
+                    <th data-i18n="col.category">Category</th>
+                    {% endif %}
                     <th data-i18n="col.subset">Subset</th>
                     <th data-i18n="col.metric">Metric</th>
                     <th data-i18n="col.score">Score</th>
@@ -167,6 +170,9 @@
                 <tbody>
                   {% for row in msec.subset_rows %}
                   <tr>
+                    {% if msec.show_category %}
+                    <td><span class="tag">{{ row.category }}</span></td>
+                    {% endif %}
                     <td>{{ row.subset }}</td>
                     <td><span class="metric-tag">{{ row.metric }}</span></td>
                     <td class="score-cell">{{ "%.4f" | format(row.score) }}</td>

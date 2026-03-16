@@ -216,7 +216,7 @@ class TestPerf(unittest.TestCase):
             url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
             api_key=env.get('DASHSCOPE_API_KEY'),
             api='openai',
-            dataset='flickr8k',
+            dataset='kontext_bench',
             min_tokens=100,
             max_tokens=100,
             tokenizer_path='Qwen/Qwen2.5-VL-7B-Instruct',
