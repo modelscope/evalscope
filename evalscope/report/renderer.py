@@ -285,10 +285,7 @@ def gen_html_report_file(
                     subset_labels.append(sub.name)
                     subset_scores.append(sub.score)
 
-            # Determine whether the category column adds information
-            # (hide it when every row has the same category or no category)
-            unique_cats = {r['category'] for r in subset_rows}
-            show_category = len(unique_cats) > 1 or (len(unique_cats) == 1 and '' not in unique_cats)
+            show_category = True
 
             chart_div = _subset_chart_div(
                 ds=ds,
