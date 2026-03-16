@@ -1,7 +1,7 @@
 {
   "meta": {
     "pretty_name": "AIME-2025",
-    "dataset_id": "opencompass/AIME2025",
+    "dataset_id": "evalscope/aime25",
     "paper_url": null,
     "tags": [
       "Math",
@@ -18,10 +18,9 @@
     "eval_split": "test",
     "train_split": "",
     "subset_list": [
-      "AIME2025-I",
-      "AIME2025-II"
+      "default"
     ],
-    "description": "\n## Overview\n\nAIME 2025 (American Invitational Mathematics Examination 2025) is a benchmark based on problems from the prestigious AIME competition, one of the most challenging high school mathematics contests in the United States. It tests advanced mathematical reasoning and problem-solving skills.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: AIME-level mathematical problem\n- **Output**: Integer answer (0-999) with step-by-step reasoning\n- **Difficulty**: Advanced high school / early undergraduate level\n\n## Key Features\n\n- Problems from AIME I and AIME II 2025 competitions\n- Answers are always integers between 0 and 999\n- Requires creative mathematical reasoning and problem-solving\n- Topics: algebra, geometry, number theory, combinatorics, probability\n- Represents top-tier high school mathematics competition difficulty\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Uses LLM-as-judge for mathematical equivalence checking\n- Subsets: AIME2025-I, AIME2025-II\n",
+    "description": "\n## Overview\n\nAIME 2025 (American Invitational Mathematics Examination 2025) is a benchmark based on problems from the prestigious AIME competition, one of the most challenging high school mathematics contests in the United States. It tests advanced mathematical reasoning and problem-solving skills.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: AIME-level mathematical problem\n- **Output**: Integer answer (0-999) with step-by-step reasoning\n- **Difficulty**: Advanced high school / early undergraduate level\n\n## Key Features\n\n- Problems from AIME I and AIME II 2025 competitions\n- Answers are always integers between 0 and 999\n- Requires creative mathematical reasoning and problem-solving\n- Topics: algebra, geometry, number theory, combinatorics, probability\n- Represents top-tier high school mathematics competition difficulty\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Uses LLM-as-judge for mathematical equivalence checking\n",
     "prompt_template": "\nSolve the following math problem step by step. Put your answer inside \\boxed{{}}.\n\n{question}\n\nRemember to put your answer inside \\boxed{{}}.",
     "system_prompt": "",
     "few_shot_prompt_template": "",
@@ -34,54 +33,45 @@
     "total_samples": 30,
     "subset_stats": [
       {
-        "name": "AIME2025-I",
-        "sample_count": 15,
-        "prompt_length_mean": 476.07,
-        "prompt_length_min": 212,
-        "prompt_length_max": 768,
-        "prompt_length_std": 158.43,
-        "target_length_mean": 2.6
-      },
-      {
-        "name": "AIME2025-II",
-        "sample_count": 15,
-        "prompt_length_mean": 506.07,
-        "prompt_length_min": 234,
-        "prompt_length_max": 1119,
-        "prompt_length_std": 228.43,
-        "target_length_mean": 3.2
+        "name": "default",
+        "sample_count": 30,
+        "prompt_length_mean": 604.93,
+        "prompt_length_min": 208,
+        "prompt_length_max": 1862,
+        "prompt_length_std": 426.58,
+        "target_length_mean": 2.7
       }
     ],
     "prompt_length": {
-      "mean": 491.07,
-      "min": 212,
-      "max": 1119,
-      "std": 193.75
+      "mean": 604.93,
+      "min": 208,
+      "max": 1862,
+      "std": 426.58
     },
-    "target_length_mean": 2.9,
-    "computed_at": "2026-01-28T11:12:35.898924"
+    "target_length_mean": 2.7,
+    "computed_at": "2026-03-16T17:43:27.467422"
   },
   "sample_example": {
     "data": {
       "input": [
         {
-          "id": "99875e2d",
-          "content": "\nSolve the following math problem step by step. Put your answer inside \\boxed{}.\n\nFind the sum of all integer bases $b>9$ for which $17_{b}$ is a divisor of $97_{b}$.\n\nRemember to put your answer inside \\boxed{}."
+          "id": "bff66863",
+          "content": "\nSolve the following math problem step by step. Put your answer inside \\boxed{}.\n\nFind the sum of all integer bases $b>9$ for which $17_b$ is a divisor of $97_b.$\n\nRemember to put your answer inside \\boxed{}."
         }
       ],
       "target": "70",
       "id": 0,
       "group_id": 0
     },
-    "subset": "AIME2025-I",
+    "subset": "default",
     "truncated": false
   },
   "readme": {
-    "en": "# AIME-2025\n\n\n## Overview\n\nAIME 2025 (American Invitational Mathematics Examination 2025) is a benchmark based on problems from the prestigious AIME competition, one of the most challenging high school mathematics contests in the United States. It tests advanced mathematical reasoning and problem-solving skills.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: AIME-level mathematical problem\n- **Output**: Integer answer (0-999) with step-by-step reasoning\n- **Difficulty**: Advanced high school / early undergraduate level\n\n## Key Features\n\n- Problems from AIME I and AIME II 2025 competitions\n- Answers are always integers between 0 and 999\n- Requires creative mathematical reasoning and problem-solving\n- Topics: algebra, geometry, number theory, combinatorics, probability\n- Represents top-tier high school mathematics competition difficulty\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Uses LLM-as-judge for mathematical equivalence checking\n- Subsets: AIME2025-I, AIME2025-II\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `aime25` |\n| **Dataset ID** | [opencompass/AIME2025](https://modelscope.cn/datasets/opencompass/AIME2025/summary) |\n| **Paper** | N/A |\n| **Tags** | `Math`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 30 |\n| Prompt Length (Mean) | 491.07 chars |\n| Prompt Length (Min/Max) | 212 / 1119 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `AIME2025-I` | 15 | 476.07 | 212 | 768 |\n| `AIME2025-II` | 15 | 506.07 | 234 | 1119 |\n\n## Sample Example\n\n**Subset**: `AIME2025-I`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"99875e2d\",\n      \"content\": \"\\nSolve the following math problem step by step. Put your answer inside \\\\boxed{}.\\n\\nFind the sum of all integer bases $b>9$ for which $17_{b}$ is a divisor of $97_{b}$.\\n\\nRemember to put your answer inside \\\\boxed{}.\"\n    }\n  ],\n  \"target\": \"70\",\n  \"id\": 0,\n  \"group_id\": 0\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n\nSolve the following math problem step by step. Put your answer inside \\boxed{{}}.\n\n{question}\n\nRemember to put your answer inside \\boxed{{}}.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets aime25 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['aime25'],\n    dataset_args={\n        'aime25': {\n            # subset_list: ['AIME2025-I', 'AIME2025-II']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
-    "zh": "# AIME-2025\n\n## 概述\n\nAIME 2025（2025年美国数学邀请赛）是一个基于著名AIME竞赛题目的基准测试。AIME是美国最具挑战性的高中数学竞赛之一，该基准测试旨在评估高级数学推理与问题解决能力。\n\n## 任务描述\n\n- **任务类型**：竞赛数学问题求解  \n- **输入**：AIME级别的数学问题  \n- **输出**：整数答案（0–999），附带逐步推理过程  \n- **难度**：高级高中 / 大学低年级水平  \n\n## 主要特点\n\n- 题目来自2025年AIME I和AIME II竞赛  \n- 答案始终为0到999之间的整数  \n- 要求具备创造性的数学推理与解题能力  \n- 涉及主题：代数、几何、数论、组合数学、概率  \n- 代表顶尖高中数学竞赛的难度水平  \n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估方式  \n- 答案需用 `\\boxed{}` 格式包裹以便正确提取  \n- 使用LLM-as-judge进行数学等价性检查  \n- 子集：AIME2025-I、AIME2025-II  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `aime25` |\n| **数据集ID** | [opencompass/AIME2025](https://modelscope.cn/datasets/opencompass/AIME2025/summary) |\n| **论文** | N/A |\n| **标签** | `Math`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 30 |\n| 提示词长度（平均） | 491.07 字符 |\n| 提示词长度（最小/最大） | 212 / 1119 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `AIME2025-I` | 15 | 476.07 | 212 | 768 |\n| `AIME2025-II` | 15 | 506.07 | 234 | 1119 |\n\n## 样例示例\n\n**子集**: `AIME2025-I`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"99875e2d\",\n      \"content\": \"\\nSolve the following math problem step by step. Put your answer inside \\\\boxed{}.\\n\\nFind the sum of all integer bases $b>9$ for which $17_{b}$ is a divisor of $97_{b}$.\\n\\nRemember to put your answer inside \\\\boxed{}.\"\n    }\n  ],\n  \"target\": \"70\",\n  \"id\": 0,\n  \"group_id\": 0\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n\nSolve the following math problem step by step. Put your answer inside \\boxed{{}}.\n\n{question}\n\nRemember to put your answer inside \\boxed{{}}.\n```\n\n## 使用方法\n\n### 通过命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets aime25 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 通过Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['aime25'],\n    dataset_args={\n        'aime25': {\n            # subset_list: ['AIME2025-I', 'AIME2025-II']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
-    "content_hash": "37fdce287bce475f48120512efba0213",
+    "en": "# AIME-2025\n\n\n## Overview\n\nAIME 2025 (American Invitational Mathematics Examination 2025) is a benchmark based on problems from the prestigious AIME competition, one of the most challenging high school mathematics contests in the United States. It tests advanced mathematical reasoning and problem-solving skills.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: AIME-level mathematical problem\n- **Output**: Integer answer (0-999) with step-by-step reasoning\n- **Difficulty**: Advanced high school / early undergraduate level\n\n## Key Features\n\n- Problems from AIME I and AIME II 2025 competitions\n- Answers are always integers between 0 and 999\n- Requires creative mathematical reasoning and problem-solving\n- Topics: algebra, geometry, number theory, combinatorics, probability\n- Represents top-tier high school mathematics competition difficulty\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Uses LLM-as-judge for mathematical equivalence checking\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `aime25` |\n| **Dataset ID** | [evalscope/aime25](https://modelscope.cn/datasets/evalscope/aime25/summary) |\n| **Paper** | N/A |\n| **Tags** | `Math`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 30 |\n| Prompt Length (Mean) | 604.93 chars |\n| Prompt Length (Min/Max) | 208 / 1862 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"bff66863\",\n      \"content\": \"\\nSolve the following math problem step by step. Put your answer inside \\\\boxed{}.\\n\\nFind the sum of all integer bases $b>9$ for which $17_b$ is a divisor of $97_b.$\\n\\nRemember to put your answer inside \\\\boxed{}.\"\n    }\n  ],\n  \"target\": \"70\",\n  \"id\": 0,\n  \"group_id\": 0\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n\nSolve the following math problem step by step. Put your answer inside \\boxed{{}}.\n\n{question}\n\nRemember to put your answer inside \\boxed{{}}.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets aime25 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['aime25'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# AIME-2025\n\n\n## 概述\n\nAIME 2025（2025年美国数学邀请赛）是一个基于著名AIME竞赛题目的基准测试。AIME是美国最具挑战性的高中数学竞赛之一，该基准测试旨在评估高级数学推理与问题解决能力。\n\n## 任务描述\n\n- **任务类型**：竞赛数学问题求解\n- **输入**：AIME级别的数学问题\n- **输出**：整数答案（0-999），并附带逐步推理过程\n- **难度**：高级高中 / 大学低年级水平\n\n## 主要特点\n\n- 题目来自2025年AIME I和AIME II竞赛\n- 答案始终为0到999之间的整数\n- 要求具备创造性的数学推理与解题能力\n- 涉及主题：代数、几何、数论、组合数学、概率\n- 代表顶尖高中数学竞赛的难度水平\n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估方式\n- 答案应使用 `\\boxed{}` 格式包裹，以便正确提取\n- 使用LLM-as-judge进行数学等价性检查\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `aime25` |\n| **数据集ID** | [evalscope/aime25](https://modelscope.cn/datasets/evalscope/aime25/summary) |\n| **论文** | N/A |\n| **标签** | `Math`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 30 |\n| 提示词长度（平均） | 604.93 字符 |\n| 提示词长度（最小/最大） | 208 / 1862 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"bff66863\",\n      \"content\": \"\\nSolve the following math problem step by step. Put your answer inside \\\\boxed{}.\\n\\nFind the sum of all integer bases $b>9$ for which $17_b$ is a divisor of $97_b.$\\n\\nRemember to put your answer inside \\\\boxed{}.\"\n    }\n  ],\n  \"target\": \"70\",\n  \"id\": 0,\n  \"group_id\": 0\n}\n```\n\n## 提示模板\n\n**提示模板:**\n```text\n\nSolve the following math problem step by step. Put your answer inside \\boxed{{}}.\n\n{question}\n\nRemember to put your answer inside \\boxed{{}}.\n```\n\n## 使用方法\n\n### 使用命令行接口（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets aime25 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['aime25'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "e885824146510312f3b0c6c664156fcf",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T17:31:32.179979",
-  "translation_updated_at": "2026-01-28T15:56:15Z"
+  "updated_at": "2026-03-16T17:43:27.477945",
+  "translation_updated_at": "2026-03-16T17:46:34Z"
 }
