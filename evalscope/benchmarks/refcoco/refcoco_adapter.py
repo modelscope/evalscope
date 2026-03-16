@@ -109,6 +109,7 @@ class RefCOCOAdapter(DefaultDataAdapter):
 
         bbox_norm = []
         image_base64 = None
+        image_size = None
 
         if image_bytes:
             image_data = Image.open(io.BytesIO(image_bytes))
@@ -120,6 +121,7 @@ class RefCOCOAdapter(DefaultDataAdapter):
                 x, y, bw, bh = original_bbox
                 bbox_norm = [x / w, y / h, (x + bw) / w, (y + bh) / h]
                 image_data = image_data.convert('RGB')
+                image_size = (w, h)
             elif self.eval_mode == EvalMode.BBOX:
                 image_data = refcoco_bbox_doc_to_visual(image_data, original_bbox)
             elif self.eval_mode == EvalMode.SEG:
@@ -139,7 +141,8 @@ class RefCOCOAdapter(DefaultDataAdapter):
             'answer': record.get('answer'),
             'original_bbox': original_bbox,
             'bbox': bbox_norm,
-            'eval_mode': self.eval_mode
+            'eval_mode': self.eval_mode,
+            'image_size': image_size if self.eval_mode == EvalMode.BBOX_REC else None
         }
 
         if self.eval_mode == EvalMode.BBOX_REC:
@@ -183,7 +186,14 @@ class RefCOCOAdapter(DefaultDataAdapter):
             match = re.search(pattern, prediction)
 
             if match:
-                return [float(match.group(i)) for i in range(1, 5)]
+                coords = [float(match.group(i)) for i in range(1, 5)]
+                # If any coordinate > 1, treat as pixel coordinates and normalize
+                image_size = task_state.metadata.get('image_size')
+                if image_size and any(c > 1.0 for c in coords):
+                    w, h = image_size
+                    coords = [coords[0] / w, coords[1] / h, coords[2] / w, coords[3] / h]
+                    logger.debug(f'Normalized pixel coords to: {coords} using image size {image_size}')
+                return coords
             return [0.0, 0.0, 0.0, 0.0]
         else:
             return prediction
