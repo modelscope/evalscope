@@ -41,12 +41,13 @@ var I18N = {
     'card.subset_scores':  'Subset Scores',
 
     /* ── Table column headers ─────────────────── */
-    'col.dataset': 'Dataset',
-    'col.model':   'Model',
-    'col.metric':  'Metric',
-    'col.score':   'Score',
-    'col.num':     'Num',
-    'col.subset':  'Subset',
+    'col.dataset':   'Dataset',
+    'col.model':     'Model',
+    'col.metric':    'Metric',
+    'col.score':     'Score',
+    'col.num':       'Num',
+    'col.subset':    'Subset',
+    'col.category':  'Category',
 
     /* ── Inline badge suffixes ────────────────── */
     'badge.entries': 'entries',
@@ -82,12 +83,13 @@ var I18N = {
     'card.subset_scores':  '子集分数',
 
     /* ── Table column headers ─────────────────── */
-    'col.dataset': '数据集',
-    'col.model':   '模型',
-    'col.metric':  '指标',
-    'col.score':   '分数',
-    'col.num':     '数量',
-    'col.subset':  '子集',
+    'col.dataset':   '数据集',
+    'col.model':     '模型',
+    'col.metric':    '指标',
+    'col.score':     '分数',
+    'col.num':       '数量',
+    'col.subset':    '子集',
+    'col.category':  '类别',
 
     /* ── Inline badge suffixes ────────────────── */
     'badge.entries': '条记录',

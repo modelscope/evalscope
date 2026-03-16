@@ -156,7 +156,7 @@ class TestNativeBenchmark(TestBenchmark):
     def test_ceval(self):
         """Test CEval dataset."""
         dataset_args = {
-            'subset_list': ['logic', 'law'],
+            'subset_list': ['logic', 'law', 'computer_network'],
             # 'few_shot_num': 0,
         }
         # self._run_dataset_load_test('ceval')
