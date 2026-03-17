@@ -1,9 +1,9 @@
-# AIME-2025
+# AIME-2026
 
 
 ## Overview
 
-AIME 2025 (American Invitational Mathematics Examination 2025) is a benchmark based on problems from the prestigious AIME competition, one of the most challenging high school mathematics contests in the United States. It tests advanced mathematical reasoning and problem-solving skills.
+AIME 2026 (American Invitational Mathematics Examination 2026) is a benchmark based on problems from the prestigious AIME competition, one of the most challenging high school mathematics contests in the United States. It tests advanced mathematical reasoning and problem-solving skills.
 
 ## Task Description
 
@@ -14,7 +14,7 @@ AIME 2025 (American Invitational Mathematics Examination 2025) is a benchmark ba
 
 ## Key Features
 
-- Problems from AIME I and AIME II 2025 competitions
+- Problems from AIME I and AIME II 2026 competitions
 - Answers are always integers between 0 and 999
 - Requires creative mathematical reasoning and problem-solving
 - Topics: algebra, geometry, number theory, combinatorics, probability
@@ -31,8 +31,8 @@ AIME 2025 (American Invitational Mathematics Examination 2025) is a benchmark ba
 
 | Property | Value |
 |----------|-------|
-| **Benchmark Name** | `aime25` |
-| **Dataset ID** | [evalscope/aime25](https://modelscope.cn/datasets/evalscope/aime25/summary) |
+| **Benchmark Name** | `aime26` |
+| **Dataset ID** | [evalscope/aime26](https://modelscope.cn/datasets/evalscope/aime26/summary) |
 | **Paper** | N/A |
 | **Tags** | `Math`, `Reasoning` |
 | **Metrics** | `acc` |
@@ -45,8 +45,8 @@ AIME 2025 (American Invitational Mathematics Examination 2025) is a benchmark ba
 | Metric | Value |
 |--------|-------|
 | Total Samples | 30 |
-| Prompt Length (Mean) | 604.93 chars |
-| Prompt Length (Min/Max) | 208 / 1862 chars |
+| Prompt Length (Mean) | 517.7 chars |
+| Prompt Length (Min/Max) | 263 / 1026 chars |
 
 ## Sample Example
 
@@ -56,11 +56,11 @@ AIME 2025 (American Invitational Mathematics Examination 2025) is a benchmark ba
 {
   "input": [
     {
-      "id": "bff66863",
-      "content": "\nSolve the following math problem step by step. Put your answer inside \\boxed{}.\n\nFind the sum of all integer bases $b>9$ for which $17_b$ is a divisor of $97_b.$\n\nRemember to put your answer inside \\boxed{}."
+      "id": "a6d469bc",
+      "content": "\nSolve the following math problem step by step. Put your answer inside \\boxed{}.\n\nPatrick started walking at a constant rate along a straight road from school to the park. One hour after Patrick left, Tanya started running along the same road ... [TRUNCATED 270 chars] ... ya ran, and all three arrived at the park at the same time. The distance from the school to the park is $\\frac{m}{n}$ miles, where $m$ and $n$ are relatively prime positive integers. Find $m + n$.\n\nRemember to put your answer inside \\boxed{}."
     }
   ],
-  "target": "70",
+  "target": "277",
   "id": 0,
   "group_id": 0
 }
@@ -87,7 +87,7 @@ evalscope eval \
     --model YOUR_MODEL \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
-    --datasets aime25 \
+    --datasets aime26 \
     --limit 10  # Remove this line for formal evaluation
 ```
 
@@ -101,7 +101,7 @@ task_cfg = TaskConfig(
     model='YOUR_MODEL',
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
-    datasets=['aime25'],
+    datasets=['aime26'],
     limit=10,  # Remove this line for formal evaluation
 )
 

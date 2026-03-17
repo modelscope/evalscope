@@ -11,12 +11,15 @@ The SLA (Service Level Agreement) auto-tuning feature allows users to define ser
 
 ## Parameter Description
 
-See [Parameter Description](./parameters.md#sla-settings) for details.
-
-Main parameters:
-- `--sla-auto-tune`: Enable auto-tuning.
-- `--sla-variable`: Adjustment variable, `parallel` or `rate`.
-- `--sla-params`: Define SLA rules.
+| Parameter | Type | Description | Default |
+|------|------|------|--------|
+| `--sla-auto-tune` | `bool` | Whether to enable SLA auto-tuning mode | `False` |
+| `--sla-variable` | `str` | Variable for auto-tuning<br>Options: `parallel` (concurrency), `rate` (request rate) | `parallel` |
+| `--sla-params` | `str` | SLA constraint conditions, JSON string, supports multiple constraint groups (AND/OR logic), see [description below](#sla-params-logic) | `None` |
+| `--sla-upper-bound` | `int` | Maximum concurrency/rate limit during auto-tuning | `65536` |
+| `--sla-lower-bound` | `int` | Minimum concurrency/rate limit during auto-tuning | `1` |
+| `--sla-num-runs` | `int` | Number of repeated runs per test point (average taken to reduce fluctuation) | `3` |
+| `--sla-number-multiplier` | `float` | Multiplier of total requests relative to concurrency/rate per test, i.e. `number = round(parallel × N)`; defaults to `2` when not set | `None` |
 
 ## Supported Metrics and Operators
 
@@ -30,6 +33,56 @@ Main parameters:
 | | `p99_tpot` | 99th percentile time per output token | `<=`, `<`, `min` |
 | **Throughput** | `rps` | Requests per second | `>=`, `>`, `max` |
 | | `tps` | Tokens per second | `>=`, `>`, `max` |
+
+## `--sla-params` Logic
+
+`--sla-params` accepts a **JSON array**, where each element is an **object (group)**. Logic rules are as follows:
+
+- **Multiple metrics within the same object**: **AND** (must all be satisfied simultaneously)
+- **Between different objects**: **OR** (any one group satisfied is sufficient)
+
+The overall semantics are: `(Group1 ConditionA AND Group1 ConditionB) OR (Group2 ConditionC AND Group2 ConditionD) OR ...`
+
+### AND Example: Satisfy TTFT and TPOT Simultaneously
+
+Write multiple metrics in the **same object** to indicate they must **all** be satisfied:
+
+```bash
+--sla-params '[{"avg_ttft": "<=2", "avg_tpot": "<=0.05"}]'
+```
+
+Meaning: Find the maximum concurrency satisfying **`avg_ttft <= 2s` AND `avg_tpot <= 0.05s`**. Only when both metrics are met does that concurrency level pass.
+
+### OR Example: Independently Evaluate Multiple TTFT Thresholds
+
+Write each metric in a **different object** so each group of conditions is evaluated **independently**:
+
+```bash
+--sla-params '[{"p99_ttft": "<0.05"}, {"p99_ttft": "<0.01"}]'
+```
+
+Meaning: Find the maximum request rate satisfying **`p99_ttft < 0.05s`** and satisfying **`p99_ttft < 0.01s`** separately, each outputting results independently.
+
+### AND + OR Combined Example
+
+```bash
+--sla-params '[{"avg_ttft": "<=1", "avg_tpot": "<=0.05"}, {"p99_latency": "<=5"}]'
+```
+
+Meaning:
+- **Group 1**: `avg_ttft <= 1s` **AND** `avg_tpot <= 0.05s` (both satisfied simultaneously)
+- **Group 2**: `p99_latency <= 5s`
+- Each group independently completes a binary search and outputs its maximum concurrency value separately.
+
+### Extremum Optimization Mode
+
+When the array has **only one object with only one metric**, and the operator is `max` or `min`, the tool enters extremum optimization mode and directly finds the pressure value corresponding to the optimal metric:
+
+```bash
+--sla-params '[{"tps": "max"}]'
+```
+
+Meaning: Find the concurrency corresponding to maximum TPS (token throughput).
 
 ## Workflow
 

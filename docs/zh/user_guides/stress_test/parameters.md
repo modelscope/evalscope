@@ -52,6 +52,7 @@
 | `--sla-upper-bound` | `int` | 自动调优时的最大并发数/速率限制 | `65536` |
 | `--sla-lower-bound` | `int` | 自动调优时的最小并发数/速率限制 | `1` |
 | `--sla-num-runs` | `int` | 每个并发级别的运行次数（取平均值） | `3` |
+| `--sla-number-multiplier` | `float` | 每次测试时请求总数相对于并发数/速率的倍数，即 `number = round(parallel × N)`；未设置时默认为 `2` | `None` |
 
 ```{seealso}
 SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。

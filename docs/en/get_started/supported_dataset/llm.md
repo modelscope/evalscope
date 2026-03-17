@@ -7,6 +7,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `aa_lcr` | [AA-LCR](../../benchmarks/aa_lcr.md) | `Knowledge`, `LongContext`, `Reasoning` |
 | `aime24` | [AIME-2024](../../benchmarks/aime24.md) | `Math`, `Reasoning` |
 | `aime25` | [AIME-2025](../../benchmarks/aime25.md) | `Math`, `Reasoning` |
+| `aime26` | [AIME-2026](../../benchmarks/aime26.md) | `Math`, `Reasoning` |
 | `alpaca_eval` | [AlpacaEval2.0](../../benchmarks/alpaca_eval.md) | `Arena`, `InstructionFollowing` |
 | `amc` | [AMC](../../benchmarks/amc.md) | `Math`, `Reasoning` |
 | `anat_em` | [AnatEM](../../benchmarks/anat_em.md) | `Knowledge`, `NER` |
@@ -116,6 +117,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/aa_lcr.md
 ../../benchmarks/aime24.md
 ../../benchmarks/aime25.md
+../../benchmarks/aime26.md
 ../../benchmarks/alpaca_eval.md
 ../../benchmarks/amc.md
 ../../benchmarks/anat_em.md

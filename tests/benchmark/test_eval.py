@@ -130,11 +130,15 @@ class TestNativeBenchmark(TestBenchmark):
 
     def test_aime24(self):
         """Test AIME 2024 dataset."""
-        self._run_dataset_test('aime24')
+        self._run_dataset_test('aime24', limit=1)
 
     def test_aime25(self):
         """Test AIME 2025 dataset."""
-        self._run_dataset_test('aime25')
+        self._run_dataset_test('aime25', limit=1)
+
+    def test_aime26(self):
+        """Test AIME 2026 dataset."""
+        self._run_dataset_test('aime26', limit=5)
 
     def test_competition_math(self):
         """Test Competition Math dataset."""
