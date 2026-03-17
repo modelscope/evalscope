@@ -86,8 +86,9 @@ class Arguments(BaseArgument):
     """Lower bound limit for SLA auto-tuning."""
 
     sla_number_multiplier: Optional[float] = None
-    """Multiplier for number of requests relative to parallel/rate in SLA auto-tuning.
-    If set, number = round(parallel * sla_number_multiplier). If None, defaults to 2 (i.e. number = parallel * 2)."""
+    """Multiplier for number of requests relative to the tuned SLA variable (parallel/rate) in SLA auto-tuning.
+    If set, number = round(val * sla_number_multiplier) where val is the current value of `sla_variable`
+    (either `parallel` or `rate`). If None, defaults to 2 (i.e. number = val * 2)."""
 
     # Tuning knobs
     db_commit_interval: int = 1000
@@ -322,7 +323,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--sla-num-runs', type=int, default=3, help='Number of runs to average for each configuration in SLA auto-tuning')  # noqa: E501
     parser.add_argument('--sla-upper-bound', type=int, default=65536, help='Maximum concurrency limit for SLA auto-tuning')  # noqa: E501
     parser.add_argument('--sla-lower-bound', type=int, default=1, help='Minimum concurrency limit for SLA auto-tuning')  # noqa: E501
-    parser.add_argument('--sla-number-multiplier', type=float, default=None, help='Multiplier for number of requests relative to parallel/rate in SLA auto-tuning. number = round(parallel * N). Defaults to 2 if not set.')  # noqa: E501
+    parser.add_argument('--sla-number-multiplier', type=float, default=None, help='Multiplier for number of requests relative to parallel/rate in SLA auto-tuning. number = round(val * N). Defaults to 2 if not set.')  # noqa: E501
 
     # Tuning knobs
     parser.add_argument('--db-commit-interval', type=int, default=1000, help='Rows buffered before SQLite commit')

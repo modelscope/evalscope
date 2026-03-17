@@ -136,23 +136,21 @@ class SLAAutoTuner:
         logger.info(f'SLA Range: [{self.lower_bound}, {self.upper_bound}]')
         logger.info(f'SLA Params: {self.args.sla_params}')
 
-        # sla_params is a list of criterion groups.
-        # Within one group (dict): ALL metrics must pass → AND logic.
-        # Across groups (list):   ANY group passing is sufficient → OR logic.
+        # sla_params is a list of criterion groups. Each group is evaluated independently:
+        # - Within one group (dict): ALL metrics must pass → AND logic.
+        # - Each group in the list runs its own binary search and produces its own result row.
         #
         # Examples:
         #   AND: [{"avg_ttft": "<=2", "avg_tpot": "<=0.05"}]          → single group, both required
-        #   OR:  [{"avg_ttft": "<=2"}, {"avg_tpot": "<=0.05"}]         → two groups, either is ok
+        #   OR:  [{"avg_ttft": "<=2"}, {"avg_tpot": "<=0.05"}]         → two independent searches
         #
-        # All groups are passed together to a single tuning job so that check_sla
-        # evaluates them with the correct AND/OR semantics in one binary-search pass.
-        # Special case: a single-metric max/min group triggers optimization mode.
+        # Special case: a single-group single-metric max/min triggers optimization mode.
         current_val = self.args.parallel if self.sla_variable == 'parallel' else self.args.rate
         if isinstance(current_val, list):
             current_val = current_val[0]
 
-        # Ensure current_val is within bounds
-        current_val = max(self.lower_bound, min(current_val, self.upper_bound))
+        # Ensure current_val is an int within bounds so binary search and cache keys are consistent
+        current_val = int(max(self.lower_bound, min(current_val, self.upper_bound)))
 
         # Check if this is a single-group single-metric optimization (max/min)
         if len(sla_params) == 1 and len(sla_params[0]) == 1:
@@ -162,10 +160,12 @@ class SLAAutoTuner:
                 self._tune_optimization(current_val, opt_metric, opt_mode)
                 return self._finalize_results()
 
-        # General case: run a single tuning job with all groups (AND-within / OR-across)
-        criteria_desc = ' OR '.join('(' + ' AND '.join(f'{k} {v}' for k, v in g.items()) + ')' for g in sla_params)
-        logger.info(f'Auto-tuning with combined criteria: {criteria_desc}')
-        self._tune_constraint(current_val, sla_params, combined=True)
+        # General case: each group runs an independent binary search and produces its own result
+        for group in sla_params:
+            criteria_desc = ' AND '.join(f'{k} {v}' for k, v in group.items())
+            logger.info(f'Auto-tuning for criteria group: {criteria_desc}')
+            self._tune_constraint(current_val, group, combined=False)
+
         return self._finalize_results()
 
     def _finalize_results(self) -> Dict[str, Any]:
@@ -191,7 +191,7 @@ class SLAAutoTuner:
         """
         multiplier = self.args.sla_number_multiplier
         if multiplier is None:
-            return val * 2
+            return max(1, round(val * 2))
         return max(1, round(val * multiplier))
 
     def _get_result(self, val: int) -> Dict[str, Any]:
