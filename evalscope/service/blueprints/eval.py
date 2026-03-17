@@ -1,6 +1,7 @@
 import json
 import os
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, current_app, jsonify, request, send_file
+from typing import Any, Dict, List
 
 from evalscope.config import TaskConfig
 from evalscope.constants import EvalType
@@ -8,7 +9,10 @@ from evalscope.utils.logger import get_logger
 
 try:
     from ..utils import (
+        DEFAULT_MULTIMODAL_BENCHMARKS,
+        DEFAULT_TEXT_BENCHMARKS,
         OUTPUT_DIR,
+        build_benchmark_entry,
         create_log_file,
         get_log_content,
         run_eval_wrapper,
@@ -17,7 +21,10 @@ try:
     )
 except ImportError:
     from utils import (  # type: ignore[no-redef]
+        DEFAULT_MULTIMODAL_BENCHMARKS,
+        DEFAULT_TEXT_BENCHMARKS,
         OUTPUT_DIR,
+        build_benchmark_entry,
         create_log_file,
         get_log_content,
         run_eval_wrapper,
@@ -200,4 +207,43 @@ def get_evaluation_log():
         return jsonify({'error': str(e)}), 404
     except Exception as e:
         logger.error(f'Failed to get evaluation log: {str(e)}')
+        return jsonify({'error': str(e)}), 500
+
+
+@bp_eval.route('/benchmarks', methods=['GET'])
+def list_benchmarks():
+    """Return the catalogue of supported benchmarks with descriptions.
+
+    The list is split into two categories: ``text`` (LLM-only) and
+    ``multimodal`` (VLM).  Descriptions are loaded from the ``_meta`` JSON
+    files and post-processed: the H1 title and the last H2 section are
+    stripped, then the remainder is split into per-section blocks.
+
+    The default catalogue can be overridden at application startup by setting
+    ``app.config['SUPPORTED_BENCHMARKS']`` to a dict with keys ``'text'`` and
+    ``'multimodal'``, each containing a list of benchmark names.
+
+    Query params:
+        type (str, optional): Filter to ``'text'`` or ``'multimodal'`` only.
+    """
+    try:
+        # Allow the catalogue to be overridden via Flask app config
+        cfg = current_app.config.get('SUPPORTED_BENCHMARKS', {})
+        text_names: List[str] = cfg.get('text', DEFAULT_TEXT_BENCHMARKS)
+        multimodal_names: List[str] = cfg.get('multimodal', DEFAULT_MULTIMODAL_BENCHMARKS)
+
+        filter_type = request.args.get('type', '').lower()
+
+        result: Dict[str, Any] = {}
+        if filter_type in ('', 'text'):
+            result['text'] = [build_benchmark_entry(name) for name in text_names]
+        if filter_type in ('', 'multimodal'):
+            result['multimodal'] = [build_benchmark_entry(name) for name in multimodal_names]
+
+        if filter_type and filter_type not in ('text', 'multimodal'):
+            return jsonify({'error': f"Unknown type '{filter_type}'. Use 'text' or 'multimodal'."}), 400
+
+        return jsonify(result), 200
+    except Exception as e:
+        logger.error(f'Failed to list benchmarks: {e}')
         return jsonify({'error': str(e)}), 500

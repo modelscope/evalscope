@@ -20,6 +20,10 @@ def create_app():
     """Create and configure the Flask application."""
     app = Flask(__name__)
 
+    # Ensure non-ASCII characters (e.g. Chinese) are serialised as-is in JSON
+    # responses instead of being escaped to \uXXXX sequences.
+    app.json.ensure_ascii = False
+
     # Register blueprints
     app.register_blueprint(bp_eval)
     app.register_blueprint(bp_perf)
@@ -36,6 +40,7 @@ def create_app():
             'available_endpoints': {
                 'GET  /health': 'Health check',
                 'POST /api/v1/eval/invoke': 'Run model evaluation task (blocking)',
+                'GET  /api/v1/eval/benchmarks': 'List supported benchmarks with descriptions',
                 'GET  /api/v1/eval/log': 'Get evaluation log',
                 'GET  /api/v1/eval/progress': 'Get real-time evaluation progress',
                 'GET  /api/v1/eval/report': 'Get HTML evaluation report',
@@ -63,6 +68,7 @@ def run_service(host: str = '0.0.0.0', port: int = 9000, debug: bool = False):
     logger.info('Available endpoints:')
     logger.info('  GET  /health                         - Health check')
     logger.info('  POST /api/v1/eval/invoke             - Run model evaluation task (blocking)')
+    logger.info('  GET  /api/v1/eval/benchmarks         - List supported benchmarks with descriptions')
     logger.info('  GET  /api/v1/eval/log                - Get evaluation log')
     logger.info('  GET  /api/v1/eval/progress           - Get real-time evaluation progress')
     logger.info('  GET  /api/v1/eval/report             - Get HTML evaluation report')
