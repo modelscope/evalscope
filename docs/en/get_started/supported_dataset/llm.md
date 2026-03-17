@@ -74,6 +74,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `mmlu` | [MMLU](../../benchmarks/mmlu.md) | `Knowledge`, `MCQ` |
 | `mmlu_pro` | [MMLU-Pro](../../benchmarks/mmlu_pro.md) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](../../benchmarks/mmlu_redux.md) | `Knowledge`, `MCQ` |
+| `mmmlu` | [MMMLU](../../benchmarks/mmmlu.md) | `Knowledge`, `MCQ`, `MultiLingual` |
 | `mri_mcqa` | [MRI-MCQA](../../benchmarks/mri_mcqa.md) | `Knowledge`, `MCQ`, `Medical` |
 | `multi_if` | [Multi-IF](../../benchmarks/multi_if.md) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
 | `multi_nerd` | [MultiNERD](../../benchmarks/multi_nerd.md) | `Knowledge`, `NER` |
@@ -184,6 +185,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/mmlu.md
 ../../benchmarks/mmlu_pro.md
 ../../benchmarks/mmlu_redux.md
+../../benchmarks/mmmlu.md
 ../../benchmarks/mri_mcqa.md
 ../../benchmarks/multi_if.md
 ../../benchmarks/multi_nerd.md
