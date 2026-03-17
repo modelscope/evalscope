@@ -13,6 +13,7 @@ from evalscope.constants import DEFAULT_LANGUAGE
 from evalscope.report.combinator import get_report_list
 from evalscope.report.report import Report, ReportKey
 from evalscope.utils.logger import get_logger
+from evalscope.utils.resource_utils import load_benchmark_data
 from evalscope.version import __version__ as _evalscope_version
 
 logger = get_logger()
@@ -57,7 +58,6 @@ def _load_meta_readme(ds: str, lang: str = DEFAULT_LANGUAGE) -> str:
     fallback is performed so callers can distinguish "has content" from
     "no content for this language".
     """
-    from evalscope.utils.resource_utils import load_benchmark_data
     try:
         entry = load_benchmark_data(ds).get(ds, {})
     except Exception:
