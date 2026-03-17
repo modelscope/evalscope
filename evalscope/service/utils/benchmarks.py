@@ -130,7 +130,7 @@ def build_benchmark_entry(name: str) -> Dict[str, Any]:
 
     # Prefer Chinese readme; fall back to English; then empty string
     raw_readme = readme.get('zh') or readme.get('en') or ''
-    description = parse_benchmark_description(raw_readme) if raw_readme else {'full': '', 'sections': {}}
+    description = parse_benchmark_description(raw_readme)
 
     return {
         'name': name,
