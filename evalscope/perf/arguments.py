@@ -51,7 +51,7 @@ class Arguments(BaseArgument):
     """The API key for authentication."""
 
     no_test_connection: bool = False
-    """Test the connection before starting the benchmark."""
+    """Skip the connection test before starting the benchmark."""
 
     # Performance and parallelism
     number: Union[int, List[int]] = 1000
