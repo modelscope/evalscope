@@ -26,7 +26,7 @@ def gen_prompt_decode_to_target_len(
     """
     remain_num_try = max_retry
     token_mismatch = 0
-    vocab_size = tokenizer.vocab_size
+    vocab_size = len(tokenizer)
 
     # Build the pool of tokens to use when filling gaps; exclude special tokens if possible
     if allowed_tokens is None:

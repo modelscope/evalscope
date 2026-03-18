@@ -1,4 +1,5 @@
 import numpy as np
+import re
 from typing import Dict, Iterator, List, Tuple
 
 from evalscope.perf.arguments import Arguments
@@ -127,7 +128,6 @@ class RandomDatasetPlugin(DatasetPluginBase):
         Detection strategy: a token is a byte-fallback token if
         `tokenizer.convert_ids_to_tokens(id)` matches the pattern `<0xHH>`.
         """
-        import re
         byte_pattern = re.compile(r'^<0x[0-9A-Fa-f]{2}>$')
         byte_ids = set()
         try:
