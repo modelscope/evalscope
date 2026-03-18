@@ -162,7 +162,7 @@ class TestPerf(unittest.TestCase):
         task_cfg = Arguments(
             parallel=[1, 2],
             number=[2, 4],
-            model='qwen-plus',
+            model='deepseek-r1-0528',
             url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
             api_key=env.get('DASHSCOPE_API_KEY'),
             api='openai',
@@ -172,7 +172,7 @@ class TestPerf(unittest.TestCase):
             prefix_length=0,
             min_prompt_length=1024,
             max_prompt_length=1024,
-            tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
+            tokenizer_path='deepseek-ai/DeepSeek-R1-0528',
             seed=None,
             extra_args={'ignore_eos': True}
         )
