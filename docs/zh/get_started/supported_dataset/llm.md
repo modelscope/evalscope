@@ -61,6 +61,7 @@
 | `jnlpba_rare` | [JNLPBA-Rare](../../benchmarks/jnlpba_rare.md) | `Knowledge`, `NER` |
 | `live_code_bench` | [Live-Code-Bench](../../benchmarks/live_code_bench.md) | `Coding` |
 | `logi_qa` | [LogiQA](../../benchmarks/logi_qa.md) | `MCQ`, `Reasoning` |
+| `longbench_v2` | [LongBench-v2](../../benchmarks/longbench_v2.md) | `LongContext`, `MCQ`, `ReadingComprehension` |
 | `maritime_bench` | [MaritimeBench](../../benchmarks/maritime_bench.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `math_500` | [MATH-500](../../benchmarks/math_500.md) | `Math`, `Reasoning` |
 | `math_qa` | [MathQA](../../benchmarks/math_qa.md) | `MCQ`, `Math`, `Reasoning` |
@@ -172,6 +173,7 @@
 ../../benchmarks/jnlpba_rare.md
 ../../benchmarks/live_code_bench.md
 ../../benchmarks/logi_qa.md
+../../benchmarks/longbench_v2.md
 ../../benchmarks/maritime_bench.md
 ../../benchmarks/math_500.md
 ../../benchmarks/math_qa.md
