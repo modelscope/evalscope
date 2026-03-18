@@ -119,6 +119,16 @@ class TestNativeBenchmark(TestBenchmark):
         # self._run_dataset_load_test('cmmlu')
         self._run_dataset_test('cmmlu', dataset_args=dataset_args)
 
+    def test_mmmlu(self):
+        """Test M-MMLU reasoning dataset."""
+        dataset_args = {
+            'subset_list': ['ZH_CN'],
+            'few_shot_num': 0,
+        }
+        # self._run_dataset_load_test('mmmlu')
+        self._run_dataset_test('mmmlu', dataset_args=dataset_args)
+
+
     def test_math_500(self):
         """Test MATH 500 dataset."""
         # self._run_dataset_load_test('math_500')
