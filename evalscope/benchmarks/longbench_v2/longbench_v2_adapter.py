@@ -98,14 +98,14 @@ class LongBenchV2Adapter(MultiChoiceAdapter):
         )
 
     def format_prompt_template(self, sample: Sample) -> str:
-        context = sample.metadata.get('context', '') if sample.metadata else ''
+        context = sample.metadata.pop('context', '') if sample.metadata else ''
         choices = Choices(sample.choices)
         choices_text = answer_options(choices)
         letters = format_letter_choices(choices)
 
-        return (
-            self.prompt_template.replace('{document}',
-                                         context).replace('{question}',
-                                                          sample.input).replace('{choices}', choices_text
-                                                                                ).replace('{letters}', letters)
+        return self.prompt_template.format(
+            document=context,
+            question=sample.input,
+            choices=choices_text,
+            letters=letters,
         )

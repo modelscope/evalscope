@@ -753,8 +753,8 @@ class TestNativeBenchmark(TestBenchmark):
         dataset_args = {
             'few_shot_num': 0,
         }
-        # self._run_dataset_load_test('longbench_v2', dataset_args, debug=False)
-        self._run_dataset_test('longbench_v2', dataset_args, limit=1, ignore_errors=True)
+        self._run_dataset_load_test('longbench_v2', dataset_args, debug=False)
+        # self._run_dataset_test('longbench_v2', dataset_args, limit=1, ignore_errors=True)
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
