@@ -135,8 +135,9 @@ def unweighted_average_from_subsets(
     for name in subset_names:
         if name in subset_dict:
             subset = subset_dict[name]
-            scores.append(subset.score)
-            total_count += subset.num
+            if subset.num > 0:  # skip subsets with no evaluated samples
+                scores.append(subset.score)
+                total_count += subset.num
 
     unweighted_avg = sum(scores) / len(scores) if scores else 0
     return Subset(name=new_name, score=unweighted_avg, num=total_count)

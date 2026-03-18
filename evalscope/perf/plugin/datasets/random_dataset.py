@@ -1,4 +1,5 @@
 import numpy as np
+import re
 from typing import Dict, Iterator, List, Tuple
 
 from evalscope.perf.arguments import Arguments
@@ -24,16 +25,23 @@ class RandomDatasetPlugin(DatasetPluginBase):
         # Use numpy's default_rng for deterministic sampling
         self._rng = np.random.default_rng(None)
 
-        # Filter out special tokens from vocabulary
-        vocab_size = self.tokenizer.vocab_size
+        # Filter out special tokens and byte-fallback tokens from vocabulary.
+        # Byte-fallback tokens (e.g. <0xE4>) are NOT in all_special_ids but decode to
+        # raw bytes that produce Mojibake when decoded as Latin-1 and re-encoded by the
+        # server tokenizer, causing 3-5x token count inflation for CJK/multi-byte content.
+        full_vocab_size = len(self.tokenizer)
         prohibited_tokens = set(self.tokenizer.all_special_ids)
-        all_tokens = np.arange(vocab_size)
+        prohibited_tokens.update(self._get_byte_fallback_token_ids())
+        all_tokens = np.arange(full_vocab_size)
         self.allowed_tokens = np.array(list(set(all_tokens) - prohibited_tokens))
 
         # Generate prefix once using allowed tokens
         self.prefix_ids = self.get_random_inputs(self.prefix_length)
 
-        logger.info(f'Using {len(self.allowed_tokens)} allowed tokens out of {vocab_size} total tokens')
+        logger.info(
+            f'Using {len(self.allowed_tokens)} allowed tokens out of {full_vocab_size} total tokens '
+            f'(excluded {len(prohibited_tokens)} special/byte-fallback tokens)'
+        )
 
     def build_messages(self) -> Iterator[List[Dict]]:
         if self.query_parameters.apply_chat_template:
@@ -100,10 +108,44 @@ class RandomDatasetPlugin(DatasetPluginBase):
             target_token_len=total_input_len,
             add_special_tokens=False,
             rng=self._rng,
+            allowed_tokens=self.allowed_tokens,
         )
         total_input_len = len(adjusted_token_sequence)
 
         return prompt, total_input_len, token_mismatch
+
+    def _get_byte_fallback_token_ids(self) -> set:
+        """Return the set of token IDs that are byte-fallback tokens.
+
+        Byte-fallback tokens (e.g. <0x00>–<0xFF>) are used by sentencepiece/tiktoken
+        BPE tokenizers to represent raw bytes when a character sequence is out of
+        vocabulary. They are NOT listed in `all_special_ids` but decode to a single
+        raw byte. When a sequence of such tokens is decoded client-side and then
+        re-encoded by the server tokenizer, the byte sequences are interpreted as
+        Latin-1 / Mojibake, causing CJK or other multi-byte characters to expand
+        into 3-5x more tokens than expected.
+
+        Detection strategy: a token is a byte-fallback token if
+        `tokenizer.convert_ids_to_tokens(id)` matches the pattern `<0xHH>`.
+        """
+        byte_pattern = re.compile(r'^<0x[0-9A-Fa-f]{2}>$')
+        byte_ids = set()
+        try:
+            vocab = self.tokenizer.get_vocab()  # {str_token: int_id}
+            for token_str, token_id in vocab.items():
+                if byte_pattern.match(token_str):
+                    byte_ids.add(token_id)
+        except Exception:
+            # Fallback: iterate over all IDs (use len(tokenizer), not vocab_size,
+            # to cover added special tokens whose IDs are >= base vocab_size)
+            for i in range(len(self.tokenizer)):
+                try:
+                    tok_str = self.tokenizer.convert_ids_to_tokens(i)
+                    if tok_str and byte_pattern.match(tok_str):
+                        byte_ids.add(i)
+                except Exception:
+                    pass
+        return byte_ids
 
     def get_random_inputs(self, length: int) -> List[int]:
         """Generate random prefix tokens from allowed vocabulary."""
