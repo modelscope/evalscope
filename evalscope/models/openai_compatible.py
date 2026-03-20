@@ -99,6 +99,9 @@ class OpenAICompatibleAPI(ModelAPI):
             # handle streaming response
             if not isinstance(completion, ChatCompletion):
                 completion = collect_stream_response(completion)
+            request_id = getattr(completion, 'id', None)
+            if request_id:
+                logger.info(f'Request ID: {request_id}')
             response = completion.model_dump()
             self.on_response(response)
 
