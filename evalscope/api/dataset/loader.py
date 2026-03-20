@@ -232,7 +232,10 @@ class LocalDataLoader(DataLoader):
 
         # shuffle if requested
         if self.shuffle:
-            random.shuffle(dataset, self.seed)
+            if self.seed is not None:
+                random.Random(self.seed).shuffle(dataset)
+            else:
+                random.shuffle(dataset)
 
         # limit if requested
         if self.limit:
@@ -279,7 +282,10 @@ class DictDataLoader(DataLoader):
 
         # shuffle if requested
         if self.shuffle:
-            random.shuffle(dataset, self.seed)
+            if self.seed is not None:
+                random.Random(self.seed).shuffle(dataset)
+            else:
+                random.shuffle(dataset)
 
         # limit if requested
         if self.limit:
