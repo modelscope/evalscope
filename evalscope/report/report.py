@@ -245,7 +245,7 @@ class Report:
                 judge_llm = LLMJudge(
                     api_key=task_config.api_key,
                     api_url=task_config.api_url,
-                    model_id=task_config.model_id,
+                    model_id=task_config.model,
                     eval_type=task_config.eval_type,
                 )
 
