@@ -54,6 +54,7 @@ class LLMJudge:
         api_url: Optional[str] = None,
         model_id: Optional[str] = None,
         eval_type: Optional[str] = None,
+        model_args: Optional[str] = None,
         system_prompt: Optional[str] = None,
         prompt_template: Optional[str] = None,
         generation_config: Optional[Dict[str, Any]] = None,
@@ -70,6 +71,7 @@ class LLMJudge:
             api_base (str, optional): API base URL
             model_id (str, optional): Model ID for LLM
             eval_type (str, optional): Evaluation LLM type for the judge
+            model_args (str, optional): Additional model arguments for the judge
             system_prompt (str, optional): System prompt for the judge
             prompt_template (str, optional): Prompt template for the judge
             generation_config (dict, optional): Generation configuration for the judge
@@ -85,6 +87,7 @@ class LLMJudge:
         self.eval_type = eval_type or EvalType.OPENAI_API
         self.system_prompt = system_prompt or os.environ.get('JUDGE_SYSTEM_PROMPT', None)
         self.generation_config = generation_config or {'temperature': 0.0, 'max_tokens': 4096}
+        self.model_args = model_args or {}
 
         # Default score mapping for A/B pattern
         self.score_type = score_type
@@ -112,6 +115,7 @@ class LLMJudge:
             base_url=self.api_url,
             api_key=self.api_key,
             config=GenerateConfig(**self.generation_config),
+            model_args=self.model_args,
         )
 
     def judge(
