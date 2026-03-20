@@ -59,9 +59,9 @@ class TestShuffleCompat(unittest.TestCase):
         self.assertNotEqual(data_a, self._make_dict_list())
 
     def test_original_call_fails_on_312(self):
-        """Confirm random.shuffle(x, seed) raises TypeError on Python 3.12+."""
-        if sys.version_info < (3, 12):
-            self.skipTest('Only fails on Python 3.12+')
+        """Confirm random.shuffle(x, seed) raises TypeError on Python 3.11+."""
+        if sys.version_info < (3, 11):
+            self.skipTest('Only fails on Python 3.11+')
         with self.assertRaises(TypeError):
             random.shuffle([1, 2, 3], 42)
 
