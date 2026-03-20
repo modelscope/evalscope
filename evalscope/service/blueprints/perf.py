@@ -1,8 +1,10 @@
 import json
 import os
 from flask import Blueprint, jsonify, request, send_file
+from tabulate import tabulate
 
 from evalscope.perf.arguments import Arguments as PerfArguments
+from evalscope.perf.utils.rich_display import analyze_results
 from evalscope.utils.logger import get_logger
 
 try:
@@ -25,6 +27,29 @@ except ImportError:
     )
 
 logger = get_logger()
+
+
+def _build_perf_table(result, api_type: str = None) -> str:
+    """Build a Markdown pipe-table from perf benchmark results with Chinese headers.
+
+    Returns an empty string when no valid results are found.
+    """
+    try:
+        summary, _tokens, _time, is_embedding_rerank = analyze_results(result, api_type=api_type)
+        if not summary:
+            return ''
+        if is_embedding_rerank:
+            headers = ['并发数', '请求速率', '每秒请求数', '平均延迟(s)', 'P99延迟(s)', '平均输入TPS', 'P99输入TPS', '平均输入Token数', '成功率']
+        else:
+            headers = [
+                '并发数', '请求速率', '每秒请求数', '平均延迟(s)', 'P99延迟(s)', '平均首字延迟(s)', 'P99首字延迟(s)', '平均每Token延迟(s)',
+                'P99每Token延迟(s)', '生成速度(toks/s)', '成功率'
+            ]
+        return tabulate(summary, headers=headers, tablefmt='pipe')
+    except Exception as e:
+        logger.warning(f'Failed to build perf table: {e}')
+        return ''
+
 
 bp_perf = Blueprint('perf', __name__, url_prefix='/api/v1/perf')
 
@@ -69,8 +94,9 @@ def run_performance_test():
 
     try:
         result = run_in_subprocess(run_perf_wrapper, perf_args)
+        table_str = _build_perf_table(result, api_type=perf_args.api)
         logger.info(f'[{task_id}] Task completed successfully')
-        return jsonify({'status': 'completed', 'task_id': task_id, 'result': result})
+        return jsonify({'status': 'completed', 'task_id': task_id, 'result': result, 'table': table_str})
     except Exception as e:
         logger.error(f'[{task_id}] Task failed: {e}')
         return jsonify({'status': 'error', 'task_id': task_id, 'error': str(e)}), 500

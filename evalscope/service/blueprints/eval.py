@@ -1,10 +1,12 @@
 import json
 import os
 from flask import Blueprint, current_app, jsonify, request, send_file
+from tabulate import tabulate
 from typing import Any, Dict, List
 
 from evalscope.config import TaskConfig
 from evalscope.constants import EvalType
+from evalscope.report.combinator import get_data_frame, get_report_list
 from evalscope.utils.logger import get_logger
 
 try:
@@ -35,6 +37,40 @@ except ImportError:
 logger = get_logger()
 
 bp_eval = Blueprint('eval', __name__, url_prefix='/api/v1/eval')
+
+_COLUMN_ZH = {
+    'Model': '模型',
+    'Dataset': '数据集',
+    'Metric': '指标',
+    'Subset': '子集',
+    'Num': '数量',
+    'Score': '得分',
+}
+
+
+def _build_result_table(work_dir: str) -> str:
+    """Build a Markdown pipe-table from the JSON report files in *work_dir*/reports.
+
+    Returns an empty string when no reports are found or on any error.
+    """
+    try:
+        reports_dir = os.path.join(work_dir, 'reports')
+        report_list = get_report_list([reports_dir])
+        if not report_list:
+            return ''
+        df = get_data_frame(report_list, flatten_metrics=True, flatten_categories=True)
+        new_cols = {}
+        for col in df.columns:
+            if col in _COLUMN_ZH:
+                new_cols[col] = _COLUMN_ZH[col]
+            elif col.startswith('Cat.'):
+                new_cols[col] = col.replace('Cat.', '类别')
+        df = df.rename(columns=new_cols)
+        return tabulate(df, headers=df.columns, tablefmt='pipe', showindex=False)
+    except Exception as e:
+        logger.warning(f'Failed to build result table: {e}')
+        return ''
+
 
 _REQUIRED_FIELDS = ['model', 'datasets', 'api_url']
 
@@ -97,8 +133,9 @@ def _execute_task(task_id: str, task_config: TaskConfig, label: str = 'Task'):
     create_log_file(task_id, os.path.join('logs', 'eval_log.log'))
     try:
         result = run_in_subprocess(run_eval_wrapper, task_config)
+        table_str = _build_result_table(task_config.work_dir)
         logger.info(f'[{task_id}] {label} completed successfully')
-        return jsonify({'status': 'completed', 'task_id': task_id, 'result': result})
+        return jsonify({'status': 'completed', 'task_id': task_id, 'result': result, 'table': table_str})
     except Exception as e:
         logger.error(f'[{task_id}] {label} failed: {e}')
         return jsonify({'status': 'error', 'task_id': task_id, 'error': str(e)}), 500

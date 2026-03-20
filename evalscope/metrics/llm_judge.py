@@ -84,7 +84,7 @@ class LLMJudge:
         self.model_id = model_id or os.environ.get('MODELSCOPE_JUDGE_LLM', DEFAULT_JUDGE_MODEL)
         self.eval_type = eval_type or EvalType.OPENAI_API
         self.system_prompt = system_prompt or os.environ.get('JUDGE_SYSTEM_PROMPT', None)
-        self.generation_config = generation_config or {'temperature': 0.0, 'max_tokens': 1024}
+        self.generation_config = generation_config or {'temperature': 0.0, 'max_tokens': 4096}
 
         # Default score mapping for A/B pattern
         self.score_type = score_type
