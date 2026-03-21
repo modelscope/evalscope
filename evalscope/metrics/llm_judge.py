@@ -54,7 +54,7 @@ class LLMJudge:
         api_url: Optional[str] = None,
         model_id: Optional[str] = None,
         eval_type: Optional[str] = None,
-        model_args: Optional[str] = None,
+        model_args: Optional[Dict[str, Any]] = None,
         system_prompt: Optional[str] = None,
         prompt_template: Optional[str] = None,
         generation_config: Optional[Dict[str, Any]] = None,
@@ -71,7 +71,7 @@ class LLMJudge:
             api_base (str, optional): API base URL
             model_id (str, optional): Model ID for LLM
             eval_type (str, optional): Evaluation LLM type for the judge
-            model_args (str, optional): Additional model arguments for the judge
+            model_args (dict, optional): Additional model arguments for the judge
             system_prompt (str, optional): System prompt for the judge
             prompt_template (str, optional): Prompt template for the judge
             generation_config (dict, optional): Generation configuration for the judge
