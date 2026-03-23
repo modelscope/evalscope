@@ -376,6 +376,7 @@ def model_output_from_anthropic(
     )
 
     return ModelOutput(
+        id=message.id,
         model=message.model,
         choices=choices,
         usage=ModelUsage(

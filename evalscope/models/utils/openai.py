@@ -511,6 +511,7 @@ def model_output_from_openai(
     choices: list[ChatCompletionChoice],
 ) -> ModelOutput:
     return ModelOutput(
+        id=completion.id,
         model=completion.model,
         choices=choices,
         usage=(
