@@ -107,6 +107,17 @@ class OpenaiPlugin(DefaultApiPlugin):
         Only one response for non-stream, multiple responses for stream.
         """
 
+        if not responses:
+            logger.error(
+                'Received empty response list (responses=[])! '
+                'This usually means the model service returned no data. '
+                'Possible causes: (1) the service crashed or timed out, '
+                '(2) the request was rejected (e.g. content filter / rate limit), '
+                '(3) network error. '
+                'Please check the model service logs and ensure it is running correctly.'
+            )
+            return 0, 0
+
         try:
             # when stream, the last response is the full usage
             # when non-stream, the last response is the first response
