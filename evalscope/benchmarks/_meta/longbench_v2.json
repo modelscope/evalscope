@@ -1,0 +1,109 @@
+{
+  "meta": {
+    "pretty_name": "LongBench-v2",
+    "dataset_id": "ZhipuAI/LongBench-v2",
+    "paper_url": null,
+    "tags": [
+      "ReadingComprehension",
+      "MCQ",
+      "LongContext"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "short",
+      "medium",
+      "long"
+    ],
+    "description": "\n## Overview\n\nLongBench v2 is a challenging benchmark for evaluating long-context understanding of large language models. It covers a wide variety of real-world tasks that require reading and comprehending long documents (ranging from a few thousand to over 2 million tokens), spanning multiple domains such as single-document QA, multi-document QA, long in-context learning, long-structured data understanding, and code repository understanding.\n\n## Task Description\n\n- **Task Type**: Long-Context Multiple-Choice Question Answering\n- **Input**: Long document context + multiple-choice question with four answer choices (A, B, C, D)\n- **Output**: Single correct answer letter\n- **Domains**: Single-Doc QA, Multi-Doc QA, Long In-Context Learning, Long Structured Data Understanding, Code Repo Understanding\n- **Difficulty**: Easy / Hard\n- **Length**: Short / Medium / Long\n\n## Key Features\n\n- 503 high-quality questions requiring genuine long-document understanding\n- Context lengths ranging from a few thousand tokens to over 2 million tokens\n- Questions are bilingual (English and Chinese)\n- Designed to require careful reading; correct answers cannot be guessed without reading the document\n- Covers diverse real-world application scenarios\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (train split used as test set)\n- Primary metric: **Accuracy** (exact match on letter choice)\n- All four answer choices are required; no random shuffling needed\n- Samples are split into **3 subsets by context length**: `short`, `medium`, `long`\n- Use `subset_list` to evaluate specific length subsets (e.g., `['short', 'medium']`)\n",
+    "prompt_template": "Please read the following text and answer the questions below.\n\n<text>\n{document}\n</text>\n\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 503,
+    "subset_stats": [
+      {
+        "name": "short",
+        "sample_count": 180,
+        "prompt_length_mean": 124200.42,
+        "prompt_length_min": 49433,
+        "prompt_length_max": 841252,
+        "prompt_length_std": 85816.55,
+        "target_length_mean": 1
+      },
+      {
+        "name": "medium",
+        "sample_count": 215,
+        "prompt_length_mean": 501002.72,
+        "prompt_length_min": 172108,
+        "prompt_length_max": 2233351,
+        "prompt_length_std": 236465.68,
+        "target_length_mean": 1
+      },
+      {
+        "name": "long",
+        "sample_count": 108,
+        "prompt_length_mean": 2861217.94,
+        "prompt_length_min": 720823,
+        "prompt_length_max": 16184015,
+        "prompt_length_std": 2893838.68,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 872928.83,
+      "min": 49433,
+      "max": 16184015,
+      "std": 1709440.64
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-03-18T16:52:13.704418"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "7e9a926f",
+          "content": "Please read the following text and answer the questions below.\n\n<text>\nContents\nPreface.\n................................................................................................ 67\nI. China’s Court System and Reform Process.\n......... ... [TRUNCATED 163697 chars] ...  accelerate the construction of intelligent courts.\nC) Improve the work ability of office staff and strengthen the reserve of work knowledge.\nD) Use advanced information systems to improve the level of information technology in case handling."
+        }
+      ],
+      "choices": [
+        "Through technology empowerment, change the way of working and improve office efficiency.",
+        "Establish new types of courts, such as intellectual property courts, financial courts, and Internet courts, and accelerate the construction of intelligent courts.",
+        "Improve the work ability of office staff and strengthen the reserve of work knowledge.",
+        "Use advanced information systems to improve the level of information technology in case handling."
+      ],
+      "target": "D",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "short",
+      "metadata": {
+        "domain": "Single-Document QA",
+        "sub_domain": "Financial",
+        "difficulty": "easy",
+        "length": "short",
+        "context": "Contents\nPreface.\n................................................................................................ 67\nI. China’s Court System and Reform Process.\n.................................... 68\nII. Fully Implementing the Judicial Acco ... [TRUNCATED 162872 chars] ... a better environment for socialist rule of \nlaw, advance the judicial civilization to a higher level, and strive to make the \npeople obtain fair and just outcomes in every judicial case.\n法院的司法改革（2013-2018）.indd   161\n2019/03/01,星期五   17:42:05",
+        "_id": "66f36490821e116aacb2cc22"
+      }
+    },
+    "subset": "short",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# LongBench-v2\n\n\n## Overview\n\nLongBench v2 is a challenging benchmark for evaluating long-context understanding of large language models. It covers a wide variety of real-world tasks that require reading and comprehending long documents (ranging from a few thousand to over 2 million tokens), spanning multiple domains such as single-document QA, multi-document QA, long in-context learning, long-structured data understanding, and code repository understanding.\n\n## Task Description\n\n- **Task Type**: Long-Context Multiple-Choice Question Answering\n- **Input**: Long document context + multiple-choice question with four answer choices (A, B, C, D)\n- **Output**: Single correct answer letter\n- **Domains**: Single-Doc QA, Multi-Doc QA, Long In-Context Learning, Long Structured Data Understanding, Code Repo Understanding\n- **Difficulty**: Easy / Hard\n- **Length**: Short / Medium / Long\n\n## Key Features\n\n- 503 high-quality questions requiring genuine long-document understanding\n- Context lengths ranging from a few thousand tokens to over 2 million tokens\n- Questions are bilingual (English and Chinese)\n- Designed to require careful reading; correct answers cannot be guessed without reading the document\n- Covers diverse real-world application scenarios\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (train split used as test set)\n- Primary metric: **Accuracy** (exact match on letter choice)\n- All four answer choices are required; no random shuffling needed\n- Samples are split into **3 subsets by context length**: `short`, `medium`, `long`\n- Use `subset_list` to evaluate specific length subsets (e.g., `['short', 'medium']`)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `longbench_v2` |\n| **Dataset ID** | [ZhipuAI/LongBench-v2](https://modelscope.cn/datasets/ZhipuAI/LongBench-v2/summary) |\n| **Paper** | N/A |\n| **Tags** | `LongContext`, `MCQ`, `ReadingComprehension` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 503 |\n| Prompt Length (Mean) | 872928.83 chars |\n| Prompt Length (Min/Max) | 49433 / 16184015 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `short` | 180 | 124200.42 | 49433 | 841252 |\n| `medium` | 215 | 501002.72 | 172108 | 2233351 |\n| `long` | 108 | 2861217.94 | 720823 | 16184015 |\n\n## Sample Example\n\n**Subset**: `short`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"7e9a926f\",\n      \"content\": \"Please read the following text and answer the questions below.\\n\\n<text>\\nContents\\nPreface.\\n................................................................................................ 67\\nI. China’s Court System and Reform Process.\\n......... ... [TRUNCATED 163697 chars] ...  accelerate the construction of intelligent courts.\\nC) Improve the work ability of office staff and strengthen the reserve of work knowledge.\\nD) Use advanced information systems to improve the level of information technology in case handling.\"\n    }\n  ],\n  \"choices\": [\n    \"Through technology empowerment, change the way of working and improve office efficiency.\",\n    \"Establish new types of courts, such as intellectual property courts, financial courts, and Internet courts, and accelerate the construction of intelligent courts.\",\n    \"Improve the work ability of office staff and strengthen the reserve of work knowledge.\",\n    \"Use advanced information systems to improve the level of information technology in case handling.\"\n  ],\n  \"target\": \"D\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"short\",\n  \"metadata\": {\n    \"domain\": \"Single-Document QA\",\n    \"sub_domain\": \"Financial\",\n    \"difficulty\": \"easy\",\n    \"length\": \"short\",\n    \"context\": \"Contents\\nPreface.\\n................................................................................................ 67\\nI. China’s Court System and Reform Process.\\n.................................... 68\\nII. Fully Implementing the Judicial Acco ... [TRUNCATED 162872 chars] ... a better environment for socialist rule of \\nlaw, advance the judicial civilization to a higher level, and strive to make the \\npeople obtain fair and just outcomes in every judicial case.\\n法院的司法改革（2013-2018）.indd   161\\n2019/03/01,星期五   17:42:05\",\n    \"_id\": \"66f36490821e116aacb2cc22\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nPlease read the following text and answer the questions below.\n\n<text>\n{document}\n</text>\n\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets longbench_v2 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['longbench_v2'],\n    dataset_args={\n        'longbench_v2': {\n            # subset_list: ['short', 'medium', 'long']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# LongBench-v2\n\n\n## 概述\n\nLongBench v2 是一个具有挑战性的基准测试，用于评估大语言模型对长上下文的理解能力。它涵盖了多种需要阅读和理解长文档（长度从数千到超过200万token不等）的真实世界任务，涉及多个领域，包括单文档问答、多文档问答、长上下文学习、长结构化数据理解以及代码仓库理解。\n\n## 任务描述\n\n- **任务类型**：长上下文多项选择题问答\n- **输入**：长文档上下文 + 包含四个选项（A、B、C、D）的多项选择题\n- **输出**：单个正确答案字母\n- **领域**：单文档问答、多文档问答、长上下文学习、长结构化数据理解、代码仓库理解\n- **难度**：简单 / 困难\n- **长度**：短 / 中 / 长\n\n## 主要特点\n\n- 包含503道高质量问题，要求真正理解长文档内容\n- 上下文长度从数千token到超过200万token不等\n- 问题为双语（英文和中文）\n- 设计上要求仔细阅读文档；若不阅读文档则无法猜出正确答案\n- 覆盖多样化的现实应用场景\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估（训练集用作测试集）\n- 主要指标：**准确率**（答案字母完全匹配）\n- 必须提供全部四个选项；无需随机打乱顺序\n- 样本按上下文长度划分为 **3个子集**：`short`、`medium`、`long`\n- 使用 `subset_list` 可评估特定长度子集（例如 `['short', 'medium']`）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `longbench_v2` |\n| **数据集ID** | [ZhipuAI/LongBench-v2](https://modelscope.cn/datasets/ZhipuAI/LongBench-v2/summary) |\n| **论文** | N/A |\n| **标签** | `LongContext`, `MCQ`, `ReadingComprehension` |\n| **指标** | `acc` |\n| **默认Shots数** | 0-shot |\n| **评估划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 503 |\n| 提示词长度（平均） | 872928.83 字符 |\n| 提示词长度（最小/最大） | 49433 / 16184015 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `short` | 180 | 124200.42 | 49433 | 841252 |\n| `medium` | 215 | 501002.72 | 172108 | 2233351 |\n| `long` | 108 | 2861217.94 | 720823 | 16184015 |\n\n## 样例示例\n\n**子集**：`short`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"7e9a926f\",\n      \"content\": \"Please read the following text and answer the questions below.\\n\\n<text>\\nContents\\nPreface.\\n................................................................................................ 67\\nI. China’s Court System and Reform Process.\\n......... ... [TRUNCATED 163697 chars] ...  accelerate the construction of intelligent courts.\\nC) Improve the work ability of office staff and strengthen the reserve of work knowledge.\\nD) Use advanced information systems to improve the level of information technology in case handling.\"\n    }\n  ],\n  \"choices\": [\n    \"Through technology empowerment, change the way of working and improve office efficiency.\",\n    \"Establish new types of courts, such as intellectual property courts, financial courts, and Internet courts, and accelerate the construction of intelligent courts.\",\n    \"Improve the work ability of office staff and strengthen the reserve of work knowledge.\",\n    \"Use advanced information systems to improve the level of information technology in case handling.\"\n  ],\n  \"target\": \"D\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"short\",\n  \"metadata\": {\n    \"domain\": \"Single-Document QA\",\n    \"sub_domain\": \"Financial\",\n    \"difficulty\": \"easy\",\n    \"length\": \"short\",\n    \"context\": \"Contents\\nPreface.\\n................................................................................................ 67\\nI. China’s Court System and Reform Process.\\n.................................... 68\\nII. Fully Implementing the Judicial Acco ... [TRUNCATED 162872 chars] ... a better environment for socialist rule of \\nlaw, advance the judicial civilization to a higher level, and strive to make the \\npeople obtain fair and just outcomes in every judicial case.\\n法院的司法改革（2013-2018）.indd   161\\n2019/03/01,星期五   17:42:05\",\n    \"_id\": \"66f36490821e116aacb2cc22\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nPlease read the following text and answer the questions below.\n\n<text>\n{document}\n</text>\n\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用命令行接口（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets longbench_v2 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['longbench_v2'],\n    dataset_args={\n        'longbench_v2': {\n            # subset_list: ['short', 'medium', 'long']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "97d3f69ad0002ead3fd81c7180a54ec6",
+    "needs_translation": false
+  },
+  "updated_at": "2026-03-18T16:52:16.189942",
+  "translation_updated_at": "2026-03-18T16:53:33Z"
+}

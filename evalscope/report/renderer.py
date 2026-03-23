@@ -13,6 +13,7 @@ from evalscope.constants import DEFAULT_LANGUAGE
 from evalscope.report.combinator import get_report_list
 from evalscope.report.report import Report, ReportKey
 from evalscope.utils.logger import get_logger
+from evalscope.utils.resource_utils import load_benchmark_data
 from evalscope.version import __version__ as _evalscope_version
 
 logger = get_logger()
@@ -57,7 +58,6 @@ def _load_meta_readme(ds: str, lang: str = DEFAULT_LANGUAGE) -> str:
     fallback is performed so callers can distinguish "has content" from
     "no content for this language".
     """
-    from evalscope.utils.resource_utils import load_benchmark_data
     try:
         entry = load_benchmark_data(ds).get(ds, {})
     except Exception:
@@ -257,7 +257,9 @@ def gen_html_report_file(
             overall_score = rpt.score
 
             if not rpt.metrics:
-                model_sections.append(dict(model_name=model, subset_rows=[], chart_div='', analysis_html=''))
+                model_sections.append(
+                    dict(model_name=model, subset_rows=[], show_category=False, chart_div='', analysis_html='')
+                )
                 continue
 
             main_metric = rpt.metrics[0]
@@ -266,12 +268,24 @@ def gen_html_report_file(
             subset_scores: List[float] = []
 
             for cat in main_metric.categories:
+                # Category name is stored as a tuple; join for display
+                cat_display = ' / '.join(cat.name) if cat.name else ''
                 for sub in cat.subsets:
                     if sub.name == ReportKey.overall_score:
                         continue
-                    subset_rows.append(dict(subset=sub.name, metric=main_metric.name, score=sub.score, num=sub.num))
+                    subset_rows.append(
+                        dict(
+                            subset=sub.name,
+                            category=cat_display,
+                            metric=main_metric.name,
+                            score=sub.score,
+                            num=sub.num,
+                        )
+                    )
                     subset_labels.append(sub.name)
                     subset_scores.append(sub.score)
+
+            show_category = True
 
             chart_div = _subset_chart_div(
                 ds=ds,
@@ -285,7 +299,13 @@ def gen_html_report_file(
             analysis_raw = rpt.analysis if rpt.analysis and rpt.analysis.strip() not in ('', 'N/A') else ''
             analysis_html = _md_to_html(analysis_raw) if analysis_raw else ''
             model_sections.append(
-                dict(model_name=model, subset_rows=subset_rows, chart_div=chart_div, analysis_html=analysis_html)
+                dict(
+                    model_name=model,
+                    subset_rows=subset_rows,
+                    show_category=show_category,
+                    chart_div=chart_div,
+                    analysis_html=analysis_html,
+                )
             )
 
         dataset_sections.append(

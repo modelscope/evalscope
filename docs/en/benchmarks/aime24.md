@@ -26,7 +26,6 @@ AIME 2024 (American Invitational Mathematics Examination 2024) is a benchmark ba
 - Answers should be formatted within `\boxed{}` for proper extraction
 - Only integer answers are accepted (matching AIME format)
 - Problems are significantly harder than GSM8K or standard MATH benchmark
-- Reference solutions available in metadata for analysis
 
 
 ## Properties
@@ -34,12 +33,12 @@ AIME 2024 (American Invitational Mathematics Examination 2024) is a benchmark ba
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `aime24` |
-| **Dataset ID** | [HuggingFaceH4/aime_2024](https://modelscope.cn/datasets/HuggingFaceH4/aime_2024/summary) |
+| **Dataset ID** | [evalscope/aime24](https://modelscope.cn/datasets/evalscope/aime24/summary) |
 | **Paper** | N/A |
 | **Tags** | `Math`, `Reasoning` |
 | **Metrics** | `acc` |
 | **Default Shots** | 0-shot |
-| **Evaluation Split** | `train` |
+| **Evaluation Split** | `test` |
 
 
 ## Data Statistics
@@ -47,8 +46,8 @@ AIME 2024 (American Invitational Mathematics Examination 2024) is a benchmark ba
 | Metric | Value |
 |--------|-------|
 | Total Samples | 30 |
-| Prompt Length (Mean) | 405.33 chars |
-| Prompt Length (Min/Max) | 185 / 1009 chars |
+| Prompt Length (Mean) | 462.33 chars |
+| Prompt Length (Min/Max) | 242 / 1066 chars |
 
 ## Sample Example
 
@@ -58,28 +57,26 @@ AIME 2024 (American Invitational Mathematics Examination 2024) is a benchmark ba
 {
   "input": [
     {
-      "id": "2f896eed",
-      "content": "Every morning Aya goes for a $9$-kilometer-long walk and stops at a coffee shop afterwards. When she walks at a constant speed of $s$ kilometers per hour, the walk takes her 4 hours, including $t$ minutes spent in the coffee shop. When she wa ... [TRUNCATED] ... e coffee shop. Suppose Aya walks at $s+\\frac{1}{2}$ kilometers per hour. Find the number of minutes the walk takes her, including the $t$ minutes spent in the coffee shop.\nPlease reason step by step, and put your final answer within \\boxed{}."
+      "id": "32187d6f",
+      "content": "\nSolve the following math problem step by step. Put your answer inside \\boxed{}.\n\nEvery morning Aya goes for a $9$-kilometer-long walk and stops at a coffee shop afterwards. When she walks at a constant speed of $s$ kilometers per hour, the w ... [TRUNCATED 164 chars] ... g $t$ minutes spent in the coffee shop. Suppose Aya walks at $s+\\frac{1}{2}$ kilometers per hour. Find the number of minutes the walk takes her, including the $t$ minutes spent in the coffee shop.\n\nRemember to put your answer inside \\boxed{}."
     }
   ],
-  "target": "204",
+  "target": "\\boxed{204}",
   "id": 0,
-  "group_id": 0,
-  "metadata": {
-    "problem_id": 60,
-    "solution": "$\\frac{9}{s} + t = 4$ in hours and $\\frac{9}{s+2} + t = 2.4$ in hours.\nSubtracting the second equation from the first, we get, \n$\\frac{9}{s} - \\frac{9}{s+2} = 1.6$\nMultiplying by $(s)(s+2)$, we get \n$9s+18-9s=18=1.6s^{2} + 3.2s$\nMultiplying b ... [TRUNCATED] ... s = 2.5$. Now, $2.5+0.5 = 3$. Taking $\\frac{9}{3} = 3$, we find that it will take three hours for the 9 kilometers to be traveled. The t minutes spent at the coffeeshop can be written as $144-48(2.5)$, so t = 24. $180 + 24 = 204$. -sepehr2010"
-  }
+  "group_id": 0
 }
 ```
-
-*Note: Some content was truncated for display.*
 
 ## Prompt Template
 
 **Prompt Template:**
 ```text
+
+Solve the following math problem step by step. Put your answer inside \boxed{{}}.
+
 {question}
-Please reason step by step, and put your final answer within \boxed{{}}.
+
+Remember to put your answer inside \boxed{{}}.
 ```
 
 ## Usage

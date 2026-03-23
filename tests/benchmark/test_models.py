@@ -56,6 +56,12 @@ class TestModels(TestBenchmark):
         }
         self._run_dataset_test('gsm8k', dataset_args=dataset_args, limit=5)
 
+    def test_chartqa(self):
+        """Test ChartQA math reasoning dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('chartqa', dataset_args=dataset_args, limit=5)
 
     def test_bfcl_v4(self):
         """Test BFCL-V4 math reasoning dataset."""

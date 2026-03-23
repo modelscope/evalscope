@@ -86,6 +86,116 @@ Remember to put your answer inside \\boxed{{}}."""
 
 @register_benchmark(
     BenchmarkMeta(
+        name='aime24',
+        pretty_name='AIME-2024',
+        tags=[Tags.MATH, Tags.REASONING],
+        description="""
+## Overview
+
+AIME 2024 (American Invitational Mathematics Examination 2024) is a benchmark based on problems from the prestigious AIME competition. These problems represent some of the most challenging high school mathematics problems, requiring creative problem-solving and advanced mathematical reasoning.
+
+## Task Description
+
+- **Task Type**: Competition Mathematics Problem Solving
+- **Input**: AIME-level mathematical problem
+- **Output**: Integer answer (0-999) with step-by-step reasoning
+- **Difficulty**: Advanced high school / early undergraduate level
+
+## Key Features
+
+- Problems from the 2024 AIME I and AIME II competitions
+- Answers are always integers between 0 and 999
+- Requires creative mathematical reasoning and problem-solving
+- Topics: algebra, geometry, number theory, combinatorics, probability
+- Represents top-tier high school mathematics competition difficulty
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Answers should be formatted within `\\boxed{}` for proper extraction
+- Only integer answers are accepted (matching AIME format)
+- Problems are significantly harder than GSM8K or standard MATH benchmark
+""",
+        dataset_id='evalscope/aime24',
+        subset_list=['default'],
+        metric_list=[{
+            'acc': {
+                'numeric': True
+            }
+        }],
+        few_shot_num=0,
+        train_split=None,
+        eval_split='test',
+        prompt_template=PROMPT_TEMPLATE,
+    )
+)
+class AIME24Adapter(DefaultDataAdapter):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        return Sample(
+            input=record['problem'],
+            target=record.get('answer', '') or record.get('solution', ''),
+        )
+
+    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
+        from evalscope.metrics.math_parser import extract_answer
+        from .math_normalize import normalize_answer
+
+        extracted_pred = extract_answer(prediction)
+        filtered_pred = normalize_answer(extracted_pred)
+        return filtered_pred
+
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        from .grader import grade_answer
+
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
+
+        try:
+            is_correct = grade_answer(filtered_prediction, reference)
+            accuracy_score = 1.0 if is_correct else 0.0
+            score.value['acc'] = accuracy_score
+        except Exception as e:
+            logger.error(f'Error in custom grading: {e}')
+            score.value['acc'] = 0.0
+            score.metadata['acc'] = f'grading_error: {str(e)}'
+        return score
+
+    def llm_match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
+
+        judge_prompt = JUDGE_PROMPT.format(expression1=original_prediction, expression2=reference)
+
+        judge_response = self.llm_judge.judge(prompt=judge_prompt)
+
+        is_correct = bool(re.search(r'\bYes\b', judge_response, re.IGNORECASE))
+        score.value = {
+            'acc': 1.0 if is_correct else 0.0,
+        }
+        score.explanation = f'LLM judge: {judge_response}'
+        score.metadata = {
+            'source': 'llm_judge',
+            'judge_strategy': self.judge_strategy,
+            'model': self.llm_judge.model_id,
+        }
+        score.main_score_name = 'acc'
+        return score
+
+
+@register_benchmark(
+    BenchmarkMeta(
         name='aime25',
         pretty_name='AIME-2025',
         tags=[Tags.MATH, Tags.REASONING],
@@ -114,10 +224,9 @@ AIME 2025 (American Invitational Mathematics Examination 2025) is a benchmark ba
 - Default configuration uses **0-shot** evaluation
 - Answers should be formatted within `\\boxed{}` for proper extraction
 - Uses LLM-as-judge for mathematical equivalence checking
-- Subsets: AIME2025-I, AIME2025-II
 """,
-        dataset_id='opencompass/AIME2025',
-        subset_list=['AIME2025-I', 'AIME2025-II'],
+        dataset_id='evalscope/aime25',
+        subset_list=['default'],
         metric_list=[{
             'acc': {
                 'numeric': True
@@ -129,78 +238,53 @@ AIME 2025 (American Invitational Mathematics Examination 2025) is a benchmark ba
         prompt_template=PROMPT_TEMPLATE,
     )
 )
-class AIME25Adapter(DefaultDataAdapter):
+class AIME25Adapter(AIME24Adapter):
+    ...
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
-    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        return Sample(
-            input=record['question'],
-            target=record['answer'],
-        )
+@register_benchmark(
+    BenchmarkMeta(
+        name='aime26',
+        pretty_name='AIME-2026',
+        tags=[Tags.MATH, Tags.REASONING],
+        description="""
+## Overview
 
-    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        """
-        Args:
-            prediction (str): The model prediction to extract from
-            task_state (TaskState): The task state for additional context
+AIME 2026 (American Invitational Mathematics Examination 2026) is a benchmark based on problems from the prestigious AIME competition, one of the most challenging high school mathematics contests in the United States. It tests advanced mathematical reasoning and problem-solving skills.
 
-        Returns:
-            str: The extracted answer
-        """
-        from evalscope.metrics.math_parser import extract_answer
-        from .math_normalize import normalize_answer
+## Task Description
 
-        extracted_pred = extract_answer(prediction)
-        filtered_pred = normalize_answer(extracted_pred)
-        return filtered_pred
+- **Task Type**: Competition Mathematics Problem Solving
+- **Input**: AIME-level mathematical problem
+- **Output**: Integer answer (0-999) with step-by-step reasoning
+- **Difficulty**: Advanced high school / early undergraduate level
 
-    def match_score(
-        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
-    ) -> Score:
-        from evalscope.metrics.math_parser import extract_answer
-        from .grader import grade_answer
+## Key Features
 
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
-        )
+- Problems from AIME I and AIME II 2026 competitions
+- Answers are always integers between 0 and 999
+- Requires creative mathematical reasoning and problem-solving
+- Topics: algebra, geometry, number theory, combinatorics, probability
+- Represents top-tier high school mathematics competition difficulty
 
-        # Use the custom grade_answer function for evaluation
-        try:
-            is_correct = grade_answer(extract_answer(original_prediction), reference)
-            accuracy_score = 1.0 if is_correct else 0.0
-            score.value['acc'] = accuracy_score
-        except Exception as e:
-            logger.error(f'Error in custom grading: {e}')
-            score.value['acc'] = 0.0
-            score.metadata['acc'] = f'grading_error: {str(e)}'
-        return score
+## Evaluation Notes
 
-    def llm_match_score(
-        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
-    ) -> Score:
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
-        )
-
-        judge_prompt = JUDGE_PROMPT.format(expression1=original_prediction, expression2=reference)
-
-        # Request judge and obtain score
-        judge_response = self.llm_judge.judge(prompt=judge_prompt)
-
-        # Parse judge response to get accuracy score
-        is_correct = bool(re.search(r'\bYes\b', judge_response, re.IGNORECASE))
-        score.value = {
-            'acc': 1.0 if is_correct else 0.0,
-        }
-        score.explanation = f'LLM judge: {judge_response}'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': self.llm_judge.model_id,
-        }
-        score.main_score_name = 'acc'
-        return score
+- Default configuration uses **0-shot** evaluation
+- Answers should be formatted within `\\boxed{}` for proper extraction
+- Uses LLM-as-judge for mathematical equivalence checking
+""",
+        dataset_id='evalscope/aime26',
+        subset_list=['default'],
+        metric_list=[{
+            'acc': {
+                'numeric': True
+            }
+        }],
+        few_shot_num=0,
+        train_split=None,
+        eval_split='test',
+        prompt_template=PROMPT_TEMPLATE,
+    )
+)
+class AIME26Adapter(AIME24Adapter):
+    ...

@@ -16,6 +16,18 @@ from .utils import data_to_samples, shuffle_choices_if_requested
 logger = get_logger()
 
 
+def _shuffle_in_place(data: list, seed: Optional[int]) -> None:
+    """Shuffle a list in place with an optional seed.
+
+    Uses random.Random(seed) instead of the deprecated random.shuffle(x, random)
+    which was removed in Python 3.12.
+    """
+    if seed is not None:
+        random.Random(seed).shuffle(data)
+    else:
+        random.shuffle(data)
+
+
 class DataLoader(ABC):
     """
     Abstract base class for data loaders.
@@ -232,7 +244,7 @@ class LocalDataLoader(DataLoader):
 
         # shuffle if requested
         if self.shuffle:
-            random.shuffle(dataset, self.seed)
+            _shuffle_in_place(dataset, self.seed)
 
         # limit if requested
         if self.limit:
@@ -279,7 +291,7 @@ class DictDataLoader(DataLoader):
 
         # shuffle if requested
         if self.shuffle:
-            random.shuffle(dataset, self.seed)
+            _shuffle_in_place(dataset, self.seed)
 
         # limit if requested
         if self.limit:

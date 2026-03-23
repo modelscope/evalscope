@@ -199,12 +199,12 @@ def extract_adapter_meta(adapter) -> Dict[str, Any]:
     }
 
 
-def compute_adapter_statistics(adapter, max_samples: int = 5000) -> Dict[str, Any]:
-    """Compute statistics for a DataAdapter."""
+def compute_adapter_statistics(adapter) -> Dict[str, Any]:
+    """Compute statistics for a DataAdapter (all samples are included)."""
     from evalscope.utils.doc_utils.benchmark_stats import compute_benchmark_statistics
 
     try:
-        stats = compute_benchmark_statistics(adapter, max_samples_per_subset=max_samples)
+        stats = compute_benchmark_statistics(adapter)
         return stats.to_dict()
     except Exception as e:
         print(f'Warning: Failed to compute statistics for {adapter.name}: {e}')
@@ -237,7 +237,6 @@ def update_benchmark_data(
     benchmark_name: Optional[Union[str, List[str]]] = None,
     force: bool = False,
     compute_stats: bool = True,
-    max_samples: int = 50000,
     workers: int = 8,
 ) -> Dict[str, Any]:
     """
@@ -247,7 +246,6 @@ def update_benchmark_data(
         benchmark_name: Specific benchmark name, list of names, or None for all
         force: Force recompute even if data exists
         compute_stats: Whether to compute statistics (requires dataset download)
-        max_samples: Maximum samples per subset for statistics computation
         workers: Number of parallel workers (default: 8)
 
     Returns:
@@ -284,7 +282,7 @@ def update_benchmark_data(
     def update_single(name: str) -> tuple:
         """Update a single benchmark and return (name, result, error)."""
         try:
-            result = _update_single_benchmark(name, force, compute_stats, max_samples)
+            result = _update_single_benchmark(name, force, compute_stats)
             return (name, result, None)
         except Exception as e:
             import traceback
@@ -312,7 +310,6 @@ def _update_single_benchmark(
     name: str,
     force: bool,
     compute_stats: bool,
-    max_samples: int,
 ) -> Optional[Dict[str, Any]]:
     """
     Update a single benchmark.
@@ -321,7 +318,6 @@ def _update_single_benchmark(
         name: Benchmark name
         force: Force recompute even if data exists
         compute_stats: Whether to compute statistics
-        max_samples: Maximum samples per subset for statistics computation
 
     Returns:
         Updated benchmark entry or None if failed
@@ -350,7 +346,7 @@ def _update_single_benchmark(
         # Compute statistics if requested and not exists (or forced)
         if compute_stats and (force or not entry.get('statistics')):
             print(f'  [{name}] Computing statistics...')
-            entry['statistics'] = compute_adapter_statistics(adapter, max_samples=max_samples)
+            entry['statistics'] = compute_adapter_statistics(adapter)
             entry['sample_example'] = get_adapter_sample_example(adapter)
             has_changes = True
             print(f'  [{name}] Statistics computed')

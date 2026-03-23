@@ -9,6 +9,7 @@ def gen_prompt_decode_to_target_len(
     max_retry: int = 10,
     add_special_tokens: bool = False,
     rng: np.random.Generator = None,
+    allowed_tokens: np.ndarray = None,
 ) -> Tuple[str, List[int], int]:
     """
     Ensure decoded-then-encoded prompt length matches the target token length.
@@ -25,7 +26,14 @@ def gen_prompt_decode_to_target_len(
     """
     remain_num_try = max_retry
     token_mismatch = 0
-    vocab_size = tokenizer.vocab_size
+    vocab_size = len(tokenizer)
+
+    # Build the pool of tokens to use when filling gaps; exclude special tokens if possible
+    if allowed_tokens is None:
+        prohibited = set(tokenizer.all_special_ids)
+        allowed_tokens = np.array([t for t in range(vocab_size) if t not in prohibited])
+        if len(allowed_tokens) == 0:
+            allowed_tokens = np.arange(vocab_size)
 
     while True:
         prompt = tokenizer.decode(token_sequence)
@@ -39,19 +47,13 @@ def gen_prompt_decode_to_target_len(
         if len(token_sequence) == target_token_len:
             break
         elif len(token_sequence) < target_token_len:
-            # Generate extra tokens to reach target length
+            # Generate extra tokens to reach target length, only from allowed (non-special) tokens
+            fill_size = target_token_len - len(token_sequence)
             if rng is not None:
-                extra_tokens = rng.integers(
-                    0,
-                    vocab_size,
-                    size=target_token_len - len(token_sequence),
-                ).tolist()
+                indices = rng.integers(0, len(allowed_tokens), size=fill_size)
             else:
-                extra_tokens = np.random.randint(
-                    0,
-                    vocab_size,
-                    size=target_token_len - len(token_sequence),
-                ).tolist()
+                indices = np.random.randint(0, len(allowed_tokens), size=fill_size)
+            extra_tokens = allowed_tokens[indices].tolist()
             token_sequence.extend(extra_tokens)
         elif len(token_sequence) > target_token_len:
             # Truncate to target length

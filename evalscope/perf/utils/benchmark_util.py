@@ -162,7 +162,14 @@ class BenchmarkMetrics:
             ) if self.n_total_inter_token_latency else 0.0
             self.qps = self.n_succeed_queries / self.total_time
         except ZeroDivisionError as e:
-            logger.exception(e)
+            logger.error(
+                f'ZeroDivisionError in calculate_averages: {e}. '
+                f'total_first_chunk_latency={self.total_first_chunk_latency}, '
+                f'total_time={self.total_time}, '
+                f'n_succeed_queries={self.n_succeed_queries}. '
+                'This is likely caused by all requests returning empty responses (e.g. service is down). '
+                'Please check the model service and ensure it is returning valid responses.'
+            )
             return
 
     def create_message(self, default_ndigits=4, api_type: str = None):

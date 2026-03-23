@@ -151,7 +151,7 @@ async def connect_test(args: Arguments, api_plugin):
     if is_embedding_or_rerank_api(args.api):
         return
 
-    if not args.no_test_connection:
+    if args.no_test_connection:
         return
 
     if not await test_connection(args, api_plugin):

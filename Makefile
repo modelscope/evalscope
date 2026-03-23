@@ -23,18 +23,21 @@ default: install
 # PARAMETERS:
 #   BENCHMARK  Specific benchmark name (e.g. gsm8k, mmlu).
 #              Omit to process ALL registered benchmarks.
-#   FORCE=1    Force re-translate even when a translation already exists.
-#              Only applies to docs-translate.
+#   FORCE=1    Force recompute/re-translate even when data already exists.
+#              Applies to docs-update, docs-update-stats, and docs-translate.
 #   WORKERS    Parallel worker count for update / translate (default: 4).
 #
 # COMMON USAGE:
 #   make docs                               # Full pipeline: translate → generate → build HTML
 #   make docs-update                        # Update metadata for ALL benchmarks
 #   make docs-update BENCHMARK=gsm8k        # Update metadata for ONE benchmark
+#   make docs-update BENCHMARK="gsm8k mmlu"  # Update metadata for MULTIPLE benchmarks
 #   make docs-update-stats                  # Update metadata + stats for ALL benchmarks
 #   make docs-update-stats BENCHMARK=gsm8k  # Update metadata + stats for ONE benchmark
+#   make docs-update-stats BENCHMARK="gsm8k mmlu"  # Update metadata + stats for MULTIPLE benchmarks
 #   make docs-translate                     # Translate only untranslated benchmarks (ALL)
 #   make docs-translate BENCHMARK=gsm8k     # Translate ONE benchmark (skip if done)
+#   make docs-translate BENCHMARK="gsm8k mmlu"  # Translate MULTIPLE benchmarks
 #   make docs-translate FORCE=1             # Force re-translate ALL benchmarks
 #   make docs-translate BENCHMARK=gsm8k FORCE=1  # Force re-translate ONE benchmark
 #   make docs-generate                      # Regenerate .md files from persisted JSON data
@@ -44,12 +47,13 @@ default: install
 # ============================================================================
 
 # Parameters
+# BENCHMARK: one or more benchmark names, space-separated (e.g. BENCHMARK="gsm8k mmlu")
 BENCHMARK ?=
 FORCE     ?=
 WORKERS   ?= 4
 
 # Internal helpers
-# When BENCHMARK is set: pass it as positional arg; otherwise use --all flag
+# When BENCHMARK is set: pass name(s) as positional args; otherwise use --all flag
 _BENCH_ARGS = $(if $(BENCHMARK),$(BENCHMARK),--all)
 # When FORCE is non-empty (e.g. FORCE=1): append --force flag
 _FORCE_FLAG = $(if $(FORCE),--force,)
@@ -61,11 +65,11 @@ docs: docs-translate docs-generate
 
 .PHONY: docs-update
 docs-update:
-	python -m evalscope.cli.cli benchmark-info $(_BENCH_ARGS) --update --workers $(WORKERS)
+	python -m evalscope.cli.cli benchmark-info $(_BENCH_ARGS) --update $(_FORCE_FLAG) --workers $(WORKERS)
 
 .PHONY: docs-update-stats
 docs-update-stats:
-	python -m evalscope.cli.cli benchmark-info $(_BENCH_ARGS) --update --compute-stats --workers $(WORKERS)
+	python -m evalscope.cli.cli benchmark-info $(_BENCH_ARGS) --update --compute-stats $(_FORCE_FLAG) --workers $(WORKERS)
 
 .PHONY: docs-translate
 docs-translate:

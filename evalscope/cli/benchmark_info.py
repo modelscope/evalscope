@@ -140,13 +140,6 @@ class BenchmarkInfoCMD(CLICommand):
         )
 
         parser.add_argument(
-            '--max-samples',
-            type=int,
-            default=5000,
-            help='Maximum samples per subset when computing statistics (default: 5000)',
-        )
-
-        parser.add_argument(
             '--workers',
             type=int,
             default=8,
@@ -248,7 +241,6 @@ class BenchmarkInfoCMD(CLICommand):
             benchmark_name=benchmark_names,
             force=self.args.force,
             compute_stats=self.args.compute_stats,
-            max_samples=self.args.max_samples,
             workers=self.args.workers,
         )
 

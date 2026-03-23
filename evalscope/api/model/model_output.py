@@ -129,6 +129,9 @@ class ChatCompletionChoice(BaseModel):
 class ModelOutput(BaseModel):
     """Output from model generation."""
 
+    id: Optional[str] = Field(default=None)
+    """Completion ID."""
+
     model: str = Field(default_factory=str)
     """Model used for generation."""
 

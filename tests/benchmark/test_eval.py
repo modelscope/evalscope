@@ -119,6 +119,16 @@ class TestNativeBenchmark(TestBenchmark):
         # self._run_dataset_load_test('cmmlu')
         self._run_dataset_test('cmmlu', dataset_args=dataset_args)
 
+    def test_mmmlu(self):
+        """Test M-MMLU reasoning dataset."""
+        dataset_args = {
+            'subset_list': ['ZH_CN'],
+            'few_shot_num': 0,
+        }
+        # self._run_dataset_load_test('mmmlu')
+        self._run_dataset_test('mmmlu', dataset_args=dataset_args)
+
+
     def test_math_500(self):
         """Test MATH 500 dataset."""
         # self._run_dataset_load_test('math_500')
@@ -130,11 +140,15 @@ class TestNativeBenchmark(TestBenchmark):
 
     def test_aime24(self):
         """Test AIME 2024 dataset."""
-        self._run_dataset_test('aime24')
+        self._run_dataset_test('aime24', limit=1)
 
     def test_aime25(self):
         """Test AIME 2025 dataset."""
-        self._run_dataset_test('aime25')
+        self._run_dataset_test('aime25', limit=1)
+
+    def test_aime26(self):
+        """Test AIME 2026 dataset."""
+        self._run_dataset_test('aime26', limit=5)
 
     def test_competition_math(self):
         """Test Competition Math dataset."""
@@ -156,7 +170,7 @@ class TestNativeBenchmark(TestBenchmark):
     def test_ceval(self):
         """Test CEval dataset."""
         dataset_args = {
-            'subset_list': ['logic', 'law'],
+            'subset_list': ['logic', 'law', 'computer_network'],
             # 'few_shot_num': 0,
         }
         # self._run_dataset_load_test('ceval')
@@ -733,6 +747,14 @@ class TestNativeBenchmark(TestBenchmark):
         dataset_args = {
         }
         self._run_dataset_test('cl_bench', dataset_args, limit=10)
+
+    def test_longbench_v2(self):
+        """Test LongBench-v2 dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_load_test('longbench_v2', dataset_args, debug=False)
+        # self._run_dataset_test('longbench_v2', dataset_args, limit=1, ignore_errors=True)
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k

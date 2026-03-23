@@ -1,0 +1,214 @@
+{
+  "meta": {
+    "pretty_name": "MMMLU",
+    "dataset_id": "openai-mirror/MMMLU",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "MultiLingual"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "AR_XY",
+      "BN_BD",
+      "DE_DE",
+      "ES_LA",
+      "FR_FR",
+      "HI_IN",
+      "ID_ID",
+      "IT_IT",
+      "JA_JP",
+      "KO_KR",
+      "PT_BR",
+      "SW_KE",
+      "YO_NG",
+      "ZH_CN"
+    ],
+    "description": "\n## Overview\n\nMMMLU (Multilingual Massive Multitask Language Understanding) is a multilingual extension of the MMLU benchmark. It evaluates the multilingual knowledge and reasoning capabilities of language models across 14 languages, covering 57 subjects from the original MMLU benchmark.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Question Answering\n- **Input**: Question with four answer choices (A, B, C, D) in one of 14 languages\n- **Output**: Single correct answer letter\n- **Languages**: Arabic, Bengali, German, Spanish, French, Hindi, Indonesian, Italian, Japanese, Korean, Portuguese, Swahili, Yoruba, Chinese\n- **Subjects**: 57 subjects from MMLU (STEM, Humanities, Social Sciences, Other)\n\n## Key Features\n\n- Multilingual translation of the full MMLU benchmark\n- 14 typologically diverse languages covering major language families\n- Tests cross-lingual knowledge transfer and multilingual reasoning\n- Same subject coverage as original MMLU (57 subjects)\n- Includes low-resource languages (e.g., Swahili, Yoruba)\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split only)\n- Use `subset_list` to evaluate specific languages (e.g., `['ZH_CN', 'JA_JP', 'FR_FR']`)\n- Results are grouped by language subset\n- Cross-lingual performance comparison supported\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 196588,
+    "subset_stats": [
+      {
+        "name": "AR_XY",
+        "sample_count": 14042,
+        "prompt_length_mean": 584.94,
+        "prompt_length_min": 231,
+        "prompt_length_max": 4735,
+        "prompt_length_std": 372.41,
+        "target_length_mean": 1
+      },
+      {
+        "name": "BN_BD",
+        "sample_count": 14042,
+        "prompt_length_mean": 654.99,
+        "prompt_length_min": 247,
+        "prompt_length_max": 4914,
+        "prompt_length_std": 435.68,
+        "target_length_mean": 1
+      },
+      {
+        "name": "DE_DE",
+        "sample_count": 14042,
+        "prompt_length_mean": 791.64,
+        "prompt_length_min": 294,
+        "prompt_length_max": 5657,
+        "prompt_length_std": 534.03,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ES_LA",
+        "sample_count": 14042,
+        "prompt_length_mean": 753.18,
+        "prompt_length_min": 271,
+        "prompt_length_max": 5791,
+        "prompt_length_std": 504.03,
+        "target_length_mean": 1
+      },
+      {
+        "name": "FR_FR",
+        "sample_count": 14042,
+        "prompt_length_mean": 777.82,
+        "prompt_length_min": 278,
+        "prompt_length_max": 5952,
+        "prompt_length_std": 515.91,
+        "target_length_mean": 1
+      },
+      {
+        "name": "HI_IN",
+        "sample_count": 14042,
+        "prompt_length_mean": 675.02,
+        "prompt_length_min": 256,
+        "prompt_length_max": 5379,
+        "prompt_length_std": 451.2,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ID_ID",
+        "sample_count": 14042,
+        "prompt_length_mean": 726.51,
+        "prompt_length_min": 270,
+        "prompt_length_max": 5539,
+        "prompt_length_std": 484.13,
+        "target_length_mean": 1
+      },
+      {
+        "name": "IT_IT",
+        "sample_count": 14042,
+        "prompt_length_mean": 761.19,
+        "prompt_length_min": 277,
+        "prompt_length_max": 5975,
+        "prompt_length_std": 516.1,
+        "target_length_mean": 1
+      },
+      {
+        "name": "JA_JP",
+        "sample_count": 14042,
+        "prompt_length_mean": 322.79,
+        "prompt_length_min": 149,
+        "prompt_length_max": 2064,
+        "prompt_length_std": 190.7,
+        "target_length_mean": 1
+      },
+      {
+        "name": "KO_KR",
+        "sample_count": 14042,
+        "prompt_length_mean": 354.35,
+        "prompt_length_min": 153,
+        "prompt_length_max": 2345,
+        "prompt_length_std": 217.05,
+        "target_length_mean": 1
+      },
+      {
+        "name": "PT_BR",
+        "sample_count": 14042,
+        "prompt_length_mean": 706.79,
+        "prompt_length_min": 258,
+        "prompt_length_max": 5635,
+        "prompt_length_std": 477.5,
+        "target_length_mean": 1
+      },
+      {
+        "name": "SW_KE",
+        "sample_count": 14042,
+        "prompt_length_mean": 699.08,
+        "prompt_length_min": 259,
+        "prompt_length_max": 5566,
+        "prompt_length_std": 464.63,
+        "target_length_mean": 1
+      },
+      {
+        "name": "YO_NG",
+        "sample_count": 14042,
+        "prompt_length_mean": 681.01,
+        "prompt_length_min": 248,
+        "prompt_length_max": 5644,
+        "prompt_length_std": 444.46,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ZH_CN",
+        "sample_count": 14042,
+        "prompt_length_mean": 257.15,
+        "prompt_length_min": 136,
+        "prompt_length_max": 1495,
+        "prompt_length_std": 130.25,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 624.75,
+      "min": 136,
+      "max": 5975,
+      "std": 462.64
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-03-17T18:23:04.995378"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "e43faf14",
+          "content": "أجب على سؤال الاختيار من متعدد التالي. يجب أن يكون السطر الأخير من إجابتك بالتنسيق التالي: 'ANSWER: [LETTER]' (بدون علامات اقتباس) حيث [LETTER] هو أحد الحروف A,B,C,D. فكّر خطوة بخطوة قبل الإجابة.\n\nأوجد درجة امتداد الحقل المحدد Q(sqrt(2)، sqrt(3)، sqrt(18)) على Q.\n\nA) 0\nB) 4\nC) 2\nD) 6"
+        }
+      ],
+      "choices": [
+        "0",
+        "4",
+        "2",
+        "6"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "subject": "abstract_algebra",
+        "language": "AR_XY"
+      }
+    },
+    "subset": "AR_XY",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MMMLU\n\n\n## Overview\n\nMMMLU (Multilingual Massive Multitask Language Understanding) is a multilingual extension of the MMLU benchmark. It evaluates the multilingual knowledge and reasoning capabilities of language models across 14 languages, covering 57 subjects from the original MMLU benchmark.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Question Answering\n- **Input**: Question with four answer choices (A, B, C, D) in one of 14 languages\n- **Output**: Single correct answer letter\n- **Languages**: Arabic, Bengali, German, Spanish, French, Hindi, Indonesian, Italian, Japanese, Korean, Portuguese, Swahili, Yoruba, Chinese\n- **Subjects**: 57 subjects from MMLU (STEM, Humanities, Social Sciences, Other)\n\n## Key Features\n\n- Multilingual translation of the full MMLU benchmark\n- 14 typologically diverse languages covering major language families\n- Tests cross-lingual knowledge transfer and multilingual reasoning\n- Same subject coverage as original MMLU (57 subjects)\n- Includes low-resource languages (e.g., Swahili, Yoruba)\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split only)\n- Use `subset_list` to evaluate specific languages (e.g., `['ZH_CN', 'JA_JP', 'FR_FR']`)\n- Results are grouped by language subset\n- Cross-lingual performance comparison supported\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `mmmlu` |\n| **Dataset ID** | [openai-mirror/MMMLU](https://modelscope.cn/datasets/openai-mirror/MMMLU/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 196,588 |\n| Prompt Length (Mean) | 624.75 chars |\n| Prompt Length (Min/Max) | 136 / 5975 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `AR_XY` | 14,042 | 584.94 | 231 | 4735 |\n| `BN_BD` | 14,042 | 654.99 | 247 | 4914 |\n| `DE_DE` | 14,042 | 791.64 | 294 | 5657 |\n| `ES_LA` | 14,042 | 753.18 | 271 | 5791 |\n| `FR_FR` | 14,042 | 777.82 | 278 | 5952 |\n| `HI_IN` | 14,042 | 675.02 | 256 | 5379 |\n| `ID_ID` | 14,042 | 726.51 | 270 | 5539 |\n| `IT_IT` | 14,042 | 761.19 | 277 | 5975 |\n| `JA_JP` | 14,042 | 322.79 | 149 | 2064 |\n| `KO_KR` | 14,042 | 354.35 | 153 | 2345 |\n| `PT_BR` | 14,042 | 706.79 | 258 | 5635 |\n| `SW_KE` | 14,042 | 699.08 | 259 | 5566 |\n| `YO_NG` | 14,042 | 681.01 | 248 | 5644 |\n| `ZH_CN` | 14,042 | 257.15 | 136 | 1495 |\n\n## Sample Example\n\n**Subset**: `AR_XY`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"e43faf14\",\n      \"content\": \"أجب على سؤال الاختيار من متعدد التالي. يجب أن يكون السطر الأخير من إجابتك بالتنسيق التالي: 'ANSWER: [LETTER]' (بدون علامات اقتباس) حيث [LETTER] هو أحد الحروف A,B,C,D. فكّر خطوة بخطوة قبل الإجابة.\\n\\nأوجد درجة امتداد الحقل المحدد Q(sqrt(2)، sqrt(3)، sqrt(18)) على Q.\\n\\nA) 0\\nB) 4\\nC) 2\\nD) 6\"\n    }\n  ],\n  \"choices\": [\n    \"0\",\n    \"4\",\n    \"2\",\n    \"6\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"subject\": \"abstract_algebra\",\n    \"language\": \"AR_XY\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mmmlu \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mmmlu'],\n    dataset_args={\n        'mmmlu': {\n            # subset_list: ['AR_XY', 'BN_BD', 'DE_DE']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "content_hash": "c177f88120bc9017dd7edb61070ec2f9",
+    "needs_translation": false,
+    "zh": "# MMMLU\n\n\n## 概述\n\nMMMLU（Multilingual Massive Multitask Language Understanding，多语言大规模多任务语言理解）是 MMLU 基准测试的多语言扩展版本。它在 14 种语言中评估语言模型的多语言知识与推理能力，涵盖原始 MMLU 基准中的 57 个学科。\n\n## 任务描述\n\n- **任务类型**：多语言多项选择题问答\n- **输入**：以 14 种语言之一呈现的问题，包含四个选项（A、B、C、D）\n- **输出**：单个正确答案字母\n- **语言**：阿拉伯语、孟加拉语、德语、西班牙语、法语、印地语、印尼语、意大利语、日语、韩语、葡萄牙语、斯瓦希里语、约鲁巴语、中文\n- **学科**：MMLU 中的 57 个学科（STEM、人文学科、社会科学、其他）\n\n## 主要特点\n\n- 完整 MMLU 基准的多语言翻译\n- 覆盖主要语系的 14 种类型学上多样化的语言\n- 测试跨语言知识迁移与多语言推理能力\n- 与原始 MMLU 相同的学科覆盖范围（57 个学科）\n- 包含低资源语言（例如斯瓦希里语、约鲁巴语）\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估（仅测试集）\n- 使用 `subset_list` 评估特定语言（例如 `['ZH_CN', 'JA_JP', 'FR_FR']`）\n- 结果按语言子集分组\n- 支持跨语言性能比较\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `mmmlu` |\n| **数据集ID** | [openai-mirror/MMMLU](https://modelscope.cn/datasets/openai-mirror/MMMLU/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 196,588 |\n| 提示词长度（平均） | 624.75 字符 |\n| 提示词长度（最小/最大） | 136 / 5975 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `AR_XY` | 14,042 | 584.94 | 231 | 4735 |\n| `BN_BD` | 14,042 | 654.99 | 247 | 4914 |\n| `DE_DE` | 14,042 | 791.64 | 294 | 5657 |\n| `ES_LA` | 14,042 | 753.18 | 271 | 5791 |\n| `FR_FR` | 14,042 | 777.82 | 278 | 5952 |\n| `HI_IN` | 14,042 | 675.02 | 256 | 5379 |\n| `ID_ID` | 14,042 | 726.51 | 270 | 5539 |\n| `IT_IT` | 14,042 | 761.19 | 277 | 5975 |\n| `JA_JP` | 14,042 | 322.79 | 149 | 2064 |\n| `KO_KR` | 14,042 | 354.35 | 153 | 2345 |\n| `PT_BR` | 14,042 | 706.79 | 258 | 5635 |\n| `SW_KE` | 14,042 | 699.08 | 259 | 5566 |\n| `YO_NG` | 14,042 | 681.01 | 248 | 5644 |\n| `ZH_CN` | 14,042 | 257.15 | 136 | 1495 |\n\n## 样例示例\n\n**子集**: `AR_XY`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"e43faf14\",\n      \"content\": \"أجب على سؤال الاختيار من متعدد التالي. يجب أن يكون السطر الأخير من إجابتك بالتنسيق التالي: 'ANSWER: [LETTER]' (بدون علامات اقتباس) حيث [LETTER] هو أحد الحروف A,B,C,D. فكّر خطوة بخطوة قبل الإجابة.\\n\\nأوجد درجة امتداد الحقل المحدد Q(sqrt(2)، sqrt(3)، sqrt(18)) على Q.\\n\\nA) 0\\nB) 4\\nC) 2\\nD) 6\"\n    }\n  ],\n  \"choices\": [\n    \"0\",\n    \"4\",\n    \"2\",\n    \"6\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"subject\": \"abstract_algebra\",\n    \"language\": \"AR_XY\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mmmlu \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mmmlu'],\n    dataset_args={\n        'mmmlu': {\n            # subset_list: ['AR_XY', 'BN_BD', 'DE_DE']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```"
+  },
+  "updated_at": "2026-03-17T18:23:11.531727",
+  "translation_updated_at": "2026-03-17T18:23:36Z"
+}
