@@ -174,6 +174,7 @@ LLM-as-a-Judge evaluation parameters using a judge model to determine correctnes
 | `system_prompt` | `str` | System prompt | - |
 | `prompt_template` | `str` | Prompt template | Auto-selected based on `score_type` |
 | `generation_config` | `dict` | Generation parameters (same as `--generation-config`) | - |
+| `model_args` | `dict` | Judge model loading parameters (same as `--model-args`), e.g. `{"default_headers": {"X-API-KEY": "your-api-key"}}` | `{}` |
 | `score_type` | `str` | Scoring method<br>• `pattern`: Judge if answer matches reference<br>• `numeric`: Score without reference (0-1) | `pattern` |
 | `score_pattern` | `str` | Regex to parse output | `pattern` mode: `(A\|B)`<br>`numeric` mode: `\[\[(\d+(?:\.\d+)?)\]\]` |
 | `score_mapping` | `dict` | Score mapping for `pattern` mode | `{'A': 1.0, 'B': 0.0}` |
