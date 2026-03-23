@@ -157,7 +157,7 @@ LLM-as-a-Judge评测参数，使用裁判模型判断正误：
 |------|------|------|--------|
 | `--judge-strategy` | `str` | 裁判模型策略<br>• `auto`: 根据数据集自动决定<br>• `llm`: 总是使用裁判模型<br>• `rule`: 只使用规则判断<br>• `llm_recall`: 规则失败后使用裁判模型 | `auto` |
 | `--judge-worker-num` | `int` | 裁判模型并发数 | `1` |
-| `--judge-model-args` | `str` | 裁判模型配置（JSON字符串），详见下表 | - |
+| `--judge-model-args` | `dict` | 裁判模型配置（JSON字符串），详见下表 | - |
 | `--analysis-report` | `bool` | 是否生成分析报告（自动判断语言） | `false` |
 
 ### judge-model-args 配置项
@@ -170,6 +170,7 @@ LLM-as-a-Judge评测参数，使用裁判模型判断正误：
 | `system_prompt` | `str` | 系统prompt | - |
 | `prompt_template` | `str` | Prompt模板 | 根据`score_type`自动选择 |
 | `generation_config` | `dict` | 生成参数（同`--generation-config`） | - |
+| `model_args` | `dict` | 裁判模型加载参数（同`--model-args`），例如`{"default_headers": {"X-API-KEY": "your-api-key"}}` | `{}` |
 | `score_type` | `str` | 打分方式<br>• `pattern`: 判断与参考答案是否相同<br>• `numeric`: 无参考答案打分（0-1） | `pattern` |
 | `score_pattern` | `str` | 解析输出的正则表达式 | `pattern`模式：`(A\|B)`<br>`numeric`模式：`\[\[(\d+(?:\.\d+)?)\]\]` |
 | `score_mapping` | `dict` | `pattern`模式的分数映射 | `{'A': 1.0, 'B': 0.0}` |
