@@ -31,15 +31,15 @@ If not installed, install it:
 # Basic installation
 pip install evalscope
 
-# Full installation (all backends and features)
+# Install all major backends (opencompass, vlmeval, rag, perf, app, aigc, service)
+# Note: does NOT include sandbox (requires Docker) or dev/docs extras
 pip install 'evalscope[all]'
 
 # Selective extras
-pip install 'evalscope[perf]'    # Performance benchmarking only
-pip install 'evalscope[app]'     # Visualization UI only
-pip install 'evalscope[opencompass]'  # OpenCompass backend
-pip install 'evalscope[vlmeval]'     # VLMEvalKit backend (multimodal)
+pip install 'evalscope[perf]'        # Performance benchmarking only
+pip install 'evalscope[app]'         # Visualization UI only
 pip install 'evalscope[rag]'         # RAG evaluation backend
+pip install 'evalscope[sandbox]'     # Sandbox code execution (requires Docker)
 ```
 
 ## Decision Tree

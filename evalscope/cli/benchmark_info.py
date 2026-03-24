@@ -209,25 +209,6 @@ class BenchmarkInfoCMD(CLICommand):
                     raise
 
     @staticmethod
-    def _get_category_from_meta(meta):
-        """Determine benchmark category from meta.data_adapter class without instantiation."""
-        from evalscope.api.benchmark import AgentAdapter, ImageEditAdapter, Text2ImageAdapter, VisionLanguageAdapter
-
-        adapter_cls = meta.data_adapter
-        if adapter_cls is None:
-            return 'unknown'
-        try:
-            if issubclass(adapter_cls, (Text2ImageAdapter, ImageEditAdapter)):
-                return 'aigc'
-            elif issubclass(adapter_cls, VisionLanguageAdapter):
-                return 'vlm'
-            elif issubclass(adapter_cls, AgentAdapter):
-                return 'agent'
-        except TypeError:
-            return 'unknown'
-        return 'llm'
-
-    @staticmethod
     def _format_metric_list(metric_list):
         """Format metric_list (mixed strings and dicts) into readable strings."""
         formatted = []
@@ -248,6 +229,7 @@ class BenchmarkInfoCMD(CLICommand):
         from tabulate import tabulate
 
         from evalscope.api.registry import BENCHMARK_REGISTRY
+        from evalscope.utils.doc_utils.generate_dataset_md import get_category_from_adapter_class
 
         # Collect flat rows: one row per benchmark
         filter_tags = None
@@ -261,7 +243,7 @@ class BenchmarkInfoCMD(CLICommand):
             if filter_tags:
                 if not any(t.lower() in filter_tags for t in tags):
                     continue
-            category = self._get_category_from_meta(meta)
+            category = get_category_from_adapter_class(meta.data_adapter)
             tags_str = ', '.join(tags)
             n_metrics = len(meta.metric_list) if meta.metric_list else 0
             n_subsets = len(meta.subset_list) if meta.subset_list else 0
