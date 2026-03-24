@@ -213,6 +213,32 @@ class APIEmbeddingModel(BaseModel):
 
         self.supported_encode_params = get_supported_params(self.model.embed_documents)
 
+    def _get_tokenizer(self):
+        """Lazy-load the model's tokenizer for accurate truncation."""
+        if not hasattr(self, '_tokenizer'):
+            self._tokenizer = None
+            try:
+                from transformers import AutoTokenizer
+                tokenizer_name = self.encode_kwargs.get('tokenizer', self.model_name)
+                self._tokenizer = AutoTokenizer.from_pretrained(
+                    tokenizer_name, trust_remote_code=True)
+            except Exception:
+                pass
+        return self._tokenizer
+
+    def _truncate_texts(self, texts: List[str], max_tokens: int) -> List[str]:
+        """Truncate texts so the total token count (including special tokens) <= max_tokens."""
+        tokenizer = self._get_tokenizer()
+        if tokenizer is not None:
+            truncated = []
+            for text in texts:
+                encoded = tokenizer(text, truncation=True, max_length=max_tokens)
+                text = tokenizer.decode(encoded['input_ids'], skip_special_tokens=True)
+                truncated.append(text)
+            return truncated
+        max_chars = int(max_tokens * 1.5)
+        return [t[:max_chars] for t in texts]
+
     def encode(self, texts: Union[str, List[str]], **kwargs) -> Tensor:
         # pop unused kwargs
         extra_params = {}
@@ -231,6 +257,8 @@ class APIEmbeddingModel(BaseModel):
         if isinstance(texts, str):
             texts = [texts]
 
+        max_length = self.encode_kwargs.get('max_length', None)
+
         embeddings: List[List[float]] = []
         for i in tqdm(range(0, len(texts), self.batch_size)):
             # set prompt if provided
@@ -238,6 +266,8 @@ class APIEmbeddingModel(BaseModel):
                 batch_texts = [prompt + text for text in texts[i:i + self.batch_size]]
             else:
                 batch_texts = texts[i:i + self.batch_size]
+            if max_length:
+                batch_texts = self._truncate_texts(batch_texts, max_length)
             response = self.model.embed_documents(batch_texts, chunk_size=self.batch_size)
             embeddings.extend(response)
         return torch.tensor(embeddings)
