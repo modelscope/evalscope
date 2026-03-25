@@ -1,16 +1,16 @@
 ---
 name: evalscope
 description: >-
-  NL2Eval: converts natural language evaluation requests directly into
-  ready-to-run evalscope CLI commands. Core capabilities: (1) Model
-  accuracy evaluation — runs 156+ benchmarks (Math, Coding, Chinese,
-  Multimodal, Agent, etc.) against local checkpoints or OpenAI-compatible
-  / Anthropic API endpoints; (2) Performance stress testing — measures
-  TTFT, TPOT, throughput, and latency under configurable concurrency
-  gradients or SLA auto-tuning; (3) Benchmark discovery — lists and
-  filters benchmarks by capability tag, retrieves full metadata and
-  sample examples; (4) Result visualization — launches a Gradio web UI
-  to compare and explore evaluation outputs. Trigger this skill whenever
+  Translates natural language requests into evalscope CLI commands.
+  Core capabilities: (1) Model accuracy evaluation (eval) — runs 156+
+  benchmarks (Math, Coding, Chinese, Multimodal, Agent, etc.) against
+  local checkpoints or OpenAI-compatible / Anthropic API endpoints;
+  (2) Performance stress testing (perf) — measures TTFT, TPOT,
+  throughput, and latency under configurable concurrency gradients or
+  SLA auto-tuning; (3) Benchmark discovery — lists and filters
+  benchmarks by capability tag, retrieves full metadata and sample
+  examples; (4) Result visualization — launches a Gradio web UI to
+  compare and explore evaluation outputs. Trigger this skill whenever
   the user mentions: evaluate / benchmark / score a model, throughput /
   latency / QPS / stress test, find benchmarks by tag or capability, or
   view / compare evaluation results.
