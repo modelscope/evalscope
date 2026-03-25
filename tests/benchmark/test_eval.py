@@ -85,7 +85,7 @@ class TestNativeBenchmark(TestBenchmark):
             'few_shot_num': 0,
             # 'subset_list': ['abstract_algebra', 'computer_security']
         }
-        self._run_dataset_test('mmlu', dataset_args=dataset_args, debug=False)
+        self._run_dataset_test('mmlu', dataset_args=dataset_args, debug=False, enable_progress_tracker=True)
 
     def test_mmlu_reasoning(self):
         """Test MMLU reasoning dataset."""
