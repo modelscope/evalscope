@@ -164,7 +164,6 @@ class TestRun(unittest.TestCase):
                 'n': 1,
                 'max_tokens': 4096,
             },
-            eval_batch_size=5,
             judge_strategy=JudgeStrategy.AUTO,
             judge_model_args={
                 'model_id': 'qwen2.5-72b-instruct',
