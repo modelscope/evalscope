@@ -33,7 +33,6 @@ class TestNativeBenchmark(TestBenchmark):
                 'retries':3
             },
             'judge_strategy': JudgeStrategy.AUTO,
-            'eval_batch_size': 5,
             'judge_model_args': {
                 'model_id': 'qwen3-max',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',

@@ -42,7 +42,6 @@ class TestRunCustom(TestBenchmark):
                     'max_tokens': 4096
                 },
             },
-            'eval_batch_size': 5,
             'judge_strategy': JudgeStrategy.LLM,
         }
 

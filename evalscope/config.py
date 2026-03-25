@@ -249,9 +249,6 @@ class TaskConfig(BaseArgument):
 
     def _get_default_generation_config(self) -> Dict:
         if self.model_task == ModelTask.IMAGE_GENERATION:
-            if self.eval_batch_size != 1:
-                logger.warning('For image generation task, we only support eval_batch_size=1 for now, changed to 1.')
-                self.eval_batch_size = 1
             return DEFAULT_IMAGE_GEN_CONFIG.copy()
 
         elif self.model_task == ModelTask.TEXT_GENERATION:

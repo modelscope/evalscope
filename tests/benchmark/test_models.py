@@ -33,7 +33,6 @@ class TestModels(TestBenchmark):
                 'stream': True
             },
             'judge_strategy': JudgeStrategy.AUTO,
-            'eval_batch_size': 5,
             'judge_model_args': {
                 'model_id': 'qwen3-235b-a22b',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',

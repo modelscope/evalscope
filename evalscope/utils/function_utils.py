@@ -231,7 +231,10 @@ def run_in_threads_with_progress(
     # Resolve progress-bar total: default to initial + actual workload size
     progress_bar_total = total if total is not None else initial + len(indexed_work_items)
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    # Bound max_workers to actual workload size to avoid unnecessarily large thread pools
+    effective_max_workers = max(1, min(max_workers, len(indexed_work_items)))
+
+    with ThreadPoolExecutor(max_workers=effective_max_workers) as executor:
         with tqdm(
             total=progress_bar_total,
             initial=initial,
