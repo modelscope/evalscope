@@ -205,7 +205,6 @@ class TestRun(unittest.TestCase):
                 'image_width': 512,
                 'image_num': 2,
             },
-            eval_batch_size=5,
             judge_strategy=JudgeStrategy.AUTO,
             judge_model_args={
                 'model_id': 'qwen2.5-72b-instruct',
@@ -252,7 +251,6 @@ class TestRun(unittest.TestCase):
                 'n': 1,
                 'max_tokens': 4096,
             },
-            eval_batch_size=1,
             judge_strategy=JudgeStrategy.AUTO,
             judge_model_args={
                 'model_id': 'qwen2.5-72b-instruct',
