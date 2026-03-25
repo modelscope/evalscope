@@ -78,8 +78,7 @@ task_cfg = TaskConfig(
             }
         }
     },
-    eval_batch_size=5,  # Batch size for inference
-    judge_worker_num=5, # Number of worker threads for parallel evaluation tasks, number of docker containers
+    eval_batch_size=5,  # Batch size for inference / number of worker threads for parallel evaluation (docker containers)
     limit=5,  # Limit evaluation quantity for quick testing, recommended to remove this for formal evaluation
     generation_config={
         'temperature': 0.1,

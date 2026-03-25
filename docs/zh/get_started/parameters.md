@@ -145,7 +145,7 @@
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
 | `--eval-type` | `str` | 评测类型<br>• `llm_ckpt`: 本地模型推理（transformers）<br>• `openai_api`: OpenAI兼容API服务<br>• `anthropic_api`: Anthropic Claude API服务<br>• `text2image`: 文本转图像模型（diffusers）<br>• `mock_llm`: 模拟推理（功能验证） | `None`（自动判断） |
-| `--eval-batch-size` | `int` | 评测批量大小<br>`eval-type=service`时表示并发请求数 | `1`（service模式为`8`） |
+| `--eval-batch-size` | `int` | 评测批量大小，作用于以下阶段：<br>• 推理阶段：并发请求数（service模式）或批量大小（checkpoint模式）<br>• LLM-judge 评审阶段：并发线程数<br>• batch_calculate_metrics 阶段：每批次处理的样本数 | `1`（service模式为`8`） |
 | `--eval-backend` | `str` | 评测后端<br>• `Native`: 默认后端<br>• `OpenCompass`: 大语言模型评测<br>• `VLMEvalKit`: 多模态模型评测<br>• `RAGEval`: RAG/Embedding/Reranker/CLIP评测<br>• `ThirdParty`: 特殊任务评测 | `Native` |
 | `--eval-config` | `str` | 非Native后端的配置文件路径 | - |
 
@@ -156,7 +156,7 @@ LLM-as-a-Judge评测参数，使用裁判模型判断正误：
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
 | `--judge-strategy` | `str` | 裁判模型策略<br>• `auto`: 根据数据集自动决定<br>• `llm`: 总是使用裁判模型<br>• `rule`: 只使用规则判断<br>• `llm_recall`: 规则失败后使用裁判模型 | `auto` |
-| `--judge-worker-num` | `int` | 裁判模型并发数 | `1` |
+| `--judge-worker-num` | `int` | **[已废弃]** 请使用 `--eval-batch-size` 代替，将在 v2.0.0 中移除 | `1` |
 | `--judge-model-args` | `dict` | 裁判模型配置（JSON字符串），详见下表 | - |
 | `--analysis-report` | `bool` | 是否生成分析报告（自动判断语言） | `false` |
 

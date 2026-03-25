@@ -212,7 +212,7 @@ task_cfg = TaskConfig(
             'max_tokens': 8000
         },
     },
-    judge_worker_num=5,
+    eval_batch_size=5,
     # use_cache='outputs/xxx' # Optional: to add new candidate models to existing results, specify the existing results path
 )
 

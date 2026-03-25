@@ -47,7 +47,7 @@ class EnclaveSandboxBackend(SandboxBackend):
     def __init__(self, benchmark_meta: 'BenchmarkMeta', task_config: 'TaskConfig'):
         super().__init__(benchmark_meta, task_config)
         self._manager: Optional['SandboxManager'] = None
-        self._pool_size: int = self._task_config.judge_worker_num if self._task_config else 1
+        self._pool_size: int = self._task_config.eval_batch_size if self._task_config else 1
         self._use_custom_image: bool = False
 
     def start(self) -> None:

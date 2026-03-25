@@ -33,7 +33,7 @@ class TestImageEditBenchmark(TestBenchmark):
                 'negative_prompt': ' ',
             },
             'judge_strategy': JudgeStrategy.AUTO,
-            'judge_worker_num': 5,
+            'eval_batch_size': 5,
             'judge_model_args': {
                 'model_id': 'qwen2.5-vl-72b-instruct',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',

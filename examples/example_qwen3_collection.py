@@ -84,7 +84,6 @@ def run_test_no_think():
             'n': 1,  # 每个请求产生的回复数量
             'extra_body':{'chat_template_kwargs': {'enable_thinking': False}}  # 关闭思考模式
         },
-        judge_worker_num=1,
         timeout=60000,  # 超时时间
         stream=True,  # 是否使用流式输出
         limit=10,  # 设置为1000条数据进行测试

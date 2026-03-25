@@ -19,10 +19,9 @@ task_config = TaskConfig(
             }
         }
     },
-    eval_batch_size=1,
+    eval_batch_size=5,
     limit=5,
     judge_strategy=JudgeStrategy.AUTO,
-    judge_worker_num=5,
     judge_model_args={  # 需要配置一个VLM模型用于自动打分
         'model_id': 'qwen2.5-vl-72b-instruct',
         'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',

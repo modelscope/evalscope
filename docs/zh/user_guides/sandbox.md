@@ -50,7 +50,6 @@ task_config = TaskConfig(
     },
     use_sandbox=True, # 启用沙箱
     sandbox_type='docker', # 指定沙箱类型
-    judge_worker_num=5, # 指定评测时的沙箱工作进程数
 )
 
 run_task(task_config)
@@ -124,7 +123,6 @@ task_config = TaskConfig(
     sandbox_manager_config={
         'base_url': 'http://<remote_host>:1234'  # 远端沙箱管理器URL
     },
-    judge_worker_num=5, # 指定评测时的沙箱工作进程数
 )
 
 run_task(task_config)

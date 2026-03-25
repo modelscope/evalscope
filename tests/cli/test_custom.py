@@ -42,7 +42,7 @@ class TestRunCustom(TestBenchmark):
                     'max_tokens': 4096
                 },
             },
-            'judge_worker_num': 5,
+            'eval_batch_size': 5,
             'judge_strategy': JudgeStrategy.LLM,
         }
 
@@ -129,7 +129,7 @@ class TestRunCustom(TestBenchmark):
                 },
                 'score_type': 'numeric',
             },
-            judge_worker_num=5,
+            eval_batch_size=5,
             judge_strategy=JudgeStrategy.LLM,
         )
 
@@ -153,7 +153,7 @@ class TestRunCustom(TestBenchmark):
                 },
                 'score_type': 'pattern',
             },
-            judge_worker_num=1,
+            eval_batch_size=1,
             judge_strategy=JudgeStrategy.LLM,
         )
 
@@ -188,7 +188,7 @@ class TestRunCustom(TestBenchmark):
                     'max_tokens': 8000
                 },
             },
-            judge_worker_num=5,
+            eval_batch_size=5,
         )
 
 

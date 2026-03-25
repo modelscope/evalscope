@@ -78,8 +78,7 @@ task_cfg = TaskConfig(
             }
         }
     },
-    eval_batch_size=5,  # 推理时的批处理大小
-    judge_worker_num=5, # 并行评测任务的工作线程数, docker container数量
+    eval_batch_size=5,  # 推理批大小 / 并行评测任务的工作线程数（docker container数量）
     limit=5,  # 限制评测数量，便于快速测试，正式评测时建议去掉此项
     generation_config={
         'temperature': 0.1,

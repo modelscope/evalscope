@@ -33,7 +33,7 @@ class TestNativeBenchmark(TestBenchmark):
                 'retries':3
             },
             'judge_strategy': JudgeStrategy.AUTO,
-            'judge_worker_num': 5,
+            'eval_batch_size': 5,
             'judge_model_args': {
                 'model_id': 'qwen3-max',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -701,7 +701,7 @@ class TestNativeBenchmark(TestBenchmark):
             # 'subset_list': ['example']
             'force_redownload': True,
         }
-        self._run_dataset_load_test('general_fc', dataset_args, debug=False, judge_worker_num=5)
+        self._run_dataset_load_test('general_fc', dataset_args, debug=False, eval_batch_size=5)
 
     def test_general_fc_local(self):
         """Test General Function Calling dataset with local path."""
@@ -721,7 +721,7 @@ class TestNativeBenchmark(TestBenchmark):
         """Test IFBench dataset loading."""
         dataset_args = {
         }
-        self._run_dataset_load_test('ifbench', dataset_args, debug=False, judge_worker_num=5)
+        self._run_dataset_load_test('ifbench', dataset_args, debug=False, eval_batch_size=5)
 
     def test_eq_bench(self):
         """Test EQ-Bench dataset."""

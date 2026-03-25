@@ -222,8 +222,8 @@ task_cfg = TaskConfig(
         # 根据参考答案和模型输出，判断模型输出是否正确
         'score_type': 'pattern',
     },
-    # judge 并发数
-    judge_worker_num=5,
+    # 评测并发数
+    eval_batch_size=5,
     # 使用 LLM 进行评测
     judge_strategy=JudgeStrategy.LLM,
 )
@@ -279,8 +279,8 @@ task_cfg = TaskConfig(
         # 直接打分
         'score_type': 'numeric',
     },
-    # judge 并发数
-    judge_worker_num=5,
+    # 评测并发数
+    eval_batch_size=5,
     # 使用 LLM 进行评测
     judge_strategy=JudgeStrategy.LLM,
 )

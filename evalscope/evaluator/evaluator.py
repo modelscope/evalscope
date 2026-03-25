@@ -22,7 +22,6 @@ from evalscope.evaluator.batch_reviewer import BatchReviewer
 from evalscope.report import Report, gen_table
 from evalscope.utils.function_utils import run_in_threads_with_progress
 from evalscope.utils.logger import get_logger
-from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
