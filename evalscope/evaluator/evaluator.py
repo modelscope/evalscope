@@ -308,7 +308,7 @@ class DefaultEvaluator(Evaluator):
             log_interval=HEARTBEAT_INTERVAL_SEC,
             on_result=on_result,
             on_error=on_error,
-            filter_none_results=True,
+            skip_failed=True,
             initial=context.total_cached,
             total=context.grand_total,
         )

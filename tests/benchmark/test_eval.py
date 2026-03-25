@@ -24,12 +24,13 @@ class TestNativeBenchmark(TestBenchmark):
             'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'api_key': env.get('DASHSCOPE_API_KEY'),
             'eval_type': EvalType.OPENAI_API,
-            'eval_batch_size': 5,
+            'eval_batch_size': 1,
             'limit': 5,
             'generation_config': {
                 # 'max_tokens': 4096,
                 'temperature': 0.7,
-                'parallel_tool_calls': True
+                'parallel_tool_calls': True,
+                'retries':3
             },
             'judge_strategy': JudgeStrategy.AUTO,
             'judge_worker_num': 5,
@@ -53,7 +54,7 @@ class TestNativeBenchmark(TestBenchmark):
         dataset_args = {
             'few_shot_num': 0,
         }
-        self._run_dataset_test('gsm8k', dataset_args=dataset_args, limit=5, debug=False, eval_batch_size=5)
+        self._run_dataset_test('gsm8k', dataset_args=dataset_args, limit=5, debug=True, eval_batch_size=5)
 
     def test_gsm8k_pass_at_k(self):
         """Test GSM8K math reasoning dataset with Pass@k metric."""
@@ -82,9 +83,9 @@ class TestNativeBenchmark(TestBenchmark):
         """Test MMLU reasoning dataset."""
         dataset_args = {
             'few_shot_num': 0,
-            'subset_list': ['abstract_algebra', 'computer_security']
+            # 'subset_list': ['abstract_algebra', 'computer_security']
         }
-        self._run_dataset_test('mmlu', use_mock=True, dataset_args=dataset_args)
+        self._run_dataset_test('mmlu', dataset_args=dataset_args, debug=False)
 
     def test_mmlu_reasoning(self):
         """Test MMLU reasoning dataset."""

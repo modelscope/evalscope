@@ -340,5 +340,4 @@ def gen_html_report_file(
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
 
-    logger.info(f'HTML report generated: {out_path}')
     return out_path

@@ -173,7 +173,7 @@ def run_in_threads_with_progress(
     log_interval: Optional[int] = None,
     on_result: Optional[Callable[[T, R], None]] = None,
     on_error: Optional[Callable[[T, Exception], None]] = None,
-    filter_none_results: bool = False,
+    skip_failed: bool = False,
     initial: int = 0,
     total: Optional[int] = None,
 ) -> List[R]:
@@ -184,8 +184,8 @@ def run_in_threads_with_progress(
     Key behaviors:
     - Concurrency: Uses up to `min(len(items), max_workers)` threads.
     - Progress: A tqdm bar advances when each task finishes (success or failure).
-    - Heartbeat: If no tasks finish within `heartbeat_sec`, a status line is logged.
-    - Ordering: Results are appended in completion order (not the original order).
+    - Heartbeat: If no tasks finish within `log_interval` seconds, a status line is logged.
+    - Ordering: Results preserve the original input order.
     - Error handling:
         * If `on_error` is provided, it is called for each failed item; execution continues
           unless `on_error` itself raises.
@@ -204,14 +204,17 @@ def run_in_threads_with_progress(
         on_result: Optional callback invoked as on_result(item, result) after success.
         on_error: Optional callback invoked as on_error(item, exception) on failure. If omitted,
             the exception is propagated and the function terminates early.
+        skip_failed: If True, items whose tasks raised an exception (and were handled by
+            `on_error`) are omitted from the returned list. Only meaningful when `on_error`
+            is provided; otherwise exceptions are always propagated.
         initial: Number of already-completed items (e.g. loaded from cache). The progress
             bar will start at this offset so the full work is visible.
-        total: Override the displayed total.  Defaults to ``initial + len(items)``.
+        total: Override the displayed total. Defaults to ``initial + len(items)``.
 
     Returns:
-        A list of results collected as tasks complete (completion order).
-        If some tasks fail and `on_error` is provided (and does not re-raise), those failures
-        are skipped and not included in the returned results.
+        A list of results in the original input order.
+        If some tasks fail and `on_error` is provided (and does not re-raise), those slots
+        are omitted when `skip_failed=True`, otherwise they appear as ``None``.
 
     Raises:
         Exception: Propagates the first task exception if `on_error` is not provided, or if
@@ -222,21 +225,15 @@ def run_in_threads_with_progress(
         - Use `on_error` to implement "best-effort" processing where failures are logged
           and the rest continue.
     """
-    # Include indices to ensure results are returned in input order
-    indexed_items = list(enumerate(items))
-    results: List[Optional[R]] = [None] * len(items)  # Preallocate results list
+    indexed_work_items = list(enumerate(items))
+    ordered_results: List[Optional[R]] = [None] * len(items)  # pre-allocated; preserves input order
 
-    # Resolve display total: default to initial + actual workload size
-    display_total = total if total is not None else initial + len(indexed_items)
+    # Resolve progress-bar total: default to initial + actual workload size
+    progress_bar_total = total if total is not None else initial + len(indexed_work_items)
 
-    # Bound the pool by actual workload size for efficiency.
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # Submit all tasks up-front and map futures back to their originating item.
-        future_to_index = {executor.submit(worker, item): index for index, item in indexed_items}
-
-        # Progress bar reflects total number of submitted tasks; updated per finished future.
         with tqdm(
-            total=display_total,
+            total=progress_bar_total,
             initial=initial,
             desc=desc,
             mininterval=1,
@@ -244,41 +241,51 @@ def run_in_threads_with_progress(
             logger=logger,
             log_interval=log_interval
         ) as pbar:
-            # Track unfinished futures and poll with a timeout to enable heartbeat logs.
-            pending = set(future_to_index.keys())
-            while pending:
-                # Wait with timeout to detect stalls and emit heartbeats proactively.
-                done, not_done = wait(pending, timeout=1)
-                if not done:
-                    # Heartbeat when nothing has completed within the window.
+            # Submit tasks in a sliding window of size max_workers so that an early
+            # failure does not leave many already-submitted futures still running.
+            item_iter = iter(indexed_work_items)
+            pending_futures: set = set()
+            future_index_map: dict = {}
+
+            def _try_submit_next():
+                """Submit the next item from the iterator into the thread pool, if any remain."""
+                try:
+                    item_index, item = next(item_iter)
+                    fut = executor.submit(worker, item)
+                    future_index_map[fut] = item_index
+                    pending_futures.add(fut)
+                except StopIteration:
+                    pass
+
+            # Fill the initial sliding window.
+            for _ in range(max_workers):
+                _try_submit_next()
+
+            while pending_futures:
+                completed_futures, _ = wait(pending_futures, timeout=1)
+                if not completed_futures:
                     pbar.check_log()
                     continue
 
-                # Consume completed futures.
-                for future in done:
-                    index = future_to_index[future]
+                for fut in completed_futures:
+                    item_index = future_index_map.pop(fut)
+                    pending_futures.discard(fut)
                     try:
-                        res = future.result()
-                        results[index] = res  # Store result at the correct index
-                        # Invoke success callback in caller thread (not in worker).
+                        result = fut.result()
+                        ordered_results[item_index] = result
                         if on_result is not None:
-                            on_result(items[index], res)
-                    except Exception as exc:
-                        # Delegate failure handling to on_error if provided; otherwise bubble up.
+                            on_result(items[item_index], result)
+                        _try_submit_next()  # keep the window full on success
+                    except Exception as error:
                         if on_error is not None:
-                            on_error(items[index], exc)
+                            on_error(items[item_index], error)  # may re-raise
+                            _try_submit_next()  # error was tolerated, keep going
                         else:
                             raise
                     finally:
-                        # Always advance progress for completed futures (success or failure).
                         pbar.update(1)
-                        pbar.refresh()
 
-                # Continue polling remaining futures.
-                pending = not_done
-
-    # Return results, which are now guaranteed to be in input order
-    if filter_none_results:
-        # Filter out None results if on_error was used and some tasks failed
-        results = [res for res in results if res is not None]
-    return results
+    # Return results in input order; optionally compact out failed (None) slots
+    if skip_failed:
+        return [res for res in ordered_results if res is not None]
+    return ordered_results
