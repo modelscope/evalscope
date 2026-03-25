@@ -33,7 +33,6 @@ class TestBenchmark(TestCase):
                 'parallel_tool_calls': True
             },
             'judge_strategy': JudgeStrategy.AUTO,
-            'judge_worker_num': 5,
             'judge_model_args': {
                 'model_id': 'qwen2.5-72b-instruct',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',

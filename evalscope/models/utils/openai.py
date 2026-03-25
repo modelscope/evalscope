@@ -533,6 +533,13 @@ def model_output_from_openai(
 
 
 def chat_choices_from_openai(response: ChatCompletion, tools: List[ToolInfo]) -> List[ChatCompletionChoice]:
+    if response.choices is None:
+        raise ValueError(
+            f'Model response contains no choices (choices=None). '
+            f'Response id={getattr(response, "id", "unknown")}, '
+            f'model={getattr(response, "model", "unknown")}. '
+            f'This may indicate the model returned an empty or malformed response.'
+        )
     choices = list(response.choices)
     choices.sort(key=lambda c: c.index)
     return [

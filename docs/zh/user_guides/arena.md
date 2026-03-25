@@ -212,7 +212,7 @@ task_cfg = TaskConfig(
             'max_tokens': 8000
         },
     },
-    judge_worker_num=5,
+    eval_batch_size=5,
     # use_cache='outputs/xxx' # 可选，若想在已有评测结果上添加新的候选模型，可以指定已有评测结果路径
 )
 

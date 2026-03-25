@@ -206,7 +206,7 @@ task_cfg = TaskConfig(
             'max_tokens': 4096
         },
     },
-    judge_worker_num=5,
+    eval_batch_size=5,
     judge_strategy=JudgeStrategy.LLM,
 )
 result = run_task(task_cfg=task_cfg)

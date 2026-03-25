@@ -35,7 +35,7 @@ Use these repo-specific rules to ship changes confidently. Prefer concrete patte
 - Visualization: `evalscope app` (see README “Visualization of Evaluation Results”).
 
 ## Behavior that matters
-- Concurrency: predictions use `eval_batch_size`; reviews use `judge_worker_num` (thread pools in `DefaultEvaluator`).
+- Concurrency: predictions use `eval_batch_size`.
 - `limit`: int (count) or float (fraction). `repeats` duplicates items for k-metrics; `generation_config.n` is deprecated and mapped.
 - `dataset_args` merges into `BenchmarkMeta._update()` (supports `local_path`, `filters` OrderedDict prepended).
 - Reports: printed tables via `evalscope/report`; failures are logged but should not crash runs.

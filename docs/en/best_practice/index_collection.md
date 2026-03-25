@@ -175,7 +175,7 @@ task_cfg = TaskConfig(
         'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
         'api_key': os.getenv('DASHSCOPE_API_KEY'),
     },
-    judge_worker_num=5, # Judge concurrency, adjust according to actual situation
+    eval_batch_size=5, # Eval concurrency, adjust according to actual situation
 )
 
 run_task(task_cfg=task_cfg)
