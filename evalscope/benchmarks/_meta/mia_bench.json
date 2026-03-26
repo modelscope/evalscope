@@ -1,0 +1,169 @@
+{
+  "meta": {
+    "pretty_name": "MIA-Bench",
+    "dataset_id": "lmms-lab/MIA-Bench",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "InstructionFollowing",
+      "QA"
+    ],
+    "metrics": [
+      "total_score"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nMIA-Bench is a multimodal instruction-following benchmark designed to evaluate vision-language models on their ability to follow complex, compositional instructions grounded in images. Each sample contains an image paired with a multi-component instruction, and model responses are scored by an LLM judge per component.\n\n## Task Description\n\n- **Task Type**: Multimodal Instruction Following\n- **Input**: Image + multi-component instruction\n- **Output**: Free-form response following all instruction components\n- **Domains**: Visual understanding, instruction following, language generation\n\n## Key Features\n\n- 400 test samples with diverse instruction types (basic to advanced)\n- Each instruction decomposes into 1–5 graded components with weighted scores\n- Component types include: describe, length_limit, linguistics, format, etc.\n- LLM-as-judge scoring: judge evaluates each component independently and gives a weighted total score (0–10 range, normalized to 0–1)\n- No predefined reference answers; scoring is fully judge-based\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split (400 samples)\n- Primary metric: **total_score** (mean of per-sample normalized 0–1 total scores)\n- Requires a capable LLM judge (e.g., GPT-4o, Qwen-Max) configured via `judge_model_args`\n- Judge strategy should be set to `JudgeStrategy.LLM`\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 400,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 400,
+        "prompt_length_mean": 137.81,
+        "prompt_length_min": 34,
+        "prompt_length_max": 327,
+        "prompt_length_std": 49.72,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 400,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1333",
+              "1000x1500",
+              "1012x1024",
+              "1023x685",
+              "1024x683",
+              "1024x768",
+              "1037x1500",
+              "1051x1600",
+              "1110x1246",
+              "1111x2000"
+            ],
+            "resolution_range": {
+              "min": "135x240",
+              "max": "3264x4928"
+            },
+            "formats": [
+              "jpeg",
+              "mpo",
+              "webp"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 137.81,
+      "min": 34,
+      "max": 327,
+      "std": 49.72
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-03-26T16:11:40.171943",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 400,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1000x1333",
+          "1000x1500",
+          "1012x1024",
+          "1023x685",
+          "1024x683",
+          "1024x768",
+          "1037x1500",
+          "1051x1600",
+          "1110x1246",
+          "1111x2000"
+        ],
+        "resolution_range": {
+          "min": "135x240",
+          "max": "3264x4928"
+        },
+        "formats": [
+          "jpeg",
+          "mpo",
+          "webp"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "9156e81c",
+          "content": [
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~195.9KB]"
+            },
+            {
+              "text": "Explain the activity taking place in the image using exactly two sentences, including one metaphor."
+            }
+          ]
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "instruction": "Explain the activity taking place in the image using exactly two sentences, including one metaphor.",
+        "type": "advanced",
+        "num_of_component": 3,
+        "components": [
+          "Explain the activity taking place in the image",
+          "using exactly two sentences",
+          "including one metaphor"
+        ],
+        "component_weight": [
+          4,
+          3,
+          3
+        ],
+        "component_type": [
+          "describe",
+          "length_limit",
+          "linguistics"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MIA-Bench\n\n\n## Overview\n\nMIA-Bench is a multimodal instruction-following benchmark designed to evaluate vision-language models on their ability to follow complex, compositional instructions grounded in images. Each sample contains an image paired with a multi-component instruction, and model responses are scored by an LLM judge per component.\n\n## Task Description\n\n- **Task Type**: Multimodal Instruction Following\n- **Input**: Image + multi-component instruction\n- **Output**: Free-form response following all instruction components\n- **Domains**: Visual understanding, instruction following, language generation\n\n## Key Features\n\n- 400 test samples with diverse instruction types (basic to advanced)\n- Each instruction decomposes into 1–5 graded components with weighted scores\n- Component types include: describe, length_limit, linguistics, format, etc.\n- LLM-as-judge scoring: judge evaluates each component independently and gives a weighted total score (0–10 range, normalized to 0–1)\n- No predefined reference answers; scoring is fully judge-based\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split (400 samples)\n- Primary metric: **total_score** (mean of per-sample normalized 0–1 total scores)\n- Requires a capable LLM judge (e.g., GPT-4o, Qwen-Max) configured via `judge_model_args`\n- Judge strategy should be set to `JudgeStrategy.LLM`\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `mia_bench` |\n| **Dataset ID** | [lmms-lab/MIA-Bench](https://modelscope.cn/datasets/lmms-lab/MIA-Bench/summary) |\n| **Paper** | N/A |\n| **Tags** | `InstructionFollowing`, `MultiModal`, `QA` |\n| **Metrics** | `total_score` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 400 |\n| Prompt Length (Mean) | 137.81 chars |\n| Prompt Length (Min/Max) | 34 / 327 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 400 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 135x240 - 3264x4928 |\n| Formats | jpeg, mpo, webp |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"9156e81c\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~195.9KB]\"\n        },\n        {\n          \"text\": \"Explain the activity taking place in the image using exactly two sentences, including one metaphor.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"instruction\": \"Explain the activity taking place in the image using exactly two sentences, including one metaphor.\",\n    \"type\": \"advanced\",\n    \"num_of_component\": 3,\n    \"components\": [\n      \"Explain the activity taking place in the image\",\n      \"using exactly two sentences\",\n      \"including one metaphor\"\n    ],\n    \"component_weight\": [\n      4,\n      3,\n      3\n    ],\n    \"component_type\": [\n      \"describe\",\n      \"length_limit\",\n      \"linguistics\"\n    ]\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mia_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mia_bench'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MIA-Bench\n\n\n## 概述\n\nMIA-Bench 是一个多模态指令遵循基准测试，旨在评估视觉-语言模型在图像基础上遵循复杂、组合式指令的能力。每个样本包含一张图像和一条多组件指令，模型的响应由大语言模型（LLM）评委按组件分别打分。\n\n## 任务描述\n\n- **任务类型**：多模态指令遵循\n- **输入**：图像 + 多组件指令\n- **输出**：自由格式的回答，需满足所有指令组件的要求\n- **领域**：视觉理解、指令遵循、语言生成\n\n## 主要特点\n\n- 包含 400 个测试样本，涵盖从基础到高级的多样化指令类型\n- 每条指令被分解为 1–5 个评分组件，并配有加权分数\n- 组件类型包括：描述（describe）、长度限制（length_limit）、语言学要求（linguistics）、格式（format）等\n- 采用 LLM 作为评委进行评分：评委独立评估每个组件，并给出加权总分（0–10 分范围，归一化至 0–1）\n- 无预设参考答案；评分完全依赖评委判断\n\n## 评估说明\n\n- 默认使用 **test** 划分进行评估（400 个样本）\n- 主要指标：**total_score**（各样本归一化后 0–1 总分的平均值）\n- 需配置一个能力强的 LLM 评委（例如 GPT-4o、Qwen-Max），通过 `judge_model_args` 设置\n- 评委策略应设置为 `JudgeStrategy.LLM`\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `mia_bench` |\n| **数据集ID** | [lmms-lab/MIA-Bench](https://modelscope.cn/datasets/lmms-lab/MIA-Bench/summary) |\n| **论文** | N/A |\n| **标签** | `InstructionFollowing`, `MultiModal`, `QA` |\n| **指标** | `total_score` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 400 |\n| 提示词长度（平均） | 137.81 字符 |\n| 提示词长度（最小/最大） | 34 / 327 字符 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 400 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 135x240 - 3264x4928 |\n| 格式 | jpeg, mpo, webp |\n\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"9156e81c\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~195.9KB]\"\n        },\n        {\n          \"text\": \"Explain the activity taking place in the image using exactly two sentences, including one metaphor.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"instruction\": \"Explain the activity taking place in the image using exactly two sentences, including one metaphor.\",\n    \"type\": \"advanced\",\n    \"num_of_component\": 3,\n    \"components\": [\n      \"Explain the activity taking place in the image\",\n      \"using exactly two sentences\",\n      \"including one metaphor\"\n    ],\n    \"component_weight\": [\n      4,\n      3,\n      3\n    ],\n    \"component_type\": [\n      \"describe\",\n      \"length_limit\",\n      \"linguistics\"\n    ]\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mia_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mia_bench'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "6a8ce1c3a13a3e880c862ead2ff23947",
+    "needs_translation": false
+  },
+  "updated_at": "2026-03-26T16:11:40.573971",
+  "translation_updated_at": "2026-03-26T16:11:48Z"
+}
