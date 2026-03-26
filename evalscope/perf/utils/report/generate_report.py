@@ -321,5 +321,4 @@ def gen_perf_html_report(
     with open(out_path, 'w', encoding='utf-8') as fh:
         fh.write(html_content)
 
-    logger.info(f'Performance HTML report generated: {out_path}')
     return out_path
