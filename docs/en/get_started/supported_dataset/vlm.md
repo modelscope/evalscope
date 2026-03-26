@@ -22,6 +22,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `math_verse` | [MathVerse](../../benchmarks/math_verse.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vision` | [MathVision](../../benchmarks/math_vision.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vista` | [MathVista](../../benchmarks/math_vista.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
+| `mia_bench` | [MIA-Bench](../../benchmarks/mia_bench.md) | `InstructionFollowing`, `MultiModal`, `QA` |
 | `micro_vqa` | [MicroVQA](../../benchmarks/micro_vqa.md) | `Knowledge`, `MCQ`, `Medical`, `MultiModal` |
 | `mm_bench` | [MMBench](../../benchmarks/mm_bench.md) | `Knowledge`, `MultiModal`, `QA` |
 | `mm_star` | [MMStar](../../benchmarks/mm_star.md) | `Knowledge`, `MCQ`, `MultiModal` |
@@ -64,6 +65,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/math_verse.md
 ../../benchmarks/math_vision.md
 ../../benchmarks/math_vista.md
+../../benchmarks/mia_bench.md
 ../../benchmarks/micro_vqa.md
 ../../benchmarks/mm_bench.md
 ../../benchmarks/mm_star.md
