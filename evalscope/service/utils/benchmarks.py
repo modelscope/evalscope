@@ -167,14 +167,15 @@ def build_benchmark_entry(name: str) -> Dict[str, Any]:
         name: Benchmark identifier (e.g. ``'gsm8k'``).
 
     Returns:
-        A dict containing ``name``, ``pretty_name``, ``tags``, and
-        ``description``.  The ``description`` field has two sub-keys,
+        A dict containing ``name``, ``meta``, and ``description``.
+        ``meta`` includes all top-level benchmark data fields except
+        ``readme`` (e.g. ``meta``, ``statistics``, ``sample_example``,
+        ``updated_at``).  The ``description`` field has two sub-keys,
         ``'zh'`` and ``'en'``, each containing ``full`` and ``sections``
         parsed from the corresponding readme.  A key is ``None`` when the
         readme for that language is absent.
     """
     data = load_benchmark_data(name).get(name, {})
-    meta = data.get('meta', {})
     readme = data.get('readme', {})
 
     zh_raw = readme.get('zh') or ''
@@ -185,9 +186,15 @@ def build_benchmark_entry(name: str) -> Dict[str, Any]:
         'en': parse_benchmark_description(en_raw) if en_raw else None,
     }
 
+    meta = data.get('meta', {})
+
+    # Flatten metrics to list[str]: extract key name if item is a dict
+    raw_metrics = meta.get('metrics', [])
+    metrics = [next(iter(m)) if isinstance(m, dict) else str(m) for m in raw_metrics]
+
     return {
         'name': name,
-        'pretty_name': meta.get('pretty_name', name),
-        'tags': meta.get('tags', []),
+        'metrics': metrics,
+        'meta': meta,
         'description': description,
     }
