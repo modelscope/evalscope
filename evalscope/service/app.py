@@ -2,6 +2,7 @@
 """Flask service for EvalScope evaluation and performance testing."""
 from datetime import datetime
 from flask import Flask, jsonify
+import multiprocessing
 
 from evalscope.utils.logger import get_logger
 
@@ -63,7 +64,8 @@ def create_app():
 def run_service(host: str = '0.0.0.0', port: int = 9000, debug: bool = False):
     """Run the Flask service."""
 
-    import multiprocessing
+    # Force the multiprocessing start method to 'spawn' to avoid issues with
+    # model loading in forked child processes on some platforms.
     multiprocessing.set_start_method('spawn', force=True)
     app = create_app()
 
