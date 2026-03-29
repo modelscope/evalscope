@@ -62,6 +62,9 @@ def create_app():
 
 def run_service(host: str = '0.0.0.0', port: int = 9000, debug: bool = False):
     """Run the Flask service."""
+
+    import multiprocessing
+    multiprocessing.set_start_method('spawn', force=True)
     app = create_app()
 
     logger.info(f'Starting EvalScope service on {host}:{port}')
