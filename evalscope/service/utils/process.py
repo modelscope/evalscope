@@ -1,4 +1,8 @@
+import contextlib
+import io
 import multiprocessing
+import queue
+import sys
 import traceback
 
 from evalscope.config import TaskConfig
@@ -14,13 +18,39 @@ logger = get_logger()
 # ---------------------------------------------------------------------------
 
 
-def _process_worker(func, queue, *args, **kwargs):
-    """Target for multiprocessing.Process — executes *func* and posts result."""
+@contextlib.contextmanager
+def _capture_stderr():
+    """Context manager that redirects sys.stderr to a StringIO buffer.
+
+    Yields the buffer so the caller can read captured output after the block.
+    Always restores the original sys.stderr on exit.
+    """
+    buf = io.StringIO()
+    original = sys.stderr
+    sys.stderr = buf
     try:
-        result = func(*args, **kwargs)
-        queue.put({'status': 'success', 'result': result})
-    except Exception as e:
-        queue.put({'status': 'error', 'error': str(e), 'traceback': traceback.format_exc()})
+        yield buf
+    finally:
+        sys.stderr = original
+
+
+def _process_worker(func, result_queue, *args, **kwargs):
+    """Target for multiprocessing.Process — executes *func* and posts result.
+
+    stderr is captured and forwarded through the queue so the parent process
+    can surface it even when the child crashes before *func* is reached.
+    """
+    with _capture_stderr() as stderr_buf:
+        try:
+            result = func(*args, **kwargs)
+            result_queue.put({'status': 'success', 'result': result})
+        except BaseException as e:
+            result_queue.put({
+                'status': 'error',
+                'error': str(e),
+                'traceback': traceback.format_exc(),
+                'stderr': stderr_buf.getvalue(),
+            })
 
 
 def run_in_subprocess(func, *args, **kwargs):
@@ -28,18 +58,28 @@ def run_in_subprocess(func, *args, **kwargs):
 
     Returns the function's return value on success; raises on error.
     """
-    queue = multiprocessing.Queue()
-    p = multiprocessing.Process(target=_process_worker, args=(func, queue, *args), kwargs=kwargs)
+    result_queue = multiprocessing.Queue()
+    p = multiprocessing.Process(target=_process_worker, args=(func, result_queue, *args), kwargs=kwargs)
     p.start()
     p.join()
 
-    if not queue.empty():
-        res = queue.get()
+    try:
+        # Use a short timeout instead of queue.empty() to avoid race conditions
+        # where the child has put data but the buffer hasn't flushed yet.
+        res = result_queue.get(timeout=5)
         if res['status'] == 'error':
-            raise RuntimeError(f"Subprocess error: {res['error']}\n{res.get('traceback', '')}")
+            stderr_info = res.get('stderr', '')
+            stderr_section = f'\n[stderr]\n{stderr_info}' if stderr_info.strip() else ''
+            raise RuntimeError(f"Subprocess error: {res['error']}\n{res.get('traceback', '')}{stderr_section}")
         return res['result']
-    else:
-        raise RuntimeError(f'Subprocess terminated unexpectedly (exit code {p.exitcode})')
+    except queue.Empty:
+        # Queue was truly empty — the child crashed before putting anything
+        # (OOM, SIGKILL, import error, segfault, etc.).
+        raise RuntimeError(
+            f'Subprocess terminated unexpectedly (exit code {p.exitcode}). '
+            'The child process may have crashed due to OOM, a missing import, '
+            'GPU initialisation failure, or a signal (e.g. SIGKILL).'
+        ) from None
 
 
 # ---------------------------------------------------------------------------
