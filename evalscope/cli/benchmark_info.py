@@ -103,6 +103,13 @@ class BenchmarkInfoCMD(CLICommand):
         )
 
         parser.add_argument(
+            '--tag',
+            nargs='+',
+            default=None,
+            help='Filter benchmarks by tag(s) when listing (e.g., --tag Agent Coding). Case-insensitive.',
+        )
+
+        parser.add_argument(
             '--update',
             action='store_true',
             help='Update benchmark data in the unified JSON file',
@@ -201,27 +208,50 @@ class BenchmarkInfoCMD(CLICommand):
                 if not self.args.all:
                     raise
 
+    @staticmethod
+    def _format_metric_list(metric_list):
+        """Format metric_list (mixed strings and dicts) into readable strings."""
+        formatted = []
+        for item in (metric_list or []):
+            if isinstance(item, str):
+                formatted.append(item)
+            elif isinstance(item, dict):
+                for metric_name, config in item.items():
+                    if isinstance(config, dict) and config:
+                        params = ', '.join(f'{k}={v}' for k, v in config.items())
+                        formatted.append(f'{metric_name} ({params})')
+                    else:
+                        formatted.append(str(metric_name))
+        return formatted
+
     def _list_benchmarks(self):
         """List all available benchmarks."""
+        from tabulate import tabulate
+
         from evalscope.api.registry import BENCHMARK_REGISTRY
+        from evalscope.utils.doc_utils.generate_dataset_md import get_category_from_adapter_class
 
-        print('\nAvailable Benchmarks:')
-        print('=' * 60)
+        # Collect flat rows: one row per benchmark
+        filter_tags = None
+        if hasattr(self.args, 'tag') and self.args.tag:
+            filter_tags = {t.lower() for t in self.args.tag}
 
-        # Group by tags
-        benchmarks_by_tag = {}
+        rows = []
         for name, meta in sorted(BENCHMARK_REGISTRY.items()):
-            for tag in meta.tags or ['Other']:
-                if tag not in benchmarks_by_tag:
-                    benchmarks_by_tag[tag] = []
-                benchmarks_by_tag[tag].append((name, meta.pretty_name or name))
+            tags = meta.tags or ['Other']
+            # Apply tag filter (case-insensitive)
+            if filter_tags:
+                if not any(t.lower() in filter_tags for t in tags):
+                    continue
+            category = get_category_from_adapter_class(meta.data_adapter)
+            tags_str = ', '.join(tags)
+            n_metrics = len(meta.metric_list) if meta.metric_list else 0
+            n_subsets = len(meta.subset_list) if meta.subset_list else 0
+            rows.append([name, meta.pretty_name or name, category, tags_str, n_metrics, n_subsets])
 
-        for tag in sorted(benchmarks_by_tag.keys()):
-            print(f'\n{tag}:')
-            for name, pretty_name in sorted(benchmarks_by_tag[tag]):
-                print(f'  - {name:30s} ({pretty_name})')
-
-        print(f'\nTotal: {len(BENCHMARK_REGISTRY)} benchmarks')
+        headers = ['Name', 'Pretty Name', 'Category', 'Tags', 'Metrics', 'Subsets']
+        print(tabulate(rows, headers=headers, tablefmt='simple'))
+        print(f'\nTotal: {len(rows)} benchmarks')
 
     def _update_benchmark_data(self, benchmark_names: list):
         """
@@ -278,34 +308,80 @@ class BenchmarkInfoCMD(CLICommand):
 
     def _display_info(self, adapter):
         """Display benchmark information."""
+        from evalscope.utils.doc_utils.generate_dataset_md import get_adapter_category
+
         meta = adapter._benchmark_meta
+        category = get_adapter_category(adapter)
 
         if self.args.format == 'json':
-            self._display_json(adapter)
+            self._display_json(adapter, category)
         elif self.args.format == 'markdown':
             self._display_markdown(adapter)
         else:
-            self._display_text(meta)
+            self._display_text(meta, category)
 
-    def _display_text(self, meta):
+    def _display_text(self, meta, category=None):
         """Display info in text format."""
         print(f'\n{"=" * 60}')
         print(f'Benchmark: {meta.pretty_name or meta.name}')
         print(f'{"=" * 60}')
         print(f'Name:          {meta.name}')
         print(f'Dataset ID:    {meta.dataset_id}')
+        print(f'Category:      {category or "N/A"}')
         print(f'Tags:          {", ".join(meta.tags) if meta.tags else "N/A"}')
+        print(f'Output Types:  {", ".join(meta.output_types) if meta.output_types else "N/A"}')
         print(f'Few-shot:      {meta.few_shot_num}-shot')
+        print(f'Aggregation:   {meta.aggregation or "mean"}')
+        print(f'Train Split:   {meta.train_split or "N/A"}')
         print(f'Eval Split:    {meta.eval_split or "N/A"}')
         print(f'Subsets:       {", ".join(meta.subset_list) if meta.subset_list else "N/A"}')
 
         if meta.paper_url:
             print(f'Paper:         {meta.paper_url}')
 
+        # Metrics
+        if meta.metric_list:
+            formatted_metrics = self._format_metric_list(meta.metric_list)
+            print(f'\nMetrics:')
+            for m in formatted_metrics:
+                print(f'  - {m}')
+
         if meta.description:
             print(f'\nDescription:')
             for line in meta.description.split('\n'):
                 print(f'  {line}')
+
+        # Prompt template (truncated for readability)
+        if meta.prompt_template:
+            print(f'\nPrompt Template:')
+            template = meta.prompt_template
+            if len(template) > 200:
+                template = template[:200] + '... [TRUNCATED]'
+            for line in template.split('\n'):
+                print(f'  {line}')
+
+        # System prompt (truncated for readability)
+        if meta.system_prompt:
+            print(f'\nSystem Prompt:')
+            prompt = meta.system_prompt
+            if len(prompt) > 200:
+                prompt = prompt[:200] + '... [TRUNCATED]'
+            for line in prompt.split('\n'):
+                print(f'  {line}')
+
+        # Configurable parameters (extra_params with full spec)
+        if meta.extra_params:
+            print(f'\nConfigurable Parameters:')
+            for param_name, param_spec in meta.extra_params.items():
+                print(f'  {param_name}:')
+                if meta._is_spec_entry(param_spec):
+                    print(f'    Type:        {param_spec.get("type", "N/A")}')
+                    print(f'    Default:     {param_spec.get("value", "N/A")}')
+                    print(f'    Description: {param_spec.get("description", "N/A")}')
+                    if param_spec.get('choices'):
+                        print(f'    Choices:     {param_spec["choices"]}')
+                else:
+                    print(f'    Value:       {param_spec}')
 
         if meta.data_statistics:
             stats = meta.data_statistics
@@ -316,7 +392,7 @@ class BenchmarkInfoCMD(CLICommand):
 
         print()
 
-    def _display_json(self, adapter):
+    def _display_json(self, adapter, category=None):
         """Display info in JSON format."""
         from evalscope.utils.doc_utils import load_benchmark_data
 
@@ -337,13 +413,21 @@ class BenchmarkInfoCMD(CLICommand):
             'name': meta.name,
             'pretty_name': meta.pretty_name,
             'dataset_id': meta.dataset_id,
+            'category': category,
             'tags': meta.tags,
+            'output_types': meta.output_types,
             'description': meta.description,
             'paper_url': meta.paper_url,
             'few_shot_num': meta.few_shot_num,
+            'train_split': meta.train_split,
             'eval_split': meta.eval_split,
             'subset_list': meta.subset_list,
             'metric_list': meta.metric_list,
+            'aggregation': meta.aggregation,
+            'prompt_template': meta.prompt_template,
+            'system_prompt': meta.system_prompt,
+            'extra_params': meta.extra_params,
+            'sandbox_config': meta.sandbox_config if meta.sandbox_config else None,
         }
         print(json.dumps(data, indent=2, ensure_ascii=False))
 

@@ -20,8 +20,8 @@ class TestModels(TestBenchmark):
     def setUp(self):
         """Setup common test configuration."""
         self.base_config = {
-            'model': 'Qwen3-0.6B',
-            'api_url': 'http://localhost:8801/',
+            'model': 'Qwen2.5-VL-7B-Instruct',
+            'api_url': 'http://localhost:8000/',
             'api_key': env.get('DASHSCOPE_API_KEY'),
             'eval_type': EvalType.ANTHROPIC_API,  # test anthropic api
             'eval_batch_size': 5,
@@ -33,7 +33,6 @@ class TestModels(TestBenchmark):
                 'stream': True
             },
             'judge_strategy': JudgeStrategy.AUTO,
-            'judge_worker_num': 5,
             'judge_model_args': {
                 'model_id': 'qwen3-235b-a22b',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -98,3 +97,8 @@ class TestModels(TestBenchmark):
             }
         }
         self._run_dataset_test('bfcl_v4', dataset_args=dataset_args)
+
+    def test_chartqa(self):
+        """Test ChartQA math reasoning dataset."""
+
+        self._run_dataset_test('chartqa')

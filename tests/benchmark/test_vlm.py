@@ -17,7 +17,7 @@ class TestVLMBenchmark(TestBenchmark):
     def setUp(self):
         """Setup common test configuration."""
         self.base_config = {
-            'model': 'qwen3-vl-235b-a22b-instruct',
+            'model': 'qwen-vl-plus',
             'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'api_key': env.get('DASHSCOPE_API_KEY'),
             'eval_type': EvalType.OPENAI_API,
@@ -30,7 +30,6 @@ class TestVLMBenchmark(TestBenchmark):
                 'parallel_tool_calls': True
             },
             'judge_strategy': JudgeStrategy.AUTO,
-            'judge_worker_num': 5,
             'judge_model_args': {
                 'model_id': 'qwen-plus',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -313,7 +312,7 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {
             # 'subset_list': ['default']
         }
-        self._run_dataset_test('cmmu', dataset_args=dataset_args, use_cache='outputs/20251112_163342', limit=10, rerun_review=True, judge_worker_num=1)
+        self._run_dataset_test('cmmu', dataset_args=dataset_args, use_cache='outputs/20251112_163342', limit=10, rerun_review=True, eval_batch_size=1)
 
     def test_a_okvqa_bench(self):
         dataset_args = {
@@ -391,3 +390,10 @@ class TestVLMBenchmark(TestBenchmark):
             }
         }
         self._run_dataset_test('refcoco', dataset_args=dataset_args, limit=10)
+
+    def test_mia_bench(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        # self._run_dataset_load_test('mia_bench')
+        self._run_dataset_test('mia_bench', dataset_args=dataset_args, limit=10)

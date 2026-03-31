@@ -30,7 +30,6 @@ class TestCodeBenchmark(TestBenchmark):
                 'stream': True,
             },
             'judge_strategy': JudgeStrategy.AUTO,
-            'judge_worker_num': 5,
             'judge_model_args': {
                 'model_id': 'qwen2.5-72b-instruct',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -133,7 +132,7 @@ class TestCodeBenchmark(TestBenchmark):
                 'mbpp-jl', # ok
         ],
         }
-        self._run_dataset_test('multiple_mbpp', dataset_args, limit=10, use_cache='outputs/20251210_150606', rerun_review=True, debug=False, judge_worker_num=2)
+        self._run_dataset_test('multiple_mbpp', dataset_args, limit=10, use_cache='outputs/20251210_150606', rerun_review=True, debug=False, eval_batch_size=2)
 
     def test_multipl_e_humaneval(self):
         """Test MultiPL-E HumanEval dataset."""
@@ -159,7 +158,7 @@ class TestCodeBenchmark(TestBenchmark):
                 'humaneval-jl', # ok
         ],
         }
-        self._run_dataset_test('multiple_humaneval', dataset_args, limit=10, use_cache='outputs/20251212_102548', rerun_review=True, debug=False, judge_worker_num=2)
+        self._run_dataset_test('multiple_humaneval', dataset_args, limit=10, use_cache='outputs/20251212_102548', rerun_review=True, debug=False, eval_batch_size=2)
 
     def test_terminal_bench_v2(self):
         """Test Terminal-Bench v2 dataset."""

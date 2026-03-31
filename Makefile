@@ -40,6 +40,9 @@ default: install
 #   make docs-translate BENCHMARK="gsm8k mmlu"  # Translate MULTIPLE benchmarks
 #   make docs-translate FORCE=1             # Force re-translate ALL benchmarks
 #   make docs-translate BENCHMARK=gsm8k FORCE=1  # Force re-translate ONE benchmark
+#   make docs-pipeline BENCHMARK=gsm8k     # update-stats + translate + generate for ONE benchmark
+#   make docs-pipeline BENCHMARK="gsm8k mmlu"  # update-stats + translate + generate for MULTIPLE
+#   make docs-pipeline BENCHMARK=gsm8k FORCE=1  # Force update-stats + translate + generate
 #   make docs-generate                      # Regenerate .md files from persisted JSON data
 #   make docs-en                            # Build English HTML docs only
 #   make docs-zh                            # Build Chinese HTML docs only
@@ -74,6 +77,12 @@ docs-update-stats:
 .PHONY: docs-translate
 docs-translate:
 	python -m evalscope.cli.cli benchmark-info $(_BENCH_ARGS) --translate $(_FORCE_FLAG) --workers $(WORKERS)
+
+.PHONY: docs-pipeline
+docs-pipeline:
+	python -m evalscope.cli.cli benchmark-info $(_BENCH_ARGS) --update --compute-stats $(_FORCE_FLAG) --workers $(WORKERS)
+	python -m evalscope.cli.cli benchmark-info $(_BENCH_ARGS) --translate $(_FORCE_FLAG) --workers $(WORKERS)
+	python -m evalscope.cli.cli benchmark-info --generate-docs
 
 .PHONY: docs-generate
 docs-generate:

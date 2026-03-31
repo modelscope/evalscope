@@ -49,7 +49,7 @@ evalscope eval \
 - `datasets` uses `data_collection` as the fixed mixed entry point.
 - `dataset_args.local_path` points to the mixed JSONL; optional `shuffle` controls sample traversal order.
 - Output structure: `outputs/<timestamp>/{logs,predictions,reviews,reports,configs}`.
-- Inference concurrency: `eval_batch_size`; review concurrency: `judge_worker_num`.
+- Inference concurrency: `eval_batch_size`.
 
 ## Metrics & Output
 

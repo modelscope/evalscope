@@ -106,7 +106,12 @@ class TaskConfig(BaseArgument):
     """Maximum number of samples to evaluate. Can be int (count) or float (fraction)."""
 
     eval_batch_size: int = 1
-    """Batch size for evaluation processing."""
+    """Batch size / concurrency for evaluation, applied across all stages:
+    - Inference: concurrent requests (service mode) or batch size (checkpoint mode).
+    - LLM-judge review (BatchReviewer Pass 1): number of concurrent threads.
+    - batch_calculate_metrics (BatchReviewer Pass 2): number of samples per batch window.
+    - Sandbox execution: worker pool size.
+    """
 
     # Cache and working directory arguments
     use_cache: Optional[str] = None
@@ -152,8 +157,8 @@ class TaskConfig(BaseArgument):
     judge_strategy: str = JudgeStrategy.AUTO
     """Strategy for LLM-based judgment (auto, single, pairwise)."""
 
-    judge_worker_num: int = 1
-    """Number of worker processes for parallel LLM judging."""
+    judge_worker_num: Optional[int] = None
+    """[Deprecated] Use `eval_batch_size` instead. Will be removed in v2.0.0."""
 
     judge_model_args: Optional[Dict] = field(default_factory=dict)
     """Additional arguments for the judge model configuration."""
@@ -179,6 +184,13 @@ class TaskConfig(BaseArgument):
 
         self.__init_eval_data_config()
         self.__init_eval_config()
+
+        # Handle deprecated judge_worker_num → eval_batch_size
+        if self.judge_worker_num is not None:
+            deprecated_warning(
+                logger, 'The `judge_worker_num` parameter is deprecated and will be removed in v2.0.0. '
+                'Use `eval_batch_size` instead.'
+            )
 
         # Set default generation_config and model_args
         self.__init_default_generation_config()
@@ -237,9 +249,6 @@ class TaskConfig(BaseArgument):
 
     def _get_default_generation_config(self) -> Dict:
         if self.model_task == ModelTask.IMAGE_GENERATION:
-            if self.eval_batch_size != 1:
-                logger.warning('For image generation task, we only support eval_batch_size=1 for now, changed to 1.')
-                self.eval_batch_size = 1
             return DEFAULT_IMAGE_GEN_CONFIG.copy()
 
         elif self.model_task == ModelTask.TEXT_GENERATION:

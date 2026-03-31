@@ -2,7 +2,7 @@
 
 本框架支持两种自定义多模态评测方式：
 
-- **通用问答题格式（General-VQA）**：基于 OpenAI 消息格式，支持多图片输入、系统提示和 base64 图片，适用于问答类多模态评测任务。
+- **通用问答题格式（General-VQA）**：基于 OpenAI 消息格式，支持多图片/音频输入、系统提示和 base64 编码，适用于问答类多模态评测任务。
 - **通用选择题格式（General-VMCQ）**：类似 MMMU 格式，问题文本中可包含图片占位符 `<image x>`，适用于选择题类多模态评测任务。
 
 ## 通用问答题格式（General-VQA）
@@ -28,6 +28,7 @@ messages	answer
 - `messages`: OpenAI 格式的消息数组，支持：
   - 文本内容：`{"type": "text", "text": "问题文本"}`
   - 图片 URL：`{"type": "image_url", "image_url": {"url": "路径或base64"}}`
+  - 音频输入：`{"type": "input_audio", "input_audio": {"data": "路径或base64", "format": "wav"}}`
   - 系统消息：`{"role": "system", "content": "系统提示"}`
 - `answer`: 参考答案（可选，用于计算 BLEU 和 Rouge 分数）
 
@@ -35,6 +36,11 @@ messages	answer
 - 本地路径：`"url": "custom_eval/multimodal/images/dog.jpg"`
 - HTTP URL：`"url": "https://example.com/image.jpg"`（需模型服务侧支持）
 - Base64 编码：`"url": "data:image/jpeg;base64,/9j/4AAQSkZJRg..."`
+
+**支持的音频格式**：
+- 本地路径：`"data": "custom_eval/multimodal/audio/sample.wav"`
+- Base64 编码：`"data": "data:audio/wav;base64,UklGRiQ..."`
+- 音频格式（`format` 字段）：支持 `"wav"` 和 `"mp3"`
 
 **多图片输入**
 
@@ -99,6 +105,54 @@ messages	answer
     }
   ],
   "answer": "A beautiful landscape"
+}
+```
+
+**音频输入**
+
+支持音频内容输入，使用 OpenAI `input_audio` 格式，`data` 字段支持本地路径或 base64 编码，`format` 支持 `wav` 和 `mp3`：
+
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "请描述这段音频的内容。"},
+        {
+          "type": "input_audio",
+          "input_audio": {
+            "data": "custom_eval/multimodal/audio/sample.wav",
+            "format": "wav"
+          }
+        }
+      ]
+    }
+  ],
+  "answer": "这是一段钢琴演奏的音乐。"
+}
+```
+
+也可以使用 base64 编码的音频数据：
+
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "这段音频里说了什么？"},
+        {
+          "type": "input_audio",
+          "input_audio": {
+            "data": "UklGRiQAAABXQVZFZm10IBAAAA...",
+            "format": "wav"
+          }
+        }
+      ]
+    }
+  ],
+  "answer": "你好，世界。"
 }
 ```
 
@@ -206,7 +260,7 @@ task_cfg = TaskConfig(
             'max_tokens': 4096
         },
     },
-    judge_worker_num=5,
+    eval_batch_size=5,
     judge_strategy=JudgeStrategy.LLM,
 )
 result = run_task(task_cfg=task_cfg)

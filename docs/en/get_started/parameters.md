@@ -145,7 +145,7 @@ The `--generation-config` parameter supports the following options (comma-separa
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `--eval-type` | `str` | Evaluation type<br>• `llm_ckpt`: Local model inference (transformers)<br>• `openai_api`: OpenAI-compatible API service<br>• `anthropic_api`: Anthropic Claude API service<br>• `text2image`: Text-to-image model (diffusers)<br>• `mock_llm`: Simulated inference (for verification) | `None` (auto-detect) |
-| `--eval-batch-size` | `int` | Evaluation batch size<br>For `eval-type=service`, means concurrent requests | `1` (service mode: `8`) |
+| `--eval-batch-size` | `int` | Evaluation batch size, applies to the following stages:<br>• Inference: concurrent requests (service mode) or batch size (checkpoint mode)<br>• LLM-judge review: number of concurrent threads<br>• `batch_calculate_metrics`: number of samples per batch window | `1` (service mode: `8`) |
 | `--eval-backend` | `str` | Evaluation backend<br>• `Native`: Default backend<br>• `OpenCompass`: LLM evaluation<br>• `VLMEvalKit`: Multimodal model evaluation<br>• `RAGEval`: RAG/Embedding/Reranker/CLIP evaluation<br>• `ThirdParty`: Special task evaluation | `Native` |
 | `--eval-config` | `str` | Configuration file path for non-Native backends | - |
 
@@ -160,7 +160,7 @@ LLM-as-a-Judge evaluation parameters using a judge model to determine correctnes
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `--judge-strategy` | `str` | Judge model strategy<br>• `auto`: Automatically decide based on dataset requirements<br>• `llm`: Always use judge model<br>• `rule`: Use rule-based judgment only<br>• `llm_recall`: Use judge model after rule-based judgment fails | `auto` |
-| `--judge-worker-num` | `int` | Judge model concurrency | `1` |
+| `--judge-worker-num` | `int` | **[Deprecated]** Use `--eval-batch-size` instead. Will be removed in v2.0.0. | `1` |
 | `--judge-model-args` | `str` | Judge model configuration (JSON string), see table below | - |
 | `--analysis-report` | `bool` | Whether to generate analysis report (language auto-detected) | `false` |
 

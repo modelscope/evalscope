@@ -130,8 +130,8 @@ class Arguments(BaseArgument):
     """Whether to disable timestamp in output directory."""
 
     # Prompt settings
-    max_prompt_length: int = 131072
-    """Maximum length of the prompt."""
+    max_prompt_length: int = sys.maxsize
+    """Maximum length of the prompt (in tokens if --tokenizer-path is set, otherwise in characters)."""
 
     min_prompt_length: int = 0
     """Minimum length of the prompt."""

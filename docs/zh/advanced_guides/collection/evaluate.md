@@ -49,7 +49,7 @@ evalscope eval \
 - datasets 固定使用 data_collection 作为混合入口。
 - dataset_args.local_path 指向混合 JSONL；可选 shuffle 控制样本遍历顺序。
 - 输出结构：outputs/<timestamp>/{logs,predictions,reviews,reports,configs}。
-- 推理并发：eval_batch_size；评审并发：judge_worker_num。
+- 推理并发：eval_batch_size。
 
 ## 指标与输出
 

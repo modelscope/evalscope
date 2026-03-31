@@ -134,6 +134,31 @@ def generate_index_table(
 # =============================================================================
 
 
+def get_category_from_adapter_class(adapter_cls) -> str:
+    """Determine benchmark category from an adapter class (without instantiation).
+
+    Args:
+        adapter_cls: DataAdapter subclass (not an instance)
+
+    Returns:
+        Category string: 'aigc', 'vlm', 'agent', 'llm', or 'unknown'
+    """
+    from evalscope.api.benchmark import AgentAdapter, ImageEditAdapter, Text2ImageAdapter, VisionLanguageAdapter
+
+    if adapter_cls is None:
+        return 'unknown'
+    try:
+        if issubclass(adapter_cls, (Text2ImageAdapter, ImageEditAdapter)):
+            return 'aigc'
+        elif issubclass(adapter_cls, VisionLanguageAdapter):
+            return 'vlm'
+        elif issubclass(adapter_cls, AgentAdapter):
+            return 'agent'
+    except TypeError:
+        return 'unknown'
+    return 'llm'
+
+
 def get_adapter_category(adapter) -> str:
     """Determine the category of an adapter based on its type.
 
@@ -143,16 +168,7 @@ def get_adapter_category(adapter) -> str:
     Returns:
         Category string: 'aigc', 'vlm', 'agent', or 'llm'
     """
-    from evalscope.api.benchmark import AgentAdapter, ImageEditAdapter, Text2ImageAdapter, VisionLanguageAdapter
-
-    if isinstance(adapter, (Text2ImageAdapter, ImageEditAdapter)):
-        return 'aigc'
-    elif isinstance(adapter, VisionLanguageAdapter):
-        return 'vlm'
-    elif isinstance(adapter, AgentAdapter):
-        return 'agent'
-    else:
-        return 'llm'
+    return get_category_from_adapter_class(adapter.__class__)
 
 
 def get_adapters():

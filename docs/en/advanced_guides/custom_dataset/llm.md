@@ -223,8 +223,8 @@ task_cfg = TaskConfig(
         # Determine if the model output is correct based on reference answers and model output
         'score_type': 'pattern',
     },
-    # judge concurrency number
-    judge_worker_num=5,
+    # eval concurrency number
+    eval_batch_size=5,
     # Use LLM for evaluation
     judge_strategy=JudgeStrategy.LLM,
 )
@@ -280,8 +280,8 @@ task_cfg = TaskConfig(
         # Direct scoring
         'score_type': 'numeric',
     },
-    # judge concurrency number
-    judge_worker_num=5,
+    # eval concurrency number
+    eval_batch_size=5,
     # Use LLM for evaluation
     judge_strategy=JudgeStrategy.LLM,
 )

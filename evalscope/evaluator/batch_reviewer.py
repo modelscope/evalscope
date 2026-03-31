@@ -35,7 +35,7 @@ class BatchReviewer:
     task state.
 
     Pass 2 – iterate over the preliminary scores in windows of
-    ``task_config.judge_worker_num`` and call
+    ``task_config.eval_batch_size`` and call
     ``benchmark.batch_calculate_metrics`` to refine them.  Each refined score
     is immediately persisted to the review cache.
 
@@ -43,7 +43,7 @@ class BatchReviewer:
         benchmark: The data adapter that provides ``batch_calculate_metrics``
             and ``save_metadata``.
         cache_manager: Used to persist each refined score to disk.
-        task_config: Supplies ``judge_worker_num`` for parallelism / batch
+        task_config: Supplies ``eval_batch_size`` for parallelism / batch
             window size.
     """
 
@@ -85,7 +85,7 @@ class BatchReviewer:
 
         logger.info(
             f'Batch reviewing {len(task_states)} task states for subset: {subset} '
-            f'(judge_worker_num={self.task_config.judge_worker_num})'
+            f'(eval_batch_size={self.task_config.eval_batch_size})'
         )
 
         # Pass 1 – parallel per-sample preliminary scoring
@@ -93,7 +93,7 @@ class BatchReviewer:
             task_states,
             review_fn,
             desc=f'Reviewing[{subset}]',
-            max_workers=self.task_config.judge_worker_num,
+            max_workers=self.task_config.eval_batch_size,
             log_interval=HEARTBEAT_INTERVAL_SEC,
         )
 
@@ -126,7 +126,7 @@ class BatchReviewer:
         Pass 2 of the batch review pipeline.
 
         Filters out ``None`` preliminary scores, then iterates in windows of
-        ``judge_worker_num`` calling ``benchmark.batch_calculate_metrics``.
+        ``eval_batch_size`` calling ``benchmark.batch_calculate_metrics``.
         Each refined score is handed to ``on_result`` for persistence.
 
         Args:
@@ -148,7 +148,7 @@ class BatchReviewer:
 
         all_reviewed_scores: List[SampleScore] = []
         total = len(valid_states)
-        batch_size = self.task_config.judge_worker_num
+        batch_size = self.task_config.eval_batch_size
 
         with tqdm(total=total, desc='Scoring[batch]', unit='sample', logger=logger) as pbar:
             for start in range(0, total, batch_size):

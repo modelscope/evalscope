@@ -137,10 +137,11 @@ def get_performance_log():
         task_id = request.args.get('task_id')
         start_line = request.args.get('start_line', 0, type=int)
 
-        content = get_log_content(task_id, os.path.join('perf', 'benchmark.log'), start_line)
+        try:
+            content = get_log_content(task_id, os.path.join('perf', 'benchmark.log'), start_line)
+        except FileNotFoundError:
+            content = ''
         return content, 200, {'Content-Type': 'text/plain; charset=utf-8'}
-    except FileNotFoundError as e:
-        return jsonify({'error': str(e)}), 404
     except Exception as e:
         logger.error(f'Failed to get performance log: {str(e)}')
         return jsonify({'error': str(e)}), 500
@@ -163,7 +164,7 @@ def get_performance_progress():
             progress = json.load(f)
         return jsonify(progress), 200
     except FileNotFoundError:
-        return jsonify({'error': f'Progress not found for task_id: {task_id}'}), 404
+        return jsonify({'percent': 0.0}), 200
     except Exception as e:
         logger.error(f'Failed to get progress for task {task_id}: {e}')
         return jsonify({'error': str(e)}), 500

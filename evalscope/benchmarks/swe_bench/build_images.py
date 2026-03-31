@@ -101,7 +101,7 @@ def build_images(
             log_interval=30,
             on_result=_on_result,
             on_error=_on_error,
-            filter_none_results=True,
+            skip_failed=True,
         )
         logger.info(f'Pulled {len(successfully_pulled)} images from Docker Hub')
 

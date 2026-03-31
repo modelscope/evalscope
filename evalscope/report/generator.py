@@ -97,6 +97,17 @@ class ReportGenerator:
 
         df = flatten_subset()
 
+        if df.empty:
+            raise ValueError(
+                f'No scores were collected for dataset "{dataset_name}". '
+                'Please check that samples are not all filtered out and that the aggregation step produces results.'
+            )
+        if 'metric_name' not in df.columns:
+            raise KeyError(
+                f'Column "metric_name" is missing from the score DataFrame for dataset "{dataset_name}". '
+                f'Available columns: {list(df.columns)}'
+            )
+
         metrics_list = []
         for metric_name, group_metric in df.groupby('metric_name', sort=False):
             categories = []
