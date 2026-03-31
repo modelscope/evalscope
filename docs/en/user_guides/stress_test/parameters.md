@@ -31,15 +31,20 @@ Execute `evalscope perf --help` to get a full parameter description.
 |-----------|------|-------------|---------|
 | `--parallel` | `list[int]` | Number of concurrent requests<br>Can input multiple values separated by spaces | `1` |
 | `--number` | `list[int]` | Total number of requests to be sent<br>Can input multiple values (must correspond one-to-one with `parallel`) | `1000` |
-| `--rate` | `float` | Number of requests generated per second<br>• `-1`: All requests generated at time 0 with no interval<br>• Other values: Use Poisson process to generate request intervals | `-1` |
+| `--rate` | `float` | Request generation rate (requests/second)<br>• `-1`: No rate limit; all requests are generated immediately and placed in the queue<br>• `> 0`: Requests are generated following a Poisson arrival model — the inter-arrival interval follows an exponential distribution with mean `1/rate`, resulting in an **average** of `rate` requests per second | `-1` |
 | `--log-every-n-query` | `int` | Log every N queries | `10` |
 | `--stream` | `bool` | Whether to use SSE stream output<br>Must be enabled to measure TTFT (Time to First Token) metric | `True` |
 | `--sleep-interval` | `int` | Sleep time between each performance test (seconds)<br>Helps avoid overloading the server | `5` |
 
 ```{tip}
-In the implementation of this tool, request generation and sending are separate:
-- The `--rate` parameter controls the number of requests generated per second, which are placed in a request queue
-- The `--parallel` parameter controls the number of workers sending requests, with each worker retrieving requests from the queue and sending them, only proceeding to the next request after receiving a response to the previous one
+`--rate` and `--parallel` control two independent phases:
+
+- **Generation phase** (controlled by `--rate`): Requests are generated and placed into a queue at the specified rate.
+  - `rate=-1`: No rate limit; all requests are enqueued immediately.
+  - `rate=R`: Inter-arrival intervals follow an exponential distribution with mean `1/R` seconds (Poisson arrival model), resulting in an average of `R` requests enqueued per second.
+- **Sending phase** (controlled by `--parallel`): At most `parallel` requests are in-flight simultaneously (sent but not yet responded to); each worker fetches the next request from the queue only after receiving a response to the previous one.
+
+The two parameters are independent: `--rate` determines how quickly requests enter the queue, while `--parallel` determines how many requests are actively being sent at any given time.
 ```
 ## SLA Settings
 
