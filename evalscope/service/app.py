@@ -1,8 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 """Flask service for EvalScope evaluation and performance testing."""
+import multiprocessing
 from datetime import datetime
 from flask import Flask, jsonify
-import multiprocessing
 
 from evalscope.utils.logger import get_logger
 
