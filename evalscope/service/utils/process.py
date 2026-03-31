@@ -57,29 +57,57 @@ def run_in_subprocess(func, *args, **kwargs):
     """Run *func* in a child process and return its result (blocks caller).
 
     Returns the function's return value on success; raises on error.
+
+    Design note — why polling instead of p.join() then queue.get():
+    ``multiprocessing.Queue`` is backed by an OS pipe whose buffer is typically
+    only 64 KB.  If the child calls ``queue.put()`` with a payload larger than
+    that buffer it will *block* until the parent drains the pipe.  But if the
+    parent is sitting in ``p.join()`` waiting for the child to exit first, both
+    sides wait on each other forever — a classic deadlock.
     """
     result_queue = multiprocessing.Queue()
     p = multiprocessing.Process(target=_process_worker, args=(func, result_queue, *args), kwargs=kwargs)
     p.start()
+
+    res = None
+    # Poll for the result while the child is alive so we continuously drain
+    # the underlying pipe and never let queue.put() block in the child.
+    while p.is_alive():
+        try:
+            res = result_queue.get(timeout=0.1)
+            break  # Got the result; let the child finish normally.
+        except queue.Empty:
+            continue  # Child still running — keep draining.
+
+    # Wait for the child to clean up after we have the result (or it crashed).
     p.join()
 
+    if res is not None:
+        if res['status'] == 'error':
+            stderr_info = res.get('stderr', '')
+            stderr_section = f'\n[stderr]\n{stderr_info}' if stderr_info.strip() else ''
+            raise RuntimeError(f"Subprocess error: {res['error']}\n{res.get('traceback', '')}{stderr_section}")
+        return res['result']
+
+    # res is still None: the child exited without putting anything in the queue
+    # (OOM, SIGKILL, import error, segfault, etc.).
+    # Do one final non-blocking check in case the item arrived between the last
+    # loop iteration and p.join() returning.
     try:
-        # Use a short timeout instead of queue.empty() to avoid race conditions
-        # where the child has put data but the buffer hasn't flushed yet.
-        res = result_queue.get(timeout=5)
+        res = result_queue.get_nowait()
         if res['status'] == 'error':
             stderr_info = res.get('stderr', '')
             stderr_section = f'\n[stderr]\n{stderr_info}' if stderr_info.strip() else ''
             raise RuntimeError(f"Subprocess error: {res['error']}\n{res.get('traceback', '')}{stderr_section}")
         return res['result']
     except queue.Empty:
-        # Queue was truly empty — the child crashed before putting anything
-        # (OOM, SIGKILL, import error, segfault, etc.).
-        raise RuntimeError(
-            f'Subprocess terminated unexpectedly (exit code {p.exitcode}). '
-            'The child process may have crashed due to OOM, a missing import, '
-            'GPU initialisation failure, or a signal (e.g. SIGKILL).'
-        ) from None
+        pass
+
+    raise RuntimeError(
+        f'Subprocess terminated unexpectedly (exit code {p.exitcode}). '
+        'The child process may have crashed due to OOM, a missing import, '
+        'GPU initialisation failure, or a signal (e.g. SIGKILL).'
+    ) from None
 
 
 # ---------------------------------------------------------------------------
