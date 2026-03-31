@@ -383,7 +383,10 @@ class TestNativeBenchmark(TestBenchmark):
 
     def test_tool_bench(self):
         """Test ToolBench dataset."""
-        self._run_dataset_test('tool_bench')
+        dataset_args = {
+            # 'force_redownload': True
+        }
+        self._run_dataset_test('tool_bench', dataset_args)
 
     def test_bfcl_v3(self):
         """Test BFCL dataset."""
