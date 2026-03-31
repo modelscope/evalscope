@@ -163,15 +163,15 @@ class RemoteDataLoader(DataLoader):
                 dataset = dataset.select(range(self.limit))
 
         # convert to list
-        dataset = dataset.to_list()
+        dataset_list = list(dataset)
 
         # repeat k times
         if self.repeats > 1:
-            dataset = [copy.deepcopy(item) for item in dataset for _ in range(self.repeats)]
+            dataset_list = [copy.deepcopy(item) for item in dataset_list for _ in range(self.repeats)]
 
         # return the dataset
         memory_dataset = MemoryDataset(
-            samples=data_to_samples(data=dataset, data_to_sample=data_to_sample),
+            samples=data_to_samples(data=dataset_list, data_to_sample=data_to_sample),
             name=Path(path).stem if Path(path).exists() else path,
             location=path,
         )

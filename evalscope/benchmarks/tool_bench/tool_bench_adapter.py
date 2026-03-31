@@ -67,7 +67,7 @@ class ToolBenchAdapter(AgentAdapter):
         # Process messages and remove the name field, convert function messages
         processed_messages = []
         for message in messages:
-            msg_dict = json.loads(message) if isinstance(message, str) else message.copy()
+            msg_dict = message.copy()
             if 'name' in msg_dict:
                 del msg_dict['name']
             if 'role' in msg_dict:
