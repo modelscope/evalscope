@@ -2,7 +2,7 @@
 
 This framework supports two custom multimodal evaluation methods:
 
-- **General-VQA Format**: Based on OpenAI message format, supports multi-image input, system prompts, and base64 images, suitable for Q&A-based multimodal evaluation tasks.
+- **General-VQA Format**: Based on OpenAI message format, supports multi-image/audio input, system prompts, and base64 encoding, suitable for Q&A-based multimodal evaluation tasks.
 - **General-VMCQ Format**: Similar to MMMU format, question text can contain image placeholders `<image x>`, suitable for multiple-choice multimodal evaluation tasks.
 
 ## General-VQA Format
@@ -28,6 +28,7 @@ messages	answer
 - `messages`: OpenAI format message array, supporting:
   - Text content: `{"type": "text", "text": "question text"}`
   - Image URL: `{"type": "image_url", "image_url": {"url": "path or base64"}}`
+  - Audio input: `{"type": "input_audio", "input_audio": {"data": "path or base64", "format": "wav"}}`
   - System message: `{"role": "system", "content": "system prompt"}`
 - `answer`: Reference answer (optional, used to calculate BLEU and Rouge scores)
 
@@ -35,6 +36,11 @@ messages	answer
 - Local path: `"url": "custom_eval/multimodal/images/dog.jpg"`
 - HTTP URL: `"url": "https://example.com/image.jpg"` (requires model service support)
 - Base64 encoding: `"url": "data:image/jpeg;base64,/9j/4AAQSkZJRg..."`
+
+**Supported Audio Formats**:
+- Local path: `"data": "custom_eval/multimodal/audio/sample.wav"`
+- Base64 encoding: `"data": "data:audio/wav;base64,UklGRiQ..."`
+- Audio format (`format` field): supports `"wav"` and `"mp3"`
 
 **Multi-image Input**
 
@@ -99,6 +105,54 @@ Supports directly using base64 encoded images:
     }
   ],
   "answer": "A beautiful landscape"
+}
+```
+
+**Audio Input**
+
+Supports audio content input using OpenAI `input_audio` format. The `data` field accepts either a local file path or base64-encoded data. The `format` field supports `"wav"` and `"mp3"`:
+
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "Describe the content of this audio clip."},
+        {
+          "type": "input_audio",
+          "input_audio": {
+            "data": "custom_eval/multimodal/audio/sample.wav",
+            "format": "wav"
+          }
+        }
+      ]
+    }
+  ],
+  "answer": "A piano music performance."
+}
+```
+
+You can also use base64-encoded audio data:
+
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "What is being said in this audio?"},
+        {
+          "type": "input_audio",
+          "input_audio": {
+            "data": "UklGRiQAAABXQVZFZm10IBAAAA...",
+            "format": "wav"
+          }
+        }
+      ]
+    }
+  ],
+  "answer": "Hello, world."
 }
 ```
 
