@@ -107,12 +107,10 @@ class OpenAICompatibleAPI(ModelAPI):
             choices = self.chat_choices_from_completion(completion, tools)
             model_output = model_output_from_openai(completion, choices)
 
+            print("completioncompletioncompletion",completion)
             # save reasoning content into review.jsonl
-            reasoning_content = ""
-            try:
-                reasoning_content = completion.choices[0].message.reasoning_content
-            except Exception as e:
-                print("extract reasoning_content error:", str(e))
+            message = completion.choices[0].message
+            reasoning_content = getattr(message, "reasoning", "") or getattr(message, "reasoning_content", "")
             model_output.metadata = {"reason": reasoning_content}
 
             return model_output
