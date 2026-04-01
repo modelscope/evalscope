@@ -246,7 +246,7 @@ class Arguments(BaseArgument):
             _stripped = self.url.rstrip('/')
             _expected_suffix = _OPENAI_API_ENDPOINT_MAP[self.api]
             _known_endpoints = ('chat/completions', 'completions', 'embeddings', 'reranks')
-            if not any(_stripped.endswith(ep) for ep in _known_endpoints):
+            if not any(_stripped.endswith('/' + ep) for ep in _known_endpoints):
                 self.url = _stripped + '/' + _expected_suffix
                 logger.warning(
                     f'URL "{_stripped}" has no endpoint path, auto-appended "/{_expected_suffix}". '
