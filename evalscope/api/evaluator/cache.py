@@ -196,15 +196,13 @@ class CacheManager:
             The saved review result object
         """
         cache_file = self.get_review_cache_path(subset)
+        output = getattr(task_state, "output", None)
         # Convert score and state to serializable review result
         review_result = ReviewResult.from_score_state(sample_score, task_state, save_metadata)
+        # Save reasoning content into review result
+        review_result.reasoning = (output.metadata or {}).get("reason", "") if output else ""
         # Serialize to dictionary
         review_result_dict = review_result.model_dump()
-
-        # save reasoning content into review file
-        output = getattr(task_state, "output", None)
-        review_result_dict["reasoning"] = (output.metadata or {}).get("reason", "") if output else ""
-
         # Append to JSONL cache file
         dump_jsonl_data(data_list=review_result_dict, jsonl_file=cache_file, dump_mode=DumpMode.APPEND)
         return review_result
@@ -338,6 +336,9 @@ class ReviewResult(BaseModel):
     sample_score: SampleScore
     """The computed evaluation score for this sample."""
 
+    reasoning: str = ''
+    """Model reasoning/thinking process for this sample."""
+    
     @classmethod
     def from_score_state(
         cls, sample_score: SampleScore, state: TaskState, save_metadata: bool = True
