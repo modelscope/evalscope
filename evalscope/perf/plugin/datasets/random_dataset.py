@@ -48,7 +48,12 @@ class RandomDatasetPlugin(DatasetPluginBase):
             template_len = self.get_template_len()
             min_prompt_length = self.query_parameters.min_prompt_length - template_len
             max_prompt_length = self.query_parameters.max_prompt_length - template_len + 1
-            assert min_prompt_length >= 0, f'min_prompt_length should be greater than or equal to the template length {template_len}.'  # noqa: E501
+            if min_prompt_length < 0:
+                logger.warning(
+                    f'min_prompt_length is less than the template length {template_len}, '
+                    'setting min_prompt_length to 0.'
+                )
+                min_prompt_length = 0
         else:
             min_prompt_length = self.query_parameters.min_prompt_length
             max_prompt_length = self.query_parameters.max_prompt_length + 1

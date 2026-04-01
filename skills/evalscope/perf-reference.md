@@ -111,7 +111,7 @@ Operators: `<=`, `>=`, `<`, `>`, `==`.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `--min-prompt-length` | int | 0 | Minimum input prompt length. Unit is **tokens** when `--tokenizer-path` is provided, otherwise **characters** (`len(prompt)`) |
-| `--max-prompt-length` | int | `sys.maxsize` (no cap) | Maximum input prompt length. Unit is **tokens** when `--tokenizer-path` is provided, otherwise **characters** (`len(prompt)`) |
+| `--max-prompt-length` | int | 131072 (no cap) | Maximum input prompt length. Unit is **tokens** when `--tokenizer-path` is provided, otherwise **characters** (`len(prompt)`) |
 | `--prefix-length` | int | 0 | Fixed prefix length for random prompts |
 
 ## Vision-Language Settings (for `random_vl` dataset)

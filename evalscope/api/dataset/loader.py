@@ -87,6 +87,7 @@ class RemoteDataLoader(DataLoader):
     def load(self) -> Dataset:
         import datasets
         from datasets import DownloadMode as HFDownloadMode
+        from datasets.features import Audio, Image
         from modelscope import MsDataset
         from modelscope.utils.constant import DownloadMode as MSDownloadMode
 
@@ -148,6 +149,13 @@ class RemoteDataLoader(DataLoader):
             # Only save to disk if not loading from local path
             if self.data_source != HubType.LOCAL:
                 dataset.save_to_disk(dataset_cache_dir)
+
+        # Disable auto-decoding for Image/Audio to keep raw bytes format (compat with datasets >= 3.0)
+        for col, feat in list(dataset.features.items()):
+            if isinstance(feat, Image):
+                dataset = dataset.cast_column(col, Image(decode=False))
+            elif isinstance(feat, Audio):
+                dataset = dataset.cast_column(col, Audio(decode=False))
 
         # shuffle if requested
         if self.shuffle:

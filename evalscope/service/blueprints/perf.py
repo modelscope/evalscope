@@ -86,6 +86,7 @@ def run_performance_test():
     perf_args.outputs_dir = os.path.join(OUTPUT_DIR, task_id)
     perf_args.name = 'perf'
     perf_args.enable_progress_tracker = True
+    perf_args.no_test_connection = True
 
     logger.info(f'[{task_id}] Running performance benchmark for model: {perf_args.model}')
     logger.info(f'[{task_id}] URL: {perf_args.url}')
