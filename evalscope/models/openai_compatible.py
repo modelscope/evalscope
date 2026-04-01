@@ -107,10 +107,13 @@ class OpenAICompatibleAPI(ModelAPI):
             choices = self.chat_choices_from_completion(completion, tools)
             model_output = model_output_from_openai(completion, choices)
 
-            # save reasoning content into review file
-            message = completion.choices[0].message
-            reasoning_content = getattr(message, "reasoning", "") or getattr(message, "reasoning_content", "")
-            model_output.metadata = {"reason": reasoning_content}
+            # save reasoning content into review result
+            if completion.choices:
+                message = completion.choices[0].message
+                reasoning_content = getattr(message, "reasoning", None) or getattr(message, "reasoning_content", None) or ""
+                if model_output.metadata is None:
+                    model_output.metadata = {}
+                model_output.metadata["reason"] = reasoning_content
 
             return model_output
 
