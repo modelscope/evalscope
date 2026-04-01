@@ -7,6 +7,17 @@ from typing import Any, Dict, List, Optional, Union
 
 from evalscope.constants import DEFAULT_WORK_DIR, VisualizerType
 from evalscope.utils import BaseArgument
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
+
+_OPENAI_API_ENDPOINT_MAP = {
+    'openai': 'chat/completions',
+    'openai_embedding': 'embeddings',
+    'embedding': 'embeddings',
+    'openai_rerank': 'reranks',
+    'rerank': 'reranks',
+}
 
 
 @dataclass
@@ -229,6 +240,18 @@ class Arguments(BaseArgument):
                 self.url = f'http://127.0.0.1:{self.port}/v1/completions'
             else:
                 self.url = f'http://127.0.0.1:{self.port}/v1/chat/completions'
+
+        # Auto-append endpoint path for openai-compatible APIs when URL has no known endpoint suffix
+        if self.api in _OPENAI_API_ENDPOINT_MAP:
+            _stripped = self.url.rstrip('/')
+            _expected_suffix = _OPENAI_API_ENDPOINT_MAP[self.api]
+            _known_endpoints = ('chat/completions', 'completions', 'embeddings', 'reranks')
+            if not any(_stripped.endswith('/' + ep) for ep in _known_endpoints):
+                self.url = _stripped + '/' + _expected_suffix
+                logger.warning(
+                    f'URL "{_stripped}" has no endpoint path, auto-appended "/{_expected_suffix}". '
+                    'If this is not intended, please specify the full URL explicitly.'
+                )
 
         # Set the apply_chat_template flag based on the URL
         if self.apply_chat_template is None:
