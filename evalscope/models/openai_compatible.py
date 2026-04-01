@@ -110,10 +110,10 @@ class OpenAICompatibleAPI(ModelAPI):
             # save reasoning content into review result
             if completion.choices:
                 message = completion.choices[0].message
-                reasoning_content = getattr(message, "reasoning", None) or getattr(message, "reasoning_content", None) or ""
+                reasoning = getattr(message, "reasoning_content", None) or getattr(message, "reasoning", None) or ""
                 if model_output.metadata is None:
                     model_output.metadata = {}
-                model_output.metadata["reason"] = reasoning_content
+                model_output.metadata["reason"] = reasoning
 
             return model_output
 
