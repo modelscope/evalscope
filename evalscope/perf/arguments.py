@@ -1,7 +1,6 @@
 import argparse
 import json
 import os
-import sys
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
@@ -130,7 +129,7 @@ class Arguments(BaseArgument):
     """Whether to disable timestamp in output directory."""
 
     # Prompt settings
-    max_prompt_length: int = sys.maxsize
+    max_prompt_length: int = 131072
     """Maximum length of the prompt (in tokens if --tokenizer-path is set, otherwise in characters)."""
 
     min_prompt_length: int = 0
@@ -341,7 +340,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--enable-progress-tracker', action='store_true', default=False, help='Enable progress tracker')
 
     # Prompt settings
-    parser.add_argument('--max-prompt-length', type=int, default=sys.maxsize, help='Maximum input prompt length')
+    parser.add_argument('--max-prompt-length', type=int, default=131072, help='Maximum input prompt length')
     parser.add_argument('--min-prompt-length', type=int, default=0, help='Minimum input prompt length')
     parser.add_argument('--prefix-length', type=int, default=0, help='The prefix length')
     parser.add_argument('--prompt', type=str, required=False, default=None, help='Specified the request prompt')

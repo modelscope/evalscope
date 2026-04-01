@@ -123,9 +123,11 @@ class DefaultApiPlugin(ApiPluginBase):
 
                                     if choices := data.get('choices'):
                                         if data.get('object') == 'text_completion':
-                                            content = choices[0].get('text')
+                                            content = choices[0].get('text') or ''
                                         else:
-                                            content = choices[0]['delta'].get('content')
+                                            delta = choices[0].get('delta', {})
+                                            content = (delta.get('content')
+                                                       or '') + (delta.get('reasoning_content') or '')
                                         # First token
                                         if ttft == 0.0:
                                             ttft = timestamp - st
@@ -135,7 +137,7 @@ class DefaultApiPlugin(ApiPluginBase):
                                         else:
                                             output.inter_chunk_latency.append(timestamp - most_recent_timestamp)
 
-                                        generated_text += content or ''
+                                        generated_text += content
                                         output.response_messages.append(data)
                                     elif usage := data.get('usage'):
                                         output.prompt_tokens = usage.get('prompt_tokens')
@@ -171,7 +173,7 @@ class DefaultApiPlugin(ApiPluginBase):
                                 # Chat Completions format
                                 msg = first.get('message') or {}
                                 if isinstance(msg, dict) and msg.get('content') is not None:
-                                    text = msg.get('content') or ''
+                                    text = (msg.get('content') or '') + (msg.get('reasoning_content') or '')
                                 else:
                                     # Legacy Completions format
                                     text = first.get('text') or ''

@@ -188,28 +188,24 @@ def transform_doc_links(content, source_path, source_dir, target_base, lang_suff
         if href.startswith('http://') or href.startswith('https://') or href.startswith('/'):
             return match.group(0)
 
-        # Split off fragment anchor
-        fragment = ''
-        path_part = href
+        # Strip fragment anchor (#) — keep only the .md path part
         if '#' in href:
-            idx = href.index('#')
-            fragment = href[idx:]
-            path_part = href[:idx]
+            href = href[:href.index('#')]
 
         # Only transform links that end with .md
-        if not path_part.endswith('.md'):
+        if not href.endswith('.md'):
             return match.group(0)
 
         # Resolve the absolute source path for the linked file
-        abs_link = os.path.normpath(os.path.join(source_file_dir, path_part))
+        abs_link = os.path.normpath(os.path.join(source_file_dir, href))
 
         # Must reside within source_dir
         rel_from_source = os.path.relpath(abs_link, source_dir)
         if rel_from_source.startswith('..'):
             return match.group(0)
 
-        # Compute the target path for the linked file (no language suffix in links)
-        linked_target = compute_target_path_next(abs_link, source_dir, target_base, '')
+        # Compute the target path for the linked file (with language suffix)
+        linked_target = compute_target_path_next(abs_link, source_dir, target_base, lang_suffix)
 
         # Compute relative path from the current target file's directory
         rel_link = os.path.relpath(linked_target, target_file_dir)
@@ -217,7 +213,7 @@ def transform_doc_links(content, source_path, source_dir, target_base, lang_suff
         if not rel_link.startswith('.'):
             rel_link = './' + rel_link
 
-        return f'[{text}]({rel_link}{fragment})'
+        return f'[{text}]({rel_link})'
 
     # Match optional leading '!' followed by [text](href)
     pattern = re.compile(r'(!?)\[([^\]]*)\]\(([^)]*)\)')
