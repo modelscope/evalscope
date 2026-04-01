@@ -196,11 +196,8 @@ class CacheManager:
             The saved review result object
         """
         cache_file = self.get_review_cache_path(subset)
-        output = task_state.output
         # Convert score and state to serializable review result
         review_result = ReviewResult.from_score_state(sample_score, task_state, save_metadata)
-        # Save reasoning content into review result
-        review_result.reasoning = (output.metadata or {}).get("reason", "")
         # Serialize to dictionary
         review_result_dict = review_result.model_dump()
         # Append to JSONL cache file
@@ -357,11 +354,15 @@ class ReviewResult(BaseModel):
             sample_score = copy.deepcopy(sample_score)
             sample_score.sample_metadata = None
 
+        # Save reasoning content into review result
+        reasoning = (state.output.metadata or {}).get("reason") or ""
+
         return cls(
             index=state.sample_id,
             input=state.input_markdown,
             target=state.target,
             sample_score=sample_score,
+            reasoning=reasoning,
         )
 
     def to_sample_score(self) -> SampleScore:
