@@ -105,7 +105,17 @@ class OpenAICompatibleAPI(ModelAPI):
 
             # return output and call
             choices = self.chat_choices_from_completion(completion, tools)
-            return model_output_from_openai(completion, choices)
+            model_output = model_output_from_openai(completion, choices)
+
+            # save reasoning content into review.jsonl
+            reasoning_content = ""
+            try:
+                reasoning_content = completion.choices[0].message.reasoning_content
+            except Exception as e:
+                print("extract reasoning_content error:", str(e))
+            model_output.metadata = {"reason": reasoning_content}
+
+            return model_output
 
         except (BadRequestError, UnprocessableEntityError, PermissionDeniedError) as ex:
             return self.handle_bad_request(ex)
