@@ -201,7 +201,7 @@ class CacheManager:
         # Serialize to dictionary
         review_result_dict = review_result.model_dump()
 
-        # save reasoning content into review.jsonl
+        # save reasoning content into review file
         output = getattr(task_state, "output", None)
         review_result_dict["reasoning"] = (output.metadata or {}).get("reason", "") if output else ""
 
