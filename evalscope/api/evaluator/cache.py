@@ -200,6 +200,11 @@ class CacheManager:
         review_result = ReviewResult.from_score_state(sample_score, task_state, save_metadata)
         # Serialize to dictionary
         review_result_dict = review_result.model_dump()
+
+        # save reasoning content into review file
+        output = getattr(task_state, "output", None)
+        review_result_dict["reasoning"] = (output.metadata or {}).get("reason", "") if output else ""
+
         # Append to JSONL cache file
         dump_jsonl_data(data_list=review_result_dict, jsonl_file=cache_file, dump_mode=DumpMode.APPEND)
         return review_result
