@@ -8,31 +8,17 @@ from evalscope.config import TaskConfig
 from evalscope.constants import EvalType
 from evalscope.report.combinator import get_data_frame, get_report_list
 from evalscope.utils.logger import get_logger
-
-try:
-    from ..utils import (
-        DEFAULT_MULTIMODAL_BENCHMARKS,
-        DEFAULT_TEXT_BENCHMARKS,
-        OUTPUT_DIR,
-        build_benchmark_entry,
-        create_log_file,
-        get_log_content,
-        run_eval_wrapper,
-        run_in_subprocess,
-        validate_task_id,
-    )
-except ImportError:
-    from utils import (  # type: ignore[no-redef]
-        DEFAULT_MULTIMODAL_BENCHMARKS,
-        DEFAULT_TEXT_BENCHMARKS,
-        OUTPUT_DIR,
-        build_benchmark_entry,
-        create_log_file,
-        get_log_content,
-        run_eval_wrapper,
-        run_in_subprocess,
-        validate_task_id,
-    )
+from ..utils import (
+    DEFAULT_MULTIMODAL_BENCHMARKS,
+    DEFAULT_TEXT_BENCHMARKS,
+    OUTPUT_DIR,
+    build_benchmark_entry,
+    create_log_file,
+    get_log_content,
+    run_eval_wrapper,
+    run_in_subprocess,
+    validate_task_id,
+)
 
 logger = get_logger()
 

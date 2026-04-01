@@ -6,25 +6,7 @@ from tabulate import tabulate
 from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.perf.utils.rich_display import analyze_results
 from evalscope.utils.logger import get_logger
-
-try:
-    from ..utils import (
-        OUTPUT_DIR,
-        create_log_file,
-        get_log_content,
-        run_in_subprocess,
-        run_perf_wrapper,
-        validate_task_id,
-    )
-except ImportError:
-    from utils import (  # type: ignore[no-redef]
-        OUTPUT_DIR,
-        create_log_file,
-        get_log_content,
-        run_in_subprocess,
-        run_perf_wrapper,
-        validate_task_id,
-    )
+from ..utils import OUTPUT_DIR, create_log_file, get_log_content, run_in_subprocess, run_perf_wrapper, validate_task_id
 
 logger = get_logger()
 
