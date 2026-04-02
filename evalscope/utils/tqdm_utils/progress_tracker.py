@@ -77,7 +77,9 @@ class ProgressTracker:
         self._pipeline = pipeline
         self._write_interval = write_interval
         self._last_write_time: float = 0.0
-        self._total_count: Optional[int] = total_count
+        if total_count is None or total_count <= 0:
+            raise ValueError(f'`total_count` must be > 0, got {total_count}.')
+        self._total_count: int = total_count
         self._write(force=True)
 
     # ------------------------------------------------------------------
@@ -158,17 +160,11 @@ class ProgressTracker:
     # Internal
     # ------------------------------------------------------------------
 
-    def _get_processed_count(self) -> Optional[int]:
-        """Sum the ``current`` values of all work stages for the active pipeline.
-
-        Returns ``None`` when no matching stages are found or when
-        ``total_count`` was not provided (so the field can be omitted).
-        """
-        if self._total_count is None:
-            return None
+    def _get_processed_count(self) -> int:
+        """Sum the ``current`` values of all work stages for the active pipeline."""
         stage_name = self._PROCESSED_STAGE_NAMES.get(self._pipeline)
         if stage_name is None:
-            return None
+            return 0
         return sum(s['current'] for s in self._stages if s['name'] == stage_name)
 
     def _build_tree(self, stages: List[dict]) -> Optional[dict]:
@@ -220,7 +216,7 @@ class ProgressTracker:
         self._last_write_time = now
         processed = self._get_processed_count()
         percent: Optional[float] = None
-        if self._total_count is not None and self._total_count > 0 and processed is not None:
+        if self._total_count > 0:
             percent = round(processed / self._total_count * 100, 2)
         state = {
             'status': self._status,
@@ -252,7 +248,7 @@ def make_tracker(
         with make_tracker(task_config.enable_progress_tracker, outputs.outputs_dir, pipeline='eval', total_count=5000) as tracker:
             ...
     """
-    if enabled:
+    if enabled and total_count is not None and total_count > 0:
         return ProgressTracker(
             work_dir=work_dir, pipeline=pipeline, write_interval=write_interval, total_count=total_count
         )

@@ -231,6 +231,10 @@ class TaskConfig(BaseArgument):
         # Post process limit
         if self.limit is not None:
             self.limit = parse_int_or_float(self.limit)
+            if self.limit < 0:
+                raise ValueError(f'`limit` must be >= 0 or None, got {self.limit}.')
+            if self.limit == 0:
+                self.limit = None
 
     def __init_default_generation_config(self):
         # 1. Set defaults if empty

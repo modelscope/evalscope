@@ -41,7 +41,7 @@ IFBench is a benchmark designed to evaluate how reliably AI models follow novel,
 
 - Default configuration uses **0-shot** evaluation
 - Metrics: prompt_level_strict, inst_level_strict, prompt_level_loose, inst_level_loose
-- Requires emoji, syllapy, and spacy packages
+- Requires emoji, syllapy packages
 - Evaluates both strict and loose constraint satisfaction
 """,  # noqa: E501
         tags=[Tags.INSTRUCTION_FOLLOWING],
@@ -64,8 +64,8 @@ class IFBenchAdapter(DefaultDataAdapter):
         super().__init__(**kwargs)
 
         check_import(
-            module_name=['emoji', 'syllapy', 'spacy'],
-            package=['emoji', 'syllapy', 'spacy'],
+            module_name=['emoji', 'syllapy'],
+            package=['emoji', 'syllapy'],
             raise_error=True,
             feature_name=self.pretty_name
         )

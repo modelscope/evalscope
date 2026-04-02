@@ -3,7 +3,10 @@ import os
 import zipfile
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from evalscope.config import TaskConfig
 
 from evalscope.utils.logger import get_logger
 from evalscope.utils.url_utils import download_url
@@ -164,3 +167,59 @@ def save_benchmark_data(data: Dict[str, Any], benchmark_name: Optional[str] = No
             json_path = BENCHMARK_META_DIR / f'{name}.json'
             with open(json_path, 'w', encoding='utf-8') as f:
                 json.dump(benchmark_data, f, ensure_ascii=False, indent=2)
+
+
+def compute_eval_total_count(task_config: 'TaskConfig') -> Optional[int]:
+    """Estimate the total number of evaluation samples for a task configuration.
+
+    Reads per-subset ``sample_count`` values from the bundled ``_meta`` JSON
+    files and applies ``limit`` (per-subset cap) and ``repeats`` (multiplier).
+    Returns ``None`` if the count cannot be determined (e.g. missing meta file
+    or unknown dataset).
+
+    Calculation per dataset::
+
+        effective = min(sample_count, limit)  # apply limit first
+        contribution = effective * repeats    # then multiply by repeats
+
+    """
+    total = 0
+
+    for dataset_name in task_config.datasets:
+        entry = load_benchmark_data(dataset_name).get(dataset_name, {})
+        if not entry.get('statistics'):
+            logger.debug(f'No meta file found for dataset "{dataset_name}", skipping total_count estimate.')
+            return None
+
+        subset_stats: List[dict] = entry.get('statistics', {}).get('subset_stats', [])
+        if not subset_stats:
+            logger.debug(f'No subset_stats in meta for "{dataset_name}", skipping total_count estimate.')
+            return None
+
+        subset_count_map = {s['name']: s['sample_count'] for s in subset_stats}
+
+        # Determine which subsets are active (user override or full list)
+        dataset_args = task_config.dataset_args.get(dataset_name, {})
+        active_subsets = dataset_args.get('subset_list', None)
+        if active_subsets is None:
+            active_subsets = entry.get('meta', {}).get('subset_list', list(subset_count_map.keys()))
+
+        limit = task_config.limit
+        repeats = task_config.repeats
+
+        for subset in active_subsets:
+            sample_count = subset_count_map.get(subset)
+            if sample_count is None:
+                continue
+            # Apply limit per subset first
+            if limit is not None:
+                if isinstance(limit, float):
+                    effective = int(sample_count * limit)
+                else:
+                    effective = min(sample_count, int(limit))
+            else:
+                effective = sample_count
+            # Then multiply by repeats
+            total += effective * repeats
+
+    return total if total > 0 else None
