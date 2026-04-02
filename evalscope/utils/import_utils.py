@@ -59,7 +59,7 @@ def check_import(
     for i, mod_name in enumerate(module_names):
         try:
             importlib.import_module(mod_name)
-        except ImportError:
+        except Exception:
             missing_modules.append(mod_name)
             if i < len(packages) and packages[i]:
                 missing_packages.append(packages[i])
