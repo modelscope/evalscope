@@ -157,6 +157,7 @@ def resume_evaluation():
         return jsonify({'error': f'Output directory not found for task_id: {task_id}'}), 404
 
     task_config = _build_task_config(data)
+    task_config.work_dir = work_dir
     task_config.use_cache = work_dir
     task_config.rerun_review = True
 

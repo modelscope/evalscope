@@ -114,7 +114,11 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
 
         cur_run_name = f'parallel_{args.parallel}_number_{args.number}'
         with tqdm(
-            desc=f'Processing[{cur_run_name}]', total=args.number, logger=logger, log_interval=HEARTBEAT_INTERVAL_SEC
+            desc=f'Processing[{cur_run_name}]',
+            total=args.number,
+            logger=logger,
+            log_interval=HEARTBEAT_INTERVAL_SEC,
+            track_progress=True,
         ) as pbar:
             while not (data_process_completed_event.is_set() and benchmark_data_queue.empty()):
                 try:
