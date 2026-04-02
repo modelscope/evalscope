@@ -20,20 +20,13 @@ import io
 import nltk
 import random
 import re
-import spacy
 import string
 import syllapy
 import unicodedata
 from collections import Counter
-from spacy.cli import download
 
 from evalscope.utils.resource_utils import check_nltk_data
 from . import instructions_util
-
-try:
-    spacy.load('en_core_web_sm')
-except OSError:
-    download('en_core_web_sm')
 
 # The number of keywords.
 _NUM_KEYWORDS = 2

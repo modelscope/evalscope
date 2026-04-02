@@ -242,7 +242,8 @@ def run_in_threads_with_progress(
             mininterval=1,
             dynamic_ncols=True,
             logger=logger,
-            log_interval=log_interval
+            log_interval=log_interval,
+            track_progress=True,
         ) as pbar:
             # Submit tasks in a sliding window of size max_workers so that an early
             # failure does not leave many already-submitted futures still running.

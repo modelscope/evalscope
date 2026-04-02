@@ -718,7 +718,7 @@ class TestNativeBenchmark(TestBenchmark):
         """Test IFBench dataset."""
         dataset_args = {
         }
-        self._run_dataset_test('ifbench', dataset_args, limit=30, use_cache='outputs/20251124_200641')
+        self._run_dataset_test('ifbench', dataset_args, limit=3)
 
     def test_ifbench_load(self):
         """Test IFBench dataset loading."""

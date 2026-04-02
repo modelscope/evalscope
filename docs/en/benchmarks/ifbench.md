@@ -24,7 +24,7 @@ IFBench is a benchmark designed to evaluate how reliably AI models follow novel,
 
 - Default configuration uses **0-shot** evaluation
 - Metrics: prompt_level_strict, inst_level_strict, prompt_level_loose, inst_level_loose
-- Requires emoji, syllapy, and spacy packages
+- Requires emoji, syllapy packages
 - Evaluates both strict and loose constraint satisfaction
 
 
