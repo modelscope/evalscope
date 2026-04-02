@@ -112,8 +112,8 @@ def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData)
 
 
 def get_output_path(args: Arguments) -> str:
-    # Filter illegal characters from the name/model_id part only
-    name = re.sub(r'[<>:"|?*]', '_', args.name or args.model_id)
+    # Filter illegal filename characters and path separators to prevent path traversal
+    name = re.sub(r'[<>:"|?*\\/\0]', '_', args.name or args.model_id)
     if args.no_timestamp:
         output_path = os.path.join(args.outputs_dir, name)
     else:
