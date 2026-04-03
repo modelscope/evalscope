@@ -195,7 +195,10 @@ body {
   z-index: 300;
 }
 .brand-logo {
+  display: block;
   line-height: 0;
+  text-decoration: none;
+  color: inherit;
 }
 .brand-logo svg {
   height: 20px;
