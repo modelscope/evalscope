@@ -4,7 +4,6 @@ from word2number import w2n
 
 from evalscope.api.metric import Metric
 from evalscope.api.registry import register_metric
-from evalscope.utils.multi_choices import answer_character
 
 def _fix_fracs(string):
     substrs = string.split("\\frac")
@@ -224,8 +223,9 @@ def _fallback_answer(pred_str: str) -> str:
     numbers = re.findall(r'-?\d+(?:\.\d+)?', pred_str)
     if numbers:
         return numbers[-1]
+    return ""
 
-def extract_answer(prediction, task_state=None, multiple_choice: bool=False):
+def extract_answer(prediction):
     if not prediction or not isinstance(prediction, str):
         return str(prediction).strip()
     if "boxed" in prediction:
@@ -257,7 +257,6 @@ def math_equal(
     reference,
     include_percentage: bool = True,
     is_close: bool = True,
-    timeout: bool = False,
     rel_tol: float = 1e-2,
 ) -> bool:
     if prediction is None or reference is None:
@@ -293,9 +292,28 @@ def math_equal(
 class NumericAcc(Metric):
 
     def apply(self, predictions, references):
+        """The metric considers three forms of the actual value: the value itself, its 100x multiple,
+        and its 1/100 fraction. The prediction is considered correct if it matches any of these
+        three references within a relative tolerance of 1%.
+
+        The relative error is computed as:
+            error = abs(predicted - reference) / max(abs(predicted), abs(reference))
+        where the reference is the actual value, 100 * actual, or actual / 100.
+
+        This behavior is designed for metrics where percentage representations (e.g., 0.5 vs 50)
+        are treated as equivalent, allowing a 1% numerical tolerance.
+
+        Args:
+            predictions: list, The predicted numeric value.
+            references: list, The ground truth numeric value.
+
+        Returns:
+            List[Float]
+            1.0 if the prediction matches any of the three reference forms within 1% relative
+            tolerance, otherwise 0.0
+        """
         results = []
         for prediction, reference in zip(predictions, references):
-            # print(f"pred: {prediction}, reference: {reference}")
             pred_answer = prediction
             ref_answer = reference
             results.append(float(math_equal(pred_answer, ref_answer)))
