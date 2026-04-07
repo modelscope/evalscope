@@ -45,12 +45,17 @@ def _build_result_table(work_dir: str) -> str:
         if not report_list:
             return ''
         df = get_data_frame(report_list, flatten_metrics=True, flatten_categories=True)
+        _CAT_LEVEL_NAMES = ['类别', '子类别', '细分类别']
         new_cols = {}
         for col in df.columns:
             if col in _COLUMN_ZH:
                 new_cols[col] = _COLUMN_ZH[col]
             elif col.startswith('Cat.'):
-                new_cols[col] = col.replace('Cat.', '类别')
+                try:
+                    level = int(col[4:])
+                    new_cols[col] = _CAT_LEVEL_NAMES[level] if level < len(_CAT_LEVEL_NAMES) else f'类别{level}'
+                except ValueError:
+                    new_cols[col] = col.replace('Cat.', '类别')
         df = df.rename(columns=new_cols)
         return tabulate(df, headers=df.columns, tablefmt='pipe', showindex=False)
     except Exception as e:
