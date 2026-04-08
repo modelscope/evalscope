@@ -1,5 +1,6 @@
 import json
 import os
+import pandas as pd
 from flask import Blueprint, current_app, jsonify, request, send_file
 from tabulate import tabulate
 from typing import Any, Dict, List
@@ -57,7 +58,11 @@ def _build_result_table(work_dir: str) -> str:
                 except ValueError:
                     new_cols[col] = col.replace('Cat.', '类别')
         df = df.rename(columns=new_cols)
-        return tabulate(df, headers=df.columns, tablefmt='pipe', showindex=False)
+        score_col = _COLUMN_ZH.get('Score', 'Score')
+        if score_col in df.columns:
+            df[score_col] = pd.to_numeric(df[score_col],
+                                          errors='coerce').map(lambda x: f'{x:.4f}' if pd.notna(x) else '')
+        return tabulate(df, headers=df.columns, tablefmt='pipe', showindex=False, disable_numparse=True)
     except Exception as e:
         logger.warning(f'Failed to build result table: {e}')
         return ''
