@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.10.0-cuda13.0-cudnn9-runtime
+FROM vllm/vllm-openai:v0.18.0
 
 RUN sed -i 's@//.*archive.ubuntu.com@//mirrors.ustc.edu.cn@g' /etc/apt/sources.list \
     && sed -i 's@//.*security.ubuntu.com@//mirrors.ustc.edu.cn@g' /etc/apt/sources.list \
@@ -7,15 +7,10 @@ RUN sed -i 's@//.*archive.ubuntu.com@//mirrors.ustc.edu.cn@g' /etc/apt/sources.l
 
 RUN pip config set global.index-url https://mirrors.ustc.edu.cn/pypi/simple
 
-RUN git clone https://kkgithub.com/vllm-project/vllm.git /tmp/vllm \
-    && cd /tmp/vllm \
-    && python use_existing_torch.py \
-    && pip install -r requirements/build.txt \
-    && pip install --no-build-isolation -e . \
-    && rm -rf /tmp/vllm
-
 WORKDIR /app
 COPY dockerfiles/start-vllm.sh /app/
 RUN chmod +x /app/start-vllm.sh
+
+ENTRYPOINT []
 
 CMD ["/app/start-vllm.sh"]

@@ -4,7 +4,6 @@ export NCCL_P2P_DISABLE=1
 
 vllm serve "${MODEL_PATH}" \
     --served-model-name "${MODEL_NAME}" \
-    --task "generate" \
     --dtype "${VLLM_DTYPE}" \
     --trust-remote-code \
     --max-model-len "${VLLM_MAX_MODEL_LEN}" \
