@@ -2,7 +2,7 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.metric import Score
 from evalscope.api.registry import get_metric, register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import Tags, HubType
 from evalscope.utils.logger import get_logger
 
 from .utils import strip_string, extract_answer
@@ -46,6 +46,7 @@ Your final answer must be  numeric-only, and it's unit should be {unit}.
 class SciBenchAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.dataset_hub=HubType.HUGGINGFACE
         self.reformat_subset = True
 
     def record_to_sample(self, record) -> Sample:
