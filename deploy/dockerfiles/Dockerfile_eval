@@ -7,7 +7,6 @@ RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debi
 
 WORKDIR /app
 
-# RUN git clone -b main --single-branch https://kkgithub.com/BrevityD/evalscope.git
 COPY . /app/
 
 RUN pip config set global.index-url https://mirrors.ustc.edu.cn/pypi/simple \

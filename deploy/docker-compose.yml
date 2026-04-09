@@ -2,10 +2,10 @@ version: '3.8'
 
 services:
   vllm-service:
-    # build: 
-    #   context: .
-    #   dockerfile: dockerfiles/Dockerfile_vllm
-    image: deploy-vllm-service:latest
+    build: 
+      context: .
+      dockerfile: dockerfiles/Dockerfile_vllm
+    # image: deploy-vllm-service:latest
     container_name: vllm-service
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
@@ -26,6 +26,7 @@ services:
       - eval-network
     devices:
       - "nvidia.com/gpu=1"
+      - "nvidia.com/gpu=2"
 
   eval-service:
     build:
@@ -41,6 +42,7 @@ services:
       - EVAL_DATASETS=${EVAL_DATASETS}
       - EVAL_TYPE=${EVAL_TYPE}
       - EVAL_LIMIT=${EVAL_LIMIT}
+      - EVAL_USE_CACHE=${EVAL_USE_CACHE}
       - EVAL_GENERATION_CONFIG=${EVAL_GENERATION_CONFIG}
       - EVAL_DATASET_ARGS=${EVAL_DATASET_ARGS}
     networks:
