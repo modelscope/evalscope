@@ -26,14 +26,13 @@ services:
       - eval-network
     devices:
       - "nvidia.com/gpu=1"
-      - "nvidia.com/gpu=2"
 
   eval-service:
     build:
       context: ~/evalscope
       dockerfile: deploy/dockerfiles/Dockerfile_eval
     # image: deploy-eval-service:latest
-    container_name: eval-service-offline
+    container_name: eval-service
     environment:
       - EVAL_MODEL_NAME=${MODEL_NAME}
       - EVAL_API_URL=${EVAL_API_URL}
@@ -45,6 +44,8 @@ services:
       - EVAL_USE_CACHE=${EVAL_USE_CACHE}
       - EVAL_GENERATION_CONFIG=${EVAL_GENERATION_CONFIG}
       - EVAL_DATASET_ARGS=${EVAL_DATASET_ARGS}
+    volumes:
+      - ./outputs:/app/outputs
     networks:
       - eval-network
 

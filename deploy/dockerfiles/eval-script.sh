@@ -9,11 +9,9 @@ until curl -f "${EVAL_API_URL}/health" > /dev/null 2>&1; do
             break
         fi
     fi
-    echo "waiting for vllm..."
+    echo "waiting for vllm at ${EVAL_API_URL}..."
     sleep 5
 done
-
-echo "start evaluation..."
 
 CMD="evalscope eval \
  --model \"${EVAL_MODEL_NAME}\" \
@@ -21,12 +19,14 @@ CMD="evalscope eval \
  --api-key \"${EVAL_API_KEY}\" \
  --datasets ${EVAL_DATASETS} \
  --eval-type \"${EVAL_TYPE}\" \
- --generation-config \"${EVAL_GENERATION_CONFIG}\" \
- --eval-batch-size \"${EVAL_BATCH_SIZE}\" \
- --dataset-args \"${EVAL_DATASET_ARGS}\" \
+ --generation-config '${EVAL_GENERATION_CONFIG}' \
+ --eval-batch-size ${EVAL_BATCH_SIZE} \
+ --dataset-args '${EVAL_DATASET_ARGS}' \
  --ignore-errors"
 
-[ -n "${EVAL_LIMIT}" ] && CMD="$CMD --limit \"{$EVAL_LIMIT}\""
-[ -n "${EVAL_USE_CACHE}" ] && CMD="$CMD --use-cache \"${EVAL_USE_CACHE}\""
+[ -n "${EVAL_LIMIT}" ] && CMD="$CMD --limit ${EVAL_LIMIT}"
+[ -n "${EVAL_USE_CACHE}" ] && CMD="$CMD --use-cache ${EVAL_USE_CACHE}"
+
+echo "start evaluation with command ${CMD}..."
 
 eval $CMD

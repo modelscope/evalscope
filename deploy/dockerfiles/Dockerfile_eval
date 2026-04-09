@@ -10,7 +10,8 @@ WORKDIR /app
 COPY . /app/
 
 RUN pip config set global.index-url https://mirrors.ustc.edu.cn/pypi/simple \
-    && pip install -e .
+    && pip install -e . \
+    && pip install oss2
 
 COPY ./deploy/dockerfiles/eval-script.sh /app/
 RUN chmod +x /app/eval-script.sh
