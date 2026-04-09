@@ -1,4 +1,3 @@
-import itertools
 import os
 from collections import deque
 
@@ -40,43 +39,52 @@ def get_log_content(task_id: str, sub_path: str, start_line: int = None, page: i
     Args:
         task_id: The task identifier.
         sub_path: The log file path relative to task output directory.
-        start_line: If None, read last `page` lines from end; otherwise read from this line.
-        page: Number of lines to read (default 500).
+        start_line: If None, read last `page` lines from end; otherwise read from this line (must be >= 0).
+        page: Number of lines to read (must be >= 1, default 500).
 
     Returns:
         dict with keys:
-            - text: log content, lines joined by '\n'
+            - text: log content (lines kept as-is, preserving original newlines)
             - head_line: 0-based start line number of returned content
             - tail_line: 0-based end line number (exclusive)
             - total_lines: total line count of the log file
     """
     validate_task_id(task_id)
 
+    # Validate parameters
+    if page < 1:
+        raise ValueError('page must be >= 1')
+    if start_line is not None and start_line < 0:
+        raise ValueError('start_line must be >= 0')
+
     log_file = os.path.join(OUTPUT_DIR, task_id, sub_path)
     if not os.path.exists(log_file):
         return {'text': '', 'head_line': 0, 'tail_line': 0, 'total_lines': 0}
 
     with open(log_file, 'r', encoding='utf-8') as f:
-        # Fast line count: count newlines in chunks
+        # Single-pass: count lines and collect requested lines
+        # This ensures total_lines matches Python's line iteration semantics
         total_lines = 0
-        while True:
-            chunk = f.read(65536)  # 64KB chunks
-            if not chunk:
-                break
-            total_lines += chunk.count('\n')
+        lines = deque(maxlen=page) if start_line is None else []
 
-        f.seek(0)
+        for line in f:
+            total_lines += 1
+            if start_line is None:
+                # deque with maxlen automatically keeps last N lines (O(1))
+                lines.append(line)
+            else:
+                if total_lines > start_line and len(lines) < page:
+                    lines.append(line)
 
+        # Compute head_line based on actual total_lines
         if start_line is None:
-            # Read last `page` lines from end
-            lines = list(deque(f, maxlen=page))
             head_line = max(0, total_lines - page)
+            lines = list(lines)
+        elif start_line >= total_lines:
+            return {'text': '', 'head_line': total_lines, 'tail_line': total_lines, 'total_lines': total_lines}
         else:
-            # Read from start_line
-            if start_line >= total_lines:
-                return {'text': '', 'head_line': start_line, 'tail_line': total_lines, 'total_lines': total_lines}
-            lines = list(itertools.islice(f, start_line, start_line + page))
             head_line = start_line
 
     tail_line = head_line + len(lines)
-    return {'text': '\n'.join(lines), 'head_line': head_line, 'tail_line': tail_line, 'total_lines': total_lines}
+    # Use ''.join to preserve original newlines in each line
+    return {'text': ''.join(lines), 'head_line': head_line, 'tail_line': tail_line, 'total_lines': total_lines}
