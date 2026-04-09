@@ -225,21 +225,26 @@ def get_evaluation_report():
 
 @bp_eval.route('/log', methods=['GET'])
 def get_evaluation_log():
-    """Get evaluation log content.
+    """Get evaluation log content with pagination.
 
     Query params:
         task_id    (str): the task identifier
-        start_line (int): skip this many leading lines (default 0)
-    """
-    try:
-        task_id = request.args.get('task_id')
-        start_line = request.args.get('start_line', 0, type=int)
+        start_line (int, optional): if not provided, read last `page` lines from end
+        page       (int): number of lines to read (default 500)
 
-        try:
-            content = get_log_content(task_id, os.path.join('logs', 'eval_log.log'), start_line)
-        except FileNotFoundError:
-            content = ''
-        return content, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+    Returns:
+        dict with text, head_line, tail_line, total_lines
+    """
+    task_id = request.args.get('task_id')
+    if not task_id:
+        return jsonify({'error': 'task_id is required'}), 400
+
+    start_line = request.args.get('start_line', type=int)
+    page = request.args.get('page', 500, type=int)
+
+    try:
+        result = get_log_content(task_id, os.path.join('logs', 'eval_log.log'), start_line, page)
+        return jsonify(result), 200
     except Exception as e:
         logger.error(f'Failed to get evaluation log: {str(e)}')
         return jsonify({'error': str(e)}), 500
