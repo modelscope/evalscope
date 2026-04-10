@@ -101,8 +101,27 @@ SLA_CRITERIA = {
 }
 
 
+# Unicode equivalents for SLA operators
+UNICODE_OPERATORS = {
+    '≤': '<=',
+    '≥': '>=',
+    '≧': '>=',
+    ' ': '',  # thin space that may appear
+}
+
+
+def _normalize_operator(value_str: str) -> str:
+    """Normalize Unicode operators to ASCII equivalents."""
+    for unicode_op, ascii_op in UNICODE_OPERATORS.items():
+        if unicode_op in value_str:
+            value_str = value_str.replace(unicode_op, ascii_op)
+    return value_str
+
+
 def create_criterion(value_str: str) -> SLACriterionBase:
     value_str = str(value_str).strip()
+    value_str = _normalize_operator(value_str)
+
     if value_str == 'max':
         return SLAMax(target=0.0)
     if value_str == 'min':
@@ -115,3 +134,5 @@ def create_criterion(value_str: str) -> SLACriterionBase:
                 return SLA_CRITERIA[op_key](val)
             except ValueError:
                 raise ValueError(f'Invalid target value in SLA param: {value_str}')
+
+    raise ValueError(f'Invalid SLA param format: {value_str}. Expected format: "<=0.02", ">=0.5", etc.')
