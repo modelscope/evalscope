@@ -100,7 +100,6 @@ SLA_CRITERIA = {
     '>': SLAGreaterThan,
 }
 
-
 # Unicode equivalents for SLA operators
 UNICODE_OPERATORS = {
     '≤': '<=',
@@ -111,7 +110,8 @@ UNICODE_OPERATORS = {
 
 
 def _normalize_operator(value_str: str) -> str:
-    """Normalize Unicode operators to ASCII equivalents."""
+    """Normalize Unicode operators to ASCII equivalents and strip whitespace."""
+    value_str = value_str.strip()
     for unicode_op, ascii_op in UNICODE_OPERATORS.items():
         if unicode_op in value_str:
             value_str = value_str.replace(unicode_op, ascii_op)
@@ -119,8 +119,7 @@ def _normalize_operator(value_str: str) -> str:
 
 
 def create_criterion(value_str: str) -> SLACriterionBase:
-    value_str = str(value_str).strip()
-    value_str = _normalize_operator(value_str)
+    value_str = _normalize_operator(str(value_str))
 
     if value_str == 'max':
         return SLAMax(target=0.0)
