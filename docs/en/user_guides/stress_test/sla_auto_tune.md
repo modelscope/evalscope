@@ -16,10 +16,11 @@ The SLA (Service Level Agreement) auto-tuning feature allows users to define ser
 | `--sla-auto-tune` | `bool` | Whether to enable SLA auto-tuning mode | `False` |
 | `--sla-variable` | `str` | Variable for auto-tuning<br>Options: `parallel` (concurrency), `rate` (request rate) | `parallel` |
 | `--sla-params` | `str` | SLA constraint conditions, JSON string, supports multiple constraint groups (AND/OR logic), see [description below](#sla-params-logic) | `None` |
-| `--sla-upper-bound` | `int` | Maximum concurrency/rate limit during auto-tuning | `65536` |
-| `--sla-lower-bound` | `int` | Minimum concurrency/rate limit during auto-tuning | `1` |
+| `--sla-upper-bound` | `int` | Upper bound of the tuned SLA variable search range | `65536` |
+| `--sla-lower-bound` | `int` | Lower bound of the tuned SLA variable search range | `1` |
+| `--sla-fixed-parallel` | `int` | Fixed parallel workers used when `--sla-variable=rate`; defaults to `--sla-upper-bound` for backward compatibility | `None` |
 | `--sla-num-runs` | `int` | Number of repeated runs per test point (average taken to reduce fluctuation) | `3` |
-| `--sla-number-multiplier` | `float` | Multiplier of total requests relative to concurrency/rate per test, i.e. `number = round(parallel × N)`; defaults to `2` when not set | `None` |
+| `--sla-number-multiplier` | `float` | Multiplier of total requests relative to the tuned variable (concurrency or rate), i.e. `number = round(variable × N)`; defaults to `2` when not set | `None` |
 
 ## Supported Metrics and Operators
 
@@ -95,6 +96,8 @@ Meaning: Find the concurrency corresponding to maximum TPS (token throughput).
 5. **Report Output**: After testing, output a summary of the tuning process and final results.
 
 > **Note**: If the request success rate during testing is below 100%, that test point will be considered failed (violating SLA).
+>
+> When `--sla-variable=rate`, use `--sla-fixed-parallel` to explicitly control the fixed concurrency. If not set, the implementation falls back to `--sla-upper-bound` for backward compatibility.
 
 ## Usage Examples
 
@@ -223,6 +226,7 @@ evalscope perf \
  --sla-params '[{"p99_ttft": "<0.05"}, {"p99_ttft": "<0.01"}]' \
  --rate 2 \
  --sla-num-runs 1 \
+ --sla-fixed-parallel 40 \
  --sla-lower-bound 10 \
  --sla-upper-bound 40
 ```
