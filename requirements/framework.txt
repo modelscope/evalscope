@@ -1,6 +1,7 @@
 colorlog
 docstring_parser
 dotenv
+editdistance
 jinja2
 jsonlines
 jsonschema
