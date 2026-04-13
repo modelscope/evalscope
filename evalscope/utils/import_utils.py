@@ -22,17 +22,21 @@ def check_import(
     raise_warning: bool = True,
     raise_error: bool = False,
     feature_name: Optional[str] = 'this feature',
+    extra: Optional[str] = None,
 ) -> bool:
     """Check if a module or list of modules can be imported.
 
     Args:
         module_name (Union[str, list[str]]): The name(s) of the module(s) to check.
         package (Union[str, list[str]], optional): The package(s) to install if the module(s) are not found.
-            Defaults to None.
+            Used in the error message when ``extra`` is not provided. Defaults to None.
         raise_error (bool, optional): Whether to raise an error if any module is not found. Defaults to False.
         raise_warning (bool, optional): Whether to log a warning if any module is not found. Defaults to True.
         feature_name (str, optional): The feature name that requires the module(s). Used in the warning/error message.
             Defaults to 'this feature'.
+        extra (str, optional): The evalscope optional extra name (benchmark_id). When provided, the install hint
+            will be ``pip install 'evalscope[{extra}]'`` instead of listing individual packages.
+            Defaults to None.
 
     Returns:
         bool: True if all modules can be imported, False otherwise.
@@ -70,7 +74,9 @@ def check_import(
         else:
             error_msg = f'The following modules are not found: {", ".join(f"`{mod}`" for mod in missing_modules)}.'
 
-        if missing_packages:
+        if extra:
+            error_msg += f" Please run `pip install 'evalscope[{extra}]'` to use {feature_name}."
+        elif missing_packages:
             if len(missing_packages) == 1:
                 error_msg += f' Please run `pip install {missing_packages[0]}` to use {feature_name}.'
             else:

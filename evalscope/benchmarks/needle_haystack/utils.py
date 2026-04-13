@@ -1,9 +1,6 @@
-import matplotlib.pyplot as plt
 import os
 import re
-import seaborn as sns
 import string
-from matplotlib.colors import LinearSegmentedColormap
 
 
 def normalize_answer(s):
@@ -38,6 +35,10 @@ def parse_score(score_str: str) -> int:
 
 
 def draw_score_chat(pivot_table, outpath, show_score=False):
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    from matplotlib.colors import LinearSegmentedColormap
+
     # Create a custom colormap. Go to https://coolors.co/ and pick cool colors
     cmap = LinearSegmentedColormap.from_list('custom_cmap', ['#F0496E', '#EBB839', '#0CD79F'])
 

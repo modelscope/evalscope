@@ -73,8 +73,8 @@ class OCRBenchV2Adapter(VisionLanguageAdapter):
         self.reformat_subset = True
 
         check_import(
-            module_name=['apted', 'distance', 'Levenshtein', 'lxml', 'Polygon', 'zss'],
-            package=['apted', 'distance', 'Levenshtein', 'lxml', 'Polygon3', 'zss'],
+            module_name=['apted', 'distance', 'Levenshtein', 'lxml', 'Polygon', 'zss', 'jieba', 'nltk', 'editdistance'],
+            extra='ocr_bench',
             raise_error=True,
             feature_name='OCRBench-v2 benchmark'
         )

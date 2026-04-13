@@ -146,9 +146,9 @@ Whether you want to evaluate the general capabilities of models, conduct multi-m
 
 Welcome to join our community to communicate with other developers and get help.
 
-[Discord Group](https://discord.com/invite/D27yfEFVz5)              |  WeChat Group | DingTalk Group
+[Discord Group](https://discord.gg/xc66bMxc4h)              |  WeChat Group | DingTalk Group
 :-------------------------:|:-------------------------:|:-------------------------:
-<img src="docs/asset/discord_qr.jpg" width="160" height="160">  |  <img src="docs/asset/wechat.png" width="160" height="160"> | <img src="docs/asset/dingding.png" width="160" height="160">
+<img src="docs/asset/discord_qr.png" width="160" height="160">  |  <img src="docs/asset/wechat.png" width="160" height="160"> | <img src="docs/asset/dingding.png" width="160" height="160">
 
 
 

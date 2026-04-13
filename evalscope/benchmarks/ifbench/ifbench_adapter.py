@@ -64,10 +64,7 @@ class IFBenchAdapter(DefaultDataAdapter):
         super().__init__(**kwargs)
 
         check_import(
-            module_name=['emoji', 'syllapy'],
-            package=['emoji', 'syllapy'],
-            raise_error=True,
-            feature_name=self.pretty_name
+            module_name=['emoji', 'syllapy', 'nltk'], extra='ifbench', raise_error=True, feature_name=self.pretty_name
         )
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

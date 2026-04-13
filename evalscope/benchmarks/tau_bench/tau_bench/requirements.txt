@@ -1,0 +1,3 @@
+# Git-only dependency: cannot be installed via pip install evalscope[tau_bench]
+# Install manually:
+git+https://github.com/sierra-research/tau-bench

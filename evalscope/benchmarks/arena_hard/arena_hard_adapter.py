@@ -7,6 +7,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -63,6 +64,7 @@ class ArenaHardAdapter(DefaultDataAdapter):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        check_import(module_name=['sklearn'], extra='arena_hard', raise_error=True, feature_name=self.pretty_name)
 
         self._use_llm_judge = True  # Use LLM as a judge by default
 

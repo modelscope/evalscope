@@ -7,6 +7,7 @@ from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -66,6 +67,9 @@ class IFEvalAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        check_import(
+            module_name=['langdetect', 'nltk'], extra='ifeval', raise_error=True, feature_name=self.pretty_name
+        )
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """

@@ -201,7 +201,7 @@ class WMT24PPAdapter(DefaultDataAdapter):
 
         # Replace dict-style check with list[dict]-aware check
         if self.has_metric('comet'):
-            check_import('comet', 'unbabel-comet', raise_error=True, feature_name='COMETScore Metric')
+            check_import('comet', extra='wmt', raise_error=True, feature_name='COMETScore Metric')
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """

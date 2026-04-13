@@ -12,7 +12,6 @@
 
 import ast
 import distance
-import editdistance
 import json
 import Levenshtein
 import numpy as np
@@ -537,6 +536,7 @@ def get_anls(s1, s2):
         pass
     if s1 == s2:
         return 1.0
+    import editdistance
     iou = 1 - editdistance.eval(s1, s2) / max(len(s1), len(s2))
     anls = iou
     return anls

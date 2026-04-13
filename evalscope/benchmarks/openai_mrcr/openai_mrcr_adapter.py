@@ -7,6 +7,7 @@ from evalscope.api.metric import Score
 from evalscope.api.metric.scorer import AggScore, SampleScore
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 from .utils import OPENAI_MRCR_BINS, bin_index_for, get_chatml_tok_cnt, get_token_count, grade, str_to_chat_messages
 
@@ -115,6 +116,7 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
                 total token count is strictly greater than this value.
         """
         super().__init__(**kwargs)
+        check_import(module_name=['tiktoken'], extra='openai_mrcr', raise_error=True, feature_name=self.pretty_name)
         self.enc_name = self.extra_params.get('tik_enc', 'o200k_base')
         self.max_context_size = self.extra_params.get('max_context_size')
         self.needle_count = self.extra_params.get('needle_count')

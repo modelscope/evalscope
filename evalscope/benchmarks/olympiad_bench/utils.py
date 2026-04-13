@@ -2,7 +2,6 @@
 import math
 import re
 import sympy as sp
-from latex2sympy2_extended import latex2sympy as parse_latex
 from sympy import Eq, Pow, simplify, sympify
 
 from evalscope.utils import get_logger
@@ -173,6 +172,7 @@ class OlympiadBenchPrompter:
 class MathJudger:
 
     def __init__(self):
+        from latex2sympy2_extended import latex2sympy as parse_latex
         self.special_signal_map = {
             '\\left': '',
             '\\right': '',
@@ -345,6 +345,7 @@ class MathJudger:
         exp2 = extract_expression(exp2)
 
         # 将表达式转换为 sympy 中能够进行处理的格式
+        from latex2sympy2_extended import latex2sympy as parse_latex
         expr1_sym = sympify(parse_latex(exp1))
         expr2_sym = sympify(parse_latex(exp2))
 
@@ -398,6 +399,7 @@ class MathJudger:
             lhs, rhs = latex_eq.split('=')
 
             # Parse LaTeX expressions using parse_latex
+            from latex2sympy2_extended import latex2sympy as parse_latex
             lhs_expr = parse_latex(lhs)
             rhs_expr = parse_latex(rhs)
 

@@ -95,7 +95,7 @@ class RefCOCOAdapter(DefaultDataAdapter):
         self.split_as_subset = True
         self.eval_mode = self.extra_params.get('eval_mode', EvalMode.BBOX)
 
-        check_import(module_name='pycocoevalcap', package='pycocoevalcap', raise_error=True)
+        check_import(module_name='pycocoevalcap', extra='refcoco', raise_error=True)
 
     def record_to_sample(self, record: Dict[str, Any]) -> Union[Sample, List[Sample]]:
         from PIL import Image
