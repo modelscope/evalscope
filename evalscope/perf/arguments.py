@@ -264,10 +264,14 @@ class Arguments(BaseArgument):
                     'If this is not intended, please specify the full URL explicitly.'
                 )
 
-        # When tokenize_prompt is enabled, redirect to the completions endpoint and
-        # disable chat-template application (token IDs are assembled client-side).
+        # Resolve apply_chat_template from the *original* URL before any redirects.
+        if self.apply_chat_template is None:
+            self.apply_chat_template = self.url.strip('/').endswith('chat/completions')
+
+        # When tokenize_prompt is enabled, redirect to the completions endpoint.
         if self.tokenize_prompt:
-            assert self.tokenizer_path, ('--tokenizer-path is required when --tokenize-prompt is set.')
+            if not self.tokenizer_path:
+                raise ValueError('--tokenizer-path is required when --tokenize-prompt is set.')
             _stripped = self.url.rstrip('/')
             if _stripped.endswith('chat/completions'):
                 self.url = _stripped[:-len('chat/completions')] + 'completions'
@@ -275,11 +279,6 @@ class Arguments(BaseArgument):
                     f'--tokenize-prompt is set: URL auto-adjusted from chat/completions '
                     f'to completions endpoint: {self.url}'
                 )
-            self.apply_chat_template = False
-
-        # Set the apply_chat_template flag based on the URL
-        if self.apply_chat_template is None:
-            self.apply_chat_template = self.url.strip('/').endswith('chat/completions')
 
         # Set number and parallel to lists if they are integers
         if isinstance(self.number, int):

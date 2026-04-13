@@ -49,8 +49,16 @@ class RandomDatasetPlugin(DatasetPluginBase):
         tokenize_prompt = self.query_parameters.tokenize_prompt
 
         if tokenize_prompt:
-            min_prompt_length = self.query_parameters.min_prompt_length
-            max_prompt_length = self.query_parameters.max_prompt_length + 1
+            # Subtract prefix_length so that the final prompt
+            # (prefix_ids + inner_seq) stays within [min, max]_prompt_length.
+            min_prompt_length = self.query_parameters.min_prompt_length - self.prefix_length
+            max_prompt_length = self.query_parameters.max_prompt_length - self.prefix_length + 1
+            if min_prompt_length < 0:
+                logger.warning(
+                    f'min_prompt_length is less than prefix_length {self.prefix_length}, '
+                    'setting min_prompt_length to 0.'
+                )
+                min_prompt_length = 0
         elif self.query_parameters.apply_chat_template:
             template_len = self.get_template_len()
             min_prompt_length = self.query_parameters.min_prompt_length - template_len

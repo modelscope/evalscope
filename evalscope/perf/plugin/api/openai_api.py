@@ -93,10 +93,9 @@ class OpenaiPlugin(DefaultApiPlugin):
         Returns:
             List[int]: Flat list of token IDs ready to be sent as `prompt`.
         """
-        assert self.tokenizer is not None, (
-            'A tokenizer is required for --tokenize-prompt. '
-            'Please specify --tokenizer-path.'
-        )
+        if self.tokenizer is None:
+            raise ValueError('A tokenizer is required for --tokenize-prompt. '
+                             'Please specify --tokenizer-path.')
         # Already token IDs (random dataset fast path)
         if isinstance(messages, list) and messages and isinstance(messages[0], int):
             return messages

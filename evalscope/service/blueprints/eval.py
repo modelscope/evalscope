@@ -124,12 +124,35 @@ def _build_task_config(data: dict) -> TaskConfig:
     return task_config
 
 
+def _all_results_empty(result) -> bool:
+    """Return True when every dataset in the evaluation result produced no scores.
+
+    This happens when ``ignore_errors=True`` and every sample failed: each
+    dataset evaluator returns an empty dict instead of a :class:`Report`.
+    """
+    if not result:
+        return True
+    if isinstance(result, dict):
+        return all(not v for v in result.values())
+    if isinstance(result, list):
+        return all(_all_results_empty(r) for r in result)
+    return False
+
+
 def _execute_task(task_id: str, task_config: TaskConfig, label: str = 'Task'):
     """Run the evaluation subprocess and return a Flask response."""
     create_log_file(task_id, os.path.join('logs', 'eval_log.log'))
     try:
         result = run_in_subprocess(run_eval_wrapper, task_config)
         table_str = _build_result_table(task_config.work_dir)
+        if _all_results_empty(result):
+            error_msg = (
+                'Evaluation completed but no results were produced. '
+                'All samples may have failed. '
+                'Check the evaluation log for details.'
+            )
+            logger.error(f'[{task_id}] {label} produced empty results: {error_msg}')
+            return jsonify({'status': 'error', 'task_id': task_id, 'error': error_msg}), 500
         logger.info(f'[{task_id}] {label} completed successfully')
         return jsonify({'status': 'completed', 'task_id': task_id, 'result': result, 'table': table_str})
     except Exception as e:

@@ -164,6 +164,12 @@ evalscope perf \
   --debug
 ```
 
+```{note}
+若需要服务端收到的 token 数与配置精确匹配，可加上 `--tokenize-prompt` 参数。该参数将 prompt 在客户端 tokenize 为 token ID 列表后直接通过 `/v1/completions` 的 `prompt` 字段发送，绕过服务端的重新 tokenize。
+
+服务端将收到恰好 `prefix_length + inner_seq_length` 个 token，落在 `[min-prompt-length, max-prompt-length]` 范围内。适用于 vLLM、SGLang、LMDeploy 等支持接收 token ID 的推理框架；不支持 `random_vl` 数据集。
+```
+
 ## 使用random图文数据集
 使用`random_vl`数据集，随机生成图像和文本输入，在`random`基础上增加了图像相关参数（`image-width`，`image-height`，`image-format`，`image-num`）。
 
