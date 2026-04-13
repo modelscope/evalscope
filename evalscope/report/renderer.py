@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import re
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
 from evalscope.app.utils.visualization import (
@@ -323,10 +323,12 @@ def gen_html_report_file(
     # ------------------------------------------------------------------
     env = Environment(loader=FileSystemLoader(_TEMPLATE_DIR), autoescape=False)
     template = env.get_template('report.html.j2')
+    # Use China timezone (UTC+8) for consistent timestamp
+    beijing_tz = timezone(timedelta(hours=8))
     html_content = template.render(
         models=all_models,
         datasets=all_datasets,
-        generated_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        generated_at=datetime.now(beijing_tz).strftime('%Y-%m-%d %H:%M:%S'),
         summary_rows=summary_rows,
         overview_chart_div=overview_chart_div,
         sunburst_chart_div=sunburst_chart_div,
