@@ -1,6 +1,6 @@
 import numpy as np
 import re
-from typing import Dict, Iterator, List, Tuple
+from typing import Dict, Iterator, List, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
@@ -43,8 +43,15 @@ class RandomDatasetPlugin(DatasetPluginBase):
             f'(excluded {len(prohibited_tokens)} special/byte-fallback tokens)'
         )
 
-    def build_messages(self) -> Iterator[List[Dict]]:
-        if self.query_parameters.apply_chat_template:
+    def build_messages(self) -> Iterator[Union[List[Dict], List[int]]]:
+        """Yield prompts as text messages or, when --tokenize-prompt is set, as raw
+        token-ID lists that bypass the decode/re-encode round-trip entirely."""
+        tokenize_prompt = self.query_parameters.tokenize_prompt
+
+        if tokenize_prompt:
+            min_prompt_length = self.query_parameters.min_prompt_length
+            max_prompt_length = self.query_parameters.max_prompt_length + 1
+        elif self.query_parameters.apply_chat_template:
             template_len = self.get_template_len()
             min_prompt_length = self.query_parameters.min_prompt_length - template_len
             max_prompt_length = self.query_parameters.max_prompt_length - template_len + 1
@@ -68,26 +75,52 @@ class RandomDatasetPlugin(DatasetPluginBase):
 
         token_mismatch_total = 0
         for i in range(self.number):
-            prompt, total_input_len, token_mismatch = self.generate_token_sequence(
-                input_len=int(input_lens[i]),
-                offset=int(offsets[i]),
-                index=i,
-            )
-            token_mismatch_total += token_mismatch
-
-            if self.query_parameters.apply_chat_template:
-                message = self.create_message(prompt)
-                yield [message]
+            if tokenize_prompt:
+                # Fast path: yield token IDs directly, no decode/re-encode step.
+                # The API plugin will send them as `prompt=[int, ...]` to /v1/completions.
+                token_ids = self.generate_token_ids_only(
+                    input_len=int(input_lens[i]),
+                    offset=int(offsets[i]),
+                    index=i,
+                )
+                yield token_ids
             else:
-                yield prompt
+                prompt, total_input_len, token_mismatch = self.generate_token_sequence(
+                    input_len=int(input_lens[i]),
+                    offset=int(offsets[i]),
+                    index=i,
+                )
+                token_mismatch_total += token_mismatch
 
-        if token_mismatch_total != 0:
+                if self.query_parameters.apply_chat_template:
+                    message = self.create_message(prompt)
+                    yield [message]
+                else:
+                    yield prompt
+
+        if not tokenize_prompt and token_mismatch_total != 0:
             sign = 'more' if token_mismatch_total > 0 else 'fewer'
             logger.warning(
                 f'Across all generated prompts, there were {abs(token_mismatch_total)} {sign} tokens '
                 'than expected after decoding and re-encoding. This is expected due to the '
                 'imperfect nature of the sampling procedure.'
             )
+
+    def generate_token_ids_only(
+        self,
+        input_len: int,
+        offset: int,
+        index: int,
+    ) -> List[int]:
+        """Return a raw token-ID list of exactly `input_len` tokens (+ prefix).
+
+        Unlike `generate_token_sequence`, this method never decodes tokens to text
+        and therefore avoids any token ID → text → token ID round-trip inflation.
+        The result is intended to be sent directly as `prompt=[int, ...]` to the
+        /v1/completions endpoint via the --tokenize-prompt path.
+        """
+        inner_seq = self.allowed_tokens[(offset + index + np.arange(input_len)) % len(self.allowed_tokens)].tolist()
+        return self.prefix_ids + inner_seq
 
     def generate_token_sequence(
         self,

@@ -121,6 +121,7 @@ For details on using the SLA auto-tuning feature, see the [Auto-tuning Guide](./
 | `--top-p` | `float` | Top-p sampling | - |
 | `--top-k` | `int` | Top-k sampling | - |
 | `--extra-args` | `str` | Additional parameters to be passed in the request body<br>JSON string format<br>Example: `'{"ignore_eos": true}'` | - |
+| `--tokenize-prompt` | `bool` | Tokenize the prompt into a token-ID list on the client side and send it directly as `prompt=[int, ...]` via `/v1/completions`, bypassing server-side re-tokenization<br>**Problem solved**: When using the `random` dataset, the round-trip `decode → text → server tokenize` conversion can inflate the actual input token count to several times the expected value; enabling this flag makes the server-side token count exactly match the `min/max-prompt-length` configured on the client<br>**Requirements**: `--tokenizer-path` must also be set; the URL is automatically adjusted from `/v1/chat/completions` to `/v1/completions`<br>**Compatibility**: Supported by vLLM, SGLang, LMDeploy, and other inference frameworks | `False` |
 
 ## Data Storage
 

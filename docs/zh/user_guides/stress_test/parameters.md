@@ -123,6 +123,7 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `--top-p` | `float` | top_p采样 | - |
 | `--top-k` | `int` | top_k采样 | - |
 | `--extra-args` | `str` | 额外传入请求体的参数<br>JSON字符串格式<br>示例：`'{"ignore_eos": true}'` | - |
+| `--tokenize-prompt` | `bool` | 在客户端将prompt tokenize为token ID列表，直接通过`/v1/completions`的`prompt`字段发送整数列表，绕过服务端的重新tokenize<br>**解决的问题**：使用`random`数据集时，随机token IDs经`decode→text→服务端tokenize`的往返转换后，实际输入token数可能膨胀至预期的数倍；启用此参数可使服务端收到的token数与客户端设置的`min/max-prompt-length`精确一致<br>**使用条件**：必须同时设置`--tokenizer-path`；URL会自动从`/v1/chat/completions`调整为`/v1/completions`<br>**兼容性**：支持vLLM、SGLang、LMDeploy等推理框架 | `False` |
 
 ## 数据存储
 

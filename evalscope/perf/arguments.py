@@ -230,6 +230,11 @@ class Arguments(BaseArgument):
     extra_args: Optional[Dict[str, Any]] = None
     """Extra arguments."""
 
+    tokenize_prompt: bool = False
+    """Tokenize prompt client-side and send token IDs directly to /v1/completions,
+    avoiding the token ID → text → token ID round-trip inflation.
+    Requires --tokenizer-path to be set."""
+
     def __post_init__(self):
         # Set the default headers
         self.headers = self.headers or {}  # Default to empty dictionary
@@ -258,6 +263,19 @@ class Arguments(BaseArgument):
                     f'URL "{_stripped}" has no endpoint path, auto-appended "/{_expected_suffix}". '
                     'If this is not intended, please specify the full URL explicitly.'
                 )
+
+        # When tokenize_prompt is enabled, redirect to the completions endpoint and
+        # disable chat-template application (token IDs are assembled client-side).
+        if self.tokenize_prompt:
+            assert self.tokenizer_path, ('--tokenizer-path is required when --tokenize-prompt is set.')
+            _stripped = self.url.rstrip('/')
+            if _stripped.endswith('chat/completions'):
+                self.url = _stripped[:-len('chat/completions')] + 'completions'
+                logger.warning(
+                    f'--tokenize-prompt is set: URL auto-adjusted from chat/completions '
+                    f'to completions endpoint: {self.url}'
+                )
+            self.apply_chat_template = False
 
         # Set the apply_chat_template flag based on the URL
         if self.apply_chat_template is None:
@@ -409,6 +427,16 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--top-p', type=float, help='Sampling top p', default=None)
     parser.add_argument('--top-k', type=int, help='Sampling top k', default=None)
     parser.add_argument('--extra-args', type=json.loads, default='{}', help='Extra arguments, should in JSON format',)
+    parser.add_argument(
+        '--tokenize-prompt',
+        action='store_true',
+        default=False,
+        help=(
+            'Tokenize prompt client-side and send token IDs directly via /v1/completions, '
+            'avoiding the token ID \u2192 text \u2192 token ID re-tokenization inflation. '
+            'Requires --tokenizer-path to be set.'
+        ),
+    )
     # yapf: enable
 
 
