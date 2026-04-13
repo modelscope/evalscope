@@ -8,6 +8,7 @@ from evalscope.api.messages.content import Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.utils.import_utils import check_import
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 
@@ -84,6 +85,12 @@ class OlympiadBenchAdapter(VisionLanguageAdapter):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        check_import(
+            module_name=['latex2sympy2_extended'],
+            extra='olympiad_bench',
+            raise_error=True,
+            feature_name=self.pretty_name
+        )
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Generate prompt for a single item."""

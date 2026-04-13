@@ -1,6 +1,5 @@
 # flake8: noqa
 import copy
-import jieba
 import Levenshtein
 import pandas as pd
 import re
@@ -8,8 +7,6 @@ from apted import APTED, Config
 from apted.helpers import Tree
 from collections import defaultdict, deque
 from lxml import etree, html
-from nltk.translate.bleu_score import corpus_bleu
-from nltk.translate.meteor_score import meteor_score
 from tabulate import tabulate
 from tqdm import tqdm
 
@@ -240,6 +237,7 @@ class call_TEDS():
 
 def tokenize(text) -> list[str]:
     """Tokenizes text, handling Chinese and non-Chinese strings appropriately."""
+    import jieba
 
     def contain_chinese_string(text):
         chinese_pattern = re.compile(r'[\u4e00-\u9fa5]')
@@ -274,6 +272,7 @@ class call_BLEU():
                 bleu_score = 0
             else:
                 try:
+                    from nltk.translate.bleu_score import corpus_bleu
                     bleu_score = corpus_bleu(references, predictions)
                 except ZeroDivisionError:
                     bleu_score = 0
@@ -304,6 +303,7 @@ class call_METEOR():
                 meteor_results = 0
             else:
                 try:
+                    from nltk.translate.meteor_score import meteor_score
                     total_score = 0
                     for ref, pred in zip(references, predictions):
                         score = meteor_score([ref], pred)

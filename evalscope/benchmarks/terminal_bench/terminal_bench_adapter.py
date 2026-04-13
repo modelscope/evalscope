@@ -90,7 +90,7 @@ class TerminalBenchV2Adapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        check_import('harbor', package='harbor==0.1.28', raise_error=True, feature_name=self.pretty_name)
+        check_import('harbor', extra='terminal_bench', raise_error=True, feature_name=self.pretty_name)
         self.environment_type = self.extra_params.get('environment_type', 'docker')
         self.agent_name = self.extra_params.get('agent_name', 'terminus-2')
         self.timeout_multiplier = self.extra_params.get('timeout_multiplier', 1.0)

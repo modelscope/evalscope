@@ -71,7 +71,7 @@ class TorgoAdapter(VisionLanguageAdapter):
         self.sem_scorer = None
 
         if self.has_metric('cer') or self.has_metric('wer'):
-            check_import('jiwer', 'jiwer', raise_error=True, feature_name='CER/WER Metric')
+            check_import('jiwer', extra='torgo', raise_error=True, feature_name='CER/WER Metric')
             try:
                 if self.has_metric('cer'):
                     from jiwer import cer as jiwer_cer
@@ -87,7 +87,7 @@ class TorgoAdapter(VisionLanguageAdapter):
                 logger.warning(f'[TorgoAdapter] Failed to import jiwer components: {e}')
 
         if self.has_metric('sem_score'):
-            check_import('jellyfish', 'jellyfish', raise_error=True, feature_name='SemScore Metric')
+            check_import('jellyfish', extra='torgo', raise_error=True, feature_name='SemScore Metric')
             try:
                 from evalscope.metrics.metric import SemScore
                 self.sem_scorer = SemScore()

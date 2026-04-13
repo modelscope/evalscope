@@ -12,6 +12,7 @@ from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.report import Report, ReportKey
+from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -89,6 +90,7 @@ class GeneralArenaAdapter(DefaultDataAdapter):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        check_import(module_name=['sklearn'], extra='general_arena', raise_error=True, feature_name=self.pretty_name)
 
         self._use_llm_judge = True
 

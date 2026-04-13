@@ -1,8 +1,4 @@
-import jieba
-import nltk
 import re
-from nltk.metrics import f_measure, precision, recall
-from nltk.translate import meteor_score
 
 from evalscope.utils.function_utils import thread_safe
 
@@ -14,6 +10,10 @@ def contain_chinese_string(text):
 
 @thread_safe
 def cal_per_metrics(pred, gt):
+    import jieba
+    import nltk
+    from nltk.metrics import f_measure, precision, recall
+    from nltk.translate import meteor_score
     metrics = {}
 
     if contain_chinese_string(gt) or contain_chinese_string(pred):

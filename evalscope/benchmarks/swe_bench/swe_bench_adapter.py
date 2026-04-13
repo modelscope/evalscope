@@ -79,7 +79,7 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        check_import('swebench', package='swebench==4.1.0', raise_error=True, feature_name=self.pretty_name)
+        check_import('swebench', extra='swe_bench', raise_error=True, feature_name=self.pretty_name)
 
         self.build_docker_images: bool = self.extra_params.get('build_docker_images', True)
         self.pull_remote_images_if_available: bool = self.extra_params.get('pull_remote_images_if_available', True)

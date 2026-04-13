@@ -42,16 +42,33 @@ version = {attr = "evalscope.version.__version__"}
 dependencies = {file = ["requirements/framework.txt"]}
 
 [tool.setuptools.dynamic.optional-dependencies]
-opencompass = {file = ["requirements/opencompass.txt"]}
-vlmeval     = {file = ["requirements/vlmeval.txt"]}
-rag         = {file = ["requirements/rag.txt"]}
-perf        = {file = ["requirements/perf.txt"]}
-app         = {file = ["requirements/app.txt"]}
-aigc        = {file = ["requirements/aigc.txt"]}
-sandbox     = {file = ["requirements/sandbox.txt"]}
-service     = {file = ["requirements/service.txt"]}
-dev         = {file = ["requirements/dev.txt"]}
-docs        = {file = ["requirements/docs.txt"]}
+opencompass      = {file = ["requirements/opencompass.txt"]}
+vlmeval          = {file = ["requirements/vlmeval.txt"]}
+rag              = {file = ["requirements/rag.txt"]}
+perf             = {file = ["requirements/perf.txt"]}
+app              = {file = ["requirements/app.txt"]}
+aigc             = {file = ["requirements/aigc.txt"]}
+sandbox          = {file = ["requirements/sandbox.txt"]}
+service          = {file = ["requirements/service.txt"]}
+dev              = {file = ["requirements/dev.txt"]}
+docs             = {file = ["requirements/docs.txt"]}
+
+ocr_bench        = {file = ["evalscope/benchmarks/ocr_bench/requirements.txt"]}
+omnidoc_bench    = {file = ["evalscope/benchmarks/omnidoc_bench/requirements.txt"]}
+ifeval           = {file = ["evalscope/benchmarks/ifeval/requirements.txt"]}
+ifbench          = {file = ["evalscope/benchmarks/ifbench/requirements.txt"]}
+multi_if         = {file = ["evalscope/benchmarks/multi_if/requirements.txt"]}
+olympiad_bench   = {file = ["evalscope/benchmarks/olympiad_bench/requirements.txt"]}
+needle_haystack  = {file = ["evalscope/benchmarks/needle_haystack/requirements.txt"]}
+openai_mrcr      = {file = ["evalscope/benchmarks/openai_mrcr/requirements.txt"]}
+general_arena    = {file = ["evalscope/benchmarks/general_arena/requirements.txt"]}
+arena_hard       = {file = ["evalscope/benchmarks/arena_hard/requirements.txt"]}
+refcoco          = {file = ["evalscope/benchmarks/refcoco/requirements.txt"]}
+swe_bench        = {file = ["evalscope/benchmarks/swe_bench/requirements.txt"]}
+wmt              = {file = ["evalscope/benchmarks/wmt/requirements.txt"]}
+torgo            = {file = ["evalscope/benchmarks/torgo/requirements.txt"]}
+terminal_bench   = {file = ["evalscope/benchmarks/terminal_bench/requirements.txt"]}
+bfcl             = {file = ["evalscope/benchmarks/bfcl/requirements.txt"]}
 all = {file = [
   "requirements/opencompass.txt",
   "requirements/vlmeval.txt",

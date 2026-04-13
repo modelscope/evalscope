@@ -1,0 +1,6 @@
+apted
+beautifulsoup4
+distance
+jieba
+lxml
+python-Levenshtein

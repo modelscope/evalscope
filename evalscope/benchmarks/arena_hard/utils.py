@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import re
 from collections import defaultdict
-from sklearn.linear_model import LogisticRegression
 from tqdm import tqdm
 
 from evalscope.utils.logger import get_logger
@@ -140,6 +139,7 @@ def compute_mle_elo(df, SCALE=400, BASE=10, INIT_RATING=1000):
             elo_scores[df['model_b'].iloc[0]] += SCALE  # Boost the winning model
         return elo_scores.sort_values(ascending=False)
 
+    from sklearn.linear_model import LogisticRegression
     lr = LogisticRegression(
         fit_intercept=False, penalty=None, tol=1e-8
     )  # May need to set a small value when not use GPT4 as judge model

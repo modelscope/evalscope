@@ -95,7 +95,7 @@ class BFCLV4Adapter(AgentAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        check_import('bfcl_eval', package='bfcl-eval==2025.10.27.1', raise_error=True, feature_name=self.pretty_name)
+        check_import('bfcl_eval', extra='bfcl', raise_error=True, feature_name=self.pretty_name)
 
         self.add_overall_metric = False
         self.add_aggregation_name = False
