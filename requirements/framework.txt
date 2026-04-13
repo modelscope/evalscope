@@ -2,12 +2,14 @@ colorlog
 docstring_parser
 dotenv
 editdistance
+jieba
 jinja2
 jsonlines
 jsonschema
 Markdown
 modelscope[datasets]>=1.34
 more_itertools
+nltk
 openai
 overrides
 pandas
