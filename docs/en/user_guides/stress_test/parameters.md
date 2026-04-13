@@ -53,10 +53,11 @@ The two parameters are independent: `--rate` determines how quickly requests ent
 | `--sla-auto-tune` | `bool` | Whether to enable SLA auto-tuning mode | `False` |
 | `--sla-variable` | `str` | Variable for auto-tuning<br>Options: `parallel` (concurrency), `rate` (request rate) | `parallel` |
 | `--sla-params` | `str` | SLA constraint conditions<br>JSON string<br>Supported metrics: `avg_latency`, `p99_latency`, `avg_ttft`, `p99_ttft`, `avg_tpot`, `p99_tpot`, `rps`, `tps`<br>Supported operators: `<=`, `<`, `min` (for latency metrics); `>=`, `>`, `max` (for throughput metrics)<br>Example: `'[{"p99_latency": "<=2"}]'` | `None` |
-| `--sla-upper-bound` | `int` | Maximum concurrency/rate limit for auto-tuning | `65536` |
-| `--sla-lower-bound` | `int` | Minimum concurrency/rate limit for auto-tuning | `1` |
+| `--sla-upper-bound` | `int` | Upper bound of the tuned SLA variable search range | `65536` |
+| `--sla-lower-bound` | `int` | Lower bound of the tuned SLA variable search range | `1` |
+| `--sla-fixed-parallel` | `int` | Fixed parallel workers used when `--sla-variable=rate`; defaults to `--sla-upper-bound` for backward compatibility | `None` |
 | `--sla-num-runs` | `int` | Number of runs per concurrency level (average taken) | `3` |
-
+| `--sla-number-multiplier` | `float` | Multiplier of total requests relative to the tuned variable (concurrency or rate), i.e. `number = round(variable × N)`; defaults to `2` when not set | `None` |
 ```{seealso}
 For details on using the SLA auto-tuning feature, see the [Auto-tuning Guide](./sla_auto_tune.md).
 ```

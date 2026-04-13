@@ -125,6 +125,7 @@ class SLAAutoTuner:
         self.sla_results_table = []
         self.upper_bound = args.sla_upper_bound
         self.lower_bound = args.sla_lower_bound
+        self.fixed_parallel = args.sla_fixed_parallel if args.sla_fixed_parallel is not None else args.sla_upper_bound
 
     def tune(self) -> Dict[str, Any]:
         if not self.args.sla_params:
@@ -210,7 +211,7 @@ class SLAAutoTuner:
             elif self.sla_variable == 'rate':
                 run_args.rate = val
                 run_args.number = self._compute_number(val)
-                run_args.parallel = self.upper_bound
+                run_args.parallel = self.fixed_parallel
             else:
                 raise ValueError(f'Unsupported SLA variable: {self.sla_variable}')
 

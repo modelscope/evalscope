@@ -95,6 +95,12 @@ class Arguments(BaseArgument):
     sla_lower_bound: int = 1
     """Lower bound limit for SLA auto-tuning."""
 
+    sla_fixed_parallel: Optional[int] = None
+    """Fixed parallel workers used when tuning `rate`.
+
+    If not set, falls back to `sla_upper_bound` for backward compatibility.
+    """
+
     sla_number_multiplier: Optional[float] = None
     """Multiplier for number of requests relative to the tuned SLA variable (parallel/rate) in SLA auto-tuning.
     If set, number = round(val * sla_number_multiplier) where val is the current value of `sla_variable`
@@ -343,8 +349,9 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--sla-variable', type=str, default='parallel', choices=['parallel', 'rate'], help='The variable to tune, can be parallel or rate')  # noqa: E501
     parser.add_argument('--sla-params', type=json.loads, default=None, help='SLA constraints in JSON format')
     parser.add_argument('--sla-num-runs', type=int, default=3, help='Number of runs to average for each configuration in SLA auto-tuning')  # noqa: E501
-    parser.add_argument('--sla-upper-bound', type=int, default=65536, help='Maximum concurrency limit for SLA auto-tuning')  # noqa: E501
-    parser.add_argument('--sla-lower-bound', type=int, default=1, help='Minimum concurrency limit for SLA auto-tuning')  # noqa: E501
+    parser.add_argument('--sla-upper-bound', type=int, default=65536, help='Upper bound of the tuned SLA variable search range')  # noqa: E501
+    parser.add_argument('--sla-lower-bound', type=int, default=1, help='Lower bound of the tuned SLA variable search range')  # noqa: E501
+    parser.add_argument('--sla-fixed-parallel', type=int, default=None, help='Fixed parallel workers used when --sla-variable=rate. Defaults to --sla-upper-bound for backward compatibility.')  # noqa: E501
     parser.add_argument('--sla-number-multiplier', type=float, default=None, help='Multiplier for number of requests relative to parallel/rate in SLA auto-tuning. number = round(val * N). Defaults to 2 if not set.')  # noqa: E501
 
     # Tuning knobs

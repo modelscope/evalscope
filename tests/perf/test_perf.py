@@ -2,9 +2,13 @@
 from dotenv import dotenv_values
 
 env = dotenv_values('.env')
+import tempfile
 import unittest
 
 from evalscope.perf.main import run_perf_benchmark
+from evalscope.perf.sla.sla_run import SLAAutoTuner
+from evalscope.perf.utils.benchmark_util import Metrics
+from evalscope.perf.utils.db_util import PercentileMetrics
 from tests.utils import test_level_list
 
 
@@ -335,6 +339,101 @@ class TestPerf(unittest.TestCase):
         )
 
         run_perf_benchmark(task_cfg)
+
+    def test_perf_sla_rate_uses_fixed_parallel_when_provided(self):
+        from evalscope.perf.arguments import Arguments
+        captured_args = []
+
+        def fake_runner(run_args, output_path):
+            captured_args.append((run_args.parallel, run_args.rate, run_args.number))
+            return {
+                'run': {
+                    'metrics': {
+                        Metrics.SUCCEED_REQUESTS: 1,
+                        Metrics.TOTAL_REQUESTS: 1,
+                        Metrics.AVERAGE_LATENCY: 1.0,
+                        Metrics.AVERAGE_TIME_TO_FIRST_TOKEN: 0.1,
+                        Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN: 0.01,
+                        Metrics.REQUEST_THROUGHPUT: 2.0,
+                        Metrics.OUTPUT_TOKEN_THROUGHPUT: 20.0,
+                    },
+                    'percentiles': {
+                        PercentileMetrics.PERCENTILES: ['99%'],
+                        PercentileMetrics.LATENCY: [1.0],
+                        PercentileMetrics.TTFT: [0.1],
+                        PercentileMetrics.TPOT: [0.01],
+                    }
+                }
+            }
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            args = Arguments(
+                parallel=8,
+                number=8,
+                model='Qwen2.5-0.5B-Instruct',
+                url='http://127.0.0.1:8801/v1/completions',
+                api='openai',
+                dataset='random',
+                outputs_dir=tmpdir,
+                sla_auto_tune=True,
+                sla_variable='rate',
+                sla_params=[{'p99_ttft': '<=1'}],
+                sla_num_runs=1,
+                sla_upper_bound=64,
+                sla_lower_bound=1,
+                sla_fixed_parallel=40,
+            )
+            tuner = SLAAutoTuner(args, fake_runner)
+            tuner._get_result(12)
+
+        self.assertEqual(captured_args[0], (40, 12, 24))
+
+    def test_perf_sla_rate_falls_back_to_upper_bound_without_fixed_parallel(self):
+        from evalscope.perf.arguments import Arguments
+        captured_args = []
+
+        def fake_runner(run_args, output_path):
+            captured_args.append((run_args.parallel, run_args.rate, run_args.number))
+            return {
+                'run': {
+                    'metrics': {
+                        Metrics.SUCCEED_REQUESTS: 1,
+                        Metrics.TOTAL_REQUESTS: 1,
+                        Metrics.AVERAGE_LATENCY: 1.0,
+                        Metrics.AVERAGE_TIME_TO_FIRST_TOKEN: 0.1,
+                        Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN: 0.01,
+                        Metrics.REQUEST_THROUGHPUT: 2.0,
+                        Metrics.OUTPUT_TOKEN_THROUGHPUT: 20.0,
+                    },
+                    'percentiles': {
+                        PercentileMetrics.PERCENTILES: ['99%'],
+                        PercentileMetrics.LATENCY: [1.0],
+                        PercentileMetrics.TTFT: [0.1],
+                        PercentileMetrics.TPOT: [0.01],
+                    }
+                }
+            }
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            args = Arguments(
+                parallel=8,
+                number=8,
+                model='Qwen2.5-0.5B-Instruct',
+                url='http://127.0.0.1:8801/v1/completions',
+                api='openai',
+                dataset='random',
+                outputs_dir=tmpdir,
+                sla_auto_tune=True,
+                sla_variable='rate',
+                sla_params=[{'p99_ttft': '<=1'}],
+                sla_num_runs=1,
+                sla_upper_bound=64,
+                sla_lower_bound=1,
+            )
+            tuner = SLAAutoTuner(args, fake_runner)
+            tuner._get_result(12)
+
+        self.assertEqual(captured_args[0], (64, 12, 24))
 
     def test_perf_embedding_random(self):
         from evalscope.perf.arguments import Arguments
