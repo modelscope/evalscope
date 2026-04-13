@@ -1,0 +1,9 @@
+apted
+distance
+editdistance
+jieba
+lxml
+nltk>=3.9
+Polygon3
+python-Levenshtein
+zss

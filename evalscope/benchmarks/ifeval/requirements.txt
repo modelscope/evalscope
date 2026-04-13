@@ -1,0 +1,2 @@
+langdetect
+nltk>=3.9

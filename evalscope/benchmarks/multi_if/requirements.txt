@@ -1,0 +1,4 @@
+emoji
+langdetect
+nltk>=3.9
+pythainlp

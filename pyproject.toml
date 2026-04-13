@@ -52,6 +52,7 @@ sandbox          = {file = ["requirements/sandbox.txt"]}
 service          = {file = ["requirements/service.txt"]}
 dev              = {file = ["requirements/dev.txt"]}
 docs             = {file = ["requirements/docs.txt"]}
+
 ocr_bench        = {file = ["evalscope/benchmarks/ocr_bench/requirements.txt"]}
 omnidoc_bench    = {file = ["evalscope/benchmarks/omnidoc_bench/requirements.txt"]}
 ifeval           = {file = ["evalscope/benchmarks/ifeval/requirements.txt"]}
@@ -67,6 +68,7 @@ swe_bench        = {file = ["evalscope/benchmarks/swe_bench/requirements.txt"]}
 wmt              = {file = ["evalscope/benchmarks/wmt/requirements.txt"]}
 torgo            = {file = ["evalscope/benchmarks/torgo/requirements.txt"]}
 terminal_bench   = {file = ["evalscope/benchmarks/terminal_bench/requirements.txt"]}
+bfcl             = {file = ["evalscope/benchmarks/bfcl/requirements.txt"]}
 all = {file = [
   "requirements/opencompass.txt",
   "requirements/vlmeval.txt",
