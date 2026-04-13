@@ -121,6 +121,7 @@ For details on using the SLA auto-tuning feature, see the [Auto-tuning Guide](./
 | `--top-p` | `float` | Top-p sampling | - |
 | `--top-k` | `int` | Top-k sampling | - |
 | `--extra-args` | `str` | Additional parameters to be passed in the request body<br>JSON string format<br>Example: `'{"ignore_eos": true}'` | - |
+| `--tokenize-prompt` | `bool` | Tokenize the prompt client-side into a token-ID list and send it directly via `/v1/completions`, bypassing server-side re-tokenization | `False` |
 
 ## Data Storage
 

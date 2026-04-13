@@ -161,6 +161,12 @@ evalscope perf \
   --debug
 ```
 
+```{note}
+To ensure the server receives exactly the configured number of tokens, add `--tokenize-prompt`. This flag tokenizes the prompt into a token-ID list on the client side and sends it directly via the `prompt` field of `/v1/completions`, bypassing server-side re-tokenization.
+
+The server will receive exactly `prefix_length + inner_seq_length` tokens, which falls within `[min-prompt-length, max-prompt-length]`. Compatible with vLLM, SGLang, LMDeploy, and other frameworks that accept token-ID input; not supported for the `random_vl` dataset.
+```
+
 ## Using the Random Multimodal Dataset
 
 Use the `random_vl` dataset to randomly generate image and text inputs. Based on the `random` dataset, it adds image-related parameters (`image-width`, `image-height`, `image-format`, `image-num`).

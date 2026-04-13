@@ -123,6 +123,7 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `--top-p` | `float` | top_p采样 | - |
 | `--top-k` | `int` | top_k采样 | - |
 | `--extra-args` | `str` | 额外传入请求体的参数<br>JSON字符串格式<br>示例：`'{"ignore_eos": true}'` | - |
+| `--tokenize-prompt` | `bool` | 在客户端将prompt tokenize为token ID列表，绕过服务端重新tokenize，通过`/v1/completions`直接发送 | `False` |
 
 ## 数据存储
 
