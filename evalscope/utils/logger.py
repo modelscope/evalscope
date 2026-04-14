@@ -48,6 +48,40 @@ def warning_once(self, msg, *args, **kwargs):
     self.warning(msg)
 
 
+class ReopenFileHandler(logging.FileHandler):
+    """FileHandler that closes the file after every emit.
+
+    On OSS/FUSE-mounted filesystems the FUSE driver only uploads data when
+    the file descriptor is closed.  By reopening on each record this handler
+    ensures every log line is visible on OSS in near real-time.
+
+    Thread safety: emit() is invoked inside Handler.handle() which already
+    holds self.lock, so no extra locking is needed here.
+    """
+
+    def __init__(self, filename: str, mode: str = 'a', encoding: str = 'utf-8'):
+        # delay=True: skip opening the file in __init__; we open it ourselves in emit()
+        super().__init__(filename, mode=mode, encoding=encoding, delay=True)
+        self._first_write = True
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Open → format+write → flush → close for every log record."""
+        # After the first write switch to append so we never truncate
+        if not self._first_write:
+            self.mode = 'a'
+        self.stream = self._open()
+        try:
+            logging.StreamHandler.emit(self, record)
+        finally:
+            if self.stream is not None:
+                try:
+                    self.stream.flush()
+                    self.stream.close()
+                finally:
+                    self.stream = None
+            self._first_write = False
+
+
 def get_logger(
     log_file: Optional[str] = None,
     name: Optional[str] = None,
@@ -108,7 +142,8 @@ def get_logger(
     handlers = [stream_handler]
 
     if is_worker0 and log_file is not None:
-        file_handler = logging.FileHandler(log_file, file_mode, encoding='utf-8')
+        handler_cls = logging.FileHandler if log_level == logging.DEBUG else ReopenFileHandler
+        file_handler = handler_cls(log_file, mode=file_mode, encoding='utf-8')
         handlers.append(file_handler)
 
     for handler in handlers:
@@ -182,7 +217,8 @@ def add_file_handler_if_needed(
         except Exception:
             pass
 
-    file_handler = logging.FileHandler(target_path, file_mode, encoding='utf-8')
+    handler_cls = logging.FileHandler if log_level == logging.DEBUG else ReopenFileHandler
+    file_handler = handler_cls(target_path, mode=file_mode, encoding='utf-8')
     file_handler.setFormatter(plain_detailed_formatter if log_level == logging.DEBUG else plain_simple_formatter)
     file_handler.setLevel(log_level)
     logger.addHandler(file_handler)
