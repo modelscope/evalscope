@@ -20,6 +20,9 @@ plain_detailed_formatter = logging.Formatter(detailed_format, datefmt=data_forma
 plain_simple_formatter = logging.Formatter(simple_format, datefmt=data_format)
 
 DEFAULT_LEVEL = logging.DEBUG if os.getenv('EVALSCOPE_LOG_LEVEL', 'INFO') == 'DEBUG' else logging.INFO
+# Use ReopenFileHandler on OSS/FUSE mounts so each record is visible immediately;
+# fall back to the standard FileHandler on local filesystems.
+_USE_OSS = os.getenv('USE_OSS', '0') == '1'
 
 logging.basicConfig(format=simple_format, level=logging.INFO, force=True)
 
@@ -82,6 +85,10 @@ class ReopenFileHandler(logging.FileHandler):
             self._first_write = False
 
 
+# Module-level handler class: resolved once at import time from the USE_OSS env var.
+FILE_HANDLER_CLS = ReopenFileHandler if _USE_OSS else logging.FileHandler
+
+
 def get_logger(
     log_file: Optional[str] = None,
     name: Optional[str] = None,
@@ -142,8 +149,7 @@ def get_logger(
     handlers = [stream_handler]
 
     if is_worker0 and log_file is not None:
-        handler_cls = logging.FileHandler if log_level == logging.DEBUG else ReopenFileHandler
-        file_handler = handler_cls(log_file, mode=file_mode, encoding='utf-8')
+        file_handler = FILE_HANDLER_CLS(log_file, mode=file_mode, encoding='utf-8')
         handlers.append(file_handler)
 
     for handler in handlers:
@@ -217,8 +223,7 @@ def add_file_handler_if_needed(
         except Exception:
             pass
 
-    handler_cls = logging.FileHandler if log_level == logging.DEBUG else ReopenFileHandler
-    file_handler = handler_cls(target_path, mode=file_mode, encoding='utf-8')
+    file_handler = FILE_HANDLER_CLS(target_path, mode=file_mode, encoding='utf-8')
     file_handler.setFormatter(plain_detailed_formatter if log_level == logging.DEBUG else plain_simple_formatter)
     file_handler.setLevel(log_level)
     logger.addHandler(file_handler)
