@@ -165,7 +165,6 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
                 # Release evaluator immediately after eval to avoid
                 # accumulating all benchmark objects in memory simultaneously
                 evaluators[i] = None
-                del evaluator
 
     # Make overall report
     try:
