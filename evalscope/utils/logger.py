@@ -20,6 +20,9 @@ plain_detailed_formatter = logging.Formatter(detailed_format, datefmt=data_forma
 plain_simple_formatter = logging.Formatter(simple_format, datefmt=data_format)
 
 DEFAULT_LEVEL = logging.DEBUG if os.getenv('EVALSCOPE_LOG_LEVEL', 'INFO') == 'DEBUG' else logging.INFO
+# Use ReopenFileHandler on OSS/FUSE mounts so each record is visible immediately;
+# fall back to the standard FileHandler on local filesystems.
+_USE_OSS = os.getenv('USE_OSS', '0') == '1'
 
 logging.basicConfig(format=simple_format, level=logging.INFO, force=True)
 
@@ -46,6 +49,44 @@ def warning_once(self, msg, *args, **kwargs):
         return
     warning_set.add(hash_id)
     self.warning(msg)
+
+
+class ReopenFileHandler(logging.FileHandler):
+    """FileHandler that closes the file after every emit.
+
+    On OSS/FUSE-mounted filesystems the FUSE driver only uploads data when
+    the file descriptor is closed.  By reopening on each record this handler
+    ensures every log line is visible on OSS in near real-time.
+
+    Thread safety: emit() is invoked inside Handler.handle() which already
+    holds self.lock, so no extra locking is needed here.
+    """
+
+    def __init__(self, filename: str, mode: str = 'a', encoding: str = 'utf-8'):
+        # delay=True: skip opening the file in __init__; we open it ourselves in emit()
+        super().__init__(filename, mode=mode, encoding=encoding, delay=True)
+        self._first_write = True
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Open → format+write → flush → close for every log record."""
+        # After the first write switch to append so we never truncate
+        if not self._first_write:
+            self.mode = 'a'
+        self.stream = self._open()
+        try:
+            logging.StreamHandler.emit(self, record)
+        finally:
+            if self.stream is not None:
+                try:
+                    self.stream.flush()
+                    self.stream.close()
+                finally:
+                    self.stream = None
+            self._first_write = False
+
+
+# Module-level handler class: resolved once at import time from the USE_OSS env var.
+FILE_HANDLER_CLS = ReopenFileHandler if _USE_OSS else logging.FileHandler
 
 
 def get_logger(
@@ -108,7 +149,7 @@ def get_logger(
     handlers = [stream_handler]
 
     if is_worker0 and log_file is not None:
-        file_handler = logging.FileHandler(log_file, file_mode, encoding='utf-8')
+        file_handler = FILE_HANDLER_CLS(log_file, mode=file_mode, encoding='utf-8')
         handlers.append(file_handler)
 
     for handler in handlers:
@@ -182,7 +223,7 @@ def add_file_handler_if_needed(
         except Exception:
             pass
 
-    file_handler = logging.FileHandler(target_path, file_mode, encoding='utf-8')
+    file_handler = FILE_HANDLER_CLS(target_path, mode=file_mode, encoding='utf-8')
     file_handler.setFormatter(plain_detailed_formatter if log_level == logging.DEBUG else plain_simple_formatter)
     file_handler.setLevel(log_level)
     logger.addHandler(file_handler)

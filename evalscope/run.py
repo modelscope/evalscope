@@ -159,9 +159,12 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
             unit='benchmark',
             logger=logger,
         ) as pbar:
-            for evaluator in pbar:
+            for i, evaluator in enumerate(pbar):
                 res_dict = evaluator.eval()
                 eval_results[evaluator.benchmark_name] = res_dict
+                # Release evaluator immediately after eval to avoid
+                # accumulating all benchmark objects in memory simultaneously
+                evaluators[i] = None
 
     # Make overall report
     try:

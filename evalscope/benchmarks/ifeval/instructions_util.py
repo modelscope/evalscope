@@ -19,6 +19,8 @@ import os
 import random
 import re
 
+from evalscope.utils.resource_utils import check_nltk_data
+
 RANK = os.environ.get('LOCAL_RANK', '0')
 
 WORD_LIST = [
@@ -1654,7 +1656,11 @@ def count_words(text):
 
 @functools.lru_cache(maxsize=None)
 def _get_sentence_tokenizer():
-    return nltk.data.load('nltk:tokenizers/punkt/english.pickle')
+    check_nltk_data('punkt_tab')
+    try:
+        return nltk.data.load('tokenizers/punkt_tab/english.pickle')
+    except LookupError:
+        return nltk.data.load('nltk:tokenizers/punkt/english.pickle')
 
 
 def count_sentences(text):
