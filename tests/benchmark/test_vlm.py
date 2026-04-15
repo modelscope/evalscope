@@ -27,9 +27,10 @@ class TestVLMBenchmark(TestBenchmark):
                 'max_tokens': 4096,
                 'temperature': 0.0,
                 'seed': 42,
-                'parallel_tool_calls': True
+                'parallel_tool_calls': True,
+                'retries': 1
             },
-            'judge_strategy': JudgeStrategy.AUTO,
+            'judge_strategy': JudgeStrategy.LLM_RECALL,
             'judge_model_args': {
                 'model_id': 'qwen-plus',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -397,3 +398,12 @@ class TestVLMBenchmark(TestBenchmark):
         }
         # self._run_dataset_load_test('mia_bench')
         self._run_dataset_test('mia_bench', dataset_args=dataset_args, limit=10)
+
+    def test_tir_bench(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('tir_bench', dataset_args=dataset_args, limit=5, ignore_errors=True, use_cache='outputs/20260415_173317', rerun_review=True)
+
+    def test_tir_bench_load(self):
+        self._run_dataset_load_test('tir_bench')
