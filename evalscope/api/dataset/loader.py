@@ -238,23 +238,25 @@ class LocalDataLoader(DataLoader):
 
         # If no specific file found, raise an error with helpful information
         if not dataset_found:
+            supported_exts = [ext for ext, _ in supported_format]
             if os.path.isdir(path):
-                # List available files in directory to help user diagnose the problem
-                available_files = sorted([
-                    f for f in os.listdir(path) if any(f.endswith(ext) for ext, _ in supported_format)
-                ])
-                expected_paths = []
-                for ext, _ in supported_format:
-                    expected_paths.append(f'  - {os.path.join(path, f"{self.subset}_{self.split}{ext}")}')
-                    expected_paths.append(f'  - {os.path.join(path, f"{self.subset}{ext}")}')
+                # Directory path: list expected candidates and available files for diagnosis
+                expected_with_split = [os.path.join(path, f'{self.subset}_{self.split}{ext}') for ext in supported_exts]
+                available_files = sorted([f for f in os.listdir(path) if os.path.splitext(f)[1] in supported_exts])
                 raise FileNotFoundError(
-                    f'Dataset file not found for subset="{self.subset}", split="{self.split}".\n'
-                    f'Expected one of:\n' + '\n'.join(expected_paths) + '\n'
-                    f'Available files in "{path}":\n' + '\n'.join(f'  - {f}' for f in available_files)
+                    f'No dataset file found for subset="{self.subset}", split="{self.split}" in "{path}".\n'
+                    f'Expected one of:\n' + '\n'.join(f'  - {p}' for p in expected_with_split) + '\n'
+                    + 'Available files in "' + path + '":\n'
+                    + ('\n'.join(f'  - {f}' for f in available_files) if available_files else '  (none)')
                 )
-            elif os.path.exists(path):
-                raise FileNotFoundError(f'Dataset file "{path}" was found but is either empty or has an unsupported extension. '
-                                        f'Supported extensions: {[ext for ext, _ in supported_format]}')
+            elif os.path.isfile(path):
+                # Direct file path provided but unsupported extension
+                _, file_ext = os.path.splitext(path)
+                if file_ext not in supported_exts:
+                    raise FileNotFoundError(
+                        f'Unsupported file format "{file_ext}" for "{path}". '
+                        f'Supported formats: {supported_exts}'
+                    )
             else:
                 raise FileNotFoundError(f'Dataset path does not exist: "{path}"')
 
