@@ -252,6 +252,9 @@ class LocalDataLoader(DataLoader):
                     f'Expected one of:\n' + '\n'.join(expected_paths) + '\n'
                     f'Available files in "{path}":\n' + '\n'.join(f'  - {f}' for f in available_files)
                 )
+            elif os.path.exists(path):
+                raise FileNotFoundError(f'Dataset file "{path}" was found but is either empty or has an unsupported extension. '
+                                        f'Supported extensions: {[ext for ext, _ in supported_format]}')
             else:
                 raise FileNotFoundError(f'Dataset path does not exist: "{path}"')
 
