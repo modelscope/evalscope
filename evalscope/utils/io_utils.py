@@ -166,12 +166,15 @@ def csv_to_list(csv_file) -> list:
     Returns:
         list: list of lines. Each line is a dict.
     """
-    res_list = []
-    with open(csv_file, 'r', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            res_list.append(row)
-    return res_list
+    try:
+        res_list = []
+        with open(csv_file, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                res_list.append(row)
+        return res_list
+    except Exception as e:
+        raise ValueError(f'Failed to read CSV file "{csv_file}": {e}') from e
 
 
 def tsv_to_list(tsv_file) -> list:
@@ -184,12 +187,15 @@ def tsv_to_list(tsv_file) -> list:
     Returns:
         list: list of lines. Each line is a dict.
     """
-    res_list = []
-    with open(tsv_file, 'r', encoding='utf-8') as f:
-        reader = csv.DictReader(f, delimiter='\t')
-        for row in reader:
-            res_list.append(row)
-    return res_list
+    try:
+        res_list = []
+        with open(tsv_file, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f, delimiter='\t')
+            for row in reader:
+                res_list.append(row)
+        return res_list
+    except Exception as e:
+        raise ValueError(f'Failed to read TSV file "{tsv_file}": {e}') from e
 
 
 def csv_to_jsonl(csv_file, jsonl_file):
