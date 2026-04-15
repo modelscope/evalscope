@@ -1,0 +1,645 @@
+{
+  "meta": {
+    "pretty_name": "TIR-Bench",
+    "dataset_id": "evalscope/TIR-Bench",
+    "paper_url": "https://arxiv.org/abs/2511.01833",
+    "tags": [
+      "MultiModal",
+      "Reasoning",
+      "QA"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "instrument",
+      "color",
+      "refcoco",
+      "rotation_game",
+      "math",
+      "word_search",
+      "visual_search",
+      "ocr",
+      "symbolic",
+      "spot_difference",
+      "contrast",
+      "jigsaw",
+      "maze"
+    ],
+    "description": "\n## Overview\n\nTIR-Bench (Thinking-with-Images Reasoning Benchmark) is a comprehensive multimodal benchmark\nthat evaluates agentic visual reasoning capabilities of vision-language models. It covers\ndiverse task categories requiring spatial, compositional, and multi-step visual reasoning.\n\n## Task Description\n\n- **Task Type**: Multi-task Visual Reasoning (MCQ, OCR, word search, spot difference, jigsaw, etc.)\n- **Input**: One or two images + question (most tasks use multiple-choice format)\n- **Output**: Answer letter (MCQ) or numeric/text response depending on task type\n- **Domains**: instrument, color, refcoco, rotation_game, math, word_search, visual_search, ocr, symbolic, spot_difference, contrast, jigsaw, maze\n\n## Key Features\n\n- 1,215 test samples across 13 diverse visual reasoning task categories\n- Covers single-image and dual-image reasoning scenarios\n- Answers span letter choices (A-J), integers, floats, and text\n- Task-specific scoring with LLM-as-judge fallback for robust evaluation\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split (1,215 samples)\n- Primary metric: **Accuracy** (acc)\n- Images are downloaded as `data.zip` from ModelScope and extracted automatically\n- Rule-based scoring: OCR (substring match), jigsaw (grid IoU), spot_difference (set IoU),\n  word_search (numeric match), all other tasks (MCQ / numeric judge)\n- **Recommended**: set `judge_strategy=JudgeStrategy.LLM_RECALL` and provide `judge_model_args`\n  to activate LLM-as-judge as a recall mechanism — the judge is called only when rule-based\n  scoring gives 0, providing more accurate evaluation without unnecessary API overhead\n- [Paper](https://arxiv.org/abs/2511.01833) | [GitHub](https://github.com/agents-x-project/TIR-Bench)\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 1215,
+    "subset_stats": [
+      {
+        "name": "instrument",
+        "sample_count": 80,
+        "prompt_length_mean": 110.96,
+        "prompt_length_min": 57,
+        "prompt_length_max": 196,
+        "prompt_length_std": 26.13,
+        "target_length_mean": 1.6,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 80,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1080x1440",
+              "1080x1621",
+              "1224x1632",
+              "1280x853",
+              "1360x1273",
+              "1372x1642",
+              "1406x1254",
+              "1416x2832",
+              "1486x1824",
+              "1536x1024"
+            ],
+            "resolution_range": {
+              "min": "326x871",
+              "max": "6944x9280"
+            },
+            "formats": [
+              "jpeg",
+              "mpo",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "color",
+        "sample_count": 100,
+        "prompt_length_mean": 130.26,
+        "prompt_length_min": 98,
+        "prompt_length_max": 241,
+        "prompt_length_std": 23.28,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 100,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x624",
+              "1000x667",
+              "100x100",
+              "1024x1024",
+              "1024x640",
+              "113x110",
+              "1200x590",
+              "1200x800",
+              "1425x625",
+              "1536x1024"
+            ],
+            "resolution_range": {
+              "min": "100x100",
+              "max": "7296x7296"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "refcoco",
+        "sample_count": 120,
+        "prompt_length_mean": 144.51,
+        "prompt_length_min": 132,
+        "prompt_length_max": 182,
+        "prompt_length_std": 8.59,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 120,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "309x500",
+              "334x500",
+              "375x500",
+              "379x640",
+              "426x640",
+              "427x640",
+              "480x640",
+              "492x500",
+              "493x640",
+              "499x640"
+            ],
+            "resolution_range": {
+              "min": "640x221",
+              "max": "640x640"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "rotation_game",
+        "sample_count": 75,
+        "prompt_length_mean": 146.44,
+        "prompt_length_min": 140,
+        "prompt_length_max": 148,
+        "prompt_length_std": 2.41,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 75,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1038x1674",
+              "1072x1226",
+              "1130x1254",
+              "1226x1072",
+              "1254x1130",
+              "1272x1178",
+              "1280x1218",
+              "1280x1248",
+              "1284x1780",
+              "1492x1832"
+            ],
+            "resolution_range": {
+              "min": "298x298",
+              "max": "2680x2746"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "math",
+        "sample_count": 120,
+        "prompt_length_mean": 126.69,
+        "prompt_length_min": 50,
+        "prompt_length_max": 397,
+        "prompt_length_std": 62.67,
+        "target_length_mean": 1.09,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 120,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1090x808",
+              "1098x1168",
+              "1164x846",
+              "117x92",
+              "1202x656",
+              "124x128",
+              "1256x1040",
+              "1288x1146",
+              "1290x558",
+              "1294x840"
+            ],
+            "resolution_range": {
+              "min": "117x92",
+              "max": "2830x2051"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "word_search",
+        "sample_count": 100,
+        "prompt_length_mean": 126.72,
+        "prompt_length_min": 24,
+        "prompt_length_max": 307,
+        "prompt_length_std": 107.17,
+        "target_length_mean": 4.6,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 100,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1040x1040",
+              "1090x1090",
+              "1106x1212",
+              "1120x1130",
+              "1200x1268",
+              "1224x1506",
+              "1236x1528",
+              "1238x1528",
+              "1242x1134",
+              "1290x1290"
+            ],
+            "resolution_range": {
+              "min": "540x540",
+              "max": "2490x2490"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "visual_search",
+        "sample_count": 120,
+        "prompt_length_mean": 111.64,
+        "prompt_length_min": 19,
+        "prompt_length_max": 501,
+        "prompt_length_std": 65.44,
+        "target_length_mean": 1.29,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 120,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1080x720",
+              "1280x711",
+              "1304x871",
+              "1430x952",
+              "1480x833",
+              "1500x2250",
+              "1920x1080",
+              "2000x1500",
+              "2016x1512",
+              "2174x1812"
+            ],
+            "resolution_range": {
+              "min": "1080x720",
+              "max": "7241x7680"
+            },
+            "formats": [
+              "jpeg",
+              "png",
+              "webp"
+            ]
+          }
+        }
+      },
+      {
+        "name": "ocr",
+        "sample_count": 60,
+        "prompt_length_mean": 35.08,
+        "prompt_length_min": 29,
+        "prompt_length_max": 116,
+        "prompt_length_std": 20.21,
+        "target_length_mean": 6.42,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 60,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "103x67",
+              "104x44",
+              "106x64",
+              "109x49",
+              "112x44",
+              "118x413",
+              "119x41",
+              "126x67",
+              "127x51",
+              "130x45"
+            ],
+            "resolution_range": {
+              "min": "60x23",
+              "max": "7016x4961"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "symbolic",
+        "sample_count": 50,
+        "prompt_length_mean": 88.18,
+        "prompt_length_min": 66,
+        "prompt_length_max": 243,
+        "prompt_length_std": 27.05,
+        "target_length_mean": 1.36,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 50,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x1024",
+              "1060x712",
+              "1088x946",
+              "1098x1010",
+              "1144x1012",
+              "1310x662",
+              "1428x862",
+              "1568x786",
+              "286x176",
+              "372x532"
+            ],
+            "resolution_range": {
+              "min": "286x176",
+              "max": "1568x786"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "spot_difference",
+        "sample_count": 100,
+        "prompt_length_mean": 1114.79,
+        "prompt_length_min": 93,
+        "prompt_length_max": 1379,
+        "prompt_length_std": 515.54,
+        "target_length_mean": 15.58,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 140,
+            "count_per_sample": {
+              "min": 1,
+              "max": 2,
+              "mean": 1.4
+            },
+            "resolutions": [
+              "1080x1440",
+              "1080x1446",
+              "1080x1447",
+              "1080x1448",
+              "1080x1452",
+              "1080x1455",
+              "1080x1457",
+              "1080x1464",
+              "1080x1466",
+              "1080x1468"
+            ],
+            "resolution_range": {
+              "min": "914x794",
+              "max": "1080x1482"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "contrast",
+        "sample_count": 50,
+        "prompt_length_mean": 48.1,
+        "prompt_length_min": 31,
+        "prompt_length_max": 123,
+        "prompt_length_std": 18.58,
+        "target_length_mean": 1.02,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 50,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "384x384",
+              "600x400"
+            ],
+            "resolution_range": {
+              "min": "384x384",
+              "max": "600x400"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "jigsaw",
+        "sample_count": 120,
+        "prompt_length_mean": 605,
+        "prompt_length_min": 605,
+        "prompt_length_max": 605,
+        "prompt_length_std": null,
+        "target_length_mean": 77,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 120,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "640x640",
+              "650x650",
+              "660x660",
+              "670x670"
+            ],
+            "resolution_range": {
+              "min": "640x640",
+              "max": "670x670"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "maze",
+        "sample_count": 120,
+        "prompt_length_mean": 1527.06,
+        "prompt_length_min": 626,
+        "prompt_length_max": 4039,
+        "prompt_length_std": 725.32,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 120,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x1024",
+              "1536x1536",
+              "512x512"
+            ],
+            "resolution_range": {
+              "min": "512x512",
+              "max": "1536x1536"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 384.97,
+      "min": 19,
+      "max": 4039,
+      "std": 553.25
+    },
+    "target_length_mean": 10.36,
+    "computed_at": "2026-04-15T17:58:59.028312",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 1255,
+        "count_per_sample": {
+          "min": 1,
+          "max": 2,
+          "mean": 1.03
+        },
+        "resolutions": [
+          "1000x624",
+          "1000x667",
+          "100x100",
+          "1024x1024",
+          "1024x640",
+          "1038x1674",
+          "103x67",
+          "1040x1040",
+          "104x44",
+          "1060x712"
+        ],
+        "resolution_range": {
+          "min": "60x23",
+          "max": "6944x9280"
+        },
+        "formats": [
+          "jpeg",
+          "mpo",
+          "png",
+          "webp"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "dd25f10d",
+          "content": [
+            {
+              "image": "[BASE64_IMAGE: jpg, ~2.9MB]"
+            },
+            {
+              "text": "According to the image, what is the thermometer reading in Fahrenheit? Answer as an integer like 1,2,3."
+            }
+          ]
+        }
+      ],
+      "target": "72",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "instrument",
+      "metadata": {
+        "task": "instrument",
+        "meta_data": {},
+        "id": 6
+      }
+    },
+    "subset": "instrument",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# TIR-Bench\n\n\n## Overview\n\nTIR-Bench (Thinking-with-Images Reasoning Benchmark) is a comprehensive multimodal benchmark\nthat evaluates agentic visual reasoning capabilities of vision-language models. It covers\ndiverse task categories requiring spatial, compositional, and multi-step visual reasoning.\n\n## Task Description\n\n- **Task Type**: Multi-task Visual Reasoning (MCQ, OCR, word search, spot difference, jigsaw, etc.)\n- **Input**: One or two images + question (most tasks use multiple-choice format)\n- **Output**: Answer letter (MCQ) or numeric/text response depending on task type\n- **Domains**: instrument, color, refcoco, rotation_game, math, word_search, visual_search, ocr, symbolic, spot_difference, contrast, jigsaw, maze\n\n## Key Features\n\n- 1,215 test samples across 13 diverse visual reasoning task categories\n- Covers single-image and dual-image reasoning scenarios\n- Answers span letter choices (A-J), integers, floats, and text\n- Task-specific scoring with LLM-as-judge fallback for robust evaluation\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split (1,215 samples)\n- Primary metric: **Accuracy** (acc)\n- Images are downloaded as `data.zip` from ModelScope and extracted automatically\n- Rule-based scoring: OCR (substring match), jigsaw (grid IoU), spot_difference (set IoU),\n  word_search (numeric match), all other tasks (MCQ / numeric judge)\n- **Recommended**: set `judge_strategy=JudgeStrategy.LLM_RECALL` and provide `judge_model_args`\n  to activate LLM-as-judge as a recall mechanism — the judge is called only when rule-based\n  scoring gives 0, providing more accurate evaluation without unnecessary API overhead\n- [Paper](https://arxiv.org/abs/2511.01833) | [GitHub](https://github.com/agents-x-project/TIR-Bench)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `tir_bench` |\n| **Dataset ID** | [evalscope/TIR-Bench](https://modelscope.cn/datasets/evalscope/TIR-Bench/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2511.01833) |\n| **Tags** | `MultiModal`, `QA`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,215 |\n| Prompt Length (Mean) | 384.97 chars |\n| Prompt Length (Min/Max) | 19 / 4039 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `instrument` | 80 | 110.96 | 57 | 196 |\n| `color` | 100 | 130.26 | 98 | 241 |\n| `refcoco` | 120 | 144.51 | 132 | 182 |\n| `rotation_game` | 75 | 146.44 | 140 | 148 |\n| `math` | 120 | 126.69 | 50 | 397 |\n| `word_search` | 100 | 126.72 | 24 | 307 |\n| `visual_search` | 120 | 111.64 | 19 | 501 |\n| `ocr` | 60 | 35.08 | 29 | 116 |\n| `symbolic` | 50 | 88.18 | 66 | 243 |\n| `spot_difference` | 100 | 1114.79 | 93 | 1379 |\n| `contrast` | 50 | 48.1 | 31 | 123 |\n| `jigsaw` | 120 | 605 | 605 | 605 |\n| `maze` | 120 | 1527.06 | 626 | 4039 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 1,255 |\n| Images per Sample | min: 1, max: 2, mean: 1.03 |\n| Resolution Range | 60x23 - 6944x9280 |\n| Formats | jpeg, mpo, png, webp |\n\n\n## Sample Example\n\n**Subset**: `instrument`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"dd25f10d\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: jpg, ~2.9MB]\"\n        },\n        {\n          \"text\": \"According to the image, what is the thermometer reading in Fahrenheit? Answer as an integer like 1,2,3.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"72\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"instrument\",\n  \"metadata\": {\n    \"task\": \"instrument\",\n    \"meta_data\": {},\n    \"id\": 6\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tir_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tir_bench'],\n    dataset_args={\n        'tir_bench': {\n            # subset_list: ['instrument', 'color', 'refcoco']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# TIR-Bench\n\n\n## 概述\n\nTIR-Bench（Thinking-with-Images Reasoning Benchmark）是一个全面的多模态基准测试，用于评估视觉语言模型的具身视觉推理能力。该基准涵盖多种任务类别，要求模型具备空间、组合式及多步骤的视觉推理能力。\n\n## 任务描述\n\n- **任务类型**：多任务视觉推理（选择题、OCR、单词搜索、找不同、拼图等）\n- **输入**：一张或两张图像 + 问题（大多数任务采用选择题格式）\n- **输出**：答案字母（选择题）或数字/文本形式的答案（取决于任务类型）\n- **领域**：instrument（仪器）、color（颜色）、refcoco、rotation_game（旋转游戏）、math（数学）、word_search（单词搜索）、visual_search（视觉搜索）、ocr、symbolic（符号）、spot_difference（找不同）、contrast（对比）、jigsaw（拼图）、maze（迷宫）\n\n## 核心特性\n\n- 包含13种多样化的视觉推理任务类别，共计1,215个测试样本\n- 覆盖单图和双图推理场景\n- 答案形式包括字母选项（A-J）、整数、浮点数和文本\n- 采用任务特定评分机制，并辅以LLM-as-judge作为后备方案，确保评估的鲁棒性\n\n## 评估说明\n\n- 默认使用 **test** 划分进行评估（共1,215个样本）\n- 主要指标：**准确率**（acc）\n- 图像数据通过 ModelScope 下载为 `data.zip` 并自动解压\n- 基于规则的评分方式：\n  - OCR（子串匹配）\n  - 拼图（grid IoU）\n  - 找不同（set IoU）\n  - 单词搜索（数值匹配）\n  - 其他所有任务（选择题 / 数值判断）\n- **推荐设置**：将 `judge_strategy=JudgeStrategy.LLM_RECALL` 并提供 `judge_model_args`，以启用 LLM-as-judge 作为召回机制——仅当基于规则的评分结果为0时才调用判别模型，在避免不必要 API 开销的同时提升评估准确性\n- [论文](https://arxiv.org/abs/2511.01833) | [GitHub](https://github.com/agents-x-project/TIR-Bench)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `tir_bench` |\n| **数据集ID** | [evalscope/TIR-Bench](https://modelscope.cn/datasets/evalscope/TIR-Bench/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2511.01833) |\n| **标签** | `MultiModal`, `QA`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,215 |\n| 提示词长度（平均） | 384.97 字符 |\n| 提示词长度（最小/最大） | 19 / 4039 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `instrument` | 80 | 110.96 | 57 | 196 |\n| `color` | 100 | 130.26 | 98 | 241 |\n| `refcoco` | 120 | 144.51 | 132 | 182 |\n| `rotation_game` | 75 | 146.44 | 140 | 148 |\n| `math` | 120 | 126.69 | 50 | 397 |\n| `word_search` | 100 | 126.72 | 24 | 307 |\n| `visual_search` | 120 | 111.64 | 19 | 501 |\n| `ocr` | 60 | 35.08 | 29 | 116 |\n| `symbolic` | 50 | 88.18 | 66 | 243 |\n| `spot_difference` | 100 | 1114.79 | 93 | 1379 |\n| `contrast` | 50 | 48.1 | 31 | 123 |\n| `jigsaw` | 120 | 605 | 605 | 605 |\n| `maze` | 120 | 1527.06 | 626 | 4039 |\n\n**图像统计数据：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 1,255 |\n| 每样本图像数 | 最小: 1, 最大: 2, 平均: 1.03 |\n| 分辨率范围 | 60x23 - 6944x9280 |\n| 格式 | jpeg, mpo, png, webp |\n\n\n## 样例示例\n\n**子集**: `instrument`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"dd25f10d\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: jpg, ~2.9MB]\"\n        },\n        {\n          \"text\": \"According to the image, what is the thermometer reading in Fahrenheit? Answer as an integer like 1,2,3.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"72\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"instrument\",\n  \"metadata\": {\n    \"task\": \"instrument\",\n    \"meta_data\": {},\n    \"id\": 6\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tir_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tir_bench'],\n    dataset_args={\n        'tir_bench': {\n            # subset_list: ['instrument', 'color', 'refcoco']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "1e7e5c11d8da8e7d4e20f47aa3f18cd3",
+    "needs_translation": false
+  },
+  "updated_at": "2026-04-15T19:08:49.368638",
+  "translation_updated_at": "2026-04-15T19:08:56Z"
+}
