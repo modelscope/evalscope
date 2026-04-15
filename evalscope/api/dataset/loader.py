@@ -236,19 +236,24 @@ class LocalDataLoader(DataLoader):
                         dataset_found = True
                     break
 
-        # Fallback: if no file found, try to find the first supported file in the directory
-        if not dataset_found and os.path.isdir(path):
-            for ext, loader in supported_format:
-                if dataset_found:
-                    break
-                for file in os.listdir(path):
-                    if file.endswith(ext):
-                        file_path = os.path.join(path, file)
-                        logger.warning(f'No specific dataset file found, loading the first found file: {file_path}')
-                        dataset = loader(file_path)
-                        if dataset:
-                            dataset_found = True
-                        break
+        # If no specific file found, raise an error with helpful information
+        if not dataset_found:
+            if os.path.isdir(path):
+                # List available files in directory to help user diagnose the problem
+                available_files = sorted([
+                    f for f in os.listdir(path) if any(f.endswith(ext) for ext, _ in supported_format)
+                ])
+                expected_paths = []
+                for ext, _ in supported_format:
+                    expected_paths.append(f'  - {os.path.join(path, f"{self.subset}_{self.split}{ext}")}')
+                    expected_paths.append(f'  - {os.path.join(path, f"{self.subset}{ext}")}')
+                raise FileNotFoundError(
+                    f'Dataset file not found for subset="{self.subset}", split="{self.split}".\n'
+                    f'Expected one of:\n' + '\n'.join(expected_paths) + '\n'
+                    f'Available files in "{path}":\n' + '\n'.join(f'  - {f}' for f in available_files)
+                )
+            else:
+                raise FileNotFoundError(f'Dataset path does not exist: "{path}"')
 
         # shuffle if requested
         if self.shuffle:
