@@ -154,6 +154,11 @@ def jsonl_to_csv(jsonl_file, csv_file):
         logger.warning(f'No data found in {jsonl_file}.')
         return
 
+    # Create directory if not exists
+    dir_name = os.path.dirname(csv_file)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
+
     with open(csv_file, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(data[0].keys())  # Write header
@@ -237,6 +242,11 @@ def dict_to_yaml(d: dict, yaml_file: str):
     """
     Dump dict to yaml file.
     """
+    # Create directory if not exists
+    dir_name = os.path.dirname(yaml_file)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
+
     with open(yaml_file, 'w') as f:
         yaml.dump(d, f, default_flow_style=False, allow_unicode=True, Dumper=yaml.SafeDumper)
 
@@ -269,6 +279,11 @@ def dict_to_json(d: dict, json_file: str):
     """
     Dump dict to json file.
     """
+    # Create directory if not exists
+    dir_name = os.path.dirname(json_file)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
+
     with open(json_file, 'w') as f:
         json.dump(d, f, indent=4, ensure_ascii=False)
 
