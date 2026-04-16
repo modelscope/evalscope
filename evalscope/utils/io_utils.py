@@ -122,6 +122,11 @@ def dump_jsonl_data(data_list, jsonl_file, dump_mode=DumpMode.OVERWRITE):
 
     jsonl_file = os.path.expanduser(jsonl_file)
 
+    # Create directory if not exists
+    dir_name = os.path.dirname(jsonl_file)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
+
     if not isinstance(data_list, list):
         data_list = [data_list]
 
