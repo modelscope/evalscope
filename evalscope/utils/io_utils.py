@@ -280,6 +280,7 @@ def dict_to_json(d: dict, json_file: str):
     Dump dict to json file.
     """
     # Create directory if not exists
+    json_file = os.path.expanduser(json_file)
     dir_name = os.path.dirname(json_file)
     if dir_name:
         os.makedirs(dir_name, exist_ok=True)
