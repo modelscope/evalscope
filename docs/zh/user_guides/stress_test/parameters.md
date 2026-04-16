@@ -105,6 +105,9 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `rerank` | 从文件加载Query-Document对评测Rerank模型<br>支持JSONL格式 (含`query`和`documents`字段) | ✓ (必需) |
 | `random_rerank` | 根据`max-prompt-length`和`min-prompt-length`随机生成query数据评测Rerank模型<br>**必需指定`tokenizer-path`**<br>支持`--extra-args '{"num_documents": 10, "document_length_ratio": 5}'`设置文档数量和相对query的长度倍数 | ✗ |
 | `custom` | 自定义数据集解析器<br>参考[自定义数据集指南](custom.md/#自定义数据集) | ✓ |
+| `random_multi_turn` | 合成多轮对话，每轮随机生成 token 序列<br>需配合 `--multi-turn` 使用<br>**必需 `--tokenizer-path`、`--max-turns`**<br>[使用示例](./multi_turn.md#1-使用-random_multi_turn合成多轮对话) | ✗ |
+| `share_gpt_zh_multi_turn` | 从 ModelScope 自动下载中文 [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) 数据集（约 70k 条），保留完整多轮对话<br>需配合 `--multi-turn` 使用<br>[使用示例](./multi_turn.md#2-使用-share_gpt_zh_multi_turn真实中文对话) | ✓ |
+| `share_gpt_en_multi_turn` | 从 ModelScope 自动下载英文 [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) 数据集（约 70k 条），保留完整多轮对话<br>需配合 `--multi-turn` 使用 | ✓ |
 
 ## 模型设置
 
@@ -135,6 +138,18 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `--swanlab-api-key` | `str` | swanlab API密钥<br>**已废弃**，请使用`--visualizer swanlab` | - |
 | `--outputs-dir` | `str` | 输出文件路径 | `./outputs` |
 | `--no-timestamp` | `bool` | 输出目录不包含时间戳 | `False` |
+
+## 多轮对话设置
+
+| 参数 | 类型 | 说明 | 默认值 |
+|------|------|------|--------|
+| `--multi-turn` | `bool` | 启用多轮对话压测模式；`--number` 表示总发送 turn 数，`--parallel` 表示并发 turn 数 | `False` |
+| `--min-turns` | `int` | 每个对话最少用户轮数，仅 `random_multi_turn` 使用 | `1` |
+| `--max-turns` | `int` | 每个对话最多用户轮数；`random_multi_turn` 必需；ShareGPT 数据集可选，用于截断过长对话 | `None` |
+
+```{seealso}
+多轮对话压测使用详见[多轮对话压测指南](./multi_turn.md)。
+```
 
 ## 其他参数
 

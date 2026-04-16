@@ -4,7 +4,8 @@ from flask import Blueprint, jsonify, request, send_file
 from tabulate import tabulate
 
 from evalscope.perf.arguments import Arguments as PerfArguments
-from evalscope.perf.utils.rich_display import analyze_results
+from evalscope.perf.utils.benchmark_util import Metrics
+from evalscope.perf.utils.rich_display import EmbeddingResultAnalyzer, LLMResultAnalyzer
 from evalscope.utils.logger import get_logger
 from ..utils import OUTPUT_DIR, create_log_file, get_log_content, run_in_subprocess, run_perf_wrapper, validate_task_id
 
@@ -17,17 +18,19 @@ def _build_perf_table(result, api_type: str = None) -> str:
     Returns an empty string when no valid results are found.
     """
     try:
-        summary, _tokens, _time, is_embedding_rerank = analyze_results(result, api_type=api_type)
-        if not summary:
+        is_emb = Metrics.is_embedding_or_rerank(api_type)
+        analyzer = EmbeddingResultAnalyzer() if is_emb else LLMResultAnalyzer()
+        analysis = analyzer.analyze(result)
+        if not analysis.rows:
             return ''
-        if is_embedding_rerank:
+        if is_emb:
             headers = ['并发数', '请求速率', '每秒请求数', '平均延迟(s)', 'P99延迟(s)', '平均输入TPS', 'P99输入TPS', '平均输入Token数', '成功率']
         else:
             headers = [
                 '并发数', '请求速率', '每秒请求数', '平均延迟(s)', 'P99延迟(s)', '平均首字延迟(s)', 'P99首字延迟(s)', '平均每Token延迟(s)',
                 'P99每Token延迟(s)', '生成速度(toks/s)', '成功率'
             ]
-        return tabulate(summary, headers=headers, tablefmt='pipe')
+        return tabulate(analysis.rows, headers=headers, tablefmt='pipe')
     except Exception as e:
         logger.warning(f'Failed to build perf table: {e}')
         return ''

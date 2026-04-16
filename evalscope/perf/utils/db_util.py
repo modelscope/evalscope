@@ -10,7 +10,7 @@ from tabulate import tabulate
 from typing import Dict, List, Tuple
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
+from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics, Metrics
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -178,8 +178,6 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Dict[st
     :param api_type: The API type (e.g., 'openai', 'openai_embedding', 'openai_rerank').
     :return: Dictionary of percentiles for various metrics.
     """
-    from evalscope.perf.utils.benchmark_util import is_embedding_or_rerank_api
-
     query_sql = f'''SELECT {DatabaseColumns.START_TIME}, {DatabaseColumns.INTER_TOKEN_LATENCIES}, {DatabaseColumns.SUCCESS},
                     {DatabaseColumns.COMPLETED_TIME}, {DatabaseColumns.LATENCY}, {DatabaseColumns.FIRST_CHUNK_LATENCY},
                     {DatabaseColumns.PROMPT_TOKENS},
@@ -197,7 +195,7 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Dict[st
     # Create column index mapping
     col_indices = {col: idx for idx, col in enumerate(columns)}
 
-    is_embedding_rerank = is_embedding_or_rerank_api(api_type)
+    is_embedding_rerank = Metrics.is_embedding_or_rerank(api_type)
 
     if is_embedding_rerank:
         # For embedding/rerank models, show relevant metrics only
