@@ -10,6 +10,7 @@ from .flickr8k import FlickrDatasetPlugin
 from .kontext_bench import KontextDatasetPlugin
 from .line_by_line import LineByLineDatasetPlugin
 from .longalpaca import LongAlpacaDatasetPlugin
+from .multi_turn import RandomMultiTurnDatasetPlugin, ShareGPTEnMultiTurnPlugin, ShareGPTZhMultiTurnPlugin
 from .openqa import OpenqaDatasetPlugin
 from .random_dataset import RandomDatasetPlugin
 from .random_vl_dataset import RandomVLDatasetPlugin

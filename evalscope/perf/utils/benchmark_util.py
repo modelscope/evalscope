@@ -29,6 +29,12 @@ class BenchmarkData:
     prompt_tokens: Optional[int] = None
     completion_tokens: Optional[int] = None
 
+    # multi-turn specific fields (only populated in multi-turn benchmark mode)
+    input_num_turns: int = 0
+    """Number of user turns in the conversation context when this request was sent."""
+    approx_cached_percent: float = 0.0
+    """Estimated KV cache hit rate: history_prompt_tokens / total_prompt_tokens * 100."""
+
     def _calculate_tokens(self, api_plugin):
         if self.prompt_tokens is None or self.completion_tokens is None:
             self.prompt_tokens, self.completion_tokens = api_plugin.parse_responses(
@@ -70,6 +76,9 @@ class Metrics:
     AVERAGE_INTER_TOKEN_LATENCY = 'Average inter-token latency (s)'
     AVERAGE_INPUT_TOKENS_PER_REQUEST = 'Average input tokens per request'
     AVERAGE_OUTPUT_TOKENS_PER_REQUEST = 'Average output tokens per request'
+    # Multi-turn specific metrics
+    AVERAGE_INPUT_TURNS_PER_REQUEST = 'Average input turns per request'
+    AVERAGE_CACHED_PERCENT = 'Average approx KV cache hit rate (%)'
 
 
 def is_embedding_or_rerank_api(api_name: str) -> bool:
@@ -108,6 +117,19 @@ class BenchmarkMetrics:
     avg_inter_token_latency: float = -1
     qps: float = -1
 
+    # Multi-turn specific accumulators
+    total_input_turns: int = 0
+    """Sum of input_num_turns across all successful multi-turn requests."""
+    total_cached_percent: float = 0.0
+    """Sum of approx_cached_percent across requests with non-zero cached percent."""
+    n_cached_percent_samples: int = 0
+    """Number of requests with a valid (non-zero) approx_cached_percent."""
+
+    avg_turns_per_request: float = -1
+    """Average number of conversation turns in the context per request."""
+    avg_cached_percent: float = -1
+    """Average estimated KV cache hit rate (%) across multi-turn requests."""
+
     def update_metrics(self, benchmark_data: BenchmarkData, api_plugin):
         self.n_total_queries += 1
 
@@ -122,6 +144,13 @@ class BenchmarkMetrics:
             self.total_first_chunk_latency += benchmark_data.first_chunk_latency
             self.n_time_per_output_token += benchmark_data.time_per_output_token
             self.n_total_inter_token_latency += benchmark_data.inter_chunk_latency
+
+            # Accumulate multi-turn specific metrics
+            if benchmark_data.input_num_turns > 0:
+                self.total_input_turns += benchmark_data.input_num_turns
+            if benchmark_data.approx_cached_percent > 0:
+                self.total_cached_percent += benchmark_data.approx_cached_percent
+                self.n_cached_percent_samples += 1
         else:
             self.n_failed_queries += 1
 
@@ -161,6 +190,12 @@ class BenchmarkMetrics:
                 self.n_total_inter_token_latency
             ) if self.n_total_inter_token_latency else 0.0
             self.qps = self.n_succeed_queries / self.total_time
+
+            # Multi-turn averages
+            if self.total_input_turns > 0:
+                self.avg_turns_per_request = self.total_input_turns / self.n_succeed_queries
+            if self.n_cached_percent_samples > 0:
+                self.avg_cached_percent = self.total_cached_percent / self.n_cached_percent_samples
         except ZeroDivisionError as e:
             logger.error(
                 f'ZeroDivisionError in calculate_averages: {e}. '
@@ -215,4 +250,11 @@ class BenchmarkMetrics:
                 Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST: round(self.avg_prompt_tokens, default_ndigits),
                 Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST: round(self.avg_completion_tokens, default_ndigits),
             }
+
+        # Conditionally append multi-turn specific metrics
+        if self.avg_turns_per_request > 0:
+            message[Metrics.AVERAGE_INPUT_TURNS_PER_REQUEST] = round(self.avg_turns_per_request, default_ndigits)
+        if self.avg_cached_percent > 0:
+            message[Metrics.AVERAGE_CACHED_PERCENT] = round(self.avg_cached_percent, default_ndigits)
+
         return message

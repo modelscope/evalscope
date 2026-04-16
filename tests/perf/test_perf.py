@@ -452,5 +452,58 @@ class TestPerf(unittest.TestCase):
         )
         result = run_perf_benchmark(task_cfg)
 
+    def test_run_perf_multi_turn_random(self):
+        """Multi-turn benchmark with synthetic random conversations.
+
+        Each conversation has 2-4 user turns.  ``--number`` is the total turn
+        budget (= total API requests), ``--parallel`` is the concurrency.
+        Requires a running chat/completions endpoint and a local tokenizer.
+        """
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=[5, 10],
+            number=[10, 20],
+            model='Qwen2.5-0.5B-Instruct',
+            url='http://127.0.0.1:8801/v1/chat/completions',
+            api='openai',
+            dataset='random_multi_turn',
+            multi_turn=True,
+            min_turns=2,
+            max_turns=4,
+            min_prompt_length=64,
+            max_prompt_length=256,
+            max_tokens=128,
+            tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
+            debug=True,
+        )
+        result = run_perf_benchmark(task_cfg)
+        print(result)
+
+    def test_run_perf_multi_turn_share_gpt(self):
+        """Multi-turn benchmark with ShareGPT Chinese conversations.
+
+        Uses the full user+assistant conversation from the dataset; assistant
+        turns are replaced by real model outputs during the benchmark.
+        Requires DASHSCOPE_API_KEY to be set in .env.
+        """
+        if not env.get('DASHSCOPE_API_KEY'):
+            self.skipTest('DASHSCOPE_API_KEY is not set.')
+            return
+
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=2,
+            number=5,
+            model='qwen-plus',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai',
+            dataset='share_gpt_zh_multi_turn',
+            multi_turn=True,
+            max_turns=4,
+        )
+        result = run_perf_benchmark(task_cfg)
+        print(result)
+
 if __name__ == '__main__':
     unittest.main(buffer=False)

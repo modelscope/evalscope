@@ -276,7 +276,7 @@ def _print_summary_embedding(summary, total_tokens, total_time, args, console, f
     _generate_recommendations(summary, console, file_console)
 
 
-def _print_summary_llm(summary, total_tokens, total_time, args, console, file_console):
+def _print_summary_llm(summary, total_tokens, total_time, args, console, file_console, all_results=None):
     """Print summary specifically for LLM Generation models."""
     # 1. Title
     title = Text('Performance Test Summary Report', style='bold')
@@ -331,8 +331,100 @@ def _print_summary_llm(summary, total_tokens, total_time, args, console, file_co
     _print_to_both(console, file_console, '\n')
     _print_to_both(console, file_console, table)
 
-    # 4. Recommendations
+    # 4. Request-level token/turn metrics
+    if all_results is not None:
+        _print_request_metrics(all_results, console, file_console)
+
+    # 5. Recommendations
     _generate_recommendations(summary, console, file_console)
+
+
+def _print_request_metrics(all_results, console, file_console):
+    """Print per-concurrency request metrics table:
+    num_reqs, avg/p99 input tokens, avg/p99 output tokens,
+    and (if multi-turn) avg turns and avg approx cache hit.
+    """
+    results = _normalize_results(all_results)
+    if not results:
+        return
+
+    rows = []
+    has_turns = False
+    has_cache = False
+
+    for result in results:
+        total_metrics = result[0]
+        percentile_metrics = result[1]
+        percentiles = percentile_metrics.get(PercentileMetrics.PERCENTILES, [])
+
+        concurrency = total_metrics.get(Metrics.NUMBER_OF_CONCURRENCY, 0)
+        num_reqs = total_metrics.get(Metrics.TOTAL_REQUESTS)
+        avg_in = total_metrics.get(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST)
+        avg_out = total_metrics.get(Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST)
+        avg_turns = total_metrics.get(Metrics.AVERAGE_INPUT_TURNS_PER_REQUEST)
+        avg_cache = total_metrics.get(Metrics.AVERAGE_CACHED_PERCENT)
+
+        # Fetch p99 from percentile arrays
+        p99_in, p99_out = None, None
+        try:
+            idx99 = percentiles.index('99%')
+            in_data = percentile_metrics.get(PercentileMetrics.INPUT_TOKENS)
+            if in_data:
+                p99_in = in_data[idx99]
+            out_data = percentile_metrics.get(PercentileMetrics.OUTPUT_TOKENS)
+            if out_data:
+                p99_out = out_data[idx99]
+        except (ValueError, IndexError):
+            pass
+
+        if avg_turns is not None and avg_turns > 0:
+            has_turns = True
+        if avg_cache is not None and avg_cache > 0:
+            has_cache = True
+
+        rows.append({
+            'conc': str(int(concurrency)),
+            'num_reqs': str(int(num_reqs)) if num_reqs is not None else 'N/A',
+            'avg_in': f'{avg_in:.1f}' if avg_in is not None else 'N/A',
+            'p99_in': f'{p99_in:.1f}' if p99_in is not None else 'N/A',
+            'avg_out': f'{avg_out:.1f}' if avg_out is not None else 'N/A',
+            'p99_out': f'{p99_out:.1f}' if p99_out is not None else 'N/A',
+            'avg_turns': f'{avg_turns:.2f}' if (avg_turns is not None and avg_turns > 0) else None,
+            'avg_cache': f'{avg_cache:.1f}%' if (avg_cache is not None and avg_cache > 0) else None,
+        })
+
+    if not rows:
+        return
+
+    req_table = Table(
+        title='Request Metrics',
+        show_header=True,
+        header_style='bold cyan',
+        border_style='blue',
+        pad_edge=False,
+        expand=False,
+    )
+    req_table.add_column('Conc.', justify='right', style='cyan')
+    req_table.add_column('Num Reqs', justify='right')
+    req_table.add_column('Avg In Toks', justify='right')
+    req_table.add_column('P99 In Toks', justify='right')
+    req_table.add_column('Avg Out Toks', justify='right')
+    req_table.add_column('P99 Out Toks', justify='right')
+    if has_turns:
+        req_table.add_column('Avg Turns/Req', justify='right')
+    if has_cache:
+        req_table.add_column('Approx Cache Hit', justify='right', style='green')
+
+    for r in rows:
+        row_data = [r['conc'], r['num_reqs'], r['avg_in'], r['p99_in'], r['avg_out'], r['p99_out']]
+        if has_turns:
+            row_data.append(r['avg_turns'] or 'N/A')
+        if has_cache:
+            row_data.append(r['avg_cache'] or 'N/A')
+        req_table.add_row(*row_data)
+
+    _print_to_both(console, file_console, '\n')
+    _print_to_both(console, file_console, req_table)
 
 
 def print_summary(all_results, args: Arguments):
@@ -354,6 +446,6 @@ def print_summary(all_results, args: Arguments):
         if is_embedding_rerank:
             _print_summary_embedding(summary, total_tokens, total_time, args, console, file_console)
         else:
-            _print_summary_llm(summary, total_tokens, total_time, args, console, file_console)
+            _print_summary_llm(summary, total_tokens, total_time, args, console, file_console, all_results=all_results)
 
     logger.info(f'Performance summary saved to: {summary_file}')

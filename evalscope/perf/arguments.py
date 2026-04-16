@@ -235,6 +235,30 @@ class Arguments(BaseArgument):
     avoiding the token ID → text → token ID round-trip inflation.
     Requires --tokenizer-path to be set."""
 
+    # Multi-turn settings
+    multi_turn: bool = False
+    """Enable multi-turn conversation benchmark mode.
+
+    When enabled, each request is a single turn within a multi-turn conversation.
+    The conversation context (previous turns + model responses) is accumulated and
+    sent with each subsequent turn.  Use a multi-turn compatible dataset such as
+    ``random_multi_turn``, ``share_gpt_zh_multi_turn``, or ``share_gpt_en_multi_turn``.
+
+    Semantics of existing parameters in multi-turn mode:
+    - ``--number``: total number of turns to send (same as normal mode).
+    - ``--parallel``: number of concurrently active turn requests.
+    """
+
+    min_turns: int = 1
+    """Minimum number of user turns per conversation (used by ``random_multi_turn``)."""
+
+    max_turns: Optional[int] = None
+    """Maximum number of user turns per conversation.
+
+    For ``random_multi_turn``: caps the randomly sampled turn count.
+    For ShareGPT multi-turn datasets: truncates long conversations.
+    """
+
     def __post_init__(self):
         # Set the default headers
         self.headers = self.headers or {}  # Default to empty dictionary
@@ -434,6 +458,35 @@ def add_argument(parser: argparse.ArgumentParser):
             'Tokenize prompt client-side and send token IDs directly via /v1/completions, '
             'avoiding the token ID \u2192 text \u2192 token ID re-tokenization inflation. '
             'Requires --tokenizer-path to be set.'
+        ),
+    )
+    # Multi-turn settings
+    parser.add_argument(
+        '--multi-turn',
+        action='store_true',
+        default=False,
+        help=(
+            'Enable multi-turn conversation benchmark mode. '
+            'In this mode --number is the total number of turns to send and '
+            '--parallel is the number of concurrently active turn-level requests. '
+            'Use a multi-turn compatible dataset: random_multi_turn, '
+            'share_gpt_zh_multi_turn, or share_gpt_en_multi_turn.'
+        ),
+    )
+    parser.add_argument(
+        '--min-turns',
+        type=int,
+        default=1,
+        help='Minimum number of user turns per conversation (random_multi_turn only). Default: 1.',
+    )
+    parser.add_argument(
+        '--max-turns',
+        type=int,
+        default=None,
+        help=(
+            'Maximum number of user turns per conversation. '
+            'For random_multi_turn: required, caps the sampled turn count. '
+            'For ShareGPT multi-turn datasets: optional, truncates long conversations.'
         ),
     )
     # yapf: enable
