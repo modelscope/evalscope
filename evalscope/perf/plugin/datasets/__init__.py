@@ -14,4 +14,5 @@ from .openqa import OpenqaDatasetPlugin
 from .random_dataset import RandomDatasetPlugin
 from .random_vl_dataset import RandomVLDatasetPlugin
 from .rerank_dataset import RandomRerankDatasetPlugin, RerankDatasetPlugin
+from .share_gpt import ShareGPTEnDatasetPlugin, ShareGPTZhDatasetPlugin
 from .speed_benchmark import SpeedBenchmarkDatasetPlugin, SpeedBenchmarkLongDatasetPlugin
