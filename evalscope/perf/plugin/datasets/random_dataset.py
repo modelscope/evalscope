@@ -48,18 +48,7 @@ class RandomDatasetPlugin(DatasetPluginBase):
         token-ID lists that bypass the decode/re-encode round-trip entirely."""
         tokenize_prompt = self.query_parameters.tokenize_prompt
 
-        if tokenize_prompt:
-            # Subtract prefix_length so that the final prompt
-            # (prefix_ids + inner_seq) stays within [min, max]_prompt_length.
-            min_prompt_length = self.query_parameters.min_prompt_length - self.prefix_length
-            max_prompt_length = self.query_parameters.max_prompt_length - self.prefix_length + 1
-            if min_prompt_length < 0:
-                logger.warning(
-                    f'min_prompt_length is less than prefix_length {self.prefix_length}, '
-                    'setting min_prompt_length to 0.'
-                )
-                min_prompt_length = 0
-        elif self.query_parameters.apply_chat_template:
+        if self.query_parameters.apply_chat_template and not tokenize_prompt:
             template_len = self.get_template_len()
             min_prompt_length = self.query_parameters.min_prompt_length - template_len
             max_prompt_length = self.query_parameters.max_prompt_length - template_len + 1
@@ -120,7 +109,7 @@ class RandomDatasetPlugin(DatasetPluginBase):
         offset: int,
         index: int,
     ) -> List[int]:
-        """Return a raw token-ID list of exactly `input_len` tokens (+ prefix).
+        """Return a raw token-ID list of exactly `prefix_length + input_len` tokens.
 
         Unlike `generate_token_sequence`, this method never decodes tokens to text
         and therefore avoids any token ID → text → token ID round-trip inflation.
