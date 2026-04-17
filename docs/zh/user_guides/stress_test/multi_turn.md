@@ -141,8 +141,8 @@ evalscope perf \
 
 **指标解读**：
 
-- `Average input turns per request: 2.87`：测试期间每次请求平均携带 2.87 轮上下文，符合 `--min-turns 2 --max-turns 5` 的随机采样分布。
-- `Average approx KV cache hit rate (%): 41.23`：平均约 41% 的输入 token 来自 KV 缓存（历史对话），服务端 prefix caching 有一定收益；若命中率接近 0，建议检查服务是否开启 prefix caching。
+- `Avg Turns/Req: 1.60`：测试期间每次请求平均携带 1.60 轮上下文，符合 `--min-turns 2 --max-turns 5` 的随机采样分布（第 1 轮无历史，后续轮次历史逐步增长）。
+- `Approx Cache Hit: 58.1%`：约 58% 的输入 token 来自历史对话，若服务端已开启 prefix caching，则这部分 token 可从缓存直接提供；若此值接近 0，建议检查服务端是否开启了 prefix caching。
 
 ### 2. 使用 share_gpt_zh_multi_turn（真实中文对话）
 
@@ -160,3 +160,43 @@ evalscope perf \
   --number 300 \
   --parallel 10
 ```
+
+若已本地下载数据集，可通过 `--dataset-path` 避免重复下载：
+
+```bash
+evalscope perf \
+  --model Qwen2.5-7B-Instruct \
+  --url http://127.0.0.1:8801/v1/chat/completions \
+  --api openai \
+  --dataset share_gpt_zh_multi_turn \
+  --dataset-path /path/to/common_zh_70k.jsonl \
+  --max-tokens 512 \
+  --multi-turn \
+  --max-turns 3 \
+  --number 300 \
+  --parallel 10
+```
+
+输出示例：
+
+```text
+                                    Detailed Performance Metrics
+┏━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓
+┃      ┃      ┃      ┃     Avg ┃     P99 ┃     Avg ┃     P99 ┃     Avg ┃    P99 ┃    Gen. ┃ Success┃
+┃Conc. ┃ Rate ┃  RPS ┃ Lat.(s) ┃ Lat.(s) ┃ TTFT(s) ┃ TTFT(s) ┃ TPOT(s) ┃ TPOT(… ┃  toks/s ┃    Rate┃
+┡━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩
+│   10 │  INF │ 3.87 │   2.571 │   4.103 │   0.055 │   0.098 │   0.010 │  0.013 │  985.21 │  100.0%│
+└──────┴──────┴──────┴─────────┴─────────┴─────────┴─────────┴─────────┴────────┴─────────┴────────┘
+
+                                          Request Metrics                                           
+┏━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃      ┃          ┃             ┃     P99 In ┃     Avg Out ┃    P99 Out ┃         Avg ┃      Approx┃
+┃Conc. ┃ Num Reqs ┃ Avg In Toks ┃       Toks ┃        Toks ┃       Toks ┃   Turns/Req ┃   Cache Hit┃
+│   10 │      300 │       428.7 │      912.0 │       186.3 │      384.0 │        1.98 │       53.7%│
+└──────┴──────────┴─────────────┴────────────┴─────────────┴────────────┴─────────────┴────────────┘
+```
+
+**指标解读**：
+
+- `Avg Turns/Req: 1.98`：受 `--max-turns 3` 限制，平均每请求包含约 2 轮上下文，符合预期（第 1 轮无历史，第 2、3 轮分别携带 1、2 轮历史，平均约 1.98）。
+- `Approx Cache Hit: 53.7%`：真实对话中上下文较长，历史 token 占比约 54%。若服务端开启了 prefix caching，收益尤为显著——尤其是后续轮次中缓存前缀越来越长，TTFT 通常会随轮次增加而降低。

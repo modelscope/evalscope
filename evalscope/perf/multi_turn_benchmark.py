@@ -30,6 +30,7 @@ Multi-turn specific parameters
 """
 
 import asyncio
+import numpy as np
 from typing import TYPE_CHECKING, Dict, List, Tuple
 
 from evalscope.perf.arguments import Arguments
@@ -73,11 +74,17 @@ async def multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     logger.info(f'Loading conversations from dataset: {args.dataset}')
     dataset_plugin = DatasetRegistry.get_class(args.dataset)(args)
 
+    # Cap preloading: worst-case every conversation has 1 turn, so args.number
+    # conversations is always sufficient to cover the full turn budget.
+    # This prevents loading 70k+ ShareGPT conversations when --number is small.
+    _max_preload = args.number
     with tqdm(desc='Loading[conversations]', logger=logger) as pbar:
         all_conversations: List[List[Dict]] = []
         for conv in dataset_plugin.build_messages():
             all_conversations.append(conv)
             pbar.update(1)
+            if len(all_conversations) >= _max_preload:
+                break
 
     if not all_conversations:
         raise ValueError(f'Dataset "{args.dataset}" produced no conversations!')
@@ -159,12 +166,29 @@ async def multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
                     # beyond args.number.
                     _turn_counter += 1
 
+                    # ---- Rate limiting (mirrors standard benchmark behaviour) ----
+                    # In the standard benchmark, an exponential inter-request sleep is
+                    # applied when --rate != -1 (Poisson arrivals).  We replicate the
+                    # same logic here so multi-turn runs honour the configured rate.
+                    if args.rate != -1:
+                        interval = np.random.exponential(1.0 / args.rate)
+                        await asyncio.sleep(interval)
+
                     # ---- Send the turn ----
                     request = api_plugin.build_request(list(context))
                     benchmark_data = await client.post(request)
 
                     # ---- Inject multi-turn specific metadata ----
                     benchmark_data.input_num_turns = user_turn_idx + 1
+
+                    # ---- Ensure token counts are available before computing cache ratio ----
+                    # Some OpenAI-compatible servers omit ``usage`` in the stream, so
+                    # prompt_tokens / completion_tokens remain None until finalize() is
+                    # called (which falls back to api_plugin.parse_responses() via the
+                    # tokenizer).  finalize() is idempotent: the consumer's subsequent
+                    # call will be a no-op once token counts are already populated.
+                    if benchmark_data.success:
+                        benchmark_data.finalize(api_plugin)
 
                     # Estimate KV-cache hit rate.
                     # cacheable = prev_prompt_tokens + prev_completion_tokens

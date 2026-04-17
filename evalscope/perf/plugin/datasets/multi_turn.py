@@ -96,9 +96,16 @@ class RandomMultiTurnDatasetPlugin(RandomDatasetPlugin):
         max_prompt_length = self.query_parameters.max_prompt_length
 
         # Total number of conversations to pre-generate.
-        # Using args.number as upper bound ensures the runner never exhausts
-        # the pool before reaching the turn budget.
-        n_convs = self.number
+        # args.number is the total *turn* budget, not the desired conversation
+        # count.  Equating the two over-allocates by a factor of ~avg_turns,
+        # wasting significant memory when --number is large.
+        # Instead, estimate the required conversations from the expected turns
+        # per conversation, and keep a small diversity buffer for workers.
+        avg_turns = (self.min_turns_per_conv + self.max_turns_per_conv) / 2.0
+        n_convs = max(
+            self.query_parameters.parallel * 4,  # diversity buffer so workers don't all repeat the same conv
+            int(self.number / avg_turns) + 1,  # enough to cover the turn budget
+        )
 
         # Sample per-conversation turn counts
         turn_counts = self._rng.integers(
@@ -143,8 +150,12 @@ class ShareGPTMultiTurnBase(ShareGPTDatasetPluginBase):
     strip the trailing assistant turn.  The full conversation is yielded so
     that the multi-turn benchmark runner can:
 
-    1. Use the reference assistant replies to seed context between turns.
-    2. Replace them with the model's real output during execution.
+    1. Correctly count user turns and respect ``max_turns`` limits.
+    2. (Future) Optionally replay dataset assistant turns as seeded history.
+
+    In the current implementation the runner discards all dataset assistant
+    turns and accumulates only the model's real responses as conversation
+    history.
 
     ``args.max_turns`` limits how many *user* turns to include.  If
     ``max_turns`` is set to N, only the first N user turns (and their
