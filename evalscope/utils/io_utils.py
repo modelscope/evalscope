@@ -15,10 +15,22 @@ from io import BytesIO
 from PIL import Image
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from evalscope.constants import DumpMode
+from evalscope.constants import BEIJING_TZ, USE_OSS, DumpMode
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+
+def now_beijing() -> datetime:
+    """Return current datetime.
+
+    Uses Beijing timezone (UTC+8) when ``USE_OSS=1``;
+    otherwise returns system local time.
+    """
+    if USE_OSS:
+        return datetime.now(BEIJING_TZ)
+    return datetime.now()
+
 
 # ---------------------------------------------------------------------------
 # Internal helpers

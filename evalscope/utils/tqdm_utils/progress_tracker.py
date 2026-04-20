@@ -3,10 +3,10 @@ import os
 import threading
 import time
 from contextlib import nullcontext
-from datetime import datetime
 from typing import Optional, Union
 
 from evalscope.utils import get_logger
+from evalscope.utils.io_utils import now_beijing
 
 logger = get_logger()
 
@@ -127,7 +127,7 @@ class ProgressTracker:
             'total_count': self._total_count,
             'processed_count': processed,
             'percent': percent,
-            'updated_at': datetime.now().isoformat(),
+            'updated_at': now_beijing().isoformat(),
         }
         logger.debug(f'Processed / Total: {processed} / {self._total_count} | {percent}%')
         tmp = self._path + '.tmp'

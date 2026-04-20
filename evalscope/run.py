@@ -4,12 +4,11 @@ Run evaluation for LLMs.
 """
 import os
 from argparse import Namespace
-from datetime import datetime
 from typing import List, Optional, Union
 
 from evalscope.config import TaskConfig, parse_task_config
 from evalscope.constants import DEFAULT_WORK_DIR, DataCollection, EvalBackend
-from evalscope.utils.io_utils import OutputsStructure
+from evalscope.utils.io_utils import OutputsStructure, now_beijing
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
 from evalscope.utils.resource_utils import compute_eval_total_count
@@ -49,7 +48,7 @@ def run_single_task(task_cfg: TaskConfig) -> dict:
 def setup_work_directory(task_cfg: TaskConfig):
     """Set the working directory for the task."""
     # Get current time
-    run_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+    run_time = now_beijing().strftime('%Y%m%d_%H%M%S')
     # use cache
     if task_cfg.use_cache:
         task_cfg.work_dir = task_cfg.use_cache

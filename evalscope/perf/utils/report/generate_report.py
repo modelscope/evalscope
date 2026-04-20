@@ -13,10 +13,10 @@ from __future__ import annotations
 
 import os
 from collections import OrderedDict
-from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from evalscope.constants import DEFAULT_LANGUAGE
+from evalscope.utils.io_utils import now_beijing
 from evalscope.utils.logger import get_logger
 from evalscope.version import __version__ as _evalscope_version
 
@@ -304,7 +304,7 @@ def gen_perf_html_report(
         model=first_args.get('model', first_args.get('model_id', 'N/A')),
         api_type=api_type,
         dataset=first_args.get('dataset', 'N/A'),
-        generated_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        generated_at=now_beijing().strftime('%Y-%m-%d %H:%M:%S'),
         evalscope_version=_evalscope_version,
         basic_info=_build_basic_info(first_args, runs, is_emb),
         summary_columns=summary_columns,

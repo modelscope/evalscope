@@ -13,12 +13,11 @@ Usage via CLI:
     evalscope benchmark-info gsm8k --translate     # Translate specific benchmark
 """
 
-import datetime
-import json
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional
 
+from evalscope.utils.io_utils import now_beijing
 from . import get_benchmarks_needing_translation, load_benchmark_data, needs_translation_update, save_benchmark_data
 
 # Set BUILD_DOC to avoid heavy dependencies
@@ -192,7 +191,7 @@ def translate_benchmarks(
     client = _get_client()
     translated_count = 0
     errors = []
-    now_iso = datetime.datetime.now().replace(microsecond=0).isoformat() + 'Z'
+    now_iso = now_beijing().replace(microsecond=0).isoformat()
 
     def translate_one(name_content):
         name, en_content = name_content

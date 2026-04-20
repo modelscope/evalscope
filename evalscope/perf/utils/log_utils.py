@@ -2,6 +2,7 @@ import os
 
 from evalscope.constants import VisualizerType
 from evalscope.perf.arguments import Arguments
+from evalscope.utils.io_utils import now_beijing
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -71,14 +72,13 @@ def init_wandb(args: Arguments) -> None:
     """
     Initialize WandB for logging.
     """
-    import datetime
     try:
         import wandb
     except ImportError:
         raise RuntimeError('Cannot import wandb. Please install it with command: \n pip install wandb')
     os.environ['WANDB_SILENT'] = 'true'
     os.environ['WANDB_DIR'] = args.outputs_dir
-    current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    current_time = now_beijing().strftime('%Y%m%d_%H%M%S')
     name = args.name if args.name else f'{args.model_id}_{current_time}'
 
     logging_config = _get_sanitized_config(args)
@@ -92,13 +92,12 @@ def init_swanlab(args: Arguments) -> None:
     """
     Initialize SwanLab for logging.
     """
-    import datetime
     try:
         import swanlab
     except ImportError:
         raise RuntimeError('Cannot import swanlab. Please install it with command: \n pip install swanlab')
     os.environ['SWANLAB_LOG_DIR'] = args.outputs_dir
-    current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    current_time = now_beijing().strftime('%Y%m%d_%H%M%S')
     name = args.name if args.name else f'{args.model_id}_{current_time}'
     swanlab.config.update({'framework': '📏evalscope'})
 
@@ -124,13 +123,11 @@ def init_clearml(args: Arguments) -> None:
     """
     Initialize ClearML for logging.
     """
-    import datetime
     try:
         from clearml import Task
     except ImportError:
         raise RuntimeError('Cannot import clearml. Please install it with command: \n pip install clearml')
-
-    current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    current_time = now_beijing().strftime('%Y%m%d_%H%M%S')
     task_name = args.name if args.name else f'{args.model_id}_{current_time}'
     project_name = os.getenv('CLEARML_PROJECT_NAME', 'perf_benchmark')
 
