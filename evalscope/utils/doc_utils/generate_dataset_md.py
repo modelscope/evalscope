@@ -13,7 +13,7 @@ Note: This is a library module. CLI operations are handled by evalscope benchmar
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Union
 
-from evalscope.utils.io_utils import now_beijing
+from evalscope.utils.io_utils import current_time
 from . import (
     BENCHMARK_META_DIR,
     BENCHMARK_README_DIR_EN,
@@ -398,7 +398,7 @@ def _update_single_benchmark(
 
         # Only update timestamp if there were actual changes
         if has_changes:
-            entry['updated_at'] = now_beijing().isoformat()
+            entry['updated_at'] = current_time().isoformat()
             print(f'  [{name}] Updated timestamp')
         else:
             print(f'  [{name}] No changes detected')

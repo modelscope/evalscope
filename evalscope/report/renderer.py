@@ -11,7 +11,7 @@ from evalscope.app.utils.visualization import (
 from evalscope.constants import DEFAULT_LANGUAGE
 from evalscope.report.combinator import get_report_list
 from evalscope.report.report import Report, ReportKey
-from evalscope.utils.io_utils import now_beijing
+from evalscope.utils.io_utils import current_time
 from evalscope.utils.logger import get_logger
 from evalscope.utils.resource_utils import load_benchmark_data
 
@@ -326,7 +326,7 @@ def gen_html_report_file(
     html_content = template.render(
         models=all_models,
         datasets=all_datasets,
-        generated_at=now_beijing().strftime('%Y-%m-%d %H:%M:%S'),
+        generated_at=current_time().strftime('%Y-%m-%d %H:%M:%S'),
         summary_rows=summary_rows,
         overview_chart_div=overview_chart_div,
         sunburst_chart_div=sunburst_chart_div,

@@ -23,7 +23,7 @@ from types import ModuleType
 # used for testing the code that reads from input
 from unittest.mock import mock_open, patch
 
-from evalscope.utils.io_utils import now_beijing
+from evalscope.utils.io_utils import current_time
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -396,7 +396,7 @@ def run_test(sample, test=None, debug=False, timeout=6):
     reliability_guard()
 
     if debug:
-        logger.info(f'start = {now_beijing().time()}')
+        logger.info(f'start = {current_time().time()}')
 
     try:
         in_outs = json.loads(sample['input_output'])
@@ -414,7 +414,7 @@ def run_test(sample, test=None, debug=False, timeout=6):
             method_name = in_outs['fn_name']
 
     if debug:
-        logger.info(f'loaded input_output = {now_beijing().time()}')
+        logger.info(f'loaded input_output = {current_time().time()}')
 
     if test is None:
         assert False, 'should not happen: test code is none'
@@ -423,7 +423,7 @@ def run_test(sample, test=None, debug=False, timeout=6):
         results = []
         sol = import_string
         if debug:
-            logger.info(f'loading test code = {now_beijing().time()}')
+            logger.info(f'loading test code = {current_time().time()}')
 
         if which_type == CODE_TYPE.call_based:
             signal.alarm(timeout)

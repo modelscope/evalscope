@@ -10,7 +10,7 @@ from typing import Dict, List, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics, Metrics
-from evalscope.utils.io_utils import now_beijing
+from evalscope.utils.io_utils import current_time
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -117,8 +117,8 @@ def get_output_path(args: Arguments) -> str:
     if args.no_timestamp:
         output_path = os.path.join(args.outputs_dir, name)
     else:
-        current_time = now_beijing().strftime('%Y%m%d_%H%M%S')
-        output_path = os.path.join(args.outputs_dir, current_time, name)
+        current_time_str = current_time().strftime('%Y%m%d_%H%M%S')
+        output_path = os.path.join(args.outputs_dir, current_time_str, name)
     if not os.path.exists(output_path):
         os.makedirs(output_path, exist_ok=True)
     logger.info(f'Save the result to: {output_path}')

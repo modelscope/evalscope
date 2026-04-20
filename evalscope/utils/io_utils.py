@@ -21,7 +21,7 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-def now_beijing() -> datetime:
+def current_time() -> datetime:
     """Return current datetime.
 
     Uses Beijing timezone (UTC+8) when ``USE_OSS=1``;
