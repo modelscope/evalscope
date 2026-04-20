@@ -131,6 +131,15 @@ async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
             if output.success:
                 logger.info('Test connection successful.')
                 return True
+            # 4xx errors are client-side configuration errors (wrong URL, wrong
+            # request format, auth failure, etc.) and will never succeed on
+            # retry – bail out immediately instead of looping until timeout.
+            if output.status_code is not None and 400 <= output.status_code < 500:
+                logger.error(
+                    f'Non-retryable error (HTTP {output.status_code}): {output.error}. '
+                    'Please check your --url and --api settings.'
+                )
+                return False
             logger.warning(f'Retrying... <{output.error}>')
         except Exception as e:
             logger.warning(f'Retrying... <{e}>')

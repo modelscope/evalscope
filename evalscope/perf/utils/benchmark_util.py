@@ -37,6 +37,7 @@ class BenchmarkData:
     # --- Response content ---
     generated_text: str = ''
     error: Optional[str] = None
+    status_code: Optional[int] = None  # HTTP status code; set for non-200 responses
     prompt_tokens: Optional[int] = None
     completion_tokens: Optional[int] = None
 
