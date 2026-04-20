@@ -54,7 +54,7 @@ class TestNativeBenchmark(TestBenchmark):
         dataset_args = {
             'few_shot_num': 0,
         }
-        self._run_dataset_test('gsm8k', dataset_args=dataset_args, limit=5, debug=False, eval_batch_size=1, use_cache='outputs/20260414_113853')
+        self._run_dataset_test('gsm8k', dataset_args=dataset_args, limit=5, debug=False, eval_batch_size=5)
 
     def test_gsm8k_pass_at_k(self):
         """Test GSM8K math reasoning dataset with Pass@k metric."""

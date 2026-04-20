@@ -107,7 +107,7 @@ class ReopenFileHandler(logging.FileHandler):
 
 
 # Module-level handler class: resolved once at import time from the USE_OSS env var.
-FILE_HANDLER_CLS = ReopenFileHandler if _USE_OSS else logging.FileHandler
+FILE_HANDLER_CLS = ReopenFileHandler if USE_OSS else logging.FileHandler
 
 
 def get_logger(
