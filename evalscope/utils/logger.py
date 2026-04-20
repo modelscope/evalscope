@@ -2,29 +2,50 @@ import colorlog
 import importlib.util as iutil
 import logging
 import os
+from datetime import datetime
 from logging import Logger
 from typing import List, Optional
 
-init_loggers = {}
-# Define log formats
-data_format = '%Y-%m-%d %H:%M:%S'
-# For console output
-color_detailed_format = '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d - %(log_color)s%(levelname)s%(reset)s: %(message)s'  # noqa:E501
-color_simple_format = '%(asctime)s - %(name)s - %(log_color)s%(levelname)s%(reset)s: %(message)s'
-color_detailed_formatter = colorlog.ColoredFormatter(color_detailed_format, datefmt=data_format)
-color_simple_formatter = colorlog.ColoredFormatter(color_simple_format, datefmt=data_format)
-# For file output
-detailed_format = '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d - %(levelname)s: %(message)s'  # noqa:E501
-simple_format = '%(asctime)s - %(name)s - %(levelname)s: %(message)s'
-plain_detailed_formatter = logging.Formatter(detailed_format, datefmt=data_format)
-plain_simple_formatter = logging.Formatter(simple_format, datefmt=data_format)
+from evalscope.constants import BEIJING_TZ, USE_OSS, LoggingConstants
 
-DEFAULT_LEVEL = logging.DEBUG if os.getenv('EVALSCOPE_LOG_LEVEL', 'INFO') == 'DEBUG' else logging.INFO
+init_loggers = {}
+
 # Use ReopenFileHandler on OSS/FUSE mounts so each record is visible immediately;
 # fall back to the standard FileHandler on local filesystems.
-_USE_OSS = os.getenv('USE_OSS', '0') == '1'
+# Beijing timezone (UTC+8) for log timestamps when USE_OSS=1
 
-logging.basicConfig(format=simple_format, level=logging.INFO, force=True)
+
+def beijing_converter(timestamp):
+    """Convert a Unix timestamp to Beijing time (UTC+8) as a time.struct_time."""
+    return datetime.fromtimestamp(timestamp, tz=BEIJING_TZ).timetuple()
+
+
+if USE_OSS:
+
+    class BeijingColoredFormatter(colorlog.ColoredFormatter):
+
+        def converter(self, timestamp):
+            return beijing_converter(timestamp)
+
+    class BeijingPlainFormatter(logging.Formatter):
+
+        def converter(self, timestamp):
+            return beijing_converter(timestamp)
+
+    ColoredFmtCls = BeijingColoredFormatter
+    PlainFmtCls = BeijingPlainFormatter
+else:
+    ColoredFmtCls = colorlog.ColoredFormatter
+    PlainFmtCls = logging.Formatter
+
+color_detailed_formatter = ColoredFmtCls(LoggingConstants.COLOR_DETAILED_FORMAT, datefmt=LoggingConstants.DATE_FORMAT)
+color_simple_formatter = ColoredFmtCls(LoggingConstants.COLOR_SIMPLE_FORMAT, datefmt=LoggingConstants.DATE_FORMAT)
+plain_detailed_formatter = PlainFmtCls(LoggingConstants.DETAILED_FORMAT, datefmt=LoggingConstants.DATE_FORMAT)
+plain_simple_formatter = PlainFmtCls(LoggingConstants.SIMPLE_FORMAT, datefmt=LoggingConstants.DATE_FORMAT)
+
+DEFAULT_LEVEL = logging.DEBUG if os.getenv('EVALSCOPE_LOG_LEVEL', 'INFO') == 'DEBUG' else logging.INFO
+
+logging.basicConfig(format=LoggingConstants.SIMPLE_FORMAT, level=logging.INFO, force=True)
 
 # set logging level
 logging.getLogger('datasets').setLevel(logging.WARNING)
@@ -86,7 +107,7 @@ class ReopenFileHandler(logging.FileHandler):
 
 
 # Module-level handler class: resolved once at import time from the USE_OSS env var.
-FILE_HANDLER_CLS = ReopenFileHandler if _USE_OSS else logging.FileHandler
+FILE_HANDLER_CLS = ReopenFileHandler if USE_OSS else logging.FileHandler
 
 
 def get_logger(
