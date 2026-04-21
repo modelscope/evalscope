@@ -901,30 +901,21 @@ def match_gt2pred_simple(gt_items, pred_items, line_type, img_name):
         for gt_idx in range(len(norm_gt_lines)):
             match_list.append({
                 'gt_idx': [gt_idx],
-                'gt':
-                gt_lines[gt_idx],
+                'gt': gt_lines[gt_idx],
                 'pred_idx': [''],
-                'pred':
-                '',
+                'pred': '',
                 'gt_position': [
                     gt_items[gt_idx].get('order')
                     if gt_items[gt_idx].get('order') else gt_items[gt_idx].get('position', [''])[0]
                 ],
-                'pred_position':
-                '',
-                'norm_gt':
-                norm_gt_lines[gt_idx],
-                'norm_pred':
-                '',
-                'gt_category_type':
-                gt_cat_list[gt_idx],
-                'pred_category_type':
-                '',
+                'pred_position': '',
+                'norm_gt': norm_gt_lines[gt_idx],
+                'norm_pred': '',
+                'gt_category_type': gt_cat_list[gt_idx],
+                'pred_category_type': '',
                 'gt_attribute': [gt_items[gt_idx].get('attribute', {})],
-                'edit':
-                1,
-                'img_id':
-                img_name
+                'edit': 1,
+                'img_id': img_name
             })
         return match_list
 
@@ -951,30 +942,21 @@ def match_gt2pred_simple(gt_items, pred_items, line_type, img_name):
 
         match_list.append({
             'gt_idx': [gt_idx],
-            'gt':
-            gt_lines[gt_idx],
-            'norm_gt':
-            norm_gt_lines[gt_idx],
-            'gt_category_type':
-            gt_cat_list[gt_idx],
+            'gt': gt_lines[gt_idx],
+            'norm_gt': norm_gt_lines[gt_idx],
+            'gt_category_type': gt_cat_list[gt_idx],
             'gt_position': [
                 gt_items[gt_idx].get('order')
                 if gt_items[gt_idx].get('order') else gt_items[gt_idx].get('position', [''])[0]
             ],
             'gt_attribute': [gt_items[gt_idx].get('attribute', {})],
             'pred_idx': [pred_idx],
-            'pred':
-            pred_line,
-            'norm_pred':
-            norm_pred_line,
-            'pred_category_type':
-            get_pred_category_type(pred_idx, pred_items) if pred_idx else '',
-            'pred_position':
-            pred_items[pred_idx]['position'][0] if pred_idx else '',
-            'edit':
-            edit,
-            'img_id':
-            img_name
+            'pred': pred_line,
+            'norm_pred': norm_pred_line,
+            'pred_category_type': get_pred_category_type(pred_idx, pred_items) if pred_idx else '',
+            'pred_position': pred_items[pred_idx]['position'][0] if pred_idx else '',
+            'edit': edit,
+            'img_id': img_name
         })
         # print('-'*10)
         # [([0,1], 0),(2, 1), (1,2)] --> [0,2,1]/[0,1,2]
@@ -1082,30 +1064,21 @@ def match_gt2pred_quick(gt_items, pred_items, line_type, img_name):
         for gt_idx in range(len(norm_gt_lines)):
             match_list.append({
                 'gt_idx': [gt_idx],
-                'gt':
-                gt_lines[gt_idx],
+                'gt': gt_lines[gt_idx],
                 'pred_idx': [''],
-                'pred':
-                '',
+                'pred': '',
                 'gt_position': [
                     gt_items[gt_idx].get('order')
                     if gt_items[gt_idx].get('order') else gt_items[gt_idx].get('position', [''])[0]
                 ],
-                'pred_position':
-                '',
-                'norm_gt':
-                norm_gt_lines[gt_idx],
-                'norm_pred':
-                '',
-                'gt_category_type':
-                gt_cat_list[gt_idx],
-                'pred_category_type':
-                '',
+                'pred_position': '',
+                'norm_gt': norm_gt_lines[gt_idx],
+                'norm_pred': '',
+                'gt_category_type': gt_cat_list[gt_idx],
+                'pred_category_type': '',
                 'gt_attribute': [gt_items[gt_idx].get('attribute', {})],
-                'edit':
-                1,
-                'img_id':
-                img_name
+                'edit': 1,
+                'img_id': img_name
             })
         return match_list
     elif len(norm_gt_lines) == 1 and len(norm_pred_lines) == 1:
@@ -1113,28 +1086,20 @@ def match_gt2pred_quick(gt_items, pred_items, line_type, img_name):
         normalized_edit_distance = edit_distance / max(len(norm_gt_lines[0]), len(norm_pred_lines[0]))
         return [{
             'gt_idx': [0],
-            'gt':
-            gt_lines[0],
+            'gt': gt_lines[0],
             'pred_idx': [0],
-            'pred':
-            pred_lines[0],
-            'gt_position':
-            [gt_items[0].get('order') if gt_items[0].get('order') else gt_items[0].get('position', [''])[0]],
-            'pred_position':
-            pred_items[0]['position'][0],
-            'norm_gt':
-            norm_gt_lines[0],
-            'norm_pred':
-            norm_pred_lines[0],
-            'gt_category_type':
-            gt_cat_list[0],
-            'pred_category_type':
-            get_pred_category_type(0, pred_items),
+            'pred': pred_lines[0],
+            'gt_position': [
+                gt_items[0].get('order') if gt_items[0].get('order') else gt_items[0].get('position', [''])[0]
+            ],
+            'pred_position': pred_items[0]['position'][0],
+            'norm_gt': norm_gt_lines[0],
+            'norm_pred': norm_pred_lines[0],
+            'gt_category_type': gt_cat_list[0],
+            'pred_category_type': get_pred_category_type(0, pred_items),
             'gt_attribute': [gt_items[0].get('attribute', {})],
-            'edit':
-            normalized_edit_distance,
-            'img_id':
-            img_name
+            'edit': normalized_edit_distance,
+            'img_id': img_name
         }]
 
     cost_matrix = compute_edit_distance_matrix_new(norm_gt_lines, norm_pred_lines)

@@ -118,10 +118,8 @@ class ArenaHardAdapter(DefaultDataAdapter):
         score2 = get_judge_score(res2, reverse=False)
 
         battle_result = {
-            'model_a':
-            'gpt4-0314',
-            'model_b':
-            'test_model',
+            'model_a': 'gpt4-0314',
+            'model_b': 'test_model',
             'games': [
                 {
                     'user_prompt': prompt1,

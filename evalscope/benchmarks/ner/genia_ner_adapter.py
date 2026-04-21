@@ -69,19 +69,17 @@ class GeniaNERAdapter(NERAdapter):
 
         # Add descriptions for each entity type
         self.entity_descriptions = {
-            'CELL_LINE':
-            'A population of cells derived from a single cell and grown in a culture.',
-            'CELL_TYPE':
-            ('A category of cells that are part of a larger organism and share a specific '
-             'structure and function.'),
-            'DNA':
-            'Deoxyribonucleic acid. This includes specific genes, domains, and regions of a DNA molecule.',
+            'CELL_LINE': 'A population of cells derived from a single cell and grown in a culture.',
+            'CELL_TYPE': (
+                'A category of cells that are part of a larger organism and share a specific '
+                'structure and function.'
+            ),
+            'DNA': 'Deoxyribonucleic acid. This includes specific genes, domains, and regions of a DNA molecule.',
             'PROTEIN': (
                 'Molecules composed of amino acids that perform a vast array of functions within '
                 'organisms. This includes enzymes, receptors, and signaling molecules.'
             ),
-            'RNA':
-            'Ribonucleic acid. This refers to RNA molecules, including messenger RNA (mRNA) and other types.'
+            'RNA': 'Ribonucleic acid. This refers to RNA molecules, including messenger RNA (mRNA) and other types.'
         }
 
         # Setup entity mappings based on the defined entity types

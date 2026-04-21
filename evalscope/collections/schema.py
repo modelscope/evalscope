@@ -72,12 +72,11 @@ class CollectionSchema:
 
     def to_dict(self) -> Dict[str, object]:
         return {
-            'name':
-            self.name,
-            'weight':
-            self.weight,
-            'datasets':
-            [asdict(dataset) if isinstance(dataset, DatasetInfo) else dataset.to_dict() for dataset in self.datasets],
+            'name': self.name,
+            'weight': self.weight,
+            'datasets': [
+                asdict(dataset) if isinstance(dataset, DatasetInfo) else dataset.to_dict() for dataset in self.datasets
+            ],
         }
 
     @classmethod

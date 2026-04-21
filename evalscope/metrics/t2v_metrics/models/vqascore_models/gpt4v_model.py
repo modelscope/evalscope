@@ -64,8 +64,7 @@ class GPT4VModel(VQAScoreModel):
             completion = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=[{
-                    'role':
-                    'user',
+                    'role': 'user',
                     'content': [{
                         'type': 'text',
                         'text': question
@@ -89,8 +88,7 @@ class GPT4VModel(VQAScoreModel):
                 completion = self.client.chat.completions.create(
                     model=self.model_name,
                     messages=[{
-                        'role':
-                        'user',
+                        'role': 'user',
                         'content': [{
                             'type': 'text',
                             'text': question

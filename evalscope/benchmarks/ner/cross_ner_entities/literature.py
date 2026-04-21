@@ -18,9 +18,10 @@ def get_entity_mappings():
         'BOOK': ('The title of a book (e.g., "Pride and Prejudice", "One Hundred Years of Solitude").'),
         'COUNTRY': ('A country relevant to the literary context (e.g., "England", "Russia").'),
         'EVENT': ('A literary festival or significant event (e.g., "Hay Festival", "Frankfurt Book Fair").'),
-        'LITERARYGENRE':
-        ('A genre or category of literature (e.g., "Science Fiction", "Gothic novel", '
-         '"magical realism").'),
+        'LITERARYGENRE': (
+            'A genre or category of literature (e.g., "Science Fiction", "Gothic novel", '
+            '"magical realism").'
+        ),
         'LOCATION': ('A real or fictional place mentioned in a literary context (e.g., "London", '
                      '"Middle-earth").'),
         'MAGAZINE': ('A magazine or literary journal (e.g., "The New Yorker", "Paris Review").'),

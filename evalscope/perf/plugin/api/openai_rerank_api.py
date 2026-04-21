@@ -217,6 +217,7 @@ class OpenaiRerankPlugin(ApiPluginBase):
 
                     output.success = True
                 else:
+                    output.status_code = response.status
                     try:
                         err_payload = await response.json()
                         output.error = json.dumps(err_payload, ensure_ascii=False)

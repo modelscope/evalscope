@@ -168,6 +168,10 @@ Percentile results:
 | 平均输出token间时延 | Average inter-token latency | 生成每个输出token之间的平均间隔时间 | 总输出token间时延 / 成功请求数 |
 | 平均输入token数 | Average input tokens per request | 每个请求的平均输入标记数 | 总输入token数 / 成功请求数 |
 | 平均输出token数 | Average output tokens per request | 每个请求的平均输出标记数 | 总输出token数 / 成功请求数 |
+| 平均输入轮数 | Average input turns per request | 多轮对话中每个请求的平均历史对话轮数（单轮时为1） | 总输入轮数 / 成功请求数 |
+| 近似KV缓存命中率 | Average approx KV cache hit rate | 基于cached token占输入token比例估算的前缀缓存命中率（需服务端开启prefix caching并返回cached_tokens字段） | 总cached token数 / 总输入token数 × 100% |
+| 平均每次解码输出token数 | Average decoded tokens per iter | 投机解码场景下，每次大模型前向推理（iteration）平均接受的token数，反映draft model的命中效果 | (总输出token数 - 1) / (总chunk数 - 1) |
+| 近似投机解码接受率 | Approx speculative decoding acceptance rate | 投机解码的近似token接受率，由每次解码输出token数推导，越接近1表示draft model越准确 | 1 - 1 / (平均每次解码输出token数) |
 
 **百分位指标 (Percentile)**
 

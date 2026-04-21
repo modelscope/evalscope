@@ -30,12 +30,9 @@ def check_nltk_data(name: str) -> None:
 
     MIRROR_MAP = {
         'punkt_tab': {
-            'resource_path':
-            'tokenizers/punkt_tab',
-            'zip_name':
-            'punkt_tab.zip',
-            'extract_dir':
-            'tokenizers',
+            'resource_path': 'tokenizers/punkt_tab',
+            'zip_name': 'punkt_tab.zip',
+            'extract_dir': 'tokenizers',
             'urls': [
                 'https://modelscope-open.oss-cn-hangzhou.aliyuncs.com/open_data/nltk_data/punkt_tab.zip',
                 f'{GITEE_MIRROR}/tokenizers/punkt_tab.zip',

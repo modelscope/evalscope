@@ -63,16 +63,13 @@ class HarveyNERAdapter(NERAdapter):
 
         # Add descriptions for each entity type
         self.entity_descriptions = {
-            'AREA':
-            'Geographical entities such as city subdivisions, neighborhoods, etc.',
+            'AREA': 'Geographical entities such as city subdivisions, neighborhoods, etc.',
             'POINT': (
                 'An exact location that a geocoordinate can be assigned. E.g., a uniquely named '
                 'building, intersections of roads or rivers.'
             ),
-            'RIVER':
-            'A river or a section of a river.',
-            'ROAD':
-            'A road or a section of a road.'
+            'RIVER': 'A river or a section of a river.',
+            'ROAD': 'A road or a section of a road.'
         }
 
         # Setup entity mappings based on the defined entity types

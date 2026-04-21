@@ -66,12 +66,9 @@ SciCode is a challenging benchmark designed to evaluate language model capabilit
         prompt_template=INITIAL_PROMPT,
         extra_params={
             'provide_background': {
-                'type':
-                'bool',
-                'value':
-                False,
-                'description':
-                'Include scientific background information written by scientists for the problem in the model\'s prompt.'
+                'type': 'bool',
+                'value': False,
+                'description': 'Include scientific background information written by scientists for the problem in the model\'s prompt.'
             }
         },
         sandbox_config={

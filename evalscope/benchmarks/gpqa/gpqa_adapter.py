@@ -77,10 +77,10 @@ class GPQAAdapter(MultiChoiceAdapter):
             target=processed_data['answer'],
             subset_key=record.get('subset', ''),
             metadata={
-                'correct_answer':
-                record['Correct Answer'],
-                'incorrect_answers':
-                [record['Incorrect Answer 1'], record['Incorrect Answer 2'], record['Incorrect Answer 3']],
+                'correct_answer': record['Correct Answer'],
+                'incorrect_answers': [
+                    record['Incorrect Answer 1'], record['Incorrect Answer 2'], record['Incorrect Answer 3']
+                ],
             },
         )
 

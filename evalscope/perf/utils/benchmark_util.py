@@ -37,6 +37,7 @@ class BenchmarkData:
     # --- Response content ---
     generated_text: str = ''
     error: Optional[str] = None
+    status_code: Optional[int] = None  # HTTP status code; set for non-200 responses
     prompt_tokens: Optional[int] = None
     completion_tokens: Optional[int] = None
 
@@ -45,6 +46,11 @@ class BenchmarkData:
     """Number of user turns in the conversation context when this request was sent."""
     approx_cached_percent: float = 0.0
     """Estimated KV cache hit rate: history_prompt_tokens / total_prompt_tokens * 100."""
+
+    # --- Speculative decoding specific ---
+    decoded_tokens_per_iter: float = 0.0
+    """Average decoded tokens per iteration: (completion_tokens - 1) / (n_chunks - 1).
+    Approximates speculative decoding acceptance length L."""
 
     def finalize(self, api_plugin) -> None:
         """Parse token counts and compute all derived timing metrics.
@@ -65,6 +71,19 @@ class BenchmarkData:
         # Derive inter-chunk latencies from chunk timestamps when not already set
         if not self.inter_chunk_latency and self.chunk_times:
             self.inter_chunk_latency = [t2 - t1 for t1, t2 in zip(self.chunk_times[:-1], self.chunk_times[1:])]
+
+        # Compute average decoded tokens per iteration for speculative decoding estimation
+        # Formula: L = (tokens - 1) / (chunks - 1)
+        # n_chunks is inferred from inter_chunk_latency: N chunks produce N-1 inter-chunk intervals,
+        # so n_chunks = len(inter_chunk_latency) + 1.  Falls back to chunk_times when available.
+        if self.chunk_times:
+            n_chunks = len(self.chunk_times)
+        elif self.inter_chunk_latency:
+            n_chunks = len(self.inter_chunk_latency) + 1
+        else:
+            n_chunks = 0
+        if self.completion_tokens and self.completion_tokens > 1 and n_chunks > 1:
+            self.decoded_tokens_per_iter = (self.completion_tokens - 1) / (n_chunks - 1)
 
     def update_gpu_usage(self) -> None:
         """Update max GPU memory usage across all visible CUDA devices."""
@@ -110,6 +129,10 @@ class Metrics:
     # Multi-turn specific
     AVERAGE_INPUT_TURNS_PER_REQUEST = 'Average input turns per request'
     AVERAGE_CACHED_PERCENT = 'Average approx KV cache hit rate (%)'
+
+    # Speculative decoding specific
+    AVERAGE_DECODED_TOKENS_PER_ITER = 'Average decoded tokens per iter (tok/iter)'
+    APPROX_SPECULATIVE_ACCEPTANCE_RATE = 'Approx speculative decoding acceptance rate'
 
     @staticmethod
     def is_embedding_or_rerank(api_name: str) -> bool:
@@ -158,6 +181,10 @@ class MetricsAccumulator:
     total_cached_percent: float = 0.0
     n_cached_samples: int = 0
 
+    # --- Speculative decoding cumulative sums ---
+    total_decoded_tokens_per_iter: float = 0.0
+    n_decoded_samples: int = 0
+
     # -----------------------------------------------------------------------
     # Properties
     # -----------------------------------------------------------------------
@@ -199,6 +226,11 @@ class MetricsAccumulator:
             if data.approx_cached_percent > 0:
                 self.total_cached_percent += data.approx_cached_percent
                 self.n_cached_samples += 1
+
+            # Speculative decoding specific
+            if data.decoded_tokens_per_iter > 0:
+                self.total_decoded_tokens_per_iter += data.decoded_tokens_per_iter
+                self.n_decoded_samples += 1
 
         self._update_wall_time(data)
 
@@ -244,6 +276,10 @@ class MetricsAccumulator:
             avg_cached_percent = (
                 _safe_div(self.total_cached_percent, self.n_cached_samples) if self.n_cached_samples > 0 else -1
             )
+            avg_decoded_tokens_per_iter = (
+                _safe_div(self.total_decoded_tokens_per_iter, self.n_decoded_samples)
+                if self.n_decoded_samples > 0 else -1
+            )
         except ZeroDivisionError as e:
             logger.error(
                 f'ZeroDivisionError while computing metrics: {e}. '
@@ -255,7 +291,7 @@ class MetricsAccumulator:
             avg_latency = avg_first_chunk_latency = avg_prompt_tokens = avg_completion_tokens = -1
             avg_time_per_output_token = avg_inter_token_latency = qps = -1
             avg_input_token_throughput = avg_output_token_throughput = avg_total_token_throughput = -1
-            avg_turns_per_request = avg_cached_percent = -1
+            avg_turns_per_request = avg_cached_percent = avg_decoded_tokens_per_iter = -1
 
         return BenchmarkMetrics(
             concurrency=self.concurrency,
@@ -276,6 +312,7 @@ class MetricsAccumulator:
             avg_total_token_throughput=avg_total_token_throughput,
             avg_turns_per_request=avg_turns_per_request,
             avg_cached_percent=avg_cached_percent,
+            avg_decoded_tokens_per_iter=avg_decoded_tokens_per_iter,
         )
 
 
@@ -320,6 +357,11 @@ class BenchmarkMetrics:
     avg_turns_per_request: float = -1
     avg_cached_percent: float = -1
 
+    # --- Speculative decoding ---
+    avg_decoded_tokens_per_iter: float = -1
+    """Average decoded tokens per iteration L = (tokens-1)/(chunks-1).
+    Acceptance rate p can be derived as p = 1 - 1/L."""
+
     # -----------------------------------------------------------------------
     # Serialization
     # -----------------------------------------------------------------------
@@ -337,7 +379,8 @@ class BenchmarkMetrics:
             if Metrics.is_embedding_or_rerank(api_type) else self._build_llm_fields(ndigits)
         )
         multiturn = self._build_multiturn_fields(ndigits)
-        return {**base, **specific, **multiturn}
+        speculative = self._build_speculative_decoding_fields(ndigits)
+        return {**base, **specific, **multiturn, **speculative}
 
     def _build_common_fields(self, r: int) -> dict:
         """Fields shared by all API types."""
@@ -377,4 +420,24 @@ class BenchmarkMetrics:
             result[Metrics.AVERAGE_INPUT_TURNS_PER_REQUEST] = round(self.avg_turns_per_request, r)
         if self.avg_cached_percent > 0:
             result[Metrics.AVERAGE_CACHED_PERCENT] = round(self.avg_cached_percent, r)
+        return result
+
+    def _build_speculative_decoding_fields(self, r: int) -> dict:
+        """Conditionally included speculative decoding metrics.
+
+        Only emitted when chunk-level data is available (i.e. streaming responses
+        with more than one chunk were observed).
+
+        - ``avg_decoded_tokens_per_iter`` (L): average accepted tokens per
+          speculative-decoding iteration, computed as (tokens-1)/(chunks-1).
+        - ``approx_acceptance_rate`` (p): per-position draft-token acceptance
+          probability, derived as p = 1 - 1/L.
+        """
+        result = {}
+        if self.avg_decoded_tokens_per_iter > 0:
+            L = self.avg_decoded_tokens_per_iter
+            result[Metrics.AVERAGE_DECODED_TOKENS_PER_ITER] = round(L, r)
+            # p = 1 - 1/L  (valid only when L > 1; clamp to [0, 1])
+            p = max(0.0, min(1.0, 1.0 - 1.0 / L)) if L > 0 else 0.0
+            result[Metrics.APPROX_SPECULATIVE_ACCEPTANCE_RATE] = round(p, r)
         return result
