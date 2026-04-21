@@ -30,7 +30,7 @@ def _build_perf_table(result, api_type: str = None) -> str:
                 '并发数', '请求速率', '请求数', '每秒请求数', '平均延迟(s)', 'P99延迟(s)', '平均首字延迟(s)', 'P99首字延迟(s)', '平均每Token延迟(s)',
                 'P99每Token延迟(s)', '生成速度(toks/s)', '成功率'
             ]
-        return tabulate(analysis.rows, headers=headers, tablefmt='pipe')
+        return tabulate([list(r.values()) for r in analysis.rows], headers=headers, tablefmt='pipe')
     except Exception as e:
         logger.warning(f'Failed to build perf table: {e}')
         return ''
