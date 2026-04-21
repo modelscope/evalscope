@@ -131,7 +131,7 @@ class Metrics:
     AVERAGE_CACHED_PERCENT = 'Average approx KV cache hit rate (%)'
 
     # Speculative decoding specific
-    AVERAGE_DECODED_TOKENS_PER_ITER = 'Avg decoded tokens per iter (tok/iter)'
+    AVERAGE_DECODED_TOKENS_PER_ITER = 'Average decoded tokens per iter (tok/iter)'
     APPROX_SPECULATIVE_ACCEPTANCE_RATE = 'Approx speculative decoding acceptance rate'
 
     @staticmethod
