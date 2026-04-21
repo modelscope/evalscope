@@ -61,12 +61,9 @@ Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 
                 'choices': ['docker', 'daytona', 'e2b', 'modal']
             },
             'agent_name': {
-                'type':
-                'str',
-                'description':
-                'Agent type to be used in Harbor.',
-                'value':
-                'terminus-2',
+                'type': 'str',
+                'description': 'Agent type to be used in Harbor.',
+                'value': 'terminus-2',
                 'choices': [
                     'oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode',
                     'mini-swe-agent'

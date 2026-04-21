@@ -93,8 +93,7 @@ AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluatin
         extra_params={
             'text_dir': {
                 'type': 'str | null',
-                'description':
-                'Local directory containing extracted AA-LCR text files; if null will auto-download & extract.',
+                'description': 'Local directory containing extracted AA-LCR text files; if null will auto-download & extract.',
                 'value': None
             }
         }

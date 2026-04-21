@@ -77,21 +77,18 @@ class MultiNERDAdapter(NERAdapter):
         self.entity_descriptions = {
             'PER': 'People.',
             'ORG': 'Associations, companies, agencies, institutions, nationalities and religious or political groups.',
-            'LOC':
-            'Physical locations (e.g. mountains, bodies of water), geopolitical entities (e.g. cities, states), and facilities (e.g. bridges, buildings, airports).',
+            'LOC': 'Physical locations (e.g. mountains, bodies of water), geopolitical entities (e.g. cities, states), and facilities (e.g. bridges, buildings, airports).',
             'ANIM': 'Breeds of dogs, cats and other animals, including their scientific names.',
             'BIO': 'Genus of fungus, bacteria and protoctists, families of viruses, and other biological entities.',
             'CEL': 'Planets, stars, asteroids, comets, nebulae, galaxies and other astronomical objects.',
-            'DIS':
-            'Physical, mental, infectious, non-infectious, deficiency, inherited, degenerative, social and self-inflicted diseases.',
+            'DIS': 'Physical, mental, infectious, non-infectious, deficiency, inherited, degenerative, social and self-inflicted diseases.',
             'EVE': 'Sport events, battles, wars and other events.',
             'FOOD': 'Foods and drinks.',
             'INST': 'Technological instruments, mechanical instruments, musical instruments, and other tools.',
             'MEDIA': 'Titles of films, books, magazines, songs and albums, fictional characters and languages.',
             'MYTH': 'Mythological and religious entities.',
             'PLANT': 'Types of trees, flowers, and other plants, including their scientific names.',
-            'TIME':
-            'Specific and well-defined time intervals, such as eras, historical periods, centuries, years and important days. No months and days of the week.',
+            'TIME': 'Specific and well-defined time intervals, such as eras, historical periods, centuries, years and important days. No months and days of the week.',
             'VEHI': 'Cars, motorcycles and other vehicles.'
         }
 

@@ -563,24 +563,20 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
                 has_spec = True
 
             rows.append({
-                ReqMetCol.CONCURRENCY.key:
-                str(int(concurrency)),
-                ReqMetCol.NUM.key:
-                str(int(num_reqs)),
-                ReqMetCol.AVG_IN.key:
-                f'{avg_in:.1f}' if avg_in is not None else 'N/A',
-                ReqMetCol.P99_IN.key:
-                f'{p99_in:.1f}' if p99_in is not None else 'N/A',
-                ReqMetCol.AVG_OUT.key:
-                f'{avg_out:.1f}' if avg_out is not None else 'N/A',
-                ReqMetCol.P99_OUT.key:
-                f'{p99_out:.1f}' if p99_out is not None else 'N/A',
+                ReqMetCol.CONCURRENCY.key: str(int(concurrency)),
+                ReqMetCol.NUM.key: str(int(num_reqs)),
+                ReqMetCol.AVG_IN.key: (f'{avg_in:.1f}' if avg_in is not None else 'N/A'),
+                ReqMetCol.P99_IN.key: (f'{p99_in:.1f}' if p99_in is not None else 'N/A'),
+                ReqMetCol.AVG_OUT.key: (f'{avg_out:.1f}' if avg_out is not None else 'N/A'),
+                ReqMetCol.P99_OUT.key: (f'{p99_out:.1f}' if p99_out is not None else 'N/A'),
                 ReqMetCol.AVG_TURNS.key: (f'{avg_turns:.2f}' if (avg_turns is not None and avg_turns > 0) else None),
                 ReqMetCol.AVG_CACHE.key: (f'{avg_cache:.1f}%' if (avg_cache is not None and avg_cache > 0) else None),
-                ReqMetCol.AVG_DECODED.key:
-                (f'{avg_decoded:.2f}' if (avg_decoded is not None and avg_decoded > 0) else None),
-                ReqMetCol.SPEC_RATE.key:
-                (f'{avg_spec_rate * 100:.1f}%' if (avg_spec_rate is not None and avg_spec_rate > 0) else None),
+                ReqMetCol.AVG_DECODED.key: (
+                    f'{avg_decoded:.2f}' if (avg_decoded is not None and avg_decoded > 0) else None
+                ),
+                ReqMetCol.SPEC_RATE.key: (
+                    f'{avg_spec_rate * 100:.1f}%' if (avg_spec_rate is not None and avg_spec_rate > 0) else None
+                ),
             })
 
         if not rows:

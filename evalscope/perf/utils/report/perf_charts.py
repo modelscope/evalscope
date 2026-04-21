@@ -384,10 +384,8 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
             )
         )
     tabs.append({
-        'label':
-        'Latency',
-        'chart':
-        ChartBuilder.line(
+        'label': 'Latency',
+        'chart': ChartBuilder.line(
             lat_traces,
             x_title='Request Index',
             y_title='Time (s)',
@@ -418,10 +416,8 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
             )
         )
     tabs.append({
-        'label':
-        'Tokens',
-        'chart':
-        ChartBuilder.line(
+        'label': 'Tokens',
+        'chart': ChartBuilder.line(
             tok_traces,
             x_title='Request Index',
             y_title='Token Count',
@@ -434,10 +430,8 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
         itl_y = [(sum(r.inter_token_latencies) / len(r.inter_token_latencies)) if r.inter_token_latencies else 0
                  for r in sorted_reqs]
         tabs.append({
-            'label':
-            'ITL',
-            'chart':
-            ChartBuilder.line(
+            'label': 'ITL',
+            'chart': ChartBuilder.line(
                 [
                     dict(
                         x=xs,
@@ -456,10 +450,8 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
 
     # ── Tab 4: Success ────────────────────────────────────────────────────
     tabs.append({
-        'label':
-        'Success',
-        'chart':
-        ChartBuilder.line(
+        'label': 'Success',
+        'chart': ChartBuilder.line(
             [
                 dict(
                     x=xs,
