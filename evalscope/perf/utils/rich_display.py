@@ -574,9 +574,7 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
                 ReqMetCol.AVG_DECODED.key: (
                     f'{avg_decoded:.2f}' if (avg_decoded is not None and avg_decoded > 0) else None
                 ),
-                ReqMetCol.SPEC_RATE.key: (
-                    f'{avg_spec_rate * 100:.1f}%' if (avg_spec_rate is not None and avg_spec_rate > 0) else None
-                ),
+                ReqMetCol.SPEC_RATE.key: (f'{avg_spec_rate * 100:.1f}%' if avg_spec_rate is not None else None),
             })
 
         if not rows:
