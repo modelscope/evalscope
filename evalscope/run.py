@@ -114,7 +114,7 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     from evalscope.api.evaluator import Evaluator
     from evalscope.api.model.lazy_model import LazyModel
     from evalscope.api.registry import create_evaluator, get_benchmark
-    from evalscope.report import gen_html_report_file, gen_table
+    from evalscope.report import gen_html_report_file, gen_perf_table, gen_table
     from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
     from evalscope.utils.tqdm_utils import make_tracker
 
@@ -171,6 +171,14 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
         logger.info(f'Overall report table: \n{report_table} \n')
     except Exception:
         logger.error('Failed to generate report table.')
+
+    # Make overall perf table
+    try:
+        perf_table = gen_perf_table(reports_path_list=[outputs.reports_dir])
+        if perf_table:
+            logger.info(f'Overall perf table: \n{perf_table} \n')
+    except Exception:
+        logger.error('Failed to generate perf table.')
 
     # Generate interactive HTML report
     try:

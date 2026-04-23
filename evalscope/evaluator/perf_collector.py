@@ -6,6 +6,7 @@ per-sample PerformanceMetrics objects produced during model inference and
 exposes summary statistics and JSON export helpers.
 """
 import os
+import statistics
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.model.perf_metrics import PerformanceMetrics
@@ -79,8 +80,9 @@ class PerfCollector:
         """Compute aggregate statistics across all recorded samples.
 
         Returns:
-            A dictionary with average and percentile breakdowns for each
-            available metric.  Empty dict when no samples have been recorded.
+            A dictionary with average, min/max/std, throughput and percentile
+            breakdowns for each available metric.  Empty dict when no samples
+            have been recorded.
         """
         samples = self._get_samples()
 
@@ -94,14 +96,23 @@ class PerfCollector:
         input_tokens = [s.input_tokens for s in samples]
         output_tokens = [s.output_tokens for s in samples]
 
+        avg_latency = _safe_avg(latencies) or 0.0
+        avg_output_tokens = _safe_avg(output_tokens) or 0.0
+
         summary: Dict[str, Any] = {
             'n_samples': n,
-            # Averages
-            'avg_latency': round(_safe_avg(latencies) or 0.0, 6),
+            # Latency statistics
+            'avg_latency': round(avg_latency, 6),
+            'min_latency': round(min(latencies), 6),
+            'max_latency': round(max(latencies), 6),
+            'std_latency': round(statistics.pstdev(latencies), 6),
+            # TTFT / TPOT averages
             'avg_ttft': round(_safe_avg(ttfts), 6) if ttfts else None,
             'avg_tpot': round(_safe_avg(tpots), 6) if tpots else None,
+            # Token statistics
             'avg_input_tokens': round(_safe_avg(input_tokens) or 0.0, 2),
-            'avg_output_tokens': round(_safe_avg(output_tokens) or 0.0, 2),
+            'avg_output_tokens': round(avg_output_tokens, 2),
+            'avg_throughput': round(avg_output_tokens / avg_latency, 2) if avg_latency > 0 else 0.0,
             'total_input_tokens': sum(input_tokens),
             'total_output_tokens': sum(output_tokens),
             # Percentile breakdowns
@@ -109,8 +120,12 @@ class PerfCollector:
         }
 
         if ttfts:
+            summary['min_ttft'] = round(min(ttfts), 6)
+            summary['max_ttft'] = round(max(ttfts), 6)
             summary['ttft_percentiles'] = _percentiles(ttfts, self._PERCENTILE_PS)
         if tpots:
+            summary['min_tpot'] = round(min(tpots), 6)
+            summary['max_tpot'] = round(max(tpots), 6)
             summary['tpot_percentiles'] = _percentiles(tpots, self._PERCENTILE_PS)
 
         return summary
@@ -146,19 +161,18 @@ class PerfCollector:
         """Return a dict suitable for embedding in a report JSON.
 
         Returns:
-            Dict with ``summary`` and ``per_sample`` keys, or empty dict when
-            no samples have been collected.
+            Dict with ``summary`` key, or empty dict when no samples have been
+            collected.  Per-sample records are intentionally omitted here as
+            each prediction entry in the output file already carries the same
+            information.
         """
         summary = self.get_summary()
         if not summary:
             return {}
-        return {
-            'summary': summary,
-            'per_sample': self.get_per_sample_records(),
-        }
+        return {'summary': summary}
 
     def save_report(self, output_dir: str, filename: str = 'perf_metrics.json') -> Optional[str]:
-        """Write summary + per-sample records to a JSON file.
+        """Write summary statistics to a JSON file.
 
         Args:
             output_dir: Directory in which to write the report.  Created

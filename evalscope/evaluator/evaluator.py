@@ -20,7 +20,7 @@ from evalscope.api.registry import register_evaluator
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.evaluator.batch_reviewer import BatchReviewer
 from evalscope.evaluator.perf_collector import PerfCollector
-from evalscope.report import Report, gen_table
+from evalscope.report import Report, gen_perf_table, gen_table
 from evalscope.utils.function_utils import run_in_threads_with_progress
 from evalscope.utils.logger import get_logger
 
@@ -504,6 +504,16 @@ class DefaultEvaluator(Evaluator):
         # Save the complete report to file
         report.to_json(report_file)
         logger.info(f'Dump report to: {report_file} \n')
+
+        # Print per-benchmark perf table when perf data is available
+        if self.task_config.collect_perf and report.perf_metrics:
+            try:
+                perf_table = gen_perf_table(report_list=[report])
+                if perf_table:
+                    logger.info(f'\n{self.benchmark_name} perf table:\n{perf_table}\n')
+            except Exception:
+                logger.error('Failed to generate perf table.')
+
         return report
 
     def finalize(self, *args, **kwargs):
