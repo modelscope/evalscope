@@ -626,25 +626,34 @@ def _parse_content_with_internal(content: str, ) -> Tuple[str, Optional[JsonValu
     ) if internal_match else (content, None))
 
 
-def collect_stream_response(response_stream: List[ChatCompletionChunk]) -> Tuple[ChatCompletion, Optional[float]]:
+def collect_stream_response(
+    response_stream: List[ChatCompletionChunk],
+    request_start: Optional[float] = None,
+) -> Tuple[ChatCompletion, Optional[float]]:
     """Consume a streaming chat completion and aggregate chunks into a single ChatCompletion.
 
     Args:
         response_stream: Iterable of ChatCompletionChunk objects from the OpenAI SDK.
+        request_start: ``time.monotonic()`` timestamp captured immediately before the
+            underlying HTTP request was initiated (e.g. before ``retry_call``).  When
+            provided, TTFT is measured from that point so that connection-establishment
+            and header-receive latency are included.  When ``None``, TTFT is measured
+            from the moment this function is entered (legacy behaviour).
 
     Returns:
         A tuple of:
         - The assembled :class:`ChatCompletion` object.
-        - Time To First Token (TTFT) in seconds measured from the moment this
-          function is entered until the first chunk carrying non-empty content
-          or tool-call data arrives.  ``None`` if no content chunk was observed.
+        - Time To First Token (TTFT) in seconds measured from ``request_start`` (or
+          from function entry when ``request_start`` is ``None``) until the first chunk
+          carrying non-empty content or tool-call data arrives.
+          ``None`` if no content chunk was observed.
     """
     collected_chunks: List[ChatCompletionChunk] = []
     collected_messages = defaultdict(list)
     collected_reasoning = defaultdict(list)
     collected_tool_calls = defaultdict(dict)
 
-    t_start = time.monotonic()
+    t_start = request_start if request_start is not None else time.monotonic()
     ttft: Optional[float] = None
 
     for chunk in response_stream:

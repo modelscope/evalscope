@@ -103,7 +103,7 @@ class OpenAICompatibleAPI(ModelAPI):
             )
             # handle streaming response
             if not isinstance(completion, ChatCompletion):
-                completion, ttft = collect_stream_response(completion)
+                completion, ttft = collect_stream_response(completion, request_start=t_start)
 
             total_time = time.monotonic() - t_start
 

@@ -138,7 +138,7 @@ class AnthropicCompatibleAPI(ModelAPI):
 
             # Handle streaming response
             if not isinstance(message, Message):
-                message, ttft = collect_stream_response(message)
+                message, ttft = collect_stream_response(message, request_start=t_start)
 
             total_time = time.monotonic() - t_start
 

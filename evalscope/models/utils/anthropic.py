@@ -437,17 +437,29 @@ def anthropic_media_filter(key: Optional[Any], value: Any) -> Any:
     return value
 
 
-def collect_stream_response(response_stream: Any) -> Tuple[Message, Optional[float]]:
+def collect_stream_response(
+    response_stream: Any,
+    request_start: Optional[float] = None,
+) -> Tuple[Message, Optional[float]]:
     """Collect streaming response chunks into a single Message.
 
     This function handles Anthropic's streaming response format.
 
+    Args:
+        response_stream: Iterable of Anthropic streaming events.
+        request_start: ``time.monotonic()`` timestamp captured immediately before the
+            underlying HTTP request was initiated (e.g. before ``retry_call``).  When
+            provided, TTFT is measured from that point so that connection-establishment
+            and header-receive latency are included.  When ``None``, TTFT is measured
+            from the moment this function is entered (legacy behaviour).
+
     Returns:
         A tuple of:
         - The assembled :class:`Message` object.
-        - Time To First Token (TTFT) in seconds measured from the moment this
-          function is entered until the first chunk carrying non-empty content
-          or tool-call data arrives.  ``None`` if no content chunk was observed.
+        - Time To First Token (TTFT) in seconds measured from ``request_start`` (or
+          from function entry when ``request_start`` is ``None``) until the first chunk
+          carrying non-empty content or tool-call data arrives.
+          ``None`` if no content chunk was observed.
     """
     from anthropic.types import (
         ContentBlockDeltaEvent,
@@ -471,7 +483,7 @@ def collect_stream_response(response_stream: Any) -> Tuple[Message, Optional[flo
     current_tool_id: str = ''
     current_tool_name: str = ''
 
-    t_start = time.monotonic()
+    t_start = request_start if request_start is not None else time.monotonic()
     ttft: Optional[float] = None
 
     for event in response_stream:

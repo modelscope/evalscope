@@ -57,11 +57,13 @@ def calc_tpot(latency: float, ttft: Optional[float], output_tokens: int) -> Opti
 
     Returns:
         TPOT in seconds, or ``None`` when the formula cannot be applied
-        (missing TTFT or fewer than two output tokens).
+        (missing TTFT, fewer than two output tokens, or negative decode time).
+        Returns ``0.0`` when all tokens arrived in the first chunk
+        (``latency == ttft`` with ``output_tokens > 1``).
     """
     if ttft is None or output_tokens <= 1:
         return None
     decode_time = latency - ttft
-    if decode_time <= 0:
+    if decode_time < 0:
         return None
     return decode_time / (output_tokens - 1)

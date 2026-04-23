@@ -207,7 +207,7 @@ def gen_perf_table(
             Either this or ``reports_path_list`` must be provided.
 
     Returns:
-        str: A grid-formatted table string, or ``None`` when no report
+        str: A simple-formatted table string, or ``None`` when no report
         contains perf data.
 
     Raises:
