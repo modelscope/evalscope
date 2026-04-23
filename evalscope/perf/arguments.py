@@ -303,6 +303,9 @@ class Arguments(BaseArgument):
                     f'--tokenize-prompt is set: URL auto-adjusted from chat/completions '
                     f'to completions endpoint: {self.url}'
                 )
+            # The endpoint is now /v1/completions, which expects raw token IDs rather than
+            # chat-format messages.
+            self.apply_chat_template = False
 
         # Set number and parallel to lists if they are integers
         if isinstance(self.number, int):

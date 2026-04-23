@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Tuple, Union
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.default_api import DefaultApiPlugin
 from evalscope.perf.plugin.registry import register_api
+from evalscope.perf.plugin.utils import tokenize_chat_messages
 from evalscope.utils.io_utils import base64_to_PIL
 from evalscope.utils.logger import get_logger
 
@@ -99,9 +100,9 @@ class OpenaiPlugin(DefaultApiPlugin):
         # Already token IDs (random dataset fast path)
         if isinstance(messages, list) and messages and isinstance(messages[0], int):
             return messages
-        # Chat messages -> apply chat template to obtain token IDs
+        # Chat messages -> apply chat template to obtain token IDs.
         if isinstance(messages, list) and messages and isinstance(messages[0], dict):
-            return self.tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True)
+            return tokenize_chat_messages(self.tokenizer, messages)
         # Plain-text string
         if isinstance(messages, str):
             return self.tokenizer.encode(messages, add_special_tokens=False)
@@ -253,9 +254,7 @@ class OpenaiPlugin(DefaultApiPlugin):
         input_tokens = 0
         request = json.loads(request_str)
         if 'messages' in request:
-            input_content = self.tokenizer.apply_chat_template(
-                request['messages'], tokenize=True, add_generation_prompt=True
-            )
+            input_content = tokenize_chat_messages(self.tokenizer, request['messages'])
             input_tokens += len(input_content)
             # handle image tokens if any
             for message in request['messages']:
