@@ -31,7 +31,8 @@ class TestNativeBenchmark(TestBenchmark):
                 'temperature': 0.7,
                 'parallel_tool_calls': True,
                 'retries':3,
-                'extra_body': {'enable_thinking': True}
+                'extra_body': {'enable_thinking': True},
+                'stream': True
             },
             'judge_strategy': JudgeStrategy.AUTO,
             'judge_model_args': {

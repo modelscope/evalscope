@@ -1,10 +1,12 @@
 import os
+import time
 from anthropic import Anthropic, APIStatusError, BadRequestError, PermissionDeniedError
 from anthropic.types import Message
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, ModelOutput
+from evalscope.api.model.perf_metrics import PerformanceMetrics, calc_tpot
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_supported_params
@@ -123,6 +125,9 @@ class AnthropicCompatibleAPI(ModelAPI):
         self.validate_request_params(request)
 
         try:
+            t_start = time.monotonic()
+            ttft: Optional[float] = None
+
             # Generate completion
             message = retry_call(
                 self.client.messages.create,
@@ -133,14 +138,25 @@ class AnthropicCompatibleAPI(ModelAPI):
 
             # Handle streaming response
             if not isinstance(message, Message):
-                message = collect_stream_response(message)
+                message, ttft = collect_stream_response(message)
+
+            total_time = time.monotonic() - t_start
 
             response = message.model_dump()
             self.on_response(response)
 
-            # Return output
+            # Build output and populate timing + perf metrics
             choices = self.chat_choices_from_message(message, tools)
-            return model_output_from_anthropic(message, choices)
+            output = model_output_from_anthropic(message, choices)
+            output.time = total_time
+            usage = output.usage
+            output.perf_metrics = PerformanceMetrics(
+                latency=total_time,
+                ttft=ttft,
+                input_tokens=usage.input_tokens if usage else 0,
+                output_tokens=usage.output_tokens if usage else 0,
+            )
+            return output
 
         except (BadRequestError, PermissionDeniedError) as ex:
             return self.handle_bad_request(ex)

@@ -1,4 +1,5 @@
 import os
+import time
 from openai import APIStatusError, BadRequestError, OpenAI, PermissionDeniedError, UnprocessableEntityError
 from openai._types import NOT_GIVEN
 from openai.types.chat import ChatCompletion
@@ -6,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, ModelOutput
+from evalscope.api.model.perf_metrics import PerformanceMetrics, calc_tpot
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_supported_params
@@ -89,6 +91,9 @@ class OpenAICompatibleAPI(ModelAPI):
         self.validate_request_params(request)
 
         try:
+            t_start = time.monotonic()
+            ttft: Optional[float] = None
+
             # generate completion and save response for model call
             completion = retry_call(
                 self.client.chat.completions.create,
@@ -98,14 +103,27 @@ class OpenAICompatibleAPI(ModelAPI):
             )
             # handle streaming response
             if not isinstance(completion, ChatCompletion):
-                completion = collect_stream_response(completion)
+                completion, ttft = collect_stream_response(completion)
+
+            total_time = time.monotonic() - t_start
 
             response = completion.model_dump()
             self.on_response(response)
 
             # return output and call
             choices = self.chat_choices_from_completion(completion, tools)
-            return model_output_from_openai(completion, choices)
+            output = model_output_from_openai(completion, choices)
+
+            # Populate timing fields
+            output.time = total_time
+            usage = output.usage
+            output.perf_metrics = PerformanceMetrics(
+                latency=total_time,
+                ttft=ttft,
+                input_tokens=usage.input_tokens if usage else 0,
+                output_tokens=usage.output_tokens if usage else 0,
+            )
+            return output
 
         except (BadRequestError, UnprocessableEntityError, PermissionDeniedError) as ex:
             return self.handle_bad_request(ex)

@@ -1,6 +1,7 @@
 import base64
 import json
 import re
+import time
 from collections import defaultdict
 from copy import copy
 from openai import APIStatusError, OpenAIError
@@ -625,15 +626,38 @@ def _parse_content_with_internal(content: str, ) -> Tuple[str, Optional[JsonValu
     ) if internal_match else (content, None))
 
 
-def collect_stream_response(response_stream: List[ChatCompletionChunk]) -> ChatCompletion:
+def collect_stream_response(response_stream: List[ChatCompletionChunk]) -> Tuple[ChatCompletion, Optional[float]]:
+    """Consume a streaming chat completion and aggregate chunks into a single ChatCompletion.
+
+    Args:
+        response_stream: Iterable of ChatCompletionChunk objects from the OpenAI SDK.
+
+    Returns:
+        A tuple of:
+        - The assembled :class:`ChatCompletion` object.
+        - Time To First Token (TTFT) in seconds measured from the moment this
+          function is entered until the first chunk carrying non-empty content
+          or tool-call data arrives.  ``None`` if no content chunk was observed.
+    """
     collected_chunks: List[ChatCompletionChunk] = []
     collected_messages = defaultdict(list)
     collected_reasoning = defaultdict(list)
     collected_tool_calls = defaultdict(dict)
 
+    t_start = time.monotonic()
+    ttft: Optional[float] = None
+
     for chunk in response_stream:
         collected_chunks.append(chunk)
         for choice in chunk.choices:
+            # Detect first meaningful content chunk for TTFT
+            has_content = ((choice.delta.content is not None and choice.delta.content != '') or (
+                hasattr(choice.delta, 'reasoning_content') and choice.delta.reasoning_content is not None
+                and choice.delta.reasoning_content != ''
+            ) or (hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls))
+            if ttft is None and has_content:
+                ttft = time.monotonic() - t_start
+
             # Handle reasoning content
             if hasattr(choice.delta, 'reasoning_content') and choice.delta.reasoning_content is not None:
                 collected_reasoning[choice.index].append(choice.delta.reasoning_content)
@@ -714,4 +738,4 @@ def collect_stream_response(response_stream: List[ChatCompletionChunk]) -> ChatC
         model=collected_chunks[0].model,
         object='chat.completion',
         usage=collected_chunks[-1].usage  # use the usage from the last chunk
-    )
+    ), ttft
