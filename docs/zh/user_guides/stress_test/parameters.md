@@ -89,25 +89,50 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 
 ### dataset 模式说明
 
+**文本对话类**
+
 | 模式 | 说明 | 支持dataset-path |
 |------|------|------------------|
 | `openqa` | 从ModelScope自动下载[OpenQA](https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/summary)<br>prompt长度较短（一般<100 token）<br>指定`dataset_path`时使用jsonl文件的`question`字段 | ✓ |
 | `longalpaca` | 从ModelScope自动下载[LongAlpaca-12k](https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/dataPeview)<br>prompt长度较长（一般>6000 token）<br>指定`dataset_path`时使用jsonl文件的`instruction`字段 | ✓ |
 | `line_by_line` | 逐行将txt文件的每一行作为一个prompt<br>**必需提供`dataset_path`** | ✓（必需） |
+| `random` | 根据`prefix-length`、`max-prompt-length`和`min-prompt-length`随机生成prompt<br>**必需指定`tokenizer-path`**<br>[使用示例](./examples.md#使用random数据集) | ✗ |
+| `custom` | 自定义数据集解析器<br>参考[自定义数据集指南](custom.md/#自定义数据集) | ✓ |
+
+**多模态类**
+
+| 模式 | 说明 | 支持dataset-path |
+|------|------|------------------|
 | `flickr8k` | 从ModelScope自动下载[Flick8k](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview)<br>构建图文输入，数据集较大，适合评测多模态模型 | ✗ |
 | `kontext_bench` | 从ModelScope自动下载[Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview)<br>构建图文输入，约1000条数据，适合快速评测多模态模型 | ✗ |
-| `random` | 根据`prefix-length`、`max-prompt-length`和`min-prompt-length`随机生成prompt<br>**必需指定`tokenizer-path`**<br>[使用示例](./examples.md#使用random数据集) | ✗ |
 | `random_vl` | 随机生成图像和文本输入<br>在`random`基础上增加图像相关参数<br>[使用示例](./examples.md#使用random图文数据集) | ✗ |
+
+**Embedding 类**
+
+| 模式 | 说明 | 支持dataset-path |
+|------|------|------------------|
 | `embedding` | 从文件加载文本数据评测Embedding模型<br>支持Line-by-line(TXT)或JSONL格式（含`text`字段） | ✓ (必需) |
 | `random_embedding` | 根据`max-prompt-length`和`min-prompt-length`随机生成query评测Embedding模型<br>**必需指定`tokenizer-path`** | ✗ |
 | `embedding_batch` | 批量发送文本数据评测Embedding模型<br>从文件加载数据<br>支持`--extra-args '{"batch_size": 8}'`设置批次大小 | ✓ (必需) |
 | `random_embedding_batch` | 批量发送根据`max-prompt-length`和`min-prompt-length`随机生成query数据评测Embedding模型<br>**必需指定`tokenizer-path`**<br>支持`--extra-args '{"batch_size": 8}'`设置批次大小 | ✗ |
+
+**Rerank 类**
+
+| 模式 | 说明 | 支持dataset-path |
+|------|------|------------------|
 | `rerank` | 从文件加载Query-Document对评测Rerank模型<br>支持JSONL格式 (含`query`和`documents`字段) | ✓ (必需) |
 | `random_rerank` | 根据`max-prompt-length`和`min-prompt-length`随机生成query数据评测Rerank模型<br>**必需指定`tokenizer-path`**<br>支持`--extra-args '{"num_documents": 10, "document_length_ratio": 5}'`设置文档数量和相对query的长度倍数 | ✗ |
-| `custom` | 自定义数据集解析器<br>参考[自定义数据集指南](custom.md/#自定义数据集) | ✓ |
-| `random_multi_turn` | 合成多轮对话，每轮随机生成 token 序列<br>需配合 `--multi-turn` 使用<br>**必需 `--tokenizer-path`、`--max-turns`**<br>[使用示例](./multi_turn.md#1-使用-random_multi_turn合成多轮对话) | ✗ |
-| `share_gpt_zh_multi_turn` | 从 ModelScope 自动下载中文 [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) 数据集（约 70k 条），保留完整多轮对话<br>需配合 `--multi-turn` 使用<br>[使用示例](./multi_turn.md#2-使用-share_gpt_zh_multi_turn真实中文对话) | ✓ |
-| `share_gpt_en_multi_turn` | 从 ModelScope 自动下载英文 [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) 数据集（约 70k 条），保留完整多轮对话<br>需配合 `--multi-turn` 使用 | ✓ |
+
+**多轮对话类**
+
+需配合 `--multi-turn` 使用，详见[多轮对话压测指南](./multi_turn.md)。
+
+| 模式 | 说明 | 支持dataset-path |
+|------|------|------------------|
+| `random_multi_turn` | 合成多轮对话，每轮随机生成 token 序列<br>**必需 `--tokenizer-path`、`--max-turns`**<br>[使用示例](./multi_turn.md#1-使用-random_multi_turn合成多轮对话) | ✗ |
+| `share_gpt_zh_multi_turn` | 从 ModelScope 自动下载中文 [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) 数据集（约 70k 条），保留完整多轮对话<br>[使用示例](./multi_turn.md#2-使用-share_gpt_zh_multi_turn真实中文对话) | ✓ |
+| `share_gpt_en_multi_turn` | 从 ModelScope 自动下载英文 [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) 数据集（约 70k 条），保留完整多轮对话 | ✓ |
+| `custom_multi_turn` | 使用本地 JSONL 文件作为自定义多轮对话数据集<br>每行为 OpenAI messages 格式的 JSON 数组，适合已有对话数据直接压测<br>**必需提供`dataset_path`**<br>[使用示例](./multi_turn.md#3-使用-custom_multi_turn自定义本地对话) | ✓（必需） |
 
 ## 模型设置
 

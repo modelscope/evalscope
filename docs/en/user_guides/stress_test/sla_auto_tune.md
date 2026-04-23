@@ -35,6 +35,7 @@ The SLA (Service Level Agreement) auto-tuning feature allows users to define ser
 | **Throughput** | `rps` | Requests per second | `>=`, `>`, `max` |
 | | `tps` | Tokens per second | `>=`, `>`, `max` |
 
+(sla-params-logic)=
 ## `--sla-params` Logic
 
 `--sla-params` accepts a **JSON array**, where each element is an **object (group)**. Logic rules are as follows:
