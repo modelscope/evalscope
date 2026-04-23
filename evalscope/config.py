@@ -166,6 +166,9 @@ class TaskConfig(BaseArgument):
     analysis_report: bool = False
     """Whether to generate detailed analysis reports after evaluation."""
 
+    collect_perf: bool = True
+    """Whether to collect per-request performance metrics during evaluation."""
+
     # Sandbox configuration arguments
     use_sandbox: bool = False
     """Whether to execute code in a sandboxed environment."""

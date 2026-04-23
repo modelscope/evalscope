@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field, JsonValue, model_validator
 from typing import Any, Dict, List, Literal, Optional, Type, Union
 
 from evalscope.api.messages import ChatMessageAssistant, Content
+from evalscope.api.model.perf_metrics import PerformanceMetrics
 from evalscope.api.tool import ToolCall, ToolFunction
 
 
@@ -149,6 +150,13 @@ class ModelOutput(BaseModel):
 
     error: Optional[str] = Field(default=None)
     """Error message in the case of content moderation refusals."""
+
+    perf_metrics: Optional[PerformanceMetrics] = Field(default=None)
+    """Per-request performance metrics (latency, TTFT, token usage, etc.).
+
+    Populated when ``TaskConfig.collect_perf=True``.  ``None`` otherwise and
+    for cached predictions (no live inference was run).
+    """
 
     @property
     def empty(self) -> bool:

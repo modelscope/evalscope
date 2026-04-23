@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, List, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from evalscope.metrics import macro_mean, micro_mean
 from evalscope.utils import get_logger
@@ -135,6 +135,7 @@ class Report:
     score: float = 0.0
     metrics: List[Metric] = field(default_factory=list)
     analysis: str = 'N/A'
+    perf_metrics: Optional[Dict[str, Any]] = field(default=None, compare=False)
 
     def __post_init__(self):
         self.score = self.metrics[0].score  # NOTE: only use the first metric by default
@@ -164,6 +165,7 @@ class Report:
             model_name=data['model_name'],
             metrics=metrics,
             analysis=data.get('analysis', 'N/A'),
+            perf_metrics=data.get('perf_metrics'),
         )
 
     @classmethod

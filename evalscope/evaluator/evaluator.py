@@ -19,7 +19,8 @@ from evalscope.api.metric import AggScore, SampleScore
 from evalscope.api.registry import register_evaluator
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.evaluator.batch_reviewer import BatchReviewer
-from evalscope.report import Report, gen_table
+from evalscope.evaluator.perf_collector import PerfCollector
+from evalscope.report import Report, gen_perf_table, gen_table
 from evalscope.utils.function_utils import run_in_threads_with_progress
 from evalscope.utils.logger import get_logger
 
@@ -139,6 +140,9 @@ class DefaultEvaluator(Evaluator):
             cache_manager=self.cache_manager,
             task_config=task_config,
         )
+
+        # Initialize PerfCollector for collecting per-request performance metrics
+        self.perf_collector = PerfCollector()
 
     def eval(self) -> Report:
         """
@@ -367,6 +371,13 @@ class DefaultEvaluator(Evaluator):
             )
             logger.debug(f'Review result: \n{review_result.pretty_print()}')
 
+        # Collect per-request performance metrics for live inference items only
+        # when perf collection is enabled.
+        if self.task_config.collect_perf and item.needs_predict:
+            perf = task_state.output.perf_metrics if task_state.output is not None else None
+            if perf is not None:
+                self.perf_collector.record(perf)
+
     def _aggregate_scores(
         self,
         dataset_dict: Dict[str, Dataset],
@@ -487,9 +498,23 @@ class DefaultEvaluator(Evaluator):
         else:
             logger.info('Skipping report analysis (`analysis_report=False`).')
 
+        # Inject perf metrics into the report when collect_perf is enabled
+        if self.task_config.collect_perf:
+            report.perf_metrics = self.perf_collector.get_perf_dict() or None
+
         # Save the complete report to file
         report.to_json(report_file)
         logger.info(f'Dump report to: {report_file} \n')
+
+        # Print per-benchmark perf table when perf data is available
+        if self.task_config.collect_perf and report.perf_metrics:
+            try:
+                perf_table = gen_perf_table(report_list=[report])
+                if perf_table:
+                    logger.info(f'\n{self.benchmark_name} perf table:\n{perf_table}\n')
+            except Exception:
+                logger.error('Failed to generate perf table.')
+
         return report
 
     def finalize(self, *args, **kwargs):

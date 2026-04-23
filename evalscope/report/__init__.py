@@ -5,6 +5,7 @@ from evalscope.utils.import_utils import _LazyModule
 
 if TYPE_CHECKING:
     from .combinator import (
+        gen_perf_table,
         gen_table,
         get_data_frame,
         get_report_list,
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
 else:
     _import_structure = {
         'combinator': [
+            'gen_perf_table',
             'gen_table',
             'get_data_frame',
             'get_report_list',

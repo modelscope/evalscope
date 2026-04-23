@@ -236,6 +236,7 @@ After providing your explanation, you must rate the response on a scale of 0 (wo
 | `--use-cache` | `str` | 复用本地缓存路径（如`outputs/20241210_194434`）<br>重用推理结果和评测结果 | `None` |
 | `--rerun-review` | `bool` | 只重新运行评测（重用推理结果） | `false` |
 | `--enable-progress-tracker` | `bool` | 是否开启进度追踪，将层级评测进度实时写入`progress.json`，可通过服务接口查询 | `false` |
+| `--collect-perf` | `bool` | 采集每次推理请求的性能指标（延迟、TTFT、Token 用量），汇总后写入评测报告。采集 TTFT 需开启 `--generation-config stream=true`；使用 `--no-collect-perf` 可禁用 | `true` |
 | `--seed` | `int` | 随机种子 | `42` |
 | `--debug` | `bool` | 是否开启调试模式 | `false` |
 | `--ignore-errors` | `bool` | 是否忽略生成过程中的错误 | `false` |

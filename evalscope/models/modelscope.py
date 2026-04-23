@@ -33,6 +33,7 @@ from evalscope.api.model import (
     ModelUsage,
     TopLogprob,
 )
+from evalscope.api.model.perf_metrics import PerformanceMetrics
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils.model_utils import get_device
 
@@ -223,7 +224,7 @@ class ModelScopeAPI(ModelAPI):
             choices.append(choice)
 
         # return output
-        return ModelOutput(
+        output = ModelOutput(
             model=self.model_name,
             choices=choices,
             usage=ModelUsage(
@@ -233,6 +234,15 @@ class ModelScopeAPI(ModelAPI):
             ),
             time=response.time,
         )
+        # Populate PerformanceMetrics from the already-available fields.
+        # Local models do not produce TTFT (no streaming chunks), so ttft stays None.
+        output.perf_metrics = PerformanceMetrics(
+            latency=response.time,
+            ttft=None,
+            input_tokens=response.input_tokens,
+            output_tokens=response.output_tokens,
+        )
+        return output
 
     @override
     def max_tokens(self) -> Optional[int]:

@@ -1,4 +1,5 @@
 import json
+import time
 from anthropic import APIStatusError
 from anthropic.types import (
     ContentBlock,
@@ -436,10 +437,29 @@ def anthropic_media_filter(key: Optional[Any], value: Any) -> Any:
     return value
 
 
-def collect_stream_response(response_stream: Any) -> Message:
+def collect_stream_response(
+    response_stream: Any,
+    request_start: Optional[float] = None,
+) -> Tuple[Message, Optional[float]]:
     """Collect streaming response chunks into a single Message.
 
     This function handles Anthropic's streaming response format.
+
+    Args:
+        response_stream: Iterable of Anthropic streaming events.
+        request_start: ``time.monotonic()`` timestamp captured immediately before the
+            underlying HTTP request was initiated (e.g. before ``retry_call``).  When
+            provided, TTFT is measured from that point so that connection-establishment
+            and header-receive latency are included.  When ``None``, TTFT is measured
+            from the moment this function is entered (legacy behaviour).
+
+    Returns:
+        A tuple of:
+        - The assembled :class:`Message` object.
+        - Time To First Token (TTFT) in seconds measured from ``request_start`` (or
+          from function entry when ``request_start`` is ``None``) until the first chunk
+          carrying non-empty content or tool-call data arrives.
+          ``None`` if no content chunk was observed.
     """
     from anthropic.types import (
         ContentBlockDeltaEvent,
@@ -462,6 +482,9 @@ def collect_stream_response(response_stream: Any) -> Message:
     current_tool_input: str = ''
     current_tool_id: str = ''
     current_tool_name: str = ''
+
+    t_start = request_start if request_start is not None else time.monotonic()
+    ttft: Optional[float] = None
 
     for event in response_stream:
         if isinstance(event, MessageStartEvent):
@@ -493,10 +516,18 @@ def collect_stream_response(response_stream: Any) -> Message:
                 current_tool_name = getattr(event.content_block, 'name', '')
 
         elif isinstance(event, ContentBlockDeltaEvent):
+            delta_text = ''
+            delta_tool = ''
             if hasattr(event.delta, 'text'):
-                current_text += event.delta.text or ''
+                delta_text = event.delta.text or ''
+                current_text += delta_text
             elif hasattr(event.delta, 'partial_json'):
-                current_tool_input += event.delta.partial_json or ''
+                delta_tool = event.delta.partial_json or ''
+                current_tool_input += delta_tool
+
+            # Record TTFT on the first chunk with actual content
+            if ttft is None and (delta_text or delta_tool):
+                ttft = time.monotonic() - t_start
 
         elif isinstance(event, MessageDeltaEvent):
             stop_reason = event.delta.stop_reason
@@ -516,7 +547,7 @@ def collect_stream_response(response_stream: Any) -> Message:
         stop_reason=stop_reason,  # type: ignore
         stop_sequence=None,
         usage=Usage(input_tokens=usage_input_tokens, output_tokens=usage_output_tokens),
-    )
+    ), ttft
 
 
 def _append_content_block(
