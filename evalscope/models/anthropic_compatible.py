@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, ModelOutput
-from evalscope.api.model.perf_metrics import PerformanceMetrics, calc_tpot
+from evalscope.api.model.perf_metrics import PerformanceMetrics
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_supported_params
