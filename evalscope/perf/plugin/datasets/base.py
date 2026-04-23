@@ -3,6 +3,7 @@ from abc import abstractmethod
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
+from evalscope.perf.plugin.datasets.utils import tokenize_chat_messages
 
 
 class DatasetPluginBase:
@@ -111,7 +112,7 @@ class DatasetPluginBase:
             prompt_length = len(prompt)
         elif self.query_parameters.apply_chat_template:
             messages = [self.create_message(prompt)]
-            prompt_length = len(self.tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True))
+            prompt_length = len(tokenize_chat_messages(self.tokenizer, messages))
         else:
             prompt_length = len(self.tokenizer.encode(prompt))
         is_valid = self.query_parameters.min_prompt_length <= prompt_length <= self.query_parameters.max_prompt_length
