@@ -288,10 +288,6 @@ class Arguments(BaseArgument):
                     'If this is not intended, please specify the full URL explicitly.'
                 )
 
-        # Resolve apply_chat_template from the *original* URL before any redirects.
-        if self.apply_chat_template is None:
-            self.apply_chat_template = self.url.strip('/').endswith('chat/completions')
-
         # When tokenize_prompt is enabled, redirect to the completions endpoint.
         if self.tokenize_prompt:
             if not self.tokenizer_path:
@@ -303,6 +299,10 @@ class Arguments(BaseArgument):
                     f'--tokenize-prompt is set: URL auto-adjusted from chat/completions '
                     f'to completions endpoint: {self.url}'
                 )
+
+        # Resolve apply_chat_template from the *original* URL before any redirects.
+        if self.apply_chat_template is None:
+            self.apply_chat_template = self.url.strip('/').endswith('chat/completions')
 
         # Set number and parallel to lists if they are integers
         if isinstance(self.number, int):
