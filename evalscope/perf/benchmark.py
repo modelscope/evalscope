@@ -26,6 +26,10 @@ data_process_completed_event = asyncio.Event()
 @exception_handler
 async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGenerator[dict, None]:
 
+    # Warn if same_request is used without dataset mode
+    if args.same_request and not args.dataset:
+        logger.warning("--same-request only works in dataset mode, ignoring...")
+
     async def _generate_from_prompt():
         """Generate requests by repeating a single prompt."""
         prompt = load_prompt(args.prompt)
@@ -55,6 +59,10 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
 
         if not dataset_messages:
             raise ValueError('Dataset is empty!')
+        
+        # When same_request is True, we will only use the first message to generate all requests
+        if args.same_request:
+            dataset_messages = [dataset_messages[0]]
 
         # Yield requests cyclically until total count is reached
         count = 0
