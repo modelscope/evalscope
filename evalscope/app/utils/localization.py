@@ -207,10 +207,8 @@ def get_app_locale(lang: str) -> Dict[str, str]:
             'en': '📈 Evalscope Dashboard'
         },
         'star_beggar': {
-            'zh':
-            '喜欢<a href=\"https://github.com/modelscope/evalscope\" target=\"_blank\">EvalScope</a>就动动手指给我们加个star吧 🥺 ',
-            'en':
-            'If you like <a href=\"https://github.com/modelscope/evalscope\" target=\"_blank\">EvalScope</a>, '
+            'zh': '喜欢<a href=\"https://github.com/modelscope/evalscope\" target=\"_blank\">EvalScope</a>就动动手指给我们加个star吧 🥺 ',
+            'en': 'If you like <a href=\"https://github.com/modelscope/evalscope\" target=\"_blank\">EvalScope</a>, '
             'please take a few seconds to star us 🥺 '
         },
         'note': {

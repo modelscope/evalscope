@@ -5,12 +5,12 @@ import pickle
 import re
 import sqlite3
 import sys
-from datetime import datetime
 from tabulate import tabulate
 from typing import Dict, List, Tuple
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
+from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics, Metrics
+from evalscope.utils.io_utils import current_time
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -117,8 +117,8 @@ def get_output_path(args: Arguments) -> str:
     if args.no_timestamp:
         output_path = os.path.join(args.outputs_dir, name)
     else:
-        current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
-        output_path = os.path.join(args.outputs_dir, current_time, name)
+        current_time_str = current_time().strftime('%Y%m%d_%H%M%S')
+        output_path = os.path.join(args.outputs_dir, current_time_str, name)
     if not os.path.exists(output_path):
         os.makedirs(output_path, exist_ok=True)
     logger.info(f'Save the result to: {output_path}')
@@ -178,8 +178,6 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Dict[st
     :param api_type: The API type (e.g., 'openai', 'openai_embedding', 'openai_rerank').
     :return: Dictionary of percentiles for various metrics.
     """
-    from evalscope.perf.utils.benchmark_util import is_embedding_or_rerank_api
-
     query_sql = f'''SELECT {DatabaseColumns.START_TIME}, {DatabaseColumns.INTER_TOKEN_LATENCIES}, {DatabaseColumns.SUCCESS},
                     {DatabaseColumns.COMPLETED_TIME}, {DatabaseColumns.LATENCY}, {DatabaseColumns.FIRST_CHUNK_LATENCY},
                     {DatabaseColumns.PROMPT_TOKENS},
@@ -197,16 +195,17 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Dict[st
     # Create column index mapping
     col_indices = {col: idx for idx, col in enumerate(columns)}
 
-    is_embedding_rerank = is_embedding_or_rerank_api(api_type)
+    is_embedding_rerank = Metrics.is_embedding_or_rerank(api_type)
 
     if is_embedding_rerank:
         # For embedding/rerank models, show relevant metrics only
         metrics = {
             PercentileMetrics.LATENCY: [row[col_indices[DatabaseColumns.LATENCY]] for row in rows],
             PercentileMetrics.INPUT_TOKENS: [row[col_indices[DatabaseColumns.PROMPT_TOKENS]] for row in rows],
-            PercentileMetrics.INPUT_THROUGHPUT:
-            [(row[col_indices[DatabaseColumns.PROMPT_TOKENS]] / row[col_indices[DatabaseColumns.LATENCY]])
-             if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows],
+            PercentileMetrics.INPUT_THROUGHPUT: [
+                (row[col_indices[DatabaseColumns.PROMPT_TOKENS]] / row[col_indices[DatabaseColumns.LATENCY]])
+                if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows
+            ],
         }
     else:
         # For LLM models, show all metrics
@@ -221,19 +220,19 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Dict[st
 
         metrics = {
             PercentileMetrics.TTFT: [row[col_indices[DatabaseColumns.FIRST_CHUNK_LATENCY]] for row in rows],
-            PercentileMetrics.ITL:
-            inter_token_latencies_all,
+            PercentileMetrics.ITL: inter_token_latencies_all,
             PercentileMetrics.TPOT: [row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]] for row in rows],
             PercentileMetrics.LATENCY: [row[col_indices[DatabaseColumns.LATENCY]] for row in rows],
             PercentileMetrics.INPUT_TOKENS: [row[col_indices[DatabaseColumns.PROMPT_TOKENS]] for row in rows],
             PercentileMetrics.OUTPUT_TOKENS: [row[col_indices[DatabaseColumns.COMPLETION_TOKENS]] for row in rows],
-            PercentileMetrics.OUTPUT_THROUGHPUT:
-            [(row[col_indices[DatabaseColumns.COMPLETION_TOKENS]] / row[col_indices[DatabaseColumns.LATENCY]])
-             if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows],
-            PercentileMetrics.TOTAL_THROUGHPUT:
-            [((row[col_indices[DatabaseColumns.PROMPT_TOKENS]] + row[col_indices[DatabaseColumns.COMPLETION_TOKENS]])
-              / row[col_indices[DatabaseColumns.LATENCY]])
-             if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows]
+            PercentileMetrics.OUTPUT_THROUGHPUT: [
+                (row[col_indices[DatabaseColumns.COMPLETION_TOKENS]] / row[col_indices[DatabaseColumns.LATENCY]])
+                if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows
+            ],
+            PercentileMetrics.TOTAL_THROUGHPUT: [(
+                (row[col_indices[DatabaseColumns.PROMPT_TOKENS]] + row[col_indices[DatabaseColumns.COMPLETION_TOKENS]])
+                / row[col_indices[DatabaseColumns.LATENCY]]
+            ) if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows]
         }
 
     # Calculate percentiles for each metric

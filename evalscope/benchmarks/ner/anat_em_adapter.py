@@ -57,8 +57,7 @@ class AnatEMAdapter(NERAdapter):
 
         # Add descriptions for each entity type
         self.entity_descriptions = {
-            'ANATOMY':
-            'Anatomical entities, ranging from subcellular structures and cells to tissues, organs, and organ systems'
+            'ANATOMY': 'Anatomical entities, ranging from subcellular structures and cells to tissues, organs, and organ systems'
         }
 
         # Setup entity mappings based on the defined entity types

@@ -768,3 +768,6 @@ class DefaultDataAdapter(DataAdapter):
     def finalize(self, *args, **kwargs):
         # Finalize the evaluation process
         self.sandbox_finalize(*args, **kwargs)
+        # Release dataset memory after evaluation to avoid accumulation across benchmarks
+        self.test_dataset = None
+        self.fewshot_dataset = None

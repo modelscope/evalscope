@@ -13,6 +13,13 @@ class RandomVLDatasetPlugin(RandomDatasetPlugin):
     """Random Vision-Language Dataset Plugin for multimodal model stress testing."""
 
     def __init__(self, query_parameters: Arguments):
+        if query_parameters.tokenize_prompt:
+            raise ValueError(
+                '--tokenize-prompt is not supported with the random_vl dataset. '
+                'The random_vl dataset produces multimodal (image + text) messages that '
+                'cannot be represented as a flat token-ID list. '
+                'Remove --tokenize-prompt or switch to the random dataset.'
+            )
         super().__init__(query_parameters)
 
         # Vision-language specific parameters

@@ -90,6 +90,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--judge-model-args', type=json.loads, default='{}', help='The judge model args, should be a json string.')  # noqa: E501
     parser.add_argument('--judge-worker-num', type=int, default=1, help='The number of workers for the judge model.')
     parser.add_argument('--analysis-report', action='store_true', default=False, help='Generate analysis report for the evaluation results using judge model.')  # noqa: E501
+    parser.add_argument('--collect-perf', action=argparse.BooleanOptionalAction, default=True, help='Collect per-request performance metrics (latency, TTFT, token usage) during evaluation. TTFT requires streaming (--generation-config stream=True). Use --no-collect-perf to disable.')  # noqa: E501
 
     # Sandbox-related arguments
     parser.add_argument('--use-sandbox', action='store_true', default=False, help='Whether to use sandbox for model evaluation.')  # noqa: E501

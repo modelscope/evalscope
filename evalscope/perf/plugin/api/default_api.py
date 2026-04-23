@@ -203,6 +203,7 @@ class DefaultApiPlugin(ApiPluginBase):
                         output.success = True
                 else:
                     # Try to parse structured error, fallback to reason/text
+                    output.status_code = response.status
                     try:
                         err_payload = await response.json()
                         output.error = json.dumps(err_payload, ensure_ascii=False)

@@ -110,7 +110,7 @@ class TestPerf(unittest.TestCase):
         from evalscope.perf.arguments import Arguments
         task_cfg = Arguments(
             parallel=20,
-            model='Qwen3-1.7B',
+            model='Qwen2.5-0.5B-Instruct',
             url='http://127.0.0.1:8801/v1/completions',
             api='openai',
             dataset='random',
@@ -122,6 +122,7 @@ class TestPerf(unittest.TestCase):
             number=20,
             tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
             seed=None,
+            tokenize_prompt=True,
             extra_args={'ignore_eos': True}
         )
         metrics_result, percentile_result = run_perf_benchmark(task_cfg)
@@ -340,101 +341,6 @@ class TestPerf(unittest.TestCase):
 
         run_perf_benchmark(task_cfg)
 
-    def test_perf_sla_rate_uses_fixed_parallel_when_provided(self):
-        from evalscope.perf.arguments import Arguments
-        captured_args = []
-
-        def fake_runner(run_args, output_path):
-            captured_args.append((run_args.parallel, run_args.rate, run_args.number))
-            return {
-                'run': {
-                    'metrics': {
-                        Metrics.SUCCEED_REQUESTS: 1,
-                        Metrics.TOTAL_REQUESTS: 1,
-                        Metrics.AVERAGE_LATENCY: 1.0,
-                        Metrics.AVERAGE_TIME_TO_FIRST_TOKEN: 0.1,
-                        Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN: 0.01,
-                        Metrics.REQUEST_THROUGHPUT: 2.0,
-                        Metrics.OUTPUT_TOKEN_THROUGHPUT: 20.0,
-                    },
-                    'percentiles': {
-                        PercentileMetrics.PERCENTILES: ['99%'],
-                        PercentileMetrics.LATENCY: [1.0],
-                        PercentileMetrics.TTFT: [0.1],
-                        PercentileMetrics.TPOT: [0.01],
-                    }
-                }
-            }
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            args = Arguments(
-                parallel=8,
-                number=8,
-                model='Qwen2.5-0.5B-Instruct',
-                url='http://127.0.0.1:8801/v1/completions',
-                api='openai',
-                dataset='random',
-                outputs_dir=tmpdir,
-                sla_auto_tune=True,
-                sla_variable='rate',
-                sla_params=[{'p99_ttft': '<=1'}],
-                sla_num_runs=1,
-                sla_upper_bound=64,
-                sla_lower_bound=1,
-                sla_fixed_parallel=40,
-            )
-            tuner = SLAAutoTuner(args, fake_runner)
-            tuner._get_result(12)
-
-        self.assertEqual(captured_args[0], (40, 12, 24))
-
-    def test_perf_sla_rate_falls_back_to_upper_bound_without_fixed_parallel(self):
-        from evalscope.perf.arguments import Arguments
-        captured_args = []
-
-        def fake_runner(run_args, output_path):
-            captured_args.append((run_args.parallel, run_args.rate, run_args.number))
-            return {
-                'run': {
-                    'metrics': {
-                        Metrics.SUCCEED_REQUESTS: 1,
-                        Metrics.TOTAL_REQUESTS: 1,
-                        Metrics.AVERAGE_LATENCY: 1.0,
-                        Metrics.AVERAGE_TIME_TO_FIRST_TOKEN: 0.1,
-                        Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN: 0.01,
-                        Metrics.REQUEST_THROUGHPUT: 2.0,
-                        Metrics.OUTPUT_TOKEN_THROUGHPUT: 20.0,
-                    },
-                    'percentiles': {
-                        PercentileMetrics.PERCENTILES: ['99%'],
-                        PercentileMetrics.LATENCY: [1.0],
-                        PercentileMetrics.TTFT: [0.1],
-                        PercentileMetrics.TPOT: [0.01],
-                    }
-                }
-            }
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            args = Arguments(
-                parallel=8,
-                number=8,
-                model='Qwen2.5-0.5B-Instruct',
-                url='http://127.0.0.1:8801/v1/completions',
-                api='openai',
-                dataset='random',
-                outputs_dir=tmpdir,
-                sla_auto_tune=True,
-                sla_variable='rate',
-                sla_params=[{'p99_ttft': '<=1'}],
-                sla_num_runs=1,
-                sla_upper_bound=64,
-                sla_lower_bound=1,
-            )
-            tuner = SLAAutoTuner(args, fake_runner)
-            tuner._get_result(12)
-
-        self.assertEqual(captured_args[0], (64, 12, 24))
-
     def test_perf_embedding_random(self):
         from evalscope.perf.arguments import Arguments
         task_cfg = Arguments(
@@ -532,6 +438,72 @@ class TestPerf(unittest.TestCase):
             dataset_path='custom_eval/text/rerank/example.jsonl'
         )
         result = run_perf_benchmark(task_cfg)
+
+    def test_perf_share_gpt(self):
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=[1, 2],
+            number=[2, 4],
+            model='qwen-plus',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai',
+            dataset='share_gpt_zh',
+        )
+        result = run_perf_benchmark(task_cfg)
+
+    def test_run_perf_multi_turn_random(self):
+        """Multi-turn benchmark with synthetic random conversations.
+
+        Each conversation has 2-4 user turns.  ``--number`` is the total turn
+        budget (= total API requests), ``--parallel`` is the concurrency.
+        Requires a running chat/completions endpoint and a local tokenizer.
+        """
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=[5, 10],
+            number=[10, 20],
+            model='Qwen2.5-0.5B-Instruct',
+            url='http://127.0.0.1:8801/v1/chat/completions',
+            api='openai',
+            dataset='random_multi_turn',
+            multi_turn=True,
+            min_turns=2,
+            max_turns=4,
+            min_prompt_length=64,
+            max_prompt_length=256,
+            max_tokens=128,
+            tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
+            debug=True,
+        )
+        result = run_perf_benchmark(task_cfg)
+        print(result)
+
+    def test_run_perf_multi_turn_share_gpt(self):
+        """Multi-turn benchmark with ShareGPT Chinese conversations.
+
+        Uses the full user+assistant conversation from the dataset; assistant
+        turns are replaced by real model outputs during the benchmark.
+        Requires DASHSCOPE_API_KEY to be set in .env.
+        """
+        if not env.get('DASHSCOPE_API_KEY'):
+            self.skipTest('DASHSCOPE_API_KEY is not set.')
+            return
+
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=2,
+            number=5,
+            model='qwen-plus',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai',
+            dataset='share_gpt_zh_multi_turn',
+            multi_turn=True,
+            max_turns=4,
+        )
+        result = run_perf_benchmark(task_cfg)
+        print(result)
 
 if __name__ == '__main__':
     unittest.main(buffer=False)

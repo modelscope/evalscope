@@ -53,10 +53,8 @@ def generate_turn(model: Model, row: dict[str, Any]):
         if str(turn_idx) in row['missing_functions']:
             assert len(messages) == 0, 'Holdout turn should not have user message.'
             new_turn = [{
-                'role':
-                'user',
-                'content':
-                DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_PROMPTING.format(
+                'role': 'user',
+                'content': DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_PROMPTING.format(
                     functions=row['missing_functions'][str(turn_idx)]
                 ),
             }]

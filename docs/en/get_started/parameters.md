@@ -240,6 +240,7 @@ After providing your explanation, you must rate the response on a scale of 0 (wo
 | `--use-cache` | `str` | Reuse local cache path (e.g., `outputs/20241210_194434`)<br>Reuses inference and evaluation results | `None` |
 | `--rerun-review` | `bool` | Only rerun evaluation (reuses inference results) | `false` |
 | `--enable-progress-tracker` | `bool` | Whether to enable progress tracking, writing hierarchical evaluation progress to `progress.json` in real time, queryable via the service API | `false` |
+| `--collect-perf` | `bool` | Collect per-request performance metrics (latency, TTFT, token usage) and write them into the evaluation report. TTFT requires `--generation-config stream=true`. Use `--no-collect-perf` to disable | `true` |
 | `--seed` | `int` | Random seed | `42` |
 | `--debug` | `bool` | Whether to enable debug mode | `false` |
 | `--ignore-errors` | `bool` | Whether to ignore errors during generation | `false` |

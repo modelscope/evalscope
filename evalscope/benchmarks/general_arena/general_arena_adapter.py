@@ -66,10 +66,8 @@ GeneralArena is a custom benchmark designed to evaluate the performance of large
         prompt_template=GRADER_TEMPLATE,
         extra_params={
             'models': {
-                'type':
-                'list[dict]',
-                'description':
-                'List of model entries with name and report_path for arena comparison.',
+                'type': 'list[dict]',
+                'description': 'List of model entries with name and report_path for arena comparison.',
                 'value': [{
                     'name': 'qwen-plus',
                     'report_path': 'outputs/20250627_172550/reports/qwen-plus'

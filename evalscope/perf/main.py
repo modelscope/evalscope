@@ -13,6 +13,7 @@ from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 from evalscope.utils.tqdm_utils import make_tracker
 from .arguments import Arguments, parse_args
 from .benchmark import benchmark
+from .multi_turn_benchmark import multi_turn_benchmark
 from .sla.sla_run import run_sla_auto_tune
 from .utils.db_util import get_output_path
 from .utils.handler import add_signal_handlers
@@ -46,7 +47,10 @@ def run_one_benchmark(args: Arguments, output_path: str = None):
             logger.warning(f'Cannot add signal handlers (running in non-main thread): {e}')
 
     with args.output_context(output_path):
-        metrics_result, percentile_result = loop.run_until_complete(benchmark(args))
+        if args.multi_turn:
+            metrics_result, percentile_result = loop.run_until_complete(multi_turn_benchmark(args))
+        else:
+            metrics_result, percentile_result = loop.run_until_complete(benchmark(args))
 
     # Return unified format
     key = f'parallel_{args.parallel}_number_{args.number}'

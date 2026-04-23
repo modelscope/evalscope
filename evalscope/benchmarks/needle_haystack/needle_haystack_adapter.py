@@ -77,12 +77,11 @@ Needle in a Haystack is a benchmark focused on evaluating information retrieval 
                 'value': 'What is the best thing to do in San Francisco?'
             },
             'needles': {
-                'type':
-                'list[str]',
-                'description':
-                'List of factual needle strings inserted into the context.',
-                'value':
-                ['\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n']
+                'type': 'list[str]',
+                'description': 'List of factual needle strings inserted into the context.',
+                'value': [
+                    '\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n'
+                ]
             },
             'context_lengths_min': {
                 'type': 'int',

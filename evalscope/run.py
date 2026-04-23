@@ -4,12 +4,11 @@ Run evaluation for LLMs.
 """
 import os
 from argparse import Namespace
-from datetime import datetime
 from typing import List, Optional, Union
 
 from evalscope.config import TaskConfig, parse_task_config
 from evalscope.constants import DEFAULT_WORK_DIR, DataCollection, EvalBackend
-from evalscope.utils.io_utils import OutputsStructure
+from evalscope.utils.io_utils import OutputsStructure, current_time
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
 from evalscope.utils.resource_utils import compute_eval_total_count
@@ -49,7 +48,7 @@ def run_single_task(task_cfg: TaskConfig) -> dict:
 def setup_work_directory(task_cfg: TaskConfig):
     """Set the working directory for the task."""
     # Get current time
-    run_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+    run_time = current_time().strftime('%Y%m%d_%H%M%S')
     # use cache
     if task_cfg.use_cache:
         task_cfg.work_dir = task_cfg.use_cache
@@ -115,7 +114,7 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     from evalscope.api.evaluator import Evaluator
     from evalscope.api.model.lazy_model import LazyModel
     from evalscope.api.registry import create_evaluator, get_benchmark
-    from evalscope.report import gen_html_report_file, gen_table
+    from evalscope.report import gen_html_report_file, gen_perf_table, gen_table
     from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
     from evalscope.utils.tqdm_utils import make_tracker
 
@@ -159,9 +158,12 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
             unit='benchmark',
             logger=logger,
         ) as pbar:
-            for evaluator in pbar:
+            for i, evaluator in enumerate(pbar):
                 res_dict = evaluator.eval()
                 eval_results[evaluator.benchmark_name] = res_dict
+                # Release evaluator immediately after eval to avoid
+                # accumulating all benchmark objects in memory simultaneously
+                evaluators[i] = None
 
     # Make overall report
     try:
@@ -169,6 +171,14 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
         logger.info(f'Overall report table: \n{report_table} \n')
     except Exception:
         logger.error('Failed to generate report table.')
+
+    # Make overall perf table
+    try:
+        perf_table = gen_perf_table(reports_path_list=[outputs.reports_dir])
+        if perf_table:
+            logger.info(f'Overall perf table: \n{perf_table} \n')
+    except Exception:
+        logger.error('Failed to generate perf table.')
 
     # Generate interactive HTML report
     try:

@@ -68,8 +68,7 @@ MRCR (Memory-Recall with Contextual Retrieval) is OpenAI's benchmark for evaluat
             },
             'needle_count': {
                 'type': 'list[int] | null',
-                'description':
-                'Needle count filter (allowed: 2,4,8). Must be a list, e.g., [2], [4], or [2, 4, 8].  None keeps all.',
+                'description': 'Needle count filter (allowed: 2,4,8). Must be a list, e.g., [2], [4], or [2, 4, 8].  None keeps all.',
                 'value': None
             },
             'tik_enc': {

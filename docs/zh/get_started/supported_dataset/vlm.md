@@ -38,6 +38,7 @@
 | `science_qa` | [ScienceQA](../../benchmarks/science_qa.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `seed_bench_2_plus` | [SEED-Bench-2-Plus](../../benchmarks/seed_bench_2_plus.md) | `Knowledge`, `MCQ`, `MultiModal`, `Reasoning` |
 | `simple_vqa` | [SimpleVQA](../../benchmarks/simple_vqa.md) | `MultiModal`, `QA`, `Reasoning` |
+| `tir_bench` | [TIR-Bench](../../benchmarks/tir_bench.md) | `MultiModal`, `QA`, `Reasoning` |
 | `torgo` | [TORGO](../../benchmarks/torgo.md) | `Audio`, `SpeechRecognition` |
 | `visulogic` | [VisuLogic](../../benchmarks/visulogic.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `vstar_bench` | [V*Bench](../../benchmarks/vstar_bench.md) | `Grounding`, `MCQ`, `MultiModal` |
@@ -81,6 +82,7 @@
 ../../benchmarks/science_qa.md
 ../../benchmarks/seed_bench_2_plus.md
 ../../benchmarks/simple_vqa.md
+../../benchmarks/tir_bench.md
 ../../benchmarks/torgo.md
 ../../benchmarks/visulogic.md
 ../../benchmarks/vstar_bench.md

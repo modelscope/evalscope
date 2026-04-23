@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # flake8: noqa
 import os
+from datetime import timedelta, timezone
 
 os.environ['MODELSCOPE_LOG_LEVEL'] = '40'  # Set default log level to ERROR
 
@@ -17,6 +18,8 @@ DEFAULT_EVALSCOPE_CACHE_DIR = os.path.expanduser(
 )  # ~/.cache/evalscope
 HEARTBEAT_INTERVAL_SEC = int(os.getenv('EVALSCOPE_HEARTBEAT_INTERVAL', '60'))  # 60 seconds
 DEFAULT_LANGUAGE = os.getenv('EVALSCOPE_LANGUAGE', 'en')  # default language: 'en' or 'zh'
+USE_OSS = os.getenv('USE_OSS', '0') == '1'  # whether to use OSS/FUSE-mounted filesystem
+BEIJING_TZ = timezone(timedelta(hours=8))  # UTC+8
 
 
 class HubType:
@@ -158,3 +161,19 @@ class VisualizerType:
     WANDB = 'wandb'
     SWANLAB = 'swanlab'
     CLEARML = 'clearml'
+
+
+class LoggingConstants:
+    DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+    # Console output formats (colorlog)
+    COLOR_DETAILED_FORMAT = (
+        '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d'
+        ' - %(log_color)s%(levelname)s%(reset)s: %(message)s'
+    )
+    COLOR_SIMPLE_FORMAT = ('%(asctime)s - %(name)s - %(log_color)s%(levelname)s%(reset)s: %(message)s')
+    # File output formats (plain)
+    DETAILED_FORMAT = (
+        '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d'
+        ' - %(levelname)s: %(message)s'
+    )
+    SIMPLE_FORMAT = '%(asctime)s - %(name)s - %(levelname)s: %(message)s'

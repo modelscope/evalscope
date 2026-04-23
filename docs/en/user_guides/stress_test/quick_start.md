@@ -171,6 +171,10 @@ Percentile results:
 | Average inter-token latency | Average time interval between generating each output token | Total inter-token latency / Successful requests |
 | Average input tokens per request | Average number of input tokens per request | Total input tokens / Successful requests |
 | Average output tokens per request | Average number of output tokens per request | Total output tokens / Successful requests |
+| Average input turns per request | Average number of historical dialogue turns per request in multi-turn conversations (1 for single-turn) | Total input turns / Successful requests |
+| Average approx KV cache hit rate | Estimated prefix cache hit rate based on the ratio of cached tokens to input tokens (requires prefix caching enabled on the server and `cached_tokens` field returned) | Total cached tokens / Total input tokens × 100% |
+| Average decoded tokens per iter | In speculative decoding, the average number of tokens accepted per model forward pass (iteration), reflecting draft model accuracy | (Total output tokens − 1) / (Total chunks − 1) |
+| Approx speculative decoding acceptance rate | Approximate token acceptance rate for speculative decoding, derived from decoded tokens per iter; closer to 1 means a more accurate draft model | 1 − 1 / (Average decoded tokens per iter) |
 
 **Percentile Metrics**
 

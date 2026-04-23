@@ -18,7 +18,6 @@ import os
 import re
 import statistics as stats_module
 from dataclasses import dataclass
-from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional, Set, Tuple
 
 from evalscope.api.benchmark.statistics import (
@@ -32,6 +31,7 @@ from evalscope.api.benchmark.statistics import (
 )
 from evalscope.api.messages import ChatMessage, ContentAudio, ContentImage, ContentVideo
 from evalscope.api.messages.chat_message import ChatMessageBase
+from evalscope.utils.io_utils import current_time
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
@@ -642,13 +642,13 @@ def compute_benchmark_statistics(
             adapter._task_config = TaskConfig(model='dummy', datasets=[adapter.name])
         except Exception as e:
             logger.warning(f'Could not create TaskConfig for {adapter.name}: {e}')
-            return DataStatistics(computed_at=datetime.now().isoformat())
+            return DataStatistics(computed_at=current_time().isoformat())
 
     try:
         test_dataset = adapter.load_dataset()
     except Exception as e:
         logger.warning(f'Failed to load dataset for {adapter.name}: {e}')
-        return DataStatistics(computed_at=datetime.now().isoformat())
+        return DataStatistics(computed_at=current_time().isoformat())
 
     all_prompt_lengths: List[int] = []
     all_target_lengths: List[int] = []
@@ -739,7 +739,7 @@ def compute_benchmark_statistics(
         prompt_length_std=stats_module.stdev(all_prompt_lengths) if len(all_prompt_lengths) > 1 else 0.0,
         target_length_mean=stats_module.mean(all_target_lengths) if all_target_lengths else None,
         multimodal=overall_multimodal,
-        computed_at=datetime.now().isoformat(),
+        computed_at=current_time().isoformat(),
     )
 
     # Log summary

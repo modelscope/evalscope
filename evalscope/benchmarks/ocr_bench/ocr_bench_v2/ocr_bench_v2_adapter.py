@@ -142,12 +142,14 @@ class OCRBenchV2Adapter(VisionLanguageAdapter):
                 'text_detection_en': ['text grounding en', 'VQA with position en'],
                 'text_spotting_en': ['text spotting en'],
                 'relationship_extraction_en': ['key information extraction en', 'key information mapping en'],
-                'element_parsing_en':
-                ['document parsing en', 'chart parsing en', 'table parsing en', 'formula recognition en'],
+                'element_parsing_en': [
+                    'document parsing en', 'chart parsing en', 'table parsing en', 'formula recognition en'
+                ],
                 'mathematical_calculation_en': ['math QA en', 'text counting en'],
                 'visual_text_understanding_en': ['document classification en', 'cognition VQA en', 'diagram QA en'],
-                'knowledge_reasoning_en':
-                ['reasoning VQA en', 'science QA en', 'APP agent en', 'ASCII art classification en'],
+                'knowledge_reasoning_en': [
+                    'reasoning VQA en', 'science QA en', 'APP agent en', 'ASCII art classification en'
+                ],
             }
             cn_categories = {
                 'text_recognition_cn': ['full-page OCR cn'],

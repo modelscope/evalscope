@@ -10,7 +10,7 @@ from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 from .arguments import Arguments
 from .http_client import AioHttpClient, test_connection
 from .plugin import ApiRegistry, DatasetRegistry
-from .utils.benchmark_util import BenchmarkMetrics, is_embedding_or_rerank_api
+from .utils.benchmark_util import Metrics, MetricsAccumulator
 from .utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data, load_prompt, summary_result
 from .utils.handler import exception_handler
 from .utils.log_utils import maybe_log_to_visualizer
@@ -101,7 +101,7 @@ async def send_request(
 
 @exception_handler
 async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: Arguments, api_plugin: 'ApiPluginBase'):
-    metrics = BenchmarkMetrics(concurrency=args.parallel, rate=args.rate)
+    accumulator = MetricsAccumulator(concurrency=args.parallel, rate=args.rate)
     result_db_path = get_result_db_path(args)
 
     # Stream inserts to DB to avoid accumulating all results in memory
@@ -126,19 +126,19 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
                 except asyncio.TimeoutError:
                     continue
 
-                # Update metrics and write to DB immediately
-                metrics.update_metrics(benchmark_data, api_plugin)
+                # Update accumulator and write to DB immediately
+                accumulator.update(benchmark_data, api_plugin)
                 insert_benchmark_data(cursor, benchmark_data)
                 processed_since_commit += 1
                 if processed_since_commit >= commit_every:
                     await asyncio.to_thread(con.commit)
                     processed_since_commit = 0
 
-                message = metrics.create_message(api_type=args.api)
+                message = accumulator.to_result().create_message(api_type=args.api)
 
                 await asyncio.to_thread(maybe_log_to_visualizer, args, message)
 
-                if int(metrics.n_total_queries) % args.log_every_n_query == 0:
+                if int(accumulator.n_total) % args.log_every_n_query == 0:
                     msg = json.dumps(message, ensure_ascii=False, indent=2)
                     logger.info(msg)
 
@@ -147,12 +147,12 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
 
         await asyncio.to_thread(con.commit)
 
-    return metrics, result_db_path
+    return accumulator.to_result(), result_db_path
 
 
 @exception_handler
 async def connect_test(args: Arguments, api_plugin):
-    if is_embedding_or_rerank_api(args.api):
+    if Metrics.is_embedding_or_rerank(args.api):
         return
 
     if args.no_test_connection:

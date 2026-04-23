@@ -230,6 +230,35 @@ class Arguments(BaseArgument):
     extra_args: Optional[Dict[str, Any]] = None
     """Extra arguments."""
 
+    tokenize_prompt: bool = False
+    """Tokenize prompt client-side and send token IDs directly to /v1/completions,
+    avoiding the token ID → text → token ID round-trip inflation.
+    Requires --tokenizer-path to be set."""
+
+    # Multi-turn settings
+    multi_turn: bool = False
+    """Enable multi-turn conversation benchmark mode.
+
+    When enabled, each request is a single turn within a multi-turn conversation.
+    The conversation context (previous turns + model responses) is accumulated and
+    sent with each subsequent turn.  Use a multi-turn compatible dataset such as
+    ``random_multi_turn``, ``share_gpt_zh_multi_turn``, or ``share_gpt_en_multi_turn``.
+
+    Semantics of existing parameters in multi-turn mode:
+    - ``--number``: total number of turns to send (same as normal mode).
+    - ``--parallel``: number of concurrently active turn requests.
+    """
+
+    min_turns: int = 1
+    """Minimum number of user turns per conversation (used by ``random_multi_turn``)."""
+
+    max_turns: Optional[int] = None
+    """Maximum number of user turns per conversation.
+
+    For ``random_multi_turn``: caps the randomly sampled turn count.
+    For ShareGPT multi-turn datasets: truncates long conversations.
+    """
+
     def __post_init__(self):
         # Set the default headers
         self.headers = self.headers or {}  # Default to empty dictionary
@@ -259,9 +288,21 @@ class Arguments(BaseArgument):
                     'If this is not intended, please specify the full URL explicitly.'
                 )
 
-        # Set the apply_chat_template flag based on the URL
+        # Resolve apply_chat_template from the *original* URL before any redirects.
         if self.apply_chat_template is None:
             self.apply_chat_template = self.url.strip('/').endswith('chat/completions')
+
+        # When tokenize_prompt is enabled, redirect to the completions endpoint.
+        if self.tokenize_prompt:
+            if not self.tokenizer_path:
+                raise ValueError('--tokenizer-path is required when --tokenize-prompt is set.')
+            _stripped = self.url.rstrip('/')
+            if _stripped.endswith('chat/completions'):
+                self.url = _stripped[:-len('chat/completions')] + 'completions'
+                logger.warning(
+                    f'--tokenize-prompt is set: URL auto-adjusted from chat/completions '
+                    f'to completions endpoint: {self.url}'
+                )
 
         # Set number and parallel to lists if they are integers
         if isinstance(self.number, int):
@@ -409,6 +450,45 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--top-p', type=float, help='Sampling top p', default=None)
     parser.add_argument('--top-k', type=int, help='Sampling top k', default=None)
     parser.add_argument('--extra-args', type=json.loads, default='{}', help='Extra arguments, should in JSON format',)
+    parser.add_argument(
+        '--tokenize-prompt',
+        action='store_true',
+        default=False,
+        help=(
+            'Tokenize prompt client-side and send token IDs directly via /v1/completions, '
+            'avoiding the token ID \u2192 text \u2192 token ID re-tokenization inflation. '
+            'Requires --tokenizer-path to be set.'
+        ),
+    )
+    # Multi-turn settings
+    parser.add_argument(
+        '--multi-turn',
+        action='store_true',
+        default=False,
+        help=(
+            'Enable multi-turn conversation benchmark mode. '
+            'In this mode --number is the total number of turns to send and '
+            '--parallel is the number of concurrently active turn-level requests. '
+            'Use a multi-turn compatible dataset: random_multi_turn, '
+            'share_gpt_zh_multi_turn, or share_gpt_en_multi_turn.'
+        ),
+    )
+    parser.add_argument(
+        '--min-turns',
+        type=int,
+        default=1,
+        help='Minimum number of user turns per conversation (random_multi_turn only). Default: 1.',
+    )
+    parser.add_argument(
+        '--max-turns',
+        type=int,
+        default=None,
+        help=(
+            'Maximum number of user turns per conversation. '
+            'For random_multi_turn: required, caps the sampled turn count. '
+            'For ShareGPT multi-turn datasets: optional, truncates long conversations.'
+        ),
+    )
     # yapf: enable
 
 

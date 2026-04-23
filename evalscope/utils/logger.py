@@ -2,26 +2,50 @@ import colorlog
 import importlib.util as iutil
 import logging
 import os
+from datetime import datetime
 from logging import Logger
 from typing import List, Optional
 
+from evalscope.constants import BEIJING_TZ, USE_OSS, LoggingConstants
+
 init_loggers = {}
-# Define log formats
-data_format = '%Y-%m-%d %H:%M:%S'
-# For console output
-color_detailed_format = '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d - %(log_color)s%(levelname)s%(reset)s: %(message)s'  # noqa:E501
-color_simple_format = '%(asctime)s - %(name)s - %(log_color)s%(levelname)s%(reset)s: %(message)s'
-color_detailed_formatter = colorlog.ColoredFormatter(color_detailed_format, datefmt=data_format)
-color_simple_formatter = colorlog.ColoredFormatter(color_simple_format, datefmt=data_format)
-# For file output
-detailed_format = '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d - %(levelname)s: %(message)s'  # noqa:E501
-simple_format = '%(asctime)s - %(name)s - %(levelname)s: %(message)s'
-plain_detailed_formatter = logging.Formatter(detailed_format, datefmt=data_format)
-plain_simple_formatter = logging.Formatter(simple_format, datefmt=data_format)
+
+# Use ReopenFileHandler on OSS/FUSE mounts so each record is visible immediately;
+# fall back to the standard FileHandler on local filesystems.
+# Beijing timezone (UTC+8) for log timestamps when USE_OSS=1
+
+
+def beijing_converter(timestamp):
+    """Convert a Unix timestamp to Beijing time (UTC+8) as a time.struct_time."""
+    return datetime.fromtimestamp(timestamp, tz=BEIJING_TZ).timetuple()
+
+
+if USE_OSS:
+
+    class BeijingColoredFormatter(colorlog.ColoredFormatter):
+
+        def converter(self, timestamp):
+            return beijing_converter(timestamp)
+
+    class BeijingPlainFormatter(logging.Formatter):
+
+        def converter(self, timestamp):
+            return beijing_converter(timestamp)
+
+    ColoredFmtCls = BeijingColoredFormatter
+    PlainFmtCls = BeijingPlainFormatter
+else:
+    ColoredFmtCls = colorlog.ColoredFormatter
+    PlainFmtCls = logging.Formatter
+
+color_detailed_formatter = ColoredFmtCls(LoggingConstants.COLOR_DETAILED_FORMAT, datefmt=LoggingConstants.DATE_FORMAT)
+color_simple_formatter = ColoredFmtCls(LoggingConstants.COLOR_SIMPLE_FORMAT, datefmt=LoggingConstants.DATE_FORMAT)
+plain_detailed_formatter = PlainFmtCls(LoggingConstants.DETAILED_FORMAT, datefmt=LoggingConstants.DATE_FORMAT)
+plain_simple_formatter = PlainFmtCls(LoggingConstants.SIMPLE_FORMAT, datefmt=LoggingConstants.DATE_FORMAT)
 
 DEFAULT_LEVEL = logging.DEBUG if os.getenv('EVALSCOPE_LOG_LEVEL', 'INFO') == 'DEBUG' else logging.INFO
 
-logging.basicConfig(format=simple_format, level=logging.INFO, force=True)
+logging.basicConfig(format=LoggingConstants.SIMPLE_FORMAT, level=logging.INFO, force=True)
 
 # set logging level
 logging.getLogger('datasets').setLevel(logging.WARNING)
@@ -46,6 +70,44 @@ def warning_once(self, msg, *args, **kwargs):
         return
     warning_set.add(hash_id)
     self.warning(msg)
+
+
+class ReopenFileHandler(logging.FileHandler):
+    """FileHandler that closes the file after every emit.
+
+    On OSS/FUSE-mounted filesystems the FUSE driver only uploads data when
+    the file descriptor is closed.  By reopening on each record this handler
+    ensures every log line is visible on OSS in near real-time.
+
+    Thread safety: emit() is invoked inside Handler.handle() which already
+    holds self.lock, so no extra locking is needed here.
+    """
+
+    def __init__(self, filename: str, mode: str = 'a', encoding: str = 'utf-8'):
+        # delay=True: skip opening the file in __init__; we open it ourselves in emit()
+        super().__init__(filename, mode=mode, encoding=encoding, delay=True)
+        self._first_write = True
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Open → format+write → flush → close for every log record."""
+        # After the first write switch to append so we never truncate
+        if not self._first_write:
+            self.mode = 'a'
+        self.stream = self._open()
+        try:
+            logging.StreamHandler.emit(self, record)
+        finally:
+            if self.stream is not None:
+                try:
+                    self.stream.flush()
+                    self.stream.close()
+                finally:
+                    self.stream = None
+            self._first_write = False
+
+
+# Module-level handler class: resolved once at import time from the USE_OSS env var.
+FILE_HANDLER_CLS = ReopenFileHandler if USE_OSS else logging.FileHandler
 
 
 def get_logger(
@@ -108,7 +170,7 @@ def get_logger(
     handlers = [stream_handler]
 
     if is_worker0 and log_file is not None:
-        file_handler = logging.FileHandler(log_file, file_mode, encoding='utf-8')
+        file_handler = FILE_HANDLER_CLS(log_file, mode=file_mode, encoding='utf-8')
         handlers.append(file_handler)
 
     for handler in handlers:
@@ -182,7 +244,7 @@ def add_file_handler_if_needed(
         except Exception:
             pass
 
-    file_handler = logging.FileHandler(target_path, file_mode, encoding='utf-8')
+    file_handler = FILE_HANDLER_CLS(target_path, mode=file_mode, encoding='utf-8')
     file_handler.setFormatter(plain_detailed_formatter if log_level == logging.DEBUG else plain_simple_formatter)
     file_handler.setLevel(log_level)
     logger.addHandler(file_handler)

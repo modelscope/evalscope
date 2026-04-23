@@ -236,19 +236,29 @@ class LocalDataLoader(DataLoader):
                         dataset_found = True
                     break
 
-        # Fallback: if no file found, try to find the first supported file in the directory
-        if not dataset_found and os.path.isdir(path):
-            for ext, loader in supported_format:
-                if dataset_found:
-                    break
-                for file in os.listdir(path):
-                    if file.endswith(ext):
-                        file_path = os.path.join(path, file)
-                        logger.warning(f'No specific dataset file found, loading the first found file: {file_path}')
-                        dataset = loader(file_path)
-                        if dataset:
-                            dataset_found = True
-                        break
+        # If no specific file found, raise an error with helpful information
+        if not dataset_found:
+            supported_exts = [ext for ext, _ in supported_format]
+            if os.path.isdir(path):
+                # Directory path: list expected candidates and available files for diagnosis
+                expected_with_split = [os.path.join(path, f'{self.subset}_{self.split}{ext}') for ext in supported_exts]
+                available_files = sorted([f for f in os.listdir(path) if os.path.splitext(f)[1] in supported_exts])
+                raise FileNotFoundError(
+                    f'No dataset file found for subset="{self.subset}", split="{self.split}" in "{path}".\n'
+                    f'Expected one of:\n' + '\n'.join(f'  - {p}' for p in expected_with_split) + '\n'
+                    + 'Available files in "' + path + '":\n'
+                    + ('\n'.join(f'  - {f}' for f in available_files) if available_files else '  (none)')
+                )
+            elif os.path.isfile(path):
+                # Direct file path provided but unsupported extension
+                _, file_ext = os.path.splitext(path)
+                if file_ext not in supported_exts:
+                    raise FileNotFoundError(
+                        f'Unsupported file format "{file_ext}" for "{path}". '
+                        f'Supported formats: {supported_exts}'
+                    )
+            else:
+                raise FileNotFoundError(f'Dataset path does not exist: "{path}"')
 
         # shuffle if requested
         if self.shuffle:
