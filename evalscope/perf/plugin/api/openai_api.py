@@ -6,8 +6,8 @@ from typing import Any, Dict, List, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.default_api import DefaultApiPlugin
+from evalscope.perf.plugin.datasets.utils import tokenize_chat_messages
 from evalscope.perf.plugin.registry import register_api
-from evalscope.perf.plugin.utils import tokenize_chat_messages
 from evalscope.utils.io_utils import base64_to_PIL
 from evalscope.utils.logger import get_logger
 

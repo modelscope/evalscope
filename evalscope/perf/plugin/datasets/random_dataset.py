@@ -4,9 +4,8 @@ from typing import Dict, Iterator, List, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
-from evalscope.perf.plugin.datasets.utils import gen_prompt_decode_to_target_len
+from evalscope.perf.plugin.datasets.utils import gen_prompt_decode_to_target_len, tokenize_chat_messages
 from evalscope.perf.plugin.registry import register_dataset
-from evalscope.perf.plugin.utils import tokenize_chat_messages
 from evalscope.utils import get_logger
 
 logger = get_logger()

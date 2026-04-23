@@ -3,7 +3,7 @@ from abc import abstractmethod
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.plugin.utils import tokenize_chat_messages
+from evalscope.perf.plugin.datasets.utils import tokenize_chat_messages
 
 
 class DatasetPluginBase:
