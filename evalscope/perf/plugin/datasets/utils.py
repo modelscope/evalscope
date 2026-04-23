@@ -1,5 +1,48 @@
 import numpy as np
-from typing import List, Tuple
+from typing import Dict, List, Tuple
+
+
+def tokenize_chat_messages(tokenizer, messages: List[Dict], add_generation_prompt: bool = True) -> List[int]:
+    """Apply a tokenizer chat template and return a plain ``List[int]`` of token IDs.
+
+    Normalises the return value of ``tokenizer.apply_chat_template`` so callers
+    always receive a flat Python list of ints regardless of the installed transformers
+    version.  transformers >= 4.46 changed ``apply_chat_template(tokenize=True)``
+    to return a ``BatchEncoding`` dict-like object instead of ``List[int]``.
+
+    Args:
+        tokenizer: A HuggingFace / ModelScope tokenizer instance.
+        messages: Chat messages in OpenAI format (list of ``{'role': ..., 'content': ...}`` dicts).
+        add_generation_prompt: Whether to append the assistant generation prompt.
+
+    Returns:
+        List[int]: Flat list of token IDs.
+
+    Raises:
+        TypeError: If the tokenizer returns an unexpected type that cannot be converted.
+    """
+    result = tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=add_generation_prompt)
+
+    # Old transformers: returns List[int] directly.
+    if isinstance(result, list):
+        # Guard against an unexpected batch dimension: [[token_ids]] -> [token_ids]
+        if result and isinstance(result[0], list):
+            return result[0]
+        return result
+
+    # transformers >= 4.46: returns BatchEncoding (dict-like) with an input_ids field.
+    if hasattr(result, 'input_ids'):
+        ids = result.input_ids
+        ids = ids.tolist() if hasattr(ids, 'tolist') else list(ids)
+        # Guard against batch dimension from tensor conversion: [[ids]] -> [ids]
+        if ids and isinstance(ids[0], list):
+            return ids[0]
+        return ids
+
+    raise TypeError(
+        f'tokenize_chat_messages: unexpected return type {type(result)!r} from '
+        'tokenizer.apply_chat_template. Expected List[int] or BatchEncoding with input_ids.'
+    )
 
 
 def gen_prompt_decode_to_target_len(

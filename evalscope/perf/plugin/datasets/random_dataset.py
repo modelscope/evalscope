@@ -4,7 +4,7 @@ from typing import Dict, Iterator, List, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
-from evalscope.perf.plugin.datasets.utils import gen_prompt_decode_to_target_len
+from evalscope.perf.plugin.datasets.utils import gen_prompt_decode_to_target_len, tokenize_chat_messages
 from evalscope.perf.plugin.registry import register_dataset
 from evalscope.utils import get_logger
 
@@ -190,5 +190,4 @@ class RandomDatasetPlugin(DatasetPluginBase):
 
     def get_template_len(self):
         empty_message = [self.create_message(text='')]
-        template = self.tokenizer.apply_chat_template(empty_message, tokenize=True, add_generation_prompt=True)
-        return len(template)
+        return len(tokenize_chat_messages(self.tokenizer, empty_message))
