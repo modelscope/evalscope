@@ -371,8 +371,9 @@ class DefaultEvaluator(Evaluator):
             )
             logger.debug(f'Review result: \n{review_result.pretty_print()}')
 
-        # Collect per-request performance metrics for live inference items.
-        if item.needs_predict:
+        # Collect per-request performance metrics for live inference items only
+        # when perf collection is enabled.
+        if self.task_config.collect_perf and item.needs_predict:
             perf = task_state.output.perf_metrics if task_state.output is not None else None
             if perf is not None:
                 self.perf_collector.record(perf)
