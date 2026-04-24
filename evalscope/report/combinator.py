@@ -6,6 +6,7 @@ import pandas as pd
 from tabulate import tabulate
 from typing import Dict, List, Optional, Tuple, Union
 
+from evalscope.api.model.perf_metrics import PerfSummary
 from evalscope.constants import DataCollection
 from evalscope.report.report import Report, Subset
 from evalscope.utils.logger import get_logger
@@ -228,20 +229,18 @@ def gen_perf_table(
         if not summary:
             continue
 
-        avg_latency = summary.get('avg_latency') or 0.0
-        avg_ttft = summary.get('avg_ttft')
-        avg_tpot = summary.get('avg_tpot')
+        ps = PerfSummary.from_dict(summary)
 
         row = {
             'Model': report.model_name,
             'Dataset': report.dataset_name,
-            'Num': summary.get('n_samples', '-'),
-            'Avg Lat\n(s)': round(avg_latency, 4),
-            'Avg TTFT\n(ms)': round(avg_ttft * 1000, 2) if avg_ttft is not None else '-',
-            'Avg TPOT\n(ms)': round(avg_tpot * 1000, 2) if avg_tpot is not None else '-',
-            'Avg Thpt\n(tok/s)': summary.get('avg_throughput', '-'),
-            'Avg In\nTok': summary.get('avg_input_tokens', '-'),
-            'Avg Out\nTok': summary.get('avg_output_tokens', '-'),
+            'Num': ps.n_samples,
+            'Avg Lat\n(s)': round(ps.avg_latency, 4),
+            'Avg TTFT\n(s)': round(ps.avg_ttft, 4) if ps.avg_ttft is not None else '-',
+            'Avg TPOT\n(s)': round(ps.avg_tpot, 4) if ps.avg_tpot is not None else '-',
+            'Avg Thpt\n(tok/s)': ps.avg_output_tps,
+            'Avg In\nTok': ps.avg_input_tokens,
+            'Avg Out\nTok': ps.avg_output_tokens,
         }
         rows.append(row)
 
