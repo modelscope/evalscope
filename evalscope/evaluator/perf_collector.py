@@ -6,33 +6,28 @@ per-sample PerformanceMetrics objects produced during model inference and
 exposes summary statistics and JSON export helpers.
 """
 import os
-import statistics
+import pandas as pd
 from typing import Any, Dict, List, Optional
 
-from evalscope.api.model.perf_metrics import PerformanceMetrics
+from evalscope.api.model.perf_metrics import PerformanceMetrics, PerfSummary
 from evalscope.utils.function_utils import thread_safe
 from evalscope.utils.io_utils import dict_to_json
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-
-def _safe_avg(values: List[float]) -> Optional[float]:
-    """Return the mean of *values*, or ``None`` if the list is empty."""
-    return sum(values) / len(values) if values else None
+_PERCENTILES = [0.25, 0.5, 0.75, 0.9, 0.99]
 
 
-def _percentiles(values: List[float], ps: List[int]) -> Dict[str, float]:
-    """Compute percentiles for a sorted list of values."""
-    if not values:
-        return {}
-    sorted_vals = sorted(values)
-    n = len(sorted_vals)
-    result = {}
-    for p in ps:
-        idx = min(int(n * p / 100), n - 1)
-        result[f'p{p}'] = round(sorted_vals[idx], 6)
-    return result
+def _series_stats(s: pd.Series) -> dict:
+    """Compute stats using pd.Series.describe() with custom percentiles.
+
+    Returns keys: mean / std / min / 25% / 50% / 75% / 90% / 99% / max,
+    all rounded to 6 decimal places.  std uses pandas default ddof=1.
+    """
+    desc = s.describe(percentiles=_PERCENTILES)
+    keys = ['mean', 'std', 'min', '25%', '50%', '75%', '90%', '99%', 'max']
+    return {k: round(float(desc[k]), 6) for k in keys}
 
 
 class PerfCollector:
@@ -47,8 +42,6 @@ class PerfCollector:
         summary = collector.get_summary()
         collector.save_report('/path/to/reports/model_name', 'benchmark.json')
     """
-
-    _PERCENTILE_PS = [50, 75, 90, 95, 99]
 
     def __init__(self) -> None:
         self._samples: List[PerformanceMetrics] = []
@@ -73,62 +66,54 @@ class PerfCollector:
         return list(self._samples)
 
     # ------------------------------------------------------------------ #
-    # Aggregation                                                         #
+    # Aggregation                                                          #
     # ------------------------------------------------------------------ #
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> Optional[PerfSummary]:
         """Compute aggregate statistics across all recorded samples.
 
         Returns:
-            A dictionary with average, min/max/std, throughput and percentile
-            breakdowns for each available metric.  Empty dict when no samples
-            have been recorded.
+            A :class:`PerfSummary` instance with avg/min/max/std, throughput,
+            token usage, and percentile breakdowns for each available metric.
+            ``None`` when no samples have been recorded.
         """
         samples = self._get_samples()
-
         if not samples:
-            return {}
+            return None
 
         n = len(samples)
-        latencies = [s.latency for s in samples]
-        ttfts = [s.ttft for s in samples if s.ttft is not None]
-        tpots = [s.tpot for s in samples if s.tpot is not None]
-        input_tokens = [s.input_tokens for s in samples]
-        output_tokens = [s.output_tokens for s in samples]
 
-        avg_latency = _safe_avg(latencies) or 0.0
-        avg_output_tokens = _safe_avg(output_tokens) or 0.0
+        latencies = pd.Series([s.latency for s in samples], dtype=float)
+        ttfts_raw = [s.ttft for s in samples if s.ttft is not None]
+        tpots_raw = [s.tpot for s in samples if s.tpot is not None]
+        input_tokens = pd.Series([s.input_tokens for s in samples], dtype=float)
+        output_tokens = pd.Series([s.output_tokens for s in samples], dtype=float)
+        total_tokens = input_tokens + output_tokens
 
-        summary: Dict[str, Any] = {
-            'n_samples': n,
-            # Latency statistics
-            'avg_latency': round(avg_latency, 6),
-            'min_latency': round(min(latencies), 6),
-            'max_latency': round(max(latencies), 6),
-            'std_latency': round(statistics.pstdev(latencies), 6),
-            # TTFT / TPOT averages
-            'avg_ttft': round(_safe_avg(ttfts), 6) if ttfts else None,
-            'avg_tpot': round(_safe_avg(tpots), 6) if tpots else None,
-            # Token statistics
-            'avg_input_tokens': round(_safe_avg(input_tokens) or 0.0, 2),
-            'avg_output_tokens': round(avg_output_tokens, 2),
-            'avg_throughput': round(avg_output_tokens / avg_latency, 2) if avg_latency > 0 else 0.0,
-            'total_input_tokens': sum(input_tokens),
-            'total_output_tokens': sum(output_tokens),
-            # Percentile breakdowns
-            'latency_percentiles': _percentiles(latencies, self._PERCENTILE_PS),
+        avg_latency = float(latencies.mean())
+        avg_output = float(output_tokens.mean())
+
+        latency_stats = _series_stats(latencies)
+        throughput = {
+            'avg_output_tps': round(avg_output / avg_latency, 2) if avg_latency > 0 else 0.0,
+            'avg_req_ps': round(1.0 / avg_latency, 4) if avg_latency > 0 else 0.0,
         }
+        usage = {
+            'input_tokens': _series_stats(input_tokens),
+            'output_tokens': _series_stats(output_tokens),
+            'total_tokens': _series_stats(total_tokens),
+        }
+        ttft_stats = _series_stats(pd.Series(ttfts_raw, dtype=float)) if ttfts_raw else None
+        tpot_stats = _series_stats(pd.Series(tpots_raw, dtype=float)) if tpots_raw else None
 
-        if ttfts:
-            summary['min_ttft'] = round(min(ttfts), 6)
-            summary['max_ttft'] = round(max(ttfts), 6)
-            summary['ttft_percentiles'] = _percentiles(ttfts, self._PERCENTILE_PS)
-        if tpots:
-            summary['min_tpot'] = round(min(tpots), 6)
-            summary['max_tpot'] = round(max(tpots), 6)
-            summary['tpot_percentiles'] = _percentiles(tpots, self._PERCENTILE_PS)
-
-        return summary
+        return PerfSummary(
+            n_samples=n,
+            latency=latency_stats,
+            throughput=throughput,
+            usage=usage,
+            ttft=ttft_stats,
+            tpot=tpot_stats,
+        )
 
     # ------------------------------------------------------------------ #
     # Serialization                                                        #
@@ -161,15 +146,13 @@ class PerfCollector:
         """Return a dict suitable for embedding in a report JSON.
 
         Returns:
-            Dict with ``summary`` key, or empty dict when no samples have been
-            collected.  Per-sample records are intentionally omitted here as
-            each prediction entry in the output file already carries the same
-            information.
+            Dict with ``summary`` key (nested structure by metric category), or
+            empty dict when no samples have been collected.
         """
         summary = self.get_summary()
-        if not summary:
+        if summary is None:
             return {}
-        return {'summary': summary}
+        return {'summary': summary.to_dict()}
 
     def save_report(self, output_dir: str, filename: str = 'perf_metrics.json') -> Optional[str]:
         """Write summary statistics to a JSON file.
