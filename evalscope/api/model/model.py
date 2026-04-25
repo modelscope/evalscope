@@ -67,45 +67,6 @@ class ModelAPI(abc.ABC):
         """
         ...
 
-    def batch_generate(
-        self,
-        inputs: List[List[ChatMessage]],
-        tools: List[List[ToolInfo]],
-        tool_choices: List[ToolChoice],
-        configs: List[GenerateConfig],
-    ) -> Generator[ModelOutput, None, None]:
-        """Default batch implementation using individual generate calls.
-
-        ModelAPI implementations can override this for optimized batch processing.
-
-        Args:
-          inputs: List of preprocessed chat message inputs.
-          tools: List of tools for each input.
-          tool_choices: List of tool choices for each input.
-          configs: List of configs for each input.
-
-        Returns:
-            Generator yielding ModelOutput for each input.
-        """
-        from concurrent.futures import ThreadPoolExecutor
-
-        def single_generate(args):
-            input_msgs, input_tools, tool_choice, config = args
-            return self.generate(input_msgs, input_tools, tool_choice, config)
-
-        with ThreadPoolExecutor(max_workers=self.config.batch_size) as executor:
-            futures = []
-            for input_msgs, input_tools, tool_choice, config in zip(inputs, tools, tool_choices, configs):
-                future = executor.submit(single_generate, (input_msgs, input_tools, tool_choice, config))
-                futures.append(future)
-
-            for future in futures:
-                yield future.result()
-
-    def supports_batch(self) -> bool:
-        """Whether this ModelAPI supports optimized batch processing."""
-        return False
-
     def max_tokens(self) -> Optional[int]:
         """Default max_tokens."""
         return None
@@ -169,7 +130,7 @@ class Model:
         self._role = role
 
     def __str__(self) -> str:
-        return f'Model(name={self.model_id}, role={self.role})'
+        return f'Model(name={self.name}, role={self.role})'
 
     def generate(
         self,
@@ -204,44 +165,6 @@ class Model:
 
         # return output
         return output
-
-    def batch_generate(
-        self,
-        inputs: List[List[ChatMessage]],
-        tools: List[List[ToolInfo]],
-        tool_choices: List[ToolChoice],
-        configs: List[GenerateConfig],
-    ) -> Generator[ModelOutput, None, None]:
-        """Generate output from the model for a batch of inputs.
-
-        Args:
-          inputs (List[List[ChatMessage]]): Batch of chat message inputs.
-          tools (List[List[ToolInfo]]): Batch of tools for each input.
-          tool_choices (List[ToolChoice]): Batch of tool choices for each input.
-          configs (List[GenerateConfig]): Batch of configs for each input.
-        """
-        preprocessed_data = []
-
-        for input_item, input_tools, input_tool_choice, input_config in zip(inputs, tools, tool_choices, configs):
-            processed_input, processed_tools, processed_tool_choice, processed_config = self._preprocess_input(
-                input=input_item, tools=input_tools, tool_choice=input_tool_choice, config=input_config
-            )
-            preprocessed_data.append((processed_input, processed_tools, processed_tool_choice, processed_config))
-
-        # check if ModelAPI supports batch processing
-        if self.api.supports_batch() and len(preprocessed_data) > 1:
-            # use the batch_generate method of the ModelAPI
-            inputs, tools, tool_choices, configs = zip(*preprocessed_data)
-            batch_results = self.api.batch_generate(
-                inputs=list(inputs), tools=list(tools), tool_choices=list(tool_choices), configs=list(configs)
-            )
-            for result in batch_results:
-                yield result
-        else:
-            # fall back to processing each input individually
-            for input_msgs, input_tools, tool_choice, config in preprocessed_data:
-                result = self.api.generate(input_msgs, input_tools, tool_choice, config)
-                yield result
 
     def _preprocess_input(
         self,
