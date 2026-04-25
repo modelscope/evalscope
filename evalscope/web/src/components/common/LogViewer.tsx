@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useLocale } from '@/contexts/LocaleContext'
 
 interface Props {
   content: string
@@ -6,6 +7,7 @@ interface Props {
 }
 
 export default function LogViewer({ content, maxHeight = '500px' }: Props) {
+  const { t } = useLocale()
   const ref = useRef<HTMLPreElement>(null)
 
   useEffect(() => {
@@ -17,10 +19,15 @@ export default function LogViewer({ content, maxHeight = '500px' }: Props) {
   return (
     <pre
       ref={ref}
-      className="bg-[#0d1117] text-[#c9d1d9] text-xs font-mono p-3 rounded-lg overflow-auto border border-[var(--color-border)]"
-      style={{ maxHeight }}
+      className="text-xs p-4 rounded-[var(--radius-sm)] overflow-auto border border-[var(--border)]"
+      style={{
+        maxHeight,
+        background: 'var(--bg-deep)',
+        color: 'var(--text-muted)',
+        fontFamily: 'var(--font-mono)',
+      }}
     >
-      {content || 'Waiting for output...'}
+      {content || t('common.loading')}
     </pre>
   )
 }

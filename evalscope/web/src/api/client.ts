@@ -10,11 +10,11 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>
 }
 
-export async function api<T = unknown>(path: string, params?: Record<string, string>): Promise<T> {
+export async function api<T = unknown>(path: string, params?: Record<string, unknown>): Promise<T> {
   const url = new URL(path, window.location.origin)
   if (params) {
     for (const [k, v] of Object.entries(params)) {
-      if (v !== undefined && v !== '') url.searchParams.set(k, v)
+      if (v !== undefined && v !== '') url.searchParams.set(k, String(v))
     }
   }
   const res = await fetch(url.toString())

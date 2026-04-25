@@ -15,7 +15,6 @@ def run_test(model_name: str):
             'gsm8k',
             'iquiz',
             'ifeval',
-            'humaneval',
             'gpqa_diamond',
         ],
         generation_config={
@@ -23,10 +22,10 @@ def run_test(model_name: str):
         },
         eval_batch_size=10,
         limit=10,  # 设置为10条数据进行测试
-        use_cache=f'examples/viz/{model_name}' # 缓存路径
+        # use_cache=f'examples/viz/{model_name}' # 缓存路径
     )
 
     run_task(task_cfg=task_cfg)
 
-run_test('qwen2.5-14b-instruct')
-run_test('qwen2.5-7b-instruct')
+run_test('qwen-plus')
+run_test('qwen3-max')

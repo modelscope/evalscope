@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import PerfConfigForm from '@/components/perf/PerfConfigForm'
 import TaskMonitor from '@/components/eval/TaskMonitor'
+import Card from '@/components/ui/Card'
 import { submitPerfTask, getPerfProgress, getPerfLog, getPerfReportUrl } from '@/api/perf'
 import type { EvalInvokeResponse, LogResponse, ProgressResponse } from '@/api/types'
 import { usePolling } from '@/hooks/usePolling'
@@ -68,25 +69,27 @@ export default function PerfTaskPage() {
   const reportUrl = useMemo(() => (taskId ? getPerfReportUrl(taskId) : null), [taskId])
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <h1 className="text-xl font-semibold">{t('perf.title')}</h1>
+    <div className="page-enter">
+      <h1 className="text-xl font-semibold mb-6">{t('perf.title')}</h1>
 
-      <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-        <h2 className="text-base font-medium mb-4">{t('perf.config')}</h2>
-        <PerfConfigForm onSubmit={handleSubmit} disabled={running} />
-      </section>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left: Config Form */}
+        <Card title={t('perf.config')}>
+          <PerfConfigForm onSubmit={handleSubmit} disabled={running} />
+        </Card>
 
-      <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-        <h2 className="text-base font-medium mb-4">{t('perf.status')}</h2>
-        <TaskMonitor
-          running={running}
-          progress={progress}
-          logText={logText}
-          result={result}
-          reportUrl={reportUrl}
-          readyLabel={t('perf.ready')}
-        />
-      </section>
+        {/* Right: Task Monitor */}
+        <Card title={t('perf.status')}>
+          <TaskMonitor
+            running={running}
+            progress={progress}
+            logText={logText}
+            result={result}
+            reportUrl={reportUrl}
+            readyLabel={t('perf.ready')}
+          />
+        </Card>
+      </div>
     </div>
   )
 }

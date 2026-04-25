@@ -1,18 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useLocale } from '@/contexts/LocaleContext'
 import { listBenchmarks } from '@/api/eval'
 import type { BenchmarkEntry } from '@/api/types'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
-import { BookOpen } from 'lucide-react'
+import SearchInput from '@/components/ui/SearchInput'
+import Tabs from '@/components/ui/Tabs'
+import Badge from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
+import { BookOpen, ArrowRight } from 'lucide-react'
 
-type Tab = 'text' | 'multimodal'
+type TabKey = 'text' | 'multimodal'
 
 export default function BenchmarksPage() {
   const { t, locale } = useLocale()
-  const [tab, setTab] = useState<Tab>('text')
+  const navigate = useNavigate()
+  const [tab, setTab] = useState<TabKey>('text')
   const [loading, setLoading] = useState(true)
   const [textBenchmarks, setTextBenchmarks] = useState<BenchmarkEntry[]>([])
   const [mmBenchmarks, setMmBenchmarks] = useState<BenchmarkEntry[]>([])
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {
     setLoading(true)
@@ -25,75 +34,94 @@ export default function BenchmarksPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const items = tab === 'text' ? textBenchmarks : mmBenchmarks
+  // Debounce search
+  useEffect(() => {
+    timerRef.current = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timerRef.current)
+  }, [search])
+
+  const allItems = tab === 'text' ? textBenchmarks : mmBenchmarks
 
   const getDescription = (entry: BenchmarkEntry) => {
     const desc = locale === 'zh' ? entry.description?.zh : entry.description?.en
     return desc?.full ?? t('benchmarks.noDescription')
   }
 
+  const items = useMemo(() => {
+    if (!debouncedSearch) return allItems
+    const q = debouncedSearch.toLowerCase()
+    return allItems.filter(
+      (e) =>
+        e.name.toLowerCase().includes(q) ||
+        getDescription(e).toLowerCase().includes(q),
+    )
+  }, [allItems, debouncedSearch, locale])
+
+  const handleUse = (name: string) => {
+    navigate(`/eval?dataset=${encodeURIComponent(name)}`)
+  }
+
+  const tabItems = [
+    { key: 'text', label: `${t('benchmarks.text')} (${textBenchmarks.length})` },
+    { key: 'multimodal', label: `${t('benchmarks.multimodal')} (${mmBenchmarks.length})` },
+  ]
+
   if (loading) return <LoadingSpinner />
 
   return (
-    <div className="space-y-4 max-w-5xl">
+    <div className="page-enter space-y-5">
       <h1 className="text-xl font-semibold">{t('benchmarks.title')}</h1>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-[var(--color-border)]">
-        <button
-          onClick={() => setTab('text')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            tab === 'text'
-              ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
-              : 'border-transparent text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-          }`}
-        >
-          {t('benchmarks.text')} ({textBenchmarks.length})
-        </button>
-        <button
-          onClick={() => setTab('multimodal')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            tab === 'multimodal'
-              ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
-              : 'border-transparent text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-          }`}
-        >
-          {t('benchmarks.multimodal')} ({mmBenchmarks.length})
-        </button>
+      {/* Controls row */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <Tabs tabs={tabItems} activeKey={tab} onChange={(k) => setTab(k as TabKey)} />
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder={t('benchmarks.search')}
+          className="sm:ml-auto w-full sm:w-72"
+        />
       </div>
 
-      {/* Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {/* Cards grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {items.map((entry) => (
           <div
             key={entry.name}
-            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 hover:border-[var(--color-primary)] transition-colors"
+            className="card-hover rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-5 flex flex-col"
           >
-            <div className="flex items-start gap-3">
-              <BookOpen size={18} className="text-[var(--color-primary)] mt-0.5 shrink-0" />
-              <div className="min-w-0">
-                <h3 className="text-sm font-semibold">{entry.name}</h3>
-                <p className="text-xs text-[var(--color-ink-muted)] mt-1 line-clamp-3">
+            <div className="flex items-start gap-3 flex-1">
+              <BookOpen size={18} className="text-[var(--accent)] mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-semibold text-[var(--text)]">{entry.name}</h3>
+                <p className="text-xs text-[var(--text-muted)] mt-1 line-clamp-3">
                   {getDescription(entry)}
                 </p>
                 {entry.metrics.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {entry.metrics.map((m) => (
-                      <span
-                        key={m}
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface-hover)] text-[var(--color-ink-muted)]"
-                      >
+                      <Badge key={m} variant="default" className="text-[10px]">
                         {m}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 )}
               </div>
             </div>
+            <div className="mt-4 pt-3 border-t border-[var(--border)]">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleUse(entry.name)}
+                className="w-full justify-center text-[var(--accent)] hover:text-white hover:bg-[var(--accent)]"
+              >
+                {t('benchmarks.use')} <ArrowRight size={14} />
+              </Button>
+            </div>
           </div>
         ))}
         {items.length === 0 && (
-          <p className="text-sm text-[var(--color-ink-muted)] col-span-2 text-center py-8">
+          <p className="text-sm text-[var(--text-muted)] col-span-full text-center py-8">
             {t('common.noData')}
           </p>
         )}

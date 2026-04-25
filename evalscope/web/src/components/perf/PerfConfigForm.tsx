@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
+import Button from '@/components/ui/Button'
 
 interface Props {
   onSubmit: (config: Record<string, unknown>) => void
@@ -21,8 +22,18 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
   const [maxPromptLen, setMaxPromptLen] = useState('')
   const [minPromptLen, setMinPromptLen] = useState('')
 
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const newErrors: Record<string, string> = {}
+    if (!model.trim()) newErrors.model = 'Required'
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+    setErrors({})
+
     const config: Record<string, unknown> = {
       model,
       api_type: apiType,
@@ -40,74 +51,102 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
     onSubmit(config)
   }
 
-  const inputClass =
-    'w-full px-2.5 py-1.5 text-sm rounded-md bg-[var(--color-bg-page)] border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-primary)]'
-  const labelClass = 'block text-xs font-medium text-[var(--color-ink-muted)] mb-1'
+  const inputStyle =
+    'w-full px-3 py-2 text-sm rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-dim)] transition-all'
+  const labelStyle = 'block text-xs font-medium text-[var(--text-muted)] mb-1'
+  const errorInputStyle = 'border-[#ef4444] focus:border-[#ef4444] focus:ring-[rgba(239,68,68,0.12)]'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Model Name */}
         <div>
-          <label className={labelClass}>{t('eval.modelName')} *</label>
-          <input value={model} onChange={(e) => setModel(e.target.value)} className={inputClass} required placeholder="Qwen/Qwen2.5-0.5B-Instruct" />
+          <label className={labelStyle}>
+            {t('eval.modelName')} <span className="text-[#ef4444]">*</span>
+          </label>
+          <input
+            value={model}
+            onChange={(e) => { setModel(e.target.value); if (errors.model) setErrors((p) => ({ ...p, model: '' })) }}
+            className={`${inputStyle} ${errors.model ? errorInputStyle : ''}`}
+            placeholder="Qwen/Qwen2.5-0.5B-Instruct"
+          />
+          {errors.model && <p className="text-xs text-[#ef4444] mt-1">{errors.model}</p>}
         </div>
+
+        {/* API Type */}
         <div>
-          <label className={labelClass}>{t('perf.apiType')}</label>
-          <select value={apiType} onChange={(e) => setApiType(e.target.value)} className={inputClass}>
+          <label className={labelStyle}>{t('perf.apiType')}</label>
+          <select value={apiType} onChange={(e) => setApiType(e.target.value)} className={inputStyle}>
             <option value="openai">OpenAI</option>
             <option value="dashscope">DashScope</option>
             <option value="local">Local</option>
           </select>
         </div>
+
+        {/* API URL */}
         <div>
-          <label className={labelClass}>{t('eval.apiUrl')}</label>
-          <input value={apiUrl} onChange={(e) => setApiUrl(e.target.value)} className={inputClass} placeholder="http://localhost:8000/v1" />
+          <label className={labelStyle}>{t('eval.apiUrl')}</label>
+          <input value={apiUrl} onChange={(e) => setApiUrl(e.target.value)} className={inputStyle} placeholder="http://localhost:8000/v1" />
         </div>
+
+        {/* API Key */}
         <div>
-          <label className={labelClass}>{t('eval.apiKey')}</label>
-          <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} className={inputClass} placeholder="sk-..." />
+          <label className={labelStyle}>{t('eval.apiKey')}</label>
+          <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} className={inputStyle} placeholder="sk-..." />
         </div>
+
+        {/* Parallel */}
         <div>
-          <label className={labelClass}>{t('perf.parallel')}</label>
-          <input value={parallel} onChange={(e) => setParallel(e.target.value)} className={inputClass} placeholder="1, 4, 8" />
+          <label className={labelStyle}>{t('perf.parallel')}</label>
+          <input value={parallel} onChange={(e) => setParallel(e.target.value)} className={inputStyle} placeholder="1, 4, 8" />
         </div>
+
+        {/* Number */}
         <div>
-          <label className={labelClass}>{t('perf.number')}</label>
-          <input value={number} onChange={(e) => setNumber(e.target.value)} className={inputClass} placeholder="10, 100" />
+          <label className={labelStyle}>{t('perf.number')}</label>
+          <input value={number} onChange={(e) => setNumber(e.target.value)} className={inputStyle} placeholder="10, 100" />
         </div>
+
+        {/* Rate */}
         <div>
-          <label className={labelClass}>{t('perf.rate')}</label>
-          <input type="number" value={rate} onChange={(e) => setRate(e.target.value)} className={inputClass} />
+          <label className={labelStyle}>{t('perf.rate')}</label>
+          <input type="number" value={rate} onChange={(e) => setRate(e.target.value)} className={inputStyle} />
         </div>
+
+        {/* Max Tokens */}
         <div>
-          <label className={labelClass}>{t('perf.maxTokens')}</label>
-          <input type="number" value={maxTokens} onChange={(e) => setMaxTokens(e.target.value)} className={inputClass} />
+          <label className={labelStyle}>{t('perf.maxTokens')}</label>
+          <input type="number" value={maxTokens} onChange={(e) => setMaxTokens(e.target.value)} className={inputStyle} />
         </div>
+
+        {/* Min Tokens */}
         <div>
-          <label className={labelClass}>{t('perf.minTokens')}</label>
-          <input type="number" value={minTokens} onChange={(e) => setMinTokens(e.target.value)} className={inputClass} />
+          <label className={labelStyle}>{t('perf.minTokens')}</label>
+          <input type="number" value={minTokens} onChange={(e) => setMinTokens(e.target.value)} className={inputStyle} />
         </div>
+
+        {/* Dataset */}
         <div>
-          <label className={labelClass}>{t('perf.dataset')}</label>
-          <input value={dataset} onChange={(e) => setDataset(e.target.value)} className={inputClass} placeholder="openqa" />
+          <label className={labelStyle}>{t('perf.dataset')}</label>
+          <input value={dataset} onChange={(e) => setDataset(e.target.value)} className={inputStyle} placeholder="openqa" />
         </div>
+
+        {/* Max Prompt Length */}
         <div>
-          <label className={labelClass}>{t('perf.maxPromptLen')}</label>
-          <input type="number" value={maxPromptLen} onChange={(e) => setMaxPromptLen(e.target.value)} className={inputClass} />
+          <label className={labelStyle}>{t('perf.maxPromptLen')}</label>
+          <input type="number" value={maxPromptLen} onChange={(e) => setMaxPromptLen(e.target.value)} className={inputStyle} />
         </div>
+
+        {/* Min Prompt Length */}
         <div>
-          <label className={labelClass}>{t('perf.minPromptLen')}</label>
-          <input type="number" value={minPromptLen} onChange={(e) => setMinPromptLen(e.target.value)} className={inputClass} />
+          <label className={labelStyle}>{t('perf.minPromptLen')}</label>
+          <input type="number" value={minPromptLen} onChange={(e) => setMinPromptLen(e.target.value)} className={inputStyle} />
         </div>
       </div>
 
-      <button
-        type="submit"
-        disabled={disabled || !model}
-        className="px-4 py-2 text-sm font-medium rounded-md bg-[var(--color-primary)] text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
-      >
+      <Button type="submit" variant="primary" disabled={disabled} className="btn-glow">
         {t('perf.startPerf')}
-      </button>
+      </Button>
     </form>
   )
 }

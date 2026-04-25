@@ -70,6 +70,7 @@ def create_app():
                 'GET  /api/v1/perf/progress': 'Get real-time performance benchmark progress',
                 'GET  /api/v1/perf/report': 'Get HTML performance benchmark report',
                 'GET  /api/v1/reports/scan': 'Scan available report folders',
+                'GET  /api/v1/reports/list': 'Filterable, paginated report listing',
                 'GET  /api/v1/reports/load': 'Load a single report',
                 'GET  /api/v1/reports/load_multi': 'Load multiple reports',
                 'GET  /api/v1/reports/dataframe': 'Get report data as JSON table',

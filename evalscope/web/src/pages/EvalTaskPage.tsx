@@ -1,13 +1,18 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useQueryParams } from '@/hooks/useQueryParams'
 import EvalConfigForm from '@/components/eval/EvalConfigForm'
 import TaskMonitor from '@/components/eval/TaskMonitor'
+import Card from '@/components/ui/Card'
 import { submitEvalTask, getEvalProgress, getEvalLog, getEvalReportUrl } from '@/api/eval'
 import type { EvalInvokeResponse, LogResponse, ProgressResponse } from '@/api/types'
 import { usePolling } from '@/hooks/usePolling'
 
 export default function EvalTaskPage() {
   const { t } = useLocale()
+  const queryParams = useQueryParams()
+  const initialDataset = queryParams.get('dataset')
+
   const [taskId, setTaskId] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<EvalInvokeResponse | null>(null)
@@ -68,25 +73,31 @@ export default function EvalTaskPage() {
   const reportUrl = useMemo(() => (taskId ? getEvalReportUrl(taskId) : null), [taskId])
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <h1 className="text-xl font-semibold">{t('eval.title')}</h1>
+    <div className="page-enter">
+      <h1 className="text-xl font-semibold mb-6">{t('eval.title')}</h1>
 
-      <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-        <h2 className="text-base font-medium mb-4">{t('eval.config')}</h2>
-        <EvalConfigForm onSubmit={handleSubmit} disabled={running} />
-      </section>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left: Config Form */}
+        <Card title={t('eval.config')}>
+          <EvalConfigForm
+            onSubmit={handleSubmit}
+            disabled={running}
+            initialDataset={initialDataset}
+          />
+        </Card>
 
-      <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-        <h2 className="text-base font-medium mb-4">{t('eval.status')}</h2>
-        <TaskMonitor
-          running={running}
-          progress={progress}
-          logText={logText}
-          result={result}
-          reportUrl={reportUrl}
-          readyLabel={t('eval.ready')}
-        />
-      </section>
+        {/* Right: Task Monitor */}
+        <Card title={t('eval.status')}>
+          <TaskMonitor
+            running={running}
+            progress={progress}
+            logText={logText}
+            result={result}
+            reportUrl={reportUrl}
+            readyLabel={t('eval.ready')}
+          />
+        </Card>
+      </div>
     </div>
   )
 }

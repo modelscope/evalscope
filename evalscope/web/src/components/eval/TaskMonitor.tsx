@@ -1,5 +1,7 @@
 import type { EvalInvokeResponse } from '@/api/types'
 import LogViewer from '@/components/common/LogViewer'
+import Badge from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
 import { useLocale } from '@/contexts/LocaleContext'
 import { ExternalLink, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 
@@ -16,38 +18,38 @@ export default function TaskMonitor({ running, progress, logText, result, report
   const { t } = useLocale()
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Status */}
       <div className="flex items-center gap-2 text-sm">
         {running && (
           <>
-            <Loader2 size={16} className="animate-spin text-[var(--color-primary)]" />
-            <span>Running... {progress > 0 ? `${Math.round(progress)}%` : ''}</span>
+            <Loader2 size={16} className="animate-spin text-[var(--accent)]" />
+            <Badge variant="warning">Running{progress > 0 ? ` ${Math.round(progress)}%` : '...'}</Badge>
           </>
         )}
         {!running && result?.status === 'error' && (
           <>
-            <XCircle size={16} className="text-red-500" />
-            <span className="text-red-400">{result.error}</span>
+            <XCircle size={16} className="text-[#ef4444]" />
+            <Badge variant="danger">{result.error}</Badge>
           </>
         )}
         {!running && result && result.status !== 'error' && (
           <>
-            <CheckCircle2 size={16} className="text-green-500" />
-            <span className="text-green-400">Completed</span>
+            <CheckCircle2 size={16} className="text-[var(--green)]" />
+            <Badge variant="success">Completed</Badge>
           </>
         )}
         {!running && !result && (
-          <span className="text-[var(--color-ink-muted)]">{readyLabel}</span>
+          <span className="text-[var(--text-muted)]">{readyLabel}</span>
         )}
       </div>
 
       {/* Progress bar */}
       {(running || (result && result.status !== 'error')) && (
-        <div className="h-1.5 rounded-full bg-[var(--color-surface-hover)] overflow-hidden">
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-deep)' }}>
           <div
-            className="h-full rounded-full bg-[var(--color-primary)] transition-all duration-500"
-            style={{ width: `${Math.min(progress, 100)}%` }}
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${Math.min(progress, 100)}%`, background: 'var(--accent)' }}
           />
         </div>
       )}
@@ -57,15 +59,15 @@ export default function TaskMonitor({ running, progress, logText, result, report
 
       {/* Report link */}
       {!running && result && result.status !== 'error' && reportUrl && (
-        <a
-          href={reportUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-primary)] hover:underline"
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => window.open(reportUrl, '_blank')}
+          className="btn-glow"
         >
           <ExternalLink size={14} />
           {t('common.openNewTab')}
-        </a>
+        </Button>
       )}
     </div>
   )

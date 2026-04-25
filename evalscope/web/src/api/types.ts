@@ -100,3 +100,23 @@ export interface ProgressResponse {
   current_step?: string
   [key: string]: unknown
 }
+
+export interface ReportSummary {
+  name: string
+  model_name: string
+  dataset_name: string
+  score: number
+  num_samples: number
+  timestamp: string
+}
+
+export interface ListReportsResponse {
+  reports: ReportSummary[]
+  total: number
+  page: number
+  page_size: number
+  filters: {
+    available_models: string[]
+    available_datasets: string[]
+  }
+}

@@ -14,6 +14,8 @@ interface ReportsState {
   reportCache: Record<string, LoadReportResponse>
   /** Multi-report list cache (all selected) */
   multiReportList: ReportData[]
+  /** Reports selected for compare across pages */
+  selectedForCompare: string[]
   loading: boolean
 }
 
@@ -25,6 +27,9 @@ type Action =
   | { type: 'SET_MULTI'; list: ReportData[] }
   | { type: 'SET_LOADING'; loading: boolean }
   | { type: 'CLEAR_CACHE' }
+  | { type: 'TOGGLE_COMPARE'; name: string }
+  | { type: 'SET_COMPARE'; names: string[] }
+  | { type: 'CLEAR_COMPARE' }
 
 const initialState: ReportsState = {
   rootPath: './outputs',
@@ -32,6 +37,7 @@ const initialState: ReportsState = {
   selectedReports: [],
   reportCache: {},
   multiReportList: [],
+  selectedForCompare: [],
   loading: false,
 }
 
@@ -51,6 +57,16 @@ function reducer(state: ReportsState, action: Action): ReportsState {
       return { ...state, loading: action.loading }
     case 'CLEAR_CACHE':
       return { ...state, reportCache: {}, multiReportList: [] }
+    case 'TOGGLE_COMPARE': {
+      const set = new Set(state.selectedForCompare)
+      if (set.has(action.name)) set.delete(action.name)
+      else set.add(action.name)
+      return { ...state, selectedForCompare: Array.from(set) }
+    }
+    case 'SET_COMPARE':
+      return { ...state, selectedForCompare: action.names }
+    case 'CLEAR_COMPARE':
+      return { ...state, selectedForCompare: [] }
     default:
       return state
   }
@@ -66,6 +82,9 @@ interface ReportsCtx extends ReportsState {
   selectReports: (r: string[]) => void
   loadReport: (name: string) => Promise<LoadReportResponse>
   loadMultiReports: (names: string[]) => Promise<ReportData[]>
+  toggleSelectForCompare: (name: string) => void
+  setCompareSelection: (names: string[]) => void
+  clearCompareSelection: () => void
 }
 
 const ReportsContext = createContext<ReportsCtx>(null!)
@@ -116,6 +135,21 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     [state.rootPath],
   )
 
+  const toggleSelectForCompare = useCallback(
+    (name: string) => dispatch({ type: 'TOGGLE_COMPARE', name }),
+    [],
+  )
+
+  const setCompareSelection = useCallback(
+    (names: string[]) => dispatch({ type: 'SET_COMPARE', names }),
+    [],
+  )
+
+  const clearCompareSelection = useCallback(
+    () => dispatch({ type: 'CLEAR_COMPARE' }),
+    [],
+  )
+
   const value = useMemo<ReportsCtx>(
     () => ({
       ...state,
@@ -124,8 +158,11 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
       selectReports,
       loadReport,
       loadMultiReports,
+      toggleSelectForCompare,
+      setCompareSelection,
+      clearCompareSelection,
     }),
-    [state, setRootPath, scanReportsAction, selectReports, loadReport, loadMultiReports],
+    [state, setRootPath, scanReportsAction, selectReports, loadReport, loadMultiReports, toggleSelectForCompare, setCompareSelection, clearCompareSelection],
   )
 
   return <ReportsContext.Provider value={value}>{children}</ReportsContext.Provider>
