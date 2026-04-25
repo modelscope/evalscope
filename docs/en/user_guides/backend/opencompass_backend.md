@@ -290,7 +290,6 @@ After configuring the configuration file, run the following script:
 :caption: example_eval_openai_api.py
 
 from evalscope.run import run_task
-from evalscope.summarizer import Summarizer
 
 def run_eval():
     # Option 1: Python dictionary
@@ -303,9 +302,6 @@ def run_eval():
     # task_cfg = 'eval_openai_api.json'
     
     run_task(task_cfg=task_cfg)
-    print('>> Start to get the report with summarizer ...')
-    report_list = Summarizer.get_report_from_cfg(task_cfg)
-    print(f'\n>> The report list: {report_list}')
 
 run_eval()
 ```

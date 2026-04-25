@@ -9,7 +9,6 @@ import unittest
 
 from evalscope.backend.opencompass import OpenCompassBackendManager
 from evalscope.run import run_task
-from evalscope.summarizer import Summarizer
 from evalscope.utils.import_utils import is_module_installed
 from evalscope.utils.logger import get_logger
 from tests.utils import test_level_list
@@ -134,12 +133,6 @@ class TestRunSwiftEval(unittest.TestCase):
         # Submit the task
         logger.info(f'Start to run UT with cfg: {task_cfg}')
         run_task(task_cfg=task_cfg)
-
-        # Get the final report with summarizer
-        report_list = Summarizer.get_report_from_cfg(task_cfg)
-        logger.info(f'>>The report list:\n{report_list}')
-
-        assert len(report_list) > 0, f'Failed to get report list: {report_list}'
 
 
 if __name__ == '__main__':
