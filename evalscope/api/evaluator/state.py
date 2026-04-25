@@ -1,3 +1,4 @@
+import time
 from dataclasses import dataclass
 from random import Random
 from typing import Any, Dict, List, Optional, Sequence, Union, overload
@@ -122,6 +123,17 @@ class Choices(Sequence[Choice]):
         self._choices = shuffled_choices
 
 
+@dataclass
+class TrajectoryStep:
+    """Record a single processing step during evaluation."""
+
+    step_name: str  # solver/processor name
+    step_type: str  # "solver", "scorer", "tool", "generate"
+    timestamp: float  # time.time()
+    messages_snapshot: Optional[List[ChatMessage]] = None  # messages produced by this step
+    metadata: Optional[Dict[str, Any]] = None  # extra metadata (e.g. token usage)
+
+
 class TaskState:
     """
     The `TaskState` represents the internal state of the `Task` being run for a single `Sample`.
@@ -136,7 +148,7 @@ class TaskState:
         self,
         model: str,
         sample: Sample,
-        messages: List[ChatMessage] = [],
+        messages: Optional[List[ChatMessage]] = None,
         output: Optional[ModelOutput] = None,
         completed: bool = False,
     ) -> None:
@@ -147,9 +159,10 @@ class TaskState:
         self._input = sample.input
         self._target = Target(sample.target)
         self._metadata = sample.metadata
-        self._messages: List[ChatMessage] = messages
+        self._messages: List[ChatMessage] = messages if messages is not None else []
         self._output = output if output else ModelOutput(model=str(model))
         self._completed = completed
+        self._trajectory: List[TrajectoryStep] = []
         if sample.choices:
             self._choices = Choices(sample.choices)
         else:
@@ -286,3 +299,26 @@ class TaskState:
     def target(self, text: str) -> None:
         """Set the target for review purposes."""
         self._target = Target(text)
+
+    @property
+    def trajectory(self) -> List[TrajectoryStep]:
+        """The trajectory of processing steps for this sample."""
+        return self._trajectory
+
+    def add_trajectory_step(
+        self,
+        step_name: str,
+        step_type: str,
+        messages: Optional[List[ChatMessage]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Record a processing step in the trajectory."""
+        self._trajectory.append(
+            TrajectoryStep(
+                step_name=step_name,
+                step_type=step_type,
+                timestamp=time.time(),
+                messages_snapshot=messages,
+                metadata=metadata,
+            )
+        )

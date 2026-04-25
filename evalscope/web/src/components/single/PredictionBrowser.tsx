@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { MessageCircle, LayoutList, Table } from 'lucide-react'
 import type { PredictionRow } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
 import FilterBar from '@/components/common/FilterBar'
@@ -6,18 +7,22 @@ import Pagination from '@/components/common/Pagination'
 import ScoreBadge from '@/components/common/ScoreBadge'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import { prettyJson } from '@/utils/formatUtils'
+import ChatView from './ChatView'
+import FlatView from './FlatView'
 
 interface Props {
   predictions: PredictionRow[]
 }
 
 const ANSWER_MODES = ['All', 'Pass', 'Fail']
+type ViewMode = 'chat' | 'flat' | 'table'
 
 export default function PredictionBrowser({ predictions }: Props) {
   const { t } = useLocale()
   const [mode, setMode] = useState('All')
   const [threshold, setThreshold] = useState(0.99)
   const [page, setPage] = useState(1)
+  const [viewMode, setViewMode] = useState<ViewMode>('flat')
 
   const filtered = useMemo(() => {
     if (mode === 'Pass') return predictions.filter((p) => p.NScore >= threshold)
@@ -32,6 +37,12 @@ export default function PredictionBrowser({ predictions }: Props) {
 
   // Reset page when filter changes
   useMemo(() => setPage(1), [mode, threshold]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const viewButtons: { key: ViewMode; icon: React.ReactNode; label: string }[] = [
+    { key: 'chat', icon: <MessageCircle size={14} />, label: t('prediction.chatView') },
+    { key: 'flat', icon: <LayoutList size={14} />, label: t('prediction.flatView') },
+    { key: 'table', icon: <Table size={14} />, label: t('prediction.tableView') },
+  ]
 
   return (
     <div className="flex flex-col gap-3">
@@ -50,6 +61,34 @@ export default function PredictionBrowser({ predictions }: Props) {
             className="w-20 px-2 py-1 text-sm rounded-md bg-[var(--color-surface)] border border-[var(--color-border)]"
           />
         </div>
+
+        {/* View mode toggle */}
+        <div
+          className="flex items-center rounded-xl p-0.5 gap-0.5 ml-auto"
+          style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+        >
+          {viewButtons.map(({ key, icon, label }) => (
+            <button
+              key={key}
+              onClick={() => setViewMode(key)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+              style={
+                viewMode === key
+                  ? {
+                      background: 'var(--color-primary-muted)',
+                      color: 'var(--color-primary)',
+                      boxShadow: '0 1px 4px rgba(99,102,241,0.15)',
+                    }
+                  : {
+                      color: 'var(--color-ink-muted)',
+                    }
+              }
+            >
+              {icon}
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Stats */}
@@ -60,28 +99,34 @@ export default function PredictionBrowser({ predictions }: Props) {
         <Pagination page={page} total={total} onChange={setPage} />
       </div>
 
-      {/* Detail panels */}
+      {/* Content area */}
       {row && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Panel title="Score">
-            <pre className="text-xs font-mono whitespace-pre-wrap break-all">{prettyJson(row.Score)}</pre>
-          </Panel>
-          <Panel title={t('common.normalizedScore')}>
-            <ScoreBadge score={row.NScore} threshold={threshold} />
-          </Panel>
-          <Panel title={t('common.gold')}>
-            <MarkdownRenderer content={formatValue(row.Gold)} />
-          </Panel>
-          <Panel title={t('common.pred')}>
-            <MarkdownRenderer content={formatValue(row.Pred)} />
-          </Panel>
-          <Panel title={t('common.input')}>
-            <MarkdownRenderer content={formatValue(row.Input)} />
-          </Panel>
-          <Panel title={t('common.generated')}>
-            <MarkdownRenderer content={formatValue(row.Generated)} />
-          </Panel>
-        </div>
+        <>
+          {viewMode === 'chat' && <ChatView prediction={row} threshold={threshold} />}
+          {viewMode === 'flat' && <FlatView prediction={row} threshold={threshold} />}
+          {viewMode === 'table' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Panel title="Score">
+                <pre className="text-xs font-mono whitespace-pre-wrap break-all">{prettyJson(row.Score)}</pre>
+              </Panel>
+              <Panel title={t('common.normalizedScore')}>
+                <ScoreBadge score={row.NScore} threshold={threshold} />
+              </Panel>
+              <Panel title={t('common.gold')}>
+                <MarkdownRenderer content={formatValue(row.Gold)} />
+              </Panel>
+              <Panel title={t('common.pred')}>
+                <MarkdownRenderer content={formatValue(row.Pred)} />
+              </Panel>
+              <Panel title={t('common.input')}>
+                <MarkdownRenderer content={formatValue(row.Input)} />
+              </Panel>
+              <Panel title={t('common.generated')}>
+                <MarkdownRenderer content={formatValue(row.Generated)} />
+              </Panel>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

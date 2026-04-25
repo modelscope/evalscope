@@ -3,6 +3,7 @@ import { useReports } from '@/contexts/ReportsContext'
 import { useLocale } from '@/contexts/LocaleContext'
 import DatasetsOverview from '@/components/single/DatasetsOverview'
 import DatasetDetails from '@/components/single/DatasetDetails'
+import SummaryStats from '@/components/single/SummaryStats'
 import EmptyState from '@/components/common/EmptyState'
 import type { ReportData } from '@/api/types'
 import { prettyJson } from '@/utils/formatUtils'
@@ -43,6 +44,14 @@ export default function SingleModelPage() {
             ))}
           </select>
         </div>
+      )}
+
+      {/* Summary stats */}
+      {reportList.length > 0 && (
+        <section>
+          <h2 className="text-lg font-semibold mb-3">{t('single.summaryStats')}</h2>
+          <SummaryStats reports={reportList} />
+        </section>
       )}
 
       {/* Task config */}

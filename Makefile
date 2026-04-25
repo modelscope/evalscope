@@ -108,6 +108,10 @@ web-install:
 web-build:
 	cd evalscope/web && npm install && npm run build
 
+.PHONY: web-dev
+web-dev:
+	cd evalscope/web && npm install && npm run dev
+
 # ============================================================================
 # Development
 # ============================================================================

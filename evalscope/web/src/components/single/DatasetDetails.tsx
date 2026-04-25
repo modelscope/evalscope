@@ -4,6 +4,7 @@ import { useLocale } from '@/contexts/LocaleContext'
 import type { PredictionRow, ReportData } from '@/api/types'
 import { getPredictions, getAnalysis, getDataFrame, getChartUrl } from '@/api/reports'
 import ChartEmbed from '@/components/charts/ChartEmbed'
+import ScoreHistogram from '@/components/charts/ScoreHistogram'
 import DataTable from '@/components/common/DataTable'
 import PredictionBrowser from './PredictionBrowser'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
@@ -152,6 +153,13 @@ export default function DatasetDetails({ reports, reportName }: Props) {
           ))}
         </select>
       </div>
+
+      {/* Score distribution histogram */}
+      {(predictions.length > 0 || selectedSubset) && (
+        <div className="glass-card rounded-xl p-4">
+          <ScoreHistogram predictions={predictions} />
+        </div>
+      )}
 
       {predictions.length > 0 && <PredictionBrowser predictions={predictions} />}
     </div>
