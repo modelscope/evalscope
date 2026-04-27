@@ -52,32 +52,6 @@ def _root_path() -> str:
 # ------------------------------------------------------------------
 
 
-def _report_to_dict(report: Report) -> dict:
-    """Serialise a Report to a JSON-friendly dict."""
-    return {
-        'name': report.name,
-        'dataset_name': report.dataset_name,
-        'model_name': report.model_name,
-        'score': report.score,
-        'analysis': report.analysis,
-        'metrics': [{
-            'name': m.name,
-            'num': m.num,
-            'score': m.score,
-            'categories': [{
-                'name': list(c.name) if c.name else [],
-                'num': c.num,
-                'score': c.score,
-                'subsets': [{
-                    'name': s.name,
-                    'score': s.score,
-                    'num': s.num
-                } for s in c.subsets],
-            } for c in m.categories],
-        } for m in report.metrics],
-    }
-
-
 def _df_to_records(df) -> list:
     """Convert a pandas DataFrame to a list of dicts, handling NaN."""
     if df is None or df.empty:
@@ -129,12 +103,21 @@ def _build_report_meta(report_name: str, root: str) -> dict:
     avg_score = round(score_sum / len(report_list), 4) if report_list else 0.0
     timestamp = _extract_timestamp(report_name, root)
 
+    # Build per-dataset score mapping (normalized to 0-1 range)
+    dataset_scores = {}
+    for r in report_list:
+        score = r.score
+        if score is not None and score > 1:
+            score = score / 100
+        dataset_scores[r.dataset_name] = round(score, 4) if score is not None else None
+
     return {
         'name': report_name,
         'model_name': first.model_name,
         'dataset_name': ', '.join(dataset_names) if len(dataset_names) > 1 else
         (dataset_names[0] if dataset_names else ''),
         'score': avg_score,
+        'dataset_scores': dataset_scores,
         'num_samples': total_num,
         'timestamp': timestamp,
         # keep individual scores for per-dataset filtering
@@ -277,7 +260,7 @@ def load_report():
         root = _root_path()
         report_list, datasets, task_cfg = load_single_report(root, report_name)
         return jsonify({
-            'report_list': [_report_to_dict(r) for r in report_list],
+            'report_list': [r.to_dict() for r in report_list],
             'datasets': datasets,
             'task_config': task_cfg,
         }), 200
@@ -303,7 +286,7 @@ def load_multi():
         root = _root_path()
         report_list = load_multi_report(root, names)
         return jsonify({
-            'report_list': [_report_to_dict(r) for r in report_list],
+            'report_list': [r.to_dict() for r in report_list],
         }), 200
     except Exception as e:
         logger.error(f'Failed to load multi reports: {e}')

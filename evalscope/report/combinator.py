@@ -26,7 +26,8 @@ def get_report_list(reports_path_list: List[str]) -> List[Report]:
         # Iterate over each report file
         for file_path in report_files:
             # Skip the collection report file
-            if os.path.basename(file_path) == DataCollection.REPORT_NAME:
+            basename = os.path.basename(file_path)
+            if basename == DataCollection.REPORT_NAME:
                 continue
             try:
                 report = Report.from_json(file_path)

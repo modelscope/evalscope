@@ -22,6 +22,15 @@ export default function ReportDetailPage() {
   const rootPath = searchParams.get('root_path') || './outputs'
   const reportName = decodeURIComponent(reportId ?? '')
 
+  // Parse model name from reportName format: {timestamp}@@{model_name}::{datasets}
+  const breadcrumbLabel = useMemo(() => {
+    const atIdx = reportName.indexOf('@@')
+    if (atIdx === -1) return reportName
+    const afterAt = reportName.slice(atIdx + 2)
+    const colonIdx = afterAt.indexOf('::')
+    return colonIdx !== -1 ? afterAt.slice(0, colonIdx) : afterAt
+  }, [reportName])
+
   const [data, setData] = useState<LoadReportResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -68,6 +77,14 @@ export default function ReportDetailPage() {
   const datasets = data?.datasets ?? []
   const htmlReportUrl = getHtmlReportUrl(rootPath, reportName)
 
+  // Handler: switch dataset and auto-navigate to details tab
+  const handleDatasetChange = (ds: string) => {
+    setActiveDataset(ds)
+    if (activeTab === 'overview') {
+      setActiveTab('details')
+    }
+  }
+
   const tabs = [
     { key: 'overview', label: t('reportDetail.overview') },
     { key: 'details', label: t('reportDetail.details') },
@@ -90,7 +107,7 @@ export default function ReportDetailPage() {
         <Breadcrumb
           items={[
             { label: 'Reports', href: '/reports' },
-            { label: reportName || 'Detail' },
+            { label: breadcrumbLabel || 'Detail' },
           ]}
         />
         <div className="mt-6 p-6 rounded-[var(--radius)] border border-[#ef4444] bg-[rgba(239,68,68,0.08)] text-[#ef4444]">
@@ -106,7 +123,7 @@ export default function ReportDetailPage() {
       <Breadcrumb
         items={[
           { label: 'Reports', href: '/reports' },
-          { label: reportName },
+          { label: breadcrumbLabel },
         ]}
       />
 
@@ -114,69 +131,75 @@ export default function ReportDetailPage() {
       <ReportHeader
         modelName={modelName}
         datasetName={primaryDataset}
+        datasets={datasets}
         score={overallScore}
         totalSamples={totalSamples}
         htmlReportUrl={htmlReportUrl}
+        onDatasetClick={handleDatasetChange}
       />
 
-      {/* Main body: Dataset Nav + Tabbed Content */}
-      <div className="flex flex-col md:flex-row gap-0 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
-        {/* Dataset nav - horizontal scroll on mobile, vertical sidebar on desktop */}
-        {datasets.length > 0 && (
-          <>
-            {/* Mobile horizontal dataset nav */}
-            <div className="md:hidden flex items-center gap-1 px-4 py-2 border-b border-[var(--border)] overflow-x-auto">
-              {datasets.map((ds) => (
-                <button
-                  key={ds}
-                  onClick={() => setActiveDataset(ds)}
-                  className={`whitespace-nowrap px-3 py-1.5 text-xs rounded-full transition-all duration-150 ${
-                    ds === activeDataset
-                      ? 'bg-[var(--accent-dim)] text-[var(--accent)] font-medium'
-                      : 'text-[var(--text-muted)] hover:bg-[var(--bg-card2)]'
-                  }`}
-                >
-                  {ds}
-                </button>
-              ))}
-            </div>
-            {/* Desktop vertical dataset nav */}
-            <div className="hidden md:block">
-              <DatasetNav
-                datasets={datasets}
-                active={activeDataset}
-                onChange={setActiveDataset}
-              />
-            </div>
-          </>
-        )}
+      {/* Tabs bar */}
+      <div className="rounded-t-[var(--radius)] border border-b-0 border-[var(--border)] bg-[var(--bg-card)] px-5 pt-4 pb-2">
+        <Tabs tabs={tabs} activeKey={activeTab} onChange={(k) => setActiveTab(k as TabKey)} />
+      </div>
 
-        {/* Right content area */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Tabs bar */}
-          <div className="px-5 pt-4 pb-2 border-b border-[var(--border)]">
-            <Tabs tabs={tabs} activeKey={activeTab} onChange={(k) => setActiveTab(k as TabKey)} />
-          </div>
+      {/* Tab content */}
+      {activeTab === 'overview' ? (
+        <div className="rounded-b-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-5">
+          <OverviewTab
+            reports={reportList}
+            reportName={reportName}
+            rootPath={rootPath}
+            taskConfig={data?.task_config}
+            onDatasetClick={handleDatasetChange}
+          />
+        </div>
+      ) : (
+        <div className="flex flex-col md:flex-row gap-0 rounded-b-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
+          {/* Dataset nav - horizontal scroll on mobile, vertical sidebar on desktop */}
+          {datasets.length > 0 && (
+            <>
+              {/* Mobile horizontal dataset nav */}
+              <div className="md:hidden flex items-center gap-1 px-4 py-2 border-b border-[var(--border)] overflow-x-auto">
+                {datasets.map((ds) => (
+                  <button
+                    key={ds}
+                    onClick={() => handleDatasetChange(ds)}
+                    className={`whitespace-nowrap px-3 py-1.5 text-xs rounded-full transition-all duration-150 ${
+                      ds === activeDataset
+                        ? 'bg-[var(--accent-dim)] text-[var(--accent)] font-medium'
+                        : 'text-[var(--text-muted)] hover:bg-[var(--bg-card2)]'
+                    }`}
+                  >
+                    {ds}
+                  </button>
+                ))}
+              </div>
+              {/* Desktop vertical dataset nav */}
+              <div className="hidden md:block">
+                <DatasetNav
+                  datasets={datasets}
+                  active={activeDataset}
+                  onChange={handleDatasetChange}
+                />
+              </div>
+            </>
+          )}
 
-          {/* Tab content */}
-          <div className="p-5">
-            {activeTab === 'overview' && (
-              <OverviewTab
-                reports={reportList}
-                reportName={reportName}
-                rootPath={rootPath}
-                taskConfig={data?.task_config}
-              />
-            )}
+          {/* Right content area */}
+          <div className="flex-1 min-w-0 p-5">
             {activeTab === 'details' && (
               <DetailsTab
+                key={activeDataset}
                 reportName={reportName}
                 datasetName={activeDataset}
                 rootPath={rootPath}
+                perfMetrics={reportList.find((r) => r.dataset_name === activeDataset)?.perf_metrics}
               />
             )}
             {activeTab === 'predictions' && (
               <PredictionsTab
+                key={activeDataset}
                 reportName={reportName}
                 datasetName={activeDataset}
                 rootPath={rootPath}
@@ -184,7 +207,7 @@ export default function ReportDetailPage() {
             )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

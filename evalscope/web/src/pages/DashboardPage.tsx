@@ -4,7 +4,6 @@ import { useReports } from '@/contexts/ReportsContext'
 import { useLocale } from '@/contexts/LocaleContext'
 import { listReports } from '@/api/reports'
 import type { ReportSummary } from '@/api/types'
-import ScoreHeatmap from '@/components/charts/ScoreHeatmap'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
@@ -14,15 +13,26 @@ import {
   Cpu,
   Database,
   Clock,
-  PlayCircle,
-  Gauge,
-  FolderOpen,
-  BookOpen,
-  ArrowRight,
   Search,
   Inbox,
   FolderInput,
+  FolderOpen,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react'
+
+// ------------------------------------------------------------------ //
+// Helpers                                                              //
+// ------------------------------------------------------------------ //
+function scoreColor(score: number): string {
+  const hue = Math.round(score * 120)
+  return `hsl(${hue}, 70%, 45%)`
+}
+
+function scoreBg(score: number): string {
+  const hue = Math.round(score * 120)
+  return `hsla(${hue}, 70%, 45%, 0.15)`
+}
 
 // ------------------------------------------------------------------ //
 // KPI Card                                                            //
@@ -63,91 +73,111 @@ function KpiCard({ icon, value, label, gradient, delay = 0 }: KpiCardProps) {
 }
 
 // ------------------------------------------------------------------ //
-// Quick Action Card                                                   //
+// Dataset Score Chip                                                   //
 // ------------------------------------------------------------------ //
-interface QuickActionProps {
-  icon: React.ReactNode
-  title: string
-  desc: string
-  onClick: () => void
-  gradient: string
-  delay?: number
+function DatasetChip({ name, score }: { name: string; score: number }) {
+  const fg = scoreColor(score)
+  const bg = scoreBg(score)
+  return (
+    <span
+      className="px-2 py-0.5 rounded-full text-[10px] font-mono whitespace-nowrap"
+      style={{ background: bg, color: fg }}
+    >
+      {name} {(score * 100).toFixed(1)}
+    </span>
+  )
 }
 
-function QuickActionCard({ icon, title, desc, onClick, gradient, delay = 0 }: QuickActionProps) {
+// ------------------------------------------------------------------ //
+// EvalRunCard (Timeline view)                                          //
+// ------------------------------------------------------------------ //
+interface EvalRunCardProps {
+  report: ReportSummary
+  onClick: () => void
+}
+
+function EvalRunCard({ report, onClick }: EvalRunCardProps) {
+  const score = report.score
+  const fg = scoreColor(score)
+  const bg = scoreBg(score)
+  const dsScores = report.dataset_scores
+
   return (
     <button
       onClick={onClick}
-      className="group text-left p-5 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] flex items-start gap-4 transition-all duration-200 hover:border-[var(--accent)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)]"
-      style={{ animationDelay: `${delay}ms` }}
+      className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--border-md)] transition-colors p-4 cursor-pointer w-full text-left"
     >
-      <div
-        className="w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0 transition-transform duration-200 group-hover:scale-110"
-        style={{ background: gradient }}
-      >
-        {icon}
+      {/* Top row */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold text-[var(--text)] truncate flex-1 min-w-0">
+          {report.model_name}
+        </span>
+        {report.timestamp && (
+          <span className="text-[10px] font-mono text-[var(--text-dim)] shrink-0">
+            {report.timestamp.replace('T', ' ')}
+          </span>
+        )}
+        <span
+          className="shrink-0 px-2.5 py-0.5 rounded-full text-xs font-bold tabular-nums"
+          style={{ background: bg, color: fg }}
+        >
+          {(score * 100).toFixed(1)}%
+        </span>
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-semibold text-[var(--text)]">{title}</span>
-          <ArrowRight
-            size={14}
-            className="text-[var(--text-dim)] group-hover:text-[var(--accent)] group-hover:translate-x-0.5 transition-all duration-200 shrink-0"
-          />
-        </div>
-        <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-relaxed">{desc}</p>
+
+      {/* Dataset chips */}
+      <div className="flex flex-wrap gap-1.5 mt-2">
+        {dsScores && Object.keys(dsScores).length > 0 ? (
+          Object.entries(dsScores).map(([ds, s]) => (
+            <DatasetChip key={ds} name={ds} score={s} />
+          ))
+        ) : (
+          <span className="text-[10px] text-[var(--text-dim)] font-mono">{report.dataset_name}</span>
+        )}
       </div>
     </button>
   )
 }
 
 // ------------------------------------------------------------------ //
-// Timeline Entry                                                      //
+// CompactRunRow (Grouped view)                                         //
 // ------------------------------------------------------------------ //
-interface TimelineEntryProps {
+interface CompactRunRowProps {
   report: ReportSummary
-  index: number
   onClick: () => void
 }
 
-function TimelineEntry({ report, index, onClick }: TimelineEntryProps) {
+function CompactRunRow({ report, onClick }: CompactRunRowProps) {
   const score = report.score
-  const hue = Math.round(score * 120)
-  const bg = `hsla(${hue}, 70%, 45%, 0.15)`
-  const fg = `hsl(${hue}, 70%, 45%)`
+  const fg = scoreColor(score)
+  const bg = scoreBg(score)
+  const dsScores = report.dataset_scores
 
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-3 py-3 border-b border-[var(--border)] last:border-0 group hover:bg-[var(--bg-card2)] -mx-3 px-3 rounded-[var(--radius-sm)] transition-colors duration-150 w-full text-left"
+      className="flex items-center gap-3 py-2.5 px-3 rounded-[var(--radius-sm)] hover:bg-[var(--bg-card2)] transition-colors w-full text-left"
     >
-      {/* Index badge */}
-      <div className="w-6 h-6 rounded-full bg-[var(--bg-deep)] border border-[var(--border)] flex items-center justify-center text-[10px] font-bold text-[var(--text-dim)] shrink-0">
-        {index + 1}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-semibold text-[var(--text)] truncate max-w-[180px]" title={report.model_name}>
-            {report.model_name}
-          </span>
-          <span className="text-[10px] text-[var(--text-dim)]">·</span>
-          <span className="text-xs text-[var(--text-muted)] truncate max-w-[140px]" title={report.dataset_name}>
-            {report.dataset_name}
-          </span>
-        </div>
-        {report.timestamp && (
-          <div className="text-[10px] text-[var(--text-dim)] mt-0.5 font-mono">
-            {report.timestamp}
-          </div>
+      {report.timestamp && (
+        <span className="text-[10px] font-mono text-[var(--text-dim)] shrink-0 w-[110px]">
+          {report.timestamp.replace('T', ' ').slice(5)}
+        </span>
+      )}
+      <div className="flex flex-wrap gap-1 flex-1 min-w-0">
+        {dsScores && Object.keys(dsScores).length > 0 ? (
+          Object.entries(dsScores).map(([ds, s]) => (
+            <DatasetChip key={ds} name={ds} score={s} />
+          ))
+        ) : (
+          <span className="text-[10px] text-[var(--text-dim)] font-mono">{report.dataset_name}</span>
         )}
       </div>
-      {/* Score badge */}
-      <div
-        className="shrink-0 px-2.5 py-0.5 rounded-full text-xs font-bold tabular-nums"
+      <span
+        className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold tabular-nums"
         style={{ background: bg, color: fg }}
       >
         {(score * 100).toFixed(1)}%
-      </div>
+      </span>
     </button>
   )
 }
@@ -185,6 +215,12 @@ export default function DashboardPage() {
   const [reports, setReports] = useState<ReportSummary[]>([])
   const [scanned, setScanned] = useState(false)
 
+  // Evaluation list state
+  const [view, setView] = useState<'timeline' | 'grouped'>('timeline')
+  const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState('time')
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+
   // Scan for reports using listReports API
   const handleScan = useCallback(async () => {
     const trimmed = pathInput.trim()
@@ -212,31 +248,64 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Initialize expanded groups when reports change
+  useEffect(() => {
+    const models = new Set(reports.map(r => r.model_name))
+    setExpandedGroups(models)
+  }, [reports])
+
   // KPI stats
   const kpiStats = useMemo(() => {
     const totalEvals = reports.length
     const models = new Set(reports.map((r) => r.model_name))
     const datasets = new Set(reports.map((r) => r.dataset_name))
     const latest = reports.length > 0
-      ? (reports[0].timestamp || reports[0].name)
+      ? (reports[0].timestamp || reports[0].name).replace('T', ' ')
       : t('dashboard.neverText')
     return { totalEvals, models: models.size, datasets: datasets.size, latest }
   }, [reports, t])
 
-  // Heatmap data
-  const heatmapData = useMemo(() => {
-    return reports.map((r) => ({
-      model: r.model_name,
-      dataset: r.dataset_name,
-      score: r.score,
-      reportName: r.name,
-    }))
-  }, [reports])
+  // Filtered & sorted reports
+  const sortedReports = useMemo(() => {
+    let filtered = reports
+    if (search) {
+      const q = search.toLowerCase()
+      filtered = reports.filter(r =>
+        r.model_name.toLowerCase().includes(q) ||
+        r.dataset_name.toLowerCase().includes(q)
+      )
+    }
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'time') return (b.timestamp || '').localeCompare(a.timestamp || '')
+      if (sortBy === 'score') return (b.score ?? 0) - (a.score ?? 0)
+      if (sortBy === 'model') return a.model_name.localeCompare(b.model_name)
+      return 0
+    })
+  }, [reports, search, sortBy])
 
-  // Recent activity (up to 20)
-  const recentReports = useMemo(() => {
-    return reports.slice(0, 20)
-  }, [reports])
+  // Grouped by model
+  const grouped = useMemo(() => {
+    const map = new Map<string, ReportSummary[]>()
+    for (const r of sortedReports) {
+      const list = map.get(r.model_name) || []
+      list.push(r)
+      map.set(r.model_name, list)
+    }
+    return Array.from(map.entries())
+  }, [sortedReports])
+
+  const toggleGroup = (model: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(model)) next.delete(model)
+      else next.add(model)
+      return next
+    })
+  }
+
+  const navigateToReport = (report: ReportSummary) => {
+    navigate(`/reports/${encodeURIComponent(report.name)}?root_path=${encodeURIComponent(rootPath)}`)
+  }
 
   const hasData = scanned && reports.length > 0
 
@@ -316,57 +385,144 @@ export default function DashboardPage() {
 
       {/* ── Loading skeleton for content ── */}
       {scanning && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card title={t('dashboard.scoreMatrix')}>
-            <Skeleton lines={5} height={16} />
-          </Card>
-          <Card title={t('dashboard.recentActivity')}>
-            <Skeleton lines={8} height={14} />
-          </Card>
-        </div>
+        <Card title={t('dashboard.evaluations')}>
+          <Skeleton lines={8} height={14} />
+        </Card>
       )}
 
-      {/* ── Score Matrix + Recent Activity ── */}
+      {/* ── Unified Evaluation List ── */}
       {hasData && !scanning && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Score Matrix */}
-          <Card title={t('dashboard.scoreMatrix')} badge={<Badge>{heatmapData.length}</Badge>}>
-            <ScoreHeatmap
-              data={heatmapData}
-              onCellClick={(cell) => {
-                if (cell.reportName) {
-                  navigate(`/reports/${encodeURIComponent(cell.reportName)}?root_path=${encodeURIComponent(rootPath)}`)
-                }
+        <Card
+          title={t('dashboard.evaluations')}
+          badge={<Badge>{sortedReports.length}</Badge>}
+        >
+          {/* Controls bar */}
+          <div className="flex items-center gap-3 flex-wrap mb-4">
+            {/* View toggle */}
+            <div
+              style={{
+                display: 'inline-flex',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--border-md)',
+                overflow: 'hidden',
               }}
-            />
-          </Card>
-
-          {/* Recent Activity */}
-          <Card
-            title={t('dashboard.recentActivity')}
-            badge={
+            >
               <button
-                onClick={() => navigate(`/reports?root_path=${encodeURIComponent(rootPath)}`)}
-                className="text-xs text-[var(--accent)] hover:underline ml-2"
+                onClick={() => setView('timeline')}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '12px',
+                  background: view === 'timeline' ? 'var(--accent)' : 'var(--bg-card2)',
+                  color: view === 'timeline' ? '#fff' : 'var(--text-muted)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
               >
-                {t('dashboard.viewAll')}
+                {t('dashboard.timelineView')}
               </button>
-            }
-          >
-            <div className="flex flex-col max-h-[480px] overflow-y-auto">
-              {recentReports.map((r, i) => (
-                <TimelineEntry
-                  key={`${r.name}-${r.dataset_name}-${i}`}
-                  report={r}
-                  index={i}
-                  onClick={() =>
-                    navigate(`/reports/${encodeURIComponent(r.name)}?root_path=${encodeURIComponent(rootPath)}`)
-                  }
-                />
-              ))}
+              <button
+                onClick={() => setView('grouped')}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '12px',
+                  background: view === 'grouped' ? 'var(--accent)' : 'var(--bg-card2)',
+                  color: view === 'grouped' ? '#fff' : 'var(--text-muted)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {t('dashboard.groupedView')}
+              </button>
             </div>
-          </Card>
-        </div>
+
+            {/* Search */}
+            <input
+              type="text"
+              placeholder={t('dashboard.searchPlaceholder')}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="flex-1 min-w-[160px] max-w-[300px] px-3 py-1.5 text-xs rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)] placeholder-[var(--text-dim)]"
+            />
+
+            {/* Sort */}
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              className="px-3 py-1.5 text-xs rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)]"
+            >
+              <option value="time">{t('dashboard.sortTime')}</option>
+              <option value="score">{t('dashboard.sortScore')}</option>
+              <option value="model">{t('dashboard.sortModel')}</option>
+            </select>
+          </div>
+
+          {/* List content */}
+          <div style={{ maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}>
+            {sortedReports.length === 0 ? (
+              <div className="text-center py-8 text-sm text-[var(--text-dim)]">
+                {t('dashboard.noEvals')}
+              </div>
+            ) : view === 'timeline' ? (
+              /* ── Timeline view ── */
+              <div className="flex flex-col gap-3">
+                {sortedReports.map((report) => (
+                  <EvalRunCard
+                    key={`${report.name}-${report.dataset_name}`}
+                    report={report}
+                    onClick={() => navigateToReport(report)}
+                  />
+                ))}
+              </div>
+            ) : (
+              /* ── Grouped view ── */
+              <div className="flex flex-col gap-2">
+                {grouped.map(([model, runs]) => {
+                  const expanded = expandedGroups.has(model)
+                  const bestScore = Math.max(...runs.map(r => r.score))
+                  const bestFg = scoreColor(bestScore)
+
+                  return (
+                    <div key={model} className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
+                      {/* Group header */}
+                      <button
+                        onClick={() => toggleGroup(model)}
+                        className="flex items-center gap-2 w-full px-4 py-3 hover:bg-[var(--bg-card2)] transition-colors text-left"
+                      >
+                        {expanded ? (
+                          <ChevronDown size={14} className="text-[var(--text-dim)] shrink-0" />
+                        ) : (
+                          <ChevronRight size={14} className="text-[var(--text-dim)] shrink-0" />
+                        )}
+                        <span className="text-sm font-semibold text-[var(--text)]">{model}</span>
+                        <span className="text-[10px] text-[var(--text-dim)] font-mono">
+                          ({runs.length} {t('dashboard.runs')})
+                        </span>
+                        <span className="ml-auto text-[10px] font-mono" style={{ color: bestFg }}>
+                          {t('dashboard.bestScore')}: {(bestScore * 100).toFixed(1)}%
+                        </span>
+                      </button>
+
+                      {/* Group entries */}
+                      {expanded && (
+                        <div className="border-t border-[var(--border)]">
+                          {runs.map((report) => (
+                            <CompactRunRow
+                              key={`${report.name}-${report.dataset_name}`}
+                              report={report}
+                              onClick={() => navigateToReport(report)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </Card>
       )}
 
       {/* ── Empty state after scan ── */}
@@ -394,47 +550,6 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-
-      {/* ── Quick Actions ── */}
-      <div>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-3">
-          {t('dashboard.quickActions')}
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <QuickActionCard
-            icon={<PlayCircle size={18} />}
-            title={t('dashboard.newEvaluation')}
-            desc={t('dashboard.newEvalDesc')}
-            onClick={() => navigate('/eval')}
-            gradient="linear-gradient(135deg, #6366f1, #8b5cf6)"
-            delay={0}
-          />
-          <QuickActionCard
-            icon={<Gauge size={18} />}
-            title={t('dashboard.newPerfTest')}
-            desc={t('dashboard.newPerfDesc')}
-            onClick={() => navigate('/perf')}
-            gradient="linear-gradient(135deg, #10b981, #06b6d4)"
-            delay={60}
-          />
-          <QuickActionCard
-            icon={<FolderOpen size={18} />}
-            title={t('dashboard.browseReports')}
-            desc={t('dashboard.browseReportsDesc')}
-            onClick={() => navigate(`/reports?root_path=${encodeURIComponent(rootPath)}`)}
-            gradient="linear-gradient(135deg, #f59e0b, #f97316)"
-            delay={120}
-          />
-          <QuickActionCard
-            icon={<BookOpen size={18} />}
-            title={t('dashboard.viewBenchmarks')}
-            desc={t('dashboard.viewBenchmarksDesc')}
-            onClick={() => navigate('/benchmarks')}
-            gradient="linear-gradient(135deg, #ec4899, #8b5cf6)"
-            delay={180}
-          />
-        </div>
-      </div>
     </div>
   )
 }

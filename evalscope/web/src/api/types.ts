@@ -22,6 +22,36 @@ export interface MetricData {
   categories: CategoryData[]
 }
 
+export interface PercentileStats {
+  mean: number
+  std: number
+  min: number
+  '25%': number
+  '50%': number
+  '75%': number
+  '90%': number
+  '99%': number
+  max: number
+}
+
+export interface PerfMetricsSummary {
+  n_samples: number
+  latency: PercentileStats
+  throughput: {
+    avg_output_tps: number
+    avg_req_ps: number
+  }
+  usage: {
+    input_tokens: PercentileStats
+    output_tokens: PercentileStats
+    total_tokens: PercentileStats
+  }
+}
+
+export interface PerfMetrics {
+  summary: PerfMetricsSummary
+}
+
 export interface ReportData {
   name: string
   dataset_name: string
@@ -29,6 +59,7 @@ export interface ReportData {
   score: number
   analysis: string
   metrics: MetricData[]
+  perf_metrics?: PerfMetrics
 }
 
 export interface LoadReportResponse {
@@ -106,6 +137,7 @@ export interface ReportSummary {
   model_name: string
   dataset_name: string
   score: number
+  dataset_scores?: Record<string, number>
   num_samples: number
   timestamp: string
 }

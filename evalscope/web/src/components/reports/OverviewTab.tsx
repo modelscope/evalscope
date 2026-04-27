@@ -13,9 +13,10 @@ interface Props {
   reportName: string
   rootPath: string
   taskConfig?: Record<string, unknown>
+  onDatasetClick?: (dataset: string) => void
 }
 
-export default function OverviewTab({ reports, reportName, rootPath, taskConfig }: Props) {
+export default function OverviewTab({ reports, reportName, rootPath, taskConfig, onDatasetClick }: Props) {
   const { t } = useLocale()
 
   const tableData = useMemo(() => {
@@ -27,7 +28,24 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig 
   }, [reports])
 
   const columns = [
-    { key: 'Dataset', label: 'Dataset' },
+    {
+      key: 'Dataset',
+      label: 'Dataset',
+      render: (row: Record<string, unknown>) => {
+        const name = String(row.Dataset)
+        if (onDatasetClick) {
+          return (
+            <button
+              onClick={() => onDatasetClick(name)}
+              className="text-[var(--accent)] hover:underline cursor-pointer bg-transparent border-none p-0 font-inherit text-left"
+            >
+              {name}
+            </button>
+          )
+        }
+        return name
+      },
+    },
     {
       key: 'Score',
       label: 'Score',

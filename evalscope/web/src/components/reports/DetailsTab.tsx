@@ -6,14 +6,17 @@ import Table, { scoreColor } from '@/components/ui/Table'
 import PlotlyChart from '@/components/charts/PlotlyChart'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import Skeleton from '@/components/ui/Skeleton'
+import PerfMetricsPanel from '@/components/reports/PerfMetricsPanel'
+import type { PerfMetrics } from '@/api/types'
 
 interface Props {
   reportName: string
   datasetName: string
   rootPath: string
+  perfMetrics?: PerfMetrics
 }
 
-export default function DetailsTab({ reportName, datasetName, rootPath }: Props) {
+export default function DetailsTab({ reportName, datasetName, rootPath, perfMetrics }: Props) {
   const { t } = useLocale()
   const [analysis, setAnalysis] = useState('')
   const [analysisLoading, setAnalysisLoading] = useState(false)
@@ -94,6 +97,13 @@ export default function DetailsTab({ reportName, datasetName, rootPath }: Props)
         height={350}
         title={t('single.datasetScores')}
       />
+
+      {/* Performance Metrics */}
+      {perfMetrics && (
+        <Card title={t('reportDetail.perfMetrics')}>
+          <PerfMetricsPanel perfMetrics={perfMetrics} />
+        </Card>
+      )}
     </div>
   )
 }

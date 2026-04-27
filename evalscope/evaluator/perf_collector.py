@@ -40,7 +40,6 @@ class PerfCollector:
         collector.record(task_state.output.perf_metrics)
         # (called once from the main thread after the pool finishes)
         summary = collector.get_summary()
-        collector.save_report('/path/to/reports/model_name', 'benchmark.json')
     """
 
     def __init__(self) -> None:
@@ -153,25 +152,3 @@ class PerfCollector:
         if summary is None:
             return {}
         return {'summary': summary.to_dict()}
-
-    def save_report(self, output_dir: str, filename: str = 'perf_metrics.json') -> Optional[str]:
-        """Write summary statistics to a JSON file.
-
-        Args:
-            output_dir: Directory in which to write the report.  Created
-                automatically if it does not exist.
-            filename: Base name for the output file.
-
-        Returns:
-            Absolute path of the written file, or ``None`` if there are no
-            samples to report.
-        """
-        report = self.get_perf_dict()
-        if not report:
-            logger.debug('PerfCollector: no samples recorded, skipping report.')
-            return None
-
-        report_path = os.path.join(output_dir, filename)
-        dict_to_json(report, report_path)
-        logger.info(f'Performance metrics report saved to: {report_path}')
-        return report_path

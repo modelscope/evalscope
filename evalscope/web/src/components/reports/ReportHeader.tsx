@@ -9,17 +9,21 @@ import { scoreColor } from '@/components/ui/Table'
 interface Props {
   modelName: string
   datasetName: string
+  datasets?: string[]
   score: number
   totalSamples: number
   htmlReportUrl: string
+  onDatasetClick?: (dataset: string) => void
 }
 
 export default function ReportHeader({
   modelName,
   datasetName,
+  datasets,
   score,
   totalSamples,
   htmlReportUrl,
+  onDatasetClick,
 }: Props) {
   const { t } = useLocale()
   const navigate = useNavigate()
@@ -38,7 +42,27 @@ export default function ReportHeader({
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-xl font-bold text-[var(--text)]">{modelName}</h1>
             <span className="text-[var(--text-dim)]">×</span>
-            <span className="text-lg text-[var(--text-muted)]">{datasetName}</span>
+            {datasets && datasets.length > 0 ? (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {datasets.map((ds, idx) => (
+                  <span key={ds} className="flex items-center gap-1.5">
+                    {idx > 0 && <span className="text-[var(--text-dim)]">,</span>}
+                    {onDatasetClick ? (
+                      <button
+                        onClick={() => onDatasetClick(ds)}
+                        className="text-lg text-[var(--accent)] hover:underline cursor-pointer bg-transparent border-none p-0 font-inherit"
+                      >
+                        {ds}
+                      </button>
+                    ) : (
+                      <span className="text-lg text-[var(--text-muted)]">{ds}</span>
+                    )}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span className="text-lg text-[var(--text-muted)]">{datasetName}</span>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <Badge variant={variant} className="font-mono text-sm px-3 py-1">

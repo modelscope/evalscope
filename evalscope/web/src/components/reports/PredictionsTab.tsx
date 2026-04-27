@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { PredictionRow, ReportData } from '@/api/types'
 import { getPredictions, getDataFrame } from '@/api/reports'
 import Select from '@/components/ui/Select'
-import Card from '@/components/ui/Card'
 
-import Pagination from '@/components/common/Pagination'
 import ScoreBadge from '@/components/common/ScoreBadge'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import ChatView from '@/components/single/ChatView'
@@ -88,13 +87,33 @@ export default function PredictionsTab({ reportName, datasetName, rootPath }: Pr
 
   const passCount = useMemo(() => predictions.filter((p) => p.NScore >= threshold).length, [predictions, threshold])
   const failCount = predictions.length - passCount
-  const total = filtered.length
-  const row = total > 0 ? filtered[Math.min(page - 1, total - 1)] : null
+  const totalPages = filtered.length
+  const row = totalPages > 0 ? filtered[Math.min(page - 1, totalPages - 1)] : null
+
+  const filtered_counts = {
+    all: predictions.length,
+    pass: passCount,
+    fail: failCount,
+  }
 
   // Reset page when filter changes
   useEffect(() => {
     setPage(1)
   }, [mode, threshold, selectedSubset])
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (e.key === 'ArrowLeft' && page > 1) {
+        setPage(p => p - 1)
+      } else if (e.key === 'ArrowRight' && page < totalPages) {
+        setPage(p => p + 1)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [page, totalPages])
 
   const viewTabs = [
     { key: 'chat', label: t('prediction.chatView') },
@@ -121,24 +140,46 @@ export default function PredictionsTab({ reportName, datasetName, rootPath }: Pr
 
       {!loading && predictions.length > 0 && (
         <>
-          {/* Controls row */}
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex flex-wrap gap-1">
-              {([['All', predictions.length], ['Pass', passCount], ['Fail', failCount]] as const).map(([m, count]) => (
-                <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                    mode === m
-                      ? 'bg-[var(--color-primary)] text-white'
-                      : 'bg-[var(--color-surface)] text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]'
-                  }`}
-                >
-                  {m} ({count})
-                </button>
-              ))}
+          {/* Row 1: Filters + Threshold */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem' }}>
+            {/* Segmented filter control */}
+            <div style={{
+              display: 'inline-flex',
+              borderRadius: 'var(--radius)',
+              border: '1px solid var(--border-md)',
+              overflow: 'hidden',
+            }}>
+              {(['All', 'Pass', 'Fail'] as const).map((m, idx, arr) => {
+                const count = m === 'All' ? filtered_counts.all : m === 'Pass' ? filtered_counts.pass : filtered_counts.fail
+                const isActive = mode === m
+                return (
+                  <button
+                    key={m}
+                    onClick={() => { setMode(m); setPage(1) }}
+                    style={{
+                      padding: '0.625rem 1.25rem',
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      background: isActive ? 'var(--accent)' : 'var(--bg-card2)',
+                      color: isActive ? '#fff' : 'var(--text-muted)',
+                      border: 'none',
+                      borderRight: idx < arr.length - 1 ? '1px solid var(--border-md)' : 'none',
+                      cursor: 'pointer',
+                      transition: 'var(--transition)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    {m}
+                    <span style={{ opacity: 0.7 }}>{count}</span>
+                  </button>
+                )
+              })}
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Threshold input */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <label className="text-xs text-[var(--text-muted)]">{t('single.scoreThreshold')}</label>
               <input
                 type="number"
@@ -150,17 +191,64 @@ export default function PredictionsTab({ reportName, datasetName, rootPath }: Pr
                 className="w-20 px-2 py-1 text-sm rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
               />
             </div>
-            <div className="ml-auto">
+          </div>
+
+          {/* Row 2: Sample nav + View mode */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {/* Left arrow */}
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--border)',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: page <= 1 ? 'not-allowed' : 'pointer',
+                opacity: page <= 1 ? 0.3 : 1,
+                color: 'var(--text)',
+                transition: 'var(--transition)',
+              }}
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            {/* Sample X / Y */}
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontVariantNumeric: 'tabular-nums' }}>
+              Sample {page} / {totalPages}
+            </span>
+
+            {/* Right arrow */}
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--border)',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: page >= totalPages ? 'not-allowed' : 'pointer',
+                opacity: page >= totalPages ? 0.3 : 1,
+                color: 'var(--text)',
+                transition: 'var(--transition)',
+              }}
+            >
+              <ChevronRight size={16} />
+            </button>
+
+            {/* View mode tabs pushed right */}
+            <div style={{ marginLeft: 'auto' }}>
               <Tabs tabs={viewTabs} activeKey={viewMode} onChange={(k) => setViewMode(k as ViewMode)} />
             </div>
           </div>
-
-          {/* Pagination bar */}
-          <Card>
-            <div className="flex items-center justify-end">
-              <Pagination page={page} total={total} onChange={setPage} />
-            </div>
-          </Card>
 
           {/* Content area */}
           {row && (

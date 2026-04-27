@@ -119,6 +119,15 @@ export default function ReportsPage() {
     }
   }, [rootPath, filters.sortBy, filters.sortOrder, clearCompareSelection])
 
+  // Auto-scan on mount if rootPath is available
+  const hasAutoScanned = useRef(false)
+  useEffect(() => {
+    if (rootPath && !hasScanned && !hasAutoScanned.current) {
+      hasAutoScanned.current = true
+      handleScan()
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ---- Selection helpers ----
   const currentPageNames = useMemo(() => reports.map((r) => r.name), [reports])
 
