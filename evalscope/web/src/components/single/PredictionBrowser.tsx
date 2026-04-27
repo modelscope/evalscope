@@ -105,5 +105,3 @@ export default function PredictionBrowser({ predictions }: Props) {
     </div>
   )
 }
-
-

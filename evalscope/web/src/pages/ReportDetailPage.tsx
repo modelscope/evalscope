@@ -36,6 +36,7 @@ export default function ReportDetailPage() {
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState<TabKey>('overview')
   const [activeDataset, setActiveDataset] = useState('')
+  const [initialSubset, setInitialSubset] = useState<string | undefined>(undefined)
 
   // Load report on mount
   useEffect(() => {
@@ -80,9 +81,16 @@ export default function ReportDetailPage() {
   // Handler: switch dataset and auto-navigate to details tab
   const handleDatasetChange = (ds: string) => {
     setActiveDataset(ds)
+    setInitialSubset(undefined)
     if (activeTab === 'overview') {
       setActiveTab('details')
     }
+  }
+
+  // Handler: click a subset name in DetailsTab → jump to Predictions with that subset pre-selected
+  const handleSubsetClick = (subset: string) => {
+    setInitialSubset(subset)
+    setActiveTab('predictions')
   }
 
   const tabs = [
@@ -195,14 +203,17 @@ export default function ReportDetailPage() {
                 datasetName={activeDataset}
                 rootPath={rootPath}
                 perfMetrics={reportList.find((r) => r.dataset_name === activeDataset)?.perf_metrics}
+                overallScore={reportList.find((r) => r.dataset_name === activeDataset)?.score}
+                onSubsetClick={handleSubsetClick}
               />
             )}
             {activeTab === 'predictions' && (
               <PredictionsTab
-                key={activeDataset}
+                key={`${activeDataset}-${initialSubset ?? ''}`}
                 reportName={reportName}
                 datasetName={activeDataset}
                 rootPath={rootPath}
+                initialSubset={initialSubset}
               />
             )}
           </div>

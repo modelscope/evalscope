@@ -15,11 +15,12 @@ interface Props {
   datasetName: string
   rootPath: string
   report?: ReportData
+  initialSubset?: string
 }
 
 type ViewMode = 'chat' | 'flat'
 
-export default function PredictionsTab({ reportName, datasetName, rootPath }: Props) {
+export default function PredictionsTab({ reportName, datasetName, rootPath, initialSubset }: Props) {
   const { t } = useLocale()
   const [subsets, setSubsets] = useState<string[]>([])
   const [selectedSubset, setSelectedSubset] = useState('')
@@ -47,7 +48,9 @@ export default function PredictionsTab({ reportName, datasetName, rootPath }: Pr
           if (name && !subNames.includes(name)) subNames.push(name)
         }
         setSubsets(subNames)
-        setSelectedSubset(subNames[0] ?? '')
+        // Use initialSubset if provided and valid, otherwise fallback to first
+        const target = initialSubset && subNames.includes(initialSubset) ? initialSubset : (subNames[0] ?? '')
+        setSelectedSubset(target)
         setPredictions([])
       } catch (e) {
         console.error('Failed to load subsets:', e)
@@ -55,7 +58,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath }: Pr
     }
     loadSubsets()
     return () => { cancelled = true }
-  }, [datasetName, reportName, rootPath])
+  }, [datasetName, reportName, rootPath, initialSubset])
 
   // Load predictions when subset changes
   const loadPredictions = useCallback(async () => {

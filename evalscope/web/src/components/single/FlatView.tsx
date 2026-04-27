@@ -5,6 +5,7 @@ import { useLocale } from '@/contexts/LocaleContext'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import ScoreBadge from '@/components/common/ScoreBadge'
 import { prettyJson } from '@/utils/formatUtils'
+import JsonViewer from '@/components/common/JsonViewer'
 
 interface Props {
   prediction: PredictionRow
@@ -189,12 +190,7 @@ export default function FlatView({ prediction, threshold = 0.99 }: Props) {
               threshold: {threshold}
             </span>
           </div>
-          <pre
-            className="text-xs font-mono whitespace-pre-wrap break-all p-3 rounded-xl"
-            style={{ background: 'var(--color-surface)', color: 'var(--color-ink-muted)' }}
-          >
-            {scoreStr}
-          </pre>
+          <JsonViewer value={prediction.Score} maxHeight={300} />
         </div>
       </SectionCard>
 
@@ -209,12 +205,7 @@ export default function FlatView({ prediction, threshold = 0.99 }: Props) {
           collapsible={isLargeMetadata}
           defaultOpen={!isLargeMetadata}
         >
-          <pre
-            className="text-xs font-mono whitespace-pre-wrap break-all"
-            style={{ color: 'var(--color-ink-muted)' }}
-          >
-            {metaStr}
-          </pre>
+          <JsonViewer value={prediction.Metadata} maxHeight={400} />
         </SectionCard>
       )}
     </div>
