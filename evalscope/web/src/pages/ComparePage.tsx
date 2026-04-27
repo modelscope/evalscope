@@ -8,7 +8,7 @@ import { parseReportName } from '@/utils/reportParser'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Card from '@/components/ui/Card'
 import Tabs from '@/components/ui/Tabs'
-import Table, { scoreColor } from '@/components/ui/Table'
+import { scoreColor } from '@/components/ui/Table'
 import FilterChip from '@/components/ui/FilterChip'
 import Button from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
@@ -387,6 +387,11 @@ export default function ComparePage() {
 // Score Comparison Tab                                                 //
 // ------------------------------------------------------------------ //
 
+const scoreBg = (score: number) => {
+  const hue = Math.round(score * 120)
+  return `hsla(${hue}, 70%, 45%, 0.12)`
+}
+
 function ScoreTab({
   rootPath,
   reportNames,
@@ -400,15 +405,17 @@ function ScoreTab({
   scoreTableData: Record<string, unknown>[]
   t: (p: string) => string
 }) {
+  // Extract model names from columns (skip first 'dataset' column)
+  const modelNames = scoreTableColumns.slice(1).map((c) => c.key)
+
+  // Separate data rows from avg row (avg row is last if present)
+  const dataRows = scoreTableData.slice(0, -1)
+  const avgRow = scoreTableData.length > 0 ? scoreTableData[scoreTableData.length - 1] : null
+  const hasAvgRow = avgRow && avgRow.dataset === t('compare.average')
+  const bodyRows = hasAvgRow ? dataRows : scoreTableData
+
   return (
     <div className="flex flex-col gap-6">
-      {/* Grouped Bar Chart */}
-      <PlotlyChart
-        src={getChartUrl(rootPath, 'scores', { reportNames })}
-        height={450}
-        title={t('compare.scoreComparison')}
-      />
-
       {/* Radar Chart */}
       <PlotlyChart
         src={getChartUrl(rootPath, 'radar', { reportNames })}
@@ -416,10 +423,104 @@ function ScoreTab({
         title={t('multi.modelRadar')}
       />
 
-      {/* Comparison Table */}
-      <Card title={t('multi.modelScores')}>
-        <Table columns={scoreTableColumns} data={scoreTableData} />
-      </Card>
+      {/* Custom Score Matrix */}
+      <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden shadow-[var(--shadow-sm)]">
+        {/* Title bar */}
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+              {t('multi.modelScores')}
+            </h3>
+          </div>
+        </div>
+
+        {scoreTableData.length === 0 ? (
+          <div className="py-12 text-center text-sm text-[var(--text-dim)]">{t('common.noData')}</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="border-b border-[var(--border)]">
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">
+                    Dataset
+                  </th>
+                  {modelNames.map((m) => (
+                    <th
+                      key={m}
+                      className="px-4 py-2.5 text-center text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide"
+                    >
+                      {parseReportName(m).model || m}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {bodyRows.map((row, rowIdx) => (
+                  <tr
+                    key={rowIdx}
+                    className={`hover:bg-[var(--bg-card2)] transition-colors ${rowIdx % 2 === 1 ? 'bg-[var(--bg-deep)]/30' : ''}`}
+                  >
+                    <td className="px-4 py-2.5 text-left text-sm text-[var(--text)]">
+                      {row.dataset as string}
+                    </td>
+                    {modelNames.map((m) => {
+                      const score = row[m] as number
+                      const isBest = row[`${m}_best`] as boolean
+                      return (
+                        <td key={m} className="px-4 py-2.5 text-center">
+                          <span
+                            className="rounded-md px-3 py-1 inline-block"
+                            style={{
+                              background: scoreBg(score),
+                              color: scoreColor(score),
+                              fontWeight: isBest ? 700 : undefined,
+                            }}
+                          >
+                            {isBest && (
+                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)] mr-1.5 align-middle" />
+                            )}
+                            {(score * 100).toFixed(1)}%
+                          </span>
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+
+                {/* Average row */}
+                {hasAvgRow && avgRow && (
+                  <tr className="border-t border-[var(--border-md)] bg-[var(--bg-card2)] hover:bg-[var(--bg-card2)] transition-colors">
+                    <td className="px-4 py-2.5 text-left text-sm font-semibold text-[var(--accent)]">
+                      {avgRow.dataset as string}
+                    </td>
+                    {modelNames.map((m) => {
+                      const score = avgRow[m] as number
+                      const isBest = avgRow[`${m}_best`] as boolean
+                      return (
+                        <td key={m} className="px-4 py-2.5 text-center">
+                          <span
+                            className="rounded-md px-3 py-1 inline-block"
+                            style={{
+                              background: scoreBg(score),
+                              color: scoreColor(score),
+                              fontWeight: isBest ? 700 : undefined,
+                            }}
+                          >
+                            {isBest && (
+                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)] mr-1.5 align-middle" />
+                            )}
+                            {(score * 100).toFixed(1)}%
+                          </span>
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

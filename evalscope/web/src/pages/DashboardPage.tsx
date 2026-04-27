@@ -34,6 +34,16 @@ function scoreBg(score: number): string {
   return `hsla(${hue}, 70%, 45%, 0.15)`
 }
 
+/** 格式化时间戳为 YYYY-MM-DD HH:MM:SS */
+function formatTimestamp(ts: string): string {
+  return ts.replace('T', ' ').slice(0, 19)
+}
+
+/** 格式化时间戳为短格式 MM-DD HH:MM */
+function formatTimestampShort(ts: string): string {
+  return ts.replace('T', ' ').slice(5, 16)
+}
+
 // ------------------------------------------------------------------ //
 // KPI Card                                                            //
 // ------------------------------------------------------------------ //
@@ -43,12 +53,14 @@ interface KpiCardProps {
   label: string
   gradient: string
   delay?: number
+  onClick?: () => void
 }
 
-function KpiCard({ icon, value, label, gradient, delay = 0 }: KpiCardProps) {
+function KpiCard({ icon, value, label, gradient, delay = 0, onClick }: KpiCardProps) {
   return (
     <div
-      className="kpi-card"
+      className={`kpi-card group${onClick ? ' cursor-pointer' : ''}`}
+      onClick={onClick}
       style={{
         animationDelay: `${delay}ms`,
         background: 'linear-gradient(135deg, rgba(129,109,248,0.10) 0%, rgba(129,109,248,0.03) 100%)',
@@ -56,7 +68,18 @@ function KpiCard({ icon, value, label, gradient, delay = 0 }: KpiCardProps) {
         borderRadius: 'var(--radius)',
         padding: '1.25rem',
         backdropFilter: 'blur(12px)',
+        transition: 'border-color 0.15s, transform 0.15s',
       }}
+      onMouseEnter={onClick ? (e) => {
+        const el = e.currentTarget as HTMLDivElement
+        el.style.borderColor = 'var(--border-md)'
+        el.style.transform = 'scale(1.02)'
+      } : undefined}
+      onMouseLeave={onClick ? (e) => {
+        const el = e.currentTarget as HTMLDivElement
+        el.style.borderColor = 'var(--border)'
+        el.style.transform = 'scale(1)'
+      } : undefined}
     >
       <div className="flex items-start justify-between mb-3">
         <div
@@ -80,7 +103,7 @@ function DatasetChip({ name, score }: { name: string; score: number }) {
   const bg = scoreBg(score)
   return (
     <span
-      className="px-2 py-0.5 rounded-full text-[10px] font-mono whitespace-nowrap"
+      className="px-2 py-0.5 rounded-full text-xs font-mono whitespace-nowrap"
       style={{ background: bg, color: fg }}
     >
       {name} {(score * 100).toFixed(1)}
@@ -105,35 +128,37 @@ function EvalRunCard({ report, onClick }: EvalRunCardProps) {
   return (
     <button
       onClick={onClick}
-      className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--border-md)] transition-colors p-4 cursor-pointer w-full text-left"
+      className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--border-md)] transition-colors p-4 sm:p-5 cursor-pointer w-full text-left"
     >
-      {/* Top row */}
+      {/* First row: model name + score badge */}
       <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-[var(--text)] truncate flex-1 min-w-0">
+        <span className="text-base font-bold text-[var(--text)] truncate flex-1 min-w-0">
           {report.model_name}
         </span>
-        {report.timestamp && (
-          <span className="text-[10px] font-mono text-[var(--text-dim)] shrink-0">
-            {report.timestamp.replace('T', ' ')}
-          </span>
-        )}
         <span
-          className="shrink-0 px-2.5 py-0.5 rounded-full text-xs font-bold tabular-nums"
+          className="shrink-0 px-2.5 py-0.5 rounded-full text-sm font-bold tabular-nums"
           style={{ background: bg, color: fg }}
         >
           {(score * 100).toFixed(1)}%
         </span>
       </div>
 
-      {/* Dataset chips */}
-      <div className="flex flex-wrap gap-1.5 mt-2">
-        {dsScores && Object.keys(dsScores).length > 0 ? (
-          Object.entries(dsScores).map(([ds, s]) => (
-            <DatasetChip key={ds} name={ds} score={s} />
-          ))
-        ) : (
-          <span className="text-[10px] text-[var(--text-dim)] font-mono">{report.dataset_name}</span>
+      {/* Second row: timestamp + dataset chips */}
+      <div className="flex items-center gap-2 mt-2 flex-wrap">
+        {report.timestamp && (
+          <span className="text-xs font-mono text-[var(--text-dim)] shrink-0">
+            {formatTimestamp(report.timestamp)}
+          </span>
         )}
+        <div className="flex flex-wrap gap-1.5">
+          {dsScores && Object.keys(dsScores).length > 0 ? (
+            Object.entries(dsScores).map(([ds, s]) => (
+              <DatasetChip key={ds} name={ds} score={s} />
+            ))
+          ) : (
+            <span className="text-xs text-[var(--text-dim)] font-mono">{report.dataset_name}</span>
+          )}
+        </div>
       </div>
     </button>
   )
@@ -159,8 +184,8 @@ function CompactRunRow({ report, onClick }: CompactRunRowProps) {
       className="flex items-center gap-3 py-2.5 px-3 rounded-[var(--radius-sm)] hover:bg-[var(--bg-card2)] transition-colors w-full text-left"
     >
       {report.timestamp && (
-        <span className="text-[10px] font-mono text-[var(--text-dim)] shrink-0 w-[110px]">
-          {report.timestamp.replace('T', ' ').slice(5)}
+        <span className="text-xs font-mono text-[var(--text-dim)] shrink-0 w-[110px]">
+          {formatTimestampShort(report.timestamp)}
         </span>
       )}
       <div className="flex flex-wrap gap-1 flex-1 min-w-0">
@@ -169,11 +194,11 @@ function CompactRunRow({ report, onClick }: CompactRunRowProps) {
             <DatasetChip key={ds} name={ds} score={s} />
           ))
         ) : (
-          <span className="text-[10px] text-[var(--text-dim)] font-mono">{report.dataset_name}</span>
+          <span className="text-xs text-[var(--text-dim)] font-mono">{report.dataset_name}</span>
         )}
       </div>
       <span
-        className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold tabular-nums"
+        className="shrink-0 px-2 py-0.5 rounded-full text-xs font-bold tabular-nums"
         style={{ background: bg, color: fg }}
       >
         {(score * 100).toFixed(1)}%
@@ -260,7 +285,7 @@ export default function DashboardPage() {
     const models = new Set(reports.map((r) => r.model_name))
     const datasets = new Set(reports.map((r) => r.dataset_name))
     const latest = reports.length > 0
-      ? (reports[0].timestamp || reports[0].name).replace('T', ' ')
+      ? formatTimestamp(reports[0].timestamp || reports[0].name)
       : t('dashboard.neverText')
     return { totalEvals, models: models.size, datasets: datasets.size, latest }
   }, [reports, t])
@@ -358,6 +383,7 @@ export default function DashboardPage() {
             label={t('dashboard.totalEvaluations')}
             gradient="linear-gradient(135deg, #6366f1, #8b5cf6)"
             delay={0}
+            onClick={() => navigate(`/reports?root_path=${encodeURIComponent(rootPath)}`)}
           />
           <KpiCard
             icon={<Cpu size={18} strokeWidth={2} />}
@@ -365,6 +391,7 @@ export default function DashboardPage() {
             label={t('dashboard.modelsEvaluated')}
             gradient="linear-gradient(135deg, #10b981, #06b6d4)"
             delay={60}
+            onClick={() => navigate(`/reports?root_path=${encodeURIComponent(rootPath)}`)}
           />
           <KpiCard
             icon={<Database size={18} strokeWidth={2} />}
@@ -372,6 +399,7 @@ export default function DashboardPage() {
             label={t('dashboard.datasetsUsed')}
             gradient="linear-gradient(135deg, #f59e0b, #f97316)"
             delay={120}
+            onClick={() => navigate(`/reports?root_path=${encodeURIComponent(rootPath)}`)}
           />
           <KpiCard
             icon={<Clock size={18} strokeWidth={2} />}
@@ -379,6 +407,7 @@ export default function DashboardPage() {
             label={t('dashboard.latestEval')}
             gradient="linear-gradient(135deg, #ec4899, #8b5cf6)"
             delay={180}
+            onClick={() => reports.length > 0 && navigateToReport(reports[0])}
           />
         </div>
       )}
@@ -495,11 +524,11 @@ export default function DashboardPage() {
                         ) : (
                           <ChevronRight size={14} className="text-[var(--text-dim)] shrink-0" />
                         )}
-                        <span className="text-sm font-semibold text-[var(--text)]">{model}</span>
-                        <span className="text-[10px] text-[var(--text-dim)] font-mono">
+                        <span className="text-base font-bold text-[var(--text)]">{model}</span>
+                        <span className="text-sm text-[var(--text-dim)] font-mono">
                           ({runs.length} {t('dashboard.runs')})
                         </span>
-                        <span className="ml-auto text-[10px] font-mono" style={{ color: bestFg }}>
+                        <span className="ml-auto text-sm font-mono" style={{ color: bestFg }}>
                           {t('dashboard.bestScore')}: {(bestScore * 100).toFixed(1)}%
                         </span>
                       </button>

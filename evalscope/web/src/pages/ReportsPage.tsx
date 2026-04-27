@@ -222,15 +222,37 @@ export default function ReportsPage() {
       {/* Action bar */}
       {hasScanned && reports.length > 0 && (
         <div className="flex items-center gap-3 flex-wrap">
-          <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] cursor-pointer">
-            <input
-              type="checkbox"
-              checked={allSelected}
-              onChange={handleSelectAll}
-              className="accent-[var(--accent)] w-4 h-4"
-            />
+          <button
+            type="button"
+            onClick={handleSelectAll}
+            className="flex items-center gap-2 text-sm text-[var(--text-muted)] cursor-pointer hover:text-[var(--text)] transition-colors"
+          >
+            <span
+              role="checkbox"
+              aria-checked={allSelected}
+              className="w-4.5 h-4.5 rounded-[var(--radius-xs)] border-2 flex items-center justify-center transition-all duration-150 shrink-0"
+              style={{
+                borderColor: allSelected ? 'var(--accent)' : 'var(--border-strong)',
+                background: allSelected ? 'var(--accent)' : 'transparent',
+              }}
+            >
+              {allSelected && (
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="2,6 5,9 10,3" />
+                </svg>
+              )}
+            </span>
             {t('reports.selectAll')}
-          </label>
+          </button>
           {selectedForCompare.length > 0 && (
             <span className="text-xs text-[var(--text-muted)]">
               {selectedForCompare.length} {t('reports.selected')}

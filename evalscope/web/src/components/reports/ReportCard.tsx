@@ -14,16 +14,45 @@ function scoreColor(score: number): string {
   return `hsl(${score * 120}, 70%, 45%)`
 }
 
+function formatTimestamp(ts: string): string {
+  return ts.replace('T', ' ').slice(0, 19)
+}
+
+function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      onClick={onChange}
+      className="w-4.5 h-4.5 rounded-[var(--radius-xs)] border-2 flex items-center justify-center transition-all duration-150 cursor-pointer shrink-0"
+      style={{
+        borderColor: checked ? 'var(--accent)' : 'var(--border-strong)',
+        background: checked ? 'var(--accent)' : 'transparent',
+      }}
+    >
+      {checked && (
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 12 12"
+          fill="none"
+          stroke="white"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="2,6 5,9 10,3" />
+        </svg>
+      )}
+    </button>
+  )
+}
+
 export default function ReportCard({ report, selected, onSelect, onClick }: ReportCardProps) {
   const { t } = useLocale()
 
-  const formattedDate = report.timestamp
-    ? new Date(report.timestamp).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      })
-    : '—'
+  const formattedDate = report.timestamp ? formatTimestamp(report.timestamp) : '—'
 
   return (
     <div
@@ -37,38 +66,45 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
       onClick={() => onClick(report.name)}
     >
       {/* Checkbox */}
-      <input
-        type="checkbox"
-        checked={selected}
-        onChange={(e) => {
+      <div
+        onClick={(e) => {
           e.stopPropagation()
-          onSelect(report.name)
         }}
-        onClick={(e) => e.stopPropagation()}
-        className="accent-[var(--accent)] w-4 h-4 shrink-0 cursor-pointer"
-      />
+      >
+        <Checkbox
+          checked={selected}
+          onChange={() => onSelect(report.name)}
+        />
+      </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-semibold text-sm text-[var(--text)] truncate">
-            {report.model_name}
-          </span>
-          <span className="text-[var(--text-dim)] text-xs">::</span>
-          <span className="text-sm text-[var(--text-muted)] truncate">
-            {report.dataset_name}
-          </span>
+      <div className="flex-1 min-w-0 flex items-center gap-4">
+        {/* Model + Dataset */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="font-bold text-base text-[var(--text)] truncate">
+              {report.model_name}
+            </span>
+            <span className="text-[var(--text-dim)] text-xs">·</span>
+            <span className="text-sm text-[var(--text-muted)] truncate">
+              {report.dataset_name}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 mt-0.5">
+            <span className="text-xs text-[var(--text-dim)]">
+              {t('reports.samples')}: {report.num_samples}
+            </span>
+            <span className="text-xs text-[var(--text-dim)]">{formattedDate}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-3 mt-1 text-xs text-[var(--text-muted)]">
-          <span
-            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono font-medium"
-            style={{ backgroundColor: `${scoreColor(report.score)}20`, color: scoreColor(report.score) }}
-          >
-            {report.score.toFixed(4)}
-          </span>
-          <span>{t('reports.samples')}: {report.num_samples}</span>
-          <span>{formattedDate}</span>
-        </div>
+
+        {/* Score badge */}
+        <span
+          className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-mono font-semibold shrink-0"
+          style={{ backgroundColor: `${scoreColor(report.score)}20`, color: scoreColor(report.score) }}
+        >
+          {report.score.toFixed(4)}
+        </span>
       </div>
 
       {/* Chevron */}
