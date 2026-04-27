@@ -5,13 +5,10 @@ import type { PredictionRow, ReportData } from '@/api/types'
 import { getPredictions, getDataFrame } from '@/api/reports'
 import Select from '@/components/ui/Select'
 
-import ScoreBadge from '@/components/common/ScoreBadge'
-import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import ChatView from '@/components/single/ChatView'
 import FlatView from '@/components/single/FlatView'
 import Tabs from '@/components/ui/Tabs'
 import Skeleton from '@/components/ui/Skeleton'
-import { prettyJson } from '@/utils/formatUtils'
 
 interface Props {
   reportName: string
@@ -20,7 +17,7 @@ interface Props {
   report?: ReportData
 }
 
-type ViewMode = 'chat' | 'flat' | 'table'
+type ViewMode = 'chat' | 'flat'
 
 export default function PredictionsTab({ reportName, datasetName, rootPath }: Props) {
   const { t } = useLocale()
@@ -118,7 +115,6 @@ export default function PredictionsTab({ reportName, datasetName, rootPath }: Pr
   const viewTabs = [
     { key: 'chat', label: t('prediction.chatView') },
     { key: 'flat', label: t('prediction.flatView') },
-    { key: 'table', label: t('prediction.tableView') },
   ]
 
   const subsetOptions = subsets.map((s) => ({ value: s, label: s }))
@@ -255,30 +251,6 @@ export default function PredictionsTab({ reportName, datasetName, rootPath }: Pr
             <div className="transition-all duration-200">
               {viewMode === 'chat' && <ChatView prediction={row} threshold={threshold} />}
               {viewMode === 'flat' && <FlatView prediction={row} threshold={threshold} />}
-              {viewMode === 'table' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <TablePanel title="Score">
-                    <pre className="text-xs font-mono whitespace-pre-wrap break-all text-[var(--text-muted)]">
-                      {prettyJson(row.Score)}
-                    </pre>
-                  </TablePanel>
-                  <TablePanel title={t('common.normalizedScore')}>
-                    <ScoreBadge score={row.NScore} threshold={threshold} />
-                  </TablePanel>
-                  <TablePanel title={t('common.gold')}>
-                    <MarkdownRenderer content={formatValue(row.Gold)} />
-                  </TablePanel>
-                  <TablePanel title={t('common.pred')}>
-                    <MarkdownRenderer content={formatValue(row.Pred)} />
-                  </TablePanel>
-                  <TablePanel title={t('common.input')}>
-                    <MarkdownRenderer content={formatValue(row.Input)} />
-                  </TablePanel>
-                  <TablePanel title={t('common.generated')}>
-                    <MarkdownRenderer content={formatValue(row.Generated)} />
-                  </TablePanel>
-                </div>
-              )}
             </div>
           )}
         </>
@@ -289,19 +261,4 @@ export default function PredictionsTab({ reportName, datasetName, rootPath }: Pr
       )}
     </div>
   )
-}
-
-function TablePanel({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-4">
-      <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-dim)] mb-2">{title}</h5>
-      <div className="max-h-[300px] overflow-auto">{children}</div>
-    </div>
-  )
-}
-
-function formatValue(val: unknown): string {
-  if (val === null || val === undefined) return ''
-  if (typeof val === 'object') return '```json\n' + JSON.stringify(val, null, 2) + '\n```'
-  return String(val)
 }

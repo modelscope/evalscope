@@ -45,7 +45,12 @@ export interface PerfMetricsSummary {
     input_tokens: PercentileStats
     output_tokens: PercentileStats
     total_tokens: PercentileStats
+    total_input_tokens?: number
+    total_output_tokens?: number
+    total_tokens_count?: number
   }
+  ttft?: PercentileStats
+  tpot?: PercentileStats
 }
 
 export interface PerfMetrics {

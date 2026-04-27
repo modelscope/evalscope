@@ -106,7 +106,7 @@ export default function ReportDetailPage() {
       <div className="page-enter p-6">
         <Breadcrumb
           items={[
-            { label: 'Reports', href: '/reports' },
+            { label: 'Reports', href: `/reports?root_path=${encodeURIComponent(rootPath)}` },
             { label: breadcrumbLabel || 'Detail' },
           ]}
         />
@@ -122,7 +122,7 @@ export default function ReportDetailPage() {
       {/* Breadcrumb */}
       <Breadcrumb
         items={[
-          { label: 'Reports', href: '/reports' },
+          { label: 'Reports', href: `/reports?root_path=${encodeURIComponent(rootPath)}` },
           { label: breadcrumbLabel },
         ]}
       />

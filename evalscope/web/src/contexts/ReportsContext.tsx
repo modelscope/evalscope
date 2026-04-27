@@ -125,9 +125,16 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     async (names: string[]) => {
       dispatch({ type: 'SET_LOADING', loading: true })
       try {
-        const res = await reportsApi.loadMultiReport(state.rootPath, names)
-        dispatch({ type: 'SET_MULTI', list: res.report_list })
-        return res.report_list
+        // Load each report individually to preserve the source reportName mapping.
+        // This avoids data collisions when multiple reports share the same model_name.
+        const results = await Promise.all(
+          names.map((name) => reportsApi.loadReport(state.rootPath, name))
+        )
+        const list = results.flatMap((res, i) =>
+          res.report_list.map((r) => ({ ...r, _reportName: names[i] }))
+        )
+        dispatch({ type: 'SET_MULTI', list })
+        return list
       } finally {
         dispatch({ type: 'SET_LOADING', loading: false })
       }

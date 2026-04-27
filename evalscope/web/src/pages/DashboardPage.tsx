@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useReports } from '@/contexts/ReportsContext'
 import { useLocale } from '@/contexts/LocaleContext'
@@ -241,7 +241,8 @@ export default function DashboardPage() {
   const [scanned, setScanned] = useState(false)
 
   // Evaluation list state
-  const [view, setView] = useState<'timeline' | 'grouped'>('timeline')
+  const [view, setView] = useState<'timeline' | 'grouped' | 'byDataset'>('timeline')
+  const evalListRef = useRef<HTMLDivElement>(null)
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('time')
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
@@ -274,10 +275,7 @@ export default function DashboardPage() {
   }, [])
 
   // Initialize expanded groups when reports change
-  useEffect(() => {
-    const models = new Set(reports.map(r => r.model_name))
-    setExpandedGroups(models)
-  }, [reports])
+  // (removed: default to collapsed)
 
   // KPI stats
   const kpiStats = useMemo(() => {
@@ -315,6 +313,17 @@ export default function DashboardPage() {
       const list = map.get(r.model_name) || []
       list.push(r)
       map.set(r.model_name, list)
+    }
+    return Array.from(map.entries())
+  }, [sortedReports])
+
+  // Grouped by dataset
+  const groupedByDataset = useMemo(() => {
+    const map = new Map<string, ReportSummary[]>()
+    for (const r of sortedReports) {
+      const list = map.get(r.dataset_name) || []
+      list.push(r)
+      map.set(r.dataset_name, list)
     }
     return Array.from(map.entries())
   }, [sortedReports])
@@ -383,7 +392,7 @@ export default function DashboardPage() {
             label={t('dashboard.totalEvaluations')}
             gradient="linear-gradient(135deg, #6366f1, #8b5cf6)"
             delay={0}
-            onClick={() => navigate(`/reports?root_path=${encodeURIComponent(rootPath)}`)}
+            onClick={() => { setView('timeline'); evalListRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
           />
           <KpiCard
             icon={<Cpu size={18} strokeWidth={2} />}
@@ -391,7 +400,7 @@ export default function DashboardPage() {
             label={t('dashboard.modelsEvaluated')}
             gradient="linear-gradient(135deg, #10b981, #06b6d4)"
             delay={60}
-            onClick={() => navigate(`/reports?root_path=${encodeURIComponent(rootPath)}`)}
+            onClick={() => { setView('grouped'); evalListRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
           />
           <KpiCard
             icon={<Database size={18} strokeWidth={2} />}
@@ -399,7 +408,7 @@ export default function DashboardPage() {
             label={t('dashboard.datasetsUsed')}
             gradient="linear-gradient(135deg, #f59e0b, #f97316)"
             delay={120}
-            onClick={() => navigate(`/reports?root_path=${encodeURIComponent(rootPath)}`)}
+            onClick={() => { setView('byDataset'); evalListRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
           />
           <KpiCard
             icon={<Clock size={18} strokeWidth={2} />}
@@ -421,7 +430,7 @@ export default function DashboardPage() {
 
       {/* ── Unified Evaluation List ── */}
       {hasData && !scanning && (
-        <Card
+        <div ref={evalListRef}><Card
           title={t('dashboard.evaluations')}
           badge={<Badge>{sortedReports.length}</Badge>}
         >
@@ -464,6 +473,20 @@ export default function DashboardPage() {
               >
                 {t('dashboard.groupedView')}
               </button>
+              <button
+                onClick={() => setView('byDataset')}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '12px',
+                  background: view === 'byDataset' ? 'var(--accent)' : 'var(--bg-card2)',
+                  color: view === 'byDataset' ? '#fff' : 'var(--text-muted)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {t('dashboard.byDatasetView')}
+              </button>
             </div>
 
             {/* Search */}
@@ -504,7 +527,7 @@ export default function DashboardPage() {
                   />
                 ))}
               </div>
-            ) : (
+            ) : view === 'grouped' ? (
               /* ── Grouped view ── */
               <div className="flex flex-col gap-2">
                 {grouped.map(([model, runs]) => {
@@ -549,9 +572,54 @@ export default function DashboardPage() {
                   )
                 })}
               </div>
-            )}
+            ) : view === 'byDataset' ? (
+              /* ── By Dataset view ── */
+              <div className="flex flex-col gap-2">
+                {groupedByDataset.map(([dataset, runs]) => {
+                  const expanded = expandedGroups.has(dataset)
+                  const bestScore = Math.max(...runs.map(r => r.score))
+                  const bestFg = scoreColor(bestScore)
+
+                  return (
+                    <div key={dataset} className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
+                      {/* Group header */}
+                      <button
+                        onClick={() => toggleGroup(dataset)}
+                        className="flex items-center gap-2 w-full px-4 py-3 hover:bg-[var(--bg-card2)] transition-colors text-left"
+                      >
+                        {expanded ? (
+                          <ChevronDown size={14} className="text-[var(--text-dim)] shrink-0" />
+                        ) : (
+                          <ChevronRight size={14} className="text-[var(--text-dim)] shrink-0" />
+                        )}
+                        <span className="text-base font-bold text-[var(--text)]">{dataset}</span>
+                        <span className="text-sm text-[var(--text-dim)] font-mono">
+                          ({runs.length} {t('dashboard.runs')})
+                        </span>
+                        <span className="ml-auto text-sm font-mono" style={{ color: bestFg }}>
+                          {t('dashboard.bestScore')}: {(bestScore * 100).toFixed(1)}%
+                        </span>
+                      </button>
+
+                      {/* Group entries */}
+                      {expanded && (
+                        <div className="border-t border-[var(--border)]">
+                          {runs.map((report) => (
+                            <CompactRunRow
+                              key={`${report.name}-${report.dataset_name}`}
+                              report={report}
+                              onClick={() => navigateToReport(report)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            ) : null}
           </div>
-        </Card>
+        </Card></div>
       )}
 
       {/* ── Empty state after scan ── */}

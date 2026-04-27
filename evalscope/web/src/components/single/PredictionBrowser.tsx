@@ -1,12 +1,9 @@
 import { useMemo, useState } from 'react'
-import { MessageCircle, LayoutList, Table } from 'lucide-react'
+import { MessageCircle, LayoutList } from 'lucide-react'
 import type { PredictionRow } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
 import FilterBar from '@/components/common/FilterBar'
 import Pagination from '@/components/common/Pagination'
-import ScoreBadge from '@/components/common/ScoreBadge'
-import MarkdownRenderer from '@/components/common/MarkdownRenderer'
-import { prettyJson } from '@/utils/formatUtils'
 import ChatView from './ChatView'
 import FlatView from './FlatView'
 
@@ -15,7 +12,7 @@ interface Props {
 }
 
 const ANSWER_MODES = ['All', 'Pass', 'Fail']
-type ViewMode = 'chat' | 'flat' | 'table'
+type ViewMode = 'chat' | 'flat'
 
 export default function PredictionBrowser({ predictions }: Props) {
   const { t } = useLocale()
@@ -41,7 +38,6 @@ export default function PredictionBrowser({ predictions }: Props) {
   const viewButtons: { key: ViewMode; icon: React.ReactNode; label: string }[] = [
     { key: 'chat', icon: <MessageCircle size={14} />, label: t('prediction.chatView') },
     { key: 'flat', icon: <LayoutList size={14} />, label: t('prediction.flatView') },
-    { key: 'table', icon: <Table size={14} />, label: t('prediction.tableView') },
   ]
 
   return (
@@ -104,45 +100,10 @@ export default function PredictionBrowser({ predictions }: Props) {
         <>
           {viewMode === 'chat' && <ChatView prediction={row} threshold={threshold} />}
           {viewMode === 'flat' && <FlatView prediction={row} threshold={threshold} />}
-          {viewMode === 'table' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Panel title="Score">
-                <pre className="text-xs font-mono whitespace-pre-wrap break-all">{prettyJson(row.Score)}</pre>
-              </Panel>
-              <Panel title={t('common.normalizedScore')}>
-                <ScoreBadge score={row.NScore} threshold={threshold} />
-              </Panel>
-              <Panel title={t('common.gold')}>
-                <MarkdownRenderer content={formatValue(row.Gold)} />
-              </Panel>
-              <Panel title={t('common.pred')}>
-                <MarkdownRenderer content={formatValue(row.Pred)} />
-              </Panel>
-              <Panel title={t('common.input')}>
-                <MarkdownRenderer content={formatValue(row.Input)} />
-              </Panel>
-              <Panel title={t('common.generated')}>
-                <MarkdownRenderer content={formatValue(row.Generated)} />
-              </Panel>
-            </div>
-          )}
         </>
       )}
     </div>
   )
 }
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-[var(--color-surface)] rounded-lg border border-[var(--color-border)] p-3">
-      <h5 className="text-xs font-medium text-[var(--color-ink-muted)] mb-2">{title}</h5>
-      <div className="max-h-[300px] overflow-auto">{children}</div>
-    </div>
-  )
-}
 
-function formatValue(val: unknown): string {
-  if (val === null || val === undefined) return ''
-  if (typeof val === 'object') return '```json\n' + JSON.stringify(val, null, 2) + '\n```'
-  return String(val)
-}

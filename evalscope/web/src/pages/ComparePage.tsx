@@ -4,7 +4,7 @@ import { useReports } from '@/contexts/ReportsContext'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { getPredictions, getChartUrl } from '@/api/reports'
 import type { ReportData } from '@/api/types'
-import { parseReportName } from '@/utils/reportParser'
+import { getDisplayNames, parseReportName } from '@/utils/reportParser'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Card from '@/components/ui/Card'
 import Tabs from '@/components/ui/Tabs'
@@ -86,30 +86,32 @@ export default function ComparePage() {
   // Score Tab Data                                                      //
   // ------------------------------------------------------------------ //
 
-  const { scoreTableData, scoreTableColumns } = useMemo(() => {
-    if (!reports.length) return { scoreTableData: [], scoreTableColumns: [] }
+  const { scoreTableData, scoreTableColumns, displayNames } = useMemo(() => {
+    const displayNames = getDisplayNames(reportNames)
+    if (!reports.length) return { scoreTableData: [], scoreTableColumns: [], displayNames }
 
-    const byModel: Record<string, Record<string, number>> = {}
+    const byReport: Record<string, Record<string, number>> = {}
     for (const r of reports) {
-      if (!byModel[r.model_name]) byModel[r.model_name] = {}
-      byModel[r.model_name][r.dataset_name] = r.score
+      const key = (r as ReportData & { _reportName?: string })._reportName ?? r.model_name
+      if (!byReport[key]) byReport[key] = {}
+      byReport[key][r.dataset_name] = r.score
     }
 
-    const modelNames = Object.keys(byModel)
-    const dsLists = modelNames.map((m) => new Set(Object.keys(byModel[m])))
+    const reportKeys = reportNames.filter((n) => byReport[n])
+    const dsLists = reportKeys.map((k) => new Set(Object.keys(byReport[k])))
     const common = dsLists.length
       ? [...dsLists.reduce((a, b) => new Set([...a].filter((x) => b.has(x))))]
       : []
     common.sort()
 
-    // Build table rows
+    // Build table rows: each row = one dataset, columns = reportKeys
     const rows: Record<string, unknown>[] = common.map((ds) => {
       const row: Record<string, unknown> = { dataset: ds }
-      const scores = modelNames.map((m) => byModel[m][ds] ?? 0)
+      const scores = reportKeys.map((k) => byReport[k][ds] ?? 0)
       const maxScore = Math.max(...scores)
-      modelNames.forEach((m, i) => {
-        row[m] = scores[i]
-        row[`${m}_best`] = scores[i] === maxScore && maxScore > 0
+      reportKeys.forEach((k, i) => {
+        row[k] = scores[i]
+        row[`${k}_best`] = scores[i] === maxScore && maxScore > 0
       })
       return row
     })
@@ -117,44 +119,28 @@ export default function ComparePage() {
     // Average row
     if (common.length > 0) {
       const avgRow: Record<string, unknown> = { dataset: t('compare.average') }
-      modelNames.forEach((m) => {
-        const scores = common.map((ds) => byModel[m][ds] ?? 0)
+      reportKeys.forEach((k) => {
+        const scores = common.map((ds) => byReport[k][ds] ?? 0)
         const avg = scores.reduce((a, b) => a + b, 0) / scores.length
-        avgRow[m] = avg
-        avgRow[`${m}_best`] = false
+        avgRow[k] = avg
+        avgRow[`${k}_best`] = false
       })
-      // find best avg
       let bestAvg = -1
-      modelNames.forEach((m) => { if ((avgRow[m] as number) > bestAvg) bestAvg = avgRow[m] as number })
-      modelNames.forEach((m) => { if ((avgRow[m] as number) === bestAvg && bestAvg > 0) avgRow[`${m}_best`] = true })
+      reportKeys.forEach((k) => { if ((avgRow[k] as number) > bestAvg) bestAvg = avgRow[k] as number })
+      reportKeys.forEach((k) => { if ((avgRow[k] as number) === bestAvg && bestAvg > 0) avgRow[`${k}_best`] = true })
       rows.push(avgRow)
     }
 
     const columns = [
-      { key: 'dataset', label: t('compare.dataset'), render: (row: Record<string, unknown>) => {
-        const isAvg = row.dataset === t('compare.average')
-        return <span className={isAvg ? 'font-semibold text-[var(--accent)]' : 'text-[var(--text)]'}>{row.dataset as string}</span>
-      }},
-      ...modelNames.map((m) => ({
-        key: m,
-        label: parseReportName(m).model || m,
-        render: (row: Record<string, unknown>) => {
-          const score = row[m] as number
-          const isBest = row[`${m}_best`] as boolean
-          return (
-            <span
-              className={isBest ? 'font-bold' : ''}
-              style={{ color: isBest ? 'var(--accent)' : scoreColor(score) }}
-            >
-              {(score * 100).toFixed(1)}%
-            </span>
-          )
-        },
+      { key: 'dataset', label: t('compare.dataset') },
+      ...reportKeys.map((k) => ({
+        key: k,
+        label: displayNames[k],
       })),
     ]
 
-    return { scoreTableData: rows, scoreTableColumns: columns }
-  }, [reports, t])
+    return { scoreTableData: rows, scoreTableColumns: columns, displayNames }
+  }, [reports, reportNames, t])
 
   // ------------------------------------------------------------------ //
   // Prediction Tab Data                                                 //
@@ -170,6 +156,13 @@ export default function ComparePage() {
     if (dsLists.some((s) => s.size === 0)) return []
     return [...dsLists.reduce((a, b) => new Set([...a].filter((x) => b.has(x))))]
   }, [reportNames, reportCache])
+
+  // Auto-select first dataset when switching to prediction tab or when predCommonDatasets loads
+  useEffect(() => {
+    if (activeTab === 'prediction' && predCommonDatasets.length > 0 && !selectedDs) {
+      setSelectedDs(predCommonDatasets[0])
+    }
+  }, [activeTab, predCommonDatasets, selectedDs])
 
   // Subsets for selected dataset
   const subsets = useMemo(() => {
@@ -189,6 +182,13 @@ export default function ComparePage() {
     }
     return subs
   }, [selectedDs, reportNames, reportCache])
+
+  // Auto-select first subset when subsets load
+  useEffect(() => {
+    if (subsets.length > 0 && !selectedSubset) {
+      setSelectedSubset(subsets[0])
+    }
+  }, [subsets, selectedSubset])
 
   // Load predictions for all models
   const loadPredictions = useCallback(async () => {
@@ -304,7 +304,7 @@ export default function ComparePage() {
           {reportNames.map((name) => (
             <FilterChip
               key={name}
-              label={parseReportName(name).model || name}
+              label={displayNames[name] ?? (parseReportName(name).model || name)}
               onRemove={reportNames.length > 2 ? () => removeReport(name) : undefined}
             />
           ))}
@@ -353,11 +353,13 @@ export default function ComparePage() {
           reportNames={reportNames}
           scoreTableColumns={scoreTableColumns}
           scoreTableData={scoreTableData}
+          displayNames={displayNames}
           t={t}
         />
       ) : (
         <PredictionTab
           reportNames={reportNames}
+          displayNames={displayNames}
           predCommonDatasets={predCommonDatasets}
           selectedDs={selectedDs}
           setSelectedDs={setSelectedDs}
@@ -387,32 +389,27 @@ export default function ComparePage() {
 // Score Comparison Tab                                                 //
 // ------------------------------------------------------------------ //
 
-const scoreBg = (score: number) => {
-  const hue = Math.round(score * 120)
-  return `hsla(${hue}, 70%, 45%, 0.12)`
-}
-
 function ScoreTab({
   rootPath,
   reportNames,
   scoreTableColumns,
   scoreTableData,
+  displayNames,
   t,
 }: {
   rootPath: string
   reportNames: string[]
-  scoreTableColumns: { key: string; label: string; render?: (row: Record<string, unknown>, idx: number) => React.ReactNode }[]
+  scoreTableColumns: { key: string; label: string }[]
   scoreTableData: Record<string, unknown>[]
+  displayNames: Record<string, string>
   t: (p: string) => string
 }) {
-  // Extract model names from columns (skip first 'dataset' column)
-  const modelNames = scoreTableColumns.slice(1).map((c) => c.key)
-
-  // Separate data rows from avg row (avg row is last if present)
-  const dataRows = scoreTableData.slice(0, -1)
-  const avgRow = scoreTableData.length > 0 ? scoreTableData[scoreTableData.length - 1] : null
-  const hasAvgRow = avgRow && avgRow.dataset === t('compare.average')
-  const bodyRows = hasAvgRow ? dataRows : scoreTableData
+  // reportKeys = column keys excluding the first 'dataset' column
+  const reportKeys = scoreTableColumns.slice(1).map((c) => c.key)
+  const dataRows = scoreTableData.filter((r) => r.dataset !== t('compare.average'))
+  const avgRow = scoreTableData.find((r) => r.dataset === t('compare.average')) ?? null
+  // Collect sorted dataset names from data rows
+  const datasetNames = dataRows.map((r) => r.dataset as string)
 
   return (
     <div className="flex flex-col gap-6">
@@ -423,99 +420,94 @@ function ScoreTab({
         title={t('multi.modelRadar')}
       />
 
-      {/* Custom Score Matrix */}
+      {/* Score Heatmap: rows = reports, columns = datasets */}
       <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden shadow-[var(--shadow-sm)]">
         {/* Title bar */}
         <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-3">
-          <div className="flex items-center gap-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-              {t('multi.modelScores')}
-            </h3>
-          </div>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+            {t('multi.modelScores')}
+          </h3>
         </div>
 
         {scoreTableData.length === 0 ? (
           <div className="py-12 text-center text-sm text-[var(--text-dim)]">{t('common.noData')}</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
+            <table className="text-sm border-collapse w-full">
               <thead>
                 <tr className="border-b border-[var(--border)]">
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">
-                    Dataset
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)] sticky left-0 bg-[var(--bg-card)] z-10 border-r border-[var(--border)] w-32">
+                    Model
                   </th>
-                  {modelNames.map((m) => (
+                  {datasetNames.map((ds) => (
                     <th
-                      key={m}
-                      className="px-4 py-2.5 text-center text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide"
+                      key={ds}
+                      className="py-2.5 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)] whitespace-nowrap w-[100px]"
                     >
-                      {parseReportName(m).model || m}
+                      {ds}
                     </th>
                   ))}
+                  {avgRow && (
+                    <th className="py-2.5 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--accent)] whitespace-nowrap border-l border-[var(--border)] w-[100px]">
+                      {t('compare.average')}
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
-                {bodyRows.map((row, rowIdx) => (
-                  <tr
-                    key={rowIdx}
-                    className={`hover:bg-[var(--bg-card2)] transition-colors ${rowIdx % 2 === 1 ? 'bg-[var(--bg-deep)]/30' : ''}`}
-                  >
-                    <td className="px-4 py-2.5 text-left text-sm text-[var(--text)]">
-                      {row.dataset as string}
+                {reportKeys.map((rk) => (
+                  <tr key={rk} className="hover:bg-[var(--bg-card2)] transition-colors">
+                    {/* Sticky model label */}
+                    <td className="px-3 py-2 text-xs font-medium text-[var(--text-muted)] whitespace-nowrap sticky left-0 bg-[var(--bg-card)] z-10 border-r border-[var(--border)] w-32">
+                      {displayNames[rk] ?? rk}
                     </td>
-                    {modelNames.map((m) => {
-                      const score = row[m] as number
-                      const isBest = row[`${m}_best`] as boolean
+                    {/* Score cells per dataset */}
+                    {datasetNames.map((ds) => {
+                      // find the row where row.dataset === ds
+                      const row = dataRows.find((r) => r.dataset === ds)
+                      const score = row ? (row[rk] as number) : null
+                      const isBest = row ? !!(row[`${rk}_best`]) : false
+                      const hasScore = score != null
                       return (
-                        <td key={m} className="px-4 py-2.5 text-center">
-                          <span
-                            className="rounded-md px-3 py-1 inline-block"
-                            style={{
-                              background: scoreBg(score),
-                              color: scoreColor(score),
-                              fontWeight: isBest ? 700 : undefined,
-                            }}
-                          >
-                            {isBest && (
-                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)] mr-1.5 align-middle" />
-                            )}
-                            {(score * 100).toFixed(1)}%
-                          </span>
+                        <td key={ds} className="px-1 py-1 w-[100px]">
+                          {hasScore ? (
+                            <div
+                              className="w-full py-1.5 px-2 rounded-[var(--radius-xs)] text-xs font-mono font-medium text-center text-white"
+                              style={{ backgroundColor: scoreColor(score) }}
+                            >
+                              {isBest && (
+                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)] mr-1 align-middle" />
+                              )}
+                              {(score * 100).toFixed(1)}%
+                            </div>
+                          ) : (
+                            <div className="w-full py-1.5 px-2 text-xs text-center text-[var(--text-dim)] bg-[var(--bg-deep)] rounded-[var(--radius-xs)]">
+                              —
+                            </div>
+                          )}
                         </td>
                       )
                     })}
+                    {/* Average cell */}
+                    {avgRow && (() => {
+                      const score = avgRow[rk] as number
+                      const isBest = !!(avgRow[`${rk}_best`])
+                      return (
+                        <td className="px-1 py-1 border-l border-[var(--border)] w-[100px]">
+                          <div
+                            className="w-full py-1.5 px-2 rounded-[var(--radius-xs)] text-xs font-mono font-semibold text-center text-white"
+                            style={{ backgroundColor: scoreColor(score) }}
+                          >
+                            {isBest && (
+                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)] mr-1 align-middle" />
+                            )}
+                            {(score * 100).toFixed(1)}%
+                          </div>
+                        </td>
+                      )
+                    })()}
                   </tr>
                 ))}
-
-                {/* Average row */}
-                {hasAvgRow && avgRow && (
-                  <tr className="border-t border-[var(--border-md)] bg-[var(--bg-card2)] hover:bg-[var(--bg-card2)] transition-colors">
-                    <td className="px-4 py-2.5 text-left text-sm font-semibold text-[var(--accent)]">
-                      {avgRow.dataset as string}
-                    </td>
-                    {modelNames.map((m) => {
-                      const score = avgRow[m] as number
-                      const isBest = avgRow[`${m}_best`] as boolean
-                      return (
-                        <td key={m} className="px-4 py-2.5 text-center">
-                          <span
-                            className="rounded-md px-3 py-1 inline-block"
-                            style={{
-                              background: scoreBg(score),
-                              color: scoreColor(score),
-                              fontWeight: isBest ? 700 : undefined,
-                            }}
-                          >
-                            {isBest && (
-                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)] mr-1.5 align-middle" />
-                            )}
-                            {(score * 100).toFixed(1)}%
-                          </span>
-                        </td>
-                      )
-                    })}
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
@@ -531,6 +523,7 @@ function ScoreTab({
 
 function PredictionTab({
   reportNames,
+  displayNames,
   predCommonDatasets,
   selectedDs,
   setSelectedDs,
@@ -552,6 +545,7 @@ function PredictionTab({
   t,
 }: {
   reportNames: string[]
+  displayNames: Record<string, string>
   predCommonDatasets: string[]
   selectedDs: string
   setSelectedDs: (ds: string) => void
@@ -648,7 +642,7 @@ function PredictionTab({
           <span className="text-[var(--border)]">|</span>
           {reportNames.map((name) => (
             <span key={name} className="text-sm text-[var(--text-muted)]">
-              {parseReportName(name).model || name}: <Badge variant={(passRates[name] ?? 0) >= 0.5 ? 'success' : 'warning'}>{((passRates[name] ?? 0) * 100).toFixed(1)}%</Badge>
+              {displayNames[name] ?? (parseReportName(name).model || name)}: <Badge variant={(passRates[name] ?? 0) >= 0.5 ? 'success' : 'warning'}>{((passRates[name] ?? 0) * 100).toFixed(1)}%</Badge>
             </span>
           ))}
         </div>
@@ -713,7 +707,7 @@ function PredictionTab({
               return (
                 <PredictionPanel
                   key={name}
-                  title={`${parseReportName(name).model || name} — ${t('compare.score')}`}
+                  title={`${displayNames[name] ?? (parseReportName(name).model || name)} — ${t('compare.score')}`}
                 >
                   <span
                     className="inline-block px-2.5 py-1 rounded text-sm font-mono font-semibold"
@@ -740,7 +734,7 @@ function PredictionTab({
               return (
                 <PredictionPanel
                   key={name}
-                  title={`${parseReportName(name).model || name} — ${t('compare.prediction')}`}
+                  title={`${displayNames[name] ?? (parseReportName(name).model || name)} — ${t('compare.prediction')}`}
                 >
                   <MarkdownRenderer content={formatVal(data.Pred)} />
                 </PredictionPanel>
@@ -759,7 +753,7 @@ function PredictionTab({
               return (
                 <PredictionPanel
                   key={name}
-                  title={`${parseReportName(name).model || name} — ${t('compare.generated')}`}
+                  title={`${displayNames[name] ?? (parseReportName(name).model || name)} — ${t('compare.generated')}`}
                 >
                   <MarkdownRenderer content={formatVal(data.Generated)} />
                 </PredictionPanel>

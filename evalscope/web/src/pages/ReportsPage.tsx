@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Download, Eye, FolderOpen, GitCompareArrows, Loader2, ScanSearch } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useReports } from '@/contexts/ReportsContext'
@@ -26,6 +26,8 @@ const defaultFilters: ReportFilters = {
 export default function ReportsPage() {
   const { t } = useLocale()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
   const {
     rootPath,
     setRootPath,
@@ -119,10 +121,20 @@ export default function ReportsPage() {
     }
   }, [rootPath, filters.sortBy, filters.sortOrder, clearCompareSelection])
 
+  // Sync root_path from URL on mount (e.g. when navigating back from detail page)
+  useEffect(() => {
+    const urlRoot = searchParams.get('root_path')
+    if (urlRoot) {
+      setRootPath(urlRoot)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto-scan on mount if rootPath is available
   const hasAutoScanned = useRef(false)
   useEffect(() => {
-    if (rootPath && !hasScanned && !hasAutoScanned.current) {
+    const urlRoot = searchParams.get('root_path')
+    const effectiveRoot = urlRoot || rootPath
+    if (effectiveRoot && !hasScanned && !hasAutoScanned.current) {
       hasAutoScanned.current = true
       handleScan()
     }
@@ -222,6 +234,7 @@ export default function ReportsPage() {
       {/* Action bar */}
       {hasScanned && reports.length > 0 && (
         <div className="flex items-center gap-3 flex-wrap">
+          {/* Select-all checkbox */}
           <button
             type="button"
             onClick={handleSelectAll}
@@ -253,11 +266,13 @@ export default function ReportsPage() {
             </span>
             {t('reports.selectAll')}
           </button>
+
           {selectedForCompare.length > 0 && (
             <span className="text-xs text-[var(--text-muted)]">
               {selectedForCompare.length} {t('reports.selected')}
             </span>
           )}
+
           <div className="flex items-center gap-2 ml-auto">
             <Button
               variant="outline"

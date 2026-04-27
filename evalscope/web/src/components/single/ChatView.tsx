@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { User, Bot, Target, X, ChevronDown, ChevronRight, Shield } from 'lucide-react'
+import { User, Bot, Target, ChevronDown, ChevronRight, Shield } from 'lucide-react'
 import type { PredictionRow } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
@@ -73,16 +73,6 @@ function extractToolCalls(text: string): { before: string; calls: string[]; afte
   return { before: remaining.trim(), calls, after: '' }
 }
 
-function extractImages(markdown: string): { src: string; alt: string }[] {
-  const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g
-  const images: { src: string; alt: string }[] = []
-  let m: RegExpExecArray | null
-  while ((m = imgRegex.exec(markdown)) !== null) {
-    images.push({ alt: m[1], src: m[2] })
-  }
-  return images
-}
-
 /* ─── sub-components ──────────────────────────────────────────── */
 
 function SystemBanner({ content }: { content: string }) {
@@ -109,56 +99,6 @@ function SystemBanner({ content }: { content: string }) {
       {content.length > 120 &&
         (expanded ? <ChevronDown size={14} className="shrink-0" /> : <ChevronRight size={14} className="shrink-0" />)}
     </div>
-  )
-}
-
-function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)' }}
-      onClick={onClose}
-    >
-      <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-        <button
-          onClick={onClose}
-          className="absolute -top-3 -right-3 z-10 rounded-full p-1 bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surface-hover)] transition-colors"
-        >
-          <X size={16} />
-        </button>
-        <img
-          src={src}
-          alt={alt}
-          className="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl"
-        />
-        {alt && <p className="text-center text-xs text-[var(--color-ink-muted)] mt-2">{alt}</p>}
-      </div>
-    </div>
-  )
-}
-
-function InlineImages({ markdown }: { markdown: string }) {
-  const { t } = useLocale()
-  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
-  const images = extractImages(markdown)
-  if (!images.length) return null
-  return (
-    <>
-      <div className="flex flex-wrap gap-2 mt-2">
-        {images.map((img, i) => (
-          <button
-            key={i}
-            title={t('prediction.expandImage')}
-            onClick={() => setLightbox(img)}
-            className="rounded-lg overflow-hidden border border-[var(--color-border)] hover:border-[var(--color-border-strong)] transition-all hover:scale-105"
-            style={{ maxHeight: 200, lineHeight: 0 }}
-          >
-            <img src={img.src} alt={img.alt} style={{ maxHeight: 200, maxWidth: 320, display: 'block' }} className="rounded-lg" />
-          </button>
-        ))}
-      </div>
-      {lightbox && <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />}
-    </>
   )
 }
 
@@ -195,7 +135,6 @@ function ToolCallBlock({ raw }: { raw: string }) {
 }
 
 function UserBubble({ content }: { content: string }) {
-  const hasImg = /!\[/.test(content)
   return (
     <div className="flex gap-3 items-start" style={{ animation: 'fadeInUp 300ms ease-out both' }}>
       <div
@@ -214,7 +153,6 @@ function UserBubble({ content }: { content: string }) {
         }}
       >
         <MarkdownRenderer content={content} />
-        {hasImg && <InlineImages markdown={content} />}
       </div>
     </div>
   )

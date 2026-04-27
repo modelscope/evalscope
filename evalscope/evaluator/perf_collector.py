@@ -101,6 +101,9 @@ class PerfCollector:
             'input_tokens': _series_stats(input_tokens),
             'output_tokens': _series_stats(output_tokens),
             'total_tokens': _series_stats(total_tokens),
+            'total_input_tokens': int(input_tokens.sum()),
+            'total_output_tokens': int(output_tokens.sum()),
+            'total_tokens_count': int(total_tokens.sum()),
         }
         ttft_stats = _series_stats(pd.Series(ttfts_raw, dtype=float)) if ttfts_raw else None
         tpot_stats = _series_stats(pd.Series(tpots_raw, dtype=float)) if tpots_raw else None
