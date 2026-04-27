@@ -1,7 +1,3 @@
-// ------------------------------------------------------------------ //
-// Lightweight fetch wrapper (Ultron pattern – no axios)               //
-// ------------------------------------------------------------------ //
-
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }))

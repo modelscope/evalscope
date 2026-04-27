@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Download, Eye, FolderOpen, GitCompareArrows, Loader2, ScanSearch } from 'lucide-react'
+import { Eye, FolderOpen, GitCompareArrows, Loader2, ScanSearch } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useReports } from '@/contexts/ReportsContext'
 import * as reportsApi from '@/api/reports'
@@ -170,17 +170,6 @@ export default function ReportsPage() {
     }
   }, [selectedForCompare, navigate, rootPath])
 
-  const handleExport = useCallback(() => {
-    const data = reports.filter((r) => selectedForCompare.includes(r.name))
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'reports-export.json'
-    a.click()
-    URL.revokeObjectURL(url)
-  }, [reports, selectedForCompare])
-
   const handleViewHtml = useCallback(() => {
     if (selectedForCompare.length === 1) {
       const url = reportsApi.getHtmlReportUrl(rootPath, selectedForCompare[0])
@@ -282,15 +271,6 @@ export default function ReportsPage() {
             >
               <GitCompareArrows size={14} />
               {t('reports.compare')}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={selectedForCompare.length === 0}
-              onClick={handleExport}
-            >
-              <Download size={14} />
-              {t('reports.export')}
             </Button>
             <Button
               variant="outline"

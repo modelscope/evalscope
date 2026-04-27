@@ -1,9 +1,11 @@
-import { useState } from 'react'
-import { User, Bot, Target, ChevronDown, ChevronRight, Shield } from 'lucide-react'
+import { useState, useCallback } from 'react'
+import { User, Bot, Shield, ChevronDown, ChevronRight, ClipboardCheck, Copy, Check } from 'lucide-react'
 import type { PredictionRow } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import ScoreBadge from '@/components/common/ScoreBadge'
+import JsonViewer from '@/components/common/JsonViewer'
+import PerfChip from './PerfChip'
 
 interface Props {
   prediction: PredictionRow
@@ -143,39 +145,106 @@ function UserBubble({ content }: { content: string }) {
       >
         <User size={15} style={{ color: '#818cf8' }} />
       </div>
-      <div
-        className="flex-1 rounded-2xl px-4 py-3 text-sm shadow"
-        style={{
-          maxWidth: '80%',
-          background: 'rgba(99,102,241,0.12)',
-          border: '1px solid rgba(99,102,241,0.25)',
-          boxShadow: '0 2px 8px rgba(99,102,241,0.12)',
-        }}
-      >
-        <MarkdownRenderer content={content} />
+      <div className="bubble-wrap" style={{ maxWidth: '80%', position: 'relative' }}>
+        <div
+          className="flex-1 rounded-2xl px-4 py-3 text-sm shadow"
+          style={{
+            background: 'rgba(99,102,241,0.12)',
+            border: '1px solid rgba(99,102,241,0.25)',
+            boxShadow: '0 2px 8px rgba(99,102,241,0.12)',
+          }}
+        >
+          <MarkdownRenderer content={content} />
+        </div>
+        {/* Copy button — floats above top-right, visible on hover */}
+        <div className="bubble-copy-btn" style={{ position: 'absolute', top: '-0.75rem', right: '0.25rem' }}>
+          <CopyButton text={content} variant="indigo" />
+        </div>
       </div>
     </div>
   )
 }
 
-function AssistantBubble({ content }: { content: string }) {
+interface AssistantBubbleProps {
+  content: string
+  perfMetrics?: PredictionRow['PerfMetrics']
+}
+
+type CopyVariant = 'green' | 'indigo'
+
+function CopyButton({ text, variant = 'green' }: { text: string; variant?: CopyVariant }) {
+  const { t } = useLocale()
+  const [copied, setCopied] = useState(false)
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch {
+      // fallback for non-https
+      const el = document.createElement('textarea')
+      el.value = text
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      document.body.removeChild(el)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    }
+  }, [text])
+
+  const activeColor = variant === 'green' ? '#34d399' : '#818cf8'
+  const borderColor = variant === 'green' ? 'rgba(16,185,129,0.2)' : 'rgba(99,102,241,0.2)'
+  const bgColor = variant === 'green' ? 'rgba(16,185,129,0.06)' : 'rgba(99,102,241,0.06)'
+
+  return (
+    <button
+      onClick={handleCopy}
+      title={t('prediction.copyContent')}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.25rem',
+        padding: '0.2rem 0.5rem',
+        borderRadius: '0.4rem',
+        border: `1px solid ${borderColor}`,
+        background: bgColor,
+        color: copied ? activeColor : 'rgba(148,163,184,0.7)',
+        fontSize: '0.68rem',
+        cursor: 'pointer',
+        transition: 'all 0.15s',
+      }}
+    >
+      {copied ? <Check size={11} /> : <Copy size={11} />}
+      <span>{copied ? t('prediction.copySuccess') : t('prediction.copyContent')}</span>
+    </button>
+  )
+}
+
+function AssistantBubble({ content, perfMetrics }: AssistantBubbleProps) {
   const { calls, before } = extractToolCalls(content)
   return (
     <div
       className="flex gap-3 items-start justify-end"
       style={{ animation: 'fadeInUp 300ms ease-out 80ms both' }}
     >
-      <div
-        className="flex-1 rounded-2xl px-4 py-3 text-sm"
-        style={{
-          maxWidth: '80%',
-          background: 'rgba(16,185,129,0.1)',
-          border: '1px solid rgba(16,185,129,0.25)',
-          boxShadow: '0 2px 8px rgba(16,185,129,0.1)',
-        }}
-      >
-        {before && <MarkdownRenderer content={before} />}
-        {calls.map((c, i) => <ToolCallBlock key={i} raw={c} />)}
+      <div className="bubble-wrap" style={{ maxWidth: '80%', position: 'relative' }}>
+        <div
+          className="flex-1 rounded-2xl px-4 py-3 text-sm"
+          style={{
+            background: 'rgba(16,185,129,0.1)',
+            border: '1px solid rgba(16,185,129,0.25)',
+            boxShadow: '0 2px 8px rgba(16,185,129,0.1)',
+          }}
+        >
+          {before && <MarkdownRenderer content={before} />}
+          {calls.map((c, i) => <ToolCallBlock key={i} raw={c} />)}
+          {perfMetrics && <PerfChip metrics={perfMetrics} variant="green" />}
+        </div>
+        {/* Copy button — floats above top-right, visible on hover */}
+        <div className="bubble-copy-btn" style={{ position: 'absolute', top: '-0.75rem', right: '0.25rem' }}>
+          <CopyButton text={content} variant="green" />
+        </div>
       </div>
       <div
         className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-1"
@@ -187,27 +256,235 @@ function AssistantBubble({ content }: { content: string }) {
   )
 }
 
-function GoldCard({ content, threshold }: { content: string; threshold: number }) {
+/* ─── Collapsible JSON block ────────────────────────────────────── */
+
+interface CollapsibleJsonProps {
+  label: string
+  value: unknown
+  maxHeight?: number
+  defaultOpen?: boolean
+}
+
+function CollapsibleJson({ label, value, maxHeight = 200, defaultOpen = false }: CollapsibleJsonProps) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  const isEmpty = value == null ||
+    (typeof value === 'object' && Object.keys(value as object).length === 0) ||
+    value === '{}'
+
+  if (isEmpty) return null
+
+  return (
+    <div style={{ marginTop: '0.5rem' }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.3rem',
+          fontSize: '0.7rem',
+          color: 'var(--color-ink-muted)',
+          opacity: 0.7,
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: '0.1rem 0',
+          transition: 'opacity 0.15s',
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
+      >
+        {open ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+        <span className="uppercase tracking-wide font-semibold">{label}</span>
+      </button>
+      {open && (
+        <div
+          style={{
+            marginTop: '0.35rem',
+            borderRadius: '0.5rem',
+            overflow: 'hidden',
+            border: '1px solid var(--color-border-subtle)',
+          }}
+        >
+          <JsonViewer value={value} maxHeight={maxHeight} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─── Eval Result Panel ─────────────────────────────────────────── */
+
+interface EvalResultPanelProps {
+  pred: string
+  gold: string
+  nScore: number
+  score: Record<string, unknown>
+  metadata: unknown
+  threshold: number
+  showPred: boolean
+}
+
+function EvalResultPanel({ pred, gold, nScore, score, metadata, threshold, showPred }: EvalResultPanelProps) {
   const { t } = useLocale()
+
+  const isSameAsGenerated = pred === '*Same as Generated*' || pred === ''
+
+  const metaStr = (() => {
+    if (metadata == null) return ''
+    if (typeof metadata === 'object') return JSON.stringify(metadata)
+    return String(metadata)
+  })()
+  const hasMetadata = metaStr && metaStr !== '{}' && metaStr !== 'null'
+
   return (
     <div
-      className="rounded-2xl px-4 py-3 text-sm"
       style={{
-        background: 'rgba(245,158,11,0.08)',
-        border: '1px solid rgba(245,158,11,0.25)',
+        borderRadius: '0.875rem',
+        border: '1px solid var(--color-border-subtle)',
+        background: 'rgba(255,255,255,0.02)',
+        overflow: 'hidden',
         animation: 'fadeInUp 300ms ease-out 160ms both',
       }}
     >
-      <div className="flex items-center gap-2 mb-2">
-        <Target size={14} style={{ color: '#fbbf24' }} />
-        <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#fbbf24' }}>
-          {t('prediction.expectedAnswer')}
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.4rem',
+          padding: '0.5rem 1rem',
+          borderBottom: '1px solid var(--color-border-subtle)',
+          background: 'rgba(255,255,255,0.02)',
+        }}
+      >
+        <ClipboardCheck size={13} style={{ color: 'var(--color-ink-muted)', opacity: 0.6 }} />
+        <span
+          style={{
+            fontSize: '0.65rem',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color: 'var(--color-ink-muted)',
+            opacity: 0.7,
+          }}
+        >
+          {t('prediction.evalResult')}
         </span>
       </div>
-      <MarkdownRenderer content={content} />
-      <div className="mt-2">
-        <ScoreBadge score={threshold} threshold={threshold} />
+
+      {/* 3-column grid */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: showPred ? 'minmax(80px,auto) 1fr minmax(100px,auto)' : '1fr minmax(100px,auto)',
+          gap: '0',
+          padding: '0.75rem 1rem',
+        }}
+      >
+        {/* PRED column */}
+        {showPred && (
+          <div style={{ paddingRight: '1rem', borderRight: '1px solid var(--color-border-subtle)' }}>
+            <div
+              style={{
+                fontSize: '0.65rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: '#a78bfa',
+                opacity: 0.8,
+                marginBottom: '0.35rem',
+              }}
+            >
+              {t('prediction.pred')}
+            </div>
+            {isSameAsGenerated ? (
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', opacity: 0.5, fontStyle: 'italic' }}>
+                = Generated
+              </span>
+            ) : (
+              <div style={{ fontSize: '0.875rem' }}>
+                <MarkdownRenderer content={pred} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* EXPECTED ANSWER column */}
+        <div
+          style={{
+            padding: showPred ? '0 1rem' : '0 1rem 0 0',
+            borderRight: '1px solid var(--color-border-subtle)',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '0.65rem',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: '#fbbf24',
+              opacity: 0.9,
+              marginBottom: '0.35rem',
+            }}
+          >
+            {t('prediction.expectedAnswer')}
+          </div>
+          <div style={{ fontSize: '0.875rem' }}>
+            <MarkdownRenderer content={gold} />
+          </div>
+        </div>
+
+        {/* SCORE column */}
+        <div style={{ paddingLeft: '1rem' }}>
+          <div
+            style={{
+              fontSize: '0.65rem',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: '#22d3ee',
+              opacity: 0.9,
+              marginBottom: '0.35rem',
+            }}
+          >
+            {t('prediction.score')}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <ScoreBadge score={nScore} threshold={threshold} />
+            <span style={{ fontSize: '0.65rem', color: 'var(--color-ink-muted)', opacity: 0.5 }}>
+              thr: {threshold}
+            </span>
+          </div>
+        </div>
       </div>
+
+      {/* Collapsible JSON sections */}
+      {(Object.keys(score).length > 0 || hasMetadata) && (
+        <div
+          style={{
+            padding: '0 1rem 0.75rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.25rem',
+          }}
+        >
+          {Object.keys(score).length > 0 && (
+            <CollapsibleJson
+              label={t('prediction.scoreJson')}
+              value={score}
+              maxHeight={200}
+            />
+          )}
+          {hasMetadata && (
+            <CollapsibleJson
+              label={t('prediction.metadata')}
+              value={metadata}
+              maxHeight={250}
+            />
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -220,6 +497,7 @@ export default function ChatView({ prediction, threshold = 0.99 }: Props) {
 
   const showPred =
     prediction.Pred &&
+    prediction.Pred !== '*Same as Generated*' &&
     prediction.Generated &&
     prediction.Pred.trim() !== prediction.Generated.trim()
 
@@ -231,41 +509,27 @@ export default function ChatView({ prediction, threshold = 0.99 }: Props) {
       {/* User message */}
       <UserBubble content={user || prediction.Input} />
 
-      {/* Assistant: Generated */}
-      {prediction.Generated && <AssistantBubble content={prediction.Generated} />}
-
-      {/* Pred (only if different) */}
-      {showPred && (
-        <div className="pl-11">
-          <div
-            className="rounded-xl px-3 py-2 text-xs"
-            style={{
-              background: 'rgba(139,92,246,0.08)',
-              border: '1px solid rgba(139,92,246,0.2)',
-            }}
-          >
-            <span className="font-semibold uppercase tracking-wide text-xs opacity-60 mr-2" style={{ color: '#a78bfa' }}>
-              Pred
-            </span>
-            <MarkdownRenderer content={prediction.Pred} />
-          </div>
-        </div>
+      {/* Assistant: Generated + PerfChip */}
+      {prediction.Generated && (
+        <AssistantBubble
+          content={prediction.Generated}
+          perfMetrics={prediction.PerfMetrics}
+        />
       )}
 
       {/* Divider */}
       <div style={{ borderTop: '1px solid var(--color-border-subtle)' }} />
 
-      {/* Gold + Score */}
-      <GoldCard content={prediction.Gold} threshold={threshold} />
-
-      {/* Score */}
-      <div
-        className="flex items-center gap-3 px-1"
-        style={{ animation: 'fadeInUp 300ms ease-out 200ms both' }}
-      >
-        <span className="text-xs text-[var(--color-ink-muted)] uppercase tracking-wide font-semibold">Score</span>
-        <ScoreBadge score={prediction.NScore} threshold={threshold} />
-      </div>
+      {/* Eval Result Panel */}
+      <EvalResultPanel
+        pred={prediction.Pred}
+        gold={prediction.Gold}
+        nScore={prediction.NScore}
+        score={prediction.Score}
+        metadata={prediction.Metadata}
+        threshold={threshold}
+        showPred={!!showPred}
+      />
     </div>
   )
 }

@@ -82,6 +82,14 @@ export interface DataFrameResponse {
   data: Record<string, unknown>[]
 }
 
+export interface SamplePerfMetrics {
+  latency: number
+  ttft?: number | null
+  tpot?: number | null
+  input_tokens: number
+  output_tokens: number
+}
+
 export interface PredictionRow {
   Index: string
   Input: string
@@ -91,6 +99,7 @@ export interface PredictionRow {
   Pred: string
   Score: Record<string, unknown>
   NScore: number
+  PerfMetrics?: SamplePerfMetrics | null
 }
 
 export interface PredictionsResponse {

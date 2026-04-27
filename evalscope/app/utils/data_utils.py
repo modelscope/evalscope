@@ -150,6 +150,28 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
     logger.debug(f'review_path: {review_cache_path}')
     review_caches = jsonl_to_list(review_cache_path)
 
+    # Build index -> perf_metrics mapping from prediction cache
+    perf_map: Dict[int, Any] = {}
+    try:
+        pred_subset = 'default' if dataset_name == DataCollection.NAME else subset_name
+        pred_cache_path = cache_manager.get_prediction_cache_path(pred_subset)
+        if os.path.exists(pred_cache_path):
+            for item in jsonl_to_list(pred_cache_path):
+                idx = item.get('index')
+                mo = item.get('model_output') or {}
+                pm = mo.get('perf_metrics')
+                if pm is not None and idx is not None:
+                    # Extract only the fields we want to expose
+                    perf_map[int(idx)] = {
+                        'latency': pm.get('latency'),
+                        'ttft': pm.get('ttft'),
+                        'tpot': pm.get('tpot'),
+                        'input_tokens': pm.get('input_tokens'),
+                        'output_tokens': pm.get('output_tokens'),
+                    }
+    except Exception as e:
+        logger.debug(f'Could not load perf metrics from prediction cache: {e}')
+
     ds = []
     for cache in review_caches:
         review_result = ReviewResult.model_validate(cache)
@@ -173,11 +195,12 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
             'Input': review_result.input.replace('\n', '\n\n'),  # for markdown
             'Metadata': metadata,
             'Generated': prediction or '',  # Ensure no None value
-            'Gold': target,
+            'Gold': target or '*No Gold Provided*',
             'Pred': (extracted_prediction if extracted_prediction != prediction else '*Same as Generated*')
             or '',  # Ensure no None value
             'Score': score.model_dump(exclude_none=True),
-            'NScore': normalize_score(score.main_value)
+            'NScore': normalize_score(score.main_value),
+            'PerfMetrics': perf_map.get(int(review_result.index)),
         }
         ds.append(raw_d)
 

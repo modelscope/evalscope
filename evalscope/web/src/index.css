@@ -218,3 +218,16 @@ body {
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+/* ------------------------------------------------------------------ */
+/* Chat bubble copy button — hover-reveal                              */
+/* ------------------------------------------------------------------ */
+.bubble-copy-btn {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.bubble-wrap:hover .bubble-copy-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
