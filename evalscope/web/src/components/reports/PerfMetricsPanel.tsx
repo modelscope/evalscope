@@ -1,3 +1,4 @@
+import type { ReactNode, CSSProperties } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { PerfMetrics, PercentileStats } from '@/api/types'
 
@@ -88,7 +89,7 @@ interface MetricSectionProps {
   dot?: boolean
   label: string
   sublabel?: string
-  children: React.ReactNode
+  children: ReactNode
 }
 
 function MetricSection({ color, label, sublabel, children }: MetricSectionProps) {
@@ -152,7 +153,7 @@ function TokenTable({ usage, labels }: TokenTableProps) {
 
   const headers = ['', 'Mean', '±Std', 'P50', 'P99', 'Min', 'Max', ...(hasCount ? [labels.totalCount] : [])]
 
-  const cellBase: React.CSSProperties = {
+  const cellBase: CSSProperties = {
     fontSize: '0.8rem',
     fontVariantNumeric: 'tabular-nums',
     padding: '0.3rem 0.5rem',

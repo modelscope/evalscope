@@ -1,4 +1,5 @@
 import { Timer, Zap, Activity, Hash } from 'lucide-react'
+import type { ReactNode } from 'react'
 import type { SamplePerfMetrics } from '@/api/types'
 
 interface Props {
@@ -18,7 +19,7 @@ function fmtMs(n: number | null | undefined): string | null {
 }
 
 interface ChipItemProps {
-  icon: React.ReactNode
+  icon: ReactNode
   label: string
   value: string
   color?: string
@@ -60,7 +61,7 @@ export default function PerfChip({ metrics, variant = 'green' }: Props) {
   const iconSize = 10
   const iconColor = isGreen ? 'var(--bubble-bot-color)' : 'var(--text-muted)'
 
-  const items: React.ReactNode[] = []
+  const items: ReactNode[] = []
 
   if (latStr) {
     items.push(

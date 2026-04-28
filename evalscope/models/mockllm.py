@@ -60,6 +60,3 @@ class MockLLM(ModelAPI):
         if not isinstance(output, ModelOutput):
             raise ValueError(f'output must be an instance of ModelOutput; got {type(output)}; content: {repr(output)}')
         return output
-
-    def batch_generate(inputs: Dataset, config: GenerateConfig) -> List[ModelOutput]:
-        return super().batch_generate(inputs, config)

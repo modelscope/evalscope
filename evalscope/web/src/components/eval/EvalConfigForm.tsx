@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { listBenchmarks } from '@/api/eval'
 import Button from '@/components/ui/Button'
@@ -87,7 +87,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
     setShowSuggestions(false)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     const newErrors: Record<string, string> = {}
     if (!model.trim()) newErrors.model = 'Required'

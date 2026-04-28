@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import Button from '@/components/ui/Button'
 
@@ -24,7 +24,7 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     const newErrors: Record<string, string> = {}
     if (!model.trim()) newErrors.model = 'Required'

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useReports } from '@/contexts/ReportsContext'
 import { useQueryParams } from '@/hooks/useQueryParams'
@@ -678,7 +678,7 @@ function PredictionTab({
             const palette = MODEL_PALETTE[idx] ?? MODEL_PALETTE[0]
             const cur = perModelFilter[name] ?? 'any'
             const rate = passRates[name]
-            const chips: { key: PerModelFilter; label: string; icon?: React.ReactNode; activeBg: string }[] = [
+            const chips: { key: PerModelFilter; label: string; icon?: ReactNode; activeBg: string }[] = [
               { key: 'any', label: t('compare.any'), activeBg: 'var(--accent)' },
               { key: 'pass', label: t('common.pass'), icon: <CircleCheck size={12} />, activeBg: 'var(--color-pass)' },
               { key: 'fail', label: t('common.fail'), icon: <CircleX size={12} />, activeBg: 'var(--color-fail)' },

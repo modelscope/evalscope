@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useReports } from '@/contexts/ReportsContext'
 import { useLocale } from '@/contexts/LocaleContext'
@@ -41,7 +41,7 @@ function formatTimestampShort(ts: string): string {
 // KPI Card                                                            //
 // ------------------------------------------------------------------ //
 interface KpiCardProps {
-  icon: React.ReactNode
+  icon: ReactNode
   value: string
   label: string
   gradient: string

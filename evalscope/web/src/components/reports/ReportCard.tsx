@@ -1,4 +1,5 @@
 import { ChevronRight } from 'lucide-react'
+import type { MouseEvent } from 'react'
 import { cn } from '@/lib/utils'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportSummary } from '@/api/types'
@@ -50,7 +51,7 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
 
   const formattedDate = report.timestamp ? formatTimestamp(report.timestamp) : ''
 
-  const handleDetailClick = (e: React.MouseEvent) => {
+  const handleDetailClick = (e: MouseEvent) => {
     e.stopPropagation()
     onClick(report.name)
   }

@@ -12,14 +12,12 @@ turn_index)`` so downstream consumers can inspect / filter per-turn or
 per-sample breakdowns while aggregate statistics are always computed at the
 request granularity.
 """
-import os
 import pandas as pd
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.messages.perf_metrics import PerformanceMetrics, PerfSummary
 from evalscope.utils.function_utils import thread_safe
-from evalscope.utils.io_utils import dict_to_json
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, FolderOpen, GitCompareArrows, Loader2, ScanSearch } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
@@ -375,7 +375,7 @@ function EmptyState({
   title,
   subtitle,
 }: {
-  icon: React.ReactNode
+  icon: ReactNode
   title: string
   subtitle: string
 }) {

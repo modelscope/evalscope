@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, type FC, type CSSProperties } from 'react'
 import {
   Cog,
   Target,
@@ -110,7 +110,7 @@ function formatRelTime(ts: number, t: (key: string) => string): string {
 /* ─── Step type config ────────────────────────────────────────── */
 
 interface StepTypeConfig {
-  icon: React.FC<{ size?: number; style?: React.CSSProperties }>
+  icon: FC<{ size?: number; style?: CSSProperties }>
   color: string
   bgColor: string
   borderColor: string
@@ -179,7 +179,7 @@ function MiniMessageBubble({
 
   const preview = content.length > 180 ? content.slice(0, 180) + '…' : content
 
-  let bubbleStyle: React.CSSProperties = {}
+  let bubbleStyle: CSSProperties = {}
   let labelColor = 'var(--color-ink-muted)'
   let labelText = role
 
