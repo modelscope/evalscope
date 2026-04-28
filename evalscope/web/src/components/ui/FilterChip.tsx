@@ -20,7 +20,7 @@ export default function FilterChip({ label, onRemove, className }: FilterChipPro
       {onRemove && (
         <button
           onClick={onRemove}
-          className="flex items-center justify-center w-3.5 h-3.5 rounded-full hover:bg-[rgba(129,109,248,0.2)] transition-colors cursor-pointer"
+          className="flex items-center justify-center w-3.5 h-3.5 rounded-full hover:bg-[var(--accent-dim)] transition-colors cursor-pointer"
           aria-label={`Remove ${label}`}
         >
           <X size={10} />

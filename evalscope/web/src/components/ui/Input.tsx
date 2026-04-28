@@ -29,12 +29,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             'placeholder:text-[var(--text-dim)]',
             'focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-dim)]',
             'transition-all duration-[var(--transition)]',
-            error && 'border-[#ef4444] focus:border-[#ef4444] focus:ring-[rgba(239,68,68,0.12)]',
+            error && 'border-[var(--danger)] focus:border-[var(--danger)] focus:ring-[var(--danger-bg)]',
             className,
           )}
           {...props}
         />
-        {error && <p className="text-xs text-[#ef4444]">{error}</p>}
+        {error && <p className="text-xs text-[var(--danger)]">{error}</p>}
       </div>
     )
   },

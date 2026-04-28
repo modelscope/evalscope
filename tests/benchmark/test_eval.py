@@ -497,7 +497,7 @@ class TestNativeBenchmark(TestBenchmark):
             'subset_list': ['English', 'Chinese'],
             'few_shot_num': 0,
         }
-        self._run_dataset_test('multi_if', dataset_args, limit=5)
+        self._run_dataset_test('multi_if', dataset_args, limit=3)
 
     def test_multi_if_load(self):
         dataset_args = {

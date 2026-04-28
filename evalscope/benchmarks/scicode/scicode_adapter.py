@@ -2,14 +2,13 @@
 # flake8: noqa: E501
 
 from pathlib import Path
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List, Optional, Union, cast
 
-from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.benchmark import BenchmarkMeta, MultiTurnAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages.chat_message import ChatMessageSystem, ChatMessageUser
+from evalscope.api.messages.chat_message import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
-from evalscope.api.model.model_output import ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -80,9 +79,14 @@ SciCode is a challenging benchmark designed to evaluate language model capabilit
         }
     )
 )
-class SciCodeAdapter(DefaultDataAdapter):
+class SciCodeAdapter(MultiTurnAdapter):
     """
     SciCode adapter using the new data processing framework.
+
+    Drives a per-sample multi-turn conversation via the ``MultiTurnAdapter``
+    hook set: one turn per subproblem, with a sample-specific system prompt
+    seeded into the history and a full conversation rendering exposed via
+    ``TaskState.output`` for downstream display.
     """
 
     def __init__(self, **kwargs):
@@ -109,32 +113,25 @@ class SciCodeAdapter(DefaultDataAdapter):
         """
         return Sample(input=[ChatMessageUser(content=record['problem_id'])], metadata=record)
 
-    def run_inference(self, model, sample, output_dir, **kwargs) -> TaskState:
-        """
-        Run inference for a sample.
-        SciCode problems are multi-step, so we need to iterate over subproblems.
-        """
+    def get_max_turns(self, sample: Sample) -> int:
+        """One turn per subproblem."""
+        return len(sample.metadata['sub_steps'])
+
+    def initialize_history(self, sample: Sample) -> list:
+        """Seed the conversation with the per-sample system prompt."""
         system_prompt = self.system_prompt.format(required_dependencies=sample.metadata['required_dependencies'])
-        messages = [ChatMessageSystem(content=system_prompt)]
+        return [ChatMessageSystem(content=system_prompt)]
 
-        # Iterate over subproblems and generate code for each
-        for subproblem in sample.metadata['sub_steps']:
-            formatted_prompt = self.prompt_template.format(**subproblem)
-            chat_message = ChatMessageUser(content=formatted_prompt)
-            messages.append(chat_message)
-            logger.info(f'Submitting subproblem {subproblem["step_number"]} to model...')
-            model_output = model.generate(input=messages)
-            messages.append(model_output.message)
-
-        state = TaskState(
-            model=model.name,
-            sample=sample,
-            messages=messages,
-            completed=True,
-        )
-        output = ModelOutput.from_content(model=model.name, content=state.messages_markdown)
-        state.output = output
-        return state
+    def build_turn_prompt(
+        self,
+        sample: Sample,
+        history: list,
+        turn_index: int,
+    ) -> Optional[Union[str, ChatMessage]]:
+        """Return the user prompt for the ``turn_index``-th subproblem."""
+        subproblem = sample.metadata['sub_steps'][turn_index]
+        logger.info(f'Submitting subproblem {subproblem["step_number"]} to model...')
+        return ChatMessageUser(content=self.prompt_template.format(**subproblem))
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):
         """

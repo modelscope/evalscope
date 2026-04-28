@@ -6,6 +6,7 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import type { Components } from 'react-markdown'
 import { X } from 'lucide-react'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Props {
   content: string
@@ -26,7 +27,7 @@ function ImageWithLightbox({ src, alt }: { src?: string; alt?: string }) {
       {open && createPortal(
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)' }}
+          style={{ background: 'var(--overlay-bg)', backdropFilter: 'blur(6px)' }}
           onClick={() => setOpen(false)}
         >
           <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
@@ -54,9 +55,10 @@ const markdownComponents: Components = {
 }
 
 export default function MarkdownRenderer({ content }: Props) {
+  const { theme } = useTheme()
   if (!content) return null
   return (
-    <div className="prose prose-sm prose-invert max-w-none break-words [&_table]:text-xs [&_pre]:bg-[var(--color-surface)] [&_code]:bg-[var(--color-surface)] [&_code]:px-1 [&_code]:rounded [&_img]:max-w-full [&_img]:rounded">
+    <div className={`prose prose-sm max-w-none break-words [&_table]:text-xs [&_pre]:bg-[var(--color-surface)] [&_code]:bg-[var(--color-surface)] [&_code]:px-1 [&_code]:rounded [&_img]:max-w-full [&_img]:rounded${theme === 'dark' ? ' prose-invert' : ''}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}

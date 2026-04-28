@@ -11,9 +11,9 @@ interface BadgeProps {
 
 const variantStyles: Record<BadgeVariant, string> = {
   default: 'bg-[var(--accent-dim)] text-[var(--accent)]',
-  success: 'bg-[rgba(15,156,126,0.12)] text-[var(--green)]',
-  warning: 'bg-[rgba(251,191,36,0.12)] text-[var(--yellow)]',
-  danger: 'bg-[rgba(239,68,68,0.12)] text-[#ef4444]',
+  success: 'bg-[var(--color-accent-muted)] text-[var(--green)]',
+  warning: 'bg-[var(--warning-bg)] text-[var(--yellow)]',
+  danger: 'bg-[var(--danger-bg)] text-[var(--danger)]',
 }
 
 export default function Badge({ children, variant = 'default', className }: BadgeProps) {

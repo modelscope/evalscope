@@ -12,7 +12,6 @@ interface SelectProps {
   onChange?: (value: string) => void
   label?: string
   placeholder?: string
-  multiple?: boolean
   className?: string
 }
 

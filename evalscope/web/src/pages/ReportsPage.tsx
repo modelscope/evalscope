@@ -166,7 +166,7 @@ export default function ReportsPage() {
 
   const handleCompare = useCallback(() => {
     if (selectedForCompare.length >= 2) {
-      navigate(`/compare?reports=${selectedForCompare.join(';')}&root_path=${encodeURIComponent(rootPath)}`)
+      navigate(`/compare?reports=${selectedForCompare.slice(0, 3).join(';')}&root_path=${encodeURIComponent(rootPath)}`)
     }
   }, [selectedForCompare, navigate, rootPath])
 
@@ -259,6 +259,9 @@ export default function ReportsPage() {
           {selectedForCompare.length > 0 && (
             <span className="text-xs text-[var(--text-muted)]">
               {selectedForCompare.length} {t('reports.selected')}
+              {selectedForCompare.length > 3 && (
+                <span className="ml-1 text-[var(--warning-color)]">{t('compare.maxThreeSelected')}</span>
+              )}
             </span>
           )}
 
@@ -287,7 +290,7 @@ export default function ReportsPage() {
 
       {/* Error */}
       {error && (
-        <div className="px-4 py-3 rounded-[var(--radius)] bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.2)] text-sm text-[#ef4444]">
+        <div className="px-4 py-3 rounded-[var(--radius)] bg-[var(--danger-bg)] border border-[var(--danger-border)] text-sm text-[var(--danger)]">
           {error}
         </div>
       )}

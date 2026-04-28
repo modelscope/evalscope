@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useLocale } from '@/contexts/LocaleContext'
 import LocaleToggle from './LocaleToggle'
-import { BarChart3, Gauge, FlaskConical, BookOpen, FileText, Zap, Menu, X } from 'lucide-react'
+import ThemeToggle from './ThemeToggle'
+import { BarChart3, Gauge, FlaskConical, BookOpen, FileText, Menu, X } from 'lucide-react'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -31,15 +32,21 @@ export default function TopNav() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[rgba(18,18,43,0.7)] backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--color-surface-glass)] backdrop-blur-xl">
       {/* Subtle gradient line at top */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-40" />
       <div className="flex items-center justify-between h-13 px-4 max-w-[1600px] mx-auto" style={{ height: '52px' }}>
         {/* Brand */}
         <div className="flex items-center gap-5">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#816DF8] to-[#a78bfa] flex items-center justify-center shadow-[0_0_12px_rgba(129,109,248,0.4)]">
-              <Zap size={14} className="text-white" strokeWidth={2.5} />
+            <div className="w-7 h-7 flex items-center justify-center">
+              {/* EvalScope icon - original artwork */}
+              <svg width="28" height="25" viewBox="1306 838 641 555" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1320.5 1379.5 1627 851.5 1933.5 1379.5Z" fill="var(--text)"/>
+                <path d="M1438 1312 1627 987 1816 1312Z" fill="var(--bg)"/>
+                <path d="M1421.65 1313.36 1757.78 980.177 1748.6 970.922 1766.95 989.431 1785.3 1007.94 1776.12 998.685 1439.99 1331.87Z" fill="#EAB762"/>
+                <path d="M1769.96 1005 1810.7 964.212 1823.63 1000.15C1824.27 1002 1826.28 1002.98 1828.12 1002.35 1829.15 1001.99 1829.96 1001.18 1830.31 1000.15L1864.82 896.589C1864.94 896.218 1865 895.829 1865 895.438 1864.96 893.498 1863.35 891.959 1861.41 892.001 1861.05 892.008 1860.7 892.071 1860.36 892.187L1756.76 926.635C1754.92 927.285 1753.96 929.304 1754.61 931.144 1754.97 932.151 1755.76 932.942 1756.76 933.298L1792.72 946.262 1752 987.009Z" fill="#EAB762"/>
+              </svg>
             </div>
             <span className="font-bold text-base tracking-tight text-[var(--text)]">
               Eval<span className="text-[var(--accent)]">Scope</span>
@@ -67,6 +74,7 @@ export default function TopNav() {
             </svg>
           </a>
           <LocaleToggle />
+          <ThemeToggle />
           {/* Mobile menu button */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}

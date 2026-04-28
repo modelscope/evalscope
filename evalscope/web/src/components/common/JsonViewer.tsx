@@ -1,6 +1,8 @@
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
 import json from 'react-syntax-highlighter/dist/esm/languages/hljs/json'
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs'
+import { atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs'
+import { useTheme } from '@/contexts/ThemeContext'
 
 SyntaxHighlighter.registerLanguage('json', json)
 
@@ -11,6 +13,7 @@ interface Props {
 }
 
 export default function JsonViewer({ value, maxHeight = 400, className = '' }: Props) {
+  const { theme } = useTheme()
   let code: string
   try {
     code = typeof value === 'string' ? value : JSON.stringify(value, null, 2)
@@ -24,7 +27,7 @@ export default function JsonViewer({ value, maxHeight = 400, className = '' }: P
     <div className={`text-xs overflow-auto rounded-lg ${className}`} style={{ maxHeight: maxH }}>
       <SyntaxHighlighter
         language="json"
-        style={atomOneDark}
+        style={theme === 'dark' ? atomOneDark : atomOneLight}
         customStyle={{
           background: 'transparent',
           padding: 0,

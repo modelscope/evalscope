@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import { ReportsProvider } from '@/contexts/ReportsContext'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 import MainLayout from '@/layouts/MainLayout'
 import ErrorBoundary from '@/components/common/ErrorBoundary'
 import { lazy, Suspense } from 'react'
@@ -39,11 +40,13 @@ export default function App() {
   return (
     <BrowserRouter>
       <ErrorBoundary>
-        <LocaleProvider>
-          <ReportsProvider>
-            <AppRoutes />
-          </ReportsProvider>
-        </LocaleProvider>
+        <ThemeProvider>
+          <LocaleProvider>
+            <ReportsProvider>
+              <AppRoutes />
+            </ReportsProvider>
+          </LocaleProvider>
+        </ThemeProvider>
       </ErrorBoundary>
     </BrowserRouter>
   )

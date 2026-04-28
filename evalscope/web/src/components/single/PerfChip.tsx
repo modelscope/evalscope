@@ -32,7 +32,7 @@ function ChipItem({ icon, label, value, color }: ChipItemProps) {
         alignItems: 'center',
         gap: '0.2rem',
         whiteSpace: 'nowrap',
-        color: color ?? '#94a3b8',
+        color: color ?? 'var(--text-muted)',
       }}
     >
       {icon}
@@ -58,7 +58,7 @@ export default function PerfChip({ metrics, variant = 'green' }: Props) {
 
   const isGreen = variant === 'green'
   const iconSize = 10
-  const iconColor = isGreen ? '#34d399' : '#94a3b8'
+  const iconColor = isGreen ? 'var(--bubble-bot-color)' : 'var(--text-muted)'
 
   const items: React.ReactNode[] = []
 
@@ -104,7 +104,7 @@ export default function PerfChip({ metrics, variant = 'green' }: Props) {
           alignItems: 'center',
           gap: '0.25rem',
           whiteSpace: 'nowrap',
-          color: '#94a3b8',
+          color: 'var(--text-muted)',
         }}
       >
         <Hash size={iconSize} color={iconColor} />
@@ -128,8 +128,8 @@ export default function PerfChip({ metrics, variant = 'green' }: Props) {
         marginTop: '0.5rem',
         padding: '0.25rem 0.6rem',
         borderRadius: '0.5rem',
-        background: isGreen ? 'rgba(16,185,129,0.06)' : 'rgba(148,163,184,0.06)',
-        border: isGreen ? '1px solid rgba(16,185,129,0.15)' : '1px solid rgba(148,163,184,0.12)',
+        background: isGreen ? 'var(--bubble-reasoning-bg)' : 'var(--bubble-system-bg)',
+        border: isGreen ? '1px solid var(--bubble-reasoning-border)' : '1px solid var(--color-border-subtle)',
         fontSize: '0.67rem',
         lineHeight: 1.6,
         fontVariantNumeric: 'tabular-nums',

@@ -20,26 +20,19 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react'
+import { scoreColor } from '@/components/ui/Table'
+import { scoreBg } from '@/utils/colorScale'
 
 // ------------------------------------------------------------------ //
 // Helpers                                                              //
 // ------------------------------------------------------------------ //
-function scoreColor(score: number): string {
-  const hue = Math.round(score * 120)
-  return `hsl(${hue}, 70%, 45%)`
-}
 
-function scoreBg(score: number): string {
-  const hue = Math.round(score * 120)
-  return `hsla(${hue}, 70%, 45%, 0.15)`
-}
-
-/** 格式化时间戳为 YYYY-MM-DD HH:MM:SS */
+/** Format timestamp to YYYY-MM-DD HH:MM:SS */
 function formatTimestamp(ts: string): string {
   return ts.replace('T', ' ').slice(0, 19)
 }
 
-/** 格式化时间戳为短格式 MM-DD HH:MM */
+/** Format timestamp to short form MM-DD HH:MM */
 function formatTimestampShort(ts: string): string {
   return ts.replace('T', ' ').slice(5, 16)
 }
@@ -63,7 +56,7 @@ function KpiCard({ icon, value, label, gradient, delay = 0, onClick }: KpiCardPr
       onClick={onClick}
       style={{
         animationDelay: `${delay}ms`,
-        background: 'linear-gradient(135deg, rgba(129,109,248,0.10) 0%, rgba(129,109,248,0.03) 100%)',
+        background: 'var(--gradient-surface)',
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius)',
         padding: '1.25rem',
@@ -274,9 +267,6 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Initialize expanded groups when reports change
-  // (removed: default to collapsed)
-
   // KPI stats
   const kpiStats = useMemo(() => {
     const totalEvals = reports.length
@@ -390,7 +380,7 @@ export default function DashboardPage() {
             icon={<FileText size={18} strokeWidth={2} />}
             value={String(kpiStats.totalEvals)}
             label={t('dashboard.totalEvaluations')}
-            gradient="linear-gradient(135deg, #6366f1, #8b5cf6)"
+            gradient="var(--kpi-grad-0)"
             delay={0}
             onClick={() => { setView('timeline'); evalListRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
           />
@@ -398,7 +388,7 @@ export default function DashboardPage() {
             icon={<Cpu size={18} strokeWidth={2} />}
             value={String(kpiStats.models)}
             label={t('dashboard.modelsEvaluated')}
-            gradient="linear-gradient(135deg, #10b981, #06b6d4)"
+            gradient="var(--kpi-grad-1)"
             delay={60}
             onClick={() => { setView('grouped'); evalListRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
           />
@@ -406,7 +396,7 @@ export default function DashboardPage() {
             icon={<Database size={18} strokeWidth={2} />}
             value={String(kpiStats.datasets)}
             label={t('dashboard.datasetsUsed')}
-            gradient="linear-gradient(135deg, #f59e0b, #f97316)"
+            gradient="var(--kpi-grad-2)"
             delay={120}
             onClick={() => { setView('byDataset'); evalListRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
           />
@@ -414,7 +404,7 @@ export default function DashboardPage() {
             icon={<Clock size={18} strokeWidth={2} />}
             value={kpiStats.latest.length > 20 ? kpiStats.latest.slice(0, 20) + '…' : kpiStats.latest}
             label={t('dashboard.latestEval')}
-            gradient="linear-gradient(135deg, #ec4899, #8b5cf6)"
+            gradient="var(--kpi-grad-3)"
             delay={180}
             onClick={() => reports.length > 0 && navigateToReport(reports[0])}
           />
@@ -451,7 +441,7 @@ export default function DashboardPage() {
                   padding: '6px 14px',
                   fontSize: '12px',
                   background: view === 'timeline' ? 'var(--accent)' : 'var(--bg-card2)',
-                  color: view === 'timeline' ? '#fff' : 'var(--text-muted)',
+                  color: view === 'timeline' ? 'var(--bg)' : 'var(--text-muted)',
                   border: 'none',
                   cursor: 'pointer',
                   transition: 'all 0.15s',
@@ -465,7 +455,7 @@ export default function DashboardPage() {
                   padding: '6px 14px',
                   fontSize: '12px',
                   background: view === 'grouped' ? 'var(--accent)' : 'var(--bg-card2)',
-                  color: view === 'grouped' ? '#fff' : 'var(--text-muted)',
+                  color: view === 'grouped' ? 'var(--bg)' : 'var(--text-muted)',
                   border: 'none',
                   cursor: 'pointer',
                   transition: 'all 0.15s',
@@ -479,7 +469,7 @@ export default function DashboardPage() {
                   padding: '6px 14px',
                   fontSize: '12px',
                   background: view === 'byDataset' ? 'var(--accent)' : 'var(--bg-card2)',
-                  color: view === 'byDataset' ? '#fff' : 'var(--text-muted)',
+                  color: view === 'byDataset' ? 'var(--bg)' : 'var(--text-muted)',
                   border: 'none',
                   cursor: 'pointer',
                   transition: 'all 0.15s',

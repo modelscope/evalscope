@@ -97,7 +97,7 @@ def _build_report_meta(report_name: str, root: str) -> dict:
     score_sum = 0.0
     for r in report_list:
         dataset_names.append(r.dataset_name)
-        total_num += sum(m.num for m in r.metrics)
+        total_num += r.num or 0
         score_sum += r.score
 
     avg_score = round(score_sum / len(report_list), 4) if report_list else 0.0

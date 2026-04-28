@@ -90,10 +90,38 @@ export interface SamplePerfMetrics {
   output_tokens: number
 }
 
+/** A single content block inside a chat message.
+ *
+ * Supported block types (mirrors the backend `Content` union in `content.py`):
+ *  - text      : plain/markdown text
+ *  - reasoning : model chain-of-thought / thinking block
+ *  - image     : image URL or base64 data-URI
+ *  - audio     : audio URL or base64 data-URI
+ *  - video     : video URL or base64 data-URI
+ *  - data      : opaque provider-specific payload (not rendered directly)
+ */
+export interface ContentBlock {
+  type: 'text' | 'reasoning' | 'image' | 'audio' | 'video' | 'data'
+  // text / reasoning fields
+  text?: string
+  reasoning?: string
+  // multimodal fields (present when type === 'image' | 'audio' | 'video')
+  image?: string
+  audio?: string
+  video?: string
+  /** Audio/video format hint, e.g. 'mp3', 'wav', 'mp4'. */
+  format?: string
+  /** Image detail level hint ('auto' | 'low' | 'high'). */
+  detail?: string
+  /** Opaque payload for type === 'data'. */
+  data?: Record<string, unknown>
+}
+
 /** A single chat message in a conversation (system / user / assistant / tool). */
 export interface ChatMessage {
+  id?: string
   role: 'system' | 'user' | 'assistant' | 'tool'
-  content: string
+  content: string | ContentBlock[]
   perf_metrics?: SamplePerfMetrics | null
 }
 

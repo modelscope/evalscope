@@ -60,8 +60,8 @@ export default class ErrorBoundary extends Component<Props, State> {
                 width: 56,
                 height: 56,
                 borderRadius: 16,
-                background: 'rgba(239,68,68,0.1)',
-                border: '1px solid rgba(239,68,68,0.2)',
+                background: 'var(--danger-bg)',
+                border: '1px solid var(--danger-border)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -73,7 +73,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                 height={24}
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#ef4444"
+                stroke="var(--danger)"
                 strokeWidth={2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -107,7 +107,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               onClick={this.handleReload}
               style={{
                 background: 'var(--accent)',
-                color: '#fff',
+                color: 'var(--bg)',
                 border: 'none',
                 borderRadius: 'var(--radius-sm)',
                 padding: '0.5rem 1.5rem',

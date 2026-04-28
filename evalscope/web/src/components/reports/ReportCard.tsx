@@ -2,6 +2,7 @@ import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportSummary } from '@/api/types'
+import { scoreColor } from '@/components/ui/Table'
 
 interface ReportCardProps {
   report: ReportSummary
@@ -9,10 +10,6 @@ interface ReportCardProps {
   onSelect: (name: string) => void
   /** Navigate to report detail */
   onClick: (name: string) => void
-}
-
-function scoreColor(score: number): string {
-  return `hsl(${score * 120}, 70%, 45%)`
 }
 
 function formatTimestamp(ts: string): string {

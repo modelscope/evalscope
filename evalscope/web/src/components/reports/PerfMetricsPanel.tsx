@@ -6,10 +6,10 @@ interface PerfMetricsPanelProps {
 }
 
 // ── Design tokens (match CSS vars) ───────────────────────────────────────────
-const C_LATENCY = '#60a5fa'  // blue-400   — latency
-const C_TTFT    = '#34d399'  // emerald-400 — ttft
-const C_TPOT    = '#a78bfa'  // violet-400  — tpot
-const C_TOKEN   = '#94a3b8'  // slate-400   — tokens (neutral)
+const C_LATENCY = 'var(--chart-latency)'
+const C_TTFT    = 'var(--chart-ttft)'
+const C_TPOT    = 'var(--chart-tpot)'
+const C_TOKEN   = 'var(--chart-token)'
 
 // ── Percentile table ──────────────────────────────────────────────────────────
 

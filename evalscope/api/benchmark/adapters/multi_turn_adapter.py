@@ -93,6 +93,43 @@ class MultiTurnAdapter(DefaultDataAdapter):
         """
         return None
 
+    def get_max_turns(self, sample: Sample) -> int:
+        """Return the max number of turns for this sample.
+
+        Override when the turn budget is per-sample (e.g. determined by the
+        length of a list in ``sample.metadata``). Default: ``self.max_turns``.
+        """
+        return self.max_turns
+
+    def initialize_history(self, sample: Sample) -> list:
+        """Return the initial conversation history before the first turn.
+
+        Override to pre-populate the history with a system message, fixed
+        context, or any other seed messages. Default: empty list.
+        """
+        return []
+
+    def build_final_output(
+        self,
+        model: Model,
+        sample: Sample,
+        history: list,
+        last_output: Optional[ModelOutput],
+    ) -> ModelOutput:
+        """Return the ``ModelOutput`` used for ``TaskState.output``.
+
+        Default: the last turn's ``ModelOutput``, or an empty ``ModelOutput``
+        if no turns executed. Override to, e.g., synthesize an output from
+        the full conversation for display purposes.
+        """
+        if last_output is not None:
+            return last_output
+        logger.warning(
+            f'MultiTurnAdapter produced no turns for sample {sample.id}; '
+            'returning an empty ModelOutput.'
+        )
+        return ModelOutput(model=model.name)
+
     # ------------------------------------------------------------------ #
     # Orchestration                                                         #
     # ------------------------------------------------------------------ #
@@ -103,13 +140,24 @@ class MultiTurnAdapter(DefaultDataAdapter):
         Builds the conversation one turn at a time, letting ``build_turn_prompt``
         decide when to stop. The final ``TaskState`` carries the complete
         message history (each assistant message already has its own
-        ``perf_metrics`` when ``collect_perf`` is enabled) plus the last
-        ``ModelOutput`` for legacy/display purposes.
-        """
-        history: list = []
-        model_output: Optional[ModelOutput] = None
+        ``perf_metrics`` when ``collect_perf`` is enabled) plus a
+        ``ModelOutput`` produced by :meth:`build_final_output`.
 
-        for turn_index in range(self.max_turns):
+        Subclasses typically customize behavior via hooks rather than
+        overriding this method:
+
+        * Simple multi-turn: implement :meth:`build_turn_prompt` only.
+        * Per-turn bookkeeping (multi_if-style): also override
+          :meth:`on_turn_complete`.
+        * Per-sample turn budget / seed system prompt / custom final
+          output (scicode-style): override :meth:`get_max_turns`,
+          :meth:`initialize_history`, and/or :meth:`build_final_output`.
+        """
+        history: list = self.initialize_history(sample)
+        max_turns = self.get_max_turns(sample)
+        last_output: Optional[ModelOutput] = None
+
+        for turn_index in range(max_turns):
             prompt = self.build_turn_prompt(sample, history, turn_index)
             if prompt is None:
                 break
@@ -117,23 +165,16 @@ class MultiTurnAdapter(DefaultDataAdapter):
                 prompt = ChatMessageUser(content=prompt)
             history.append(prompt)
 
-            model_output = model.generate(input=history, tools=sample.tools)
+            last_output = model.generate(input=history, tools=sample.tools)
             # Assistant message already carries perf_metrics when collect_perf=True.
-            history.append(model_output.message)
+            history.append(last_output.message)
 
-            self.on_turn_complete(sample, turn_index, model_output, history)
-
-        if model_output is None:
-            logger.warning(
-                f'MultiTurnAdapter produced no turns for sample {sample.id}; '
-                'returning an empty TaskState.'
-            )
-            model_output = ModelOutput(model=model.name)
+            self.on_turn_complete(sample, turn_index, last_output, history)
 
         return TaskState(
             model=model.name,
             sample=sample,
             messages=history,
-            output=model_output,
+            output=self.build_final_output(model, sample, history, last_output),
             completed=True,
         )

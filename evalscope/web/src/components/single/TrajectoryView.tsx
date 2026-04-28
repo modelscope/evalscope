@@ -122,42 +122,42 @@ function getStepTypeConfig(stepType: string): StepTypeConfig {
     case 'solver':
       return {
         icon: Cog,
-        color: '#818cf8',
-        bgColor: 'rgba(99,102,241,0.15)',
-        borderColor: 'rgba(99,102,241,0.4)',
-        glowColor: 'rgba(99,102,241,0.3)',
+        color: 'var(--bubble-user-color)',
+        bgColor: 'var(--bubble-user-icon-bg)',
+        borderColor: 'var(--bubble-user-border)',
+        glowColor: 'var(--bubble-user-bg)',
       }
     case 'generate':
       return {
         icon: Sparkles,
-        color: '#34d399',
-        bgColor: 'rgba(16,185,129,0.15)',
-        borderColor: 'rgba(16,185,129,0.4)',
-        glowColor: 'rgba(16,185,129,0.3)',
+        color: 'var(--bubble-bot-color)',
+        bgColor: 'var(--bubble-bot-icon-bg)',
+        borderColor: 'var(--bubble-bot-border)',
+        glowColor: 'var(--bubble-bot-bg)',
       }
     case 'tool':
       return {
         icon: Wrench,
-        color: '#fbbf24',
-        bgColor: 'rgba(245,158,11,0.15)',
-        borderColor: 'rgba(245,158,11,0.4)',
-        glowColor: 'rgba(245,158,11,0.3)',
+        color: 'var(--bubble-tool-color)',
+        bgColor: 'var(--bubble-tool-icon-bg)',
+        borderColor: 'var(--bubble-tool-border)',
+        glowColor: 'var(--bubble-tool-bg)',
       }
     case 'scorer':
       return {
         icon: Target,
-        color: '#c084fc',
-        bgColor: 'rgba(192,132,252,0.15)',
-        borderColor: 'rgba(192,132,252,0.4)',
-        glowColor: 'rgba(192,132,252,0.3)',
+        color: 'var(--purple)',
+        bgColor: 'var(--accent-dim)',
+        borderColor: 'var(--border-md)',
+        glowColor: 'var(--accent-dim)',
       }
     default:
       return {
         icon: Circle,
-        color: '#94a3b8',
-        bgColor: 'rgba(148,163,184,0.1)',
-        borderColor: 'rgba(148,163,184,0.3)',
-        glowColor: 'rgba(148,163,184,0.2)',
+        color: 'var(--text-muted)',
+        bgColor: 'var(--bubble-system-bg)',
+        borderColor: 'var(--bubble-system-border)',
+        glowColor: 'var(--bubble-system-bg)',
       }
   }
 }
@@ -185,31 +185,31 @@ function MiniMessageBubble({
 
   if (isUser) {
     bubbleStyle = {
-      background: 'rgba(99,102,241,0.08)',
-      border: '1px solid rgba(99,102,241,0.2)',
+      background: 'var(--bubble-user-bg)',
+      border: '1px solid var(--bubble-user-border)',
     }
-    labelColor = '#818cf8'
+    labelColor = 'var(--bubble-user-color)'
     labelText = 'user'
   } else if (isAssistant) {
     bubbleStyle = {
-      background: 'rgba(16,185,129,0.08)',
-      border: '1px solid rgba(16,185,129,0.2)',
+      background: 'var(--bubble-bot-bg)',
+      border: '1px solid var(--bubble-bot-border)',
     }
-    labelColor = '#34d399'
+    labelColor = 'var(--bubble-bot-color)'
     labelText = 'assistant'
   } else if (isSystem) {
     bubbleStyle = {
-      background: 'rgba(148,163,184,0.06)',
-      border: '1px solid rgba(148,163,184,0.15)',
+      background: 'var(--bubble-system-bg)',
+      border: '1px solid var(--bubble-system-border)',
     }
-    labelColor = '#94a3b8'
+    labelColor = 'var(--text-muted)'
     labelText = 'system'
   } else if (isTool) {
     bubbleStyle = {
-      background: 'rgba(245,158,11,0.06)',
-      border: '1px solid rgba(245,158,11,0.15)',
+      background: 'var(--bubble-tool-bg)',
+      border: '1px solid var(--bubble-tool-border)',
     }
-    labelColor = '#fbbf24'
+    labelColor = 'var(--bubble-tool-color)'
     labelText = 'tool'
   }
 
@@ -247,7 +247,7 @@ function MetaTable({ data }: { data: Record<string, unknown> }) {
             <tr
               key={k}
               style={{
-                background: i % 2 === 0 ? 'rgba(99,102,241,0.03)' : 'transparent',
+                background: i % 2 === 0 ? 'var(--accent-dim)' : 'transparent',
                 borderTop: i > 0 ? '1px solid var(--color-border-subtle)' : undefined,
               }}
             >
@@ -323,7 +323,7 @@ function StepCard({
           <div
             className="flex-1 w-px mt-1"
             style={{
-              background: `linear-gradient(to bottom, ${cfg.borderColor}, rgba(148,163,184,0.1))`,
+              background: `linear-gradient(to bottom, ${cfg.borderColor}, var(--color-border-subtle))`,
               minHeight: 24,
             }}
           />
@@ -474,8 +474,8 @@ function EmptyState({ onShowDemo }: { onShowDemo: () => void }) {
       <div
         className="rounded-3xl p-12 flex flex-col items-center gap-5 max-w-md w-full"
         style={{
-          border: '2px dashed rgba(148,163,184,0.2)',
-          background: 'rgba(148,163,184,0.03)',
+          border: '2px dashed var(--bubble-system-border)',
+          background: 'var(--bubble-system-bg)',
         }}
       >
         {/* Icon cluster */}
@@ -483,21 +483,21 @@ function EmptyState({ onShowDemo }: { onShowDemo: () => void }) {
           <div
             className="w-16 h-16 rounded-2xl flex items-center justify-center"
             style={{
-              background: 'rgba(99,102,241,0.1)',
-              border: '1px solid rgba(99,102,241,0.2)',
-              boxShadow: '0 0 24px rgba(99,102,241,0.15)',
+              background: 'var(--bubble-user-icon-bg)',
+              border: '1px solid var(--bubble-user-border)',
+              boxShadow: '0 0 24px var(--bubble-user-bg)',
             }}
           >
-            <GitBranch size={28} style={{ color: '#818cf8' }} />
+            <GitBranch size={28} style={{ color: 'var(--bubble-user-color)' }} />
           </div>
           {/* Floating decorative dots */}
           <div
             className="absolute -top-1 -right-1 w-3 h-3 rounded-full"
-            style={{ background: 'rgba(16,185,129,0.4)', border: '1px solid rgba(16,185,129,0.6)' }}
+            style={{ background: 'var(--bubble-bot-icon-bg)', border: '1px solid var(--bubble-bot-border)' }}
           />
           <div
             className="absolute -bottom-1 -left-1 w-2 h-2 rounded-full"
-            style={{ background: 'rgba(192,132,252,0.4)', border: '1px solid rgba(192,132,252,0.6)' }}
+            style={{ background: 'var(--accent-dim)', border: '1px solid var(--border-md)' }}
           />
         </div>
 
@@ -516,9 +516,9 @@ function EmptyState({ onShowDemo }: { onShowDemo: () => void }) {
           onClick={onShowDemo}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 active:scale-95 btn-glow"
           style={{
-            background: 'rgba(99,102,241,0.12)',
-            border: '1px solid rgba(99,102,241,0.3)',
-            color: '#818cf8',
+            background: 'var(--bubble-user-bg)',
+            border: '1px solid var(--bubble-user-border)',
+            color: 'var(--bubble-user-color)',
           }}
         >
           <Sparkles size={14} />
@@ -558,9 +558,9 @@ export default function TrajectoryView({ steps, className = '' }: TrajectoryView
         <div
           className="flex items-center justify-between px-4 py-2 rounded-xl mb-4 text-xs font-medium"
           style={{
-            background: 'rgba(245,158,11,0.08)',
-            border: '1px solid rgba(245,158,11,0.2)',
-            color: '#fbbf24',
+            background: 'var(--warning-bg)',
+            border: '1px solid var(--warning-border)',
+            color: 'var(--yellow)',
           }}
         >
           <div className="flex items-center gap-2">

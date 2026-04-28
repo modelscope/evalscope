@@ -118,7 +118,7 @@ export default function ReportDetailPage() {
             { label: breadcrumbLabel || 'Detail' },
           ]}
         />
-        <div className="mt-6 p-6 rounded-[var(--radius)] border border-[#ef4444] bg-[rgba(239,68,68,0.08)] text-[#ef4444]">
+        <div className="mt-6 p-6 rounded-[var(--radius)] border border-[var(--danger)] bg-[var(--danger-bg)] text-[var(--danger)]">
           <p className="text-sm">Failed to load report: {error}</p>
         </div>
       </div>

@@ -2,9 +2,32 @@
 @import "katex/dist/katex.min.css";
 
 /* ------------------------------------------------------------------ */
-/* Design tokens — Dark mode only (report template aligned)            */
+/* Design tokens — shared structural vars                              */
 /* ------------------------------------------------------------------ */
 :root {
+  /* Radius */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* Transition */
+  --transition: 0.18s ease;
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Font */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", "Cascadia Code", "Fira Code", monospace;
+}
+
+/* ------------------------------------------------------------------ */
+/* Dark theme (default)                                                */
+/* ------------------------------------------------------------------ */
+:root,
+[data-theme="dark"] {
   /* Backgrounds */
   --bg: #0c0c1a;
   --bg-card: #12122b;
@@ -18,6 +41,7 @@
   --purple: #a78bfa;
   --green: #0F9C7E;
   --yellow: #fbbf24;
+  --cyan: #22d3ee;
 
   /* Text */
   --text: #e2e8f0;
@@ -34,29 +58,28 @@
   --shadow: 0 4px 20px rgba(0, 0, 0, 0.55);
   --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6);
 
-  /* Radius */
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #816DF8 0%, #a78bfa 100%);
+  --gradient-accent: linear-gradient(135deg, #0F9C7E 0%, #06b6d4 100%);
+  --gradient-warm: linear-gradient(135deg, #fbbf24 0%, #ef4444 100%);
+  --gradient-surface: linear-gradient(135deg, rgba(129, 109, 248, 0.08) 0%, rgba(167, 139, 250, 0.05) 100%);
 
-  /* Transition */
-  --transition: 0.18s ease;
+  /* Pass / Fail */
+  --color-pass: rgb(45, 104, 62);
+  --color-fail: rgb(151, 31, 44);
 
-  /* Font */
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "SF Mono", "Cascadia Code", "Fira Code", monospace;
+  /* Overlay / tooltip backdrop */
+  --overlay-bg: rgba(0, 0, 0, 0.82);
 
-  /* Legacy aliases (for existing components not yet migrated) */
+  /* Legacy aliases — kept for backward compat, point to semantic tokens */
   --color-primary: var(--accent);
   --color-primary-hover: var(--accent-dark);
   --color-primary-muted: var(--accent-dim);
   --color-primary-glow: rgba(129, 109, 248, 0.3);
   --color-accent: var(--green);
   --color-accent-muted: rgba(15, 156, 126, 0.15);
-  --color-danger: #ef4444;
-  --color-warning: var(--yellow);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning-color);
   --color-ink: var(--text);
   --color-ink-muted: var(--text-muted);
   --color-ink-faint: var(--text-dim);
@@ -69,18 +92,204 @@
   --color-border: var(--border);
   --color-border-subtle: rgba(148, 163, 184, 0.08);
   --color-border-strong: var(--border-strong);
-  --gradient-primary: linear-gradient(135deg, #816DF8 0%, #a78bfa 100%);
-  --gradient-accent: linear-gradient(135deg, #0F9C7E 0%, #06b6d4 100%);
-  --gradient-warm: linear-gradient(135deg, #fbbf24 0%, #ef4444 100%);
-  --gradient-surface: linear-gradient(135deg, rgba(129, 109, 248, 0.08) 0%, rgba(167, 139, 250, 0.05) 100%);
   --shadow-card: var(--shadow);
   --shadow-elevated: var(--shadow-lg);
   --shadow-glow: 0 0 20px rgba(129, 109, 248, 0.25);
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
-  --color-pass: rgb(45, 104, 62);
-  --color-fail: rgb(151, 31, 44);
+
+  /* Semantic color tokens */
+  --danger: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.08);
+  --danger-border: rgba(239, 68, 68, 0.20);
+  --danger-bg-strong: rgba(239, 68, 68, 0.75);
+  --warning-color: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.08);
+  --warning-border: rgba(245, 158, 11, 0.20);
+  --info: #60a5fa;
+
+  /* Compare palette — per-model slot */
+  --compare-0-dot: #818cf8;
+  --compare-0-border: rgba(99, 102, 241, 0.30);
+  --compare-0-bg: rgba(99, 102, 241, 0.06);
+  --compare-0-bg-header: rgba(99, 102, 241, 0.10);
+  --compare-1-dot: #34d399;
+  --compare-1-border: rgba(16, 185, 129, 0.30);
+  --compare-1-bg: rgba(16, 185, 129, 0.06);
+  --compare-1-bg-header: rgba(16, 185, 129, 0.10);
+  --compare-2-dot: #fbbf24;
+  --compare-2-border: rgba(245, 158, 11, 0.30);
+  --compare-2-bg: rgba(245, 158, 11, 0.06);
+  --compare-2-bg-header: rgba(245, 158, 11, 0.10);
+
+  /* Chart colors */
+  --chart-latency: #60a5fa;
+  --chart-ttft: #34d399;
+  --chart-tpot: #a78bfa;
+  --chart-token: #94a3b8;
+
+  /* KPI card gradients */
+  --kpi-grad-0: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --kpi-grad-1: linear-gradient(135deg, #10b981, #06b6d4);
+  --kpi-grad-2: linear-gradient(135deg, #f59e0b, #f97316);
+  --kpi-grad-3: linear-gradient(135deg, #ec4899, #8b5cf6);
+
+  /* Chat bubble tokens */
+  --bubble-user-bg: rgba(99, 102, 241, 0.12);
+  --bubble-user-bg-hl: rgba(99, 102, 241, 0.22);
+  --bubble-user-border: rgba(99, 102, 241, 0.25);
+  --bubble-user-border-hl: rgba(99, 102, 241, 0.60);
+  --bubble-user-icon-bg: rgba(99, 102, 241, 0.20);
+  --bubble-user-icon-border: rgba(99, 102, 241, 0.35);
+  --bubble-user-color: #818cf8;
+  --bubble-bot-bg: rgba(16, 185, 129, 0.10);
+  --bubble-bot-bg-hl: rgba(16, 185, 129, 0.18);
+  --bubble-bot-border: rgba(16, 185, 129, 0.25);
+  --bubble-bot-border-hl: rgba(16, 185, 129, 0.55);
+  --bubble-bot-icon-bg: rgba(16, 185, 129, 0.15);
+  --bubble-bot-icon-border: rgba(16, 185, 129, 0.30);
+  --bubble-bot-color: #34d399;
+  --bubble-reasoning-bg: rgba(16, 185, 129, 0.06);
+  --bubble-reasoning-border: rgba(16, 185, 129, 0.25);
+  --bubble-tool-bg: rgba(245, 158, 11, 0.05);
+  --bubble-tool-border: rgba(245, 158, 11, 0.25);
+  --bubble-tool-icon-bg: rgba(245, 158, 11, 0.15);
+  --bubble-tool-icon-border: rgba(245, 158, 11, 0.30);
+  --bubble-tool-color: #fbbf24;
+  --bubble-system-bg: rgba(148, 163, 184, 0.06);
+  --bubble-system-border: rgba(148, 163, 184, 0.20);
+}
+
+/* ------------------------------------------------------------------ */
+/* Light theme                                                         */
+/* ------------------------------------------------------------------ */
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg: #f5f6fa;
+  --bg-card: #ffffff;
+  --bg-card2: #eef0f7;
+  --bg-deep: #ebebf5;
+
+  /* Accent — keep same hue, tune lightness for light bg */
+  --accent: #6c57e8;
+  --accent-dim: rgba(108, 87, 232, 0.10);
+  --accent-dark: #4f3ec8;
+  --purple: #7c6be0;
+  --green: #0a8a6e;
+  --yellow: #d97706;
+  --cyan: #0891b2;
+
+  /* Text */
+  --text: #1a1f2e;
+  --text-muted: #5a6378;
+  --text-dim: #9aa0b4;
+
+  /* Borders */
+  --border: rgba(108, 87, 232, 0.12);
+  --border-md: rgba(108, 87, 232, 0.22);
+  --border-strong: rgba(108, 87, 232, 0.35);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.07);
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.10);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.14);
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #6c57e8 0%, #7c6be0 100%);
+  --gradient-accent: linear-gradient(135deg, #0a8a6e 0%, #0891b2 100%);
+  --gradient-warm: linear-gradient(135deg, #d97706 0%, #dc2626 100%);
+  --gradient-surface: linear-gradient(135deg, rgba(108, 87, 232, 0.06) 0%, rgba(124, 107, 224, 0.03) 100%);
+
+  /* Pass / Fail */
+  --color-pass: rgb(16, 108, 55);
+  --color-fail: rgb(180, 30, 42);
+
+  /* Overlay / tooltip backdrop */
+  --overlay-bg: rgba(0, 0, 0, 0.55);
+
+  /* Legacy aliases — kept for backward compat, point to semantic tokens */
+  --color-primary: var(--accent);
+  --color-primary-hover: var(--accent-dark);
+  --color-primary-muted: var(--accent-dim);
+  --color-primary-glow: rgba(108, 87, 232, 0.25);
+  --color-accent: var(--green);
+  --color-accent-muted: rgba(10, 138, 110, 0.12);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning-color);
+  --color-ink: var(--text);
+  --color-ink-muted: var(--text-muted);
+  --color-ink-faint: var(--text-dim);
+  --color-bg-page: var(--bg);
+  --color-bg-subtle: var(--bg-card);
+  --color-surface: var(--bg-card);
+  --color-surface-2: var(--bg-card2);
+  --color-surface-hover: var(--bg-card2);
+  --color-surface-glass: rgba(255, 255, 255, 0.80);
+  --color-border: var(--border);
+  --color-border-subtle: rgba(108, 87, 232, 0.08);
+  --color-border-strong: var(--border-strong);
+  --shadow-card: var(--shadow);
+  --shadow-elevated: var(--shadow-lg);
+  --shadow-glow: 0 0 20px rgba(108, 87, 232, 0.18);
+
+  /* Semantic color tokens */
+  --danger: #dc2626;
+  --danger-bg: rgba(220, 38, 38, 0.07);
+  --danger-border: rgba(220, 38, 38, 0.22);
+  --danger-bg-strong: rgba(220, 38, 38, 0.70);
+  --warning-color: #d97706;
+  --warning-bg: rgba(217, 119, 6, 0.08);
+  --warning-border: rgba(217, 119, 6, 0.22);
+  --info: #3b82f6;
+
+  /* Compare palette — per-model slot */
+  --compare-0-dot: #6c57e8;
+  --compare-0-border: rgba(108, 87, 232, 0.35);
+  --compare-0-bg: rgba(108, 87, 232, 0.07);
+  --compare-0-bg-header: rgba(108, 87, 232, 0.12);
+  --compare-1-dot: #0a8a6e;
+  --compare-1-border: rgba(10, 138, 110, 0.35);
+  --compare-1-bg: rgba(10, 138, 110, 0.07);
+  --compare-1-bg-header: rgba(10, 138, 110, 0.12);
+  --compare-2-dot: #d97706;
+  --compare-2-border: rgba(217, 119, 6, 0.35);
+  --compare-2-bg: rgba(217, 119, 6, 0.07);
+  --compare-2-bg-header: rgba(217, 119, 6, 0.12);
+
+  /* Chart colors */
+  --chart-latency: #3b82f6;
+  --chart-ttft: #0a8a6e;
+  --chart-tpot: #7c6be0;
+  --chart-token: #5a6378;
+
+  /* KPI card gradients */
+  --kpi-grad-0: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --kpi-grad-1: linear-gradient(135deg, #10b981, #06b6d4);
+  --kpi-grad-2: linear-gradient(135deg, #f59e0b, #f97316);
+  --kpi-grad-3: linear-gradient(135deg, #ec4899, #8b5cf6);
+
+  /* Chat bubble tokens */
+  --bubble-user-bg: rgba(108, 87, 232, 0.10);
+  --bubble-user-bg-hl: rgba(108, 87, 232, 0.20);
+  --bubble-user-border: rgba(108, 87, 232, 0.30);
+  --bubble-user-border-hl: rgba(108, 87, 232, 0.65);
+  --bubble-user-icon-bg: rgba(108, 87, 232, 0.15);
+  --bubble-user-icon-border: rgba(108, 87, 232, 0.40);
+  --bubble-user-color: #6c57e8;
+  --bubble-bot-bg: rgba(10, 138, 110, 0.10);
+  --bubble-bot-bg-hl: rgba(10, 138, 110, 0.20);
+  --bubble-bot-border: rgba(10, 138, 110, 0.30);
+  --bubble-bot-border-hl: rgba(10, 138, 110, 0.60);
+  --bubble-bot-icon-bg: rgba(10, 138, 110, 0.15);
+  --bubble-bot-icon-border: rgba(10, 138, 110, 0.35);
+  --bubble-bot-color: #0a8a6e;
+  --bubble-reasoning-bg: rgba(10, 138, 110, 0.08);
+  --bubble-reasoning-border: rgba(10, 138, 110, 0.28);
+  --bubble-tool-bg: rgba(180, 100, 0, 0.07);
+  --bubble-tool-border: rgba(180, 100, 0, 0.28);
+  --bubble-tool-icon-bg: rgba(180, 100, 0, 0.12);
+  --bubble-tool-icon-border: rgba(180, 100, 0, 0.32);
+  --bubble-tool-color: #b26200;
+  --bubble-system-bg: rgba(90, 99, 120, 0.08);
+  --bubble-system-border: rgba(90, 99, 120, 0.22);
 }
 
 /* ------------------------------------------------------------------ */
@@ -97,6 +306,7 @@ body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  transition: background var(--transition-base), color var(--transition-base);
 }
 
 #root {
@@ -217,17 +427,4 @@ body {
 /* ------------------------------------------------------------------ */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-
-/* ------------------------------------------------------------------ */
-/* Chat bubble copy button — hover-reveal                              */
-/* ------------------------------------------------------------------ */
-.bubble-copy-btn {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s ease;
-}
-.bubble-wrap:hover .bubble-copy-btn {
-  opacity: 1;
-  pointer-events: auto;
-}
+::-webkit-scrollbar-thumb { background: var(--text-dim); border-radius: 3px; }

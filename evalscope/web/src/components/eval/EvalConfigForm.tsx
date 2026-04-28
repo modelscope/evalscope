@@ -124,7 +124,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
   const inputStyle =
     'w-full px-3 py-2 text-sm rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-dim)] transition-all'
   const labelStyle = 'block text-xs font-medium text-[var(--text-muted)] mb-1'
-  const errorInputStyle = 'border-[#ef4444] focus:border-[#ef4444] focus:ring-[rgba(239,68,68,0.12)]'
+  const errorInputStyle = 'border-[var(--danger)] focus:border-[var(--danger)] focus:ring-[var(--danger-bg)]'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -132,7 +132,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
         {/* Model Name */}
         <div>
           <label className={labelStyle}>
-            {t('eval.modelName')} <span className="text-[#ef4444]">*</span>
+            {t('eval.modelName')} <span className="text-[var(--danger)]">*</span>
           </label>
           <input
             value={model}
@@ -140,13 +140,13 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
             className={`${inputStyle} ${errors.model ? errorInputStyle : ''}`}
             placeholder="Qwen/Qwen2.5-0.5B-Instruct"
           />
-          {errors.model && <p className="text-xs text-[#ef4444] mt-1">{errors.model}</p>}
+          {errors.model && <p className="text-xs text-[var(--danger)] mt-1">{errors.model}</p>}
         </div>
 
         {/* Datasets with autocomplete */}
         <div ref={datasetInputRef} className="relative">
           <label className={labelStyle}>
-            {t('eval.datasets')} <span className="text-[#ef4444]">*</span>
+            {t('eval.datasets')} <span className="text-[var(--danger)]">*</span>
           </label>
           <input
             value={datasets}
@@ -155,7 +155,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
             className={`${inputStyle} ${errors.datasets ? errorInputStyle : ''}`}
             placeholder="gsm8k, arc"
           />
-          {errors.datasets && <p className="text-xs text-[#ef4444] mt-1">{errors.datasets}</p>}
+          {errors.datasets && <p className="text-xs text-[var(--danger)] mt-1">{errors.datasets}</p>}
           {showSuggestions && (
             <div className="absolute z-50 left-0 right-0 mt-1 rounded-[var(--radius-sm)] border border-[var(--border-md)] bg-[var(--bg-card)] shadow-[var(--shadow)] overflow-hidden max-h-48 overflow-y-auto">
               {filteredSuggestions.map((name) => (

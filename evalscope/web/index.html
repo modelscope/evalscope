@@ -4,7 +4,14 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>web</title>
+    <title>EvalScope</title>
+    <script>
+      // Apply saved theme before first paint to avoid flash
+      ;(function () {
+        const t = localStorage.getItem('evalscope-theme')
+        document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark')
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -29,7 +29,7 @@ export default function TaskMonitor({ running, progress, logText, result, report
         )}
         {!running && result?.status === 'error' && (
           <>
-            <XCircle size={16} className="text-[#ef4444]" />
+            <XCircle size={16} className="text-[var(--danger)]" />
             <Badge variant="danger">{result.error}</Badge>
           </>
         )}
