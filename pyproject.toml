@@ -33,9 +33,13 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 include-package-data = true
 
+[tool.setuptools.package-data]
+"evalscope.web" = ["dist/**/*"]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["evalscope*"]
+exclude = ["evalscope.web.node_modules*", "evalscope.web.src*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "evalscope.version.__version__"}

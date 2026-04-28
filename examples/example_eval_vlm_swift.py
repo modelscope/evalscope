@@ -9,7 +9,6 @@ EvalScope: pip install evalscope[vlmeval]
 """
 from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
 from evalscope.run import run_task
-from evalscope.summarizer import Summarizer
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -44,11 +43,6 @@ def run_swift_eval():
 
     # Run task
     run_task(task_cfg=task_cfg)
-
-    # [Optional] Get the final report with summarizer
-    logger.info('>> Start to get the report with summarizer ...')
-    report_list = Summarizer.get_report_from_cfg(task_cfg)
-    logger.info(f'\n>> The report list: {report_list}')
 
 
 if __name__ == '__main__':

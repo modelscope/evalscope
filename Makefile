@@ -97,6 +97,22 @@ docs-zh:
 	cd docs/zh && make clean && make html
 
 # ============================================================================
+# Frontend (evalscope/web)
+# ============================================================================
+
+.PHONY: web-install
+web-install:
+	cd evalscope/web && npm install
+
+.PHONY: web-build
+web-build:
+	cd evalscope/web && npm install && npm run build
+
+.PHONY: web-dev
+web-dev:
+	cd evalscope/web && npm install && npm run dev
+
+# ============================================================================
 # Development
 # ============================================================================
 

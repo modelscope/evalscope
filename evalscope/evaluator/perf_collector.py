@@ -2,21 +2,35 @@
 """Thread-safe performance metrics collector for the evaluation pipeline.
 
 PerfCollector is instantiated by DefaultEvaluator at startup.  It accumulates
-per-sample PerformanceMetrics objects produced during model inference and
+per-**request** PerformanceMetrics objects produced during model inference and
 exposes summary statistics and JSON export helpers.
+
+Each ``record`` call represents a single generation request. For single-turn
+benchmarks this is 1-to-1 with a sample; for multi-turn benchmarks a sample
+produces one record per assistant turn, tagged with ``(sample_index,
+turn_index)`` so downstream consumers can inspect / filter per-turn or
+per-sample breakdowns while aggregate statistics are always computed at the
+request granularity.
 """
-import os
 import pandas as pd
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from evalscope.api.model.perf_metrics import PerformanceMetrics, PerfSummary
+from evalscope.api.messages.perf_metrics import PerformanceMetrics, PerfSummary
 from evalscope.utils.function_utils import thread_safe
-from evalscope.utils.io_utils import dict_to_json
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
 _PERCENTILES = [0.25, 0.5, 0.75, 0.9, 0.99]
+
+
+@dataclass
+class _PerfRecord:
+    """Internal container pairing a PerformanceMetrics with its identity."""
+    perf: PerformanceMetrics
+    sample_index: Optional[Any] = None
+    turn_index: Optional[int] = None
 
 
 def _series_stats(s: pd.Series) -> dict:
@@ -31,56 +45,68 @@ def _series_stats(s: pd.Series) -> dict:
 
 
 class PerfCollector:
-    """Thread-safe collector for per-sample performance metrics during evaluation.
+    """Thread-safe collector for per-request performance metrics during evaluation.
 
     Usage::
 
         collector = PerfCollector()
-        # (called from multiple threads inside the eval pool)
-        collector.record(task_state.output.perf_metrics)
-        # (called once from the main thread after the pool finishes)
+        # single-turn: one record per sample
+        collector.record(perf, sample_index=sample_id, turn_index=0)
+        # multi-turn: one record per assistant message
+        for t, msg in enumerate(assistant_messages):
+            collector.record(msg.perf_metrics, sample_index=sample_id, turn_index=t)
+        # aggregate (main thread, after the pool finishes)
         summary = collector.get_summary()
-        collector.save_report('/path/to/reports/model_name', 'benchmark.json')
     """
 
     def __init__(self) -> None:
-        self._samples: List[PerformanceMetrics] = []
+        self._records: List[_PerfRecord] = []
 
     # ------------------------------------------------------------------ #
     # Data ingestion                                                       #
     # ------------------------------------------------------------------ #
 
     @thread_safe
-    def record(self, perf: PerformanceMetrics) -> None:
-        """Append one sample's metrics to the internal store (thread-safe).
+    def record(
+        self,
+        perf: PerformanceMetrics,
+        sample_index: Optional[Any] = None,
+        turn_index: Optional[int] = None,
+    ) -> None:
+        """Append one request's metrics to the internal store (thread-safe).
 
         Args:
             perf: A :class:`PerformanceMetrics` instance from a completed
                 inference call.
+            sample_index: Optional sample identifier to correlate records
+                back to a specific sample (useful for multi-turn dumps).
+            turn_index: Optional 0-based turn index inside a sample. ``None``
+                or ``0`` for single-turn benchmarks.
         """
-        self._samples.append(perf)
+        self._records.append(_PerfRecord(perf=perf, sample_index=sample_index, turn_index=turn_index))
 
     @thread_safe
-    def _get_samples(self) -> List[PerformanceMetrics]:
-        """Return a snapshot of collected samples (thread-safe)."""
-        return list(self._samples)
+    def _get_records(self) -> List[_PerfRecord]:
+        """Return a snapshot of collected records (thread-safe)."""
+        return list(self._records)
 
     # ------------------------------------------------------------------ #
     # Aggregation                                                          #
     # ------------------------------------------------------------------ #
 
     def get_summary(self) -> Optional[PerfSummary]:
-        """Compute aggregate statistics across all recorded samples.
+        """Compute aggregate statistics across all recorded requests.
 
         Returns:
             A :class:`PerfSummary` instance with avg/min/max/std, throughput,
             token usage, and percentile breakdowns for each available metric.
-            ``None`` when no samples have been recorded.
+            ``None`` when no requests have been recorded.
         """
-        samples = self._get_samples()
-        if not samples:
+        records = self._get_records()
+        if not records:
             return None
 
+        samples = [r.perf for r in records]
         n = len(samples)
 
         latencies = pd.Series([s.latency for s in samples], dtype=float)
@@ -102,6 +128,9 @@ class PerfCollector:
             'input_tokens': _series_stats(input_tokens),
             'output_tokens': _series_stats(output_tokens),
             'total_tokens': _series_stats(total_tokens),
+            'total_input_tokens': int(input_tokens.sum()),
+            'total_output_tokens': int(output_tokens.sum()),
+            'total_tokens_count': int(total_tokens.sum()),
         }
         ttft_stats = _series_stats(pd.Series(ttfts_raw, dtype=float)) if ttfts_raw else None
         tpot_stats = _series_stats(pd.Series(tpots_raw, dtype=float)) if tpots_raw else None
@@ -120,17 +149,21 @@ class PerfCollector:
     # ------------------------------------------------------------------ #
 
     def get_per_sample_records(self) -> List[Dict[str, Any]]:
-        """Return a list of per-sample metric dictionaries.
+        """Return a list of per-request metric dictionaries.
 
-        Each entry has ``sample_index`` (0-based insertion order), plus all
+        Each entry has ``sample_index`` (the sample id passed to ``record``,
+        falling back to insertion order when absent), ``turn_index`` (0-based
+        turn position inside the sample, ``None`` for single-turn), plus all
         fields from :class:`PerformanceMetrics`.
         """
-        samples = self._get_samples()
+        records = self._get_records()
 
-        records = []
-        for i, s in enumerate(samples):
+        out: List[Dict[str, Any]] = []
+        for i, r in enumerate(records):
+            s = r.perf
             record: Dict[str, Any] = {
-                'sample_index': i,
+                'sample_index': r.sample_index if r.sample_index is not None else i,
+                'turn_index': r.turn_index,
                 'latency': s.latency,
                 'input_tokens': s.input_tokens,
                 'output_tokens': s.output_tokens,
@@ -139,39 +172,17 @@ class PerfCollector:
                 record['ttft'] = s.ttft
             if s.tpot is not None:
                 record['tpot'] = s.tpot
-            records.append(record)
-        return records
+            out.append(record)
+        return out
 
     def get_perf_dict(self) -> Dict[str, Any]:
         """Return a dict suitable for embedding in a report JSON.
 
         Returns:
             Dict with ``summary`` key (nested structure by metric category), or
-            empty dict when no samples have been collected.
+            empty dict when no requests have been collected.
         """
         summary = self.get_summary()
         if summary is None:
             return {}
         return {'summary': summary.to_dict()}
-
-    def save_report(self, output_dir: str, filename: str = 'perf_metrics.json') -> Optional[str]:
-        """Write summary statistics to a JSON file.
-
-        Args:
-            output_dir: Directory in which to write the report.  Created
-                automatically if it does not exist.
-            filename: Base name for the output file.
-
-        Returns:
-            Absolute path of the written file, or ``None`` if there are no
-            samples to report.
-        """
-        report = self.get_perf_dict()
-        if not report:
-            logger.debug('PerfCollector: no samples recorded, skipping report.')
-            return None
-
-        report_path = os.path.join(output_dir, filename)
-        dict_to_json(report, report_path)
-        logger.info(f'Performance metrics report saved to: {report_path}')
-        return report_path

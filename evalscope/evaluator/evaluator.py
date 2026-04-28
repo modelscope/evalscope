@@ -371,12 +371,24 @@ class DefaultEvaluator(Evaluator):
             )
             logger.debug(f'Review result: \n{review_result.pretty_print()}')
 
-        # Collect per-request performance metrics for live inference items only
-        # when perf collection is enabled.
         if self.task_config.collect_perf and item.needs_predict:
-            perf = task_state.output.perf_metrics if task_state.output is not None else None
-            if perf is not None:
-                self.perf_collector.record(perf)
+            self._record_perf(task_state)
+
+    def _record_perf(self, task_state: TaskState) -> None:
+        """Record per-request performance metrics into :attr:`perf_collector`.
+
+        For multi-turn benchmarks each assistant message carries its own
+        ``perf_metrics`` and is recorded as a separate request tagged with
+        its 0-based ``turn_index``.  Falls back to ``task_state.output`` for
+        solvers that set the output directly without appending to messages.
+        """
+        perfs = [(t, m.perf_metrics)
+                 for t, m in enumerate(task_state.messages)
+                 if m.role == 'assistant' and m.perf_metrics is not None]
+        if not perfs and task_state.output.perf_metrics is not None:
+            perfs = [(0, task_state.output.perf_metrics)]
+        for turn_index, perf in perfs:
+            self.perf_collector.record(perf, sample_index=task_state.sample_id, turn_index=turn_index)
 
     def _aggregate_scores(
         self,

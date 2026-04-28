@@ -2,8 +2,9 @@ import json
 import os
 import pandas as pd
 from collections import defaultdict
-from dataclasses import asdict, dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from pydantic import BaseModel, Field, computed_field, field_serializer, field_validator, model_validator
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing_extensions import Self
 
 from evalscope.metrics import macro_mean, micro_mean
 from evalscope.utils import get_logger
@@ -62,55 +63,57 @@ def normalize_score(score: Union[float, dict, int], keep_num: int = 4) -> Union[
     return score
 
 
-@dataclass
-class Subset:
+class Subset(BaseModel):
     name: str = 'default_subset'
     score: float = 0.0
     num: int = 0
 
-    def __post_init__(self):
-        self.score = normalize_score(self.score)
+    @field_validator('score', mode='after')
+    @classmethod
+    def _normalize_score(cls, v: float) -> float:
+        return normalize_score(v)
 
 
-@dataclass
-class Category:
-    name: tuple[str] = field(default_factory=tuple)
+class Category(BaseModel):
+    name: Tuple[str, ...] = Field(default_factory=tuple)
     num: int = 0
     score: float = 0.0
     macro_score: float = 0.0
-    subsets: List[Subset] = field(default_factory=list)
+    subsets: List[Subset] = Field(default_factory=list)
 
-    def __post_init__(self):
-        if isinstance(self.name, str):
-            # ensure name is tuple format
-            self.name = (self.name, )
+    @field_validator('name', mode='before')
+    @classmethod
+    def _coerce_name_to_tuple(cls, v) -> Tuple[str, ...]:
+        if isinstance(v, str):
+            return (v, )
+        return tuple(v)
+
+    @field_serializer('name')
+    def _serialize_name(self, v: Tuple[str, ...]) -> List[str]:
+        # Serialize as list for JSON compatibility (mirrors original asdict behaviour)
+        return list(v)
+
+    @model_validator(mode='after')
+    def _compute_aggregates(self) -> Self:
         self.num = sum(subset.num for subset in self.subsets)
         self.score = normalize_score(micro_mean(self.subsets))
         self.macro_score = normalize_score(macro_mean(self.subsets))
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        subsets = [Subset(**subset) for subset in data.get('subsets', [])]
-        return cls(name=data['name'], subsets=subsets)
+        return self
 
 
-@dataclass
-class Metric:
+class Metric(BaseModel):
     name: str = 'default_metric'
     num: int = 0
     score: float = 0.0
     macro_score: float = 0.0
-    categories: List[Category] = field(default_factory=list)
+    categories: List[Category] = Field(default_factory=list)
 
-    def __post_init__(self):
+    @model_validator(mode='after')
+    def _compute_aggregates(self) -> Self:
         self.num = sum(category.num for category in self.categories)
         self.score = normalize_score(micro_mean(self.categories))
         self.macro_score = normalize_score(macro_mean(self.categories))
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        categories = [Category.from_dict(category) for category in data.get('categories', [])]
-        return cls(name=data['name'], categories=categories)
+        return self
 
 
 class ReportKey:
@@ -125,23 +128,43 @@ class ReportKey:
     overall_score = 'OVERALL'
 
 
-@dataclass
-class Report:
+class Report(BaseModel):
     name: str = 'default_report'
     dataset_name: str = 'default_dataset'
     dataset_pretty_name: str = ''
     dataset_description: str = ''
     model_name: str = 'default_model'
     score: float = 0.0
-    metrics: List[Metric] = field(default_factory=list)
+    metrics: List[Metric] = Field(default_factory=list)
     analysis: str = 'N/A'
-    perf_metrics: Optional[Dict[str, Any]] = field(default=None, compare=False)
+    # compare=False equivalent: excluded from model equality via model_config
+    perf_metrics: Optional[Dict[str, Any]] = Field(default=None)
 
-    def __post_init__(self):
-        self.score = self.metrics[0].score  # NOTE: only use the first metric by default
+    model_config = {'ignored_types': ()}
+
+    @model_validator(mode='after')
+    def _set_score(self) -> Self:
+        if self.metrics:
+            self.score = self.metrics[0].score  # NOTE: only use the first metric by default
+        return self
+
+    @computed_field
+    @property
+    def num(self) -> int:
+        """Total sample count derived from the first metric's subsets.
+
+        Using the first metric avoids double-counting datasets that have
+        multiple metrics over the same sample set (e.g. multi_if has 12
+        metrics all evaluated on the same 6 samples).
+        """
+        first = self.metrics[0] if self.metrics else None
+        if first is None:
+            return 0
+        return sum(s.num for c in first.categories for s in c.subsets)
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        # model_dump includes computed_field 'num' automatically
+        return self.model_dump()
 
     def to_json_str(self) -> str:
         return json.dumps(self.to_dict(), indent=4, ensure_ascii=False)
@@ -155,18 +178,8 @@ class Report:
 
     @classmethod
     def from_dict(cls, data: dict):
-        metrics = [Metric.from_dict(metric) for metric in data.get('metrics', [])]
-        return cls(
-            name=data['name'],
-            dataset_name=data['dataset_name'],
-            dataset_pretty_name=data.get('dataset_pretty_name'),
-            dataset_description=data.get('dataset_description'),
-            score=data['score'],
-            model_name=data['model_name'],
-            metrics=metrics,
-            analysis=data.get('analysis', 'N/A'),
-            perf_metrics=data.get('perf_metrics'),
-        )
+        # Pydantic handles nested model construction automatically via model_validate
+        return cls.model_validate(data)
 
     @classmethod
     def from_json(cls, json_file: str):

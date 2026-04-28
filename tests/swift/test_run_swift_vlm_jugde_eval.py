@@ -9,7 +9,6 @@ import unittest
 
 from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
 from evalscope.run import run_task
-from evalscope.summarizer import Summarizer
 from evalscope.utils.import_utils import is_module_installed
 from evalscope.utils.logger import get_logger
 from tests.utils import test_level_list
@@ -145,13 +144,6 @@ class TestRunSwiftVLMEval(unittest.TestCase):
         logger.info(f'>> Start to run task: {task_cfg}')
 
         run_task(task_cfg)
-
-        logger.info('>> Start to get the report with summarizer ...')
-        report_list = Summarizer.get_report_from_cfg(task_cfg)
-        logger.info(f'\n>> The report list: {report_list}')
-
-        assert len(report_list) > 0, f'Failed to get report list: {report_list}'
-
 
 if __name__ == '__main__':
     unittest.main(buffer=False)

@@ -11,4 +11,3 @@ from .model_output import (
     TopLogprob,
     as_stop_reason,
 )
-from .perf_metrics import PerformanceMetrics, calc_tpot

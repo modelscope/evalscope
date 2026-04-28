@@ -1,9 +1,9 @@
 import uuid
-from pydantic import BaseModel, Field, JsonValue, model_validator
+from pydantic import BaseModel, Field, JsonValue, computed_field, model_validator
 from typing import Any, Dict, List, Literal, Optional, Type, Union
 
 from evalscope.api.messages import ChatMessageAssistant, Content
-from evalscope.api.model.perf_metrics import PerformanceMetrics
+from evalscope.api.messages.perf_metrics import PerformanceMetrics
 from evalscope.api.tool import ToolCall, ToolFunction
 
 
@@ -151,12 +151,44 @@ class ModelOutput(BaseModel):
     error: Optional[str] = Field(default=None)
     """Error message in the case of content moderation refusals."""
 
-    perf_metrics: Optional[PerformanceMetrics] = Field(default=None)
-    """Per-request performance metrics (latency, TTFT, token usage, etc.).
+    @model_validator(mode='before')
+    @classmethod
+    def _absorb_legacy_perf_metrics(cls, data: Any) -> Any:
+        """Migrate legacy ``ModelOutput.perf_metrics`` onto the assistant message.
 
-    Populated when ``TaskConfig.collect_perf=True``.  ``None`` otherwise and
-    for cached predictions (no live inference was run).
-    """
+        Older cached predictions stored ``perf_metrics`` directly on
+        ``ModelOutput``.  The field is now a derived ``@computed_field`` backed
+        by ``choices[0].message.perf_metrics``.  When loading legacy JSON we
+        transparently relocate the value so downstream consumers (PerfCollector,
+        chat visualization) read a single unified source.
+        """
+        if not isinstance(data, dict):
+            return data
+        legacy = data.pop('perf_metrics', None)
+        if legacy is None:
+            return data
+        choices = data.get('choices')
+        if isinstance(choices, list) and choices:
+            first = choices[0]
+            if isinstance(first, dict):
+                msg = first.get('message')
+                if isinstance(msg, dict) and msg.get('perf_metrics') is None:
+                    msg['perf_metrics'] = legacy
+        return data
+
+    @computed_field
+    @property
+    def perf_metrics(self) -> Optional[PerformanceMetrics]:
+        """Per-request performance metrics of this ModelOutput.
+
+        Derived from ``choices[0].message.perf_metrics``.  Assign via
+        ``output.message.perf_metrics = ...`` (setter not available here).
+        Populated when ``TaskConfig.collect_perf=True``; ``None`` otherwise and
+        for cached predictions (no live inference was run).
+        """
+        if not self.choices:
+            return None
+        return self.choices[0].message.perf_metrics
 
     @property
     def empty(self) -> bool:

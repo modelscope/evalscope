@@ -1,16 +1,16 @@
 import copy
 import os
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.api.dataset import Dataset
-from evalscope.api.messages import ChatMessage
+from evalscope.api.messages import ChatMessage, messages_pretty_str, messages_to_markdown
 from evalscope.api.metric import SampleScore
 from evalscope.api.model import ModelOutput
 from evalscope.constants import DumpMode
 from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
 from evalscope.utils.logger import get_logger
-from .state import TaskState
+from .state import TaskState, TrajectoryStep
 
 logger = get_logger()
 
@@ -253,6 +253,22 @@ class ModelResult(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
     """Additional metadata associated with the model result."""
 
+    @model_validator(mode='after')
+    def _sync_perf_to_messages(self) -> 'ModelResult':
+        """Best-effort sync of assistant perf_metrics onto ``messages[-1]``."""
+        if self.model_output is None or not self.model_output.choices or not self.messages:
+            return self
+        out_msg = self.model_output.message
+        if out_msg is None or out_msg.perf_metrics is None:
+            return self
+        last = self.messages[-1]
+        if getattr(last, 'perf_metrics', None) is None:
+            try:
+                last.perf_metrics = out_msg.perf_metrics
+            except Exception:  # noqa: BLE001 - defensive, must not break loading
+                logger.debug('Failed to sync perf_metrics onto messages[-1]; skipping.')
+        return self
+
     @classmethod
     def from_task_state(cls, task_state: TaskState, save_metadata: bool = True) -> 'ModelResult':
         """
@@ -324,14 +340,46 @@ class ReviewResult(BaseModel):
     index: int
     """Index of the sample that was reviewed."""
 
-    input: str = ''
-    """Original input from the sample (immutable reference)."""
-
     target: Optional[str] = None
     """Expected/target answer for the sample, if available."""
 
+    messages: List[ChatMessage] = Field(default_factory=list)
+    """Full chat message history exchanged during evaluation."""
+
+    trajectory: List[TrajectoryStep] = Field(default_factory=list)
+    """Solver/tool trajectory steps recorded during evaluation."""
+
     sample_score: SampleScore
     """The computed evaluation score for this sample."""
+
+    @model_validator(mode='before')
+    @classmethod
+    def _migrate_legacy_input(cls, data: Any) -> Any:
+        """Migrate legacy ``input: str`` into a synthetic user message.
+
+        Older review caches stored only a rendered input string. To keep
+        those caches loadable we synthesize a single user message so
+        downstream consumers (markdown/text views) keep working.
+        """
+        if not isinstance(data, dict):
+            return data
+        legacy_input = data.pop('input', None)
+        if legacy_input and not data.get('messages'):
+            data['messages'] = [{
+                'role': 'user',
+                'content': legacy_input,
+            }]
+        return data
+
+    @property
+    def messages_markdown(self) -> str:
+        """Render ``messages`` as markdown (multi-modal aware)."""
+        return messages_to_markdown(self.messages)
+
+    @property
+    def messages_text(self) -> str:
+        """Render ``messages`` as plain text."""
+        return messages_pretty_str(self.messages)
 
     @classmethod
     def from_score_state(
@@ -353,8 +401,9 @@ class ReviewResult(BaseModel):
 
         return cls(
             index=state.sample_id,
-            input=state.input_markdown,
             target=state.target,
+            messages=state.messages,
+            trajectory=state.trajectory,
             sample_score=sample_score,
         )
 

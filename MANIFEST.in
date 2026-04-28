@@ -6,5 +6,14 @@ recursive-include evalscope *
 # Exclude cache/compiled artifacts
 global-exclude *.py[cod] __pycache__ *.so *.dylib
 
-# If there are models/large files, you can add prune/exclude as needed
-# Example: prune evalscope/models
+# Exclude large data files
+global-exclude *.h5 *.hdf5 *.parquet *.bin *.safetensors *.gguf *.pth *.pt
+
+# Exclude frontend dev files (only dist/ is needed at runtime)
+prune evalscope/web/node_modules
+prune evalscope/web/src
+exclude evalscope/web/package.json
+exclude evalscope/web/package-lock.json
+exclude evalscope/web/tsconfig*.json
+exclude evalscope/web/vite.config.ts
+exclude evalscope/web/eslint.config.js

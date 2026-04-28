@@ -6,7 +6,7 @@ import pandas as pd
 from tabulate import tabulate
 from typing import Dict, List, Optional, Tuple, Union
 
-from evalscope.api.model.perf_metrics import PerfSummary
+from evalscope.api.messages.perf_metrics import PerfSummary
 from evalscope.constants import DataCollection
 from evalscope.report.report import Report, Subset
 from evalscope.utils.logger import get_logger
@@ -26,7 +26,8 @@ def get_report_list(reports_path_list: List[str]) -> List[Report]:
         # Iterate over each report file
         for file_path in report_files:
             # Skip the collection report file
-            if os.path.basename(file_path) == DataCollection.REPORT_NAME:
+            basename = os.path.basename(file_path)
+            if basename == DataCollection.REPORT_NAME:
                 continue
             try:
                 report = Report.from_json(file_path)

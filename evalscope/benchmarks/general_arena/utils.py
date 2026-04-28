@@ -31,8 +31,8 @@ def process_review_item(review_result: ReviewResult) -> list:
 
     raw_d = {
         'Index': str(review_result.index),
-        'Input': review_result.input,
-        'Question': review_result.input,  # Use input as question
+        'Input': review_result.messages_markdown,
+        'Question': review_result.messages_markdown,  # Use rendered messages as question
         'Generated': prediction
         if prediction != extracted_prediction else extracted_prediction or '',  # Ensure no None value
         'Gold': target,

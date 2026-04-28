@@ -23,6 +23,7 @@ from evalscope.api.messages import (
     ContentText,
     ContentVideo,
 )
+from evalscope.api.messages.perf_metrics import PerformanceMetrics
 from evalscope.api.model import (
     ChatCompletionChoice,
     GenerateConfig,
@@ -33,7 +34,6 @@ from evalscope.api.model import (
     ModelUsage,
     TopLogprob,
 )
-from evalscope.api.model.perf_metrics import PerformanceMetrics
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils.model_utils import get_device
 
@@ -236,7 +236,7 @@ class ModelScopeAPI(ModelAPI):
         )
         # Populate PerformanceMetrics from the already-available fields.
         # Local models do not produce TTFT (no streaming chunks), so ttft stays None.
-        output.perf_metrics = PerformanceMetrics(
+        output.message.perf_metrics = PerformanceMetrics(
             latency=response.time,
             ttft=None,
             input_tokens=response.input_tokens,

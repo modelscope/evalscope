@@ -163,3 +163,8 @@ Tool/
 docs/zh/learn/
 examples/api_test/
 .qoder
+.claude
+
+# Frontend (evalscope/web)
+node_modules/
+evalscope/web/dist/
