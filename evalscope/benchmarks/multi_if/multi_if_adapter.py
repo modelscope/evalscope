@@ -1,12 +1,12 @@
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Union
 
-from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.benchmark import BenchmarkMeta, MultiTurnAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages import ChatMessageUser, messages_pretty_str
+from evalscope.api.messages import ChatMessage, ChatMessageUser, messages_pretty_str
 from evalscope.api.metric import Score
-from evalscope.api.model import Model
+from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import
@@ -84,7 +84,7 @@ Multi-IF is a benchmark designed to evaluate LLM capabilities in multi-turn inst
         }
     )
 )
-class MultiIFAdapter(DefaultDataAdapter):
+class MultiIFAdapter(MultiTurnAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -108,44 +108,50 @@ class MultiIFAdapter(DefaultDataAdapter):
             metadata=record,
         )
 
-    def run_inference(self, model: Model, sample: Sample, output_dir: str, **kwargs) -> TaskState:
-        """
-        Run multi-turn inference with the model and sample.
+    def build_turn_prompt(
+        self,
+        sample: Sample,
+        history: List[ChatMessage],
+        turn_index: int,
+    ) -> Optional[Union[str, ChatMessage]]:
+        """Pull the ``turn_{step}_prompt`` field for the 1-based step.
+
+        Returns ``None`` when the sample has no prompt for this step, which
+        signals the base loop to stop cleanly.
         """
         record = sample.metadata
-        history = []
-        step_record = {}
-        for step in range(1, self.max_turns + 1):
-            if not record.get(f'turn_{step}_prompt'):
-                break
-            current_prompt = json.loads(record[f'turn_{step}_prompt'])
-            history.append(ChatMessageUser(content=current_prompt['content']))
-            # Generate model output
-            model_output = model.generate(input=history, tools=sample.tools)
+        step = turn_index + 1
+        raw = record.get(f'turn_{step}_prompt')
+        if not raw:
+            return None
+        current_prompt = json.loads(raw)
+        return ChatMessageUser(content=current_prompt['content'])
 
-            response = model_output.completion
-            instruction_id_list = json.loads(record[f'turn_{step}_instruction_id_list'])
-            kwargs_list = json.loads(record[f'turn_{step}_kwargs'])
-            _kwargs = [json.loads(kwarg) for kwarg in kwargs_list]
+    def on_turn_complete(
+        self,
+        sample: Sample,
+        turn_index: int,
+        model_output: ModelOutput,
+        history: List[ChatMessage],
+    ) -> None:
+        """Capture per-turn scoring inputs into ``sample.metadata['step_record']``."""
+        record = sample.metadata
+        step = turn_index + 1
+        instruction_id_list = json.loads(record[f'turn_{step}_instruction_id_list'])
+        kwargs_list = json.loads(record[f'turn_{step}_kwargs'])
+        _kwargs = [json.loads(kwarg) for kwarg in kwargs_list]
 
-            step_record[step] = {
-                'prompt': messages_pretty_str(history),
-                'response': response,
-                'instruction_id_list': instruction_id_list,
-                'kwargs': _kwargs
-            }
+        # history at this point ends with the assistant message for `step`;
+        # everything before it (excluding that assistant) is the prompt stack.
+        prompt_history = history[:-1]
 
-            # Append model output to history for next turn
-            history.append(model_output.message)
-
-        sample.metadata['step_record'] = step_record
-        return TaskState(
-            model=model.name,
-            sample=sample,
-            messages=history,
-            output=model_output,
-            completed=True,
-        )
+        step_record = record.setdefault('step_record', {})
+        step_record[step] = {
+            'prompt': messages_pretty_str(prompt_history),
+            'response': model_output.completion,
+            'instruction_id_list': instruction_id_list,
+            'kwargs': _kwargs,
+        }
 
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: Dict, task_state: TaskState

@@ -3,6 +3,7 @@ from .adapters import (
     DefaultDataAdapter,
     ImageEditAdapter,
     MultiChoiceAdapter,
+    MultiTurnAdapter,
     NERAdapter,
     Text2ImageAdapter,
     VisionLanguageAdapter,

@@ -6,7 +6,7 @@ import pandas as pd
 from tabulate import tabulate
 from typing import Dict, List, Optional, Tuple, Union
 
-from evalscope.api.model.perf_metrics import PerfSummary
+from evalscope.api.messages.perf_metrics import PerfSummary
 from evalscope.constants import DataCollection
 from evalscope.report.report import Report, Subset
 from evalscope.utils.logger import get_logger

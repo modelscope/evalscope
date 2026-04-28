@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Literal, Optional, Type, Union
 
 from evalscope.api.tool import ToolCall, ToolCallError
 from .content import Content, ContentAudio, ContentImage, ContentReasoning, ContentText
+from .perf_metrics import PerformanceMetrics
 from .utils import parse_content_with_reasoning
 
 
@@ -25,6 +26,9 @@ class ChatMessageBase(BaseModel):
 
     internal: Optional[JsonValue] = Field(default=None)
     """Model provider specific payload - typically used to aid transformation back to model types."""
+
+    perf_metrics: Optional[PerformanceMetrics] = Field(default=None)
+    """Per-message performance metrics (latency, TTFT, token usage)."""
 
     def model_post_init(self, __context: Any) -> None:
         # Generate ID
@@ -208,10 +212,7 @@ def messages_to_markdown(messages: List[ChatMessage], max_length: Optional[int] 
     """
     output = []
     for message in messages:
-        role = message.role.capitalize()
-
-        # Start with role header
-        content_parts = [f'**{role}**: ']
+        content_parts = []
 
         # Handle content based on type
         if isinstance(message.content, str):

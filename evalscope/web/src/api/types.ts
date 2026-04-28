@@ -90,6 +90,13 @@ export interface SamplePerfMetrics {
   output_tokens: number
 }
 
+/** A single chat message in a conversation (system / user / assistant / tool). */
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool'
+  content: string
+  perf_metrics?: SamplePerfMetrics | null
+}
+
 export interface PredictionRow {
   Index: string
   Input: string
@@ -100,6 +107,8 @@ export interface PredictionRow {
   Score: Record<string, unknown>
   NScore: number
   PerfMetrics?: SamplePerfMetrics | null
+  /** Structured message list; present for all new-format caches. */
+  Messages?: ChatMessage[] | null
 }
 
 export interface PredictionsResponse {

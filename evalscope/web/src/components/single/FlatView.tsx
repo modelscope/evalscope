@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
-import { Edit3, Cpu, Target, Copy, Check, ChevronDown, ChevronRight, ClipboardCheck } from 'lucide-react'
-import type { PredictionRow } from '@/api/types'
+import { Edit3, Cpu, Target, Copy, Check, ChevronDown, ChevronRight, ClipboardCheck, User, Bot, Wrench, Shield } from 'lucide-react'
+import type { PredictionRow, ChatMessage, SamplePerfMetrics } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import ScoreBadge from '@/components/common/ScoreBadge'
@@ -11,6 +11,86 @@ import PerfChip from './PerfChip'
 interface Props {
   prediction: PredictionRow
   threshold?: number
+}
+
+/* ─── Conversation Timeline (multi-turn Input view) ──────────── */
+
+const ROLE_META: Record<string, { icon: React.ReactNode; label: string; color: string; bg: string; border: string }> = {
+  system: {
+    icon: <Shield size={12} />,
+    label: 'System',
+    color: '#94a3b8',
+    bg: 'rgba(148,163,184,0.07)',
+    border: 'rgba(148,163,184,0.2)',
+  },
+  user: {
+    icon: <User size={12} />,
+    label: 'User',
+    color: '#818cf8',
+    bg: 'rgba(99,102,241,0.07)',
+    border: 'rgba(99,102,241,0.2)',
+  },
+  assistant: {
+    icon: <Bot size={12} />,
+    label: 'Assistant',
+    color: '#34d399',
+    bg: 'rgba(16,185,129,0.07)',
+    border: 'rgba(16,185,129,0.2)',
+  },
+  tool: {
+    icon: <Wrench size={12} />,
+    label: 'Tool',
+    color: '#fbbf24',
+    bg: 'rgba(245,158,11,0.07)',
+    border: 'rgba(245,158,11,0.2)',
+  },
+}
+
+function ConversationTimeline({ messages }: { messages: ChatMessage[] }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+      {messages.map((msg, idx) => {
+        const meta = ROLE_META[msg.role] ?? ROLE_META.user
+        return (
+          <div
+            key={idx}
+            style={{
+              borderRadius: '0.75rem',
+              border: `1px solid ${meta.border}`,
+              background: meta.bg,
+              overflow: 'hidden',
+            }}
+          >
+            {/* role badge */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                padding: '0.3rem 0.75rem',
+                borderBottom: `1px solid ${meta.border}`,
+                fontSize: '0.65rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: meta.color,
+              }}
+            >
+              {meta.icon}
+              <span>{meta.label}</span>
+            </div>
+            {/* content */}
+            <div style={{ padding: '0.5rem 0.75rem', fontSize: '0.82rem' }}>
+              <MarkdownRenderer content={msg.content} />
+              {msg.role === 'assistant' && msg.perf_metrics && (
+                <PerfChip metrics={msg.perf_metrics} variant="neutral" />
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 interface SectionCardProps {
@@ -274,17 +354,36 @@ export default function FlatView({ prediction, threshold = 0.99 }: Props) {
     metaStr !== '{}'
   )
 
+  // Determine if we should use structured conversation view
+  const messages = prediction.Messages
+  const hasStructured = !!(messages && messages.length > 0)
+  const userCount = hasStructured ? messages!.filter((m) => m.role === 'user').length : 0
+  const isMultiTurn = userCount > 1
+
+  // Perf metrics: prefer the last assistant message's perf, fallback to global PerfMetrics
+  const lastAssistantPerf: SamplePerfMetrics | null | undefined = hasStructured
+    ? messages!.reduce<SamplePerfMetrics | null>((acc, m) => {
+        if (m.role === 'assistant' && m.perf_metrics) return m.perf_metrics
+        return acc
+      }, null)
+    : null
+  const effectivePerf = lastAssistantPerf ?? prediction.PerfMetrics
+
   return (
     <div className="flex flex-col gap-3 stagger-children">
-      {/* Input */}
+      {/* Input / Conversation */}
       <SectionCard
-        title={t('prediction.input')}
+        title={isMultiTurn ? t('prediction.conversation') : t('prediction.input')}
         icon={<Edit3 size={14} />}
         borderColor="#6366f1"
         accentColor="#818cf8"
         copyText={formatValue(prediction.Input)}
       >
-        <MarkdownRenderer content={formatValue(prediction.Input)} />
+        {hasStructured ? (
+          <ConversationTimeline messages={messages!} />
+        ) : (
+          <MarkdownRenderer content={formatValue(prediction.Input)} />
+        )}
       </SectionCard>
 
       {/* Generated */}
@@ -297,8 +396,8 @@ export default function FlatView({ prediction, threshold = 0.99 }: Props) {
       >
         <MarkdownRenderer content={formatValue(prediction.Generated)} />
         {/* Per-sample perf chip */}
-        {prediction.PerfMetrics && (
-          <PerfChip metrics={prediction.PerfMetrics} variant="green" />
+        {effectivePerf && (
+          <PerfChip metrics={effectivePerf} variant="green" />
         )}
       </SectionCard>
 

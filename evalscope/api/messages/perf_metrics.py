@@ -1,12 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 """Performance metrics data structures for per-request inference profiling.
 
-PerformanceMetrics is attached to ModelOutput when performance collection is
-enabled (TaskConfig.collect_perf=True), capturing latency, TTFT, and token
-usage for a single generation call.
+PerformanceMetrics is attached to ChatMessage (assistant role) when performance
+collection is enabled (TaskConfig.collect_perf=True), capturing latency, TTFT,
+and token usage for a single generation call.
 
 PerfSummary is the aggregated counterpart produced by PerfCollector after all
-samples have been collected.  It carries nested statistics by metric category
+requests have been collected.  It carries nested statistics by metric category
 (latency, throughput, usage, ttft, tpot) and exposes convenience properties
 for reporting.
 """
@@ -80,7 +80,7 @@ class PerfSummary:
     """Structured container for aggregated performance metrics.
 
     Produced by :class:`~evalscope.evaluator.perf_collector.PerfCollector`
-    after all samples have been collected.  Provides typed properties for
+    after all requests have been collected.  Provides typed properties for
     convenient access in reporting code, plus serialization helpers for JSON
     persistence.
 
@@ -89,7 +89,7 @@ class PerfSummary:
     ``mean / std / min / 25% / 50% / 75% / 90% / 99% / max``.
 
     Attributes:
-        n_samples:  Total number of recorded inference samples.
+        n_samples:  Total number of recorded inference requests.
         latency:    Latency stats dict (seconds).
         throughput: Throughput dict with avg_output_tps (tok/s) and avg_req_ps (req/s).
         usage:      Token usage dict; each sub-key (input_tokens / output_tokens /

@@ -1,5 +1,6 @@
 import time
 from dataclasses import dataclass
+from pydantic import BaseModel, Field
 from random import Random
 from typing import Any, Dict, List, Optional, Sequence, Union, overload
 
@@ -123,15 +124,23 @@ class Choices(Sequence[Choice]):
         self._choices = shuffled_choices
 
 
-@dataclass
-class TrajectoryStep:
+class TrajectoryStep(BaseModel):
     """Record a single processing step during evaluation."""
 
-    step_name: str  # solver/processor name
-    step_type: str  # "solver", "scorer", "tool", "generate"
-    timestamp: float  # time.time()
-    messages_snapshot: Optional[List[ChatMessage]] = None  # messages produced by this step
-    metadata: Optional[Dict[str, Any]] = None  # extra metadata (e.g. token usage)
+    step_name: str
+    """solver / processor name"""
+
+    step_type: str
+    """e.g. 'solver', 'scorer', 'tool', 'generate'"""
+
+    timestamp: float = Field(default_factory=time.time)
+    """time.time() when the step was recorded"""
+
+    messages_snapshot: Optional[List[ChatMessage]] = None
+    """messages produced/observed by this step"""
+
+    metadata: Optional[Dict[str, Any]] = None
+    """extra metadata (e.g. token usage, tool call info)"""
 
 
 class TaskState:

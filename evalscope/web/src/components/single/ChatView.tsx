@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
-import { User, Bot, Shield, ChevronDown, ChevronRight, ClipboardCheck, Copy, Check } from 'lucide-react'
-import type { PredictionRow } from '@/api/types'
+import { User, Bot, Shield, Wrench, ChevronDown, ChevronRight, ClipboardCheck, Copy, Check } from 'lucide-react'
+import type { PredictionRow, ChatMessage, SamplePerfMetrics } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import ScoreBadge from '@/components/common/ScoreBadge'
@@ -12,7 +12,7 @@ interface Props {
   threshold?: number
 }
 
-/* ─── helpers ─────────────────────────────────────────────────── */
+/* ─── helpers (legacy string-based fallback) ──────────────────── */
 
 function hasSystemPrompt(input: string): boolean {
   const lower = input.trim().toLowerCase()
@@ -26,7 +26,6 @@ function hasSystemPrompt(input: string): boolean {
 }
 
 function parseSystemUser(input: string): { system: string; user: string } {
-  // multi-turn format with <|system|> ... <|user|>
   const sysMatch = input.match(/<\|system\|>([\s\S]*?)(?:<\|user\|>|$)/i)
   const userMatch = input.match(/<\|user\|>([\s\S]*?)(?:<\|assistant\|>|$)/i)
   if (sysMatch) {
@@ -35,7 +34,6 @@ function parseSystemUser(input: string): { system: string; user: string } {
       user: userMatch ? userMatch[1].trim() : input.replace(/<\|system\|>[\s\S]*?<\|user\|>/i, '').trim(),
     }
   }
-  // [system] prefix
   const bracketMatch = input.match(/^\[system\]([\s\S]*?)(?:\[user\]|$)/i)
   if (bracketMatch) {
     return {
@@ -43,7 +41,6 @@ function parseSystemUser(input: string): { system: string; user: string } {
       user: input.replace(/^\[system\][\s\S]*?(?:\[user\])/i, '').trim(),
     }
   }
-  // system: prefix
   const colonMatch = input.match(/^system:\s*([\s\S]*?)(?:\nuser:|$)/i)
   if (colonMatch) {
     return {
@@ -58,14 +55,12 @@ function extractToolCalls(text: string): { before: string; calls: string[]; afte
   const calls: string[] = []
   let remaining = text
 
-  // <tool_call> ... </tool_call>
   const toolCallRegex = /<tool_call>([\s\S]*?)<\/tool_call>/g
   remaining = remaining.replace(toolCallRegex, (match) => {
     calls.push(match)
     return ''
   })
 
-  // JSON function call pattern: {"name": "...", "arguments": {...}}
   const jsonFnRegex = /\{"name"\s*:\s*"[^"]+"\s*,\s*"arguments"\s*:\s*\{[\s\S]*?\}\s*\}/g
   remaining = remaining.replace(jsonFnRegex, (match) => {
     calls.push(match)
@@ -75,7 +70,67 @@ function extractToolCalls(text: string): { before: string; calls: string[]; afte
   return { before: remaining.trim(), calls, after: '' }
 }
 
-/* ─── sub-components ──────────────────────────────────────────── */
+/* ─── shared sub-components ───────────────────────────────────── */
+
+type CopyVariant = 'green' | 'indigo' | 'neutral'
+
+function CopyButton({ text, variant = 'green' }: { text: string; variant?: CopyVariant }) {
+  const { t } = useLocale()
+  const [copied, setCopied] = useState(false)
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch {
+      const el = document.createElement('textarea')
+      el.value = text
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      document.body.removeChild(el)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    }
+  }, [text])
+
+  const activeColor = variant === 'green' ? '#34d399' : variant === 'indigo' ? '#818cf8' : '#94a3b8'
+  const borderColor =
+    variant === 'green'
+      ? 'rgba(16,185,129,0.2)'
+      : variant === 'indigo'
+        ? 'rgba(99,102,241,0.2)'
+        : 'rgba(148,163,184,0.2)'
+  const bgColor =
+    variant === 'green'
+      ? 'rgba(16,185,129,0.06)'
+      : variant === 'indigo'
+        ? 'rgba(99,102,241,0.06)'
+        : 'rgba(148,163,184,0.06)'
+
+  return (
+    <button
+      onClick={handleCopy}
+      title={t('prediction.copyContent')}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.25rem',
+        padding: '0.2rem 0.5rem',
+        borderRadius: '0.4rem',
+        border: `1px solid ${borderColor}`,
+        background: bgColor,
+        color: copied ? activeColor : 'rgba(148,163,184,0.7)',
+        fontSize: '0.68rem',
+        cursor: 'pointer',
+        transition: 'all 0.15s',
+      }}
+    >
+      {copied ? <Check size={11} /> : <Copy size={11} />}
+      <span>{copied ? t('prediction.copySuccess') : t('prediction.copyContent')}</span>
+    </button>
+  )
+}
 
 function SystemBanner({ content }: { content: string }) {
   const { t } = useLocale()
@@ -112,7 +167,9 @@ function ToolCallBlock({ raw }: { raw: string }) {
     const inner = raw.replace(/<\/?tool_call>/g, '').trim()
     const parsed = JSON.parse(inner)
     if (parsed.name) fnName = parsed.name
-  } catch { /* noop */ }
+  } catch {
+    /* noop */
+  }
   return (
     <div className="mt-2 rounded-xl border border-[var(--color-border)] overflow-hidden text-xs">
       <button
@@ -136,7 +193,7 @@ function ToolCallBlock({ raw }: { raw: string }) {
   )
 }
 
-function UserBubble({ content }: { content: string }) {
+function UserBubble({ content, turnBadge }: { content: string; turnBadge?: string }) {
   return (
     <div className="flex gap-3 items-start" style={{ animation: 'fadeInUp 300ms ease-out both' }}>
       <div
@@ -146,6 +203,21 @@ function UserBubble({ content }: { content: string }) {
         <User size={15} style={{ color: '#818cf8' }} />
       </div>
       <div className="bubble-wrap" style={{ maxWidth: '80%', position: 'relative' }}>
+        {turnBadge && (
+          <div
+            style={{
+              fontSize: '0.6rem',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: '#818cf8',
+              opacity: 0.7,
+              marginBottom: '0.2rem',
+            }}
+          >
+            {turnBadge}
+          </div>
+        )}
         <div
           className="flex-1 rounded-2xl px-4 py-3 text-sm shadow"
           style={{
@@ -156,7 +228,6 @@ function UserBubble({ content }: { content: string }) {
         >
           <MarkdownRenderer content={content} />
         </div>
-        {/* Copy button — floats above top-right, visible on hover */}
         <div className="bubble-copy-btn" style={{ position: 'absolute', top: '-0.75rem', right: '0.25rem' }}>
           <CopyButton text={content} variant="indigo" />
         </div>
@@ -167,61 +238,11 @@ function UserBubble({ content }: { content: string }) {
 
 interface AssistantBubbleProps {
   content: string
-  perfMetrics?: PredictionRow['PerfMetrics']
+  perfMetrics?: SamplePerfMetrics | null
+  turnBadge?: string
 }
 
-type CopyVariant = 'green' | 'indigo'
-
-function CopyButton({ text, variant = 'green' }: { text: string; variant?: CopyVariant }) {
-  const { t } = useLocale()
-  const [copied, setCopied] = useState(false)
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1800)
-    } catch {
-      // fallback for non-https
-      const el = document.createElement('textarea')
-      el.value = text
-      document.body.appendChild(el)
-      el.select()
-      document.execCommand('copy')
-      document.body.removeChild(el)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1800)
-    }
-  }, [text])
-
-  const activeColor = variant === 'green' ? '#34d399' : '#818cf8'
-  const borderColor = variant === 'green' ? 'rgba(16,185,129,0.2)' : 'rgba(99,102,241,0.2)'
-  const bgColor = variant === 'green' ? 'rgba(16,185,129,0.06)' : 'rgba(99,102,241,0.06)'
-
-  return (
-    <button
-      onClick={handleCopy}
-      title={t('prediction.copyContent')}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '0.25rem',
-        padding: '0.2rem 0.5rem',
-        borderRadius: '0.4rem',
-        border: `1px solid ${borderColor}`,
-        background: bgColor,
-        color: copied ? activeColor : 'rgba(148,163,184,0.7)',
-        fontSize: '0.68rem',
-        cursor: 'pointer',
-        transition: 'all 0.15s',
-      }}
-    >
-      {copied ? <Check size={11} /> : <Copy size={11} />}
-      <span>{copied ? t('prediction.copySuccess') : t('prediction.copyContent')}</span>
-    </button>
-  )
-}
-
-function AssistantBubble({ content, perfMetrics }: AssistantBubbleProps) {
+function AssistantBubble({ content, perfMetrics, turnBadge }: AssistantBubbleProps) {
   const { calls, before } = extractToolCalls(content)
   return (
     <div
@@ -229,6 +250,22 @@ function AssistantBubble({ content, perfMetrics }: AssistantBubbleProps) {
       style={{ animation: 'fadeInUp 300ms ease-out 80ms both' }}
     >
       <div className="bubble-wrap" style={{ maxWidth: '80%', position: 'relative' }}>
+        {turnBadge && (
+          <div
+            style={{
+              fontSize: '0.6rem',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: '#34d399',
+              opacity: 0.7,
+              marginBottom: '0.2rem',
+              textAlign: 'right',
+            }}
+          >
+            {turnBadge}
+          </div>
+        )}
         <div
           className="flex-1 rounded-2xl px-4 py-3 text-sm"
           style={{
@@ -238,10 +275,11 @@ function AssistantBubble({ content, perfMetrics }: AssistantBubbleProps) {
           }}
         >
           {before && <MarkdownRenderer content={before} />}
-          {calls.map((c, i) => <ToolCallBlock key={i} raw={c} />)}
+          {calls.map((c, i) => (
+            <ToolCallBlock key={i} raw={c} />
+          ))}
           {perfMetrics && <PerfChip metrics={perfMetrics} variant="green" />}
         </div>
-        {/* Copy button — floats above top-right, visible on hover */}
         <div className="bubble-copy-btn" style={{ position: 'absolute', top: '-0.75rem', right: '0.25rem' }}>
           <CopyButton text={content} variant="green" />
         </div>
@@ -251,6 +289,47 @@ function AssistantBubble({ content, perfMetrics }: AssistantBubbleProps) {
         style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)' }}
       >
         <Bot size={15} style={{ color: '#34d399' }} />
+      </div>
+    </div>
+  )
+}
+
+/** Collapsible tool-result message bubble */
+function ToolResultBubble({ content }: { content: string }) {
+  const { t } = useLocale()
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="flex gap-3 items-start" style={{ animation: 'fadeInUp 300ms ease-out both' }}>
+      <div
+        className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-1"
+        style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)' }}
+      >
+        <Wrench size={14} style={{ color: '#fbbf24' }} />
+      </div>
+      <div style={{ maxWidth: '80%', flex: 1 }}>
+        <div
+          className="rounded-xl border overflow-hidden text-xs"
+          style={{ borderColor: 'rgba(245,158,11,0.25)', background: 'rgba(245,158,11,0.05)' }}
+        >
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="flex items-center gap-2 w-full px-3 py-2 text-left"
+            style={{ color: '#fbbf24' }}
+          >
+            {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            <span className="font-semibold uppercase tracking-wide" style={{ fontSize: '0.65rem' }}>
+              {t('prediction.toolResult')}
+            </span>
+          </button>
+          {open && (
+            <pre
+              className="px-3 py-2 text-xs font-mono whitespace-pre-wrap break-all overflow-auto max-h-[200px]"
+              style={{ background: 'var(--color-surface)', color: 'var(--color-ink-muted)' }}
+            >
+              {content}
+            </pre>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -268,7 +347,8 @@ interface CollapsibleJsonProps {
 function CollapsibleJson({ label, value, maxHeight = 200, defaultOpen = false }: CollapsibleJsonProps) {
   const [open, setOpen] = useState(defaultOpen)
 
-  const isEmpty = value == null ||
+  const isEmpty =
+    value == null ||
     (typeof value === 'object' && Object.keys(value as object).length === 0) ||
     value === '{}'
 
@@ -470,18 +550,10 @@ function EvalResultPanel({ pred, gold, nScore, score, metadata, threshold, showP
           }}
         >
           {Object.keys(score).length > 0 && (
-            <CollapsibleJson
-              label={t('prediction.scoreJson')}
-              value={score}
-              maxHeight={200}
-            />
+            <CollapsibleJson label={t('prediction.scoreJson')} value={score} maxHeight={200} />
           )}
           {hasMetadata && (
-            <CollapsibleJson
-              label={t('prediction.metadata')}
-              value={metadata}
-              maxHeight={250}
-            />
+            <CollapsibleJson label={t('prediction.metadata')} value={metadata} maxHeight={250} />
           )}
         </div>
       )}
@@ -489,32 +561,102 @@ function EvalResultPanel({ pred, gold, nScore, score, metadata, threshold, showP
   )
 }
 
+/* ─── Structured multi-turn renderer ───────────────────────────── */
+
+function StructuredMessages({
+  messages,
+  isMultiTurn,
+}: {
+  messages: ChatMessage[]
+  isMultiTurn: boolean
+}) {
+  const { t } = useLocale()
+
+  // Compute per-role turn index for badge labeling (only user & assistant)
+  const turnCounters = { user: 0, assistant: 0 }
+
+  return (
+    <>
+      {messages.map((msg, idx) => {
+        if (msg.role === 'system') {
+          return <SystemBanner key={idx} content={msg.content} />
+        }
+
+        if (msg.role === 'user') {
+          turnCounters.user += 1
+          const badge =
+            isMultiTurn
+              ? t('prediction.turnN').replace('${n}', String(turnCounters.user))
+              : undefined
+          return <UserBubble key={idx} content={msg.content} turnBadge={badge} />
+        }
+
+        if (msg.role === 'assistant') {
+          turnCounters.assistant += 1
+          const badge =
+            isMultiTurn
+              ? t('prediction.turnN').replace('${n}', String(turnCounters.assistant))
+              : undefined
+          return (
+            <AssistantBubble
+              key={idx}
+              content={msg.content}
+              perfMetrics={msg.perf_metrics}
+              turnBadge={badge}
+            />
+          )
+        }
+
+        if (msg.role === 'tool') {
+          return <ToolResultBubble key={idx} content={msg.content} />
+        }
+
+        return null
+      })}
+    </>
+  )
+}
+
 /* ─── main export ─────────────────────────────────────────────── */
 
 export default function ChatView({ prediction, threshold = 0.99 }: Props) {
-  const isSystemMsg = hasSystemPrompt(prediction.Input)
-  const { system, user } = isSystemMsg ? parseSystemUser(prediction.Input) : { system: '', user: prediction.Input }
-
   const showPred =
     prediction.Pred &&
     prediction.Pred !== '*Same as Generated*' &&
     prediction.Generated &&
     prediction.Pred.trim() !== prediction.Generated.trim()
 
+  // Determine if we have structured messages and if it's truly multi-turn
+  const messages = prediction.Messages
+  const hasStructured = !!(messages && messages.length > 0)
+
+  // Multi-turn = more than one user message (excluding system)
+  const userCount = hasStructured ? messages!.filter((m) => m.role === 'user').length : 0
+  const isMultiTurn = userCount > 1
+
   return (
     <div className="flex flex-col gap-4 py-2">
-      {/* System prompt banner */}
-      {system && <SystemBanner content={system} />}
+      {hasStructured ? (
+        /* ── Structured rendering (new-format caches) ── */
+        <StructuredMessages messages={messages!} isMultiTurn={isMultiTurn} />
+      ) : (
+        /* ── Legacy string-based fallback ── */
+        (() => {
+          const isSystemMsg = hasSystemPrompt(prediction.Input)
+          const { system, user } = isSystemMsg
+            ? parseSystemUser(prediction.Input)
+            : { system: '', user: prediction.Input }
 
-      {/* User message */}
-      <UserBubble content={user || prediction.Input} />
-
-      {/* Assistant: Generated + PerfChip */}
-      {prediction.Generated && (
-        <AssistantBubble
-          content={prediction.Generated}
-          perfMetrics={prediction.PerfMetrics}
-        />
+          return (
+            <>
+              {system && <SystemBanner content={system} />}
+              <UserBubble content={user || prediction.Input} />
+              {prediction.Generated && (
+                <AssistantBubble content={prediction.Generated} perfMetrics={prediction.PerfMetrics} />
+              )}
+            </>
+          )
+        })()
       )}
 
       {/* Divider */}

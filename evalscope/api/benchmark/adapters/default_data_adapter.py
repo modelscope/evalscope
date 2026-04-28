@@ -426,7 +426,7 @@ class DefaultDataAdapter(DataAdapter):
         return TaskState(
             model=model.name,
             sample=sample,
-            messages=[model_output.message],
+            messages=sample.input + [model_output.message],
             output=model_output,
             completed=True,
         )

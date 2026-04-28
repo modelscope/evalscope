@@ -190,9 +190,47 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
         prediction = score.prediction
         target = review_result.target
         extracted_prediction = score.extracted_prediction
+
+        # Build structured message list for multi-turn visualization.
+        # Each entry: {role, content, perf_metrics?}  (perf_metrics only on assistant msgs).
+        messages_data = None
+        try:
+            messages_data = [{
+                'role': m.role,
+                'content': m.text,
+                'perf_metrics': m.perf_metrics.model_dump() if m.perf_metrics else None,
+            } for m in review_result.messages]
+        except Exception as e:
+            logger.debug(f'Could not serialize messages for prediction row: {e}')
+
+        # Fallback perf from prediction cache (single-turn legacy path).
+        fallback_perf = perf_map.get(int(review_result.index))
+
+        # For single-turn without per-message perf, propagate the fallback perf onto the
+        # last assistant message so PerfChip works consistently.
+        if messages_data and fallback_perf:
+            for msg in reversed(messages_data):
+                if msg['role'] == 'assistant' and msg['perf_metrics'] is None:
+                    msg['perf_metrics'] = fallback_perf
+                    break
+
+        # Ensure the assistant's response always appears in Messages.
+        # Old/current caches store the model output in score.prediction, NOT in
+        # ReviewResult.messages (which only carries the user prompt after migration).
+        # New caches produced with multi-turn adapters will already have the assistant
+        # message in messages[], so we only append when it is absent.
+        if messages_data is not None and prediction:
+            has_assistant = any(m['role'] == 'assistant' for m in messages_data)
+            if not has_assistant:
+                messages_data.append({
+                    'role': 'assistant',
+                    'content': prediction,
+                    'perf_metrics': fallback_perf,
+                })
+
         raw_d = {
             'Index': str(review_result.index),
-            'Input': review_result.input.replace('\n', '\n\n'),  # for markdown
+            'Input': review_result.messages_markdown.replace('\n', '\n\n'),  # for markdown
             'Metadata': metadata,
             'Generated': prediction or '',  # Ensure no None value
             'Gold': target or '*No Gold Provided*',
@@ -200,7 +238,8 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
             or '',  # Ensure no None value
             'Score': score.model_dump(exclude_none=True),
             'NScore': normalize_score(score.main_value),
-            'PerfMetrics': perf_map.get(int(review_result.index)),
+            'PerfMetrics': fallback_perf,
+            'Messages': messages_data,
         }
         ds.append(raw_d)
 
