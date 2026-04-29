@@ -143,11 +143,11 @@ def _build_best_config(runs: list) -> OrderedDict:
     best: OrderedDict = OrderedDict()
 
     best_rps = max(runs, key=lambda r: r.summary.request_throughput)
-    best['Highest RPS'] = (f'Concurrency {best_rps.parallel} '
+    best['Highest RPS'] = (f'{best_rps.name} '
                            f'({best_rps.summary.request_throughput:.4f} req/s)')
 
     best_lat = min(runs, key=lambda r: r.summary.avg_latency if r.summary.avg_latency >= 0 else float('inf'))
-    best['Lowest Latency'] = (f'Concurrency {best_lat.parallel} '
+    best['Lowest Latency'] = (f'{best_lat.name} '
                               f'({best_lat.summary.avg_latency:.3f} s)')
 
     return best
@@ -167,18 +167,18 @@ def _build_recommendations(runs: list) -> List[str]:
         if best_idx == len(rps_values) - 1:
             recs.append(
                 'The system has not reached its performance bottleneck. '
-                'Consider testing with higher concurrency levels.'
+                'Consider testing with higher load levels.'
             )
         elif best_idx == 0:
-            recs.append('Consider lowering concurrency; load may be too high for the system.')
+            recs.append('Consider lowering the load; it may be too high for the system.')
         else:
-            recs.append(f'Optimal concurrency appears to be around {sorted_runs[best_idx].parallel}.')
+            recs.append(f'Optimal configuration appears to be around {sorted_runs[best_idx].name}.')
 
     last = sorted_runs[-1]
     if last.success_rate < 95:
         recs.append(
-            f'Success rate at highest concurrency ({last.parallel}) is {last.success_rate:.1f}%. '
-            'Check system resources or reduce concurrency.'
+            f'Success rate at highest load ({last.name}) is {last.success_rate:.1f}%. '
+            'Check system resources or reduce the load.'
         )
 
     if len(sorted_runs) >= 2:
@@ -186,8 +186,8 @@ def _build_recommendations(runs: list) -> List[str]:
         last_lat = sorted_runs[-1].summary.avg_latency
         if first_lat > 0 and last_lat / first_lat > 3:
             recs.append(
-                f'Latency grew {last_lat / first_lat:.1f}× from lowest to highest concurrency. '
-                'The system may be under significant load.'
+                f'Latency grew {last_lat / first_lat:.1f}\u00d7 from lowest to highest load. '
+                'The system may be under significant stress.'
             )
 
     return recs
@@ -247,6 +247,7 @@ def _build_run_section(run, is_embedding_flag: bool) -> Dict[str, Any]:
     from . import perf_charts as charts
 
     pct = run.percentiles.to_list()
+    pct_charts = charts.build_percentile_chart(run, is_embedding_flag)
     return {
         'name': run.name,
         'total_requests': run.summary.total_requests,
@@ -256,7 +257,8 @@ def _build_run_section(run, is_embedding_flag: bool) -> Dict[str, Any]:
         'percentile_columns': list(pct[0].keys()) if pct else [],
         'percentile_rows': [list(p.values()) for p in pct],
         # charts
-        'percentile_chart': charts.build_percentile_chart(run, is_embedding_flag),
+        'percentile_chart': pct_charts[0],
+        'percentile_token_lat_chart': pct_charts[1],
         'request_detail_tabs': charts.build_request_detail_tabs(run, is_embedding_flag),
     }
 

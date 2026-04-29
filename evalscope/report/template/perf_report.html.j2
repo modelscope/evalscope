@@ -257,8 +257,14 @@
         <!-- Percentile Curves -->
         {% if run.percentile_chart %}
         <div class="sub-card">
-          <div class="sub-card-header" data-i18n="card.percentile_curves">Percentile Curves</div>
+          <div class="sub-card-header" data-i18n="card.percentile_curves">Percentile Curves — Latency (s)</div>
           <div class="chart-wrap">{{ run.percentile_chart | safe }}</div>
+        </div>
+        {% endif %}
+        {% if run.percentile_token_lat_chart %}
+        <div class="sub-card">
+          <div class="sub-card-header" data-i18n="card.percentile_curves_token_lat">Percentile Curves — TTFT / TPOT / ITL (ms)</div>
+          <div class="chart-wrap">{{ run.percentile_token_lat_chart | safe }}</div>
         </div>
         {% endif %}
 

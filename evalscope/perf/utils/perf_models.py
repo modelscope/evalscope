@@ -280,7 +280,15 @@ class RunData(BaseModel):
 
     @property
     def name(self) -> str:
-        """Human-readable run label."""
+        """Human-readable run label.
+
+        * ``parallel_<N>_number_<M>`` directories  → "Parallel N / Number M"
+        * ``rate_<R>_number_<M>`` directories       → "Rate R rps / Number M"
+        """
+        import re
+        m = re.match(r'^rate_([\d.]+)_number_(\d+)$', self.dir_name)
+        if m:
+            return f'Rate {m.group(1)} rps / Number {m.group(2)}'
         return f'Parallel {self.parallel} / Number {self.number}'
 
     @property

@@ -34,20 +34,32 @@ logger = get_logger()
 # Loader
 # ---------------------------------------------------------------------------
 
+# Patterns for recognized run directory names
+_PARALLEL_RE = re.compile(r'^parallel_(\d+)_number_(\d+)$')
+_RATE_RE = re.compile(r'^rate_([\d.]+)_number_(\d+)$')
+
 
 class RunLoader:
-    """Discovers and loads all benchmark runs from an output directory."""
+    """Discovers and loads all benchmark runs from an output directory.
+
+    Recognized sub-directory patterns:
+
+    * ``parallel_<N>_number_<M>`` – closed-loop / fixed-concurrency mode
+    * ``rate_<R>_number_<M>``     – open-loop / fixed-rate mode
+    """
 
     @staticmethod
     def load_all(output_dir: str) -> List[RunData]:
-        """Walk *output_dir* for ``parallel_*`` subdirectories and return sorted runs."""
+        """Walk *output_dir* for run subdirectories and return sorted runs."""
         if not os.path.isdir(output_dir):
             return []
 
         runs: List[RunData] = []
         for entry in sorted(os.listdir(output_dir)):
             run_dir = os.path.join(output_dir, entry)
-            if not os.path.isdir(run_dir) or not entry.startswith('parallel_'):
+            if not os.path.isdir(run_dir):
+                continue
+            if not (_PARALLEL_RE.match(entry) or _RATE_RE.match(entry)):
                 continue
             run = RunLoader._load_single(run_dir, entry)
             if run is not None:
@@ -68,9 +80,15 @@ class RunLoader:
         percentiles = PercentileResult.from_list(percentile_rows) if isinstance(percentile_rows, list) \
             else PercentileResult.from_transposed(percentile_rows)
 
-        m = re.match(r'parallel_(\d+)_number_(\d+)', dir_name)
-        if m:
-            parallel, number = int(m.group(1)), int(m.group(2))
+        m_parallel = _PARALLEL_RE.match(dir_name)
+        m_rate = _RATE_RE.match(dir_name)
+        if m_parallel:
+            parallel, number = int(m_parallel.group(1)), int(m_parallel.group(2))
+        elif m_rate:
+            # open-loop mode: encode rate*1000 as a synthetic "parallel" key so
+            # that the existing (parallel, number) sort order stays meaningful.
+            parallel = round(float(m_rate.group(1)) * 1000)
+            number = int(m_rate.group(2))
         else:
             parallel = summary.concurrency
             number = summary.total_requests
