@@ -26,11 +26,13 @@ logger = get_logger()
 
 
 def run_one_benchmark(args: Arguments, output_path: str = None):
-    """Run a single benchmark with given parallel and number settings."""
+    """Run a single benchmark with given parallel/rate and number settings."""
     if isinstance(args.parallel, list):
         args.parallel = args.parallel[0]
     if isinstance(args.number, list):
         args.number = args.number[0]
+    if isinstance(args.rate, list):
+        args.rate = args.rate[0]
 
     logger.info('Starting benchmark with args: ')
     logger.info(args)
@@ -52,41 +54,73 @@ def run_one_benchmark(args: Arguments, output_path: str = None):
         else:
             metrics_result, percentile_result = loop.run_until_complete(benchmark(args))
 
-    # Return unified format
-    key = f'parallel_{args.parallel}_number_{args.number}'
+    # Return unified format; key reflects the sweep dimension
+    if args.open_loop:
+        key = f'rate_{args.rate}_number_{args.number}'
+    else:
+        key = f'parallel_{args.parallel}_number_{args.number}'
     return {key: {'metrics': metrics_result, 'percentiles': percentile_result}}
 
 
 def run_multi_benchmark(args: Arguments, output_path: str = None):
-    """Run multiple benchmarks with different parallel and number combinations."""
+    """Run multiple benchmarks with different parallel/rate and number combinations."""
     results = {}
     number_list = copy.deepcopy(args.number)
-    parallel_list = copy.deepcopy(args.parallel)
 
-    pbar = tqdm(
-        enumerate(zip(number_list, parallel_list)),
-        total=len(number_list),
-        desc='Running[perf]',
-        logger=logger,
-        log_interval=HEARTBEAT_INTERVAL_SEC
-    )
-    for i, (number, parallel) in pbar:
-        args.number = number
-        args.parallel = parallel
+    if args.open_loop:
+        # open-loop mode: sweep over (number, rate) pairs
+        sweep_list = copy.deepcopy(args.rate)
+        total = len(number_list)
 
-        cur_run_name = f'parallel_{parallel}_number_{number}'
-        # Set up output path for each run
-        cur_output_path = os.path.join(output_path, cur_run_name)
-        os.makedirs(cur_output_path, exist_ok=True)
+        pbar = tqdm(
+            enumerate(zip(number_list, sweep_list)),
+            total=total,
+            desc='Running[perf-open-loop]',
+            logger=logger,
+            log_interval=HEARTBEAT_INTERVAL_SEC
+        )
+        for i, (number, rate) in pbar:
+            args.number = number
+            args.rate = rate
 
-        # Start the benchmark
-        benchmark_result = run_one_benchmark(args, output_path=cur_output_path)
-        results.update(benchmark_result)
+            cur_run_name = f'rate_{rate}_number_{number}'
+            cur_output_path = os.path.join(output_path, cur_run_name)
+            os.makedirs(cur_output_path, exist_ok=True)
 
-        # Sleep between runs to avoid overwhelming the server
-        if i < len(number_list) - 1:
-            logger.info(f'Sleeping for {args.sleep_interval} seconds before the next run...')
-            time.sleep(args.sleep_interval)
+            benchmark_result = run_one_benchmark(args, output_path=cur_output_path)
+            results.update(benchmark_result)
+
+            if i < total - 1:
+                logger.info(f'Sleeping for {args.sleep_interval} seconds before the next run...')
+                time.sleep(args.sleep_interval)
+
+    else:
+        parallel_list = copy.deepcopy(args.parallel)
+
+        pbar = tqdm(
+            enumerate(zip(number_list, parallel_list)),
+            total=len(number_list),
+            desc='Running[perf]',
+            logger=logger,
+            log_interval=HEARTBEAT_INTERVAL_SEC
+        )
+        for i, (number, parallel) in pbar:
+            args.number = number
+            args.parallel = parallel
+
+            cur_run_name = f'parallel_{parallel}_number_{number}'
+            # Set up output path for each run
+            cur_output_path = os.path.join(output_path, cur_run_name)
+            os.makedirs(cur_output_path, exist_ok=True)
+
+            # Start the benchmark
+            benchmark_result = run_one_benchmark(args, output_path=cur_output_path)
+            results.update(benchmark_result)
+
+            # Sleep between runs to avoid overwhelming the server
+            if i < len(number_list) - 1:
+                logger.info(f'Sleeping for {args.sleep_interval} seconds before the next run...')
+                time.sleep(args.sleep_interval)
 
     print_summary(results, args)
 

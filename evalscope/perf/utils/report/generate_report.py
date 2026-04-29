@@ -95,7 +95,7 @@ def _build_summary_table(runs: list, is_embedding_flag: bool):
             s = r.summary
             rate = s.get('Request rate (req/s)', -1)
             rows.append([
-                str(int(s.get('Number of concurrency', 0))),
+                'INF' if int(s.get('Number of concurrency', 0)) == -1 else str(int(s.get('Number of concurrency', 0))),
                 'INF' if rate == -1 else f'{rate:.2f}',
                 f"{s.get('Request throughput (req/s)', 0):.4f}",
                 f"{s.get('Average latency (s)', 0):.3f}",
@@ -123,7 +123,7 @@ def _build_summary_table(runs: list, is_embedding_flag: bool):
             s = r.summary
             rate = s.get('Request rate (req/s)', -1)
             rows.append([
-                str(int(s.get('Number of concurrency', 0))),
+                'INF' if int(s.get('Number of concurrency', 0)) == -1 else str(int(s.get('Number of concurrency', 0))),
                 'INF' if rate == -1 else f'{rate:.2f}',
                 f"{s.get('Request throughput (req/s)', 0):.4f}",
                 f"{s.get('Average latency (s)', 0):.3f}",

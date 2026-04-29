@@ -70,8 +70,21 @@ class Arguments(BaseArgument):
     parallel: Union[int, List[int]] = 1
     """Number of parallel requests."""
 
-    rate: float = -1
-    """Rate limit for requests (default: -1, no limit)."""
+    rate: Union[float, List[float]] = -1
+    """Rate limit for requests per second (default: -1, no limit). Supports a list of values for multi-run sweeps in open-loop mode."""
+
+    open_loop: bool = False
+    """Enable open-loop rate mode: dispatch requests at the scheduled rate without semaphore backpressure.
+
+    When enabled, requests are fired according to the Poisson arrival schedule set by ``--rate``
+    regardless of whether the server has finished processing previous requests.
+    Use ``--rate`` (list) and ``--number`` (list) to sweep multiple load levels.
+
+    Semantics in open-loop mode:
+    - ``--rate``: target request rate in req/s; drives multi-run iteration (replaces ``--parallel`` sweep).
+    - ``--number``: total requests per run; must have the same length as ``--rate``.
+    - ``--parallel``: ignored for concurrency control; optionally used for MetricsAccumulator labelling.
+    """
 
     sleep_interval: int = 5
     """Sleep interval between performance runs, in seconds."""
@@ -304,14 +317,37 @@ class Arguments(BaseArgument):
         if self.apply_chat_template is None:
             self.apply_chat_template = self.url.strip('/').endswith('chat/completions')
 
+        # Normalise rate to a list
+        if isinstance(self.rate, (int, float)):
+            self.rate = [float(self.rate)]
+
         # Set number and parallel to lists if they are integers
         if isinstance(self.number, int):
             self.number = [self.number]
         if isinstance(self.parallel, int):
             self.parallel = [self.parallel]
-        assert len(self.number) == len(
-            self.parallel
-        ), f'The length of number and parallel should be the same, but got number: {self.number} and parallel: {self.parallel}'  # noqa: E501
+
+        if self.open_loop:
+            # open-loop mode: sweep over (number, rate) pairs
+            assert len(self.number) == len(self.rate), (
+                f'In open-loop mode the length of --number and --rate must match, '
+                f'but got number: {self.number} and rate: {self.rate}'
+            )
+            # Ensure rate values are valid (> 0) in open-loop mode
+            assert all(r > 0
+                       for r in self.rate), (f'In open-loop mode all --rate values must be > 0, but got: {self.rate}')
+            # In open-loop mode concurrency is unbounded; set parallel=-1 so downstream
+            # display layers render it as INF instead of a numeric value.
+            # self.parallel = [-1]
+            # logger.info(
+            #     'open-loop mode enabled: concurrency is unbounded (parallel set to -1 / INF). '
+            #     f'Rate sweep: {self.rate}, number sweep: {self.number}.'
+            # )
+        else:
+            assert len(self.number) == len(self.parallel), (
+                f'The length of number and parallel should be the same, '
+                f'but got number: {self.number} and parallel: {self.parallel}'
+            )
 
         # Validate tuning knobs
         if self.db_commit_interval <= 0:
@@ -381,7 +417,12 @@ def add_argument(parser: argparse.ArgumentParser):
     # Performance and parallelism
     parser.add_argument('-n', '--number', type=int, default=1000, nargs='+', help='How many requests to be made')
     parser.add_argument('--parallel', type=int, default=1, nargs='+', help='Set number of concurrency requests, default 1')  # noqa: E501
-    parser.add_argument('--rate', type=float, default=-1, help='Number of requests per second. default -1 means no rate limit')  # noqa: E501
+    parser.add_argument('--rate', type=float, default=-1, nargs='+',
+                        help='Number of requests per second. default -1 means no rate limit. '
+                             'Accepts multiple values for open-loop multi-run sweeps, e.g. --rate 5 10 20')  # noqa: E501
+    parser.add_argument('--open-loop', action='store_true', default=False,
+                        help='Enable open-loop rate mode: dispatch requests at the scheduled rate without '
+                             'semaphore backpressure. Use with --rate (list) and matching --number (list).')  # noqa: E501
     parser.add_argument(
         '--sleep-interval', type=int, default=5, help='Sleep interval between performance runs, in seconds. Default 5')  # noqa: E501
 

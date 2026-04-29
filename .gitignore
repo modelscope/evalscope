@@ -168,3 +168,4 @@ examples/api_test/
 # Frontend (evalscope/web)
 node_modules/
 evalscope/web/dist/
+evalscope/web/.vite/

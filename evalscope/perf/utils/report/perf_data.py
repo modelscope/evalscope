@@ -82,7 +82,10 @@ class RunData:
             ('Total Requests', str(int(s.get('Total requests', 0)))),
             ('Succeed Requests', str(int(s.get('Succeed requests', 0)))),
             ('Failed Requests', str(int(s.get('Failed requests', 0)))),
-            ('Concurrency', str(int(s.get('Number of concurrency', 0)))),
+            (
+                'Concurrency',
+                'INF' if int(s.get('Number of concurrency', 0)) == -1 else str(int(s.get('Number of concurrency', 0)))
+            ),
             ('Time Taken (s)', f"{s.get('Time taken for tests (s)', 0):.3f}"),
             ('Request Rate (req/s)', rate_str),
             ('Request Throughput (req/s)', f"{s.get('Request throughput (req/s)', 0):.4f}"),
@@ -98,9 +101,9 @@ class RunData:
             extra = [
                 ('Output Tok Throughput (tok/s)', f"{s.get('Output token throughput (tok/s)', 0):.2f}"),
                 ('Total Tok Throughput (tok/s)', f"{s.get('Total token throughput (tok/s)', 0):.2f}"),
-                ('Avg TTFT (s)', f"{s.get('Average time to first token (s)', 0):.4f}"),
-                ('Avg TPOT (s)', f"{s.get('Average time per output token (s)', 0):.4f}"),
-                ('Avg ITL (s)', f"{s.get('Average inter-token latency (s)', 0):.4f}"),
+                ('Avg TTFT (ms)', f"{s.get('Average time to first token (s)', 0) * 1000:.2f}"),
+                ('Avg TPOT (ms)', f"{s.get('Average time per output token (s)', 0) * 1000:.2f}"),
+                ('Avg ITL (ms)', f"{s.get('Average inter-token latency (s)', 0) * 1000:.2f}"),
                 ('Avg Input Tokens', f"{s.get('Average input tokens per request', 0):.1f}"),
                 ('Avg Output Tokens', f"{s.get('Average output tokens per request', 0):.1f}"),
             ]

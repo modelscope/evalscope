@@ -94,10 +94,10 @@ class LLMCol:
     RPS = ColSpec('rps', 'RPS')
     AVG_LATENCY = ColSpec('avg_latency', 'Avg\nLat.(s)')
     P99_LATENCY = ColSpec('p99_latency', 'P99\nLat.(s)')
-    AVG_TTFT = ColSpec('avg_ttft', 'Avg\nTTFT(s)')
-    P99_TTFT = ColSpec('p99_ttft', 'P99\nTTFT(s)')
-    AVG_TPOT = ColSpec('avg_tpot', 'Avg\nTPOT(s)')
-    P99_TPOT = ColSpec('p99_tpot', 'P99\nTPOT(s)')
+    AVG_TTFT = ColSpec('avg_ttft', 'Avg\nTTFT(ms)')
+    P99_TTFT = ColSpec('p99_ttft', 'P99\nTTFT(ms)')
+    AVG_TPOT = ColSpec('avg_tpot', 'Avg\nTPOT(ms)')
+    P99_TPOT = ColSpec('p99_tpot', 'P99\nTPOT(ms)')
     AVG_TPS = ColSpec('avg_tps', 'Gen.\ntoks/s')
     SUCCESS_RATE = ColSpec('success_rate', 'Success\nRate', style='green')
 
@@ -268,21 +268,26 @@ class LLMResultAnalyzer(BaseResultAnalyzer):
         p99_ttft = self._get_p99(percentile_metrics, PercentileMetrics.TTFT, percentiles)
         avg_tpot = total_metrics.get(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, 0)
         p99_tpot = self._get_p99(percentile_metrics, PercentileMetrics.TPOT, percentiles)
+        # Convert TTFT and TPOT from seconds to milliseconds for display
+        avg_ttft_ms = avg_ttft * 1000 if avg_ttft is not None else None
+        p99_ttft_ms = p99_ttft * 1000 if p99_ttft is not None else None
+        avg_tpot_ms = avg_tpot * 1000 if avg_tpot is not None else None
+        p99_tpot_ms = p99_tpot * 1000 if p99_tpot is not None else None
 
         if any(x is None for x in [concurrency, rps, avg_latency, p99_latency]):
             raise ValueError(f'Test results for concurrency {concurrency} contain invalid data, skipped')
 
         row = {
-            LLMCol.CONCURRENCY.key: str(int(concurrency)),
+            LLMCol.CONCURRENCY.key: 'INF' if concurrency == -1 else str(int(concurrency)),
             LLMCol.RATE.key: f'{rate:.2f}' if rate != -1 else 'INF',
             LLMCol.NUM.key: str(int(num_reqs)),
             LLMCol.RPS.key: f'{rps:.2f}' if rps is not None else 'N/A',
             LLMCol.AVG_LATENCY.key: f'{avg_latency:.3f}' if avg_latency is not None else 'N/A',
             LLMCol.P99_LATENCY.key: f'{p99_latency:.3f}' if p99_latency is not None else 'N/A',
-            LLMCol.AVG_TTFT.key: f'{avg_ttft:.3f}' if avg_ttft is not None else 'N/A',
-            LLMCol.P99_TTFT.key: f'{p99_ttft:.3f}' if p99_ttft is not None else 'N/A',
-            LLMCol.AVG_TPOT.key: f'{avg_tpot:.3f}' if avg_tpot is not None else 'N/A',
-            LLMCol.P99_TPOT.key: f'{p99_tpot:.3f}' if p99_tpot is not None else 'N/A',
+            LLMCol.AVG_TTFT.key: f'{avg_ttft_ms:.1f}' if avg_ttft_ms is not None else 'N/A',
+            LLMCol.P99_TTFT.key: f'{p99_ttft_ms:.1f}' if p99_ttft_ms is not None else 'N/A',
+            LLMCol.AVG_TPOT.key: f'{avg_tpot_ms:.1f}' if avg_tpot_ms is not None else 'N/A',
+            LLMCol.P99_TPOT.key: f'{p99_tpot_ms:.1f}' if p99_tpot_ms is not None else 'N/A',
             LLMCol.AVG_TPS.key: f'{avg_tps:.2f}' if avg_tps is not None else 'N/A',
             LLMCol.SUCCESS_RATE.key: f'{success_rate:.1f}%' if success_rate is not None else 'N/A',
         }
@@ -319,7 +324,7 @@ class EmbeddingResultAnalyzer(BaseResultAnalyzer):
             raise ValueError(f'Test results for concurrency {concurrency} contain invalid data, skipped')
 
         row = {
-            EmbCol.CONCURRENCY.key: str(int(concurrency)),
+            EmbCol.CONCURRENCY.key: 'INF' if concurrency == -1 else str(int(concurrency)),
             EmbCol.RATE.key: f'{rate:.2f}' if rate != -1 else 'INF',
             EmbCol.RPS.key: f'{rps:.2f}' if rps is not None else 'N/A',
             EmbCol.AVG_LATENCY.key: f'{avg_latency:.3f}' if avg_latency is not None else 'N/A',
@@ -563,7 +568,7 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
                 has_spec = True
 
             rows.append({
-                ReqMetCol.CONCURRENCY.key: str(int(concurrency)),
+                ReqMetCol.CONCURRENCY.key: 'INF' if concurrency == -1 else str(int(concurrency)),
                 ReqMetCol.NUM.key: str(int(num_reqs)),
                 ReqMetCol.AVG_IN.key: (f'{avg_in:.1f}' if avg_in is not None else 'N/A'),
                 ReqMetCol.P99_IN.key: (f'{p99_in:.1f}' if p99_in is not None else 'N/A'),

@@ -100,6 +100,19 @@ async def send_request(
 
 
 @exception_handler
+async def send_request_open_loop(
+    request: dict,
+    benchmark_data_queue: asyncio.Queue,
+    args: Arguments,
+    client: AioHttpClient,
+):
+    """Open-loop send: no semaphore, fires immediately regardless of in-flight count."""
+    benchmark_data = await client.post(request)
+    benchmark_data.update_gpu_usage()
+    await benchmark_data_queue.put(benchmark_data)
+
+
+@exception_handler
 async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: Arguments, api_plugin: 'ApiPluginBase'):
     accumulator = MetricsAccumulator(concurrency=args.parallel, rate=args.rate)
     result_db_path = get_result_db_path(args)
@@ -112,7 +125,10 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
         cursor = con.cursor()
         create_result_table(cursor)
 
-        cur_run_name = f'parallel_{args.parallel}_number_{args.number}'
+        cur_run_name = (
+            f'rate_{args.rate}_number_{args.number}'
+            if args.open_loop else f'parallel_{args.parallel}_number_{args.number}'
+        )
         with tqdm(
             desc=f'Processing[{cur_run_name}]',
             total=args.number,
@@ -167,37 +183,56 @@ async def benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     api_plugin_class = ApiRegistry.get_class(args.api)
     api_plugin = api_plugin_class(args)
 
-    benchmark_data_queue: asyncio.Queue = asyncio.Queue(maxsize=max(1, args.parallel * args.queue_size_multiplier))
-    data_process_completed_event.clear()
-
     # test connection
     await connect_test(args, api_plugin)
 
     # Create a single shared client session for all requests
     client = AioHttpClient(args, api_plugin)
     async with client:
-        # start statistic benchmark metric (consumer)
-        statistic_benchmark_metric_task = asyncio.create_task(
-            statistic_benchmark_metric(benchmark_data_queue, args, api_plugin)
-        )
+        if args.open_loop:
+            # --- Open-loop mode: unbounded queue, no semaphore ---
+            benchmark_data_queue: asyncio.Queue = asyncio.Queue()
+            data_process_completed_event.clear()
 
-        # start sending requests with bounded in-flight tasks
-        semaphore = asyncio.Semaphore(args.parallel)
-        in_flight: set[asyncio.Task] = set()
-        max_in_flight = args.parallel * args.in_flight_task_multiplier
+            statistic_benchmark_metric_task = asyncio.create_task(
+                statistic_benchmark_metric(benchmark_data_queue, args, api_plugin)
+            )
 
-        async for request in get_requests(args, api_plugin):
-            # Keep the number of scheduled tasks bounded to avoid OOM
-            if len(in_flight) >= max_in_flight:
-                done, pending = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
-                in_flight = pending
+            in_flight: set[asyncio.Task] = set()
+            async for request in get_requests(args, api_plugin):
+                task = asyncio.create_task(send_request_open_loop(request, benchmark_data_queue, args, client))
+                in_flight.add(task)
+                task.add_done_callback(in_flight.discard)
 
-            task = asyncio.create_task(send_request(semaphore, request, benchmark_data_queue, args, client))
-            in_flight.add(task)
+            # Wait for all in-flight tasks
+            if in_flight:
+                await asyncio.gather(*in_flight, return_exceptions=True)
 
-        # Wait for remaining in-flight tasks
-        if in_flight:
-            await asyncio.gather(*in_flight, return_exceptions=True)
+        else:
+            # --- Closed-loop mode: bounded queue + semaphore ---
+            benchmark_data_queue = asyncio.Queue(maxsize=max(1, args.parallel * args.queue_size_multiplier))
+            data_process_completed_event.clear()
+
+            statistic_benchmark_metric_task = asyncio.create_task(
+                statistic_benchmark_metric(benchmark_data_queue, args, api_plugin)
+            )
+
+            semaphore = asyncio.Semaphore(args.parallel)
+            in_flight: set[asyncio.Task] = set()
+            max_in_flight = args.parallel * args.in_flight_task_multiplier
+
+            async for request in get_requests(args, api_plugin):
+                # Keep the number of scheduled tasks bounded to avoid OOM
+                if len(in_flight) >= max_in_flight:
+                    done, pending = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
+                    in_flight = pending
+
+                task = asyncio.create_task(send_request(semaphore, request, benchmark_data_queue, args, client))
+                in_flight.add(task)
+
+            # Wait for remaining in-flight tasks
+            if in_flight:
+                await asyncio.gather(*in_flight, return_exceptions=True)
 
         # Drain queue and finish
         await benchmark_data_queue.join()

@@ -197,7 +197,7 @@ def build_ttft_chart(runs: List[RunData]) -> str:
     traces = [
         dict(
             x=xs,
-            y=[r.summary.get('Average time to first token (s)', 0) for r in runs],
+            y=[r.summary.get('Average time to first token (s)', 0) * 1000 for r in runs],
             mode='lines+markers',
             name='Avg TTFT',
             line=dict(color=GREEN, width=2),
@@ -205,14 +205,14 @@ def build_ttft_chart(runs: List[RunData]) -> str:
         ),
         dict(
             x=xs,
-            y=[r.get_p99('TTFT (s)') for r in runs],
+            y=[r.get_p99('TTFT (s)') * 1000 for r in runs],
             mode='lines+markers',
             name='P99 TTFT',
             line=dict(color=YELLOW, width=2, dash='dash'),
             marker=dict(size=8),
         ),
     ]
-    return ChartBuilder.line(traces, x_title='Concurrency', y_title='TTFT (s)', div_id='chart-ttft')
+    return ChartBuilder.line(traces, x_title='Concurrency', y_title='TTFT (ms)', div_id='chart-ttft')
 
 
 def build_tpot_chart(runs: List[RunData]) -> str:
@@ -221,7 +221,7 @@ def build_tpot_chart(runs: List[RunData]) -> str:
     traces = [
         dict(
             x=xs,
-            y=[r.summary.get('Average time per output token (s)', 0) for r in runs],
+            y=[r.summary.get('Average time per output token (s)', 0) * 1000 for r in runs],
             mode='lines+markers',
             name='Avg TPOT',
             line=dict(color=ACCENT, width=2),
@@ -229,14 +229,14 @@ def build_tpot_chart(runs: List[RunData]) -> str:
         ),
         dict(
             x=xs,
-            y=[r.get_p99('TPOT (s)') for r in runs],
+            y=[r.get_p99('TPOT (s)') * 1000 for r in runs],
             mode='lines+markers',
             name='P99 TPOT',
             line=dict(color=RED, width=2, dash='dash'),
             marker=dict(size=8),
         ),
     ]
-    return ChartBuilder.line(traces, x_title='Concurrency', y_title='TPOT (s)', div_id='chart-tpot')
+    return ChartBuilder.line(traces, x_title='Concurrency', y_title='TPOT (ms)', div_id='chart-tpot')
 
 
 def build_rps_chart(runs: List[RunData]) -> str:
@@ -366,9 +366,9 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
         lat_traces.append(
             dict(
                 x=xs,
-                y=[r.first_chunk_latency if r.first_chunk_latency is not None else 0 for r in sorted_reqs],
+                y=[(r.first_chunk_latency * 1000) if r.first_chunk_latency is not None else 0 for r in sorted_reqs],
                 mode='lines+markers',
-                name='TTFT',
+                name='TTFT (ms)',
                 line=dict(color=GREEN, width=1.5),
                 marker=dict(size=4),
             )
@@ -376,9 +376,9 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
         lat_traces.append(
             dict(
                 x=xs,
-                y=[r.time_per_output_token if r.time_per_output_token is not None else 0 for r in sorted_reqs],
+                y=[(r.time_per_output_token * 1000) if r.time_per_output_token is not None else 0 for r in sorted_reqs],
                 mode='lines+markers',
-                name='TPOT',
+                name='TPOT (ms)',
                 line=dict(color=YELLOW, width=1.5),
                 marker=dict(size=4),
             )
@@ -388,7 +388,7 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
         'chart': ChartBuilder.line(
             lat_traces,
             x_title='Request Index',
-            y_title='Time (s)',
+            y_title='Time (s) / ms',
             div_id=f'req-latency-{safe}',
         ),
     })
@@ -427,8 +427,10 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
 
     # ── Tab 3: ITL (LLM only) ─────────────────────────────────────────────
     if not is_embedding:
-        itl_y = [(sum(r.inter_token_latencies) / len(r.inter_token_latencies)) if r.inter_token_latencies else 0
-                 for r in sorted_reqs]
+        itl_y = [
+            ((sum(r.inter_token_latencies) / len(r.inter_token_latencies)) * 1000) if r.inter_token_latencies else 0
+            for r in sorted_reqs
+        ]
         tabs.append({
             'label': 'ITL',
             'chart': ChartBuilder.line(
@@ -443,7 +445,7 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
                     )
                 ],
                 x_title='Request Index',
-                y_title='Avg ITL (s)',
+                y_title='Avg ITL (ms)',
                 div_id=f'req-itl-{safe}',
             ),
         })
@@ -499,25 +501,25 @@ def build_percentile_chart(run: RunData, is_embedding: bool) -> str:
         traces += [
             dict(
                 x=xs,
-                y=[p.get('TTFT (s)', 0) for p in run.percentiles],
+                y=[p.get('TTFT (s)', 0) * 1000 for p in run.percentiles],
                 mode='lines+markers',
-                name='TTFT',
+                name='TTFT (ms)',
                 line=dict(color=GREEN, width=2),
                 marker=dict(size=6),
             ),
             dict(
                 x=xs,
-                y=[p.get('TPOT (s)', 0) for p in run.percentiles],
+                y=[p.get('TPOT (s)', 0) * 1000 for p in run.percentiles],
                 mode='lines+markers',
-                name='TPOT',
+                name='TPOT (ms)',
                 line=dict(color=YELLOW, width=2),
                 marker=dict(size=6),
             ),
             dict(
                 x=xs,
-                y=[p.get('ITL (s)', 0) for p in run.percentiles],
+                y=[p.get('ITL (s)', 0) * 1000 for p in run.percentiles],
                 mode='lines+markers',
-                name='ITL',
+                name='ITL (ms)',
                 line=dict(color=PURPLE, width=2),
                 marker=dict(size=6),
             ),
@@ -527,6 +529,6 @@ def build_percentile_chart(run: RunData, is_embedding: bool) -> str:
     return ChartBuilder.line(
         traces,
         x_title='Percentile',
-        y_title='Time (s)',
+        y_title='Time (s) / ms',
         div_id=f'chart-percentile-{safe}',
     )
