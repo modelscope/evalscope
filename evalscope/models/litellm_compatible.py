@@ -21,6 +21,7 @@ from evalscope.utils import get_logger
 from evalscope.utils.function_utils import retry_call
 from .utils.openai import (
     chat_choices_from_openai,
+    collect_stream_response,
     model_output_from_openai,
     openai_chat_messages,
     openai_chat_tool_choice,
@@ -97,8 +98,12 @@ class LiteLLMAPI(ModelAPI):
             )
 
             total_time = time.monotonic() - t_start
+            ttft: Optional[float] = None
 
-            completion = ChatCompletion(**response.model_dump())
+            if config.stream and not isinstance(response, ChatCompletion):
+                completion, ttft = collect_stream_response(response, request_start=t_start)
+            else:
+                completion = ChatCompletion(**response.model_dump())
 
             choices = chat_choices_from_openai(completion, tools)
             output = model_output_from_openai(completion, choices)
@@ -107,7 +112,7 @@ class LiteLLMAPI(ModelAPI):
             usage = output.usage
             output.message.perf_metrics = PerformanceMetrics(
                 latency=total_time,
-                ttft=None,
+                ttft=ttft,
                 input_tokens=usage.input_tokens if usage else 0,
                 output_tokens=usage.output_tokens if usage else 0,
             )
