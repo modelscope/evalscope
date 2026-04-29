@@ -1,14 +1,14 @@
 import aiohttp
 import asyncio
 import time
-from typing import TYPE_CHECKING, AsyncGenerator, Dict, List, Tuple
+from typing import TYPE_CHECKING
 
+from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.benchmark_util import BenchmarkData
 from evalscope.utils.logger import get_logger
-from .arguments import Arguments
 
 if TYPE_CHECKING:
-    from .plugin.api.base import ApiPluginBase
+    from evalscope.perf.plugin.api.base import ApiPluginBase
 
 logger = get_logger()
 

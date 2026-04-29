@@ -27,34 +27,36 @@ Multi-turn specific parameters
 -------------------------------
 * ``--min-turns`` - minimum user turns per conversation (random_multi_turn).
 * ``--max-turns`` - maximum user turns per conversation.
+
+Note on open-loop mode
+----------------------
+Open-loop mode is **not** supported for multi-turn benchmarks.  The core issue
+is that open-loop semantics require each request to be dispatched independently
+of whether previous requests have completed.  Multi-turn conversations, however,
+have a hard sequential dependency: turn N must wait for the assistant response
+from turn N-1 before the next request can be constructed (the response is
+appended to the context).  Removing this dependency would break the conversation
+context and produce meaningless evaluation results.
 """
 
 import asyncio
-import numpy as np
-from typing import TYPE_CHECKING, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.benchmark import connect_test, data_process_completed_event, statistic_benchmark_metric
-from evalscope.perf.http_client import AioHttpClient
+from evalscope.perf.core.http_client import AioHttpClient
+from evalscope.perf.core.metrics_consumer import connect_test, data_process_completed_event, statistic_benchmark_metric
+from evalscope.perf.core.strategies import MultiTurnStrategy
 from evalscope.perf.plugin import ApiRegistry, DatasetRegistry
 from evalscope.perf.utils.db_util import summary_result
 from evalscope.perf.utils.handler import exception_handler
 from evalscope.utils.logger import get_logger
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 
-if TYPE_CHECKING:
-    from evalscope.perf.plugin.api.base import ApiPluginBase
-
 logger = get_logger()
 
 
-def _extract_user_turns(conversation: List[Dict]) -> List[Dict]:
-    """Return only the user-role messages from a conversation in order."""
-    return [m for m in conversation if m.get('role') == 'user']
-
-
 @exception_handler
-async def multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
+async def run_multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     """Run a multi-turn conversation benchmark.
 
     Args:
@@ -63,10 +65,10 @@ async def multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
 
     Returns:
         Tuple of ``(metrics_result, percentile_result)`` dicts, identical in
-        structure to the output of the standard ``benchmark()`` function.
+        structure to the output of :func:`~evalscope.perf.benchmark.run_benchmark`.
     """
     api_plugin_class = ApiRegistry.get_class(args.api)
-    api_plugin: 'ApiPluginBase' = api_plugin_class(args)
+    api_plugin = api_plugin_class(args)
 
     # ------------------------------------------------------------------
     # 1. Load all conversations from the dataset
@@ -94,23 +96,11 @@ async def multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     # ------------------------------------------------------------------
     # 2. Setup shared state
     # ------------------------------------------------------------------
-    benchmark_data_queue: asyncio.Queue = asyncio.Queue(maxsize=max(1, args.parallel * args.queue_size_multiplier))
+    queue: asyncio.Queue = asyncio.Queue(maxsize=max(1, args.parallel * args.queue_size_multiplier))
     data_process_completed_event.clear()
 
-    # Conversation cycling: each worker independently advances this counter.
-    # asyncio is single-threaded / cooperative, so plain int is safe.
-    _conv_index = 0
-    _turn_counter = 0
-
-    def _next_conversation() -> List[Dict]:
-        """Return the next conversation from the cycled pool."""
-        nonlocal _conv_index
-        conv = all_conversations[_conv_index % len(all_conversations)]
-        _conv_index += 1
-        return conv
-
     # ------------------------------------------------------------------
-    # 3. Test connection (reuse connect_test from benchmark.py)
+    # 3. Test connection
     # ------------------------------------------------------------------
     await connect_test(args, api_plugin)
 
@@ -121,126 +111,32 @@ async def multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
 
     async with client:
         # ----------------------------------------------------------------
-        # 5. Start the metrics consumer task (reused from benchmark.py)
+        # 5. Start the metrics consumer task
         # ----------------------------------------------------------------
-        statistic_task = asyncio.create_task(statistic_benchmark_metric(benchmark_data_queue, args, api_plugin))
-
-        # ----------------------------------------------------------------
-        # 6. Worker coroutine: one per parallel slot
-        # ----------------------------------------------------------------
-        async def conversation_worker(worker_id: int) -> None:
-            """Process conversations until the global turn budget is reached."""
-            nonlocal _turn_counter
-
-            while _turn_counter < args.number:
-                # Grab the next conversation (cycled)
-                conversation = _next_conversation()
-                user_msgs = _extract_user_turns(conversation)
-
-                if not user_msgs:
-                    # Degenerate conversation with no user messages, skip
-                    continue
-
-                # Accumulated context sent with each turn.
-                # Real assistant responses are appended after each successful
-                # turn so the next turn sees the growing history.
-                context: List[Dict] = []
-                prev_prompt_tokens: int = 0  # used for approx_cached_percent
-                prev_completion_tokens: int = 0  # needed to account for cached asst tokens
-
-                for user_turn_idx, user_msg in enumerate(user_msgs):
-                    # ---- Check global turn budget ----
-                    if _turn_counter >= args.number:
-                        return
-
-                    # ---- Respect per-conversation max_turns ----
-                    if args.max_turns is not None and user_turn_idx >= args.max_turns:
-                        break
-
-                    # ---- Build current context (append user message) ----
-                    context.append(user_msg.copy())
-
-                    # ---- Reserve this turn slot BEFORE awaiting ----
-                    # Incrementing here (before the await) ensures no other
-                    # worker can claim the same slot, preventing overshoot
-                    # beyond args.number.
-                    _turn_counter += 1
-
-                    # ---- Rate limiting (mirrors standard benchmark behaviour) ----
-                    # In the standard benchmark, an exponential inter-request sleep is
-                    # applied when --rate != -1 (Poisson arrivals).  We replicate the
-                    # same logic here so multi-turn runs honour the configured rate.
-                    if args.rate != -1:
-                        interval = np.random.exponential(1.0 / args.rate)
-                        await asyncio.sleep(interval)
-
-                    # ---- Send the turn ----
-                    request = api_plugin.build_request(list(context))
-                    benchmark_data = await client.post(request)
-
-                    # ---- Inject multi-turn specific metadata ----
-                    benchmark_data.input_num_turns = user_turn_idx + 1
-
-                    # ---- Ensure token counts are available before computing cache ratio ----
-                    # Some OpenAI-compatible servers omit ``usage`` in the stream, so
-                    # prompt_tokens / completion_tokens remain None until finalize() is
-                    # called (which falls back to api_plugin.parse_responses() via the
-                    # tokenizer).  finalize() is idempotent: the consumer's subsequent
-                    # call will be a no-op once token counts are already populated.
-                    if benchmark_data.success:
-                        benchmark_data.finalize(api_plugin)
-
-                    # Estimate KV-cache hit rate.
-                    # cacheable = prev_prompt_tokens + prev_completion_tokens
-                    # because after turn N-1, the server KV cache holds:
-                    #   [user_0, ..., user_{N-1}]  (= prev_prompt_tokens)
-                    #   [asst_{N-1}]               (= prev_completion_tokens)
-                    # both of which appear as prefix in the current request.
-                    # This matches vLLM's formula:
-                    #   (input_tokens - current_user_tokens) / input_tokens
-                    if (
-                        benchmark_data.prompt_tokens is not None and benchmark_data.prompt_tokens > 0
-                        and prev_prompt_tokens > 0
-                    ):
-                        cacheable_tokens = prev_prompt_tokens + prev_completion_tokens
-                        benchmark_data.approx_cached_percent = (100.0 * cacheable_tokens / benchmark_data.prompt_tokens)
-                    if benchmark_data.prompt_tokens:
-                        prev_prompt_tokens = benchmark_data.prompt_tokens
-                    if benchmark_data.completion_tokens:
-                        prev_completion_tokens = benchmark_data.completion_tokens
-
-                    # ---- Enqueue for metrics ----
-                    await benchmark_data_queue.put(benchmark_data)
-
-                    if not benchmark_data.success:
-                        logger.debug(
-                            f'worker={worker_id} turn={user_turn_idx} '
-                            f'failed ({benchmark_data.error}), abandoning conversation.'
-                        )
-                        break
-
-                    # ---- Append real response to context for next turn ----
-                    context.append({
-                        'role': 'assistant',
-                        'content': benchmark_data.generated_text,
-                    })
+        statistic_task = asyncio.create_task(statistic_benchmark_metric(queue, args, api_plugin))
 
         # ----------------------------------------------------------------
-        # 7. Launch workers and wait for all to finish
+        # 6. Run multi-turn strategy
         # ----------------------------------------------------------------
-        workers = [asyncio.create_task(conversation_worker(worker_id=i)) for i in range(args.parallel)]
-        await asyncio.gather(*workers, return_exceptions=True)
+        strategy = MultiTurnStrategy(
+            args=args,
+            api_plugin=api_plugin,
+            client=client,
+            queue=queue,
+            all_conversations=all_conversations,
+        )
+        await strategy.run()
 
         # ----------------------------------------------------------------
-        # 8. Drain the metrics queue and signal the consumer to stop
+        # 7. Drain the metrics queue and signal the consumer to stop
         # ----------------------------------------------------------------
-        await benchmark_data_queue.join()
+        await queue.join()
         data_process_completed_event.set()
 
         metrics, result_db_path = await statistic_task
 
     # ------------------------------------------------------------------
-    # 9. Summarise and return
+    # 8. Summarise and return
     # ------------------------------------------------------------------
     metrics_result, percentile_result = summary_result(args, metrics, result_db_path)
     return metrics_result, percentile_result
