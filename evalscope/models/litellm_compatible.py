@@ -11,7 +11,6 @@ See https://docs.litellm.ai/docs/providers for the full list.
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
-from openai._types import NOT_GIVEN
 from openai.types.chat import ChatCompletion
 
 from evalscope.api.messages import ChatMessage
@@ -73,14 +72,15 @@ class LiteLLMAPI(ModelAPI):
         )
 
         request = dict(
-            messages=messages,
-            tools=openai_chat_tools(tools) if len(tools) > 0 else NOT_GIVEN,
-            tool_choice=openai_chat_tool_choice(tool_choice) if len(tools) > 0 else NOT_GIVEN,
             # drop_params silently drops provider-unsupported kwargs
             # to prevent cross-provider errors
             drop_params=True,
             **completion_params,
         )
+        request["messages"] = messages
+        if len(tools) > 0:
+            request["tools"] = openai_chat_tools(tools)
+            request["tool_choice"] = openai_chat_tool_choice(tool_choice)
         if self.api_key:
             request["api_key"] = self.api_key
         if self.base_url:
