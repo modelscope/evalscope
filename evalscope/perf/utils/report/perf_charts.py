@@ -18,7 +18,7 @@ import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 if TYPE_CHECKING:
-    from .perf_data import RunData
+    from evalscope.perf.utils.perf_models import RunData
 
 # ── Design tokens (must match report.css :root variables) ─────────────────────
 ACCENT = '#63b3ed'
@@ -173,7 +173,7 @@ def build_latency_chart(runs: List[RunData]) -> str:
     traces = [
         dict(
             x=xs,
-            y=[r.summary.get('Average latency (s)', 0) for r in runs],
+            y=[r.summary.avg_latency for r in runs],
             mode='lines+markers',
             name='Avg Latency',
             line=dict(color=ACCENT, width=2),
@@ -181,7 +181,7 @@ def build_latency_chart(runs: List[RunData]) -> str:
         ),
         dict(
             x=xs,
-            y=[r.get_p99('Latency (s)') for r in runs],
+            y=[r.get_p99('latency') for r in runs],
             mode='lines+markers',
             name='P99 Latency',
             line=dict(color=PURPLE, width=2, dash='dash'),
@@ -197,7 +197,7 @@ def build_ttft_chart(runs: List[RunData]) -> str:
     traces = [
         dict(
             x=xs,
-            y=[r.summary.get('Average time to first token (s)', 0) * 1000 for r in runs],
+            y=[r.summary.avg_ttft * 1000 for r in runs],
             mode='lines+markers',
             name='Avg TTFT',
             line=dict(color=GREEN, width=2),
@@ -205,7 +205,7 @@ def build_ttft_chart(runs: List[RunData]) -> str:
         ),
         dict(
             x=xs,
-            y=[r.get_p99('TTFT (s)') * 1000 for r in runs],
+            y=[r.get_p99('ttft') * 1000 for r in runs],
             mode='lines+markers',
             name='P99 TTFT',
             line=dict(color=YELLOW, width=2, dash='dash'),
@@ -221,7 +221,7 @@ def build_tpot_chart(runs: List[RunData]) -> str:
     traces = [
         dict(
             x=xs,
-            y=[r.summary.get('Average time per output token (s)', 0) * 1000 for r in runs],
+            y=[r.summary.avg_tpot * 1000 for r in runs],
             mode='lines+markers',
             name='Avg TPOT',
             line=dict(color=ACCENT, width=2),
@@ -229,7 +229,7 @@ def build_tpot_chart(runs: List[RunData]) -> str:
         ),
         dict(
             x=xs,
-            y=[r.get_p99('TPOT (s)') * 1000 for r in runs],
+            y=[r.get_p99('tpot') * 1000 for r in runs],
             mode='lines+markers',
             name='P99 TPOT',
             line=dict(color=RED, width=2, dash='dash'),
@@ -245,7 +245,7 @@ def build_rps_chart(runs: List[RunData]) -> str:
     traces = [
         dict(
             x=xs,
-            y=[r.summary.get('Request throughput (req/s)', 0) for r in runs],
+            y=[r.summary.request_throughput for r in runs],
             mode='lines+markers',
             name='RPS',
             line=dict(color=ACCENT, width=2),
@@ -265,7 +265,7 @@ def build_throughput_chart(runs: List[RunData], is_embedding: bool) -> str:
         traces = [
             dict(
                 x=xs,
-                y=[r.summary.get('Input token throughput (tok/s)', 0) for r in runs],
+                y=[r.summary.input_token_throughput for r in runs],
                 mode='lines+markers',
                 name='Input tok/s',
                 line=dict(color=GREEN, width=2),
@@ -278,7 +278,7 @@ def build_throughput_chart(runs: List[RunData], is_embedding: bool) -> str:
         traces = [
             dict(
                 x=xs,
-                y=[r.summary.get('Output token throughput (tok/s)', 0) for r in runs],
+                y=[r.summary.output_token_throughput for r in runs],
                 mode='lines+markers',
                 name='Output tok/s',
                 line=dict(color=GREEN, width=2),
@@ -288,7 +288,7 @@ def build_throughput_chart(runs: List[RunData], is_embedding: bool) -> str:
             ),
             dict(
                 x=xs,
-                y=[r.summary.get('Total token throughput (tok/s)', 0) for r in runs],
+                y=[r.summary.total_token_throughput for r in runs],
                 mode='lines+markers',
                 name='Total tok/s',
                 line=dict(color=PURPLE, width=2, dash='dash'),
@@ -480,16 +480,16 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
     return tabs
 
 
-def build_percentile_chart(run: RunData, is_embedding: bool) -> str:
+def build_percentile_chart(run: 'RunData', is_embedding: bool) -> str:
     """Line chart: metric values across percentile levels (P10-P99)."""
-    if not run.percentiles:
+    if not run.percentiles.rows:
         return ''
 
-    xs = [p.get('Percentiles', '') for p in run.percentiles]
+    xs = [row.percentile for row in run.percentiles.rows]
     traces = [
         dict(
             x=xs,
-            y=[p.get('Latency (s)', 0) for p in run.percentiles],
+            y=[row.latency or 0 for row in run.percentiles.rows],
             mode='lines+markers',
             name='Latency',
             line=dict(color=ACCENT, width=2),
@@ -501,7 +501,7 @@ def build_percentile_chart(run: RunData, is_embedding: bool) -> str:
         traces += [
             dict(
                 x=xs,
-                y=[p.get('TTFT (s)', 0) * 1000 for p in run.percentiles],
+                y=[(row.ttft or 0) * 1000 for row in run.percentiles.rows],
                 mode='lines+markers',
                 name='TTFT (ms)',
                 line=dict(color=GREEN, width=2),
@@ -509,7 +509,7 @@ def build_percentile_chart(run: RunData, is_embedding: bool) -> str:
             ),
             dict(
                 x=xs,
-                y=[p.get('TPOT (s)', 0) * 1000 for p in run.percentiles],
+                y=[(row.tpot or 0) * 1000 for row in run.percentiles.rows],
                 mode='lines+markers',
                 name='TPOT (ms)',
                 line=dict(color=YELLOW, width=2),
@@ -517,7 +517,7 @@ def build_percentile_chart(run: RunData, is_embedding: bool) -> str:
             ),
             dict(
                 x=xs,
-                y=[p.get('ITL (s)', 0) * 1000 for p in run.percentiles],
+                y=[(row.itl or 0) * 1000 for row in run.percentiles.rows],
                 mode='lines+markers',
                 name='ITL (ms)',
                 line=dict(color=PURPLE, width=2),

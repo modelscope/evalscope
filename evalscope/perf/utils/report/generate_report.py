@@ -55,23 +55,19 @@ def _build_basic_info(
     info['API Type'] = args_dict.get('api', 'N/A')
     info['Dataset'] = args_dict.get('dataset', 'N/A')
 
-    total_req = sum(r.summary.get('Total requests', 0) for r in runs)
-    succeed = sum(r.summary.get('Succeed requests', 0) for r in runs)
-    total_time = sum(r.summary.get('Time taken for tests (s)', 0) for r in runs)
+    total_req = sum(r.summary.total_requests for r in runs)
+    succeed = sum(r.summary.succeed_requests for r in runs)
+    total_time = sum(r.summary.time_taken for r in runs)
 
     info['Total Requests'] = f'{total_req:,}'
     info['Succeed Requests'] = f'{succeed:,}'
     info['Total Test Time'] = f'{total_time:.2f} s'
 
     if is_embedding_flag:
-        total_input = sum(
-            r.summary.get('Average input tokens per request', 0) * r.summary.get('Succeed requests', 0) for r in runs
-        )
+        total_input = sum(r.summary.avg_input_tokens * r.summary.succeed_requests for r in runs)
         info['Total Input Tokens'] = f'{total_input:,.0f}'
     else:
-        total_output = sum(
-            r.summary.get('Average output tokens per request', 0) * r.summary.get('Succeed requests', 0) for r in runs
-        )
+        total_output = sum(r.summary.avg_output_tokens * r.summary.succeed_requests for r in runs)
         info['Total Output Tokens'] = f'{total_output:,.0f}'
 
     return info
@@ -93,15 +89,15 @@ def _build_summary_table(runs: list, is_embedding_flag: bool):
         rows = []
         for r in runs:
             s = r.summary
-            rate = s.get('Request rate (req/s)', -1)
+            rate = s.request_rate
             rows.append([
-                'INF' if int(s.get('Number of concurrency', 0)) == -1 else str(int(s.get('Number of concurrency', 0))),
+                'INF' if s.concurrency == -1 else str(s.concurrency),
                 'INF' if rate == -1 else f'{rate:.2f}',
-                f"{s.get('Request throughput (req/s)', 0):.4f}",
-                f"{s.get('Average latency (s)', 0):.3f}",
-                f"{r.get_p99('Latency (s)'):.3f}",
-                f"{s.get('Input token throughput (tok/s)', 0):.2f}",
-                f"{s.get('Average input tokens per request', 0):.1f}",
+                f'{s.request_throughput:.4f}',
+                f'{s.avg_latency:.3f}',
+                f'{r.get_p99("latency"):.3f}',
+                f'{s.input_token_throughput:.2f}',
+                f'{s.avg_input_tokens:.1f}',
                 f'{r.success_rate:.1f}%',
             ])
     else:
@@ -121,18 +117,18 @@ def _build_summary_table(runs: list, is_embedding_flag: bool):
         rows = []
         for r in runs:
             s = r.summary
-            rate = s.get('Request rate (req/s)', -1)
+            rate = s.request_rate
             rows.append([
-                'INF' if int(s.get('Number of concurrency', 0)) == -1 else str(int(s.get('Number of concurrency', 0))),
+                'INF' if s.concurrency == -1 else str(s.concurrency),
                 'INF' if rate == -1 else f'{rate:.2f}',
-                f"{s.get('Request throughput (req/s)', 0):.4f}",
-                f"{s.get('Average latency (s)', 0):.3f}",
-                f"{r.get_p99('Latency (s)'):.3f}",
-                f"{s.get('Average time to first token (s)', 0):.3f}",
-                f"{r.get_p99('TTFT (s)'):.3f}",
-                f"{s.get('Average time per output token (s)', 0):.3f}",
-                f"{r.get_p99('TPOT (s)'):.3f}",
-                f"{s.get('Output token throughput (tok/s)', 0):.2f}",
+                f'{s.request_throughput:.4f}',
+                f'{s.avg_latency:.3f}',
+                f'{r.get_p99("latency"):.3f}',
+                f'{s.avg_ttft:.3f}',
+                f'{r.get_p99("ttft"):.3f}',
+                f'{s.avg_tpot:.3f}',
+                f'{r.get_p99("tpot"):.3f}',
+                f'{s.output_token_throughput:.2f}',
                 f'{r.success_rate:.1f}%',
             ])
 
@@ -146,17 +142,13 @@ def _build_best_config(runs: list) -> OrderedDict:
 
     best: OrderedDict = OrderedDict()
 
-    best_rps = max(runs, key=lambda r: r.summary.get('Request throughput (req/s)', 0))
-    best['Highest RPS'] = (
-        f'Concurrency {best_rps.parallel} '
-        f"({best_rps.summary.get('Request throughput (req/s)', 0):.4f} req/s)"
-    )
+    best_rps = max(runs, key=lambda r: r.summary.request_throughput)
+    best['Highest RPS'] = (f'Concurrency {best_rps.parallel} '
+                           f'({best_rps.summary.request_throughput:.4f} req/s)')
 
-    best_lat = min(runs, key=lambda r: r.summary.get('Average latency (s)', float('inf')))
-    best['Lowest Latency'] = (
-        f'Concurrency {best_lat.parallel} '
-        f"({best_lat.summary.get('Average latency (s)', 0):.3f} s)"
-    )
+    best_lat = min(runs, key=lambda r: r.summary.avg_latency if r.summary.avg_latency >= 0 else float('inf'))
+    best['Lowest Latency'] = (f'Concurrency {best_lat.parallel} '
+                              f'({best_lat.summary.avg_latency:.3f} s)')
 
     return best
 
@@ -168,7 +160,7 @@ def _build_recommendations(runs: list) -> List[str]:
 
     recs: List[str] = []
     sorted_runs = sorted(runs, key=lambda r: r.parallel)
-    rps_values = [r.summary.get('Request throughput (req/s)', 0) for r in sorted_runs]
+    rps_values = [r.summary.request_throughput for r in sorted_runs]
 
     if len(rps_values) >= 2:
         best_idx = rps_values.index(max(rps_values))
@@ -190,8 +182,8 @@ def _build_recommendations(runs: list) -> List[str]:
         )
 
     if len(sorted_runs) >= 2:
-        first_lat = sorted_runs[0].summary.get('Average latency (s)', 0)
-        last_lat = sorted_runs[-1].summary.get('Average latency (s)', 0)
+        first_lat = sorted_runs[0].summary.avg_latency
+        last_lat = sorted_runs[-1].summary.avg_latency
         if first_lat > 0 and last_lat / first_lat > 3:
             recs.append(
                 f'Latency grew {last_lat / first_lat:.1f}× from lowest to highest concurrency. '
@@ -206,16 +198,60 @@ def _build_recommendations(runs: list) -> List[str]:
 # ---------------------------------------------------------------------------
 
 
+def _build_summary_items(
+    summary,
+    is_embedding: bool,
+) -> List[Dict[str, str]]:
+    """Format *summary* fields into ``[{'key': ..., 'value': ...}]`` for the stat grid.
+
+    Kept here (not in perf_models) because it owns display-layer logic:
+    unit conversion (ms), INF substitution, and format strings.
+    """
+    s = summary
+    rate_raw = s.request_rate
+    rate_str = 'INF' if rate_raw == -1 else f'{rate_raw:.3f}'
+    concurrency_str = 'INF' if s.concurrency == -1 else str(s.concurrency)
+
+    base = [
+        ('Total Requests', str(s.total_requests)),
+        ('Succeed Requests', str(s.succeed_requests)),
+        ('Failed Requests', str(s.failed_requests)),
+        ('Concurrency', concurrency_str),
+        ('Time Taken (s)', f'{s.time_taken:.3f}'),
+        ('Request Rate (req/s)', rate_str),
+        ('Request Throughput (req/s)', f'{s.request_throughput:.4f}'),
+        ('Avg Latency (s)', f'{s.avg_latency:.4f}'),
+    ]
+
+    if is_embedding:
+        extra = [
+            ('Input Tok Throughput (tok/s)', f'{s.input_token_throughput:.2f}'),
+            ('Avg Input Tokens', f'{s.avg_input_tokens:.1f}'),
+        ]
+    else:
+        extra = [
+            ('Output Tok Throughput (tok/s)', f'{s.output_token_throughput:.2f}'),
+            ('Total Tok Throughput (tok/s)', f'{s.total_token_throughput:.2f}'),
+            ('Avg TTFT (ms)', f'{s.avg_ttft * 1000:.2f}'),
+            ('Avg TPOT (ms)', f'{s.avg_tpot * 1000:.2f}'),
+            ('Avg ITL (ms)', f'{s.avg_itl * 1000:.2f}'),
+            ('Avg Input Tokens', f'{s.avg_input_tokens:.1f}'),
+            ('Avg Output Tokens', f'{s.avg_output_tokens:.1f}'),
+        ]
+
+    return [{'key': k, 'value': v} for k, v in base + extra]
+
+
 def _build_run_section(run, is_embedding_flag: bool) -> Dict[str, Any]:
     """Build the template-ready dict for one per-run accordion card."""
     from . import perf_charts as charts
 
-    pct = run.percentiles
+    pct = run.percentiles.to_list()
     return {
         'name': run.name,
-        'total_requests': run.summary.get('Total requests', 0),
+        'total_requests': run.summary.total_requests,
         # benchmark_summary.json displayed as a stat grid
-        'summary_items': run.summary_items(is_embedding_flag),
+        'summary_items': _build_summary_items(run.summary, is_embedding_flag),
         # percentile table
         'percentile_columns': list(pct[0].keys()) if pct else [],
         'percentile_rows': [list(p.values()) for p in pct],

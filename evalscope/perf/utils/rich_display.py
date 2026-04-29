@@ -6,12 +6,12 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-from typing import Any, Dict, List, NamedTuple
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
+from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
 from evalscope.utils.logger import get_logger
-from .benchmark_util import Metrics
-from .db_util import PercentileMetrics
+from .perf_constants import Metrics, PercentileMetrics
 
 logger = get_logger()
 
@@ -178,33 +178,46 @@ class BaseResultAnalyzer(ABC):
 
     @staticmethod
     def normalize(all_results) -> list:
-        """Normalize input to a list of ``(metrics, percentile_metrics)`` tuples."""
+        """Normalize input to a list of ``(BenchmarkSummary, PercentileResult)`` tuples."""
         if isinstance(all_results, dict):
-            return [(v['metrics'], v['percentiles'])
-                    for v in all_results.values()
-                    if 'metrics' in v and 'percentiles' in v]
+            pairs = []
+            for v in all_results.values():
+                if not isinstance(v, dict):
+                    continue
+                raw_metrics = v.get('metrics', {})
+                raw_perc = v.get('percentiles', {})
+                # Coerce to typed objects if not already
+                summary = (
+                    raw_metrics
+                    if isinstance(raw_metrics, BenchmarkSummary) else BenchmarkSummary.from_dict(raw_metrics)
+                )
+                percentiles = (
+                    raw_perc if isinstance(raw_perc, PercentileResult) else
+                    PercentileResult.from_transposed(raw_perc) if isinstance(raw_perc, dict) and raw_perc else
+                    PercentileResult.from_list(raw_perc) if isinstance(raw_perc, list) else PercentileResult()
+                )
+                if summary is not None:
+                    pairs.append((summary, percentiles))
+            return pairs
         return all_results
 
     @staticmethod
-    def _get_p99(percentile_metrics, key, percentiles):
-        """Safely fetch the p99 value for *key* from *percentile_metrics*.
+    def _get_p99(percentiles: PercentileResult, metric_field: str) -> Optional[float]:
+        """Safely fetch the P99 value for *metric_field* from *percentiles*.
 
-        Returns ``None`` when the key is absent or the index cannot be found.
+        *metric_field* is the **Python attribute name** on PercentileRow
+        (e.g. ``'latency'``, ``'ttft'``, ``'tpot'``).
+        Returns ``None`` when no P99 row is found.
         """
-        data = percentile_metrics.get(key)
-        if data is None:
-            return None
-        try:
-            return data[percentiles.index('99%')]
-        except (ValueError, IndexError):
-            return None
+        val = percentiles.get_p99(metric_field)
+        return val if val != 0.0 else None
 
     @staticmethod
     def _sort_rows(rows: list):
         """Sort rows ascending by (concurrency, rate)."""
         rows.sort(
             key=lambda x: (
-                float(x[LLMCol.CONCURRENCY.key]),
+                float(x[LLMCol.CONCURRENCY.key]) if x[LLMCol.CONCURRENCY.key] != 'INF' else float('inf'),
                 float(x[LLMCol.RATE.key]) if x[LLMCol.RATE.key] != 'INF' else float('inf'),
             )
         )
@@ -235,8 +248,8 @@ class BaseResultAnalyzer(ABC):
         )
 
     @abstractmethod
-    def _process_one(self, entry) -> tuple:
-        """Process a single ``(metrics, percentile_metrics)`` entry.
+    def _process_one(self, entry: Tuple[BenchmarkSummary, PercentileResult]) -> tuple:
+        """Process a single ``(BenchmarkSummary, PercentileResult)`` entry.
 
         Returns:
             ``(formatted_row, token_count, elapsed_seconds)``
@@ -249,25 +262,22 @@ class BaseResultAnalyzer(ABC):
 class LLMResultAnalyzer(BaseResultAnalyzer):
     """Analyzer for LLM text-generation APIs."""
 
-    def _process_one(self, entry) -> tuple:
-        total_metrics, percentile_metrics = entry
-        percentiles = percentile_metrics[PercentileMetrics.PERCENTILES]
+    def _process_one(self, entry: Tuple[BenchmarkSummary, PercentileResult]) -> tuple:
+        summary, percentiles = entry
 
-        concurrency = total_metrics.get(Metrics.NUMBER_OF_CONCURRENCY, 0)
-        rate = total_metrics.get(Metrics.REQUEST_RATE, 0)
-        num_reqs = total_metrics.get(Metrics.TOTAL_REQUESTS, 0)
-        rps = total_metrics.get(Metrics.REQUEST_THROUGHPUT, 0)
-        avg_latency = total_metrics.get(Metrics.AVERAGE_LATENCY, 0)
-        p99_latency = self._get_p99(percentile_metrics, PercentileMetrics.LATENCY, percentiles)
-        success_rate = (
-            total_metrics.get(Metrics.SUCCEED_REQUESTS, 0) / total_metrics.get(Metrics.TOTAL_REQUESTS, 1)
-        ) * 100
+        concurrency = summary.concurrency
+        rate = summary.request_rate
+        num_reqs = summary.total_requests
+        rps = summary.request_throughput
+        avg_latency = summary.avg_latency
+        p99_latency = self._get_p99(percentiles, 'latency')
+        success_rate = summary.success_rate
 
-        avg_tps = total_metrics.get(Metrics.OUTPUT_TOKEN_THROUGHPUT, 0)
-        avg_ttft = total_metrics.get(Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, 0)
-        p99_ttft = self._get_p99(percentile_metrics, PercentileMetrics.TTFT, percentiles)
-        avg_tpot = total_metrics.get(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, 0)
-        p99_tpot = self._get_p99(percentile_metrics, PercentileMetrics.TPOT, percentiles)
+        avg_tps = summary.output_token_throughput
+        avg_ttft = summary.avg_ttft
+        p99_ttft = self._get_p99(percentiles, 'ttft')
+        avg_tpot = summary.avg_tpot
+        p99_tpot = self._get_p99(percentiles, 'tpot')
         # Convert TTFT and TPOT from seconds to milliseconds for display
         avg_ttft_ms = avg_ttft * 1000 if avg_ttft is not None else None
         p99_ttft_ms = p99_ttft * 1000 if p99_ttft is not None else None
@@ -291,34 +301,28 @@ class LLMResultAnalyzer(BaseResultAnalyzer):
             LLMCol.AVG_TPS.key: f'{avg_tps:.2f}' if avg_tps is not None else 'N/A',
             LLMCol.SUCCESS_RATE.key: f'{success_rate:.1f}%' if success_rate is not None else 'N/A',
         }
-        tokens = (
-            total_metrics.get(Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST, 0)
-            * total_metrics.get(Metrics.SUCCEED_REQUESTS, 0)
-        )
-        elapsed = total_metrics.get(Metrics.TIME_TAKEN_FOR_TESTS, 0)
+        tokens = summary.avg_output_tokens * summary.succeed_requests
+        elapsed = summary.time_taken
         return row, tokens, elapsed
 
 
 class EmbeddingResultAnalyzer(BaseResultAnalyzer):
     """Analyzer for Embedding / Rerank APIs."""
 
-    def _process_one(self, entry) -> tuple:
-        total_metrics, percentile_metrics = entry
-        percentiles = percentile_metrics[PercentileMetrics.PERCENTILES]
+    def _process_one(self, entry: Tuple[BenchmarkSummary, PercentileResult]) -> tuple:
+        summary, percentiles = entry
 
-        concurrency = total_metrics.get(Metrics.NUMBER_OF_CONCURRENCY, 0)
-        rate = total_metrics.get(Metrics.REQUEST_RATE, 0)
-        rps = total_metrics.get(Metrics.REQUEST_THROUGHPUT, 0)
-        avg_latency = total_metrics.get(Metrics.AVERAGE_LATENCY, 0)
-        p99_latency = self._get_p99(percentile_metrics, PercentileMetrics.LATENCY, percentiles)
-        success_rate = (
-            total_metrics.get(Metrics.SUCCEED_REQUESTS, 0) / total_metrics.get(Metrics.TOTAL_REQUESTS, 1)
-        ) * 100
+        concurrency = summary.concurrency
+        rate = summary.request_rate
+        rps = summary.request_throughput
+        avg_latency = summary.avg_latency
+        p99_latency = self._get_p99(percentiles, 'latency')
+        success_rate = summary.success_rate
 
-        avg_input_tps = total_metrics.get(Metrics.INPUT_TOKEN_THROUGHPUT, 0)
+        avg_input_tps = summary.input_token_throughput
         # Default to 0 when INPUT_THROUGHPUT percentile data is absent (mirrors original behaviour)
-        p99_input_tps = self._get_p99(percentile_metrics, PercentileMetrics.INPUT_THROUGHPUT, percentiles) or 0.0
-        avg_input_tokens = total_metrics.get(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, 0)
+        p99_input_tps = self._get_p99(percentiles, 'input_throughput') or 0.0
+        avg_input_tokens = summary.avg_input_tokens
 
         if any(x is None for x in [concurrency, rps, avg_latency, p99_latency]):
             raise ValueError(f'Test results for concurrency {concurrency} contain invalid data, skipped')
@@ -334,11 +338,8 @@ class EmbeddingResultAnalyzer(BaseResultAnalyzer):
             EmbCol.AVG_INPUT_TOKENS.key: f'{avg_input_tokens:.1f}' if avg_input_tokens is not None else 'N/A',
             EmbCol.SUCCESS_RATE.key: f'{success_rate:.1f}%' if success_rate is not None else 'N/A',
         }
-        tokens = (
-            total_metrics.get(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, 0)
-            * total_metrics.get(Metrics.SUCCEED_REQUESTS, 0)
-        )
-        elapsed = total_metrics.get(Metrics.TIME_TAKEN_FOR_TESTS, 0)
+        tokens = summary.avg_input_tokens * summary.succeed_requests
+        elapsed = summary.time_taken
         return row, tokens, elapsed
 
 
@@ -536,29 +537,24 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
         has_spec = False
 
         for entry in results:
-            total_metrics, percentile_metrics = entry
-            percentiles = percentile_metrics.get(PercentileMetrics.PERCENTILES, [])
+            summary, percentiles = entry
 
-            concurrency = total_metrics.get(Metrics.NUMBER_OF_CONCURRENCY, 0)
-            num_reqs = total_metrics.get(Metrics.TOTAL_REQUESTS, 0)
-            avg_in = total_metrics.get(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST)
-            avg_out = total_metrics.get(Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST)
-            avg_turns = total_metrics.get(Metrics.AVERAGE_INPUT_TURNS_PER_REQUEST)
-            avg_cache = total_metrics.get(Metrics.AVERAGE_CACHED_PERCENT)
-            avg_decoded = total_metrics.get(Metrics.AVERAGE_DECODED_TOKENS_PER_ITER)
-            avg_spec_rate = total_metrics.get(Metrics.APPROX_SPECULATIVE_ACCEPTANCE_RATE)
+            concurrency = summary.concurrency
+            num_reqs = summary.total_requests
+            avg_in = summary.avg_input_tokens
+            avg_out = summary.avg_output_tokens
+            avg_turns = summary.avg_turns
+            avg_cache = summary.avg_cached_percent
+            avg_decoded = summary.avg_decoded_tokens_per_iter
+            avg_spec_rate = summary.approx_spec_acceptance_rate
 
             p99_in, p99_out = None, None
-            try:
-                idx99 = percentiles.index('99%')
-                in_data = percentile_metrics.get(PercentileMetrics.INPUT_TOKENS)
-                if in_data:
-                    p99_in = in_data[idx99]
-                out_data = percentile_metrics.get(PercentileMetrics.OUTPUT_TOKENS)
-                if out_data:
-                    p99_out = out_data[idx99]
-            except (ValueError, IndexError):
-                pass
+            p99_in_val = percentiles.get_p99('input_tokens')
+            if p99_in_val:
+                p99_in = p99_in_val
+            p99_out_val = percentiles.get_p99('output_tokens')
+            if p99_out_val:
+                p99_out = p99_out_val
 
             if avg_turns is not None and avg_turns > 0:
                 has_turns = True

@@ -6,8 +6,8 @@ from tabulate import tabulate
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.utils.benchmark_util import Metrics
-from evalscope.perf.utils.db_util import PercentileMetrics, average_results
+from evalscope.perf.utils.db_util import average_results
+from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
 from evalscope.perf.utils.rich_display import print_summary
 from evalscope.utils.logger import get_logger
 from .sla_criterion import SLACriterionBase, SLAMax, SLAMin, create_criterion
@@ -41,55 +41,46 @@ def parse_sla_params(
 
 
 def get_metric_values(results: Dict[str, Any]) -> Dict[str, float]:
-    metrics = results.get('metrics', {})
-    percentiles_data = results.get('percentiles', {})
+    raw_metrics = results.get('metrics', {})
+    raw_perc = results.get('percentiles', {})
+
+    # Coerce to typed objects
+    summary = (raw_metrics if isinstance(raw_metrics, BenchmarkSummary) else BenchmarkSummary.from_dict(raw_metrics))
+    if isinstance(raw_perc, PercentileResult):
+        percentiles = raw_perc
+    elif isinstance(raw_perc, dict) and raw_perc:
+        percentiles = PercentileResult.from_transposed(raw_perc)
+    else:
+        percentiles = PercentileResult()
 
     values = {
-        'avg_latency': metrics.get(Metrics.AVERAGE_LATENCY, 0),
-        'avg_ttft': metrics.get(Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, 0),
-        'avg_tpot': metrics.get(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, 0),
-        'rps': metrics.get(Metrics.REQUEST_THROUGHPUT, 0),
-        'tps': metrics.get(Metrics.OUTPUT_TOKEN_THROUGHPUT, 0),
+        'avg_latency': summary.avg_latency,
+        'avg_ttft': summary.avg_ttft,
+        'avg_tpot': summary.avg_tpot,
+        'rps': summary.request_throughput,
+        'tps': summary.output_token_throughput,
     }
 
-    p50_idx = -1
-    p90_idx = -1
-    p99_idx = -1
-
-    if percentiles_data:
-        try:
-            perc_list = percentiles_data.get(PercentileMetrics.PERCENTILES, [])
-            p50_idx = perc_list.index('50%')
-            p90_idx = perc_list.index('90%')
-            p99_idx = perc_list.index('99%')
-        except ValueError:
-            pass
-
-    def get_p(key, idx):
-        if idx == -1:
-            return 0
-        lst = percentiles_data.get(key, [])
-        return lst[idx] if lst and len(lst) > idx and isinstance(lst[idx], (int, float)) else 0
-
-    values['p99_latency'] = get_p(PercentileMetrics.LATENCY, p99_idx)
-    values['p99_ttft'] = get_p(PercentileMetrics.TTFT, p99_idx)
-    values['p99_tpot'] = get_p(PercentileMetrics.TPOT, p99_idx)
-    values['p50_ttft'] = get_p(PercentileMetrics.TTFT, p50_idx)
-    values['p90_ttft'] = get_p(PercentileMetrics.TTFT, p90_idx)
-    values['p50_tpot'] = get_p(PercentileMetrics.TPOT, p50_idx)
-    values['p90_tpot'] = get_p(PercentileMetrics.TPOT, p90_idx)
+    values['p99_latency'] = percentiles.get_p99('latency')
+    values['p99_ttft'] = percentiles.get_p99('ttft')
+    values['p99_tpot'] = percentiles.get_p99('tpot')
+    values['p50_ttft'] = percentiles.get_p('50%', 'ttft')
+    values['p90_ttft'] = percentiles.get_p('90%', 'ttft')
+    values['p50_tpot'] = percentiles.get_p('50%', 'tpot')
+    values['p90_tpot'] = percentiles.get_p('90%', 'tpot')
 
     return values
 
 
 def check_sla(results: Dict[str, Any], sla_criteria: List[Dict[str, SLACriterionBase]], selector: str = None) -> bool:
-    metrics = results.get('metrics', {})
+    raw_metrics = results.get('metrics', {})
     prefix = f'[{selector}] ' if selector else ''
 
+    # Coerce to typed object
+    summary = (raw_metrics if isinstance(raw_metrics, BenchmarkSummary) else BenchmarkSummary.from_dict(raw_metrics))
+
     # 1. Check Success Rate (Must be 100%)
-    succeed = metrics.get(Metrics.SUCCEED_REQUESTS, 0)
-    total = metrics.get(Metrics.TOTAL_REQUESTS, 0)
-    success_rate = (succeed / total * 100) if total > 0 else 0.0
+    success_rate = summary.success_rate
 
     if success_rate < 100.0:
         logger.warning(f'{prefix}SLA Check: Success Rate = {success_rate:.2f}% | Expect 100% | FAILED')
