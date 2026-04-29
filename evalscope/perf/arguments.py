@@ -338,11 +338,11 @@ class Arguments(BaseArgument):
                        for r in self.rate), (f'In open-loop mode all --rate values must be > 0, but got: {self.rate}')
             # In open-loop mode concurrency is unbounded; set parallel=-1 so downstream
             # display layers render it as INF instead of a numeric value.
-            # self.parallel = [-1]
-            # logger.info(
-            #     'open-loop mode enabled: concurrency is unbounded (parallel set to -1 / INF). '
-            #     f'Rate sweep: {self.rate}, number sweep: {self.number}.'
-            # )
+            self.parallel = [-1]
+            logger.info(
+                'open-loop mode enabled: concurrency is unbounded (parallel set to -1 / INF). '
+                f'Rate sweep: {self.rate}, number sweep: {self.number}.'
+            )
         else:
             assert len(self.number) == len(self.parallel), (
                 f'The length of number and parallel should be the same, '

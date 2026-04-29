@@ -28,9 +28,10 @@ class AioHttpClient:
         self.api_plugin = api_plugin
 
         # Configure connector similar to vLLM bench for better TTFT under load.
+        _conn_limit = 0 if (args.parallel is None or args.parallel <= 0) else args.parallel
         connector = aiohttp.TCPConnector(
-            limit=args.parallel or 0,  # 0 means no limit in aiohttp; use parallel as limit if set
-            limit_per_host=args.parallel or 0,
+            limit=_conn_limit,  # 0 means no limit in aiohttp; use parallel as limit if set
+            limit_per_host=_conn_limit,
             ttl_dns_cache=300,
             use_dns_cache=True,
             keepalive_timeout=60,
