@@ -118,5 +118,5 @@ class LiteLLMAPI(ModelAPI):
             return output
 
         except Exception as ex:
-            logger.error(f"LiteLLM [{self.model_name}] error: {ex}")
+            logger.error(f'LiteLLM [{self.model_name}] error: {ex}')
             raise
