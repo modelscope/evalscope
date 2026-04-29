@@ -9,9 +9,8 @@ See https://docs.litellm.ai/docs/providers for the full list.
 """
 
 import time
-from typing import Any, Dict, List, Optional, Tuple
-
 from openai.types.chat import ChatCompletion
+from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.messages.perf_metrics import PerformanceMetrics
@@ -78,14 +77,14 @@ class LiteLLMAPI(ModelAPI):
             drop_params=True,
             **completion_params,
         )
-        request["messages"] = messages
+        request['messages'] = messages
         if len(tools) > 0:
-            request["tools"] = openai_chat_tools(tools)
-            request["tool_choice"] = openai_chat_tool_choice(tool_choice)
+            request['tools'] = openai_chat_tools(tools)
+            request['tool_choice'] = openai_chat_tool_choice(tool_choice)
         if self.api_key:
-            request["api_key"] = self.api_key
+            request['api_key'] = self.api_key
         if self.base_url:
-            request["api_base"] = self.base_url
+            request['api_base'] = self.base_url
 
         try:
             t_start = time.monotonic()
