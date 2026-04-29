@@ -7,6 +7,7 @@ jinja2
 jsonlines
 jsonschema
 latex2sympy2_extended[antlr4_9_3]
+litellm>=1.55,<2.0
 Markdown
 modelscope[datasets]>=1.34
 more_itertools

@@ -27,6 +27,15 @@ def anthropic_api() -> type[ModelAPI]:
     return AnthropicCompatibleAPI
 
 
+@register_model_api(name='litellm')
+def litellm_api() -> type[ModelAPI]:
+    check_import('litellm', package='litellm', raise_error=True, feature_name='litellm')
+
+    from .litellm_compatible import LiteLLMAPI
+
+    return LiteLLMAPI
+
+
 @register_model_api(name='server')
 @deprecated(since='1.0.0', remove_in='1.1.0', alternative='openai_api')
 def server() -> type[ModelAPI]:
