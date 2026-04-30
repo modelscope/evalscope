@@ -218,7 +218,7 @@ def build_ttft_chart(runs: List[RunData]) -> str:
     traces = [
         dict(
             x=xs,
-            y=[r.summary.avg_ttft * 1000 for r in runs],
+            y=[r.summary.avg_ttft for r in runs],
             mode='lines+markers',
             name='Avg TTFT',
             line=dict(color=GREEN, width=2),
@@ -226,7 +226,7 @@ def build_ttft_chart(runs: List[RunData]) -> str:
         ),
         dict(
             x=xs,
-            y=[r.get_p99('ttft') * 1000 for r in runs],
+            y=[r.get_p99('ttft') for r in runs],
             mode='lines+markers',
             name='P99 TTFT',
             line=dict(color=YELLOW, width=2, dash='dash'),
@@ -242,7 +242,7 @@ def build_tpot_chart(runs: List[RunData]) -> str:
     traces = [
         dict(
             x=xs,
-            y=[r.summary.avg_tpot * 1000 for r in runs],
+            y=[r.summary.avg_tpot for r in runs],
             mode='lines+markers',
             name='Avg TPOT',
             line=dict(color=ACCENT, width=2),
@@ -250,7 +250,7 @@ def build_tpot_chart(runs: List[RunData]) -> str:
         ),
         dict(
             x=xs,
-            y=[r.get_p99('tpot') * 1000 for r in runs],
+            y=[r.get_p99('tpot') for r in runs],
             mode='lines+markers',
             name='P99 TPOT',
             line=dict(color=RED, width=2, dash='dash'),
@@ -396,14 +396,12 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
 
     # ── Tab 2: TTFT / TPOT / ITL (milliseconds, LLM only) ───────────────────
     if not is_embedding:
-        itl_y = [
-            ((sum(r.inter_token_latencies) / len(r.inter_token_latencies)) * 1000) if r.inter_token_latencies else 0
-            for r in sorted_reqs
-        ]
+        itl_y = [(sum(r.inter_token_latencies) / len(r.inter_token_latencies)) if r.inter_token_latencies else 0
+                 for r in sorted_reqs]
         ttft_tpot_itl_traces = [
             dict(
                 x=xs,
-                y=[(r.first_chunk_latency * 1000) if r.first_chunk_latency is not None else 0 for r in sorted_reqs],
+                y=[r.first_chunk_latency if r.first_chunk_latency is not None else 0 for r in sorted_reqs],
                 mode='lines+markers',
                 name='TTFT',
                 line=dict(color=GREEN, width=1.5),
@@ -411,7 +409,7 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
             ),
             dict(
                 x=xs,
-                y=[(r.time_per_output_token * 1000) if r.time_per_output_token is not None else 0 for r in sorted_reqs],
+                y=[r.time_per_output_token if r.time_per_output_token is not None else 0 for r in sorted_reqs],
                 mode='lines+markers',
                 name='TPOT',
                 line=dict(color=YELLOW, width=1.5),
@@ -536,7 +534,7 @@ def build_percentile_chart(run: 'RunData', is_embedding: bool) -> 'Tuple[str, st
         token_lat_traces = [
             dict(
                 x=xs,
-                y=[(row.ttft or 0) * 1000 for row in run.percentiles.rows],
+                y=[(row.ttft or 0) for row in run.percentiles.rows],
                 mode='lines+markers',
                 name='TTFT',
                 line=dict(color=GREEN, width=2),
@@ -544,7 +542,7 @@ def build_percentile_chart(run: 'RunData', is_embedding: bool) -> 'Tuple[str, st
             ),
             dict(
                 x=xs,
-                y=[(row.tpot or 0) * 1000 for row in run.percentiles.rows],
+                y=[(row.tpot or 0) for row in run.percentiles.rows],
                 mode='lines+markers',
                 name='TPOT',
                 line=dict(color=YELLOW, width=2),
@@ -552,7 +550,7 @@ def build_percentile_chart(run: 'RunData', is_embedding: bool) -> 'Tuple[str, st
             ),
             dict(
                 x=xs,
-                y=[(row.itl or 0) * 1000 for row in run.percentiles.rows],
+                y=[(row.itl or 0) for row in run.percentiles.rows],
                 mode='lines+markers',
                 name='ITL',
                 line=dict(color=PURPLE, width=2),
@@ -562,7 +560,7 @@ def build_percentile_chart(run: 'RunData', is_embedding: bool) -> 'Tuple[str, st
         token_lat_chart = ChartBuilder.line(
             token_lat_traces,
             x_title='Percentile',
-            y_title='TTFT / TPOT / ITL (ms)',
+            y_title='Time (ms)',
             div_id=f'chart-percentile-token-lat-{safe}',
         )
 

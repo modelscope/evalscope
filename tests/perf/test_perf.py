@@ -474,7 +474,6 @@ class TestPerf(unittest.TestCase):
             max_prompt_length=256,
             max_tokens=128,
             tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
-            debug=True,
         )
         result = run_perf_benchmark(task_cfg)
         print(result)

@@ -278,11 +278,11 @@ class LLMResultAnalyzer(BaseResultAnalyzer):
         p99_ttft = self._get_p99(percentiles, 'ttft')
         avg_tpot = summary.avg_tpot
         p99_tpot = self._get_p99(percentiles, 'tpot')
-        # Convert TTFT and TPOT from seconds to milliseconds for display
-        avg_ttft_ms = avg_ttft * 1000 if avg_ttft is not None else None
-        p99_ttft_ms = p99_ttft * 1000 if p99_ttft is not None else None
-        avg_tpot_ms = avg_tpot * 1000 if avg_tpot is not None else None
-        p99_tpot_ms = p99_tpot * 1000 if p99_tpot is not None else None
+        # TTFT and TPOT are already stored in ms
+        avg_ttft_ms = avg_ttft if avg_ttft is not None else None
+        p99_ttft_ms = p99_ttft if p99_ttft is not None else None
+        avg_tpot_ms = avg_tpot if avg_tpot is not None else None
+        p99_tpot_ms = p99_tpot if p99_tpot is not None else None
 
         if any(x is None for x in [concurrency, rps, avg_latency, p99_latency]):
             raise ValueError(f'Test results for concurrency {concurrency} contain invalid data, skipped')

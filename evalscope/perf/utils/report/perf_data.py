@@ -135,16 +135,19 @@ class RunLoader:
                     except (json.JSONDecodeError, TypeError):
                         itl = []
 
+                    # DB stores all latency fields in seconds; convert to ms on load.
+                    fcl = d.get('first_chunk_latency')
+                    tpot = d.get('time_per_output_token')
                     records.append(
                         RequestRecord(
                             start_time=float(d.get('start_time') or 0),
                             completed_time=float(d.get('completed_time') or 0),
                             latency=float(d.get('latency') or 0),
-                            first_chunk_latency=d.get('first_chunk_latency'),
+                            first_chunk_latency=(fcl * 1000) if fcl is not None else None,
                             prompt_tokens=int(d.get('prompt_tokens') or 0),
                             completion_tokens=int(d.get('completion_tokens') or 0),
-                            inter_token_latencies=itl,
-                            time_per_output_token=d.get('time_per_output_token'),
+                            inter_token_latencies=[v * 1000 for v in itl],
+                            time_per_output_token=(tpot * 1000) if tpot is not None else None,
                             success=bool(d.get('success', 0)),
                         )
                     )

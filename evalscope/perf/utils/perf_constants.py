@@ -37,9 +37,9 @@ class Metrics:
     # LLM-specific
     OUTPUT_TOKEN_THROUGHPUT = 'Output token throughput (tok/s)'
     TOTAL_TOKEN_THROUGHPUT = 'Total token throughput (tok/s)'
-    AVERAGE_TIME_TO_FIRST_TOKEN = 'Average time to first token (s)'
-    AVERAGE_TIME_PER_OUTPUT_TOKEN = 'Average time per output token (s)'
-    AVERAGE_INTER_TOKEN_LATENCY = 'Average inter-token latency (s)'
+    AVERAGE_TIME_TO_FIRST_TOKEN = 'Average time to first token (ms)'
+    AVERAGE_TIME_PER_OUTPUT_TOKEN = 'Average time per output token (ms)'
+    AVERAGE_INTER_TOKEN_LATENCY = 'Average inter-token latency (ms)'
     AVERAGE_OUTPUT_TOKENS_PER_REQUEST = 'Average output tokens per request'
 
     # Embedding / Rerank-specific
@@ -74,9 +74,9 @@ class PercentileMetrics:
     ``get_percentile_results`` function output.
     """
 
-    TTFT = 'TTFT (s)'
-    ITL = 'ITL (s)'
-    TPOT = 'TPOT (s)'
+    TTFT = 'TTFT (ms)'
+    ITL = 'ITL (ms)'
+    TPOT = 'TPOT (ms)'
     LATENCY = 'Latency (s)'
     INPUT_TOKENS = 'Input tokens'
     OUTPUT_TOKENS = 'Output tokens'

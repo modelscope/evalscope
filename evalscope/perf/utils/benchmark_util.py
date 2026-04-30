@@ -359,9 +359,9 @@ class BenchmarkMetrics:
         return {
             Metrics.OUTPUT_TOKEN_THROUGHPUT: round(self.avg_output_token_throughput, r),
             Metrics.TOTAL_TOKEN_THROUGHPUT: round(self.avg_total_token_throughput, r),
-            Metrics.AVERAGE_TIME_TO_FIRST_TOKEN: round(self.avg_first_chunk_latency, r),
-            Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN: round(self.avg_time_per_output_token, r),
-            Metrics.AVERAGE_INTER_TOKEN_LATENCY: round(self.avg_inter_token_latency, r),
+            Metrics.AVERAGE_TIME_TO_FIRST_TOKEN: round(self.avg_first_chunk_latency * 1000, 2),
+            Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN: round(self.avg_time_per_output_token * 1000, 2),
+            Metrics.AVERAGE_INTER_TOKEN_LATENCY: round(self.avg_inter_token_latency * 1000, 2),
             Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST: round(self.avg_completion_tokens, r),
         }
 

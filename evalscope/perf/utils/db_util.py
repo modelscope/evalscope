@@ -153,7 +153,7 @@ def calculate_percentiles(data: List[float], percentiles: List[int]) -> Dict[int
         try:
             idx = int(n_success_queries * percentile / 100)
             value = data[idx] if data[idx] is not None else float('nan')
-            results[percentile] = round(value, 4)
+            results[percentile] = round(value, 2)
         except IndexError:
             results[percentile] = float('nan')
     return results
@@ -208,9 +208,9 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Percent
                 logger.error(f'Error parsing inter token latencies: {e}')
 
         metrics = {
-            PercentileMetrics.TTFT: [row[col_indices[DatabaseColumns.FIRST_CHUNK_LATENCY]] for row in rows],
-            PercentileMetrics.ITL: inter_token_latencies_all,
-            PercentileMetrics.TPOT: [row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]] for row in rows],
+            PercentileMetrics.TTFT: [row[col_indices[DatabaseColumns.FIRST_CHUNK_LATENCY]] * 1000 for row in rows],
+            PercentileMetrics.ITL: [v * 1000 for v in inter_token_latencies_all],
+            PercentileMetrics.TPOT: [row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]] * 1000 for row in rows],
             PercentileMetrics.LATENCY: [row[col_indices[DatabaseColumns.LATENCY]] for row in rows],
             PercentileMetrics.INPUT_TOKENS: [row[col_indices[DatabaseColumns.PROMPT_TOKENS]] for row in rows],
             PercentileMetrics.OUTPUT_TOKENS: [row[col_indices[DatabaseColumns.COMPLETION_TOKENS]] for row in rows],
