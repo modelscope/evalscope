@@ -186,7 +186,10 @@ class MetricsAccumulator:
                 self.n_cached_samples += 1
 
             # Speculative decoding specific
-            if data.decoded_tokens_per_iter > 0:
+            # Only count samples where L > 1 (genuine speculative decoding acceleration).
+            # L <= 1 means chunk count >= token count, which indicates empty/heartbeat
+            # chunks in the stream rather than real speculative decoding.
+            if data.decoded_tokens_per_iter > 1:
                 self.total_decoded_tokens_per_iter += data.decoded_tokens_per_iter
                 self.n_decoded_samples += 1
 

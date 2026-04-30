@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 from pydantic import BaseModel, ConfigDict, Field
+from tabulate import tabulate
 from typing import Any, Dict, List, Optional
 
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
@@ -115,6 +116,7 @@ class PercentileRow(BaseModel):
     output_throughput: Optional[float] = Field(None, alias=PercentileMetrics.OUTPUT_THROUGHPUT)
     input_throughput: Optional[float] = Field(None, alias=PercentileMetrics.INPUT_THROUGHPUT)
     total_throughput: Optional[float] = Field(None, alias=PercentileMetrics.TOTAL_THROUGHPUT)
+    decode_throughput: Optional[float] = Field(None, alias=PercentileMetrics.DECODE_THROUGHPUT)
 
     @classmethod
     def from_dict(cls, d: dict) -> 'PercentileRow':
@@ -235,6 +237,27 @@ class PercentileResult(BaseModel):
     def to_list(self) -> List[dict]:
         """Export as a list of alias-keyed row dicts (for benchmark_percentile.json)."""
         return [r.to_dict() for r in self.rows]
+
+    def to_table(self) -> str:
+        """Render percentile results as a formatted table string.
+
+        Rows are metrics, columns are percentile labels (e.g. 5%, 10%, ..., 99%).
+        All numeric values are formatted to two decimal places.
+        """
+        col_data = self.to_columns()
+        p_labels = col_data.get(PercentileMetrics.PERCENTILES, [])
+        rows = [[metric] + [f'{v:.2f}' if isinstance(v, (int, float)) else v
+                            for v in values]
+                for metric, values in col_data.items()
+                if metric != PercentileMetrics.PERCENTILES]
+        col_align = ('left', ) + ('right', ) * len(p_labels)
+        return tabulate(
+            rows,
+            headers=['Metric'] + p_labels,
+            tablefmt='simple_outline',
+            disable_numparse=True,
+            colalign=col_align,
+        )
 
 
 # ---------------------------------------------------------------------------

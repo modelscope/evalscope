@@ -83,4 +83,5 @@ class PercentileMetrics:
     OUTPUT_THROUGHPUT = 'Output (tok/s)'
     INPUT_THROUGHPUT = 'Input (tok/s)'
     TOTAL_THROUGHPUT = 'Total (tok/s)'
+    DECODE_THROUGHPUT = 'Decode (tok/s)'
     PERCENTILES = 'Percentiles'

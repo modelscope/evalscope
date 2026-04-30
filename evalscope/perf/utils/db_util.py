@@ -50,13 +50,6 @@ def write_json_file(data, output_path):
         json.dump(data, f, indent=4, ensure_ascii=False)
 
 
-def transpose_results(data):
-    headers = data.keys()
-    rows = zip(*data.values())
-
-    return [dict(zip(headers, row)) for row in rows]
-
-
 def create_result_table(cursor):
     cursor.execute(
         f'''CREATE TABLE IF NOT EXISTS result(
@@ -173,7 +166,7 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Percent
                     {DatabaseColumns.COMPLETION_TOKENS}, {DatabaseColumns.TIME_PER_OUTPUT_TOKEN}
                     FROM result WHERE {DatabaseColumns.SUCCESS}=1'''  # noqa: E501
 
-    percentiles = [10, 25, 50, 66, 75, 80, 90, 95, 98, 99]
+    percentiles = [1, 5, 10, 25, 50, 75, 90, 95, 99]
 
     with sqlite3.connect(result_db_path) as con:
         cursor = con.cursor()
@@ -221,7 +214,11 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Percent
             PercentileMetrics.TOTAL_THROUGHPUT: [(
                 (row[col_indices[DatabaseColumns.PROMPT_TOKENS]] + row[col_indices[DatabaseColumns.COMPLETION_TOKENS]])
                 / row[col_indices[DatabaseColumns.LATENCY]]
-            ) if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows]
+            ) if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows],
+            PercentileMetrics.DECODE_THROUGHPUT: [
+                (1.0 / row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]])
+                if row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]] > 0 else float('nan') for row in rows
+            ]
         }
 
     # Calculate percentiles for each metric and build transposed dict
@@ -251,8 +248,8 @@ def summary_result(args: Arguments, metrics: BenchmarkMetrics,
     percentile_result = get_percentile_results(result_db_path, api_type=args.api)
     if percentile_result.rows:
         write_json_file(percentile_result.to_list(), os.path.join(result_path, 'benchmark_percentile.json'))
-        # Print percentile results in a table
-        table = tabulate(percentile_result.to_columns(), headers='keys', tablefmt='pretty')
+        # Print percentile results in a table (transposed: rows=metrics, cols=percentiles)
+        table = percentile_result.to_table()
         logger.info('\nPercentile results:\n' + table)
 
     if args.dataset.startswith('speed_benchmark'):

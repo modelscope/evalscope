@@ -160,6 +160,7 @@ class ReqMetCol:
     # Conditionally shown
     AVG_TURNS = ColSpec('avg_turns', 'Avg\nTurns/Req')
     AVG_CACHE = ColSpec('avg_cache', 'Approx\nCache Hit', style='green')
+    DECODE_TPS = ColSpec('decode_tps', 'Decode\ntoks/s', style='cyan')
     AVG_DECODED = ColSpec('avg_decoded', 'Decoded\nTok/Iter')
     SPEC_RATE = ColSpec('spec_rate', 'Spec.\nAccept Rate', style='cyan')
 
@@ -534,6 +535,7 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
         rows = []
         has_turns = False
         has_cache = False
+        has_decode_tps = False
         has_spec = False
 
         for entry in results:
@@ -548,6 +550,10 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
             avg_decoded = summary.avg_decoded_tokens_per_iter
             avg_spec_rate = summary.approx_spec_acceptance_rate
 
+            # Decode toks/s = 1000 / avg_tpot_ms  (avg_tpot is stored in ms)
+            avg_tpot_ms = summary.avg_tpot
+            decode_tps = (1000.0 / avg_tpot_ms) if (avg_tpot_ms is not None and avg_tpot_ms > 0) else None
+
             p99_in, p99_out = None, None
             p99_in_val = percentiles.get_p99('input_tokens')
             if p99_in_val:
@@ -560,6 +566,8 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
                 has_turns = True
             if avg_cache is not None and avg_cache > 0:
                 has_cache = True
+            if decode_tps is not None and decode_tps > 0:
+                has_decode_tps = True
             if avg_decoded is not None and avg_decoded > 0:
                 has_spec = True
 
@@ -572,6 +580,7 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
                 ReqMetCol.P99_OUT.key: (f'{p99_out:.1f}' if p99_out is not None else 'N/A'),
                 ReqMetCol.AVG_TURNS.key: (f'{avg_turns:.2f}' if (avg_turns is not None and avg_turns > 0) else None),
                 ReqMetCol.AVG_CACHE.key: (f'{avg_cache:.1f}%' if (avg_cache is not None and avg_cache > 0) else None),
+                ReqMetCol.DECODE_TPS.key: (f'{decode_tps:.2f}' if decode_tps is not None else None),
                 ReqMetCol.AVG_DECODED.key: (
                     f'{avg_decoded:.2f}' if (avg_decoded is not None and avg_decoded > 0) else None
                 ),
@@ -597,6 +606,9 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
         if has_cache:
             c = ReqMetCol.AVG_CACHE
             req_table.add_column(c.header, justify=c.justify, style=c.style)
+        if has_decode_tps:
+            c = ReqMetCol.DECODE_TPS
+            req_table.add_column(c.header, justify=c.justify, style=c.style)
         if has_spec:
             for c in (ReqMetCol.AVG_DECODED, ReqMetCol.SPEC_RATE):
                 req_table.add_column(c.header, justify=c.justify, style=c.style)
@@ -607,6 +619,8 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
                 row_data.append(r[ReqMetCol.AVG_TURNS.key] or 'N/A')
             if has_cache:
                 row_data.append(r[ReqMetCol.AVG_CACHE.key] or 'N/A')
+            if has_decode_tps:
+                row_data.append(r[ReqMetCol.DECODE_TPS.key] or 'N/A')
             if has_spec:
                 row_data.append(r[ReqMetCol.AVG_DECODED.key] or 'N/A')
                 row_data.append(r[ReqMetCol.SPEC_RATE.key] or 'N/A')
