@@ -103,51 +103,41 @@ Additionally, the test results for each concurrency level are output separately,
 
 ```text
 Benchmarking summary:
-+-----------------------------------+------------+
-| Key                               |      Value |
-+===================================+============+
-| Time taken for tests (s)          |    62.9998 |
-+-----------------------------------+------------+
-| Number of concurrency             |   200      |
-+-----------------------------------+------------+
-| Total requests                    |   400      |
-+-----------------------------------+------------+
-| Succeed requests                  |   400      |
-+-----------------------------------+------------+
-| Failed requests                   |     0      |
-+-----------------------------------+------------+
-| Output token throughput (tok/s)   |  6501.61   |
-+-----------------------------------+------------+
-| Total token throughput (tok/s)    | 13379.1    |
-+-----------------------------------+------------+
-| Request throughput (req/s)        |     6.3492 |
-+-----------------------------------+------------+
-| Average latency (s)               |    30.9964 |
-+-----------------------------------+------------+
-| Average time to first token (s)   |     1.3071 |
-+-----------------------------------+------------+
-| Average time per output token (s) |     0.029  |
-+-----------------------------------+------------+
-| Average input tokens per request  |  1083.2    |
-+-----------------------------------+------------+
-| Average output tokens per request |  1024      |
-+-----------------------------------+------------+
-2025-05-16 11:36:33,122 - evalscope - INFO - 
+┌───────────────────────────┬───────────────┐
+│ Metric                    │         Value │
+├───────────────────────────┼───────────────┤
+│ ── General ──             │               │
+│ Test Duration (s)         │         38.31 │
+│ Concurrency               │           200 │
+│ Request Rate (req/s)      │         -1.00 │
+│ Total / Success / Failed  │ 400 / 400 / 0 │
+│ Req Throughput (req/s)    │         10.44 │
+│ ── Latency ──             │               │
+│ Avg Latency (s)           │         18.78 │
+│ TTFT (ms)                 │        717.63 │
+│ TPOT (ms)                 │         17.66 │
+│ ITL (ms)                  │         17.64 │
+│ ── Tokens ──              │               │
+│ Avg Input Tokens          │       1024.00 │
+│ Avg Output Tokens         │       1024.00 │
+│ Output Throughput (tok/s) │      10692.45 │
+│ Total Throughput (tok/s)  │      21384.91 │
+└───────────────────────────┴───────────────┘
+                                                                                         
 Percentile results:
-+-------------+----------+---------+----------+-------------+--------------+---------------+----------------+---------------+
-| Percentiles | TTFT (s) | ITL (s) | TPOT (s) | Latency (s) | Input tokens | Output tokens | Output (tok/s) | Total (tok/s) |
-+-------------+----------+---------+----------+-------------+--------------+---------------+----------------+---------------+
-|     10%     |  0.3371  |   0.0   |  0.0275  |   28.8971   |     1029     |     1024      |    30.5721     |    62.9394    |
-|     25%     |  0.4225  | 0.0218  |  0.0281  |   29.7338   |     1061     |     1024      |    32.1195     |    65.5693    |
-|     50%     |  0.9366  | 0.0263  |  0.0291  |   30.8739   |     1073     |     1024      |    33.1733     |    67.9478    |
-|     66%     |  1.5892  | 0.0293  |  0.0296  |   31.5315   |     1080     |     1024      |    33.9593     |    69.8569    |
-|     75%     |  2.0769  | 0.0308  |  0.0298  |   31.8956   |     1084     |     1024      |    34.4398     |    70.9794    |
-|     80%     |  2.3656  | 0.0319  |  0.0299  |   32.3317   |     1088     |     1024      |    34.7858     |    71.7338    |
-|     90%     |  3.1024  |  0.039  |  0.0304  |   33.4968   |     1197     |     1024      |    35.4505     |    73.0745    |
-|     95%     |  3.5413  | 0.0572  |  0.0308  |   34.1158   |     1251     |     1024      |    35.8045     |    74.3043    |
-|     98%     |  3.8131  | 0.1462  |  0.0309  |   34.5008   |     1292     |     1024      |    36.0191     |    77.1365    |
-|     99%     |  3.8955  | 0.1761  |  0.031   |   34.5951   |     1343     |     1024      |    36.1281     |    79.4895    |
-+-------------+----------+---------+----------+-------------+--------------+---------------+----------------+---------------+
+┌────────────────┬─────────┬─────────┬─────────┬─────────┬─────────┬─────────┬─────────┬─────────┬─────────┐
+│ Metric         │      1% │      5% │     10% │     25% │     50% │     75% │     90% │     95% │     99% │
+├────────────────┼─────────┼─────────┼─────────┼─────────┼─────────┼─────────┼─────────┼─────────┼─────────┤
+│ Latency (s)    │   17.25 │   17.46 │   17.74 │   18.14 │   18.71 │   19.23 │   20.28 │   20.62 │   20.84 │
+│ TTFT (ms)      │  176.30 │  212.60 │  246.76 │  279.87 │  333.79 │ 1082.24 │ 1812.13 │ 2097.23 │ 2319.52 │
+│ ITL (ms)       │    0.00 │    0.01 │    0.01 │   10.62 │   15.67 │   20.37 │   26.97 │   32.50 │   50.11 │
+│ TPOT (ms)      │   16.61 │   16.80 │   17.02 │   17.31 │   17.76 │   18.06 │   18.18 │   18.28 │   18.36 │
+│ Input tokens   │ 1024.00 │ 1024.00 │ 1024.00 │ 1024.00 │ 1024.00 │ 1024.00 │ 1024.00 │ 1024.00 │ 1024.00 │
+│ Output tokens  │ 1024.00 │ 1024.00 │ 1024.00 │ 1024.00 │ 1024.00 │ 1024.00 │ 1024.00 │ 1024.00 │ 1024.00 │
+│ Output (tok/s) │   49.15 │   49.75 │   50.55 │   53.33 │   54.79 │   56.48 │   57.73 │   58.73 │   59.45 │
+│ Total (tok/s)  │   98.30 │   99.50 │  101.09 │  106.66 │  109.58 │  112.97 │  115.46 │  117.45 │  118.89 │
+│ Decode (tok/s) │   54.46 │   54.74 │   55.07 │   55.38 │   56.31 │   57.80 │   58.77 │   59.55 │   60.24 │
+└────────────────┴─────────┴─────────┴─────────┴─────────┴─────────┴─────────┴─────────┴─────────┴─────────┘
 ```
 
 ### Metric Descriptions
@@ -156,38 +146,37 @@ Percentile results:
 
 | Metric | Explanation | Formula |
 |--------|-------------|---------|
-| Time taken for tests | Total time from the start to the end of the test process | Last request end time - First request start time |
-| Number of concurrency | Number of clients sending requests simultaneously | Preset value |
-| Total requests | Total number of requests sent during the testing process | Successful requests + Failed requests |
-| Succeed requests | Number of requests completed successfully and returning expected results | Direct count |
-| Failed requests | Number of requests that failed to complete successfully | Direct count |
-| Output token throughput (tok/s) | Average number of tokens processed per second | Total output tokens / Time taken for tests |
-| Total token throughput (tok/s) | Average number of tokens processed per second | Total tokens / Time taken for tests |
-| Request throughput (req/s) | Average number of successful queries processed per second | Successful requests / Time taken for tests |
-| Total latency | Sum of latency times for all successful requests | Sum of all successful request latencies |
-| Average latency | Average time from sending a request to receiving a complete response | Total latency / Successful requests |
-| Average time to first token | Average time from sending a request to receiving the first response token | Total first chunk latency / Successful requests |
-| Average time per output token | Average time required to generate each output token (exclude first token) | Total time per output token / Successful requests |
-| Average inter-token latency | Average time interval between generating each output token | Total inter-token latency / Successful requests |
-| Average input tokens per request | Average number of input tokens per request | Total input tokens / Successful requests |
-| Average output tokens per request | Average number of output tokens per request | Total output tokens / Successful requests |
-| Average input turns per request | Average number of historical dialogue turns per request in multi-turn conversations (1 for single-turn) | Total input turns / Successful requests |
-| Average approx KV cache hit rate | Estimated prefix cache hit rate based on the ratio of cached tokens to input tokens (requires prefix caching enabled on the server and `cached_tokens` field returned) | Total cached tokens / Total input tokens × 100% |
-| Average decoded tokens per iter | In speculative decoding, the average number of tokens accepted per model forward pass (iteration), reflecting draft model accuracy | (Total output tokens − 1) / (Total chunks − 1) |
-| Approx speculative decoding acceptance rate | Approximate token acceptance rate for speculative decoding, derived from decoded tokens per iter; closer to 1 means a more accurate draft model | 1 − 1 / (Average decoded tokens per iter) |
+| Test Duration (s) | Total time from the start to the end of the test process | Last request end time - First request start time |
+| Concurrency | Number of clients sending requests simultaneously | Preset value |
+| Request Rate (req/s) | Target request sending rate, -1 means unlimited | Preset value |
+| Total / Success / Failed | Total number of requests sent during the test and their success/failure counts | Successful requests + Failed requests |
+| Req Throughput (req/s) | Average number of successful requests processed per second | Successful requests / Test Duration |
+| Avg Latency (s) | Average time from sending a request to receiving a complete response | Total latency / Successful requests |
+| TTFT (ms) | Average time from sending a request to receiving the first response token | Total first chunk latency / Successful requests |
+| TPOT (ms) | Average time required to generate each output token (excluding first token) | Total time per output token / Successful requests |
+| ITL (ms) | Average time interval between generating each output token | Total inter-token latency / Successful requests |
+| Avg Input Tokens | Average number of input tokens per request | Total input tokens / Successful requests |
+| Avg Output Tokens | Average number of output tokens per request | Total output tokens / Successful requests |
+| Output Throughput (tok/s) | Average number of output tokens processed per second | Total output tokens / Test Duration |
+| Total Throughput (tok/s) | Average number of tokens (input + output) processed per second | (Total input tokens + Total output tokens) / Test Duration |
+| Avg Input Turns | Average number of historical dialogue turns per request in multi-turn conversations (1 for single-turn) | Total input turns / Successful requests |
+| KV Cache Hit Rate (%) | Estimated prefix cache hit rate based on the ratio of cached tokens to input tokens (requires prefix caching enabled on the server and `cached_tokens` field returned) | Total cached tokens / Total input tokens × 100% |
+| Avg Decoded Tokens/Iter | In speculative decoding, the average number of tokens accepted per model forward pass (iteration), reflecting draft model accuracy | (Total output tokens − 1) / (Total chunks − 1) |
+| Spec Decode Acceptance (%) | Approximate token acceptance rate for speculative decoding, derived from decoded tokens per iter; closer to 1 means a more accurate draft model | 1 − 1 / (Avg Decoded Tokens/Iter) |
 
 **Percentile Metrics**
 
 | Metric | Explanation |
 |--------|-------------|
-| Time to First Token | The time from sending a request to generating the first token (in seconds), assessing the initial packet delay. |
-| Inter-token Latency | The time interval between generating each output token (in seconds), assessing the smoothness of output. |
-| Time per Output Token | The time required to generate each output token (excluding the first token, in seconds), assessing decoding speed. |
-| Latency | The time from sending a request to receiving a complete response (in seconds): Time to First Token + Time per Output Token * Output tokens. |
-| Input Tokens | The number of tokens input in the request. |
-| Output Tokens | The number of tokens generated in the response. |
-| Output Throughput | The number of tokens output per second: Output tokens / Latency. |
-| Total Throughput | The number of tokens processed per second: (Input tokens + Output tokens) / Latency. |
+| Latency (s) | The time from sending a request to receiving a complete response (in seconds): TTFT + TPOT * Output tokens. |
+| TTFT (ms) | The time from sending a request to generating the first token (in milliseconds), assessing the initial packet delay. |
+| ITL (ms) | The time interval between generating each output token (in milliseconds), assessing the smoothness of output. |
+| TPOT (ms) | The time required to generate each output token (excluding the first token, in milliseconds), assessing decoding speed. |
+| Input tokens | The number of tokens input in the request. |
+| Output tokens | The number of tokens generated in the response. |
+| Output (tok/s) | The number of tokens output per second: Output tokens / Latency. |
+| Total (tok/s) | The number of tokens processed per second: (Input tokens + Output tokens) / Latency. |
+| Decode (tok/s) | The number of decoded output tokens per second. |
 
 
 ## Visualizing Test Results

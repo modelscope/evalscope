@@ -289,6 +289,35 @@ clearml-init
 ![clearml sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/clearml_vis.jpg)
 
 
+## Open-loop 开放环路模式
+
+Open-loop 模式下，请求按泊松到达调度（由 `--rate` 控制）立即发出，不等待服务端返回，从而模拟真实流量中请求到达与服务时间无关的场景。通过一次命令指定多个速率点，可自动扫描吞吐-延迟曲线。
+
+以下示例在 5、10、20 req/s 三个速率点各发送 500、1000、2000 个请求，观察不同负载下的延迟与吞吐变化：
+
+```bash
+evalscope perf \
+  --url 'http://127.0.0.1:8000/v1/chat/completions' \
+  --model 'qwen2.5' \
+  --api openai \
+  --dataset openqa \
+  --open-loop \
+  --rate 5 10 20 \
+  --number 500 1000 2000 \
+  --max-tokens 1024 \
+  --stream
+```
+
+```{note}
+**注意事项**
+
+- `--rate` 所有值必须 **> 0**；open-loop 模式下不支持 `rate=-1`（无限速）。
+- `--number` 与 `--rate` 必须**等长**，每对 `(rate, number)` 对应一轮独立压测。
+- `--parallel` 在 open-loop 模式下**被忽略**（内部自动设为 INF），无需手动指定。
+- open-loop 并发上限为无穷大，若服务端处理能力不足，在高速率下可能积压大量飞行中的请求，请根据服务端资源合理设置速率上限。
+- 本模式与 closed-loop（默认）模式的核心区别：closed-loop 每个 worker 等待响应后再发下一条（背压保护），open-loop 不等待、按调度直接发出（更接近真实流量）。
+```
+
 ## 调试请求
 使用 `--debug` 选项，我们将输出请求和响应，输出示例如下：
 

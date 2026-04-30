@@ -5,6 +5,9 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.utils import tokenize_chat_messages
 
+Message = Dict[str, Any]  # single OpenAI message: {"role": ..., "content": ...}
+Messages = List[Message]  # delta messages for one turn
+
 
 class DatasetPluginBase:
 
@@ -90,6 +93,22 @@ class DatasetPluginBase:
             for url in image_urls:
                 message['content'].append({'type': 'image_url', 'image_url': {'url': url}})
         return message
+
+    def get_sampled_multi_turn_params(self) -> dict:
+        """Return sampled multi-turn parameters if ``multi_turn_args`` is set.
+
+        Provides a common entry-point for all dataset plugins to obtain
+        concrete multi-turn parameter values.  Each IntOrRange field in
+        :class:`~evalscope.perf.multi_turn_args.MultiTurnArgs` is sampled
+        using the global numpy RNG (seeded by ``seed_everything``).
+
+        Returns:
+            Dict with concrete integer values for all sampled fields, or an
+            empty dict when ``multi_turn_args`` is not configured.
+        """
+        if self.query_parameters.multi_turn_args:
+            return self.query_parameters.multi_turn_args.sample_params()
+        return {}
 
     def check_prompt_length(self, prompt: str) -> Tuple[bool, int]:
         """Check if the prompt length is within the specified range.

@@ -15,10 +15,10 @@ Design choices:
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
-    from .perf_data import RunData
+    from evalscope.perf.utils.perf_models import RunData
 
 # ── Design tokens (must match report.css :root variables) ─────────────────────
 ACCENT = '#63b3ed'
@@ -163,17 +163,38 @@ class ChartBuilder:
 
 
 # ---------------------------------------------------------------------------
-# Concurrency-level charts (one data point per run)
+# X-axis helper: adapts to open-loop (rate) vs closed-loop (concurrency)
+# ---------------------------------------------------------------------------
+
+_RATE_DIR_RE = re.compile(r'^rate_[\d.]+_number_\d+$')
+
+
+def _x_axis(runs: 'List[RunData]'):
+    """Return *(xs, x_title)* appropriate for the run mode.
+
+    * open-loop  (``rate_*_number_*`` dirs) → xs = request_rate floats,
+      x_title = ``'Rate (req/s)'``
+    * closed-loop (``parallel_*_number_*`` dirs) → xs = concurrency integers,
+      x_title = ``'Concurrency'``
+    """
+    is_open = any(_RATE_DIR_RE.match(r.dir_name) for r in runs)
+    if is_open:
+        return [r.summary.request_rate for r in runs], 'Rate (req/s)'
+    return [r.parallel for r in runs], 'Concurrency'
+
+
+# ---------------------------------------------------------------------------
+# Per-sweep charts (one data point per run)
 # ---------------------------------------------------------------------------
 
 
 def build_latency_chart(runs: List[RunData]) -> str:
-    """Line chart: Avg + P99 end-to-end latency vs concurrency."""
-    xs = [r.parallel for r in runs]
+    """Line chart: Avg + P99 end-to-end latency vs concurrency / rate."""
+    xs, x_title = _x_axis(runs)
     traces = [
         dict(
             x=xs,
-            y=[r.summary.get('Average latency (s)', 0) for r in runs],
+            y=[r.summary.avg_latency for r in runs],
             mode='lines+markers',
             name='Avg Latency',
             line=dict(color=ACCENT, width=2),
@@ -181,23 +202,23 @@ def build_latency_chart(runs: List[RunData]) -> str:
         ),
         dict(
             x=xs,
-            y=[r.get_p99('Latency (s)') for r in runs],
+            y=[r.get_p99('latency') for r in runs],
             mode='lines+markers',
             name='P99 Latency',
             line=dict(color=PURPLE, width=2, dash='dash'),
             marker=dict(size=8),
         ),
     ]
-    return ChartBuilder.line(traces, x_title='Concurrency', y_title='Latency (s)', div_id='chart-latency')
+    return ChartBuilder.line(traces, x_title=x_title, y_title='Latency (s)', div_id='chart-latency')
 
 
 def build_ttft_chart(runs: List[RunData]) -> str:
-    """Line chart: Avg + P99 Time-To-First-Token vs concurrency (LLM only)."""
-    xs = [r.parallel for r in runs]
+    """Line chart: Avg + P99 Time-To-First-Token vs concurrency / rate (LLM only)."""
+    xs, x_title = _x_axis(runs)
     traces = [
         dict(
             x=xs,
-            y=[r.summary.get('Average time to first token (s)', 0) for r in runs],
+            y=[r.summary.avg_ttft for r in runs],
             mode='lines+markers',
             name='Avg TTFT',
             line=dict(color=GREEN, width=2),
@@ -205,23 +226,23 @@ def build_ttft_chart(runs: List[RunData]) -> str:
         ),
         dict(
             x=xs,
-            y=[r.get_p99('TTFT (s)') for r in runs],
+            y=[r.get_p99('ttft') for r in runs],
             mode='lines+markers',
             name='P99 TTFT',
             line=dict(color=YELLOW, width=2, dash='dash'),
             marker=dict(size=8),
         ),
     ]
-    return ChartBuilder.line(traces, x_title='Concurrency', y_title='TTFT (s)', div_id='chart-ttft')
+    return ChartBuilder.line(traces, x_title=x_title, y_title='TTFT (ms)', div_id='chart-ttft')
 
 
 def build_tpot_chart(runs: List[RunData]) -> str:
-    """Line chart: Avg + P99 Time-Per-Output-Token vs concurrency (LLM only)."""
-    xs = [r.parallel for r in runs]
+    """Line chart: Avg + P99 Time-Per-Output-Token vs concurrency / rate (LLM only)."""
+    xs, x_title = _x_axis(runs)
     traces = [
         dict(
             x=xs,
-            y=[r.summary.get('Average time per output token (s)', 0) for r in runs],
+            y=[r.summary.avg_tpot for r in runs],
             mode='lines+markers',
             name='Avg TPOT',
             line=dict(color=ACCENT, width=2),
@@ -229,23 +250,23 @@ def build_tpot_chart(runs: List[RunData]) -> str:
         ),
         dict(
             x=xs,
-            y=[r.get_p99('TPOT (s)') for r in runs],
+            y=[r.get_p99('tpot') for r in runs],
             mode='lines+markers',
             name='P99 TPOT',
             line=dict(color=RED, width=2, dash='dash'),
             marker=dict(size=8),
         ),
     ]
-    return ChartBuilder.line(traces, x_title='Concurrency', y_title='TPOT (s)', div_id='chart-tpot')
+    return ChartBuilder.line(traces, x_title=x_title, y_title='TPOT (ms)', div_id='chart-tpot')
 
 
 def build_rps_chart(runs: List[RunData]) -> str:
-    """Line chart: request throughput (RPS) vs concurrency."""
-    xs = [r.parallel for r in runs]
+    """Line chart: request throughput (RPS) vs concurrency / rate."""
+    xs, x_title = _x_axis(runs)
     traces = [
         dict(
             x=xs,
-            y=[r.summary.get('Request throughput (req/s)', 0) for r in runs],
+            y=[r.summary.request_throughput for r in runs],
             mode='lines+markers',
             name='RPS',
             line=dict(color=ACCENT, width=2),
@@ -254,18 +275,18 @@ def build_rps_chart(runs: List[RunData]) -> str:
             fillcolor='rgba(99,179,237,0.08)',
         ),
     ]
-    return ChartBuilder.line(traces, x_title='Concurrency', y_title='Requests/sec', div_id='chart-rps')
+    return ChartBuilder.line(traces, x_title=x_title, y_title='Requests/sec', div_id='chart-rps')
 
 
 def build_throughput_chart(runs: List[RunData], is_embedding: bool) -> str:
-    """Line chart: token throughput vs concurrency."""
-    xs = [r.parallel for r in runs]
+    """Line chart: token throughput vs concurrency / rate."""
+    xs, x_title = _x_axis(runs)
 
     if is_embedding:
         traces = [
             dict(
                 x=xs,
-                y=[r.summary.get('Input token throughput (tok/s)', 0) for r in runs],
+                y=[r.summary.input_token_throughput for r in runs],
                 mode='lines+markers',
                 name='Input tok/s',
                 line=dict(color=GREEN, width=2),
@@ -278,7 +299,7 @@ def build_throughput_chart(runs: List[RunData], is_embedding: bool) -> str:
         traces = [
             dict(
                 x=xs,
-                y=[r.summary.get('Output token throughput (tok/s)', 0) for r in runs],
+                y=[r.summary.output_token_throughput for r in runs],
                 mode='lines+markers',
                 name='Output tok/s',
                 line=dict(color=GREEN, width=2),
@@ -288,7 +309,7 @@ def build_throughput_chart(runs: List[RunData], is_embedding: bool) -> str:
             ),
             dict(
                 x=xs,
-                y=[r.summary.get('Total token throughput (tok/s)', 0) for r in runs],
+                y=[r.summary.total_token_throughput for r in runs],
                 mode='lines+markers',
                 name='Total tok/s',
                 line=dict(color=PURPLE, width=2, dash='dash'),
@@ -298,15 +319,15 @@ def build_throughput_chart(runs: List[RunData], is_embedding: bool) -> str:
 
     return ChartBuilder.line(
         traces,
-        x_title='Concurrency',
+        x_title=x_title,
         y_title='Tokens/sec',
         div_id='chart-throughput',
     )
 
 
 def build_success_chart(runs: List[RunData]) -> str:
-    """Line chart: success rate (%) vs concurrency."""
-    xs = [r.parallel for r in runs]
+    """Line chart: success rate (%) vs concurrency / rate."""
+    xs, x_title = _x_axis(runs)
     traces = [
         dict(
             x=xs,
@@ -321,7 +342,7 @@ def build_success_chart(runs: List[RunData]) -> str:
     ]
     return ChartBuilder.line(
         traces,
-        x_title='Concurrency',
+        x_title=x_title,
         y_title='Success Rate (%)',
         div_id='chart-success',
         extra_layout=dict(yaxis=dict(range=[0, 105], **_GRID))
@@ -337,10 +358,11 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
     """Build per-request line charts (sorted by start_time) organised as tabs.
 
     Tabs returned:
-      - Latency  : Latency + TTFT + TPOT (LLM) / Latency only (embedding)
-      - Tokens   : Prompt + Completion tokens
-      - ITL      : avg inter-token latency per request (LLM only)
-      - Success  : per-request success/failure markers
+      - Latency      : End-to-end latency in seconds (LLM & embedding)
+      - TTFT / TPOT  : TTFT and TPOT in milliseconds (LLM only)
+      - Tokens       : Prompt + Completion tokens
+      - ITL          : avg inter-token latency per request (LLM only)
+      - Success      : per-request success/failure markers
     """
     if not run.requests:
         return []
@@ -351,7 +373,7 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
 
     tabs = []
 
-    # ── Tab 1: Latency ────────────────────────────────────────────────────
+    # ── Tab 1: Latency (seconds) ──────────────────────────────────────────
     lat_traces = [
         dict(
             x=xs,
@@ -362,8 +384,21 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
             marker=dict(size=4),
         )
     ]
+    tabs.append({
+        'label': 'Latency',
+        'chart': ChartBuilder.line(
+            lat_traces,
+            x_title='Request Index',
+            y_title='Latency (s)',
+            div_id=f'req-latency-{safe}',
+        ),
+    })
+
+    # ── Tab 2: TTFT / TPOT / ITL (milliseconds, LLM only) ───────────────────
     if not is_embedding:
-        lat_traces.append(
+        itl_y = [(sum(r.inter_token_latencies) / len(r.inter_token_latencies)) if r.inter_token_latencies else 0
+                 for r in sorted_reqs]
+        ttft_tpot_itl_traces = [
             dict(
                 x=xs,
                 y=[r.first_chunk_latency if r.first_chunk_latency is not None else 0 for r in sorted_reqs],
@@ -371,9 +406,7 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
                 name='TTFT',
                 line=dict(color=GREEN, width=1.5),
                 marker=dict(size=4),
-            )
-        )
-        lat_traces.append(
+            ),
             dict(
                 x=xs,
                 y=[r.time_per_output_token if r.time_per_output_token is not None else 0 for r in sorted_reqs],
@@ -381,19 +414,27 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
                 name='TPOT',
                 line=dict(color=YELLOW, width=1.5),
                 marker=dict(size=4),
-            )
-        )
-    tabs.append({
-        'label': 'Latency',
-        'chart': ChartBuilder.line(
-            lat_traces,
-            x_title='Request Index',
-            y_title='Time (s)',
-            div_id=f'req-latency-{safe}',
-        ),
-    })
+            ),
+            dict(
+                x=xs,
+                y=itl_y,
+                mode='lines+markers',
+                name='Avg ITL',
+                line=dict(color=PURPLE, width=1.5),
+                marker=dict(size=4),
+            ),
+        ]
+        tabs.append({
+            'label': 'TTFT / TPOT / ITL',
+            'chart': ChartBuilder.line(
+                ttft_tpot_itl_traces,
+                x_title='Request Index',
+                y_title='Time (ms)',
+                div_id=f'req-ttft-tpot-itl-{safe}',
+            ),
+        })
 
-    # ── Tab 2: Tokens ─────────────────────────────────────────────────────
+    # ── Tab 3: Tokens ─────────────────────────────────────────────────────
     tok_traces = [
         dict(
             x=xs,
@@ -425,29 +466,6 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
         ),
     })
 
-    # ── Tab 3: ITL (LLM only) ─────────────────────────────────────────────
-    if not is_embedding:
-        itl_y = [(sum(r.inter_token_latencies) / len(r.inter_token_latencies)) if r.inter_token_latencies else 0
-                 for r in sorted_reqs]
-        tabs.append({
-            'label': 'ITL',
-            'chart': ChartBuilder.line(
-                [
-                    dict(
-                        x=xs,
-                        y=itl_y,
-                        mode='lines+markers',
-                        name='Avg ITL',
-                        line=dict(color=YELLOW, width=1.5),
-                        marker=dict(size=4),
-                    )
-                ],
-                x_title='Request Index',
-                y_title='Avg ITL (s)',
-                div_id=f'req-itl-{safe}',
-            ),
-        })
-
     # ── Tab 4: Success ────────────────────────────────────────────────────
     tabs.append({
         'label': 'Success',
@@ -478,28 +496,45 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
     return tabs
 
 
-def build_percentile_chart(run: RunData, is_embedding: bool) -> str:
-    """Line chart: metric values across percentile levels (P10-P99)."""
-    if not run.percentiles:
-        return ''
+def build_percentile_chart(run: 'RunData', is_embedding: bool) -> 'Tuple[str, str]':
+    """Line charts: metric values across percentile levels (P10-P99).
 
-    xs = [p.get('Percentiles', '') for p in run.percentiles]
-    traces = [
+    Returns a tuple ``(latency_chart_html, token_latency_chart_html)`` where:
+      - ``latency_chart_html``       : Latency in seconds.
+      - ``token_latency_chart_html`` : TTFT / TPOT / ITL in milliseconds
+                                       (empty string for embedding models).
+    """
+    if not run.percentiles.rows:
+        return '', ''
+
+    xs = [row.percentile for row in run.percentiles.rows]
+    safe = re.sub(r'[^a-zA-Z0-9_]', '_', run.dir_name)
+
+    # Chart 1: Latency (s)
+    latency_traces = [
         dict(
             x=xs,
-            y=[p.get('Latency (s)', 0) for p in run.percentiles],
+            y=[row.latency or 0 for row in run.percentiles.rows],
             mode='lines+markers',
             name='Latency',
             line=dict(color=ACCENT, width=2),
             marker=dict(size=6),
         )
     ]
+    latency_chart = ChartBuilder.line(
+        latency_traces,
+        x_title='Percentile',
+        y_title='Latency (s)',
+        div_id=f'chart-percentile-latency-{safe}',
+    )
 
+    # Chart 2: TTFT / TPOT / ITL (ms) — LLM only
+    token_lat_chart = ''
     if not is_embedding:
-        traces += [
+        token_lat_traces = [
             dict(
                 x=xs,
-                y=[p.get('TTFT (s)', 0) for p in run.percentiles],
+                y=[(row.ttft or 0) for row in run.percentiles.rows],
                 mode='lines+markers',
                 name='TTFT',
                 line=dict(color=GREEN, width=2),
@@ -507,7 +542,7 @@ def build_percentile_chart(run: RunData, is_embedding: bool) -> str:
             ),
             dict(
                 x=xs,
-                y=[p.get('TPOT (s)', 0) for p in run.percentiles],
+                y=[(row.tpot or 0) for row in run.percentiles.rows],
                 mode='lines+markers',
                 name='TPOT',
                 line=dict(color=YELLOW, width=2),
@@ -515,18 +550,18 @@ def build_percentile_chart(run: RunData, is_embedding: bool) -> str:
             ),
             dict(
                 x=xs,
-                y=[p.get('ITL (s)', 0) for p in run.percentiles],
+                y=[(row.itl or 0) for row in run.percentiles.rows],
                 mode='lines+markers',
                 name='ITL',
                 line=dict(color=PURPLE, width=2),
                 marker=dict(size=6),
             ),
         ]
+        token_lat_chart = ChartBuilder.line(
+            token_lat_traces,
+            x_title='Percentile',
+            y_title='Time (ms)',
+            div_id=f'chart-percentile-token-lat-{safe}',
+        )
 
-    safe = re.sub(r'[^a-zA-Z0-9_]', '_', run.dir_name)
-    return ChartBuilder.line(
-        traces,
-        x_title='Percentile',
-        y_title='Time (s)',
-        div_id=f'chart-percentile-{safe}',
-    )
+    return latency_chart, token_lat_chart

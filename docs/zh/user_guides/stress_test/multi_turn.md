@@ -6,7 +6,7 @@
 
 - **真实上下文累积**：每轮请求成功后，将模型实际输出追加到对话历史，下一轮请求携带完整历史，而非仅发送当前用户消息。
 - **KV 缓存可命中率估算**：基于客户端 token 计数，估算每轮请求中历史对话 token 占总输入 token 的比例，即理论上可被服务端 prefix caching 利用的上限；实际是否命中取决于服务端是否开启并维持了对应缓存。
-- **多数据集支持**：提供随机合成（`random_multi_turn`）、真实对话（`share_gpt_zh_multi_turn` / `share_gpt_en_multi_turn`）和自定义本地数据（`custom_multi_turn`）四种数据集。
+- **多数据集支持**：提供随机合成（`random_multi_turn`）、真实对话（`share_gpt_zh_multi_turn` / `share_gpt_en_multi_turn`）、自定义本地数据（`custom_multi_turn`）和真实 Agent 轨迹（`swe_smith`）五种数据集。
 - **参数语义一致**：`--number` 为总 turn 数，`--parallel` 为并发 turn 数，与普通压测模式语义保持一致。
 
 ## 参数说明
@@ -17,7 +17,22 @@
 |------|------|------|--------|
 | `--multi-turn` | `bool` | 启用多轮对话压测模式 | `False` |
 | `--min-turns` | `int` | 每个对话最少用户轮数，仅 `random_multi_turn` 使用 | `1` |
-| `--max-turns` | `int` | 每个对话最多用户轮数；`random_multi_turn` **必须设置**；ShareGPT 数据集可选，用于截断过长对话 | `None` |
+| `--max-turns` | `int` | 每个对话最多用户轮数；`random_multi_turn` **必须设置**；ShareGPT / `swe_smith` 等数据集可选，用于截断过长对话 | `None` |
+| `--dataset-offset` | `int` | 跳过数据集前 N 条对话，用于分片测试或避免缓存命中 | `0` |
+
+### `multi_turn_args`（`swe_smith` 专属参数）
+
+`swe_smith` 数据集的 live 构建模式支持通过 `MultiTurnArgs` 对象精细控制对话结构和 token 长度目标。所有 `IntOrRange` 类型字段既可传入单个整数，也可传入 `[min, max]` 列表——列表形式会在每条对话构建时随机采样，结合 `--seed` 保证可复现。
+
+| 参数 | 类型 | 说明 | 默认值 |
+|------|------|------|--------|
+| `min_turns` | `int` | 每个对话至少包含的用户轮数；构建轮数不足时丢弃该对话 | `1` |
+| `max_turns` | `int` | 每个对话最多保留的用户轮数；超出部分截断 | `5` |
+| `first_turn_length` | `IntOrRange` | 第 1 轮目标 prompt token 数；从原始轨迹中截取恰好达到该长度的消息片段 | `65000` |
+| `subsequent_turn_length` | `IntOrRange` | 后续每轮在上一轮基础上新增的目标 token 数；决定每轮 delta 的大小 | `500` |
+| `max_context_length` | `IntOrRange` | 单次请求允许的最大 context token 数（prompt tokens 上限）；超出后停止追加新轮次 | `75000` |
+| `chars_per_token` | `float` | 无 tokenizer 时的字符/token 估算比，用于预过滤原始轨迹 | `3.0` |
+| `num_workers` | `int` | live 构建模式下并行 worker 数量（>1 使用 multiprocessing.Pool） | `4` |
 
 ### 已有参数在多轮模式下的语义
 
@@ -105,6 +120,21 @@
 
 > **说明**：数据集中的 `assistant` 消息仅用于标识对话结构，**不会**被直接发送给模型。运行时 worker 始终将模型的实际输出追加到上下文，保证历史准确。
 
+### swe_smith
+
+使用来自 [SWE-bench/SWE-smith-trajectories](https://www.modelscope.cn/datasets/SWE-bench/SWE-smith-trajectories) 的真实 Agent 代码修复轨迹数据，专为**长上下文 + 多轮 Agent 场景**压测设计。每条轨迹由工具调用、代码片段、Patch 结果等组成，单条 prompt 通常超过数万 token，适合评测模型在大上下文下的 prefill 吞吐和 KV 缓存命中率。
+
+支持两种数据源模式：
+
+**1. 预构建 JSON 模式**（推荐）：指定 `--dataset-path` 加载已生成的 `agentic_dataset.json`，无需 tokenizer，启动快。
+
+**2. Live 构建模式**（不指定 `--dataset-path`）：运行时从 ModelScope 拉取原始轨迹并动态构建对话，**必须**指定 `--tokenizer-path` 用于精确 token 计数。
+
+两种模式共同特性：
+- **可选截断**：通过 `--max-turns`（或 `MultiTurnArgs.max_turns`）限制每条对话保留的用户轮数
+- **支持偏移**：通过 `--dataset-offset` 跳过前 N 条对话，用于分片测试或规避缓存热点
+- **支持范围采样**：`first_turn_length`、`subsequent_turn_length`、`max_context_length` 均支持 `[min, max]` 列表，每条对话独立随机采样，需配合 `--seed` 保证复现性
+
 ## 工作流程
 
 1. **加载对话池**：启动时从数据集文件顺序读取，将所有对话预加载到内存，最多加载 `--number` 条（防止大数据集占用过多内存）。
@@ -173,8 +203,8 @@
 
 ```bash
 evalscope perf \
-  --model Qwen2.5-7B-Instruct \
-  --tokenizer-path Qwen/Qwen2.5-7B-Instruct \
+  --model Qwen2.5-0.5B-Instruct \
+  --tokenizer-path Qwen/Qwen2.5-0.5B-Instruct \
   --url http://127.0.0.1:8801/v1/chat/completions \
   --api openai \
   --dataset random_multi_turn \
@@ -218,7 +248,7 @@ evalscope perf \
 
 ```bash
 evalscope perf \
-  --model Qwen2.5-7B-Instruct \
+  --model Qwen2.5-0.5B-Instruct \
   --url http://127.0.0.1:8801/v1/chat/completions \
   --api openai \
   --dataset share_gpt_zh_multi_turn \
@@ -233,7 +263,7 @@ evalscope perf \
 
 ```bash
 evalscope perf \
-  --model Qwen2.5-7B-Instruct \
+  --model Qwen2.5-0.5B-Instruct \
   --url http://127.0.0.1:8801/v1/chat/completions \
   --api openai \
   --dataset share_gpt_zh_multi_turn \
@@ -284,7 +314,7 @@ evalscope perf \
 
 ```bash
 evalscope perf \
-  --model Qwen2.5-7B-Instruct \
+  --model Qwen2.5-0.5B-Instruct \
   --url http://127.0.0.1:8801/v1/chat/completions \
   --api openai \
   --dataset custom_multi_turn \
@@ -295,3 +325,80 @@ evalscope perf \
   --number 100 \
   --parallel 10
 ```
+
+### 4. 使用 swe_smith（真实 Agent 轨迹，长上下文多轮）
+
+适用场景：评测模型在长上下文 Agent 代码修复轨迹下的 prefill 吞吐、TTFT 及 KV 缓存命中率表现。
+
+#### 4.1 Live 构建模式（自动下载轨迹 + 动态构建）
+
+自动从 ModelScope 拉取 SWE-smith-trajectories 数据集并实时构建对话，需指定 `--tokenizer-path`。
+
+```bash
+evalscope perf \
+  --model Qwen2.5-0.5B-Instruct \
+  --url http://127.0.0.1:8801/v1/chat/completions \
+  --api openai \
+  --dataset swe_smith \
+  --tokenizer-path Qwen/Qwen2.5-0.5B-Instruct \
+  --max-tokens 512 \
+  --min-tokens 512 \
+  --multi-turn \
+  --multi-turn-args '{
+      "min_turns": 2,
+      "max_turns": 4,
+      "first_turn_length": 8192,
+      "subsequent_turn_length": 1024,
+      "max_context_length": 12000
+  }' \
+  --seed 42 \
+  --number 10 20 \
+  --parallel 5 10 \
+  --extra-args '{"ignore_eos": true}'
+```
+
+`first_turn_length` / `subsequent_turn_length` / `max_context_length` 也支持传入 `[min, max]` 列表进行随机采样：
+
+```bash
+evalscope perf \
+  --model Qwen2.5-0.5B-Instruct \
+  --url http://127.0.0.1:8801/v1/chat/completions \
+  --api openai \
+  --dataset swe_smith \
+  --tokenizer-path Qwen/Qwen2.5-0.5B-Instruct \
+  --max-tokens 512 \
+  --multi-turn \
+  --multi-turn-args '{
+      "min_turns": 2,
+      "max_turns": 6,
+      "first_turn_length": [4096, 16384],
+      "subsequent_turn_length": [512, 2048],
+      "max_context_length": [20000, 40000]
+  }' \
+  --seed 42 \
+  --number 200 \
+  --parallel 20
+```
+
+> **说明**：`[min, max]` 形式的参数会在每条对话构建时独立随机采样，实现不同对话具有不同上下文长度目标，从而更真实地模拟生产环境中的请求分布。需配合 `--seed` 保证结果可复现。
+
+#### 4.2 预构建 JSON 模式（加载 agentic_dataset.json）
+
+若已预先生成 `agentic_dataset.json`，可直接加载，无需 tokenizer，启动更快：
+
+```bash
+evalscope perf \
+  --model Qwen2.5-0.5B-Instruct \
+  --url http://127.0.0.1:8801/v1/chat/completions \
+  --api openai \
+  --dataset swe_smith \
+  --dataset-path /path/to/agentic_dataset.json \
+  --max-tokens 512 \
+  --multi-turn \
+  --max-turns 4 \
+  --dataset-offset 100 \
+  --number 200 \
+  --parallel 20
+```
+
+> **说明**：`--dataset-offset` 可跳过数据集前 N 条对话，适合多机分片压测或规避 KV 缓存热点。

@@ -48,9 +48,10 @@ var I18N = {
     'card.run_summary':       'Run Summary',
     'card.percentile_dist':   'Percentile Distribution',
     'card.percentile_curves': 'Percentile Curves',
+    'card.percentile_curves_token_lat': 'Percentile Curves — TTFT / TPOT / ITL',
     'card.per_request':       'Per-Request Details',
 
-    /* ── Inline badge suffixes ────────────────── */
+    /* ── Inline badge suffixes ──────────────────────────────────── */
     'badge.runs':     'runs',
     'badge.requests': 'requests',
 
@@ -66,6 +67,7 @@ var I18N = {
     'Success Rate':       'Success Rate',
     'Tokens':             'Tokens',
     'ITL':                'ITL',
+    'TTFT / TPOT / ITL':  'TTFT / TPOT / ITL',
     'Success':            'Success',
   },
 
@@ -97,7 +99,8 @@ var I18N = {
     'card.recommendations':   '性能建议',
     'card.run_summary':       '运行摘要',
     'card.percentile_dist':   '百分位分布',
-    'card.percentile_curves': '百分位曲线',
+    'card.percentile_curves': '百分位曲线（延迟）',
+    'card.percentile_curves_token_lat': '百分位曲线（TTFT / TPOT / ITL）',
     'card.per_request':       '每请求详情',
 
     /* ── Inline badge suffixes ────────────────── */
@@ -116,6 +119,7 @@ var I18N = {
     'Success Rate':       '成功率',
     'Tokens':             'Token 数',
     'ITL':                'Token 间延迟',
+    'TTFT / TPOT / ITL':  '首Token/每Token/Token间延迟',
     'Success':            '请求成功率',
   },
 

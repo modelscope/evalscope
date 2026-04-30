@@ -122,9 +122,6 @@ class RandomRerankDatasetPlugin(DatasetPluginBase):
         if not self.tokenizer:
             raise ValueError('Tokenizer is required for random rerank generation. Please provide --tokenizer-path.')
 
-        # Use numpy's default_rng for sampling
-        self._rng = np.random.default_rng(None)
-
         # Filter out special tokens from vocabulary
         vocab_size = self.tokenizer.vocab_size
         prohibited_tokens = set(self.tokenizer.all_special_ids)
@@ -136,13 +133,12 @@ class RandomRerankDatasetPlugin(DatasetPluginBase):
 
     def _generate_token_sequence(self, length: int) -> str:
         """Generate a random string with specific token length."""
-        tokens = self.allowed_tokens[self._rng.integers(0, len(self.allowed_tokens), size=length)].tolist()
+        tokens = self.allowed_tokens[np.random.randint(0, len(self.allowed_tokens), size=length)].tolist()
         prompt, _, _ = gen_prompt_decode_to_target_len(
             tokenizer=self.tokenizer,
             token_sequence=tokens,
             target_token_len=length,
             add_special_tokens=False,
-            rng=self._rng,
         )
         return prompt
 
@@ -156,7 +152,7 @@ class RandomRerankDatasetPlugin(DatasetPluginBase):
         min_len = max(1, min_len)
         max_len = max(1, max_len)
 
-        query_len = int(self._rng.integers(min_len, max_len + 1))
+        query_len = int(np.random.randint(min_len, max_len + 1))
         doc_len = int(query_len * self.document_length_ratio)
         if doc_len < 1:
             doc_len = 1

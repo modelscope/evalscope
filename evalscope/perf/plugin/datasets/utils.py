@@ -51,7 +51,6 @@ def gen_prompt_decode_to_target_len(
     target_token_len: int,
     max_retry: int = 10,
     add_special_tokens: bool = False,
-    rng: np.random.Generator = None,
     allowed_tokens: np.ndarray = None,
 ) -> Tuple[str, List[int], int]:
     """
@@ -92,10 +91,7 @@ def gen_prompt_decode_to_target_len(
         elif len(token_sequence) < target_token_len:
             # Generate extra tokens to reach target length, only from allowed (non-special) tokens
             fill_size = target_token_len - len(token_sequence)
-            if rng is not None:
-                indices = rng.integers(0, len(allowed_tokens), size=fill_size)
-            else:
-                indices = np.random.randint(0, len(allowed_tokens), size=fill_size)
+            indices = np.random.randint(0, len(allowed_tokens), size=fill_size)
             extra_tokens = allowed_tokens[indices].tolist()
             token_sequence.extend(extra_tokens)
         elif len(token_sequence) > target_token_len:

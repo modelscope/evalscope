@@ -1,14 +1,14 @@
 import aiohttp
 import asyncio
 import time
-from typing import TYPE_CHECKING, AsyncGenerator, Dict, List, Tuple
+from typing import TYPE_CHECKING
 
+from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.benchmark_util import BenchmarkData
 from evalscope.utils.logger import get_logger
-from .arguments import Arguments
 
 if TYPE_CHECKING:
-    from .plugin.api.base import ApiPluginBase
+    from evalscope.perf.plugin.api.base import ApiPluginBase
 
 logger = get_logger()
 
@@ -28,9 +28,10 @@ class AioHttpClient:
         self.api_plugin = api_plugin
 
         # Configure connector similar to vLLM bench for better TTFT under load.
+        _conn_limit = 0 if (args.parallel is None or args.parallel <= 0) else args.parallel
         connector = aiohttp.TCPConnector(
-            limit=args.parallel or 0,  # 0 means no limit in aiohttp; use parallel as limit if set
-            limit_per_host=args.parallel or 0,
+            limit=_conn_limit,  # 0 means no limit in aiohttp; use parallel as limit if set
+            limit_per_host=_conn_limit,
             ttl_dns_cache=300,
             use_dns_cache=True,
             keepalive_timeout=60,

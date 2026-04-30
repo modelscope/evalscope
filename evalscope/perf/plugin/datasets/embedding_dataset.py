@@ -27,9 +27,6 @@ class RandomEmbeddingDatasetPlugin(DatasetPluginBase):
         if not self.tokenizer:
             raise ValueError('Tokenizer is required for random embedding generation. Please provide --tokenizer-path.')
 
-        # Use numpy's default_rng for sampling
-        self._rng = np.random.default_rng(None)
-
         # Filter out special tokens from vocabulary
         vocab_size = self.tokenizer.vocab_size
         prohibited_tokens = set(self.tokenizer.all_special_ids)
@@ -52,10 +49,10 @@ class RandomEmbeddingDatasetPlugin(DatasetPluginBase):
         min_len = max(1, min_len)
         max_len = max(1, max_len)
 
-        target_length = self._rng.integers(min_len, max_len + 1)
+        target_length = np.random.randint(min_len, max_len + 1)
 
         # Generate random tokens
-        tokens = self.allowed_tokens[self._rng.integers(0, len(self.allowed_tokens), size=target_length)].tolist()
+        tokens = self.allowed_tokens[np.random.randint(0, len(self.allowed_tokens), size=target_length)].tolist()
 
         # Decode and re-encode to ensure length match
         prompt, _, _ = gen_prompt_decode_to_target_len(
@@ -63,7 +60,6 @@ class RandomEmbeddingDatasetPlugin(DatasetPluginBase):
             token_sequence=tokens,
             target_token_len=target_length,
             add_special_tokens=False,
-            rng=self._rng,
         )
 
         return prompt

@@ -1,131 +1,65 @@
-"""Data models and loading utilities for perf benchmark HTML reports.
+"""Data loading utilities for perf benchmark HTML reports.
 
 Provides:
-  - RequestRecord  dataclass: a single per-request DB row
-  - RunData        dataclass: all data for one parallel_X_number_Y run
-  - RunLoader      class:     discovers and loads runs from an output directory
+  - RunLoader  class: discovers and loads runs from an output directory
+
+Data models (BenchmarkSummary, PercentileResult, RequestRecord, RunData)
+are defined in :mod:`evalscope.perf.utils.perf_models` and re-exported here
+for backward compatibility.
 """
 
 from __future__ import annotations
 
-import dataclasses
 import json
 import os
 import re
 import sqlite3
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
+from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult, RequestRecord, RunData
 from evalscope.utils.logger import get_logger
 
+# Re-export for backward compatibility
+__all__ = [
+    'BenchmarkSummary',
+    'PercentileResult',
+    'RequestRecord',
+    'RunData',
+    'RunLoader',
+]
+
 logger = get_logger()
-
-# ---------------------------------------------------------------------------
-# Data models
-# ---------------------------------------------------------------------------
-
-
-@dataclasses.dataclass
-class RequestRecord:
-    """A single benchmark request record loaded from the SQLite DB."""
-
-    start_time: float
-    completed_time: float
-    latency: float
-    first_chunk_latency: Optional[float]
-    prompt_tokens: int
-    completion_tokens: int
-    inter_token_latencies: List[float]
-    time_per_output_token: Optional[float]
-    success: bool
-
-
-@dataclasses.dataclass
-class RunData:
-    """All data for a single benchmark run (one parallel_X_number_Y directory)."""
-
-    dir_name: str
-    parallel: int
-    number: int
-    summary: Dict[str, Any]
-    percentiles: List[Dict[str, Any]]
-    args: Dict[str, Any]
-    requests: List[RequestRecord]
-
-    # ── Derived properties ──────────────────────────────────────────────────
-
-    @property
-    def name(self) -> str:
-        """Human-readable run label."""
-        return f'Parallel {self.parallel} / Number {self.number}'
-
-    @property
-    def success_rate(self) -> float:
-        """Success rate as a percentage (0-100)."""
-        total = self.summary.get('Total requests', 1)
-        succeed = self.summary.get('Succeed requests', 0)
-        return round(succeed / total * 100, 1) if total > 0 else 0.0
-
-    def get_p99(self, metric_key: str) -> float:
-        """Return the P99 value for *metric_key* from the percentile list."""
-        for p in self.percentiles:
-            if p.get('Percentiles') == '99%':
-                return float(p.get(metric_key) or 0)
-        return 0.0
-
-    def summary_items(self, is_embedding: bool) -> List[Dict[str, str]]:
-        """Return benchmark_summary fields as ``[{'key': ..., 'value': ...}]`` for display."""
-        s = self.summary
-        rate_raw = s.get('Request rate (req/s)', -1)
-        rate_str = 'INF' if rate_raw == -1 else f'{rate_raw:.3f}'
-
-        base = [
-            ('Total Requests', str(int(s.get('Total requests', 0)))),
-            ('Succeed Requests', str(int(s.get('Succeed requests', 0)))),
-            ('Failed Requests', str(int(s.get('Failed requests', 0)))),
-            ('Concurrency', str(int(s.get('Number of concurrency', 0)))),
-            ('Time Taken (s)', f"{s.get('Time taken for tests (s)', 0):.3f}"),
-            ('Request Rate (req/s)', rate_str),
-            ('Request Throughput (req/s)', f"{s.get('Request throughput (req/s)', 0):.4f}"),
-            ('Avg Latency (s)', f"{s.get('Average latency (s)', 0):.4f}"),
-        ]
-
-        if is_embedding:
-            extra = [
-                ('Input Tok Throughput (tok/s)', f"{s.get('Input token throughput (tok/s)', 0):.2f}"),
-                ('Avg Input Tokens', f"{s.get('Average input tokens per request', 0):.1f}"),
-            ]
-        else:
-            extra = [
-                ('Output Tok Throughput (tok/s)', f"{s.get('Output token throughput (tok/s)', 0):.2f}"),
-                ('Total Tok Throughput (tok/s)', f"{s.get('Total token throughput (tok/s)', 0):.2f}"),
-                ('Avg TTFT (s)', f"{s.get('Average time to first token (s)', 0):.4f}"),
-                ('Avg TPOT (s)', f"{s.get('Average time per output token (s)', 0):.4f}"),
-                ('Avg ITL (s)', f"{s.get('Average inter-token latency (s)', 0):.4f}"),
-                ('Avg Input Tokens', f"{s.get('Average input tokens per request', 0):.1f}"),
-                ('Avg Output Tokens', f"{s.get('Average output tokens per request', 0):.1f}"),
-            ]
-
-        return [{'key': k, 'value': v} for k, v in base + extra]
-
 
 # ---------------------------------------------------------------------------
 # Loader
 # ---------------------------------------------------------------------------
 
+# Patterns for recognized run directory names
+_PARALLEL_RE = re.compile(r'^parallel_(\d+)_number_(\d+)$')
+_RATE_RE = re.compile(r'^rate_([\d.]+)_number_(\d+)$')
+
 
 class RunLoader:
-    """Discovers and loads all benchmark runs from an output directory."""
+    """Discovers and loads all benchmark runs from an output directory.
+
+    Recognized sub-directory patterns:
+
+    * ``parallel_<N>_number_<M>`` – closed-loop / fixed-concurrency mode
+    * ``rate_<R>_number_<M>``     – open-loop / fixed-rate mode
+    """
 
     @staticmethod
     def load_all(output_dir: str) -> List[RunData]:
-        """Walk *output_dir* for ``parallel_*`` subdirectories and return sorted runs."""
+        """Walk *output_dir* for run subdirectories and return sorted runs."""
         if not os.path.isdir(output_dir):
             return []
 
         runs: List[RunData] = []
         for entry in sorted(os.listdir(output_dir)):
             run_dir = os.path.join(output_dir, entry)
-            if not os.path.isdir(run_dir) or not entry.startswith('parallel_'):
+            if not os.path.isdir(run_dir):
+                continue
+            if not (_PARALLEL_RE.match(entry) or _RATE_RE.match(entry)):
                 continue
             run = RunLoader._load_single(run_dir, entry)
             if run is not None:
@@ -137,17 +71,27 @@ class RunLoader:
 
     @staticmethod
     def _load_single(run_dir: str, dir_name: str) -> Optional[RunData]:
-        summary = RunLoader._load_json(os.path.join(run_dir, 'benchmark_summary.json')) or {}
-        percentiles = RunLoader._load_json(os.path.join(run_dir, 'benchmark_percentile.json')) or []
+        summary_dict = RunLoader._load_json(os.path.join(run_dir, 'benchmark_summary.json')) or {}
+        percentile_rows = RunLoader._load_json(os.path.join(run_dir, 'benchmark_percentile.json')) or []
         args = RunLoader._load_json(os.path.join(run_dir, 'benchmark_args.json')) or {}
         requests = RunLoader._load_db(run_dir)
 
-        m = re.match(r'parallel_(\d+)_number_(\d+)', dir_name)
-        if m:
-            parallel, number = int(m.group(1)), int(m.group(2))
+        summary = BenchmarkSummary.from_dict(summary_dict)
+        percentiles = PercentileResult.from_list(percentile_rows) if isinstance(percentile_rows, list) \
+            else PercentileResult.from_transposed(percentile_rows)
+
+        m_parallel = _PARALLEL_RE.match(dir_name)
+        m_rate = _RATE_RE.match(dir_name)
+        if m_parallel:
+            parallel, number = int(m_parallel.group(1)), int(m_parallel.group(2))
+        elif m_rate:
+            # open-loop mode: encode rate*1000 as a synthetic "parallel" key so
+            # that the existing (parallel, number) sort order stays meaningful.
+            parallel = round(float(m_rate.group(1)) * 1000)
+            number = int(m_rate.group(2))
         else:
-            parallel = int(summary.get('Number of concurrency', 0))
-            number = int(summary.get('Total requests', 0))
+            parallel = summary.concurrency
+            number = summary.total_requests
 
         return RunData(
             dir_name=dir_name,
@@ -160,7 +104,7 @@ class RunLoader:
         )
 
     @staticmethod
-    def _load_json(path: str) -> Optional[Any]:
+    def _load_json(path: str):
         try:
             with open(path, 'r', encoding='utf-8') as fh:
                 return json.load(fh)
@@ -191,16 +135,19 @@ class RunLoader:
                     except (json.JSONDecodeError, TypeError):
                         itl = []
 
+                    # DB stores all latency fields in seconds; convert to ms on load.
+                    fcl = d.get('first_chunk_latency')
+                    tpot = d.get('time_per_output_token')
                     records.append(
                         RequestRecord(
                             start_time=float(d.get('start_time') or 0),
                             completed_time=float(d.get('completed_time') or 0),
                             latency=float(d.get('latency') or 0),
-                            first_chunk_latency=d.get('first_chunk_latency'),
+                            first_chunk_latency=(fcl * 1000) if fcl is not None else None,
                             prompt_tokens=int(d.get('prompt_tokens') or 0),
                             completion_tokens=int(d.get('completion_tokens') or 0),
-                            inter_token_latencies=itl,
-                            time_per_output_token=d.get('time_per_output_token'),
+                            inter_token_latencies=[v * 1000 for v in itl],
+                            time_per_output_token=(tpot * 1000) if tpot is not None else None,
                             success=bool(d.get('success', 0)),
                         )
                     )

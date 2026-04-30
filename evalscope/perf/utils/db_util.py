@@ -9,7 +9,9 @@ from tabulate import tabulate
 from typing import Dict, List, Tuple
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics, Metrics
+from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
+from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
+from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
 from evalscope.utils.io_utils import current_time
 from evalscope.utils.logger import get_logger
 
@@ -46,13 +48,6 @@ def encode_data(data) -> str:
 def write_json_file(data, output_path):
     with open(output_path, 'w') as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
-
-
-def transpose_results(data):
-    headers = data.keys()
-    rows = zip(*data.values())
-
-    return [dict(zip(headers, row)) for row in rows]
 
 
 def create_result_table(cursor):
@@ -136,19 +131,6 @@ def get_result_db_path(args: Arguments):
     return result_db_path
 
 
-class PercentileMetrics:
-    TTFT = 'TTFT (s)'
-    ITL = 'ITL (s)'
-    TPOT = 'TPOT (s)'
-    LATENCY = 'Latency (s)'
-    INPUT_TOKENS = 'Input tokens'
-    OUTPUT_TOKENS = 'Output tokens'
-    OUTPUT_THROUGHPUT = 'Output (tok/s)'
-    INPUT_THROUGHPUT = 'Input (tok/s)'
-    TOTAL_THROUGHPUT = 'Total (tok/s)'
-    PERCENTILES = 'Percentiles'
-
-
 def calculate_percentiles(data: List[float], percentiles: List[int]) -> Dict[int, float]:
     """
     Calculate the percentiles for a specific list of data.
@@ -164,19 +146,19 @@ def calculate_percentiles(data: List[float], percentiles: List[int]) -> Dict[int
         try:
             idx = int(n_success_queries * percentile / 100)
             value = data[idx] if data[idx] is not None else float('nan')
-            results[percentile] = round(value, 4)
+            results[percentile] = round(value, 2)
         except IndexError:
             results[percentile] = float('nan')
     return results
 
 
-def get_percentile_results(result_db_path: str, api_type: str = None) -> Dict[str, List[float]]:
+def get_percentile_results(result_db_path: str, api_type: str = None) -> PercentileResult:
     """
     Compute and return quantiles for various metrics from the database results.
 
     :param result_db_path: Path to the SQLite database file.
     :param api_type: The API type (e.g., 'openai', 'openai_embedding', 'openai_rerank').
-    :return: Dictionary of percentiles for various metrics.
+    :return: :class:`~evalscope.perf.utils.perf_models.PercentileResult` instance.
     """
     query_sql = f'''SELECT {DatabaseColumns.START_TIME}, {DatabaseColumns.INTER_TOKEN_LATENCIES}, {DatabaseColumns.SUCCESS},
                     {DatabaseColumns.COMPLETED_TIME}, {DatabaseColumns.LATENCY}, {DatabaseColumns.FIRST_CHUNK_LATENCY},
@@ -184,7 +166,7 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Dict[st
                     {DatabaseColumns.COMPLETION_TOKENS}, {DatabaseColumns.TIME_PER_OUTPUT_TOKEN}
                     FROM result WHERE {DatabaseColumns.SUCCESS}=1'''  # noqa: E501
 
-    percentiles = [10, 25, 50, 66, 75, 80, 90, 95, 98, 99]
+    percentiles = [1, 5, 10, 25, 50, 75, 90, 95, 99]
 
     with sqlite3.connect(result_db_path) as con:
         cursor = con.cursor()
@@ -219,9 +201,9 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Dict[st
                 logger.error(f'Error parsing inter token latencies: {e}')
 
         metrics = {
-            PercentileMetrics.TTFT: [row[col_indices[DatabaseColumns.FIRST_CHUNK_LATENCY]] for row in rows],
-            PercentileMetrics.ITL: inter_token_latencies_all,
-            PercentileMetrics.TPOT: [row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]] for row in rows],
+            PercentileMetrics.TTFT: [row[col_indices[DatabaseColumns.FIRST_CHUNK_LATENCY]] * 1000 for row in rows],
+            PercentileMetrics.ITL: [v * 1000 for v in inter_token_latencies_all],
+            PercentileMetrics.TPOT: [row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]] * 1000 for row in rows],
             PercentileMetrics.LATENCY: [row[col_indices[DatabaseColumns.LATENCY]] for row in rows],
             PercentileMetrics.INPUT_TOKENS: [row[col_indices[DatabaseColumns.PROMPT_TOKENS]] for row in rows],
             PercentileMetrics.OUTPUT_TOKENS: [row[col_indices[DatabaseColumns.COMPLETION_TOKENS]] for row in rows],
@@ -232,35 +214,41 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Dict[st
             PercentileMetrics.TOTAL_THROUGHPUT: [(
                 (row[col_indices[DatabaseColumns.PROMPT_TOKENS]] + row[col_indices[DatabaseColumns.COMPLETION_TOKENS]])
                 / row[col_indices[DatabaseColumns.LATENCY]]
-            ) if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows]
+            ) if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows],
+            PercentileMetrics.DECODE_THROUGHPUT: [
+                (1.0 / row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]])
+                if row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]] > 0 else float('nan') for row in rows
+            ]
         }
 
-    # Calculate percentiles for each metric
-    results = {PercentileMetrics.PERCENTILES: [f'{p}%' for p in percentiles]}
+    # Calculate percentiles for each metric and build transposed dict
+    transposed: Dict[str, list] = {PercentileMetrics.PERCENTILES: [f'{p}%' for p in percentiles]}
     for metric_name, data in metrics.items():
         metric_percentiles = calculate_percentiles(data, percentiles)
-        results[metric_name] = [metric_percentiles[p] for p in percentiles]
+        transposed[metric_name] = [metric_percentiles[p] for p in percentiles]
 
-    return results
+    return PercentileResult.from_transposed(transposed)
 
 
-def summary_result(args: Arguments, metrics: BenchmarkMetrics, result_db_path: str) -> Tuple[Dict, Dict]:
+def summary_result(args: Arguments, metrics: BenchmarkMetrics,
+                   result_db_path: str) -> Tuple['BenchmarkSummary', 'PercentileResult']:
     result_path = os.path.dirname(result_db_path)
     write_json_file(args.to_dict(), os.path.join(result_path, 'benchmark_args.json'))
 
-    metrics_result = metrics.create_message(api_type=args.api)
-    write_json_file(metrics_result, os.path.join(result_path, 'benchmark_summary.json'))
+    # Build BenchmarkSummary from the legacy create_message dict
+    raw_metrics_dict = metrics.create_message(api_type=args.api)
+    summary = BenchmarkSummary.from_dict(raw_metrics_dict)
+    write_json_file(summary.to_dict(), os.path.join(result_path, 'benchmark_summary.json'))
 
     # Print summary in a table
-    table = tabulate(list(metrics_result.items()), headers=['Key', 'Value'], tablefmt='grid')
-    logger.info('\nBenchmarking summary:\n' + table)
+    logger.info('\nBenchmarking summary:\n' + summary.to_table())
 
     # Get percentile results
     percentile_result = get_percentile_results(result_db_path, api_type=args.api)
-    if percentile_result:
-        write_json_file(transpose_results(percentile_result), os.path.join(result_path, 'benchmark_percentile.json'))
-        # Print percentile results in a table
-        table = tabulate(percentile_result, headers='keys', tablefmt='pretty')
+    if percentile_result.rows:
+        write_json_file(percentile_result.to_list(), os.path.join(result_path, 'benchmark_percentile.json'))
+        # Print percentile results in a table (transposed: rows=metrics, cols=percentiles)
+        table = percentile_result.to_table()
         logger.info('\nPercentile results:\n' + table)
 
     if args.dataset.startswith('speed_benchmark'):
@@ -268,7 +256,7 @@ def summary_result(args: Arguments, metrics: BenchmarkMetrics, result_db_path: s
 
     logger.info(f'Save the summary to: {result_path}')
 
-    return metrics_result, percentile_result
+    return summary, percentile_result
 
 
 def speed_benchmark_result(result_db_path: str):
@@ -304,50 +292,58 @@ def speed_benchmark_result(result_db_path: str):
 
 
 def average_results(results_list: List[Dict]):
+    """Average a list of per-run result dicts.
+
+    Each element may be either:
+    - A legacy dict ``{'metrics': BenchmarkSummary | dict, 'percentiles': PercentileResult | dict}``
+    - Directly a ``{'metrics': ..., 'percentiles': ...}`` dict from ``run_one_benchmark``
+
+    Returns a dict in the same format, with values averaged.
+    """
     if not results_list:
         return {}
 
-    avg_res = {'metrics': {}, 'percentiles': {}}
+    # Normalise entries: unwrap BenchmarkSummary / PercentileResult to dicts if needed
+    def _to_metrics_dict(m):
+        if isinstance(m, BenchmarkSummary):
+            return m.to_dict()
+        return dict(m) if m else {}
 
-    # Metrics
-    metric_keys = results_list[0]['metrics'].keys()
+    def _to_perc_columns(p):
+        if isinstance(p, PercentileResult):
+            return p.to_columns()
+        return dict(p) if p else {}
+
+    avg_metrics: Dict = {}
+    avg_perc: Dict = {}
+
+    # --- Metrics averaging ---
+    metric_dicts = [_to_metrics_dict(r.get('metrics', r.get('summary', {}))) for r in results_list]
+    metric_keys = metric_dicts[0].keys() if metric_dicts else []
     for k in metric_keys:
-        vals = [r['metrics'].get(k, 0) for r in results_list]
+        vals = [d.get(k, 0) for d in metric_dicts]
         vals = [v for v in vals if isinstance(v, (int, float))]
         if vals:
-            avg_res['metrics'][k] = sum(vals) / len(vals)
+            avg_metrics[k] = sum(vals) / len(vals)
 
-    # Percentiles
-    if results_list[0].get('percentiles'):
-        perc_keys = results_list[0]['percentiles'].keys()
-        for k in perc_keys:
-            # Skip averaging for the labels list, just copy it
+    # --- Percentile averaging ---
+    first_perc_raw = results_list[0].get('percentiles', {})
+    if first_perc_raw:
+        perc_col_dicts = [_to_perc_columns(r.get('percentiles', {})) for r in results_list]
+        for k in perc_col_dicts[0].keys():
             if k == PercentileMetrics.PERCENTILES:
-                avg_res['percentiles'][k] = results_list[0]['percentiles'][k]
+                avg_perc[k] = perc_col_dicts[0][k]
                 continue
-
-            lists = [r['percentiles'][k] for r in results_list]
+            lists = [d.get(k, []) for d in perc_col_dicts]
             avg_list = []
             if lists and lists[0]:
                 length = len(lists[0])
                 for i in range(length):
-                    # Extract i-th percentile from all runs
                     col_vals = []
-                    for l in lists:  # noqa: E741
-                        if i < len(l) and isinstance(l[i], (int, float)):
-                            col_vals.append(l[i])
+                    for lst in lists:
+                        if i < len(lst) and isinstance(lst[i], (int, float)):
+                            col_vals.append(lst[i])
+                    avg_list.append(sum(col_vals) / len(col_vals) if col_vals else 0)
+            avg_perc[k] = avg_list
 
-                    if col_vals:
-                        val = sum(col_vals) / len(col_vals)
-                        avg_list.append(val)
-                    else:
-                        avg_list.append(0)  # Use 0 for N/A to maintain list structure
-            avg_res['percentiles'][k] = avg_list
-
-    # Copy other keys like 'percentiles_keys' if they exist
-    if 'percentiles' in results_list[0]:
-        for k, v in results_list[0]['percentiles'].items():
-            if k not in avg_res['percentiles']:
-                avg_res['percentiles'][k] = v
-
-    return avg_res
+    return {'metrics': avg_metrics, 'percentiles': avg_perc}

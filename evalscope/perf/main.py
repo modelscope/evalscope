@@ -12,8 +12,8 @@ from evalscope.utils.model_utils import seed_everything
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 from evalscope.utils.tqdm_utils import make_tracker
 from .arguments import Arguments, parse_args
-from .benchmark import benchmark
-from .multi_turn_benchmark import multi_turn_benchmark
+from .benchmark import run_benchmark
+from .multi_turn_benchmark import run_multi_turn_benchmark
 from .sla.sla_run import run_sla_auto_tune
 from .utils.db_util import get_output_path
 from .utils.handler import add_signal_handlers
@@ -26,11 +26,13 @@ logger = get_logger()
 
 
 def run_one_benchmark(args: Arguments, output_path: str = None):
-    """Run a single benchmark with given parallel and number settings."""
+    """Run a single benchmark with given parallel/rate and number settings."""
     if isinstance(args.parallel, list):
         args.parallel = args.parallel[0]
     if isinstance(args.number, list):
         args.number = args.number[0]
+    if isinstance(args.rate, list):
+        args.rate = args.rate[0]
 
     logger.info('Starting benchmark with args: ')
     logger.info(args)
@@ -48,43 +50,58 @@ def run_one_benchmark(args: Arguments, output_path: str = None):
 
     with args.output_context(output_path):
         if args.multi_turn:
-            metrics_result, percentile_result = loop.run_until_complete(multi_turn_benchmark(args))
+            metrics_result, percentile_result = loop.run_until_complete(run_multi_turn_benchmark(args))
         else:
-            metrics_result, percentile_result = loop.run_until_complete(benchmark(args))
+            metrics_result, percentile_result = loop.run_until_complete(run_benchmark(args))
 
-    # Return unified format
-    key = f'parallel_{args.parallel}_number_{args.number}'
+    # Return unified format; key reflects the sweep dimension
+    if args.open_loop:
+        key = f'rate_{args.rate}_number_{args.number}'
+    else:
+        key = f'parallel_{args.parallel}_number_{args.number}'
     return {key: {'metrics': metrics_result, 'percentiles': percentile_result}}
 
 
 def run_multi_benchmark(args: Arguments, output_path: str = None):
-    """Run multiple benchmarks with different parallel and number combinations."""
+    """Run multiple benchmarks with different parallel/rate and number combinations."""
     results = {}
     number_list = copy.deepcopy(args.number)
-    parallel_list = copy.deepcopy(args.parallel)
 
+    if args.open_loop:
+        sweep_attr = 'rate'
+        sweep_list = copy.deepcopy(args.rate)
+        run_name_fmt = 'rate_{sweep}_number_{number}'
+        desc = 'Running[perf-open-loop]'
+    else:
+        sweep_attr = 'parallel'
+        sweep_list = copy.deepcopy(args.parallel)
+        run_name_fmt = 'parallel_{sweep}_number_{number}'
+        desc = 'Running[perf]'
+
+    total = len(number_list)
     pbar = tqdm(
-        enumerate(zip(number_list, parallel_list)),
-        total=len(number_list),
-        desc='Running[perf]',
+        enumerate(zip(number_list, sweep_list)),
+        total=total,
+        desc=desc,
         logger=logger,
-        log_interval=HEARTBEAT_INTERVAL_SEC
+        log_interval=HEARTBEAT_INTERVAL_SEC,
     )
-    for i, (number, parallel) in pbar:
+    for i, (number, sweep_val) in pbar:
         args.number = number
-        args.parallel = parallel
+        setattr(args, sweep_attr, sweep_val)
 
-        cur_run_name = f'parallel_{parallel}_number_{number}'
-        # Set up output path for each run
+        cur_run_name = run_name_fmt.format(sweep=sweep_val, number=number)
         cur_output_path = os.path.join(output_path, cur_run_name)
         os.makedirs(cur_output_path, exist_ok=True)
 
-        # Start the benchmark
         benchmark_result = run_one_benchmark(args, output_path=cur_output_path)
         results.update(benchmark_result)
 
-        # Sleep between runs to avoid overwhelming the server
-        if i < len(number_list) - 1:
+        # Auto-advance dataset_offset so the next run starts at a different position
+        # in the token vocabulary, preventing KV-cache hits from identical prompts.
+        args.dataset_offset += number
+
+        if i < total - 1:
             logger.info(f'Sleeping for {args.sleep_interval} seconds before the next run...')
             time.sleep(args.sleep_interval)
 

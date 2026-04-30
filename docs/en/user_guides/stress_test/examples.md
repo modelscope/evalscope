@@ -287,6 +287,35 @@ Add the following parameters before starting the test:
 ![clearml sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/clearml_vis.jpg)
 
 
+## Open-loop Mode
+
+In open-loop mode, requests are dispatched immediately following a Poisson arrival schedule (controlled by `--rate`), without waiting for the server to return responses. This models realistic traffic patterns where arrivals are independent of service time. By specifying multiple rate values in a single command, you can automatically sweep the throughput-latency curve.
+
+The following example runs three independent benchmark rounds at 5, 10, and 20 req/s, sending 500, 1000, and 2000 requests respectively, to observe how latency and throughput change under different loads:
+
+```bash
+evalscope perf \
+  --url 'http://127.0.0.1:8000/v1/chat/completions' \
+  --model 'qwen2.5' \
+  --api openai \
+  --dataset openqa \
+  --open-loop \
+  --rate 5 10 20 \
+  --number 500 1000 2000 \
+  --max-tokens 1024 \
+  --stream
+```
+
+```{note}
+**Important Notes**
+
+- All `--rate` values must be **> 0**; `rate=-1` (unlimited) is not supported in open-loop mode.
+- `--number` and `--rate` must have the **same length**; each `(rate, number)` pair corresponds to one independent benchmark run.
+- `--parallel` is **ignored** in open-loop mode (internally set to INF); no need to specify it.
+- Since concurrency is unbounded, a high rate may cause a large number of in-flight requests to accumulate if the server cannot keep up. Set rate limits according to your server's capacity.
+- Core difference from closed-loop (default) mode: closed-loop workers wait for a response before sending the next request (backpressure protection); open-loop fires requests on schedule without waiting (closer to real traffic).
+```
+
 ## Debugging Requests
 Use the `--debug` option to output the requests and responses.
 

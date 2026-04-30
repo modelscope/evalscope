@@ -1,11 +1,13 @@
 import argparse
 import json
 import os
+import warnings
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
 
 from evalscope.constants import DEFAULT_WORK_DIR, VisualizerType
+from evalscope.perf.multi_turn_args import MultiTurnArgs
 from evalscope.utils import BaseArgument
 from evalscope.utils.logger import get_logger
 
@@ -70,8 +72,21 @@ class Arguments(BaseArgument):
     parallel: Union[int, List[int]] = 1
     """Number of parallel requests."""
 
-    rate: float = -1
-    """Rate limit for requests (default: -1, no limit)."""
+    rate: Union[float, List[float]] = -1
+    """Rate limit for requests per second (default: -1, no limit). Supports a list of values for multi-run sweeps in open-loop mode."""
+
+    open_loop: bool = False
+    """Enable open-loop rate mode: dispatch requests at the scheduled rate without semaphore backpressure.
+
+    When enabled, requests are fired according to the Poisson arrival schedule set by ``--rate``
+    regardless of whether the server has finished processing previous requests.
+    Use ``--rate`` (list) and ``--number`` (list) to sweep multiple load levels.
+
+    Semantics in open-loop mode:
+    - ``--rate``: target request rate in req/s; drives multi-run iteration (replaces ``--parallel`` sweep).
+    - ``--number``: total requests per run; must have the same length as ``--rate``.
+    - ``--parallel``: ignored for concurrency control; optionally used for MetricsAccumulator labelling.
+    """
 
     sleep_interval: int = 5
     """Sleep interval between performance runs, in seconds."""
@@ -117,7 +132,7 @@ class Arguments(BaseArgument):
     """Max scheduled tasks = parallel * this multiplier."""
 
     # Logging and debugging
-    log_every_n_query: int = 10
+    log_every_n_query: int = 100
     """Log every N queries."""
 
     debug: bool = False
@@ -187,6 +202,18 @@ class Arguments(BaseArgument):
     dataset_path: Optional[str] = None
     """Path to the dataset."""
 
+    dataset_offset: int = 0
+    """Global token-sequence offset for random datasets.
+
+    When running multiple parallel/rate sweeps, this offset is automatically
+    incremented by the number of requests in each run so that successive runs
+    start at different positions in the token vocabulary, preventing KV-cache
+    hits from identical prompts.
+
+    Set to 0 (default) to enable automatic cumulative offsetting.
+    A non-zero initial value shifts the starting position of the first run.
+    """
+
     # Response settings
     frequency_penalty: Optional[float] = None
     """Frequency penalty for the response."""
@@ -250,16 +277,57 @@ class Arguments(BaseArgument):
     """
 
     min_turns: int = 1
-    """Minimum number of user turns per conversation (used by ``random_multi_turn``)."""
+    """Minimum number of user turns per conversation (used by ``random_multi_turn``).
+
+    Deprecated: Use ``multi_turn_args.min_turns`` instead.
+    """
 
     max_turns: Optional[int] = None
     """Maximum number of user turns per conversation.
 
     For ``random_multi_turn``: caps the randomly sampled turn count.
     For ShareGPT multi-turn datasets: truncates long conversations.
+
+    Deprecated: Use ``multi_turn_args.max_turns`` instead.
     """
 
+    multi_turn_args: Optional[MultiTurnArgs] = None
+    """Advanced multi-turn conversation parameters (MultiTurnArgs). Pass as JSON string via CLI."""
+
     def __post_init__(self):
+        # Handle deprecated top-level min_turns/max_turns: merge into multi_turn_args
+        _min_turns_set = self.min_turns != 1
+        _max_turns_set = self.max_turns is not None
+
+        # Parse multi_turn_args from JSON string if necessary (CLI passes a string)
+        if isinstance(self.multi_turn_args, str):
+            try:
+                self.multi_turn_args = MultiTurnArgs(**json.loads(self.multi_turn_args))
+            except Exception as e:
+                raise ValueError(f'Failed to parse --multi-turn-args JSON: {e}') from e
+        elif isinstance(self.multi_turn_args, dict):
+            self.multi_turn_args = MultiTurnArgs(**self.multi_turn_args)
+
+        if (_min_turns_set or _max_turns_set) and self.multi_turn_args is None:
+            warnings.warn(
+                'Top-level --min-turns and --max-turns are deprecated. '
+                'Please use --multi-turn-args \'{"min_turns": N, "max_turns": M}\' instead.',
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            self.multi_turn_args = MultiTurnArgs(
+                min_turns=self.min_turns,
+                max_turns=self.max_turns if self.max_turns is not None else 5,
+            )
+        elif (_min_turns_set or _max_turns_set) and self.multi_turn_args is not None:
+            # Merge top-level values into existing multi_turn_args when not already overridden
+            warnings.warn(
+                'Both top-level --min-turns/--max-turns and --multi-turn-args are set. '
+                'Values in --multi-turn-args take precedence.',
+                UserWarning,
+                stacklevel=2,
+            )
+
         # Set the default headers
         self.headers = self.headers or {}  # Default to empty dictionary
         if self.api_key:
@@ -304,14 +372,37 @@ class Arguments(BaseArgument):
         if self.apply_chat_template is None:
             self.apply_chat_template = self.url.strip('/').endswith('chat/completions')
 
+        # Normalise rate to a list
+        if isinstance(self.rate, (int, float)):
+            self.rate = [float(self.rate)]
+
         # Set number and parallel to lists if they are integers
         if isinstance(self.number, int):
             self.number = [self.number]
         if isinstance(self.parallel, int):
             self.parallel = [self.parallel]
-        assert len(self.number) == len(
-            self.parallel
-        ), f'The length of number and parallel should be the same, but got number: {self.number} and parallel: {self.parallel}'  # noqa: E501
+
+        if self.open_loop:
+            # open-loop mode: sweep over (number, rate) pairs
+            assert len(self.number) == len(self.rate), (
+                f'In open-loop mode the length of --number and --rate must match, '
+                f'but got number: {self.number} and rate: {self.rate}'
+            )
+            # Ensure rate values are valid (> 0) in open-loop mode
+            assert all(r > 0
+                       for r in self.rate), (f'In open-loop mode all --rate values must be > 0, but got: {self.rate}')
+            # In open-loop mode concurrency is unbounded; set parallel=-1 so downstream
+            # display layers render it as INF instead of a numeric value.
+            self.parallel = [-1]
+            logger.info(
+                'open-loop mode enabled: concurrency is unbounded (parallel set to -1 / INF). '
+                f'Rate sweep: {self.rate}, number sweep: {self.number}.'
+            )
+        else:
+            assert len(self.number) == len(self.parallel), (
+                f'The length of number and parallel should be the same, '
+                f'but got number: {self.number} and parallel: {self.parallel}'
+            )
 
         # Validate tuning knobs
         if self.db_commit_interval <= 0:
@@ -320,6 +411,13 @@ class Arguments(BaseArgument):
             self.queue_size_multiplier = 1
         if self.in_flight_task_multiplier <= 0:
             self.in_flight_task_multiplier = 1
+
+    def to_dict(self):
+        """Convert the instance to a JSON-serializable dictionary."""
+        result = super().to_dict()
+        if result.get('multi_turn_args') is not None:
+            result['multi_turn_args'] = result['multi_turn_args'].model_dump()
+        return result
 
     @contextmanager
     def output_context(self, path: str):
@@ -381,7 +479,12 @@ def add_argument(parser: argparse.ArgumentParser):
     # Performance and parallelism
     parser.add_argument('-n', '--number', type=int, default=1000, nargs='+', help='How many requests to be made')
     parser.add_argument('--parallel', type=int, default=1, nargs='+', help='Set number of concurrency requests, default 1')  # noqa: E501
-    parser.add_argument('--rate', type=float, default=-1, help='Number of requests per second. default -1 means no rate limit')  # noqa: E501
+    parser.add_argument('--rate', type=float, default=-1, nargs='+',
+                        help='Number of requests per second. default -1 means no rate limit. '
+                             'Accepts multiple values for open-loop multi-run sweeps, e.g. --rate 5 10 20')  # noqa: E501
+    parser.add_argument('--open-loop', action='store_true', default=False,
+                        help='Enable open-loop rate mode: dispatch requests at the scheduled rate without '
+                             'semaphore backpressure. Use with --rate (list) and matching --number (list).')  # noqa: E501
     parser.add_argument(
         '--sleep-interval', type=int, default=5, help='Sleep interval between performance runs, in seconds. Default 5')  # noqa: E501
 
@@ -401,7 +504,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--in-flight-task-multiplier', type=int, default=2, help='Max scheduled tasks = parallel * multiplier')  # noqa: E501
 
     # Logging and debugging
-    parser.add_argument('--log-every-n-query', type=int, default=10, help='Logging every n query')
+    parser.add_argument('--log-every-n-query', type=int, default=100, help='Logging every n query')
     parser.add_argument('--debug', action='store_true', default=False, help='Debug request send')
     parser.add_argument('--visualizer', type=str, default=None,
                         choices=[VisualizerType.WANDB, VisualizerType.SWANLAB, VisualizerType.CLEARML, None], help='The visualizer to use, default None')  # noqa: E501
@@ -432,6 +535,16 @@ def add_argument(parser: argparse.ArgumentParser):
     # Dataset settings
     parser.add_argument('--dataset', type=str, default='openqa', help='Specify the dataset')
     parser.add_argument('--dataset-path', type=str, required=False, help='Path to the dataset file')
+    parser.add_argument(
+        '--dataset-offset',
+        type=int,
+        default=0,
+        help=(
+            'Global token-sequence offset for random datasets. '
+            'Automatically incremented between runs to avoid KV-cache hits. '
+            'Default 0.'
+        ),
+    )
 
     # Response settings
     parser.add_argument('--frequency-penalty', type=float, help='The frequency_penalty value', default=None)
@@ -486,7 +599,21 @@ def add_argument(parser: argparse.ArgumentParser):
         help=(
             'Maximum number of user turns per conversation. '
             'For random_multi_turn: required, caps the sampled turn count. '
-            'For ShareGPT multi-turn datasets: optional, truncates long conversations.'
+            'For ShareGPT multi-turn datasets: optional, truncates long conversations. '
+            'Deprecated: use --multi-turn-args instead.'
+        ),
+    )
+    parser.add_argument(
+        '--multi-turn-args',
+        type=str,
+        default=None,
+        dest='multi_turn_args',
+        help=(
+            'Advanced multi-turn conversation parameters as a JSON string. '
+            'Example: \'{"min_turns": 1, "max_turns": 5, "first_turn_length": 65000, '
+            '"subsequent_turn_length": 500, "max_context_length": 75000, '
+            '"chars_per_token": 3.0, "offset": 0}\'. '
+            'Supports IntOrRange for length fields, e.g. "first_turn_length": [60000, 70000].'
         ),
     )
     # yapf: enable
