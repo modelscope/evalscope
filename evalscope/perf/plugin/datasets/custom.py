@@ -103,16 +103,16 @@ class CustomMultiTurnDatasetPlugin(DatasetPluginBase):
             try:
                 messages = json.loads(line)
             except json.JSONDecodeError as e:
-                logger.warning(f'[custom_multi_turn] Skipping malformed JSON line: {e}')
+                logger.warning(f'Skipping malformed JSON line: {e}')
                 continue
 
             if not isinstance(messages, list) or not messages:
-                logger.warning('[custom_multi_turn] Skipping line: expected a non-empty JSON array.')
+                logger.warning('Skipping line: expected a non-empty JSON array.')
                 continue
 
             # Validate that every element has role and content fields
             if not all(isinstance(m, dict) and 'role' in m and 'content' in m for m in messages):
-                logger.warning('[custom_multi_turn] Skipping line: each message must have "role" and "content" fields.')
+                logger.warning('Skipping line: each message must have "role" and "content" fields.')
                 continue
 
             turns = self._split_into_turns(messages)

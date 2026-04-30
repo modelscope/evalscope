@@ -45,6 +45,9 @@ class MultiTurnArgs(BaseModel):
     chars_per_token: float = 3.0
     """Estimated characters per token used for pre-filtering when no tokenizer is available."""
 
+    num_workers: int = 4
+    """Number of parallel worker processes for live conversation building (>1 uses multiprocessing.Pool)."""
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # ------------------------------------------------------------------
@@ -99,4 +102,5 @@ class MultiTurnArgs(BaseModel):
             'subsequent_turn_length': self._sample(self.subsequent_turn_length),
             'max_context_length': self._sample(self.max_context_length),
             'chars_per_token': self.chars_per_token,
+            'num_workers': self.num_workers,
         }
