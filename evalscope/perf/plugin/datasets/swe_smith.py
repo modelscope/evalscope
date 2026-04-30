@@ -377,6 +377,12 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
         from modelscope import MsDataset
         dataset = MsDataset.load(_DEFAULT_DATASET_NAME, split=_DEFAULT_SPLIT)
 
+        target_count = max(1, self.query_parameters.number)
+        # Scan at most scan_multiplier × target_count rows; _build_conversation has a
+        # ~50 % pass rate so 20× gives a comfortable safety margin.
+        scan_multiplier = 20
+        max_scan = target_count * scan_multiplier
+
         min_chars = int(max_ctx_upper * chars_per_token)
         candidates = []
         skipped_short = 0
@@ -397,6 +403,9 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
                 skipped_short += 1
                 continue
             candidates.append(messages)
+            if len(candidates) >= max_scan:
+                logger.info(f'Reached scan limit ({max_scan}), stopping dataset scan early.')
+                break
 
         logger.info(
             f'Pre-filter: {len(candidates)} candidates '
@@ -414,6 +423,8 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
         # so that different conversations can have different token-length targets.
         built = 0
         for messages in candidates:
+            if built >= target_count:
+                break
             sampled = self.get_sampled_multi_turn_params()
             first_turn_length = sampled.get('first_turn_length', 65000)
             subsequent_turn_length = sampled.get('subsequent_turn_length', 500)
