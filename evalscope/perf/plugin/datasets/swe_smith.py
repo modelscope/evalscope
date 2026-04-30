@@ -316,7 +316,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
 
         # Apply offset: shuffle conversations deterministically before slicing
         mt_args = self.query_parameters.multi_turn_args
-        offset = mt_args.offset if mt_args else 0
+        offset = self.query_parameters.dataset_offset
         if offset > 0:
             conversations = conversations[offset:] + conversations[:offset]
 
@@ -354,7 +354,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
 
         # Read static / non-sampleable params directly
         chars_per_token = mt_args.chars_per_token if mt_args else 3.0
-        offset = mt_args.offset if mt_args else 0
+        offset = self.query_parameters.dataset_offset
         min_turns = mt_args.min_turns if mt_args else 1
         max_turns = mt_args.max_turns if mt_args else 5
         output_length = self.query_parameters.max_tokens or 300

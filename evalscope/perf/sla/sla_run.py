@@ -223,6 +223,10 @@ class SLAAutoTuner:
             res = self.runner(run_args, output_path)
             run_results.append(list(res.values())[0])
 
+            # Advance dataset_offset on the source args so the next deepcopy
+            # picks up the new offset, preventing KV-cache hits across runs.
+            self.args.dataset_offset += run_args.number
+
             if i < self.args.sla_num_runs - 1:
                 logger.info(f'Sleeping {self.args.sleep_interval} seconds before next run...')
                 time.sleep(self.args.sleep_interval)

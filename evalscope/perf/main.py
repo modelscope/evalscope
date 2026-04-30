@@ -97,6 +97,10 @@ def run_multi_benchmark(args: Arguments, output_path: str = None):
         benchmark_result = run_one_benchmark(args, output_path=cur_output_path)
         results.update(benchmark_result)
 
+        # Auto-advance dataset_offset so the next run starts at a different position
+        # in the token vocabulary, preventing KV-cache hits from identical prompts.
+        args.dataset_offset += number
+
         if i < total - 1:
             logger.info(f'Sleeping for {args.sleep_interval} seconds before the next run...')
             time.sleep(args.sleep_interval)

@@ -22,8 +22,6 @@ class RandomDatasetPlugin(DatasetPluginBase):
         assert self.tokenizer is not None, 'Tokenizer should be initialized for random data generation.'  # noqa: E501
         self.prefix_length = self.query_parameters.prefix_length
         self.number = self.query_parameters.number or 1
-        # Use numpy's default_rng for deterministic sampling
-        self._rng = np.random.default_rng(None)
 
         # Filter out special tokens and byte-fallback tokens from vocabulary.
         # Byte-fallback tokens (e.g. <0xE4>) are NOT in all_special_ids but decode to
@@ -67,8 +65,10 @@ class RandomDatasetPlugin(DatasetPluginBase):
         logger.info(f'Sampling input lengths from [{min_prompt_length}, {max_prompt_length})')
 
         # Sample input lengths
-        input_lens = self._rng.integers(min_prompt_length, max_prompt_length, size=self.number)
-        offsets = self._rng.integers(0, len(self.allowed_tokens), size=self.number)
+        input_lens = np.random.randint(min_prompt_length, max_prompt_length, size=self.number)
+        global_offset = self.query_parameters.dataset_offset
+        offsets = (np.random.randint(0, len(self.allowed_tokens), size=self.number)
+                   + global_offset) % len(self.allowed_tokens)
 
         token_mismatch_total = 0
         for i in range(self.number):
@@ -142,7 +142,6 @@ class RandomDatasetPlugin(DatasetPluginBase):
             token_sequence=token_sequence,
             target_token_len=total_input_len,
             add_special_tokens=False,
-            rng=self._rng,
             allowed_tokens=self.allowed_tokens,
         )
         total_input_len = len(adjusted_token_sequence)
@@ -186,7 +185,7 @@ class RandomDatasetPlugin(DatasetPluginBase):
         """Generate random prefix tokens from allowed vocabulary."""
         if length <= 0:
             return []
-        return self.allowed_tokens[self._rng.integers(0, len(self.allowed_tokens), size=length)].tolist()
+        return self.allowed_tokens[np.random.randint(0, len(self.allowed_tokens), size=length)].tolist()
 
     def get_template_len(self):
         empty_message = [self.create_message(text='')]

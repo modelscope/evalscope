@@ -132,7 +132,7 @@ class Arguments(BaseArgument):
     """Max scheduled tasks = parallel * this multiplier."""
 
     # Logging and debugging
-    log_every_n_query: int = 10
+    log_every_n_query: int = 100
     """Log every N queries."""
 
     debug: bool = False
@@ -201,6 +201,18 @@ class Arguments(BaseArgument):
 
     dataset_path: Optional[str] = None
     """Path to the dataset."""
+
+    dataset_offset: int = 0
+    """Global token-sequence offset for random datasets.
+
+    When running multiple parallel/rate sweeps, this offset is automatically
+    incremented by the number of requests in each run so that successive runs
+    start at different positions in the token vocabulary, preventing KV-cache
+    hits from identical prompts.
+
+    Set to 0 (default) to enable automatic cumulative offsetting.
+    A non-zero initial value shifts the starting position of the first run.
+    """
 
     # Response settings
     frequency_penalty: Optional[float] = None
@@ -492,7 +504,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--in-flight-task-multiplier', type=int, default=2, help='Max scheduled tasks = parallel * multiplier')  # noqa: E501
 
     # Logging and debugging
-    parser.add_argument('--log-every-n-query', type=int, default=10, help='Logging every n query')
+    parser.add_argument('--log-every-n-query', type=int, default=100, help='Logging every n query')
     parser.add_argument('--debug', action='store_true', default=False, help='Debug request send')
     parser.add_argument('--visualizer', type=str, default=None,
                         choices=[VisualizerType.WANDB, VisualizerType.SWANLAB, VisualizerType.CLEARML, None], help='The visualizer to use, default None')  # noqa: E501
@@ -523,6 +535,16 @@ def add_argument(parser: argparse.ArgumentParser):
     # Dataset settings
     parser.add_argument('--dataset', type=str, default='openqa', help='Specify the dataset')
     parser.add_argument('--dataset-path', type=str, required=False, help='Path to the dataset file')
+    parser.add_argument(
+        '--dataset-offset',
+        type=int,
+        default=0,
+        help=(
+            'Global token-sequence offset for random datasets. '
+            'Automatically incremented between runs to avoid KV-cache hits. '
+            'Default 0.'
+        ),
+    )
 
     # Response settings
     parser.add_argument('--frequency-penalty', type=float, help='The frequency_penalty value', default=None)

@@ -45,9 +45,6 @@ class MultiTurnArgs(BaseModel):
     chars_per_token: float = 3.0
     """Estimated characters per token used for pre-filtering when no tokenizer is available."""
 
-    offset: int = 0
-    """Conversation-cycling offset to avoid cross-run KV-cache hits."""
-
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # ------------------------------------------------------------------
@@ -102,5 +99,4 @@ class MultiTurnArgs(BaseModel):
             'subsequent_turn_length': self._sample(self.subsequent_turn_length),
             'max_context_length': self._sample(self.max_context_length),
             'chars_per_token': self.chars_per_token,
-            'offset': self.offset,
         }

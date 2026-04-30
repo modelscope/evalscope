@@ -32,7 +32,7 @@
 | `--parallel` | `list[int]` | 并发请求的数量<br>可传入多个值，空格分隔 | `1` |
 | `--number` | `list[int]` | 发出的请求总数量<br>可传入多个值（需与`parallel`一一对应） | `1000` |
 | `--rate` | `float` | 请求生成速率（请求/秒）<br>• `-1`: 请求不限速，立即全部生成并放入队列<br>• `> 0`: 请求按泊松到达模型生成，生成间隔服从均值为 `1/rate` 的指数分布，即**平均**每秒生成 `rate` 个请求 | `-1` |
-| `--log-every-n-query` | `int` | 每N个查询记录日志 | `10` |
+| `--log-every-n-query` | `int` | 每N个查询记录日志 | `100` |
 | `--stream` | `bool` | 是否使用SSE流输出<br>需要启用以测量TTFT（Time to First Token）指标 | `True` |
 | `--sleep-interval` | `int` | 每次性能测试之间的休眠时间（秒）<br>避免过载服务器 | `5` |
 | `--open-loop` | `bool` | 启用开放环路（open-loop）模式：<br>请求按 `--rate` 指定的速率发出，无论服务端是否已处理完之前的请求。<br>• `--rate` 变为扫描变量（支持多值）<br>• `--number` 须与 `--rate` 等长，表示每轮发出的请求总数<br>• `--parallel` 在此模式下被忽略（内部设为 -1 / INF）<br>详见[使用示例](./examples.md#open-loop-开放环路模式) | `False` |

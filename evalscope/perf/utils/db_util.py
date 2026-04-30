@@ -241,8 +241,7 @@ def summary_result(args: Arguments, metrics: BenchmarkMetrics,
     write_json_file(summary.to_dict(), os.path.join(result_path, 'benchmark_summary.json'))
 
     # Print summary in a table
-    table = tabulate(list(summary.to_dict().items()), headers=['Key', 'Value'], tablefmt='grid')
-    logger.info('\nBenchmarking summary:\n' + table)
+    logger.info('\nBenchmarking summary:\n' + summary.to_table())
 
     # Get percentile results
     percentile_result = get_percentile_results(result_db_path, api_type=args.api)

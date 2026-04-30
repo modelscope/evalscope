@@ -30,6 +30,7 @@ Example (share_gpt_*_multi_turn):
 """
 
 import json
+import numpy as np
 import os
 from typing import Any, Dict, Iterator, List
 
@@ -117,7 +118,7 @@ class RandomMultiTurnDatasetPlugin(RandomDatasetPlugin):
         )
 
         # Sample per-conversation turn counts
-        turn_counts = self._rng.integers(
+        turn_counts = np.random.randint(
             self.min_turns_per_conv,
             self.max_turns_per_conv + 1,
             size=n_convs,
@@ -127,8 +128,10 @@ class RandomMultiTurnDatasetPlugin(RandomDatasetPlugin):
         total_turns = int(turn_counts.sum())
 
         # Pre-sample all input lengths and offsets at once for efficiency
-        input_lens = self._rng.integers(min_prompt_length, max_prompt_length + 1, size=total_turns)
-        offsets = self._rng.integers(0, len(self.allowed_tokens), size=total_turns)
+        input_lens = np.random.randint(min_prompt_length, max_prompt_length + 1, size=total_turns)
+        global_offset = self.query_parameters.dataset_offset
+        offsets = (np.random.randint(0, len(self.allowed_tokens), size=total_turns)
+                   + global_offset) % len(self.allowed_tokens)
 
         turn_slot = 0
         for conv_idx in range(n_convs):

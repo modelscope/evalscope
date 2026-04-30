@@ -24,34 +24,34 @@ class Metrics:
     """
 
     # General
-    TIME_TAKEN_FOR_TESTS = 'Time taken for tests (s)'
-    NUMBER_OF_CONCURRENCY = 'Number of concurrency'
-    REQUEST_RATE = 'Request rate (req/s)'
-    TOTAL_REQUESTS = 'Total requests'
-    SUCCEED_REQUESTS = 'Succeed requests'
-    FAILED_REQUESTS = 'Failed requests'
-    REQUEST_THROUGHPUT = 'Request throughput (req/s)'
-    AVERAGE_LATENCY = 'Average latency (s)'
-    AVERAGE_INPUT_TOKENS_PER_REQUEST = 'Average input tokens per request'
+    TIME_TAKEN_FOR_TESTS = 'Test Duration (s)'
+    NUMBER_OF_CONCURRENCY = 'Concurrency'
+    REQUEST_RATE = 'Request Rate (req/s)'
+    TOTAL_REQUESTS = 'Total Requests'
+    SUCCEED_REQUESTS = 'Success Requests'
+    FAILED_REQUESTS = 'Failed Requests'
+    REQUEST_THROUGHPUT = 'Req Throughput (req/s)'
+    AVERAGE_LATENCY = 'Avg Latency (s)'
+    AVERAGE_INPUT_TOKENS_PER_REQUEST = 'Avg Input Tokens'
 
     # LLM-specific
-    OUTPUT_TOKEN_THROUGHPUT = 'Output token throughput (tok/s)'
-    TOTAL_TOKEN_THROUGHPUT = 'Total token throughput (tok/s)'
-    AVERAGE_TIME_TO_FIRST_TOKEN = 'Average time to first token (ms)'
-    AVERAGE_TIME_PER_OUTPUT_TOKEN = 'Average time per output token (ms)'
-    AVERAGE_INTER_TOKEN_LATENCY = 'Average inter-token latency (ms)'
-    AVERAGE_OUTPUT_TOKENS_PER_REQUEST = 'Average output tokens per request'
+    OUTPUT_TOKEN_THROUGHPUT = 'Output Throughput (tok/s)'
+    TOTAL_TOKEN_THROUGHPUT = 'Total Throughput (tok/s)'
+    AVERAGE_TIME_TO_FIRST_TOKEN = 'TTFT (ms)'
+    AVERAGE_TIME_PER_OUTPUT_TOKEN = 'TPOT (ms)'
+    AVERAGE_INTER_TOKEN_LATENCY = 'ITL (ms)'
+    AVERAGE_OUTPUT_TOKENS_PER_REQUEST = 'Avg Output Tokens'
 
     # Embedding / Rerank-specific
-    INPUT_TOKEN_THROUGHPUT = 'Input token throughput (tok/s)'
+    INPUT_TOKEN_THROUGHPUT = 'Input Throughput (tok/s)'
 
     # Multi-turn specific
-    AVERAGE_INPUT_TURNS_PER_REQUEST = 'Average input turns per request'
-    AVERAGE_CACHED_PERCENT = 'Average approx KV cache hit rate (%)'
+    AVERAGE_INPUT_TURNS_PER_REQUEST = 'Avg Turns/Request'
+    AVERAGE_CACHED_PERCENT = 'KV Cache Hit Rate (%)'
 
     # Speculative decoding specific
-    AVERAGE_DECODED_TOKENS_PER_ITER = 'Average decoded tokens per iter (tok/iter)'
-    APPROX_SPECULATIVE_ACCEPTANCE_RATE = 'Approx speculative decoding acceptance rate'
+    AVERAGE_DECODED_TOKENS_PER_ITER = 'Decoded Tok/Iter'
+    APPROX_SPECULATIVE_ACCEPTANCE_RATE = 'Spec. Accept Rate'
 
     @staticmethod
     def is_embedding_or_rerank(api_name: str) -> bool:

@@ -32,7 +32,7 @@ Execute `evalscope perf --help` to get a full parameter description.
 | `--parallel` | `list[int]` | Number of concurrent requests<br>Can input multiple values separated by spaces | `1` |
 | `--number` | `list[int]` | Total number of requests to be sent<br>Can input multiple values (must correspond one-to-one with `parallel`) | `1000` |
 | `--rate` | `float` | Request generation rate (requests/second)<br>• `-1`: No rate limit; all requests are generated immediately and placed in the queue<br>• `> 0`: Requests are generated following a Poisson arrival model — the inter-arrival interval follows an exponential distribution with mean `1/rate`, resulting in an **average** of `rate` requests per second | `-1` |
-| `--log-every-n-query` | `int` | Log every N queries | `10` |
+| `--log-every-n-query` | `int` | Log every N queries | `100` |
 | `--stream` | `bool` | Whether to use SSE stream output<br>Must be enabled to measure TTFT (Time to First Token) metric | `True` |
 | `--sleep-interval` | `int` | Sleep time between each performance test (seconds)<br>Helps avoid overloading the server | `5` |
 | `--open-loop` | `bool` | Enable open-loop mode: dispatch requests following a Poisson arrival schedule without semaphore backpressure.<br>Requests are fired at the rate set by `--rate` regardless of whether the server has finished processing previous requests.<br>• `--rate` becomes the sweep variable (accepts multiple values), replacing `--parallel` to drive multi-run iterations<br>• `--number` must have the same length as `--rate`; each pair `(rate, number)` corresponds to one independent run<br>• `--parallel` is ignored in this mode (internally set to -1 / INF)<br>See [Usage Example](./examples.md#open-loop-mode) | `False` |
