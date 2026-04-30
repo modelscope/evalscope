@@ -400,6 +400,13 @@ class Arguments(BaseArgument):
         if self.in_flight_task_multiplier <= 0:
             self.in_flight_task_multiplier = 1
 
+    def to_dict(self):
+        """Convert the instance to a JSON-serializable dictionary."""
+        result = super().to_dict()
+        if result.get('multi_turn_args') is not None:
+            result['multi_turn_args'] = result['multi_turn_args'].model_dump()
+        return result
+
     @contextmanager
     def output_context(self, path: str):
         """

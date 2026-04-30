@@ -505,5 +505,32 @@ class TestPerf(unittest.TestCase):
         result = run_perf_benchmark(task_cfg)
         print(result)
 
+    def test_run_perf_multi_turn_swe_smith(self):
+        from evalscope.perf.arguments import Arguments
+        from evalscope.perf.multi_turn_args import MultiTurnArgs
+        task_cfg = Arguments(
+            parallel=[5, 10],
+            number=[10, 20],
+            model='Qwen2.5-0.5B-Instruct',
+            url='http://127.0.0.1:8801/v1/chat/completions',
+            api='openai',
+            dataset='swe_smith',
+            tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
+            multi_turn=True,
+            max_tokens=128,
+            min_tokens=128,
+            multi_turn_args=MultiTurnArgs(
+                min_turns=2,
+                max_turns=4,
+                first_turn_length=8192,
+                subsequent_turn_length=1024,
+                max_context_length=12000
+            ),
+            seed=42,
+            extra_args={'ignore_eos': True}
+        )
+        result = run_perf_benchmark(task_cfg)
+        print(result)
+
 if __name__ == '__main__':
     unittest.main(buffer=False)

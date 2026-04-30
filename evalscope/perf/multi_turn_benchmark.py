@@ -40,13 +40,14 @@ context and produce meaningless evaluation results.
 """
 
 import asyncio
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.http_client import AioHttpClient
 from evalscope.perf.core.metrics_consumer import connect_test, data_process_completed_event, statistic_benchmark_metric
 from evalscope.perf.core.strategies import MultiTurnStrategy
 from evalscope.perf.plugin import ApiRegistry, DatasetRegistry
+from evalscope.perf.plugin.datasets.base import Message, Messages
 from evalscope.perf.utils.db_util import summary_result
 from evalscope.perf.utils.handler import exception_handler
 from evalscope.utils.logger import get_logger
@@ -81,7 +82,7 @@ async def run_multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     # This prevents loading 70k+ ShareGPT conversations when --number is small.
     _max_preload = args.number
     with tqdm(desc='Loading[conversations]', logger=logger) as pbar:
-        all_conversations: List[List[Dict]] = []
+        all_conversations: List[List[Messages]] = []
         for conv in dataset_plugin.build_messages():
             all_conversations.append(conv)
             pbar.update(1)

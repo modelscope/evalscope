@@ -1,9 +1,10 @@
 import asyncio
 import numpy as np
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.strategies.base import BenchmarkStrategy
+from evalscope.perf.plugin.datasets.base import Message, Messages
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
@@ -11,11 +12,6 @@ if TYPE_CHECKING:
     from evalscope.perf.plugin.api.base import ApiPluginBase
 
 logger = get_logger()
-
-
-def _extract_user_turns(conversation: List[Dict]) -> List[Dict]:
-    """Return only the user-role messages from a conversation in order."""
-    return [m for m in conversation if m.get('role') == 'user']
 
 
 class MultiTurnStrategy(BenchmarkStrategy):
@@ -41,7 +37,7 @@ class MultiTurnStrategy(BenchmarkStrategy):
         api_plugin: 'ApiPluginBase',
         client: 'AioHttpClient',
         queue: asyncio.Queue,
-        all_conversations: List[List[Dict]],
+        all_conversations: List[List[Messages]],
     ) -> None:
         super().__init__(args, api_plugin, client, queue)
         self._all_conversations = all_conversations
@@ -60,30 +56,30 @@ class MultiTurnStrategy(BenchmarkStrategy):
         """Process conversations until the global turn budget is reached."""
         while self._turn_counter < self.args.number:
             conversation = self._next_conversation()
-            user_msgs = _extract_user_turns(conversation)
 
-            if not user_msgs:
-                # Degenerate conversation with no user messages – skip.
+            if not conversation:
+                # Degenerate conversation with no turns – skip.
                 continue
 
             # Accumulated context sent with each turn.  Real assistant responses
             # are appended after each successful turn so the next turn sees the
             # growing history.
-            context: List[Dict] = []
+            context: List[Message] = []
             prev_prompt_tokens: int = 0
             prev_completion_tokens: int = 0
 
-            for user_turn_idx, user_msg in enumerate(user_msgs):
+            for turn_idx, turn_delta in enumerate(conversation):
+                # turn_delta: Messages – the delta to append for this turn
                 # Check global turn budget.
                 if self._turn_counter >= self.args.number:
                     return
 
                 # Respect per-conversation max_turns.
-                if self.args.max_turns is not None and user_turn_idx >= self.args.max_turns:
+                if self.args.max_turns is not None and turn_idx >= self.args.max_turns:
                     break
 
-                # Append current user message to context.
-                context.append(user_msg.copy())
+                # Append this turn's delta to the growing context.
+                context.extend([m.copy() for m in turn_delta])
 
                 # Reserve this turn slot BEFORE awaiting to prevent other workers
                 # from claiming the same slot and overshooting args.number.
@@ -101,7 +97,7 @@ class MultiTurnStrategy(BenchmarkStrategy):
                 benchmark_data = await self.client.post(request)
 
                 # Inject multi-turn specific metadata.
-                benchmark_data.input_num_turns = user_turn_idx + 1
+                benchmark_data.input_num_turns = turn_idx + 1
 
                 # Ensure token counts are available before computing cache ratio.
                 # Some OpenAI-compatible servers omit ``usage`` in the stream, so
@@ -136,7 +132,7 @@ class MultiTurnStrategy(BenchmarkStrategy):
 
                 if not benchmark_data.success:
                     logger.debug(
-                        f'worker={worker_id} turn={user_turn_idx} '
+                        f'worker={worker_id} turn={turn_idx} '
                         f'failed ({benchmark_data.error}), abandoning conversation.'
                     )
                     break

@@ -1,8 +1,8 @@
 import json
-from typing import Dict, Iterator, List
+from typing import Any, Dict, Iterator, List
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.plugin.datasets.base import DatasetPluginBase
+from evalscope.perf.plugin.datasets.base import DatasetPluginBase, Message, Messages
 from evalscope.perf.plugin.registry import register_dataset
 from evalscope.utils import get_logger
 
@@ -38,13 +38,12 @@ class CustomMultiTurnDatasetPlugin(DatasetPluginBase):
 
         [{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi!"}, {"role": "user", "content": "How are you?"}]
 
-    The conversation is yielded as-is to the multi-turn benchmark runner.
-    The runner discards all ``assistant`` messages from the dataset and
-    accumulates only the model's **real** responses as conversation history,
-    so the reference assistant content is never sent to the model.
+    ``build_messages`` yields each conversation as a ``List[Messages]`` where
+    every ``Messages`` is the delta for one turn (all non-assistant messages
+    between two consecutive assistant messages).  The runner appends real
+    model responses; dataset assistant content is discarded.
 
-    ``--max-turns`` optionally truncates long conversations to at most N user
-    turns (and their preceding assistant replies).
+    ``--max-turns`` optionally truncates long conversations to at most N turns.
     """
 
     def __init__(self, query_parameters: Arguments):
@@ -55,38 +54,47 @@ class CustomMultiTurnDatasetPlugin(DatasetPluginBase):
                 'Each line must be a JSON array of OpenAI message dicts.'
             )
 
-    def _truncate_to_max_turns(self, messages: List[Dict]) -> List[Dict]:
-        """Truncate a conversation to at most max_turns user turns.
+    def _split_into_turns(self, messages: List[Message]) -> List[Messages]:
+        """Split a flat message list into per-turn delta lists.
+
+        Uses ``assistant`` messages as turn boundaries.  Each run of
+        non-assistant messages before an ``assistant`` message (or at the end
+        of the conversation) forms one turn's delta.
+
+        Example::
+            [system, user_1, assistant_ref, user_2, assistant_ref, user_3]
+            -> [[system, user_1], [user_2], [user_3]]
 
         Args:
-            messages: Full conversation as a flat list of OpenAI message dicts.
+            messages: Flat list of OpenAI message dicts.
 
         Returns:
-            Truncated list containing at most ``max_turns`` user turns and
-            their preceding/interleaved assistant messages.
+            ``List[Messages]`` – one ``Messages`` per turn.
+        """
+        turns: List[Messages] = []
+        current: Messages = []
+        for msg in messages:
+            if msg.get('role') == 'assistant':
+                if current:
+                    turns.append(current)
+                    current = []
+                # assistant message acts as boundary only; content is discarded
+            else:
+                current.append(msg)
+        if current:
+            turns.append(current)
+        return turns
+
+    def build_messages(self) -> Iterator[List[Messages]]:
+        """Yield complete conversations as ``List[Messages]`` from the JSONL file.
+
+        Each yielded item is a ``List[Messages]`` where every ``Messages``
+        contains the delta for one turn.  The multi-turn benchmark runner
+        extends the growing context with each delta and appends the model's
+        real response after each turn.
         """
         max_turns = self.query_parameters.max_turns
-        if max_turns is None:
-            return messages
 
-        truncated: List[Dict] = []
-        user_turn_count = 0
-        for msg in messages:
-            if msg.get('role') == 'user':
-                if user_turn_count >= max_turns:
-                    break
-                user_turn_count += 1
-            truncated.append(msg)
-        return truncated
-
-    def build_messages(self) -> Iterator[List[Dict]]:
-        """Yield complete conversations from the JSONL file.
-
-        Each yielded item is a ``List[Dict]`` containing all messages of one
-        conversation in OpenAI format.  The multi-turn benchmark runner will
-        extract only user turns and use the model's real responses to build
-        the growing context.
-        """
         for line in self.dataset_line_by_line(self.query_parameters.dataset_path):
             line = line.strip()
             if not line:
@@ -107,24 +115,31 @@ class CustomMultiTurnDatasetPlugin(DatasetPluginBase):
                 logger.warning('[custom_multi_turn] Skipping line: each message must have "role" and "content" fields.')
                 continue
 
-            # Apply max_turns truncation
-            messages = self._truncate_to_max_turns(messages)
+            turns = self._split_into_turns(messages)
 
-            # A valid multi-turn conversation needs at least one user turn
-            user_turns = [m for m in messages if m.get('role') == 'user']
-            if not user_turns:
+            # Apply max_turns truncation at the dataset layer
+            if max_turns is not None:
+                turns = turns[:max_turns]
+
+            # A valid multi-turn conversation needs at least one turn
+            if not turns:
                 continue
 
-            # Length filter: check the first user turn as a proxy
-            first_user_content = user_turns[0]['content']
+            # Length filter: check the first user message of the first turn as a proxy
+            first_msg = next((m for m in turns[0] if m.get('role') == 'user'), None)
+            if first_msg is None:
+                yield turns
+                continue
+
+            first_user_content = first_msg['content']
             if not isinstance(first_user_content, str):
                 # Vision messages or other non-text content: skip length check
-                yield messages
+                yield turns
                 continue
 
             is_valid, _ = self.check_prompt_length(first_user_content)
             if is_valid:
-                yield messages
+                yield turns
 
 
 if __name__ == '__main__':

@@ -5,6 +5,9 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.utils import tokenize_chat_messages
 
+Message = Dict[str, Any]  # single OpenAI message: {"role": ..., "content": ...}
+Messages = List[Message]  # delta messages for one turn
+
 
 class DatasetPluginBase:
 

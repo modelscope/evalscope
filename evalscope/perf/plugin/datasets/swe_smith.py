@@ -49,10 +49,10 @@ by the model fill the gaps between delta turns at runtime.
 """
 
 import json
-from typing import Dict, Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.plugin.datasets.base import DatasetPluginBase
+from evalscope.perf.plugin.datasets.base import DatasetPluginBase, Message, Messages
 from evalscope.perf.plugin.datasets.utils import tokenize_chat_messages
 from evalscope.perf.plugin.registry import register_dataset
 from evalscope.utils.logger import get_logger
@@ -301,7 +301,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
     # Pre-built JSON mode
     # ------------------------------------------------------------------
 
-    def _load_from_json(self) -> Iterator[List[Dict]]:
+    def _load_from_json(self) -> Iterator[List[Messages]]:
         """Load pre-built ``agentic_dataset.json`` and yield conversations."""
         dataset_path = self.query_parameters.dataset_path
         logger.info(f'Loading pre-built dataset from {dataset_path}')
@@ -327,28 +327,21 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
                     f'(offset={offset}, max_turns={max_turns})')
 
         for conversation in conversations:
-            full_messages: List[Dict] = []
-            user_turn_count = 0
+            # Each turn's "messages" list is already the delta (non-assistant).
+            turns: List[Messages] = [turn.get('messages', []) for turn in conversation]
 
-            for turn in conversation:
-                turn_messages = turn.get('messages', [])
-                user_turns_in_delta = [m for m in turn_messages if m.get('role') == 'user']
+            # Apply max_turns truncation at the dataset layer
+            if max_turns is not None:
+                turns = turns[:max_turns]
 
-                # Respect max_turns
-                if max_turns is not None and user_turn_count + len(user_turns_in_delta) > max_turns:
-                    break
-
-                full_messages.extend(turn_messages)
-                user_turn_count += len(user_turns_in_delta)
-
-            if full_messages:
-                yield full_messages
+            if turns:
+                yield turns
 
     # ------------------------------------------------------------------
     # Live construction mode
     # ------------------------------------------------------------------
 
-    def _load_live(self) -> Iterator[List[Dict]]:
+    def _load_live(self) -> Iterator[List[Messages]]:
         """Pull SWE-smith-trajectories from ModelScope and construct conversations."""
         if self.tokenizer is None:
             raise ValueError(
@@ -362,7 +355,8 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
         # Read static / non-sampleable params directly
         chars_per_token = mt_args.chars_per_token if mt_args else 3.0
         offset = mt_args.offset if mt_args else 0
-        max_turns = mt_args.max_turns if mt_args else None
+        min_turns = mt_args.min_turns if mt_args else 1
+        max_turns = mt_args.max_turns if mt_args else 5
         output_length = self.query_parameters.max_tokens or 300
 
         # For pre-filtering, use the upper bound of max_context_length so that
@@ -375,19 +369,9 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
         else:
             max_ctx_upper = 75000
 
-        # The number of conversations to build: use args.number as the turn
-        # budget and estimate conversations from expected turns per conv.
-        number = max(self.query_parameters.number
-                     ) if isinstance(self.query_parameters.number, list) else self.query_parameters.number
-        min_turns = mt_args.min_turns if mt_args else 1
-        max_turns_val = mt_args.max_turns if mt_args else 5
-        avg_turns = max(1, (min_turns + max_turns_val) // 2)
-        num_conversations = max(int(number / avg_turns) + 1, 1)
-
         logger.info(
-            f'Live construction: offset={offset}, max_turns={max_turns}, '
-            f'output_length={output_length}, max_ctx_upper={max_ctx_upper}, '
-            f'num_conversations={num_conversations}'
+            f'Live construction: offset={offset}, min_turns={min_turns}, max_turns={max_turns}, '
+            f'output_length={output_length}, max_ctx_upper={max_ctx_upper}'
         )
 
         from modelscope import MsDataset
@@ -446,22 +430,13 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
             if conversation is None:
                 continue
 
-            full_messages: List[Dict] = []
-            user_turn_count = 0
+            # Each turn's delta is the Messages for that turn.
+            turns: List[Messages] = [turn.get('messages', []) for turn in conversation]
 
-            for turn in conversation:
-                turn_messages = turn.get('messages', [])
-                user_turns_in_delta = [m for m in turn_messages if m.get('role') == 'user']
+            # Apply max_turns truncation at the dataset layer
+            if max_turns is not None:
+                turns = turns[:max_turns]
 
-                if max_turns is not None and user_turn_count + len(user_turns_in_delta) > max_turns:
-                    break
-
-                full_messages.extend(turn_messages)
-                user_turn_count += len(user_turns_in_delta)
-
-            if full_messages:
+            if len(turns) >= min_turns:
                 built += 1
-                yield full_messages
-
-            if built >= num_conversations:
-                break
+                yield turns

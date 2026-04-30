@@ -31,9 +31,10 @@ Example (share_gpt_*_multi_turn):
 
 import json
 import os
-from typing import Dict, Iterator, List
+from typing import Any, Dict, Iterator, List
 
 from evalscope.perf.arguments import Arguments
+from evalscope.perf.plugin.datasets.base import Message, Messages
 from evalscope.perf.plugin.datasets.random_dataset import RandomDatasetPlugin
 from evalscope.perf.plugin.datasets.share_gpt import ShareGPTDatasetPluginBase
 from evalscope.perf.plugin.registry import register_dataset
@@ -82,12 +83,13 @@ class RandomMultiTurnDatasetPlugin(RandomDatasetPlugin):
                 f'--min-turns ({self.min_turns_per_conv}).'
             )
 
-    def build_messages(self) -> Iterator[List[Dict]]:
+    def build_messages(self) -> Iterator[List[Messages]]:
         """Yield complete synthetic conversations.
 
-        Each conversation is a list of ``{'role': 'user', 'content': <text>}``
-        dicts.  The multi-turn benchmark runner will append the model's real
-        responses after each turn and pass the growing context to the next turn.
+        Each conversation is a ``List[Messages]`` where every ``Messages`` is a
+        one-element list ``[{'role': 'user', 'content': <text>}]`` representing
+        one turn's delta.  The multi-turn benchmark runner appends the model's
+        real response after each turn and passes the growing context to the next.
 
         Note: ``--tokenize-prompt`` is not supported for multi-turn datasets
         (multi-turn requires the chat/completions endpoint which expects message
@@ -131,7 +133,7 @@ class RandomMultiTurnDatasetPlugin(RandomDatasetPlugin):
         turn_slot = 0
         for conv_idx in range(n_convs):
             n_turns = int(turn_counts[conv_idx])
-            conversation: List[Dict] = []
+            conversation: List[Messages] = []
 
             for t in range(n_turns):
                 prompt, _, _ = self.generate_token_sequence(
@@ -139,7 +141,7 @@ class RandomMultiTurnDatasetPlugin(RandomDatasetPlugin):
                     offset=int(offsets[turn_slot]),
                     index=turn_slot,
                 )
-                conversation.append({'role': 'user', 'content': prompt})
+                conversation.append([{'role': 'user', 'content': prompt}])
                 turn_slot += 1
 
             yield conversation
@@ -178,15 +180,17 @@ class ShareGPTMultiTurnBase(ShareGPTDatasetPluginBase):
     model as history; only actual model responses are accumulated.
     """
 
-    def _convert_to_openai_messages_full(self, conversation: List[Dict]) -> List[Dict]:
-        """Convert swift/sharegpt format to full OpenAI messages, preserving all turns.
+    def _convert_to_openai_messages_full(self, conversation: List[Dict]) -> List[Messages]:
+        """Convert swift/sharegpt format to a list of per-turn delta Messages.
 
         Args:
             conversation: List of dicts with ``'human'`` and ``'assistant'`` keys.
 
         Returns:
-            Flat list of ``{'role': ..., 'content': ...}`` dicts.  The last
-            message may be from either 'user' or 'assistant'.
+            ``List[Messages]`` where each ``Messages`` is
+            ``[{'role': 'user', 'content': human_text}]``.  The dataset
+            assistant content is discarded; the benchmark runner fills the
+            gaps with real model responses.
         """
         # Read max_turns from multi_turn_args if set, otherwise fall back
         # to top-level field for backward compatibility.
@@ -195,12 +199,11 @@ class ShareGPTMultiTurnBase(ShareGPTDatasetPluginBase):
             max_turns = mt_args.max_turns
         else:
             max_turns = self.query_parameters.max_turns
-        messages: List[Dict] = []
+        turns: List[Messages] = []
         user_turn_count = 0
 
         for turn in conversation:
             human = turn.get('human', '').strip()
-            assistant = turn.get('assistant', '').strip()
 
             if not human:
                 continue
@@ -209,16 +212,13 @@ class ShareGPTMultiTurnBase(ShareGPTDatasetPluginBase):
             if max_turns is not None and user_turn_count >= max_turns:
                 break
 
-            messages.append({'role': 'user', 'content': human})
+            turns.append([{'role': 'user', 'content': human}])
             user_turn_count += 1
 
-            if assistant:
-                messages.append({'role': 'assistant', 'content': assistant})
+        return turns
 
-        return messages
-
-    def build_messages(self) -> Iterator[List[Dict]]:
-        """Yield full conversations including all user and assistant turns."""
+    def build_messages(self) -> Iterator[List[Messages]]:
+        """Yield full conversations as List[Messages] (one Messages per user turn)."""
         if not self.query_parameters.dataset_path:
             from modelscope import dataset_snapshot_download
 
@@ -231,18 +231,17 @@ class ShareGPTMultiTurnBase(ShareGPTDatasetPluginBase):
             if not conversation:
                 continue
 
-            messages = self._convert_to_openai_messages_full(conversation)
+            turns = self._convert_to_openai_messages_full(conversation)
 
-            # A valid multi-turn conversation needs at least one user turn
-            user_turns = [m for m in messages if m['role'] == 'user']
-            if not user_turns:
+            # A valid multi-turn conversation needs at least one turn
+            if not turns:
                 continue
 
-            # Length filter: check the first user turn as a proxy
-            first_user_content = user_turns[0]['content']
+            # Length filter: check the first user message of the first turn as a proxy
+            first_user_content = turns[0][0]['content']
             is_valid, _ = self.check_prompt_length(first_user_content)
             if is_valid:
-                yield messages
+                yield turns
 
 
 # ---------------------------------------------------------------------------
