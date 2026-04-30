@@ -61,8 +61,15 @@ class RandomMultiTurnDatasetPlugin(RandomDatasetPlugin):
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
 
-        self.min_turns_per_conv = max(1, query_parameters.min_turns)
-        self.max_turns_per_conv = query_parameters.max_turns
+        # Read min/max_turns from multi_turn_args if set, otherwise fall back
+        # to top-level fields for backward compatibility.
+        mt_args = query_parameters.multi_turn_args
+        if mt_args is not None:
+            self.min_turns_per_conv = max(1, mt_args.min_turns)
+            self.max_turns_per_conv = mt_args.max_turns
+        else:
+            self.min_turns_per_conv = max(1, query_parameters.min_turns)
+            self.max_turns_per_conv = query_parameters.max_turns
 
         if self.max_turns_per_conv is None:
             raise ValueError(
@@ -181,7 +188,13 @@ class ShareGPTMultiTurnBase(ShareGPTDatasetPluginBase):
             Flat list of ``{'role': ..., 'content': ...}`` dicts.  The last
             message may be from either 'user' or 'assistant'.
         """
-        max_turns = self.query_parameters.max_turns
+        # Read max_turns from multi_turn_args if set, otherwise fall back
+        # to top-level field for backward compatibility.
+        mt_args = self.query_parameters.multi_turn_args
+        if mt_args is not None:
+            max_turns = mt_args.max_turns
+        else:
+            max_turns = self.query_parameters.max_turns
         messages: List[Dict] = []
         user_turn_count = 0
 

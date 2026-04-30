@@ -111,17 +111,21 @@ class MultiTurnStrategy(BenchmarkStrategy):
                     benchmark_data.finalize(self.api_plugin)
 
                 # Estimate KV-cache hit rate.
+                # If the server reports real cached_tokens, use them directly.
+                # Otherwise fall back to the prev_tokens estimation heuristic.
                 # cacheable = prev_prompt_tokens + prev_completion_tokens because
                 # after turn N-1 the server KV cache holds:
                 #   [user_0, ..., user_{N-1}]  (= prev_prompt_tokens)
                 #   [asst_{N-1}]               (= prev_completion_tokens)
                 # both of which appear as prefix in the current request.
-                if (
-                    benchmark_data.prompt_tokens is not None and benchmark_data.prompt_tokens > 0
-                    and prev_prompt_tokens > 0
-                ):
-                    cacheable_tokens = prev_prompt_tokens + prev_completion_tokens
-                    benchmark_data.approx_cached_percent = (100.0 * cacheable_tokens / benchmark_data.prompt_tokens)
+                if (benchmark_data.prompt_tokens is not None and benchmark_data.prompt_tokens > 0):
+                    if benchmark_data.real_cached_tokens is not None:
+                        benchmark_data.approx_cached_percent = (
+                            100.0 * benchmark_data.real_cached_tokens / benchmark_data.prompt_tokens
+                        )
+                    elif prev_prompt_tokens > 0:
+                        cacheable_tokens = prev_prompt_tokens + prev_completion_tokens
+                        benchmark_data.approx_cached_percent = (100.0 * cacheable_tokens / benchmark_data.prompt_tokens)
                 if benchmark_data.prompt_tokens:
                     prev_prompt_tokens = benchmark_data.prompt_tokens
                 if benchmark_data.completion_tokens:

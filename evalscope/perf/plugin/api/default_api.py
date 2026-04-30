@@ -142,6 +142,12 @@ class DefaultApiPlugin(ApiPluginBase):
                                     elif usage := data.get('usage'):
                                         output.prompt_tokens = usage.get('prompt_tokens')
                                         output.completion_tokens = usage.get('completion_tokens')
+                                        # Extract real cached tokens from prompt_tokens_details
+                                        _details = usage.get('prompt_tokens_details')
+                                        if _details and isinstance(_details, dict):
+                                            _cached = _details.get('cached_tokens')
+                                            if _cached is not None:
+                                                output.real_cached_tokens = _cached
 
                                     most_recent_timestamp = timestamp
 
@@ -183,6 +189,12 @@ class DefaultApiPlugin(ApiPluginBase):
                             if usage := payload.get('usage'):
                                 output.prompt_tokens = usage.get('prompt_tokens')
                                 output.completion_tokens = usage.get('completion_tokens')
+                                # Extract real cached tokens from prompt_tokens_details
+                                _details = usage.get('prompt_tokens_details')
+                                if _details and isinstance(_details, dict):
+                                    _cached = _details.get('cached_tokens')
+                                    if _cached is not None:
+                                        output.real_cached_tokens = _cached
 
                             output.response_messages.append(payload)
                         else:

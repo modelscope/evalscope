@@ -47,6 +47,8 @@ class BenchmarkData:
     """Number of user turns in the conversation context when this request was sent."""
     approx_cached_percent: float = 0.0
     """Estimated KV cache hit rate: history_prompt_tokens / total_prompt_tokens * 100."""
+    real_cached_tokens: Optional[int] = None
+    """Real cached token count from server response usage.prompt_tokens_details.cached_tokens."""
 
     # --- Speculative decoding specific ---
     decoded_tokens_per_iter: float = 0.0
