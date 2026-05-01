@@ -511,8 +511,9 @@ class TestPerf(unittest.TestCase):
         task_cfg = Arguments(
             parallel=[5, 10],
             number=[10, 20],
-            model='Qwen2.5-0.5B-Instruct',
-            url='http://127.0.0.1:8801/v1/chat/completions',
+            model='qwen-plus',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+            api_key=env.get('DASHSCOPE_API_KEY'),
             api='openai',
             dataset='swe_smith',
             tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
@@ -520,8 +521,8 @@ class TestPerf(unittest.TestCase):
             max_tokens=128,
             min_tokens=128,
             multi_turn_args=MultiTurnArgs(
-                min_turns=2,
-                max_turns=4,
+                min_turns=12,
+                max_turns=12,
                 first_turn_length=8192,
                 subsequent_turn_length=1024,
                 max_context_length=12000

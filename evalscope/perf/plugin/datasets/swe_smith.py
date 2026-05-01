@@ -157,11 +157,20 @@ def _build_conversation(
     subsequent_turn_length: int,
     max_context_length: int,
     output_length: int,
+    allow_partial: bool = False,
 ) -> Optional[List[Dict]]:
     """Build a multi-turn conversation from trajectory messages.
 
     Returns a list of turn dicts (``{"messages": [...], "prompt_tokens": int,
     "output_tokens": int}``), or ``None`` if the trajectory is too short.
+
+    Args:
+        allow_partial: When True, skip the strict ``expected_turns`` quality
+            check and accept any non-empty result.  Use this in live
+            construction mode where ``min_turns`` on the caller side already
+            handles quality filtering.  When False (default, used by the
+            offline build script), only trajectories whose turn count matches
+            the formula are accepted.
     """
     turns = []
     accumulated: List[Dict] = []
@@ -214,6 +223,10 @@ def _build_conversation(
     remaining = max_context_length - output_length - first_turn_length
     step = subsequent_turn_length + output_length
     expected_turns = 1 + remaining // step
+
+    if allow_partial:
+        # Caller (live mode) filters by min_turns; skip strict formula check.
+        return turns if turns else None
 
     if len(turns) in (expected_turns, expected_turns - 1):
         return turns
@@ -403,6 +416,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
                 subsequent_turn_length,
                 max_context_length,
                 output_length,
+                allow_partial=True,
             )
             if conversation is None:
                 continue

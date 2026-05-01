@@ -41,100 +41,6 @@ The `swe_smith` dataset's live construction mode supports fine-grained control o
 | `--number` | Total number of **turns** to send (not conversations); all workers stop once this many HTTP requests have been made |
 | `--parallel` | Number of concurrently in-flight turn-level requests |
 
-## Datasets
-
-### random_multi_turn
-
-Generates synthetic token sequences based on the `random` dataset. Each conversation contains `[min_turns, max_turns]` user turns. No external data file is required, making it ideal for quick benchmarking and performance comparisons.
-
-**Required**: `--tokenizer-path`, `--max-turns`
-
-**Optional**: `--min-turns` (default `1`), `--min-prompt-length`, `--max-prompt-length` (control the token length range of each user message)
-
-Each conversation produced by the dataset has the following structure:
-
-```json
-[
-  {"role": "user", "content": "...turn 1 random token sequence..."},
-  {"role": "user", "content": "...turn 2 random token sequence..."}
-]
-```
-
-> **Note**: `--tokenize-prompt` is not supported in multi-turn mode and will be silently ignored. Multi-turn conversations are always sent as message dicts to the `/v1/chat/completions` endpoint.
-
-### share_gpt_zh_multi_turn / share_gpt_en_multi_turn
-
-Uses real conversation data from [swift/sharegpt](https://www.modelscope.cn/datasets/swift/sharegpt) (~70k Chinese / English conversations), preserving the full user + assistant alternation, making it suitable for evaluating models against realistic conversation distributions.
-
-- **Auto download**: When `--dataset-path` is not specified, the dataset is automatically downloaded from ModelScope.
-- **Local data support**: Provide a local JSONL file via `--dataset-path` (one `conversation` object per line).
-- **Optional truncation**: Use `--max-turns` to limit the maximum number of user turns used from each conversation.
-
-Local JSONL dataset format (one conversation per line):
-
-```json
-{"conversation": [{"human": "Hello", "assistant": "Hi! How can I help you?"}, {"human": "Write me a poem", "assistant": "Sure, ..."}]}
-```
-
-Runtime context structure (when sending turn 2):
-
-```json
-[
-  {"role": "user",      "content": "Hello"},
-  {"role": "assistant", "content": "<model's actual reply to turn 1>"},
-  {"role": "user",      "content": "Write me a poem"}
-]
-```
-
-> **Note**: The reference assistant replies in the dataset are included for structural completeness only and are never sent directly to the model. At runtime, workers always append the model's **actual output** to the context to ensure accurate history.
-
-### custom_multi_turn
-
-Uses a local JSONL file as a custom multi-turn conversation dataset. Each line stores a complete conversation directly in **OpenAI messages format** — no format conversion required. Ideal for benchmarking with your own existing conversation data.
-
-- **`--dataset-path` is required** and must point to a local JSONL file.
-- **Optional truncation**: Use `--max-turns` to limit the maximum number of user turns per conversation.
-
-**JSONL dataset format** (one conversation per line, as an OpenAI messages array):
-
-```json
-[{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi! How can I help you?"}, {"role": "user", "content": "Write me a poem"}]
-[{"role": "user", "content": "What is the capital of France?"}, {"role": "assistant", "content": "Paris."}, {"role": "user", "content": "Tell me more about it."}]
-```
-
-Each line must satisfy:
-- Must be a JSON array.
-- Every element must have `role` and `content` fields.
-- `role` must be either `user` or `assistant`.
-- Must contain at least one `user` message.
-
-**Runtime context structure** (when sending turn 2):
-
-```json
-[
-  {"role": "user",      "content": "Hello"},
-  {"role": "assistant", "content": "<model's actual reply to turn 1>"},
-  {"role": "user",      "content": "Write me a poem"}
-]
-```
-
-> **Note**: The `assistant` messages in the dataset are used only to identify conversation structure and are **never** sent directly to the model. At runtime, workers always append the model's actual output to the context to ensure accurate history.
-
-### swe_smith
-
-Uses real Agent code-repair trajectory data from [SWE-bench/SWE-smith-trajectories](https://www.modelscope.cn/datasets/SWE-bench/SWE-smith-trajectories), designed specifically for **long-context + multi-turn Agent scenario** benchmarking. Each trajectory consists of tool calls, code snippets, patch results, etc. A single prompt typically exceeds tens of thousands of tokens, making it ideal for evaluating prefill throughput and KV cache hit rates under large contexts.
-
-Two data source modes are supported:
-
-**1. Pre-built JSON mode** (recommended): Specify `--dataset-path` to load a pre-generated `agentic_dataset.json`. No tokenizer is required and startup is fast.
-
-**2. Live construction mode** (no `--dataset-path`): Pulls raw trajectories from ModelScope at runtime and dynamically builds conversations. `--tokenizer-path` is **required** for accurate token counting.
-
-Common features of both modes:
-- **Optional truncation**: Limit the number of user turns retained per conversation via `--max-turns` (or `MultiTurnArgs.max_turns`).
-- **Offset support**: Skip the first N conversations via `--dataset-offset`, useful for sharded testing or avoiding KV cache hot-spots.
-- **Range sampling**: `first_turn_length`, `subsequent_turn_length`, and `max_context_length` all support `[min, max]` lists for per-conversation random sampling; combine with `--seed` for reproducibility.
-
 ## Workflow
 
 1. **Load conversation pool**: At startup, conversations are read sequentially from the dataset file and pre-loaded into memory, up to a maximum of `--number` conversations (to avoid excessive memory usage with large datasets).
@@ -184,28 +90,32 @@ Common features of both modes:
 
 > **Note**: When the request success rate is below 100%, interrupted conversations do not contribute subsequent turns to the context, which may result in lower reported KV cache hit rates.
 
-## Output Metrics
+## random_multi_turn
 
-In addition to all standard benchmark metrics, multi-turn mode outputs two extra metrics:
+Generates synthetic token sequences based on the `random` dataset. Each conversation contains `[min_turns, max_turns]` user turns. No external data file is required, making it ideal for quick benchmarking and performance comparisons.
 
-| Metric | Description | How to interpret |
-|--------|-------------|-----------------|
-| `Average input turns per request` | Average number of user turns in the context at the time each request is sent | Reflects the average growth of context during the test; a higher value means deeper conversations and longer prompts |
-| `Average approx KV cache hit rate (%)` | Estimated proportion of history tokens relative to total input tokens (theoretical upper bound for prefix caching benefit) | A higher ratio means more of the input is historical context; if the server has prefix caching enabled, a higher ratio translates to greater latency savings. Calculation: `(prev_prompt_tokens + prev_completion_tokens) / current_prompt_tokens × 100%`; the first turn (no history) is excluded from the calculation |
+**Required**: `--tokenizer-path`, `--max-turns`
 
-All other metrics (Avg/P99 Latency, TTFT, TPOT, RPS, TPS) have the same meaning as in [standard benchmark mode](./parameters.md).
+**Optional**: `--min-turns` (default `1`), `--min-prompt-length`, `--max-prompt-length` (control the token length range of each user message)
 
-## Usage Examples
+Each conversation produced by the dataset has the following structure:
 
-### 1. Using random_multi_turn (Synthetic Multi-turn Conversations)
+```json
+[
+  {"role": "user", "content": "...turn 1 random token sequence..."},
+  {"role": "user", "content": "...turn 2 random token sequence..."}
+]
+```
 
-Use case: Quickly evaluate service performance at a specified prompt length distribution and conversation depth without a real dataset.
+> **Note**: `--tokenize-prompt` is not supported in multi-turn mode and will be silently ignored. Multi-turn conversations are always sent as message dicts to the `/v1/chat/completions` endpoint.
+
+**Usage example**: Quickly evaluate service performance at a specified prompt length distribution and conversation depth without a real dataset.
 
 ```bash
 evalscope perf \
-  --model Qwen2.5-0.5B-Instruct \
-  --tokenizer-path Qwen/Qwen2.5-0.5B-Instruct \
-  --url http://127.0.0.1:8801/v1/chat/completions \
+  --model YOUR_MODEL \
+  --tokenizer-path YOUR_MODEL \
+  --url OPENAI_API_COMPAT_URL \
   --api openai \
   --dataset random_multi_turn \
   --min-prompt-length 256 \
@@ -242,14 +152,38 @@ Example output:
 - `Avg Turns/Req: 1.60`: Each request carried an average of 1.60 turns of context during the test, consistent with the `--min-turns 2 --max-turns 5` random sampling distribution.
 - `Approx Cache Hit: 58.1%`: About 58% of input tokens came from conversation history.
 
-### 2. Using share_gpt_zh_multi_turn (Real Chinese Conversations)
+## share_gpt_zh_multi_turn / share_gpt_en_multi_turn
 
-Use case: Evaluate service performance using a realistic user conversation distribution, better reflecting production environment behavior.
+Uses real conversation data from [swift/sharegpt](https://www.modelscope.cn/datasets/swift/sharegpt) (~70k Chinese / English conversations), preserving the full user + assistant alternation, making it suitable for evaluating models against realistic conversation distributions.
+
+- **Auto download**: When `--dataset-path` is not specified, the dataset is automatically downloaded from ModelScope.
+- **Local data support**: Provide a local JSONL file via `--dataset-path` (one `conversation` object per line).
+- **Optional truncation**: Use `--max-turns` to limit the maximum number of user turns used from each conversation.
+
+Local JSONL dataset format (one conversation per line):
+
+```json
+{"conversation": [{"human": "Hello", "assistant": "Hi! How can I help you?"}, {"human": "Write me a poem", "assistant": "Sure, ..."}]}
+```
+
+Runtime context structure (when sending turn 2):
+
+```json
+[
+  {"role": "user",      "content": "Hello"},
+  {"role": "assistant", "content": "<model's actual reply to turn 1>"},
+  {"role": "user",      "content": "Write me a poem"}
+]
+```
+
+> **Note**: The reference assistant replies in the dataset are included for structural completeness only and are never sent directly to the model. At runtime, workers always append the model's **actual output** to the context to ensure accurate history.
+
+**Usage example**: Evaluate service performance using a realistic user conversation distribution, better reflecting production environment behavior.
 
 ```bash
 evalscope perf \
-  --model Qwen2.5-0.5B-Instruct \
-  --url http://127.0.0.1:8801/v1/chat/completions \
+  --model YOUR_MODEL \
+  --url OPENAI_API_COMPAT_URL \
   --api openai \
   --dataset share_gpt_zh_multi_turn \
   --max-tokens 512 \
@@ -263,8 +197,8 @@ If the dataset is already downloaded locally, use `--dataset-path` to avoid re-d
 
 ```bash
 evalscope perf \
-  --model Qwen2.5-0.5B-Instruct \
-  --url http://127.0.0.1:8801/v1/chat/completions \
+  --model YOUR_MODEL \
+  --url OPENAI_API_COMPAT_URL \
   --api openai \
   --dataset share_gpt_zh_multi_turn \
   --dataset-path /path/to/common_zh_70k.jsonl \
@@ -299,9 +233,39 @@ Example output:
 - `Avg Turns/Req: 1.98`: Limited by `--max-turns 3`, each request carried approximately 2 turns of context on average, as expected (turn 1 has no history, turns 2 and 3 carry 1 and 2 turns of history respectively, averaging ~1.98).
 - `Approx Cache Hit: 53.7%`: Real conversations have longer context; history tokens account for ~54% of input.
 
-### 3. Using custom_multi_turn (Custom Local Conversations)
+## custom_multi_turn
 
-Use case: You have conversation data already in OpenAI messages format and want to benchmark directly without any format conversion.
+Uses a local JSONL file as a custom multi-turn conversation dataset. Each line stores a complete conversation directly in **OpenAI messages format** — no format conversion required. Ideal for benchmarking with your own existing conversation data.
+
+- **`--dataset-path` is required** and must point to a local JSONL file.
+- **Optional truncation**: Use `--max-turns` to limit the maximum number of user turns per conversation.
+
+**JSONL dataset format** (one conversation per line, as an OpenAI messages array):
+
+```json
+[{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi! How can I help you?"}, {"role": "user", "content": "Write me a poem"}]
+[{"role": "user", "content": "What is the capital of France?"}, {"role": "assistant", "content": "Paris."}, {"role": "user", "content": "Tell me more about it."}]
+```
+
+Each line must satisfy:
+- Must be a JSON array.
+- Every element must have `role` and `content` fields.
+- `role` must be either `user` or `assistant`.
+- Must contain at least one `user` message.
+
+Runtime context structure (when sending turn 2):
+
+```json
+[
+  {"role": "user",      "content": "Hello"},
+  {"role": "assistant", "content": "<model's actual reply to turn 1>"},
+  {"role": "user",      "content": "Write me a poem"}
+]
+```
+
+> **Note**: The `assistant` messages in the dataset are used only to identify conversation structure and are **never** sent directly to the model. At runtime, workers always append the model's actual output to the context to ensure accurate history.
+
+**Usage example**: You have conversation data already in OpenAI messages format and want to benchmark directly without any format conversion.
 
 First, prepare the JSONL data file (one conversation per line):
 
@@ -314,8 +278,8 @@ Then run the benchmark:
 
 ```bash
 evalscope perf \
-  --model Qwen2.5-0.5B-Instruct \
-  --url http://127.0.0.1:8801/v1/chat/completions \
+  --model YOUR_MODEL \
+  --url OPENAI_API_COMPAT_URL \
   --api openai \
   --dataset custom_multi_turn \
   --dataset-path /path/to/my_conversations.jsonl \
@@ -326,21 +290,83 @@ evalscope perf \
   --parallel 10
 ```
 
-### 4. Using swe_smith (Real Agent Trajectories, Long-context Multi-turn)
+## swe_smith
 
-Use case: Evaluate prefill throughput, TTFT, and KV cache hit rate under long-context Agent code-repair trajectories.
+Uses real Agent code-repair trajectory data from [SWE-bench/SWE-smith-trajectories](https://www.modelscope.cn/datasets/SWE-bench/SWE-smith-trajectories), designed specifically for **long-context + multi-turn Agent scenario** benchmarking. Each trajectory consists of tool calls, code snippets, patch results, etc. A single prompt typically exceeds tens of thousands of tokens, making it ideal for evaluating prefill throughput and KV cache hit rates under large contexts.
 
-#### 4.1 Live Construction Mode (Auto-download + Dynamic Build)
+Two data source modes are supported:
 
-Automatically pulls SWE-smith-trajectories from ModelScope and constructs conversations at runtime. `--tokenizer-path` is required.
+- **Pre-built JSON mode** (recommended): Specify `--dataset-path` to load a pre-generated `agentic_dataset.json`. No tokenizer is required and startup is fast.
+- **Live construction mode** (no `--dataset-path`): Pulls raw trajectories from ModelScope at runtime and dynamically builds conversations. `--tokenizer-path` is **required** for accurate token counting.
+
+Common features of both modes:
+- **Optional truncation**: Limit the number of user turns retained per conversation via `--max-turns` (or `MultiTurnArgs.max_turns`).
+- **Offset support**: Skip the first N conversations via `--dataset-offset`, useful for sharded testing or avoiding KV cache hot-spots.
+- **Range sampling**: `first_turn_length`, `subsequent_turn_length`, and `max_context_length` all support `[min, max]` lists for per-conversation random sampling; combine with `--seed` for reproducibility.
+
+### Building the Dataset
+
+It is recommended to pre-build `agentic_dataset.json` using `examples/perf/build_swe_smith_dataset.py` before running a benchmark — build once, reuse many times, avoiding repeated downloads and on-the-fly construction.
+
+**Key parameters**:
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--model-path` | Tokenizer path for accurate token counting (ModelScope model ID or local path) | `Qwen/Qwen2.5-7B-Instruct` |
+| `--first-turn-length` | Target prompt token count for turn 1 | `65000` |
+| `--subsequent-turn-length` | Target token increment per subsequent turn | `500` |
+| `--max-context-length` | Maximum context token count per conversation | `75000` |
+| `--output-length` | Reserved output tokens per turn (should match `--max-tokens` at benchmark time) | `300` |
+| `--num-conversations` | Number of conversations to generate | `128` |
+| `--output-path` | Output file path | `agentic_dataset.json` |
+| `--seed` | Random seed for reproducibility | `42` |
+| `--num-workers` | Number of parallel workers | CPU count |
+
+```bash
+python examples/perf/build_swe_smith_dataset.py \
+  --model-path Qwen/Qwen2.5-7B-Instruct \
+  --first-turn-length 8192 \
+  --subsequent-turn-length 1024 \
+  --max-context-length 12000 \
+  --output-length 512 \
+  --num-conversations 128 \
+  --output-path agentic_dataset.json \
+  --seed 42 \
+  --num-workers 8
+```
+
+### Usage Example: Pre-built JSON Mode (Recommended)
+
+After generating `agentic_dataset.json`, load it via `--dataset-path` — no tokenizer needed and startup is faster:
 
 ```bash
 evalscope perf \
-  --model Qwen2.5-0.5B-Instruct \
-  --url http://127.0.0.1:8801/v1/chat/completions \
+  --model YOUR_MODEL \
+  --url OPENAI_API_COMPAT_URL \
   --api openai \
   --dataset swe_smith \
-  --tokenizer-path Qwen/Qwen2.5-0.5B-Instruct \
+  --dataset-path /path/to/agentic_dataset.json \
+  --max-tokens 512 \
+  --multi-turn \
+  --max-turns 4 \
+  --dataset-offset 100 \
+  --number 200 \
+  --parallel 20
+```
+
+> **Note**: `--dataset-offset` skips the first N conversations in the dataset, making it suitable for multi-machine sharded benchmarking or avoiding KV cache hot-spots.
+
+### Usage Example: Live Construction Mode
+
+Automatically pulls SWE-smith-trajectories from ModelScope and constructs conversations at runtime. `--tokenizer-path` is required:
+
+```bash
+evalscope perf \
+  --model YOUR_MODEL \
+  --url OPENAI_API_COMPAT_URL \
+  --api openai \
+  --dataset swe_smith \
+  --tokenizer-path YOUR_MODEL \
   --max-tokens 512 \
   --min-tokens 512 \
   --multi-turn \
@@ -357,15 +383,15 @@ evalscope perf \
   --extra-args '{"ignore_eos": true}'
 ```
 
-`first_turn_length` / `subsequent_turn_length` / `max_context_length` also support `[min, max]` lists for random sampling per conversation:
+`first_turn_length` / `subsequent_turn_length` / `max_context_length` also support `[min, max]` lists for per-conversation random sampling, so different conversations get different context-length targets:
 
 ```bash
 evalscope perf \
-  --model Qwen2.5-0.5B-Instruct \
-  --url http://127.0.0.1:8801/v1/chat/completions \
+  --model YOUR_MODEL \
+  --url OPENAI_API_COMPAT_URL \
   --api openai \
   --dataset swe_smith \
-  --tokenizer-path Qwen/Qwen2.5-0.5B-Instruct \
+  --tokenizer-path YOUR_MODEL \
   --max-tokens 512 \
   --multi-turn \
   --multi-turn-args '{
@@ -380,25 +406,15 @@ evalscope perf \
   --parallel 20
 ```
 
-> **Note**: Parameters in `[min, max]` form are independently sampled for each conversation, so different conversations get different context-length targets — more faithfully simulating the request distribution in production. Use `--seed` to make results reproducible.
+> **Note**: Parameters in `[min, max]` form are independently sampled for each conversation, more faithfully simulating the request distribution in production. Use `--seed` to make results reproducible.
 
-#### 4.2 Pre-built JSON Mode (Load agentic_dataset.json)
+## Output Metrics
 
-If you have already pre-generated `agentic_dataset.json`, you can load it directly without a tokenizer for faster startup:
+In addition to all standard benchmark metrics, multi-turn mode outputs two extra metrics:
 
-```bash
-evalscope perf \
-  --model Qwen2.5-0.5B-Instruct \
-  --url http://127.0.0.1:8801/v1/chat/completions \
-  --api openai \
-  --dataset swe_smith \
-  --dataset-path /path/to/agentic_dataset.json \
-  --max-tokens 512 \
-  --multi-turn \
-  --max-turns 4 \
-  --dataset-offset 100 \
-  --number 200 \
-  --parallel 20
-```
+| Metric | Description | How to interpret |
+|--------|-------------|-----------------|
+| `Average input turns per request` | Average number of user turns in the context at the time each request is sent | Reflects the average growth of context during the test; a higher value means deeper conversations and longer prompts |
+| `Average approx KV cache hit rate (%)` | Estimated proportion of history tokens relative to total input tokens (theoretical upper bound for prefix caching benefit) | A higher ratio means more of the input is historical context; if the server has prefix caching enabled, a higher ratio translates to greater latency savings. Calculation: `(prev_prompt_tokens + prev_completion_tokens) / current_prompt_tokens × 100%`; the first turn (no history) is excluded from the calculation |
 
-> **Note**: `--dataset-offset` skips the first N conversations in the dataset, making it suitable for multi-machine sharded benchmarking or avoiding KV cache hot-spots.
+All other metrics (Avg/P99 Latency, TTFT, TPOT, RPS, TPS) have the same meaning as in [standard benchmark mode](./parameters.md).
