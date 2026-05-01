@@ -521,8 +521,6 @@ class TestPerf(unittest.TestCase):
             max_tokens=128,
             min_tokens=128,
             multi_turn_args=MultiTurnArgs(
-                min_turns=12,
-                max_turns=12,
                 first_turn_length=8192,
                 subsequent_turn_length=1024,
                 max_context_length=12000

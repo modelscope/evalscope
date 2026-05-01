@@ -17,17 +17,17 @@
 |------|------|------|--------|
 | `--multi-turn` | `bool` | 启用多轮对话压测模式 | `False` |
 | `--min-turns` | `int` | 每个对话最少用户轮数，仅 `random_multi_turn` 使用 | `1` |
-| `--max-turns` | `int` | 每个对话最多用户轮数；`random_multi_turn` **必须设置**；ShareGPT / `swe_smith` 等数据集可选，用于截断过长对话 | `None` |
+| `--max-turns` | `int` | 每个对话最多用户轮数；`random_multi_turn` **必须设置**；ShareGPT / `custom_multi_turn` 等数据集可选，用于截断过长对话。`swe_smith` 不使用此参数，轮次数量由 token 长度参数决定 | `None` |
 | `--dataset-offset` | `int` | 跳过数据集前 N 条对话，用于分片测试或避免缓存命中 | `0` |
 
 ### `multi_turn_args`（`swe_smith` 专属参数）
 
-`swe_smith` 数据集的 live 构建模式支持通过 `MultiTurnArgs` 对象精细控制对话结构和 token 长度目标。所有 `IntOrRange` 类型字段既可传入单个整数，也可传入 `[min, max]` 列表——列表形式会在每条对话构建时随机采样，结合 `--seed` 保证可复现。
+`swe_smith` 数据集的 live 构建模式支持通过 `MultiTurnArgs` 对象精细控制对话 token 长度目标。所有 `IntOrRange` 类型字段既可传入单个整数，也可传入 `[min, max]` 列表——列表形式会在每条对话构建时随机采样，结合 `--seed` 保证可复现。
+
+每条对话的轮次数量完全由以下 token 长度参数决定，`swe_smith` **不使用** `--min-turns` 或 `--max-turns`。
 
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
-| `min_turns` | `int` | 每个对话至少包含的用户轮数；构建轮数不足时丢弃该对话 | `1` |
-| `max_turns` | `int` | 每个对话最多保留的用户轮数；超出部分截断 | `5` |
 | `first_turn_length` | `IntOrRange` | 第 1 轮目标 prompt token 数；从原始轨迹中截取恰好达到该长度的消息片段 | `65000` |
 | `subsequent_turn_length` | `IntOrRange` | 后续每轮在上一轮基础上新增的目标 token 数；决定每轮 delta 的大小 | `500` |
 | `max_context_length` | `IntOrRange` | 单次请求允许的最大 context token 数（prompt tokens 上限）；超出后停止追加新轮次 | `75000` |
@@ -300,9 +300,10 @@ evalscope perf \
 - **Live 构建模式**（不指定 `--dataset-path`）：运行时从 ModelScope 拉取原始轨迹并动态构建对话，**必须**指定 `--tokenizer-path` 用于精确 token 计数。
 
 两种模式共同特性：
-- **可选截断**：通过 `--max-turns`（或 `MultiTurnArgs.max_turns`）限制每条对话保留的用户轮数
 - **支持偏移**：通过 `--dataset-offset` 跳过前 N 条对话，用于分片测试或规避缓存热点
 - **支持范围采样**：`first_turn_length`、`subsequent_turn_length`、`max_context_length` 均支持 `[min, max]` 列表，每条对话独立随机采样，需配合 `--seed` 保证复现性
+
+> **说明**：每条对话的轮次数量完全由 token 长度参数（`first_turn_length`、`subsequent_turn_length`、`max_context_length`、`--max-tokens`）决定。`--min-turns` 和 `--max-turns` 对 `swe_smith` 无效。
 
 ### 预构建数据集生成
 
@@ -348,7 +349,6 @@ evalscope perf \
   --dataset-path /path/to/agentic_dataset.json \
   --max-tokens 512 \
   --multi-turn \
-  --max-turns 4 \
   --dataset-offset 100 \
   --number 200 \
   --parallel 20
@@ -371,8 +371,6 @@ evalscope perf \
   --min-tokens 512 \
   --multi-turn \
   --multi-turn-args '{
-      "min_turns": 2,
-      "max_turns": 4,
       "first_turn_length": 8192,
       "subsequent_turn_length": 1024,
       "max_context_length": 12000
@@ -395,8 +393,6 @@ evalscope perf \
   --max-tokens 512 \
   --multi-turn \
   --multi-turn-args '{
-      "min_turns": 2,
-      "max_turns": 6,
       "first_turn_length": [4096, 16384],
       "subsequent_turn_length": [512, 2048],
       "max_context_length": [20000, 40000]

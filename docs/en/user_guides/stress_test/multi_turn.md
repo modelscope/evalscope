@@ -17,17 +17,17 @@ The multi-turn conversation benchmark allows you to test a model service in real
 |-----------|------|-------------|---------|
 | `--multi-turn` | `bool` | Enable multi-turn conversation benchmark mode | `False` |
 | `--min-turns` | `int` | Minimum number of user turns per conversation; used by `random_multi_turn` only | `1` |
-| `--max-turns` | `int` | Maximum number of user turns per conversation; **required** for `random_multi_turn`; optional for ShareGPT / `swe_smith` datasets to truncate long conversations | `None` |
+| `--max-turns` | `int` | Maximum number of user turns per conversation; **required** for `random_multi_turn`; optional for ShareGPT / `custom_multi_turn` datasets to truncate long conversations. Not used by `swe_smith` — its turn count is determined by token-length parameters | `None` |
 | `--dataset-offset` | `int` | Skip the first N conversations in the dataset; useful for sharded testing or avoiding cache hits | `0` |
 
 ### `multi_turn_args` (swe_smith-specific parameters)
 
 The `swe_smith` dataset's live construction mode supports fine-grained control of conversation structure and token-length targets via a `MultiTurnArgs` object. All `IntOrRange` fields accept either a single integer or a `[min, max]` list — the list form triggers per-conversation random sampling and is reproducible when combined with `--seed`.
 
+The number of turns per conversation is determined entirely by the token-length parameters below — `swe_smith` does **not** use `--min-turns` or `--max-turns`.
+
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `min_turns` | `int` | Minimum number of user turns per conversation; conversations with fewer turns are discarded | `1` |
-| `max_turns` | `int` | Maximum number of user turns to retain; excess turns are truncated | `5` |
 | `first_turn_length` | `IntOrRange` | Target prompt token count for turn 1; trajectory messages are sliced until this length is reached | `65000` |
 | `subsequent_turn_length` | `IntOrRange` | Target token increment per subsequent turn; controls the delta size added each round | `500` |
 | `max_context_length` | `IntOrRange` | Maximum context token count (prompt tokens upper bound) allowed per request; no new turns are added once exceeded | `75000` |
@@ -300,9 +300,10 @@ Two data source modes are supported:
 - **Live construction mode** (no `--dataset-path`): Pulls raw trajectories from ModelScope at runtime and dynamically builds conversations. `--tokenizer-path` is **required** for accurate token counting.
 
 Common features of both modes:
-- **Optional truncation**: Limit the number of user turns retained per conversation via `--max-turns` (or `MultiTurnArgs.max_turns`).
 - **Offset support**: Skip the first N conversations via `--dataset-offset`, useful for sharded testing or avoiding KV cache hot-spots.
 - **Range sampling**: `first_turn_length`, `subsequent_turn_length`, and `max_context_length` all support `[min, max]` lists for per-conversation random sampling; combine with `--seed` for reproducibility.
+
+> **Note**: The turn count for each conversation is determined entirely by the token-length parameters (`first_turn_length`, `subsequent_turn_length`, `max_context_length`, and `--max-tokens`). `--min-turns` and `--max-turns` are ignored for `swe_smith`.
 
 ### Building the Dataset
 
@@ -348,7 +349,6 @@ evalscope perf \
   --dataset-path /path/to/agentic_dataset.json \
   --max-tokens 512 \
   --multi-turn \
-  --max-turns 4 \
   --dataset-offset 100 \
   --number 200 \
   --parallel 20
@@ -371,8 +371,6 @@ evalscope perf \
   --min-tokens 512 \
   --multi-turn \
   --multi-turn-args '{
-      "min_turns": 2,
-      "max_turns": 4,
       "first_turn_length": 8192,
       "subsequent_turn_length": 1024,
       "max_context_length": 12000
@@ -395,8 +393,6 @@ evalscope perf \
   --max-tokens 512 \
   --multi-turn \
   --multi-turn-args '{
-      "min_turns": 2,
-      "max_turns": 6,
       "first_turn_length": [4096, 16384],
       "subsequent_turn_length": [512, 2048],
       "max_context_length": [20000, 40000]

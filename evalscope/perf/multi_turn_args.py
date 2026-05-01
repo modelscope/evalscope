@@ -22,14 +22,13 @@ class MultiTurnArgs(BaseModel):
 
     Sampling relies on the global numpy RNG state seeded by
     ``seed_everything`` in ``main.py``.
+
+    Note: ``min_turns`` and ``max_turns`` are top-level ``Arguments`` fields
+    (``--min-turns`` / ``--max-turns``) and are not part of ``MultiTurnArgs``.
+    For ``swe_smith`` the turn count is determined entirely by the token-length
+    parameters below (``first_turn_length``, ``subsequent_turn_length``,
+    ``max_context_length``).
     """
-
-    # Conversation structure
-    min_turns: int = 1
-    """Minimum number of user turns per conversation."""
-
-    max_turns: int = 5
-    """Maximum number of user turns per conversation."""
 
     # Token-length controls (support range sampling)
     first_turn_length: IntOrRange = 65000
@@ -47,6 +46,12 @@ class MultiTurnArgs(BaseModel):
 
     num_workers: int = 4
     """Number of parallel worker processes for live conversation building (>1 uses multiprocessing.Pool)."""
+
+    scan_multiplier: int = 50
+    """Maximum number of candidate trajectories to collect during dataset scan, expressed as a multiple
+    of ``number`` (the target conversation count).  The scan stops early once
+    ``number * scan_multiplier`` candidates have been collected, avoiding a full dataset traversal
+    when the dataset is very large.  Set to 0 to disable the limit and scan the entire dataset."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -96,8 +101,6 @@ class MultiTurnArgs(BaseModel):
             Dictionary with concrete integer values for all sampled fields.
         """
         return {
-            'min_turns': self.min_turns,
-            'max_turns': self.max_turns,
             'first_turn_length': self._sample(self.first_turn_length),
             'subsequent_turn_length': self._sample(self.subsequent_turn_length),
             'max_context_length': self._sample(self.max_context_length),

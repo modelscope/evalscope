@@ -1,7 +1,6 @@
 import argparse
 import json
 import os
-import warnings
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
@@ -277,28 +276,26 @@ class Arguments(BaseArgument):
     """
 
     min_turns: int = 1
-    """Minimum number of user turns per conversation (used by ``random_multi_turn``).
+    """Minimum number of user turns per conversation.
 
-    Deprecated: Use ``multi_turn_args.min_turns`` instead.
+    Used by ``random_multi_turn`` to set the lower bound of the per-conversation
+    turn count.  Ignored by ``swe_smith`` (turn count is derived from token-length
+    parameters).
     """
 
     max_turns: Optional[int] = None
     """Maximum number of user turns per conversation.
 
-    For ``random_multi_turn``: caps the randomly sampled turn count.
-    For ShareGPT multi-turn datasets: truncates long conversations.
-
-    Deprecated: Use ``multi_turn_args.max_turns`` instead.
+    For ``random_multi_turn``: caps the randomly sampled turn count (required).
+    For ``share_gpt_*_multi_turn`` / ``custom_multi_turn``: truncates long conversations.
+    For ``swe_smith``: not used; turn count is determined by ``first_turn_length``,
+    ``subsequent_turn_length``, ``max_context_length``, and ``--max-tokens``.
     """
 
     multi_turn_args: Optional[MultiTurnArgs] = None
     """Advanced multi-turn conversation parameters (MultiTurnArgs). Pass as JSON string via CLI."""
 
     def __post_init__(self):
-        # Handle deprecated top-level min_turns/max_turns: merge into multi_turn_args
-        _min_turns_set = self.min_turns != 1
-        _max_turns_set = self.max_turns is not None
-
         # Parse multi_turn_args from JSON string if necessary (CLI passes a string)
         if isinstance(self.multi_turn_args, str):
             try:
@@ -307,26 +304,6 @@ class Arguments(BaseArgument):
                 raise ValueError(f'Failed to parse --multi-turn-args JSON: {e}') from e
         elif isinstance(self.multi_turn_args, dict):
             self.multi_turn_args = MultiTurnArgs(**self.multi_turn_args)
-
-        if (_min_turns_set or _max_turns_set) and self.multi_turn_args is None:
-            warnings.warn(
-                'Top-level --min-turns and --max-turns are deprecated. '
-                'Please use --multi-turn-args \'{"min_turns": N, "max_turns": M}\' instead.',
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            self.multi_turn_args = MultiTurnArgs(
-                min_turns=self.min_turns,
-                max_turns=self.max_turns if self.max_turns is not None else 5,
-            )
-        elif (_min_turns_set or _max_turns_set) and self.multi_turn_args is not None:
-            # Merge top-level values into existing multi_turn_args when not already overridden
-            warnings.warn(
-                'Both top-level --min-turns/--max-turns and --multi-turn-args are set. '
-                'Values in --multi-turn-args take precedence.',
-                UserWarning,
-                stacklevel=2,
-            )
 
         # Set the default headers
         self.headers = self.headers or {}  # Default to empty dictionary
@@ -609,11 +586,12 @@ def add_argument(parser: argparse.ArgumentParser):
         default=None,
         dest='multi_turn_args',
         help=(
-            'Advanced multi-turn conversation parameters as a JSON string. '
-            'Example: \'{"min_turns": 1, "max_turns": 5, "first_turn_length": 65000, '
-            '"subsequent_turn_length": 500, "max_context_length": 75000, '
-            '"chars_per_token": 3.0, "offset": 0}\'. '
-            'Supports IntOrRange for length fields, e.g. "first_turn_length": [60000, 70000].'
+            'Advanced multi-turn conversation parameters for swe_smith (live construction) '
+            'as a JSON string. '
+            'Example: \'{"first_turn_length": 65000, "subsequent_turn_length": 500, '
+            '"max_context_length": 75000, "chars_per_token": 3.0}\'. '
+            'Supports IntOrRange for length fields, e.g. "first_turn_length": [60000, 70000]. '
+            'Note: min_turns and max_turns are top-level --min-turns / --max-turns arguments.'
         ),
     )
     # yapf: enable
