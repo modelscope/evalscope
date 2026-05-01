@@ -492,13 +492,14 @@ class TestPerf(unittest.TestCase):
         from evalscope.perf.arguments import Arguments
         task_cfg = Arguments(
             parallel=2,
-            number=5,
+            number=8,
             model='qwen-plus',
             url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
             api_key=env.get('DASHSCOPE_API_KEY'),
             api='openai',
             dataset='share_gpt_zh_multi_turn',
             multi_turn=True,
+            max_tokens=128,
             max_turns=4,
         )
         result = run_perf_benchmark(task_cfg)

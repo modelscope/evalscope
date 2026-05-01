@@ -156,32 +156,7 @@ class RandomMultiTurnDatasetPlugin(RandomDatasetPlugin):
 
 
 class ShareGPTMultiTurnBase(ShareGPTDatasetPluginBase):
-    """ShareGPT plugin that preserves the full user+assistant alternation.
-
-    Unlike the standard ``ShareGPTDatasetPluginBase``, this plugin does NOT
-    strip the trailing assistant turn.  The full conversation is yielded so
-    that the multi-turn benchmark runner can:
-
-    1. Correctly count user turns and respect ``max_turns`` limits.
-    2. (Future) Optionally replay dataset assistant turns as seeded history.
-
-    In the current implementation the runner discards all dataset assistant
-    turns and accumulates only the model's real responses as conversation
-    history.
-
-    ``args.max_turns`` limits how many *user* turns to include.  If
-    ``max_turns`` is set to N, only the first N user turns (and their
-    preceding assistant replies) are included.
-
-    Note on assistant messages in the yielded conversation
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    The assistant messages from the dataset are included in the yielded
-    conversation list for completeness, but the benchmark runner
-    (``conversation_worker``) always discards them via ``_extract_user_turns``
-    and uses the model's **real** output to build the growing context.  The
-    reference assistant content in the dataset is therefore never sent to the
-    model as history; only actual model responses are accumulated.
-    """
+    """ShareGPT plugin that preserves the full user+assistant alternation."""
 
     def _convert_to_openai_messages_full(self, conversation: List[Dict]) -> List[Messages]:
         """Convert swift/sharegpt format to a list of per-turn delta Messages.

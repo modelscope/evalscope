@@ -45,10 +45,14 @@ class BenchmarkData:
     # --- Multi-turn specific (only populated in multi-turn benchmark mode) ---
     input_num_turns: int = 0
     """Number of user turns in the conversation context when this request was sent."""
-    approx_cached_percent: float = 0.0
-    """Estimated KV cache hit rate: history_prompt_tokens / total_prompt_tokens * 100."""
     real_cached_tokens: Optional[int] = None
     """Real cached token count from server response usage.prompt_tokens_details.cached_tokens."""
+    cached_tokens: Optional[int] = None
+    """Absolute number of KV-cached tokens for this turn.
+    Preferred source for cache hit rate aggregation.
+    Priority: real_cached_tokens (server-reported) > estimated (prev_prompt + prev_completion).
+    Turn 1 is always 0 (no prior context), contributing 0 to the numerator but
+    still counted in the denominator so the global ratio is unbiased."""
 
     # --- Speculative decoding specific ---
     decoded_tokens_per_iter: float = 0.0
@@ -136,8 +140,14 @@ class MetricsAccumulator:
 
     # --- Multi-turn cumulative sums ---
     total_input_turns: int = 0
-    total_cached_percent: float = 0.0
-    n_cached_samples: int = 0
+    # Token-level accumulators for unbiased global cache hit rate.
+    # total_cached_tokens: sum of cached_tokens across all turns (incl. turn 1 = 0).
+    # total_prompt_tokens_for_cache: sum of prompt_tokens for turns that have
+    # cached_tokens set (i.e. multi-turn turns).  Kept separate from
+    # total_prompt_tokens so single-turn requests don't pollute the ratio.
+    total_cached_tokens: int = 0
+    total_prompt_tokens_for_cache: int = 0  # denominator: prompt_tokens of turns with cached_tokens set
+    n_cache_turns: int = 0  # number of turns contributing to the cache ratio
 
     # --- Speculative decoding cumulative sums ---
     total_decoded_tokens_per_iter: float = 0.0
@@ -181,9 +191,13 @@ class MetricsAccumulator:
             # Multi-turn specific
             if data.input_num_turns > 0:
                 self.total_input_turns += data.input_num_turns
-            if data.approx_cached_percent > 0:
-                self.total_cached_percent += data.approx_cached_percent
-                self.n_cached_samples += 1
+            # Token-level cache accumulator: include *every* turn that has
+            # cached_tokens set (turn 1 contributes 0 to numerator but its
+            # prompt_tokens still count in the denominator).
+            if data.cached_tokens is not None and data.prompt_tokens:
+                self.total_cached_tokens += data.cached_tokens
+                self.total_prompt_tokens_for_cache += data.prompt_tokens
+                self.n_cache_turns += 1
 
             # Speculative decoding specific
             # Only count samples where L > 1 (genuine speculative decoding acceleration).
@@ -234,8 +248,13 @@ class MetricsAccumulator:
             avg_output_token_throughput = _safe_div(self.total_completion_tokens, t)
             avg_total_token_throughput = _safe_div(self.total_prompt_tokens + self.total_completion_tokens, t)
             avg_turns_per_request = (_safe_div(self.total_input_turns, n) if self.total_input_turns > 0 else -1)
+            # Unbiased global KV-cache hit rate:
+            # total_cached_tokens / total_prompt_tokens_for_cache
+            # (includes turn 1 which contributes 0 cached tokens but still
+            # counts in the denominator, so the ratio is not inflated).
             avg_cached_percent = (
-                _safe_div(self.total_cached_percent, self.n_cached_samples) if self.n_cached_samples > 0 else -1
+                _safe_div(self.total_cached_tokens
+                          * 100.0, self.total_prompt_tokens_for_cache, default=-1) if self.n_cache_turns > 0 else -1
             )
             avg_decoded_tokens_per_iter = (
                 _safe_div(self.total_decoded_tokens_per_iter, self.n_decoded_samples)
@@ -379,7 +398,9 @@ class BenchmarkMetrics:
         result = {}
         if self.avg_turns_per_request > 0:
             result[Metrics.AVERAGE_INPUT_TURNS_PER_REQUEST] = round(self.avg_turns_per_request, r)
-        if self.avg_cached_percent > 0:
+        # Emit whenever multi-turn cache tracking was active (avg_cached_percent >= 0).
+        # -1 means "not applicable" (no multi-turn data); 0 means active but no cache hits.
+        if self.avg_cached_percent >= 0:
             result[Metrics.AVERAGE_CACHED_PERCENT] = round(self.avg_cached_percent, r)
         return result
 

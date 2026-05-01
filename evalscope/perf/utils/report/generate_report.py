@@ -159,7 +159,7 @@ def _build_recommendations(runs: list) -> List[str]:
         return []
 
     recs: List[str] = []
-    sorted_runs = sorted(runs, key=lambda r: r.parallel)
+    sorted_runs = sorted(runs, key=lambda r: r.sort_key)
     rps_values = [r.summary.request_throughput for r in sorted_runs]
 
     if len(rps_values) >= 2:

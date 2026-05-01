@@ -12,43 +12,10 @@ This plugin supports two data-source modes:
    conversations on-the-fly using the core logic ported from
    ``build_dataset.py``.  Requires ``args.tokenizer_path`` for accurate token
    counting; falls back to ``chars_per_token`` estimation otherwise.
-
-Dataset format loaded from JSON
---------------------------------
-The ``agentic_dataset.json`` structure::
-
-    {
-        "metadata": {...},
-        "conversations": [
-            [  # conversation 0
-                {"messages": [...], "prompt_tokens": 65432, "output_tokens": 300},
-                {"messages": [...], "prompt_tokens": 66100, "output_tokens": 300},
-            ],
-            ...
-        ]
-    }
-
-Each turn's ``messages`` list contains only the **delta** messages to append
-for that turn (not the full history).  The benchmark runner accumulates the
-full context by prepending previous turns + model responses.
-
-Plugin output format
---------------------
-``build_messages()`` yields each conversation as a flat ``List[Dict]``
-representing the full message sequence (all turns joined), compatible with
-the multi-turn benchmark runner::
-
-    [
-        {'role': 'user', 'content': '...'},     # turn 1 message(s)
-        {'role': 'user', 'content': '...'},     # turn 2 delta
-        ...
-    ]
-
-The runner re-sends the growing context; the assistant responses produced
-by the model fill the gaps between delta turns at runtime.
 """
 
 import json
+import numpy as np
 from typing import Any, Dict, Iterator, List, Optional
 
 from evalscope.perf.arguments import Arguments
@@ -412,8 +379,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
             f'({skipped_short} too short, {skipped_parse} parse error)'
         )
 
-        import random
-        random.shuffle(candidates)
+        np.random.shuffle(candidates)
 
         # Apply offset
         if offset > 0:
