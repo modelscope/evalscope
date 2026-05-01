@@ -9,22 +9,26 @@ This plugin supports two data-source modes:
 
 2. **Live construction** (``args.dataset_path`` is ``None``):
    Pull the raw SWE-smith-trajectories dataset from ModelScope and construct
-   conversations on-the-fly using the core logic ported from
-   ``build_dataset.py``.  Requires ``args.tokenizer_path`` for accurate token
-   counting; falls back to ``chars_per_token`` estimation otherwise.
+   conversations in parallel using ``multiprocessing.Pool``.  Requires
+   ``args.tokenizer_path`` for accurate token counting; falls back to
+   ``chars_per_token`` estimation otherwise.
 
    The entire dataset is scanned once and all trajectories that pass the
    character-length pre-filter are collected as candidates.  Candidates are
-   then shuffled and processed one by one until ``number`` valid conversations
-   have been built.  Each conversation must satisfy the strict turn-count
-   formula (same as the offline build script) to ensure that the token
-   distribution of every conversation matches the configured parameters.
+   then shuffled, and for each candidate the IntOrRange token-length params are
+   sampled in the main process.  All work items are dispatched to a
+   ``multiprocessing.Pool`` (size ``multi_turn_args.num_workers``); results are
+   collected until ``number`` valid conversations have been built.  Each
+   conversation must satisfy the strict turn-count formula (same as the offline
+   build script) to ensure that the token distribution of every conversation
+   matches the configured parameters.
 """
 
 import json
+import multiprocessing
 import numpy as np
 from tqdm import tqdm
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase, Message, Messages
@@ -156,6 +160,24 @@ def _accumulate_messages(
 def _make_fake_response(tokenizer, num_tokens: int) -> str:
     """Generate a fake response by decoding num_tokens token IDs."""
     return tokenizer.decode(list(range(1000, 1000 + num_tokens)), skip_special_tokens=True)
+
+
+def _build_one(args_tuple: Tuple, ) -> Optional[List[Dict]]:
+    """Worker function for multiprocessing.Pool.
+
+    Unpacks a tuple of (messages, tokenizer, first_turn_length,
+    subsequent_turn_length, max_context_length, output_length) and calls
+    _build_conversation.
+    """
+    messages, tokenizer, first_turn_length, subsequent_turn_length, max_context_length, output_length = args_tuple
+    return _build_conversation(
+        messages,
+        tokenizer,
+        first_turn_length,
+        subsequent_turn_length,
+        max_context_length,
+        output_length,
+    )
 
 
 def _build_conversation(
@@ -390,30 +412,58 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
         if offset > 0:
             candidates = candidates[offset:] + candidates[:offset]
 
-        # Build conversations one-by-one; sample IntOrRange params PER conversation
-        # so that different conversations can have different token-length targets.
-        built = 0
+        # Pre-sample IntOrRange params PER candidate in the main process so that
+        # different conversations can have different token-length targets, then
+        # build all conversations in parallel using multiprocessing.Pool.
+        work_items = []
         for messages in candidates:
-            if built >= target_count:
-                break
             sampled = self.get_sampled_multi_turn_params()
-            first_turn_length = sampled.get('first_turn_length', 65000)
-            subsequent_turn_length = sampled.get('subsequent_turn_length', 500)
-            max_context_length = sampled.get('max_context_length', 75000)
-
-            conversation = _build_conversation(
+            work_items.append((
                 messages,
                 self.tokenizer,
-                first_turn_length,
-                subsequent_turn_length,
-                max_context_length,
+                sampled.get('first_turn_length', 65000),
+                sampled.get('subsequent_turn_length', 500),
+                sampled.get('max_context_length', 75000),
                 output_length,
-            )
-            if conversation is None:
-                continue
+            ))
 
+        num_workers = mt_args.num_workers if mt_args else 1
+        logger.info(
+            f'Building up to {target_count} conversations from {len(work_items)} candidates '
+            f'using {num_workers} worker(s)...'
+        )
+
+        conversations: List[List[Messages]] = []
+        skipped_build = 0
+
+        if num_workers > 1:
+            with multiprocessing.Pool(num_workers) as pool:
+                with tqdm(total=target_count, desc='Building conversations') as pbar:
+                    for conv in pool.imap(_build_one, work_items):
+                        if conv is None:
+                            skipped_build += 1
+                        else:
+                            conversations.append(conv)
+                            pbar.update(1)
+                        if len(conversations) >= target_count:
+                            pool.terminate()
+                            break
+        else:
+            with tqdm(total=target_count, desc='Building conversations') as pbar:
+                for work_item in work_items:
+                    conv = _build_one(work_item)
+                    if conv is None:
+                        skipped_build += 1
+                    else:
+                        conversations.append(conv)
+                        pbar.update(1)
+                    if len(conversations) >= target_count:
+                        break
+
+        logger.info(f'Built {len(conversations)} conversations '
+                    f'({skipped_build} skipped during build)')
+
+        for conversation in conversations:
             # Each turn's delta is the Messages for that turn.
             turns: List[Messages] = [turn.get('messages', []) for turn in conversation]
-
-            built += 1
             yield turns

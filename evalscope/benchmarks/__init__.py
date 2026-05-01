@@ -26,10 +26,3 @@ for file_path in files:
         end_time = time.perf_counter()
 
         import_times.append((full_path, end_time - start_time))
-
-# Sort by import time in descending order
-import_times.sort(key=lambda x: x[1], reverse=True)
-
-# Log the sorted import times
-for module, duration in import_times:
-    logger.debug(f'Module {module} imported in {duration:.6f} seconds')
