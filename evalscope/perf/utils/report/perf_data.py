@@ -65,7 +65,7 @@ class RunLoader:
             if run is not None:
                 runs.append(run)
 
-        return sorted(runs, key=lambda r: (r.parallel, r.number))
+        return sorted(runs, key=lambda r: (r.sort_key, r.number))
 
     # ── Private helpers ────────────────────────────────────────────────────
 
@@ -83,20 +83,25 @@ class RunLoader:
         m_parallel = _PARALLEL_RE.match(dir_name)
         m_rate = _RATE_RE.match(dir_name)
         if m_parallel:
-            parallel, number = int(m_parallel.group(1)), int(m_parallel.group(2))
+            parallel = int(m_parallel.group(1))
+            number = int(m_parallel.group(2))
+            rate = None
         elif m_rate:
-            # open-loop mode: encode rate*1000 as a synthetic "parallel" key so
-            # that the existing (parallel, number) sort order stays meaningful.
-            parallel = round(float(m_rate.group(1)) * 1000)
+            # open-loop mode: parallel has no meaningful value; use 0 as a
+            # placeholder.  The real ordering key is the rate field.
+            parallel = 0
             number = int(m_rate.group(2))
+            rate = float(m_rate.group(1))
         else:
             parallel = summary.concurrency
             number = summary.total_requests
+            rate = None
 
         return RunData(
             dir_name=dir_name,
             parallel=parallel,
             number=number,
+            rate=rate,
             summary=summary,
             percentiles=percentiles,
             args=args,

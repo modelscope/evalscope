@@ -564,7 +564,9 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
 
             if avg_turns is not None and avg_turns > 0:
                 has_turns = True
-            if avg_cache is not None and avg_cache > 0:
+            # Show cache column whenever cache tracking was active (>= 0 means multi-turn data present).
+            # None means no multi-turn data; -1 is also treated as N/A.
+            if avg_cache is not None and avg_cache >= 0:
                 has_cache = True
             if decode_tps is not None and decode_tps > 0:
                 has_decode_tps = True
@@ -579,7 +581,7 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
                 ReqMetCol.AVG_OUT.key: (f'{avg_out:.1f}' if avg_out is not None else 'N/A'),
                 ReqMetCol.P99_OUT.key: (f'{p99_out:.1f}' if p99_out is not None else 'N/A'),
                 ReqMetCol.AVG_TURNS.key: (f'{avg_turns:.2f}' if (avg_turns is not None and avg_turns > 0) else None),
-                ReqMetCol.AVG_CACHE.key: (f'{avg_cache:.1f}%' if (avg_cache is not None and avg_cache > 0) else None),
+                ReqMetCol.AVG_CACHE.key: (f'{avg_cache:.1f}%' if (avg_cache is not None and avg_cache >= 0) else None),
                 ReqMetCol.DECODE_TPS.key: (f'{decode_tps:.2f}' if decode_tps is not None else None),
                 ReqMetCol.AVG_DECODED.key: (
                     f'{avg_decoded:.2f}' if (avg_decoded is not None and avg_decoded > 0) else None

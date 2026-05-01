@@ -47,7 +47,7 @@ var I18N = {
     'card.recommendations':   'Performance Recommendations',
     'card.run_summary':       'Run Summary',
     'card.percentile_dist':   'Percentile Distribution',
-    'card.percentile_curves': 'Percentile Curves',
+    'card.percentile_curves': 'Percentile Curves — Latency',
     'card.percentile_curves_token_lat': 'Percentile Curves — TTFT / TPOT / ITL',
     'card.per_request':       'Per-Request Details',
 

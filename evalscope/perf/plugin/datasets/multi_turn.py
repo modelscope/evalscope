@@ -63,15 +63,9 @@ class RandomMultiTurnDatasetPlugin(RandomDatasetPlugin):
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
 
-        # Read min/max_turns from multi_turn_args if set, otherwise fall back
-        # to top-level fields for backward compatibility.
-        mt_args = query_parameters.multi_turn_args
-        if mt_args is not None:
-            self.min_turns_per_conv = max(1, mt_args.min_turns)
-            self.max_turns_per_conv = mt_args.max_turns
-        else:
-            self.min_turns_per_conv = max(1, query_parameters.min_turns)
-            self.max_turns_per_conv = query_parameters.max_turns
+        # Read min/max_turns from top-level Arguments fields.
+        self.min_turns_per_conv = max(1, query_parameters.min_turns)
+        self.max_turns_per_conv = query_parameters.max_turns
 
         if self.max_turns_per_conv is None:
             raise ValueError(
@@ -156,32 +150,7 @@ class RandomMultiTurnDatasetPlugin(RandomDatasetPlugin):
 
 
 class ShareGPTMultiTurnBase(ShareGPTDatasetPluginBase):
-    """ShareGPT plugin that preserves the full user+assistant alternation.
-
-    Unlike the standard ``ShareGPTDatasetPluginBase``, this plugin does NOT
-    strip the trailing assistant turn.  The full conversation is yielded so
-    that the multi-turn benchmark runner can:
-
-    1. Correctly count user turns and respect ``max_turns`` limits.
-    2. (Future) Optionally replay dataset assistant turns as seeded history.
-
-    In the current implementation the runner discards all dataset assistant
-    turns and accumulates only the model's real responses as conversation
-    history.
-
-    ``args.max_turns`` limits how many *user* turns to include.  If
-    ``max_turns`` is set to N, only the first N user turns (and their
-    preceding assistant replies) are included.
-
-    Note on assistant messages in the yielded conversation
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    The assistant messages from the dataset are included in the yielded
-    conversation list for completeness, but the benchmark runner
-    (``conversation_worker``) always discards them via ``_extract_user_turns``
-    and uses the model's **real** output to build the growing context.  The
-    reference assistant content in the dataset is therefore never sent to the
-    model as history; only actual model responses are accumulated.
-    """
+    """ShareGPT plugin that preserves the full user+assistant alternation."""
 
     def _convert_to_openai_messages_full(self, conversation: List[Dict]) -> List[Messages]:
         """Convert swift/sharegpt format to a list of per-turn delta Messages.
@@ -195,13 +164,8 @@ class ShareGPTMultiTurnBase(ShareGPTDatasetPluginBase):
             assistant content is discarded; the benchmark runner fills the
             gaps with real model responses.
         """
-        # Read max_turns from multi_turn_args if set, otherwise fall back
-        # to top-level field for backward compatibility.
-        mt_args = self.query_parameters.multi_turn_args
-        if mt_args is not None:
-            max_turns = mt_args.max_turns
-        else:
-            max_turns = self.query_parameters.max_turns
+        # Read max_turns from top-level Arguments field.
+        max_turns = self.query_parameters.max_turns
         turns: List[Messages] = []
         user_turn_count = 0
 

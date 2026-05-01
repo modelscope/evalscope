@@ -347,7 +347,19 @@ class RequestRecord(BaseModel):
 
 
 class RunData(BaseModel):
-    """All data for a single benchmark run (one parallel_X_number_Y directory)."""
+    """All data for a single benchmark run (one parallel_X_number_Y directory).
+
+    Two run modes are supported:
+
+    * **closed-loop** (``parallel_<N>_number_<M>``): ``parallel`` holds the
+      real concurrency value; ``rate`` is ``None``.
+    * **open-loop** (``rate_<R>_number_<M>``): ``parallel`` is set to ``0``
+      (placeholder – no fixed concurrency); ``rate`` holds the real request
+      rate in req/s.
+
+    Use :attr:`sort_key` instead of ``parallel`` whenever you need a
+    meaningful ordering that works correctly for both modes.
+    """
 
     dir_name: str
     parallel: int
@@ -356,12 +368,33 @@ class RunData(BaseModel):
     percentiles: PercentileResult
     args: Dict[str, Any] = Field(default_factory=dict)
     requests: List[RequestRecord] = Field(default_factory=list)
+    # open-loop mode: the target request rate (req/s); None for closed-loop.
+    rate: Optional[float] = Field(default=None)
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # -----------------------------------------------------------------------
     # Derived properties
     # -----------------------------------------------------------------------
+
+    @property
+    def is_open_loop(self) -> bool:
+        """Return ``True`` when this run used open-loop (rate) mode."""
+        return self.rate is not None
+
+    @property
+    def sort_key(self) -> float:
+        """Comparable key for ordering runs within a sweep.
+
+        * open-loop  → real request rate (req/s) as a float
+        * closed-loop → concurrency (``parallel``) cast to float
+
+        Using this instead of ``parallel`` avoids the old ``rate * 1000``
+        integer hack and guarantees correct ordering for both modes.
+        """
+        if self.is_open_loop:
+            return float(self.rate)  # type: ignore[arg-type]
+        return float(self.parallel)
 
     @property
     def name(self) -> str:

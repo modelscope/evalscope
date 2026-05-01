@@ -9,47 +9,26 @@ This plugin supports two data-source modes:
 
 2. **Live construction** (``args.dataset_path`` is ``None``):
    Pull the raw SWE-smith-trajectories dataset from ModelScope and construct
-   conversations on-the-fly using the core logic ported from
-   ``build_dataset.py``.  Requires ``args.tokenizer_path`` for accurate token
-   counting; falls back to ``chars_per_token`` estimation otherwise.
+   conversations in parallel using ``multiprocessing.Pool``.  Requires
+   ``args.tokenizer_path`` for accurate token counting; falls back to
+   ``chars_per_token`` estimation otherwise.
 
-Dataset format loaded from JSON
---------------------------------
-The ``agentic_dataset.json`` structure::
-
-    {
-        "metadata": {...},
-        "conversations": [
-            [  # conversation 0
-                {"messages": [...], "prompt_tokens": 65432, "output_tokens": 300},
-                {"messages": [...], "prompt_tokens": 66100, "output_tokens": 300},
-            ],
-            ...
-        ]
-    }
-
-Each turn's ``messages`` list contains only the **delta** messages to append
-for that turn (not the full history).  The benchmark runner accumulates the
-full context by prepending previous turns + model responses.
-
-Plugin output format
---------------------
-``build_messages()`` yields each conversation as a flat ``List[Dict]``
-representing the full message sequence (all turns joined), compatible with
-the multi-turn benchmark runner::
-
-    [
-        {'role': 'user', 'content': '...'},     # turn 1 message(s)
-        {'role': 'user', 'content': '...'},     # turn 2 delta
-        ...
-    ]
-
-The runner re-sends the growing context; the assistant responses produced
-by the model fill the gaps between delta turns at runtime.
+   The entire dataset is scanned once and all trajectories that pass the
+   character-length pre-filter are collected as candidates.  Candidates are
+   then shuffled, and for each candidate the IntOrRange token-length params are
+   sampled in the main process.  All work items are dispatched to a
+   ``multiprocessing.Pool`` (size ``multi_turn_args.num_workers``); results are
+   collected until ``number`` valid conversations have been built.  Each
+   conversation must satisfy the strict turn-count formula (same as the offline
+   build script) to ensure that the token distribution of every conversation
+   matches the configured parameters.
 """
 
 import json
-from typing import Any, Dict, Iterator, List, Optional
+import multiprocessing
+import numpy as np
+from tqdm import tqdm
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase, Message, Messages
@@ -183,6 +162,24 @@ def _make_fake_response(tokenizer, num_tokens: int) -> str:
     return tokenizer.decode(list(range(1000, 1000 + num_tokens)), skip_special_tokens=True)
 
 
+def _build_one(args_tuple: Tuple, ) -> Optional[List[Dict]]:
+    """Worker function for multiprocessing.Pool.
+
+    Unpacks a tuple of (messages, tokenizer, first_turn_length,
+    subsequent_turn_length, max_context_length, output_length) and calls
+    _build_conversation.
+    """
+    messages, tokenizer, first_turn_length, subsequent_turn_length, max_context_length, output_length = args_tuple
+    return _build_conversation(
+        messages,
+        tokenizer,
+        first_turn_length,
+        subsequent_turn_length,
+        max_context_length,
+        output_length,
+    )
+
+
 def _build_conversation(
     messages: List[Dict[str, str]],
     tokenizer,
@@ -193,8 +190,12 @@ def _build_conversation(
 ) -> Optional[List[Dict]]:
     """Build a multi-turn conversation from trajectory messages.
 
-    Returns a list of turn dicts (``{"messages": [...], "prompt_tokens": int,
-    "output_tokens": int}``), or ``None`` if the trajectory is too short.
+    The number of turns is determined entirely by the token-length parameters:
+    the conversation grows until adding another turn would exceed
+    ``max_context_length``.  Returns a list of turn dicts
+    (``{"messages": [...], "prompt_tokens": int, "output_tokens": int}``),
+    or ``None`` if the trajectory is too short to satisfy the strict turn-count
+    formula.
     """
     turns = []
     accumulated: List[Dict] = []
@@ -273,6 +274,12 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
       on-the-fly.  Token-length parameters are taken from ``multi_turn_args``
       (supports range sampling via seed) or sensible defaults.
 
+    The number of turns per conversation is determined by the token-length
+    parameters (``first_turn_length``, ``subsequent_turn_length``,
+    ``max_context_length``, ``--max-tokens``) — NOT by ``--min-turns`` /
+    ``--max-turns``.  Those top-level turn-count flags are ignored for
+    ``swe_smith``.
+
     Parameters from ``multi_turn_args`` that affect live construction:
 
     * ``first_turn_length``   – target tokens for turn 1 (IntOrRange)
@@ -280,7 +287,6 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
     * ``max_context_length``  – max total context tokens (IntOrRange)
     * ``chars_per_token``     – pre-filter estimate (no tokenizer fallback)
     * ``offset``              – shuffle offset to avoid cache hits
-    * ``max_turns``           – max user turns to include per conversation
     """
 
     def __init__(self, query_parameters: Arguments):
@@ -314,25 +320,16 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
             logger.warning(f'No conversations found in {dataset_path}')
             return
 
-        # Apply offset: shuffle conversations deterministically before slicing
-        mt_args = self.query_parameters.multi_turn_args
+        # Apply offset: rotate conversations list before cycling
         offset = self.query_parameters.dataset_offset
         if offset > 0:
             conversations = conversations[offset:] + conversations[:offset]
 
-        # Determine max_turns cap
-        max_turns = mt_args.max_turns if mt_args else None
-
-        logger.info(f'Loaded {len(conversations)} conversations '
-                    f'(offset={offset}, max_turns={max_turns})')
+        logger.info(f'Loaded {len(conversations)} conversations (offset={offset})')
 
         for conversation in conversations:
             # Each turn's "messages" list is already the delta (non-assistant).
             turns: List[Messages] = [turn.get('messages', []) for turn in conversation]
-
-            # Apply max_turns truncation at the dataset layer
-            if max_turns is not None:
-                turns = turns[:max_turns]
 
             if turns:
                 yield turns
@@ -355,8 +352,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
         # Read static / non-sampleable params directly
         chars_per_token = mt_args.chars_per_token if mt_args else 3.0
         offset = self.query_parameters.dataset_offset
-        min_turns = mt_args.min_turns if mt_args else 1
-        max_turns = mt_args.max_turns if mt_args else 5
+        scan_multiplier = mt_args.scan_multiplier if mt_args else 50
         output_length = self.query_parameters.max_tokens or 300
 
         # For pre-filtering, use the upper bound of max_context_length so that
@@ -370,25 +366,23 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
             max_ctx_upper = 75000
 
         logger.info(
-            f'Live construction: offset={offset}, min_turns={min_turns}, max_turns={max_turns}, '
-            f'output_length={output_length}, max_ctx_upper={max_ctx_upper}'
+            f'Live construction: offset={offset}, output_length={output_length}, '
+            f'max_ctx_upper={max_ctx_upper}, scan_multiplier={scan_multiplier}'
         )
 
         from modelscope import MsDataset
         dataset = MsDataset.load(_DEFAULT_DATASET_NAME, split=_DEFAULT_SPLIT)
 
         target_count = max(1, self.query_parameters.number)
-        # Scan at most scan_multiplier × target_count rows; _build_conversation has a
-        # ~50 % pass rate so 20× gives a comfortable safety margin.
-        scan_multiplier = 20
-        max_scan = target_count * scan_multiplier
+        max_scan = target_count * scan_multiplier if scan_multiplier > 0 else None
 
         min_chars = int(max_ctx_upper * chars_per_token)
         candidates = []
         skipped_short = 0
         skipped_parse = 0
 
-        for row in dataset:
+        rows = tqdm(dataset, desc='Scanning dataset', unit='row')
+        for row in rows:
             raw_messages = row.get('messages', '') if isinstance(row, dict) else row['messages']
             if len(raw_messages) < min_chars:
                 skipped_short += 1
@@ -403,7 +397,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
                 skipped_short += 1
                 continue
             candidates.append(messages)
-            if len(candidates) >= max_scan:
+            if max_scan is not None and len(candidates) >= max_scan:
                 logger.info(f'Reached scan limit ({max_scan}), stopping dataset scan early.')
                 break
 
@@ -412,42 +406,64 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
             f'({skipped_short} too short, {skipped_parse} parse error)'
         )
 
-        import random
-        random.shuffle(candidates)
+        np.random.shuffle(candidates)
 
         # Apply offset
         if offset > 0:
             candidates = candidates[offset:] + candidates[:offset]
 
-        # Build conversations one-by-one; sample IntOrRange params PER conversation
-        # so that different conversations can have different token-length targets.
-        built = 0
+        # Pre-sample IntOrRange params PER candidate in the main process so that
+        # different conversations can have different token-length targets, then
+        # build all conversations in parallel using multiprocessing.Pool.
+        work_items = []
         for messages in candidates:
-            if built >= target_count:
-                break
             sampled = self.get_sampled_multi_turn_params()
-            first_turn_length = sampled.get('first_turn_length', 65000)
-            subsequent_turn_length = sampled.get('subsequent_turn_length', 500)
-            max_context_length = sampled.get('max_context_length', 75000)
-
-            conversation = _build_conversation(
+            work_items.append((
                 messages,
                 self.tokenizer,
-                first_turn_length,
-                subsequent_turn_length,
-                max_context_length,
+                sampled.get('first_turn_length', 65000),
+                sampled.get('subsequent_turn_length', 500),
+                sampled.get('max_context_length', 75000),
                 output_length,
-            )
-            if conversation is None:
-                continue
+            ))
 
+        num_workers = mt_args.num_workers if mt_args else 1
+        logger.info(
+            f'Building up to {target_count} conversations from {len(work_items)} candidates '
+            f'using {num_workers} worker(s)...'
+        )
+
+        conversations: List[List[Messages]] = []
+        skipped_build = 0
+
+        if num_workers > 1:
+            with multiprocessing.Pool(num_workers) as pool:
+                with tqdm(total=target_count, desc='Building conversations') as pbar:
+                    for conv in pool.imap(_build_one, work_items):
+                        if conv is None:
+                            skipped_build += 1
+                        else:
+                            conversations.append(conv)
+                            pbar.update(1)
+                        if len(conversations) >= target_count:
+                            pool.terminate()
+                            break
+        else:
+            with tqdm(total=target_count, desc='Building conversations') as pbar:
+                for work_item in work_items:
+                    conv = _build_one(work_item)
+                    if conv is None:
+                        skipped_build += 1
+                    else:
+                        conversations.append(conv)
+                        pbar.update(1)
+                    if len(conversations) >= target_count:
+                        break
+
+        logger.info(f'Built {len(conversations)} conversations '
+                    f'({skipped_build} skipped during build)')
+
+        for conversation in conversations:
             # Each turn's delta is the Messages for that turn.
             turns: List[Messages] = [turn.get('messages', []) for turn in conversation]
-
-            # Apply max_turns truncation at the dataset layer
-            if max_turns is not None:
-                turns = turns[:max_turns]
-
-            if len(turns) >= min_turns:
-                built += 1
-                yield turns
+            yield turns
