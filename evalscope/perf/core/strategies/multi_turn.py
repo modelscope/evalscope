@@ -19,7 +19,9 @@ class MultiTurnStrategy(BenchmarkStrategy):
 
     Each worker owns one active conversation at a time and progresses through
     its turns sequentially.  Workers cycle through ``all_conversations`` until
-    ``args.number`` conversations have been completed.
+    ``args.number`` conversations have been started (attempted).  A conversation
+    that is abandoned mid-way due to a failed turn still counts toward this
+    budget; only degenerate empty conversations are excluded.
 
     Open-loop mode is intentionally **not** supported for multi-turn
     conversations.  The fundamental reason is that open-loop semantics require
@@ -73,12 +75,17 @@ class MultiTurnStrategy(BenchmarkStrategy):
             context: List[Message] = []
             prev_prompt_tokens: int = 0
             prev_completion_tokens: int = 0
+            total_turns = len(conversation)
 
             for turn_idx, turn_delta in enumerate(conversation):
                 # turn_delta: Messages – the delta to append for this turn
 
                 # Respect per-conversation max_turns.
                 if self.args.max_turns is not None and turn_idx >= self.args.max_turns:
+                    # Mark the last successfully enqueued turn as conversation-final.
+                    # The turn at turn_idx was never sent, so turn_idx-1 was the last.
+                    # Nothing to mark here; the previous iteration already set is_last_turn
+                    # via the look-ahead below if it was the effective last turn.
                     break
 
                 # Append this turn's delta to the growing context.
@@ -131,7 +138,18 @@ class MultiTurnStrategy(BenchmarkStrategy):
                 if benchmark_data.completion_tokens:
                     prev_completion_tokens = benchmark_data.completion_tokens
 
+                # Determine whether this is the last turn of the conversation:
+                # • normal completion: final index in the dataset
+                # • max_turns cap: next iteration would be skipped
+                # • request failure: conversation is abandoned after this turn
+                effective_last = (
+                    turn_idx == total_turns - 1
+                    or (self.args.max_turns is not None and turn_idx + 1 >= self.args.max_turns)
+                    or not benchmark_data.success
+                )
+
                 # Enqueue for metrics collection.
+                benchmark_data.is_last_turn = effective_last
                 await self.queue.put(benchmark_data)
 
                 if not benchmark_data.success:

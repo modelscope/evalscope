@@ -509,8 +509,8 @@ class TestPerf(unittest.TestCase):
         from evalscope.perf.arguments import Arguments
         from evalscope.perf.multi_turn_args import MultiTurnArgs
         task_cfg = Arguments(
-            parallel=[3, 5],
-            number=[3, 5],
+            parallel=[2, 4],
+            number=[4, 8],
             model='qwen-plus',
             url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
             api_key=env.get('DASHSCOPE_API_KEY'),
