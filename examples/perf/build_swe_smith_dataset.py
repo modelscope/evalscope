@@ -1,15 +1,20 @@
 """Build a multi-turn benchmarking dataset from SWE-bench/SWE-smith-trajectories.
 
-Each trajectory is converted into a multi-turn conversation where:
-- Turn 1: accumulate messages until prompt reaches --first-turn-length tokens
-- Subsequent turns: append server response + accumulate messages until prompt grows
-  by --subsequent-turn-length tokens
-- Stop when total context reaches --max-context-length or trajectory is exhausted
+Each trajectory is converted into a multi-turn conversation with exactly --num-turns turns:
+- Turn 1: collect user messages until the prompt reaches --first-turn-length tokens;
+  the last message is truncated if it overshoots.
+- Subsequent turns: collect user messages until the incremental token growth reaches
+  --subsequent-turn-length tokens; truncate the last message if needed.
+- If the trajectory runs out of user messages before all turns are filled, the
+  conversation is discarded (skip).
 
-Each turn stores only the DELTA messages (new messages to append), not the full
-history. At benchmark time, the full prompt is built incrementally:
+Each turn stores only the DELTA user messages for that turn.  At benchmark time the
+runtime accumulates the full history across turns:
     turn_1.messages -> send -> get response ->
-    [response_as_assistant_msg] + turn_2.messages -> send -> ...
+    [actual_server_response] + turn_2.messages -> send -> ...
+
+assistant messages in the source trajectory are ignored entirely; the runtime always
+appends the real server response as the assistant turn.
 
 The dataset can be used with evalscope perf --dataset swe_smith via
 --dataset-path pointing to the generated JSON file.
@@ -17,10 +22,9 @@ The dataset can be used with evalscope perf --dataset swe_smith via
 Usage:
     python examples/perf/build_swe_smith_dataset.py \\
         --model-path Qwen/Qwen2.5-7B-Instruct \\
-        --first-turn-length 8192 \\
-        --subsequent-turn-length 1024 \\
-        --max-context-length 12000 \\
-        --output-length 512 \\
+        --first-turn-length 65000 \\
+        --subsequent-turn-length 500 \\
+        --num-turns 10 \\
         --num-conversations 128 \\
         --output-path agentic_dataset.json \\
         --seed 42 \\
@@ -29,11 +33,16 @@ Usage:
 
 import argparse
 import json
+import logging
 import multiprocessing
 import numpy as np
 import sys
 from tqdm import tqdm
 from typing import Dict, List, Optional, Tuple
+
+from evalscope.utils import get_logger
+
+logger = get_logger()
 
 # Dataset constants (same as swe_smith.py plugin)
 _DEFAULT_DATASET_NAME = 'SWE-bench/SWE-smith-trajectories'
@@ -75,16 +84,11 @@ def parse_args():
         help='Target token growth per subsequent turn (default: 500)',
     )
     parser.add_argument(
-        '--max-context-length',
+        '--num-turns',
         type=int,
-        default=75000,
-        help='Maximum total context length in tokens (default: 75000)',
-    )
-    parser.add_argument(
-        '--output-length',
-        type=int,
-        default=300,
-        help='Output token length for each turn (default: 300)',
+        default=10,
+        help='Number of turns per conversation (default: 10). Trajectories with fewer user '
+             'messages are discarded.',
     )
     parser.add_argument(
         '--num-conversations',
@@ -115,6 +119,13 @@ def parse_args():
         type=int,
         default=None,
         help='Number of parallel workers (default: number of CPU cores)',
+    )
+    parser.add_argument(
+        '--log-level',
+        type=str,
+        default='INFO',
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
+        help='Logging level (default: INFO). Use DEBUG to see per-turn token counts.',
     )
     return parser.parse_args()
 
@@ -154,106 +165,118 @@ def count_tokens_for_messages(messages: List[Dict[str, str]], tokenizer) -> int:
     return len(token_ids)
 
 
-def count_tokens_for_text(text: str, tokenizer) -> int:
-    """Count tokens for a plain text string."""
-    return len(tokenizer.encode(text))
+def _bare_encode(text: str, tokenizer) -> List[int]:
+    """Encode text to token ids without triggering tokenizer WARNING logs.
+
+    Some tokenizers (e.g. Kimi-K2.5) emit a WARNING when called with
+    ``add_special_tokens=False`` via the base-class ``encode``.  We suppress
+    that specific logger to avoid log spam during bulk construction.
+    """
+    import logging
+    tok_logger = logging.getLogger('transformers_modules')
+    prev_level = tok_logger.level
+    tok_logger.setLevel(logging.ERROR)
+    try:
+        ids = tokenizer.encode(text, add_special_tokens=False)
+    finally:
+        tok_logger.setLevel(prev_level)
+    return ids
 
 
 def truncate_message_content(
     message: Dict[str, str],
     tokens_needed: int,
     tokenizer,
-) -> Optional[Dict[str, str]]:
-    """Truncate a message's content to approximately tokens_needed tokens.
+) -> Dict[str, str]:
+    """Truncate a message's content so it occupies at most tokens_needed bare tokens.
 
-    Returns the truncated message, or None if tokens_needed <= 0.
+    Uses raw encode (no chat template) to slice the content token ids, then decodes
+    back to text.  The caller should use count_tokens_for_messages on the full
+    accumulated list for an accurate prompt_tokens value afterwards.
     """
-    if tokens_needed <= 0:
-        return None
-    content_tokens = tokenizer.encode(message['content'], add_special_tokens=False)
+    content_tokens = _bare_encode(message['content'], tokenizer)
     truncated_content = tokenizer.decode(content_tokens[:tokens_needed], skip_special_tokens=True)
     return {'role': message['role'], 'content': truncated_content}
 
 
-def _accumulate_messages(
-    messages: List[Dict[str, str]],
-    msg_idx: int,
-    msg_char_offset: int,
-    current_messages: List[Dict[str, str]],
-    current_tokens: int,
+def _encode_len(text: str, tokenizer) -> int:
+    """Fast bare-text token count (no chat template overhead)."""
+    return len(_bare_encode(text, tokenizer))
+
+
+def collect_until(
+    user_msgs: List[Dict[str, str]],
+    start_idx: int,
     target_tokens: int,
     tokenizer,
-) -> Tuple[List[Dict[str, str]], int, int, int]:
-    """Append messages from the trajectory until reaching target_tokens.
+    accumulated_before: List[Dict[str, str]],
+) -> Tuple[List[Dict[str, str]], int]:
+    """Collect user messages from start_idx until the prompt grows by ~target_tokens.
 
-    Supports partial consumption of large messages: if a message is too long,
-    only the portion needed to reach target_tokens is consumed, and
-    msg_char_offset tracks where to resume in the next call.
+    Uses fast bare-text token counting (no chat template) to estimate the
+    incremental size of each message.  The last message is truncated if it
+    would push the cumulative bare-token count past the target.  The caller
+    is responsible for computing the final accurate prompt_tokens via
+    count_tokens_for_messages after the turn is assembled.
 
-    Rules:
-    - If a message would push past target, truncate it to hit exactly target.
-    - Never end on an assistant message (drop trailing assistant from delta).
+    Args:
+        user_msgs: Full list of user-only messages for this trajectory.
+        start_idx: Index in user_msgs to start collecting from.
+        target_tokens: Desired incremental token growth (bare-token estimate).
+        tokenizer: Tokenizer used for token counting.
+        accumulated_before: Messages already in the prompt before this turn
+                            (used only for the truncation fallback; not tokenized here).
 
     Returns:
-        (delta_messages, new_total_tokens, new_msg_idx, new_msg_char_offset)
+        (delta, new_idx) where delta is the list of collected messages and
+        new_idx is the index of the next unconsumed message.
     """
-    delta = []
+    delta: List[Dict[str, str]] = []
+    accumulated_bare = 0  # running bare-token count of delta messages
+    idx = start_idx
 
-    while msg_idx < len(messages):
-        msg = messages[msg_idx]
-        # If we have a partial offset into this message, use the remainder
-        if msg_char_offset > 0:
-            msg = {'role': msg['role'], 'content': msg['content'][msg_char_offset:]}
-            if not msg['content']:
-                msg_idx += 1
-                msg_char_offset = 0
-                continue
+    while idx < len(user_msgs):
+        msg = user_msgs[idx]
+        msg_bare = _encode_len(msg['content'], tokenizer)
 
-        trial_messages = current_messages + delta + [msg]
-        trial_tokens = count_tokens_for_messages(trial_messages, tokenizer)
-
-        if trial_tokens < target_tokens:
+        if accumulated_bare + msg_bare < target_tokens:
+            # Full message fits – keep it
             delta.append(msg)
-            current_tokens = trial_tokens
-            msg_idx += 1
-            msg_char_offset = 0
+            accumulated_bare += msg_bare
+            idx += 1
         else:
-            # Would meet or exceed target — need to truncate or stop
-            if msg['role'] == 'assistant':
-                # Don't end on assistant, skip it
-                msg_idx += 1
-                msg_char_offset = 0
-                continue
-            if trial_tokens == target_tokens:
-                delta.append(msg)
-                current_tokens = trial_tokens
-                msg_idx += 1
-                msg_char_offset = 0
-            else:
-                # Truncate this message to approximately hit target
-                tokens_needed = target_tokens - current_tokens
-                truncated = truncate_message_content(msg, tokens_needed, tokenizer)
-                if truncated:
-                    delta.append(truncated)
-                    consumed_chars = len(truncated['content'])
-                    original_content = messages[msg_idx]['content']
-                    msg_char_offset = (msg_char_offset or 0) + consumed_chars
-                    if msg_char_offset >= len(original_content):
-                        msg_idx += 1
-                        msg_char_offset = 0
-                else:
-                    msg_idx += 1
-                    msg_char_offset = 0
+            # This message would overshoot – truncate to the remaining budget
+            remaining = target_tokens - accumulated_bare
+            truncated = truncate_message_content(msg, max(1, remaining), tokenizer)
+            delta.append(truncated)
+            idx += 1
             break
 
-    # Ensure we don't end on an assistant message
-    while delta and delta[-1]['role'] == 'assistant':
-        delta.pop()
+    return delta, idx
 
-    if delta:
-        current_tokens = count_tokens_for_messages(current_messages + delta, tokenizer)
 
-    return delta, current_tokens, msg_idx, msg_char_offset
+# Placeholder assistant message used to maintain user/assistant alternation in
+# chat history for accurate token counting.  The actual assistant response is
+# substituted at benchmark time by the runtime.
+_ASSISTANT_PLACEHOLDER = {'role': 'assistant', 'content': ''}
+
+
+def _build_chat_history(accumulated_turns: List[List[Dict[str, str]]]) -> List[Dict[str, str]]:
+    """Reconstruct a valid user/assistant-alternating message list from accumulated turns.
+
+    Each turn is a list of user-role delta messages.  Between turns an empty
+    assistant placeholder is inserted so that ``apply_chat_template`` receives
+    a properly-alternating sequence and returns accurate token counts.
+    """
+    history: List[Dict[str, str]] = []
+    for i, turn_msgs in enumerate(accumulated_turns):
+        history.extend(turn_msgs)
+        # After every turn except the last, insert an assistant placeholder so
+        # the next turn's user messages don't immediately follow without an
+        # assistant reply – this matches the runtime's actual message layout.
+        if i < len(accumulated_turns) - 1:
+            history.append(_ASSISTANT_PLACEHOLDER)
+    return history
 
 
 def build_conversation(
@@ -261,127 +284,70 @@ def build_conversation(
     tokenizer,
     first_turn_length: int,
     subsequent_turn_length: int,
-    max_context_length: int,
-    output_length: int,
+    num_turns: int,
 ) -> Optional[List[Dict]]:
-    """Build a multi-turn conversation from a trajectory's messages.
+    """Build a multi-turn conversation from a trajectory.
 
-    Returns a list of turns, each turn stores only the DELTA messages for that
-    turn (not the full history). At benchmark time, the full prompt is built by
-    concatenating: turn_1.messages + server_resp_1 + turn_2.messages + ...
+    Only user messages from the trajectory are used.  Each turn stores the DELTA
+    user messages for that turn (not the full history).  assistant messages in the
+    source trajectory are skipped entirely – the runtime will substitute the real
+    server response at benchmark time.
 
-    Each turn is:
+    Turn structure:
         {
-            "messages": [...],       # delta messages to append for this turn
-            "prompt_tokens": int,    # total token count of the full prompt at this turn
-            "output_tokens": int,    # expected output token count
+            "messages": [...],   # delta user messages for this turn
+            "prompt_tokens": int # total accumulated prompt token count at this turn
         }
 
-    Returns None if the trajectory is too short.
+    Token counting uses a properly-alternating chat history (user delta messages
+    separated by empty assistant placeholders) so that ``apply_chat_template``
+    returns accurate counts even for tokenizers that require strict alternation.
+
+    Returns None if the trajectory does not have enough user messages to fill
+    all num_turns turns.
     """
-    turns = []
-    accumulated = []  # Full accumulated chat messages (for token counting)
-    msg_idx = 0
-    msg_char_offset = 0  # Partial offset into current message
-    current_tokens = 0
+    # Extract only user messages (tool responses are already normalised to user
+    # by extract_messages; skip system/assistant here).
+    user_msgs = [m for m in messages if m['role'] == 'user']
 
-    # Build first turn
-    delta, current_tokens, msg_idx, msg_char_offset = _accumulate_messages(
-        messages,
-        msg_idx,
-        msg_char_offset,
-        accumulated,
-        current_tokens,
-        first_turn_length,
-        tokenizer,
-    )
-
-    if current_tokens < first_turn_length * 0.8:
+    if not user_msgs:
         return None
 
-    accumulated.extend(delta)
-    turns.append(
-        {
-            'messages': delta,
-            'prompt_tokens': current_tokens,
-            'output_tokens': output_length,
-        }
-    )
+    turns: List[Dict] = []
+    accumulated_turns: List[List[Dict[str, str]]] = []  # per-turn delta lists
 
-    # Pre-generate a fake response that tokenizes to output_length tokens
-    fake_response_text = make_fake_response(tokenizer, output_length)
-
-    # Build subsequent turns
-    while msg_idx < len(messages) and current_tokens + output_length < max_context_length:
-        # Add a fake response for server response to accumulated for accurate token counting
-        # (will be replaced by actual server response at benchmark time)
-        fake_response = {'role': 'assistant', 'content': fake_response_text}
-        accumulated.append(fake_response)
-        current_tokens = count_tokens_for_messages(accumulated, tokenizer)
-
-        if current_tokens + output_length >= max_context_length:
-            break
-
-        # Skip the first assistant message to avoid consecutive assistant
-        # messages (fake server response is already assistant role).
-        # Only skip if we're at a message boundary (not mid-message).
-        if (
-            msg_char_offset == 0
-            and msg_idx < len(messages)
-            and messages[msg_idx]['role'] == 'assistant'
-        ):
-            msg_idx += 1
-
-        if msg_idx >= len(messages):
-            break
-
-        target = current_tokens + subsequent_turn_length
-        if target + output_length > max_context_length:
-            break
-
-        delta, current_tokens, msg_idx, msg_char_offset = _accumulate_messages(
-            messages,
-            msg_idx,
-            msg_char_offset,
-            accumulated,
-            current_tokens,
-            target,
-            tokenizer,
-        )
-
-        if not delta or abs(current_tokens - target) > 5:
-            # Trajectory exhausted or couldn't fill the turn — stop
-            break
-
-        accumulated.extend(delta)
-        turns.append(
-            {
-                'messages': delta,
-                'prompt_tokens': current_tokens,
-                'output_tokens': output_length,
-            }
-        )
-
-    # Expected turns from ideal formula; drift may cost at most one turn.
-    remaining = max_context_length - output_length - first_turn_length
-    step = subsequent_turn_length + output_length
-    expected_turns = 1 + remaining // step
-
-    if len(turns) in (expected_turns, expected_turns - 1):
-        return turns
-    else:
+    # ---- Turn 1 ----
+    logger.debug(f'building turn 1 (target={first_turn_length} tokens) from {len(user_msgs)} user msgs')
+    delta, msg_idx = collect_until(user_msgs, 0, first_turn_length, tokenizer, [])
+    if not delta:
+        logger.debug('turn1 empty, skipping trajectory')
         return None
+    accumulated_turns.append(delta)
+    history = _build_chat_history(accumulated_turns)
+    prompt_tokens = count_tokens_for_messages(history, tokenizer)
+    turns.append({'messages': delta, 'prompt_tokens': prompt_tokens})
+    logger.debug(f'turn1 done: {len(delta)} msgs, {prompt_tokens} prompt_tokens')
 
+    # ---- Turns 2..num_turns ----
+    for turn_idx in range(num_turns - 1):
+        if msg_idx >= len(user_msgs):
+            logger.debug(f'trajectory exhausted at turn {turn_idx + 2}, skipping')
+            return None  # trajectory exhausted before filling all turns
+        # Pass accumulated user messages (without placeholders) for bare-token budget
+        accumulated_flat = [m for turn in accumulated_turns for m in turn]
+        delta, msg_idx = collect_until(
+            user_msgs, msg_idx, subsequent_turn_length, tokenizer, accumulated_flat
+        )
+        if not delta:
+            logger.debug(f'turn {turn_idx + 2} empty, skipping trajectory')
+            return None
+        accumulated_turns.append(delta)
+        history = _build_chat_history(accumulated_turns)
+        prompt_tokens = count_tokens_for_messages(history, tokenizer)
+        turns.append({'messages': delta, 'prompt_tokens': prompt_tokens})
+        logger.debug(f'turn{turn_idx + 2} done: {len(delta)} msgs, {prompt_tokens} prompt_tokens')
 
-def make_fake_response(tokenizer, num_tokens: int) -> str:
-    """Generate a fake response by decoding num_tokens token IDs.
-
-    This approximates what the server produces with ignore_eos=True +
-    max_new_tokens. The decode/encode roundtrip may not be perfectly
-    lossless, but the small difference matches real benchmark behavior
-    where the actual server response is arbitrary generated text.
-    """
-    return tokenizer.decode(list(range(1000, 1000 + num_tokens)), skip_special_tokens=True)
+    return turns
 
 
 def _build_one(args_tuple):
@@ -391,21 +357,23 @@ def _build_one(args_tuple):
         tokenizer,
         first_turn_length,
         subsequent_turn_length,
-        max_context_length,
-        output_length,
+        num_turns,
     ) = args_tuple
     return build_conversation(
         messages,
         tokenizer,
         first_turn_length,
         subsequent_turn_length,
-        max_context_length,
-        output_length,
+        num_turns,
     )
 
 
 def main():
     args = parse_args()
+
+    # Re-configure logger level based on --log-level
+    log_level = getattr(logging, args.log_level.upper(), logging.INFO)
+    get_logger(log_level=log_level, force=True)
 
     np.random.seed(args.seed)
 
@@ -417,11 +385,15 @@ def main():
     from modelscope import MsDataset
     dataset = MsDataset.load(args.dataset_name, split=args.split)
 
-    # Pre-filter: estimate total chars needed for max_context_length
-    min_chars = int(args.max_context_length * args.chars_per_token)
+    # Pre-filter: need enough chars to fill all turns
+    # total ≈ first_turn_length + subsequent_turn_length * (num_turns - 1)
+    min_tokens_estimate = args.first_turn_length + args.subsequent_turn_length * (args.num_turns - 1)
+    min_chars = int(min_tokens_estimate * args.chars_per_token)
     print(
         f'Pre-filtering: require >= {min_chars} chars '
-        f'(~{args.max_context_length} tokens at {args.chars_per_token} chars/token)'
+        f'(~{min_tokens_estimate} tokens = {args.first_turn_length} + '
+        f'{args.subsequent_turn_length} x {args.num_turns - 1} turns, '
+        f'at {args.chars_per_token} chars/token)'
     )
 
     candidates = []
@@ -438,8 +410,8 @@ def main():
         except (json.JSONDecodeError, KeyError, TypeError):
             skipped_parse += 1
             continue
-        # Check total content length
-        total_chars = sum(len(m['content']) for m in messages)
+        # Check total content length of user messages only
+        total_chars = sum(len(m['content']) for m in messages if m['role'] == 'user')
         if total_chars < min_chars:
             skipped_short += 1
             continue
@@ -457,7 +429,7 @@ def main():
         print(
             f'Error: Only {len(candidates)} candidates pass pre-filter, '
             f'but {args.num_conversations} conversations requested. '
-            f'Try a smaller --max-context-length or use additional splits.'
+            f'Try a smaller --first-turn-length / --subsequent-turn-length / --num-turns or use additional splits.'
         )
         sys.exit(1)
 
@@ -469,28 +441,25 @@ def main():
             tokenizer,
             args.first_turn_length,
             args.subsequent_turn_length,
-            args.max_context_length,
-            args.output_length,
+            args.num_turns,
         )
         for msgs in candidates
     ]
 
-    print(f'Building conversations with {num_workers} workers...')
+    print(f'Building conversations with {num_workers} workers ({args.num_turns} turns each)...')
     conversations = []
     skipped_build = 0
     with multiprocessing.Pool(num_workers) as pool:
-        for conv in tqdm(
-            pool.imap(_build_one, work_items),
-            total=len(work_items),
-            desc='Building conversations',
-        ):
-            if conv is None:
-                skipped_build += 1
-            else:
-                conversations.append(conv)
-                if len(conversations) >= args.num_conversations:
-                    pool.terminate()
-                    break
+        with tqdm(total=args.num_conversations, desc='Building conversations') as pbar:
+            for conv in pool.imap(_build_one, work_items):
+                if conv is None:
+                    skipped_build += 1
+                else:
+                    conversations.append(conv)
+                    pbar.update(1)
+                    if len(conversations) >= args.num_conversations:
+                        pool.terminate()
+                        break
 
     print(f'\nBuilt {len(conversations)} conversations ({skipped_build} skipped during build)')
 
@@ -501,6 +470,10 @@ def main():
         )
 
     # Print statistics
+    if not conversations:
+        print('Error: No conversations were built. Check your dataset and parameters.')
+        return
+
     all_turns = [len(conv) for conv in conversations]
     all_first_turn_tokens = [conv[0]['prompt_tokens'] for conv in conversations]
     all_last_turn_tokens = [conv[-1]['prompt_tokens'] for conv in conversations]
@@ -509,12 +482,12 @@ def main():
         f'avg={sum(all_turns)/len(all_turns):.1f}'
     )
     print(
-        f'  First turn tokens: min={min(all_first_turn_tokens)}, '
+        f'  First turn prompt tokens: min={min(all_first_turn_tokens)}, '
         f'max={max(all_first_turn_tokens)}, '
         f'avg={sum(all_first_turn_tokens)/len(all_first_turn_tokens):.0f}'
     )
     print(
-        f'  Last turn tokens: min={min(all_last_turn_tokens)}, '
+        f'  Last turn prompt tokens: min={min(all_last_turn_tokens)}, '
         f'max={max(all_last_turn_tokens)}, '
         f'avg={sum(all_last_turn_tokens)/len(all_last_turn_tokens):.0f}'
     )
@@ -527,8 +500,7 @@ def main():
             'split': args.split,
             'first_turn_length': args.first_turn_length,
             'subsequent_turn_length': args.subsequent_turn_length,
-            'max_context_length': args.max_context_length,
-            'output_length': args.output_length,
+            'num_turns': args.num_turns,
             'num_conversations': len(conversations),
         },
         'conversations': conversations,
