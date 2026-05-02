@@ -271,7 +271,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
     # Public interface
     # ------------------------------------------------------------------
 
-    def build_messages(self) -> Iterator[List[Dict]]:
+    def build_messages(self) -> Iterator[List[Messages]]:
         """Yield up to ``args.number`` conversations as lists of per-turn delta Messages.
 
         Each element is a ``List[Messages]`` (one ``Messages`` per turn).
@@ -330,6 +330,8 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
         offset = self.query_parameters.dataset_offset
         min_turns = self.query_parameters.min_turns
         max_turns = self.query_parameters.max_turns if self.query_parameters.max_turns is not None else min_turns
+        if max_turns < min_turns:
+            raise ValueError(f'--max-turns ({max_turns}) must be >= --min-turns ({min_turns})')
         num_workers = mt_args.num_workers if mt_args else 1
 
         # For pre-filtering, use the upper-bound of first_turn_length as the minimum
