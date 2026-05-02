@@ -271,16 +271,16 @@ class Arguments(BaseArgument):
     ``random_multi_turn``, ``share_gpt_zh_multi_turn``, or ``share_gpt_en_multi_turn``.
 
     Semantics of existing parameters in multi-turn mode:
-    - ``--number``: total number of turns to send (same as normal mode).
-    - ``--parallel``: number of concurrently active turn requests.
+    - ``--number``: total number of conversations to run.
+    - ``--parallel``: number of conversations executed concurrently (each worker owns one conversation).
     """
 
     min_turns: int = 1
     """Minimum number of user turns per conversation.
 
     Used by ``random_multi_turn`` to set the lower bound of the per-conversation
-    turn count.  Ignored by ``swe_smith`` (turn count is derived from token-length
-    parameters).
+    turn count.  For ``swe_smith`` live construction, each conversation samples
+    its turn count uniformly from ``[min_turns, max_turns]``.
     """
 
     max_turns: Optional[int] = None
@@ -288,8 +288,8 @@ class Arguments(BaseArgument):
 
     For ``random_multi_turn``: caps the randomly sampled turn count (required).
     For ``share_gpt_*_multi_turn`` / ``custom_multi_turn``: truncates long conversations.
-    For ``swe_smith``: not used; turn count is determined by ``first_turn_length``,
-    ``subsequent_turn_length``, ``max_context_length``, and ``--max-tokens``.
+    For ``swe_smith`` live construction: upper bound for per-conversation turn
+    count sampling; defaults to ``min_turns`` when not set.
     """
 
     multi_turn_args: Optional[MultiTurnArgs] = None
@@ -557,8 +557,8 @@ def add_argument(parser: argparse.ArgumentParser):
         default=False,
         help=(
             'Enable multi-turn conversation benchmark mode. '
-            'In this mode --number is the total number of turns to send and '
-            '--parallel is the number of concurrently active turn-level requests. '
+            'In this mode --number is the total number of conversations to run and '
+            '--parallel is the number of conversations executed concurrently. '
             'Use a multi-turn compatible dataset: random_multi_turn, '
             'share_gpt_zh_multi_turn, or share_gpt_en_multi_turn.'
         ),
@@ -589,9 +589,10 @@ def add_argument(parser: argparse.ArgumentParser):
             'Advanced multi-turn conversation parameters for swe_smith (live construction) '
             'as a JSON string. '
             'Example: \'{"first_turn_length": 65000, "subsequent_turn_length": 500, '
-            '"max_context_length": 75000, "chars_per_token": 3.0}\'. '
+            '"chars_per_token": 3.0}\'. '
             'Supports IntOrRange for length fields, e.g. "first_turn_length": [60000, 70000]. '
-            'Note: min_turns and max_turns are top-level --min-turns / --max-turns arguments.'
+            'Note: min_turns and max_turns are top-level --min-turns / --max-turns arguments '
+            '(per-conversation turn count is sampled from [min_turns, max_turns]).'
         ),
     )
     # yapf: enable

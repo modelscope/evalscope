@@ -7,7 +7,7 @@ The multi-turn conversation benchmark allows you to test a model service in real
 - **Real context accumulation**: After each successful turn, the model's actual output is appended to the conversation history; the next turn sends the complete history rather than just the current user message.
 - **Approx KV cache hit rate estimation**: Based on client-side token counts, estimates the proportion of history tokens relative to the total input tokens in each request — i.e., the theoretical upper bound of tokens that could benefit from server-side prefix caching. Whether caching actually occurs depends on whether the server has prefix caching enabled and has retained the relevant cache.
 - **Multiple dataset support**: Provides five datasets — random synthetic (`random_multi_turn`), real conversations (`share_gpt_zh_multi_turn` / `share_gpt_en_multi_turn`), custom local data (`custom_multi_turn`), and real Agent trajectories (`swe_smith`).
-- **Consistent parameter semantics**: `--number` is the total number of turns and `--parallel` is the number of concurrent turns, keeping the same semantics as standard benchmark mode.
+- **Consistent parameter semantics**: `--number` is the total number of conversations and `--parallel` is the number of concurrent conversations, keeping the same semantics as standard benchmark mode.
 
 ## Parameters
 
@@ -17,20 +17,19 @@ The multi-turn conversation benchmark allows you to test a model service in real
 |-----------|------|-------------|---------|
 | `--multi-turn` | `bool` | Enable multi-turn conversation benchmark mode | `False` |
 | `--min-turns` | `int` | Minimum number of user turns per conversation; used by `random_multi_turn` only | `1` |
-| `--max-turns` | `int` | Maximum number of user turns per conversation; **required** for `random_multi_turn`; optional for ShareGPT / `custom_multi_turn` datasets to truncate long conversations. Not used by `swe_smith` — its turn count is determined by token-length parameters | `None` |
+| `--max-turns` | `int` | Maximum number of user turns per conversation; **required** for `random_multi_turn`; optional for ShareGPT / `custom_multi_turn` datasets to truncate long conversations; for `swe_smith` live construction, the per-conversation turn count is sampled from `[min_turns, max_turns]` | `None` |
 | `--dataset-offset` | `int` | Skip the first N conversations in the dataset; useful for sharded testing or avoiding cache hits | `0` |
 
 ### `multi_turn_args` (swe_smith-specific parameters)
 
 The `swe_smith` dataset's live construction mode supports fine-grained control of conversation structure and token-length targets via a `MultiTurnArgs` object. All `IntOrRange` fields accept either a single integer or a `[min, max]` list — the list form triggers per-conversation random sampling and is reproducible when combined with `--seed`.
 
-The number of turns per conversation is determined entirely by the token-length parameters below — `swe_smith` does **not** use `--min-turns` or `--max-turns`.
+The number of turns per conversation is sampled from `[--min-turns, --max-turns]`; the amount of content filled per turn is controlled by the token-length parameters below.
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `first_turn_length` | `IntOrRange` | Target prompt token count for turn 1; trajectory messages are sliced until this length is reached | `65000` |
 | `subsequent_turn_length` | `IntOrRange` | Target token increment per subsequent turn; controls the delta size added each round | `500` |
-| `max_context_length` | `IntOrRange` | Maximum context token count (prompt tokens upper bound) allowed per request; no new turns are added once exceeded | `75000` |
 | `chars_per_token` | `float` | Characters-per-token estimate used for pre-filtering trajectories when no tokenizer is available | `3.0` |
 | `num_workers` | `int` | Number of parallel workers for live conversation building (>1 uses multiprocessing.Pool) | `4` |
 
@@ -38,14 +37,14 @@ The number of turns per conversation is determined entirely by the token-length 
 
 | Parameter | Meaning in multi-turn mode |
 |-----------|---------------------------|
-| `--number` | Total number of **turns** to send (not conversations); all workers stop once this many HTTP requests have been made |
-| `--parallel` | Number of concurrently in-flight turn-level requests |
+| `--number` | Total number of **conversations** to run; all workers stop once this many conversations have been completed |
+| `--parallel` | Number of concurrently active conversations (each worker owns one conversation) |
 
 ## Workflow
 
 1. **Load conversation pool**: At startup, conversations are read sequentially from the dataset file and pre-loaded into memory, up to a maximum of `--number` conversations (to avoid excessive memory usage with large datasets).
 
-2. **Start workers**: `--parallel` concurrent coroutines (workers) are launched, each running independently and sharing a single global turn counter.
+2. **Start workers**: `--parallel` concurrent coroutines (workers) are launched, each running independently and sharing a single global conversation counter.
 
 3. **Conversation assignment (first-come, first-served, sequential cycling)**: Conversations are assigned to workers in order. Whoever finishes the current conversation first picks up the next one. Once all conversations are exhausted, cycling restarts from the beginning.
 
@@ -82,7 +81,7 @@ The number of turns per conversation is determined entirely by the token-length 
 
    After each turn, the user message is appended to the history before sending the request. The model's **actual reply** is then appended for use in the next turn. Dataset `assistant` content is never sent to the model — only real model outputs build the context.
 
-5. **Budget control and stopping**: The global turn counter is incremented synchronously before each request is sent, ensuring the total number of requests across all workers does not exceed `--number`. Once the limit is reached, all workers stop and no new conversations are started.
+5. **Budget control and stopping**: The global conversation counter is incremented synchronously before each conversation starts, ensuring the total number of completed conversations across all workers does not exceed `--number`. Once the limit is reached, all workers stop and no new conversations are started.
 
 6. **Failure handling**: If a turn request fails, the current conversation is immediately abandoned and the worker starts a new conversation from scratch — no failed context is carried into subsequent requests.
 
@@ -90,7 +89,9 @@ The number of turns per conversation is determined entirely by the token-length 
 
 > **Note**: When the request success rate is below 100%, interrupted conversations do not contribute subsequent turns to the context, which may result in lower reported KV cache hit rates.
 
-## random_multi_turn
+## Datasets
+
+### random_multi_turn
 
 Generates synthetic token sequences based on the `random` dataset. Each conversation contains `[min_turns, max_turns]` user turns. No external data file is required, making it ideal for quick benchmarking and performance comparisons.
 
@@ -152,7 +153,7 @@ Example output:
 - `Avg Turns/Req: 1.60`: Each request carried an average of 1.60 turns of context during the test, consistent with the `--min-turns 2 --max-turns 5` random sampling distribution.
 - `Approx Cache Hit: 58.1%`: About 58% of input tokens came from conversation history.
 
-## share_gpt_zh_multi_turn / share_gpt_en_multi_turn
+### share_gpt_zh_multi_turn / share_gpt_en_multi_turn
 
 Uses real conversation data from [swift/sharegpt](https://www.modelscope.cn/datasets/swift/sharegpt) (~70k Chinese / English conversations), preserving the full user + assistant alternation, making it suitable for evaluating models against realistic conversation distributions.
 
@@ -233,7 +234,7 @@ Example output:
 - `Avg Turns/Req: 1.98`: Limited by `--max-turns 3`, each request carried approximately 2 turns of context on average, as expected (turn 1 has no history, turns 2 and 3 carry 1 and 2 turns of history respectively, averaging ~1.98).
 - `Approx Cache Hit: 53.7%`: Real conversations have longer context; history tokens account for ~54% of input.
 
-## custom_multi_turn
+### custom_multi_turn
 
 Uses a local JSONL file as a custom multi-turn conversation dataset. Each line stores a complete conversation directly in **OpenAI messages format** — no format conversion required. Ideal for benchmarking with your own existing conversation data.
 
@@ -290,7 +291,7 @@ evalscope perf \
   --parallel 10
 ```
 
-## swe_smith
+### swe_smith
 
 Uses real Agent code-repair trajectory data from [SWE-bench/SWE-smith-trajectories](https://www.modelscope.cn/datasets/SWE-bench/SWE-smith-trajectories), designed specifically for **long-context + multi-turn Agent scenario** benchmarking. Each trajectory consists of tool calls, code snippets, patch results, etc. A single prompt typically exceeds tens of thousands of tokens, making it ideal for evaluating prefill throughput and KV cache hit rates under large contexts.
 
@@ -301,24 +302,24 @@ Two data source modes are supported:
 
 Common features of both modes:
 - **Offset support**: Skip the first N conversations via `--dataset-offset`, useful for sharded testing or avoiding KV cache hot-spots.
-- **Range sampling**: `first_turn_length`, `subsequent_turn_length`, and `max_context_length` all support `[min, max]` lists for per-conversation random sampling; combine with `--seed` for reproducibility.
+- **Range sampling**: `first_turn_length` and `subsequent_turn_length` both support `[min, max]` lists for per-conversation random sampling; combine with `--seed` for reproducibility.
 
-> **Note**: The turn count for each conversation is determined entirely by the token-length parameters (`first_turn_length`, `subsequent_turn_length`, `max_context_length`, and `--max-tokens`). `--min-turns` and `--max-turns` are ignored for `swe_smith`.
+> **Note**: The turn count for each conversation is sampled from `[--min-turns, --max-turns]`; the amount of content per turn is determined by `first_turn_length` / `subsequent_turn_length`.
 
-### Building the Dataset
+**Building the Dataset**
 
 It is recommended to pre-build `agentic_dataset.json` using `examples/perf/build_swe_smith_dataset.py` before running a benchmark — build once, reuse many times, avoiding repeated downloads and on-the-fly construction.
 
 **Key parameters**:
 
 | Parameter | Description | Default |
-|-----------|-------------|---------|
+|-----------|-------------|--------|
 | `--model-path` | Tokenizer path for accurate token counting (ModelScope model ID or local path) | `Qwen/Qwen2.5-7B-Instruct` |
 | `--first-turn-length` | Target prompt token count for turn 1 | `65000` |
 | `--subsequent-turn-length` | Target token increment per subsequent turn | `500` |
-| `--max-context-length` | Maximum context token count per conversation | `75000` |
-| `--output-length` | Reserved output tokens per turn (should match `--max-tokens` at benchmark time) | `300` |
-| `--num-conversations` | Number of conversations to generate | `128` |
+| `--min-turns` | Minimum number of turns per conversation | `1` |
+| `--max-turns` | Maximum number of turns per conversation; the actual turn count is sampled from `[min_turns, max_turns]` (consistent with live construction behaviour); defaults to `--min-turns` if not set | `None` |
+| `--number` | Number of conversations to generate | `128` |
 | `--output-path` | Output file path | `agentic_dataset.json` |
 | `--seed` | Random seed for reproducibility | `42` |
 | `--num-workers` | Number of parallel workers | CPU count |
@@ -328,15 +329,15 @@ python examples/perf/build_swe_smith_dataset.py \
   --model-path Qwen/Qwen2.5-7B-Instruct \
   --first-turn-length 8192 \
   --subsequent-turn-length 1024 \
-  --max-context-length 12000 \
-  --output-length 512 \
-  --num-conversations 128 \
+  --min-turns 3 \
+  --max-turns 8 \
+  --number 128 \
   --output-path agentic_dataset.json \
   --seed 42 \
   --num-workers 8
 ```
 
-### Usage Example: Pre-built JSON Mode (Recommended)
+**Usage Example: Pre-built JSON Mode (Recommended)**
 
 After generating `agentic_dataset.json`, load it via `--dataset-path` — no tokenizer needed and startup is faster:
 
@@ -356,7 +357,7 @@ evalscope perf \
 
 > **Note**: `--dataset-offset` skips the first N conversations in the dataset, making it suitable for multi-machine sharded benchmarking or avoiding KV cache hot-spots.
 
-### Usage Example: Live Construction Mode
+**Usage Example: Live Construction Mode**
 
 Automatically pulls SWE-smith-trajectories from ModelScope and constructs conversations at runtime. `--tokenizer-path` is required:
 
@@ -372,16 +373,17 @@ evalscope perf \
   --multi-turn \
   --multi-turn-args '{
       "first_turn_length": 8192,
-      "subsequent_turn_length": 1024,
-      "max_context_length": 12000
+      "subsequent_turn_length": 1024
   }' \
+  --min-turns 3 \
+  --max-turns 8 \
   --seed 42 \
   --number 10 20 \
   --parallel 5 10 \
   --extra-args '{"ignore_eos": true}'
 ```
 
-`first_turn_length` / `subsequent_turn_length` / `max_context_length` also support `[min, max]` lists for per-conversation random sampling, so different conversations get different context-length targets:
+`first_turn_length` / `subsequent_turn_length` also support `[min, max]` lists for per-conversation random sampling, so different conversations get different token-length targets. Use `--min-turns` / `--max-turns` to control the turn count range:
 
 ```bash
 evalscope perf \
@@ -394,23 +396,13 @@ evalscope perf \
   --multi-turn \
   --multi-turn-args '{
       "first_turn_length": [4096, 16384],
-      "subsequent_turn_length": [512, 2048],
-      "max_context_length": [20000, 40000]
+      "subsequent_turn_length": [512, 2048]
   }' \
+  --min-turns 3 \
+  --max-turns 10 \
   --seed 42 \
   --number 200 \
   --parallel 20
 ```
 
 > **Note**: Parameters in `[min, max]` form are independently sampled for each conversation, more faithfully simulating the request distribution in production. Use `--seed` to make results reproducible.
-
-## Output Metrics
-
-In addition to all standard benchmark metrics, multi-turn mode outputs two extra metrics:
-
-| Metric | Description | How to interpret |
-|--------|-------------|-----------------|
-| `Average input turns per request` | Average number of user turns in the context at the time each request is sent | Reflects the average growth of context during the test; a higher value means deeper conversations and longer prompts |
-| `Average approx KV cache hit rate (%)` | Estimated proportion of history tokens relative to total input tokens (theoretical upper bound for prefix caching benefit) | A higher ratio means more of the input is historical context; if the server has prefix caching enabled, a higher ratio translates to greater latency savings. Calculation: `(prev_prompt_tokens + prev_completion_tokens) / current_prompt_tokens × 100%`; the first turn (no history) is excluded from the calculation |
-
-All other metrics (Avg/P99 Latency, TTFT, TPOT, RPS, TPS) have the same meaning as in [standard benchmark mode](./parameters.md).

@@ -1,11 +1,14 @@
 """Build a multi-turn benchmarking dataset from SWE-bench/SWE-smith-trajectories.
 
-Each trajectory is converted into a multi-turn conversation with exactly --num-turns turns:
+Each trajectory is converted into a multi-turn conversation.  The number of turns
+per conversation is sampled uniformly from [--min-turns, --max-turns], aligning with
+the live-load behaviour of the swe_smith dataset plugin.
+
 - Turn 1: collect user messages until the prompt reaches --first-turn-length tokens;
   the last message is truncated if it overshoots.
 - Subsequent turns: collect user messages until the incremental token growth reaches
   --subsequent-turn-length tokens; truncate the last message if needed.
-- If the trajectory runs out of user messages before all turns are filled, the
+- If the trajectory runs out of user messages before filling all sampled turns, the
   conversation is discarded (skip).
 
 Each turn stores only the DELTA user messages for that turn.  At benchmark time the
@@ -13,7 +16,7 @@ runtime accumulates the full history across turns:
     turn_1.messages -> send -> get response ->
     [actual_server_response] + turn_2.messages -> send -> ...
 
-assistant messages in the source trajectory are ignored entirely; the runtime always
+Assistant messages in the source trajectory are ignored entirely; the runtime always
 appends the real server response as the assistant turn.
 
 The dataset can be used with evalscope perf --dataset swe_smith via
@@ -24,8 +27,9 @@ Usage:
         --model-path Qwen/Qwen2.5-7B-Instruct \\
         --first-turn-length 65000 \\
         --subsequent-turn-length 500 \\
-        --num-turns 10 \\
-        --num-conversations 128 \\
+        --min-turns 5 \\
+        --max-turns 10 \\
+        --number 128 \\
         --output-path agentic_dataset.json \\
         --seed 42 \\
         --num-workers 8
@@ -33,16 +37,13 @@ Usage:
 
 import argparse
 import json
-import logging
 import multiprocessing
 import numpy as np
 import sys
 from tqdm import tqdm
 from typing import Dict, List, Optional, Tuple
 
-from evalscope.utils import get_logger
-
-logger = get_logger()
+from evalscope.perf.plugin.datasets.utils import tokenize_chat_messages
 
 # Dataset constants (same as swe_smith.py plugin)
 _DEFAULT_DATASET_NAME = 'SWE-bench/SWE-smith-trajectories'
@@ -84,14 +85,22 @@ def parse_args():
         help='Target token growth per subsequent turn (default: 500)',
     )
     parser.add_argument(
-        '--num-turns',
+        '--min-turns',
         type=int,
-        default=10,
-        help='Number of turns per conversation (default: 10). Trajectories with fewer user '
-             'messages are discarded.',
+        default=1,
+        help='Minimum number of turns per conversation (default: 1)',
     )
     parser.add_argument(
-        '--num-conversations',
+        '--max-turns',
+        type=int,
+        default=None,
+        help='Maximum number of turns per conversation (default: same as --min-turns). '
+             'The actual turn count for each conversation is sampled uniformly from '
+             '[min_turns, max_turns]. Trajectories with fewer user messages than the '
+             'sampled turn count are discarded.',
+    )
+    parser.add_argument(
+        '--number',
         type=int,
         default=128,
         help='Number of conversations to generate (default: 128)',
@@ -99,7 +108,7 @@ def parse_args():
     parser.add_argument(
         '--output-path',
         type=str,
-        default='agentic_dataset.json',
+        default='outputs/agentic_dataset.json',
         help='Output file path (default: agentic_dataset.json)',
     )
     parser.add_argument(
@@ -119,13 +128,6 @@ def parse_args():
         type=int,
         default=None,
         help='Number of parallel workers (default: number of CPU cores)',
-    )
-    parser.add_argument(
-        '--log-level',
-        type=str,
-        default='INFO',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
-        help='Logging level (default: INFO). Use DEBUG to see per-turn token counts.',
     )
     return parser.parse_args()
 
@@ -158,29 +160,15 @@ def extract_messages(raw_messages: str) -> List[Dict[str, str]]:
 
 
 def count_tokens_for_messages(messages: List[Dict[str, str]], tokenizer) -> int:
-    """Count tokens for a list of chat messages using apply_chat_template."""
+    """Count tokens for a list of chat messages using tokenize_chat_messages."""
     if not messages:
         return 0
-    token_ids = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=True)
-    return len(token_ids)
+    return len(tokenize_chat_messages(tokenizer, messages))
 
 
 def _bare_encode(text: str, tokenizer) -> List[int]:
-    """Encode text to token ids without triggering tokenizer WARNING logs.
-
-    Some tokenizers (e.g. Kimi-K2.5) emit a WARNING when called with
-    ``add_special_tokens=False`` via the base-class ``encode``.  We suppress
-    that specific logger to avoid log spam during bulk construction.
-    """
-    import logging
-    tok_logger = logging.getLogger('transformers_modules')
-    prev_level = tok_logger.level
-    tok_logger.setLevel(logging.ERROR)
-    try:
-        ids = tokenizer.encode(text, add_special_tokens=False)
-    finally:
-        tok_logger.setLevel(prev_level)
-    return ids
+    """Encode text to token ids without special tokens."""
+    return tokenizer.encode(text, add_special_tokens=False)
 
 
 def truncate_message_content(
@@ -255,29 +243,6 @@ def collect_until(
     return delta, idx
 
 
-# Placeholder assistant message used to maintain user/assistant alternation in
-# chat history for accurate token counting.  The actual assistant response is
-# substituted at benchmark time by the runtime.
-_ASSISTANT_PLACEHOLDER = {'role': 'assistant', 'content': ''}
-
-
-def _build_chat_history(accumulated_turns: List[List[Dict[str, str]]]) -> List[Dict[str, str]]:
-    """Reconstruct a valid user/assistant-alternating message list from accumulated turns.
-
-    Each turn is a list of user-role delta messages.  Between turns an empty
-    assistant placeholder is inserted so that ``apply_chat_template`` receives
-    a properly-alternating sequence and returns accurate token counts.
-    """
-    history: List[Dict[str, str]] = []
-    for i, turn_msgs in enumerate(accumulated_turns):
-        history.extend(turn_msgs)
-        # After every turn except the last, insert an assistant placeholder so
-        # the next turn's user messages don't immediately follow without an
-        # assistant reply – this matches the runtime's actual message layout.
-        if i < len(accumulated_turns) - 1:
-            history.append(_ASSISTANT_PLACEHOLDER)
-    return history
-
 
 def build_conversation(
     messages: List[Dict[str, str]],
@@ -299,10 +264,6 @@ def build_conversation(
             "prompt_tokens": int # total accumulated prompt token count at this turn
         }
 
-    Token counting uses a properly-alternating chat history (user delta messages
-    separated by empty assistant placeholders) so that ``apply_chat_template``
-    returns accurate counts even for tokenizers that require strict alternation.
-
     Returns None if the trajectory does not have enough user messages to fill
     all num_turns turns.
     """
@@ -314,38 +275,28 @@ def build_conversation(
         return None
 
     turns: List[Dict] = []
-    accumulated_turns: List[List[Dict[str, str]]] = []  # per-turn delta lists
+    accumulated_msgs: List[Dict[str, str]] = []  # flat list of all delta messages so far
 
     # ---- Turn 1 ----
-    logger.debug(f'building turn 1 (target={first_turn_length} tokens) from {len(user_msgs)} user msgs')
     delta, msg_idx = collect_until(user_msgs, 0, first_turn_length, tokenizer, [])
     if not delta:
-        logger.debug('turn1 empty, skipping trajectory')
         return None
-    accumulated_turns.append(delta)
-    history = _build_chat_history(accumulated_turns)
-    prompt_tokens = count_tokens_for_messages(history, tokenizer)
+    accumulated_msgs.extend(delta)
+    prompt_tokens = count_tokens_for_messages(accumulated_msgs, tokenizer)
     turns.append({'messages': delta, 'prompt_tokens': prompt_tokens})
-    logger.debug(f'turn1 done: {len(delta)} msgs, {prompt_tokens} prompt_tokens')
 
     # ---- Turns 2..num_turns ----
     for turn_idx in range(num_turns - 1):
         if msg_idx >= len(user_msgs):
-            logger.debug(f'trajectory exhausted at turn {turn_idx + 2}, skipping')
             return None  # trajectory exhausted before filling all turns
-        # Pass accumulated user messages (without placeholders) for bare-token budget
-        accumulated_flat = [m for turn in accumulated_turns for m in turn]
         delta, msg_idx = collect_until(
-            user_msgs, msg_idx, subsequent_turn_length, tokenizer, accumulated_flat
+            user_msgs, msg_idx, subsequent_turn_length, tokenizer, accumulated_msgs
         )
         if not delta:
-            logger.debug(f'turn {turn_idx + 2} empty, skipping trajectory')
             return None
-        accumulated_turns.append(delta)
-        history = _build_chat_history(accumulated_turns)
-        prompt_tokens = count_tokens_for_messages(history, tokenizer)
+        accumulated_msgs.extend(delta)
+        prompt_tokens = count_tokens_for_messages(accumulated_msgs, tokenizer)
         turns.append({'messages': delta, 'prompt_tokens': prompt_tokens})
-        logger.debug(f'turn{turn_idx + 2} done: {len(delta)} msgs, {prompt_tokens} prompt_tokens')
 
     return turns
 
@@ -371,11 +322,14 @@ def _build_one(args_tuple):
 def main():
     args = parse_args()
 
-    # Re-configure logger level based on --log-level
-    log_level = getattr(logging, args.log_level.upper(), logging.INFO)
-    get_logger(log_level=log_level, force=True)
-
     np.random.seed(args.seed)
+
+    # Resolve min/max turns (aligns with live-load swe_smith plugin semantics)
+    min_turns = args.min_turns
+    max_turns = args.max_turns if args.max_turns is not None else min_turns
+    if max_turns < min_turns:
+        print(f'Error: --max-turns ({max_turns}) must be >= --min-turns ({min_turns})')
+        sys.exit(1)
 
     print(f'Loading tokenizer from {args.model_path}...')
     from modelscope import AutoTokenizer
@@ -385,14 +339,14 @@ def main():
     from modelscope import MsDataset
     dataset = MsDataset.load(args.dataset_name, split=args.split)
 
-    # Pre-filter: need enough chars to fill all turns
-    # total ≈ first_turn_length + subsequent_turn_length * (num_turns - 1)
-    min_tokens_estimate = args.first_turn_length + args.subsequent_turn_length * (args.num_turns - 1)
+    # Pre-filter: need enough chars to fill max_turns turns (upper bound)
+    # total ≈ first_turn_length + subsequent_turn_length * (max_turns - 1)
+    min_tokens_estimate = args.first_turn_length + args.subsequent_turn_length * (max_turns - 1)
     min_chars = int(min_tokens_estimate * args.chars_per_token)
     print(
         f'Pre-filtering: require >= {min_chars} chars '
         f'(~{min_tokens_estimate} tokens = {args.first_turn_length} + '
-        f'{args.subsequent_turn_length} x {args.num_turns - 1} turns, '
+        f'{args.subsequent_turn_length} x {max_turns - 1} turns, '
         f'at {args.chars_per_token} chars/token)'
     )
 
@@ -425,15 +379,16 @@ def main():
 
     np.random.shuffle(candidates)
 
-    if len(candidates) < args.num_conversations:
+    if len(candidates) < args.number:
         print(
             f'Error: Only {len(candidates)} candidates pass pre-filter, '
-            f'but {args.num_conversations} conversations requested. '
-            f'Try a smaller --first-turn-length / --subsequent-turn-length / --num-turns or use additional splits.'
+            f'but {args.number} conversations requested. '
+            f'Try a smaller --first-turn-length / --subsequent-turn-length / --min-turns / --max-turns '
+            f'or use additional splits.'
         )
         sys.exit(1)
 
-    # Build conversations in parallel, process all candidates until we have enough
+    # Pre-sample per-candidate num_turns (aligns with live-load behaviour)
     num_workers = args.num_workers or multiprocessing.cpu_count()
     work_items = [
         (
@@ -441,32 +396,35 @@ def main():
             tokenizer,
             args.first_turn_length,
             args.subsequent_turn_length,
-            args.num_turns,
+            int(np.random.randint(min_turns, max_turns + 1)),
         )
         for msgs in candidates
     ]
 
-    print(f'Building conversations with {num_workers} workers ({args.num_turns} turns each)...')
+    print(
+        f'Building conversations with {num_workers} workers '
+        f'(turns sampled from [{min_turns}, {max_turns}])...'
+    )
     conversations = []
     skipped_build = 0
     with multiprocessing.Pool(num_workers) as pool:
-        with tqdm(total=args.num_conversations, desc='Building conversations') as pbar:
+        with tqdm(total=args.number, desc='Building conversations') as pbar:
             for conv in pool.imap(_build_one, work_items):
                 if conv is None:
                     skipped_build += 1
                 else:
                     conversations.append(conv)
                     pbar.update(1)
-                    if len(conversations) >= args.num_conversations:
+                    if len(conversations) >= args.number:
                         pool.terminate()
                         break
 
     print(f'\nBuilt {len(conversations)} conversations ({skipped_build} skipped during build)')
 
-    if len(conversations) < args.num_conversations:
+    if len(conversations) < args.number:
         print(
             f'Warning: Only built {len(conversations)} conversations '
-            f'({skipped_build} failed), but {args.num_conversations} requested.'
+            f'({skipped_build} failed), but {args.number} requested.'
         )
 
     # Print statistics
@@ -500,7 +458,8 @@ def main():
             'split': args.split,
             'first_turn_length': args.first_turn_length,
             'subsequent_turn_length': args.subsequent_turn_length,
-            'num_turns': args.num_turns,
+            'min_turns': min_turns,
+            'max_turns': max_turns,
             'num_conversations': len(conversations),
         },
         'conversations': conversations,

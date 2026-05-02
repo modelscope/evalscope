@@ -51,6 +51,7 @@ logging.basicConfig(format=LoggingConstants.SIMPLE_FORMAT, level=logging.INFO, f
 logging.getLogger('datasets').setLevel(logging.WARNING)
 logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('modelscope').setLevel(logging.ERROR)
+logging.getLogger('transformers_modules').setLevel(logging.ERROR)
 
 info_set = set()
 warning_set = set()
