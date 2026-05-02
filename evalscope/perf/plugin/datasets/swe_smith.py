@@ -108,8 +108,10 @@ def _collect_until(
     """Collect user messages from start_idx until the prompt grows by ~target_tokens.
 
     Uses fast bare-text token counting (no chat template) to estimate the
-    incremental size of each message.  The last message is truncated if it
-    would push the cumulative bare-token count past the target.
+    incremental size of each message.  A message that fits exactly within the
+    remaining budget is collected whole.  The last message is truncated only
+    when it would *exceed* the budget (``remaining > 0``); if the budget is
+    already exhausted the message is left unconsumed (``idx`` not advanced).
 
     Args:
         user_msgs: Full list of user-only messages for this trajectory.
@@ -129,13 +131,17 @@ def _collect_until(
         msg = user_msgs[idx]
         msg_bare = _encode_len(msg['content'], tokenizer)
 
-        if accumulated_bare + msg_bare < target_tokens:
+        if accumulated_bare + msg_bare <= target_tokens:
+            # Message fits entirely within the remaining budget.
             delta.append(msg)
             accumulated_bare += msg_bare
             idx += 1
         else:
             remaining = target_tokens - accumulated_bare
-            truncated = _truncate_message_content(msg, max(1, remaining), tokenizer)
+            if remaining <= 0:
+                # Budget already exhausted; do NOT consume this message.
+                break
+            truncated = _truncate_message_content(msg, remaining, tokenizer)
             delta.append(truncated)
             idx += 1
             break
@@ -333,10 +339,16 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
                 mt_args.first_turn_length
                 if isinstance(mt_args.first_turn_length, int) else mt_args.first_turn_length[1]
             )
+            subsequent_upper = (
+                mt_args.subsequent_turn_length
+                if isinstance(mt_args.subsequent_turn_length, int) else mt_args.subsequent_turn_length[1]
+            )
         else:
             first_upper = 65000
+            subsequent_upper = 500
 
-        min_chars = int(first_upper * chars_per_token)
+        min_tokens_estimate = first_upper + subsequent_upper * (max_turns - 1)
+        min_chars = int(min_tokens_estimate * chars_per_token)
 
         logger.info(
             f'Live construction: offset={offset}, min_turns={min_turns}, max_turns={max_turns}, '

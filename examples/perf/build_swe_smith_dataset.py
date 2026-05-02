@@ -202,9 +202,11 @@ def collect_until(
     """Collect user messages from start_idx until the prompt grows by ~target_tokens.
 
     Uses fast bare-text token counting (no chat template) to estimate the
-    incremental size of each message.  The last message is truncated if it
-    would push the cumulative bare-token count past the target.  The caller
-    is responsible for computing the final accurate prompt_tokens via
+    incremental size of each message.  A message that fits exactly within the
+    remaining budget is collected whole.  The last message is truncated only
+    when it would *exceed* the budget (``remaining > 0``); if the budget is
+    already exhausted the message is left unconsumed (``idx`` not advanced).
+    The caller is responsible for computing the final accurate prompt_tokens via
     count_tokens_for_messages after the turn is assembled.
 
     Args:
@@ -227,15 +229,18 @@ def collect_until(
         msg = user_msgs[idx]
         msg_bare = _encode_len(msg['content'], tokenizer)
 
-        if accumulated_bare + msg_bare < target_tokens:
-            # Full message fits – keep it
+        if accumulated_bare + msg_bare <= target_tokens:
+            # Message fits entirely within the remaining budget.
             delta.append(msg)
             accumulated_bare += msg_bare
             idx += 1
         else:
-            # This message would overshoot – truncate to the remaining budget
+            # This message would overshoot – truncate to the remaining budget.
             remaining = target_tokens - accumulated_bare
-            truncated = truncate_message_content(msg, max(1, remaining), tokenizer)
+            if remaining <= 0:
+                # Budget already exhausted; do NOT consume this message.
+                break
+            truncated = truncate_message_content(msg, remaining, tokenizer)
             delta.append(truncated)
             idx += 1
             break
