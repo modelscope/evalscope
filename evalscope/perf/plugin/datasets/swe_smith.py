@@ -265,7 +265,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
     # Public interface
     # ------------------------------------------------------------------
 
-    def build_messages(self) -> Iterator[List[Dict]]:
+    def build_messages(self) -> Iterator[List[Messages]]:
         """Yield up to ``args.number`` conversations as lists of per-turn delta Messages.
 
         Each element is a ``List[Messages]`` (one ``Messages`` per turn).
