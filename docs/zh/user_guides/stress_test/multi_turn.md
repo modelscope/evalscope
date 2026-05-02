@@ -7,7 +7,7 @@
 - **真实上下文累积**：每轮请求成功后，将模型实际输出追加到对话历史，下一轮请求携带完整历史，而非仅发送当前用户消息。
 - **KV 缓存可命中率估算**：基于客户端 token 计数，估算每轮请求中历史对话 token 占总输入 token 的比例，即理论上可被服务端 prefix caching 利用的上限；实际是否命中取决于服务端是否开启并维持了对应缓存。
 - **多数据集支持**：提供随机合成（`random_multi_turn`）、真实对话（`share_gpt_zh_multi_turn` / `share_gpt_en_multi_turn`）、自定义本地数据（`custom_multi_turn`）和真实 Agent 轨迹（`swe_smith`）五种数据集。
-- **参数语义一致**：`--number` 为总 turn 数，`--parallel` 为并发 turn 数，与普通压测模式语义保持一致。
+- **参数语义一致**：`--number` 为总对话数，`--parallel` 为并发对话数，与普通压测模式语义保持一致。
 
 ## 参数说明
 
@@ -17,20 +17,19 @@
 |------|------|------|--------|
 | `--multi-turn` | `bool` | 启用多轮对话压测模式 | `False` |
 | `--min-turns` | `int` | 每个对话最少用户轮数，仅 `random_multi_turn` 使用 | `1` |
-| `--max-turns` | `int` | 每个对话最多用户轮数；`random_multi_turn` **必须设置**；ShareGPT / `custom_multi_turn` 等数据集可选，用于截断过长对话。`swe_smith` 不使用此参数，轮次数量由 token 长度参数决定 | `None` |
+| `--max-turns` | `int` | 每个对话最多用户轮数；`random_multi_turn` **必须设置**；ShareGPT / `custom_multi_turn` 等数据集可选，用于截断过长对话；`swe_smith` live 构建时每条对话轮次从 `[min_turns, max_turns]` 随机采样 | `None` |
 | `--dataset-offset` | `int` | 跳过数据集前 N 条对话，用于分片测试或避免缓存命中 | `0` |
 
 ### `multi_turn_args`（`swe_smith` 专属参数）
 
 `swe_smith` 数据集的 live 构建模式支持通过 `MultiTurnArgs` 对象精细控制对话 token 长度目标。所有 `IntOrRange` 类型字段既可传入单个整数，也可传入 `[min, max]` 列表——列表形式会在每条对话构建时随机采样，结合 `--seed` 保证可复现。
 
-每条对话的轮次数量完全由以下 token 长度参数决定，`swe_smith` **不使用** `--min-turns` 或 `--max-turns`。
+每条对话的轮次数量从 `[--min-turns, --max-turns]` 中随机采样，每轮按以下 token 长度参数填充消息。
 
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
 | `first_turn_length` | `IntOrRange` | 第 1 轮目标 prompt token 数；从原始轨迹中截取恰好达到该长度的消息片段 | `65000` |
 | `subsequent_turn_length` | `IntOrRange` | 后续每轮在上一轮基础上新增的目标 token 数；决定每轮 delta 的大小 | `500` |
-| `max_context_length` | `IntOrRange` | 单次请求允许的最大 context token 数（prompt tokens 上限）；超出后停止追加新轮次 | `75000` |
 | `chars_per_token` | `float` | 无 tokenizer 时的字符/token 估算比，用于预过滤原始轨迹 | `3.0` |
 | `num_workers` | `int` | live 构建模式下并行 worker 数量（>1 使用 multiprocessing.Pool） | `4` |
 
@@ -38,14 +37,14 @@
 
 | 参数 | 多轮模式下的含义 |
 |------|----------------|
-| `--number` | 总发送 **turn 数**（而非对话数）；所有 worker 合计发送的 HTTP 请求数达到此值后停止 |
-| `--parallel` | 同时在途的 turn 级并发请求数 |
+| `--number` | 总 **对话数**；所有 worker 合计完成的对话数达到此值后停止 |
+| `--parallel` | 同时并发执行的对话数（每个 worker 持有一条对话） |
 
 ## 工作流程
 
 1. **加载对话池**：启动时从数据集文件顺序读取，将所有对话预加载到内存，最多加载 `--number` 条（防止大数据集占用过多内存）。
 
-2. **启动 workers**：创建 `--parallel` 个并发协程（worker），各自独立运行，所有 worker 共享同一个全局 turn 计数器。
+2. **启动 workers**：创建 `--parallel` 个并发协程（worker），各自独立运行，所有 worker 共享同一个全局对话计数器。
 
 3. **对话分配（先到先得，顺序轮询）**：对话按顺序分配给 worker，谁先完成当前对话，谁先取下一条。所有对话用完后从头循环复用。
 
@@ -82,7 +81,7 @@
 
    每轮将用户消息追加到历史后发送请求，收到模型的**真实回复**后追加到历史，供下一轮携带。数据集中原有的 assistant 内容不会发给模型，仅用模型实际输出构建上下文。
 
-5. **预算控制与停止**：全局 turn 计数在发送请求前同步递增，确保所有 worker 合计发送的请求数不超过 `--number`。一旦达到上限，所有 worker 停止，不再取新对话。
+5. **预算控制与停止**：全局对话计数在每条对话开始前同步递增，确保所有 worker 合计完成的对话数不超过 `--number`。一旦达到上限，所有 worker 停止，不再取新对话。
 
 6. **失败处理**：某轮请求失败时，当前对话立即放弃，worker 取下一条新对话重新开始，不会将失败的上下文带入后续请求。
 
@@ -90,7 +89,9 @@
 
 > **注意**：请求成功率低于 100% 时，被中断的对话不会贡献后续轮次的上下文，KV 缓存命中率等指标可能偏低。
 
-## random_multi_turn
+## 数据集
+
+### random_multi_turn
 
 基于 `random` 数据集随机生成 token 序列，每个对话包含 `[min_turns, max_turns]` 轮用户消息，无需外部数据文件，适合快速基准测试和性能对比。
 
@@ -152,7 +153,7 @@ evalscope perf \
 - `Avg Turns/Req: 1.60`：测试期间每次请求平均携带 1.60 轮上下文，符合 `--min-turns 2 --max-turns 5` 的随机采样分布（第 1 轮无历史，后续轮次历史逐步增长）。
 - `Approx Cache Hit: 58.1%`：约 58% 的输入 token 来自历史对话。
 
-## share_gpt_zh_multi_turn / share_gpt_en_multi_turn
+### share_gpt_zh_multi_turn / share_gpt_en_multi_turn
 
 使用来自 [swift/sharegpt](https://www.modelscope.cn/datasets/swift/sharegpt) 的真实对话数据（约 70k 条中文 / 英文对话），保留完整的 user + assistant 轮次交替结构，适合评测模型在真实对话分布下的表现。
 
@@ -233,7 +234,7 @@ evalscope perf \
 - `Avg Turns/Req: 1.98`：受 `--max-turns 3` 限制，平均每请求包含约 2 轮上下文，符合预期（第 1 轮无历史，第 2、3 轮分别携带 1、2 轮历史，平均约 1.98）。
 - `Approx Cache Hit: 53.7%`：真实对话中上下文较长，历史 token 占比约 54%。
 
-## custom_multi_turn
+### custom_multi_turn
 
 使用本地 JSONL 文件作为自定义多轮对话数据集，每行直接以 **OpenAI messages 格式**存储一条完整对话，无需任何格式转换，适合已有对话数据直接压测的场景。
 
@@ -290,7 +291,7 @@ evalscope perf \
   --parallel 10
 ```
 
-## swe_smith
+### swe_smith
 
 使用来自 [SWE-bench/SWE-smith-trajectories](https://www.modelscope.cn/datasets/SWE-bench/SWE-smith-trajectories) 的真实 Agent 代码修复轨迹数据，专为**长上下文 + 多轮 Agent 场景**压测设计。每条轨迹由工具调用、代码片段、Patch 结果等组成，单条 prompt 通常超过数万 token，适合评测模型在大上下文下的 prefill 吞吐和 KV 缓存命中率。
 
@@ -301,11 +302,11 @@ evalscope perf \
 
 两种模式共同特性：
 - **支持偏移**：通过 `--dataset-offset` 跳过前 N 条对话，用于分片测试或规避缓存热点
-- **支持范围采样**：`first_turn_length`、`subsequent_turn_length`、`max_context_length` 均支持 `[min, max]` 列表，每条对话独立随机采样，需配合 `--seed` 保证复现性
+- **支持范围采样**：`first_turn_length`、`subsequent_turn_length` 均支持 `[min, max]` 列表，每条对话独立随机采样，需配合 `--seed` 保证复现性
 
-> **说明**：每条对话的轮次数量完全由 token 长度参数（`first_turn_length`、`subsequent_turn_length`、`max_context_length`、`--max-tokens`）决定。`--min-turns` 和 `--max-turns` 对 `swe_smith` 无效。
+> **说明**：每条对话的轮次数量从 `[--min-turns, --max-turns]` 中随机采样，每轮填充的消息量由 `first_turn_length` / `subsequent_turn_length` 决定。
 
-### 预构建数据集生成
+**预构建数据集生成**
 
 推荐在压测前使用 `examples/perf/build_swe_smith_dataset.py` 脚本预先构建 `agentic_dataset.json`，一次生成、多次复用，避免每次压测都重复下载和构建。
 
@@ -316,9 +317,9 @@ evalscope perf \
 | `--model-path` | 用于精确 token 计数的 tokenizer 路径（ModelScope 模型 ID 或本地路径） | `Qwen/Qwen2.5-7B-Instruct` |
 | `--first-turn-length` | 第 1 轮目标 prompt token 数 | `65000` |
 | `--subsequent-turn-length` | 后续每轮新增的目标 token 数 | `500` |
-| `--max-context-length` | 单条对话允许的最大 context token 数 | `75000` |
-| `--output-length` | 每轮预留的输出 token 数（应与压测时的 `--max-tokens` 保持一致） | `300` |
-| `--num-conversations` | 要生成的对话条数 | `128` |
+| `--min-turns` | 每条对话最少轮数 | `1` |
+| `--max-turns` | 每条对话最多轮数；实际轮数从 `[min_turns, max_turns]` 随机采样（与 live 构建模式行为一致）；未设置时等于 `--min-turns` | `None` |
+| `--number` | 要生成的对话条数 | `128` |
 | `--output-path` | 输出文件路径 | `agentic_dataset.json` |
 | `--seed` | 随机种子，保证可复现 | `42` |
 | `--num-workers` | 并行 worker 数量 | CPU 核心数 |
@@ -328,15 +329,15 @@ python examples/perf/build_swe_smith_dataset.py \
   --model-path Qwen/Qwen2.5-7B-Instruct \
   --first-turn-length 8192 \
   --subsequent-turn-length 1024 \
-  --max-context-length 12000 \
-  --output-length 512 \
-  --num-conversations 128 \
-  --output-path agentic_dataset.json \
+  --min-turns 3 \
+  --max-turns 8 \
+  --number 128 \
+  --output-path outputs/agentic_dataset.json \
   --seed 42 \
   --num-workers 8
 ```
 
-### 使用示例：预构建 JSON 模式（推荐）
+**使用示例：预构建 JSON 模式（推荐）**
 
 预先生成 `agentic_dataset.json` 后，通过 `--dataset-path` 加载，无需 tokenizer，启动更快：
 
@@ -356,7 +357,7 @@ evalscope perf \
 
 > **说明**：`--dataset-offset` 可跳过数据集前 N 条对话，适合多机分片压测或规避 KV 缓存热点。
 
-### 使用示例：Live 构建模式
+**使用示例：Live 构建模式**
 
 自动从 ModelScope 拉取 SWE-smith-trajectories 数据集并实时构建对话，需指定 `--tokenizer-path`：
 
@@ -372,16 +373,17 @@ evalscope perf \
   --multi-turn \
   --multi-turn-args '{
       "first_turn_length": 8192,
-      "subsequent_turn_length": 1024,
-      "max_context_length": 12000
+      "subsequent_turn_length": 1024
   }' \
+  --min-turns 3 \
+  --max-turns 8 \
   --seed 42 \
   --number 10 20 \
   --parallel 5 10 \
   --extra-args '{"ignore_eos": true}'
 ```
 
-`first_turn_length` / `subsequent_turn_length` / `max_context_length` 也支持传入 `[min, max]` 列表进行随机采样，实现不同对话具有不同上下文长度目标：
+`first_turn_length` / `subsequent_turn_length` 也支持传入 `[min, max]` 列表进行随机采样，实现不同对话具有不同 token 长度目标；`--min-turns` / `--max-turns` 控制每条对话的轮次范围：
 
 ```bash
 evalscope perf \
@@ -394,23 +396,13 @@ evalscope perf \
   --multi-turn \
   --multi-turn-args '{
       "first_turn_length": [4096, 16384],
-      "subsequent_turn_length": [512, 2048],
-      "max_context_length": [20000, 40000]
+      "subsequent_turn_length": [512, 2048]
   }' \
+  --min-turns 3 \
+  --max-turns 10 \
   --seed 42 \
   --number 200 \
   --parallel 20
 ```
 
 > **说明**：`[min, max]` 形式的参数会在每条对话构建时独立随机采样，从而更真实地模拟生产环境中的请求分布。需配合 `--seed` 保证结果可复现。
-
-## 输出指标说明
-
-多轮模式在普通压测的全部指标基础上，额外输出以下两个专属指标：
-
-| 指标 | 说明 | 如何解读 |
-|------|------|----------|
-| `Average input turns per request` | 每次请求时，上下文中平均包含的用户轮数 | 反映测试过程中上下文平均增长程度；值越大说明对话越深入，prompt 越长 |
-| `Average approx KV cache hit rate (%)` | 估算当前请求中历史对话 token 占总输入 token 的比例（即理论上可被 prefix caching 利用的上限） | 比值越高说明历史上下文占比越大，若服务端开启了 prefix caching 则收益越显著；计算方式：`(前一轮 prompt_tokens + 前一轮 completion_tokens) / 当前轮 prompt_tokens × 100%`；第 1 轮（无历史）不计入统计 |
-
-其余指标（Avg/P99 Latency、TTFT、TPOT、RPS、TPS）含义与[普通压测](./parameters.md)一致。

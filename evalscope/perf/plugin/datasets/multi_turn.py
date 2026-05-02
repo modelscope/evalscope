@@ -86,6 +86,9 @@ class RandomMultiTurnDatasetPlugin(RandomDatasetPlugin):
         one turn's delta.  The multi-turn benchmark runner appends the model's
         real response after each turn and passes the growing context to the next.
 
+        Generates ``args.number`` conversations (i.e. ``args.number`` is the
+        conversation count, not the turn count).
+
         Note: ``--tokenize-prompt`` is not supported for multi-turn datasets
         (multi-turn requires the chat/completions endpoint which expects message
         dicts, not raw token-ID lists).  The flag is silently ignored here.
@@ -100,15 +103,11 @@ class RandomMultiTurnDatasetPlugin(RandomDatasetPlugin):
         max_prompt_length = self.query_parameters.max_prompt_length
 
         # Total number of conversations to pre-generate.
-        # args.number is the total *turn* budget, not the desired conversation
-        # count.  Equating the two over-allocates by a factor of ~avg_turns,
-        # wasting significant memory when --number is large.
-        # Instead, estimate the required conversations from the expected turns
-        # per conversation, and keep a small diversity buffer for workers.
-        avg_turns = (self.min_turns_per_conv + self.max_turns_per_conv) / 2.0
+        # args.number is directly the conversation count (not turns), so use it
+        # as-is with a small diversity buffer so workers don't all repeat the same conv.
         n_convs = max(
-            self.query_parameters.parallel * 4,  # diversity buffer so workers don't all repeat the same conv
-            int(self.number / avg_turns) + 1,  # enough to cover the turn budget
+            self.query_parameters.parallel * 4,  # diversity buffer
+            self.number + 1,  # cover the full conversation budget
         )
 
         # Sample per-conversation turn counts

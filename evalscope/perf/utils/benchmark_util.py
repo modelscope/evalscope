@@ -54,6 +54,11 @@ class BenchmarkData:
     Turn 1 is always 0 (no prior context), contributing 0 to the numerator but
     still counted in the denominator so the global ratio is unbiased."""
 
+    # --- Conversation-level progress signal (multi-turn only) ---
+    is_last_turn: bool = False
+    """True when this BenchmarkData is the final turn of its conversation.
+    Used by the metrics consumer to advance the per-conversation progress bar."""
+
     # --- Speculative decoding specific ---
     decoded_tokens_per_iter: float = 0.0
     """Average decoded tokens per iteration: (completion_tokens - 1) / (n_chunks - 1).

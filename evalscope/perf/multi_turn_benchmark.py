@@ -20,8 +20,8 @@ active conversation at a time and progresses through its turns sequentially:
 
 Parameter semantics (same as normal benchmark mode)
 ----------------------------------------------------
-* ``--number``   - total number of turns (API requests) to send.
-* ``--parallel`` - number of concurrently active turn-level HTTP requests.
+* ``--number``   - total number of conversations to run.
+* ``--parallel`` - number of conversations executed concurrently.
 
 Multi-turn specific parameters
 -------------------------------
@@ -61,8 +61,9 @@ async def run_multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     """Run a multi-turn conversation benchmark.
 
     Args:
-        args: Benchmark configuration.  ``args.number`` is the total turn
-              budget and ``args.parallel`` controls concurrency.
+        args: Benchmark configuration.  ``args.number`` is the total number of
+              conversations to run and ``args.parallel`` controls concurrency
+              (number of simultaneously active conversations).
 
     Returns:
         Tuple of ``(metrics_result, percentile_result)`` dicts, identical in
@@ -77,8 +78,7 @@ async def run_multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     logger.info(f'Loading conversations from dataset: {args.dataset}')
     dataset_plugin = DatasetRegistry.get_class(args.dataset)(args)
 
-    # Cap preloading: worst-case every conversation has 1 turn, so args.number
-    # conversations is always sufficient to cover the full turn budget.
+    # Cap preloading to args.number since that is exactly the target conversation count.
     # This prevents loading 70k+ ShareGPT conversations when --number is small.
     _max_preload = args.number
     with tqdm(desc='Loading[conversations]', logger=logger) as pbar:

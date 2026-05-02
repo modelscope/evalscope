@@ -19,7 +19,9 @@ class MultiTurnStrategy(BenchmarkStrategy):
 
     Each worker owns one active conversation at a time and progresses through
     its turns sequentially.  Workers cycle through ``all_conversations`` until
-    the global turn budget (``args.number``) is exhausted.
+    ``args.number`` conversations have been started (attempted).  A conversation
+    that is abandoned mid-way due to a failed turn still counts toward this
+    budget; only degenerate empty conversations are excluded.
 
     Open-loop mode is intentionally **not** supported for multi-turn
     conversations.  The fundamental reason is that open-loop semantics require
@@ -44,7 +46,7 @@ class MultiTurnStrategy(BenchmarkStrategy):
         # Conversation cycling index – safe without a lock because asyncio is
         # single-threaded/cooperative.
         self._conv_index = 0
-        self._turn_counter = 0
+        self._conv_counter = 0
 
     def _next_conversation(self) -> List[Dict]:
         """Return the next conversation from the cycled pool."""
@@ -53,12 +55,18 @@ class MultiTurnStrategy(BenchmarkStrategy):
         return conv
 
     async def _worker(self, worker_id: int) -> None:
-        """Process conversations until the global turn budget is reached."""
-        while self._turn_counter < self.args.number:
+        """Process conversations until the global conversation budget is reached."""
+        while True:
+            # Atomically claim a conversation slot before awaiting to prevent
+            # other workers from overshooting args.number.
+            if self._conv_counter >= self.args.number:
+                return
+            self._conv_counter += 1
             conversation = self._next_conversation()
 
             if not conversation:
-                # Degenerate conversation with no turns – skip.
+                # Degenerate conversation with no turns – skip without counting.
+                self._conv_counter -= 1
                 continue
 
             # Accumulated context sent with each turn.  Real assistant responses
@@ -67,23 +75,21 @@ class MultiTurnStrategy(BenchmarkStrategy):
             context: List[Message] = []
             prev_prompt_tokens: int = 0
             prev_completion_tokens: int = 0
+            total_turns = len(conversation)
 
             for turn_idx, turn_delta in enumerate(conversation):
                 # turn_delta: Messages – the delta to append for this turn
-                # Check global turn budget.
-                if self._turn_counter >= self.args.number:
-                    return
 
                 # Respect per-conversation max_turns.
                 if self.args.max_turns is not None and turn_idx >= self.args.max_turns:
+                    # Mark the last successfully enqueued turn as conversation-final.
+                    # The turn at turn_idx was never sent, so turn_idx-1 was the last.
+                    # Nothing to mark here; the previous iteration already set is_last_turn
+                    # via the look-ahead below if it was the effective last turn.
                     break
 
                 # Append this turn's delta to the growing context.
                 context.extend([m.copy() for m in turn_delta])
-
-                # Reserve this turn slot BEFORE awaiting to prevent other workers
-                # from claiming the same slot and overshooting args.number.
-                self._turn_counter += 1
 
                 # Rate limiting (mirrors standard benchmark behaviour).
                 # When --rate is set, apply a Poisson inter-request sleep so
@@ -132,7 +138,18 @@ class MultiTurnStrategy(BenchmarkStrategy):
                 if benchmark_data.completion_tokens:
                     prev_completion_tokens = benchmark_data.completion_tokens
 
+                # Determine whether this is the last turn of the conversation:
+                # • normal completion: final index in the dataset
+                # • max_turns cap: next iteration would be skipped
+                # • request failure: conversation is abandoned after this turn
+                effective_last = (
+                    turn_idx == total_turns - 1
+                    or (self.args.max_turns is not None and turn_idx + 1 >= self.args.max_turns)
+                    or not benchmark_data.success
+                )
+
                 # Enqueue for metrics collection.
+                benchmark_data.is_last_turn = effective_last
                 await self.queue.put(benchmark_data)
 
                 if not benchmark_data.success:

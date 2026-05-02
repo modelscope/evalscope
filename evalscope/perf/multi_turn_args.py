@@ -24,10 +24,9 @@ class MultiTurnArgs(BaseModel):
     ``seed_everything`` in ``main.py``.
 
     Note: ``min_turns`` and ``max_turns`` are top-level ``Arguments`` fields
-    (``--min-turns`` / ``--max-turns``) and are not part of ``MultiTurnArgs``.
-    For ``swe_smith`` the turn count is determined entirely by the token-length
-    parameters below (``first_turn_length``, ``subsequent_turn_length``,
-    ``max_context_length``).
+    (``--min-turns`` / ``--max-turns``).  For ``swe_smith`` live construction
+    the per-conversation turn count is sampled from ``[min_turns, max_turns]``
+    using these token-length parameters to fill each turn.
     """
 
     # Token-length controls (support range sampling)
@@ -37,9 +36,6 @@ class MultiTurnArgs(BaseModel):
     subsequent_turn_length: IntOrRange = 500
     """Target token increment per subsequent turn."""
 
-    max_context_length: IntOrRange = 75000
-    """Maximum context length (prompt tokens) allowed per conversation."""
-
     # Misc
     chars_per_token: float = 3.0
     """Estimated characters per token used for pre-filtering when no tokenizer is available."""
@@ -47,19 +43,13 @@ class MultiTurnArgs(BaseModel):
     num_workers: int = 4
     """Number of parallel worker processes for live conversation building (>1 uses multiprocessing.Pool)."""
 
-    scan_multiplier: int = 50
-    """Maximum number of candidate trajectories to collect during dataset scan, expressed as a multiple
-    of ``number`` (the target conversation count).  The scan stops early once
-    ``number * scan_multiplier`` candidates have been collected, avoiding a full dataset traversal
-    when the dataset is very large.  Set to 0 to disable the limit and scan the entire dataset."""
-
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # ------------------------------------------------------------------
     # Validators
     # ------------------------------------------------------------------
 
-    @field_validator('first_turn_length', 'subsequent_turn_length', 'max_context_length', mode='before')
+    @field_validator('first_turn_length', 'subsequent_turn_length', mode='before')
     @classmethod
     def _validate_int_or_range(cls, v):
         if isinstance(v, int):
@@ -103,7 +93,6 @@ class MultiTurnArgs(BaseModel):
         return {
             'first_turn_length': self._sample(self.first_turn_length),
             'subsequent_turn_length': self._sample(self.subsequent_turn_length),
-            'max_context_length': self._sample(self.max_context_length),
             'chars_per_token': self.chars_per_token,
             'num_workers': self.num_workers,
         }

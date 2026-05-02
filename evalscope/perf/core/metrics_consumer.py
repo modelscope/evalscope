@@ -84,6 +84,12 @@ async def statistic_benchmark_metric(
                     logger.info(msg)
 
                 benchmark_data_queue.task_done()
+                # In multi-turn mode each conversation produces multiple turns;
+                # advance the progress bar only once per conversation (on the
+                # last turn).  In single-turn mode is_last_turn is always False,
+                # so we fall back to updating on every item.
+                if not benchmark_data.is_last_turn and benchmark_data.input_num_turns > 0:
+                    continue
                 pbar.update(1)
 
         await asyncio.to_thread(con.commit)
