@@ -14,8 +14,7 @@ This plugin supports two data-source modes:
 
    The entire dataset is scanned once and all trajectories that pass the
    character-length pre-filter are collected as candidates.  Candidates are
-   then shuffled.  For each candidate the IntOrRange token-length params are
-   sampled, and ``num_turns`` is sampled uniformly from
+   then shuffled.  For each candidate ``num_turns`` is sampled uniformly from
    ``[min_turns, max_turns]`` (``--min-turns`` / ``--max-turns``).  All work
    items are dispatched to a ``multiprocessing.Pool``
    (size ``multi_turn_args.num_workers``); results are collected until
@@ -247,7 +246,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
     * **Live construction** (no ``--dataset-path``): Stream trajectories from
       ModelScope, apply the same logic as ``build_swe_smith_dataset.py``, and
       yield conversations on-the-fly.  Token-length parameters are taken from
-      ``multi_turn_args`` (supports range sampling via seed).
+      ``multi_turn_args``.
 
     The number of turns per conversation is sampled uniformly from
     ``[min_turns, max_turns]`` (``--min-turns`` / ``--max-turns``) for each
@@ -258,8 +257,8 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
 
     Parameters from ``multi_turn_args`` that affect live construction:
 
-    * ``first_turn_length``      – target tokens for turn 1 (IntOrRange)
-    * ``subsequent_turn_length`` – token growth per subsequent turn (IntOrRange)
+    * ``first_turn_length``      – target tokens for turn 1
+    * ``subsequent_turn_length`` – token growth per subsequent turn
     * ``chars_per_token``        – pre-filter estimate
     * ``num_workers``            – multiprocessing pool size
     """
@@ -337,14 +336,8 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
         # For pre-filtering, use the upper-bound of first_turn_length as the minimum
         # char threshold (conservative: trajectories need at least that many tokens).
         if mt_args is not None:
-            first_upper = (
-                mt_args.first_turn_length
-                if isinstance(mt_args.first_turn_length, int) else mt_args.first_turn_length[1]
-            )
-            subsequent_upper = (
-                mt_args.subsequent_turn_length
-                if isinstance(mt_args.subsequent_turn_length, int) else mt_args.subsequent_turn_length[1]
-            )
+            first_upper = mt_args.first_turn_length
+            subsequent_upper = mt_args.subsequent_turn_length
         else:
             first_upper = 65000
             subsequent_upper = 500
@@ -415,7 +408,12 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
         conversations: List[List[Messages]] = []
         skipped_build = 0
 
-        pool_ctx = (multiprocessing.Pool(num_workers) if num_workers > 1 else None)
+        # Use spawn context to avoid fork-based deadlocks on Linux: the perf runner's
+        # parent process contains async loops, logger threads, tqdm monitors, and a
+        # possibly pre-warmed HF tokenizer (Rust Rayon threads). fork would inherit
+        # these threads' lock states and deadlock on Pool cleanup.
+        mp_ctx = multiprocessing.get_context('spawn')
+        pool_ctx = (mp_ctx.Pool(num_workers) if num_workers > 1 else None)
 
         ctx = pool_ctx if pool_ctx is not None else _NullContext()
         with ctx as pool:
