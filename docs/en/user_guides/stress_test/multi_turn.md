@@ -22,14 +22,14 @@ The multi-turn conversation benchmark allows you to test a model service in real
 
 ### `multi_turn_args` (swe_smith-specific parameters)
 
-The `swe_smith` dataset's live construction mode supports fine-grained control of conversation structure and token-length targets via a `MultiTurnArgs` object. All `IntOrRange` fields accept either a single integer or a `[min, max]` list — the list form triggers per-conversation random sampling and is reproducible when combined with `--seed`.
+The `swe_smith` dataset's live construction mode supports fine-grained control of conversation structure and token-length targets via a `MultiTurnArgs` object.
 
 The number of turns per conversation is sampled from `[--min-turns, --max-turns]`; the amount of content filled per turn is controlled by the token-length parameters below.
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `first_turn_length` | `IntOrRange` | Target prompt token count for turn 1; trajectory messages are sliced until this length is reached | `65000` |
-| `subsequent_turn_length` | `IntOrRange` | Target token increment per subsequent turn; controls the delta size added each round | `500` |
+| `first_turn_length` | `int` | Target prompt token count for turn 1; trajectory messages are sliced until this length is reached | `65000` |
+| `subsequent_turn_length` | `int` | Target token increment per subsequent turn; controls the delta size added each round | `500` |
 | `chars_per_token` | `float` | Characters-per-token estimate used for pre-filtering trajectories when no tokenizer is available | `3.0` |
 | `num_workers` | `int` | Number of parallel workers for live conversation building (>1 uses multiprocessing.Pool) | `4` |
 
@@ -302,7 +302,6 @@ Two data source modes are supported:
 
 Common features of both modes:
 - **Offset support**: Skip the first N conversations via `--dataset-offset`, useful for sharded testing or avoiding KV cache hot-spots.
-- **Range sampling**: `first_turn_length` and `subsequent_turn_length` both support `[min, max]` lists for per-conversation random sampling; combine with `--seed` for reproducibility.
 
 > **Note**: The turn count for each conversation is sampled from `[--min-turns, --max-turns]`; the amount of content per turn is determined by `first_turn_length` / `subsequent_turn_length`.
 
@@ -383,26 +382,4 @@ evalscope perf \
   --extra-args '{"ignore_eos": true}'
 ```
 
-`first_turn_length` / `subsequent_turn_length` also support `[min, max]` lists for per-conversation random sampling, so different conversations get different token-length targets. Use `--min-turns` / `--max-turns` to control the turn count range:
 
-```bash
-evalscope perf \
-  --model YOUR_MODEL \
-  --url OPENAI_API_COMPAT_URL \
-  --api openai \
-  --dataset swe_smith \
-  --tokenizer-path YOUR_MODEL \
-  --max-tokens 512 \
-  --multi-turn \
-  --multi-turn-args '{
-      "first_turn_length": [4096, 16384],
-      "subsequent_turn_length": [512, 2048]
-  }' \
-  --min-turns 3 \
-  --max-turns 10 \
-  --seed 42 \
-  --number 200 \
-  --parallel 20
-```
-
-> **Note**: Parameters in `[min, max]` form are independently sampled for each conversation, more faithfully simulating the request distribution in production. Use `--seed` to make results reproducible.

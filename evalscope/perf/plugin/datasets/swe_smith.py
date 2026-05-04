@@ -14,8 +14,7 @@ This plugin supports two data-source modes:
 
    The entire dataset is scanned once and all trajectories that pass the
    character-length pre-filter are collected as candidates.  Candidates are
-   then shuffled.  For each candidate the IntOrRange token-length params are
-   sampled, and ``num_turns`` is sampled uniformly from
+   then shuffled.  For each candidate ``num_turns`` is sampled uniformly from
    ``[min_turns, max_turns]`` (``--min-turns`` / ``--max-turns``).  All work
    items are dispatched to a ``multiprocessing.Pool``
    (size ``multi_turn_args.num_workers``); results are collected until
@@ -247,7 +246,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
     * **Live construction** (no ``--dataset-path``): Stream trajectories from
       ModelScope, apply the same logic as ``build_swe_smith_dataset.py``, and
       yield conversations on-the-fly.  Token-length parameters are taken from
-      ``multi_turn_args`` (supports range sampling via seed).
+      ``multi_turn_args``.
 
     The number of turns per conversation is sampled uniformly from
     ``[min_turns, max_turns]`` (``--min-turns`` / ``--max-turns``) for each
@@ -258,8 +257,8 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
 
     Parameters from ``multi_turn_args`` that affect live construction:
 
-    * ``first_turn_length``      – target tokens for turn 1 (IntOrRange)
-    * ``subsequent_turn_length`` – token growth per subsequent turn (IntOrRange)
+    * ``first_turn_length``      – target tokens for turn 1
+    * ``subsequent_turn_length`` – token growth per subsequent turn
     * ``chars_per_token``        – pre-filter estimate
     * ``num_workers``            – multiprocessing pool size
     """

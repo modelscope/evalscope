@@ -590,7 +590,6 @@ def add_argument(parser: argparse.ArgumentParser):
             'as a JSON string. '
             'Example: \'{"first_turn_length": 65000, "subsequent_turn_length": 500, '
             '"chars_per_token": 3.0}\'. '
-            'Supports IntOrRange for length fields, e.g. "first_turn_length": [60000, 70000]. '
             'Note: min_turns and max_turns are top-level --min-turns / --max-turns arguments '
             '(per-conversation turn count is sampled from [min_turns, max_turns]).'
         ),

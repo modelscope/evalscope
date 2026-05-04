@@ -22,14 +22,14 @@
 
 ### `multi_turn_args`（`swe_smith` 专属参数）
 
-`swe_smith` 数据集的 live 构建模式支持通过 `MultiTurnArgs` 对象精细控制对话 token 长度目标。所有 `IntOrRange` 类型字段既可传入单个整数，也可传入 `[min, max]` 列表——列表形式会在每条对话构建时随机采样，结合 `--seed` 保证可复现。
+`swe_smith` 数据集的 live 构建模式支持通过 `MultiTurnArgs` 对象精细控制对话 token 长度目标。
 
 每条对话的轮次数量从 `[--min-turns, --max-turns]` 中随机采样，每轮按以下 token 长度参数填充消息。
 
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
-| `first_turn_length` | `IntOrRange` | 第 1 轮目标 prompt token 数；从原始轨迹中截取恰好达到该长度的消息片段 | `65000` |
-| `subsequent_turn_length` | `IntOrRange` | 后续每轮在上一轮基础上新增的目标 token 数；决定每轮 delta 的大小 | `500` |
+| `first_turn_length` | `int` | 第 1 轮目标 prompt token 数；从原始轨迹中截取恰好达到该长度的消息片段 | `65000` |
+| `subsequent_turn_length` | `int` | 后续每轮在上一轮基础上新增的目标 token 数；决定每轮 delta 的大小 | `500` |
 | `chars_per_token` | `float` | 无 tokenizer 时的字符/token 估算比，用于预过滤原始轨迹 | `3.0` |
 | `num_workers` | `int` | live 构建模式下并行 worker 数量（>1 使用 multiprocessing.Pool） | `4` |
 
@@ -302,7 +302,6 @@ evalscope perf \
 
 两种模式共同特性：
 - **支持偏移**：通过 `--dataset-offset` 跳过前 N 条对话，用于分片测试或规避缓存热点
-- **支持范围采样**：`first_turn_length`、`subsequent_turn_length` 均支持 `[min, max]` 列表，每条对话独立随机采样，需配合 `--seed` 保证复现性
 
 > **说明**：每条对话的轮次数量从 `[--min-turns, --max-turns]` 中随机采样，每轮填充的消息量由 `first_turn_length` / `subsequent_turn_length` 决定。
 
@@ -383,26 +382,3 @@ evalscope perf \
   --extra-args '{"ignore_eos": true}'
 ```
 
-`first_turn_length` / `subsequent_turn_length` 也支持传入 `[min, max]` 列表进行随机采样，实现不同对话具有不同 token 长度目标；`--min-turns` / `--max-turns` 控制每条对话的轮次范围：
-
-```bash
-evalscope perf \
-  --model YOUR_MODEL \
-  --url OPENAI_API_COMPAT_URL \
-  --api openai \
-  --dataset swe_smith \
-  --tokenizer-path YOUR_MODEL \
-  --max-tokens 512 \
-  --multi-turn \
-  --multi-turn-args '{
-      "first_turn_length": [4096, 16384],
-      "subsequent_turn_length": [512, 2048]
-  }' \
-  --min-turns 3 \
-  --max-turns 10 \
-  --seed 42 \
-  --number 200 \
-  --parallel 20
-```
-
-> **说明**：`[min, max]` 形式的参数会在每条对话构建时独立随机采样，从而更真实地模拟生产环境中的请求分布。需配合 `--seed` 保证结果可复现。
