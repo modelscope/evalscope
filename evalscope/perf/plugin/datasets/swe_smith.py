@@ -408,7 +408,12 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
         conversations: List[List[Messages]] = []
         skipped_build = 0
 
-        pool_ctx = (multiprocessing.Pool(num_workers) if num_workers > 1 else None)
+        # Use spawn context to avoid fork-based deadlocks on Linux: the perf runner's
+        # parent process contains async loops, logger threads, tqdm monitors, and a
+        # possibly pre-warmed HF tokenizer (Rust Rayon threads). fork would inherit
+        # these threads' lock states and deadlock on Pool cleanup.
+        mp_ctx = multiprocessing.get_context('spawn')
+        pool_ctx = (mp_ctx.Pool(num_workers) if num_workers > 1 else None)
 
         ctx = pool_ctx if pool_ctx is not None else _NullContext()
         with ctx as pool:
