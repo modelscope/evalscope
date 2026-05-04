@@ -336,14 +336,8 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
         # For pre-filtering, use the upper-bound of first_turn_length as the minimum
         # char threshold (conservative: trajectories need at least that many tokens).
         if mt_args is not None:
-            first_upper = (
-                mt_args.first_turn_length
-                if isinstance(mt_args.first_turn_length, int) else mt_args.first_turn_length[1]
-            )
-            subsequent_upper = (
-                mt_args.subsequent_turn_length
-                if isinstance(mt_args.subsequent_turn_length, int) else mt_args.subsequent_turn_length[1]
-            )
+            first_upper = mt_args.first_turn_length
+            subsequent_upper = mt_args.subsequent_turn_length
         else:
             first_upper = 65000
             subsequent_upper = 500
