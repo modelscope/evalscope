@@ -165,6 +165,7 @@ class VisualizerType:
 
 # --- Report / Visualization constants (migrated from app.constants) ---
 PLOTLY_THEME = 'plotly_dark'
+PLOTLY_CDN_URL = 'https://resources.modelscope.cn/third-part/js/plotly/plotly-2.35.2.min.js'
 REPORT_TOKEN = '@@'
 MODEL_TOKEN = '::'
 DATASET_TOKEN = ', '

@@ -7,7 +7,16 @@ from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.perf.utils.benchmark_util import Metrics
 from evalscope.perf.utils.rich_display import EmbeddingResultAnalyzer, LLMResultAnalyzer
 from evalscope.utils.logger import get_logger
-from ..utils import OUTPUT_DIR, create_log_file, get_log_content, run_in_subprocess, run_perf_wrapper, validate_task_id
+from ..utils import (
+    OUTPUT_DIR,
+    create_log_file,
+    get_log_content,
+    run_in_subprocess,
+    run_perf_wrapper,
+    serialize_result,
+    stop_process,
+    validate_task_id,
+)
 
 logger = get_logger()
 
@@ -79,13 +88,36 @@ def run_performance_test():
     create_log_file(task_id, os.path.join('perf', 'benchmark.log'))
 
     try:
-        result = run_in_subprocess(run_perf_wrapper, perf_args)
+        result = run_in_subprocess(run_perf_wrapper, perf_args, task_id=task_id)
         table_str = _build_perf_table(result, api_type=perf_args.api)
         logger.info(f'[{task_id}] Task completed successfully')
-        return jsonify({'status': 'completed', 'task_id': task_id, 'result': result, 'table': table_str})
+        return jsonify({
+            'status': 'completed',
+            'task_id': task_id,
+            'result': serialize_result(result),
+            'table': table_str
+        })
     except Exception as e:
         logger.error(f'[{task_id}] Task failed: {e}')
         return jsonify({'status': 'error', 'task_id': task_id, 'error': str(e)}), 500
+
+
+@bp_perf.route('/stop', methods=['POST'])
+def stop_performance_test():
+    """Stop a running performance benchmark task.
+
+    Query params:
+        task_id (str): the task identifier
+    """
+    task_id = request.args.get('task_id')
+    if not task_id:
+        return jsonify({'error': 'task_id is required'}), 400
+
+    stopped = stop_process(task_id)
+    if stopped:
+        return jsonify({'status': 'stopped', 'task_id': task_id}), 200
+    else:
+        return jsonify({'error': f'No running task found for task_id: {task_id}'}), 404
 
 
 @bp_perf.route('/report', methods=['GET'])

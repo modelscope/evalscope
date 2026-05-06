@@ -1,9 +1,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 """Benchmark catalogue and description helpers for the EvalScope service."""
 import re
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from evalscope.utils.resource_utils import load_benchmark_data
+from evalscope.utils.resource_utils import BENCHMARK_META_DIR, load_benchmark_data
 
 # ---------------------------------------------------------------------------
 # Supported benchmark catalogue
@@ -160,6 +161,13 @@ def parse_benchmark_description(readme_content: str) -> Dict[str, Any]:
     return {'full': full_content, 'sections': sections}
 
 
+def discover_all_benchmarks() -> List[str]:
+    """Scan the ``_meta`` directory and return all benchmark names found."""
+    if not BENCHMARK_META_DIR.exists():
+        return []
+    return sorted(p.stem for p in BENCHMARK_META_DIR.glob('*.json'))
+
+
 def build_benchmark_entry(name: str) -> Dict[str, Any]:
     """Load metadata for a single benchmark and build the API response entry.
 
@@ -167,13 +175,13 @@ def build_benchmark_entry(name: str) -> Dict[str, Any]:
         name: Benchmark identifier (e.g. ``'gsm8k'``).
 
     Returns:
-        A dict containing ``name``, ``meta``, and ``description``.
-        ``meta`` includes all top-level benchmark data fields except
-        ``readme`` (e.g. ``meta``, ``statistics``, ``sample_example``,
-        ``updated_at``).  The ``description`` field has two sub-keys,
-        ``'zh'`` and ``'en'``, each containing ``full`` and ``sections``
-        parsed from the corresponding readme.  A key is ``None`` when the
-        readme for that language is absent.
+        A dict containing ``name``, ``meta``, ``description``, and several
+        convenience top-level fields for frontend consumption.  ``meta`` includes
+        all top-level benchmark data fields except ``readme`` (e.g. ``meta``,
+        ``statistics``, ``sample_example``, ``updated_at``).  The
+        ``description`` field has two sub-keys, ``'zh'`` and ``'en'``, each
+        containing ``full`` and ``sections`` parsed from the corresponding
+        readme.  A key is ``None`` when the readme for that language is absent.
     """
     data = load_benchmark_data(name).get(name, {})
     readme = data.get('readme', {})
@@ -187,6 +195,7 @@ def build_benchmark_entry(name: str) -> Dict[str, Any]:
     }
 
     meta = data.get('meta', {})
+    statistics = data.get('statistics', {})
 
     # Flatten metrics to list[str]: extract key name if item is a dict
     raw_metrics = meta.get('metrics', [])
@@ -194,6 +203,14 @@ def build_benchmark_entry(name: str) -> Dict[str, Any]:
 
     return {
         'name': name,
+        'pretty_name': meta.get('pretty_name', name),
+        'tags': meta.get('tags', []),
+        'category': meta.get('category', 'llm'),
+        'subset_list': meta.get('subset_list', []),
+        'total_samples': statistics.get('total_samples', 0),
+        'few_shot_num': meta.get('few_shot_num', 0),
+        'dataset_id': meta.get('dataset_id', ''),
+        'paper_url': meta.get('paper_url') or None,
         'metrics': metrics,
         'meta': meta,
         'description': description,

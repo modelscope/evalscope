@@ -36,11 +36,11 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
 
     const config: Record<string, unknown> = {
       model,
-      api_type: apiType,
+      api: apiType,
       parallel: parallel.split(',').map((s) => Number(s.trim())).filter(Boolean),
       number: number.split(',').map((s) => Number(s.trim())).filter(Boolean),
     }
-    if (apiUrl) config.api_url = apiUrl
+    if (apiUrl) config.url = apiUrl
     if (apiKey) config.api_key = apiKey
     if (rate) config.rate = Number(rate)
     if (maxTokens) config.max_tokens = Number(maxTokens)

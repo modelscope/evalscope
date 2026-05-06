@@ -3,7 +3,7 @@ import pandas as pd
 import re
 from typing import Dict, List, Optional
 
-from evalscope.constants import DEFAULT_LANGUAGE
+from evalscope.constants import DEFAULT_LANGUAGE, PLOTLY_CDN_URL
 from evalscope.report.combinator import get_report_list
 from evalscope.report.report import Report, ReportKey
 from evalscope.report.visualization import (
@@ -332,6 +332,7 @@ def gen_html_report_file(
         sunburst_chart_div=sunburst_chart_div,
         dataset_sections=dataset_sections,
         default_lang=DEFAULT_LANGUAGE,
+        plotly_cdn_url=PLOTLY_CDN_URL,
     )
 
     out_path = os.path.join(reports_dir, output_html_name)

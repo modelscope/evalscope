@@ -12,7 +12,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request, send_file
 from typing import List
 
-from evalscope.constants import PLOTLY_THEME
+from evalscope.constants import PLOTLY_CDN_URL, PLOTLY_THEME
 from evalscope.report import ReportKey, get_data_frame
 from evalscope.report.report import Report
 from evalscope.report.visualization import (
@@ -528,7 +528,9 @@ def get_chart():
                    'justify-content:center;height:100vh;font-family:sans-serif;">No data to plot</body></html>', \
                    200, {'Content-Type': 'text/html'}
 
-        html = fig.to_html(full_html=True, include_plotlyjs='cdn', config={'responsive': True})
+        html = fig.to_html(full_html=True, include_plotlyjs=False, config={'responsive': True})
+        plotly_script = f'<script src="{PLOTLY_CDN_URL}" charset="utf-8"></script>'
+        html = html.replace('</head>', f'  {plotly_script}\n</head>')
         return html, 200, {'Content-Type': 'text/html'}
 
     except Exception as e:

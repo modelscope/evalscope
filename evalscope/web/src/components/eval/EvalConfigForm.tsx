@@ -102,17 +102,20 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
       model,
       datasets: datasets.split(',').map((s) => s.trim()).filter(Boolean),
       limit: limit ? Number(limit) : undefined,
-      batch_size: batchSize ? Number(batchSize) : undefined,
+      eval_batch_size: batchSize ? Number(batchSize) : undefined,
     }
     if (apiUrl) config.api_url = apiUrl
     if (apiKey) config.api_key = apiKey
     if (repeats && Number(repeats) > 1) config.repeats = Number(repeats)
     if (timeout) config.timeout = Number(timeout)
     if (stream) config.stream = true
-    if (temperature) config.temperature = Number(temperature)
-    if (topP) config.top_p = Number(topP)
-    if (maxTokens) config.max_tokens = Number(maxTokens)
-    if (topK) config.top_k = Number(topK)
+    // Wrap generation params into generation_config dict
+    const genConfig: Record<string, unknown> = {}
+    if (temperature) genConfig.temperature = Number(temperature)
+    if (topP) genConfig.top_p = Number(topP)
+    if (maxTokens) genConfig.max_tokens = Number(maxTokens)
+    if (topK) genConfig.top_k = Number(topK)
+    if (Object.keys(genConfig).length > 0) config.generation_config = genConfig
     if (datasetArgs) {
       try {
         config.dataset_args = JSON.parse(datasetArgs)

@@ -7,24 +7,30 @@ interface UsePollingOptions<T> {
   onData?: (data: T) => void
 }
 
-export function usePolling<T>({ fn, interval = 3000, enabled = false, onData }: UsePollingOptions<T>) {
+export function usePolling<T>({ fn, interval = 5000, enabled = false, onData }: UsePollingOptions<T>) {
   const [data, setData] = useState<T | null>(null)
   const [error, setError] = useState<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const mountedRef = useRef(true)
 
+  // Use refs so that changes to fn / onData do NOT restart the polling cycle
+  const fnRef = useRef(fn)
+  fnRef.current = fn
+  const onDataRef = useRef(onData)
+  onDataRef.current = onData
+
   const poll = useCallback(async () => {
     try {
-      const result = await fn()
+      const result = await fnRef.current()
       if (!mountedRef.current) return
       setData(result)
       setError(null)
-      onData?.(result)
+      onDataRef.current?.(result)
     } catch (e) {
       if (!mountedRef.current) return
       setError(e instanceof Error ? e.message : String(e))
     }
-  }, [fn, onData])
+  }, [])
 
   useEffect(() => {
     mountedRef.current = true

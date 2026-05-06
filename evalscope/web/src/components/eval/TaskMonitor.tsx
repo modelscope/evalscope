@@ -3,7 +3,7 @@ import LogViewer from '@/components/common/LogViewer'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import { useLocale } from '@/contexts/LocaleContext'
-import { ExternalLink, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { ExternalLink, CheckCircle2, XCircle, Loader2, Square } from 'lucide-react'
 
 interface Props {
   running: boolean
@@ -12,9 +12,10 @@ interface Props {
   result: EvalInvokeResponse | null
   reportUrl: string | null
   readyLabel: string
+  onStop?: () => void
 }
 
-export default function TaskMonitor({ running, progress, logText, result, reportUrl, readyLabel }: Props) {
+export default function TaskMonitor({ running, progress, logText, result, reportUrl, readyLabel, onStop }: Props) {
   const { t } = useLocale()
 
   return (
@@ -52,6 +53,19 @@ export default function TaskMonitor({ running, progress, logText, result, report
             style={{ width: `${Math.min(progress, 100)}%`, background: 'var(--accent)' }}
           />
         </div>
+      )}
+
+      {/* Stop button */}
+      {running && onStop && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onStop}
+          className="text-[var(--danger)] border-[var(--danger)] hover:bg-[var(--danger-bg)]"
+        >
+          <Square size={14} />
+          {t('common.stop')}
+        </Button>
       )}
 
       {/* Log */}

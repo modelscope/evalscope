@@ -149,6 +149,14 @@ export interface AnalysisResponse {
 
 export interface BenchmarkEntry {
   name: string
+  pretty_name: string
+  tags: string[]
+  category: 'llm' | 'vlm'
+  subset_list: string[]
+  total_samples: number
+  few_shot_num: number
+  dataset_id: string
+  paper_url: string | null
   metrics: string[]
   meta: Record<string, unknown>
   description: {

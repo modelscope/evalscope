@@ -15,9 +15,12 @@ from ..utils import (
     OUTPUT_DIR,
     build_benchmark_entry,
     create_log_file,
+    discover_all_benchmarks,
     get_log_content,
     run_eval_wrapper,
     run_in_subprocess,
+    serialize_result,
+    stop_process,
     validate_task_id,
 )
 
@@ -143,7 +146,7 @@ def _execute_task(task_id: str, task_config: TaskConfig, label: str = 'Task'):
     """Run the evaluation subprocess and return a Flask response."""
     create_log_file(task_id, os.path.join('logs', 'eval_log.log'))
     try:
-        result = run_in_subprocess(run_eval_wrapper, task_config)
+        result = run_in_subprocess(run_eval_wrapper, task_config, task_id=task_id)
         table_str = _build_result_table(task_config.work_dir)
         if _all_results_empty(result):
             error_msg = (
@@ -154,7 +157,12 @@ def _execute_task(task_id: str, task_config: TaskConfig, label: str = 'Task'):
             logger.error(f'[{task_id}] {label} produced empty results: {error_msg}')
             return jsonify({'status': 'error', 'task_id': task_id, 'error': error_msg}), 500
         logger.info(f'[{task_id}] {label} completed successfully')
-        return jsonify({'status': 'completed', 'task_id': task_id, 'result': result, 'table': table_str})
+        return jsonify({
+            'status': 'completed',
+            'task_id': task_id,
+            'result': serialize_result(result),
+            'table': table_str
+        })
     except Exception as e:
         logger.error(f'[{task_id}] {label} failed: {e}')
         return jsonify({'status': 'error', 'task_id': task_id, 'error': str(e)}), 500
@@ -175,6 +183,24 @@ def run_evaluation():
     logger.info(f'[{task_id}] Datasets: {task_config.datasets}')
 
     return _execute_task(task_id, task_config, label='Task')
+
+
+@bp_eval.route('/stop', methods=['POST'])
+def stop_evaluation():
+    """Stop a running evaluation task.
+
+    Query params:
+        task_id (str): the task identifier
+    """
+    task_id = request.args.get('task_id')
+    if not task_id:
+        return jsonify({'error': 'task_id is required'}), 400
+
+    stopped = stop_process(task_id)
+    if stopped:
+        return jsonify({'status': 'stopped', 'task_id': task_id}), 200
+    else:
+        return jsonify({'error': f'No running task found for task_id: {task_id}'}), 404
 
 
 @bp_eval.route('/resume/invoke', methods=['POST'])
@@ -288,20 +314,38 @@ def list_benchmarks():
 
     Query params:
         type (str, optional): Filter to ``'text'`` or ``'multimodal'`` only.
+        all (str, optional): When ``'true'``, return *all* benchmarks discovered
+            from the ``_meta`` directory instead of the curated default lists.
     """
     try:
-        # Allow the catalogue to be overridden via Flask app config
-        cfg = current_app.config.get('SUPPORTED_BENCHMARKS', {})
-        text_names: List[str] = cfg.get('text', DEFAULT_TEXT_BENCHMARKS)
-        multimodal_names: List[str] = cfg.get('multimodal', DEFAULT_MULTIMODAL_BENCHMARKS)
-
         filter_type = request.args.get('type', '').lower()
+        return_all = request.args.get('all', '').lower() == 'true'
 
-        result: Dict[str, Any] = {}
-        if filter_type in ('', 'text'):
-            result['text'] = [build_benchmark_entry(name) for name in text_names]
-        if filter_type in ('', 'multimodal'):
-            result['multimodal'] = [build_benchmark_entry(name) for name in multimodal_names]
+        if return_all:
+            # Discover every benchmark from _meta directory
+            all_names = discover_all_benchmarks()
+            all_entries = [build_benchmark_entry(name) for name in all_names]
+
+            if filter_type == 'text':
+                result = {'text': [e for e in all_entries if e.get('category') == 'llm']}
+            elif filter_type == 'multimodal':
+                result = {'multimodal': [e for e in all_entries if e.get('category') == 'vlm']}
+            else:
+                result = {
+                    'text': [e for e in all_entries if e.get('category') == 'llm'],
+                    'multimodal': [e for e in all_entries if e.get('category') == 'vlm'],
+                }
+        else:
+            # Use the curated default lists (backward-compatible)
+            cfg = current_app.config.get('SUPPORTED_BENCHMARKS', {})
+            text_names: List[str] = cfg.get('text', DEFAULT_TEXT_BENCHMARKS)
+            multimodal_names: List[str] = cfg.get('multimodal', DEFAULT_MULTIMODAL_BENCHMARKS)
+
+            result: Dict[str, Any] = {}
+            if filter_type in ('', 'text'):
+                result['text'] = [build_benchmark_entry(name) for name in text_names]
+            if filter_type in ('', 'multimodal'):
+                result['multimodal'] = [build_benchmark_entry(name) for name in multimodal_names]
 
         if filter_type and filter_type not in ('text', 'multimodal'):
             return jsonify({'error': f"Unknown type '{filter_type}'. Use 'text' or 'multimodal'."}), 400
