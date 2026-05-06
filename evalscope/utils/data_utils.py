@@ -1,5 +1,5 @@
 """
-Data loading and processing utilities for the Evalscope dashboard.
+Data loading and processing utilities for reports and predictions.
 """
 import glob
 import os
@@ -7,11 +7,10 @@ import pandas as pd
 from typing import Any, Dict, List, Union
 
 from evalscope.api.evaluator import CacheManager, ReviewResult
-from evalscope.constants import DataCollection
+from evalscope.constants import DATASET_TOKEN, MODEL_TOKEN, REPORT_TOKEN, DataCollection
 from evalscope.report import Report, ReportKey, get_data_frame, get_report_list
 from evalscope.utils.io_utils import OutputsStructure, jsonl_to_list, yaml_to_dict
 from evalscope.utils.logger import get_logger
-from ..constants import DATASET_TOKEN, MODEL_TOKEN, REPORT_TOKEN
 
 logger = get_logger()
 

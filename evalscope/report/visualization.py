@@ -1,5 +1,5 @@
 """
-Visualization utilities for the Evalscope dashboard.
+Visualization utilities for report chart generation.
 """
 import numpy as np
 import pandas as pd
@@ -7,10 +7,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 from typing import List
 
-from evalscope.constants import DataCollection
+from evalscope.constants import DEFAULT_BAR_WIDTH, PLOTLY_THEME, DataCollection
 from evalscope.report import Report, ReportKey, get_data_frame
 from evalscope.utils.logger import get_logger
-from ..constants import DEFAULT_BAR_WIDTH, PLOTLY_THEME
 
 logger = get_logger()
 

@@ -155,8 +155,8 @@ For more supported benchmarks, please refer to the [EvalScope documentation](htt
 EvalScope supports visualizing results so you can see the model’s specific outputs.
 
 ```bash
-pip install 'evalscope[app]'
-evalscope app --lang en
+pip install 'evalscope[service]'
+evalscope service --lang en
 ```
 
 

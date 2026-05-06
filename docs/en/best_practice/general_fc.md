@@ -41,7 +41,7 @@ This section will guide you on how to evaluate your model using preset datasets 
 Before this, you need to install the EvalScope library by running the following code:
 
 ```shell
-pip install 'evalscope[app]' -U
+pip install 'evalscope[service]' -U
 ```
 
 ### 1. Prepare Data
@@ -188,10 +188,10 @@ After evaluation completion, the console will output a metrics report. You need 
 EvalScope has built-in visualization analysis tools that make it very convenient to view detailed information for each sample. No additional code needed—just run one command in the terminal to start a local service:
 
 ```shell
-evalscope app
+evalscope service
 ```
 
-Open your browser and visit `http://127.0.0.1:7860` to view model score distributions and responses and scores for each question:
+Open your browser and visit `http://127.0.0.1:9000` to view model score distributions and responses and scores for each question:
 
 ![image.png](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/best_practice/general_fc_overview.png)
 

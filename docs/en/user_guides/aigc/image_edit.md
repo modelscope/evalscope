@@ -236,7 +236,7 @@ Example output:
 The EvalScope framework supports visualization of evaluation results, allowing users to generate visual reports for easy comparison of the image editing effects of models:
 
 ```bash
-evalscope app
+evalscope service
 ```
 
 For documentation, please refer to the [visualization documentation](../../get_started/visualization.md).

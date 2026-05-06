@@ -110,5 +110,5 @@ The system outputs reports from five "observation perspectives":
 - **Slow evaluation with large datasets**: Increase `eval_batch_size`; ensure model/API supports concurrent requests.
 
 ## Next Steps
-- **Visualization**: `evalscope app` opens an interactive interface to filter dimensions and models.
+- **Visualization**: `evalscope service` opens an interactive interface to filter dimensions and models.
 - **Versioning**: Generate multiple JSONLs for different weight configurations, named `weighted_v1.jsonl` / `weighted_v2.jsonl` and evaluate separately.

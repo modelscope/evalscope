@@ -57,7 +57,7 @@ Whether you want to evaluate the general capabilities of models, conduct multi-m
 
 3.  **Output Layer**
     - **Structured Reports**: Supports JSON, Table, Logs
-    - **Visualization Platform**: Supports Gradio, Wandb, SwanLab
+    - **Visualization Platform**: Supports Web Dashboard, Wandb, SwanLab
 
 </details>
 
@@ -186,7 +186,7 @@ We recommend using `conda` to create a virtual environment and install with `pip
     pip install 'evalscope[perf]'
 
     # Visualization App
-    pip install 'evalscope[app]'
+    pip install 'evalscope[service]'
 
     # Other evaluation backends
     pip install 'evalscope[opencompass]'
@@ -370,16 +370,16 @@ Example output is shown below:
 
 ## 📊 Visualizing Evaluation Results
 
-EvalScope provides a Gradio-based WebUI for interactive analysis and comparison of evaluation results.
+EvalScope provides a Web dashboard for interactive analysis and comparison of evaluation results.
 
 1.  **Install Dependencies**
     ```bash
-    pip install 'evalscope[app]'
+    pip install 'evalscope[service]'
     ```
 
 2.  **Start Service**
     ```bash
-    evalscope app
+    evalscope service
     ```
     Visit `http://127.0.0.1:7861` to open the visualization interface.
 

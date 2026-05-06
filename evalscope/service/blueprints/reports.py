@@ -12,8 +12,16 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request, send_file
 from typing import List
 
-from evalscope.app.constants import PLOTLY_THEME
-from evalscope.app.utils.data_utils import (
+from evalscope.constants import PLOTLY_THEME
+from evalscope.report import ReportKey, get_data_frame
+from evalscope.report.report import Report
+from evalscope.report.visualization import (
+    plot_multi_report_radar,
+    plot_single_dataset_scores,
+    plot_single_report_scores,
+    plot_single_report_sunburst,
+)
+from evalscope.utils.data_utils import (
     get_acc_report_df,
     get_compare_report_df,
     get_model_prediction,
@@ -24,14 +32,6 @@ from evalscope.app.utils.data_utils import (
     process_report_name,
     scan_for_report_folders,
 )
-from evalscope.app.utils.visualization import (
-    plot_multi_report_radar,
-    plot_single_dataset_scores,
-    plot_single_report_scores,
-    plot_single_report_sunburst,
-)
-from evalscope.report import ReportKey, get_data_frame
-from evalscope.report.report import Report
 from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import get_logger
 from ..utils import OUTPUT_DIR
@@ -321,7 +321,7 @@ def get_dataframe():
             if not dataset_name:
                 return jsonify({'error': 'dataset_name is required for type=dataset'}), 400
             report_df = get_data_frame(report_list=report_list, flatten_metrics=True, flatten_categories=True)
-            from evalscope.app.utils.data_utils import get_single_dataset_df
+            from evalscope.utils.data_utils import get_single_dataset_df
             df, _ = get_single_dataset_df(report_df, dataset_name)
         else:
             df = acc_df
@@ -517,7 +517,7 @@ def get_chart():
                 if not dataset_name:
                     return jsonify({'error': 'dataset_name is required for dataset_scores'}), 400
                 report_df = get_data_frame(report_list=report_list, flatten_metrics=True, flatten_categories=True)
-                from evalscope.app.utils.data_utils import get_single_dataset_df
+                from evalscope.utils.data_utils import get_single_dataset_df
                 ds_df, _ = get_single_dataset_df(report_df, dataset_name)
                 fig = plot_single_dataset_scores(ds_df)
             else:

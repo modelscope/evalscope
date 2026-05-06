@@ -283,7 +283,7 @@ def speed_benchmark_result(result_db_path: str):
     data = [dict(zip(headers, row)) for row in rows]
 
     # Print results in a table
-    table = tabulate(data, headers='keys', tablefmt='pretty')
+    table = tabulate(data, headers='keys', tablefmt='simple_grid')
     logger.info('\nSpeed Benchmark Results:\n' + table)
 
     # Write results to JSON file

@@ -111,6 +111,12 @@ def run_service(host: str = '0.0.0.0', port: int = 9000, debug: bool = False):
     logger.info('  GET  /api/v1/perf/report             - Get HTML performance benchmark report')
     logger.info('Refer to docs for parameters: https://evalscope.readthedocs.io/en/latest/user_guides/service.html')
 
+    # Print a user-friendly dashboard URL
+    display_host = host if host != '0.0.0.0' else '127.0.0.1'
+    dashboard_url = f'http://{display_host}:{port}/dashboard'
+    logger.info(f'Dashboard: {dashboard_url}')
+    print(f'\n  🌐 EvalScope Dashboard: {dashboard_url}\n')
+
     app.run(host=host, port=port, debug=debug)
 
 

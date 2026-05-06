@@ -12,7 +12,7 @@
 
 安装可视化所需的依赖库。
 ```bash
-pip install 'evalscope[app]' -U
+pip install 'evalscope[service]' -U
 ```
 ```{note}
 可视化功能需要 `evalscope>=0.10.0` 生成的评测报告。若版本过低，请先升级并重新运行评测。
@@ -22,16 +22,14 @@ pip install 'evalscope[app]' -U
 
 运行以下命令启动可视化 Web 服务。
 ```bash
-evalscope app
+evalscope service
 ```
-服务启动后，在浏览器中打开 `http://127.0.0.1:7860` 即可访问。
+服务启动后，在浏览器中打开打印的 Dashboard URL（默认为 `http://127.0.0.1:9000`）即可访问。
 
 支持的命令行参数如下：
-- `--outputs`: 评测报告根目录，默认为 `./outputs`。
-- `--lang`: 界面语言，支持 `zh` (默认) 和 `en`。
-- `--share`: 创建一个公开可访问的链接。
-- `--server-name`: 服务器监听地址，默认为 `0.0.0.0`。
-- `--server-port`: 服务器端口，默认为 `7860`。
+- `--host`: 服务器监听地址，默认为 `0.0.0.0`。
+- `--port`: 服务器端口，默认为 `9000`。
+- `--debug`: 启用调试模式。
 
 ## 快速体验
 
@@ -39,7 +37,7 @@ evalscope app
 
 ```bash
 git clone https://github.com/modelscope/evalscope
-evalscope app --outputs evalscope/examples/viz
+evalscope service --outputs evalscope/examples/viz
 ```
 该样例包含了 Qwen2.5-0.5B 和 Qwen2.5-7B 模型在 C-Eval、HumanEval、ARC、GSM8K 等数据集上的评测结果。
 

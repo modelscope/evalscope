@@ -21,7 +21,7 @@ pip install evalscope
     ```
   - 若要使用可视化功能，需安装app依赖：
     ```shell
-    pip install 'evalscope[app]'
+    pip install 'evalscope[service]'
     ```
   - 若使用其他评测后端，可按需安装OpenCompass, VLMEvalKit, RAGEval：
     ```shell

@@ -116,7 +116,7 @@ Additionally, the EvalScope framework supports specifying prompts and image path
 Run the following command to launch the visualization interface, intuitively displaying model evaluation effects and analyzing model outputs:
 
 ```shell
-evalscope app
+evalscope service
 ```
 
 The evaluation results include intelligent analysis reports, model score distribution, and generated image cases. The analysis report shows that the HiDream-I1-Dev model performs well in image description and understanding but needs improvement in handling complex semantics, spatial relationships, and quantity reasoning.

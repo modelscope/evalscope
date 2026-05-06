@@ -299,7 +299,7 @@ To intuitively display the results of the battles between candidate models and t
 
 Run the command below to launch the visualization interface:
 ```shell
-evalscope app
+evalscope service
 ```
 Open `http://localhost:7860` in your browser to view the visualization page.
 

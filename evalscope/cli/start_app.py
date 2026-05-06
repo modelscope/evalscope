@@ -1,13 +1,16 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import os
+"""CLI command for starting the EvalScope service (alias for 'service').
+
+The 'app' command is deprecated.  Use 'evalscope service' instead.
+"""
+import warnings
 from argparse import ArgumentParser
 
 from evalscope.cli.base import CLICommand
 
 
 def subparser_func(args):
-    """ Function which will be called for a specific sub parser.
-    """
+    """Function which will be called for a specific sub parser."""
     return StartAppCMD(args)
 
 
@@ -19,21 +22,23 @@ class StartAppCMD(CLICommand):
 
     @staticmethod
     def define_args(parsers: ArgumentParser):
-        """ define args for create pipeline template command.
-        """
-        from evalscope.app import add_argument
-
-        parser = parsers.add_parser(StartAppCMD.name)
-        add_argument(parser)
+        """Define args for app command (deprecated alias for service)."""
+        parser = parsers.add_parser(
+            StartAppCMD.name,
+            help='[DEPRECATED] Use "evalscope service" instead',
+        )
+        parser.add_argument('--host', type=str, default='0.0.0.0', help='Host address to bind to (default: 0.0.0.0)')
+        parser.add_argument('--port', type=int, default=9000, help='Port to listen on (default: 9000)')
+        parser.add_argument('--debug', action='store_true', default=False, help='Enable debug mode')
         parser.set_defaults(func=subparser_func)
 
     def execute(self):
-        try:
-            from evalscope.app import create_app
-        except ImportError as e:
-            raise ImportError(
-                f'Failed to import create_app from evalscope.app, due to {e}. '
-                "Please run `pip install 'evalscope[app]'`."
-            )
+        warnings.warn(
+            'The "evalscope app" command is deprecated and will be removed in a future release. '
+            'Use "evalscope service" instead.',
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        from evalscope.service import run_service
 
-        create_app(self.args)
+        run_service(host=self.args.host, port=self.args.port, debug=self.args.debug)

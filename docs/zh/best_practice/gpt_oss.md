@@ -156,8 +156,8 @@ run_task(task_cfg=task_cfg)
 EvalScope 支持结果可视化，您可以查看模型的具体输出。
 
 ```bash
-pip install 'evalscope[app]'
-evalscope app --lang zh
+pip install 'evalscope[service]'
+evalscope service --lang zh
 ```
 （注：其中 --lang zh 表示界面语言为中文，如果想要英文界面使用 --lang en）
 

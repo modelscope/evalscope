@@ -299,7 +299,7 @@ qwen2.5-0.5b            7.5  (-5.0 / +1.6)
 
 运行下面命令启动可视化界面：
 ```shell
-evalscope app
+evalscope service
 ```
 在浏览器中打开`http://localhost:7860`，即可看到可视化界面。
 

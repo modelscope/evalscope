@@ -3,14 +3,14 @@ import pandas as pd
 import re
 from typing import Dict, List, Optional
 
-from evalscope.app.utils.visualization import (
+from evalscope.constants import DEFAULT_LANGUAGE
+from evalscope.report.combinator import get_report_list
+from evalscope.report.report import Report, ReportKey
+from evalscope.report.visualization import (
     plot_single_dataset_scores,
     plot_single_report_scores,
     plot_single_report_sunburst,
 )
-from evalscope.constants import DEFAULT_LANGUAGE
-from evalscope.report.combinator import get_report_list
-from evalscope.report.report import Report, ReportKey
 from evalscope.utils.io_utils import current_time
 from evalscope.utils.logger import get_logger
 from evalscope.utils.resource_utils import load_benchmark_data

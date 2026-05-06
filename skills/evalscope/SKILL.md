@@ -9,7 +9,7 @@ description: >-
   throughput, and latency under configurable concurrency gradients or
   SLA auto-tuning; (3) Benchmark discovery — lists and filters
   benchmarks by capability tag, retrieves full metadata and sample
-  examples; (4) Result visualization — launches a Gradio web UI to
+  examples; (4) Result visualization — launches a Web dashboard to
   compare and explore evaluation outputs. Trigger this skill whenever
   the user mentions: evaluate / benchmark / score a model, throughput /
   latency / QPS / stress test, find benchmarks by tag or capability, or
@@ -42,7 +42,7 @@ pip install 'evalscope[all]'
 
 # Selective extras
 pip install 'evalscope[perf]'        # Performance benchmarking only
-pip install 'evalscope[app]'         # Visualization UI only
+pip install 'evalscope[service]'         # Web dashboard & REST API service
 pip install 'evalscope[rag]'         # RAG evaluation backend
 pip install 'evalscope[sandbox]'     # Sandbox code execution (requires Docker)
 ```
@@ -274,20 +274,18 @@ An HTML report is auto-generated in `outputs/`. Read the console output for the 
 
 ## Workflow 3: Visualization
 
-### Launch Gradio Web UI
+### Launch Web Dashboard
 
 ```bash
-evalscope app --outputs ./outputs --lang zh --server-port 7860
+evalscope service --host 0.0.0.0 --port 9000
 ```
 
 Options:
-- `--outputs PATH` - directory containing evaluation results (default: `./outputs`)
-- `--lang zh|en` - interface language
-- `--server-port N` - port number
-- `--server-name ADDR` - bind address (default: `0.0.0.0`)
-- `--share` - generate a public Gradio link
+- `--host ADDR` - bind address (default: `0.0.0.0`)
+- `--port N` - port number (default: `9000`)
+- `--debug` - enable debug mode
 
-Requires: `pip install 'evalscope[app]'`
+Requires: `pip install 'evalscope[service]'`
 
 ### View HTML Reports Directly
 

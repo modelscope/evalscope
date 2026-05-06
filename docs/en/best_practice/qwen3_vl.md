@@ -135,10 +135,10 @@ Note: The following results are based on 100 data points, used only for testing 
 
 EvalScope supports result visualization, allowing you to view the specific outputs of the model.
 
-Run the following command to launch a Gradio-based visualization interface:
+Run the following command to launch a Web dashboard:
 
 ```shell
-evalscope app
+evalscope service
 ```
 
 Select the evaluation report, click load, and you will see the model's output for each question, as well as the overall accuracy rate:

@@ -7,7 +7,7 @@ Qwen3的新模型来啦，分别是代码模型[Qwen/Qwen3-Coder-480B-A35B-Instr
 首先，安装[EvalScope](https://github.com/modelscope/evalscope)模型评估框架：
 
 ```shell
-pip install 'evalscope[app]' -U
+pip install 'evalscope[service]' -U
 pip install bfcl-eval # 安装 bfcl 评测依赖
 ```
 
@@ -208,10 +208,10 @@ run_task(task_cfg=task_cfg)
 
 EvalScope支持可视化结果，可以查看模型具体的输出。
 
-运行以下命令，可以启动基于Gradio的可视化界面：
+运行以下命令，可以启动Web 可视化界面：
 
 ```shell
-evalscope app
+evalscope service
 ```
 
 选择评测报告，点击加载，即可看到模型在每个问题上的输出结果，以及整体答题正确率：

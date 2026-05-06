@@ -23,7 +23,7 @@ This tutorial can be run directly in the free Notebook environment of ModelScope
 ## Installing EvalScope
 
 ```bash
-pip install 'evalscope[app]' -U
+pip install 'evalscope[service]' -U
 ```
 
 ## Evaluating Local Model Checkpoints
@@ -128,7 +128,7 @@ From the evaluation results, it is evident that the 72B model far surpasses both
 Now we will start the visualization interface of EvalScope to take a closer look at how the model answered each question.
 
 ```bash
-evalscope app
+evalscope service
 ```
 
 Clicking the link will bring up the following visualization interface, where you first need to select the evaluation report and then click load:

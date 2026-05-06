@@ -75,7 +75,7 @@ def gen_table(
         add_overall_metric (bool, optional): Whether to add an overall metric column to the table. Defaults to False.
 
     Returns:
-        str: A string representation of the table in grid format.
+        str: A string representation of the table in simple_grid format.
 
     Raises:
         AssertionError: If neither `reports_path_list` nor `report_list` is provided.
@@ -91,7 +91,7 @@ def gen_table(
         flatten_categories=flatten_categories,
         add_overall_metric=add_overall_metric
     )
-    return tabulate(table, headers=table.columns, tablefmt='grid', showindex=False)
+    return tabulate(table, headers=table.columns, tablefmt='simple_grid', showindex=False)
 
 
 def weighted_average_from_subsets(

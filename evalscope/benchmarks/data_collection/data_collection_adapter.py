@@ -191,7 +191,7 @@ class DataCollectionAdapter(DefaultDataAdapter):
         for level, data_item in df_dict.items():
             if level == 'df':
                 continue
-            table = tabulate(data_item, headers='keys', tablefmt='pretty', showindex=False)
+            table = tabulate(data_item, headers='keys', tablefmt='simple_grid', showindex=False)
             detailed_dict[level] = data_item
             logger.info(f'{level} Report:\n{table}')
 

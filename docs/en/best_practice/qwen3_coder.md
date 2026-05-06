@@ -8,7 +8,7 @@ The new Qwen3 models have arrived! These include the coding model [Qwen/Qwen3-Co
 First, install the [EvalScope](https://github.com/modelscope/evalscope) model evaluation framework:
 
 ```shell
-pip install 'evalscope[app]' -U
+pip install 'evalscope[service]' -U
 pip install bfcl-eval # Install bfcl evaluation dependencies
 ```
 
@@ -180,10 +180,10 @@ It can be seen that the model demonstrates good reasoning abilities and a high l
 
 EvalScope supports visualizing results so you can see the model’s specific outputs.
 
-Run the following command to launch the Gradio-based visualization interface:
+Run the following command to launch the Web dashboard:
 
 ```shell
-evalscope app
+evalscope service
 ```
 
 Select the evaluation report and click "Load" to view the model’s output for each question, as well as the overall accuracy:

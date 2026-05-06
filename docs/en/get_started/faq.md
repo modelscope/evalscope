@@ -31,7 +31,7 @@ We recommend updating to the latest `main` branch code when encountering issues.
 
 **A:** Try installing `pip install python-dotenv` separately first, then execute `pip install evalscope[all]`.
 
-**Q: Environment conflicts between `evalscope[app]` and other libraries (like `bfcl-eval`)?**
+**Q: Environment conflicts between `evalscope[service]` and other libraries (like `bfcl-eval`)?**
 
 **A:** Please try installing these libraries separately rather than in a single command. For `bfcl-eval`, try version `2025.6.16`.
 
@@ -101,7 +101,7 @@ task_config = TaskConfig(
 **A:** Please follow these steps:
 1.  **Check model interface**: Confirm that the model service or local model can generate responses normally.
 2.  **Review prediction files**: Check JSONL files in the `outputs/<timestamp>/predictions/` directory to confirm model outputs meet expectations.
-3.  **Visualization analysis**: Use `evalscope app` to start the visualization interface for intuitive result viewing and analysis.
+3.  **Visualization analysis**: Use `evalscope service` to start the visualization interface for intuitive result viewing and analysis.
 
 **Q: Unstable evaluation results - inconsistent across runs?**
 
@@ -138,11 +138,11 @@ Reference documentation: [Judge Model Parameters](https://evalscope.readthedocs.
 
 **A:** Checkpoint resumption is supported. Use the `--use-cache` parameter and specify the output directory path from the previous evaluation to reuse completed model predictions and evaluation results.
 
-**Q: `evalscope app` visualization interface is inaccessible or charts display abnormally?**
+**Q: `evalscope service` visualization interface is inaccessible or charts display abnormally?**
 
 **A:**
-- **Inaccessible**: Try upgrading `gradio` version to `4.20.0` or higher.
-- **Chart anomalies**: Try downgrading `plotly` version to `5.15.0`.
+- **Inaccessible**: Make sure the service is running and open the Dashboard URL printed on startup in your browser. If the port is in use, specify another port with `--port`.
+- **Chart anomalies**: Try upgrading `plotly` to the latest version.
 
 **Q: Error when loading models locally: `Expected all tensors to be on the same device`?**
 
@@ -238,7 +238,7 @@ Reference documentation: [Judge Model Parameters](https://evalscope.readthedocs.
 
 **Q: How to visualize stress test results?**
 
-**A:** Results from the `perf` subcommand are not suitable for `evalscope app`. However, visualization through `wandb` or `swanlab` is supported. Please refer to [Stress Test Result Visualization Guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html#id6).
+**A:** Results from the `perf` subcommand are not suitable for `evalscope service`. However, visualization through `wandb` or `swanlab` is supported. Please refer to [Stress Test Result Visualization Guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html#id6).
 
 ## Citing Us
 
