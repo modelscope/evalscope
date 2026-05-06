@@ -92,8 +92,8 @@ class CoinFlipAdapter(DefaultDataAdapter):
     def extract_answer(self, prediction, task_state):
         import re
 
-        match = re.search(r'ANSWER:\s*(.*)', prediction)
-        return match.group(1) if match else prediction
+        matches = re.findall(r'ANSWER:\s*(.*)', prediction)
+        return matches[-1].strip() if matches else prediction
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
         score = Score(

@@ -166,10 +166,9 @@ class MMMUAdapter(VisionLanguageAdapter):
             answers = parse_answers(task_state)
             return ''.join(sorted(list(answers)))
         elif question_type == OPEN_TYPE:
-            pattern = r'ANSWER:\s*(.*)'
-            match = re.search(pattern, prediction)
-            if match:
-                return match.group(1).strip()
+            matches = re.findall(r'ANSWER:\s*(.*)', prediction)
+            if matches:
+                return matches[-1].strip()
             return prediction.strip()
         else:
             raise ValueError(f'Unsupported question type: {question_type}')

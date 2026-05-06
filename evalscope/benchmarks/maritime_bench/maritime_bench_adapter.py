@@ -77,7 +77,7 @@ class MaritimeBenchAdapter(MultiChoiceAdapter):
     def extract_answer(self, prediction, task_state):
         # use regex to extract the answer from the prediction
         import re
-        match = re.search(r'\[([A-D])\]', prediction)
-        if match:
-            return match.group(1)
+        matches = re.findall(r'\[([A-D])\]', prediction)
+        if matches:
+            return matches[-1]
         return ''

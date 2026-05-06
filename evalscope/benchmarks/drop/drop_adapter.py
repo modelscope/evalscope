@@ -131,8 +131,8 @@ class DROPAdapter(DefaultDataAdapter):
         """
         Extract the answer from the model prediction.
         """
-        match = re.search(r'(?i)Answer\s*:\s*([^\n]+)', prediction)
-        extracted_answer = match.group(1) if match else prediction
+        matches = re.findall(r'(?i)Answer\s*:\s*([^\n]+)', prediction)
+        extracted_answer = matches[-1] if matches else prediction
         return extracted_answer
 
     def match_score(

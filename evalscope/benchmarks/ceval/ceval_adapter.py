@@ -187,9 +187,9 @@ class CEVALAdapter(MultiChoiceAdapter):
         import re
 
         # Use regex to find the answer in the format "答案：LETTER"
-        match = re.search(r'答案：([A-D])', prediction)
-        if match:
-            return match.group(1)
+        matches = re.findall(r'答案：([A-D])', prediction)
+        if matches:
+            return matches[-1]
         else:
             logger.warning(f'No valid answer found in prediction: {prediction}')
             return ''
