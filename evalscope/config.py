@@ -4,8 +4,8 @@ import copy
 import json
 import os
 from argparse import Namespace
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Union
+from pydantic import Field, field_validator, model_validator
+from typing import Any, Dict, List, Optional, Union
 
 from evalscope.api.model import GenerateConfig, Model, ModelAPI
 from evalscope.constants import (
@@ -53,7 +53,6 @@ DEFAULT_MODEL_ARGS_CHECKPOINT = {
 }
 
 
-@dataclass
 class TaskConfig(BaseArgument):
     # Model-related arguments
     model: Optional[Union[str, Model, ModelAPI]] = None
@@ -62,7 +61,7 @@ class TaskConfig(BaseArgument):
     model_id: Optional[str] = None
     """Unique identifier for the model. Auto-generated from model name if not provided."""
 
-    model_args: Dict = field(default_factory=dict)
+    model_args: Dict = Field(default_factory=dict)
     """Additional arguments to pass to the model during initialization."""
 
     model_task: str = ModelTask.TEXT_GENERATION
@@ -73,10 +72,10 @@ class TaskConfig(BaseArgument):
     """Chat template to use for formatting conversations with the model."""
 
     # Dataset-related arguments
-    datasets: List[str] = field(default_factory=list)
+    datasets: List[str] = Field(default_factory=list)
     """List of dataset names to evaluate the model on."""
 
-    dataset_args: Dict = field(default_factory=dict)
+    dataset_args: Dict = Field(default_factory=dict)
     """Additional arguments to pass to datasets during loading."""
 
     dataset_dir: str = DEFAULT_DATASET_CACHE_DIR
@@ -89,7 +88,7 @@ class TaskConfig(BaseArgument):
     """Number of times to repeat the dataset items for k-metrics evaluation."""
 
     # Generation configuration arguments
-    generation_config: Union[Dict, GenerateConfig] = field(default_factory=dict)
+    generation_config: Union[Dict, GenerateConfig] = Field(default_factory=dict)
     """Configuration parameters for text/image generation."""
 
     # Evaluation-related arguments
@@ -160,7 +159,7 @@ class TaskConfig(BaseArgument):
     judge_worker_num: Optional[int] = None
     """[Deprecated] Use `eval_batch_size` instead. Will be removed in v2.0.0."""
 
-    judge_model_args: Optional[Dict] = field(default_factory=dict)
+    judge_model_args: Optional[Dict] = Field(default_factory=dict)
     """Additional arguments for the judge model configuration."""
 
     analysis_report: bool = False
@@ -176,31 +175,65 @@ class TaskConfig(BaseArgument):
     sandbox_type: Optional[str] = 'docker'
     """Type of sandbox environment for code execution (e.g., docker). Default is 'docker'."""
 
-    sandbox_manager_config: Optional[Dict] = field(default_factory=dict)
+    sandbox_manager_config: Optional[Dict] = Field(default_factory=dict)
     """Configuration for the sandbox manager. Default is local manager. If url is provided, it will use remote manager."""
 
     evalscope_version: Optional[str] = _evalscope_version
     """EvalScope version used for the evaluation."""
 
-    def __post_init__(self):
-        self.__init_model_and_id()
+    # --- Field validators (single-field logic) ---
 
-        self.__init_eval_data_config()
-        self.__init_eval_config()
+    @field_validator('limit', mode='before')
+    @classmethod
+    def _validate_limit(cls, v):
+        if v is not None:
+            v = parse_int_or_float(v)
+            if v < 0:
+                raise ValueError(f'`limit` must be >= 0 or None, got {v}.')
+            if v == 0:
+                return None
+        return v
 
-        # Handle deprecated judge_worker_num → eval_batch_size
+    @field_validator('eval_config', mode='before')
+    @classmethod
+    def _validate_eval_config(cls, v):
+        if not v:
+            return v
+        if isinstance(v, dict):
+            return v
+        if isinstance(v, str):
+            extension = os.path.splitext(v)[-1]
+            if extension in ['.yaml', '.yml']:
+                return yaml_to_dict(v)
+            elif extension == '.json':
+                return json_to_dict(v)
+            else:
+                try:
+                    return json.loads(v)
+                except Exception as e:
+                    raise ValueError('eval_config string is not a valid json string or file path.') from e
+        else:
+            raise ValueError('eval_config should be a dict or a file path string.')
+
+    # --- Model validator (cross-field logic, replaces __post_init__) ---
+
+    @model_validator(mode='after')
+    def _post_init(self) -> 'TaskConfig':
+        self._init_model_and_id()
+        self._init_default_generation_config()
+        self._init_default_model_args()
+        self._init_default_sandbox_config()
+
+        # Handle deprecated judge_worker_num -> eval_batch_size
         if self.judge_worker_num is not None:
             deprecated_warning(
                 logger, 'The `judge_worker_num` parameter is deprecated and will be removed in v2.0.0. '
                 'Use `eval_batch_size` instead.'
             )
 
-        # Set default generation_config and model_args
-        self.__init_default_generation_config()
-        self.__init_default_model_args()
-        self.__init_default_sandbox_config()
+        return self
 
-    def __init_model_and_id(self):
+    def _init_model_and_id(self):
         # Set model to DummyCustomModel if not provided
         if self.model is None:
             logger.info('No model is provided, using DummyCustomModel for testing.')
@@ -230,16 +263,7 @@ class TaskConfig(BaseArgument):
             return safe_filename(self.model.model_name)
         return 'dummy_model'
 
-    def __init_eval_data_config(self):
-        # Post process limit
-        if self.limit is not None:
-            self.limit = parse_int_or_float(self.limit)
-            if self.limit < 0:
-                raise ValueError(f'`limit` must be >= 0 or None, got {self.limit}.')
-            if self.limit == 0:
-                self.limit = None
-
-    def __init_default_generation_config(self):
+    def _init_default_generation_config(self):
         # 1. Set defaults if empty
         if not self.generation_config:
             self.generation_config = self._get_default_generation_config()
@@ -291,13 +315,13 @@ class TaskConfig(BaseArgument):
                 'The `n` parameter in generation_config is deprecated and will be removed in v2.0.0. Use `TaskConfig.repeats` instead.'
             )
 
-    def __init_default_model_args(self):
+    def _init_default_model_args(self):
         if self.model_args:
             return
         if self.model_task == ModelTask.TEXT_GENERATION and self.eval_type == EvalType.CHECKPOINT:
             self.model_args = DEFAULT_MODEL_ARGS_CHECKPOINT.copy()
 
-    def __init_default_sandbox_config(self):
+    def _init_default_sandbox_config(self):
         if not self.use_sandbox:
             return
 
@@ -311,25 +335,6 @@ class TaskConfig(BaseArgument):
         if not self.sandbox_type:
             return False
         return str(self.sandbox_type).lower() in {'volcengine', 'volcano', 'volc'}
-
-    def __init_eval_config(self):
-        if not self.eval_config:
-            return
-        if isinstance(self.eval_config, dict):
-            return
-        if isinstance(self.eval_config, str):
-            extension = os.path.splitext(self.eval_config)[-1]
-            if extension in ['.yaml', '.yml']:
-                self.eval_config = yaml_to_dict(self.eval_config)
-            elif extension == '.json':
-                self.eval_config = json_to_dict(self.eval_config)
-            else:
-                try:
-                    self.eval_config = json.loads(self.eval_config)
-                except Exception as e:
-                    raise ValueError('eval_config string is not a valid json string or file path.') from e
-        else:
-            raise ValueError('eval_config should be a dict or a file path string.')
 
     @staticmethod
     def _deep_merge(base: dict, override: dict) -> dict:
@@ -345,8 +350,9 @@ class TaskConfig(BaseArgument):
     def update(self, other: Union['TaskConfig', dict]):
         if isinstance(other, TaskConfig):
             other = other.to_dict()
-        merged = self._deep_merge(self.__dict__, other)
-        self.__dict__.update(merged)
+        merged = self._deep_merge(self.to_dict(), other)
+        for key, value in merged.items():
+            setattr(self, key, value)
 
     def dump_yaml(self, output_dir: str):
         """Dump the task configuration to a YAML file."""
@@ -358,7 +364,7 @@ class TaskConfig(BaseArgument):
             logger.warning(f'Failed to dump overall task config: {e}')
 
     def to_dict(self):
-        result = copy.copy(self.__dict__)
+        result = self.model_dump()
 
         # Remove sensitive info
         result.pop('api_key', None)
