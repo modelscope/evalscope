@@ -1,0 +1,115 @@
+{
+    "name": "qwen3-max@gpqa_diamond",
+    "dataset_name": "gpqa_diamond",
+    "dataset_pretty_name": "GPQA-Diamond",
+    "dataset_description": "\n## Overview\n\nGPQA (Graduate-Level Google-Proof Q&A) Diamond is a challenging benchmark of 198 multiple-choice questions written by domain experts in biology, physics, and chemistry. The questions are designed to be extremely difficult, requiring PhD-level expertise to answer correctly.\n\n## Task Description\n\n- **Task Type**: Expert-Level Multiple-Choice Q&A\n- **Input**: Graduate-level science question with 4 choices\n- **Output**: Single correct answer letter (A, B, C, or D)\n- **Domains**: Biology, Physics, Chemistry\n\n## Key Features\n\n- 198 questions written and validated by domain PhD experts\n- Questions are \"Google-proof\" - cannot be easily looked up\n- Designed to test deep domain knowledge and reasoning\n- Diamond subset represents the highest quality questions\n- Average human expert accuracy ~65%, non-expert ~34%\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** or **5-shot** evaluation\n- Supports Chain-of-Thought (CoT) prompting for improved reasoning\n- Answer choices are randomly shuffled during evaluation\n- Only uses train split (validation set is private)\n- Challenging benchmark for measuring expert-level reasoning\n",
+    "model_name": "qwen3-max",
+    "score": 0.9,
+    "metrics": [
+        {
+            "name": "mean_acc",
+            "num": 10,
+            "score": 0.9,
+            "macro_score": 0.9,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.9,
+                    "macro_score": 0.9,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.9,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "analysis": "N/A",
+    "perf_metrics": {
+        "summary": {
+            "n_samples": 10,
+            "latency": {
+                "mean": 17.873169,
+                "std": 6.183741,
+                "min": 11.040961,
+                "25%": 14.071608,
+                "50%": 15.93642,
+                "75%": 20.289031,
+                "90%": 26.315859,
+                "99%": 30.095047,
+                "max": 30.514956
+            },
+            "throughput": {
+                "avg_output_tps": 31.28,
+                "avg_req_ps": 0.0559
+            },
+            "usage": {
+                "input_tokens": {
+                    "mean": 236.1,
+                    "std": 111.360725,
+                    "min": 159.0,
+                    "25%": 163.0,
+                    "50%": 196.0,
+                    "75%": 229.75,
+                    "90%": 402.8,
+                    "99%": 474.08,
+                    "max": 482.0
+                },
+                "output_tokens": {
+                    "mean": 559.1,
+                    "std": 166.365361,
+                    "min": 350.0,
+                    "25%": 451.25,
+                    "50%": 520.5,
+                    "75%": 659.75,
+                    "90%": 800.2,
+                    "99%": 842.32,
+                    "max": 847.0
+                },
+                "total_tokens": {
+                    "mean": 795.2,
+                    "std": 241.762877,
+                    "min": 509.0,
+                    "25%": 647.5,
+                    "50%": 716.0,
+                    "75%": 906.25,
+                    "90%": 1030.2,
+                    "99%": 1299.12,
+                    "max": 1329.0
+                },
+                "total_input_tokens": 2361,
+                "total_output_tokens": 5591,
+                "total_tokens_count": 7952
+            },
+            "ttft": {
+                "mean": 0.689216,
+                "std": 0.197347,
+                "min": 0.47893,
+                "25%": 0.513894,
+                "50%": 0.659017,
+                "75%": 0.846714,
+                "90%": 0.93346,
+                "99%": 1.003618,
+                "max": 1.011414
+            },
+            "tpot": {
+                "mean": 0.030459,
+                "std": 0.002419,
+                "min": 0.02932,
+                "25%": 0.029643,
+                "50%": 0.029732,
+                "75%": 0.029896,
+                "90%": 0.030656,
+                "99%": 0.036657,
+                "max": 0.037323
+            }
+        }
+    },
+    "num": 10
+}

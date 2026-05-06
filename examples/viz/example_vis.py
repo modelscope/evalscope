@@ -19,10 +19,11 @@ def run_test(model_name: str):
         ],
         generation_config={
             'temperature': 0.7,
+            'stream': True,
         },
         eval_batch_size=10,
         limit=10,  # 设置为10条数据进行测试
-        # use_cache=f'examples/viz/{model_name}' # 缓存路径
+        use_cache=f'examples/viz/{model_name}' # 缓存路径
     )
 
     run_task(task_cfg=task_cfg)

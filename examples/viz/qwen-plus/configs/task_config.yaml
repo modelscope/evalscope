@@ -1,0 +1,379 @@
+analysis_report: false
+api_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+chat_template: null
+collect_perf: true
+dataset_args:
+  gpqa_diamond:
+    aggregation: mean
+    data_statistics: null
+    dataset_id: AI-ModelScope/gpqa_diamond
+    default_subset: default
+    description: '
+
+      ## Overview
+
+
+      GPQA (Graduate-Level Google-Proof Q&A) Diamond is a challenging benchmark of
+      198 multiple-choice questions written by domain experts in biology, physics,
+      and chemistry. The questions are designed to be extremely difficult, requiring
+      PhD-level expertise to answer correctly.
+
+
+      ## Task Description
+
+
+      - **Task Type**: Expert-Level Multiple-Choice Q&A
+
+      - **Input**: Graduate-level science question with 4 choices
+
+      - **Output**: Single correct answer letter (A, B, C, or D)
+
+      - **Domains**: Biology, Physics, Chemistry
+
+
+      ## Key Features
+
+
+      - 198 questions written and validated by domain PhD experts
+
+      - Questions are "Google-proof" - cannot be easily looked up
+
+      - Designed to test deep domain knowledge and reasoning
+
+      - Diamond subset represents the highest quality questions
+
+      - Average human expert accuracy ~65%, non-expert ~34%
+
+
+      ## Evaluation Notes
+
+
+      - Default configuration uses **0-shot** or **5-shot** evaluation
+
+      - Supports Chain-of-Thought (CoT) prompting for improved reasoning
+
+      - Answer choices are randomly shuffled during evaluation
+
+      - Only uses train split (validation set is private)
+
+      - Challenging benchmark for measuring expert-level reasoning
+
+      '
+    eval_split: train
+    extra_params: {}
+    few_shot_num: 0
+    few_shot_prompt_template: null
+    few_shot_random: false
+    filters: null
+    force_redownload: false
+    metric_list:
+    - acc
+    name: gpqa_diamond
+    output_types:
+    - generation
+    paper_url: null
+    pretty_name: GPQA-Diamond
+    prompt_template: 'Answer the following multiple choice question. The last line
+      of your response should be of the following format: ''ANSWER: [LETTER]'' (without
+      quotes) where [LETTER] is one of {letters}. Think step by step before answering.
+
+
+      {question}
+
+
+      {choices}'
+    query_template: null
+    review_timeout: null
+    sample_example: null
+    sandbox_config: {}
+    shuffle: false
+    shuffle_choices: false
+    subset_list:
+    - default
+    system_prompt: null
+    tags:
+    - Knowledge
+    - MCQ
+    train_split: null
+  gsm8k:
+    aggregation: mean
+    data_statistics: null
+    dataset_id: AI-ModelScope/gsm8k
+    default_subset: default
+    description: '
+
+      ## Overview
+
+
+      GSM8K (Grade School Math 8K) is a high-quality dataset of 8.5K linguistically
+      diverse grade school math word problems created by human problem writers. The
+      dataset is specifically designed to evaluate and improve the multi-step mathematical
+      reasoning capabilities of language models.
+
+
+      ## Task Description
+
+
+      - **Task Type**: Mathematical Word Problem Solving
+
+      - **Input**: Natural language math word problem
+
+      - **Output**: Numerical answer derived through step-by-step reasoning
+
+      - **Difficulty**: Grade school level (2-8 reasoning steps required)
+
+
+      ## Key Features
+
+
+      - Problems require basic arithmetic operations (addition, subtraction, multiplication,
+      division)
+
+      - Solutions involve 2 to 8 sequential reasoning steps
+
+      - High linguistic diversity in problem formulations
+
+      - Human-written problems ensuring natural language quality
+
+      - Clear numerical answers for objective evaluation
+
+
+      ## Evaluation Notes
+
+
+      - Default configuration uses **4-shot** examples with Chain-of-Thought (CoT)
+      prompting
+
+      - Answers should be formatted within `\boxed{}` for proper extraction
+
+      - The metric extracts numerical values for accuracy comparison
+
+      - Supports both zero-shot and few-shot evaluation modes
+
+      '
+    eval_split: test
+    extra_params: {}
+    few_shot_num: 4
+    few_shot_prompt_template: 'Here are some examples of how to solve similar problems:
+
+
+      {fewshot}
+
+
+      {question}
+
+      Please reason step by step, and put your final answer within \boxed{{}}.'
+    few_shot_random: false
+    filters: null
+    force_redownload: false
+    metric_list:
+    - acc:
+        numeric: true
+    name: gsm8k
+    output_types:
+    - generation
+    paper_url: https://arxiv.org/abs/2110.14168
+    pretty_name: GSM8K
+    prompt_template: '{question}
+
+      Please reason step by step, and put your final answer within \boxed{{}}.'
+    query_template: null
+    review_timeout: null
+    sample_example: null
+    sandbox_config: {}
+    shuffle: false
+    shuffle_choices: false
+    subset_list:
+    - main
+    system_prompt: null
+    tags:
+    - Math
+    - Reasoning
+    train_split: train
+  ifeval:
+    aggregation: mean
+    data_statistics: null
+    dataset_id: opencompass/ifeval
+    default_subset: default
+    description: "\n## Overview\n\nIFEval (Instruction-Following Eval) is a benchmark\
+      \ for evaluating how well language models follow explicit, verifiable instructions.\
+      \ It contains prompts with specific formatting, content, or structural requirements\
+      \ that can be objectively verified.\n\n## Task Description\n\n- **Task Type**:\
+      \ Instruction Following Evaluation\n- **Input**: Prompts with explicit, verifiable\
+      \ constraints\n- **Output**: Response that follows all specified instructions\n\
+      - **Constraint Types**: Format, length, keywords, structure, etc.\n\n## Key\
+      \ Features\n\n- ~500 prompts with 25 types of verifiable instructions\n- Instructions\
+      \ are objectively checkable (not subjective)\n- Examples: \"write exactly 3\
+      \ paragraphs\", \"include the word X\", \"use bullet points\"\n- Tests instruction\
+      \ comprehension and compliance\n- No ambiguity in evaluation criteria\n\n##\
+      \ Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n-\
+      \ Four metrics available:\n  - `prompt_level_strict`: All instructions in prompt\
+      \ must be followed\n  - `prompt_level_loose`: Some tolerance for minor deviations\n\
+      \  - `inst_level_strict`: Per-instruction accuracy (strict)\n  - `inst_level_loose`:\
+      \ Per-instruction accuracy (loose)\n- `prompt_level_strict` is the primary metric\n\
+      - Automatic verification of instruction compliance\n"
+    eval_split: train
+    extra_params: {}
+    few_shot_num: 0
+    few_shot_prompt_template: null
+    few_shot_random: false
+    filters: null
+    force_redownload: false
+    metric_list:
+    - prompt_level_strict
+    - inst_level_strict
+    - prompt_level_loose
+    - inst_level_loose
+    name: ifeval
+    output_types:
+    - generation
+    paper_url: null
+    pretty_name: IFEval
+    prompt_template: ''
+    query_template: null
+    review_timeout: null
+    sample_example: null
+    sandbox_config: {}
+    shuffle: false
+    shuffle_choices: false
+    subset_list:
+    - default
+    system_prompt: null
+    tags:
+    - InstructionFollowing
+    train_split: null
+  iquiz:
+    aggregation: mean
+    data_statistics: null
+    dataset_id: AI-ModelScope/IQuiz
+    default_subset: default
+    description: '
+
+      ## Overview
+
+
+      IQuiz is a Chinese benchmark for evaluating AI models on intelligence quotient
+      (IQ) and emotional quotient (EQ) questions. It tests logical reasoning, pattern
+      recognition, and social-emotional understanding through multiple-choice questions.
+
+
+      ## Task Description
+
+
+      - **Task Type**: Multiple-Choice Question Answering
+
+      - **Input**: Question in Chinese with multiple choice options
+
+      - **Output**: Selected answer with explanation (Chain-of-Thought)
+
+      - **Language**: Chinese
+
+
+      ## Key Features
+
+
+      - Dual evaluation of IQ and EQ capabilities
+
+      - Chinese-language cognitive assessment
+
+      - Multiple difficulty levels
+
+      - Requires explanation alongside answer selection
+
+      - Tests logical reasoning and emotional understanding
+
+
+      ## Evaluation Notes
+
+
+      - Default configuration uses **0-shot** evaluation
+
+      - Primary metric: **Accuracy**
+
+      - Subsets: **IQ** (logical reasoning) and **EQ** (emotional intelligence)
+
+      - Uses Chinese Chain-of-Thought prompt template
+
+      - Evaluates on **test** split
+
+      - Metadata includes difficulty level information
+
+      '
+    eval_split: test
+    extra_params: {}
+    few_shot_num: 0
+    few_shot_prompt_template: null
+    few_shot_random: false
+    filters: null
+    force_redownload: false
+    metric_list:
+    - acc
+    name: iquiz
+    output_types:
+    - generation
+    paper_url: null
+    pretty_name: IQuiz
+    prompt_template: '回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：[LETTER]"（不带引号），其中
+      [LETTER] 是 {letters} 中的一个。请在回答前进行一步步思考。
+
+
+      问题：{question}
+
+      选项：
+
+      {choices}
+
+      '
+    query_template: null
+    review_timeout: null
+    sample_example: null
+    sandbox_config: {}
+    shuffle: false
+    shuffle_choices: false
+    subset_list:
+    - IQ
+    - EQ
+    system_prompt: null
+    tags:
+    - Knowledge
+    - MCQ
+    - Chinese
+    train_split: null
+dataset_dir: /Users/yunlin/.cache/modelscope/hub/datasets
+dataset_hub: modelscope
+datasets:
+- gsm8k
+- iquiz
+- ifeval
+- gpqa_diamond
+debug: false
+enable_progress_tracker: false
+eval_backend: Native
+eval_batch_size: 10
+eval_config: null
+eval_type: openai_api
+evalscope_version: 0.0.0_dev
+generation_config:
+  batch_size: 10
+  stream: true
+  temperature: 0.7
+ignore_errors: false
+judge_model_args: {}
+judge_strategy: auto
+judge_worker_num: null
+limit: 10
+model: qwen-plus
+model_args: {}
+model_id: qwen-plus
+model_task: text_generation
+no_timestamp: false
+repeats: 1
+rerun_review: false
+sandbox_manager_config: {}
+sandbox_type: docker
+seed: 42
+stream: null
+timeout: null
+use_cache: examples/viz/qwen-plus
+use_sandbox: false
+work_dir: examples/viz/qwen-plus

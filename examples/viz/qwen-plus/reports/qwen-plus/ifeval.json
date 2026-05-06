@@ -1,0 +1,184 @@
+{
+    "name": "qwen-plus@ifeval",
+    "dataset_name": "ifeval",
+    "dataset_pretty_name": "IFEval",
+    "dataset_description": "\n## Overview\n\nIFEval (Instruction-Following Eval) is a benchmark for evaluating how well language models follow explicit, verifiable instructions. It contains prompts with specific formatting, content, or structural requirements that can be objectively verified.\n\n## Task Description\n\n- **Task Type**: Instruction Following Evaluation\n- **Input**: Prompts with explicit, verifiable constraints\n- **Output**: Response that follows all specified instructions\n- **Constraint Types**: Format, length, keywords, structure, etc.\n\n## Key Features\n\n- ~500 prompts with 25 types of verifiable instructions\n- Instructions are objectively checkable (not subjective)\n- Examples: \"write exactly 3 paragraphs\", \"include the word X\", \"use bullet points\"\n- Tests instruction comprehension and compliance\n- No ambiguity in evaluation criteria\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Four metrics available:\n  - `prompt_level_strict`: All instructions in prompt must be followed\n  - `prompt_level_loose`: Some tolerance for minor deviations\n  - `inst_level_strict`: Per-instruction accuracy (strict)\n  - `inst_level_loose`: Per-instruction accuracy (loose)\n- `prompt_level_strict` is the primary metric\n- Automatic verification of instruction compliance\n",
+    "model_name": "qwen-plus",
+    "score": 0.9,
+    "metrics": [
+        {
+            "name": "mean_prompt_level_strict",
+            "num": 10,
+            "score": 0.9,
+            "macro_score": 0.9,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.9,
+                    "macro_score": 0.9,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.9,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "mean_inst_level_strict",
+            "num": 10,
+            "score": 0.9667,
+            "macro_score": 0.9667,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.9667,
+                    "macro_score": 0.9667,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.9667,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "mean_prompt_level_loose",
+            "num": 10,
+            "score": 0.9,
+            "macro_score": 0.9,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.9,
+                    "macro_score": 0.9,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.9,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "mean_inst_level_loose",
+            "num": 10,
+            "score": 0.9667,
+            "macro_score": 0.9667,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.9667,
+                    "macro_score": 0.9667,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.9667,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "analysis": "N/A",
+    "perf_metrics": {
+        "summary": {
+            "n_samples": 10,
+            "latency": {
+                "mean": 11.079484,
+                "std": 7.201937,
+                "min": 0.960985,
+                "25%": 7.622653,
+                "50%": 9.834743,
+                "75%": 12.396242,
+                "90%": 22.852129,
+                "99%": 23.100449,
+                "max": 23.12804
+            },
+            "throughput": {
+                "avg_output_tps": 41.92,
+                "avg_req_ps": 0.0903
+            },
+            "usage": {
+                "input_tokens": {
+                    "mean": 57.5,
+                    "std": 19.648297,
+                    "min": 25.0,
+                    "25%": 47.25,
+                    "50%": 52.0,
+                    "75%": 74.5,
+                    "90%": 84.1,
+                    "99%": 84.91,
+                    "max": 85.0
+                },
+                "output_tokens": {
+                    "mean": 464.5,
+                    "std": 316.091495,
+                    "min": 14.0,
+                    "25%": 311.0,
+                    "50%": 422.5,
+                    "75%": 534.0,
+                    "90%": 957.4,
+                    "99%": 1009.24,
+                    "max": 1015.0
+                },
+                "total_tokens": {
+                    "mean": 522.0,
+                    "std": 317.655998,
+                    "min": 62.0,
+                    "25%": 394.25,
+                    "50%": 472.5,
+                    "75%": 610.25,
+                    "90%": 1011.6,
+                    "99%": 1056.96,
+                    "max": 1062.0
+                },
+                "total_input_tokens": 575,
+                "total_output_tokens": 4645,
+                "total_tokens_count": 5220
+            },
+            "ttft": {
+                "mean": 0.519482,
+                "std": 0.074999,
+                "min": 0.429155,
+                "25%": 0.456413,
+                "50%": 0.507214,
+                "75%": 0.587693,
+                "90%": 0.609996,
+                "99%": 0.630964,
+                "max": 0.633293
+            },
+            "tpot": {
+                "mean": 0.022977,
+                "std": 0.001269,
+                "min": 0.022026,
+                "25%": 0.022069,
+                "50%": 0.022091,
+                "75%": 0.023783,
+                "90%": 0.024873,
+                "99%": 0.025174,
+                "max": 0.025207
+            }
+        }
+    },
+    "num": 10
+}

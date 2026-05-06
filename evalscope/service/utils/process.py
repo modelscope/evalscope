@@ -110,8 +110,12 @@ def run_in_subprocess(func, *args, task_id=None, **kwargs):
     parent is sitting in ``p.join()`` waiting for the child to exit first, both
     sides wait on each other forever — a classic deadlock.
     """
-    result_queue = multiprocessing.Queue()
-    p = multiprocessing.Process(target=_process_worker, args=(func, result_queue, *args), kwargs=kwargs)
+    # Use spawn context to avoid fork-based deadlocks on Linux and to
+    # ensure consistent cross-platform behaviour (macOS defaults to spawn,
+    # Linux defaults to fork).
+    ctx = multiprocessing.get_context('spawn')
+    result_queue = ctx.Queue()
+    p = ctx.Process(target=_process_worker, args=(func, result_queue, *args), kwargs=kwargs)
     p.start()
 
     if task_id:

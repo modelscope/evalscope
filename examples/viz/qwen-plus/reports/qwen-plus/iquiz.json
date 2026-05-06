@@ -1,0 +1,120 @@
+{
+    "name": "qwen-plus@iquiz",
+    "dataset_name": "iquiz",
+    "dataset_pretty_name": "IQuiz",
+    "dataset_description": "\n## Overview\n\nIQuiz is a Chinese benchmark for evaluating AI models on intelligence quotient (IQ) and emotional quotient (EQ) questions. It tests logical reasoning, pattern recognition, and social-emotional understanding through multiple-choice questions.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Question Answering\n- **Input**: Question in Chinese with multiple choice options\n- **Output**: Selected answer with explanation (Chain-of-Thought)\n- **Language**: Chinese\n\n## Key Features\n\n- Dual evaluation of IQ and EQ capabilities\n- Chinese-language cognitive assessment\n- Multiple difficulty levels\n- Requires explanation alongside answer selection\n- Tests logical reasoning and emotional understanding\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **Accuracy**\n- Subsets: **IQ** (logical reasoning) and **EQ** (emotional intelligence)\n- Uses Chinese Chain-of-Thought prompt template\n- Evaluates on **test** split\n- Metadata includes difficulty level information\n",
+    "model_name": "qwen-plus",
+    "score": 0.85,
+    "metrics": [
+        {
+            "name": "mean_acc",
+            "num": 20,
+            "score": 0.85,
+            "macro_score": 0.85,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 20,
+                    "score": 0.85,
+                    "macro_score": 0.85,
+                    "subsets": [
+                        {
+                            "name": "IQ",
+                            "score": 1.0,
+                            "num": 10
+                        },
+                        {
+                            "name": "EQ",
+                            "score": 0.7,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "analysis": "N/A",
+    "perf_metrics": {
+        "summary": {
+            "n_samples": 20,
+            "latency": {
+                "mean": 15.546738,
+                "std": 10.30199,
+                "min": 5.254643,
+                "25%": 10.637517,
+                "50%": 11.393814,
+                "75%": 18.294405,
+                "90%": 25.321017,
+                "99%": 46.294005,
+                "max": 50.807889
+            },
+            "throughput": {
+                "avg_output_tps": 43.7,
+                "avg_req_ps": 0.0643
+            },
+            "usage": {
+                "input_tokens": {
+                    "mean": 152.35,
+                    "std": 53.29686,
+                    "min": 98.0,
+                    "25%": 109.0,
+                    "50%": 138.0,
+                    "75%": 180.5,
+                    "90%": 232.0,
+                    "99%": 264.58,
+                    "max": 268.0
+                },
+                "output_tokens": {
+                    "mean": 679.45,
+                    "std": 470.432105,
+                    "min": 214.0,
+                    "25%": 438.25,
+                    "50%": 497.5,
+                    "75%": 802.25,
+                    "90%": 1129.4,
+                    "99%": 2087.0,
+                    "max": 2296.0
+                },
+                "total_tokens": {
+                    "mean": 831.8,
+                    "std": 506.89754,
+                    "min": 324.0,
+                    "25%": 577.5,
+                    "50%": 658.0,
+                    "75%": 968.0,
+                    "90%": 1326.1,
+                    "99%": 2337.52,
+                    "max": 2564.0
+                },
+                "total_input_tokens": 3047,
+                "total_output_tokens": 13589,
+                "total_tokens_count": 16636
+            },
+            "ttft": {
+                "mean": 0.459516,
+                "std": 0.111803,
+                "min": 0.298405,
+                "25%": 0.384433,
+                "50%": 0.428345,
+                "75%": 0.541882,
+                "90%": 0.595447,
+                "99%": 0.698237,
+                "max": 0.710127
+            },
+            "tpot": {
+                "mean": 0.022291,
+                "std": 0.000472,
+                "min": 0.021981,
+                "25%": 0.022033,
+                "50%": 0.022046,
+                "75%": 0.022301,
+                "90%": 0.023054,
+                "99%": 0.023441,
+                "max": 0.023443
+            }
+        }
+    },
+    "num": 20
+}
