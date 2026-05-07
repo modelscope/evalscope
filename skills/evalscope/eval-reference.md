@@ -58,6 +58,7 @@ Common per-dataset options:
 | `llm_ckpt` (checkpoint) | Local model weights (auto-detected when --model is a path) |
 | `openai_api` | OpenAI-compatible API endpoint (auto-detected when --api-url is set) |
 | `anthropic_api` | Anthropic Claude API |
+| `litellm` | LiteLLM multi-provider routing (100+ LLM providers, use `provider/model` naming) |
 | `mock_llm` | Pipeline testing without a real model |
 | `text2image` | Image generation models |
 
