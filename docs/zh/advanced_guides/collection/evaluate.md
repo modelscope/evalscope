@@ -109,5 +109,5 @@ evalscope eval \
 - 大数据量评测速度慢：调大 eval_batch_size；确保模型/接口支持并发请求。
 
 ## 后续操作
-- 可视化：evalscope app 打开交互界面筛选维度与模型。
+- 可视化：evalscope service 打开交互界面筛选维度与模型。
 - 版本化：为不同权重配置生成多份 JSONL，命名为 weighted_v1.jsonl / weighted_v2.jsonl 并分开评测。

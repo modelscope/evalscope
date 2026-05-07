@@ -163,6 +163,32 @@ class VisualizerType:
     CLEARML = 'clearml'
 
 
+# --- Report / Visualization constants (migrated from app.constants) ---
+PLOTLY_THEME = 'plotly_dark'
+PLOTLY_CDN_URL = 'https://resources.modelscope.cn/third-part/js/plotly/plotly-2.35.2.min.js'
+REPORT_TOKEN = '@@'
+MODEL_TOKEN = '::'
+DATASET_TOKEN = ', '
+DEFAULT_BAR_WIDTH = 0.2
+LATEX_DELIMITERS = [{
+    'left': '$$',
+    'right': '$$',
+    'display': True,
+}, {
+    'left': '$',
+    'right': '$',
+    'display': False,
+}, {
+    'left': '\\(',
+    'right': '\\)',
+    'display': False,
+}, {
+    'left': '\\[',
+    'right': '\\]',
+    'display': True,
+}]
+
+
 class LoggingConstants:
     DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
     # Console output formats (colorlog)

@@ -4,7 +4,7 @@ import { useQueryParams } from '@/hooks/useQueryParams'
 import EvalConfigForm from '@/components/eval/EvalConfigForm'
 import TaskMonitor from '@/components/eval/TaskMonitor'
 import Card from '@/components/ui/Card'
-import { submitEvalTask, getEvalProgress, getEvalLog, getEvalReportUrl } from '@/api/eval'
+import { submitEvalTask, stopEvalTask, getEvalProgress, getEvalLog, getEvalReportUrl } from '@/api/eval'
 import type { EvalInvokeResponse, LogResponse, ProgressResponse } from '@/api/types'
 import { usePolling } from '@/hooks/usePolling'
 
@@ -38,6 +38,15 @@ export default function EvalTaskPage() {
     }
   }
 
+  const handleStop = async () => {
+    if (!taskId) return
+    try {
+      await stopEvalTask(taskId)
+    } catch { /* ignore errors */ }
+    setRunning(false)
+    setResult({ status: 'stopped', task_id: taskId })
+  }
+
   const progressFn = useCallback(async () => {
     if (!taskId) throw new Error('no task')
     return getEvalProgress(taskId)
@@ -51,7 +60,7 @@ export default function EvalTaskPage() {
   usePolling<ProgressResponse>({
     fn: progressFn,
     enabled: running && !!taskId,
-    interval: 2000,
+    interval: 5000,
     onData: (d) => {
       setProgress(d.percent ?? 0)
       if (d.percent >= 100) setRunning(false)
@@ -61,7 +70,7 @@ export default function EvalTaskPage() {
   usePolling<LogResponse>({
     fn: logFn,
     enabled: running && !!taskId,
-    interval: 2000,
+    interval: 5000,
     onData: (d) => {
       if (d.text) {
         setLogText((prev) => prev + d.text)
@@ -95,6 +104,7 @@ export default function EvalTaskPage() {
             result={result}
             reportUrl={reportUrl}
             readyLabel={t('eval.ready')}
+            onStop={handleStop}
           />
         </Card>
       </div>

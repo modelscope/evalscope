@@ -266,10 +266,10 @@ Output results:
 
 EvalScope supports result visualization, allowing you to view the model's specific output.
 
-Run the following command to launch the Gradio-based visualization interface:
+Run the following command to launch the Web dashboard:
 
 ```shell
-evalscope app
+evalscope service
 ```
 
 Select the evaluation report and click load to view the model's output for each question and overall accuracy:

@@ -412,7 +412,9 @@ def main():
     )
     conversations = []
     skipped_build = 0
-    with multiprocessing.Pool(num_workers) as pool:
+    # Use spawn context to avoid fork-based deadlocks on Linux.
+    mp_ctx = multiprocessing.get_context('spawn')
+    with mp_ctx.Pool(num_workers) as pool:
         with tqdm(total=args.number, desc='Building conversations') as pbar:
             for conv in pool.imap(_build_one, work_items):
                 if conv is None:

@@ -255,7 +255,7 @@ run_task(task_cfg=task_cfg)
 The EvalScope framework supports visualization of evaluation results. Users can generate a visual report using the following command:
 
 ```bash
-evalscope app
+evalscope service
 ```
 
 For usage documentation, please refer to the [visualization documentation](../../get_started/visualization.md).

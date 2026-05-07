@@ -24,7 +24,7 @@
 ## 安装 EvalScope
 
 ```bash
-pip install 'evalscope[app]' -U
+pip install 'evalscope[service]' -U
 ```
 
 ## 评测本地模型checkpoint
@@ -129,7 +129,7 @@ evalscope eval \
 下面我们启动EvalScope的可视化界面，来具体看看模型对每个问题是如何回答的
 
 ```bash
-evalscope app
+evalscope service
 ```
 
 

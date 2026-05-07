@@ -30,7 +30,7 @@ class TestVLMBenchmark(TestBenchmark):
                 'parallel_tool_calls': True,
                 'retries': 1
             },
-            'judge_strategy': JudgeStrategy.LLM_RECALL,
+            'judge_strategy': JudgeStrategy.AUTO,
             'judge_model_args': {
                 'model_id': 'qwen-plus',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -92,7 +92,7 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {
             'subset_list': ['default']
         }
-        self._run_dataset_test('real_world_qa', dataset_args=dataset_args, limit=10)
+        self._run_dataset_test('real_world_qa', dataset_args=dataset_args, limit=20)
 
     def test_ai2d(self):
         dataset_args = {

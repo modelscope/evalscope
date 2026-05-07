@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "katex/dist/katex.min.css";
+@plugin "@tailwindcss/typography";
 
 /* ------------------------------------------------------------------ */
 /* Design tokens — shared structural vars                              */

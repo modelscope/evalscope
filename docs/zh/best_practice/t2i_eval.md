@@ -117,7 +117,7 @@ run_task(task_cfg=task_cfg)
 运行如下命令可以启动可视化界面，直观展现模型评测效果以及分析模型的输出：
 
 ```shell
-evalscope app
+evalscope service
 ```
 
 评测结果中包括智能分析报告、模型得分分布、生成图片case等部分。从分析报告可以看出HiDream-I1-Dev 模型的图像描述与理解能力表现较好，但在处理复杂语义、空间关系和数量推理等方面仍需提升。

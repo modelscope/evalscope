@@ -172,10 +172,10 @@ run_task(task_cfg=task_cfg)
 
 EvalScope支持可视化结果，可以查看模型具体的输出。
 
-运行以下命令，可以启动基于Gradio的可视化界面：
+运行以下命令，可以启动Web 可视化界面：
 
 ```shell
-evalscope app
+evalscope service
 ```
 
 选择评测报告，点击加载，即可看到模型在每个问题上的输出结果，以及整体答题正确率：

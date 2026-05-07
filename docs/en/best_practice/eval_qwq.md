@@ -139,7 +139,7 @@ EvalScope supports visualizing results, allowing you to see the specific outputs
 Run the following command to launch the visualization interface:
 
 ```bash
-evalscope app --lang en
+evalscope service 
 ```
 
 Select the evaluation report and click to load it, allowing you to view the model's output for each question, as well as the overall accuracy:

@@ -3,7 +3,7 @@ import { useLocale } from '@/contexts/LocaleContext'
 import PerfConfigForm from '@/components/perf/PerfConfigForm'
 import TaskMonitor from '@/components/eval/TaskMonitor'
 import Card from '@/components/ui/Card'
-import { submitPerfTask, getPerfProgress, getPerfLog, getPerfReportUrl } from '@/api/perf'
+import { submitPerfTask, stopPerfTask, getPerfProgress, getPerfLog, getPerfReportUrl } from '@/api/perf'
 import type { EvalInvokeResponse, LogResponse, ProgressResponse } from '@/api/types'
 import { usePolling } from '@/hooks/usePolling'
 
@@ -34,6 +34,15 @@ export default function PerfTaskPage() {
     }
   }
 
+  const handleStop = async () => {
+    if (!taskId) return
+    try {
+      await stopPerfTask(taskId)
+    } catch { /* ignore errors */ }
+    setRunning(false)
+    setResult({ status: 'stopped', task_id: taskId })
+  }
+
   const progressFn = useCallback(async () => {
     if (!taskId) throw new Error('no task')
     return getPerfProgress(taskId)
@@ -47,7 +56,7 @@ export default function PerfTaskPage() {
   usePolling<ProgressResponse>({
     fn: progressFn,
     enabled: running && !!taskId,
-    interval: 2000,
+    interval: 5000,
     onData: (d) => {
       setProgress(d.percent ?? 0)
       if (d.percent >= 100) setRunning(false)
@@ -57,7 +66,7 @@ export default function PerfTaskPage() {
   usePolling<LogResponse>({
     fn: logFn,
     enabled: running && !!taskId,
-    interval: 2000,
+    interval: 5000,
     onData: (d) => {
       if (d.text) {
         setLogText((prev) => prev + d.text)
@@ -87,6 +96,7 @@ export default function PerfTaskPage() {
             result={result}
             reportUrl={reportUrl}
             readyLabel={t('perf.ready')}
+            onStop={handleStop}
           />
         </Card>
       </div>

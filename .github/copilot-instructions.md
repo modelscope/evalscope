@@ -6,7 +6,7 @@ Use these repo-specific rules to ship changes confidently. Prefer concrete patte
 - CLI entry: `evalscope` (see `pyproject.toml -> [project.scripts]`) with subcommands:
   - `eval` → native evaluation (`evalscope/cli/start_eval.py` → `evalscope/run.py`).
   - `perf` → service load testing (extra `evalscope[perf]`).
-  - `app` → result visualization (extra `evalscope[app]`).
+  - `app` → result visualization (extra `evalscope[service]`).
 - Native eval path (`evalscope/run.py`):
   1) Build `TaskConfig` (`evalscope/config.py`) → set `work_dir` → `OutputsStructure` creates `logs/`, `predictions/`, `reviews/`, `reports/`, `configs/`.
   2) Build `Model` via API registry (see `evalscope/api/model/model.py`, function `get_model_with_task_config`).
@@ -32,7 +32,7 @@ Use these repo-specific rules to ship changes confidently. Prefer concrete patte
 - Quick eval (Python): `from evalscope import run_task, TaskConfig; run_task(TaskConfig(model='Qwen/Qwen2.5-0.5B-Instruct', datasets=['gsm8k'], limit=5))`.
 - API eval (OpenAI-compatible): set `--eval-type openai_api` or `TaskConfig(eval_type='openai_api')`, provide `--api-url/--api-key`.
 - Perf benchmark: `evalscope perf --url http://127.0.0.1:8801/v1/chat/completions --api openai --model qwen2.5 --parallel 5 -n 20` (see `test_perf.sh`).
-- Visualization: `evalscope app` (see README “Visualization of Evaluation Results”).
+- Visualization: `evalscope service` (see README “Visualization of Evaluation Results”).
 
 ## Behavior that matters
 - Concurrency: predictions use `eval_batch_size`.

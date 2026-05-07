@@ -31,7 +31,7 @@
 
 **A:** 尝试先单独安装 `pip install python-dotenv`，然后再执行 `pip install evalscope[all]`。
 
-**Q: `evalscope[app]` 与其他库（如 `bfcl-eval`）存在环境冲突？**
+**Q: `evalscope[service]` 与其他库（如 `bfcl-eval`）存在环境冲突？**
 
 **A:** 请尝试单独安装这些库，而不是在一条命令中同时安装。对于 `bfcl-eval`，可以尝试 `2025.6.16` 版本。
 
@@ -102,7 +102,7 @@ task_config = TaskConfig(
 **A:** 请遵循以下步骤：
 1.  **检查模型接口**：确认模型服务或本地模型能正常生成回复。
 2.  **查看预测文件**：检查 `outputs/<timestamp>/predictions/` 目录下的 JSONL 文件，确认模型输出是否符合预期。
-3.  **可视化分析**：使用 `evalscope app` 启动可视化界面，直观地查看和分析评测结果。
+3.  **可视化分析**：使用 `evalscope service` 启动可视化界面，直观地查看和分析评测结果。
 
 **Q: 评测结果不稳定，两次运行结果不一致怎么办？**
 
@@ -139,11 +139,11 @@ judge_model_args={
 
 **A:** 支持断点续评。使用 `--use-cache` 参数并指定上次评测的输出目录路径，即可重用已完成的模型预测和评估结果。
 
-**Q: `evalscope app` 可视化界面无法访问或图表显示异常？**
+**Q: `evalscope service` 可视化界面无法访问或图表显示异常？**
 
 **A:**
-- **无法访问**：尝试升级 `gradio` 版本到 `4.20.0` 或更高。
-- **图表异常**：尝试降级 `plotly` 版本到 `5.15.0`。
+- **无法访问**：请确认服务已启动，浏览器打开打印的 Dashboard URL。如端口被占用，使用 `--port` 指定其他端口。
+- **图表异常**：尝试升级 `plotly` 版本。
 
 **Q: 本地加载模型时报错 `Expected all tensors to be on the same device`？**
 
@@ -240,7 +240,7 @@ judge_model_args={
 
 **Q: 压测结果如何可视化？**
 
-**A:** `perf` 子命令的结果不适用于 `evalscope app`。但支持通过 `wandb` 或 `swanlab` 进行可视化。请参考[压测结果可视化指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html#id6)。
+**A:** `perf` 子命令的结果不适用于 `evalscope service`。但支持通过 `wandb` 或 `swanlab` 进行可视化。请参考[压测结果可视化指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html#id6)。
 
 ## 引用我们
 

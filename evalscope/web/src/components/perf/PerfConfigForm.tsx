@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SyntheticEvent } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import Button from '@/components/ui/Button'
 
@@ -10,9 +10,9 @@ interface Props {
 export default function PerfConfigForm({ onSubmit, disabled }: Props) {
   const { t } = useLocale()
   const [model, setModel] = useState('')
-  const [apiUrl, setApiUrl] = useState('')
+  const [url, setUrl] = useState('')
   const [apiKey, setApiKey] = useState('')
-  const [apiType, setApiType] = useState('openai')
+  const [api, setApi] = useState('openai')
   const [parallel, setParallel] = useState('1')
   const [number, setNumber] = useState('10')
   const [rate, setRate] = useState('')
@@ -24,7 +24,7 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
     const newErrors: Record<string, string> = {}
     if (!model.trim()) newErrors.model = 'Required'
@@ -36,11 +36,11 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
 
     const config: Record<string, unknown> = {
       model,
-      api_type: apiType,
+      api,
       parallel: parallel.split(',').map((s) => Number(s.trim())).filter(Boolean),
       number: number.split(',').map((s) => Number(s.trim())).filter(Boolean),
     }
-    if (apiUrl) config.api_url = apiUrl
+    if (url) config.url = url
     if (apiKey) config.api_key = apiKey
     if (rate) config.rate = Number(rate)
     if (maxTokens) config.max_tokens = Number(maxTokens)
@@ -76,7 +76,7 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
         {/* API Type */}
         <div>
           <label className={labelStyle}>{t('perf.apiType')}</label>
-          <select value={apiType} onChange={(e) => setApiType(e.target.value)} className={inputStyle}>
+          <select value={api} onChange={(e) => setApi(e.target.value)} className={inputStyle}>
             <option value="openai">OpenAI</option>
             <option value="dashscope">DashScope</option>
             <option value="local">Local</option>
@@ -86,7 +86,7 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
         {/* API URL */}
         <div>
           <label className={labelStyle}>{t('eval.apiUrl')}</label>
-          <input value={apiUrl} onChange={(e) => setApiUrl(e.target.value)} className={inputStyle} placeholder="http://localhost:8000/v1" />
+          <input value={url} onChange={(e) => setUrl(e.target.value)} className={inputStyle} placeholder="http://localhost:8000/v1" />
         </div>
 
         {/* API Key */}

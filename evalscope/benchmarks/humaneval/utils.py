@@ -64,10 +64,11 @@ def check_correctness(problem: Dict, completion: str, timeout: float, completion
         the results later even if execution finishes asynchronously.
     """
 
-    manager = multiprocessing.Manager()
+    ctx = multiprocessing.get_context('spawn')
+    manager = ctx.Manager()
     result = manager.list()
 
-    p = multiprocessing.Process(target=unsafe_execute, args=(problem, completion, timeout, result))
+    p = ctx.Process(target=unsafe_execute, args=(problem, completion, timeout, result))
     p.start()
     p.join(timeout=timeout + 1)
     if p.is_alive():

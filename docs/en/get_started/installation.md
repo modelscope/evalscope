@@ -21,7 +21,7 @@ pip install evalscope
     ```
   - To use visualization features, install the app dependency:
     ```shell
-    pip install 'evalscope[app]'
+    pip install 'evalscope[service]'
     ```
   - If you want to use other evaluation backends, you can optionally install OpenCompass, VLMEvalKit, and RAGEval:
     ```shell

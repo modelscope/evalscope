@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useMemo, useReducer, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react'
 import type { LoadReportResponse, ReportData } from '@/api/types'
 import * as reportsApi from '@/api/reports'
+import { api } from '@/api/client'
 
 // ------------------------------------------------------------------ //
 // State                                                               //
@@ -31,8 +32,10 @@ type Action =
   | { type: 'SET_COMPARE'; names: string[] }
   | { type: 'CLEAR_COMPARE' }
 
+const INITIAL_ROOT = './outputs' // fallback; will be overridden by /api/v1/config
+
 const initialState: ReportsState = {
-  rootPath: './outputs',
+  rootPath: INITIAL_ROOT,
   availableReports: [],
   selectedReports: [],
   reportCache: {},
@@ -92,7 +95,26 @@ const ReportsContext = createContext<ReportsCtx>(null!)
 export function ReportsProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
 
-  const setRootPath = useCallback((p: string) => dispatch({ type: 'SET_ROOT', rootPath: p }), [])
+  // Fetch the server-side default outputs_root from /api/v1/config on mount
+  useEffect(() => {
+    let cancelled = false
+    api<{ outputs_root: string }>('/api/v1/config')
+      .then((cfg) => {
+        if (!cancelled && cfg.outputs_root && !userSetRootRef.current) {
+          dispatch({ type: 'SET_ROOT', rootPath: cfg.outputs_root })
+        }
+      })
+      .catch(() => {/* ignore; keep default */})
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const userSetRootRef = useRef(false)
+
+  const setRootPath = useCallback((p: string) => {
+    userSetRootRef.current = true
+    dispatch({ type: 'SET_ROOT', rootPath: p })
+  }, [])
 
   const scanReportsAction = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', loading: true })

@@ -192,7 +192,7 @@ EvalScope支持可视化结果，可以查看模型具体的输出。
 
 运行以下命令，可以启动可视化界面：
 ```bash
-evalscope app
+evalscope service
 ```
 
 终端将输出如下链接内容：

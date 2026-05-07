@@ -1,11 +1,12 @@
 import json
 from argparse import Namespace
 from inspect import signature
+from pydantic import BaseModel, ConfigDict
 
 from evalscope.utils.io_utils import json_to_dict, yaml_to_dict
 
 
-class BaseArgument:
+class BaseArgument(BaseModel):
     """
     BaseArgument is a base class designed to facilitate the creation and manipulation
     of argument classes in the evalscope framework. It provides utility methods for
@@ -13,10 +14,16 @@ class BaseArgument:
     dictionary representations.
     """
 
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        protected_namespaces=(),
+        validate_default=True,
+    )
+
     @classmethod
     def from_dict(cls, d: dict):
         """Instantiate the class from a dictionary."""
-        return cls(**d)
+        return cls.model_validate(d)
 
     @classmethod
     def from_json(cls, json_file: str):
@@ -43,8 +50,7 @@ class BaseArgument:
 
     def to_dict(self):
         """Convert the instance to a dictionary."""
-        result = self.__dict__.copy()
-        return result
+        return self.model_dump()
 
     def __str__(self):
         """Return a JSON-formatted string representation of the instance."""

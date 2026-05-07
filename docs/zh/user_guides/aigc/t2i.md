@@ -254,7 +254,7 @@ run_task(task_cfg=task_cfg)
 EvalScope框架支持对评测结果进行可视化，用户可以通过以下命令生成可视化报告：
 
 ```bash
-evalscope app
+evalscope service
 ```
 
 使用文档请参考[可视化文档](../../get_started/visualization.md)。

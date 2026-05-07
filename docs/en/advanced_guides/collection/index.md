@@ -103,7 +103,7 @@ After obtaining the mixed JSONL, you can:
 After evaluation, you can use:
 
 - Report summaries to compare different models' performance under the same Index;
-- EvalScope's **visualization app (`evalscope app`)** to visually compare model strengths and weaknesses.
+- EvalScope's **visualization app (`evalscope service`)** to visually compare model strengths and weaknesses.
 
 **Specific evaluation commands and sample outputs:** See [How to Evaluate](evaluate.md).
 

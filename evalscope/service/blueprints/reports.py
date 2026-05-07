@@ -12,8 +12,16 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request, send_file
 from typing import List
 
-from evalscope.app.constants import PLOTLY_THEME
-from evalscope.app.utils.data_utils import (
+from evalscope.constants import PLOTLY_CDN_URL, PLOTLY_THEME
+from evalscope.report import ReportKey, get_data_frame
+from evalscope.report.report import Report
+from evalscope.report.visualization import (
+    plot_multi_report_radar,
+    plot_single_dataset_scores,
+    plot_single_report_scores,
+    plot_single_report_sunburst,
+)
+from evalscope.utils.data_utils import (
     get_acc_report_df,
     get_compare_report_df,
     get_model_prediction,
@@ -24,14 +32,6 @@ from evalscope.app.utils.data_utils import (
     process_report_name,
     scan_for_report_folders,
 )
-from evalscope.app.utils.visualization import (
-    plot_multi_report_radar,
-    plot_single_dataset_scores,
-    plot_single_report_scores,
-    plot_single_report_sunburst,
-)
-from evalscope.report import ReportKey, get_data_frame
-from evalscope.report.report import Report
 from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import get_logger
 from ..utils import OUTPUT_DIR
@@ -44,7 +44,9 @@ _DEFAULT_ROOT = OUTPUT_DIR
 
 
 def _root_path() -> str:
-    return request.args.get('root_path', _DEFAULT_ROOT)
+    # Priority: URL query param > app config (from --outputs CLI arg) > default
+    from flask import current_app
+    return request.args.get('root_path', current_app.config.get('OUTPUTS_ROOT') or _DEFAULT_ROOT)
 
 
 # ------------------------------------------------------------------
@@ -321,7 +323,7 @@ def get_dataframe():
             if not dataset_name:
                 return jsonify({'error': 'dataset_name is required for type=dataset'}), 400
             report_df = get_data_frame(report_list=report_list, flatten_metrics=True, flatten_categories=True)
-            from evalscope.app.utils.data_utils import get_single_dataset_df
+            from evalscope.utils.data_utils import get_single_dataset_df
             df, _ = get_single_dataset_df(report_df, dataset_name)
         else:
             df = acc_df
@@ -517,7 +519,7 @@ def get_chart():
                 if not dataset_name:
                     return jsonify({'error': 'dataset_name is required for dataset_scores'}), 400
                 report_df = get_data_frame(report_list=report_list, flatten_metrics=True, flatten_categories=True)
-                from evalscope.app.utils.data_utils import get_single_dataset_df
+                from evalscope.utils.data_utils import get_single_dataset_df
                 ds_df, _ = get_single_dataset_df(report_df, dataset_name)
                 fig = plot_single_dataset_scores(ds_df)
             else:
@@ -528,7 +530,9 @@ def get_chart():
                    'justify-content:center;height:100vh;font-family:sans-serif;">No data to plot</body></html>', \
                    200, {'Content-Type': 'text/html'}
 
-        html = fig.to_html(full_html=True, include_plotlyjs='cdn', config={'responsive': True})
+        html = fig.to_html(full_html=True, include_plotlyjs=False, config={'responsive': True})
+        plotly_script = f'<script src="{PLOTLY_CDN_URL}" charset="utf-8"></script>'
+        html = html.replace('</head>', f'  {plotly_script}\n</head>')
         return html, 200, {'Content-Type': 'text/html'}
 
     except Exception as e:

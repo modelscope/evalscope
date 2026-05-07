@@ -78,13 +78,12 @@ class RealWorldQAAdapter(VisionLanguageAdapter):
             content_list.append(ContentImage(image=image_base64))
         return Sample(
             input=[ChatMessageUser(content=content_list)],
-            target=record['answer'],
+            target=record['answer'].lower(),
             metadata={'image_path': record['image_path']}
         )
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        pattern = r'ANSWER:\s*(.*)'
-        match = re.search(pattern, prediction)
-        if match:
-            return match.group(1).strip()
+        matches = re.findall(r'ANSWER:\s*(.*)', prediction)
+        if matches:
+            return matches[-1].strip().lower()
         return ''

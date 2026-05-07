@@ -22,8 +22,13 @@ export function getEvalReportUrl(taskId: string): string {
   return `/api/v1/eval/report?task_id=${encodeURIComponent(taskId)}`
 }
 
-export async function listBenchmarks(type?: 'text' | 'multimodal'): Promise<BenchmarksResponse> {
+export async function stopEvalTask(taskId: string): Promise<{ status: string; task_id: string }> {
+  return apiPost<{ status: string; task_id: string }>(`/api/v1/eval/stop?task_id=${encodeURIComponent(taskId)}`, {})
+}
+
+export async function listBenchmarks(type?: 'text' | 'multimodal', all?: boolean): Promise<BenchmarksResponse> {
   const params: Record<string, string> = {}
   if (type) params.type = type
+  if (all) params.all = 'true'
   return api<BenchmarksResponse>('/api/v1/eval/benchmarks', params)
 }

@@ -170,10 +170,10 @@ For more available evaluation datasets, refer to the [Dataset List](https://eval
 
 EvalScope supports result visualization, allowing you to view the model's specific outputs.
 
-Run the following command to launch a Gradio-based visualization interface:
+Run the following command to launch a Web dashboard:
 
 ```shell
-evalscope app
+evalscope service
 ```
 
 Select the evaluation report and click load to see the model's output for each question and the overall accuracy:

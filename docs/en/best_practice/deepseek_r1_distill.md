@@ -192,7 +192,7 @@ EvalScope supports result visualization, allowing you to view the model's specif
 
 Run the following command to launch the visualization interface:
 ```bash
-evalscope app
+evalscope service
 ```
 
 The terminal will output the following link content:

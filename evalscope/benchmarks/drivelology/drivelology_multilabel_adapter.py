@@ -103,9 +103,9 @@ class DrivelologyMultilabelClassificationAdapter(DefaultDataAdapter):
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         pattern = r'ANSWER:\s*([A-E]+)'
-        match = re.search(pattern, prediction)
-        if match:
-            letters = match.group(1).strip().upper()
+        matches = re.findall(pattern, prediction)
+        if matches:
+            letters = matches[-1].strip().upper()
             return ''.join(sorted(set(letters)))
         else:
             try:

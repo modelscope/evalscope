@@ -93,8 +93,7 @@ class TriviaQaAdapter(DefaultDataAdapter):
         # use regex to extract the answer from the prediction
         import re
 
-        pattern = r'ANSWER:\s*(.*)'
-        match = re.search(pattern, prediction)
-        if match:
-            return match.group(1).strip()
+        matches = re.findall(r'ANSWER:\s*(.*)', prediction)
+        if matches:
+            return matches[-1].strip()
         return prediction.strip()

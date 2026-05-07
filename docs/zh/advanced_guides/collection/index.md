@@ -103,7 +103,7 @@ EvalScope 的 **Collection** 就是为此设计的：
 评测完成后，你可以用：
 
 - 报表汇总不同模型在同一个 Index 下的表现；
-- EvalScope 的 **可视化应用（`evalscope app`）** 直观对比模型优劣。
+- EvalScope 的 **可视化应用（`evalscope service`）** 直观对比模型优劣。
 
 **具体评测命令与示例输出：** 见 [如何评测](evaluate.md)。
 

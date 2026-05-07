@@ -315,7 +315,9 @@ class _bootstrap_internal:
 def bootstrap_stderr(f, xs, iters):
     import multiprocessing as mp
 
-    pool = mp.Pool(mp.cpu_count())
+    # Use spawn context to avoid fork-based deadlocks on Linux.
+    ctx = mp.get_context('spawn')
+    pool = ctx.Pool(mp.cpu_count())
     # this gives a biased estimate of the stderr (i.e w/ the mean, it gives something
     # equivalent to stderr calculated without Bessel's correction in the stddev.
     # Unfortunately, I haven't been able to figure out what the right correction is

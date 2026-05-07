@@ -3,7 +3,7 @@ name = "evalscope"
 dynamic = ["version", "dependencies", "optional-dependencies"]
 description = "EvalScope: Lightweight LLMs Evaluation Framework"
 readme = {file = "README.md", content-type = "text/markdown"}
-license = {text = "Apache License 2.0"}
+license = "Apache-2.0"
 authors = [
   {name = "ModelScope team"},
   {email = "contact@modelscope.cn"}
@@ -17,7 +17,6 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
-  "License :: OSI Approved :: Apache Software License"
 ]
 
 [project.urls]

@@ -1,0 +1,36 @@
+{
+    "name": "qwen-plus@gsm8k",
+    "dataset_name": "gsm8k",
+    "dataset_pretty_name": "GSM8K",
+    "dataset_description": "\n## Overview\n\nGSM8K (Grade School Math 8K) is a high-quality dataset of 8.5K linguistically diverse grade school math word problems created by human problem writers. The dataset is specifically designed to evaluate and improve the multi-step mathematical reasoning capabilities of language models.\n\n## Task Description\n\n- **Task Type**: Mathematical Word Problem Solving\n- **Input**: Natural language math word problem\n- **Output**: Numerical answer derived through step-by-step reasoning\n- **Difficulty**: Grade school level (2-8 reasoning steps required)\n\n## Key Features\n\n- Problems require basic arithmetic operations (addition, subtraction, multiplication, division)\n- Solutions involve 2 to 8 sequential reasoning steps\n- High linguistic diversity in problem formulations\n- Human-written problems ensuring natural language quality\n- Clear numerical answers for objective evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **4-shot** examples with Chain-of-Thought (CoT) prompting\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- The metric extracts numerical values for accuracy comparison\n- Supports both zero-shot and few-shot evaluation modes\n",
+    "model_name": "qwen-plus",
+    "score": 1.0,
+    "metrics": [
+        {
+            "name": "mean_acc",
+            "num": 10,
+            "score": 1.0,
+            "macro_score": 1.0,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 1.0,
+                    "macro_score": 1.0,
+                    "subsets": [
+                        {
+                            "name": "main",
+                            "score": 1.0,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "analysis": "N/A",
+    "perf_metrics": null,
+    "num": 10
+}

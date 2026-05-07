@@ -43,7 +43,7 @@
 在此之前，你需要安装EvalScope库，运行下面的代码：
 
 ```shell
-pip install 'evalscope[app]' -U
+pip install 'evalscope[service]' -U
 ```
 
 ### 1. 准备数据
@@ -196,10 +196,10 @@ run_task(task_cfg=task_cfg)
 EvalScope 内置了可视化分析工具，让你非常方便查看每一个样本的详细情况。无需编写额外代码，只需在终端运行一条命令，即可启动本地服务：
 
 ```shell
-evalscope app
+evalscope service
 ```
 
-打开浏览器访问 `http://127.0.0.1:7860`即可查看模型得分分布和在每个问题的回复和打分：
+打开浏览器访问 `http://127.0.0.1:9000`即可查看模型得分分布和在每个问题的回复和打分：
 
 ![image.png](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/best_practice/general_fc_overview.png)
 

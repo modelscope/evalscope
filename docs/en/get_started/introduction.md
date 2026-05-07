@@ -41,7 +41,7 @@ The architecture includes the following modules:
 
 3. Output Layer  
 - **Structured Reports**: Supports JSON/Tables/Logs  
-- **Visualization Platforms**: Supports Gradio/Wandb/SwanLab
+- **Visualization Platforms**: Supports Web Dashboard/Wandb/SwanLab
 
 ## Framework Features
 - **Benchmark Datasets**: Preloaded with several commonly used test benchmarks, including MMLU, CMMLU, C-Eval, GSM8K, ARC, HellaSwag, TruthfulQA, MATH, HumanEval, etc.

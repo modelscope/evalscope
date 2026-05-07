@@ -174,7 +174,9 @@ class SLAAutoTuner:
         results = self._save_summary()
         print_summary(results, self.args)
         if self.sla_results_table:
-            logger.info('SLA Auto-tune Summary:\n' + tabulate(self.sla_results_table, headers='keys', tablefmt='grid'))
+            logger.info(
+                'SLA Auto-tune Summary:\n' + tabulate(self.sla_results_table, headers='keys', tablefmt='simple_grid')
+            )
         return results
 
     def _get_optimization_mode(self, criteria: Dict[str, SLACriterionBase]) -> Tuple[Optional[str], Optional[str]]:

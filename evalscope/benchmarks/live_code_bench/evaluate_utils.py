@@ -29,10 +29,11 @@ def codegen_check_correctness(sample, generation, timeout, debug=True):
     timeouts inside `run_test`
     """
 
-    manager = multiprocessing.Manager()
+    ctx = multiprocessing.get_context('spawn')
+    manager = ctx.Manager()
     result = manager.list()
     metadata_list = manager.list()
-    p = multiprocessing.Process(
+    p = ctx.Process(
         target=_temp_run,
         args=(sample, generation, debug, result, metadata_list, timeout),
     )

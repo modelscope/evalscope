@@ -21,3 +21,7 @@ export async function getPerfLog(taskId: string, startLine?: number, page = 500)
 export function getPerfReportUrl(taskId: string): string {
   return `/api/v1/perf/report?task_id=${encodeURIComponent(taskId)}`
 }
+
+export async function stopPerfTask(taskId: string): Promise<{ status: string; task_id: string }> {
+  return apiPost<{ status: string; task_id: string }>(`/api/v1/perf/stop?task_id=${encodeURIComponent(taskId)}`, {})
+}

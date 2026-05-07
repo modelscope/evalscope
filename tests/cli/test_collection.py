@@ -116,8 +116,8 @@ class TestCollection(TestBenchmark):
                 'local_path': 'outputs/mixed_data_test.jsonl',
                 'shuffle': True,
             },
-            model='qwen2.5-7b-instruct',
-            limit=10,
+            model='qwen-plus',
+            limit=20,
         )
 
     def test_evaluate_rag_index(self):

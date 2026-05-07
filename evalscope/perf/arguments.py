@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from pydantic import Field, field_validator, model_validator
 from typing import Any, Dict, List, Optional, Union
 
 from evalscope.constants import DEFAULT_WORK_DIR, VisualizerType
@@ -21,7 +21,6 @@ _OPENAI_API_ENDPOINT_MAP = {
 }
 
 
-@dataclass
 class Arguments(BaseArgument):
     # Model and API
     model: str
@@ -46,7 +45,7 @@ class Arguments(BaseArgument):
     url: str = 'http://127.0.0.1:8877/v1/chat/completions'
     """URL for the API connection."""
 
-    headers: Dict[str, Any] = field(default_factory=dict)
+    headers: Dict[str, Any] = Field(default_factory=dict)
     """Custom headers."""
 
     connect_timeout: Optional[int] = None
@@ -258,7 +257,7 @@ class Arguments(BaseArgument):
 
     tokenize_prompt: bool = False
     """Tokenize prompt client-side and send token IDs directly to /v1/completions,
-    avoiding the token ID → text → token ID round-trip inflation.
+    avoiding the token ID -> text -> token ID round-trip inflation.
     Requires --tokenizer-path to be set."""
 
     # Multi-turn settings
@@ -295,25 +294,86 @@ class Arguments(BaseArgument):
     multi_turn_args: Optional[MultiTurnArgs] = None
     """Advanced multi-turn conversation parameters (MultiTurnArgs). Pass as JSON string via CLI."""
 
-    def __post_init__(self):
-        # Parse multi_turn_args from JSON string if necessary (CLI passes a string)
-        if isinstance(self.multi_turn_args, str):
+    # --- Field validators ---
+
+    @field_validator('multi_turn_args', mode='before')
+    @classmethod
+    def _validate_multi_turn_args(cls, v):
+        if v is None:
+            return v
+        if isinstance(v, MultiTurnArgs):
+            return v
+        if isinstance(v, str):
             try:
-                self.multi_turn_args = MultiTurnArgs(**json.loads(self.multi_turn_args))
+                return MultiTurnArgs(**json.loads(v))
             except Exception as e:
                 raise ValueError(f'Failed to parse --multi-turn-args JSON: {e}') from e
-        elif isinstance(self.multi_turn_args, dict):
-            self.multi_turn_args = MultiTurnArgs(**self.multi_turn_args)
+        if isinstance(v, dict):
+            return MultiTurnArgs(**v)
+        return v
 
+    @field_validator('rate', mode='before')
+    @classmethod
+    def _validate_rate(cls, v):
+        if isinstance(v, (int, float)):
+            return [float(v)]
+        return v
+
+    @field_validator('number', mode='before')
+    @classmethod
+    def _validate_number(cls, v):
+        if isinstance(v, int):
+            return [v]
+        return v
+
+    @field_validator('parallel', mode='before')
+    @classmethod
+    def _validate_parallel(cls, v):
+        if isinstance(v, int):
+            return [v]
+        return v
+
+    @field_validator('db_commit_interval', mode='after')
+    @classmethod
+    def _validate_db_commit_interval(cls, v):
+        return max(v, 1) if v <= 0 else v
+
+    @field_validator('queue_size_multiplier', mode='after')
+    @classmethod
+    def _validate_queue_size_multiplier(cls, v):
+        return max(v, 1) if v <= 0 else v
+
+    @field_validator('in_flight_task_multiplier', mode='after')
+    @classmethod
+    def _validate_in_flight_task_multiplier(cls, v):
+        return max(v, 1) if v <= 0 else v
+
+    # --- Model validator (cross-field logic) ---
+
+    @model_validator(mode='after')
+    def _post_init(self) -> 'Arguments':
         # Set the default headers
-        self.headers = self.headers or {}  # Default to empty dictionary
+        self.headers = self.headers or {}
         if self.api_key:
-            # Assuming the API key is used as a Bearer token
             self.headers['Authorization'] = f'Bearer {self.api_key}'
 
         # Set the model ID based on the model name
         self.model_id = os.path.basename(self.model)
 
+        # Set the URL based on the dataset type
+        self._resolve_url()
+
+        # Resolve apply_chat_template from the *original* URL before any redirects.
+        if self.apply_chat_template is None:
+            self.apply_chat_template = self.url.strip('/').endswith('chat/completions')
+
+        # Validate sweep params (number/parallel/rate consistency)
+        self._validate_sweep_params()
+
+        return self
+
+    def _resolve_url(self):
+        """Resolve URL based on api, dataset, port, and tokenize_prompt settings."""
         # Set the URL based on the dataset type
         if self.api.startswith('local'):
             if self.dataset.startswith('speed_benchmark'):
@@ -345,29 +405,16 @@ class Arguments(BaseArgument):
                     f'to completions endpoint: {self.url}'
                 )
 
-        # Resolve apply_chat_template from the *original* URL before any redirects.
-        if self.apply_chat_template is None:
-            self.apply_chat_template = self.url.strip('/').endswith('chat/completions')
-
-        # Normalise rate to a list
-        if isinstance(self.rate, (int, float)):
-            self.rate = [float(self.rate)]
-
-        # Set number and parallel to lists if they are integers
-        if isinstance(self.number, int):
-            self.number = [self.number]
-        if isinstance(self.parallel, int):
-            self.parallel = [self.parallel]
-
+    def _validate_sweep_params(self):
+        """Validate number/parallel/rate consistency after normalization."""
         if self.open_loop:
-            # open-loop mode: sweep over (number, rate) pairs
-            assert len(self.number) == len(self.rate), (
-                f'In open-loop mode the length of --number and --rate must match, '
-                f'but got number: {self.number} and rate: {self.rate}'
-            )
-            # Ensure rate values are valid (> 0) in open-loop mode
-            assert all(r > 0
-                       for r in self.rate), (f'In open-loop mode all --rate values must be > 0, but got: {self.rate}')
+            if len(self.number) != len(self.rate):
+                raise ValueError(
+                    f'In open-loop mode the length of --number and --rate must match, '
+                    f'but got number: {self.number} and rate: {self.rate}'
+                )
+            if not all(r > 0 for r in self.rate):
+                raise ValueError(f'In open-loop mode all --rate values must be > 0, but got: {self.rate}')
             # In open-loop mode concurrency is unbounded; set parallel=-1 so downstream
             # display layers render it as INF instead of a numeric value.
             self.parallel = [-1]
@@ -376,24 +423,16 @@ class Arguments(BaseArgument):
                 f'Rate sweep: {self.rate}, number sweep: {self.number}.'
             )
         else:
-            assert len(self.number) == len(self.parallel), (
-                f'The length of number and parallel should be the same, '
-                f'but got number: {self.number} and parallel: {self.parallel}'
-            )
-
-        # Validate tuning knobs
-        if self.db_commit_interval <= 0:
-            self.db_commit_interval = 1
-        if self.queue_size_multiplier <= 0:
-            self.queue_size_multiplier = 1
-        if self.in_flight_task_multiplier <= 0:
-            self.in_flight_task_multiplier = 1
+            if len(self.number) != len(self.parallel):
+                raise ValueError(
+                    f'The length of number and parallel should be the same, '
+                    f'but got number: {self.number} and parallel: {self.parallel}'
+                )
 
     def to_dict(self):
         """Convert the instance to a JSON-serializable dictionary."""
         result = super().to_dict()
-        if result.get('multi_turn_args') is not None:
-            result['multi_turn_args'] = result['multi_turn_args'].model_dump()
+        # model_dump() already recursively serializes nested Pydantic models (MultiTurnArgs)
         return result
 
     @contextmanager
@@ -450,7 +489,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--api-key', type=str, required=False, default=None, help='The API key for authentication')
     parser.add_argument('--connect-timeout', type=int, required=False, default=None, help='The network connection timeout')  # noqa: E501
     parser.add_argument('--read-timeout', type=int, required=False, default=None, help='The network read timeout')
-    parser.add_argument('--total-timeout', type=int, required=False, default=6 * 60 * 60, help='The total timeout for each request')  # noqa: E501
+    parser.add_argument('--total-timeout', type=int, default=6 * 60 * 60, help='The total timeout for each request')  # noqa: E501
     parser.add_argument('--no-test-connection', action='store_true', default=False, help='Do not test the connection before starting the benchmark')  # noqa: E501
 
     # Performance and parallelism

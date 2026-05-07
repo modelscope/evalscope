@@ -3,7 +3,7 @@ import LogViewer from '@/components/common/LogViewer'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import { useLocale } from '@/contexts/LocaleContext'
-import { ExternalLink, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { ExternalLink, CheckCircle2, XCircle, Loader2, Square, OctagonX } from 'lucide-react'
 
 interface Props {
   running: boolean
@@ -12,9 +12,10 @@ interface Props {
   result: EvalInvokeResponse | null
   reportUrl: string | null
   readyLabel: string
+  onStop?: () => void
 }
 
-export default function TaskMonitor({ running, progress, logText, result, reportUrl, readyLabel }: Props) {
+export default function TaskMonitor({ running, progress, logText, result, reportUrl, readyLabel, onStop }: Props) {
   const { t } = useLocale()
 
   return (
@@ -27,13 +28,19 @@ export default function TaskMonitor({ running, progress, logText, result, report
             <Badge variant="warning">Running{progress > 0 ? ` ${Math.round(progress)}%` : '...'}</Badge>
           </>
         )}
+        {!running && result?.status === 'stopped' && (
+          <>
+            <OctagonX size={16} className="text-[var(--yellow)]" />
+            <Badge variant="warning">Stopped</Badge>
+          </>
+        )}
         {!running && result?.status === 'error' && (
           <>
             <XCircle size={16} className="text-[var(--danger)]" />
             <Badge variant="danger">{result.error}</Badge>
           </>
         )}
-        {!running && result && result.status !== 'error' && (
+        {!running && result && result.status !== 'error' && result.status !== 'stopped' && (
           <>
             <CheckCircle2 size={16} className="text-[var(--green)]" />
             <Badge variant="success">Completed</Badge>
@@ -45,7 +52,7 @@ export default function TaskMonitor({ running, progress, logText, result, report
       </div>
 
       {/* Progress bar */}
-      {(running || (result && result.status !== 'error')) && (
+      {(running || (result && result.status !== 'error' && result.status !== 'stopped')) && (
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-deep)' }}>
           <div
             className="h-full rounded-full transition-all duration-500"
@@ -54,11 +61,24 @@ export default function TaskMonitor({ running, progress, logText, result, report
         </div>
       )}
 
+      {/* Stop button */}
+      {running && onStop && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onStop}
+          className="text-[var(--danger)] border-[var(--danger)] hover:bg-[var(--danger-bg)]"
+        >
+          <Square size={14} />
+          {t('common.stop')}
+        </Button>
+      )}
+
       {/* Log */}
       {logText && <LogViewer content={logText} />}
 
       {/* Report link */}
-      {!running && result && result.status !== 'error' && reportUrl && (
+      {!running && result && result.status !== 'error' && result.status !== 'stopped' && reportUrl && (
         <Button
           variant="primary"
           size="sm"

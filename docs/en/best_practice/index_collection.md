@@ -53,7 +53,7 @@ Below, we'll use building an **"Enterprise RAG Assistant Index"** as an example 
 Before that, you need to install the EvalScope library by running the following code:
 
 ```shell
-pip install 'evalscope[app]' -U
+pip install 'evalscope[service]' -U
 ```
 
 ## 3. Practice: Building an "Enterprise RAG Assistant Index"
@@ -221,10 +221,10 @@ Getting the Index total score doesn't mean the work is done. On the contrary, an
 EvalScope has built-in visualization analysis tools that make it very convenient to view details of each sample. Without writing additional code, just run one command in the terminal to start a local service:
 
 ```shell
-evalscope app
+evalscope service
 ```
 
-Open your browser and visit `http://127.0.0.1:7860` to view the model score distribution and responses and scores for each question:
+Open your browser and visit `http://127.0.0.1:9000` to view the model score distribution and responses and scores for each question:
 
 ![image.png](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/best_practice/overview.jpg)
 

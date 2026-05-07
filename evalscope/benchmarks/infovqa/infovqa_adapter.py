@@ -85,8 +85,7 @@ class InfoVQAAdapter(VisionLanguageAdapter):
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         import re
 
-        pattern = r'ANSWER:\s*(.*)'
-        match = re.search(pattern, prediction)
-        if match:
-            return match.group(1).strip()
+        matches = re.findall(r'ANSWER:\s*(.*)', prediction)
+        if matches:
+            return matches[-1].strip()
         return prediction.strip()

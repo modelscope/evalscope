@@ -88,10 +88,9 @@ class ChartQAAdapter(VisionLanguageAdapter):
         )
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        pattern = r'ANSWER:\s*(.*)'
-        match = re.search(pattern, prediction)
-        if match:
-            return match.group(1).strip()
+        matches = re.findall(r'ANSWER:\s*(.*)', prediction)
+        if matches:
+            return matches[-1].strip()
         return ''
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
