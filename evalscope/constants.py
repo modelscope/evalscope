@@ -78,6 +78,7 @@ class EvalType:
     IMAGE_EDITING = 'image_editing'  # image editing service
     OPENAI_API = 'openai_api'
     ANTHROPIC_API = 'anthropic_api'
+    LITELLM = 'litellm'
 
 
 class OutputType:
