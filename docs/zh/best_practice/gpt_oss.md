@@ -157,9 +157,8 @@ EvalScope 支持结果可视化，您可以查看模型的具体输出。
 
 ```bash
 pip install 'evalscope[service]'
-evalscope service --lang zh
+evalscope service
 ```
-（注：其中 --lang zh 表示界面语言为中文，如果想要英文界面使用 --lang en）
 
 ## 总结
 通过以上步骤，我们成功地使用 EvalScope 测试了 GPT-OSS 模型的推理速度和基准测试能力。GPT-OSS 模型在推理速度和基准测试上表现出色，适合用于生产环境和高性能需求的场景。

@@ -105,7 +105,7 @@ evalscope perf \
 4. Or launch the visualization UI:
 
 ```bash
-evalscope service --outputs ./outputs --server-port 7860 --lang en
+evalscope service --outputs ./outputs --server-port 7860 
 ```
 
 ---

@@ -44,7 +44,9 @@ _DEFAULT_ROOT = OUTPUT_DIR
 
 
 def _root_path() -> str:
-    return request.args.get('root_path', _DEFAULT_ROOT)
+    # Priority: URL query param > app config (from --outputs CLI arg) > default
+    from flask import current_app
+    return request.args.get('root_path', current_app.config.get('OUTPUTS_ROOT') or _DEFAULT_ROOT)
 
 
 # ------------------------------------------------------------------

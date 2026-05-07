@@ -104,13 +104,59 @@ run_task(task_cfg="config.json")
 +-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
 ```
 
-```{seealso}
-除了命令行报告，您还可以使用我们的可视化工具来深入分析评测结果。
+````{tip}
+您还可以通过可视化工具来深入分析评测结果：
 
-参考：[评测结果可视化](visualization.md)
+```bash
+pip install 'evalscope[service]'
+evalscope service
 ```
 
+服务启动后，访问 `http://127.0.0.1:9000` 即可打开可视化界面。详情参考：[评测结果可视化](visualization.md)
+````
+
 ## 进阶用法
+
+### 评测在线模型 API
+
+EvalScope 支持评测兼容 OpenAI API 格式的模型服务。只需指定服务地址、API Key，并将 `eval-type` 设置为 `openai_api`。
+
+**示例1：直接评测 OpenAI API 兼容的云端服务（推荐入门方式，无需 GPU）**
+
+支持任意 OpenAI API 兼容的模型服务，只需配置 `$OPENAI_API_BASE_URL` 与 `$OPENAI_API_KEY` 即可：
+```shell
+evalscope eval \
+ --model your-model-name \
+ --api-url $OPENAI_API_BASE_URL \
+ --api-key $OPENAI_API_KEY \
+ --eval-type openai_api \
+ --datasets gsm8k \
+ --limit 10
+```
+
+**示例2：评测自部署的模型服务**
+
+以 vLLM 为例，启动一个模型服务：
+```shell
+# 请先安装 vLLM: pip install vllm
+export VLLM_USE_MODELSCOPE=True
+python -m vllm.entrypoints.openai.api_server \
+  --model Qwen/Qwen2.5-0.5B-Instruct \
+  --served-model-name qwen2.5 \
+  --trust-remote-code \
+  --port 8801
+```
+
+使用以下命令评测该 API 服务：
+```shell
+evalscope eval \
+ --model qwen2.5 \
+ --api-url http://127.0.0.1:8801/v1 \
+ --api-key EMPTY \
+ --eval-type openai_api \
+ --datasets gsm8k \
+ --limit 10
+```
 
 ### 自定义评测参数
 
@@ -149,36 +195,6 @@ evalscope eval \
 
 ```{seealso}
 查看所有可配置项，请参考：[全部参数说明](parameters.md)
-```
-
-### 评测在线模型 API
-
-EvalScope 支持评测兼容 OpenAI API 格式的模型服务。只需指定服务地址、API Key，并将 `eval-type` 设置为 `openai_api`。
-
-**1. 启动模型服务**
-
-以 vLLM 为例，启动一个模型服务：
-```shell
-# 请先安装 vLLM: pip install vllm
-export VLLM_USE_MODELSCOPE=True
-python -m vllm.entrypoints.openai.api_server \
-  --model Qwen/Qwen2.5-0.5B-Instruct \
-  --served-model-name qwen2.5 \
-  --trust-remote-code \
-  --port 8801
-```
-
-**2. 运行评测**
-
-使用以下命令评测该 API 服务：
-```shell
-evalscope eval \
- --model qwen2.5 \
- --api-url http://127.0.0.1:8801/v1 \
- --api-key EMPTY \
- --eval-type openai_api \
- --datasets gsm8k \
- --limit 10
 ```
 
 ### 使用裁判模型进行评估
@@ -278,15 +294,17 @@ evalscope eval \
  --ignore-errors
 ```
 
-## 从 v0.1.x 迁移
+```{admonition} 从 v0.1.x 迁移
+:class: tip, dropdown
 
 如果您之前使用的是 v0.1.x 版本，升级到 v1.0+ 后请注意以下主要变化：
 
-1.  **本地数据集**：不再支持 `zip` 压缩包格式。请参考[离线评测](#离线评测)指引，使用 `local_path` 参数加载本地数据集。
-2.  **可视化兼容性**：v1.0 的输出报告格式已更新，旧版报告与新版可视化工具不兼容。
-3.  **推理参数**：模型推理参数 `n` 已被移除，请改用 `repeats` 参数来控制重复生成次数。
-4.  **评测流程控制**：`stage` 参数已移除。新增 `rerun_review` 参数，用于在 `use_cache=True` 时强制重新执行评分步骤。
-5.  **数据集名称**：`gpqa` 数据集已更名为 `gpqa_diamond`，且不再需要手动指定 `subset_list`。
+1. **本地数据集**：不再支持 `zip` 压缩包格式。请参考[离线评测](#离线评测)指引，使用 `local_path` 参数加载本地数据集。
+2. **可视化兼容性**：v1.0 的输出报告格式已更新，旧版报告与新版可视化工具不兼容。
+3. **推理参数**：模型推理参数 `n` 已被移除，请改用 `repeats` 参数来控制重复生成次数。
+4. **评测流程控制**：`stage` 参数已移除。新增 `rerun_review` 参数，用于在 `use_cache=True` 时强制重新执行评分步骤。
+5. **数据集名称**：`gpqa` 数据集已更名为 `gpqa_diamond`，且不再需要手动指定 `subset_list`。
+```
 
 ## 常见问题
 

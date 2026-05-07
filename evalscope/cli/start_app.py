@@ -29,6 +29,9 @@ class StartAppCMD(CLICommand):
         )
         parser.add_argument('--host', type=str, default='0.0.0.0', help='Host address to bind to (default: 0.0.0.0)')
         parser.add_argument('--port', type=int, default=9000, help='Port to listen on (default: 9000)')
+        parser.add_argument(
+            '--outputs', type=str, default=None, help='Root directory for evaluation outputs (default: ./outputs)'
+        )
         parser.add_argument('--debug', action='store_true', default=False, help='Enable debug mode')
         parser.set_defaults(func=subparser_func)
 
@@ -41,4 +44,4 @@ class StartAppCMD(CLICommand):
         )
         from evalscope.service import run_service
 
-        run_service(host=self.args.host, port=self.args.port, debug=self.args.debug)
+        run_service(host=self.args.host, port=self.args.port, debug=self.args.debug, outputs=self.args.outputs)

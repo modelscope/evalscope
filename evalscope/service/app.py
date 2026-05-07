@@ -7,6 +7,7 @@ from flask import Flask, jsonify, send_from_directory
 
 from evalscope.utils.logger import get_logger
 from .blueprints import bp_eval, bp_perf, bp_reports
+from .utils import OUTPUT_DIR as _DEFAULT_ROOT
 
 logger = get_logger()
 
@@ -16,9 +17,20 @@ _WEB_DIST = os.path.join(os.path.dirname(__file__), '..', 'web', 'dist')
 _WEB_DIST = os.path.abspath(_WEB_DIST)
 
 
-def create_app():
-    """Create and configure the Flask application."""
+def create_app(outputs: str = None):
+    """Create and configure the Flask application.
+
+    Args:
+        outputs: Root directory for evaluation outputs. If provided, it will be
+                 used as the default scan path in the web dashboard.
+    """
     app = Flask(__name__)
+
+    # Store the outputs path in app config so blueprints can access it
+    if outputs:
+        app.config['OUTPUTS_ROOT'] = os.path.abspath(outputs)
+    else:
+        app.config['OUTPUTS_ROOT'] = None
 
     # Ensure non-ASCII characters (e.g. Chinese) are serialised as-is in JSON
     # responses instead of being escaped to \uXXXX sequences.
@@ -40,6 +52,14 @@ def create_app():
     def health_check():
         """Health check endpoint."""
         return jsonify({'status': 'ok', 'service': 'evalscope', 'timestamp': datetime.now().isoformat()})
+
+    @app.route('/api/v1/config', methods=['GET'])
+    def get_config():
+        """Return runtime configuration for the frontend."""
+        outputs_root = app.config.get('OUTPUTS_ROOT')
+        return jsonify({
+            'outputs_root': outputs_root or _DEFAULT_ROOT,
+        })
 
     # --- SPA static-file serving ------------------------------------------
     if os.path.isdir(_WEB_DIST):
@@ -88,13 +108,19 @@ def create_app():
     return app
 
 
-def run_service(host: str = '0.0.0.0', port: int = 9000, debug: bool = False):
-    """Run the Flask service."""
+def run_service(host: str = '0.0.0.0', port: int = 9000, debug: bool = False, outputs: str = None):
+    """Run the Flask service.
+
+    Args:
+        outputs: Root directory for evaluation outputs. If provided, the web
+                 dashboard will use this as the default scan path instead of
+                 ``./outputs``.
+    """
 
     # Force the multiprocessing start method to 'spawn' to avoid issues with
     # model loading in forked child processes on some platforms.
     multiprocessing.set_start_method('spawn', force=True)
-    app = create_app()
+    app = create_app(outputs=outputs)
 
     logger.info(f'Starting EvalScope service on {host}:{port}')
     logger.info('Available endpoints:')

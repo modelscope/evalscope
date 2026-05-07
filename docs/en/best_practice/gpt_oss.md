@@ -156,7 +156,7 @@ EvalScope supports visualizing results so you can see the model’s specific out
 
 ```bash
 pip install 'evalscope[service]'
-evalscope service --lang en
+evalscope service 
 ```
 
 
