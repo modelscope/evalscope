@@ -1,1 +1,2 @@
--r service.txt
+flask>=2.0.0
+plotly>=5.23.0
