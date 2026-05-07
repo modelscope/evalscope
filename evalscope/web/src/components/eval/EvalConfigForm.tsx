@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type SyntheticEvent } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { listBenchmarks } from '@/api/eval'
 import Button from '@/components/ui/Button'
@@ -18,7 +18,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
   const [apiKey, setApiKey] = useState('')
   const [datasets, setDatasets] = useState(initialDataset ?? '')
   const [limit, setLimit] = useState('5')
-  const [batchSize, setBatchSize] = useState('16')
+  const [evalBatchSize, setEvalBatchSize] = useState('16')
   const [showMore, setShowMore] = useState(false)
   const [repeats, setRepeats] = useState('1')
   const [timeout, setTimeout_] = useState('60')
@@ -87,7 +87,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
     setShowSuggestions(false)
   }
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
     const newErrors: Record<string, string> = {}
     if (!model.trim()) newErrors.model = 'Required'
@@ -102,7 +102,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
       model,
       datasets: datasets.split(',').map((s) => s.trim()).filter(Boolean),
       limit: limit ? Number(limit) : undefined,
-      eval_batch_size: batchSize ? Number(batchSize) : undefined,
+      eval_batch_size: evalBatchSize ? Number(evalBatchSize) : undefined,
     }
     if (apiUrl) config.api_url = apiUrl
     if (apiKey) config.api_key = apiKey
@@ -196,7 +196,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
         {/* Batch Size */}
         <div>
           <label className={labelStyle}>{t('eval.batchSize')}</label>
-          <input type="number" value={batchSize} onChange={(e) => setBatchSize(e.target.value)} className={inputStyle} />
+          <input type="number" value={evalBatchSize} onChange={(e) => setEvalBatchSize(e.target.value)} className={inputStyle} />
         </div>
       </div>
 

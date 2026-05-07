@@ -40,7 +40,7 @@ export default function PerfTaskPage() {
       await stopPerfTask(taskId)
     } catch { /* ignore errors */ }
     setRunning(false)
-    setResult({ status: 'error', task_id: taskId, error: 'Stopped by user' })
+    setResult({ status: 'stopped', task_id: taskId })
   }
 
   const progressFn = useCallback(async () => {

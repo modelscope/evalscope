@@ -170,8 +170,10 @@ export interface BenchmarksResponse {
   multimodal?: BenchmarkEntry[]
 }
 
+export type InvokeStatus = 'ok' | 'error' | 'stopped'
+
 export interface EvalInvokeResponse {
-  status: string
+  status: InvokeStatus
   task_id: string
   result?: unknown
   table?: string

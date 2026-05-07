@@ -1,7 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 """Benchmark catalogue and description helpers for the EvalScope service."""
 import re
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from evalscope.utils.resource_utils import BENCHMARK_META_DIR, load_benchmark_data

@@ -301,7 +301,7 @@ Run the command below to launch the visualization interface:
 ```shell
 evalscope service
 ```
-Open `http://localhost:7860` in your browser to view the visualization page.
+Open `http://localhost:9000` in your browser to view the visualization page.
 
 Workflow:
 1. Select the latest `general_arena` evaluation report and click the "Load and View" button.

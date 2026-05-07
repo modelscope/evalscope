@@ -105,7 +105,7 @@ evalscope perf \
 4. Or launch the visualization UI:
 
 ```bash
-evalscope service --outputs ./outputs --server-port 7860 
+evalscope service --outputs ./outputs --port 9000 
 ```
 
 ---
@@ -198,7 +198,7 @@ evalscope eval \
 
 After both complete, read and compare the JSON reports from each output directory. Or use the visualization UI to compare:
 ```bash
-evalscope service --outputs ./outputs --server-port 7860
+evalscope service --outputs ./outputs --port 7860
 ```
 
 ---

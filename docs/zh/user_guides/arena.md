@@ -301,7 +301,7 @@ qwen2.5-0.5b            7.5  (-5.0 / +1.6)
 ```shell
 evalscope service
 ```
-在浏览器中打开`http://localhost:7860`，即可看到可视化界面。
+在浏览器中打开`http://localhost:9000`，即可看到可视化界面。
 
 使用流程为：
 1. 选择最近的`general_arena`评测报告，点击`加载并查看`按钮

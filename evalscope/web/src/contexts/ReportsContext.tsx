@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react'
 import type { LoadReportResponse, ReportData } from '@/api/types'
 import * as reportsApi from '@/api/reports'
 import { api } from '@/api/client'
@@ -100,7 +100,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     let cancelled = false
     api<{ outputs_root: string }>('/api/v1/config')
       .then((cfg) => {
-        if (!cancelled && cfg.outputs_root && state.rootPath === INITIAL_ROOT) {
+        if (!cancelled && cfg.outputs_root && !userSetRootRef.current) {
           dispatch({ type: 'SET_ROOT', rootPath: cfg.outputs_root })
         }
       })
@@ -109,7 +109,12 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const setRootPath = useCallback((p: string) => dispatch({ type: 'SET_ROOT', rootPath: p }), [])
+  const userSetRootRef = useRef(false)
+
+  const setRootPath = useCallback((p: string) => {
+    userSetRootRef.current = true
+    dispatch({ type: 'SET_ROOT', rootPath: p })
+  }, [])
 
   const scanReportsAction = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', loading: true })
