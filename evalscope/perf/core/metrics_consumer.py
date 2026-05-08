@@ -65,7 +65,6 @@ async def statistic_benchmark_metric(
             _warmup_pbar = tqdm_std(
                 desc=f'Warmup[{cur_run_name}]',
                 total=warmup_count,
-                leave=False,
             )
 
         with tqdm(

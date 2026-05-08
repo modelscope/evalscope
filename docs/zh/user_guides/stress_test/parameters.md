@@ -36,6 +36,7 @@
 | `--stream` | `bool` | 是否使用SSE流输出<br>需要启用以测量TTFT（Time to First Token）指标 | `True` |
 | `--sleep-interval` | `int` | 每次性能测试之间的休眠时间（秒）<br>避免过载服务器 | `5` |
 | `--open-loop` | `bool` | 启用开放环路（open-loop）模式：<br>请求按 `--rate` 指定的速率发出，无论服务端是否已处理完之前的请求。<br>• `--rate` 变为扫描变量（支持多值）<br>• `--number` 须与 `--rate` 等长，表示每轮发出的请求总数<br>• `--parallel` 在此模式下被忽略（内部设为 -1 / INF）<br>详见[使用示例](./examples.md#open-loop-开放环路模式) | `False` |
+| `--warmup-num` | `float` | 预热请求数量或比例：<br>• `0`：禁用预热（默认）<br>• `>= 1`：绝对数量，如 `--warmup-num 10` 表示预热 10 个请求<br>• `0 < value < 1`：比例模式，如 `--warmup-num 0.1` 表示预热数量为 `--number` 的 10%<br>预热请求使用与正式压测相同的并发/速率发送，但**不计入性能指标**<br>适用于消除冷启动影响（如 KV-cache 填充、JIT 编译等）<br>详见[使用示例](./examples.md#warmup-预热压测) | `0` |
 
 ```{tip}
 **Closed-loop 模式（默认）** 与 **Open-loop 模式**（`--open-loop`）的参数行为对比：
