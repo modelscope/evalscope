@@ -534,5 +534,92 @@ class TestPerf(unittest.TestCase):
         result = run_perf_benchmark(task_cfg)
         print(result)
 
+    def test_perf_warmup_single_turn(self):
+        """Single-turn warmup with absolute count."""
+        if not env.get('DASHSCOPE_API_KEY'):
+            self.skipTest('DASHSCOPE_API_KEY is not set.')
+            return
+
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=2,
+            number=10,
+            warmup_num=3,
+            model='qwen-plus',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai',
+            dataset='openqa',
+            max_tokens=64,
+            stream=True,
+        )
+        self.assertEqual(task_cfg.warmup_count, 3)
+
+        results = run_perf_benchmark(task_cfg)
+        # Extract metrics from the single-run result dict
+        run_key = list(results.keys())[0]
+        metrics_result = results[run_key]['metrics']
+        # Warmup requests must be excluded from metrics
+        self.assertEqual(metrics_result.total_requests, 10)
+
+    def test_perf_warmup_ratio(self):
+        """Single-turn warmup with ratio mode (0 < warmup_num < 1)."""
+        if not env.get('DASHSCOPE_API_KEY'):
+            self.skipTest('DASHSCOPE_API_KEY is not set.')
+            return
+
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=2,
+            number=10,
+            warmup_num=0.3,
+            model='qwen-plus',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai',
+            dataset='openqa',
+            max_tokens=64,
+            stream=True,
+        )
+        # 0.3 * 10 = 3
+        self.assertEqual(task_cfg.warmup_count, 3)
+
+        results = run_perf_benchmark(task_cfg)
+        run_key = list(results.keys())[0]
+        metrics_result = results[run_key]['metrics']
+        self.assertEqual(metrics_result.total_requests, 10)
+
+    def test_perf_warmup_multi_turn(self):
+        """Multi-turn warmup with absolute count."""
+        if not env.get('DASHSCOPE_API_KEY'):
+            self.skipTest('DASHSCOPE_API_KEY is not set.')
+            return
+
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=2,
+            number=6,
+            warmup_num=2,
+            model='qwen-plus',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai',
+            dataset='share_gpt_zh_multi_turn',
+            multi_turn=True,
+            max_tokens=64,
+            max_turns=3,
+        )
+        self.assertEqual(task_cfg.warmup_count, 2)
+
+        results = run_perf_benchmark(task_cfg)
+        run_key = list(results.keys())[0]
+        metrics_result = results[run_key]['metrics']
+        # In multi-turn mode total_requests counts individual turns,
+        # not conversations.  6 benchmark conversations with max 3 turns each
+        # should produce 6-18 turns; the 2 warmup conversations are excluded.
+        self.assertGreaterEqual(metrics_result.total_requests, 6)
+        self.assertLessEqual(metrics_result.total_requests, 18)
+
+
 if __name__ == '__main__':
     unittest.main(buffer=False)

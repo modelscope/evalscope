@@ -1,6 +1,7 @@
 import asyncio
 import json
 import sqlite3
+from tqdm import tqdm as tqdm_std
 from typing import TYPE_CHECKING, Tuple
 
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
@@ -41,6 +42,7 @@ async def statistic_benchmark_metric(
     """
     accumulator = MetricsAccumulator(concurrency=args.parallel, rate=args.rate)
     result_db_path = get_result_db_path(args)
+    warmup_count = args.warmup_count
 
     # Stream inserts to DB to avoid accumulating all results in memory.
     commit_every = args.db_commit_interval
@@ -54,6 +56,18 @@ async def statistic_benchmark_metric(
             f'rate_{args.rate}_number_{args.number}'
             if args.open_loop else f'parallel_{args.parallel}_number_{args.number}'
         )
+
+        # Warmup bar: uses standard tqdm (no logging redirect) so it doesn't
+        # conflict with the benchmark bar's TqdmLogging redirect.  ``leave=False``
+        # makes it disappear after warmup completes.
+        _warmup_pbar = None
+        if warmup_count > 0:
+            _warmup_pbar = tqdm_std(
+                desc=f'Warmup[{cur_run_name}]',
+                total=warmup_count,
+                leave=False,
+            )
+
         with tqdm(
             desc=f'Processing[{cur_run_name}]',
             total=args.number,
@@ -66,6 +80,20 @@ async def statistic_benchmark_metric(
                     benchmark_data = await asyncio.wait_for(benchmark_data_queue.get(), timeout=0.1)
                 except asyncio.TimeoutError:
                     continue
+
+                if benchmark_data.is_warmup:
+                    benchmark_data_queue.task_done()
+                    # Multi-turn: only count last turn per conversation.
+                    if not benchmark_data.is_last_turn and benchmark_data.input_num_turns > 0:
+                        continue
+                    if _warmup_pbar:
+                        _warmup_pbar.update(1)
+                    continue
+
+                # First benchmark item — close the warmup bar so it disappears.
+                if _warmup_pbar:
+                    _warmup_pbar.close()
+                    _warmup_pbar = None
 
                 # Update accumulator and write to DB immediately.
                 accumulator.update(benchmark_data, api_plugin)

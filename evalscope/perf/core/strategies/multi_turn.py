@@ -47,6 +47,13 @@ class MultiTurnStrategy(BenchmarkStrategy):
         # single-threaded/cooperative.
         self._conv_index = 0
         self._conv_counter = 0
+        self._warmup_count = self.args.warmup_count
+
+        if self._warmup_count > 0:
+            logger.info(
+                f'Warmup enabled: {self._warmup_count} warmup conversations '
+                f'(benchmark: {self.args.number})'
+            )
 
     def _next_conversation(self) -> List[Dict]:
         """Return the next conversation from the cycled pool."""
@@ -56,12 +63,14 @@ class MultiTurnStrategy(BenchmarkStrategy):
 
     async def _worker(self, worker_id: int) -> None:
         """Process conversations until the global conversation budget is reached."""
+        _total_budget = self.args.number + self._warmup_count
         while True:
             # Atomically claim a conversation slot before awaiting to prevent
-            # other workers from overshooting args.number.
-            if self._conv_counter >= self.args.number:
+            # other workers from overshooting the total budget.
+            if self._conv_counter >= _total_budget:
                 return
             self._conv_counter += 1
+            is_warmup = self._conv_counter <= self._warmup_count
             conversation = self._next_conversation()
 
             if not conversation:
@@ -103,6 +112,7 @@ class MultiTurnStrategy(BenchmarkStrategy):
                 benchmark_data = await self.client.post(request)
 
                 # Inject multi-turn specific metadata.
+                benchmark_data.is_warmup = is_warmup
                 benchmark_data.input_num_turns = turn_idx + 1
 
                 # Ensure token counts are available before computing cache ratio.

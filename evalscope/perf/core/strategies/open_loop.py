@@ -14,11 +14,13 @@ logger = get_logger()
 
 async def _send_request_open_loop(
     request: dict,
+    is_warmup: bool,
     queue: asyncio.Queue,
     client: 'AioHttpClient',
 ) -> None:
     """Open-loop send: fires immediately regardless of in-flight count."""
     benchmark_data = await client.post(request)
+    benchmark_data.is_warmup = is_warmup
     benchmark_data.update_gpu_usage()
     await queue.put(benchmark_data)
 
@@ -46,8 +48,8 @@ class OpenLoopStrategy(BenchmarkStrategy):
     async def run(self) -> None:
         in_flight: set[asyncio.Task] = set()
 
-        async for request in self._request_generator:
-            task = asyncio.create_task(_send_request_open_loop(request, self.queue, self.client))
+        async for request, is_warmup in self._request_generator:
+            task = asyncio.create_task(_send_request_open_loop(request, is_warmup, self.queue, self.client))
             in_flight.add(task)
             task.add_done_callback(in_flight.discard)
 

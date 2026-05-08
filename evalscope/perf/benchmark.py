@@ -19,32 +19,46 @@ logger = get_logger()
 
 
 @exception_handler
-async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGenerator[dict, None]:
+async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGenerator[Tuple[dict, bool], None]:
+    """Generate requests with warmup marking.
+
+    Yields ``(request_dict, is_warmup)`` tuples.  The first ``warmup_count``
+    requests are marked ``is_warmup=True`` and excluded from final metrics.
+    Total yield count = ``warmup_count + args.number``.
+    """
+    warmup_count = args.warmup_count
+    total_count = args.number + warmup_count
+
+    if warmup_count > 0:
+        logger.info(
+            f'Warmup enabled: {warmup_count} warmup requests '
+            f'(total: {total_count}, benchmark: {args.number})'
+        )
 
     async def _generate_from_prompt():
         """Generate requests by repeating a single prompt."""
         prompt = load_prompt(args.prompt)
         messages = [{'role': 'user', 'content': prompt}] if args.apply_chat_template else prompt
         request = api_plugin.build_request(messages)
-        for _ in range(args.number):
-            yield request
+        for i in range(total_count):
+            yield request, i < warmup_count
 
     async def _generate_from_dataset():
         """Generate requests by cycling through a dataset."""
         message_generator = DatasetRegistry.get_class(args.dataset)(args)
         dataset_messages = []
 
-        # Load dataset messages into memory (limited by args.number).
+        # Load dataset messages into memory (limited by total_count).
         with tqdm(
             message_generator.build_messages(),
             desc='Generating[requests]',
-            total=args.number,
+            total=total_count,
             initial=1,
             logger=logger
         ) as pbar:
             for messages in pbar:
                 dataset_messages.append(messages)
-                if len(dataset_messages) >= args.number:
+                if len(dataset_messages) >= total_count:
                     break
 
         if not dataset_messages:
@@ -55,11 +69,11 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         dataset_index = 0
         num_messages = len(dataset_messages)
 
-        while count < args.number:
+        while count < total_count:
             messages = dataset_messages[dataset_index]
             request = api_plugin.build_request(messages)
             if request is not None:
-                yield request
+                yield request, count < warmup_count
                 count += 1
             dataset_index = (dataset_index + 1) % num_messages
 
@@ -72,8 +86,8 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         raise ValueError('Either prompt or dataset is required!')
 
     # Yield requests with rate limiting.
-    async for request in generator:
-        yield request
+    async for request, is_warmup in generator:
+        yield request, is_warmup
         if args.rate != -1:
             interval = np.random.exponential(1.0 / args.rate)
             await asyncio.sleep(interval)

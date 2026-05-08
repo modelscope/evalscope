@@ -73,6 +73,30 @@ class Arguments(BaseArgument):
     rate: Union[float, List[float]] = -1
     """Rate limit for requests per second (default: -1, no limit). Supports a list of values for multi-run sweeps in open-loop mode."""
 
+    warmup_num: Union[int, float] = 0
+    """Number or ratio of warmup requests.
+
+    - 0: disabled (default).
+    - >= 1 (int or float): absolute number of warmup requests.
+    - 0 < value < 1 (float): ratio of ``--number``, e.g. 0.1 = 10% warmup.
+      Actual count = max(1, int(warmup_num * number)). Useful for sweep mode
+      where each run has a different number of requests.
+    """
+
+    @property
+    def warmup_count(self) -> int:
+        """Resolved number of warmup requests/conversations.
+
+        Derived from ``warmup_num`` and the current ``number`` value.
+        Handles both absolute count (>=1) and ratio (0 < value < 1) modes.
+        """
+        if self.warmup_num <= 0:
+            return 0
+        n = self.number if isinstance(self.number, int) else self.number[0]
+        if self.warmup_num >= 1:
+            return int(self.warmup_num)
+        return max(1, int(self.warmup_num * n))
+
     open_loop: bool = False
     """Enable open-loop rate mode: dispatch requests at the scheduled rate without semaphore backpressure.
 
@@ -429,12 +453,6 @@ class Arguments(BaseArgument):
                     f'but got number: {self.number} and parallel: {self.parallel}'
                 )
 
-    def to_dict(self):
-        """Convert the instance to a JSON-serializable dictionary."""
-        result = super().to_dict()
-        # model_dump() already recursively serializes nested Pydantic models (MultiTurnArgs)
-        return result
-
     @contextmanager
     def output_context(self, path: str):
         """
@@ -498,6 +516,10 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--rate', type=float, default=-1, nargs='+',
                         help='Number of requests per second. default -1 means no rate limit. '
                              'Accepts multiple values for open-loop multi-run sweeps, e.g. --rate 5 10 20')  # noqa: E501
+    parser.add_argument('--warmup-num', type=float, default=0,
+                        help='Number or ratio of warmup requests. '
+                             '>=1: absolute count. 0<value<1: ratio of --number. '
+                             '0: disabled. Default: 0')
     parser.add_argument('--open-loop', action='store_true', default=False,
                         help='Enable open-loop rate mode: dispatch requests at the scheduled rate without '
                              'semaphore backpressure. Use with --rate (list) and matching --number (list).')  # noqa: E501
