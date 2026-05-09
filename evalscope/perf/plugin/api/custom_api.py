@@ -3,6 +3,7 @@ import json
 from typing import Any, AsyncGenerator, Dict, List, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
+from evalscope.perf.multi_turn_args import _sample_int_or_range
 from evalscope.perf.plugin.api.base import ApiPluginBase
 from evalscope.perf.plugin.registry import register_api
 from evalscope.perf.utils.benchmark_util import BenchmarkData
@@ -82,7 +83,7 @@ class CustomPlugin(ApiPluginBase):
 
         # Add various parameters if they are provided
         if param.max_tokens is not None:
-            payload['max_tokens'] = param.max_tokens
+            payload['max_tokens'] = _sample_int_or_range(param.max_tokens)
         if param.temperature is not None:
             payload['temperature'] = param.temperature
         if param.top_p is not None:

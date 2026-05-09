@@ -78,9 +78,10 @@ async def run_multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     logger.info(f'Loading conversations from dataset: {args.dataset}')
     dataset_plugin = DatasetRegistry.get_class(args.dataset)(args)
 
-    # Cap preloading to args.number since that is exactly the target conversation count.
-    # This prevents loading 70k+ ShareGPT conversations when --number is small.
-    _max_preload = args.number
+    # Cap preloading to the total conversation count (benchmark + warmup)
+    # so the strategy has enough conversations without cycling warmup prompts
+    # into the benchmark portion.
+    _max_preload = args.total_count
     with tqdm(desc='Loading[conversations]', logger=logger) as pbar:
         all_conversations: List[List[Messages]] = []
         for conv in dataset_plugin.build_messages():
