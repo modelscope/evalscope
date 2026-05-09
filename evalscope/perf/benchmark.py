@@ -27,7 +27,7 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
     Total yield count = ``warmup_count + args.number``.
     """
     warmup_count = args.warmup_count
-    total_count = args.number + warmup_count
+    total_count = args.total_count
 
     if warmup_count > 0:
         logger.info(

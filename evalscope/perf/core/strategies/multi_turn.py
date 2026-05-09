@@ -63,7 +63,7 @@ class MultiTurnStrategy(BenchmarkStrategy):
 
     async def _worker(self, worker_id: int) -> None:
         """Process conversations until the global conversation budget is reached."""
-        _total_budget = self.args.number + self._warmup_count
+        _total_budget = self.args.total_count
         while True:
             # Atomically claim a conversation slot before awaiting to prevent
             # other workers from overshooting the total budget.

@@ -27,6 +27,10 @@ class RandomEmbeddingDatasetPlugin(DatasetPluginBase):
         if not self.tokenizer:
             raise ValueError('Tokenizer is required for random embedding generation. Please provide --tokenizer-path.')
 
+        # Include warmup_count so the generator produces enough unique items
+        # to cover both warmup and benchmark requests without cycling reuse.
+        self.number = query_parameters.total_count or 1
+
         # Filter out special tokens from vocabulary
         vocab_size = self.tokenizer.vocab_size
         prohibited_tokens = set(self.tokenizer.all_special_ids)
@@ -66,7 +70,7 @@ class RandomEmbeddingDatasetPlugin(DatasetPluginBase):
 
     def build_messages(self) -> Iterator[str]:
         """Build random embedding input texts."""
-        for _ in range(self.query_parameters.number):
+        for _ in range(self.number):
             text = self._generate_random_text()
             yield text
 
@@ -161,7 +165,7 @@ class RandomEmbeddingBatchDatasetPlugin(RandomEmbeddingDatasetPlugin):
 
     def build_messages(self) -> Iterator[List[str]]:
         """Build batches of random embedding input texts."""
-        for _ in range(self.query_parameters.number):
+        for _ in range(self.number):
             batch = [self._generate_random_text() for _ in range(self.batch_size)]
             yield batch
 

@@ -97,6 +97,16 @@ class Arguments(BaseArgument):
             return int(self.warmup_num)
         return max(1, int(self.warmup_num * n))
 
+    @property
+    def total_count(self) -> int:
+        """Total number of requests/conversations including warmup.
+
+        Equal to ``number + warmup_count``.  When ``number`` is a list
+        (sweep mode), uses the first element.
+        """
+        n = self.number if isinstance(self.number, int) else self.number[0]
+        return n + self.warmup_count
+
     open_loop: bool = False
     """Enable open-loop rate mode: dispatch requests at the scheduled rate without semaphore backpressure.
 

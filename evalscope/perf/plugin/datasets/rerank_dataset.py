@@ -112,6 +112,10 @@ class RandomRerankDatasetPlugin(DatasetPluginBase):
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
 
+        # Include warmup_count so the generator produces enough unique items
+        # to cover both warmup and benchmark requests without cycling reuse.
+        self.number = query_parameters.total_count or 1
+
         # Number of documents per query (from extra_args or default 10)
         self.num_documents = 10
         self.document_length_ratio = 5
@@ -168,5 +172,5 @@ class RandomRerankDatasetPlugin(DatasetPluginBase):
         Yields:
             Iterator[Dict]: Dict with 'query' and 'documents' keys.
         """
-        for _ in range(self.query_parameters.number):
+        for _ in range(self.number):
             yield self._generate_random_pair()

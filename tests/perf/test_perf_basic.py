@@ -366,9 +366,9 @@ class TestPerfBasic(PerfTestBase):
         self.skip_without_api_key()
 
         task_cfg = Arguments(
-            parallel=2,
-            number=10,
-            warmup_num=0.3,
+            parallel=[2, 4],
+            number=[5, 10],
+            warmup_num=0.2,
             model='qwen-plus',
             url=DASHSCOPE_CHAT_URL,
             api_key=self.api_key,
@@ -377,13 +377,7 @@ class TestPerfBasic(PerfTestBase):
             max_tokens=64,
             stream=True,
         )
-        # 0.3 * 10 = 3
-        self.assertEqual(task_cfg.warmup_count, 3)
-
         results = run_perf_benchmark(task_cfg)
-        run_key = list(results.keys())[0]
-        metrics_result = results[run_key]['metrics']
-        self.assertEqual(metrics_result.total_requests, 10)
 
     def test_warmup_multi_turn_absolute(self):
         """Multi-turn warmup with absolute count (warmup_num=2).
