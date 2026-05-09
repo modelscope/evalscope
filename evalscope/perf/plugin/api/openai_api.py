@@ -5,6 +5,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
+from evalscope.perf.multi_turn_args import _sample_int_or_range
 from evalscope.perf.plugin.api.default_api import DefaultApiPlugin
 from evalscope.perf.plugin.datasets.utils import tokenize_chat_messages
 from evalscope.perf.plugin.registry import register_api
@@ -113,7 +114,7 @@ class OpenaiPlugin(DefaultApiPlugin):
     def __compose_query_from_parameter(self, payload: Dict, param: Arguments):
         payload['model'] = param.model
         if param.max_tokens is not None:
-            payload['max_tokens'] = param.max_tokens
+            payload['max_tokens'] = _sample_int_or_range(param.max_tokens)
         if param.min_tokens is not None:
             payload['min_tokens'] = param.min_tokens
         if param.frequency_penalty is not None:

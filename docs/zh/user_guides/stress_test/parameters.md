@@ -143,7 +143,7 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `--tokenizer-path` | `str` | 分词器权重路径<br>用于计算输入和输出的token数量<br>通常与模型权重在同一目录 | `None` |
 | `--frequency-penalty` | `float` | frequency_penalty值 | - |
 | `--logprobs` | `bool` | 是否返回对数概率 | - |
-| `--max-tokens` | `int` | 可以生成的最大token数量 | - |
+| `--max-tokens` | `int` 或 `int int` | 可以生成的最大token数量<br>• 单个整数：固定值，如 `--max-tokens 2048`<br>• 两个整数：`最小值 最大值`，每次请求从该范围均匀随机采样，如 `--max-tokens 512 2048` | `2048` |
 | `--min-tokens` | `int` | 生成的最少token数量<br>注意：并非所有模型服务都支持<br>对于`vLLM>=0.8.1`，需额外设置<br>`--extra-args '{"ignore_eos": true}'` | - |
 | `--n-choices` | `int` | 生成的补全选择数量 | - |
 | `--seed` | `int` | 随机种子 | `None` |

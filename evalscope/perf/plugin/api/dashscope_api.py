@@ -3,6 +3,7 @@ import os
 from typing import Any, Dict, Iterator, List
 
 from evalscope.perf.arguments import Arguments
+from evalscope.perf.multi_turn_args import _sample_int_or_range
 from evalscope.perf.plugin.api.base import ApiPluginBase
 from evalscope.perf.plugin.registry import register_api
 from evalscope.utils.logger import get_logger
@@ -56,7 +57,7 @@ class DashScopeApiPlugin(ApiPluginBase):
         if 'parameters' not in payload:
             payload['parameters'] = {}
         if param.max_tokens is not None:
-            payload['parameters']['max_tokens'] = param.max_tokens
+            payload['parameters']['max_tokens'] = _sample_int_or_range(param.max_tokens)
         if param.frequency_penalty is not None:
             payload['parameters']['frequency_penalty'] = param.frequency_penalty
         if param.logprobs is not None:

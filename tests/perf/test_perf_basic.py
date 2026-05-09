@@ -413,7 +413,3 @@ class TestPerfBasic(PerfTestBase):
         # should produce 6-18 turns; the 2 warmup conversations are excluded.
         self.assertGreaterEqual(metrics_result.total_requests, 6)
         self.assertLessEqual(metrics_result.total_requests, 18)
-
-
-if __name__ == '__main__':
-    unittest.main(buffer=False)
