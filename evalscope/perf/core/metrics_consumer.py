@@ -57,15 +57,12 @@ async def statistic_benchmark_metric(
             if args.open_loop else f'parallel_{args.parallel}_number_{args.number}'
         )
 
-        # Warmup bar: uses standard tqdm (no logging redirect) so it doesn't
-        # conflict with the benchmark bar's TqdmLogging redirect.  ``leave=False``
-        # makes it disappear after warmup completes.
+        # Warmup bar
         _warmup_pbar = None
         if warmup_count > 0:
             _warmup_pbar = tqdm_std(
                 desc=f'Warmup[{cur_run_name}]',
                 total=warmup_count,
-                leave=False,
             )
 
         with tqdm(

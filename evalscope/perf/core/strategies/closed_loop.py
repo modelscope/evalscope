@@ -1,5 +1,6 @@
 import asyncio
-from typing import TYPE_CHECKING
+import numpy as np
+from typing import TYPE_CHECKING, List
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.strategies.base import BenchmarkStrategy
@@ -46,11 +47,26 @@ class ClosedLoopStrategy(BenchmarkStrategy):
         self._request_generator = request_generator
 
     async def run(self) -> None:
-        semaphore = asyncio.Semaphore(self.args.parallel)
-        in_flight: set[asyncio.Task] = set()
-        max_in_flight = self.args.parallel * self.args.in_flight_task_multiplier
+        warmup_requests, benchmark_requests = await self._partition_requests(self._request_generator)
 
-        async for request, is_warmup in self._request_generator:
+        if warmup_requests:
+            await self._run_phase(warmup_requests, is_warmup=True)
+        await self._run_phase(benchmark_requests, is_warmup=False)
+
+    async def _run_phase(self, requests: List[dict], is_warmup: bool) -> None:
+        """Dispatch one phase of requests and wait for all to complete."""
+        semaphore = asyncio.Semaphore(self.args.parallel)
+        max_in_flight = self.args.parallel * self.args.in_flight_task_multiplier
+        in_flight: set[asyncio.Task] = set()
+
+        for request in requests:
+            # Apply Poisson inter-arrival sleep when rate is set.
+            # Closed-loop combines back-pressure (semaphore) with arrival-rate
+            # control (rate), allowing both concurrency cap and request pacing.
+            if self.args.rate != -1:
+                interval = np.random.exponential(1.0 / self.args.rate)
+                await asyncio.sleep(interval)
+
             # Keep the number of scheduled tasks bounded to avoid OOM.
             if len(in_flight) >= max_in_flight:
                 done, pending = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
@@ -59,5 +75,6 @@ class ClosedLoopStrategy(BenchmarkStrategy):
             task = asyncio.create_task(_send_request(semaphore, request, is_warmup, self.queue, self.client))
             in_flight.add(task)
 
+        # Phase barrier: wait for all in-flight requests before returning.
         if in_flight:
             await asyncio.gather(*in_flight, return_exceptions=True)

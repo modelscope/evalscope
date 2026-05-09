@@ -1,5 +1,6 @@
 import asyncio
-from typing import TYPE_CHECKING
+import numpy as np
+from typing import TYPE_CHECKING, List
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.strategies.base import BenchmarkStrategy
@@ -46,12 +47,27 @@ class OpenLoopStrategy(BenchmarkStrategy):
         self._request_generator = request_generator
 
     async def run(self) -> None:
+        warmup_requests, benchmark_requests = await self._partition_requests(self._request_generator)
+
+        if warmup_requests:
+            await self._run_phase(warmup_requests, is_warmup=True)
+        await self._run_phase(benchmark_requests, is_warmup=False)
+
+    async def _run_phase(self, requests: List[dict], is_warmup: bool) -> None:
+        """Fire all requests in this phase and wait for all to complete."""
         in_flight: set[asyncio.Task] = set()
 
-        async for request, is_warmup in self._request_generator:
+        for request in requests:
+            # Apply Poisson inter-arrival sleep so open-loop semantics are
+            # preserved: the interval elapses *before* each dispatch, not
+            # during pre-collection.
+            if self.args.rate != -1:
+                interval = np.random.exponential(1.0 / self.args.rate)
+                await asyncio.sleep(interval)
+
             task = asyncio.create_task(_send_request_open_loop(request, is_warmup, self.queue, self.client))
             in_flight.add(task)
-            task.add_done_callback(in_flight.discard)
 
+        # Phase barrier: wait for all in-flight requests before returning.
         if in_flight:
             await asyncio.gather(*in_flight, return_exceptions=True)

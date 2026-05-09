@@ -85,12 +85,11 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
     else:
         raise ValueError('Either prompt or dataset is required!')
 
-    # Yield requests with rate limiting.
+    # Yield requests without rate limiting; open-loop strategies apply the
+    # Poisson sleep in their dispatch loop so the interval falls between
+    # consecutive dispatches rather than during pre-collection.
     async for request, is_warmup in generator:
         yield request, is_warmup
-        if args.rate != -1:
-            interval = np.random.exponential(1.0 / args.rate)
-            await asyncio.sleep(interval)
 
 
 @exception_handler

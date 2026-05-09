@@ -181,7 +181,8 @@ class TestPerfBasic(PerfTestBase):
         task_cfg = Arguments(
             parallel=[1, 2],
             number=[2, 4],
-            model='deepseek-r1-0528',
+            warmup_num=3,
+            model='qwen-plus',
             url=DASHSCOPE_CHAT_URL,
             api_key=self.api_key,
             api='openai',

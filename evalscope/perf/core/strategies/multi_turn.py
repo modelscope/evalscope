@@ -44,10 +44,19 @@ class MultiTurnStrategy(BenchmarkStrategy):
         super().__init__(args, api_plugin, client, queue)
         self._all_conversations = all_conversations
         # Conversation cycling index – safe without a lock because asyncio is
-        # single-threaded/cooperative.
+        # single-threaded/cooperative.  Continuous across phases so warmup
+        # consumes the first ``warmup_count`` conversations and benchmark
+        # picks up from there (preserves dataset uniqueness contract).
         self._conv_index = 0
-        self._conv_counter = 0
         self._warmup_count = self.args.warmup_count
+
+        # Per-phase dispatch state.  Reset at the start of every phase by
+        # ``_run_phase``.  ``_phase_counter`` tracks how many conversations
+        # this phase has already claimed; ``_phase_budget`` caps that count;
+        # ``_phase_is_warmup`` tags every enqueued ``BenchmarkData``.
+        self._phase_counter = 0
+        self._phase_budget = 0
+        self._phase_is_warmup = False
 
         if self._warmup_count > 0:
             logger.info(
@@ -62,20 +71,19 @@ class MultiTurnStrategy(BenchmarkStrategy):
         return conv
 
     async def _worker(self, worker_id: int) -> None:
-        """Process conversations until the global conversation budget is reached."""
-        _total_budget = self.args.total_count
+        """Process conversations until the current phase budget is reached."""
         while True:
             # Atomically claim a conversation slot before awaiting to prevent
-            # other workers from overshooting the total budget.
-            if self._conv_counter >= _total_budget:
+            # other workers from overshooting the phase budget.
+            if self._phase_counter >= self._phase_budget:
                 return
-            self._conv_counter += 1
-            is_warmup = self._conv_counter <= self._warmup_count
+            self._phase_counter += 1
+            is_warmup = self._phase_is_warmup
             conversation = self._next_conversation()
 
             if not conversation:
                 # Degenerate conversation with no turns – skip without counting.
-                self._conv_counter -= 1
+                self._phase_counter -= 1
                 continue
 
             # Accumulated context sent with each turn.  Real assistant responses
@@ -176,5 +184,18 @@ class MultiTurnStrategy(BenchmarkStrategy):
                 })
 
     async def run(self) -> None:
+        # Two-phase dispatch: warmup conversations complete in full before any
+        # benchmark conversation starts.  ``_conv_index`` persists across
+        # phases so warmup and benchmark pull disjoint conversations from the
+        # dataset (first ``warmup_count`` vs. the rest).
+        if self._warmup_count > 0:
+            await self._run_phase(budget=self._warmup_count, is_warmup=True)
+        await self._run_phase(budget=self.args.number, is_warmup=False)
+
+    async def _run_phase(self, budget: int, is_warmup: bool) -> None:
+        """Spawn ``args.parallel`` workers and drain them within one phase."""
+        self._phase_counter = 0
+        self._phase_budget = budget
+        self._phase_is_warmup = is_warmup
         workers = [asyncio.create_task(self._worker(worker_id=i)) for i in range(self.args.parallel)]
         await asyncio.gather(*workers, return_exceptions=True)

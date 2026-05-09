@@ -1,6 +1,6 @@
 import asyncio
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, AsyncIterator, List, Tuple
 
 from evalscope.perf.arguments import Arguments
 
@@ -44,3 +44,21 @@ class BenchmarkStrategy(ABC):
         - awaiting ``queue.join()`` after this coroutine returns.
         - setting ``data_process_completed_event`` to signal the consumer.
         """
+
+    @staticmethod
+    async def _partition_requests(gen: AsyncIterator[Tuple[dict, bool]], ) -> Tuple[List[dict], List[dict]]:
+        """Consume all ``(request, is_warmup)`` items from gen.
+
+        Returns:
+            (warmup_requests, benchmark_requests) – two plain lists that can
+            be iterated independently, enabling a clean two-phase dispatch
+            without any buffer/closure complexity.
+        """
+        warmup: List[dict] = []
+        benchmark: List[dict] = []
+        async for request, is_warmup in gen:
+            if is_warmup:
+                warmup.append(request)
+            else:
+                benchmark.append(request)
+        return warmup, benchmark
