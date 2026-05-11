@@ -1,6 +1,17 @@
 import os
 from modelscope import snapshot_download
 
+LOCAL_FILES_ONLY_ENV = 'EVALSCOPE_T2V_LOCAL_FILES_ONLY'
+
+
+def _is_env_enabled(name):
+    value = os.getenv(name, '')
+    return value.lower() in ('1', 'true', 'yes', 'on')
+
+
+def is_local_files_only():
+    return _is_env_enabled(LOCAL_FILES_ONLY_ENV)
+
 
 def download_open_clip_model(model_name, tag, cache_dir):
     import open_clip
@@ -10,7 +21,12 @@ def download_open_clip_model(model_name, tag, cache_dir):
     model_hub = pretrained_cfg.get('hf_hub').strip('/')
     # load model from modelscope
     model_weight_name = 'open_clip_model.safetensors'
-    local_path = snapshot_download(model_id=model_hub, cache_dir=cache_dir, allow_patterns=model_weight_name)
+    local_path = snapshot_download(
+        model_id=model_hub,
+        cache_dir=cache_dir,
+        allow_patterns=model_weight_name,
+        local_files_only=is_local_files_only(),
+    )
     model_file_path = os.path.join(local_path, model_weight_name)
 
     return model_file_path
@@ -18,7 +34,12 @@ def download_open_clip_model(model_name, tag, cache_dir):
 
 def download_file(model_id, file_name=None, cache_dir=None):
     # download file from modelscope
-    local_path = snapshot_download(model_id=model_id, cache_dir=cache_dir, allow_patterns=file_name)
+    local_path = snapshot_download(
+        model_id=model_id,
+        cache_dir=cache_dir,
+        allow_patterns=file_name,
+        local_files_only=is_local_files_only(),
+    )
     if file_name is None:
         return local_path
     else:
