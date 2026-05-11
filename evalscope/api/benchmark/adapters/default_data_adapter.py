@@ -464,7 +464,7 @@ class DefaultDataAdapter(DataAdapter):
 
     def get_metric_args(self, name: str) -> Dict[str, Any]:
         for d in (self.metric_list or []):
-            if name in d:
+            if isinstance(d, dict) and name in d:
                 cfg = d.get(name, {})
                 return cfg if isinstance(cfg, dict) else {}
         return {}
