@@ -1,10 +1,12 @@
 import os
 import torch
-from modelscope import AutoTokenizer
+from modelscope import snapshot_download
+from transformers import BertTokenizer
 from typing import List, Union
 
 from ...constants import CACHE_DIR
 from ..model import ScoreModel
+from ..utils import is_local_files_only
 from ..vqascore_models.lavis.models import load_model_and_preprocess
 
 FGA_BLIP2_MODELS = {
@@ -37,7 +39,11 @@ class FGA_BLIP2ScoreModel(ScoreModel):
         from ..utils import download_file
 
         # load tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained('AI-ModelScope/bert-base-uncased', truncation_side='right')
+        local_files_only = is_local_files_only()
+        bert_path = snapshot_download('AI-ModelScope/bert-base-uncased', local_files_only=local_files_only)
+        self.tokenizer = BertTokenizer.from_pretrained(
+            bert_path, truncation_side='right', local_files_only=local_files_only
+        )
         self.tokenizer.add_special_tokens({'bos_token': '[DEC]'})
         # load model
         self.variant = FGA_BLIP2_MODELS[self.model_name]['variant']
