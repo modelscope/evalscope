@@ -12,7 +12,6 @@ from modelscope import snapshot_download
 from transformers import BertTokenizer
 
 from evalscope.metrics.t2v_metrics.models.utils import is_local_files_only
-
 from ...common.dist_utils import download_cached_file
 from ...common.utils import is_url
 from ...models.base_model import BaseModel
@@ -25,7 +24,7 @@ class BlipBase(BaseModel):
     def init_tokenizer(cls):
         local_files_only = is_local_files_only()
         bert_path = snapshot_download('AI-ModelScope/bert-base-uncased', local_files_only=local_files_only)
-        tokenizer = BertTokenizer.from_pretrained(bert_path, local_files_only=local_files_only)
+        tokenizer = BertTokenizer.from_pretrained(bert_path)
         tokenizer.add_special_tokens({'bos_token': '[DEC]'})
         tokenizer.add_special_tokens({'additional_special_tokens': ['[ENC]']})
         tokenizer.enc_token_id = tokenizer.additional_special_tokens_ids[0]

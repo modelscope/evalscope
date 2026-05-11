@@ -40,10 +40,10 @@ class FGA_BLIP2ScoreModel(ScoreModel):
 
         # load tokenizer
         local_files_only = is_local_files_only()
-        bert_path = snapshot_download('AI-ModelScope/bert-base-uncased', local_files_only=local_files_only)
-        self.tokenizer = BertTokenizer.from_pretrained(
-            bert_path, truncation_side='right', local_files_only=local_files_only
+        bert_path = snapshot_download(
+            'AI-ModelScope/bert-base-uncased', cache_dir=self.cache_dir, local_files_only=local_files_only
         )
+        self.tokenizer = BertTokenizer.from_pretrained(bert_path, truncation_side='right')
         self.tokenizer.add_special_tokens({'bos_token': '[DEC]'})
         # load model
         self.variant = FGA_BLIP2_MODELS[self.model_name]['variant']

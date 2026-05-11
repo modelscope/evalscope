@@ -17,7 +17,6 @@ from modelscope import snapshot_download
 from transformers import BertTokenizer
 
 from evalscope.metrics.t2v_metrics.models.utils import is_local_files_only
-
 from ...common import dist_utils
 from ...common.dist_utils import download_cached_file
 from ...common.logger import MetricLogger
@@ -34,9 +33,7 @@ class Blip2Base(BaseModel):
     def init_tokenizer(cls, truncation_side='right'):
         local_files_only = is_local_files_only()
         bert_path = snapshot_download('AI-ModelScope/bert-base-uncased', local_files_only=local_files_only)
-        tokenizer = BertTokenizer.from_pretrained(
-            bert_path, truncation_side=truncation_side, local_files_only=local_files_only
-        )
+        tokenizer = BertTokenizer.from_pretrained(bert_path, truncation_side=truncation_side)
         tokenizer.add_special_tokens({'bos_token': '[DEC]'})
         return tokenizer
 
@@ -54,7 +51,7 @@ class Blip2Base(BaseModel):
     def init_Qformer(cls, num_query_token, vision_width, cross_attention_freq=2):
         local_files_only = is_local_files_only()
         bert_path = snapshot_download('AI-ModelScope/bert-base-uncased', local_files_only=local_files_only)
-        encoder_config = BertConfig.from_pretrained(bert_path, local_files_only=local_files_only)
+        encoder_config = BertConfig.from_pretrained(bert_path)
         encoder_config.encoder_width = vision_width
         encoder_config.vocab_size += 1  # add one for [DEC]
         # insert cross-attention layer every other block

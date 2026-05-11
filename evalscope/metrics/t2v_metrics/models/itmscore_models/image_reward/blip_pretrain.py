@@ -14,7 +14,7 @@ from ...vqascore_models.lavis.models.vit import VisionTransformer
 def init_tokenizer():
     local_files_only = is_local_files_only()
     bert_path = snapshot_download('AI-ModelScope/bert-base-uncased', local_files_only=local_files_only)
-    tokenizer = BertTokenizer.from_pretrained(bert_path, local_files_only=local_files_only)
+    tokenizer = BertTokenizer.from_pretrained(bert_path)
     tokenizer.add_special_tokens({'bos_token': '[DEC]'})
     tokenizer.add_special_tokens({'additional_special_tokens': ['[ENC]']})
     tokenizer.enc_token_id = tokenizer.additional_special_tokens_ids[0]
