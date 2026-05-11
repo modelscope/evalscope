@@ -132,12 +132,13 @@ class Text2ImageAdapter(DefaultDataAdapter):
             try:
                 if isinstance(metric, str):
                     metric_name = metric
-                    metric_scorer = get_metric(metric)  # Get metric implementation from registry
-                    metric_func = metric_scorer()  # Instantiate the metric scorer
                 elif isinstance(metric, dict):
                     metric_name = list(metric.keys())[0]
-                    metric_cls = get_metric(metric_name)
-                    metric_func = metric_cls(**metric[metric_name])  # Initialize with parameters
+                else:
+                    continue
+                metric_args = self.get_metric_args(metric_name)
+                metric_cls = get_metric(metric_name)
+                metric_func = metric_cls(**metric_args)
                 metric_score = metric_func(image_path, prompt)[0]
 
                 # fine-granular metrics
