@@ -57,8 +57,11 @@ class EvalMuseAdapter(Text2ImageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        assert len(self.metric_list
-                   ) == 1 and self.metric_list[0] == 'FGA_BLIP2Score', 'Only FGA_BLIP2Score is supported for EvalMuse'
+        metric_entry = self.metric_list[0]
+        metric_name = list(metric_entry.keys())[0] if isinstance(metric_entry, dict) else metric_entry
+        assert len(
+            self.metric_list
+        ) == 1 and metric_name == 'FGA_BLIP2Score', 'Only FGA_BLIP2Score is supported for EvalMuse'
 
     @thread_safe
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):
@@ -73,9 +76,11 @@ class EvalMuseAdapter(Text2ImageAdapter):
 
         # Calculate scores for each configured metric
         try:
-            metric_name = self.metric_list[0]
+            metric_entry = self.metric_list[0]
+            metric_name = list(metric_entry.keys())[0] if isinstance(metric_entry, dict) else metric_entry
+            metric_args = self.get_metric_args(metric_name)
             metric_cls = get_metric(metric_name)
-            metric_func = metric_cls()  # Initialize with parameters
+            metric_func = metric_cls(**metric_args)
             metric_score = metric_func(image_path, task_state.metadata)[0]
 
             for k, v in metric_score.items():
