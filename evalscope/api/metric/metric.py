@@ -53,6 +53,17 @@ class SingletonMetric(Metric):
 class T2IMetric(SingletonMetric):
     """Singleton base class for T2I metrics."""
 
+    @staticmethod
+    def _resolve_defaults(device=None, cache_dir=None):
+        """Resolve device and cache_dir defaults for T2I metrics."""
+        if device is None:
+            from evalscope.utils.model_utils import get_device
+            device = get_device()
+        if cache_dir is None:
+            from evalscope.metrics.t2v_metrics.constants import CACHE_DIR
+            cache_dir = CACHE_DIR
+        return device, cache_dir
+
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[Union[float, dict]]:
         pass
 

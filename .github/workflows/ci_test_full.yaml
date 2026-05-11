@@ -70,4 +70,4 @@ jobs:
 
       - name: Run perf test
         run: |
-          python -m pytest tests/perf/test_perf.py::TestPerf::test_run_perf_multi_parallel -v -s -p no:warnings
+          python -m pytest tests/perf/test_perf_basic.py::TestPerfBasic::test_multi_parallel_sweep -v -s -p no:warnings

@@ -59,6 +59,10 @@ class BenchmarkData:
     """True when this BenchmarkData is the final turn of its conversation.
     Used by the metrics consumer to advance the per-conversation progress bar."""
 
+    # --- Warmup ---
+    is_warmup: bool = False
+    """True when this request is a warmup request, excluded from final metrics."""
+
     # --- Speculative decoding specific ---
     decoded_tokens_per_iter: float = 0.0
     """Average decoded tokens per iteration: (completion_tokens - 1) / (n_chunks - 1).
@@ -180,6 +184,9 @@ class MetricsAccumulator:
 
     def update(self, data: BenchmarkData, api_plugin) -> None:
         """Ingest one completed request and update all running totals."""
+        if data.is_warmup:
+            return  # Warmup requests are excluded from all metrics
+
         self.n_total += 1
 
         if data.success:

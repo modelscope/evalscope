@@ -21,7 +21,9 @@ class RandomDatasetPlugin(DatasetPluginBase):
 
         assert self.tokenizer is not None, 'Tokenizer should be initialized for random data generation.'  # noqa: E501
         self.prefix_length = self.query_parameters.prefix_length
-        self.number = self.query_parameters.number or 1
+        # Include warmup_count so the generator produces enough unique items
+        # to cover both warmup and benchmark requests without cycling reuse.
+        self.number = self.query_parameters.total_count or 1
 
         # Filter out special tokens and byte-fallback tokens from vocabulary.
         # Byte-fallback tokens (e.g. <0xE4>) are NOT in all_special_ids but decode to
