@@ -3,6 +3,7 @@ import httpx
 import mimetypes
 import os
 import re
+from typing import Literal, Optional, cast
 
 from evalscope.utils.logger import get_logger
 
@@ -32,6 +33,34 @@ def data_uri_to_base64(data_uri: str) -> str:
     pattern = r'^data:[^,]+,'
     stripped_uri = re.sub(pattern, '', data_uri)
     return stripped_uri
+
+
+VideoFormat = Literal['mp4', 'mpeg', 'mov']
+SUPPORTED_VIDEO_FORMATS: tuple[VideoFormat, ...] = ('mp4', 'mpeg', 'mov')
+
+
+def guess_video_format(video: Optional[str], default: VideoFormat = 'mp4') -> VideoFormat:
+    """Infer a supported video format from a data URI, URL, or local path."""
+    if not video:
+        return default
+
+    mime_type = data_uri_mime_type(video)
+    if not mime_type:
+        path_like = video.split('?', 1)[0].split('#', 1)[0]
+        mime_type, _ = mimetypes.guess_type(path_like, strict=False)
+
+    if mime_type and mime_type.startswith('video/'):
+        subtype = mime_type.split('/', 1)[1].lower()
+        if subtype == 'quicktime':
+            return 'mov'
+        if subtype in SUPPORTED_VIDEO_FORMATS:
+            return cast(VideoFormat, subtype)
+
+    ext = os.path.splitext(video.split('?', 1)[0].split('#', 1)[0])[1].lstrip('.').lower()
+    if ext in SUPPORTED_VIDEO_FORMATS:
+        return cast(VideoFormat, ext)
+
+    return default
 
 
 def file_as_data(file: str) -> tuple[bytes, str]:

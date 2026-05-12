@@ -1,0 +1,1 @@
+{"messages": [{"role": "user", "content": [{"type": "text", "text": "What type of media is provided in this sample?"}, {"type": "video_url", "video_url": {"url": "custom_eval/multimodal/videos/sample.mp4"}}]}], "answer": "Video"}

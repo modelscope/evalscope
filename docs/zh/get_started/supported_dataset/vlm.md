@@ -28,6 +28,7 @@
 | `mm_star` | [MMStar](../../benchmarks/mm_star.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `mmmu` | [MMMU](../../benchmarks/mmmu.md) | `Knowledge`, `MultiModal`, `QA` |
 | `mmmu_pro` | [MMMU-PRO](../../benchmarks/mmmu_pro.md) | `Knowledge`, `MCQ`, `MultiModal` |
+| `mvbench` | [MVBench](../../benchmarks/mvbench.md) | `MCQ`, `MultiModal` |
 | `ocr_bench` | [OCRBench](../../benchmarks/ocr_bench.md) | `Knowledge`, `MultiModal`, `QA` |
 | `ocr_bench_v2` | [OCRBench-v2](../../benchmarks/ocr_bench_v2.md) | `Knowledge`, `MultiModal`, `QA` |
 | `olympiad_bench` | [OlympiadBench](../../benchmarks/olympiad_bench.md) | `Math`, `Reasoning` |
@@ -72,6 +73,7 @@
 ../../benchmarks/mm_star.md
 ../../benchmarks/mmmu.md
 ../../benchmarks/mmmu_pro.md
+../../benchmarks/mvbench.md
 ../../benchmarks/ocr_bench.md
 ../../benchmarks/ocr_bench_v2.md
 ../../benchmarks/olympiad_bench.md
