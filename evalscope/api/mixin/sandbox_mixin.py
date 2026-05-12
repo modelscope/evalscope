@@ -142,7 +142,7 @@ class EnclaveSandboxBackend(SandboxBackend):
             from ms_enclave.sandbox.model import SandboxType, VolcengineSandboxConfig
 
             sandbox_type = SandboxType.VOLCENGINE
-            sandbox_config = VolcengineSandboxConfig.model_validate(self._benchmark_meta.sandbox_config)
+            sandbox_config = VolcengineSandboxConfig.model_validate(self._benchmark_meta.sandbox_config or {})
         else:
             from ms_enclave.sandbox.model import DockerSandboxConfig, SandboxType
 
