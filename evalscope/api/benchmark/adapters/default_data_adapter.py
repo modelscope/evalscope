@@ -4,13 +4,20 @@ from functools import partial
 from overrides import override
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
-from evalscope.api.agent import AgentContext, AgentLoop, AgentTrace, ToolExecutor
+from evalscope.api.agent import AgentContext, AgentEnvironment, AgentLoop, AgentLoopResult, AgentTrace, ToolExecutor
 from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, LocalDataLoader, RemoteDataLoader, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
-from evalscope.api.registry import get_aggregation, get_metric, get_strategy, resolve_tools
+from evalscope.api.registry import (
+    get_aggregation,
+    get_environment,
+    get_metric,
+    get_strategy,
+    resolve_tool_infos,
+    resolve_tools,
+)
 from evalscope.constants import HubType, JudgeStrategy
 from evalscope.report import Report, ReportGenerator
 from evalscope.utils import get_logger
@@ -421,46 +428,110 @@ class DefaultDataAdapter(DataAdapter):
         stashed on ``model_output.metadata`` under reserved keys so that
         :meth:`run_inference` can relocate them onto the resulting
         :class:`TaskState` without changing the hook signature.
+
+        When ``agent_config.environment`` is set the environment is
+        instantiated, used for the full sample, and closed in a ``finally``
+        block regardless of loop outcome.  ``agent_config.environment_extra``
+        is forwarded as keyword arguments to the environment constructor.
         """
         cfg = self._task_config.agent_config
         strategy_cls = get_strategy(cfg.strategy)
         strategy = strategy_cls(**cfg.extra)
 
         handlers = resolve_tools(cfg.tools)
-        tool_executor = ToolExecutor(handlers=handlers, environment=None)
+
+        # Resolve ToolInfo schemas from the registry so the model can see them.
+        registered_tool_infos = resolve_tool_infos(cfg.tools)
+
+        # Determine environment class (if any) – instantiated inside the async
+        # coroutine so its constructor can be async-safe.
+        env_cls: Optional[type] = None
+        if cfg.environment is not None:
+            env_cls = get_environment(cfg.environment)
+
+        # Build environment kwargs: start from agent_config.environment_extra,
+        # then backfill manager_config from TaskConfig.sandbox_manager_config
+        # when not already overridden.  This lets users set sandbox_manager_config
+        # once at the TaskConfig level for both SandboxMixin and AgentEnvironment.
+        env_kwargs = dict(cfg.environment_extra)
+        if 'manager_config' not in env_kwargs:
+            task_mgr_cfg = getattr(self._task_config, 'sandbox_manager_config', None)
+            if task_mgr_cfg:
+                env_kwargs['manager_config'] = task_mgr_cfg
 
         if isinstance(sample.input, list):
             initial_messages = list(sample.input)
         else:
             initial_messages = [ChatMessageUser(content=sample.input)]
 
-        ctx = AgentContext(
-            sample_id=sample.id,
-            messages=initial_messages,
-            tools=list(sample.tools or []),
-            max_steps=cfg.max_steps,
-        )
-        trace = AgentTrace(
-            strategy=cfg.strategy,
-            environment=cfg.environment,
-            max_steps=cfg.max_steps,
-        )
-        loop = AgentLoop(
-            model=model,
-            strategy=strategy,
-            tool_executor=tool_executor,
-            environment=None,
-            max_steps=cfg.max_steps,
-            trace=trace,
-        )
-        result = AsyncioLoopRunner.run(loop.run(ctx))
+        # Merge sample-level tools with agent-config tools.
+        sample_tools = list(sample.tools or [])
+        all_tools = sample_tools + [t for t in registered_tool_infos if t not in sample_tools]
 
+        async def _run() -> AgentLoopResult:
+            environment: Optional[AgentEnvironment] = (env_cls(**env_kwargs) if env_cls is not None else None)
+            try:
+                tool_executor = ToolExecutor(handlers=handlers, environment=environment)
+                ctx = AgentContext(
+                    sample_id=sample.id,
+                    messages=initial_messages,
+                    tools=all_tools,
+                    max_steps=cfg.max_steps,
+                )
+                trace = AgentTrace(
+                    strategy=cfg.strategy,
+                    environment=cfg.environment,
+                    max_steps=cfg.max_steps,
+                )
+                loop = AgentLoop(
+                    model=model,
+                    strategy=strategy,
+                    tool_executor=tool_executor,
+                    environment=environment,
+                    max_steps=cfg.max_steps,
+                    trace=trace,
+                )
+                return await loop.run(ctx)
+            finally:
+                if environment is not None:
+                    await environment.close()
+
+        result = AsyncioLoopRunner.run(_run())
+
+        # Extract final prediction through the strategy → adapter hook chain.
+        # Benchmarks can override ``_extract_final_answer`` for custom logic
+        # (e.g. SWE-bench_Pro extracting a git patch from the message history).
+        final_text = self._extract_final_answer(result, strategy)
         output = result.final_output
+        output.completion = final_text  # normalise content via existing setter
         if output.metadata is None:
             output.metadata = {}
         output.metadata['__agent_messages__'] = result.messages
         output.metadata['__agent_trace__'] = result.trace
         return output
+
+    def _extract_final_answer(self, result: AgentLoopResult, strategy: Any) -> str:
+        """Return the final prediction string from a completed agent loop.
+
+        The default implementation delegates to
+        ``strategy.extract_final_answer(result)`` which is defined per
+        strategy (e.g. :class:`FunctionCallingStrategy` returns the content
+        of the last ``model.generate`` output).
+
+        **Override point for benchmarks**: subclasses that need to extract a
+        different artifact from the trajectory — for example a ``git diff``
+        patch for SWE-bench_Pro, or a JSON field from the last tool
+        observation — should override this method rather than the strategy
+        method, keeping strategy logic generic.
+
+        Args:
+            result: Completed :class:`AgentLoopResult` from the loop.
+            strategy: The :class:`AgentStrategy` instance used for this run.
+
+        Returns:
+            str: Final prediction string forwarded to metric calculation.
+        """
+        return strategy.extract_final_answer(result)
 
     def _on_inference_end(
         self, model: Model, sample: Sample, model_output: ModelOutput, output_dir: str, **kwargs

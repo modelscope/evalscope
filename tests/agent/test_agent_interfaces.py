@@ -141,7 +141,6 @@ class TestAgentTypesBehavior(unittest.TestCase):
         self.assertEqual(cfg.tools, [])
         self.assertEqual(cfg.max_steps, 10)
         self.assertIsNone(cfg.environment)
-        self.assertTrue(cfg.extract_final_from_trace)
         self.assertEqual(cfg.extra, {})
 
     def test_agent_config_dict_validate(self):

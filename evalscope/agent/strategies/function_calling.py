@@ -8,7 +8,7 @@ an assistant message without any tool calls.
 
 from typing import List, Optional
 
-from evalscope.api.agent import AgentContext, AgentStrategy, ParsedAction, ToolSchemaMode
+from evalscope.api.agent import AgentContext, AgentLoopResult, AgentStrategy, ParsedAction, ToolSchemaMode
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_strategy
@@ -46,6 +46,15 @@ class FunctionCallingStrategy(AgentStrategy):
 
     def tools(self, ctx: AgentContext) -> List[ToolInfo]:
         return list(ctx.tools)
+
+    def extract_final_answer(self, result: AgentLoopResult) -> str:
+        """Return the text content of the last model output.
+
+        For function-calling strategy the loop always terminates on a
+        tool-call-free assistant turn, so ``final_output.message.content``
+        is guaranteed to be the model's direct answer.
+        """
+        return str(result.final_output.message.content or '')
 
 
 __all__ = ['FunctionCallingStrategy']

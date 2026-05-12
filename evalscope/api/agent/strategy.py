@@ -5,12 +5,12 @@ only turns ``ModelOutput`` into a :class:`ParsedAction` and advises the
 loop whether to stop.
 """
 
-from typing import List, Optional, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, List, Optional, Protocol, runtime_checkable
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolInfo
-from .types import AgentContext, ParsedAction, ToolSchemaMode
+from .types import AgentContext, AgentLoopResult, ParsedAction, ToolSchemaMode
 
 
 @runtime_checkable
@@ -51,6 +51,20 @@ class AgentStrategy(Protocol):
     def tools(self, ctx: AgentContext) -> List[ToolInfo]:
         """Tools to pass to ``model.generate`` when
         ``tool_schema_mode() == 'function_calling'``.  Default: ``ctx.tools``.
+        """
+        ...
+
+    def extract_final_answer(self, result: AgentLoopResult) -> str:
+        """Extract the final prediction string from a completed loop run.
+
+        Called by :meth:`DefaultDataAdapter._extract_final_answer` after the
+        loop finishes.  The default for ``function_calling`` is the content of
+        the last ``model.generate`` output.  Other strategies (e.g. ReAct) may
+        scan the message history for a specific tag or tool argument.
+
+        Benchmarks that need custom extraction should override
+        :meth:`DefaultDataAdapter._extract_final_answer` instead of this
+        method.
         """
         ...
 

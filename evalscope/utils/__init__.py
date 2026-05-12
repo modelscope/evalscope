@@ -62,7 +62,6 @@ else:
             'gen_hash',
             'get_valid_list',
             'safe_filename',
-            'thread_safe',
         ],
         'deprecation_utils': [
             'deprecated',

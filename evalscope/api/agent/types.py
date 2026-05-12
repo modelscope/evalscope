@@ -39,11 +39,11 @@ class AgentConfig(BaseModel):
     environment: Optional[str] = Field(default=None)
     """Registered environment name.  ``None`` means no sandbox (local tools only)."""
 
-    extract_final_from_trace: bool = Field(default=True)
-    """If True the last assistant message text becomes the final prediction."""
-
     extra: Dict[str, Any] = Field(default_factory=dict)
-    """Free-form strategy / environment specific options."""
+    """Free-form strategy-specific options (passed to strategy constructor)."""
+
+    environment_extra: Dict[str, Any] = Field(default_factory=dict)
+    """Free-form environment-specific options (passed to environment constructor)."""
 
 
 class ExecResult(BaseModel):

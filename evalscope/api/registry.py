@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from evalscope.api.filter import Filter
     from evalscope.api.metric import Aggregator, Metric
     from evalscope.api.model.model import ModelAPI
+    from evalscope.api.tool import ToolInfo
     from evalscope.config import TaskConfig
     from evalscope.utils.io_utils import OutputsStructure
 
@@ -250,6 +251,9 @@ def create_evaluator(
 STRATEGY_REGISTRY: Dict[str, Type['AgentStrategy']] = {}
 ENVIRONMENT_REGISTRY: Dict[str, Type['AgentEnvironment']] = {}
 AGENT_TOOL_REGISTRY: Dict[str, 'ToolHandler'] = {}
+AGENT_TOOL_INFO_REGISTRY: Dict[str, 'ToolInfo'] = {}
+"""Maps tool name → :class:`ToolInfo` schema.  Populated by :func:`register_agent_tool`
+when an ``info`` kwarg is supplied."""
 
 
 def register_strategy(name: str) -> Callable[[Type['AgentStrategy']], Type['AgentStrategy']]:
@@ -302,17 +306,28 @@ def list_environments() -> List[str]:
     return sorted(ENVIRONMENT_REGISTRY.keys())
 
 
-def register_agent_tool(name: str) -> Callable[['ToolHandler'], 'ToolHandler']:
+def register_agent_tool(
+    name: str,
+    info: Optional['ToolInfo'] = None,
+) -> Callable[['ToolHandler'], 'ToolHandler']:
     """Register an async tool handler under ``name``.
 
     The decorated callable must match :data:`ToolHandler`:
     ``async def run(call: ToolCall, env: Optional[AgentEnvironment]) -> str``.
+
+    Args:
+        name:  Registry key (also used as the tool function name exposed to the model).
+        info:  Optional :class:`~evalscope.api.tool.ToolInfo` schema.  When provided, it
+               is stored in :data:`AGENT_TOOL_INFO_REGISTRY` so that
+               :func:`resolve_tool_infos` can surface it to ``model.generate``.
     """
 
     def decorator(fn: 'ToolHandler') -> 'ToolHandler':
         if name in AGENT_TOOL_REGISTRY:
             raise ValueError(f"Agent tool '{name}' is already registered.")
         AGENT_TOOL_REGISTRY[name] = fn
+        if info is not None:
+            AGENT_TOOL_INFO_REGISTRY[name] = info
         return fn
 
     return decorator
@@ -334,6 +349,22 @@ def resolve_tools(names: Optional[List[str]]) -> Dict[str, 'ToolHandler']:
     if not names:
         return {}
     return {name: get_agent_tool(name) for name in names}
+
+
+def get_agent_tool_info(name: str) -> Optional['ToolInfo']:
+    """Return the :class:`ToolInfo` schema for a registered tool, or ``None``."""
+    return AGENT_TOOL_INFO_REGISTRY.get(name)
+
+
+def resolve_tool_infos(names: Optional[List[str]]) -> List['ToolInfo']:
+    """Return :class:`ToolInfo` schemas for the named tools that have one.
+
+    Tools registered without an ``info`` argument are silently skipped.
+    ``None`` / empty → ``[]``.
+    """
+    if not names:
+        return []
+    return [AGENT_TOOL_INFO_REGISTRY[n] for n in names if n in AGENT_TOOL_INFO_REGISTRY]
 
 
 # END: Registry for agent strategies, environments and tools
