@@ -7,6 +7,7 @@ from argparse import Namespace
 from pydantic import Field, field_validator, model_validator
 from typing import Any, Dict, List, Optional, Union
 
+from evalscope.api.agent import AgentConfig
 from evalscope.api.model import GenerateConfig, Model, ModelAPI
 from evalscope.constants import (
     DEFAULT_DATASET_CACHE_DIR,
@@ -178,6 +179,13 @@ class TaskConfig(BaseArgument):
     sandbox_manager_config: Optional[Dict] = Field(default_factory=dict)
     """Configuration for the sandbox manager. Default is local manager. If url is provided, it will use remote manager."""
 
+    # Agent-loop configuration
+    agent_config: Optional[AgentConfig] = None
+    """Global agent-loop configuration. When set, every DefaultDataAdapter-based
+    benchmark routes inference through the AgentLoop instead of a single
+    ``model.generate`` call.  AgentAdapter subclasses (e.g. SWE-bench_Pro)
+    ignore this field and use their own settings."""
+
     evalscope_version: Optional[str] = _evalscope_version
     """EvalScope version used for the evaluation."""
 
@@ -214,6 +222,15 @@ class TaskConfig(BaseArgument):
                     raise ValueError('eval_config string is not a valid json string or file path.') from e
         else:
             raise ValueError('eval_config should be a dict or a file path string.')
+
+    @field_validator('agent_config', mode='before')
+    @classmethod
+    def _validate_agent_config(cls, v):
+        if v is None or isinstance(v, AgentConfig):
+            return v
+        if isinstance(v, dict):
+            return AgentConfig.model_validate(v)
+        raise ValueError(f'`agent_config` must be a dict, AgentConfig or None, got {type(v).__name__}.')
 
     # --- Model validator (cross-field logic, replaces __post_init__) ---
 

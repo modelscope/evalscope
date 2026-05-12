@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+from evalscope import agent  # noqa: F401  # registered agent strategies
 from evalscope.benchmarks import *  # registered benchmarks
 from evalscope.config import TaskConfig
 from evalscope.evaluator import *  # registered evaluators

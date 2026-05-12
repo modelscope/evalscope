@@ -4,15 +4,17 @@ from functools import partial
 from overrides import override
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
+from evalscope.api.agent import AgentContext, AgentLoop, AgentTrace, ToolExecutor
 from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, LocalDataLoader, RemoteDataLoader, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
-from evalscope.api.registry import get_aggregation, get_metric
+from evalscope.api.registry import get_aggregation, get_metric, get_strategy, resolve_tools
 from evalscope.constants import HubType, JudgeStrategy
 from evalscope.report import Report, ReportGenerator
 from evalscope.utils import get_logger
+from evalscope.utils.function_utils import AsyncioLoopRunner
 from ..benchmark import DataAdapter
 
 logger = get_logger()
@@ -393,6 +395,12 @@ class DefaultDataAdapter(DataAdapter):
         This method executes the model inference and can be overridden
         to implement custom inference logic or model interaction patterns.
 
+        When ``TaskConfig.agent_config`` is set, the default implementation
+        routes inference through an :class:`AgentLoop` instead of issuing a
+        single ``model.generate`` call.  Subclasses that override this
+        method (e.g. :class:`AgentAdapter`) bypass the global switch and
+        drive their own loop.
+
         Args:
             model (Model): The model to use for inference
             sample (Sample): The sample to process
@@ -400,9 +408,59 @@ class DefaultDataAdapter(DataAdapter):
         Returns:
             ModelOutput: The raw output from the model
         """
+        if self._task_config is not None and self._task_config.agent_config is not None:
+            return self._on_agent_inference(model, sample)
         # Execute model inference with the processed input and any tools
         model_output = model.generate(input=sample.input, tools=sample.tools)
         return model_output
+
+    def _on_agent_inference(self, model: Model, sample: Sample) -> ModelOutput:
+        """Run a sample through the global AgentLoop path.
+
+        The AgentLoop's message trace and structured ``AgentTrace`` are
+        stashed on ``model_output.metadata`` under reserved keys so that
+        :meth:`run_inference` can relocate them onto the resulting
+        :class:`TaskState` without changing the hook signature.
+        """
+        cfg = self._task_config.agent_config
+        strategy_cls = get_strategy(cfg.strategy)
+        strategy = strategy_cls(**cfg.extra)
+
+        handlers = resolve_tools(cfg.tools)
+        tool_executor = ToolExecutor(handlers=handlers, environment=None)
+
+        if isinstance(sample.input, list):
+            initial_messages = list(sample.input)
+        else:
+            initial_messages = [ChatMessageUser(content=sample.input)]
+
+        ctx = AgentContext(
+            sample_id=sample.id,
+            messages=initial_messages,
+            tools=list(sample.tools or []),
+            max_steps=cfg.max_steps,
+        )
+        trace = AgentTrace(
+            strategy=cfg.strategy,
+            environment=cfg.environment,
+            max_steps=cfg.max_steps,
+        )
+        loop = AgentLoop(
+            model=model,
+            strategy=strategy,
+            tool_executor=tool_executor,
+            environment=None,
+            max_steps=cfg.max_steps,
+            trace=trace,
+        )
+        result = AsyncioLoopRunner.run(loop.run(ctx))
+
+        output = result.final_output
+        if output.metadata is None:
+            output.metadata = {}
+        output.metadata['__agent_messages__'] = result.messages
+        output.metadata['__agent_trace__'] = result.trace
+        return output
 
     def _on_inference_end(
         self, model: Model, sample: Sample, model_output: ModelOutput, output_dir: str, **kwargs
@@ -452,6 +510,17 @@ class DefaultDataAdapter(DataAdapter):
         self._on_inference_start(model, sample)
         model_output = self._on_inference(model, sample)
         task_state = self._on_inference_end(model, sample, model_output, output_dir, **kwargs)
+
+        # Relocate any AgentLoop auxiliary data from ``model_output.metadata``
+        # onto the ``TaskState``.  Reserved keys are popped so they do not
+        # leak into prediction/review caches.
+        if model_output.metadata:
+            agent_messages = model_output.metadata.pop('__agent_messages__', None)
+            agent_trace = model_output.metadata.pop('__agent_trace__', None)
+            if agent_messages is not None:
+                task_state.messages = agent_messages
+            if agent_trace is not None:
+                task_state.agent_trace = agent_trace
 
         return task_state
 
