@@ -72,7 +72,13 @@ class VisionLanguageAdapter(DefaultDataAdapter):
             if not video:
                 raise ValueError('Video field must include one of "url", "video", or "data".')
             video_format = video_value.get('format') or guess_video_format(str(video))
+            start = video_value.get('start')
+            end = video_value.get('end')
+            fps = video_value.get('fps')
         else:
             video = video_value
             video_format = guess_video_format(video)
-        return ContentVideo(video=str(video), format=video_format)
+            start = None
+            end = None
+            fps = None
+        return ContentVideo(video=str(video), format=video_format, start=start, end=end, fps=fps)

@@ -6,7 +6,7 @@ import evalscope.benchmarks  # noqa: F401
 from evalscope.api.messages import ContentVideo
 from evalscope.api.registry import get_benchmark
 from evalscope.config import TaskConfig
-from evalscope.constants import EvalType
+from evalscope.constants import EvalType, HubType
 from evalscope.models.utils.openai import openai_chat_messages
 
 
@@ -27,6 +27,10 @@ class TestMVBenchVideoBenchmark(unittest.TestCase):
             'question': 'What is the action performed by the person in the video?',
             'candidates': ['Not sure', 'Scattering something down', 'Piling something up'],
             'answer': 'Piling something up',
+            'start': '1.5',
+            'end': 4,
+            'fps': 1,
+            'subtitle': 'A person piles objects upward.',
         }]
         with mock.patch.object(adapter, '_load_subset_records', return_value=records), \
                 mock.patch.object(adapter, '_ensure_video_file',
@@ -41,7 +45,13 @@ class TestMVBenchVideoBenchmark(unittest.TestCase):
         self.assertEqual(len(video_parts), 1)
         self.assertTrue(os.path.exists(video_parts[0].video))
         self.assertEqual(video_parts[0].format, 'mp4')
+        self.assertEqual(video_parts[0].start, 1.5)
+        self.assertEqual(video_parts[0].end, 4.0)
+        self.assertEqual(video_parts[0].fps, 1.0)
         self.assertIn(sample.target, ['A', 'B', 'C'])
+        self.assertEqual(sample.metadata['dataset_hub'], HubType.HUGGINGFACE)
+        self.assertIn('video segment from 1.5s to 4s', sample.input[0].content[0].text)
+        self.assertIn('Subtitles:', sample.input[0].content[0].text)
 
         request_messages = openai_chat_messages(sample.input)
         video_request_parts = [part for part in request_messages[0]['content'] if part['type'] == 'video_url']

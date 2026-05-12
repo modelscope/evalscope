@@ -16,8 +16,10 @@ MVBench is a public video understanding benchmark for multimodal models. It eval
 
 - Public video benchmark with real MP4 inputs
 - Uses existing `VisionLanguageAdapter` and `MultiChoiceAdapter` flow
+- Loads annotations and video archives through the shared `dataset_hub` abstraction
 - Lazily extracts only the videos referenced by the selected samples
 - Sends local videos through the OpenAI-compatible `video_url` content path
+- Preserves optional `start`/`end`/`fps` video metadata and adds a segment instruction when a record is time-bounded
 - Supports selecting MVBench subsets through `dataset_args`
 
 ## Evaluation Notes
@@ -26,6 +28,7 @@ MVBench is a public video understanding benchmark for multimodal models. It eval
 - Primary metric: **Accuracy**
 - The default `action_antonym` subset downloads the small `ssv2_video.zip` archive and is suitable for CI-style validation
 - Full MVBench evaluation requires downloading the corresponding public video archives for selected subsets
+- The adapter defaults to Hugging Face because the public `PKU-Alignment/MVBench` mirror is hosted there; mirrored datasets can be selected with `extra_params.dataset_hub` and `extra_params.dataset_id`
 
 ## Properties
 
@@ -87,7 +90,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets mvbench \
-    --dataset-args '{"mvbench": {"subset_list": ["action_antonym"]}}' \
+    --dataset-args '{"mvbench": {"subset_list": ["action_antonym"], "extra_params": {"dataset_hub": "huggingface"}}}' \
     --limit 10
 ```
 
@@ -105,6 +108,9 @@ task_cfg = TaskConfig(
     dataset_args={
         'mvbench': {
             'subset_list': ['action_antonym'],
+            'extra_params': {
+                'dataset_hub': 'huggingface',
+            },
         }
     },
     limit=10,

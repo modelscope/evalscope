@@ -8,10 +8,10 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
-from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
+from evalscope.api.dataset import DatasetDict, DatasetHub, MemoryDataset, Sample
 from evalscope.api.messages import ChatMessageUser, Content, ContentText, ContentVideo
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import HubType, Tags
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_character, prompt
 from evalscope.utils.url_utils import guess_video_format
@@ -76,6 +76,7 @@ video archives.
 - Primary metric: **Accuracy**
 - The default `action_antonym` subset downloads a small public MP4 archive for quick validation
 - Full benchmark evaluation can be requested by setting `subset_list` to additional MVBench subsets
+- Time-bounded records keep start/end metadata and add a short segment instruction to the prompt
 """,
         tags=[Tags.MULTI_MODAL, Tags.MULTIPLE_CHOICE],
         dataset_id='PKU-Alignment/MVBench',
@@ -84,6 +85,24 @@ video archives.
         metric_list=['acc'],
         eval_split='train',
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER_COT,
+        extra_params={
+            'dataset_id': {
+                'type': 'str',
+                'description': 'Dataset repository ID or local dataset root for MVBench annotations and videos.',
+                'value': 'PKU-Alignment/MVBench',
+            },
+            'dataset_hub': {
+                'type': 'str',
+                'description': 'Dataset hub used to load annotations and video archives.',
+                'value': HubType.HUGGINGFACE,
+                'choices': [HubType.HUGGINGFACE, HubType.MODELSCOPE, HubType.LOCAL],
+            },
+            'dataset_revision': {
+                'type': 'str',
+                'description': 'Optional dataset revision; leave empty to use the hub default.',
+                'value': '',
+            },
+        },
     )
 )
 class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
@@ -99,6 +118,27 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
             self._video_cache_dir = os.path.join(self.dataset_dir, 'mvbench', 'videos')
         return self._video_cache_dir
 
+    @property
+    def source_dataset_id(self) -> str:
+        return self.extra_params.get('dataset_id') or self.dataset_id
+
+    @property
+    def source_dataset_hub(self) -> str:
+        return self.extra_params.get('dataset_hub') or HubType.HUGGINGFACE
+
+    @property
+    def source_dataset_revision(self) -> Optional[str]:
+        return self.extra_params.get('dataset_revision') or None
+
+    @property
+    def source_dataset(self) -> DatasetHub:
+        return DatasetHub(
+            data_id_or_path=self.source_dataset_id,
+            data_source=self.source_dataset_hub,
+            revision=self.source_dataset_revision,
+            force_redownload=self.force_redownload,
+        )
+
     def load_dataset(self) -> DatasetDict:
         dataset_dict: Dict[str, MemoryDataset] = {}
         for subset in self.subset_list:
@@ -112,7 +152,7 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
                 samples = [self.record_to_sample(record) for record in records]
                 if self.repeats > 1:
                     samples = [copy.deepcopy(sample) for sample in samples for _ in range(self.repeats)]
-                dataset = MemoryDataset(samples=samples, name='mvbench', location=self.dataset_id)
+                dataset = MemoryDataset(samples=samples, name='mvbench', location=self.source_dataset_id)
                 dataset.reindex(group_size=self.repeats)
                 dataset_dict[subset] = dataset
 
@@ -122,10 +162,8 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         return self.test_dataset
 
     def _load_subset_records(self, subset: str) -> List[Dict[str, Any]]:
-        from datasets import load_dataset
-
-        logger.info(f'Loading MVBench subset {subset} from {self.dataset_id}.')
-        dataset = load_dataset(self.dataset_id, subset, split=self.eval_split)
+        logger.info(f'Loading MVBench subset {subset} from {self.source_dataset_hub}: {self.source_dataset_id}.')
+        dataset = self.source_dataset.load(split=self.eval_split, subset=subset)
         records = list(dataset)
         if not records:
             raise ValueError(f'No records found for MVBench subset: {subset}')
@@ -144,11 +182,21 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         choices = [str(choice) for choice in record['candidates']]
         answer = str(record['answer'])
         target = answer_character(choices.index(answer))
+        start = self._optional_float(record.get('start'), 'start')
+        end = self._optional_float(record.get('end'), 'end')
+        fps = self._optional_float(record.get('fps'), 'fps')
+        if start is not None and end is not None and start > end:
+            raise ValueError(f'Invalid MVBench time boundary: start={start} is greater than end={end}.')
+
         video_path = self._ensure_video_file(self.current_subset_name, str(record['video']))
-        input_text = prompt(question=record['question'], choices=choices, template=self.prompt_template)
+        input_text = prompt(
+            question=self._question_with_video_context(record, start=start, end=end),
+            choices=choices,
+            template=self.prompt_template,
+        )
         content_list: List[Content] = [
             ContentText(text=input_text),
-            ContentVideo(video=video_path, format=guess_video_format(video_path)),
+            ContentVideo(video=video_path, format=guess_video_format(video_path), start=start, end=end, fps=fps),
         ]
 
         return Sample(
@@ -159,8 +207,11 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
                 'video': record.get('video'),
                 'answer': answer,
                 'subset': self.current_subset_name,
-                'start': record.get('start'),
-                'end': record.get('end'),
+                'start': start,
+                'end': end,
+                'fps': fps,
+                'dataset_id': self.source_dataset_id,
+                'dataset_hub': self.source_dataset_hub,
             },
         )
 
@@ -170,9 +221,7 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         if os.path.exists(output_path) and not self.force_redownload:
             return output_path
 
-        from huggingface_hub import hf_hub_download
-
-        archive_path = hf_hub_download(self.dataset_id, f'video/{archive_name}', repo_type='dataset')
+        archive_path = self.source_dataset.download_file(f'video/{archive_name}')
         member_name = self._find_archive_member(archive_path, subset, video_name)
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with zipfile.ZipFile(archive_path) as zip_file:
@@ -200,3 +249,51 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
         preferred = [name for name in matches if normalized_subset in name.replace('_', '').lower()]
         return sorted(preferred or matches)[0]
+
+    def _question_with_video_context(
+        self,
+        record: Dict[str, Any],
+        start: Optional[float],
+        end: Optional[float],
+    ) -> str:
+        context = self._format_video_context(record, start=start, end=end)
+        question = str(record['question'])
+        if not context:
+            return question
+        return f'{context}\n\n{question}'
+
+    @classmethod
+    def _format_video_context(cls, record: Dict[str, Any], start: Optional[float], end: Optional[float]) -> str:
+        context_parts = []
+        time_range = cls._format_time_range(start, end)
+        if time_range:
+            context_parts.append(f'Answer based on the video segment {time_range}.')
+
+        subtitle = record.get('subtitle') or record.get('subtitles')
+        if subtitle:
+            context_parts.append(f'Subtitles:\n{subtitle}')
+
+        return '\n'.join(context_parts)
+
+    @classmethod
+    def _format_time_range(cls, start: Optional[float], end: Optional[float]) -> str:
+        if start is None and end is None:
+            return ''
+        if start is not None and end is not None:
+            return f'from {cls._format_seconds(start)}s to {cls._format_seconds(end)}s'
+        if start is not None:
+            return f'after {cls._format_seconds(start)}s'
+        return f'before {cls._format_seconds(end)}s'
+
+    @staticmethod
+    def _format_seconds(value: float) -> str:
+        return f'{value:g}'
+
+    @staticmethod
+    def _optional_float(value: Any, field_name: str) -> Optional[float]:
+        if value is None or value == '':
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f'Invalid MVBench {field_name}: {value!r}') from exc

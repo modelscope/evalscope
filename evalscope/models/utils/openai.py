@@ -492,10 +492,16 @@ def content_from_openai(
         if isinstance(video_url, str):
             video = video_url
             video_format = guess_video_format(video)
+            start = None
+            end = None
+            fps = None
         else:
             video = video_url['url']
             video_format = video_url.get('format') or guess_video_format(video)
-        return [ContentVideo(video=video, format=video_format)]
+            start = video_url.get('start')
+            end = video_url.get('end')
+            fps = video_url.get('fps')
+        return [ContentVideo(video=video, format=video_format, start=start, end=end, fps=fps)]
     elif content['type'] == 'refusal':
         return [ContentText(text=content['refusal'], refusal=True)]
     else:

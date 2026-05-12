@@ -3,11 +3,12 @@ import tempfile
 import unittest
 
 import evalscope.benchmarks  # noqa: F401
+from evalscope.api.dataset import DatasetHub, download_dataset_file
 from evalscope.api.messages import ChatMessageUser, ContentVideo
 from evalscope.api.registry import get_benchmark
 from evalscope.config import TaskConfig
-from evalscope.constants import EvalType
-from evalscope.models.utils.openai import openai_chat_messages
+from evalscope.constants import EvalType, HubType
+from evalscope.models.utils.openai import content_from_openai, openai_chat_messages
 
 
 class TestVideoMultimodalDataset(unittest.TestCase):
@@ -80,3 +81,35 @@ class TestVideoMultimodalDataset(unittest.TestCase):
         video_request_parts = [part for part in request_messages[0]['content'] if part['type'] == 'video_url']
         self.assertEqual(len(video_request_parts), 1)
         self.assertTrue(video_request_parts[0]['video_url']['url'].startswith('data:video/mp4;base64,'))
+
+    def test_openai_video_content_preserves_time_boundary_metadata(self):
+        content = content_from_openai({
+            'type': 'video_url',
+            'video_url': {
+                'url': 'https://example.com/sample.mp4',
+                'format': 'mp4',
+                'start': 3,
+                'end': 9.5,
+                'fps': 1,
+            },
+        })
+
+        self.assertEqual(len(content), 1)
+        self.assertIsInstance(content[0], ContentVideo)
+        self.assertEqual(content[0].start, 3.0)
+        self.assertEqual(content[0].end, 9.5)
+        self.assertEqual(content[0].fps, 1.0)
+
+    def test_local_dataset_file_resolution_rejects_path_traversal(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            video_dir = os.path.join(tmp_dir, 'video')
+            os.makedirs(video_dir)
+            local_file = os.path.join(video_dir, 'sample.mp4')
+            with open(local_file, 'wb') as target:
+                target.write(b'data')
+
+            resolved_path = DatasetHub(tmp_dir, data_source=HubType.LOCAL).download_file('video/sample.mp4')
+            self.assertEqual(resolved_path, local_file)
+
+            with self.assertRaisesRegex(ValueError, 'Invalid dataset file path'):
+                download_dataset_file(tmp_dir, '../escape.mp4', data_source=HubType.LOCAL)

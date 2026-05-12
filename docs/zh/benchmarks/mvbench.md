@@ -16,8 +16,10 @@ MVBench 是一个公开的视频理解评测集，用于评估多模态模型的
 
 - 使用公开评测集中的真实 MP4 视频输入
 - 复用现有 `VisionLanguageAdapter` 和 `MultiChoiceAdapter` 流程
+- 通过统一的 `dataset_hub` 抽象加载标注和视频归档
 - 只按需解压当前样本实际引用的视频文件
 - 通过 OpenAI 兼容的 `video_url` 内容路径发送本地视频
+- 保留可选的 `start` / `end` / `fps` 视频元数据，并在样本有时间边界时自动加入片段提示
 - 可通过 `dataset_args` 选择需要评测的 MVBench 子集
 
 ## 评估说明
@@ -26,6 +28,7 @@ MVBench 是一个公开的视频理解评测集，用于评估多模态模型的
 - 主要指标：**准确率（Accuracy）**
 - 默认 `action_antonym` 子集下载较小的 `ssv2_video.zip` 归档，适合 CI 风格验证
 - 完整 MVBench 评测需要按所选子集下载对应的公开视频归档
+- 由于公开的 `PKU-Alignment/MVBench` 镜像托管在 Hugging Face，本适配器默认使用 Hugging Face；如果使用镜像数据集，可通过 `extra_params.dataset_hub` 和 `extra_params.dataset_id` 指定
 
 ## 属性
 
@@ -87,7 +90,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets mvbench \
-    --dataset-args '{"mvbench": {"subset_list": ["action_antonym"]}}' \
+    --dataset-args '{"mvbench": {"subset_list": ["action_antonym"], "extra_params": {"dataset_hub": "huggingface"}}}' \
     --limit 10
 ```
 
@@ -105,6 +108,9 @@ task_cfg = TaskConfig(
     dataset_args={
         'mvbench': {
             'subset_list': ['action_antonym'],
+            'extra_params': {
+                'dataset_hub': 'huggingface',
+            },
         }
     },
     limit=10,
