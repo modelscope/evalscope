@@ -50,10 +50,11 @@ class TestFunctionCallingStrategy(unittest.TestCase):
         )
 
     def test_parse_output_without_tool_calls(self):
+        """No tool calls → no final_answer; model must call submit to finish."""
         parsed = self.strategy.parse_output(_make_output(content='final!'), self.ctx)
-        self.assertEqual(parsed.final_answer, 'final!')
+        self.assertIsNone(parsed.final_answer)
         self.assertEqual(parsed.tool_calls, [])
-        self.assertTrue(self.strategy.is_done(parsed, self.ctx))
+        self.assertFalse(self.strategy.is_done(parsed, self.ctx))
 
     def test_parse_output_with_tool_calls(self):
         parsed = self.strategy.parse_output(
@@ -82,28 +83,37 @@ class TestAgentLoopCore(unittest.TestCase):
             trace=trace,
         )
 
-    def test_single_step_terminates_when_no_tool_calls(self):
+    def test_submit_tool_terminates_loop(self):
+        """Model must call submit to finish; nudge injected when no tool used."""
+        submit_call = ToolCall(id='sc1', function=ToolFunction(name='submit', arguments={'answer': '42'}))
         model = MagicMock()
-        model.generate.return_value = _make_output(content='the answer is 42')
+        model.generate.side_effect = [
+            _make_output(content='the answer is 42'),  # no tool call → nudge
+            _make_output(tool_calls=[submit_call]),     # submit → done
+        ]
 
         loop = self._build_loop(model)
         ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='q')])
         result = asyncio.run(loop.run(ctx))
 
-        self.assertEqual(model.generate.call_count, 1)
-        # user + assistant 两条消息
-        self.assertEqual(len(result.messages), 2)
-        self.assertEqual(result.final_output.choices[0].message.content, 'the answer is 42')
+        self.assertEqual(model.generate.call_count, 2)
+        # user + assistant(text) + nudge(user) + assistant(submit)
+        self.assertEqual(len(result.messages), 4)
 
         types = [e.type for e in result.trace.events]
-        self.assertEqual(types, [EventType.MODEL_GENERATE, EventType.SUBMIT])
+        self.assertIn(EventType.MODEL_GENERATE, types)
+        self.assertIn(EventType.SUBMIT, types)
+        # Nudge event present
+        nudge_events = [e for e in result.trace.events if e.payload and e.payload.get('source') == 'nudge']
+        self.assertEqual(len(nudge_events), 1)
 
-    def test_tool_call_then_final_answer(self):
+    def test_tool_call_then_submit(self):
         model = MagicMock()
-        # 第 1 轮发起 tool_call; 第 2 轮直接给 final answer
+        # 第 1 轮发起 tool_call; 第 2 轮调用 submit
+        submit_call = ToolCall(id='sc1', function=ToolFunction(name='submit', arguments={'answer': 'done'}))
         model.generate.side_effect = [
             _make_output(tool_calls=[_tool_call(name='echo', args={'x': 7})]),
-            _make_output(content='done'),
+            _make_output(tool_calls=[submit_call]),
         ]
 
         async def echo_handler(call, env):
@@ -114,7 +124,7 @@ class TestAgentLoopCore(unittest.TestCase):
         result = asyncio.run(loop.run(ctx))
 
         self.assertEqual(model.generate.call_count, 2)
-        # user + assistant(tool_call) + tool + assistant(final) 四条
+        # user + assistant(tool_call) + tool + assistant(submit)
         self.assertEqual(len(result.messages), 4)
         tool_msg = result.messages[2]
         self.assertIsInstance(tool_msg, ChatMessageTool)
@@ -135,9 +145,10 @@ class TestAgentLoopCore(unittest.TestCase):
 
     def test_unknown_tool_yields_error_observation_without_aborting(self):
         model = MagicMock()
+        submit_call = ToolCall(id='sc1', function=ToolFunction(name='submit', arguments={'answer': 'recovered'}))
         model.generate.side_effect = [
             _make_output(tool_calls=[_tool_call(name='missing')]),
-            _make_output(content='recovered'),
+            _make_output(tool_calls=[submit_call]),
         ]
         loop = self._build_loop(model, handlers={})
         ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='go')])
@@ -148,8 +159,7 @@ class TestAgentLoopCore(unittest.TestCase):
         self.assertIsInstance(tool_msg, ChatMessageTool)
         self.assertIsInstance(tool_msg.error, ToolCallError)
         self.assertEqual(tool_msg.error.type, 'unknown')
-        # Loop 没被打断, 第二轮成功给出 final answer
-        self.assertEqual(result.final_output.choices[0].message.content, 'recovered')
+        # Loop 没被打断, 第二轮成功 submit
 
     def test_max_steps_exhaustion_emits_error_event(self):
         model = MagicMock()

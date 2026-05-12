@@ -7,9 +7,9 @@ loop whether to stop.
 
 from typing import TYPE_CHECKING, List, Optional, Protocol, runtime_checkable
 
-from evalscope.api.messages import ChatMessage
+from evalscope.api.messages import ChatMessage, ChatMessageTool
 from evalscope.api.model import ModelOutput
-from evalscope.api.tool import ToolInfo
+from evalscope.api.tool import ToolCall, ToolCallError, ToolInfo
 from .types import AgentContext, AgentLoopResult, ParsedAction, ToolSchemaMode
 
 
@@ -65,6 +65,21 @@ class AgentStrategy(Protocol):
         Benchmarks that need custom extraction should override
         :meth:`DefaultDataAdapter._extract_final_answer` instead of this
         method.
+        """
+        ...
+
+    def format_observation(
+        self,
+        call: ToolCall,
+        observation: str,
+        error: Optional[ToolCallError],
+    ) -> ChatMessage:
+        """Format a tool execution result as a :class:`ChatMessage`.
+
+        The default implementation returns a :class:`ChatMessageTool`.
+        Textual strategies (e.g. ``mini_swe``) override this to return a
+        :class:`ChatMessageUser` with strategy-specific formatting so that
+        models which do not use function-calling can understand observations.
         """
         ...
 

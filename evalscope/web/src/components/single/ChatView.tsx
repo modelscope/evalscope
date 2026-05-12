@@ -1,12 +1,13 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react'
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { User, Bot, Shield, Wrench, ChevronDown, ChevronRight, ClipboardCheck, Copy, Check, X, Gauge, Target, Scissors, FileJson, Database } from 'lucide-react'
-import type { PredictionRow, ChatMessage, SamplePerfMetrics, ContentBlock } from '@/api/types'
+import { User, Bot, Shield, Wrench, ChevronDown, ChevronRight, ClipboardCheck, Copy, Check, X, Gauge, Target, Scissors, FileJson, Database, Sparkles, Cpu, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import type { PredictionRow, ChatMessage, SamplePerfMetrics, ContentBlock, AgentTrace, AgentTraceEvent } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import ScoreBadge from '@/components/common/ScoreBadge'
 import JsonViewer from '@/components/common/JsonViewer'
 import PerfChip from './PerfChip'
+import { TraceEventCard } from './TrajectoryView'
 
 interface Props {
   prediction: PredictionRow
@@ -329,23 +330,43 @@ function SystemBanner({ content }: { content: string }) {
   const preview = content.length > 120 ? content.slice(0, 120) + '…' : content
   return (
     <div
-      className="rounded-xl border px-4 py-3 text-sm flex gap-3 items-start cursor-pointer select-none"
+      className="rounded-xl border px-4 py-3 text-sm"
       style={{
         background: 'var(--bubble-system-bg)',
         borderColor: 'var(--bubble-system-border)',
         color: 'var(--color-ink-muted)',
       }}
-      onClick={() => setExpanded((v) => !v)}
     >
-      <Shield size={15} className="mt-0.5 shrink-0 opacity-70" />
-      <div className="flex-1 min-w-0">
-        <span className="font-semibold text-xs uppercase tracking-wide opacity-70 mr-2">
-          {t('prediction.systemPrompt')}
-        </span>
-        <span className="font-mono text-xs">{expanded ? content : preview}</span>
+      <div className="flex items-start gap-3">
+        <Shield size={15} className="mt-0.5 shrink-0 opacity-70" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-semibold text-xs uppercase tracking-wide opacity-70">
+              {t('prediction.systemPrompt')}
+            </span>
+            <CopyButton text={content} variant="neutral" />
+          </div>
+          <div
+            className="cursor-pointer select-none"
+            onClick={() => setExpanded((v) => !v)}
+          >
+            {expanded ? (
+              <div className="text-sm"><MarkdownRenderer content={content} /></div>
+            ) : (
+              <span className="font-mono text-xs">{preview}</span>
+            )}
+          </div>
+        </div>
+        {content.length > 120 && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="shrink-0 mt-0.5 opacity-50 hover:opacity-80"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--color-ink-muted)' }}
+          >
+            {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          </button>
+        )}
       </div>
-      {content.length > 120 &&
-        (expanded ? <ChevronDown size={14} className="shrink-0" /> : <ChevronRight size={14} className="shrink-0" />)}
     </div>
   )
 }
@@ -938,6 +959,606 @@ function StructuredMessages({
   )
 }
 
+/* ─── Agent trace + messages step-grouped renderer ───────────── */
+
+/* ─── Helpers (duplicated from TrajectoryView to avoid circular deps) ── */
+
+function fmtMs(ms: number | null | undefined): string {
+  if (ms == null) return ''
+  if (ms < 1000) return `${ms.toFixed(0)}ms`
+  return `${(ms / 1000).toFixed(1)}s`
+}
+
+function fmtTokens(n: number | null | undefined): string {
+  if (n == null) return '-'
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
+  return String(n)
+}
+
+interface TraceEventTypeCfg {
+  icon: React.FC<{ size?: number; style?: React.CSSProperties }>
+  color: string
+  bgColor: string
+  borderColor: string
+  labelKey: string
+}
+
+function getTraceEventTypeConfig(type: string): TraceEventTypeCfg {
+  switch (type) {
+    case 'model_generate':
+      return { icon: Sparkles, color: 'var(--bubble-bot-color)', bgColor: 'var(--bubble-bot-bg)', borderColor: 'var(--bubble-bot-border)', labelKey: 'trace.modelGenerate' }
+    case 'tool_result':
+      return { icon: Wrench, color: 'var(--bubble-tool-color)', bgColor: 'var(--bubble-tool-bg)', borderColor: 'var(--bubble-tool-border)', labelKey: 'trace.toolResult' }
+    case 'env_exec':
+      return { icon: Cpu, color: 'var(--text-muted)', bgColor: 'var(--bubble-system-bg)', borderColor: 'var(--bubble-system-border)', labelKey: 'trace.envExec' }
+    case 'error':
+      return { icon: AlertTriangle, color: 'var(--danger)', bgColor: 'var(--danger-bg)', borderColor: 'var(--danger-border, var(--danger))', labelKey: 'trace.error' }
+    case 'submit':
+      return { icon: CheckCircle2, color: 'var(--success, #10b981)', bgColor: 'var(--success-bg, rgba(16,185,129,.1))', borderColor: 'var(--success-border, rgba(16,185,129,.3))', labelKey: 'trace.submit' }
+    default:
+      return { icon: Wrench, color: 'var(--bubble-user-color)', bgColor: 'var(--bubble-user-bg)', borderColor: 'var(--bubble-user-border)', labelKey: 'trace.toolCall' }
+  }
+}
+
+/* ─── Data structures ──────────────────────────────────────── */
+
+interface StepGroup {
+  step: number
+  /** Pre-agent messages (system/user) — only for step -1 */
+  preAgentMessages: ChatMessage[]
+  /** Assistant message for this step */
+  assistant: ChatMessage | null
+  /** Tool message for this step */
+  tool: ChatMessage | null
+  /** Trace events for this step */
+  traceEvents: AgentTraceEvent[]
+  /** Total latency for this step */
+  totalLatencyMs: number | null
+}
+
+function buildStepGroups(
+  messages: ChatMessage[],
+  trace: AgentTrace,
+): StepGroup[] {
+  // Group trace events by step
+  const stepEvents = new Map<number, AgentTraceEvent[]>()
+  for (const ev of trace.events) {
+    if (!stepEvents.has(ev.step)) stepEvents.set(ev.step, [])
+    stepEvents.get(ev.step)!.push(ev)
+  }
+
+  // Split messages into pre-agent (system, user) and agent pairs
+  const preAgent: ChatMessage[] = []
+  const pairs: Array<{ assistant: ChatMessage; tool?: ChatMessage }> = []
+
+  let i = 0
+  for (; i < messages.length; i++) {
+    const msg = messages[i]
+    if (msg.role === 'assistant') break
+    preAgent.push(msg)
+  }
+
+  while (i < messages.length) {
+    const msg = messages[i]
+    if (msg.role === 'assistant') {
+      const pair: { assistant: ChatMessage; tool?: ChatMessage } = { assistant: msg }
+      i++
+      if (i < messages.length && messages[i].role === 'tool') {
+        pair.tool = messages[i]
+        i++
+      }
+      pairs.push(pair)
+    } else {
+      i++
+    }
+  }
+
+  const groups: StepGroup[] = []
+
+  // Pre-agent group (step = -1)
+  if (preAgent.length > 0) {
+    groups.push({
+      step: -1,
+      preAgentMessages: preAgent,
+      assistant: null,
+      tool: null,
+      traceEvents: [],
+      totalLatencyMs: null,
+    })
+  }
+
+  // Agent step groups
+  for (let step = 0; step < pairs.length; step++) {
+    const pair = pairs[step]
+    const events = stepEvents.get(step) ?? []
+    const visibleEvents = events
+
+    let totalLatency: number | null = null
+    for (const e of events) {
+      if (e.latency_ms != null) {
+        totalLatency = (totalLatency ?? 0) + e.latency_ms
+      }
+    }
+
+    groups.push({
+      step,
+      preAgentMessages: [],
+      assistant: pair.assistant,
+      tool: pair.tool ?? null,
+      traceEvents: visibleEvents,
+      totalLatencyMs: totalLatency,
+    })
+  }
+
+  // Remaining steps beyond message pairs
+  const maxStep = Math.max(...Array.from(stepEvents.keys()), -1)
+  for (let step = pairs.length; step <= maxStep; step++) {
+    const events = stepEvents.get(step) ?? []
+    const visibleEvents = events
+    let totalLatency: number | null = null
+    for (const e of events) {
+      if (e.latency_ms != null) totalLatency = (totalLatency ?? 0) + e.latency_ms
+    }
+    groups.push({
+      step,
+      preAgentMessages: [],
+      assistant: null,
+      tool: null,
+      traceEvents: visibleEvents,
+      totalLatencyMs: totalLatency,
+    })
+  }
+
+  return groups
+}
+
+/* ─── StepTimeline (left sidebar) ──────────────────────────── */
+
+/** Single timeline node rendered inline within each step row for alignment. */
+function TimelineNode({
+  step,
+  totalLatencyMs,
+  tokenTotal,
+  isActive,
+  isLast,
+  onClick,
+}: {
+  step: number
+  totalLatencyMs: number | null
+  tokenTotal: string | undefined
+  isActive: boolean
+  isLast: boolean
+  onClick: () => void
+}) {
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <div className="flex flex-col items-center self-stretch">
+      {/* Connector line top */}
+      <div
+        style={{
+          width: 2,
+          height: 12,
+          background: isActive ? 'var(--accent)' : 'var(--color-border-subtle)',
+          opacity: isActive ? 0.6 : 0.3,
+        }}
+      />
+
+      {/* Circle */}
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        className="flex flex-col items-center gap-0.5 shrink-0"
+        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+      >
+        <div
+          className="rounded-full flex items-center justify-center transition-all"
+          style={{
+            width: isActive ? 28 : 22,
+            height: isActive ? 28 : 22,
+            background: isActive
+              ? 'var(--accent)'
+              : hovered
+                ? 'var(--accent-dim)'
+                : 'var(--bg-card2)',
+            border: `2px solid ${isActive ? 'var(--accent)' : hovered ? 'var(--accent)' : 'var(--color-border-subtle)'}`,
+            boxShadow: isActive ? '0 0 10px var(--accent-dim)' : 'none',
+            transition: 'all 0.2s',
+          }}
+        >
+          <span
+            className="font-mono font-bold"
+            style={{
+              fontSize: isActive ? 11 : 10,
+              color: isActive ? '#fff' : 'var(--color-ink-muted)',
+            }}
+          >
+            {step}
+          </span>
+        </div>
+
+        {totalLatencyMs != null && (
+          <span
+            className="font-mono text-[9px] whitespace-nowrap"
+            style={{
+              color: isActive ? 'var(--accent)' : 'var(--color-ink-muted)',
+              opacity: isActive ? 1 : 0.7,
+            }}
+          >
+            {fmtMs(totalLatencyMs)}
+          </span>
+        )}
+        {tokenTotal && (
+          <span
+            className="font-mono text-[8px] whitespace-nowrap"
+            style={{ color: 'var(--color-ink-muted)', opacity: 0.5 }}
+          >
+            {tokenTotal}
+          </span>
+        )}
+      </button>
+
+      {/* Connector line bottom */}
+      {!isLast && (
+        <div
+          style={{
+            width: 2,
+            flex: 1,
+            minHeight: 8,
+            background: isActive ? 'var(--accent)' : 'var(--color-border-subtle)',
+            opacity: isActive ? 0.6 : 0.3,
+            transition: 'background 0.2s',
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+/* ─── StepTracePopover ─────────────────────────────────────── */
+/* (kept for standalone TrajectoryView, but not used in dual-column layout) */
+
+/* ─── TraceEventInline — compact detail line inside StepCard ── */
+
+function TraceEventInline({ event }: { event: AgentTraceEvent }) {
+  const { t } = useLocale()
+  const cfg = getTraceEventTypeConfig(event.type)
+  const Icon = cfg.icon
+  const p = event.payload
+  const stopReason = typeof p.stop_reason === 'string' ? p.stop_reason : ''
+  const payloadName = typeof p.name === 'string' ? p.name : ''
+  const payloadError = p.error != null ? String(p.error) : ''
+  const payloadPreview = typeof p.preview === 'string' ? p.preview : ''
+  const payloadFinalAnswer = p.final_answer != null ? String(p.final_answer) : ''
+
+  return (
+    <div
+      className="flex flex-col gap-1 rounded-xl px-3 py-2"
+      style={{
+        background: cfg.bgColor,
+        border: `1px solid ${cfg.borderColor}`,
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <Icon size={12} style={{ color: cfg.color }} />
+        <span className="font-mono font-semibold text-[11px]" style={{ color: cfg.color }}>
+          {t(cfg.labelKey) === cfg.labelKey ? event.type : t(cfg.labelKey)}
+        </span>
+        {event.latency_ms != null && (
+          <span className="font-mono text-[10px]" style={{ color: 'var(--color-ink-muted)', opacity: 0.7 }}>
+            {fmtMs(event.latency_ms)}
+          </span>
+        )}
+      </div>
+
+      {/* model_generate: token usage + stop_reason */}
+      {event.type === 'model_generate' && (
+        <>
+          {event.token_usage && (
+            <div className="flex items-center gap-3 text-[11px] font-mono" style={{ color: 'var(--color-ink-muted)' }}>
+              <span>{t('trace.input')}: <b style={{ color: 'var(--color-ink)' }}>{fmtTokens(event.token_usage.input)}</b></span>
+              <span style={{ opacity: 0.4 }}>→</span>
+              <span>{t('trace.output')}: <b style={{ color: 'var(--color-ink)' }}>{fmtTokens(event.token_usage.output)}</b></span>
+              <span style={{ opacity: 0.3 }}>|</span>
+              <span>{t('trace.total')}: <b style={{ color: 'var(--color-ink)' }}>{fmtTokens(event.token_usage.total)}</b></span>
+            </div>
+          )}
+          {stopReason && (
+            <div className="text-[11px] font-mono" style={{ color: 'var(--color-ink-muted)' }}>
+              {t('trace.stopReason')}: <span style={{ color: 'var(--color-ink)' }}>{stopReason}</span>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* tool_result: tool name + error + preview */}
+      {event.type === 'tool_result' && (
+        <>
+          {payloadName && (
+            <div className="text-[11px] font-mono" style={{ color: 'var(--color-ink-muted)' }}>
+              {t('trace.toolName')}: <span style={{ color: 'var(--color-ink)' }}>{payloadName}</span>
+            </div>
+          )}
+          {payloadError && (
+            <div className="text-[11px] font-mono" style={{ color: 'var(--danger)' }}>
+              Error: {payloadError}
+            </div>
+          )}
+          {payloadPreview && (
+            <div
+              className="rounded-lg px-2.5 py-1.5 text-[11px] font-mono whitespace-pre-wrap break-all max-h-[80px] overflow-auto"
+              style={{ background: 'var(--bg-deep)', color: 'var(--color-ink-muted)' }}
+            >
+              {payloadPreview.length > 300 ? payloadPreview.slice(0, 300) + '...' : payloadPreview}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* tool_call: function name + arguments */}
+      {event.type === 'tool_call' && (() => {
+        const p = event.payload
+        const funcName = typeof p.name === 'string' ? p.name : ''
+        const callId = typeof p.id === 'string' ? p.id : ''
+        const args = p.arguments
+        return (
+          <>
+            {funcName && (
+              <div className="text-[11px] font-mono" style={{ color: 'var(--color-ink-muted)' }}>
+                {t('trace.toolName')}: <span style={{ color: 'var(--color-ink)' }}>{funcName}</span>
+                {callId && <span style={{ opacity: 0.4, marginLeft: 6 }}>#{callId.length > 8 ? callId.slice(0, 8) : callId}</span>}
+              </div>
+            )}
+            {args != null && (
+              <div
+                className="rounded-lg px-2.5 py-1.5 text-[11px] font-mono whitespace-pre-wrap break-all max-h-[120px] overflow-auto"
+                style={{ background: 'var(--bg-deep)', color: 'var(--color-ink-muted)' }}
+              >
+                {typeof args === 'string' ? args : JSON.stringify(args, null, 2)}
+              </div>
+            )}
+          </>
+        )
+      })()}
+
+      {/* env_exec: command */}
+      {event.type === 'env_exec' && typeof p.command === 'string' && (
+        <div
+          className="rounded-lg px-2.5 py-1.5 text-[11px] font-mono whitespace-pre-wrap break-all"
+          style={{ background: 'var(--bg-deep)', color: 'var(--color-ink-muted)' }}
+        >
+          $ {p.command}
+        </div>
+      )}
+
+      {/* error */}
+      {event.type === 'error' && (
+        <div
+          className="rounded-lg px-2.5 py-1.5 text-[11px] font-mono whitespace-pre-wrap break-all"
+          style={{ background: 'var(--danger-bg)', color: 'var(--danger)' }}
+        >
+          {p.message != null ? String(p.message) : t('trace.error')}
+        </div>
+      )}
+
+      {/* submit: final_answer */}
+      {event.type === 'submit' && payloadFinalAnswer && (
+        <div
+          className="rounded-lg px-2.5 py-1.5 text-[11px] whitespace-pre-wrap break-all max-h-[80px] overflow-auto"
+          style={{ background: 'var(--success-bg, rgba(16,185,129,.1))', color: 'var(--color-ink-muted)' }}
+        >
+          {t('trace.finalAnswer')}: {payloadFinalAnswer.length > 200 ? payloadFinalAnswer.slice(0, 200) + '...' : payloadFinalAnswer}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─── StepCard (right side grouped card) ───────────────────── */
+
+function StepCard({
+  group,
+  highlightId,
+  highlighted,
+  turnCounter,
+  onStepClick,
+}: {
+  group: StepGroup
+  highlightId?: string
+  highlighted: boolean
+  turnCounter: number
+  onStepClick: (step: number) => void
+}) {
+  const { t } = useLocale()
+
+  // Pre-agent messages (system/user) — no card wrapper
+  if (group.step === -1) {
+    return (
+      <>
+        {group.preAgentMessages.map((msg, idx) => {
+          if (msg.role === 'system') return <SystemBanner key={idx} content={contentToText(msg.content)} />
+          return <UserBubble key={idx} content={msg.content} msgId={msg.id} highlightId={highlightId} />
+        })}
+      </>
+    )
+  }
+
+  // Separate trace events by type for ordered rendering
+  const modelGen = group.traceEvents.find(e => e.type === 'model_generate')
+  const toolCalls = group.traceEvents.filter(e => e.type === 'tool_call')
+  const toolResults = group.traceEvents.filter(e => e.type === 'tool_result')
+  const envExecs = group.traceEvents.filter(e => e.type === 'env_exec')
+  const errors = group.traceEvents.filter(e => e.type === 'error')
+  const submits = group.traceEvents.filter(e => e.type === 'submit')
+  const postAssistantEvents = [...toolCalls, ...toolResults, ...envExecs, ...errors]
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{
+        border: `1px solid ${highlighted ? 'var(--accent)' : 'var(--color-border-subtle)'}`,
+        background: highlighted ? 'var(--accent-dim)' : 'var(--bg-card2)',
+        boxShadow: highlighted ? '0 0 16px var(--accent-dim)' : 'none',
+        transition: 'border-color 0.3s, background 0.3s, box-shadow 0.3s',
+      }}
+    >
+      {/* Card header — step badge + compact trace pills */}
+      <div
+        className="flex items-center gap-2 px-3.5 py-2 cursor-pointer select-none"
+        style={{ borderBottom: `1px solid var(--color-border-subtle)` }}
+        onClick={() => onStepClick(group.step)}
+      >
+        <span
+          className="font-mono font-bold text-[11px] px-2 py-0.5 rounded-full"
+          style={{
+            background: highlighted ? 'var(--accent)' : 'var(--bg-card)',
+            color: highlighted ? '#fff' : 'var(--color-ink-muted)',
+            border: `1px solid ${highlighted ? 'var(--accent)' : 'var(--color-border-subtle)'}`,
+          }}
+        >
+          {t('trace.step')} {group.step}
+        </span>
+
+        {group.totalLatencyMs != null && (
+          <span className="font-mono text-[10px]" style={{ color: 'var(--color-ink-muted)', opacity: 0.7 }}>
+            {fmtMs(group.totalLatencyMs)}
+          </span>
+        )}
+
+        {/* Compact trace pills */}
+        {group.traceEvents.map((ev, i) => {
+          const cfg = getTraceEventTypeConfig(ev.type)
+          const Icon = cfg.icon
+          return (
+            <span
+              key={i}
+              className="inline-flex items-center gap-1 text-[9px] font-mono font-medium px-1.5 py-0.5 rounded-full"
+              style={{
+                background: cfg.bgColor,
+                border: `1px solid ${cfg.borderColor}`,
+                color: cfg.color,
+              }}
+            >
+              <Icon size={9} />
+              {t(cfg.labelKey) === cfg.labelKey ? ev.type : t(cfg.labelKey)}
+            </span>
+          )
+        })}
+      </div>
+
+      {/* Card body — trace events + message bubbles interleaved */}
+      <div className="flex flex-col gap-2 p-3">
+        {/* model_generate detail */}
+        {modelGen && <TraceEventInline event={modelGen} />}
+
+        {/* Assistant message */}
+        {group.assistant && (
+          <AssistantBubble
+            content={group.assistant.content}
+            perfMetrics={group.assistant.perf_metrics}
+            turnBadge={t('prediction.turnN').replace('${n}', String(turnCounter))}
+            msgId={group.assistant.id}
+            highlightId={highlightId}
+          />
+        )}
+
+        {/* tool_call / tool_result / env_exec / error details */}
+        {postAssistantEvents.map((ev, i) => (
+          <TraceEventInline key={`post-${i}`} event={ev} />
+        ))}
+
+        {/* Tool message — only show when no tool_result TraceEventInline already covers it */}
+        {group.tool && toolResults.length === 0 && (
+          <ToolResultBubble content={contentToText(group.tool.content)} />
+        )}
+
+        {/* submit detail */}
+        {submits.map((ev, i) => (
+          <TraceEventInline key={`submit-${i}`} event={ev} />
+        ))}
+
+        {/* Step has no messages — show trace events inline */}
+        {!group.assistant && !group.tool && group.traceEvents.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {group.traceEvents.map((ev, i) => (
+              <TraceEventCard key={i} event={ev} highlighted={highlighted} onStepClick={onStepClick} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ─── Dual-column timeline layout ──────────────────────────── */
+
+function DualColumnTimeline({
+  groups,
+  highlightStep,
+  highlightId,
+  onStepClick,
+}: {
+  groups: StepGroup[]
+  highlightStep: number | null
+  highlightId?: string
+  onStepClick: (step: number) => void
+}) {
+  let assistantCounter = 0
+
+  // Separate pre-agent group and agent groups
+  const preGroup = groups.find(g => g.step === -1)
+  const agentGroups = groups.filter(g => g.step >= 0)
+
+  return (
+    <>
+      {/* Pre-agent messages (full width, no timeline) */}
+      {preGroup && (
+        <StepCard group={preGroup} highlightId={highlightId} highlighted={false} turnCounter={0} onStepClick={onStepClick} />
+      )}
+
+      {/* Agent steps: each row = timeline node + step card, guaranteed alignment */}
+      {agentGroups.map((g, idx) => {
+        if (g.assistant) assistantCounter++
+        const isLast = idx === agentGroups.length - 1
+        const isActive = highlightStep === g.step
+
+        // Token info for timeline node
+        const modelGen = g.traceEvents.find(e => e.type === 'model_generate')
+        const tokenTotal = modelGen?.token_usage
+          ? `${fmtTokens(modelGen.token_usage.total)}tok`
+          : undefined
+
+        return (
+          <div key={g.step} className="flex gap-3 items-stretch">
+            {/* Left: timeline node (aligned to card top) */}
+            <TimelineNode
+              step={g.step}
+              totalLatencyMs={g.totalLatencyMs}
+              tokenTotal={tokenTotal}
+              isActive={isActive}
+              isLast={isLast}
+              onClick={() => onStepClick(g.step)}
+            />
+
+            {/* Right: step card */}
+            <div className="flex-1 min-w-0">
+              <StepCard
+                group={g}
+                highlightId={highlightId}
+                highlighted={isActive}
+                turnCounter={assistantCounter}
+                onStepClick={onStepClick}
+              />
+            </div>
+          </div>
+        )
+      })}
+    </>
+  )
+}
+
 /* ─── main export ─────────────────────────────────────────────── */
 
 export default function ChatView({ prediction, threshold = 0.99, highlightMsgId }: Props) {
@@ -955,9 +1576,31 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId 
   const userCount = hasStructured ? messages!.filter((m) => m.role === 'user').length : 0
   const isMultiTurn = userCount > 1
 
+  // Agent trace interleaving
+  const agentTrace = prediction.AgentTrace
+  const hasTrace = !!(agentTrace && agentTrace.events && agentTrace.events.length > 0)
+  const [highlightedStep, setHighlightedStep] = useState<number | null>(null)
+
+  const stepGroups = useMemo(() => {
+    if (!hasTrace || !hasStructured || !messages || !agentTrace) return null
+    return buildStepGroups(messages, agentTrace)
+  }, [hasTrace, hasStructured, messages, agentTrace])
+
+  const handleStepClick = useCallback((step: number) => {
+    setHighlightedStep(prev => prev === step ? null : step)
+  }, [])
+
   return (
     <div className="flex flex-col gap-4 py-2">
-      {hasStructured ? (
+      {hasTrace && stepGroups ? (
+        /* ── Dual-column timeline + step cards rendering ── */
+        <DualColumnTimeline
+          groups={stepGroups}
+          highlightStep={highlightedStep}
+          highlightId={highlightMsgId}
+          onStepClick={handleStepClick}
+        />
+      ) : hasStructured ? (
         /* ── Structured rendering (new-format caches) ── */
         <StructuredMessages messages={messages!} isMultiTurn={isMultiTurn} highlightId={highlightMsgId} />
       ) : (

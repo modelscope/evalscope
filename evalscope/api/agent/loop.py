@@ -12,7 +12,7 @@ it into the synchronous evaluation pipeline through ``AsyncioLoopRunner``.
 import time
 from typing import List, Optional
 
-from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageTool
+from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageTool, ChatMessageUser
 from evalscope.api.model import Model, ModelOutput
 from evalscope.utils.logger import get_logger
 from .environment import AgentEnvironment
@@ -115,6 +115,27 @@ class AgentLoop:
                     )
                 break
 
+            # ---- no tool calls but not done → nudge ----
+            # The model didn't call any tool and didn't submit a final
+            # answer.  Inject a user message reminding it to use tools
+            # or submit, then continue the loop.
+            if not parsed.tool_calls:
+                nudge = ChatMessageUser(
+                    content='No tool was called. Please use an available tool '
+                    'or call the submit tool with your final answer.',
+                )
+                ctx.messages.append(nudge)
+                self.trace.add_event(
+                    step=ctx.step,
+                    type=EventType.TOOL_RESULT,
+                    payload={
+                        'source': 'nudge',
+                        'message': 'no_tool_call_reminder'
+                    },
+                )
+                ctx.step += 1
+                continue
+
             # ---- tool execution ----
             if parsed.tool_calls:
                 for call in parsed.tool_calls:
@@ -128,14 +149,10 @@ class AgentLoop:
                         },
                     )
                     observation, error, duration = await self.tool_executor.execute(call)
-                    ctx.messages.append(
-                        ChatMessageTool(
-                            content=observation,
-                            tool_call_id=call.id,
-                            function=call.function.name,
-                            error=error,
-                        )
-                    )
+                    # Let the strategy decide how to format the observation
+                    # (ChatMessageTool for FC, ChatMessageUser for textual_block).
+                    obs_msg = self.strategy.format_observation(call, observation, error)
+                    ctx.messages.append(obs_msg)
                     self.trace.add_event(
                         step=ctx.step,
                         type=EventType.TOOL_RESULT,
@@ -147,6 +164,18 @@ class AgentLoop:
                             'preview': observation[:500] if isinstance(observation, str) else None,
                         },
                     )
+
+                # Post-execution termination check.  Strategies like mini_swe
+                # detect completion sentinels in the tool observation, which is
+                # only available *after* execution.  FC strategies return False
+                # here because parsed.tool_calls is still non-empty.
+                if self.strategy.is_done(parsed, ctx):
+                    self.trace.add_event(
+                        step=ctx.step,
+                        type=EventType.SUBMIT,
+                        payload={'source': 'post_execution_check'},
+                    )
+                    break
 
             ctx.step += 1
 

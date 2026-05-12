@@ -488,14 +488,15 @@ class TestAgentLoopWithEnvironment:
         env = LocalAgentEnvironment()
         handlers = {'bash': run_bash}
 
-        # Model: first call returns a bash tool_call; second call returns final answer.
+        # Model: first call returns a bash tool_call; second call returns submit.
         bash_call = _tool_call('bash', {'command': 'echo agent_output'}, call_id='tc-bash')
         first_output = _make_output(
             content='',
             tool_calls=[bash_call],
             stop_reason='tool_calls',
         )
-        second_output = _make_output(content='The output was: agent_output')
+        submit_call = _tool_call('submit', {'answer': 'agent_output'}, call_id='tc-submit')
+        second_output = _make_output(content='', tool_calls=[submit_call])
 
         model = MagicMock()
         model.generate.side_effect = [first_output, second_output]

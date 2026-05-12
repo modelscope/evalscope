@@ -1,9 +1,16 @@
-"""Function-calling agent strategy.
+"""ReAct agent strategy (function-calling mode).
 
-Relies on the model's native function-calling output (``ToolCall`` entries
-in ``ChatMessageAssistant.tool_calls``).  No custom prompt engineering or
-text parsing is needed - the loop terminates as soon as the model returns
-an assistant message without any tool calls, or calls the ``submit`` tool.
+Uses the model's native function-calling API but encourages step-by-step
+reasoning through a specialised system prompt.  The loop terminates when
+the model either (a) calls the ``submit`` tool with its final answer or
+(b) replies without any tool calls.
+
+Compared to the baseline ``FunctionCallingStrategy``, ReAct adds:
+
+* A system prompt template that enforces THOUGHT → tool-call →
+  OBSERVATION cycles.
+* Automatic injection of the ``submit`` tool so the model can
+  explicitly signal completion.
 """
 
 from typing import List, Optional
@@ -16,24 +23,62 @@ from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_strategy
 from evalscope.api.tool import ToolCall, ToolCallError, ToolInfo
 
+# ---------------------------------------------------------------------------
+# Prompt helpers
+# ---------------------------------------------------------------------------
 
-@register_strategy('function_calling')
-class FunctionCallingStrategy(AgentStrategy):
-    """Default strategy: delegate to the model's native tool-calling API.
 
-    Supports the ``submit`` tool: when the model calls ``submit(answer=...)``
-    the call is intercepted in :meth:`parse_output` and converted to a
-    ``ParsedAction(final_answer=answer)`` so the loop terminates
-    immediately without executing the tool.
-    """
+def _format_tools(tools: List[ToolInfo]) -> str:
+    """Render a compact tool summary for the system prompt."""
+    if not tools:
+        return '(no tools available)'
+    lines: list[str] = []
+    for t in tools:
+        arg_names = ', '.join(t.parameters.properties.keys()) if t.parameters else ''
+        lines.append(f'- {t.name}({arg_names}): {t.description}')
+    return '\n'.join(lines)
 
-    name: str = 'function_calling'
+
+REACT_SYSTEM_PROMPT_TEMPLATE = """\
+You are a reasoning-and-acting agent.  Solve the task step by step.
+
+You have access to the following tools:
+{tool_descriptions}
+
+You MUST follow this format for every response:
+
+1. **Think** – Briefly explain your reasoning about what to do next.
+2. **Act**  – Call the appropriate tool (or the ``submit`` tool when you
+   have the final answer).
+
+Rules:
+- Always explain your reasoning BEFORE making a tool call.
+- After receiving an observation, reflect on it before taking the next step.
+- When you are confident in the final answer, call the ``submit`` tool with
+  your answer.  This immediately completes the task.
+- If you are unsure, keep exploring with tool calls.
+- Do NOT make up information.  Only use observations from tool calls.
+"""
+
+
+@register_strategy('react')
+class ReactStrategy:
+    """ReAct strategy that uses the model's native function-calling API with
+    a reasoning-encouraging system prompt and ``submit`` tool support."""
+
+    name: str = 'react'
 
     def __init__(self, *, system_prompt: Optional[str] = None, **_: object) -> None:
         self._system_prompt = system_prompt
 
+    # ------------------------------------------------------------------
+    # AgentStrategy implementation
+    # ------------------------------------------------------------------
+
     def build_system_prompt(self, ctx: AgentContext) -> Optional[str]:
-        return self._system_prompt
+        if self._system_prompt:
+            return self._system_prompt
+        return REACT_SYSTEM_PROMPT_TEMPLATE.format(tool_descriptions=_format_tools(ctx.tools), )
 
     def prepare_messages(self, ctx: AgentContext) -> List[ChatMessage]:
         return ctx.messages
@@ -51,13 +96,14 @@ class FunctionCallingStrategy(AgentStrategy):
         if tool_calls:
             return ParsedAction(tool_calls=tool_calls, raw_text=message.text)
 
-        # No tool calls – the model didn't use the submit tool.
-        # Do NOT treat raw text as a final answer; the loop will inject
-        # a nudge message so the model can try again.
+        # No tool calls at all – the model didn't follow the ReAct format.
+        # Do NOT treat this as a final answer; the loop will inject a nudge
+        # message so the model gets another chance to call submit.
         return ParsedAction(raw_text=message.text)
 
     def is_done(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
         # Only done when submit was called (final_answer is set).
+        # No-tool-call text is NOT a valid termination signal.
         return parsed.final_answer is not None
 
     def tool_schema_mode(self) -> ToolSchemaMode:
@@ -77,7 +123,7 @@ class FunctionCallingStrategy(AgentStrategy):
         observation: str,
         error: Optional[ToolCallError],
     ) -> ChatMessage:
-        """Format tool observations as :class:`ChatMessageTool` (FC default)."""
+        # FC mode → standard ChatMessageTool.
         return ChatMessageTool(
             content=observation,
             tool_call_id=call.id,
@@ -104,4 +150,4 @@ class FunctionCallingStrategy(AgentStrategy):
         return str(result.final_output.message.content or '')
 
 
-__all__ = ['FunctionCallingStrategy']
+__all__ = ['ReactStrategy']

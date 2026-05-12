@@ -125,6 +125,37 @@ export interface ChatMessage {
   perf_metrics?: SamplePerfMetrics | null
 }
 
+// ------------------------------------------------------------------ //
+// Agent Trace types (mirrors Python api/agent/trace.py)               //
+// ------------------------------------------------------------------ //
+
+/** Canonical event kinds emitted by the AgentLoop. */
+export type AgentTraceEventType =
+  | 'model_generate'
+  | 'tool_call'
+  | 'tool_result'
+  | 'env_exec'
+  | 'error'
+  | 'submit'
+
+/** Single structured event in an agent trajectory. */
+export interface AgentTraceEvent {
+  step: number
+  timestamp: number
+  type: AgentTraceEventType
+  latency_ms?: number | null
+  token_usage?: { input?: number; output?: number; total?: number } | null
+  payload: Record<string, unknown>
+}
+
+/** Complete agent trajectory attached to a sample. */
+export interface AgentTrace {
+  strategy?: string | null
+  environment?: string | null
+  max_steps: number
+  events: AgentTraceEvent[]
+}
+
 export interface PredictionRow {
   Index: string
   Input: string
@@ -137,6 +168,8 @@ export interface PredictionRow {
   PerfMetrics?: SamplePerfMetrics | null
   /** Structured message list; present for all new-format caches. */
   Messages?: ChatMessage[] | null
+  /** Agent trajectory; only populated for agent-mode runs. */
+  AgentTrace?: AgentTrace | null
 }
 
 export interface PredictionsResponse {

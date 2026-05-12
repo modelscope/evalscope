@@ -285,6 +285,7 @@ def _build_prediction_row(
         'NScore': normalize_score(score.main_value),
         'PerfMetrics': fallback_perf,
         'Messages': messages_data,
+        'AgentTrace': review_result.agent_trace.model_dump(exclude_none=True) if review_result.agent_trace else None,
     }
 
 

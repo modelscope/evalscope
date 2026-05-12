@@ -23,6 +23,7 @@ from evalscope.api.evaluator.cache import ReviewResult
 from evalscope.api.messages import ChatMessageAssistant, ChatMessageUser
 from evalscope.api.metric import SampleScore, Score
 from evalscope.api.model.model_output import ChatCompletionChoice, ModelOutput
+from evalscope.api.tool import ToolCall, ToolFunction
 from evalscope.config import TaskConfig
 
 
@@ -32,6 +33,17 @@ def _mock_model_generate_final(content: str = 'ok'):
     model.generate.return_value = ModelOutput(
         model='mock',
         choices=[ChatCompletionChoice(message=ChatMessageAssistant(content=content))],
+    )
+    return model
+
+
+def _mock_model_generate_submit(answer: str = 'ok'):
+    """Return a MagicMock model whose .generate() yields a submit tool call."""
+    submit_call = ToolCall(id='sc1', function=ToolFunction(name='submit', arguments={'answer': answer}))
+    model = MagicMock()
+    model.generate.return_value = ModelOutput(
+        model='mock',
+        choices=[ChatCompletionChoice(message=ChatMessageAssistant(content='', tool_calls=[submit_call]))],
     )
     return model
 
@@ -152,12 +164,13 @@ class TestDefaultDataAdapterAgentBranch(unittest.TestCase):
     def test_with_agent_config_routes_through_agent_loop(self):
         cfg = TaskConfig(model='dummy', agent_config={'strategy': 'function_calling', 'max_steps': 3})
         adapter = self._make_adapter(cfg)
-        model = _mock_model_generate_final('agent_out')
+        model = _mock_model_generate_submit('agent_out')
         sample = Sample(input='hi')
 
         out = adapter._on_inference(model, sample)
 
-        model.generate.assert_called_once()  # FC 策略无 tool_calls → 单轮终止
+        model.generate.assert_called_once()  # FC 策略 submit → 单轮终止
+        # extract_final_answer 优先从 submit tool call 提取 answer
         self.assertEqual(out.choices[0].message.content, 'agent_out')
         self.assertIsNotNone(out.metadata)
         self.assertIn('__agent_messages__', out.metadata)
