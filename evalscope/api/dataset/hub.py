@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import inspect
 import os
 from dataclasses import dataclass
 from typing import Optional
@@ -85,15 +86,17 @@ def load_dataset_from_hub(
             logger.info(f'Removing dataset_infos.json file at {dataset_infos_path} to avoid datasets errors.')
             os.remove(dataset_infos_path)
 
-        return datasets.load_dataset(
+        load_kwargs = dict(
             path=data_id_or_path,
             name=subset if subset != 'default' else None,
             split=split,
             revision=version,
-            trust_remote_code=trust_remote,
             download_mode=hf_download_mode,
             **kwargs,
         )
+        if 'trust_remote_code' in inspect.signature(datasets.load_dataset).parameters:
+            load_kwargs['trust_remote_code'] = trust_remote
+        return datasets.load_dataset(**load_kwargs)
 
     raise ValueError(f'Unsupported dataset hub: {data_source}')
 

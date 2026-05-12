@@ -1,0 +1,89 @@
+{
+  "meta": {
+    "pretty_name": "Video-MME-v2",
+    "dataset_id": "MME-Benchmarks/Video-MME-v2",
+    "paper_url": "https://arxiv.org/abs/2604.05015",
+    "tags": [
+      "MultiModal",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "all"
+    ],
+    "description": "\n## Overview\n\nVideo-MME-v2 is a public comprehensive video understanding benchmark. It contains 800 videos,\n3,200 multiple-choice QA instances, and word-level subtitles with timestamps. The native adapter\nuses the shared `DatasetHub` abstraction for both annotation loading and optional media archive\ndownloads, so it exercises the same reusable video benchmark path as MVBench.\n\n## Task Description\n\n- **Task Type**: Video multiple-choice question answering\n- **Input**: Video URL or archived MP4 + question + answer choices\n- **Output**: Single correct answer letter\n- **Subsets**: `all`, `level_1`, `level_2`, `level_3`, `logic`, `relevance`\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **Accuracy**\n- The default video source is the public `url` field for lightweight smoke tests\n- Set `extra_params.video_source` to `archive` to download and use the official MP4 archives\n- Set `extra_params.use_subtitles` to `true` to include word-level subtitles in the prompt\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "dataset_id": "MME-Benchmarks/Video-MME-v2",
+      "dataset_hub": "huggingface",
+      "dataset_revision": "",
+      "video_source": "url",
+      "use_subtitles": false,
+      "subtitle_word_limit": 512
+    },
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 3200,
+    "subset_stats": [
+      {
+        "name": "all",
+        "sample_count": 3200
+      },
+      {
+        "name": "level_1",
+        "sample_count": 686
+      },
+      {
+        "name": "level_2",
+        "sample_count": 834
+      },
+      {
+        "name": "level_3",
+        "sample_count": 837
+      },
+      {
+        "name": "logic",
+        "sample_count": 1124
+      },
+      {
+        "name": "relevance",
+        "sample_count": 2076
+      }
+    ],
+    "computed_at": "2026-05-12T11:49:48Z"
+  },
+  "sample_example": {
+    "subset": "all",
+    "record": {
+      "video_id": "001",
+      "url": "https://www.youtube.com/watch?v=AYSYelOQtQI",
+      "group_type": "logic",
+      "group_structure": "[1,2,3,4]",
+      "question_id": "001-1",
+      "question": "What is the ethnicity of the protagonist's mother?",
+      "options": "A. Malaysian.\nB. British.\nC. Singaporean.\nD. German.\nE. Canadian.\nF. Chinese.\nG. American.\nH. Cannot be determined.",
+      "answer": "F",
+      "level": null,
+      "second_head": null,
+      "third_head": null
+    }
+  },
+  "readme": {
+    "en": "# Video-MME-v2\n\n## Overview\n\nVideo-MME-v2 is a public comprehensive video understanding benchmark for multimodal models. It contains 800 videos, 3,200 multiple-choice QA instances, and word-level subtitle files with timestamps.\n\nThis native adapter is intentionally built on the same reusable video benchmark path as MVBench: annotations are loaded through `DatasetHub`, optional media archives are resolved through the same hub abstraction, and samples use `ContentVideo` plus the OpenAI-compatible `video_url` path.\n\n## Task Description\n\n- **Task Type**: Video Multiple-Choice Question Answering\n- **Input**: Video URL or official archived MP4 + question + answer choices\n- **Output**: Single answer letter\n- **Default Subset**: `all`\n- **Full Benchmark**: 3,200 QA instances over 800 videos\n\n## Key Features\n\n- Public video benchmark with real video inputs\n- Reuses `VisionLanguageAdapter`, `MultiChoiceAdapter`, `DatasetHub`, and `ContentVideo`\n- Supports lightweight public-URL mode for small smoke tests\n- Supports official MP4 archive mode through `extra_params.video_source = \"archive\"`\n- Can include word-level subtitles in the prompt with `extra_params.use_subtitles = true`\n- Supports subsets: `all`, `level_1`, `level_2`, `level_3`, `logic`, `relevance`\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Primary metric: **Accuracy**\n- The public HF dataset stores official videos in 40 large zip archives; URL mode avoids downloading multi-GB archives for small tests\n- Archive mode is more reproducible but can download several GB even for one sample\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `videomme_v2` |\n| **Dataset ID** | [MME-Benchmarks/Video-MME-v2](https://huggingface.co/datasets/MME-Benchmarks/Video-MME-v2) |\n| **Paper** | [Video-MME-v2](https://arxiv.org/abs/2604.05015) |\n| **Tags** | `MCQ`, `MultiModal` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,200 |\n| Videos | 800 |\n| Questions per Video | 4 |\n\n## Sample Example\n\n```json\n{\n  \"video_id\": \"001\",\n  \"url\": \"https://www.youtube.com/watch?v=AYSYelOQtQI\",\n  \"question_id\": \"001-1\",\n  \"question\": \"What is the ethnicity of the protagonist's mother?\",\n  \"options\": \"A. Malaysian.\\nB. British.\\nC. Singaporean.\\nD. German.\\nE. Canadian.\\nF. Chinese.\\nG. American.\\nH. Cannot be determined.\",\n  \"answer\": \"F\"\n}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets videomme_v2 \\\n    --dataset-args '{\"videomme_v2\": {\"subset_list\": [\"all\"], \"extra_params\": {\"dataset_hub\": \"huggingface\", \"video_source\": \"url\", \"use_subtitles\": true, \"subtitle_word_limit\": 512}}}' \\\n    --limit 2\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['videomme_v2'],\n    dataset_args={\n        'videomme_v2': {\n            'subset_list': ['all'],\n            'extra_params': {\n                'dataset_hub': 'huggingface',\n                'video_source': 'url',\n                'use_subtitles': True,\n                'subtitle_word_limit': 512,\n            },\n        }\n    },\n    limit=2,\n)\n\nrun_task(task_cfg=task_cfg)\n```\n",
+    "zh": "# Video-MME-v2\n\n## 概述\n\nVideo-MME-v2 是一个公开视频理解评测集，用于评估多模态模型的综合视频理解能力。它包含 800 个视频、3,200 条多选问答样本，以及带时间戳的词级字幕文件。\n\n这个原生适配器刻意复用了与 MVBench 相同的视频 benchmark 路径：通过 `DatasetHub` 加载标注，通过同一个 hub 抽象解析可选媒体归档，并使用 `ContentVideo` 与 OpenAI 兼容的 `video_url` 内容路径构造样本。\n\n## 任务描述\n\n- **任务类型**：视频多选问答\n- **输入**：公开视频 URL 或官方归档 MP4 + 问题 + 候选答案\n- **输出**：单个答案字母\n- **默认子集**：`all`\n- **完整评测**：800 个视频上的 3,200 条问答样本\n\n## 主要特性\n\n- 使用公开评测集中的真实视频输入\n- 复用 `VisionLanguageAdapter`、`MultiChoiceAdapter`、`DatasetHub` 和 `ContentVideo`\n- 支持轻量的公开视频 URL 模式，便于小批量 smoke test\n- 通过 `extra_params.video_source = \"archive\"` 支持官方 MP4 归档模式\n- 可通过 `extra_params.use_subtitles = true` 将词级字幕加入 prompt\n- 支持子集：`all`、`level_1`、`level_2`、`level_3`、`logic`、`relevance`\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 主要指标：**准确率（Accuracy）**\n- 公开 HF 数据集将官方视频存放在 40 个大型 zip 归档中；URL 模式可避免小批量测试时下载多 GB 视频包\n- 归档模式更利于复现，但即使只评测一个样本也可能下载数 GB\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `videomme_v2` |\n| **数据集ID** | [MME-Benchmarks/Video-MME-v2](https://huggingface.co/datasets/MME-Benchmarks/Video-MME-v2) |\n| **论文** | [Video-MME-v2](https://arxiv.org/abs/2604.05015) |\n| **标签** | `MCQ`, `MultiModal` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估数据划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,200 |\n| 视频数量 | 800 |\n| 每个视频的问题数 | 4 |\n\n## 样例示例\n\n```json\n{\n  \"video_id\": \"001\",\n  \"url\": \"https://www.youtube.com/watch?v=AYSYelOQtQI\",\n  \"question_id\": \"001-1\",\n  \"question\": \"What is the ethnicity of the protagonist's mother?\",\n  \"options\": \"A. Malaysian.\\nB. British.\\nC. Singaporean.\\nD. German.\\nE. Canadian.\\nF. Chinese.\\nG. American.\\nH. Cannot be determined.\",\n  \"answer\": \"F\"\n}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets videomme_v2 \\\n    --dataset-args '{\"videomme_v2\": {\"subset_list\": [\"all\"], \"extra_params\": {\"dataset_hub\": \"huggingface\", \"video_source\": \"url\", \"use_subtitles\": true, \"subtitle_word_limit\": 512}}}' \\\n    --limit 2\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['videomme_v2'],\n    dataset_args={\n        'videomme_v2': {\n            'subset_list': ['all'],\n            'extra_params': {\n                'dataset_hub': 'huggingface',\n                'video_source': 'url',\n                'use_subtitles': True,\n                'subtitle_word_limit': 512,\n            },\n        }\n    },\n    limit=2,\n)\n\nrun_task(task_cfg=task_cfg)\n```\n",
+    "content_hash": "4cdfb06edf2957bbb6799568fc65869d",
+    "needs_translation": false
+  },
+  "updated_at": "2026-05-12T11:49:48Z",
+  "translation_updated_at": "2026-05-12T11:49:48Z"
+}
