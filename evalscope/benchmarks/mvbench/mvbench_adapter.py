@@ -4,6 +4,7 @@ import copy
 import os
 import random
 import zipfile
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
@@ -17,53 +18,37 @@ from evalscope.utils.url_utils import guess_video_format
 
 logger = get_logger()
 
-SUBSET_LIST = [
-    'action_antonym',
-    'action_count',
-    'action_localization',
-    'action_prediction',
-    'action_sequence',
-    'character_order',
-    'counterfactual_inference',
-    'egocentric_navigation',
-    'episodic_reasoning',
-    'fine_grained_action',
-    'fine_grained_pose',
-    'moving_attribute',
-    'moving_count',
-    'moving_direction',
-    'object_existence',
-    'object_interaction',
-    'object_shuffle',
-    'scene_transition',
-    'state_change',
-    'unexpected_action',
-]
 
-DEFAULT_SUBSET_LIST = ['action_antonym']
+@dataclass(frozen=True)
+class MVBenchSubsetSpec:
+    archive: str
 
-SUBSET_ARCHIVES = {
-    'action_antonym': 'ssv2_video.zip',
-    'action_count': 'perception.zip',
-    'action_localization': 'sta.zip',
-    'action_prediction': 'star.zip',
-    'action_sequence': 'star.zip',
-    'character_order': 'perception.zip',
-    'counterfactual_inference': 'clevrer.zip',
-    'egocentric_navigation': 'vlnqa.zip',
-    'episodic_reasoning': 'tvqa.zip',
-    'fine_grained_action': 'Moments_in_Time_Raw.zip',
-    'fine_grained_pose': 'nturgbd.zip',
-    'moving_attribute': 'clevrer.zip',
-    'moving_count': 'clevrer.zip',
-    'moving_direction': 'clevrer.zip',
-    'object_existence': 'clevrer.zip',
-    'object_interaction': 'star.zip',
-    'object_shuffle': 'perception.zip',
-    'scene_transition': 'scene_qa.zip',
-    'state_change': 'perception.zip',
-    'unexpected_action': 'FunQA_test.zip',
+
+SUBSET_SPECS = {
+    'action_antonym': MVBenchSubsetSpec(archive='ssv2_video.zip'),
+    'action_count': MVBenchSubsetSpec(archive='perception.zip'),
+    'action_localization': MVBenchSubsetSpec(archive='sta.zip'),
+    'action_prediction': MVBenchSubsetSpec(archive='star.zip'),
+    'action_sequence': MVBenchSubsetSpec(archive='star.zip'),
+    'character_order': MVBenchSubsetSpec(archive='perception.zip'),
+    'counterfactual_inference': MVBenchSubsetSpec(archive='clevrer.zip'),
+    'egocentric_navigation': MVBenchSubsetSpec(archive='vlnqa.zip'),
+    'episodic_reasoning': MVBenchSubsetSpec(archive='tvqa.zip'),
+    'fine_grained_action': MVBenchSubsetSpec(archive='Moments_in_Time_Raw.zip'),
+    'fine_grained_pose': MVBenchSubsetSpec(archive='nturgbd.zip'),
+    'moving_attribute': MVBenchSubsetSpec(archive='clevrer.zip'),
+    'moving_count': MVBenchSubsetSpec(archive='clevrer.zip'),
+    'moving_direction': MVBenchSubsetSpec(archive='clevrer.zip'),
+    'object_existence': MVBenchSubsetSpec(archive='clevrer.zip'),
+    'object_interaction': MVBenchSubsetSpec(archive='star.zip'),
+    'object_shuffle': MVBenchSubsetSpec(archive='perception.zip'),
+    'scene_transition': MVBenchSubsetSpec(archive='scene_qa.zip'),
+    'state_change': MVBenchSubsetSpec(archive='perception.zip'),
+    'unexpected_action': MVBenchSubsetSpec(archive='FunQA_test.zip'),
 }
+
+SUBSET_LIST = list(SUBSET_SPECS)
+DEFAULT_SUBSET_LIST = ['action_antonym']
 
 
 @register_benchmark(
@@ -180,8 +165,8 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         )
 
     def _ensure_video_file(self, subset: str, video_name: str) -> str:
-        archive_name = SUBSET_ARCHIVES[subset]
-        output_path = os.path.join(self.video_cache_dir, subset, video_name)
+        archive_name = SUBSET_SPECS[subset].archive
+        output_path = self._cache_output_path(subset, video_name)
         if os.path.exists(output_path) and not self.force_redownload:
             return output_path
 
@@ -193,6 +178,13 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         with zipfile.ZipFile(archive_path) as zip_file:
             with zip_file.open(member_name) as source, open(output_path, 'wb') as target:
                 target.write(source.read())
+        return output_path
+
+    def _cache_output_path(self, subset: str, video_name: str) -> str:
+        subset_dir = os.path.abspath(os.path.join(self.video_cache_dir, subset))
+        output_path = os.path.abspath(os.path.join(subset_dir, video_name))
+        if os.path.commonpath([subset_dir, output_path]) != subset_dir:
+            raise ValueError(f'Invalid MVBench video path: {video_name}')
         return output_path
 
     @staticmethod

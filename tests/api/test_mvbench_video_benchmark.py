@@ -1,5 +1,6 @@
 import os
 import unittest
+from unittest import mock
 
 import evalscope.benchmarks  # noqa: F401
 from evalscope.api.messages import ContentVideo
@@ -11,6 +12,58 @@ from evalscope.models.utils.openai import openai_chat_messages
 
 class TestMVBenchVideoBenchmark(unittest.TestCase):
 
+    def test_loads_mvbench_video_sample_without_network(self):
+        task_cfg = TaskConfig(
+            model='mockllm',
+            eval_type=EvalType.MOCK_LLM,
+            datasets=['mvbench'],
+            dataset_args={'mvbench': {'subset_list': ['action_antonym']}},
+            limit=1,
+        )
+
+        adapter = get_benchmark('mvbench', task_cfg)
+        records = [{
+            'video': '166583.mp4',
+            'question': 'What is the action performed by the person in the video?',
+            'candidates': ['Not sure', 'Scattering something down', 'Piling something up'],
+            'answer': 'Piling something up',
+        }]
+        with mock.patch.object(adapter, '_load_subset_records', return_value=records), \
+                mock.patch.object(adapter, '_ensure_video_file',
+                                  return_value='custom_eval/multimodal/videos/sample.mp4') as ensure_video_file:
+            dataset = adapter.load_dataset()
+        ensure_video_file.assert_called_once_with('action_antonym', '166583.mp4')
+        sample = dataset['action_antonym'][0]
+
+        video_parts = [
+            part for message in sample.input for part in message.content if isinstance(part, ContentVideo)
+        ]
+        self.assertEqual(len(video_parts), 1)
+        self.assertTrue(os.path.exists(video_parts[0].video))
+        self.assertEqual(video_parts[0].format, 'mp4')
+        self.assertIn(sample.target, ['A', 'B', 'C'])
+
+        request_messages = openai_chat_messages(sample.input)
+        video_request_parts = [part for part in request_messages[0]['content'] if part['type'] == 'video_url']
+        self.assertEqual(len(video_request_parts), 1)
+        self.assertTrue(video_request_parts[0]['video_url']['url'].startswith('data:video/mp4;base64,'))
+
+    def test_rejects_video_cache_path_traversal(self):
+        task_cfg = TaskConfig(
+            model='mockllm',
+            eval_type=EvalType.MOCK_LLM,
+            datasets=['mvbench'],
+            dataset_args={'mvbench': {'subset_list': ['action_antonym']}},
+        )
+        adapter = get_benchmark('mvbench', task_cfg)
+
+        with self.assertRaisesRegex(ValueError, 'Invalid MVBench video path'):
+            adapter._cache_output_path('action_antonym', '../escape.mp4')
+
+    @unittest.skipUnless(
+        os.getenv('EVALSCOPE_RUN_REMOTE_DATA_TESTS') == '1',
+        'Set EVALSCOPE_RUN_REMOTE_DATA_TESTS=1 to run public dataset download tests.',
+    )
     def test_loads_public_mvbench_video_sample(self):
         task_cfg = TaskConfig(
             model='mockllm',
@@ -31,8 +84,3 @@ class TestMVBenchVideoBenchmark(unittest.TestCase):
         self.assertTrue(os.path.exists(video_parts[0].video))
         self.assertEqual(video_parts[0].format, 'mp4')
         self.assertIn(sample.target, ['A', 'B', 'C'])
-
-        request_messages = openai_chat_messages(sample.input)
-        video_request_parts = [part for part in request_messages[0]['content'] if part['type'] == 'video_url']
-        self.assertEqual(len(video_request_parts), 1)
-        self.assertTrue(video_request_parts[0]['video_url']['url'].startswith('data:video/mp4;base64,'))

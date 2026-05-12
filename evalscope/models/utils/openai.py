@@ -57,7 +57,14 @@ from evalscope.api.model import (
     as_stop_reason,
 )
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, parse_tool_call
-from evalscope.utils.url_utils import data_uri_to_base64, file_as_data_uri, guess_video_format, is_http_url
+from evalscope.utils.url_utils import (
+    data_uri_to_base64,
+    file_as_data_uri,
+    guess_video_format,
+    is_data_uri,
+    is_http_url,
+    video_as_data_uri,
+)
 
 BASE_64_DATA_REMOVED = '<base64-data-removed>'
 
@@ -113,8 +120,8 @@ def openai_chat_completion_part(content: Content) -> Union[ChatCompletionContent
         )
     elif content.type == 'video':
         video_url = content.video
-        if not is_http_url(video_url) and not video_url.startswith('data:'):
-            video_url = file_as_data_uri(video_url)
+        if not is_http_url(video_url) and not is_data_uri(video_url):
+            video_url = video_as_data_uri(video_url, content.format)
         return {'type': 'video_url', 'video_url': {'url': video_url}}
     else:
         raise RuntimeError(f'Content type {content.type} is not currently supported by OpenAI chat models.')

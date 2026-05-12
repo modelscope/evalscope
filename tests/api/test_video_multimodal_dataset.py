@@ -1,7 +1,9 @@
+import os
+import tempfile
 import unittest
 
 import evalscope.benchmarks  # noqa: F401
-from evalscope.api.messages import ContentVideo
+from evalscope.api.messages import ChatMessageUser, ContentVideo
 from evalscope.api.registry import get_benchmark
 from evalscope.config import TaskConfig
 from evalscope.constants import EvalType
@@ -65,3 +67,16 @@ class TestVideoMultimodalDataset(unittest.TestCase):
         self.assertEqual(video_parts[0].format, 'mp4')
         self.assertEqual(sample.choices, ['Image', 'Audio', 'Video', 'Text'])
         self.assertEqual(sample.target, 'C')
+
+    def test_video_format_hint_is_used_for_extensionless_local_file(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            video_path = os.path.join(tmp_dir, 'sample')
+            with open('custom_eval/multimodal/videos/sample.mp4', 'rb') as source, open(video_path, 'wb') as target:
+                target.write(source.read())
+
+            messages = [ChatMessageUser(content=[ContentVideo(video=video_path, format='mp4')])]
+            request_messages = openai_chat_messages(messages)
+
+        video_request_parts = [part for part in request_messages[0]['content'] if part['type'] == 'video_url']
+        self.assertEqual(len(video_request_parts), 1)
+        self.assertTrue(video_request_parts[0]['video_url']['url'].startswith('data:video/mp4;base64,'))
