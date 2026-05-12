@@ -6,6 +6,8 @@
 |------------|----------|----------|
 | `a_okvqa` | [A-OKVQA](../../benchmarks/a_okvqa.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `ai2d` | [AI2D](../../benchmarks/ai2d.md) | `Knowledge`, `MultiModal`, `QA` |
+| `air_bench_chat` | [AIR-Bench-Chat](../../benchmarks/air_bench.md) | `Audio`, `QA`, `InstructionFollowing` |
+| `air_bench_foundation` | [AIR-Bench-Foundation](../../benchmarks/air_bench.md) | `Audio`, `MCQ`, `Knowledge` |
 | `blink` | [BLINK](../../benchmarks/blink.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `cc_bench` | [CCBench](../../benchmarks/cc_bench.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](../../benchmarks/chartqa.md) | `Knowledge`, `MultiModal`, `QA` |
@@ -50,6 +52,7 @@
 
 ../../benchmarks/a_okvqa.md
 ../../benchmarks/ai2d.md
+../../benchmarks/air_bench.md
 ../../benchmarks/blink.md
 ../../benchmarks/cc_bench.md
 ../../benchmarks/chartqa.md

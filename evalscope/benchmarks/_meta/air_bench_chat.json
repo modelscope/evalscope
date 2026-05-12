@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "pretty_name": "AIR-Bench-Chat",
+    "dataset_id": "qyang1021/AIR-Bench-Dataset",
+    "paper_url": "https://aclanthology.org/2024.acl-long.109/",
+    "tags": [
+      "Audio",
+      "QA",
+      "InstructionFollowing"
+    ],
+    "metrics": [
+      "gpt_score",
+      "win_rate"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "speech_QA",
+      "speech_dialogue_QA",
+      "sound_QA",
+      "sound_generation_QA",
+      "music_QA",
+      "music_generation_analysis_QA",
+      "speech_and_sound_QA",
+      "speech_and_music_QA"
+    ],
+    "description": "\n## Overview\n\nAIR-Bench Chat is the generative half of [AIR-Bench](https://arxiv.org/abs/2402.07729) (ACL 2024). It contains roughly 2k open-ended audio QA pairs covering speech, sound, music and mixed-audio scenes; responses are graded by a GPT-4 judge against a reference answer.\n\n## Task Description\n\n- **Task Type**: Open-ended audio question answering.\n- **Input**: An audio clip plus a free-form question.\n- **Output**: A textual answer evaluated against the reference response.\n\n## Evaluation Protocol\n\n- The judge LLM (default: GPT-4) receives the question, the textual audio description (`meta_info` from the dataset), the reference answer (`answer_gt`), and the model's response. It outputs a single line with two integer scores in `[1, 10]`.\n- To remove position bias, every sample is judged twice with the order of reference and prediction swapped, then averaged. This mirrors `cal_score.py` in the official repository.\n- Reported metric `gpt_score` is the model's mean judge score; `win_rate` records how often the model strictly beats the reference.\n- Categories are aggregated as `speech`, `sound`, `music`, `speech_and_sound`, `speech_and_music`. The paper's \"Mixed audio\" column equals `mean(speech_and_sound, speech_and_music)`.\n\n## Implementation Notes\n\n- Audio is loaded directly from the official Hugging Face dataset (`qyang1021/AIR-Bench-Dataset`).\n- The judge model is selected via `--judge-model-args`; ensure the model id supports long contexts (`meta_info` may exceed 4k tokens for dialogue tasks).\n- Set `extra_params={'tasks': [...]}` to evaluate only specific Chat task names — useful for partial runs.\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "tasks": {
+        "type": "list",
+        "description": "Optional list of Chat task names to evaluate (subset of ['music_QA', 'music_generation_analysis_QA', 'sound_QA', 'sound_generation_QA', 'speech_QA', 'speech_and_music_QA', 'speech_and_sound_QA', 'speech_dialogue_QA']). Defaults to all tasks.",
+        "value": null
+      },
+      "do_swap": {
+        "type": "bool",
+        "description": "When True (default), each sample is judged twice with the order of reference vs. prediction swapped, then scores are averaged. Disable to halve judge cost at the price of position bias.",
+        "value": true
+      }
+    },
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {},
+  "sample_example": {},
+  "readme": {
+    "en": "# AIR-Bench-Chat\n\n\n## Overview\n\nAIR-Bench Chat is the generative half of [AIR-Bench](https://arxiv.org/abs/2402.07729) (ACL 2024). It contains roughly 2k open-ended audio QA pairs covering speech, sound, music and mixed-audio scenes; responses are graded by a GPT-4 judge against a reference answer.\n\n## Task Description\n\n- **Task Type**: Open-ended audio question answering.\n- **Input**: An audio clip plus a free-form question.\n- **Output**: A textual answer evaluated against the reference response.\n\n## Evaluation Protocol\n\n- The judge LLM (default: GPT-4) receives the question, the textual audio description (`meta_info` from the dataset), the reference answer (`answer_gt`), and the model's response. It outputs a single line with two integer scores in `[1, 10]`.\n- To remove position bias, every sample is judged twice with the order of reference and prediction swapped, then averaged. This mirrors `cal_score.py` in the official repository.\n- Reported metric `gpt_score` is the model's mean judge score; `win_rate` records how often the model strictly beats the reference.\n- Categories are aggregated as `speech`, `sound`, `music`, `speech_and_sound`, `speech_and_music`. The paper's \"Mixed audio\" column equals `mean(speech_and_sound, speech_and_music)`.\n\n## Implementation Notes\n\n- Audio is loaded directly from the official Hugging Face dataset (`qyang1021/AIR-Bench-Dataset`).\n- The judge model is selected via `--judge-model-args`; ensure the model id supports long contexts (`meta_info` may exceed 4k tokens for dialogue tasks).\n- Set `extra_params={'tasks': [...]}` to evaluate only specific Chat task names — useful for partial runs.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `air_bench_chat` |\n| **Dataset ID** | [qyang1021/AIR-Bench-Dataset](https://modelscope.cn/datasets/qyang1021/AIR-Bench-Dataset/summary) |\n| **Paper** | [Paper](https://aclanthology.org/2024.acl-long.109/) |\n| **Tags** | `Audio`, `InstructionFollowing`, `QA` |\n| **Metrics** | `gpt_score`, `win_rate` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `tasks` | `list` | `None` | Optional list of Chat task names to evaluate (subset of ['music_QA', 'music_generation_analysis_QA', 'sound_QA', 'sound_generation_QA', 'speech_QA', 'speech_and_music_QA', 'speech_and_sound_QA', 'speech_dialogue_QA']). Defaults to all tasks. |\n| `do_swap` | `bool` | `True` | When True (default), each sample is judged twice with the order of reference vs. prediction swapped, then scores are averaged. Disable to halve judge cost at the price of position bias. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets air_bench_chat \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['air_bench_chat'],\n    dataset_args={\n        'air_bench_chat': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "",
+    "content_hash": "300963a3ea572105b1901fe5d8b6cb58",
+    "needs_translation": true
+  },
+  "updated_at": "2026-05-12T07:37:45.213813"
+}
