@@ -85,6 +85,57 @@ run_task(task_cfg=task_cfg)
 +---------------------+-------------+-----------------+----------+-------+---------+---------+
 ```
 
+### 多正确答案（Multiple Correct Answers）
+
+如果题目存在多个正确选项，可通过 `extra_params` 开启多答案模式。此时 `answer` 字段必须为字母列表（仅支持 JSONL 格式）。
+
+**数据格式**
+
+```text
+mcq/
+├── example_multi_dev.jsonl  # （可选）few-shot 样例，answer 同为列表
+└── example_multi_val.jsonl  # 实际评测数据
+```
+
+每条样本示例：
+
+```json
+{"id": "1", "category": "生物学", "question": "下列属于哺乳动物的是？", "A": "鲸", "B": "蛇", "C": "蝙蝠", "D": "鲨鱼", "answer": ["A", "C"]}
+```
+
+**extra_params 说明**
+
+| 参数 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `multiple_correct` | bool | `False` | 为 `True` 时切换到多答案模板 `CHINESE_MULTIPLE_ANSWER_TEMPLATE`，并要求 `answer` 为字母列表 |
+| `use_cot` | bool | `False` | 为 `True` 时切换到 CoT 变体模板（`*_COT`），可与 `multiple_correct` 组合使用 |
+
+**配置示例**
+
+```python
+from evalscope import TaskConfig, run_task
+
+task_cfg = TaskConfig(
+    model='Qwen/Qwen2-0.5B-Instruct',
+    datasets=['general_mcq'],
+    dataset_args={
+        'general_mcq': {
+            'local_path': 'custom_eval/text/mcq',
+            'subset_list': ['example_multi'],
+            'extra_params': {
+                'multiple_correct': True,
+                # 'use_cot': True,  # 可选：启用 CoT 模板
+            }
+        }
+    },
+)
+run_task(task_cfg=task_cfg)
+```
+
+```{note}
+当 `multiple_correct=True` 时，若 `answer` 字段不是列表（例如误填字符串 `"AC"`），数据加载阶段会直接抛出 `ValueError` 以便排查。
+```
+
 ## 问答题格式（QA）
 
 本框架支持有参考答案和无参考答案两种问答题格式。

@@ -296,6 +296,17 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('general_mcq', dataset_args)
 
+    def test_general_mcq_multi_correct(self):
+        """Test custom general MCQ dataset with multiple correct answers."""
+        dataset_args = {
+            'local_path': 'custom_eval/text/mcq',
+            'subset_list': ['example_multi'],
+            'extra_params': {
+                'multiple_correct': True,
+            }
+        }
+        self._run_dataset_test('general_mcq', dataset_args)
+
     def test_alpaca_eval(self):
         """Test AlpacaEval dataset."""
         self._run_dataset_test('alpaca_eval')
