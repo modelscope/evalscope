@@ -25,20 +25,22 @@ General-MCQ is a customizable multiple-choice question answering benchmark for e
 
 - **Task Type**: Multiple-Choice Question Answering
 - **Input**: Question with 2-10 answer choices (A through J)
-- **Output**: Selected answer choice
-- **Flexibility**: Supports custom datasets via local files
+- **Output**: Selected answer choice(s)
+- **Flexibility**: Supports custom datasets via local files, single or multiple correct answers
 
 ## Key Features
 
 - Flexible number of choices (A through J)
 - Custom dataset support via local file loading
-- Chinese single-answer prompt template
+- Chinese single-/multiple-answer prompt templates (optional CoT variants)
 - Configurable few-shot examples
 - Accuracy-based evaluation
 
 ## Evaluation Notes
 
-- Default configuration uses **0-shot** evaluation
+- Default configuration uses **0-shot** evaluation with single-answer template
+- Set `extra_params.multiple_correct=True` to evaluate questions with multiple correct answers
+- Set `extra_params.use_cot=True` to switch to chain-of-thought prompt templates
 - Primary metric: **Accuracy**
 - Train split: **dev**, Eval split: **val**
 - See [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#mcq) for dataset format
@@ -51,6 +53,20 @@ General-MCQ is a customizable multiple-choice question answering benchmark for e
         train_split='dev',
         eval_split='val',
         prompt_template=MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE,
+        extra_params={
+            'multiple_correct': {
+                'type': 'bool',
+                'description': 'Whether the dataset contains questions with multiple correct answers. '
+                'When True, switches to the multiple-answer prompt template and parser, '
+                'and requires the `answer` field to be a list of letters (e.g., ["A", "C"]).',
+                'value': False,
+            },
+            'use_cot': {
+                'type': 'bool',
+                'description': 'Whether to use the chain-of-thought (CoT) prompt template variant.',
+                'value': False,
+            },
+        },
     )
 )
 class GeneralMCQAdapter(MultiChoiceAdapter):
@@ -59,6 +75,18 @@ class GeneralMCQAdapter(MultiChoiceAdapter):
         super().__init__(**kwargs)
 
         self.choices = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+
+        self.multiple_correct = self.extra_params.get('multiple_correct', False)
+        self.use_cot = self.extra_params.get('use_cot', False)
+
+        if self.multiple_correct and self.use_cot:
+            self.prompt_template = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE_COT
+        elif self.multiple_correct:
+            self.prompt_template = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE
+        elif self.use_cot:
+            self.prompt_template = MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT
+        else:
+            self.prompt_template = MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE
 
     def load_from_disk(self, **kwargs):
         return super().load_from_disk(use_local_loader=True)
@@ -72,9 +100,17 @@ class GeneralMCQAdapter(MultiChoiceAdapter):
             else:
                 break  # Stop when we reach a choice key that doesn't exist
 
+        answer = record['answer']
+        if self.multiple_correct and not isinstance(answer, list):
+            raise ValueError(
+                f"general_mcq with multiple_correct=True requires 'answer' as a list "
+                f"of letters (e.g., ['A', 'C']), got {type(answer).__name__}: {answer!r} "
+                f"(id={record.get('id', 'unknown')})."
+            )
+
         return Sample(
             input=record['question'],
             choices=choices,
-            target=record['answer'],
+            target=answer,
             metadata={'id': record.get('id', 'unknown')},
         )
