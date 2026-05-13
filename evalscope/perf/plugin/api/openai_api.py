@@ -34,11 +34,11 @@ class OpenaiPlugin(DefaultApiPlugin):
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: Union[List[Dict], str, List[int]], param: Arguments = None) -> Dict:
+    def build_request(self, messages: Union[List[Dict], str, List[int], Dict], param: Arguments = None) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:
-            messages (List[Dict] | str | List[int]): The basic message to generator query.
+            messages (List[Dict] | str | List[int] | Dict): The basic message to generator query.
                 When param.tokenize_prompt is True, this may also be a list of token IDs
                 (List[int]) produced by the random dataset plugin.
             param (QueryParameters): The query parameters.
@@ -53,7 +53,7 @@ class OpenaiPlugin(DefaultApiPlugin):
         try:
             # --tokenize-prompt path: convert messages/text/token-IDs to a token-ID list
             # and send as a /v1/completions request with `prompt=[int, ...]`.
-            if param.tokenize_prompt:
+            if param.tokenize_prompt and not isinstance(messages, Dict):
                 token_ids = self._messages_to_token_ids(messages, param)
                 query = {'prompt': token_ids}
                 return self.__compose_query_from_parameter(query, param)
@@ -71,6 +71,8 @@ class OpenaiPlugin(DefaultApiPlugin):
 
                 # replace template messages with input messages.
                 query['messages'] = messages
+            elif isinstance(messages, dict):
+                query = messages
             elif isinstance(messages, str):
                 query = {'prompt': messages}
             else:
