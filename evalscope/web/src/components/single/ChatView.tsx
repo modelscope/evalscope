@@ -924,6 +924,31 @@ function LoopErrorRow({ event }: { event: AgentTraceEvent }) {
   )
 }
 
+/** Compact nudge reminder row (system-injected when model didn't call tools). */
+function NudgeRow({ msg }: { msg: ChatMessage }) {
+  const text = contentToText(msg.content)
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.4rem',
+        padding: '0.35rem 0.6rem',
+        background: 'var(--warning-bg, rgba(234,179,8,0.08))',
+        border: '1px solid var(--warning-border, rgba(234,179,8,0.2))',
+        borderRadius: '0.4rem',
+        fontSize: '0.72rem',
+        fontFamily: 'var(--font-mono, monospace)',
+        color: 'var(--warning-text, #b45309)',
+        marginTop: '0.25rem',
+      }}
+    >
+      <AlertTriangle size={12} style={{ flexShrink: 0 }} />
+      <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', flex: 1 }}>{text}</span>
+    </div>
+  )
+}
+
 /* ─── Structured multi-turn renderer (no trace) ────────── */
 
 function StructuredMessages({
@@ -1392,17 +1417,23 @@ function StepBlock({
         ))}
 
         {/* Any residual tool messages not linked via tool_call_id */}
-        {residualTools.map((m, i) => (
-          <MessageRow
-            key={`residual-${m.id ?? i}`}
-            role="tool"
-            content={m.content}
-            msgId={m.id}
-            highlightId={highlightId}
-            toolError={m.error ?? null}
-            toolFunction={m.function}
-          />
-        ))}
+        {residualTools.map((m, i) => {
+          // Nudge messages (role='user') get distinct visual treatment
+          if (m.role === 'user') {
+            return <NudgeRow key={`nudge-${m.id ?? i}`} msg={m} />
+          }
+          return (
+            <MessageRow
+              key={`residual-${m.id ?? i}`}
+              role="tool"
+              content={m.content}
+              msgId={m.id}
+              highlightId={highlightId}
+              toolError={m.error ?? null}
+              toolFunction={m.function}
+            />
+          )
+        })}
       </div>
     </div>
   )
@@ -1422,6 +1453,8 @@ function TraceEventPill({ event }: { event: AgentTraceEvent }) {
         return { Icon: Cpu, color: 'var(--text-muted)', labelKey: 'trace.envExec' }
       case 'error':
         return { Icon: AlertTriangle, color: 'var(--danger)', labelKey: 'trace.error' }
+      case 'nudge':
+        return { Icon: AlertTriangle, color: 'var(--warning, #d97706)', labelKey: 'trace.nudge' }
       case 'submit':
         return { Icon: Check, color: 'var(--success, #10b981)', labelKey: 'trace.submit' }
       default:

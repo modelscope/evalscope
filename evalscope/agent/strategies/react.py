@@ -106,6 +106,11 @@ class ReactStrategy:
         # No-tool-call text is NOT a valid termination signal.
         return parsed.final_answer is not None
 
+    def should_nudge(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
+        # Limit nudge to avoid token waste with models that prefer reasoning first.
+        nudge_count = sum(1 for m in ctx.messages if m.role == 'user' and 'No tool was called' in str(m.content))
+        return nudge_count < 2
+
     def tool_schema_mode(self) -> ToolSchemaMode:
         return 'function_calling'
 

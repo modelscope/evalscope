@@ -68,6 +68,14 @@ class AgentStrategy(Protocol):
         """
         ...
 
+    def should_nudge(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
+        """Whether to inject a nudge when no tool_calls are produced.
+
+        Override in subclasses to customize nudge behavior.  Return False to
+        skip the nudge and treat the current output as an implicit final answer.
+        """
+        ...
+
     def format_observation(
         self,
         call: ToolCall,

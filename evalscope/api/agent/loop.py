@@ -120,25 +120,38 @@ class AgentLoop:
 
             # ---- no tool calls but not done → nudge ----
             # The model didn't call any tool and didn't submit a final
-            # answer.  Inject a user message reminding it to use tools
-            # or submit, then continue the loop.
+            # answer.  Ask the strategy whether a nudge is appropriate.
             if not parsed.tool_calls:
-                nudge = ChatMessageUser(
-                    content='No tool was called. Please use an available tool '
-                    'or call the submit tool with your final answer.',
-                )
-                ctx.messages.append(nudge)
-                self.trace.add_event(
-                    step=ctx.step,
-                    type=EventType.TOOL_RESULT,
-                    message_id=nudge.id,
-                    payload={
-                        'source': 'nudge',
-                        'message': 'no_tool_call_reminder'
-                    },
-                )
-                ctx.step += 1
-                continue
+                if self.strategy.should_nudge(parsed, ctx):
+                    nudge = ChatMessageUser(
+                        content='No tool was called. Please use an available tool '
+                        'or call the submit tool with your final answer.',
+                    )
+                    ctx.messages.append(nudge)
+                    self.trace.add_event(
+                        step=ctx.step,
+                        type=EventType.NUDGE,
+                        message_id=nudge.id,
+                        payload={
+                            'source': 'nudge',
+                            'message': 'no_tool_call_reminder'
+                        },
+                    )
+                    ctx.step += 1
+                    continue
+                else:
+                    # Strategy declines nudge; treat as implicit final answer.
+                    final = parsed.raw_text or ''
+                    self.trace.add_event(
+                        step=ctx.step,
+                        type=EventType.SUBMIT,
+                        message_id=None,
+                        payload={
+                            'final_answer': final,
+                            'source': 'implicit_no_nudge'
+                        },
+                    )
+                    break
 
             # ---- tool execution ----
             if parsed.tool_calls:

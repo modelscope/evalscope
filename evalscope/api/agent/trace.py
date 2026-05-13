@@ -32,6 +32,9 @@ class EventType(str, Enum):
     SUBMIT = 'submit'
     """Strategy declared the task finished (final_answer / submit tool)."""
 
+    NUDGE = 'nudge'
+    """System-injected reminder when model fails to call tools."""
+
 
 class AgentTraceEvent(BaseModel):
     """Single structured event in an agent trajectory.

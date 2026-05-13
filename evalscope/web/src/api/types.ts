@@ -166,6 +166,7 @@ export type AgentTraceEventType =
   | 'tool_result'
   | 'env_exec'
   | 'error'
+  | 'nudge'
   | 'submit'
 
 /** Single structured event in an agent trajectory. */

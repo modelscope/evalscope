@@ -114,6 +114,11 @@ class MiniSweStrategy:
                     return True
         return False
 
+    def should_nudge(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
+        # mini_swe never nudges; if no bash block found, parse_output already
+        # sets final_answer and the loop terminates via is_done.
+        return False
+
     def tool_schema_mode(self) -> ToolSchemaMode:
         return 'textual_block'
 

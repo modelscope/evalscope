@@ -187,6 +187,7 @@ const en: Dict = {
     stdout: 'stdout',
     arguments: 'Arguments',
     expandDetails: 'Show details',
+    nudge: 'System Nudge',
   },
   reports: {
     title: 'Reports',
@@ -515,6 +516,7 @@ const zh: Dict = {
     stdout: '输出',
     arguments: '参数',
     expandDetails: '展开详情',
+    nudge: '系统提醒',
   },
   reports: {
     title: '报告',
