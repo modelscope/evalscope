@@ -1,12 +1,37 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { User, Bot, Shield, Wrench, ChevronDown, ChevronRight, ClipboardCheck, Copy, Check, X, Gauge, Target, Scissors, FileJson, Database, Sparkles, Cpu, AlertTriangle, CheckCircle2 } from 'lucide-react'
-import type { PredictionRow, ChatMessage, SamplePerfMetrics, ContentBlock, AgentTrace, AgentTraceEvent } from '@/api/types'
+import {
+  User,
+  Bot,
+  Shield,
+  Wrench,
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  Check,
+  X,
+  Gauge,
+  Target,
+  Scissors,
+  FileJson,
+  Database,
+  Sparkles,
+  Cpu,
+  AlertTriangle,
+  ClipboardCheck,
+} from 'lucide-react'
+import type {
+  PredictionRow,
+  ChatMessage,
+  ContentBlock,
+  AgentTrace,
+  AgentTraceEvent,
+  ToolCall,
+} from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import ScoreBadge from '@/components/common/ScoreBadge'
 import JsonViewer from '@/components/common/JsonViewer'
-import PerfChip from './PerfChip'
 
 interface Props {
   prediction: PredictionRow
@@ -14,7 +39,7 @@ interface Props {
   highlightMsgId?: string
 }
 
-/* ─── helpers (legacy string-based fallback) ──────────────────── */
+/* ─── Helpers ─────────────────────────────────────────────────── */
 
 function hasSystemPrompt(input: string): boolean {
   const lower = input.trim().toLowerCase()
@@ -53,11 +78,7 @@ function parseSystemUser(input: string): { system: string; user: string } {
   return { system: '', user: input }
 }
 
-/** Extract plain text from string or ContentBlock[] for clipboard copy.
- *
- * For multimodal blocks (image / audio / video) a short placeholder is
- * included so copied text stays meaningful even without media.
- */
+/** Extract plain text from string or ContentBlock[] for clipboard copy. */
 function contentToText(content: string | ContentBlock[]): string {
   if (typeof content === 'string') return content
   return content
@@ -73,36 +94,96 @@ function contentToText(content: string | ContentBlock[]): string {
     .trim()
 }
 
-function extractToolCalls(text: string): { before: string; calls: string[]; after: string } {
-  const calls: string[] = []
-  let remaining = text
-
-  const toolCallRegex = /<tool_call>([\s\S]*?)<\/tool_call>/g
-  remaining = remaining.replace(toolCallRegex, (match) => {
-    calls.push(match)
-    return ''
-  })
-
-  const jsonFnRegex = /\{"name"\s*:\s*"[^"]+"\s*,\s*"arguments"\s*:\s*\{[\s\S]*?\}\s*\}/g
-  remaining = remaining.replace(jsonFnRegex, (match) => {
-    calls.push(match)
-    return ''
-  })
-
-  return { before: remaining.trim(), calls, after: '' }
+function fmtMs(ms: number | null | undefined): string {
+  if (ms == null) return ''
+  if (ms < 1000) return `${ms.toFixed(0)}ms`
+  return `${(ms / 1000).toFixed(1)}s`
 }
 
-/* ─── Multimodal block renderers ────────────────────────────────── */
+function fmtTokens(n: number | null | undefined): string | null {
+  if (n == null) return null
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
+  return String(n)
+}
 
-/**
- * Renders a single image content block.
- * Supports both absolute URLs and base64 data-URIs produced by the backend.
- * Click thumbnail to open a full-screen lightbox (portal-mounted to avoid
- * overflow-hidden clipping from ancestor containers).
- */
+/** One-line preview for arguments JSON (truncate). */
+function argsPreview(args: unknown, max = 100): string {
+  if (args == null) return ''
+  let s: string
+  try {
+    s = typeof args === 'string' ? args : JSON.stringify(args)
+  } catch {
+    s = String(args)
+  }
+  s = s.replace(/\s+/g, ' ').trim()
+  return s.length > max ? s.slice(0, max) + '…' : s
+}
+
+/* ─── Role palette ──────────────────────────────────────────── */
+
+type Role = 'system' | 'user' | 'assistant' | 'tool'
+
+interface RolePalette {
+  icon: React.FC<{ size?: number; style?: React.CSSProperties; className?: string }>
+  barColor: string
+  tintBg: string
+  tintBgHl: string
+  borderHl: string
+  labelColor: string
+  label: string
+}
+
+function rolePalette(role: Role, t: (k: string) => string): RolePalette {
+  switch (role) {
+    case 'user':
+      return {
+        icon: User,
+        barColor: 'var(--bubble-user-color)',
+        tintBg: 'var(--bubble-user-bg)',
+        tintBgHl: 'var(--bubble-user-bg-hl)',
+        borderHl: 'var(--bubble-user-border-hl)',
+        labelColor: 'var(--bubble-user-color)',
+        label: 'User',
+      }
+    case 'assistant':
+      return {
+        icon: Bot,
+        barColor: 'var(--bubble-bot-color)',
+        tintBg: 'transparent',
+        tintBgHl: 'var(--bubble-bot-bg-hl)',
+        borderHl: 'var(--bubble-bot-border-hl)',
+        labelColor: 'var(--bubble-bot-color)',
+        label: 'Assistant',
+      }
+    case 'tool':
+      return {
+        icon: Wrench,
+        barColor: 'var(--bubble-tool-color)',
+        tintBg: 'var(--bubble-tool-bg)',
+        tintBgHl: 'var(--bubble-tool-bg)',
+        borderHl: 'var(--bubble-tool-border)',
+        labelColor: 'var(--bubble-tool-color)',
+        label: t('prediction.toolResult'),
+      }
+    case 'system':
+    default:
+      return {
+        icon: Shield,
+        barColor: 'var(--text-muted)',
+        tintBg: 'var(--bubble-system-bg)',
+        tintBgHl: 'var(--bubble-system-bg)',
+        borderHl: 'var(--bubble-system-border)',
+        labelColor: 'var(--text-muted)',
+        label: t('prediction.systemPrompt'),
+      }
+  }
+}
+
+/* ─── Multimodal block renderers ────────────────────────────── */
+
+/** Clickable image thumbnail with fullscreen lightbox. */
 function ImageBlock({ src }: { src: string }) {
   const [open, setOpen] = useState(false)
-  // Normalise: if src is raw base64 (no scheme), prefix with a data URI
   const imgSrc = src.startsWith('http') || src.startsWith('data:')
     ? src
     : `data:image/jpeg;base64,${src}`
@@ -127,10 +208,7 @@ function ImageBlock({ src }: { src: string }) {
           style={{ background: 'var(--overlay-bg)', backdropFilter: 'blur(6px)' }}
           onClick={() => setOpen(false)}
         >
-          <div
-            className="relative max-w-[90vw] max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="relative max-w-[90vw] max-h-[90vh]" onClick={e => e.stopPropagation()}>
             <button
               onClick={() => setOpen(false)}
               className="absolute -top-3 -right-3 z-10 rounded-full p-1 bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surface-hover)] transition-colors"
@@ -150,10 +228,6 @@ function ImageBlock({ src }: { src: string }) {
   )
 }
 
-/**
- * Renders a single audio content block.
- * Supports both URLs and base64 data-URIs.
- */
 function AudioBlock({ src, format }: { src: string; format?: string }) {
   const mimeType = format === 'mp3' ? 'audio/mpeg' : format === 'wav' ? 'audio/wav' : 'audio/mpeg'
   const audioSrc = src.startsWith('http') || src.startsWith('data:')
@@ -162,320 +236,9 @@ function AudioBlock({ src, format }: { src: string; format?: string }) {
   return (
     <div style={{ marginTop: '0.5rem', marginBottom: '0.25rem' }}>
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-      <audio
-        controls
-        src={audioSrc}
-        style={{
-          width: '100%',
-          borderRadius: '0.4rem',
-        }}
-      />
+      <audio controls src={audioSrc} style={{ width: '100%', borderRadius: '0.4rem' }} />
     </div>
   )
-}
-
-/**
- * Render a list of ContentBlocks into React nodes.
- * This is the primary multimodal rendering path used by both UserBubble
- * and AssistantBubble when content is an array.
- *
- * Layout convention:
- *  - reasoning blocks   → collapsible ReasoningBlock (above text, assistant-only)
- *  - text blocks        → MarkdownRenderer
- *  - image blocks       → inline <img>
- *  - audio blocks       → HTML5 <audio> player
- *  - video/data blocks  → plain-text placeholder (not yet fully supported)
- */
-function renderContentBlocks(
-  blocks: ContentBlock[],
-  opts: { includeReasoning?: boolean } = {},
-): React.ReactNode[] {
-  const nodes: React.ReactNode[] = []
-  blocks.forEach((b, i) => {
-    if (b.type === 'reasoning' && opts.includeReasoning) {
-      nodes.push(<ReasoningBlock key={`r${i}`} text={b.reasoning ?? ''} />)
-    } else if (b.type === 'text') {
-      if (b.text) nodes.push(<MarkdownRenderer key={`t${i}`} content={b.text} />)
-    } else if (b.type === 'image') {
-      if (b.image) nodes.push(<ImageBlock key={`img${i}`} src={b.image} />)
-    } else if (b.type === 'audio') {
-      if (b.audio) nodes.push(<AudioBlock key={`aud${i}`} src={b.audio} format={b.format} />)
-    } else if (b.type === 'video') {
-      // Video rendering not yet fully supported – show a placeholder
-      nodes.push(
-        <span key={`vid${i}`} style={{ fontSize: '0.8rem', opacity: 0.6, fontStyle: 'italic' }}>
-          [video]
-        </span>
-      )
-    }
-    // 'data' blocks are intentionally skipped (opaque provider payload)
-  })
-  return nodes
-}
-
-/* ─── shared sub-components ───────────────────────────────────── */
-
-type CopyVariant = 'green' | 'indigo' | 'neutral'
-
-function CopyButton({ text, variant = 'green' }: { text: string; variant?: CopyVariant }) {
-  const { t } = useLocale()
-  const [copied, setCopied] = useState(false)
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1800)
-    } catch {
-      const el = document.createElement('textarea')
-      el.value = text
-      document.body.appendChild(el)
-      el.select()
-      document.execCommand('copy')
-      document.body.removeChild(el)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1800)
-    }
-  }, [text])
-
-  const activeColor = variant === 'green' ? 'var(--bubble-bot-color)' : variant === 'indigo' ? 'var(--bubble-user-color)' : 'var(--text-muted)'
-  const borderColor =
-    variant === 'green'
-      ? 'var(--bubble-bot-border)'
-      : variant === 'indigo'
-        ? 'var(--bubble-user-border)'
-        : 'var(--color-border-subtle)'
-  const bgColor =
-    variant === 'green'
-      ? 'var(--bubble-bot-bg)'
-      : variant === 'indigo'
-        ? 'var(--bubble-user-bg)'
-        : 'var(--bubble-system-bg)'
-
-  return (
-    <button
-      onClick={handleCopy}
-      title={t('prediction.copyContent')}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '0.25rem',
-        padding: '0.2rem 0.5rem',
-        borderRadius: '0.4rem',
-        border: `1px solid ${borderColor}`,
-        background: bgColor,
-        color: copied ? activeColor : 'var(--text-muted)',
-        fontSize: '0.68rem',
-        cursor: 'pointer',
-        transition: 'all 0.15s',
-      }}
-    >
-      {copied ? <Check size={11} /> : <Copy size={11} />}
-      <span>{copied ? t('prediction.copySuccess') : t('prediction.copyContent')}</span>
-    </button>
-  )
-}
-
-/** Small chip showing a message's 8-char id, with copy-to-clipboard on click. */
-function MsgIdChip({ msgId, variant = 'neutral' }: { msgId: string; variant?: CopyVariant }) {
-  const { t } = useLocale()
-  const [copied, setCopied] = useState(false)
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(msgId)
-    } catch {
-      const el = document.createElement('textarea')
-      el.value = msgId
-      document.body.appendChild(el)
-      el.select()
-      document.execCommand('copy')
-      document.body.removeChild(el)
-    }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1800)
-  }, [msgId])
-
-  const activeColor = variant === 'green' ? 'var(--bubble-bot-color)' : variant === 'indigo' ? 'var(--bubble-user-color)' : 'var(--accent)'
-  const borderColor = variant === 'green' ? 'var(--bubble-bot-border)' : variant === 'indigo' ? 'var(--bubble-user-border)' : 'var(--color-border-subtle)'
-  const bgColor = variant === 'green' ? 'var(--bubble-bot-bg)' : variant === 'indigo' ? 'var(--bubble-user-bg)' : 'var(--bubble-system-bg)'
-
-  return (
-    <button
-      onClick={handleCopy}
-      title={t('prediction.copyMsgId')}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '0.25rem',
-        padding: '0.2rem 0.5rem',
-        borderRadius: '0.4rem',
-        border: `1px solid ${borderColor}`,
-        background: bgColor,
-        color: copied ? activeColor : 'var(--text-muted)',
-        fontSize: '0.68rem',
-        fontFamily: 'monospace',
-        cursor: 'pointer',
-        transition: 'all 0.15s',
-      }}
-    >
-      {copied ? <Check size={11} /> : <Copy size={11} />}
-      <span>{msgId}</span>
-    </button>
-  )
-}
-
-function SystemBanner({ content }: { content: string }) {
-  const { t } = useLocale()
-  const [expanded, setExpanded] = useState(false)
-  const preview = content.length > 120 ? content.slice(0, 120) + '…' : content
-  return (
-    <div
-      className="rounded-xl border px-4 py-3 text-sm"
-      style={{
-        background: 'var(--bubble-system-bg)',
-        borderColor: 'var(--bubble-system-border)',
-        color: 'var(--color-ink-muted)',
-      }}
-    >
-      <div className="flex items-start gap-3">
-        <Shield size={15} className="mt-0.5 shrink-0 opacity-70" />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-xs uppercase tracking-wide opacity-70">
-              {t('prediction.systemPrompt')}
-            </span>
-            <CopyButton text={content} variant="neutral" />
-          </div>
-          <div
-            className="cursor-pointer select-none"
-            onClick={() => setExpanded((v) => !v)}
-          >
-            {expanded ? (
-              <div className="text-sm"><MarkdownRenderer content={content} /></div>
-            ) : (
-              <span className="font-mono text-xs">{preview}</span>
-            )}
-          </div>
-        </div>
-        {content.length > 120 && (
-          <button
-            onClick={() => setExpanded((v) => !v)}
-            className="shrink-0 mt-0.5 opacity-50 hover:opacity-80"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--color-ink-muted)' }}
-          >
-            {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function ToolCallBlock({ raw }: { raw: string }) {
-  const { t } = useLocale()
-  const [open, setOpen] = useState(false)
-  let fnName = t('prediction.toolCall')
-  try {
-    const inner = raw.replace(/<\/?tool_call>/g, '').trim()
-    const parsed = JSON.parse(inner)
-    if (parsed.name) fnName = parsed.name
-  } catch {
-    /* noop */
-  }
-  return (
-    <div className="mt-2 rounded-xl border border-[var(--color-border)] overflow-hidden text-xs">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 w-full px-3 py-2 text-left font-mono hover:bg-[var(--color-surface-hover)] transition-colors"
-        style={{ background: 'var(--bubble-user-bg)', color: 'var(--color-primary)' }}
-      >
-        {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-        <span className="font-semibold">{t('prediction.toolCall')}:</span>
-        <span className="font-normal opacity-80">{fnName}</span>
-      </button>
-      {open && (
-        <pre
-          className="px-3 py-2 text-xs font-mono whitespace-pre-wrap break-all overflow-auto max-h-[200px]"
-          style={{ background: 'var(--color-surface)', color: 'var(--color-ink-muted)' }}
-        >
-          {raw.replace(/<\/?tool_call>/g, '').trim()}
-        </pre>
-      )}
-    </div>
-  )
-}
-
-/**
- * User message bubble.
- *
- * Current path  : content is `string | ContentBlock[]` from structured cache.
- *   - string    → rendered as markdown (legacy / simple)
- *   - ContentBlock[] → rendered via `renderContentBlocks` (multimodal path)
- *
- * Legacy fallback: caller passes a plain string (from `prediction.Input`).
- */
-function UserBubble({ content, turnBadge, msgId, highlightId }: { content: string | ContentBlock[]; turnBadge?: string; msgId?: string; highlightId?: string }) {
-  const copyText = contentToText(content)
-  const isHighlighted = !!(msgId && highlightId && msgId.startsWith(highlightId))
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (isHighlighted && ref.current) {
-      ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
-  }, [isHighlighted])
-
-  return (
-    <div ref={ref} className="flex gap-3 items-start" style={{ animation: 'fadeInUp 300ms ease-out both' }}>
-      <div
-        className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-1"
-        style={{ background: 'var(--bubble-user-icon-bg)', border: '1px solid var(--bubble-user-icon-border)' }}
-      >
-        <User size={15} style={{ color: 'var(--bubble-user-color)' }} />
-      </div>
-      <div className="bubble-wrap" style={{ maxWidth: '80%' }}>
-        {turnBadge && (
-          <div
-            style={{
-              fontSize: '0.6rem',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: 'var(--bubble-user-color)',
-              opacity: 0.7,
-              marginBottom: '0.2rem',
-            }}
-          >
-            {turnBadge}
-          </div>
-        )}
-        <div
-          className="flex-1 rounded-2xl px-4 py-3 text-sm shadow"
-          style={{
-            background: isHighlighted ? 'var(--bubble-user-bg-hl)' : 'var(--bubble-user-bg)',
-            border: isHighlighted ? '2px solid var(--bubble-user-border-hl)' : '1px solid var(--bubble-user-border)',
-            boxShadow: '0 2px 8px var(--bubble-user-bg)',
-            transition: 'border 0.4s, background 0.4s',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.25rem', marginBottom: '0.4rem' }}>
-            {msgId && <MsgIdChip msgId={msgId} variant="indigo" />}
-            <CopyButton text={copyText} variant="indigo" />
-          </div>
-          {Array.isArray(content)
-            ? renderContentBlocks(content)
-            : <MarkdownRenderer content={content} />}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-interface AssistantBubbleProps {
-  content: string | ContentBlock[]
-  perfMetrics?: SamplePerfMetrics | null
-  turnBadge?: string
-  msgId?: string
-  highlightId?: string
 }
 
 /** Collapsible reasoning block rendered above the main answer. */
@@ -486,7 +249,7 @@ function ReasoningBlock({ text }: { text: string }) {
     <div
       style={{
         marginBottom: '0.5rem',
-        borderRadius: '0.75rem',
+        borderRadius: '0.5rem',
         border: '1px solid var(--bubble-reasoning-border)',
         background: 'var(--bubble-reasoning-bg)',
         overflow: 'hidden',
@@ -499,19 +262,19 @@ function ReasoningBlock({ text }: { text: string }) {
           alignItems: 'center',
           gap: '0.35rem',
           width: '100%',
-          padding: '0.4rem 0.75rem',
+          padding: '0.35rem 0.7rem',
           background: 'none',
           border: 'none',
           cursor: 'pointer',
           color: 'var(--bubble-bot-color)',
-          fontSize: '0.72rem',
+          fontSize: '0.7rem',
           fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em',
+          letterSpacing: '0.04em',
         }}
       >
         {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         {open ? t('prediction.hideReasoning') : t('prediction.showReasoning')}
+        <span style={{ opacity: 0.5, fontWeight: 400 }}>· {text.length} chars</span>
       </button>
       {open && (
         <div
@@ -529,30 +292,197 @@ function ReasoningBlock({ text }: { text: string }) {
   )
 }
 
-/**
- * Assistant message bubble.
- *
- * Current path  : content is `string | ContentBlock[]`.
- *   - ContentBlock[] → `renderContentBlocks` handles reasoning + text + image + audio
- *     Tool-call extraction still runs on the first text block for compatibility.
- *
- * Legacy fallback: content is a plain string (from `score.prediction` in old caches).
- */
-function AssistantBubble({ content, perfMetrics, turnBadge, msgId, highlightId }: AssistantBubbleProps) {
-  // Normalise to blocks so rendering logic is uniform
-  const blocks: ContentBlock[] = typeof content === 'string'
-    ? [{ type: 'text', text: content }]
-    : content
+/** Render ContentBlock[] into React nodes. */
+function renderContentBlocks(
+  blocks: ContentBlock[],
+  opts: { includeReasoning?: boolean } = {},
+): React.ReactNode[] {
+  const nodes: React.ReactNode[] = []
+  blocks.forEach((b, i) => {
+    if (b.type === 'reasoning' && opts.includeReasoning) {
+      nodes.push(<ReasoningBlock key={`r${i}`} text={b.reasoning ?? ''} />)
+    } else if (b.type === 'text') {
+      if (b.text) nodes.push(<MarkdownRenderer key={`t${i}`} content={b.text} />)
+    } else if (b.type === 'image') {
+      if (b.image) nodes.push(<ImageBlock key={`img${i}`} src={b.image} />)
+    } else if (b.type === 'audio') {
+      if (b.audio) nodes.push(<AudioBlock key={`aud${i}`} src={b.audio} format={b.format} />)
+    } else if (b.type === 'video') {
+      nodes.push(
+        <span key={`vid${i}`} style={{ fontSize: '0.8rem', opacity: 0.6, fontStyle: 'italic' }}>
+          [video]
+        </span>
+      )
+    }
+  })
+  return nodes
+}
 
-  // Extract tool-call tags from the first text block only (legacy pattern support)
-  const firstTextBlock = blocks.find(b => b.type === 'text')
-  const { calls, before } = extractToolCalls(firstTextBlock?.text ?? '')
+/* ─── Shared UI: copy buttons, chips ────────────────────────── */
 
-  // Rebuild blocks with tool-calls stripped from the first text block
-  const displayBlocks: ContentBlock[] = blocks.map(b =>
-    b === firstTextBlock ? { ...b, text: before } : b
+function CopyIconButton({ text, title }: { text: string; title?: string }) {
+  const { t } = useLocale()
+  const [copied, setCopied] = useState(false)
+  const handleCopy = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const el = document.createElement('textarea')
+      el.value = text
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      document.body.removeChild(el)
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }, [text])
+  return (
+    <button
+      onClick={handleCopy}
+      title={title ?? t('prediction.copyContent')}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 22,
+        height: 22,
+        padding: 0,
+        borderRadius: 4,
+        border: 'none',
+        background: 'transparent',
+        color: copied ? 'var(--bubble-bot-color)' : 'var(--text-muted)',
+        cursor: 'pointer',
+        opacity: 0.55,
+        transition: 'opacity 0.15s, color 0.15s',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+      onMouseLeave={e => (e.currentTarget.style.opacity = copied ? '1' : '0.55')}
+    >
+      {copied ? <Check size={13} /> : <Copy size={13} />}
+    </button>
   )
+}
 
+function MsgIdChip({ msgId }: { msgId: string }) {
+  const { t } = useLocale()
+  const [copied, setCopied] = useState(false)
+  const handleCopy = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      await navigator.clipboard.writeText(msgId)
+    } catch {
+      const el = document.createElement('textarea')
+      el.value = msgId
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      document.body.removeChild(el)
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }, [msgId])
+  return (
+    <button
+      onClick={handleCopy}
+      title={t('prediction.copyMsgId')}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 3,
+        padding: '1px 6px',
+        borderRadius: 4,
+        border: '1px solid var(--color-border-subtle)',
+        background: 'var(--bg-deep)',
+        color: copied ? 'var(--accent)' : 'var(--text-muted)',
+        fontSize: '0.62rem',
+        fontFamily: 'var(--font-mono, monospace)',
+        cursor: 'pointer',
+        opacity: 0.7,
+        transition: 'opacity 0.15s, color 0.15s',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+      onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}
+    >
+      {copied ? <Check size={10} /> : <Copy size={10} />}
+      <span>{msgId}</span>
+    </button>
+  )
+}
+
+/** Compact perf chip rendered inline inside a message header. */
+function HeaderPerfChip({
+  latency,
+  inTok,
+  outTok,
+  stopReason,
+}: {
+  latency?: number | null
+  inTok?: number | null
+  outTok?: number | null
+  stopReason?: string
+}) {
+  const parts: string[] = []
+  if (latency != null) parts.push(fmtMs(latency))
+  const inS = fmtTokens(inTok ?? null)
+  const outS = fmtTokens(outTok ?? null)
+  if (inS != null || outS != null) parts.push(`${inS ?? '0'} → ${outS ?? '0'} tok`)
+  if (stopReason) parts.push(`stop: ${stopReason}`)
+  if (parts.length === 0) return null
+  return (
+    <span
+      style={{
+        fontSize: '0.65rem',
+        fontFamily: 'var(--font-mono, monospace)',
+        color: 'var(--text-muted)',
+        opacity: 0.8,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {parts.join(' · ')}
+    </span>
+  )
+}
+
+/* ─── MessageRow: unified full-width row for all roles ───── */
+
+interface MessageRowProps {
+  role: Role
+  content: string | ContentBlock[]
+  msgId?: string
+  model?: string | null
+  highlightId?: string
+  /** extra right-side header content (e.g. perf chip). */
+  headerExtra?: React.ReactNode
+  /** inline children below content (e.g. ToolCallsGroup for assistant). */
+  children?: React.ReactNode
+  /** override role label text. */
+  labelOverride?: string
+  /** hide role icon & label (used for compact observation). */
+  compact?: boolean
+  /** tool error, shown as warning banner inside content. */
+  toolError?: { type?: string | null; message: string } | null
+  /** tool function name (to show in header when role=tool). */
+  toolFunction?: string | null
+}
+
+function MessageRow({
+  role,
+  content,
+  msgId,
+  model,
+  highlightId,
+  headerExtra,
+  children,
+  labelOverride,
+  compact,
+  toolError,
+  toolFunction,
+}: MessageRowProps) {
+  const { t } = useLocale()
+  const palette = rolePalette(role, t)
+  const RoleIcon = palette.icon
   const copyText = contentToText(content)
   const isHighlighted = !!(msgId && highlightId && msgId.startsWith(highlightId))
   const ref = useRef<HTMLDivElement>(null)
@@ -563,161 +493,1021 @@ function AssistantBubble({ content, perfMetrics, turnBadge, msgId, highlightId }
     }
   }, [isHighlighted])
 
+  const bgColor = isHighlighted ? palette.tintBgHl : palette.tintBg
+  const borderLeft = isHighlighted
+    ? `3px solid ${palette.borderHl}`
+    : `3px solid ${palette.barColor}`
+
   return (
     <div
       ref={ref}
-      className="flex gap-3 items-start justify-end"
-      style={{ animation: 'fadeInUp 300ms ease-out 80ms both' }}
+      style={{
+        display: 'flex',
+        width: '100%',
+        background: bgColor,
+        borderLeft,
+        borderRadius: '0.5rem',
+        padding: '0.6rem 0.85rem',
+        transition: 'background 0.3s, border-color 0.3s',
+        animation: 'fadeInUp 240ms ease-out both',
+      }}
     >
-      <div className="bubble-wrap" style={{ maxWidth: '80%' }}>
-        {turnBadge && (
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Header row */}
+        {!compact && (
           <div
             style={{
-              fontSize: '0.6rem',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: 'var(--bubble-bot-color)',
-              opacity: 0.7,
-              marginBottom: '0.2rem',
-              textAlign: 'right',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginBottom: '0.4rem',
+              flexWrap: 'wrap',
             }}
           >
-            {turnBadge}
+            <RoleIcon size={13} style={{ color: palette.labelColor, flexShrink: 0 }} />
+            <span
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                color: palette.labelColor,
+              }}
+            >
+              {labelOverride ?? palette.label}
+            </span>
+            {toolFunction && (
+              <span
+                style={{
+                  padding: '1px 7px',
+                  borderRadius: 4,
+                  background: 'var(--bg-deep)',
+                  border: '1px solid var(--color-border-subtle)',
+                  fontSize: '0.65rem',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                {toolFunction}
+              </span>
+            )}
+            {model && (
+              <span
+                style={{
+                  padding: '1px 7px',
+                  borderRadius: 4,
+                  background: 'var(--bg-deep)',
+                  border: '1px solid var(--color-border-subtle)',
+                  fontSize: '0.65rem',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                {model}
+              </span>
+            )}
+            {headerExtra}
+            <span style={{ flex: 1 }} />
+            {msgId && <MsgIdChip msgId={msgId} />}
+            {copyText && <CopyIconButton text={copyText} />}
           </div>
         )}
-        <div
-          className="flex-1 rounded-2xl px-4 py-3 text-sm"
-          style={{
-            background: isHighlighted ? 'var(--bubble-bot-bg-hl)' : 'var(--bubble-bot-bg)',
-            border: isHighlighted ? '2px solid var(--bubble-bot-border-hl)' : '1px solid var(--bubble-bot-border)',
-            boxShadow: '0 2px 8px var(--bubble-bot-bg)',
-            transition: 'border 0.4s, background 0.4s',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.25rem', marginBottom: '0.4rem' }}>
-            {msgId && <MsgIdChip msgId={msgId} variant="green" />}
-            <CopyButton text={copyText} variant="green" />
-          </div>
-          {renderContentBlocks(displayBlocks, { includeReasoning: true })}
-          {calls.map((c, i) => (
-            <ToolCallBlock key={i} raw={c} />
-          ))}
-          {perfMetrics && <PerfChip metrics={perfMetrics} variant="green" />}
-        </div>
-      </div>
-      <div
-        className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-1"
-        style={{ background: 'var(--bubble-bot-icon-bg)', border: '1px solid var(--bubble-bot-icon-border)' }}
-      >
-        <Bot size={15} style={{ color: 'var(--bubble-bot-color)' }} />
-      </div>
-    </div>
-  )
-}
 
-/** Collapsible tool-result message bubble (expanded by default) */
-function ToolResultBubble({ content }: { content: string }) {
-  const { t } = useLocale()
-  const [open, setOpen] = useState(true)
-  return (
-    <div className="flex gap-3 items-start" style={{ animation: 'fadeInUp 300ms ease-out both' }}>
-      <div
-        className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-1"
-        style={{ background: 'var(--bubble-tool-icon-bg)', border: '1px solid var(--bubble-tool-icon-border)' }}
-      >
-        <Wrench size={14} style={{ color: 'var(--bubble-tool-color)' }} />
-      </div>
-      <div style={{ maxWidth: '80%', flex: 1 }}>
-        <div
-          className="rounded-xl border overflow-hidden text-xs"
-          style={{ borderColor: 'var(--bubble-tool-border)', background: 'var(--bubble-tool-bg)' }}
-        >
-          <button
-            onClick={() => setOpen((v) => !v)}
-            className="flex items-center gap-2 w-full px-3 py-2 text-left"
-            style={{ color: 'var(--bubble-tool-color)' }}
+        {/* Tool error banner */}
+        {toolError && (
+          <div
+            style={{
+              marginBottom: '0.4rem',
+              padding: '0.4rem 0.6rem',
+              borderRadius: '0.4rem',
+              background: 'var(--danger-bg)',
+              border: '1px solid var(--danger-border, var(--danger))',
+              color: 'var(--danger)',
+              fontSize: '0.72rem',
+              fontFamily: 'var(--font-mono, monospace)',
+            }}
           >
-            {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            <span className="font-semibold uppercase tracking-wide" style={{ fontSize: '0.65rem' }}>
-              {t('prediction.toolResult')}
-            </span>
-          </button>
-          {open && (
-            <pre
-              className="px-3 py-2 text-xs font-mono whitespace-pre-wrap break-all overflow-auto max-h-[200px]"
-              style={{ background: 'var(--color-surface)', color: 'var(--color-ink-muted)' }}
-            >
-              {content}
-            </pre>
-          )}
+            {toolError.type ? `[${toolError.type}] ` : ''}
+            {toolError.message}
+          </div>
+        )}
+
+        {/* Content */}
+        <div style={{ fontSize: '0.85rem', lineHeight: 1.55 }}>
+          {Array.isArray(content)
+            ? renderContentBlocks(content, { includeReasoning: role === 'assistant' })
+            : <MarkdownRenderer content={content} />}
         </div>
+
+        {children}
       </div>
     </div>
   )
 }
 
-/* ─── Collapsible JSON block ────────────────────────────────────── */
+/* ─── Tool message as a compact observation (folded under tool call) */
 
-interface CollapsibleJsonProps {
-  label: string
-  value: unknown
-  maxHeight?: number
-  defaultOpen?: boolean
-  icon?: React.ReactNode
-}
-
-function CollapsibleJson({ label, value, maxHeight = 200, defaultOpen = false, icon }: CollapsibleJsonProps) {
-  const [open, setOpen] = useState(defaultOpen)
-
-  const isEmpty =
-    value == null ||
-    (typeof value === 'object' && Object.keys(value as object).length === 0) ||
-    value === '{}'
-
-  if (isEmpty) return null
+function ToolObservation({ msg }: { msg: ChatMessage }) {
+  const { t } = useLocale()
+  const [open, setOpen] = useState(false)
+  const text = contentToText(msg.content)
+  const preview = text.replace(/\s+/g, ' ').trim()
+  const previewShort = preview.length > 140 ? preview.slice(0, 140) + '…' : preview
+  const hasError = !!msg.error
 
   return (
-    <div style={{ marginTop: '0.5rem' }}>
+    <div
+      style={{
+        borderLeft: '2px solid var(--bubble-tool-border)',
+        paddingLeft: '0.6rem',
+        marginTop: '0.25rem',
+      }}
+    >
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(v => !v)}
         style={{
-          display: 'inline-flex',
+          display: 'flex',
           alignItems: 'center',
-          gap: '0.3rem',
-          fontSize: '0.7rem',
-          color: 'var(--color-ink-muted)',
-          opacity: 0.7,
+          gap: '0.4rem',
+          width: '100%',
           background: 'none',
           border: 'none',
           cursor: 'pointer',
-          padding: '0.1rem 0',
-          transition: 'opacity 0.15s',
+          padding: '0.2rem 0',
+          textAlign: 'left',
+          color: hasError ? 'var(--danger)' : 'var(--text-muted)',
+          fontSize: '0.72rem',
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
       >
         {open ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
-        {icon && <span style={{ display: 'inline-flex', alignItems: 'center' }}>{icon}</span>}
-        <span className="uppercase tracking-wide font-semibold">{label}</span>
-      </button>
-      {open && (
-        <div
+        <span
           style={{
-            marginTop: '0.35rem',
-            borderRadius: '0.5rem',
+            display: 'inline-block',
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            background: hasError ? 'var(--danger)' : 'var(--bubble-bot-color)',
+            flexShrink: 0,
+          }}
+        />
+        <span
+          style={{
+            fontFamily: 'var(--font-mono, monospace)',
+            fontSize: '0.7rem',
             overflow: 'hidden',
-            border: '1px solid var(--color-border-subtle)',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            flex: 1,
           }}
         >
-          <JsonViewer value={value} maxHeight={maxHeight} />
+          {hasError
+            ? `${t('trace.error')}: ${msg.error?.message ?? ''}`
+            : previewShort || t('trace.stdout')}
+        </span>
+        {msg.id && <span style={{ opacity: 0.4, fontSize: '0.6rem', fontFamily: 'var(--font-mono, monospace)' }}>{msg.id}</span>}
+      </button>
+      {open && (
+        <pre
+          style={{
+            margin: '0.25rem 0 0.4rem 0',
+            padding: '0.4rem 0.6rem',
+            background: 'var(--bg-deep)',
+            borderRadius: '0.35rem',
+            fontSize: '0.7rem',
+            fontFamily: 'var(--font-mono, monospace)',
+            color: 'var(--color-ink-muted)',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+            maxHeight: 260,
+            overflow: 'auto',
+          }}
+        >
+          {text}
+        </pre>
+      )}
+    </div>
+  )
+}
+
+/* ─── ToolCallsGroup: HF-style collapsible tool-call summary ── */
+
+interface ToolCallEntry {
+  id: string
+  function: string
+  arguments: unknown
+  /** resolved tool/observation message, if any. */
+  result?: ChatMessage
+  /** latency_ms from trace tool_result event, if any. */
+  latencyMs?: number | null
+}
+
+function ToolCallsGroup({ calls }: { calls: ToolCallEntry[] }) {
+  const { t } = useLocale()
+  const [summaryOpen, setSummaryOpen] = useState(true)
+
+  if (calls.length === 0) return null
+
+  const funcNames = Array.from(new Set(calls.map(c => c.function).filter(Boolean)))
+  const summaryLabel =
+    t('trace.toolCallsCount').replace('${n}', String(calls.length)) +
+    (funcNames.length > 0 ? ` (${funcNames.join(', ')})` : '')
+
+  return (
+    <div style={{ marginTop: '0.6rem' }}>
+      <button
+        onClick={() => setSummaryOpen(v => !v)}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.35rem',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: '0.2rem 0',
+          fontSize: '0.72rem',
+          fontFamily: 'var(--font-mono, monospace)',
+          color: 'var(--text-muted)',
+          opacity: 0.85,
+        }}
+      >
+        {summaryOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+        <span style={{ fontWeight: 600 }}>{summaryLabel}</span>
+      </button>
+      {summaryOpen && (
+        <div style={{ marginTop: '0.4rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {calls.map((call, i) => (
+            <ToolCallEntryRow key={call.id || i} entry={call} />
+          ))}
         </div>
       )}
     </div>
   )
 }
 
-/* ─── Eval Result Panel ─────────────────────────────────────────── */
+function ToolCallEntryRow({ entry }: { entry: ToolCallEntry }) {
+  const { t } = useLocale()
+  const [open, setOpen] = useState(false)
+  const preview = argsPreview(entry.arguments)
+
+  return (
+    <div
+      style={{
+        borderLeft: '3px solid var(--bubble-tool-border)',
+        paddingLeft: '0.7rem',
+      }}
+    >
+      {/* Header row */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.45rem',
+          width: '100%',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: '0.2rem 0',
+          textAlign: 'left',
+        }}
+      >
+        <Wrench size={12} style={{ color: 'var(--bubble-tool-color)', flexShrink: 0 }} />
+        <span
+          style={{
+            fontSize: '0.75rem',
+            fontFamily: 'var(--font-mono, monospace)',
+            fontWeight: 600,
+            color: 'var(--bubble-tool-color)',
+          }}
+        >
+          {entry.function}
+        </span>
+        {preview && (
+          <span
+            style={{
+              fontSize: '0.7rem',
+              fontFamily: 'var(--font-mono, monospace)',
+              color: 'var(--text-muted)',
+              opacity: 0.75,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1,
+            }}
+          >
+            {preview}
+          </span>
+        )}
+        {entry.latencyMs != null && (
+          <span
+            style={{
+              fontSize: '0.65rem',
+              fontFamily: 'var(--font-mono, monospace)',
+              color: 'var(--text-muted)',
+              opacity: 0.6,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {fmtMs(entry.latencyMs)}
+          </span>
+        )}
+        {entry.id && (
+          <span
+            style={{
+              fontSize: '0.6rem',
+              fontFamily: 'var(--font-mono, monospace)',
+              color: 'var(--text-dim)',
+              opacity: 0.5,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            #{entry.id.slice(0, 8)}
+          </span>
+        )}
+        {open ? <ChevronDown size={11} style={{ opacity: 0.5 }} /> : <ChevronRight size={11} style={{ opacity: 0.5 }} />}
+      </button>
+
+      {/* Expanded arguments */}
+      {open && entry.arguments != null && (
+        <div style={{ marginTop: '0.3rem' }}>
+          <div
+            style={{
+              fontSize: '0.62rem',
+              color: 'var(--text-muted)',
+              opacity: 0.6,
+              marginBottom: '0.2rem',
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              fontWeight: 600,
+            }}
+          >
+            {t('trace.arguments')}
+          </div>
+          <pre
+            style={{
+              margin: 0,
+              padding: '0.4rem 0.6rem',
+              background: 'var(--bg-deep)',
+              borderRadius: '0.35rem',
+              fontSize: '0.7rem',
+              fontFamily: 'var(--font-mono, monospace)',
+              color: 'var(--color-ink-muted)',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all',
+              maxHeight: 200,
+              overflow: 'auto',
+            }}
+          >
+            {typeof entry.arguments === 'string'
+              ? entry.arguments
+              : JSON.stringify(entry.arguments, null, 2)}
+          </pre>
+        </div>
+      )}
+
+      {/* Result observation */}
+      {entry.result && <ToolObservation msg={entry.result} />}
+    </div>
+  )
+}
+
+/* ─── Trace event extras (env_exec / loop error) ────────── */
+
+function EnvExecRow({ event }: { event: AgentTraceEvent }) {
+  const cmd = typeof event.payload.command === 'string' ? event.payload.command : ''
+  if (!cmd) return null
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '0.5rem',
+        padding: '0.35rem 0.6rem',
+        background: 'var(--bg-deep)',
+        border: '1px solid var(--color-border-subtle)',
+        borderRadius: '0.4rem',
+        fontSize: '0.72rem',
+        fontFamily: 'var(--font-mono, monospace)',
+        color: 'var(--color-ink-muted)',
+        marginTop: '0.4rem',
+      }}
+    >
+      <Cpu size={12} style={{ color: 'var(--text-muted)', marginTop: 2, flexShrink: 0 }} />
+      <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', flex: 1 }}>$ {cmd}</span>
+      {event.latency_ms != null && (
+        <span style={{ opacity: 0.6, whiteSpace: 'nowrap' }}>{fmtMs(event.latency_ms)}</span>
+      )}
+    </div>
+  )
+}
+
+function LoopErrorRow({ event }: { event: AgentTraceEvent }) {
+  const msg = event.payload.message != null ? String(event.payload.message) : ''
+  if (!msg) return null
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '0.5rem',
+        padding: '0.4rem 0.6rem',
+        background: 'var(--danger-bg)',
+        border: '1px solid var(--danger-border, var(--danger))',
+        borderRadius: '0.4rem',
+        fontSize: '0.72rem',
+        fontFamily: 'var(--font-mono, monospace)',
+        color: 'var(--danger)',
+        marginTop: '0.4rem',
+      }}
+    >
+      <AlertTriangle size={12} style={{ marginTop: 2, flexShrink: 0 }} />
+      <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', flex: 1 }}>{msg}</span>
+    </div>
+  )
+}
+
+/* ─── Structured multi-turn renderer (no trace) ────────── */
+
+function StructuredMessages({
+  messages,
+  highlightId,
+}: {
+  messages: ChatMessage[]
+  highlightId?: string
+}) {
+  // Build id->message for tool_call_id resolution
+  const byToolCallId = new Map<string, ChatMessage>()
+  for (const m of messages) {
+    if (m.role === 'tool' && m.tool_call_id) byToolCallId.set(m.tool_call_id, m)
+  }
+
+  const rendered: React.ReactNode[] = []
+  const consumedToolIds = new Set<string>()
+
+  messages.forEach((msg, idx) => {
+    if (msg.role === 'system') {
+      rendered.push(
+        <MessageRow
+          key={idx}
+          role="system"
+          content={msg.content}
+          msgId={msg.id}
+          highlightId={highlightId}
+        />
+      )
+      return
+    }
+
+    if (msg.role === 'user') {
+      rendered.push(
+        <MessageRow
+          key={idx}
+          role="user"
+          content={msg.content}
+          msgId={msg.id}
+          highlightId={highlightId}
+        />
+      )
+      return
+    }
+
+    if (msg.role === 'assistant') {
+      const pm = msg.perf_metrics
+      const headerPerf = pm ? (
+        <HeaderPerfChip
+          latency={pm.latency != null ? pm.latency * 1000 : null}
+          inTok={pm.input_tokens}
+          outTok={pm.output_tokens}
+        />
+      ) : undefined
+
+      // Build tool call entries (resolve results via tool_call_id)
+      const entries: ToolCallEntry[] = (msg.tool_calls ?? []).map(tc => {
+        const result = byToolCallId.get(tc.id)
+        if (result?.id) consumedToolIds.add(result.id)
+        return {
+          id: tc.id,
+          function: tc.function,
+          arguments: tc.arguments,
+          result,
+        }
+      })
+
+      rendered.push(
+        <MessageRow
+          key={idx}
+          role="assistant"
+          content={msg.content}
+          msgId={msg.id}
+          model={msg.model}
+          highlightId={highlightId}
+          headerExtra={headerPerf}
+        >
+          {entries.length > 0 && <ToolCallsGroup calls={entries} />}
+        </MessageRow>
+      )
+      return
+    }
+
+    if (msg.role === 'tool') {
+      // Skip tool messages already consumed by a ToolCallsGroup above
+      if (msg.id && consumedToolIds.has(msg.id)) return
+      rendered.push(
+        <MessageRow
+          key={idx}
+          role="tool"
+          content={msg.content}
+          msgId={msg.id}
+          highlightId={highlightId}
+          toolError={msg.error ?? null}
+          toolFunction={msg.function}
+        />
+      )
+      return
+    }
+  })
+
+  return <>{rendered}</>
+}
+
+/* ─── Trace-aware step grouping ───────────────────────── */
+
+interface StepGroup {
+  step: number
+  /** Pre-agent messages (system/user) — only for step -1. */
+  preAgentMessages: ChatMessage[]
+  assistant: ChatMessage | null
+  tools: ChatMessage[]
+  traceEvents: AgentTraceEvent[]
+  totalLatencyMs: number | null
+}
+
+function buildStepGroups(messages: ChatMessage[], trace: AgentTrace): StepGroup[] {
+  const messageById = new Map<string, ChatMessage>()
+  for (const m of messages) if (m.id) messageById.set(m.id, m)
+
+  const stepEvents = new Map<number, AgentTraceEvent[]>()
+  for (const ev of trace.events) {
+    if (!stepEvents.has(ev.step)) stepEvents.set(ev.step, [])
+    stepEvents.get(ev.step)!.push(ev)
+  }
+
+  const referencedIds = new Set<string>()
+  for (const ev of trace.events) if (ev.message_id) referencedIds.add(ev.message_id)
+
+  const preAgent: ChatMessage[] = []
+  for (const m of messages) {
+    if (m.id && referencedIds.has(m.id)) break
+    preAgent.push(m)
+  }
+
+  const groups: StepGroup[] = []
+  if (preAgent.length > 0) {
+    groups.push({
+      step: -1,
+      preAgentMessages: preAgent,
+      assistant: null,
+      tools: [],
+      traceEvents: [],
+      totalLatencyMs: null,
+    })
+  }
+
+  const sortedSteps = Array.from(stepEvents.keys()).sort((a, b) => a - b)
+  for (const step of sortedSteps) {
+    const events = stepEvents.get(step)!
+    let assistant: ChatMessage | null = null
+    const tools: ChatMessage[] = []
+    const seenToolIds = new Set<string>()
+    for (const ev of events) {
+      if (!ev.message_id) continue
+      const msg = messageById.get(ev.message_id)
+      if (!msg) continue
+      if (msg.role === 'assistant') {
+        if (!assistant) assistant = msg
+      } else if (msg.role === 'tool' || msg.role === 'user') {
+        if (msg.id && !seenToolIds.has(msg.id)) {
+          seenToolIds.add(msg.id)
+          tools.push(msg)
+        }
+      }
+    }
+    let totalLatency: number | null = null
+    for (const e of events) {
+      if (e.latency_ms != null) totalLatency = (totalLatency ?? 0) + e.latency_ms
+    }
+    groups.push({
+      step,
+      preAgentMessages: [],
+      assistant,
+      tools,
+      traceEvents: events,
+      totalLatencyMs: totalLatency,
+    })
+  }
+
+  return groups
+}
+
+/* ─── Timeline node (left sidebar, compact) ─────────── */
+
+function TimelineNode({
+  step,
+  totalLatencyMs,
+  isActive,
+  isLast,
+  onClick,
+}: {
+  step: number
+  totalLatencyMs: number | null
+  isActive: boolean
+  isLast: boolean
+  onClick: () => void
+}) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div
+      className="flex flex-col items-center"
+      style={{ alignSelf: 'stretch', paddingTop: 8 }}
+    >
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 2,
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0,
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            width: isActive ? 24 : 18,
+            height: isActive ? 24 : 18,
+            borderRadius: '50%',
+            background: isActive
+              ? 'var(--accent)'
+              : hovered
+                ? 'var(--accent-dim)'
+                : 'var(--bg-card2)',
+            border: `2px solid ${isActive ? 'var(--accent)' : hovered ? 'var(--accent)' : 'var(--color-border-subtle)'}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.2s',
+            boxShadow: isActive ? '0 0 8px var(--accent-dim)' : 'none',
+          }}
+        >
+          <span
+            style={{
+              fontSize: isActive ? 10 : 9,
+              fontFamily: 'var(--font-mono, monospace)',
+              fontWeight: 700,
+              color: isActive ? '#fff' : 'var(--color-ink-muted)',
+            }}
+          >
+            {step}
+          </span>
+        </div>
+        {totalLatencyMs != null && (
+          <span
+            style={{
+              fontSize: 9,
+              fontFamily: 'var(--font-mono, monospace)',
+              color: isActive ? 'var(--accent)' : 'var(--text-muted)',
+              opacity: isActive ? 1 : 0.6,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {fmtMs(totalLatencyMs)}
+          </span>
+        )}
+      </button>
+      {/* Connector line */}
+      {!isLast && (
+        <div
+          style={{
+            width: 2,
+            flex: 1,
+            minHeight: 16,
+            marginTop: 4,
+            background: isActive ? 'var(--accent)' : 'var(--color-border-subtle)',
+            opacity: isActive ? 0.5 : 0.2,
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+/* ─── StepBlock: a single step rendered full-width ───── */
+
+function StepBlock({
+  group,
+  highlightId,
+  highlighted,
+  onStepClick,
+}: {
+  group: StepGroup
+  highlightId?: string
+  highlighted: boolean
+  onStepClick: (step: number) => void
+}) {
+  const { t } = useLocale()
+
+  // Pre-agent messages (system/user) — render as-is, no wrapper
+  if (group.step === -1) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        {group.preAgentMessages.map((msg, idx) => (
+          <MessageRow
+            key={idx}
+            role={msg.role as Role}
+            content={msg.content}
+            msgId={msg.id}
+            highlightId={highlightId}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  const modelGen = group.traceEvents.find(e => e.type === 'model_generate')
+  const toolCallEvents = group.traceEvents.filter(e => e.type === 'tool_call')
+  const toolResultEvents = group.traceEvents.filter(e => e.type === 'tool_result')
+  const envExecs = group.traceEvents.filter(e => e.type === 'env_exec')
+  const loopErrors = group.traceEvents.filter(e => e.type === 'error')
+
+  // Build assistant header perf info from model_generate event (preferred)
+  const mg = modelGen
+  const stopReason = mg?.payload?.stop_reason ? String(mg.payload.stop_reason) : undefined
+  const modelGenLatMs = mg?.latency_ms ?? null
+  const inTok = mg?.token_usage?.input ?? null
+  const outTok = mg?.token_usage?.output ?? null
+
+  // Fallback to assistant.perf_metrics
+  const ap = group.assistant?.perf_metrics
+  const headerLat = modelGenLatMs ?? (ap?.latency != null ? ap.latency * 1000 : null)
+  const headerIn = inTok ?? ap?.input_tokens ?? null
+  const headerOut = outTok ?? ap?.output_tokens ?? null
+
+  const headerPerf = (
+    <HeaderPerfChip
+      latency={headerLat}
+      inTok={headerIn}
+      outTok={headerOut}
+      stopReason={stopReason}
+    />
+  )
+
+  // Build ToolCallEntry[] — prefer assistant.tool_calls, fallback to tool_call events.
+  const toolResultByCallId = new Map<string, AgentTraceEvent>()
+  for (const ev of toolResultEvents) {
+    const id = typeof ev.payload.id === 'string' ? ev.payload.id : null
+    if (id) toolResultByCallId.set(id, ev)
+  }
+  const toolMsgByCallId = new Map<string, ChatMessage>()
+  for (const m of group.tools) {
+    if (m.tool_call_id) toolMsgByCallId.set(m.tool_call_id, m)
+  }
+
+  let entries: ToolCallEntry[] = []
+  if (group.assistant?.tool_calls && group.assistant.tool_calls.length > 0) {
+    entries = group.assistant.tool_calls.map((tc: ToolCall) => {
+      const resultEv = toolResultByCallId.get(tc.id)
+      return {
+        id: tc.id,
+        function: tc.function,
+        arguments: tc.arguments,
+        result: toolMsgByCallId.get(tc.id),
+        latencyMs: resultEv?.latency_ms ?? null,
+      }
+    })
+  } else if (toolCallEvents.length > 0) {
+    // Fallback: reconstruct from tool_call events
+    entries = toolCallEvents.map(ev => {
+      const id = typeof ev.payload.id === 'string' ? ev.payload.id : ''
+      const name = typeof ev.payload.name === 'string' ? ev.payload.name : ''
+      const args = ev.payload.arguments
+      const resultEv = toolResultByCallId.get(id)
+      return {
+        id,
+        function: name,
+        arguments: args,
+        result: id ? toolMsgByCallId.get(id) : undefined,
+        latencyMs: resultEv?.latency_ms ?? null,
+      }
+    })
+  }
+
+  // Residual tool messages not linked to any call (rare; textual_block mode)
+  const linkedToolIds = new Set<string>()
+  for (const e of entries) if (e.result?.id) linkedToolIds.add(e.result.id)
+  const residualTools = group.tools.filter(m => !(m.id && linkedToolIds.has(m.id)))
+
+  return (
+    <div
+      style={{
+        borderRadius: '0.6rem',
+        background: highlighted ? 'var(--accent-dim)' : 'transparent',
+        borderLeft: highlighted ? '2px solid var(--accent)' : '2px solid transparent',
+        padding: highlighted ? '0.2rem 0 0.2rem 0.4rem' : '0.2rem 0',
+        transition: 'background 0.3s, border-color 0.3s',
+      }}
+    >
+      {/* Step header strip */}
+      <button
+        onClick={() => onStepClick(group.step)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          width: '100%',
+          background: 'none',
+          border: 'none',
+          borderBottom: '1px dashed var(--color-border-subtle)',
+          padding: '0.3rem 0 0.4rem 0',
+          marginBottom: '0.5rem',
+          cursor: 'pointer',
+        }}
+      >
+        <span
+          style={{
+            fontSize: '0.7rem',
+            fontWeight: 700,
+            fontFamily: 'var(--font-mono, monospace)',
+            color: highlighted ? 'var(--accent)' : 'var(--text-muted)',
+            letterSpacing: '0.04em',
+          }}
+        >
+          {t('trace.step')} {group.step}
+        </span>
+        {group.totalLatencyMs != null && (
+          <span
+            style={{
+              fontSize: '0.65rem',
+              fontFamily: 'var(--font-mono, monospace)',
+              color: 'var(--text-muted)',
+              opacity: 0.7,
+            }}
+          >
+            {fmtMs(group.totalLatencyMs)}
+          </span>
+        )}
+        {/* Event pills */}
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flex: 1 }}>
+          {group.traceEvents.map((ev, i) => (
+            <TraceEventPill key={i} event={ev} />
+          ))}
+        </div>
+      </button>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        {/* Assistant row */}
+        {group.assistant && (
+          <MessageRow
+            role="assistant"
+            content={group.assistant.content}
+            msgId={group.assistant.id}
+            model={group.assistant.model}
+            highlightId={highlightId}
+            headerExtra={headerPerf}
+          >
+            {entries.length > 0 && <ToolCallsGroup calls={entries} />}
+          </MessageRow>
+        )}
+
+        {/* env_exec entries */}
+        {envExecs.map((ev, i) => (
+          <EnvExecRow key={`env-${i}`} event={ev} />
+        ))}
+
+        {/* Loop-level errors (not tied to a tool_call) */}
+        {loopErrors.map((ev, i) => (
+          <LoopErrorRow key={`err-${i}`} event={ev} />
+        ))}
+
+        {/* Any residual tool messages not linked via tool_call_id */}
+        {residualTools.map((m, i) => (
+          <MessageRow
+            key={`residual-${m.id ?? i}`}
+            role="tool"
+            content={m.content}
+            msgId={m.id}
+            highlightId={highlightId}
+            toolError={m.error ?? null}
+            toolFunction={m.function}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function TraceEventPill({ event }: { event: AgentTraceEvent }) {
+  const { t } = useLocale()
+  const cfg = (() => {
+    switch (event.type) {
+      case 'model_generate':
+        return { Icon: Sparkles, color: 'var(--bubble-bot-color)', labelKey: 'trace.modelGenerate' }
+      case 'tool_call':
+        return { Icon: Wrench, color: 'var(--bubble-user-color)', labelKey: 'trace.toolCall' }
+      case 'tool_result':
+        return { Icon: Wrench, color: 'var(--bubble-tool-color)', labelKey: 'trace.toolResult' }
+      case 'env_exec':
+        return { Icon: Cpu, color: 'var(--text-muted)', labelKey: 'trace.envExec' }
+      case 'error':
+        return { Icon: AlertTriangle, color: 'var(--danger)', labelKey: 'trace.error' }
+      case 'submit':
+        return { Icon: Check, color: 'var(--success, #10b981)', labelKey: 'trace.submit' }
+      default:
+        return { Icon: Wrench, color: 'var(--text-muted)', labelKey: event.type }
+    }
+  })()
+  const Icon = cfg.Icon
+  const label = t(cfg.labelKey)
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 3,
+        padding: '1px 6px',
+        borderRadius: 3,
+        background: 'transparent',
+        border: `1px solid ${cfg.color}`,
+        color: cfg.color,
+        fontSize: '0.58rem',
+        fontFamily: 'var(--font-mono, monospace)',
+        fontWeight: 500,
+        opacity: 0.85,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <Icon size={9} />
+      {label === cfg.labelKey ? event.type : label}
+    </span>
+  )
+}
+
+/* ─── Timeline layout orchestrator ─────────────────────── */
+
+function TracedTimeline({
+  groups,
+  highlightStep,
+  highlightId,
+  onStepClick,
+}: {
+  groups: StepGroup[]
+  highlightStep: number | null
+  highlightId?: string
+  onStepClick: (step: number) => void
+}) {
+  const preGroup = groups.find(g => g.step === -1)
+  const agentGroups = groups.filter(g => g.step >= 0)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+      {preGroup && (
+        <StepBlock
+          group={preGroup}
+          highlightId={highlightId}
+          highlighted={false}
+          onStepClick={onStepClick}
+        />
+      )}
+      {agentGroups.map((g, idx) => {
+        const isLast = idx === agentGroups.length - 1
+        const isActive = highlightStep === g.step
+        return (
+          <div key={g.step} style={{ display: 'flex', gap: '0.6rem', alignItems: 'stretch' }}>
+            <TimelineNode
+              step={g.step}
+              totalLatencyMs={g.totalLatencyMs}
+              isActive={isActive}
+              isLast={isLast}
+              onClick={() => onStepClick(g.step)}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <StepBlock
+                group={g}
+                highlightId={highlightId}
+                highlighted={isActive}
+                onStepClick={onStepClick}
+              />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/* ─── Eval Result Panel ────────────────────────────────── */
 
 interface EvalResultPanelProps {
   pred: string
@@ -729,11 +1519,73 @@ interface EvalResultPanelProps {
   showPred: boolean
 }
 
-function EvalResultPanel({ pred, gold, nScore, score, metadata, threshold, showPred }: EvalResultPanelProps) {
+function CollapsibleJson({
+  label,
+  value,
+  maxHeight = 200,
+  defaultOpen = false,
+  icon,
+}: {
+  label: string
+  value: unknown
+  maxHeight?: number
+  defaultOpen?: boolean
+  icon?: React.ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  const isEmpty =
+    value == null ||
+    (typeof value === 'object' && Object.keys(value as object).length === 0) ||
+    value === '{}'
+  if (isEmpty) return null
+  return (
+    <div style={{ marginTop: '0.4rem' }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.3rem',
+          fontSize: '0.7rem',
+          color: 'var(--color-ink-muted)',
+          opacity: 0.7,
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: '0.1rem 0',
+        }}
+      >
+        {open ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+        {icon && <span style={{ display: 'inline-flex', alignItems: 'center' }}>{icon}</span>}
+        <span className="uppercase tracking-wide font-semibold">{label}</span>
+      </button>
+      {open && (
+        <div
+          style={{
+            marginTop: '0.3rem',
+            borderRadius: '0.4rem',
+            overflow: 'hidden',
+            border: '1px solid var(--color-border-subtle)',
+          }}
+        >
+          <JsonViewer value={value} maxHeight={maxHeight} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function EvalResultPanel({
+  pred,
+  gold,
+  nScore,
+  score,
+  metadata,
+  threshold,
+  showPred,
+}: EvalResultPanelProps) {
   const { t } = useLocale()
-
   const isSameAsGenerated = pred === '*Same as Generated*' || pred === ''
-
   const metaStr = (() => {
     if (metadata == null) return ''
     if (typeof metadata === 'object') return JSON.stringify(metadata)
@@ -744,7 +1596,7 @@ function EvalResultPanel({ pred, gold, nScore, score, metadata, threshold, showP
   return (
     <div
       style={{
-        borderRadius: '0.875rem',
+        borderRadius: '0.75rem',
         border: '1px solid var(--border-md)',
         background: 'var(--bg-card2)',
         overflow: 'hidden',
@@ -752,7 +1604,6 @@ function EvalResultPanel({ pred, gold, nScore, score, metadata, threshold, showP
         animation: 'fadeInUp 300ms ease-out 160ms both',
       }}
     >
-      {/* Header */}
       <div
         style={{
           display: 'flex',
@@ -778,16 +1629,14 @@ function EvalResultPanel({ pred, gold, nScore, score, metadata, threshold, showP
         </span>
       </div>
 
-      {/* 3-column grid */}
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: showPred ? 'minmax(80px,auto) 1fr minmax(100px,auto)' : '1fr minmax(100px,auto)',
-          gap: '0',
+          gap: 0,
           padding: '0.75rem 1rem',
         }}
       >
-        {/* PRED column */}
         {showPred && (
           <div style={{ paddingRight: '1rem', borderRight: '1px solid var(--border-md)' }}>
             <div
@@ -808,7 +1657,14 @@ function EvalResultPanel({ pred, gold, nScore, score, metadata, threshold, showP
               {t('prediction.extractedAnswer')}
             </div>
             {isSameAsGenerated ? (
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', opacity: 0.5, fontStyle: 'italic' }}>
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  color: 'var(--color-ink-muted)',
+                  opacity: 0.5,
+                  fontStyle: 'italic',
+                }}
+              >
                 = Generated
               </span>
             ) : (
@@ -819,7 +1675,6 @@ function EvalResultPanel({ pred, gold, nScore, score, metadata, threshold, showP
           </div>
         )}
 
-        {/* EXPECTED ANSWER column */}
         <div
           style={{
             padding: showPred ? '0 1rem' : '0 1rem 0 0',
@@ -848,7 +1703,6 @@ function EvalResultPanel({ pred, gold, nScore, score, metadata, threshold, showP
           </div>
         </div>
 
-        {/* SCORE column */}
         <div style={{ paddingLeft: '1rem' }}>
           <div
             style={{
@@ -876,7 +1730,6 @@ function EvalResultPanel({ pred, gold, nScore, score, metadata, threshold, showP
         </div>
       </div>
 
-      {/* Collapsible JSON sections */}
       {(Object.keys(score).length > 0 || hasMetadata) && (
         <div
           style={{
@@ -887,505 +1740,22 @@ function EvalResultPanel({ pred, gold, nScore, score, metadata, threshold, showP
           }}
         >
           {Object.keys(score).length > 0 && (
-            <CollapsibleJson label={t('prediction.scoreJson')} value={score} maxHeight={200} defaultOpen={true} icon={<FileJson size={11} />} />
+            <CollapsibleJson
+              label={t('prediction.scoreJson')}
+              value={score}
+              maxHeight={200}
+              defaultOpen
+              icon={<FileJson size={11} />}
+            />
           )}
           {hasMetadata && (
-            <CollapsibleJson label={t('prediction.metadata')} value={metadata} maxHeight={250} defaultOpen={true} icon={<Database size={11} />} />
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ─── Structured multi-turn renderer ───────────────────────────── */
-
-function StructuredMessages({
-  messages,
-  isMultiTurn,
-  highlightId,
-}: {
-  messages: ChatMessage[]
-  isMultiTurn: boolean
-  highlightId?: string
-}) {
-  const { t } = useLocale()
-
-  // Compute per-role turn index for badge labeling (only user & assistant)
-  const turnCounters = { user: 0, assistant: 0 }
-
-  return (
-    <>
-      {messages.map((msg, idx) => {
-        if (msg.role === 'system') {
-          return <SystemBanner key={idx} content={contentToText(msg.content)} />
-        }
-
-        if (msg.role === 'user') {
-          turnCounters.user += 1
-          const badge =
-            isMultiTurn
-              ? t('prediction.turnN').replace('${n}', String(turnCounters.user))
-              : undefined
-          return <UserBubble key={idx} content={msg.content} turnBadge={badge} msgId={msg.id} highlightId={highlightId} />
-        }
-
-        if (msg.role === 'assistant') {
-          turnCounters.assistant += 1
-          const badge =
-            isMultiTurn
-              ? t('prediction.turnN').replace('${n}', String(turnCounters.assistant))
-              : undefined
-          return (
-            <AssistantBubble
-              key={idx}
-              content={msg.content}
-              perfMetrics={msg.perf_metrics}
-              turnBadge={badge}
-              msgId={msg.id}
-              highlightId={highlightId}
+            <CollapsibleJson
+              label={t('prediction.metadata')}
+              value={metadata}
+              maxHeight={250}
+              defaultOpen
+              icon={<Database size={11} />}
             />
-          )
-        }
-
-        if (msg.role === 'tool') {
-          return <ToolResultBubble key={idx} content={contentToText(msg.content)} />
-        }
-
-        return null
-      })}
-    </>
-  )
-}
-
-/* ─── Agent trace + messages step-grouped renderer ───────────── */
-
-/* ─── Helpers (duplicated from TrajectoryView to avoid circular deps) ── */
-
-function fmtMs(ms: number | null | undefined): string {
-  if (ms == null) return ''
-  if (ms < 1000) return `${ms.toFixed(0)}ms`
-  return `${(ms / 1000).toFixed(1)}s`
-}
-
-function fmtTokens(n: number | null | undefined): string {
-  if (n == null) return '-'
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
-  return String(n)
-}
-
-interface TraceEventTypeCfg {
-  icon: React.FC<{ size?: number; style?: React.CSSProperties }>
-  color: string
-  bgColor: string
-  borderColor: string
-  labelKey: string
-}
-
-function getTraceEventTypeConfig(type: string): TraceEventTypeCfg {
-  switch (type) {
-    case 'model_generate':
-      return { icon: Sparkles, color: 'var(--bubble-bot-color)', bgColor: 'var(--bubble-bot-bg)', borderColor: 'var(--bubble-bot-border)', labelKey: 'trace.modelGenerate' }
-    case 'tool_result':
-      return { icon: Wrench, color: 'var(--bubble-tool-color)', bgColor: 'var(--bubble-tool-bg)', borderColor: 'var(--bubble-tool-border)', labelKey: 'trace.toolResult' }
-    case 'env_exec':
-      return { icon: Cpu, color: 'var(--text-muted)', bgColor: 'var(--bubble-system-bg)', borderColor: 'var(--bubble-system-border)', labelKey: 'trace.envExec' }
-    case 'error':
-      return { icon: AlertTriangle, color: 'var(--danger)', bgColor: 'var(--danger-bg)', borderColor: 'var(--danger-border, var(--danger))', labelKey: 'trace.error' }
-    case 'submit':
-      return { icon: CheckCircle2, color: 'var(--success, #10b981)', bgColor: 'var(--success-bg, rgba(16,185,129,.1))', borderColor: 'var(--success-border, rgba(16,185,129,.3))', labelKey: 'trace.submit' }
-    default:
-      return { icon: Wrench, color: 'var(--bubble-user-color)', bgColor: 'var(--bubble-user-bg)', borderColor: 'var(--bubble-user-border)', labelKey: 'trace.toolCall' }
-  }
-}
-
-/* ─── Data structures ──────────────────────────────────────── */
-
-interface StepGroup {
-  step: number
-  /** Pre-agent messages (system/user) — only for step -1 */
-  preAgentMessages: ChatMessage[]
-  /** Assistant message for this step */
-  assistant: ChatMessage | null
-  /** Tool/observation messages for this step (FC mode can emit multiple) */
-  tools: ChatMessage[]
-  /** Trace events for this step */
-  traceEvents: AgentTraceEvent[]
-  /** Total latency for this step */
-  totalLatencyMs: number | null
-}
-
-function buildStepGroups(
-  messages: ChatMessage[],
-  trace: AgentTrace,
-): StepGroup[] {
-  // Index messages by id for O(1) id-based lookup.
-  const messageById = new Map<string, ChatMessage>()
-  for (const m of messages) {
-    if (m.id) messageById.set(m.id, m)
-  }
-
-  // Group trace events by step (preserving emission order within each step).
-  const stepEvents = new Map<number, AgentTraceEvent[]>()
-  for (const ev of trace.events) {
-    if (!stepEvents.has(ev.step)) stepEvents.set(ev.step, [])
-    stepEvents.get(ev.step)!.push(ev)
-  }
-
-  // Collect every message id explicitly referenced by a trace event —
-  // these messages are "agent-owned" and belong to a step group.
-  const referencedIds = new Set<string>()
-  for (const ev of trace.events) {
-    if (ev.message_id) referencedIds.add(ev.message_id)
-  }
-
-  // Pre-agent: leading messages whose id is NOT referenced by any event
-  // (typically the system prompt + initial user question).
-  const preAgent: ChatMessage[] = []
-  for (const m of messages) {
-    if (m.id && referencedIds.has(m.id)) break
-    preAgent.push(m)
-  }
-
-  const groups: StepGroup[] = []
-
-  if (preAgent.length > 0) {
-    groups.push({
-      step: -1,
-      preAgentMessages: preAgent,
-      assistant: null,
-      tools: [],
-      traceEvents: [],
-      totalLatencyMs: null,
-    })
-  }
-
-  // Walk steps in ascending order; resolve assistant/tool message via id.
-  const sortedSteps = Array.from(stepEvents.keys()).sort((a, b) => a - b)
-  for (const step of sortedSteps) {
-    const events = stepEvents.get(step)!
-
-    let assistant: ChatMessage | null = null
-    const tools: ChatMessage[] = []
-    const seenToolIds = new Set<string>()
-
-    for (const ev of events) {
-      if (!ev.message_id) continue
-      const msg = messageById.get(ev.message_id)
-      if (!msg) continue
-      if (msg.role === 'assistant') {
-        if (!assistant) assistant = msg
-      } else if (msg.role === 'tool' || msg.role === 'user') {
-        // 'tool' for FC mode, 'user' for textual_block / nudge.
-        // Dedupe: multiple tool_result events may share the same message_id
-        // (unlikely but guard against it).
-        if (msg.id && !seenToolIds.has(msg.id)) {
-          seenToolIds.add(msg.id)
-          tools.push(msg)
-        }
-      }
-    }
-
-    let totalLatency: number | null = null
-    for (const e of events) {
-      if (e.latency_ms != null) {
-        totalLatency = (totalLatency ?? 0) + e.latency_ms
-      }
-    }
-
-    groups.push({
-      step,
-      preAgentMessages: [],
-      assistant,
-      tools,
-      traceEvents: events,
-      totalLatencyMs: totalLatency,
-    })
-  }
-
-  return groups
-}
-
-/* ─── StepTimeline (left sidebar) ──────────────────────────── */
-
-/** Single timeline node rendered inline within each step row for alignment. */
-function TimelineNode({
-  step,
-  totalLatencyMs,
-  tokenTotal,
-  isActive,
-  isLast,
-  onClick,
-}: {
-  step: number
-  totalLatencyMs: number | null
-  tokenTotal: string | undefined
-  isActive: boolean
-  isLast: boolean
-  onClick: () => void
-}) {
-  const [hovered, setHovered] = useState(false)
-
-  return (
-    <div className="flex flex-col items-center self-stretch">
-      {/* Connector line top */}
-      <div
-        style={{
-          width: 2,
-          height: 12,
-          background: isActive ? 'var(--accent)' : 'var(--color-border-subtle)',
-          opacity: isActive ? 0.6 : 0.3,
-        }}
-      />
-
-      {/* Circle */}
-      <button
-        onClick={onClick}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        className="flex flex-col items-center gap-0.5 shrink-0"
-        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-      >
-        <div
-          className="rounded-full flex items-center justify-center transition-all"
-          style={{
-            width: isActive ? 28 : 22,
-            height: isActive ? 28 : 22,
-            background: isActive
-              ? 'var(--accent)'
-              : hovered
-                ? 'var(--accent-dim)'
-                : 'var(--bg-card2)',
-            border: `2px solid ${isActive ? 'var(--accent)' : hovered ? 'var(--accent)' : 'var(--color-border-subtle)'}`,
-            boxShadow: isActive ? '0 0 10px var(--accent-dim)' : 'none',
-            transition: 'all 0.2s',
-          }}
-        >
-          <span
-            className="font-mono font-bold"
-            style={{
-              fontSize: isActive ? 11 : 10,
-              color: isActive ? '#fff' : 'var(--color-ink-muted)',
-            }}
-          >
-            {step}
-          </span>
-        </div>
-
-        {totalLatencyMs != null && (
-          <span
-            className="font-mono text-[9px] whitespace-nowrap"
-            style={{
-              color: isActive ? 'var(--accent)' : 'var(--color-ink-muted)',
-              opacity: isActive ? 1 : 0.7,
-            }}
-          >
-            {fmtMs(totalLatencyMs)}
-          </span>
-        )}
-        {tokenTotal && (
-          <span
-            className="font-mono text-[8px] whitespace-nowrap"
-            style={{ color: 'var(--color-ink-muted)', opacity: 0.5 }}
-          >
-            {tokenTotal}
-          </span>
-        )}
-      </button>
-
-      {/* Connector line bottom */}
-      {!isLast && (
-        <div
-          style={{
-            width: 2,
-            flex: 1,
-            minHeight: 8,
-            background: isActive ? 'var(--accent)' : 'var(--color-border-subtle)',
-            opacity: isActive ? 0.6 : 0.3,
-            transition: 'background 0.2s',
-          }}
-        />
-      )}
-
-      {/* End cap for the last step — keeps the timeline visually closed */}
-      {isLast && (
-        <div className="flex flex-col items-center" style={{ flex: 1, minHeight: 16 }}>
-          <div
-            style={{
-              width: 2,
-              flex: 1,
-              minHeight: 8,
-              background: isActive ? 'var(--accent)' : 'var(--color-border-subtle)',
-              opacity: isActive ? 0.6 : 0.3,
-            }}
-          />
-          <div
-            style={{
-              width: 12,
-              height: 2,
-              background: 'var(--color-border-subtle)',
-              opacity: 0.5,
-              borderRadius: 1,
-            }}
-          />
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ─── StepTracePopover ─────────────────────────────────────── */
-/* (kept for standalone TrajectoryView, but not used in dual-column layout) */
-
-/* ─── TraceEventInline — compact detail line inside StepCard ── */
-
-function TraceEventInline({ event }: { event: AgentTraceEvent }) {
-  const { t } = useLocale()
-  const cfg = getTraceEventTypeConfig(event.type)
-  const Icon = cfg.icon
-  const p = event.payload
-  const stopReason = typeof p.stop_reason === 'string' ? p.stop_reason : ''
-  const payloadName = typeof p.name === 'string' ? p.name : ''
-  const payloadError = p.error != null ? String(p.error) : ''
-  const payloadFinalAnswer = p.final_answer != null ? String(p.final_answer) : ''
-  // Submit final_answer is shown collapsed by default — the assistant bubble
-  // already carries the answer in its original form, so we avoid visual duplication.
-  const [submitOpen, setSubmitOpen] = useState(false)
-
-  return (
-    <div
-      className="flex flex-col gap-1 rounded-xl px-3 py-2"
-      style={{
-        background: cfg.bgColor,
-        border: `1px solid ${cfg.borderColor}`,
-      }}
-    >
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <Icon size={12} style={{ color: cfg.color }} />
-        <span className="font-mono font-semibold text-[11px]" style={{ color: cfg.color }}>
-          {t(cfg.labelKey) === cfg.labelKey ? event.type : t(cfg.labelKey)}
-        </span>
-        {event.latency_ms != null && (
-          <span className="font-mono text-[10px]" style={{ color: 'var(--color-ink-muted)', opacity: 0.7 }}>
-            {fmtMs(event.latency_ms)}
-          </span>
-        )}
-      </div>
-
-      {/* model_generate: token usage + stop_reason */}
-      {event.type === 'model_generate' && (
-        <>
-          {event.token_usage && (
-            <div className="flex items-center gap-3 text-[11px] font-mono" style={{ color: 'var(--color-ink-muted)' }}>
-              <span>{t('trace.input')}: <b style={{ color: 'var(--color-ink)' }}>{fmtTokens(event.token_usage.input)}</b></span>
-              <span style={{ opacity: 0.4 }}>→</span>
-              <span>{t('trace.output')}: <b style={{ color: 'var(--color-ink)' }}>{fmtTokens(event.token_usage.output)}</b></span>
-              <span style={{ opacity: 0.3 }}>|</span>
-              <span>{t('trace.total')}: <b style={{ color: 'var(--color-ink)' }}>{fmtTokens(event.token_usage.total)}</b></span>
-            </div>
-          )}
-          {stopReason && (
-            <div className="text-[11px] font-mono" style={{ color: 'var(--color-ink-muted)' }}>
-              {t('trace.stopReason')}: <span style={{ color: 'var(--color-ink)' }}>{stopReason}</span>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* tool_result: tool name + error (preview is rendered as a full
-          ToolResultBubble by StepCard — intentionally omitted here to avoid
-          duplicating / truncating the observation content). */}
-      {event.type === 'tool_result' && (
-        <>
-          {payloadName && (
-            <div className="text-[11px] font-mono" style={{ color: 'var(--color-ink-muted)' }}>
-              {t('trace.toolName')}: <span style={{ color: 'var(--color-ink)' }}>{payloadName}</span>
-            </div>
-          )}
-          {payloadError && (
-            <div className="text-[11px] font-mono" style={{ color: 'var(--danger)' }}>
-              Error: {payloadError}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* tool_call: function name + arguments */}
-      {event.type === 'tool_call' && (() => {
-        const p = event.payload
-        const funcName = typeof p.name === 'string' ? p.name : ''
-        const callId = typeof p.id === 'string' ? p.id : ''
-        const args = p.arguments
-        return (
-          <>
-            {funcName && (
-              <div className="text-[11px] font-mono" style={{ color: 'var(--color-ink-muted)' }}>
-                {t('trace.toolName')}: <span style={{ color: 'var(--color-ink)' }}>{funcName}</span>
-                {callId && <span style={{ opacity: 0.4, marginLeft: 6 }}>#{callId.length > 8 ? callId.slice(0, 8) : callId}</span>}
-              </div>
-            )}
-            {args != null && (
-              <div
-                className="rounded-lg px-2.5 py-1.5 text-[11px] font-mono whitespace-pre-wrap break-all max-h-[120px] overflow-auto"
-                style={{ background: 'var(--bg-deep)', color: 'var(--color-ink-muted)' }}
-              >
-                {typeof args === 'string' ? args : JSON.stringify(args, null, 2)}
-              </div>
-            )}
-          </>
-        )
-      })()}
-
-      {/* env_exec: command */}
-      {event.type === 'env_exec' && typeof p.command === 'string' && (
-        <div
-          className="rounded-lg px-2.5 py-1.5 text-[11px] font-mono whitespace-pre-wrap break-all"
-          style={{ background: 'var(--bg-deep)', color: 'var(--color-ink-muted)' }}
-        >
-          $ {p.command}
-        </div>
-      )}
-
-      {/* error */}
-      {event.type === 'error' && (
-        <div
-          className="rounded-lg px-2.5 py-1.5 text-[11px] font-mono whitespace-pre-wrap break-all"
-          style={{ background: 'var(--danger-bg)', color: 'var(--danger)' }}
-        >
-          {p.message != null ? String(p.message) : t('trace.error')}
-        </div>
-      )}
-
-      {/* submit: final_answer — collapsed by default (assistant bubble already
-          shows the raw answer; this section exposes the parsed version on demand). */}
-      {event.type === 'submit' && payloadFinalAnswer && (
-        <div className="flex flex-col gap-1">
-          <button
-            onClick={() => setSubmitOpen(v => !v)}
-            className="inline-flex items-center gap-1 text-[10px] font-mono self-start"
-            style={{
-              color: 'var(--color-ink-muted)',
-              background: 'none',
-              border: 'none',
-              padding: '0.1rem 0',
-              cursor: 'pointer',
-              opacity: 0.75,
-            }}
-          >
-            {submitOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
-            <span className="uppercase tracking-wide font-semibold">
-              {t('trace.finalAnswer')}
-            </span>
-            <span style={{ opacity: 0.5 }}>({payloadFinalAnswer.length} chars)</span>
-          </button>
-          {submitOpen && (
-            <div
-              className="rounded-lg px-2.5 py-1.5 text-[11px] whitespace-pre-wrap break-all max-h-[200px] overflow-auto"
-              style={{ background: 'var(--success-bg, rgba(16,185,129,.1))', color: 'var(--color-ink-muted)' }}
-            >
-              {payloadFinalAnswer}
-            </div>
           )}
         </div>
       )}
@@ -1393,203 +1763,7 @@ function TraceEventInline({ event }: { event: AgentTraceEvent }) {
   )
 }
 
-/* ─── StepCard (right side grouped card) ───────────────────── */
-
-function StepCard({
-  group,
-  highlightId,
-  highlighted,
-  turnCounter,
-  onStepClick,
-}: {
-  group: StepGroup
-  highlightId?: string
-  highlighted: boolean
-  turnCounter: number
-  onStepClick: (step: number) => void
-}) {
-  const { t } = useLocale()
-
-  // Pre-agent messages (system/user) — no card wrapper
-  if (group.step === -1) {
-    return (
-      <>
-        {group.preAgentMessages.map((msg, idx) => {
-          if (msg.role === 'system') return <SystemBanner key={idx} content={contentToText(msg.content)} />
-          return <UserBubble key={idx} content={msg.content} msgId={msg.id} highlightId={highlightId} />
-        })}
-      </>
-    )
-  }
-
-  // Separate trace events by type for ordered rendering
-  const modelGen = group.traceEvents.find(e => e.type === 'model_generate')
-  const toolCalls = group.traceEvents.filter(e => e.type === 'tool_call')
-  const toolResults = group.traceEvents.filter(e => e.type === 'tool_result')
-  const envExecs = group.traceEvents.filter(e => e.type === 'env_exec')
-  const errors = group.traceEvents.filter(e => e.type === 'error')
-  const submits = group.traceEvents.filter(e => e.type === 'submit')
-  const postAssistantEvents = [...toolCalls, ...toolResults, ...envExecs, ...errors]
-
-  return (
-    <div
-      className="rounded-2xl overflow-hidden"
-      style={{
-        border: `1px solid ${highlighted ? 'var(--accent)' : 'var(--color-border-subtle)'}`,
-        background: highlighted ? 'var(--accent-dim)' : 'var(--bg-card2)',
-        boxShadow: highlighted ? '0 0 16px var(--accent-dim)' : 'none',
-        transition: 'border-color 0.3s, background 0.3s, box-shadow 0.3s',
-      }}
-    >
-      {/* Card header — step badge + compact trace pills */}
-      <div
-        className="flex items-center gap-2 px-3.5 py-2 cursor-pointer select-none"
-        style={{ borderBottom: `1px solid var(--color-border-subtle)` }}
-        onClick={() => onStepClick(group.step)}
-      >
-        <span
-          className="font-mono font-bold text-[11px] px-2 py-0.5 rounded-full"
-          style={{
-            background: highlighted ? 'var(--accent)' : 'var(--bg-card)',
-            color: highlighted ? '#fff' : 'var(--color-ink-muted)',
-            border: `1px solid ${highlighted ? 'var(--accent)' : 'var(--color-border-subtle)'}`,
-          }}
-        >
-          {t('trace.step')} {group.step}
-        </span>
-
-        {group.totalLatencyMs != null && (
-          <span className="font-mono text-[10px]" style={{ color: 'var(--color-ink-muted)', opacity: 0.7 }}>
-            {fmtMs(group.totalLatencyMs)}
-          </span>
-        )}
-
-        {/* Compact trace pills */}
-        {group.traceEvents.map((ev, i) => {
-          const cfg = getTraceEventTypeConfig(ev.type)
-          const Icon = cfg.icon
-          return (
-            <span
-              key={i}
-              className="inline-flex items-center gap-1 text-[9px] font-mono font-medium px-1.5 py-0.5 rounded-full"
-              style={{
-                background: cfg.bgColor,
-                border: `1px solid ${cfg.borderColor}`,
-                color: cfg.color,
-              }}
-            >
-              <Icon size={9} />
-              {t(cfg.labelKey) === cfg.labelKey ? ev.type : t(cfg.labelKey)}
-            </span>
-          )
-        })}
-      </div>
-
-      {/* Card body — trace events + message bubbles interleaved */}
-      <div className="flex flex-col gap-2 p-3">
-        {/* model_generate detail */}
-        {modelGen && <TraceEventInline event={modelGen} />}
-
-        {/* Assistant message */}
-        {group.assistant && (
-          <AssistantBubble
-            content={group.assistant.content}
-            perfMetrics={group.assistant.perf_metrics}
-            turnBadge={t('prediction.turnN').replace('${n}', String(turnCounter))}
-            msgId={group.assistant.id}
-            highlightId={highlightId}
-          />
-        )}
-
-        {/* tool_call / tool_result / env_exec / error details */}
-        {postAssistantEvents.map((ev, i) => (
-          <TraceEventInline key={`post-${i}`} event={ev} />
-        ))}
-
-        {/* All tool/observation messages — rendered as full content bubbles.
-            Note: TraceEventInline above shows only the event header (name/latency/
-            error), never the preview, so there is no duplication with these. */}
-        {group.tools.map((m, i) => (
-          <ToolResultBubble key={`tool-${m.id ?? i}`} content={contentToText(m.content)} />
-        ))}
-
-        {/* submit detail */}
-        {submits.map((ev, i) => (
-          <TraceEventInline key={`submit-${i}`} event={ev} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-/* ─── Dual-column timeline layout ──────────────────────────── */
-
-function DualColumnTimeline({
-  groups,
-  highlightStep,
-  highlightId,
-  onStepClick,
-}: {
-  groups: StepGroup[]
-  highlightStep: number | null
-  highlightId?: string
-  onStepClick: (step: number) => void
-}) {
-  let assistantCounter = 0
-
-  // Separate pre-agent group and agent groups
-  const preGroup = groups.find(g => g.step === -1)
-  const agentGroups = groups.filter(g => g.step >= 0)
-
-  return (
-    <>
-      {/* Pre-agent messages (full width, no timeline) */}
-      {preGroup && (
-        <StepCard group={preGroup} highlightId={highlightId} highlighted={false} turnCounter={0} onStepClick={onStepClick} />
-      )}
-
-      {/* Agent steps: each row = timeline node + step card, guaranteed alignment */}
-      {agentGroups.map((g, idx) => {
-        if (g.assistant) assistantCounter++
-        const isLast = idx === agentGroups.length - 1
-        const isActive = highlightStep === g.step
-
-        // Token info for timeline node
-        const modelGen = g.traceEvents.find(e => e.type === 'model_generate')
-        const tokenTotal = modelGen?.token_usage
-          ? `${fmtTokens(modelGen.token_usage.total)}tok`
-          : undefined
-
-        return (
-          <div key={g.step} className="flex gap-3 items-stretch">
-            {/* Left: timeline node (aligned to card top) */}
-            <TimelineNode
-              step={g.step}
-              totalLatencyMs={g.totalLatencyMs}
-              tokenTotal={tokenTotal}
-              isActive={isActive}
-              isLast={isLast}
-              onClick={() => onStepClick(g.step)}
-            />
-
-            {/* Right: step card */}
-            <div className="flex-1 min-w-0">
-              <StepCard
-                group={g}
-                highlightId={highlightId}
-                highlighted={isActive}
-                turnCounter={assistantCounter}
-                onStepClick={onStepClick}
-              />
-            </div>
-          </div>
-        )
-      })}
-    </>
-  )
-}
-
-/* ─── main export ─────────────────────────────────────────────── */
+/* ─── Main export ──────────────────────────────────────── */
 
 export default function ChatView({ prediction, threshold = 0.99, highlightMsgId }: Props) {
   const showPred =
@@ -1598,15 +1772,9 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId 
     prediction.Generated &&
     prediction.Pred.trim() !== prediction.Generated.trim()
 
-  // Determine if we have structured messages and if it's truly multi-turn
   const messages = prediction.Messages
   const hasStructured = !!(messages && messages.length > 0)
 
-  // Multi-turn = more than one user message (excluding system)
-  const userCount = hasStructured ? messages!.filter((m) => m.role === 'user').length : 0
-  const isMultiTurn = userCount > 1
-
-  // Agent trace interleaving
   const agentTrace = prediction.AgentTrace
   const hasTrace = !!(agentTrace && agentTrace.events && agentTrace.events.length > 0)
   const [highlightedStep, setHighlightedStep] = useState<number | null>(null)
@@ -1617,46 +1785,53 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId 
   }, [hasTrace, hasStructured, messages, agentTrace])
 
   const handleStepClick = useCallback((step: number) => {
-    setHighlightedStep(prev => prev === step ? null : step)
+    setHighlightedStep(prev => (prev === step ? null : step))
   }, [])
 
   return (
     <div className="flex flex-col gap-4 py-2">
       {hasTrace && stepGroups ? (
-        /* ── Dual-column timeline + step cards rendering ── */
-        <DualColumnTimeline
+        <TracedTimeline
           groups={stepGroups}
           highlightStep={highlightedStep}
           highlightId={highlightMsgId}
           onStepClick={handleStepClick}
         />
       ) : hasStructured ? (
-        /* ── Structured rendering (new-format caches) ── */
-        <StructuredMessages messages={messages!} isMultiTurn={isMultiTurn} highlightId={highlightMsgId} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <StructuredMessages messages={messages!} highlightId={highlightMsgId} />
+        </div>
       ) : (
-        /* ── Legacy string-based fallback ── */
         (() => {
           const isSystemMsg = hasSystemPrompt(prediction.Input)
           const { system, user } = isSystemMsg
             ? parseSystemUser(prediction.Input)
             : { system: '', user: prediction.Input }
-
+          const headerPerf = prediction.PerfMetrics ? (
+            <HeaderPerfChip
+              latency={prediction.PerfMetrics.latency != null ? prediction.PerfMetrics.latency * 1000 : null}
+              inTok={prediction.PerfMetrics.input_tokens}
+              outTok={prediction.PerfMetrics.output_tokens}
+            />
+          ) : undefined
           return (
-            <>
-              {system && <SystemBanner content={system} />}
-              <UserBubble content={user || prediction.Input} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {system && <MessageRow role="system" content={system} />}
+              <MessageRow role="user" content={user || prediction.Input} />
               {prediction.Generated && (
-                <AssistantBubble content={prediction.Generated} perfMetrics={prediction.PerfMetrics} />
+                <MessageRow
+                  role="assistant"
+                  content={prediction.Generated}
+                  headerExtra={headerPerf}
+                />
               )}
-            </>
+            </div>
           )
         })()
       )}
 
-      {/* Divider */}
       <div style={{ borderTop: '1px solid var(--color-border-subtle)' }} />
 
-      {/* Eval Result Panel */}
       <EvalResultPanel
         pred={prediction.Pred}
         gold={prediction.Gold}

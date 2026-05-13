@@ -117,12 +117,42 @@ export interface ContentBlock {
   data?: Record<string, unknown>
 }
 
+/** A single tool call invocation emitted by an assistant message.
+ *
+ * Mirrors the backend ``ToolCall`` model (``api/tool/tool_call.py``),
+ * flattened for the wire format – ``function`` is the plain function name
+ * and ``arguments`` is the parsed JSON object.
+ */
+export interface ToolCall {
+  id: string
+  function: string
+  arguments: Record<string, unknown>
+}
+
+/** Error payload attached to a tool message on failure. */
+export interface ToolMessageError {
+  type?: string | null
+  message: string
+}
+
 /** A single chat message in a conversation (system / user / assistant / tool). */
 export interface ChatMessage {
   id?: string
   role: 'system' | 'user' | 'assistant' | 'tool'
   content: string | ContentBlock[]
   perf_metrics?: SamplePerfMetrics | null
+  // Assistant-only ---------------------------------------------------------
+  /** Tool calls emitted by the model in this turn. */
+  tool_calls?: ToolCall[] | null
+  /** Model identifier that produced this assistant message. */
+  model?: string | null
+  // Tool-only --------------------------------------------------------------
+  /** ID of the originating tool_call this message is a response for. */
+  tool_call_id?: string | null
+  /** Name of the function this tool observation is for. */
+  function?: string | null
+  /** Error info, when the tool invocation failed. */
+  error?: ToolMessageError | null
 }
 
 // ------------------------------------------------------------------ //

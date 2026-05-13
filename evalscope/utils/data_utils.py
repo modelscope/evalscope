@@ -204,12 +204,42 @@ def _serialize_messages(review_result: ReviewResult) -> List[Dict[str, Any]]:
                 # Text-only / legacy path – content is already a str.
                 serialised_content = m.content
 
-            messages_data.append({
+            entry: Dict[str, Any] = {
                 'id': m.id,
                 'role': m.role,
                 'content': serialised_content,
                 'perf_metrics': m.perf_metrics.model_dump() if m.perf_metrics else None,
-            })
+            }
+
+            # Assistant: tool_calls + model name (if any)
+            if m.role == 'assistant':
+                tool_calls = getattr(m, 'tool_calls', None)
+                if tool_calls:
+                    entry['tool_calls'] = [{
+                        'id': tc.id,
+                        'function': tc.function.name,
+                        'arguments': tc.function.arguments,
+                    } for tc in tool_calls]
+                model_name = getattr(m, 'model', None)
+                if model_name:
+                    entry['model'] = model_name
+
+            # Tool: function name + tool_call_id + error
+            if m.role == 'tool':
+                function = getattr(m, 'function', None)
+                if function:
+                    entry['function'] = function
+                tool_call_id = getattr(m, 'tool_call_id', None)
+                if tool_call_id:
+                    entry['tool_call_id'] = tool_call_id
+                error = getattr(m, 'error', None)
+                if error:
+                    entry['error'] = {
+                        'type': getattr(error, 'type', None),
+                        'message': getattr(error, 'message', ''),
+                    }
+
+            messages_data.append(entry)
     except Exception as e:
         logger.debug(f'Could not serialize messages for prediction row: {e}')
         return []
