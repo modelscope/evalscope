@@ -76,10 +76,12 @@ class MultiChoiceAdapter(DefaultDataAdapter):
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         if self.prompt_template in [
+            MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE,
             MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT,
-            MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE
+            MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE,
+            MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE_COT,
         ]:
-            # For Chinese COT template, we use a different extraction method
+            # For Chinese templates, use the Chinese-format extractor ('答案：...')
             answers = parse_answers_zh(task_state, multiple_correct=self.multiple_correct)
         else:
             answers = parse_answers(task_state, multiple_correct=self.multiple_correct)
