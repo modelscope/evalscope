@@ -7,7 +7,6 @@ import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import ScoreBadge from '@/components/common/ScoreBadge'
 import JsonViewer from '@/components/common/JsonViewer'
 import PerfChip from './PerfChip'
-import { TraceEventCard } from './TrajectoryView'
 
 interface Props {
   prediction: PredictionRow
@@ -617,10 +616,10 @@ function AssistantBubble({ content, perfMetrics, turnBadge, msgId, highlightId }
   )
 }
 
-/** Collapsible tool-result message bubble */
+/** Collapsible tool-result message bubble (expanded by default) */
 function ToolResultBubble({ content }: { content: string }) {
   const { t } = useLocale()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   return (
     <div className="flex gap-3 items-start" style={{ animation: 'fadeInUp 300ms ease-out both' }}>
       <div
@@ -1008,8 +1007,8 @@ interface StepGroup {
   preAgentMessages: ChatMessage[]
   /** Assistant message for this step */
   assistant: ChatMessage | null
-  /** Tool message for this step */
-  tool: ChatMessage | null
+  /** Tool/observation messages for this step (FC mode can emit multiple) */
+  tools: ChatMessage[]
   /** Trace events for this step */
   traceEvents: AgentTraceEvent[]
   /** Total latency for this step */
@@ -1020,58 +1019,72 @@ function buildStepGroups(
   messages: ChatMessage[],
   trace: AgentTrace,
 ): StepGroup[] {
-  // Group trace events by step
+  // Index messages by id for O(1) id-based lookup.
+  const messageById = new Map<string, ChatMessage>()
+  for (const m of messages) {
+    if (m.id) messageById.set(m.id, m)
+  }
+
+  // Group trace events by step (preserving emission order within each step).
   const stepEvents = new Map<number, AgentTraceEvent[]>()
   for (const ev of trace.events) {
     if (!stepEvents.has(ev.step)) stepEvents.set(ev.step, [])
     stepEvents.get(ev.step)!.push(ev)
   }
 
-  // Split messages into pre-agent (system, user) and agent pairs
-  const preAgent: ChatMessage[] = []
-  const pairs: Array<{ assistant: ChatMessage; tool?: ChatMessage }> = []
-
-  let i = 0
-  for (; i < messages.length; i++) {
-    const msg = messages[i]
-    if (msg.role === 'assistant') break
-    preAgent.push(msg)
+  // Collect every message id explicitly referenced by a trace event —
+  // these messages are "agent-owned" and belong to a step group.
+  const referencedIds = new Set<string>()
+  for (const ev of trace.events) {
+    if (ev.message_id) referencedIds.add(ev.message_id)
   }
 
-  while (i < messages.length) {
-    const msg = messages[i]
-    if (msg.role === 'assistant') {
-      const pair: { assistant: ChatMessage; tool?: ChatMessage } = { assistant: msg }
-      i++
-      if (i < messages.length && messages[i].role === 'tool') {
-        pair.tool = messages[i]
-        i++
-      }
-      pairs.push(pair)
-    } else {
-      i++
-    }
+  // Pre-agent: leading messages whose id is NOT referenced by any event
+  // (typically the system prompt + initial user question).
+  const preAgent: ChatMessage[] = []
+  for (const m of messages) {
+    if (m.id && referencedIds.has(m.id)) break
+    preAgent.push(m)
   }
 
   const groups: StepGroup[] = []
 
-  // Pre-agent group (step = -1)
   if (preAgent.length > 0) {
     groups.push({
       step: -1,
       preAgentMessages: preAgent,
       assistant: null,
-      tool: null,
+      tools: [],
       traceEvents: [],
       totalLatencyMs: null,
     })
   }
 
-  // Agent step groups
-  for (let step = 0; step < pairs.length; step++) {
-    const pair = pairs[step]
-    const events = stepEvents.get(step) ?? []
-    const visibleEvents = events
+  // Walk steps in ascending order; resolve assistant/tool message via id.
+  const sortedSteps = Array.from(stepEvents.keys()).sort((a, b) => a - b)
+  for (const step of sortedSteps) {
+    const events = stepEvents.get(step)!
+
+    let assistant: ChatMessage | null = null
+    const tools: ChatMessage[] = []
+    const seenToolIds = new Set<string>()
+
+    for (const ev of events) {
+      if (!ev.message_id) continue
+      const msg = messageById.get(ev.message_id)
+      if (!msg) continue
+      if (msg.role === 'assistant') {
+        if (!assistant) assistant = msg
+      } else if (msg.role === 'tool' || msg.role === 'user') {
+        // 'tool' for FC mode, 'user' for textual_block / nudge.
+        // Dedupe: multiple tool_result events may share the same message_id
+        // (unlikely but guard against it).
+        if (msg.id && !seenToolIds.has(msg.id)) {
+          seenToolIds.add(msg.id)
+          tools.push(msg)
+        }
+      }
+    }
 
     let totalLatency: number | null = null
     for (const e of events) {
@@ -1083,28 +1096,9 @@ function buildStepGroups(
     groups.push({
       step,
       preAgentMessages: [],
-      assistant: pair.assistant,
-      tool: pair.tool ?? null,
-      traceEvents: visibleEvents,
-      totalLatencyMs: totalLatency,
-    })
-  }
-
-  // Remaining steps beyond message pairs
-  const maxStep = Math.max(...Array.from(stepEvents.keys()), -1)
-  for (let step = pairs.length; step <= maxStep; step++) {
-    const events = stepEvents.get(step) ?? []
-    const visibleEvents = events
-    let totalLatency: number | null = null
-    for (const e of events) {
-      if (e.latency_ms != null) totalLatency = (totalLatency ?? 0) + e.latency_ms
-    }
-    groups.push({
-      step,
-      preAgentMessages: [],
-      assistant: null,
-      tool: null,
-      traceEvents: visibleEvents,
+      assistant,
+      tools,
+      traceEvents: events,
       totalLatencyMs: totalLatency,
     })
   }
@@ -1212,6 +1206,30 @@ function TimelineNode({
           }}
         />
       )}
+
+      {/* End cap for the last step — keeps the timeline visually closed */}
+      {isLast && (
+        <div className="flex flex-col items-center" style={{ flex: 1, minHeight: 16 }}>
+          <div
+            style={{
+              width: 2,
+              flex: 1,
+              minHeight: 8,
+              background: isActive ? 'var(--accent)' : 'var(--color-border-subtle)',
+              opacity: isActive ? 0.6 : 0.3,
+            }}
+          />
+          <div
+            style={{
+              width: 12,
+              height: 2,
+              background: 'var(--color-border-subtle)',
+              opacity: 0.5,
+              borderRadius: 1,
+            }}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -1229,8 +1247,10 @@ function TraceEventInline({ event }: { event: AgentTraceEvent }) {
   const stopReason = typeof p.stop_reason === 'string' ? p.stop_reason : ''
   const payloadName = typeof p.name === 'string' ? p.name : ''
   const payloadError = p.error != null ? String(p.error) : ''
-  const payloadPreview = typeof p.preview === 'string' ? p.preview : ''
   const payloadFinalAnswer = p.final_answer != null ? String(p.final_answer) : ''
+  // Submit final_answer is shown collapsed by default — the assistant bubble
+  // already carries the answer in its original form, so we avoid visual duplication.
+  const [submitOpen, setSubmitOpen] = useState(false)
 
   return (
     <div
@@ -1273,7 +1293,9 @@ function TraceEventInline({ event }: { event: AgentTraceEvent }) {
         </>
       )}
 
-      {/* tool_result: tool name + error + preview */}
+      {/* tool_result: tool name + error (preview is rendered as a full
+          ToolResultBubble by StepCard — intentionally omitted here to avoid
+          duplicating / truncating the observation content). */}
       {event.type === 'tool_result' && (
         <>
           {payloadName && (
@@ -1284,14 +1306,6 @@ function TraceEventInline({ event }: { event: AgentTraceEvent }) {
           {payloadError && (
             <div className="text-[11px] font-mono" style={{ color: 'var(--danger)' }}>
               Error: {payloadError}
-            </div>
-          )}
-          {payloadPreview && (
-            <div
-              className="rounded-lg px-2.5 py-1.5 text-[11px] font-mono whitespace-pre-wrap break-all max-h-[80px] overflow-auto"
-              style={{ background: 'var(--bg-deep)', color: 'var(--color-ink-muted)' }}
-            >
-              {payloadPreview.length > 300 ? payloadPreview.slice(0, 300) + '...' : payloadPreview}
             </div>
           )}
         </>
@@ -1343,13 +1357,36 @@ function TraceEventInline({ event }: { event: AgentTraceEvent }) {
         </div>
       )}
 
-      {/* submit: final_answer */}
+      {/* submit: final_answer — collapsed by default (assistant bubble already
+          shows the raw answer; this section exposes the parsed version on demand). */}
       {event.type === 'submit' && payloadFinalAnswer && (
-        <div
-          className="rounded-lg px-2.5 py-1.5 text-[11px] whitespace-pre-wrap break-all max-h-[80px] overflow-auto"
-          style={{ background: 'var(--success-bg, rgba(16,185,129,.1))', color: 'var(--color-ink-muted)' }}
-        >
-          {t('trace.finalAnswer')}: {payloadFinalAnswer.length > 200 ? payloadFinalAnswer.slice(0, 200) + '...' : payloadFinalAnswer}
+        <div className="flex flex-col gap-1">
+          <button
+            onClick={() => setSubmitOpen(v => !v)}
+            className="inline-flex items-center gap-1 text-[10px] font-mono self-start"
+            style={{
+              color: 'var(--color-ink-muted)',
+              background: 'none',
+              border: 'none',
+              padding: '0.1rem 0',
+              cursor: 'pointer',
+              opacity: 0.75,
+            }}
+          >
+            {submitOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+            <span className="uppercase tracking-wide font-semibold">
+              {t('trace.finalAnswer')}
+            </span>
+            <span style={{ opacity: 0.5 }}>({payloadFinalAnswer.length} chars)</span>
+          </button>
+          {submitOpen && (
+            <div
+              className="rounded-lg px-2.5 py-1.5 text-[11px] whitespace-pre-wrap break-all max-h-[200px] overflow-auto"
+              style={{ background: 'var(--success-bg, rgba(16,185,129,.1))', color: 'var(--color-ink-muted)' }}
+            >
+              {payloadFinalAnswer}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -1469,24 +1506,17 @@ function StepCard({
           <TraceEventInline key={`post-${i}`} event={ev} />
         ))}
 
-        {/* Tool message — only show when no tool_result TraceEventInline already covers it */}
-        {group.tool && toolResults.length === 0 && (
-          <ToolResultBubble content={contentToText(group.tool.content)} />
-        )}
+        {/* All tool/observation messages — rendered as full content bubbles.
+            Note: TraceEventInline above shows only the event header (name/latency/
+            error), never the preview, so there is no duplication with these. */}
+        {group.tools.map((m, i) => (
+          <ToolResultBubble key={`tool-${m.id ?? i}`} content={contentToText(m.content)} />
+        ))}
 
         {/* submit detail */}
         {submits.map((ev, i) => (
           <TraceEventInline key={`submit-${i}`} event={ev} />
         ))}
-
-        {/* Step has no messages — show trace events inline */}
-        {!group.assistant && !group.tool && group.traceEvents.length > 0 && (
-          <div className="flex flex-col gap-2">
-            {group.traceEvents.map((ev, i) => (
-              <TraceEventCard key={i} event={ev} highlighted={highlighted} onStepClick={onStepClick} />
-            ))}
-          </div>
-        )}
       </div>
     </div>
   )

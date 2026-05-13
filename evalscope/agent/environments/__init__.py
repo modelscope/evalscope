@@ -5,7 +5,7 @@ submodules below.  The registries themselves live in
 :mod:`evalscope.api.registry`.
 """
 
-from .docker import DockerAgentEnvironment
+from .enclave import EnclaveAgentEnvironment
 from .local import LocalAgentEnvironment
 
-__all__ = ['DockerAgentEnvironment', 'LocalAgentEnvironment']
+__all__ = ['EnclaveAgentEnvironment', 'LocalAgentEnvironment']

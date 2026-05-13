@@ -2,10 +2,10 @@
 
 Test plan:
   TestEnvironmentRegistry      – registry API surface (environments + tools)
-  TestLocalEnvironmentExec     – LocalAgentEnvironment exec / read_file / write_file
-  TestLocalEnvironmentTools    – bash/python_exec/read_file/write_file handlers w/ local env
-  TestDockerEnvironmentExec    – DockerAgentEnvironment exec / read_file / write_file
-  TestDockerEnvironmentTools   – bash + python_exec handlers w/ docker env
+  TestLocalEnvironmentExec     – LocalAgentEnvironment exec
+  TestLocalEnvironmentTools    – bash/python_exec handlers w/ local env
+  TestDockerEnvironmentExec    – EnclaveAgentEnvironment (docker engine) exec
+  TestDockerEnvironmentTools   – bash + python_exec handlers w/ enclave env
   TestAgentLoopWithEnvironment – full AgentLoop + local env + bash tool
   TestDefaultAdapterEnvPath    – _on_agent_inference environment_extra + tool_infos
   TestAgentConfigEnvironmentExtra – AgentConfig.environment_extra round-trip
@@ -84,11 +84,11 @@ class TestEnvironmentRegistry:
 
     def test_tools_registered(self):
         tools = list_agent_tools()
-        for name in ('bash', 'python_exec', 'read_file', 'write_file'):
+        for name in ('bash', 'python_exec'):
             assert name in tools, f"'{name}' not in {tools}"
 
     def test_tool_infos_registered(self):
-        for name in ('bash', 'python_exec', 'read_file', 'write_file'):
+        for name in ('bash', 'python_exec'):
             assert name in AGENT_TOOL_INFO_REGISTRY, f"ToolInfo missing for '{name}'"
             info = AGENT_TOOL_INFO_REGISTRY[name]
             assert isinstance(info, ToolInfo)
@@ -117,8 +117,13 @@ class TestEnvironmentRegistry:
 
     def test_get_environment_docker(self):
         cls = get_environment('docker')
-        from evalscope.agent.environments.docker import DockerAgentEnvironment
-        assert cls is DockerAgentEnvironment
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+        assert cls is EnclaveAgentEnvironment
+
+    def test_get_environment_enclave_alias(self):
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+        assert get_environment('enclave') is EnclaveAgentEnvironment
+        assert get_environment('volcengine') is EnclaveAgentEnvironment
 
     def test_get_environment_unknown_raises(self):
         with pytest.raises(ValueError, match='not registered'):
@@ -130,8 +135,6 @@ class TestEnvironmentRegistry:
             @register_environment('local')
             class _Dup(AgentEnvironment):
                 async def exec(self, *a, **kw): ...
-                async def read_file(self, *a, **kw): ...
-                async def write_file(self, *a, **kw): ...
                 async def close(self): ...
 
     def test_bash_tool_info_has_required_params(self):
@@ -192,31 +195,6 @@ class TestLocalEnvironmentExec:
         env = LocalAgentEnvironment(env_vars={'MY_VAR': 'hello_from_test'})
         result = self._run(env.exec(['bash', '-c', 'echo $MY_VAR']))
         assert 'hello_from_test' in result.stdout
-
-    def test_read_write_file(self):
-        env = self._env()
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.txt') as fh:
-            path = fh.name
-        try:
-            content = 'hello from T2 test\nline 2'
-            self._run(env.write_file(path, content))
-            read_back = self._run(env.read_file(path))
-            assert read_back == content
-        finally:
-            os.unlink(path)
-
-    def test_write_file_creates_parent_dirs(self):
-        env = self._env()
-        with tempfile.TemporaryDirectory() as tmpdir:
-            path = os.path.join(tmpdir, 'subdir', 'nested.txt')
-            self._run(env.write_file(path, 'nested content'))
-            read_back = self._run(env.read_file(path))
-            assert read_back == 'nested content'
-
-    def test_read_file_missing_raises(self):
-        env = self._env()
-        with pytest.raises(FileNotFoundError):
-            self._run(env.read_file('/nonexistent/path/xyz_8472.txt'))
 
     def test_close_is_idempotent(self):
         env = self._env()
@@ -286,46 +264,6 @@ class TestLocalEnvironmentTools:
         with pytest.raises(PermissionError):
             self._run(run_python_exec(call, None))
 
-    def test_read_file_tool(self):
-        from evalscope.agent.tools.text_editor import run_read_file, run_write_file
-        env = self._env()
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.txt', mode='w') as fh:
-            fh.write('agent reads this')
-            path = fh.name
-        try:
-            call = _tool_call('read_file', {'path': path})
-            obs = self._run(run_read_file(call, env))
-            assert 'agent reads this' in obs
-        finally:
-            os.unlink(path)
-
-    def test_write_file_tool(self):
-        from evalscope.agent.tools.text_editor import run_read_file, run_write_file
-        env = self._env()
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.txt') as fh:
-            path = fh.name
-        try:
-            call = _tool_call('write_file', {'path': path, 'content': 'written by tool'})
-            obs = self._run(run_write_file(call, env))
-            assert 'written' in obs.lower()
-            # Verify file content
-            with open(path) as fh:
-                assert fh.read() == 'written by tool'
-        finally:
-            os.unlink(path)
-
-    def test_read_file_tool_without_env_raises(self):
-        from evalscope.agent.tools.text_editor import run_read_file
-        call = _tool_call('read_file', {'path': '/tmp/x'})
-        with pytest.raises(PermissionError):
-            self._run(run_read_file(call, None))
-
-    def test_write_file_tool_without_env_raises(self):
-        from evalscope.agent.tools.text_editor import run_write_file
-        call = _tool_call('write_file', {'path': '/tmp/x', 'content': 'x'})
-        with pytest.raises(PermissionError):
-            self._run(run_write_file(call, None))
-
 
 # ===========================================================================
 # TestDockerEnvironmentExec  (requires Docker)
@@ -333,7 +271,7 @@ class TestLocalEnvironmentTools:
 
 @docker_mark
 class TestDockerEnvironmentExec:
-    """Integration tests for DockerAgentEnvironment.
+    """Integration tests for ``EnclaveAgentEnvironment`` with the docker engine.
 
     These tests create real Docker containers using the ``python:3.11-slim``
     image.  Each test uses its own environment instance (= its own container).
@@ -343,8 +281,12 @@ class TestDockerEnvironmentExec:
         return AsyncioLoopRunner.run(coro)
 
     def _env(self):
-        from evalscope.agent.environments.docker import DockerAgentEnvironment
-        return DockerAgentEnvironment(image='python:3.11-slim', timeout=30.0)
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+        return EnclaveAgentEnvironment(
+            engine='docker',
+            sandbox_config={'image': 'python:3.11-slim'},
+            timeout=30.0,
+        )
 
     def teardown_method(self, method):
         """Reset the class-level manager between test classes to avoid leakage."""
@@ -388,16 +330,6 @@ class TestDockerEnvironmentExec:
         finally:
             self._run(env.close())
 
-    def test_read_write_file(self):
-        env = self._env()
-        try:
-            content = 'docker file test\nline2'
-            self._run(env.write_file('/workspace/test.txt', content))
-            read_back = self._run(env.read_file('/workspace/test.txt'))
-            assert read_back == content
-        finally:
-            self._run(env.close())
-
     def test_close_idempotent(self):
         env = self._env()
         # Trigger container creation
@@ -412,21 +344,22 @@ class TestDockerEnvironmentExec:
         env1 = self._env()
         env2 = self._env()
         try:
-            self._run(env1.write_file('/workspace/marker.txt', 'env1'))
-            self._run(env2.write_file('/workspace/marker.txt', 'env2'))
-            v1 = self._run(env1.read_file('/workspace/marker.txt'))
-            v2 = self._run(env2.read_file('/workspace/marker.txt'))
-            # Each container has its own filesystem
-            assert v1 == 'env1'
-            assert v2 == 'env2'
+            r1 = self._run(env1.exec(['bash', '-c', 'echo env1 > /workspace/marker.txt && cat /workspace/marker.txt']))
+            r2 = self._run(env2.exec(['bash', '-c', 'echo env2 > /workspace/marker.txt && cat /workspace/marker.txt']))
+            # Each container has its own filesystem; markers stay isolated.
+            assert 'env1' in r1.stdout
+            assert 'env2' in r2.stdout
         finally:
             self._run(env1.close())
             self._run(env2.close())
 
     def test_context_manager(self):
         async def _cm():
-            from evalscope.agent.environments.docker import DockerAgentEnvironment
-            async with DockerAgentEnvironment(image='python:3.11-slim') as env:
+            from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+            async with EnclaveAgentEnvironment(
+                engine='docker',
+                sandbox_config={'image': 'python:3.11-slim'},
+            ) as env:
                 result = await env.exec(['echo', 'ctx_mgr'])
             return result
 
@@ -445,8 +378,12 @@ class TestDockerEnvironmentTools:
         return AsyncioLoopRunner.run(coro)
 
     def _env(self):
-        from evalscope.agent.environments.docker import DockerAgentEnvironment
-        return DockerAgentEnvironment(image='python:3.11-slim', timeout=30.0)
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+        return EnclaveAgentEnvironment(
+            engine='docker',
+            sandbox_config={'image': 'python:3.11-slim'},
+            timeout=30.0,
+        )
 
     def test_bash_tool_in_docker(self):
         from evalscope.agent.tools.bash import run_bash

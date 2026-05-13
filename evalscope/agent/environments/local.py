@@ -75,25 +75,8 @@ class LocalAgentEnvironment(AgentEnvironment):
             await proc.wait()
             return ExecResult(returncode=-1, timed_out=True)
 
-    async def read_file(self, path: str) -> str:
-        result = await self.exec(['cat', path])
-        if result.returncode != 0:
-            raise FileNotFoundError(f"Cannot read '{path}': {result.stderr.strip()}")
-        return result.stdout
-
-    async def write_file(self, path: str, content: str) -> None:
-        dir_path = os.path.dirname(os.path.abspath(path))
-        if dir_path:
-            os.makedirs(dir_path, exist_ok=True)
-        await asyncio.to_thread(_write_file_sync, path, content)
-
     async def close(self) -> None:
         """No external resources to release."""
-
-
-def _write_file_sync(path: str, content: str) -> None:
-    with open(path, 'w', encoding='utf-8') as fh:
-        fh.write(content)
 
 
 __all__ = ['LocalAgentEnvironment']

@@ -99,12 +99,6 @@ class TestRegistryUnification(unittest.TestCase):
             async def exec(self, cmd, *, cwd=None, input=None, timeout=None):
                 raise NotImplementedError
 
-            async def read_file(self, path):
-                raise NotImplementedError
-
-            async def write_file(self, path, content):
-                raise NotImplementedError
-
             async def close(self):
                 pass
 

@@ -143,6 +143,7 @@ export interface AgentTraceEvent {
   step: number
   timestamp: number
   type: AgentTraceEventType
+  message_id?: string | null
   latency_ms?: number | null
   token_usage?: { input?: number; output?: number; total?: number } | null
   payload: Record<string, unknown>

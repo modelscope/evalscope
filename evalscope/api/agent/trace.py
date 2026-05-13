@@ -49,6 +49,16 @@ class AgentTraceEvent(BaseModel):
     type: EventType
     """Event kind (see :class:`EventType`)."""
 
+    message_id: Optional[str] = None
+    """ID of the ``ChatMessage`` this event was emitted for.
+
+    - ``model_generate`` / ``tool_call`` / parse ``error`` / ``submit`` (final_answer)
+      → id of the assistant message just produced.
+    - ``tool_result`` → id of the tool/user observation message just appended.
+    - ``submit`` (post_execution) → id of the last observation message in this step.
+    - Loop-level events with no message (e.g. ``max_steps_exceeded``) leave this ``None``.
+    """
+
     latency_ms: Optional[float] = None
     """Wall-clock latency of the operation that produced this event."""
 
@@ -82,6 +92,7 @@ class AgentTrace(BaseModel):
         *,
         step: int,
         type: EventType,
+        message_id: Optional[str] = None,
         latency_ms: Optional[float] = None,
         token_usage: Optional[Dict[str, int]] = None,
         payload: Optional[Dict[str, Any]] = None,
@@ -90,6 +101,7 @@ class AgentTrace(BaseModel):
         event = AgentTraceEvent(
             step=step,
             type=type,
+            message_id=message_id,
             latency_ms=latency_ms,
             token_usage=token_usage,
             payload=payload or {},

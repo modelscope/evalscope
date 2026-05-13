@@ -395,6 +395,19 @@ class DefaultDataAdapter(DataAdapter):
         """
         pass
 
+    def build_sandbox_config(self, sample: Sample) -> Optional[Dict[str, Any]]:
+        """Return a per-sample sandbox config dict.
+
+        The result is merged on top of ``TaskConfig.sandbox.default_config``
+        before being passed to the Agent environment constructor.  Override
+        this hook in benchmarks that need per-sample sandbox customisation
+        (e.g. SWE-bench Pro which pins a specific image per instance).
+
+        Return ``None`` or ``{}`` to opt out; callers will then fall back to
+        the task-level default config.
+        """
+        return None
+
     def _on_inference(self, model: Model, sample: Sample) -> ModelOutput:
         """
         Hook method called during the actual inference process.
@@ -449,15 +462,12 @@ class DefaultDataAdapter(DataAdapter):
         if cfg.environment is not None:
             env_cls = get_environment(cfg.environment)
 
-        # Build environment kwargs: start from agent_config.environment_extra,
-        # then backfill manager_config from TaskConfig.sandbox_manager_config
-        # when not already overridden.  This lets users set sandbox_manager_config
-        # once at the TaskConfig level for both SandboxMixin and AgentEnvironment.
-        env_kwargs = dict(cfg.environment_extra)
-        if 'manager_config' not in env_kwargs:
-            task_mgr_cfg = getattr(self._task_config, 'sandbox_manager_config', None)
-            if task_mgr_cfg:
-                env_kwargs['manager_config'] = task_mgr_cfg
+        # Build environment kwargs.  Priority (lowest → highest):
+        #   1. TaskConfig.sandbox (engine / default_config / manager_config) –
+        #      shared with SandboxMixin so users configure sandbox **once**.
+        #   2. build_sandbox_config(sample) – per-sample override hook.
+        #   3. agent_config.environment_extra – user-supplied raw kwargs.
+        env_kwargs = self._resolve_env_kwargs(cfg, sample)
 
         if isinstance(sample.input, list):
             initial_messages = list(sample.input)
@@ -509,6 +519,41 @@ class DefaultDataAdapter(DataAdapter):
         output.metadata['__agent_messages__'] = result.messages
         output.metadata['__agent_trace__'] = result.trace
         return output
+
+    def _resolve_env_kwargs(self, cfg: Any, sample: Sample) -> Dict[str, Any]:
+        """Merge task-level + per-sample sandbox config into environment kwargs.
+
+        Precedence (lowest -> highest):
+          1. ``TaskConfig.sandbox`` — engine / default_config / manager_config
+             carried alongside the pooled SandboxMixin so sandbox settings
+             are defined **once** at the task level.
+          2. :meth:`build_sandbox_config(sample)` — per-sample override.
+          3. ``agent_config.environment_extra`` — raw kwargs forwarded verbatim
+             to the environment constructor (last word for power users).
+        """
+        env_kwargs: Dict[str, Any] = {}
+        base_sandbox_cfg: Dict[str, Any] = {}
+
+        task_sandbox = self._task_config.sandbox
+        if task_sandbox is not None and task_sandbox.enabled:
+            env_kwargs['engine'] = task_sandbox.engine
+            base_sandbox_cfg = dict(task_sandbox.default_config or {})
+            if task_sandbox.manager_config:
+                env_kwargs['manager_config'] = dict(task_sandbox.manager_config)
+
+        try:
+            per_sample_cfg = self.build_sandbox_config(sample) or {}
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning(f'build_sandbox_config raised {exc!r}; falling back to task-level sandbox config.')
+            per_sample_cfg = {}
+
+        merged_sandbox_cfg: Dict[str, Any] = {**base_sandbox_cfg, **per_sample_cfg}
+        if merged_sandbox_cfg:
+            env_kwargs['sandbox_config'] = merged_sandbox_cfg
+
+        # environment_extra wins over everything above.
+        env_kwargs.update(cfg.environment_extra)
+        return env_kwargs
 
     def _extract_final_answer(self, result: AgentLoopResult, strategy: Any) -> str:
         """Return the final prediction string from a completed agent loop.

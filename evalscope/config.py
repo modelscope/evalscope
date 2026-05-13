@@ -54,6 +54,39 @@ DEFAULT_MODEL_ARGS_CHECKPOINT = {
 }
 
 
+class SandboxTaskConfig(BaseArgument):
+    """Unified sandbox configuration for both pooled (SandboxMixin) and
+    per-sample (EnclaveAgentEnvironment) execution paths.
+
+    This is the forward-looking replacement for the legacy top-level
+    ``TaskConfig.use_sandbox`` / ``sandbox_type`` / ``sandbox_manager_config``
+    triplet.  :meth:`TaskConfig._init_default_sandbox_config` folds those
+    legacy fields into ``self.sandbox`` once at construction time; afterwards
+    all consumers read from ``self.sandbox`` and the legacy fields are
+    untouched aliases retained solely for input compatibility.
+    """
+
+    enabled: bool = False
+    """Whether to enable the sandbox subsystem for this task."""
+
+    engine: str = 'docker'
+    """Sandbox engine name.  One of ``'docker'`` / ``'volcengine'`` (or aliases
+    accepted by :func:`evalscope.api.sandbox.resolve_engine`)."""
+
+    default_config: Dict[str, Any] = Field(default_factory=dict)
+    """Task-level overrides merged on top of ``BenchmarkMeta.sandbox_config``.
+    The merged dict is passed to :func:`build_sandbox_config`.  Also acts as
+    the default sandbox config for per-sample agent environments."""
+
+    manager_config: Dict[str, Any] = Field(default_factory=dict)
+    """Kwargs forwarded to the ms_enclave manager constructor (e.g.
+    ``base_url`` for a remote docker daemon, or volcengine credentials)."""
+
+    pool_size: Optional[int] = None
+    """Warm-pool size for pooled execution.  Defaults to ``eval_batch_size``
+    when ``None``."""
+
+
 class TaskConfig(BaseArgument):
     # Model-related arguments
     model: Optional[Union[str, Model, ModelAPI]] = None
@@ -170,14 +203,22 @@ class TaskConfig(BaseArgument):
     """Whether to collect per-request performance metrics during evaluation."""
 
     # Sandbox configuration arguments
+    sandbox: Optional[SandboxTaskConfig] = None
+    """Unified sandbox configuration (preferred).  When set, takes precedence
+    over the legacy ``use_sandbox`` / ``sandbox_type`` / ``sandbox_manager_config``
+    fields which are kept as deprecated aliases."""
+
     use_sandbox: bool = False
-    """Whether to execute code in a sandboxed environment."""
+    """[Deprecated] Use ``sandbox.enabled`` instead.  Kept as an alias for
+    backward compatibility; will be removed in a future release."""
 
     sandbox_type: Optional[str] = 'docker'
-    """Type of sandbox environment for code execution (e.g., docker). Default is 'docker'."""
+    """[Deprecated] Use ``sandbox.engine`` instead.  Kept as an alias for
+    backward compatibility; will be removed in a future release."""
 
     sandbox_manager_config: Optional[Dict] = Field(default_factory=dict)
-    """Configuration for the sandbox manager. Default is local manager. If url is provided, it will use remote manager."""
+    """[Deprecated] Use ``sandbox.manager_config`` instead.  Kept as an
+    alias for backward compatibility; will be removed in a future release."""
 
     # Agent-loop configuration
     agent_config: Optional[AgentConfig] = None
@@ -231,6 +272,15 @@ class TaskConfig(BaseArgument):
         if isinstance(v, dict):
             return AgentConfig.model_validate(v)
         raise ValueError(f'`agent_config` must be a dict, AgentConfig or None, got {type(v).__name__}.')
+
+    @field_validator('sandbox', mode='before')
+    @classmethod
+    def _validate_sandbox(cls, v):
+        if v is None or isinstance(v, SandboxTaskConfig):
+            return v
+        if isinstance(v, dict):
+            return SandboxTaskConfig.model_validate(v)
+        raise ValueError(f'`sandbox` must be a dict, SandboxTaskConfig or None, got {type(v).__name__}.')
 
     # --- Model validator (cross-field logic, replaces __post_init__) ---
 
@@ -339,13 +389,42 @@ class TaskConfig(BaseArgument):
             self.model_args = DEFAULT_MODEL_ARGS_CHECKPOINT.copy()
 
     def _init_default_sandbox_config(self):
-        if not self.use_sandbox:
+        """Normalise sandbox configuration into ``self.sandbox``.
+
+        After this method every consumer (``SandboxMixin``, data adapters,
+        ``EnclaveAgentEnvironment``) reads sandbox settings exclusively from
+        ``self.sandbox`` — the legacy ``use_sandbox`` / ``sandbox_type`` /
+        ``sandbox_manager_config`` fields are single-source-of-truth inputs
+        only and are **not** kept in sync afterwards.
+
+        Rules:
+          * If ``sandbox`` is provided, it wins; when legacy fields are also
+            set a deprecation warning is emitted.
+          * Otherwise ``sandbox`` is constructed from the legacy fields so
+            historical task configs keep working.
+        """
+        legacy_set = bool(self.use_sandbox) or (self.sandbox_type
+                                                not in (None, 'docker')) or bool(self.sandbox_manager_config)
+
+        if self.sandbox is None:
+            # Build from legacy fields (possibly all defaults).
+            self.sandbox = SandboxTaskConfig(
+                enabled=bool(self.use_sandbox),
+                engine=self.sandbox_type or 'docker',
+                manager_config=dict(self.sandbox_manager_config or {}),
+            )
+        elif legacy_set:
+            deprecated_warning(
+                logger, 'Both `sandbox` and legacy sandbox fields '
+                '(`use_sandbox` / `sandbox_type` / `sandbox_manager_config`) are set; '
+                'the nested `sandbox` object takes precedence. The legacy fields will be '
+                'removed in a future release.'
+            )
+
+        if not self.sandbox.enabled:
             return
 
         check_import('ms_enclave', 'evalscope[sandbox]', raise_error=True)
-
-        if not self.sandbox_type:
-            self.sandbox_type = 'docker'
 
     @staticmethod
     def _deep_merge(base: dict, override: dict) -> dict:

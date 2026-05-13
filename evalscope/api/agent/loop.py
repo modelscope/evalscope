@@ -88,6 +88,7 @@ class AgentLoop:
             self.trace.add_event(
                 step=ctx.step,
                 type=EventType.MODEL_GENERATE,
+                message_id=assistant_msg.id,
                 latency_ms=latency_ms,
                 token_usage=_extract_usage(output),
                 payload={'stop_reason': output.stop_reason},
@@ -99,6 +100,7 @@ class AgentLoop:
                 self.trace.add_event(
                     step=ctx.step,
                     type=EventType.ERROR,
+                    message_id=assistant_msg.id,
                     payload={
                         'source': 'parse',
                         'message': parsed.error
@@ -111,6 +113,7 @@ class AgentLoop:
                     self.trace.add_event(
                         step=ctx.step,
                         type=EventType.SUBMIT,
+                        message_id=assistant_msg.id,
                         payload={'final_answer': parsed.final_answer},
                     )
                 break
@@ -128,6 +131,7 @@ class AgentLoop:
                 self.trace.add_event(
                     step=ctx.step,
                     type=EventType.TOOL_RESULT,
+                    message_id=nudge.id,
                     payload={
                         'source': 'nudge',
                         'message': 'no_tool_call_reminder'
@@ -138,10 +142,12 @@ class AgentLoop:
 
             # ---- tool execution ----
             if parsed.tool_calls:
+                last_obs_id: Optional[str] = None
                 for call in parsed.tool_calls:
                     self.trace.add_event(
                         step=ctx.step,
                         type=EventType.TOOL_CALL,
+                        message_id=assistant_msg.id,
                         payload={
                             'name': call.function.name,
                             'arguments': call.function.arguments,
@@ -153,9 +159,11 @@ class AgentLoop:
                     # (ChatMessageTool for FC, ChatMessageUser for textual_block).
                     obs_msg = self.strategy.format_observation(call, observation, error)
                     ctx.messages.append(obs_msg)
+                    last_obs_id = obs_msg.id
                     self.trace.add_event(
                         step=ctx.step,
                         type=EventType.TOOL_RESULT,
+                        message_id=obs_msg.id,
                         latency_ms=duration * 1000,
                         payload={
                             'name': call.function.name,
@@ -173,6 +181,7 @@ class AgentLoop:
                     self.trace.add_event(
                         step=ctx.step,
                         type=EventType.SUBMIT,
+                        message_id=last_obs_id,
                         payload={'source': 'post_execution_check'},
                     )
                     break
