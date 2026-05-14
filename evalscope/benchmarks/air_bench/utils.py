@@ -72,6 +72,40 @@ CHAT_REPORTED_CATEGORIES = ['speech', 'sound', 'music', 'speech_and_sound', 'spe
 SUPPORTED_CONTENT_AUDIO_FORMATS = {'wav', 'mp3'}
 
 
+def _resolve_local_cache(
+    dataset_id: str,
+    track: str,
+    cache_dir: Optional[str],
+    subset_dirs: Optional[List[str]],
+) -> Optional[str]:
+    """Return the local cache root if all requested subset directories are present.
+
+    Checks the standard ModelScope cache layout
+    ``{cache_dir}/{dataset_id}/{track}/{subset}/`` for every entry in
+    *subset_dirs*.  When *subset_dirs* is ``None`` the check only verifies
+    that the track-level directory exists.
+
+    Returns:
+        The dataset root path (parent of the track directory) when the cache
+        is complete for the requested subsets, or ``None`` if any subset is
+        absent and a download is required.
+    """
+    cache_root = cache_dir or os.path.join(os.path.expanduser('~'), '.cache', 'modelscope', 'hub', 'datasets')
+    local_cached = os.path.join(cache_root, *dataset_id.split('/'))
+    track_dir = os.path.join(local_cached, track)
+
+    if not os.path.isdir(track_dir):
+        return None
+
+    if subset_dirs:
+        missing = [s for s in subset_dirs if not os.path.isdir(os.path.join(track_dir, s))]
+        if missing:
+            logger.info(f'AIR-Bench {track}: {len(missing)} subset(s) absent from local cache: {missing}.')
+            return None
+
+    return local_cached
+
+
 def download_air_bench(
     track: str,
     dataset_id: str = HF_REPO_ID,
@@ -111,9 +145,23 @@ def download_air_bench(
 
     from modelscope import dataset_snapshot_download
 
-    # Always grab the track-level meta JSON.
+    # Determine which subsets still need to be fetched.
+    cache_root = cache_dir or os.path.join(os.path.expanduser('~'), '.cache', 'modelscope', 'hub', 'datasets')
+    local_cached = os.path.join(cache_root, *dataset_id.split('/'))
+    track_dir = os.path.join(local_cached, track)
+
+    if os.path.isdir(track_dir) and subset_dirs:
+        # Partial cache: only pull the absent subsets.
+        missing = [s for s in subset_dirs if not os.path.isdir(os.path.join(track_dir, s))]
+    else:
+        missing = subset_dirs or []
+
+    # Build allow-patterns: always include the meta JSON.
     allow_patterns: List[str] = [f'{track}/{track}_meta.json']
-    if subset_dirs:
+    if missing:
+        for sub in missing:
+            allow_patterns.append(f'{track}/{sub}/*')
+    elif subset_dirs:
         for sub in subset_dirs:
             allow_patterns.append(f'{track}/{sub}/*')
     else:
