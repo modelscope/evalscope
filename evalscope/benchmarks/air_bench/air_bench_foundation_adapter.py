@@ -47,7 +47,7 @@ VALID_LETTERS = ('A', 'B', 'C', 'D')
         description="""
 ## Overview
 
-AIR-Bench Foundation is the discriminative half of [AIR-Bench](https://arxiv.org/abs/2402.07729) (ACL 2024) — the first audio-instruction benchmark covering speech, natural sounds and music. It contains roughly 25k single-choice questions spanning 19 tasks across three audio categories.
+AIR-Bench Foundation is the discriminative half of [AIR-Bench](https://arxiv.org/abs/2402.07729) (Audio InstRuction Benchmark, ACL 2024 main conference) — the first instruction-following benchmark for large audio-language models (LALMs), covering **human speech, natural sounds and music**. The Foundation track contains roughly 25k single-choice questions spanning 19 logical tasks across three audio categories.
 
 ## Task Description
 
@@ -57,14 +57,30 @@ AIR-Bench Foundation is the discriminative half of [AIR-Bench](https://arxiv.org
 
 ## Categories (19 tasks / 25 source-dataset subsets)
 
-- **Speech** (9 tasks): grounding, language ID, gender, emotion, age, entity recognition, intent classification, speaker counting, synthesized-voice detection.
-- **Sound** (4 tasks): audio grounding, vocal sound classification, acoustic scene classification, sound QA.
-- **Music** (6 tasks): instruments, genre, MIDI pitch, MIDI velocity, music QA, music emotion.
+- **Speech** (11 dirs / 9 tasks): speech grounding, language ID, gender, emotion (IEMOCAP+MELD), age, speech entity recognition, intent classification, speaker counting, synthesized-voice detection.
+- **Sound** (6 dirs / 4 tasks): audio grounding, vocal sound classification, acoustic scene classification (CochlScene+TUT2017), sound QA (avqa+clothoaqa).
+- **Music** (8 dirs / 6 tasks): instruments, genre, MIDI pitch, MIDI velocity, music QA, music emotion.
+
+## Prompt Template (matches official `Inference_Foundation.py`)
+
+```text
+Choose the most suitable answer from options A, B, C, and D to respond the question in next line, you may only choose A or B or C or D.
+{question}
+A. {choice_a}
+B. {choice_b}
+C. {choice_c}
+D. {choice_d}
+```
+
+## Dataset Access
+
+- The dataset is hosted on ModelScope: [`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset). It uses an *audiofolder + JSON metadata* layout. evalscope downloads it lazily via `modelscope.dataset_snapshot_download` on first run; the full release is ~49 GB, so it is recommended to limit which subsets are pulled via `extra_params`.
+- If the dataset is already on disk, pass `dataset_args={'air_bench_foundation': {'local_path': '/path/to/AIR-Bench-Dataset'}}`; the local root should contain `Foundation/`.
+- Some Foundation samples are FLAC. For OpenAI-compatible audio input evalscope converts them to cached WAV files, which requires either `soundfile` (`pip install "evalscope[air_bench]"`) or a working `ffmpeg` binary.
 
 ## Evaluation Notes
 
 - Metric: **accuracy** (per source-dataset subset, plus per-category aggregation).
-- Audio is loaded from the official Hugging Face release (`qyang1021/AIR-Bench-Dataset`); FLAC samples are converted to cached WAV files for model input.
 - Default prompt follows the official `Inference_Foundation.py` formatting so existing AIR-Bench leaderboard numbers can be reproduced.
 - Set `extra_params={'subsets': [...]}` to limit to a subset of the 25 source directories — useful for partial downloads.
 """,  # noqa: E501

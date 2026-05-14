@@ -63,7 +63,7 @@ Please rate the helpfulness, relevance, accuracy, and comprehensiveness of their
         description="""
 ## Overview
 
-AIR-Bench Chat is the generative half of [AIR-Bench](https://arxiv.org/abs/2402.07729) (ACL 2024). It contains roughly 2k open-ended audio QA pairs covering speech, sound, music and mixed-audio scenes; responses are graded by a GPT-4 judge against a reference answer.
+AIR-Bench Chat is the generative half of [AIR-Bench](https://arxiv.org/abs/2402.07729) (Audio InstRuction Benchmark, ACL 2024 main conference) — the first instruction-following benchmark for large audio-language models (LALMs), covering **human speech, natural sounds and music**. It contains roughly 2k open-ended audio QA pairs covering speech, sound, music and mixed-audio scenes; responses are graded by a GPT-4 judge against a reference answer.
 
 ## Task Description
 
@@ -71,16 +71,35 @@ AIR-Bench Chat is the generative half of [AIR-Bench](https://arxiv.org/abs/2402.
 - **Input**: An audio clip plus a free-form question.
 - **Output**: A textual answer evaluated against the reference response.
 
+## Categories (8 tasks → 5 reported categories)
+
+The 8 Chat tasks are aggregated by the official `cal_score.py` into five categories:
+
+- `speech`: `speech_QA`, `speech_dialogue_QA`
+- `sound`: `sound_QA`, `sound_generation_QA`
+- `music`: `music_QA`, `music_generation_analysis_QA`
+- `speech_and_sound`: `speech_and_sound_QA`
+- `speech_and_music`: `speech_and_music_QA`
+
+The paper's **Mixed-audio = mean(speech_and_sound, speech_and_music)**.
+
+## Dataset Access
+
+- The dataset is hosted on ModelScope: [`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset). It uses an *audiofolder + JSON metadata* layout. evalscope downloads it lazily via `modelscope.dataset_snapshot_download` on first run; the full release is ~49 GB, so it is recommended to limit which tasks are pulled via `extra_params`.
+- If the dataset is already on disk, pass `dataset_args={'air_bench_chat': {'local_path': '/path/to/AIR-Bench-Dataset'}}`; the local root should contain `Chat/`.
+
 ## Evaluation Protocol
 
 - The judge LLM (default: GPT-4) receives the question, the textual audio description (`meta_info` from the dataset), the reference answer (`answer_gt`), and the model's response. It outputs a single line with two integer scores in `[1, 10]`.
-- To remove position bias, every sample is judged twice with the order of reference and prediction swapped, then averaged. This mirrors `cal_score.py` in the official repository.
+- To remove position bias, every sample is judged twice with the order of reference and prediction swapped, then averaged. This mirrors `cal_score.py` in the official repository — disable it via `extra_params={'do_swap': False}` to halve judge cost.
 - Reported metric `gpt_score` is the model's mean judge score; `win_rate` records how often the model strictly beats the reference.
-- Categories are aggregated as `speech`, `sound`, `music`, `speech_and_sound`, `speech_and_music`. The paper's "Mixed audio" column equals `mean(speech_and_sound, speech_and_music)`.
+
+```{warning}
+The official leaderboard uses `gpt-4-0125-preview` as the judge model. If that exact snapshot is unavailable, use an available GPT-4-class judge; absolute scores can drift versus the published numbers because the judge model changed.
+```
 
 ## Implementation Notes
 
-- Audio is loaded directly from the official Hugging Face dataset (`qyang1021/AIR-Bench-Dataset`).
 - The judge model is selected via `--judge-model-args`; ensure the model id supports long contexts (`meta_info` may exceed 4k tokens for dialogue tasks).
 - Set `extra_params={'tasks': [...]}` to evaluate only specific Chat task names — useful for partial runs.
 """,  # noqa: E501

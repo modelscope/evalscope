@@ -15,7 +15,7 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-HF_REPO_ID = 'qyang1021/AIR-Bench-Dataset'
+HF_REPO_ID = 'evalscope/AIR-Bench-Dataset'
 
 # Mapping from Foundation track sub-directory name -> high-level audio category.
 # The 25 directory names correspond to the 19 logical tasks described in the
@@ -78,14 +78,14 @@ def download_air_bench(
     cache_dir: Optional[str] = None,
     subset_dirs: Optional[List[str]] = None,
 ) -> str:
-    """Resolve the AIR-Bench dataset root, downloading from Hugging Face if needed.
+    """Resolve the AIR-Bench dataset root, downloading from ModelScope if needed.
 
     Args:
         track: Either ``'Foundation'`` or ``'Chat'`` — used to scope the download.
-        dataset_id: Local path or Hugging Face repository id. If a local path
+        dataset_id: Local path or ModelScope repository id. If a local path
             exists it is returned as-is.
         cache_dir: Optional local cache directory; falls back to the
-            ``huggingface_hub`` default when ``None``.
+            ``modelscope`` default when ``None``.
         subset_dirs: When provided, only these sub-directories under the chosen
             track are downloaded (alongside the track-level meta JSON).
 
@@ -96,13 +96,7 @@ def download_air_bench(
     if os.path.isdir(dataset_id):
         return dataset_id
 
-    try:
-        from huggingface_hub import snapshot_download
-    except ImportError as e:
-        raise ImportError(
-            'AIR-Bench requires the `huggingface_hub` package. '
-            'Install it via `pip install huggingface_hub`.'
-        ) from e
+    from modelscope import dataset_snapshot_download
 
     # Always grab the track-level meta JSON.
     allow_patterns: List[str] = [f'{track}/{track}_meta.json']
@@ -113,14 +107,13 @@ def download_air_bench(
         allow_patterns.append(f'{track}/*')
 
     logger.info(
-        f'Downloading AIR-Bench {track} from Hugging Face (`{dataset_id}`). '
+        f'Downloading AIR-Bench {track} from ModelScope (`{dataset_id}`). '
         f'Patterns: {allow_patterns}. This can be tens of GB on first run.'
     )
-    local_path = snapshot_download(
-        repo_id=dataset_id,
-        repo_type='dataset',
+    local_path = dataset_snapshot_download(
+        dataset_id,
         cache_dir=cache_dir,
-        allow_patterns=allow_patterns,
+        allow_file_pattern=allow_patterns,
     )
     return local_path
 

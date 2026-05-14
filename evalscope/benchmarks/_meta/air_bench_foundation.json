@@ -1,7 +1,7 @@
 {
   "meta": {
     "pretty_name": "AIR-Bench-Foundation",
-    "dataset_id": "qyang1021/AIR-Bench-Dataset",
+    "dataset_id": "evalscope/AIR-Bench-Dataset",
     "paper_url": "https://aclanthology.org/2024.acl-long.109/",
     "tags": [
       "Audio",
@@ -41,7 +41,7 @@
       "Music_Midi_Velocity_Analysis_nsynth",
       "Music_Mood_Recognition_MTJ-Jamendo"
     ],
-    "description": "\n## Overview\n\nAIR-Bench Foundation is the discriminative half of [AIR-Bench](https://arxiv.org/abs/2402.07729) (ACL 2024) — the first audio-instruction benchmark covering speech, natural sounds and music. It contains roughly 25k single-choice questions spanning 19 tasks across three audio categories.\n\n## Task Description\n\n- **Task Type**: Single-choice question answering grounded on an audio clip.\n- **Input**: One audio clip + a question with up to four candidate answers (A/B/C/D).\n- **Output**: A single letter chosen from the provided options.\n\n## Categories (19 tasks / 25 source-dataset subsets)\n\n- **Speech** (9 tasks): grounding, language ID, gender, emotion, age, entity recognition, intent classification, speaker counting, synthesized-voice detection.\n- **Sound** (4 tasks): audio grounding, vocal sound classification, acoustic scene classification, sound QA.\n- **Music** (6 tasks): instruments, genre, MIDI pitch, MIDI velocity, music QA, music emotion.\n\n## Evaluation Notes\n\n- Metric: **accuracy** (per source-dataset subset, plus per-category aggregation).\n- Audio is loaded from the official Hugging Face release (`qyang1021/AIR-Bench-Dataset`); FLAC samples are converted to cached WAV files for model input.\n- Default prompt follows the official `Inference_Foundation.py` formatting so existing AIR-Bench leaderboard numbers can be reproduced.\n- Set `extra_params={'subsets': [...]}` to limit to a subset of the 25 source directories — useful for partial downloads.\n",
+    "description": "\n## Overview\n\nAIR-Bench Foundation is the discriminative half of [AIR-Bench](https://arxiv.org/abs/2402.07729) (Audio InstRuction Benchmark, ACL 2024 main conference) — the first instruction-following benchmark for large audio-language models (LALMs), covering **human speech, natural sounds and music**. The Foundation track contains roughly 25k single-choice questions spanning 19 logical tasks across three audio categories.\n\n## Task Description\n\n- **Task Type**: Single-choice question answering grounded on an audio clip.\n- **Input**: One audio clip + a question with up to four candidate answers (A/B/C/D).\n- **Output**: A single letter chosen from the provided options.\n\n## Categories (19 tasks / 25 source-dataset subsets)\n\n- **Speech** (11 dirs / 9 tasks): speech grounding, language ID, gender, emotion (IEMOCAP+MELD), age, speech entity recognition, intent classification, speaker counting, synthesized-voice detection.\n- **Sound** (6 dirs / 4 tasks): audio grounding, vocal sound classification, acoustic scene classification (CochlScene+TUT2017), sound QA (avqa+clothoaqa).\n- **Music** (8 dirs / 6 tasks): instruments, genre, MIDI pitch, MIDI velocity, music QA, music emotion.\n\n## Prompt Template (matches official `Inference_Foundation.py`)\n\n```text\nChoose the most suitable answer from options A, B, C, and D to respond the question in next line, you may only choose A or B or C or D.\n{question}\nA. {choice_a}\nB. {choice_b}\nC. {choice_c}\nD. {choice_d}\n```\n\n## Dataset Access\n\n- The dataset is hosted on ModelScope: [`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset). It uses an *audiofolder + JSON metadata* layout. evalscope downloads it lazily via `modelscope.dataset_snapshot_download` on first run; the full release is ~49 GB, so it is recommended to limit which subsets are pulled via `extra_params`.\n- If the dataset is already on disk, pass `dataset_args={'air_bench_foundation': {'local_path': '/path/to/AIR-Bench-Dataset'}}`; the local root should contain `Foundation/`.\n- Some Foundation samples are FLAC. For OpenAI-compatible audio input evalscope converts them to cached WAV files, which requires either `soundfile` (`pip install \"evalscope[air_bench]\"`) or a working `ffmpeg` binary.\n\n## Evaluation Notes\n\n- Metric: **accuracy** (per source-dataset subset, plus per-category aggregation).\n- Default prompt follows the official `Inference_Foundation.py` formatting so existing AIR-Bench leaderboard numbers can be reproduced.\n- Set `extra_params={'subsets': [...]}` to limit to a subset of the 25 source directories — useful for partial downloads.\n",
     "prompt_template": "Choose the most suitable answer from options A, B, C, and D to respond the question in next line, you may only choose A or B or C or D.",
     "system_prompt": "",
     "few_shot_prompt_template": "",
@@ -56,13 +56,297 @@
     "sandbox_config": {},
     "category": "vlm"
   },
-  "statistics": {},
-  "sample_example": {},
-  "readme": {
-    "en": "# AIR-Bench-Foundation\n\n\n## Overview\n\nAIR-Bench Foundation is the discriminative half of [AIR-Bench](https://arxiv.org/abs/2402.07729) (ACL 2024) — the first audio-instruction benchmark covering speech, natural sounds and music. It contains roughly 25k single-choice questions spanning 19 tasks across three audio categories.\n\n## Task Description\n\n- **Task Type**: Single-choice question answering grounded on an audio clip.\n- **Input**: One audio clip + a question with up to four candidate answers (A/B/C/D).\n- **Output**: A single letter chosen from the provided options.\n\n## Categories (19 tasks / 25 source-dataset subsets)\n\n- **Speech** (9 tasks): grounding, language ID, gender, emotion, age, entity recognition, intent classification, speaker counting, synthesized-voice detection.\n- **Sound** (4 tasks): audio grounding, vocal sound classification, acoustic scene classification, sound QA.\n- **Music** (6 tasks): instruments, genre, MIDI pitch, MIDI velocity, music QA, music emotion.\n\n## Evaluation Notes\n\n- Metric: **accuracy** (per source-dataset subset, plus per-category aggregation).\n- Audio is loaded from the official Hugging Face release (`qyang1021/AIR-Bench-Dataset`); FLAC samples are converted to cached WAV files for model input.\n- Default prompt follows the official `Inference_Foundation.py` formatting so existing AIR-Bench leaderboard numbers can be reproduced.\n- Set `extra_params={'subsets': [...]}` to limit to a subset of the 25 source directories — useful for partial downloads.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `air_bench_foundation` |\n| **Dataset ID** | [qyang1021/AIR-Bench-Dataset](https://modelscope.cn/datasets/qyang1021/AIR-Bench-Dataset/summary) |\n| **Paper** | [Paper](https://aclanthology.org/2024.acl-long.109/) |\n| **Tags** | `Audio`, `Knowledge`, `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nChoose the most suitable answer from options A, B, C, and D to respond the question in next line, you may only choose A or B or C or D.\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `subsets` | `list` | `None` | Optional list of Foundation source-dataset directories to evaluate. Defaults to all 25 directories. Useful when only a subset has been downloaded locally. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets air_bench_foundation \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['air_bench_foundation'],\n    dataset_args={\n        'air_bench_foundation': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
-    "zh": "",
-    "content_hash": "70715026512fae51a27eff76ff6e0203",
-    "needs_translation": true
+  "statistics": {
+    "total_samples": 7189,
+    "subset_stats": [
+      {
+        "name": "Acoustic_Scene_Classification_CochlScene",
+        "sample_count": 1000,
+        "prompt_length_mean": 240.97,
+        "prompt_length_min": 213,
+        "prompt_length_max": 278,
+        "prompt_length_std": 12.26,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 1000,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "wav"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Acoustic_Scene_Classification_TUT2017",
+        "sample_count": 488,
+        "prompt_length_mean": 242.15,
+        "prompt_length_min": 207,
+        "prompt_length_max": 282,
+        "prompt_length_std": 13.27,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 488,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "wav"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Audio_Grounding_AudioGrounding",
+        "sample_count": 896,
+        "prompt_length_mean": 273.74,
+        "prompt_length_min": 249,
+        "prompt_length_max": 321,
+        "prompt_length_std": 10.91,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 896,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "wav"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Music_AQA_music_avqa",
+        "sample_count": 813,
+        "prompt_length_mean": 208.7,
+        "prompt_length_min": 185,
+        "prompt_length_max": 238,
+        "prompt_length_std": 13.59,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 813,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "wav"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Music_Genre_Recognition_MTJ-Jamendo",
+        "sample_count": 1000,
+        "prompt_length_mean": 223.84,
+        "prompt_length_min": 200,
+        "prompt_length_max": 248,
+        "prompt_length_std": 8.44,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 1000,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "mp3"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Music_Genre_Recognition_fma",
+        "sample_count": 1000,
+        "prompt_length_mean": 224.59,
+        "prompt_length_min": 201,
+        "prompt_length_max": 250,
+        "prompt_length_std": 8.66,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 1000,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "mp3"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Music_Instruments_Classfication_MTJ-Jamendo",
+        "sample_count": 1000,
+        "prompt_length_mean": 236.52,
+        "prompt_length_min": 218,
+        "prompt_length_max": 262,
+        "prompt_length_std": 7.27,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 1000,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "mp3"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Music_Instruments_Classfication_nsynth",
+        "sample_count": 992,
+        "prompt_length_mean": 228.12,
+        "prompt_length_min": 216,
+        "prompt_length_max": 247,
+        "prompt_length_std": 4.51,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 992,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "wav"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 234.43,
+      "min": 185,
+      "max": 321,
+      "std": 20.29
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-05-13T19:12:17.372987",
+    "multimodal": {
+      "has_images": false,
+      "has_audio": true,
+      "has_video": false,
+      "audio": {
+        "count_total": 7189,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "duration": null,
+        "sample_rates": [],
+        "formats": [
+          "mp3",
+          "wav"
+        ]
+      }
+    }
   },
-  "updated_at": "2026-05-12T07:37:45.210832"
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "eb275a3a",
+          "content": [
+            {
+              "audio": "/root/.cache/modelscope/hub/datasets/evalscope/AIR-Bench-Dataset/Foundation/Speaker_Age_Prediction_common_voice_13.0_en/common_voice_en_22159151.mp3",
+              "format": "mp3"
+            },
+            {
+              "text": "Choose the most suitable answer from options A, B, C, and D to respond the question in next line, you may only choose A or B or C or D.\nWhich age range do you believe best matches the speaker's voice?\nA. teens to twenties\nB. thirties to fourties\nC. fifties to sixties\nD. seventies to eighties"
+            }
+          ]
+        }
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "Speaker_Age_Prediction_common_voice_13.0_en",
+      "metadata": {
+        "uniq_id": 5973,
+        "task_name": "Speaker_Age_Prediction",
+        "dataset_name": "common_voice_13.0_en",
+        "category": "speech",
+        "answer_gt_text": "thirties to fourties",
+        "choices": {
+          "A": "teens to twenties",
+          "B": "thirties to fourties",
+          "C": "fifties to sixties",
+          "D": "seventies to eighties"
+        }
+      }
+    },
+    "subset": "Speaker_Age_Prediction_common_voice_13.0_en",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# AIR-Bench-Foundation\n\n\n## Overview\n\nAIR-Bench Foundation is the discriminative half of [AIR-Bench](https://arxiv.org/abs/2402.07729) (Audio InstRuction Benchmark, ACL 2024 main conference) — the first instruction-following benchmark for large audio-language models (LALMs), covering **human speech, natural sounds and music**. The Foundation track contains roughly 25k single-choice questions spanning 19 logical tasks across three audio categories.\n\n## Task Description\n\n- **Task Type**: Single-choice question answering grounded on an audio clip.\n- **Input**: One audio clip + a question with up to four candidate answers (A/B/C/D).\n- **Output**: A single letter chosen from the provided options.\n\n## Categories (19 tasks / 25 source-dataset subsets)\n\n- **Speech** (11 dirs / 9 tasks): speech grounding, language ID, gender, emotion (IEMOCAP+MELD), age, speech entity recognition, intent classification, speaker counting, synthesized-voice detection.\n- **Sound** (6 dirs / 4 tasks): audio grounding, vocal sound classification, acoustic scene classification (CochlScene+TUT2017), sound QA (avqa+clothoaqa).\n- **Music** (8 dirs / 6 tasks): instruments, genre, MIDI pitch, MIDI velocity, music QA, music emotion.\n\n## Prompt Template (matches official `Inference_Foundation.py`)\n\n```text\nChoose the most suitable answer from options A, B, C, and D to respond the question in next line, you may only choose A or B or C or D.\n{question}\nA. {choice_a}\nB. {choice_b}\nC. {choice_c}\nD. {choice_d}\n```\n\n## Dataset Access\n\n- The dataset is hosted on ModelScope: [`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset). It uses an *audiofolder + JSON metadata* layout. evalscope downloads it lazily via `modelscope.dataset_snapshot_download` on first run; the full release is ~49 GB, so it is recommended to limit which subsets are pulled via `extra_params`.\n- If the dataset is already on disk, pass `dataset_args={'air_bench_foundation': {'local_path': '/path/to/AIR-Bench-Dataset'}}`; the local root should contain `Foundation/`.\n- Some Foundation samples are FLAC. For OpenAI-compatible audio input evalscope converts them to cached WAV files, which requires either `soundfile` (`pip install \"evalscope[air_bench]\"`) or a working `ffmpeg` binary.\n\n## Evaluation Notes\n\n- Metric: **accuracy** (per source-dataset subset, plus per-category aggregation).\n- Default prompt follows the official `Inference_Foundation.py` formatting so existing AIR-Bench leaderboard numbers can be reproduced.\n- Set `extra_params={'subsets': [...]}` to limit to a subset of the 25 source directories — useful for partial downloads.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `air_bench_foundation` |\n| **Dataset ID** | [evalscope/AIR-Bench-Dataset](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset/summary) |\n| **Paper** | [Paper](https://aclanthology.org/2024.acl-long.109/) |\n| **Tags** | `Audio`, `Knowledge`, `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 7,189 |\n| Prompt Length (Mean) | 234.43 chars |\n| Prompt Length (Min/Max) | 185 / 321 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Acoustic_Scene_Classification_CochlScene` | 1,000 | 240.97 | 213 | 278 |\n| `Acoustic_Scene_Classification_TUT2017` | 488 | 242.15 | 207 | 282 |\n| `Audio_Grounding_AudioGrounding` | 896 | 273.74 | 249 | 321 |\n| `Music_AQA_music_avqa` | 813 | 208.7 | 185 | 238 |\n| `Music_Genre_Recognition_MTJ-Jamendo` | 1,000 | 223.84 | 200 | 248 |\n| `Music_Genre_Recognition_fma` | 1,000 | 224.59 | 201 | 250 |\n| `Music_Instruments_Classfication_MTJ-Jamendo` | 1,000 | 236.52 | 218 | 262 |\n| `Music_Instruments_Classfication_nsynth` | 992 | 228.12 | 216 | 247 |\n\n**Audio Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Audio Files | 7,189 |\n| Audio per Sample | min: 1, max: 1, mean: 1 |\n| Formats | mp3, wav |\n\n\n## Sample Example\n\n**Subset**: `Speaker_Age_Prediction_common_voice_13.0_en`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"eb275a3a\",\n      \"content\": [\n        {\n          \"audio\": \"/root/.cache/modelscope/hub/datasets/evalscope/AIR-Bench-Dataset/Foundation/Speaker_Age_Prediction_common_voice_13.0_en/common_voice_en_22159151.mp3\",\n          \"format\": \"mp3\"\n        },\n        {\n          \"text\": \"Choose the most suitable answer from options A, B, C, and D to respond the question in next line, you may only choose A or B or C or D.\\nWhich age range do you believe best matches the speaker's voice?\\nA. teens to twenties\\nB. thirties to fourties\\nC. fifties to sixties\\nD. seventies to eighties\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Speaker_Age_Prediction_common_voice_13.0_en\",\n  \"metadata\": {\n    \"uniq_id\": 5973,\n    \"task_name\": \"Speaker_Age_Prediction\",\n    \"dataset_name\": \"common_voice_13.0_en\",\n    \"category\": \"speech\",\n    \"answer_gt_text\": \"thirties to fourties\",\n    \"choices\": {\n      \"A\": \"teens to twenties\",\n      \"B\": \"thirties to fourties\",\n      \"C\": \"fifties to sixties\",\n      \"D\": \"seventies to eighties\"\n    }\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nChoose the most suitable answer from options A, B, C, and D to respond the question in next line, you may only choose A or B or C or D.\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `subsets` | `list` | `None` | Optional list of Foundation source-dataset directories to evaluate. Defaults to all 25 directories. Useful when only a subset has been downloaded locally. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets air_bench_foundation \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['air_bench_foundation'],\n    dataset_args={\n        'air_bench_foundation': {\n            # subset_list: ['Acoustic_Scene_Classification_CochlScene', 'Acoustic_Scene_Classification_TUT2017', 'Audio_Grounding_AudioGrounding']  # optional, evaluate specific subsets\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# AIR-Bench-Foundation\n\n\n## 概述\n\nAIR-Bench Foundation 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio InstRuction Benchmark，ACL 2024 主会）的判别任务部分——这是首个面向大音频语言模型（LALMs）的指令遵循基准测试，涵盖**人类语音、自然声音和音乐**。Foundation 轨道包含约 25,000 道单选题，横跨三个音频类别中的 19 项逻辑任务。\n\n## 任务描述\n\n- **任务类型**：基于音频片段的单选问答。\n- **输入**：一段音频 + 一道包含最多四个候选答案（A/B/C/D）的问题。\n- **输出**：从给定选项中选择一个字母。\n\n## 类别（19 项任务 / 25 个源数据集子集）\n\n- **语音**（11 个目录 / 9 项任务）：语音定位、语言识别、性别识别、情感识别（IEMOCAP+MELD）、年龄预测、语音实体识别、意图分类、说话人数量统计、合成语音检测。\n- **声音**（6 个目录 / 4 项任务）：音频定位、人声分类、声学场景分类（CochlScene+TUT2017）、声音问答（avqa+clothoaqa）。\n- **音乐**（8 个目录 / 6 项任务）：乐器识别、流派识别、MIDI 音高、MIDI 力度、音乐问答、音乐情感。\n\n## 提示模板（与官方 `Inference_Foundation.py` 一致）\n\n```text\nChoose the most suitable answer from options A, B, C, and D to respond the question in next line, you may only choose A or B or C or D.\n{question}\nA. {choice_a}\nB. {choice_b}\nC. {choice_c}\nD. {choice_d}\n```\n\n## 数据集获取\n\n- 该数据集托管在 ModelScope 上：[`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset)。采用 *audiofolder + JSON 元数据* 的布局。evalscope 在首次运行时通过 `modelscope.dataset_snapshot_download` 按需下载；完整数据集约 49 GB，建议通过 `extra_params` 限制仅拉取所需子集。\n- 如果数据集已存在于本地磁盘，请传入 `dataset_args={'air_bench_foundation': {'local_path': '/path/to/AIR-Bench-Dataset'}}`；本地根目录应包含 `Foundation/` 文件夹。\n- Foundation 中的部分样本为 FLAC 格式。为兼容 OpenAI 音频输入，evalscope 会将其转换为缓存的 WAV 文件，这需要安装 `soundfile`（`pip install \"evalscope[air_bench]\"`）或系统中存在可用的 `ffmpeg` 二进制文件。\n\n## 评估说明\n\n- **指标**：**准确率**（按源数据集子集计算，并按类别聚合）。\n- 默认提示格式与官方 `Inference_Foundation.py` 一致，因此可复现现有 AIR-Bench 排行榜结果。\n- 设置 `extra_params={'subsets': [...]}` 可限制评估范围为 25 个源目录中的部分子集——适用于仅下载了部分数据的情况。\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `air_bench_foundation` |\n| **数据集ID** | [evalscope/AIR-Bench-Dataset](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset/summary) |\n| **论文** | [Paper](https://aclanthology.org/2024.acl-long.109/) |\n| **标签** | `Audio`, `Knowledge`, `MCQ` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 7,189 |\n| 提示词长度（平均） | 234.43 字符 |\n| 提示词长度（最小/最大） | 185 / 321 字符 |\n\n**各子集统计：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Acoustic_Scene_Classification_CochlScene` | 1,000 | 240.97 | 213 | 278 |\n| `Acoustic_Scene_Classification_TUT2017` | 488 | 242.15 | 207 | 282 |\n| `Audio_Grounding_AudioGrounding` | 896 | 273.74 | 249 | 321 |\n| `Music_AQA_music_avqa` | 813 | 208.7 | 185 | 238 |\n| `Music_Genre_Recognition_MTJ-Jamendo` | 1,000 | 223.84 | 200 | 248 |\n| `Music_Genre_Recognition_fma` | 1,000 | 224.59 | 201 | 250 |\n| `Music_Instruments_Classfication_MTJ-Jamendo` | 1,000 | 236.52 | 218 | 262 |\n| `Music_Instruments_Classfication_nsynth` | 992 | 228.12 | 216 | 247 |\n\n**音频统计：**\n\n| 指标 | 值 |\n|--------|-------|\n| 音频文件总数 | 7,189 |\n| 每样本音频数 | 最小: 1, 最大: 1, 平均: 1 |\n| 格式 | mp3, wav |\n\n\n## 样例示例\n\n**子集**: `Speaker_Age_Prediction_common_voice_13.0_en`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"eb275a3a\",\n      \"content\": [\n        {\n          \"audio\": \"/root/.cache/modelscope/hub/datasets/evalscope/AIR-Bench-Dataset/Foundation/Speaker_Age_Prediction_common_voice_13.0_en/common_voice_en_22159151.mp3\",\n          \"format\": \"mp3\"\n        },\n        {\n          \"text\": \"Choose the most suitable answer from options A, B, C, and D to respond the question in next line, you may only choose A or B or C or D.\\nWhich age range do you believe best matches the speaker's voice?\\nA. teens to twenties\\nB. thirties to fourties\\nC. fifties to sixties\\nD. seventies to eighties\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Speaker_Age_Prediction_common_voice_13.0_en\",\n  \"metadata\": {\n    \"uniq_id\": 5973,\n    \"task_name\": \"Speaker_Age_Prediction\",\n    \"dataset_name\": \"common_voice_13.0_en\",\n    \"category\": \"speech\",\n    \"answer_gt_text\": \"thirties to fourties\",\n    \"choices\": {\n      \"A\": \"teens to twenties\",\n      \"B\": \"thirties to fourties\",\n      \"C\": \"fifties to sixties\",\n      \"D\": \"seventies to eighties\"\n    }\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nChoose the most suitable answer from options A, B, C, and D to respond the question in next line, you may only choose A or B or C or D.\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `subsets` | `list` | `None` | 可选的 Foundation 源数据集目录列表，用于指定评估范围。默认为全部 25 个目录。当本地仅下载了部分子集时非常有用。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets air_bench_foundation \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['air_bench_foundation'],\n    dataset_args={\n        'air_bench_foundation': {\n            # subset_list: ['Acoustic_Scene_Classification_CochlScene', 'Acoustic_Scene_Classification_TUT2017', 'Audio_Grounding_AudioGrounding']  # 可选，评估特定子集\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "94434d4b6bf67c4b98c5bfde84d5b5da",
+    "needs_translation": false
+  },
+  "updated_at": "2026-05-13T20:01:09.668933",
+  "translation_updated_at": "2026-05-13T20:01:25"
 }
