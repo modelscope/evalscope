@@ -53,7 +53,7 @@ class OpenaiPlugin(DefaultApiPlugin):
         try:
             # --tokenize-prompt path: convert messages/text/token-IDs to a token-ID list
             # and send as a /v1/completions request with `prompt=[int, ...]`.
-            if param.tokenize_prompt and not isinstance(messages, Dict):
+            if param.tokenize_prompt and not isinstance(messages, dict):
                 token_ids = self._messages_to_token_ids(messages, param)
                 query = {'prompt': token_ids}
                 return self.__compose_query_from_parameter(query, param)
