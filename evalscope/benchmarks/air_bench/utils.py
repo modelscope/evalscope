@@ -96,6 +96,19 @@ def download_air_bench(
     if os.path.isdir(dataset_id):
         return dataset_id
 
+    # Short-circuit: if the standard ModelScope cache already contains the
+    # requested track directory, return it directly without triggering
+    # dataset_snapshot_download (which re-verifies every file remotely and
+    # can fail when the CDN returns 0-byte responses for existing files).
+    _cache_root = cache_dir or os.path.join(os.path.expanduser('~'), '.cache', 'modelscope', 'hub', 'datasets')
+    _local_cached = os.path.join(_cache_root, *dataset_id.split('/'))
+    if os.path.isdir(os.path.join(_local_cached, track)):
+        logger.info(
+            f'AIR-Bench {track} already present in local cache at `{_local_cached}`. '
+            'Skipping remote download.'
+        )
+        return _local_cached
+
     from modelscope import dataset_snapshot_download
 
     # Always grab the track-level meta JSON.
@@ -250,6 +263,20 @@ def _convert_flac_to_wav(audio_path: str, *, cache_dir: str) -> str:
         'to convert it to WAV for model input. Install `evalscope[air_bench]`, '
         '`pip install soundfile`, or make `ffmpeg` available on PATH.'
     )
+
+
+def audio_path_to_base64(audio_path: str, audio_format: str) -> str:
+    """Read a local audio file and return a base64-encoded data-URI string.
+
+    This mirrors the approach used by ``LibriSpeechAdapter``: the audio bytes
+    are encoded as ``data:audio/<format>;base64,...`` so the content can be
+    forwarded directly to an OpenAI-compatible API without relying on the
+    server being able to access a local file path.
+    """
+    from evalscope.utils.io_utils import bytes_to_base64
+
+    with open(audio_path, 'rb') as fh:
+        return bytes_to_base64(fh.read(), format=audio_format, add_header=True, content_type='audio')
 
 
 def _file_sha1(path: str) -> str:

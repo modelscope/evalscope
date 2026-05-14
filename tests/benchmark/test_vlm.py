@@ -410,7 +410,7 @@ class TestVLMBenchmark(TestBenchmark):
 
     def test_air_bench_foundation(self):
         dataset_args = {
-            'subset_list': ['Music_AQA_music_avqa'],
+            # 'subset_list': ['Music_AQA_music_avqa'],
         }
         self._run_dataset_test('air_bench_foundation', dataset_args=dataset_args, limit=2, model='qwen3-omni-flash', ignore_errors=True)
 

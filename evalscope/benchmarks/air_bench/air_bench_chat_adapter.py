@@ -27,6 +27,7 @@ from evalscope.utils.logger import get_logger
 from .utils import (
     CHAT_TASK_TO_CATEGORY,
     HF_REPO_ID,
+    audio_path_to_base64,
     download_air_bench,
     load_meta,
     normalise_audio_for_content,
@@ -252,6 +253,7 @@ class AIRBenchChatAdapter(VisionLanguageAdapter):
             audio_format,
             cache_dir=self._audio_cache_dir,
         )
+        audio_b64 = audio_path_to_base64(audio_path, audio_format)
 
         category = CHAT_TASK_TO_CATEGORY[task_name]
 
@@ -259,7 +261,7 @@ class AIRBenchChatAdapter(VisionLanguageAdapter):
             input=[
                 ChatMessageUser(
                     content=[
-                        ContentAudio(audio=audio_path, format=audio_format),
+                        ContentAudio(audio=audio_b64, format=audio_format),
                         ContentText(text=question),
                     ]
                 )

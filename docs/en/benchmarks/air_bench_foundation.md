@@ -58,28 +58,45 @@ D. {choice_d}
 
 | Metric | Value |
 |--------|-------|
-| Total Samples | 7,189 |
-| Prompt Length (Mean) | 234.43 chars |
-| Prompt Length (Min/Max) | 185 / 321 chars |
+| Total Samples | 21,426 |
+| Prompt Length (Mean) | 236.68 chars |
+| Prompt Length (Min/Max) | 179 / 321 chars |
 
 **Per-Subset Statistics:**
 
 | Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
 |--------|---------|-------------|------------|------------|
+| `Speaker_Age_Prediction_common_voice_13.0_en` | 1,000 | 291.98 | 278 | 305 |
+| `Speaker_Emotion_Recontion_iemocap` | 1,000 | 227.13 | 218 | 238 |
+| `Speaker_Emotion_Recontion_meld` | 1,000 | 233.21 | 218 | 250 |
+| `Speaker_Gender_Recognition_common_voice_13_en` | 780 | 226.19 | 213 | 241 |
+| `Speaker_Gender_Recognition_meld` | 1,000 | 226.42 | 213 | 241 |
+| `Speaker_Intent_Classification_slurp` | 662 | 268.52 | 232 | 295 |
+| `Speaker_Number_Verification_voxceleb1` | 314 | 208.24 | 194 | 221 |
+| `Speech_Entity_Reconition_slurp` | 1,000 | 253.14 | 226 | 316 |
+| `Speech_Grounding_librispeech` | 981 | 253.92 | 230 | 282 |
+| `Spoken_Language_Identification_covost2` | 495 | 207.12 | 191 | 232 |
+| `Synthesized_Voice_Detection_fake_or_real` | 1,000 | 224.79 | 203 | 242 |
 | `Acoustic_Scene_Classification_CochlScene` | 1,000 | 240.97 | 213 | 278 |
-| `Acoustic_Scene_Classification_TUT2017` | 488 | 242.15 | 207 | 282 |
+| `Acoustic_Scene_Classification_TUT2017` | 1,000 | 241.72 | 207 | 284 |
 | `Audio_Grounding_AudioGrounding` | 896 | 273.74 | 249 | 321 |
-| `Music_AQA_music_avqa` | 813 | 208.7 | 185 | 238 |
+| `Sound_AQA_avqa` | 1,000 | 227.21 | 193 | 298 |
+| `Sound_AQA_clothoaqa` | 1,000 | 199.89 | 179 | 262 |
+| `vocal_sound_classification_VocalSound` | 985 | 232.62 | 210 | 253 |
+| `Music_AQA_music_avqa` | 814 | 208.7 | 185 | 238 |
 | `Music_Genre_Recognition_MTJ-Jamendo` | 1,000 | 223.84 | 200 | 248 |
 | `Music_Genre_Recognition_fma` | 1,000 | 224.59 | 201 | 250 |
 | `Music_Instruments_Classfication_MTJ-Jamendo` | 1,000 | 236.52 | 218 | 262 |
-| `Music_Instruments_Classfication_nsynth` | 992 | 228.12 | 216 | 247 |
+| `Music_Instruments_Classfication_nsynth` | 996 | 228.12 | 216 | 247 |
+| `Music_Midi_Pitch_Analysis_nsynth` | 493 | 253.88 | 243 | 264 |
+| `Music_Midi_Velocity_Analysis_nsynth` | 484 | 270.6 | 259 | 279 |
+| `Music_Mood_Recognition_MTJ-Jamendo` | 526 | 229.67 | 210 | 248 |
 
 **Audio Statistics:**
 
 | Metric | Value |
 |--------|-------|
-| Total Audio Files | 7,189 |
+| Total Audio Files | 21,426 |
 | Audio per Sample | min: 1, max: 1, mean: 1 |
 | Formats | mp3, wav |
 
@@ -92,10 +109,10 @@ D. {choice_d}
 {
   "input": [
     {
-      "id": "eb275a3a",
+      "id": "544443c0",
       "content": [
         {
-          "audio": "/root/.cache/modelscope/hub/datasets/evalscope/AIR-Bench-Dataset/Foundation/Speaker_Age_Prediction_common_voice_13.0_en/common_voice_en_22159151.mp3",
+          "audio": "[BASE64_AUDIO: mp3, ~25.9KB]",
           "format": "mp3"
         },
         {
@@ -163,7 +180,7 @@ task_cfg = TaskConfig(
     datasets=['air_bench_foundation'],
     dataset_args={
         'air_bench_foundation': {
-            # subset_list: ['Acoustic_Scene_Classification_CochlScene', 'Acoustic_Scene_Classification_TUT2017', 'Audio_Grounding_AudioGrounding']  # optional, evaluate specific subsets
+            # subset_list: ['Speaker_Age_Prediction_common_voice_13.0_en', 'Speaker_Emotion_Recontion_iemocap', 'Speaker_Emotion_Recontion_meld']  # optional, evaluate specific subsets
             # extra_params: {}  # uses default extra parameters
         }
     },
