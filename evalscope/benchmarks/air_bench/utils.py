@@ -130,18 +130,14 @@ def download_air_bench(
     if os.path.isdir(dataset_id):
         return dataset_id
 
-    # Short-circuit: if the standard ModelScope cache already contains the
-    # requested track directory, return it directly without triggering
-    # dataset_snapshot_download (which re-verifies every file remotely and
-    # can fail when the CDN returns 0-byte responses for existing files).
-    _cache_root = cache_dir or os.path.join(os.path.expanduser('~'), '.cache', 'modelscope', 'hub', 'datasets')
-    _local_cached = os.path.join(_cache_root, *dataset_id.split('/'))
-    if os.path.isdir(os.path.join(_local_cached, track)):
+    # Fast path: return immediately when every requested subset is cached.
+    local_cached = _resolve_local_cache(dataset_id, track, cache_dir, subset_dirs)
+    if local_cached is not None:
         logger.info(
-            f'AIR-Bench {track} already present in local cache at `{_local_cached}`. '
+            f'AIR-Bench {track} already present in local cache at `{local_cached}`. '
             'Skipping remote download.'
         )
-        return _local_cached
+        return local_cached
 
     from modelscope import dataset_snapshot_download
 
