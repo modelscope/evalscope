@@ -45,7 +45,7 @@ def _base_cfg(**overrides) -> dict:
         'api_url': _API_URL,
         'api_key': _API_KEY,
         'eval_type': EvalType.OPENAI_API,
-        'eval_batch_size': 2,
+        'eval_batch_size': 5,
         'limit': 5,
         'generation_config': {
             'max_tokens': 2048,

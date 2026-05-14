@@ -19,6 +19,11 @@ import {
   Cpu,
   AlertTriangle,
   ClipboardCheck,
+  Clock,
+  Zap,
+  Activity,
+  ArrowDownToLine,
+  ArrowUpFromLine,
 } from 'lucide-react'
 import type {
   PredictionRow,
@@ -98,12 +103,6 @@ function fmtMs(ms: number | null | undefined): string {
   if (ms == null) return ''
   if (ms < 1000) return `${ms.toFixed(0)}ms`
   return `${(ms / 1000).toFixed(1)}s`
-}
-
-function fmtTokens(n: number | null | undefined): string | null {
-  if (n == null) return null
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
-  return String(n)
 }
 
 /** One-line preview for arguments JSON (truncate). */
@@ -414,33 +413,91 @@ function MsgIdChip({ msgId }: { msgId: string }) {
 /** Compact perf chip rendered inline inside a message header. */
 function HeaderPerfChip({
   latency,
+  ttft,
+  tpot,
   inTok,
   outTok,
   stopReason,
 }: {
   latency?: number | null
+  ttft?: number | null
+  tpot?: number | null
   inTok?: number | null
   outTok?: number | null
   stopReason?: string
 }) {
-  const parts: string[] = []
-  if (latency != null) parts.push(fmtMs(latency))
-  const inS = fmtTokens(inTok ?? null)
-  const outS = fmtTokens(outTok ?? null)
-  if (inS != null || outS != null) parts.push(`${inS ?? '0'} → ${outS ?? '0'} tok`)
-  if (stopReason) parts.push(`stop: ${stopReason}`)
-  if (parts.length === 0) return null
+  const items: React.ReactNode[] = []
+  const chipStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '2px',
+  }
+  const iconSize = 10
+
+  if (latency != null) {
+    items.push(
+      <span key="lat" style={chipStyle}>
+        <Clock size={iconSize} style={{ opacity: 0.7 }} />
+        {fmtMs(latency)}
+      </span>
+    )
+  }
+  if (ttft != null) {
+    items.push(
+      <span key="ttft" style={chipStyle}>
+        <Zap size={iconSize} style={{ opacity: 0.7 }} />
+        TTFT {fmtMs(ttft * 1000)}
+      </span>
+    )
+  }
+  if (tpot != null) {
+    items.push(
+      <span key="tpot" style={chipStyle}>
+        <Activity size={iconSize} style={{ opacity: 0.7 }} />
+        TPOT {fmtMs(tpot * 1000)}
+      </span>
+    )
+  }
+  if (inTok != null) {
+    items.push(
+      <span key="in" style={chipStyle}>
+        <ArrowDownToLine size={iconSize} style={{ opacity: 0.7 }} />
+        in {inTok}
+      </span>
+    )
+  }
+  if (outTok != null) {
+    items.push(
+      <span key="out" style={chipStyle}>
+        <ArrowUpFromLine size={iconSize} style={{ opacity: 0.7 }} />
+        out {outTok}
+      </span>
+    )
+  }
+  if (stopReason) {
+    items.push(
+      <span key="stop" style={chipStyle}>
+        stop:{stopReason}
+      </span>
+    )
+  }
+
+  if (items.length === 0) return null
   return (
     <span
       style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.5rem',
         fontSize: '0.65rem',
         fontFamily: 'var(--font-mono, monospace)',
         color: 'var(--text-muted)',
-        opacity: 0.8,
+        opacity: 0.85,
         whiteSpace: 'nowrap',
+        flexWrap: 'wrap',
       }}
     >
-      {parts.join(' · ')}
+      {items}
     </span>
   )
 }
@@ -604,6 +661,80 @@ function MessageRow({
 }
 
 /* ─── Tool message as a compact observation (folded under tool call) */
+
+/** Collapsible system prompt — collapsed by default with one-line preview. */
+function SystemPromptRow({
+  content,
+  msgId,
+}: {
+  content: string | ContentBlock[]
+  msgId?: string
+  highlightId?: string
+}) {
+  const { t } = useLocale()
+  const [open, setOpen] = useState(false)
+  const text = contentToText(content)
+  const preview = text.replace(/\s+/g, ' ').trim()
+  const previewShort = preview.length > 120 ? preview.slice(0, 120) + '…' : preview
+
+  return (
+    <div
+      style={{
+        borderLeft: '3px solid var(--text-muted)',
+        borderRadius: '0.5rem',
+        background: 'var(--bubble-system-bg)',
+        overflow: 'hidden',
+      }}
+    >
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.45rem',
+          width: '100%',
+          padding: '0.45rem 0.75rem',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        {open ? <ChevronDown size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} /> : <ChevronRight size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />}
+        <Shield size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+        <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+          {t('prediction.systemPrompt')}
+        </span>
+        {!open && (
+          <span
+            style={{
+              fontSize: '0.7rem',
+              color: 'var(--text-muted)',
+              opacity: 0.6,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1,
+              fontFamily: 'var(--font-mono, monospace)',
+            }}
+          >
+            {previewShort}
+          </span>
+        )}
+        {msgId && <MsgIdChip msgId={msgId} />}
+      </button>
+      {open && (
+        <div style={{ padding: '0 0.75rem 0.6rem 1.6rem' }}>
+          <div style={{ fontSize: '0.82rem', lineHeight: 1.55 }}>
+            {Array.isArray(content)
+              ? renderContentBlocks(content, { includeReasoning: false })
+              : <MarkdownRenderer content={content} />}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function ToolObservation({ msg }: { msg: ChatMessage }) {
   const { t } = useLocale()
@@ -970,9 +1101,8 @@ function StructuredMessages({
   messages.forEach((msg, idx) => {
     if (msg.role === 'system') {
       rendered.push(
-        <MessageRow
+        <SystemPromptRow
           key={idx}
-          role="system"
           content={msg.content}
           msgId={msg.id}
           highlightId={highlightId}
@@ -999,6 +1129,8 @@ function StructuredMessages({
       const headerPerf = pm ? (
         <HeaderPerfChip
           latency={pm.latency != null ? pm.latency * 1000 : null}
+          ttft={pm.ttft}
+          tpot={pm.tpot}
           inTok={pm.input_tokens}
           outTok={pm.output_tokens}
         />
@@ -1248,15 +1380,24 @@ function StepBlock({
   if (group.step === -1) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        {group.preAgentMessages.map((msg, idx) => (
-          <MessageRow
-            key={idx}
-            role={msg.role as Role}
-            content={msg.content}
-            msgId={msg.id}
-            highlightId={highlightId}
-          />
-        ))}
+        {group.preAgentMessages.map((msg, idx) =>
+          msg.role === 'system' ? (
+            <SystemPromptRow
+              key={idx}
+              content={msg.content}
+              msgId={msg.id}
+              highlightId={highlightId}
+            />
+          ) : (
+            <MessageRow
+              key={idx}
+              role={msg.role as Role}
+              content={msg.content}
+              msgId={msg.id}
+              highlightId={highlightId}
+            />
+          )
+        )}
       </div>
     )
   }
@@ -1283,6 +1424,8 @@ function StepBlock({
   const headerPerf = (
     <HeaderPerfChip
       latency={headerLat}
+      ttft={ap?.ttft}
+      tpot={ap?.tpot}
       inTok={headerIn}
       outTok={headerOut}
       stopReason={stopReason}
@@ -1298,6 +1441,15 @@ function StepBlock({
   const toolMsgByCallId = new Map<string, ChatMessage>()
   for (const m of group.tools) {
     if (m.tool_call_id) toolMsgByCallId.set(m.tool_call_id, m)
+  }
+  // Also link via trace tool_result events (for mini-swe where observations
+  // are ChatMessageUser without tool_call_id).
+  for (const ev of toolResultEvents) {
+    const callId = typeof ev.payload.id === 'string' ? ev.payload.id : null
+    if (callId && !toolMsgByCallId.has(callId) && ev.message_id) {
+      const msg = group.tools.find(m => m.id === ev.message_id)
+      if (msg) toolMsgByCallId.set(callId, msg)
+    }
   }
 
   let entries: ToolCallEntry[] = []
@@ -1418,14 +1570,17 @@ function StepBlock({
 
         {/* Any residual tool messages not linked via tool_call_id */}
         {residualTools.map((m, i) => {
-          // Nudge messages (role='user') get distinct visual treatment
-          if (m.role === 'user') {
+          // Nudge messages: role='user' AND confirmed by a 'nudge' trace event
+          const isNudge = m.role === 'user' && group.traceEvents.some(
+            ev => ev.type === 'nudge' && ev.message_id === m.id
+          )
+          if (isNudge) {
             return <NudgeRow key={`nudge-${m.id ?? i}`} msg={m} />
           }
           return (
             <MessageRow
               key={`residual-${m.id ?? i}`}
-              role="tool"
+              role={m.role === 'tool' ? 'tool' : 'user'}
               content={m.content}
               msgId={m.id}
               highlightId={highlightId}
@@ -1843,13 +1998,15 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId 
           const headerPerf = prediction.PerfMetrics ? (
             <HeaderPerfChip
               latency={prediction.PerfMetrics.latency != null ? prediction.PerfMetrics.latency * 1000 : null}
+              ttft={prediction.PerfMetrics.ttft}
+              tpot={prediction.PerfMetrics.tpot}
               inTok={prediction.PerfMetrics.input_tokens}
               outTok={prediction.PerfMetrics.output_tokens}
             />
           ) : undefined
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {system && <MessageRow role="system" content={system} />}
+              {system && <SystemPromptRow content={system} />}
               <MessageRow role="user" content={user || prediction.Input} />
               {prediction.Generated && (
                 <MessageRow
