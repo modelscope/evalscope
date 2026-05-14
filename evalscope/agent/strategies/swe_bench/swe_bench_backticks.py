@@ -35,9 +35,7 @@ _BASH_BLOCK_RE = re.compile(r'```mswea_bash_command\n(.*?)\n```', re.DOTALL)
 # Minimal system prompt: SWE-bench business rules (workflow, submission
 # protocol, modification boundary) are injected by the adapter as the first
 # user (instance) message, not here.
-SWE_BENCH_BACKTICKS_SYSTEM_PROMPT = (
-    'You are a helpful assistant that can interact with a computer shell.'
-)
+SWE_BENCH_BACKTICKS_SYSTEM_PROMPT = ('You are a helpful assistant that can interact with a computer shell.')
 
 _FORMAT_ERROR_TEMPLATE = (
     'Your response must contain exactly one '

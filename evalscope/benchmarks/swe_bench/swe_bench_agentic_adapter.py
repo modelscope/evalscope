@@ -84,7 +84,6 @@ final patch.
 - Keep responses focused; long outputs will be head/tail truncated.
 """
 
-
 # ---------------------------------------------------------------------------
 # Shared extra_params definitions
 # ---------------------------------------------------------------------------
@@ -134,7 +133,6 @@ _AGENTIC_EXTRA_PARAMS: Dict[str, Any] = {
     },
 }
 
-
 # ---------------------------------------------------------------------------
 # Base adapter
 # ---------------------------------------------------------------------------
@@ -155,16 +153,14 @@ class _SWEBenchAgenticAdapterBase(AgentAdapter):
         self.action_protocol: str = self.extra_params.get('action_protocol', 'toolcall')
         if self.action_protocol not in {'toolcall', 'backticks'}:
             raise ValueError(
-                f"Invalid action_protocol={self.action_protocol!r}; "
+                f'Invalid action_protocol={self.action_protocol!r}; '
                 "must be 'toolcall' or 'backticks'."
             )
         self.max_steps = int(self.extra_params.get('max_steps', 250))
         self.command_timeout = float(self.extra_params.get('command_timeout', 60.0))
         self.working_dir: str = self.extra_params.get('working_dir', '/testbed')
         self.build_docker_images: bool = self.extra_params.get('build_docker_images', True)
-        self.pull_remote_images_if_available: bool = self.extra_params.get(
-            'pull_remote_images_if_available', True
-        )
+        self.pull_remote_images_if_available: bool = self.extra_params.get('pull_remote_images_if_available', True)
         self.force_arch: str = self.extra_params.get('force_arch', '')
 
     # ------------------------------------------------------------------
@@ -245,7 +241,7 @@ class _SWEBenchAgenticAdapterBase(AgentAdapter):
         if not image:
             raise RuntimeError(
                 f"docker_image missing for instance {sample.metadata.get('instance_id')!r}; "
-                "did _post_process_samples run?"
+                'did _post_process_samples run?'
             )
 
         sandbox_config = {
@@ -266,9 +262,8 @@ class _SWEBenchAgenticAdapterBase(AgentAdapter):
         )
 
     def build_initial_messages(self, sample: Sample) -> List[Any]:
-        problem_statement = sample.metadata.get('problem_statement') or (
-            sample.input if isinstance(sample.input, str) else ''
-        )
+        problem_statement = sample.metadata.get('problem_statement'
+                                                ) or (sample.input if isinstance(sample.input, str) else '')
         rendered = INSTANCE_TEMPLATE.format(problem_statement=problem_statement)
         return [ChatMessageUser(content=rendered)]
 
@@ -335,7 +330,6 @@ class _SWEBenchAgenticAdapterBase(AgentAdapter):
 # ---------------------------------------------------------------------------
 # Concrete benchmarks
 # ---------------------------------------------------------------------------
-
 
 _AGENTIC_DESCRIPTION_SUFFIX = """
 ## Agentic mode
