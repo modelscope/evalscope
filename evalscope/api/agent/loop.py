@@ -76,14 +76,35 @@ class AgentLoop:
             mode = self.strategy.tool_schema_mode()
             tools = self.strategy.tools(ctx) if mode == 'function_calling' else []
 
+            logger.debug(
+                f'[AgentLoop] sample={ctx.sample_id} step={ctx.step}/{self.max_steps} '
+                f'strategy={getattr(self.strategy, "name", "?")} mode={mode} '
+                f'tools=[{", ".join(t.name for t in tools)}] '
+                f'messages_count={len(generate_messages)}'
+            )
+
             started = time.time()
             output = self.model.generate(input=generate_messages, tools=tools or None)
             latency_ms = (time.time() - started) * 1000
             ctx.last_output = output
             final_output = output
 
-            assistant_msg = output.message
+            # Deep-copy before appending to ctx.messages so that downstream
+            # adapter code (e.g. ``output.completion = final_text`` in
+            # ``DefaultDataAdapter._extract_final_answer``) cannot retro-
+            # actively mutate the message we are about to persist to JSONL.
+            # Without this, the assistant's reasoning text gets overwritten
+            # by the extracted final answer because ``output.message`` and
+            # ``ctx.messages[-1]`` would otherwise share the same object.
+            assistant_msg = output.message.model_copy(deep=True)
             ctx.messages.append(assistant_msg)
+
+            logger.debug(
+                f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} generate done '
+                f'latency={latency_ms:.0f}ms stop_reason={output.stop_reason} '
+                f'tool_calls={assistant_msg.tool_calls} '
+                f'content={assistant_msg.text}'
+            )
 
             self.trace.add_event(
                 step=ctx.step,
@@ -97,6 +118,7 @@ class AgentLoop:
             # ---- parse ----
             parsed = self.strategy.parse_output(output, ctx)
             if parsed.error:
+                logger.debug(f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} parse_error: {parsed.error}')
                 self.trace.add_event(
                     step=ctx.step,
                     type=EventType.ERROR,
@@ -109,6 +131,10 @@ class AgentLoop:
 
             # ---- terminate? ----
             if self.strategy.is_done(parsed, ctx):
+                logger.debug(
+                    f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} is_done=True '
+                    f'final_answer={str(parsed.final_answer)[:100]!r}'
+                )
                 if parsed.final_answer is not None:
                     self.trace.add_event(
                         step=ctx.step,
@@ -122,6 +148,10 @@ class AgentLoop:
             # The model didn't call any tool and didn't submit a final
             # answer.  Ask the strategy whether a nudge is appropriate.
             if not parsed.tool_calls:
+                logger.debug(
+                    f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} '
+                    f'no_tool_calls, should_nudge={self.strategy.should_nudge(parsed, ctx)}'
+                )
                 if self.strategy.should_nudge(parsed, ctx):
                     nudge = ChatMessageUser(
                         content='No tool was called. Please use an available tool '
@@ -155,6 +185,11 @@ class AgentLoop:
 
             # ---- tool execution ----
             if parsed.tool_calls:
+                logger.debug(
+                    f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} '
+                    f'executing {len(parsed.tool_calls)} tool call(s): '
+                    f'{[c.function.name for c in parsed.tool_calls]}'
+                )
                 last_obs_id: Optional[str] = None
                 for call in parsed.tool_calls:
                     self.trace.add_event(
@@ -168,6 +203,12 @@ class AgentLoop:
                         },
                     )
                     observation, error, duration = await self.tool_executor.execute(call)
+                    logger.debug(
+                        f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} '
+                        f'tool={call.function.name} duration={duration*1000:.0f}ms '
+                        f'error={error.type if error else None} '
+                        f'obs_len={len(observation) if isinstance(observation, str) else 0}'
+                    )
                     # Let the strategy decide how to format the observation
                     # (ChatMessageTool for FC, ChatMessageUser for textual_block).
                     obs_msg = self.strategy.format_observation(call, observation, error)
@@ -205,6 +246,11 @@ class AgentLoop:
         if ctx.step >= self.max_steps:
             logger.info(f'AgentLoop reached max_steps={self.max_steps} '
                         f'for sample {ctx.sample_id}; terminating.')
+            if logger.isEnabledFor(10):  # DEBUG level
+                logger.debug(
+                    f'[AgentLoop] sample={ctx.sample_id} max_steps_exceeded '
+                    f'total_messages={len(ctx.messages)}'
+                )
             self.trace.add_event(
                 step=ctx.step,
                 type=EventType.ERROR,

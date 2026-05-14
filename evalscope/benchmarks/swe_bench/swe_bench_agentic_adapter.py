@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Optional
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
 from evalscope.api.agent import AgentEnvironment, AgentStrategy
 from evalscope.api.benchmark import BenchmarkMeta
-from evalscope.api.benchmark.adapters import AgentAdapter
+from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import FieldSpec, RemoteDataLoader, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser
@@ -138,7 +138,7 @@ _AGENTIC_EXTRA_PARAMS: Dict[str, Any] = {
 # ---------------------------------------------------------------------------
 
 
-class _SWEBenchAgenticAdapterBase(AgentAdapter):
+class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
     """Shared agentic SWE-bench adapter logic.
 
     Concrete benchmarks differ only in dataset_id / pretty_name; behaviour
@@ -331,8 +331,8 @@ class _SWEBenchAgenticAdapterBase(AgentAdapter):
 # Concrete benchmarks
 # ---------------------------------------------------------------------------
 
-_AGENTIC_DESCRIPTION_SUFFIX = """
-## Agentic mode
+_AGENTIC_MODE_SECTION = """
+## Agentic Mode
 
 This benchmark drives a multi-turn agent loop (mirrors mini-swe-agent's
 `swebench.yaml`) inside a per-instance SWE-bench Docker container. The
@@ -343,10 +343,95 @@ and finally submits its `git diff` patch by printing the sentinel
 `extra_params.action_protocol` selects between:
 - `toolcall` (default): OpenAI function-calling protocol with a single
   `bash` tool. Recommended for any model that supports tool calling.
-- `backticks`: textbased fallback expecting one
+- `backticks`: text-based fallback expecting one
   ` ```mswea_bash_command ``` ` block per turn. For models without
   function-calling support.
 """
+
+_SWE_BENCH_VERIFIED_AGENTIC_DESCRIPTION = """
+## Overview
+
+SWE-bench Verified Agentic is the agentic-mode evaluation of SWE-bench Verified, a human-validated subset of 500 samples from SWE-bench. Unlike the oracle single-turn variant, the model must autonomously explore the repository, run shell commands, edit source files, and submit a patch through a multi-turn agent loop driven inside a per-instance Docker container.
+
+## Task Description
+
+- **Task Type**: Automated Software Engineering / Bug Fixing (Agentic)
+- **Input**: GitHub issue description (no oracle file context)
+- **Output**: Code patch (diff format) collected from `git diff` after autonomous editing
+- **Repositories**: 12 popular Python projects (Django, Flask, Requests, etc.)
+
+## Key Features
+
+- 500 human-validated Issue-Pull Request pairs
+- Multi-turn agent loop (mini-swe-agent `swebench.yaml` compatible)
+- Per-instance SWE-bench Docker container as the execution sandbox
+- Sentinel-based patch submission protocol (`COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`)
+- Supports both function-calling (`toolcall`) and text-based (`backticks`) action protocols
+
+## Evaluation Notes
+
+- Requires `pip install swebench==4.1.0` before evaluation
+- Docker images are built/pulled automatically for each repository
+- Timeout of 1800 seconds (30 min) per instance for final patch validation
+- See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup instructions
+- Supports both local image building and remote image pulling
+""" + _AGENTIC_MODE_SECTION
+
+_SWE_BENCH_VERIFIED_MINI_AGENTIC_DESCRIPTION = """
+## Overview
+
+SWE-bench Verified Mini Agentic is the agentic-mode evaluation of SWE-bench Verified Mini, a compact 50-sample subset that maintains the same distribution of performance, test pass rates, and difficulty as the full Verified set while requiring only 5GB of storage instead of 130GB. The model must autonomously explore, edit, and submit a patch through a multi-turn agent loop.
+
+## Task Description
+
+- **Task Type**: Automated Software Engineering / Bug Fixing (Agentic)
+- **Input**: GitHub issue description (no oracle file context)
+- **Output**: Code patch (diff format) collected from `git diff` after autonomous editing
+- **Size**: 50 samples (vs 500 in full Verified set)
+
+## Key Features
+
+- Representative 50-sample subset of SWE-bench Verified
+- Same difficulty distribution as the full dataset
+- Dramatically reduced storage requirements (5GB vs 130GB)
+- Multi-turn agent loop with per-instance Docker sandbox
+- Ideal for quick agentic evaluation and development iteration
+
+## Evaluation Notes
+
+- Requires `pip install swebench==4.1.0` before evaluation
+- Docker images are built/pulled automatically
+- See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup
+- Good for rapid prototyping of agent strategies and initial model assessment
+""" + _AGENTIC_MODE_SECTION
+
+_SWE_BENCH_LITE_AGENTIC_DESCRIPTION = """
+## Overview
+
+SWE-bench Lite Agentic is the agentic-mode evaluation of SWE-bench Lite, a focused subset of SWE-bench containing 300 Issue-Pull Request pairs from 11 popular Python repositories. The model autonomously drives a multi-turn agent loop inside a per-instance Docker container to resolve real-world GitHub issues.
+
+## Task Description
+
+- **Task Type**: Automated Software Engineering / Bug Fixing (Agentic)
+- **Input**: GitHub issue description (no oracle file context)
+- **Output**: Code patch (diff format) collected from `git diff` after autonomous editing
+- **Size**: 300 carefully selected test instances
+
+## Key Features
+
+- 300 test Issue-Pull Request pairs
+- 11 popular Python repositories covered
+- Real-world bugs with verified solutions
+- Multi-turn agent loop with per-instance Docker sandbox
+- More manageable than full SWE-bench while still challenging
+
+## Evaluation Notes
+
+- Requires `pip install swebench==4.1.0` before evaluation
+- Docker images are built/pulled automatically for each repository
+- See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup instructions
+- Popular benchmark variant for initial agentic model comparison
+""" + _AGENTIC_MODE_SECTION
 
 
 @register_benchmark(
@@ -354,10 +439,7 @@ and finally submits its `git diff` patch by printing the sentinel
         name='swe_bench_verified_agentic',
         pretty_name='SWE-bench_Verified_Agentic',
         tags=[Tags.CODING],
-        description=(
-            'Agentic SWE-bench Verified evaluation driven by a multi-turn '
-            'agent loop (mini-swe-agent compatible).' + _AGENTIC_DESCRIPTION_SUFFIX
-        ),
+        description=_SWE_BENCH_VERIFIED_AGENTIC_DESCRIPTION,
         dataset_id='princeton-nlp/SWE-bench_Verified',
         metric_list=['acc'],
         eval_split='test',
@@ -374,10 +456,7 @@ class SWEBenchVerifiedAgenticAdapter(_SWEBenchAgenticAdapterBase):
         name='swe_bench_verified_mini_agentic',
         pretty_name='SWE-bench_Verified_Mini_Agentic',
         tags=[Tags.CODING],
-        description=(
-            'Agentic SWE-bench Verified Mini (50 samples) evaluation driven '
-            'by a multi-turn agent loop.' + _AGENTIC_DESCRIPTION_SUFFIX
-        ),
+        description=_SWE_BENCH_VERIFIED_MINI_AGENTIC_DESCRIPTION,
         dataset_id='evalscope/swe-bench-verified-mini',
         metric_list=['acc'],
         eval_split='test',
@@ -394,10 +473,7 @@ class SWEBenchVerifiedMiniAgenticAdapter(_SWEBenchAgenticAdapterBase):
         name='swe_bench_lite_agentic',
         pretty_name='SWE-bench_Lite_Agentic',
         tags=[Tags.CODING],
-        description=(
-            'Agentic SWE-bench Lite (300 samples) evaluation driven by a '
-            'multi-turn agent loop.' + _AGENTIC_DESCRIPTION_SUFFIX
-        ),
+        description=_SWE_BENCH_LITE_AGENTIC_DESCRIPTION,
         dataset_id='princeton-nlp/SWE-bench_Lite',
         metric_list=['acc'],
         eval_split='test',

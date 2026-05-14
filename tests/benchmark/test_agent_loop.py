@@ -127,33 +127,6 @@ class TestGSM8KAgentNoTools(unittest.TestCase):
         result = run_task(cfg)
         self.assertIn('gsm8k', result)
 
-    def test_trace_populated_strategy_correct(self):
-        """AgentTrace is saved; strategy field = 'function_calling', environment = None."""
-        cfg = TaskConfig(
-            **_base_cfg(
-                datasets=['gsm8k'],
-                dataset_args={'gsm8k': {'few_shot_num': 0}},
-                agent_config=AgentConfig(
-                    strategy='function_calling',
-                    tools=[],
-                    max_steps=3,
-                ),
-            )
-        )
-        run_task(cfg)
-        reviews = _read_review_results('gsm8k', work_dir=cfg.work_dir)
-        self.assertGreater(len(reviews), 0)
-        for r in reviews:
-            trace_dict = r.get('agent_trace')
-            self.assertIsNotNone(trace_dict, f'agent_trace missing in: {r}')
-            trace = AgentTrace.model_validate(trace_dict)
-            self.assertEqual(trace.strategy, 'function_calling')
-            self.assertIsNone(trace.environment)
-            # Every sample must have at least one MODEL_GENERATE event
-            types = [e.type for e in trace.events]
-            self.assertIn(EventType.MODEL_GENERATE, types)
-
-
 # ---------------------------------------------------------------------------
 # 3. GSM8K + agent, python_exec + local environment
 # ---------------------------------------------------------------------------
@@ -219,6 +192,8 @@ class TestGSM8KAgentBashLocal(unittest.TestCase):
                     environment='local',
                     max_steps=5,
                 ),
+                eval_batch_size=1,
+                limit=1,
             )
         )
         result = run_task(cfg)

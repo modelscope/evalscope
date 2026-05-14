@@ -6,7 +6,7 @@ Plan 覆盖点:
 - ``TaskState.agent_trace`` 替换旧 ``_trajectory``
 - ``ReviewResult.agent_trace`` 持久化 + 旧 ``trajectory`` 向后兼容丢弃
 - ``DefaultDataAdapter._on_inference`` 根据 ``agent_config`` 自动分支
-- ``AgentAdapter`` 忽略全局 ``agent_config`` 用自己的 ``strategy_name``
+- ``AgentLoopAdapter`` 忽略全局 ``agent_config`` 用自己的 ``strategy_name``
 """
 
 import asyncio
@@ -15,7 +15,7 @@ from unittest.mock import MagicMock
 
 import evalscope  # noqa: F401 - trigger strategy registration
 from evalscope.api.agent import AgentConfig, AgentTrace, EventType
-from evalscope.api.benchmark.adapters.agent_adapter import AgentAdapter
+from evalscope.api.benchmark.adapters.agent_loop_adapter import AgentLoopAdapter
 from evalscope.api.benchmark.adapters.default_data_adapter import DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
@@ -183,18 +183,19 @@ class TestDefaultDataAdapterAgentBranch(unittest.TestCase):
         self.assertEqual(types, [EventType.MODEL_GENERATE, EventType.SUBMIT])
 
 
-class TestAgentAdapterOverrides(unittest.TestCase):
-    """AgentAdapter._on_inference 忽略全局 agent_config; 用 strategy_name 类属性."""
+class TestAgentLoopAdapterOverrides(unittest.TestCase):
+    """AgentLoopAdapter._on_inference 忽略全局 agent_config; 用 strategy_name 类属性."""
 
     def test_ignores_global_agent_config(self):
-        # 即使全局配置切了 react (此刻未注册), AgentAdapter 仍该用自己的 strategy_name=function_calling
+        # 即使全局配置切了 react (此刻未注册), AgentLoopAdapter 仍该用自己的 strategy_name=function_calling
         cfg = TaskConfig(
             model='dummy',
             agent_config={'strategy': 'react', 'max_steps': 99},  # 全局
         )
-        adapter = AgentAdapter.__new__(AgentAdapter)
+        adapter = AgentLoopAdapter.__new__(AgentLoopAdapter)
         adapter._task_config = cfg
-        # AgentAdapter 类默认 strategy_name = 'function_calling' / max_steps = 30
+        # AgentLoopAdapter 类默认 strategy_name = 'function_calling' / max_steps_default = 30
+        adapter.max_steps = AgentLoopAdapter.max_steps_default
 
         model = _mock_model_generate_final('native_agent')
         sample = Sample(input='hi')
@@ -202,12 +203,12 @@ class TestAgentAdapterOverrides(unittest.TestCase):
 
         self.assertEqual(out.choices[0].message.content, 'native_agent')
         trace = out.metadata['__agent_trace__']
-        # 用了 AgentAdapter 自己的 strategy_name, 不是全局 'react'
+        # 用了 AgentLoopAdapter 自己的 strategy_name, 不是全局 'react'
         self.assertEqual(trace.strategy, 'function_calling')
-        self.assertEqual(trace.max_steps, AgentAdapter.max_steps)
+        self.assertEqual(trace.max_steps, AgentLoopAdapter.max_steps_default)
 
     def test_build_initial_messages_handles_str_and_list(self):
-        adapter = AgentAdapter.__new__(AgentAdapter)
+        adapter = AgentLoopAdapter.__new__(AgentLoopAdapter)
         s_str = Sample(input='hello')
         msgs = adapter.build_initial_messages(s_str)
         self.assertEqual(len(msgs), 1)
@@ -219,7 +220,7 @@ class TestAgentAdapterOverrides(unittest.TestCase):
         self.assertEqual(len(msgs), 2)
 
     def test_default_build_tools_and_environment(self):
-        adapter = AgentAdapter.__new__(AgentAdapter)
+        adapter = AgentLoopAdapter.__new__(AgentLoopAdapter)
         self.assertEqual(adapter.build_tools(Sample(input='x')), {})
         self.assertIsNone(adapter.build_environment(Sample(input='x')))
 

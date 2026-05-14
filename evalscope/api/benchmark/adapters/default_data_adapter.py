@@ -4,7 +4,7 @@ from functools import partial
 from overrides import override
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
-from evalscope.api.agent import AgentContext, AgentEnvironment, AgentLoop, AgentLoopResult, AgentTrace, ToolExecutor
+from evalscope.api.agent import AgentEnvironment, AgentLoopResult
 from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, LocalDataLoader, RemoteDataLoader, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
@@ -21,8 +21,8 @@ from evalscope.api.registry import (
 from evalscope.constants import HubType, JudgeStrategy
 from evalscope.report import Report, ReportGenerator
 from evalscope.utils import get_logger
-from evalscope.utils.function_utils import AsyncioLoopRunner
 from ..benchmark import DataAdapter
+from ._agent_loop_runner import run_agent_loop
 
 logger = get_logger()
 
@@ -468,6 +468,7 @@ class DefaultDataAdapter(DataAdapter):
         #   2. build_sandbox_config(sample) – per-sample override hook.
         #   3. agent_config.environment_extra – user-supplied raw kwargs.
         env_kwargs = self._resolve_env_kwargs(cfg, sample)
+        environment: Optional[AgentEnvironment] = env_cls(**env_kwargs) if env_cls is not None else None
 
         if isinstance(sample.input, list):
             initial_messages = list(sample.input)
@@ -478,35 +479,18 @@ class DefaultDataAdapter(DataAdapter):
         sample_tools = list(sample.tools or [])
         all_tools = sample_tools + [t for t in registered_tool_infos if t not in sample_tools]
 
-        async def _run() -> AgentLoopResult:
-            environment: Optional[AgentEnvironment] = (env_cls(**env_kwargs) if env_cls is not None else None)
-            try:
-                tool_executor = ToolExecutor(handlers=handlers, environment=environment)
-                ctx = AgentContext(
-                    sample_id=sample.id,
-                    messages=initial_messages,
-                    tools=all_tools,
-                    max_steps=cfg.max_steps,
-                )
-                trace = AgentTrace(
-                    strategy=cfg.strategy,
-                    environment=cfg.environment,
-                    max_steps=cfg.max_steps,
-                )
-                loop = AgentLoop(
-                    model=model,
-                    strategy=strategy,
-                    tool_executor=tool_executor,
-                    environment=environment,
-                    max_steps=cfg.max_steps,
-                    trace=trace,
-                )
-                return await loop.run(ctx)
-            finally:
-                if environment is not None:
-                    await environment.close()
-
-        result = AsyncioLoopRunner.run(_run())
+        result: AgentLoopResult = run_agent_loop(
+            model=model,
+            strategy=strategy,
+            handlers=handlers,
+            environment=environment,
+            initial_messages=initial_messages,
+            all_tools=all_tools,
+            max_steps=cfg.max_steps,
+            sample_id=sample.id,
+            trace_strategy_name=cfg.strategy,
+            trace_env_name=cfg.environment,
+        )
 
         # Extract final prediction through the strategy → adapter hook chain.
         # Benchmarks can override ``_extract_final_answer`` for custom logic
