@@ -8,7 +8,7 @@ export default function ScoreBadge({ score, threshold = 0.99 }: Props) {
   return (
     <span
       className="inline-block px-2 py-0.5 rounded text-sm font-mono"
-      style={{ backgroundColor: pass ? 'var(--color-pass)' : 'var(--color-fail)', color: '#fff' }}
+      style={{ backgroundColor: pass ? 'var(--color-pass)' : 'var(--color-fail)', color: 'var(--color-on-filled)' }}
     >
       {score.toFixed(4)}
     </span>

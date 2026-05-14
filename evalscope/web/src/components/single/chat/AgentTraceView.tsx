@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import {
   ChevronDown,
   ChevronRight,
@@ -85,12 +85,12 @@ export function NudgeRow({ msg }: { msg: ChatMessage }) {
         alignItems: 'center',
         gap: '0.4rem',
         padding: '0.35rem 0.6rem',
-        background: 'var(--warning-bg, rgba(234,179,8,0.08))',
-        border: '1px solid var(--warning-border, rgba(234,179,8,0.2))',
+        background: 'var(--warning-bg)',
+        border: '1px solid var(--warning-border)',
         borderRadius: '0.4rem',
         fontSize: '0.72rem',
         fontFamily: 'var(--font-mono, monospace)',
-        color: 'var(--warning-text, #b45309)',
+        color: 'var(--warning-text)',
         marginTop: '0.25rem',
       }}
     >
@@ -284,103 +284,6 @@ export function buildStepGroups(messages: ChatMessage[], trace: AgentTrace): Ste
   return groups
 }
 
-/* ─── TimelineNode ─────────────────────────────────────────── */
-
-export function TimelineNode({
-  step,
-  totalLatencyMs,
-  isActive,
-  isLast,
-  onClick,
-}: {
-  step: number
-  totalLatencyMs: number | null
-  isActive: boolean
-  isLast: boolean
-  onClick: () => void
-}) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <div
-      className="flex flex-col items-center"
-      style={{ alignSelf: 'stretch', paddingTop: 8 }}
-    >
-      <button
-        onClick={onClick}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 2,
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          padding: 0,
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            width: isActive ? 24 : 18,
-            height: isActive ? 24 : 18,
-            borderRadius: '50%',
-            background: isActive
-              ? 'var(--accent)'
-              : hovered
-                ? 'var(--accent-dim)'
-                : 'var(--bg-card2)',
-            border: `2px solid ${isActive ? 'var(--accent)' : hovered ? 'var(--accent)' : 'var(--color-border-subtle)'}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.2s',
-            boxShadow: isActive ? '0 0 8px var(--accent-dim)' : 'none',
-          }}
-        >
-          <span
-            style={{
-              fontSize: isActive ? 10 : 9,
-              fontFamily: 'var(--font-mono, monospace)',
-              fontWeight: 700,
-              color: isActive ? '#fff' : 'var(--color-ink-muted)',
-            }}
-          >
-            {step}
-          </span>
-        </div>
-        {totalLatencyMs != null && (
-          <span
-            style={{
-              fontSize: 9,
-              fontFamily: 'var(--font-mono, monospace)',
-              color: isActive ? 'var(--accent)' : 'var(--text-muted)',
-              opacity: isActive ? 1 : 0.6,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {fmtMs(totalLatencyMs)}
-          </span>
-        )}
-      </button>
-      {/* Connector line */}
-      {!isLast && (
-        <div
-          style={{
-            width: 2,
-            flex: 1,
-            minHeight: 16,
-            marginTop: 4,
-            background: isActive ? 'var(--accent)' : 'var(--color-border-subtle)',
-            opacity: isActive ? 0.5 : 0.2,
-          }}
-        />
-      )}
-    </div>
-  )
-}
-
 /* ─── TraceEventPill ───────────────────────────────────────── */
 
 export function TraceEventPill({ event }: { event: AgentTraceEvent }) {
@@ -398,9 +301,9 @@ export function TraceEventPill({ event }: { event: AgentTraceEvent }) {
       case 'error':
         return { Icon: AlertTriangle, color: 'var(--danger)', labelKey: 'trace.error' }
       case 'nudge':
-        return { Icon: AlertTriangle, color: 'var(--warning, #d97706)', labelKey: 'trace.nudge' }
+        return { Icon: AlertTriangle, color: 'var(--warning-color)', labelKey: 'trace.nudge' }
       case 'submit':
-        return { Icon: Check, color: 'var(--success, #10b981)', labelKey: 'trace.submit' }
+        return { Icon: Check, color: 'var(--success)', labelKey: 'trace.submit' }
       default:
         return { Icon: Wrench, color: 'var(--text-muted)', labelKey: event.type }
     }
@@ -690,27 +593,16 @@ export function TracedTimeline({
           onStepClick={onStepClick}
         />
       )}
-      {agentGroups.map((g, idx) => {
-        const isLast = idx === agentGroups.length - 1
+      {agentGroups.map((g) => {
         const isActive = highlightStep === g.step
         return (
-          <div key={g.step} style={{ display: 'flex', gap: '0.6rem', alignItems: 'stretch' }}>
-            <TimelineNode
-              step={g.step}
-              totalLatencyMs={g.totalLatencyMs}
-              isActive={isActive}
-              isLast={isLast}
-              onClick={() => onStepClick(g.step)}
-            />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <StepBlock
-                group={g}
-                highlightId={highlightId}
-                highlighted={isActive}
-                onStepClick={onStepClick}
-              />
-            </div>
-          </div>
+          <StepBlock
+            key={g.step}
+            group={g}
+            highlightId={highlightId}
+            highlighted={isActive}
+            onStepClick={onStepClick}
+          />
         )
       })}
     </div>
