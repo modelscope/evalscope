@@ -49,7 +49,7 @@ class TestMVBenchVideoBenchmark(unittest.TestCase):
         self.assertEqual(video_parts[0].end, 4.0)
         self.assertEqual(video_parts[0].fps, 1.0)
         self.assertIn(sample.target, ['A', 'B', 'C'])
-        self.assertEqual(sample.metadata['dataset_hub'], HubType.HUGGINGFACE)
+        self.assertEqual(sample.metadata['dataset_hub'], HubType.MODELSCOPE)
         self.assertIn('video segment from 1.5s to 4s', sample.input[0].content[0].text)
         self.assertIn('Subtitles:', sample.input[0].content[0].text)
 

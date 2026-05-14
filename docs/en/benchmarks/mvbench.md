@@ -2,7 +2,7 @@
 
 ## Overview
 
-MVBench is a public video understanding benchmark for multimodal models. It evaluates temporal perception, attribute/state reasoning, symbolic ordering, and high-level cognition through video multiple-choice questions. This native adapter uses the `PKU-Alignment/MVBench` Hugging Face mirror, which provides the original annotations plus optimized video archives.
+MVBench is a public video understanding benchmark for multimodal models. It evaluates temporal perception, attribute/state reasoning, symbolic ordering, and high-level cognition through video multiple-choice questions. This native adapter uses the `PKU-Alignment/MVBench` ModelScope mirror by default, which provides the original annotations plus optimized video archives.
 
 ## Task Description
 
@@ -28,14 +28,14 @@ MVBench is a public video understanding benchmark for multimodal models. It eval
 - Primary metric: **Accuracy**
 - The default `action_antonym` subset downloads the small `ssv2_video.zip` archive and is suitable for CI-style validation
 - Full MVBench evaluation requires downloading the corresponding public video archives for selected subsets
-- The adapter defaults to Hugging Face because the public `PKU-Alignment/MVBench` mirror is hosted there; mirrored datasets can be selected with `extra_params.dataset_hub` and `extra_params.dataset_id`
+- The adapter defaults to ModelScope for better availability in China; Hugging Face or local mirrors can be selected with `extra_params.dataset_hub` and `extra_params.dataset_id`
 
 ## Properties
 
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `mvbench` |
-| **Dataset ID** | [PKU-Alignment/MVBench](https://huggingface.co/datasets/PKU-Alignment/MVBench) |
+| **Dataset ID** | [PKU-Alignment/MVBench](https://modelscope.cn/datasets/PKU-Alignment/MVBench) |
 | **Paper** | [MVBench](https://arxiv.org/abs/2311.17005) |
 | **Tags** | `MCQ`, `MultiModal` |
 | **Metrics** | `acc` |
@@ -90,7 +90,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets mvbench \
-    --dataset-args '{"mvbench": {"subset_list": ["action_antonym"], "extra_params": {"dataset_hub": "huggingface"}}}' \
+    --dataset-args '{"mvbench": {"subset_list": ["action_antonym"], "extra_params": {"dataset_hub": "modelscope"}}}' \
     --limit 10
 ```
 
@@ -109,7 +109,7 @@ task_cfg = TaskConfig(
         'mvbench': {
             'subset_list': ['action_antonym'],
             'extra_params': {
-                'dataset_hub': 'huggingface',
+                'dataset_hub': 'modelscope',
             },
         }
     },

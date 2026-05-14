@@ -63,7 +63,7 @@ class TestVideoMMEv2VideoBenchmark(unittest.TestCase):
         self.assertEqual(video_parts[0].format, 'mp4')
         self.assertEqual(sample.target, 'F')
         self.assertEqual(sample.choices[5], 'Chinese.')
-        self.assertEqual(sample.metadata['dataset_hub'], HubType.HUGGINGFACE)
+        self.assertEqual(sample.metadata['dataset_hub'], HubType.MODELSCOPE)
 
         request_messages = openai_chat_messages(sample.input)
         video_request_parts = [part for part in request_messages[0]['content'] if part['type'] == 'video_url']

@@ -60,8 +60,8 @@ DEFAULT_SUBSET_LIST = ['action_antonym']
 
 MVBench is a public multimodal video understanding benchmark covering temporal perception,
 attribute/state reasoning, symbolic ordering, and high-level cognition. This native adapter uses
-the Hugging Face `PKU-Alignment/MVBench` mirror, which provides JSON annotations plus optimized
-video archives.
+the ModelScope `PKU-Alignment/MVBench` mirror by default, which provides JSON annotations plus
+optimized video archives.
 
 ## Task Description
 
@@ -94,7 +94,7 @@ video archives.
             'dataset_hub': {
                 'type': 'str',
                 'description': 'Dataset hub used to load annotations and video archives.',
-                'value': HubType.HUGGINGFACE,
+                'value': HubType.MODELSCOPE,
                 'choices': [HubType.HUGGINGFACE, HubType.MODELSCOPE, HubType.LOCAL],
             },
             'dataset_revision': {
@@ -124,7 +124,7 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
     @property
     def source_dataset_hub(self) -> str:
-        return self.extra_params.get('dataset_hub') or HubType.HUGGINGFACE
+        return self.extra_params.get('dataset_hub') or HubType.MODELSCOPE
 
     @property
     def source_dataset_revision(self) -> Optional[str]:

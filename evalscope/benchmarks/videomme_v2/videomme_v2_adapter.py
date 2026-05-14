@@ -71,7 +71,7 @@ downloads, so it exercises the same reusable video benchmark path as MVBench.
             'dataset_hub': {
                 'type': 'str',
                 'description': 'Dataset hub used to load annotations, subtitles, and optional video archives.',
-                'value': HubType.HUGGINGFACE,
+                'value': HubType.MODELSCOPE,
                 'choices': [HubType.HUGGINGFACE, HubType.MODELSCOPE, HubType.LOCAL],
             },
             'dataset_revision': {
@@ -119,7 +119,7 @@ class VideoMMEv2Adapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
     @property
     def source_dataset_hub(self) -> str:
-        return self.extra_params.get('dataset_hub') or HubType.HUGGINGFACE
+        return self.extra_params.get('dataset_hub') or HubType.MODELSCOPE
 
     @property
     def source_dataset_revision(self) -> Optional[str]:

@@ -2,7 +2,7 @@
 
 ## 概述
 
-MVBench 是一个公开的视频理解评测集，用于评估多模态模型的时间感知、属性和状态推理、符号顺序理解以及高层认知能力。本原生适配器使用 Hugging Face 上的 `PKU-Alignment/MVBench` 镜像，该镜像提供原始标注和优化后的视频归档文件。
+MVBench 是一个公开的视频理解评测集，用于评估多模态模型的时间感知、属性和状态推理、符号顺序理解以及高层认知能力。本原生适配器默认使用 ModelScope 上的 `PKU-Alignment/MVBench` 镜像，该镜像提供原始标注和优化后的视频归档文件。
 
 ## 任务描述
 
@@ -28,14 +28,14 @@ MVBench 是一个公开的视频理解评测集，用于评估多模态模型的
 - 主要指标：**准确率（Accuracy）**
 - 默认 `action_antonym` 子集下载较小的 `ssv2_video.zip` 归档，适合 CI 风格验证
 - 完整 MVBench 评测需要按所选子集下载对应的公开视频归档
-- 由于公开的 `PKU-Alignment/MVBench` 镜像托管在 Hugging Face，本适配器默认使用 Hugging Face；如果使用镜像数据集，可通过 `extra_params.dataset_hub` 和 `extra_params.dataset_id` 指定
+- 本适配器默认使用 ModelScope，便于国内环境下载；如需使用 Hugging Face 或本地镜像，可通过 `extra_params.dataset_hub` 和 `extra_params.dataset_id` 指定
 
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `mvbench` |
-| **数据集ID** | [PKU-Alignment/MVBench](https://huggingface.co/datasets/PKU-Alignment/MVBench) |
+| **数据集ID** | [PKU-Alignment/MVBench](https://modelscope.cn/datasets/PKU-Alignment/MVBench) |
 | **论文** | [MVBench](https://arxiv.org/abs/2311.17005) |
 | **标签** | `MCQ`, `MultiModal` |
 | **指标** | `acc` |
@@ -90,7 +90,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets mvbench \
-    --dataset-args '{"mvbench": {"subset_list": ["action_antonym"], "extra_params": {"dataset_hub": "huggingface"}}}' \
+    --dataset-args '{"mvbench": {"subset_list": ["action_antonym"], "extra_params": {"dataset_hub": "modelscope"}}}' \
     --limit 10
 ```
 
@@ -109,7 +109,7 @@ task_cfg = TaskConfig(
         'mvbench': {
             'subset_list': ['action_antonym'],
             'extra_params': {
-                'dataset_hub': 'huggingface',
+                'dataset_hub': 'modelscope',
             },
         }
     },

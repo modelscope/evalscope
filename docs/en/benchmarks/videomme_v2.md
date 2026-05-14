@@ -27,7 +27,7 @@ This native adapter is intentionally built on the same reusable video benchmark 
 
 - Default configuration uses **0-shot** evaluation
 - Primary metric: **Accuracy**
-- The public HF dataset stores official videos in 40 large zip archives; URL mode avoids downloading multi-GB archives for small tests
+- The public ModelScope dataset stores official videos in 40 large zip archives; URL mode avoids downloading multi-GB archives for small tests
 - Archive mode is more reproducible but can download several GB even for one sample
 
 ## Properties
@@ -35,7 +35,7 @@ This native adapter is intentionally built on the same reusable video benchmark 
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `videomme_v2` |
-| **Dataset ID** | [MME-Benchmarks/Video-MME-v2](https://huggingface.co/datasets/MME-Benchmarks/Video-MME-v2) |
+| **Dataset ID** | [MME-Benchmarks/Video-MME-v2](https://modelscope.cn/datasets/MME-Benchmarks/Video-MME-v2) |
 | **Paper** | [Video-MME-v2](https://arxiv.org/abs/2604.05015) |
 | **Tags** | `MCQ`, `MultiModal` |
 | **Metrics** | `acc` |
@@ -73,7 +73,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets videomme_v2 \
-    --dataset-args '{"videomme_v2": {"subset_list": ["all"], "extra_params": {"dataset_hub": "huggingface", "video_source": "url", "use_subtitles": true, "subtitle_word_limit": 512}}}' \
+    --dataset-args '{"videomme_v2": {"subset_list": ["all"], "extra_params": {"dataset_hub": "modelscope", "video_source": "url", "use_subtitles": true, "subtitle_word_limit": 512}}}' \
     --limit 2
 ```
 
@@ -92,7 +92,7 @@ task_cfg = TaskConfig(
         'videomme_v2': {
             'subset_list': ['all'],
             'extra_params': {
-                'dataset_hub': 'huggingface',
+                'dataset_hub': 'modelscope',
                 'video_source': 'url',
                 'use_subtitles': True,
                 'subtitle_word_limit': 512,
