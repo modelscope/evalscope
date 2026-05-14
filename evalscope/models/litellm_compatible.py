@@ -17,8 +17,9 @@ from evalscope.api.messages.perf_metrics import PerformanceMetrics
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, ModelOutput
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
-from evalscope.utils.function_utils import retry_call
+from evalscope.utils.function_utils import async_retry_call, retry_call
 from .utils.openai import (
+    async_collect_stream_response,
     chat_choices_from_openai,
     collect_stream_response,
     model_output_from_openai,
@@ -119,4 +120,75 @@ class LiteLLMAPI(ModelAPI):
 
         except Exception as ex:
             logger.error(f'LiteLLM [{self.model_name}] error: {ex}')
+            raise
+
+    async def generate_async(
+        self,
+        input: List[ChatMessage],
+        tools: List[ToolInfo],
+        tool_choice: ToolChoice,
+        config: GenerateConfig,
+    ) -> ModelOutput:
+        """Async generation using litellm.acompletion().
+
+        Uses ``litellm.acompletion()`` for non-blocking HTTP calls.  Request
+        construction and response parsing are identical to the synchronous
+        ``generate()``.
+        """
+        import litellm
+
+        messages = openai_chat_messages(input)
+        completion_params = openai_completion_params(
+            model=self.model_name,
+            config=config,
+            tools=len(tools) > 0,
+        )
+
+        request: Dict[str, Any] = dict(
+            drop_params=True,
+            **completion_params,
+        )
+        request['messages'] = messages
+        if len(tools) > 0:
+            request['tools'] = openai_chat_tools(tools)
+            request['tool_choice'] = openai_chat_tool_choice(tool_choice)
+        if self.api_key:
+            request['api_key'] = self.api_key
+        if self.base_url:
+            request['api_base'] = self.base_url
+
+        try:
+            t_start = time.monotonic()
+
+            # Async generation with retry
+            response = await async_retry_call(
+                litellm.acompletion,
+                retries=config.retries,
+                sleep_interval=config.retry_interval,
+                **request,
+            )
+
+            total_time = time.monotonic() - t_start
+            ttft: Optional[float] = None
+
+            if config.stream and not isinstance(response, ChatCompletion):
+                completion, ttft = await async_collect_stream_response(response, request_start=t_start)
+            else:
+                completion = ChatCompletion(**response.model_dump())
+
+            choices = chat_choices_from_openai(completion, tools)
+            output = model_output_from_openai(completion, choices)
+
+            output.time = total_time
+            usage = output.usage
+            output.message.perf_metrics = PerformanceMetrics(
+                latency=total_time,
+                ttft=ttft,
+                input_tokens=usage.input_tokens if usage else 0,
+                output_tokens=usage.output_tokens if usage else 0,
+            )
+            return output
+
+        except Exception as ex:
+            logger.error(f'LiteLLM [{self.model_name}] async error: {ex}')
             raise

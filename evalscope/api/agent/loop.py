@@ -83,9 +83,9 @@ class AgentLoop:
                 f'messages_count={len(generate_messages)}'
             )
 
-            started = time.time()
-            output = self.model.generate(input=generate_messages, tools=tools or None)
-            latency_ms = (time.time() - started) * 1000
+            started = time.monotonic()
+            output = await self.model.generate_async(input=generate_messages, tools=tools or None)
+            latency_ms = (time.monotonic() - started) * 1000
             ctx.last_output = output
             final_output = output
 
