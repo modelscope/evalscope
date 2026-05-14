@@ -98,3 +98,60 @@ run_task(task_cfg=task_cfg)
 | qwen-plus | swe_bench_verified | mean_acc | default  |     5 |     0.2 | default |
 +-----------+--------------------+----------+----------+-------+---------+---------+ 
 ```
+
+## Agentic 模式（mini-swe-agent 兼容）
+
+除了上述标准 oracle 单轮评测之外，EvalScope 还提供了 **agentic 多轮评测模式**，对齐 [mini-swe-agent](https://github.com/princeton-nlp/mini-swe-agent) 流程。
+
+在 agentic 模式下，模型只接收原始 `problem_statement`（不提供 oracle 检索上下文），在每个实例独立的 SWE-bench Docker 容器内驱动多轮 agent 循环。模型使用 `bash` 命令探索 `/testbed`、编辑源文件，最终通过打印哨兵字符串 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 提交 `git diff` 补丁。
+
+### Agentic 评测数据集
+
+- **`swe_bench_verified_agentic`** — SWE-bench Verified（500 样本）
+- **`swe_bench_verified_mini_agentic`** — SWE-bench Verified Mini（50 样本，约 5GB）
+- **`swe_bench_lite_agentic`** — SWE-bench Lite（300 样本）
+
+### 动作协议
+
+`action_protocol` 参数控制模型与 bash 的交互方式：
+
+| 协议 | 描述 | 适用模型 |
+|------|------|----------|
+| `toolcall`（默认） | OpenAI function-calling，注册单个 `bash` 工具，支持并行工具调用 | 支持 function-calling 的模型 |
+| `backticks` | 模型将命令包裹在 `` ```mswea_bash_command ... ``` `` 围栏块中，每轮一条命令 | 不支持 function-calling 的模型 |
+
+### 运行 Agentic 评测
+
+```python
+import os
+from evalscope import TaskConfig, run_task
+
+task_cfg = TaskConfig(
+    model='qwen-plus',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key=os.getenv('DASHSCOPE_API_KEY'),
+    eval_type='openai_api',
+    datasets=['swe_bench_verified_mini_agentic'],
+    dataset_args={
+        'swe_bench_verified_mini_agentic': {
+            'extra_params': {
+                'action_protocol': 'toolcall',  # 或 'backticks'
+                'max_steps': 250,
+                'command_timeout': 60,
+                'build_docker_images': True,
+                'pull_remote_images_if_available': True,
+            }
+        }
+    },
+    eval_batch_size=2,
+    limit=5,
+    generation_config={
+        'temperature': 0,
+    }
+)
+run_task(task_cfg=task_cfg)
+```
+
+```{note}
+Agentic 模式在推理和评测阶段都需要 Docker 运行。每个样本会从预构建的 SWE-bench 镜像启动独立容器。`max_steps` 参数（默认 250）控制每个样本的 agent 循环上限步数。
+```

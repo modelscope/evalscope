@@ -2,8 +2,8 @@
 """Unit tests for agent strategy parsers.
 
 Tests the parse_output / is_done / format_observation / extract_final_answer
-logic for ReAct, mini_swe, and FunctionCallingStrategy (submit interception)
-without making any API calls.
+logic for ReAct, SWE-bench strategies, and FunctionCallingStrategy (submit
+interception) without making any API calls.
 """
 
 import unittest
@@ -45,73 +45,73 @@ def _tool_call(name: str, args: dict | None = None, call_id: str = 'tc-1') -> To
 
 
 # ---------------------------------------------------------------------------
-# mini_swe parse_output
+# SweBenchBackticksStrategy parse_output
 # ---------------------------------------------------------------------------
 
-class TestMiniSweParseOutput(unittest.TestCase):
-    """Tests for MiniSweStrategy.parse_output."""
+class TestSweBenchBackticksParseOutput(unittest.TestCase):
+    """Tests for SweBenchBackticksStrategy.parse_output."""
 
     def setUp(self):
-        from evalscope.agent.strategies.mini_swe import MiniSweStrategy
-        self.strategy = MiniSweStrategy()
+        from evalscope.agent.strategies.swe_bench.swe_bench_backticks import SweBenchBackticksStrategy
+        self.strategy = SweBenchBackticksStrategy()
         self.ctx = _make_ctx()
 
     def test_single_bash_block(self):
-        output = _make_output(text='THOUGHT: I need to list files\n```bash\nls -la\n```')
+        output = _make_output(text='THOUGHT: I need to list files\n```mswea_bash_command\nls -la\n```')
         parsed = self.strategy.parse_output(output, self.ctx)
         self.assertEqual(len(parsed.tool_calls), 1)
         self.assertEqual(parsed.tool_calls[0].function.name, 'bash')
         self.assertIn('ls -la', parsed.tool_calls[0].function.arguments.get('command', ''))
 
-    def test_no_bash_block_final_answer(self):
+    def test_no_bash_block_returns_raw_text(self):
         output = _make_output(text='The answer is 42')
         parsed = self.strategy.parse_output(output, self.ctx)
-        self.assertEqual(parsed.final_answer, 'The answer is 42')
-        self.assertEqual(len(parsed.tool_calls), 0)
+        # No fenced block → raw_text set, final_answer is None (nudge path).
+        self.assertIsNone(parsed.final_answer)
+        self.assertEqual(parsed.raw_text, 'The answer is 42')
 
-    def test_multiple_bash_blocks_takes_first(self):
-        output = _make_output(text='THOUGHT: try two commands\n```bash\necho first\n```\n```bash\necho second\n```')
+    def test_multiple_bash_blocks_error(self):
+        output = _make_output(
+            text='THOUGHT: try two\n```mswea_bash_command\necho first\n```\n```mswea_bash_command\necho second\n```'
+        )
         parsed = self.strategy.parse_output(output, self.ctx)
-        self.assertEqual(len(parsed.tool_calls), 1)
-        self.assertIn('echo first', parsed.tool_calls[0].function.arguments.get('command', ''))
-
-    def test_empty_content_final_answer(self):
-        output = _make_output(text='')
-        parsed = self.strategy.parse_output(output, self.ctx)
-        # Empty content treated as final_answer (empty string)
-        self.assertIsNotNone(parsed.final_answer)
+        self.assertIsNotNone(parsed.error)
+        self.assertIn('exactly one', parsed.error)
 
     def test_bash_block_with_multiline_command(self):
         cmd = 'for i in $(seq 1 5); do\n  echo $i\ndone'
-        output = _make_output(text=f'THOUGHT: loop\n```bash\n{cmd}\n```')
+        output = _make_output(text=f'THOUGHT: loop\n```mswea_bash_command\n{cmd}\n```')
         parsed = self.strategy.parse_output(output, self.ctx)
         self.assertEqual(len(parsed.tool_calls), 1)
         self.assertIn('seq 1 5', parsed.tool_calls[0].function.arguments.get('command', ''))
 
 
 # ---------------------------------------------------------------------------
-# mini_swe is_done
+# SweBenchBackticksStrategy is_done
 # ---------------------------------------------------------------------------
 
-class TestMiniSweIsDone(unittest.TestCase):
-    """Tests for MiniSweStrategy.is_done."""
+class TestSweBenchBackticksIsDone(unittest.TestCase):
+    """Tests for SweBenchBackticksStrategy.is_done (sentinel detection)."""
 
     def setUp(self):
-        from evalscope.agent.strategies.mini_swe import SUBMIT_SENTINEL, MiniSweStrategy
-        self.strategy = MiniSweStrategy()
+        from evalscope.agent.strategies.swe_bench.swe_bench_backticks import SweBenchBackticksStrategy
+        from evalscope.agent.strategies.swe_bench.swe_bench_toolcall import SUBMIT_SENTINEL
+        self.strategy = SweBenchBackticksStrategy()
         self.sentinel = SUBMIT_SENTINEL
 
-    def test_final_answer_is_done(self):
-        ctx = _make_ctx()
-        parsed = ParsedAction(final_answer='42')
-        self.assertTrue(self.strategy.is_done(parsed, ctx))
-
-    def test_sentinel_in_user_message_is_done(self):
+    def test_sentinel_on_own_line_is_done(self):
         ctx = _make_ctx(messages=[
-            ChatMessageUser(content=f'output\n{self.sentinel}\n42'),
+            ChatMessageUser(content=f'<output>\n{self.sentinel}\npatch content\n</output>'),
         ])
         parsed = ParsedAction(tool_calls=[_tool_call('bash')])
         self.assertTrue(self.strategy.is_done(parsed, ctx))
+
+    def test_sentinel_substring_not_done(self):
+        ctx = _make_ctx(messages=[
+            ChatMessageUser(content=f'please run {self.sentinel} at the end'),
+        ])
+        parsed = ParsedAction(tool_calls=[_tool_call('bash')])
+        self.assertFalse(self.strategy.is_done(parsed, ctx))
 
     def test_no_sentinel_not_done(self):
         ctx = _make_ctx(messages=[
@@ -120,22 +120,25 @@ class TestMiniSweIsDone(unittest.TestCase):
         parsed = ParsedAction(tool_calls=[_tool_call('bash')])
         self.assertFalse(self.strategy.is_done(parsed, ctx))
 
-    def test_tool_call_without_final_answer_not_done(self):
-        ctx = _make_ctx()
+    def test_tool_message_ignored(self):
+        """Backticks uses user messages, not tool messages."""
+        ctx = _make_ctx(messages=[
+            ChatMessageTool(content=f'{self.sentinel}\npatch', tool_call_id='tc-1', function='bash'),
+        ])
         parsed = ParsedAction(tool_calls=[_tool_call('bash')])
         self.assertFalse(self.strategy.is_done(parsed, ctx))
 
 
 # ---------------------------------------------------------------------------
-# mini_swe format_observation
+# SweBenchBackticksStrategy format_observation
 # ---------------------------------------------------------------------------
 
-class TestMiniSweFormatObservation(unittest.TestCase):
-    """Tests for MiniSweStrategy.format_observation."""
+class TestSweBenchBackticksFormatObservation(unittest.TestCase):
+    """Tests for SweBenchBackticksStrategy.format_observation."""
 
     def setUp(self):
-        from evalscope.agent.strategies.mini_swe import MiniSweStrategy
-        self.strategy = MiniSweStrategy()
+        from evalscope.agent.strategies.swe_bench.swe_bench_backticks import SweBenchBackticksStrategy
+        self.strategy = SweBenchBackticksStrategy()
 
     def test_normal_observation_returns_user_message(self):
         call = _tool_call('bash', {'command': 'ls'})
@@ -143,25 +146,27 @@ class TestMiniSweFormatObservation(unittest.TestCase):
         self.assertIsInstance(msg, ChatMessageUser)
         self.assertEqual(msg.role, 'user')
         self.assertIn('file1.txt', msg.content)
+        self.assertIn('<output>', msg.content)
 
     def test_error_observation(self):
         call = _tool_call('bash', {'command': 'ls'})
         error = ToolCallError(type='timeout', message='command timed out')
         msg = self.strategy.format_observation(call, '', error)
         self.assertIsInstance(msg, ChatMessageUser)
-        self.assertIn('ERROR', msg.content)
+        self.assertIn('<error>', msg.content)
 
 
 # ---------------------------------------------------------------------------
-# mini_swe extract_final_answer
+# SweBenchBackticksStrategy extract_final_answer
 # ---------------------------------------------------------------------------
 
-class TestMiniSweExtractFinalAnswer(unittest.TestCase):
-    """Tests for MiniSweStrategy.extract_final_answer."""
+class TestSweBenchBackticksExtractFinalAnswer(unittest.TestCase):
+    """Tests for SweBenchBackticksStrategy.extract_final_answer."""
 
     def setUp(self):
-        from evalscope.agent.strategies.mini_swe import SUBMIT_SENTINEL, MiniSweStrategy
-        self.strategy = MiniSweStrategy()
+        from evalscope.agent.strategies.swe_bench.swe_bench_backticks import SweBenchBackticksStrategy
+        from evalscope.agent.strategies.swe_bench.swe_bench_toolcall import SUBMIT_SENTINEL
+        self.strategy = SweBenchBackticksStrategy()
         self.sentinel = SUBMIT_SENTINEL
 
     def _make_result(self, messages):
@@ -176,18 +181,122 @@ class TestMiniSweExtractFinalAnswer(unittest.TestCase):
         answer = self.strategy.extract_final_answer(result)
         self.assertEqual(answer, '42')
 
-    def test_fallback_to_last_assistant(self):
+    def test_no_sentinel_returns_empty(self):
         messages = [
             ChatMessageAssistant(content='I think the answer is 7', model='test', source='generate'),
         ]
         result = self._make_result(messages)
         answer = self.strategy.extract_final_answer(result)
-        self.assertEqual(answer, 'I think the answer is 7')
+        self.assertEqual(answer, '')
 
-    def test_no_answer_returns_empty(self):
+    def test_no_messages_returns_empty(self):
         result = self._make_result([])
         answer = self.strategy.extract_final_answer(result)
         self.assertEqual(answer, '')
+
+
+# ---------------------------------------------------------------------------
+# SweBenchToolcallStrategy parse_output / is_done / extract
+# ---------------------------------------------------------------------------
+
+class TestSweBenchToolcallParseOutput(unittest.TestCase):
+    """Tests for SweBenchToolcallStrategy.parse_output."""
+
+    def setUp(self):
+        from evalscope.agent.strategies.swe_bench.swe_bench_toolcall import SweBenchToolcallStrategy
+        self.strategy = SweBenchToolcallStrategy()
+        self.ctx = _make_ctx()
+
+    def test_bash_tool_call_parsed(self):
+        bash_call = _tool_call('bash', {'command': 'ls'})
+        output = _make_output(text='Let me check', tool_calls=[bash_call])
+        parsed = self.strategy.parse_output(output, self.ctx)
+        self.assertEqual(len(parsed.tool_calls), 1)
+
+    def test_non_bash_tool_filtered(self):
+        submit_call = _tool_call('submit', {'answer': '42'})
+        output = _make_output(text='', tool_calls=[submit_call])
+        parsed = self.strategy.parse_output(output, self.ctx)
+        self.assertEqual(len(parsed.tool_calls), 0)
+
+    def test_no_tool_calls_raw_text(self):
+        output = _make_output(text='just thinking')
+        parsed = self.strategy.parse_output(output, self.ctx)
+        self.assertIsNone(parsed.final_answer)
+        self.assertEqual(parsed.raw_text, 'just thinking')
+
+
+class TestSweBenchToolcallIsDone(unittest.TestCase):
+    """Tests for SweBenchToolcallStrategy.is_done (sentinel in tool message)."""
+
+    def setUp(self):
+        from evalscope.agent.strategies.swe_bench.swe_bench_toolcall import SUBMIT_SENTINEL, SweBenchToolcallStrategy
+        self.strategy = SweBenchToolcallStrategy()
+        self.sentinel = SUBMIT_SENTINEL
+
+    def test_sentinel_in_tool_message_is_done(self):
+        ctx = _make_ctx(messages=[
+            ChatMessageTool(
+                content=f'<output>\n{self.sentinel}\npatch_line\n</output>',
+                tool_call_id='tc-1', function='bash'),
+        ])
+        parsed = ParsedAction(tool_calls=[_tool_call('bash')])
+        self.assertTrue(self.strategy.is_done(parsed, ctx))
+
+    def test_user_message_ignored(self):
+        """Toolcall mode scans tool messages only."""
+        ctx = _make_ctx(messages=[
+            ChatMessageUser(content=f'{self.sentinel}\npatch'),
+        ])
+        parsed = ParsedAction(tool_calls=[_tool_call('bash')])
+        self.assertFalse(self.strategy.is_done(parsed, ctx))
+
+    def test_no_sentinel_not_done(self):
+        ctx = _make_ctx(messages=[
+            ChatMessageTool(content='normal output', tool_call_id='tc-1', function='bash'),
+        ])
+        parsed = ParsedAction(tool_calls=[_tool_call('bash')])
+        self.assertFalse(self.strategy.is_done(parsed, ctx))
+
+    def test_sentinel_strict_line_match(self):
+        """Sentinel embedded in prose must NOT trigger completion."""
+        ctx = _make_ctx(messages=[
+            ChatMessageTool(
+                content=f'run echo {self.sentinel} to submit',
+                tool_call_id='tc-1', function='bash'),
+        ])
+        parsed = ParsedAction(tool_calls=[_tool_call('bash')])
+        self.assertFalse(self.strategy.is_done(parsed, ctx))
+
+
+class TestSweBenchToolcallExtractFinalAnswer(unittest.TestCase):
+    """Tests for SweBenchToolcallStrategy.extract_final_answer."""
+
+    def setUp(self):
+        from evalscope.agent.strategies.swe_bench.swe_bench_toolcall import SUBMIT_SENTINEL, SweBenchToolcallStrategy
+        self.strategy = SweBenchToolcallStrategy()
+        self.sentinel = SUBMIT_SENTINEL
+
+    def _make_result(self, messages):
+        output = _make_output(text='done')
+        return AgentLoopResult(messages=messages, final_output=output, trace=AgentTrace())
+
+    def test_patch_extracted_from_tool_message(self):
+        messages = [
+            ChatMessageTool(
+                content=f'{self.sentinel}\ndiff --git a/foo.py\n+fix',
+                tool_call_id='tc-1', function='bash'),
+        ]
+        result = self._make_result(messages)
+        answer = self.strategy.extract_final_answer(result)
+        self.assertIn('diff --git', answer)
+
+    def test_no_sentinel_returns_empty(self):
+        messages = [
+            ChatMessageTool(content='just output', tool_call_id='tc-1', function='bash'),
+        ]
+        result = self._make_result(messages)
+        self.assertEqual(self.strategy.extract_final_answer(result), '')
 
 
 # ---------------------------------------------------------------------------

@@ -186,10 +186,11 @@ class AgentLoop:
                         },
                     )
 
-                # Post-execution termination check.  Strategies like mini_swe
-                # detect completion sentinels in the tool observation, which is
-                # only available *after* execution.  FC strategies return False
-                # here because parsed.tool_calls is still non-empty.
+                # Post-execution termination check.  Strategies like
+                # ``swe_bench_backticks`` detect completion sentinels in the
+                # tool observation, which is only available *after*
+                # execution.  FC strategies return False here because
+                # parsed.tool_calls is still non-empty.
                 if self.strategy.is_done(parsed, ctx):
                     self.trace.add_event(
                         step=ctx.step,

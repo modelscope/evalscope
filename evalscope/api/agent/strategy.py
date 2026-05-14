@@ -85,7 +85,7 @@ class AgentStrategy(Protocol):
         """Format a tool execution result as a :class:`ChatMessage`.
 
         The default implementation returns a :class:`ChatMessageTool`.
-        Textual strategies (e.g. ``mini_swe``) override this to return a
+        Textual strategies (e.g. ``swe_bench_backticks``) override this to return a
         :class:`ChatMessageUser` with strategy-specific formatting so that
         models which do not use function-calling can understand observations.
         """

@@ -1,0 +1,415 @@
+"""SWE-bench agentic adapter (mini-swe-agent compatible).
+
+Drives a multi-turn :class:`AgentLoop` per sample with a per-instance
+SWE-bench Docker container as the execution sandbox.  Mirrors the original
+``mini-swe-agent`` ``swebench.yaml`` (toolcall mainline) and
+``swebench_backticks.yaml`` (textbased fallback) configurations.
+
+Three benchmarks are registered alongside the original oracle adapters
+(without disrupting them):
+
+- ``swe_bench_verified_agentic``
+- ``swe_bench_verified_mini_agentic``
+- ``swe_bench_lite_agentic``
+
+The original ``swe_bench_verified`` / ``swe_bench_verified_mini`` /
+``swe_bench_lite`` benchmarks remain single-turn oracle-text evaluations
+and are not affected.
+"""
+
+from __future__ import annotations
+
+import json
+from typing import Any, Dict, List, Optional
+
+from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
+from evalscope.api.agent import AgentEnvironment, AgentStrategy
+from evalscope.api.benchmark import BenchmarkMeta
+from evalscope.api.benchmark.adapters import AgentAdapter
+from evalscope.api.dataset import FieldSpec, RemoteDataLoader, Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.messages import ChatMessageUser
+from evalscope.api.metric import Score
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
+from evalscope.utils.import_utils import check_import
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
+
+# ---------------------------------------------------------------------------
+# instance_template — mirrors mini-swe-agent swebench.yaml
+# ---------------------------------------------------------------------------
+
+INSTANCE_TEMPLATE = """\
+<pr_description>
+{problem_statement}
+</pr_description>
+
+You are an expert software engineer. Solve the issue described in the
+<pr_description> by editing the source code in /testbed.
+
+# Modification boundary
+- Modify ONLY non-test, non-configuration source files. Do NOT edit
+  files under tests/, conftest.py, setup.py, setup.cfg, pyproject.toml,
+  or any test fixture data.
+- Do NOT add new dependencies.
+
+# Recommended workflow
+1. Reproduce the failing behaviour from the description.
+2. Locate the relevant source files (use grep / find / sed).
+3. Implement the minimum-impact fix.
+4. Verify your change addresses the issue and consider edge cases.
+5. Submit (see below).
+
+# Submission protocol — follow EXACTLY
+When you are confident the patch is complete, run these commands in order
+through the bash tool. Do NOT inline the patch in plain prose: it MUST
+appear in stdout following the sentinel.
+
+  Step 1: cd /testbed && git add -A && git diff --cached > patch.txt
+  Step 2: cat patch.txt
+  Step 3: echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT && cat patch.txt
+
+Step 3 prints the literal sentinel COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT
+on its own line, immediately followed by the patch contents.  The
+evaluator detects this sentinel and submits everything after it as the
+final patch.
+
+# CRITICAL
+- The sentinel COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT must appear on its
+  OWN LINE in the bash output (not merely mentioned in your prose).
+- Each bash tool call runs in a fresh shell, so prefix commands with
+  `cd /testbed && ...` if cwd matters.
+- Keep responses focused; long outputs will be head/tail truncated.
+"""
+
+
+# ---------------------------------------------------------------------------
+# Shared extra_params definitions
+# ---------------------------------------------------------------------------
+
+_AGENTIC_EXTRA_PARAMS: Dict[str, Any] = {
+    'action_protocol': {
+        'type': 'str',
+        'description': (
+            'Agent action protocol: "toolcall" (mainline OpenAI '
+            'function-calling, mirrors mini-swe-agent swebench.yaml) or '
+            '"backticks" (textbased mswea_bash_command fallback for models '
+            'without function-calling support).'
+        ),
+        'value': 'toolcall',
+        'choices': ['toolcall', 'backticks'],
+    },
+    'max_steps': {
+        'type': 'int',
+        'description': 'Maximum number of agent steps per sample.',
+        'value': 250,
+    },
+    'command_timeout': {
+        'type': 'float',
+        'description': 'Default per-bash-command timeout in seconds.',
+        'value': 60.0,
+    },
+    'working_dir': {
+        'type': 'str',
+        'description': 'Working directory inside the SWE-bench container.',
+        'value': '/testbed',
+    },
+    'build_docker_images': {
+        'type': 'bool',
+        'description': 'Build Docker images locally for each sample.',
+        'value': True,
+    },
+    'pull_remote_images_if_available': {
+        'type': 'bool',
+        'description': 'Attempt to pull existing remote Docker images before building.',
+        'value': True,
+    },
+    'force_arch': {
+        'type': 'str',
+        'description': 'Optionally force a specific architecture for image build/pull.',
+        'value': '',
+        'choices': ['', 'arm64', 'x86_64'],
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# Base adapter
+# ---------------------------------------------------------------------------
+
+
+class _SWEBenchAgenticAdapterBase(AgentAdapter):
+    """Shared agentic SWE-bench adapter logic.
+
+    Concrete benchmarks differ only in dataset_id / pretty_name; behaviour
+    is identical otherwise.
+    """
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+
+        check_import('swebench', extra='swe_bench', raise_error=True, feature_name=self.pretty_name)
+
+        self.action_protocol: str = self.extra_params.get('action_protocol', 'toolcall')
+        if self.action_protocol not in {'toolcall', 'backticks'}:
+            raise ValueError(
+                f"Invalid action_protocol={self.action_protocol!r}; "
+                "must be 'toolcall' or 'backticks'."
+            )
+        self.max_steps = int(self.extra_params.get('max_steps', 250))
+        self.command_timeout = float(self.extra_params.get('command_timeout', 60.0))
+        self.working_dir: str = self.extra_params.get('working_dir', '/testbed')
+        self.build_docker_images: bool = self.extra_params.get('build_docker_images', True)
+        self.pull_remote_images_if_available: bool = self.extra_params.get(
+            'pull_remote_images_if_available', True
+        )
+        self.force_arch: str = self.extra_params.get('force_arch', '')
+
+    # ------------------------------------------------------------------
+    # Dataset loading
+    # ------------------------------------------------------------------
+
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        # Agentic mode never uses oracle ``text``; the model must explore
+        # /testbed itself.  Initial user message is constructed in
+        # ``build_initial_messages`` from ``problem_statement``.
+        return Sample(
+            input=record['problem_statement'],
+            metadata={
+                'problem_statement': record['problem_statement'],
+                'instance_id': record['instance_id'],
+                'base_commit': record['base_commit'],
+                'patch': record['patch'],
+                'PASS_TO_PASS': json.loads(record['PASS_TO_PASS']),
+                'FAIL_TO_PASS': json.loads(record['FAIL_TO_PASS']),
+                'test_patch': record['test_patch'],
+                'version': record['version'],
+                'repo': record['repo'],
+                'environment_setup_commit': record['environment_setup_commit'],
+                'hints_text': record['hints_text'],
+                'created_at': record['created_at'],
+            },
+        )
+
+    def _post_process_samples(self):
+        """Ensure each sample carries its per-instance Docker image."""
+        from .build_images import build_images
+        from .utils import get_remote_docker_image_from_id
+
+        samples = self.test_dataset[self.default_subset]
+
+        if self.build_docker_images:
+            id_to_docker_image_map = build_images(
+                samples=samples,
+                force_rebuild=False,
+                max_workers=4,
+                use_remote_images=self.pull_remote_images_if_available,
+                force_arch=self.force_arch,
+            )
+
+            def docker_image_from_id(instance_id: str) -> str:
+                return id_to_docker_image_map.get(instance_id, '')
+        else:
+            docker_image_from_id = get_remote_docker_image_from_id
+
+        for sample in samples:
+            sample.metadata['docker_image'] = docker_image_from_id(sample.metadata['instance_id'])
+            existing_tools = list(sample.tools or [])
+            if not any(t.name == 'bash' for t in existing_tools):
+                existing_tools.append(BASH_TOOL_INFO)
+            sample.tools = existing_tools
+
+        super()._post_process_samples()
+
+    # ------------------------------------------------------------------
+    # AgentAdapter hooks
+    # ------------------------------------------------------------------
+
+    def build_strategy(self, sample: Sample) -> AgentStrategy:
+        if self.action_protocol == 'toolcall':
+            from evalscope.agent.strategies.swe_bench import SweBenchToolcallStrategy
+            return SweBenchToolcallStrategy()
+        from evalscope.agent.strategies.swe_bench import SweBenchBackticksStrategy
+        return SweBenchBackticksStrategy()
+
+    def build_tools(self, sample: Sample):
+        # Only ``bash`` — sentinel protocol replaces the ``submit`` tool.
+        return {'bash': run_bash}
+
+    def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+
+        image = sample.metadata.get('docker_image')
+        if not image:
+            raise RuntimeError(
+                f"docker_image missing for instance {sample.metadata.get('instance_id')!r}; "
+                "did _post_process_samples run?"
+            )
+
+        sandbox_config = {
+            'image': image,
+            'working_dir': self.working_dir,
+            'environment': {
+                'PAGER': 'cat',
+                'MANPAGER': 'cat',
+                'LESS': '-R',
+                'PIP_PROGRESS_BAR': 'off',
+                'TQDM_DISABLE': '1',
+            },
+        }
+        return EnclaveAgentEnvironment(
+            engine='docker',
+            sandbox_config=sandbox_config,
+            timeout=self.command_timeout,
+        )
+
+    def build_initial_messages(self, sample: Sample) -> List[Any]:
+        problem_statement = sample.metadata.get('problem_statement') or (
+            sample.input if isinstance(sample.input, str) else ''
+        )
+        rendered = INSTANCE_TEMPLATE.format(problem_statement=problem_statement)
+        return [ChatMessageUser(content=rendered)]
+
+    # ------------------------------------------------------------------
+    # Final answer extraction
+    # ------------------------------------------------------------------
+
+    def _extract_final_answer(self, result, strategy: AgentStrategy) -> str:
+        # Strategy already implements sentinel scanning.
+        answer = strategy.extract_final_answer(result)
+        if answer:
+            return answer
+        # Fallback: try to recover a unified-diff from the last assistant
+        # message (model didn't follow the sentinel protocol).
+        try:
+            from swebench.inference.make_datasets.utils import extract_diff
+            last_assistant = ''
+            for msg in reversed(result.messages):
+                if msg.role == 'assistant':
+                    last_assistant = str(msg.content or '') or msg.text or ''
+                    if last_assistant:
+                        break
+            return extract_diff(last_assistant) or ''
+        except Exception:  # pragma: no cover - defensive
+            return ''
+
+    def extract_answer(self, prediction: str, task_state) -> str:
+        """Return the prediction as-is; sentinel extraction is authoritative."""
+        if prediction:
+            return prediction
+        from swebench.inference.make_datasets.utils import extract_diff
+        return extract_diff(prediction or '')
+
+    # ------------------------------------------------------------------
+    # Scoring (re-uses the existing oracle eval pipeline)
+    # ------------------------------------------------------------------
+
+    def match_score(
+        self,
+        original_prediction: str,
+        filtered_prediction: str,
+        reference: str,
+        task_state: TaskState,
+    ) -> Score:
+        from .utils import eval_instance
+
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
+
+        result = eval_instance(
+            instance=task_state.metadata,
+            pred=filtered_prediction,
+            timeout=1800,
+            log_dir=self._task_config.work_dir,
+        )
+
+        score.value = {'acc': float(result.get('resolved', 0.0))}
+        score.metadata = result
+        return score
+
+
+# ---------------------------------------------------------------------------
+# Concrete benchmarks
+# ---------------------------------------------------------------------------
+
+
+_AGENTIC_DESCRIPTION_SUFFIX = """
+## Agentic mode
+
+This benchmark drives a multi-turn agent loop (mirrors mini-swe-agent's
+`swebench.yaml`) inside a per-instance SWE-bench Docker container. The
+model issues `bash` commands to explore `/testbed`, edit source files,
+and finally submits its `git diff` patch by printing the sentinel
+`COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` followed by the patch contents.
+
+`extra_params.action_protocol` selects between:
+- `toolcall` (default): OpenAI function-calling protocol with a single
+  `bash` tool. Recommended for any model that supports tool calling.
+- `backticks`: textbased fallback expecting one
+  ` ```mswea_bash_command ``` ` block per turn. For models without
+  function-calling support.
+"""
+
+
+@register_benchmark(
+    BenchmarkMeta(
+        name='swe_bench_verified_agentic',
+        pretty_name='SWE-bench_Verified_Agentic',
+        tags=[Tags.CODING],
+        description=(
+            'Agentic SWE-bench Verified evaluation driven by a multi-turn '
+            'agent loop (mini-swe-agent compatible).' + _AGENTIC_DESCRIPTION_SUFFIX
+        ),
+        dataset_id='princeton-nlp/SWE-bench_Verified',
+        metric_list=['acc'],
+        eval_split='test',
+        prompt_template='{question}',
+        extra_params=_AGENTIC_EXTRA_PARAMS,
+    )
+)
+class SWEBenchVerifiedAgenticAdapter(_SWEBenchAgenticAdapterBase):
+    ...
+
+
+@register_benchmark(
+    BenchmarkMeta(
+        name='swe_bench_verified_mini_agentic',
+        pretty_name='SWE-bench_Verified_Mini_Agentic',
+        tags=[Tags.CODING],
+        description=(
+            'Agentic SWE-bench Verified Mini (50 samples) evaluation driven '
+            'by a multi-turn agent loop.' + _AGENTIC_DESCRIPTION_SUFFIX
+        ),
+        dataset_id='evalscope/swe-bench-verified-mini',
+        metric_list=['acc'],
+        eval_split='test',
+        prompt_template='{question}',
+        extra_params=_AGENTIC_EXTRA_PARAMS,
+    )
+)
+class SWEBenchVerifiedMiniAgenticAdapter(_SWEBenchAgenticAdapterBase):
+    ...
+
+
+@register_benchmark(
+    BenchmarkMeta(
+        name='swe_bench_lite_agentic',
+        pretty_name='SWE-bench_Lite_Agentic',
+        tags=[Tags.CODING],
+        description=(
+            'Agentic SWE-bench Lite (300 samples) evaluation driven by a '
+            'multi-turn agent loop.' + _AGENTIC_DESCRIPTION_SUFFIX
+        ),
+        dataset_id='princeton-nlp/SWE-bench_Lite',
+        metric_list=['acc'],
+        eval_split='test',
+        prompt_template='{question}',
+        extra_params=_AGENTIC_EXTRA_PARAMS,
+    )
+)
+class SWEBenchLiteAgenticAdapter(_SWEBenchAgenticAdapterBase):
+    ...

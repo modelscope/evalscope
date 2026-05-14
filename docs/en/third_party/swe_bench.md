@@ -98,3 +98,60 @@ Intermediate evaluation results will be saved in the `outputs/xxxxx/swebench_log
 | qwen-plus | swe_bench_verified | mean_acc | default  |     5 |     0.2 | default |
 +-----------+--------------------+----------+----------+-------+---------+---------+ 
 ```
+
+## Agentic Mode (mini-swe-agent compatible)
+
+In addition to the standard oracle single-turn evaluation above, EvalScope provides an **agentic multi-turn evaluation mode** that mirrors the [mini-swe-agent](https://github.com/princeton-nlp/mini-swe-agent) pipeline.
+
+In agentic mode, the model is given only the raw `problem_statement` (no oracle retrieval context) and drives a multi-turn agent loop inside a per-instance SWE-bench Docker container. The model uses `bash` commands to explore `/testbed`, edit source files, and submits a `git diff` patch by printing the sentinel `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`.
+
+### Agentic Evaluation Datasets
+
+- **`swe_bench_verified_agentic`** — SWE-bench Verified (500 samples)
+- **`swe_bench_verified_mini_agentic`** — SWE-bench Verified Mini (50 samples, ~5GB)
+- **`swe_bench_lite_agentic`** — SWE-bench Lite (300 samples)
+
+### Action Protocol
+
+The `action_protocol` parameter controls how the model interacts with bash:
+
+| Protocol | Description | Best For |
+|----------|-------------|----------|
+| `toolcall` (default) | OpenAI function-calling with a single `bash` tool, supports parallel tool calls | Models with function-calling support |
+| `backticks` | Model wraps commands in `` ```mswea_bash_command ... ``` `` fenced blocks, one command per turn | Models without function-calling |
+
+### Run Agentic Evaluation
+
+```python
+import os
+from evalscope import TaskConfig, run_task
+
+task_cfg = TaskConfig(
+    model='qwen-plus',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key=os.getenv('DASHSCOPE_API_KEY'),
+    eval_type='openai_api',
+    datasets=['swe_bench_verified_mini_agentic'],
+    dataset_args={
+        'swe_bench_verified_mini_agentic': {
+            'extra_params': {
+                'action_protocol': 'toolcall',  # or 'backticks'
+                'max_steps': 250,
+                'command_timeout': 60,
+                'build_docker_images': True,
+                'pull_remote_images_if_available': True,
+            }
+        }
+    },
+    eval_batch_size=2,
+    limit=5,
+    generation_config={
+        'temperature': 0,
+    }
+)
+run_task(task_cfg=task_cfg)
+```
+
+```{note}
+Agentic mode requires Docker to be running during **both** inference and evaluation. Each sample spawns its own container from pre-built SWE-bench images. The `max_steps` parameter (default 250) controls the upper bound on agent loop iterations per sample.
+```

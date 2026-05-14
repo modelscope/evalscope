@@ -38,7 +38,8 @@ class AgentAdapter(DefaultDataAdapter):
     """
 
     #: Default strategy name used when :meth:`build_strategy` is not
-    #: overridden.  Subclasses can change this (e.g. ``'mini_swe'``).
+    #: overridden.  Subclasses can change this (e.g.
+    #: ``'swe_bench_toolcall'``).
     strategy_name: str = 'function_calling'
 
     #: Upper bound on loop iterations per sample.
@@ -127,9 +128,25 @@ class AgentAdapter(DefaultDataAdapter):
 
         result = AsyncioLoopRunner.run(_run())
 
+        # Resolve the final prediction through the strategy → adapter hook
+        # chain so benchmarks (e.g. SWE-bench) can extract a custom payload
+        # like a git patch from the trajectory.
+        final_text = self._extract_final_answer(result, strategy)
+
         output = result.final_output
+        output.completion = final_text
         if output.metadata is None:
             output.metadata = {}
         output.metadata['__agent_messages__'] = result.messages
         output.metadata['__agent_trace__'] = result.trace
         return output
+
+    def _extract_final_answer(self, result: Any, strategy: AgentStrategy) -> str:
+        """Override hook for adapters that need custom prediction extraction.
+
+        Default implementation forwards to ``strategy.extract_final_answer``.
+        SWE-bench agentic benchmarks override this to scan tool messages for
+        the ``COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`` sentinel and return
+        the patch text following it.
+        """
+        return strategy.extract_final_answer(result)

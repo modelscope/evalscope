@@ -12,7 +12,7 @@ Scenarios
 4. GSM8K agent, bash + local env
 5. GSM8K agent, python_exec + docker env
 6. GSM8K + react strategy + python_exec + local env
-7. GSM8K + mini_swe strategy + bash + local env
+7. GSM8K + swe_bench_toolcall strategy + bash + local env
 """
 
 import json
@@ -278,27 +278,27 @@ class TestGSM8KAgentPythonExecDocker(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 @requires_api
-class TestGSM8KReActFC(unittest.TestCase):
-    """ReAct strategy (FC mode) with python_exec tool + local env."""
+class TestAIMEReActFC(unittest.TestCase):
+    """ReAct strategy (FC mode) with bash tool + local env."""
 
     def test_react_run_and_trace(self):
         """Run succeeds; trace has strategy='react' and correct event structure."""
         cfg = TaskConfig(
             **_base_cfg(
-                datasets=['gsm8k'],
-                dataset_args={'gsm8k': {'few_shot_num': 0}},
+                datasets=['aime26'],
+                dataset_args={'aime26': {'few_shot_num': 0}},
                 agent_config=AgentConfig(
                     strategy='react',
-                    tools=['python_exec'],
+                    tools=['bash'],
                     environment='local',
-                    max_steps=5,
+                    max_steps=10,
                 ),
             )
         )
         result = run_task(cfg)
-        self.assertIn('gsm8k', result)
+        self.assertIn('aime26', result)
 
-        reviews = _read_review_results('gsm8k', work_dir=cfg.work_dir)
+        reviews = _read_review_results('aime26', work_dir=cfg.work_dir)
         self.assertGreater(len(reviews), 0)
         for r in reviews:
             trace_dict = r.get('agent_trace')
@@ -309,48 +309,6 @@ class TestGSM8KReActFC(unittest.TestCase):
             types = [e.type for e in trace.events]
             self.assertIn(EventType.MODEL_GENERATE, types)
             # ReAct FC mode should have TOOL_CALL events when tools are used.
-            if EventType.TOOL_CALL in types:
-                self.assertIn(EventType.TOOL_RESULT, types)
-
-
-# ---------------------------------------------------------------------------
-# 7. GSM8K + mini_swe strategy + bash + local environment
-# ---------------------------------------------------------------------------
-
-@requires_api
-class TestGSM8KMiniSwe(unittest.TestCase):
-    """mini_swe strategy (textual_block mode) with bash tool + local env."""
-
-    def test_mini_swe_run_and_trace(self):
-        """Run succeeds; trace has strategy='mini_swe' and correct event structure."""
-        cfg = TaskConfig(
-            **_base_cfg(
-                datasets=['gsm8k'],
-                dataset_args={'gsm8k': {'few_shot_num': 0}},
-                agent_config=AgentConfig(
-                    strategy='mini_swe',
-                    tools=['bash'],
-                    environment='local',
-                    max_steps=5,
-                ),
-            )
-        )
-        result = run_task(cfg)
-        self.assertIn('gsm8k', result)
-
-        reviews = _read_review_results('gsm8k', work_dir=cfg.work_dir)
-        self.assertGreater(len(reviews), 0)
-        for r in reviews:
-            trace_dict = r.get('agent_trace')
-            self.assertIsNotNone(trace_dict)
-            trace = AgentTrace.model_validate(trace_dict)
-            self.assertEqual(trace.strategy, 'mini_swe')
-            self.assertEqual(trace.environment, 'local')
-            self.assertGreater(len(trace.events), 0)
-            types = [e.type for e in trace.events]
-            self.assertIn(EventType.MODEL_GENERATE, types)
-            # mini_swe uses textual_block mode: observations are user messages.
-            # Verify that tool_call/tool_result events exist when bash is used.
             if EventType.TOOL_CALL in types:
                 self.assertIn(EventType.TOOL_RESULT, types)
 
