@@ -71,8 +71,12 @@ class LocalAgentEnvironment(AgentEnvironment):
                 duration=duration,
             )
         except asyncio.TimeoutError:
-            proc.kill()
-            await proc.wait()
+            proc.terminate()
+            try:
+                await asyncio.wait_for(proc.wait(), timeout=3.0)
+            except asyncio.TimeoutError:
+                proc.kill()
+                await proc.wait()
             return ExecResult(returncode=-1, timed_out=True)
 
     async def close(self) -> None:

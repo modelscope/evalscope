@@ -65,7 +65,7 @@ export function AudioBlock({ src, format }: { src: string; format?: string }) {
 }
 
 /** Collapsible reasoning block rendered above the main answer. */
-export function ReasoningBlock({ text }: { text: string }) {
+export function ReasoningBlock({ text, tokens }: { text: string; tokens?: number }) {
   const { t } = useLocale()
   const [open, setOpen] = useState(false)
   return (
@@ -97,7 +97,9 @@ export function ReasoningBlock({ text }: { text: string }) {
       >
         {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         {open ? t('prediction.hideReasoning') : t('prediction.showReasoning')}
-        <span style={{ opacity: 0.5, fontWeight: 400 }}>· {text.length} chars</span>
+        <span style={{ opacity: 0.5, fontWeight: 400 }}>
+          · {tokens != null ? `${tokens} tokens` : `${text.length} chars`}
+        </span>
       </button>
       {open && (
         <div
@@ -123,7 +125,7 @@ export function renderContentBlocks(
   const nodes: React.ReactNode[] = []
   blocks.forEach((b, i) => {
     if (b.type === 'reasoning' && opts.includeReasoning) {
-      nodes.push(<ReasoningBlock key={`r${i}`} text={b.reasoning ?? ''} />)
+      nodes.push(<ReasoningBlock key={`r${i}`} text={b.reasoning ?? ''} tokens={b.reasoning_tokens} />)
     } else if (b.type === 'text') {
       if (b.text) nodes.push(<MarkdownRenderer key={`t${i}`} content={b.text} />)
     } else if (b.type === 'image') {

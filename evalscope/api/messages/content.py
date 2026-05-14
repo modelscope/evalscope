@@ -38,6 +38,9 @@ class ContentReasoning(ContentBase):
     redacted: bool = Field(default=False)
     """Indicates that the explicit content of this reasoning block has been redacted."""
 
+    reasoning_tokens: Optional[int] = Field(default=None)
+    """Number of reasoning tokens reported by the model API (e.g. from completion_tokens_details.reasoning_tokens)."""
+
 
 class ContentImage(ContentBase):
     """Image content."""

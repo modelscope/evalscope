@@ -105,6 +105,8 @@ export interface ContentBlock {
   // text / reasoning fields
   text?: string
   reasoning?: string
+  /** Number of reasoning tokens reported by the model API. */
+  reasoning_tokens?: number
   // multimodal fields (present when type === 'image' | 'audio' | 'video')
   image?: string
   audio?: string

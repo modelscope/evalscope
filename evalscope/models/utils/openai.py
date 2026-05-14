@@ -483,7 +483,10 @@ def content_from_openai(
 
 
 def chat_message_assistant_from_openai(
-    model: str, message: ChatCompletionMessage, tools: List[ToolInfo]
+    model: str,
+    message: ChatCompletionMessage,
+    tools: List[ToolInfo],
+    reasoning_tokens: Optional[int] = None,
 ) -> ChatMessageAssistant:
     refusal = getattr(message, 'refusal', None)
     reasoning = getattr(message, 'reasoning_content', None) or getattr(message, 'reasoning', None)
@@ -491,7 +494,7 @@ def chat_message_assistant_from_openai(
     msg_content = refusal or message.content or ''
     if reasoning is not None:
         content: Union[str, List[Content]] = [
-            ContentReasoning(reasoning=str(reasoning)),
+            ContentReasoning(reasoning=str(reasoning), reasoning_tokens=reasoning_tokens),
             ContentText(text=msg_content, refusal=True if refusal else None),
         ]
     elif refusal is not None:
@@ -541,11 +544,21 @@ def chat_choices_from_openai(response: ChatCompletion, tools: List[ToolInfo]) ->
             f'model={getattr(response, "model", "unknown")}. '
             f'This may indicate the model returned an empty or malformed response.'
         )
+    # Extract reasoning_tokens from usage.completion_tokens_details if available
+    reasoning_tokens: Optional[int] = None
+    if response.usage and getattr(response.usage, 'completion_tokens_details', None) is not None:
+        reasoning_tokens = getattr(response.usage.completion_tokens_details, 'reasoning_tokens', None)
+
     choices = list(response.choices)
     choices.sort(key=lambda c: c.index)
     return [
         ChatCompletionChoice(
-            message=chat_message_assistant_from_openai(response.model, choice.message, tools),
+            message=chat_message_assistant_from_openai(
+                response.model,
+                choice.message,
+                tools,
+                reasoning_tokens=reasoning_tokens,
+            ),
             stop_reason=as_stop_reason(choice.finish_reason),
             logprobs=(
                 Logprobs(**choice.logprobs.model_dump())

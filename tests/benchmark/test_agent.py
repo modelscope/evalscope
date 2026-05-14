@@ -74,7 +74,7 @@ class TestAgentBenchmark(TestBenchmark):
                 'force_arch': 'arm64',
             }
         }
-        self._run_dataset_test('swe_bench_verified_mini_agentic', dataset_args, limit=1)
+        self._run_dataset_test('swe_bench_verified_mini_agentic', dataset_args, limit=3)
 
     def test_swe_bench_lite_agentic(self):
         """Test SWE-bench-lite agentic dataset using docker environment."""
