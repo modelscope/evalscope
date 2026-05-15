@@ -91,7 +91,7 @@
 
 ## 数据集
 
-### random_multi_turn {#random_multi_turn}
+### random_multi_turn
 
 基于 `random` 数据集随机生成 token 序列，每个对话包含 `[min_turns, max_turns]` 轮用户消息，无需外部数据文件，适合快速基准测试和性能对比。
 
@@ -153,9 +153,9 @@ evalscope perf \
 - `Avg Turns/Req: 1.60`：测试期间每次请求平均携带 1.60 轮上下文，符合 `--min-turns 2 --max-turns 5` 的随机采样分布（第 1 轮无历史，后续轮次历史逐步增长）。
 - `Approx Cache Hit: 58.1%`：约 58% 的输入 token 来自历史对话。
 
-### share_gpt_zh_multi_turn / share_gpt_en_multi_turn {#share_gpt_multi_turn}
+### share_gpt_multi_turn
 
-使用来自 [swift/sharegpt](https://www.modelscope.cn/datasets/swift/sharegpt) 的真实对话数据（约 70k 条中文 / 英文对话），保留完整的 user + assistant 轮次交替结构，适合评测模型在真实对话分布下的表现。
+包含两个数据集：`share_gpt_zh_multi_turn`（中文）与 `share_gpt_en_multi_turn`（英文）。使用来自 [swift/sharegpt](https://www.modelscope.cn/datasets/swift/sharegpt) 的真实对话数据（约 70k 条中文 / 英文对话），保留完整的 user + assistant 轮次交替结构，适合评测模型在真实对话分布下的表现。
 
 - **数据自动下载**：未指定 `--dataset-path` 时，自动从 ModelScope 下载数据集
 - **支持本地数据**：通过 `--dataset-path` 指定本地 JSONL 文件（每行一条 `conversation` 对象）
@@ -234,7 +234,7 @@ evalscope perf \
 - `Avg Turns/Req: 1.98`：受 `--max-turns 3` 限制，平均每请求包含约 2 轮上下文，符合预期（第 1 轮无历史，第 2、3 轮分别携带 1、2 轮历史，平均约 1.98）。
 - `Approx Cache Hit: 53.7%`：真实对话中上下文较长，历史 token 占比约 54%。
 
-### custom_multi_turn {#custom_multi_turn}
+### custom_multi_turn
 
 使用本地 JSONL 文件作为自定义多轮对话数据集，每行直接以 **OpenAI messages 格式**存储一条完整对话，无需任何格式转换，适合已有对话数据直接压测的场景。
 

@@ -91,7 +91,7 @@ The number of turns per conversation is sampled from `[--min-turns, --max-turns]
 
 ## Datasets
 
-### random_multi_turn {#random_multi_turn}
+### random_multi_turn
 
 Generates synthetic token sequences based on the `random` dataset. Each conversation contains `[min_turns, max_turns]` user turns. No external data file is required, making it ideal for quick benchmarking and performance comparisons.
 
@@ -153,9 +153,9 @@ Example output:
 - `Avg Turns/Req: 1.60`: Each request carried an average of 1.60 turns of context during the test, consistent with the `--min-turns 2 --max-turns 5` random sampling distribution.
 - `Approx Cache Hit: 58.1%`: About 58% of input tokens came from conversation history.
 
-### share_gpt_zh_multi_turn / share_gpt_en_multi_turn {#share_gpt_multi_turn}
+### share_gpt_multi_turn
 
-Uses real conversation data from [swift/sharegpt](https://www.modelscope.cn/datasets/swift/sharegpt) (~70k Chinese / English conversations), preserving the full user + assistant alternation, making it suitable for evaluating models against realistic conversation distributions.
+Includes two datasets: `share_gpt_zh_multi_turn` (Chinese) and `share_gpt_en_multi_turn` (English). Uses real conversation data from [swift/sharegpt](https://www.modelscope.cn/datasets/swift/sharegpt) (~70k Chinese / English conversations), preserving the full user + assistant alternation, making it suitable for evaluating models against realistic conversation distributions.
 
 - **Auto download**: When `--dataset-path` is not specified, the dataset is automatically downloaded from ModelScope.
 - **Local data support**: Provide a local JSONL file via `--dataset-path` (one `conversation` object per line).
@@ -234,7 +234,7 @@ Example output:
 - `Avg Turns/Req: 1.98`: Limited by `--max-turns 3`, each request carried approximately 2 turns of context on average, as expected (turn 1 has no history, turns 2 and 3 carry 1 and 2 turns of history respectively, averaging ~1.98).
 - `Approx Cache Hit: 53.7%`: Real conversations have longer context; history tokens account for ~54% of input.
 
-### custom_multi_turn {#custom_multi_turn}
+### custom_multi_turn
 
 Uses a local JSONL file as a custom multi-turn conversation dataset. Each line stores a complete conversation directly in **OpenAI messages format** — no format conversion required. Ideal for benchmarking with your own existing conversation data.
 

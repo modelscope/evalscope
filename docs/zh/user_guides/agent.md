@@ -2,7 +2,7 @@
 
 EvalScope 提供 **Agent 评测模式**，允许模型在受控的多轮工具调用循环（AgentLoop）中完成评测任务。该模式适合评估模型在工具使用、多步推理、代码修复等代理类场景下的端到端能力，并对每个样本完整记录交互轨迹（AgentTrace）以便复盘与可视化。
 
-## 1. 概述与基本原理
+## 概述与基本原理
 
 启用 Agent 模式有两条路径：
 
@@ -19,7 +19,7 @@ AgentLoop 在每一轮迭代中执行：**生成 → 解析 → 工具调用 →
 
 每一轮的关键事件（模型生成、工具调用、工具结果、环境命令、错误、nudge、submit）会被结构化记录到 `AgentTrace.events` 中，并随评测结果一并落盘到 `reviews/<model_id>/<dataset>.jsonl` 的 `agent_trace` 字段，供 HTML 报告与 Web 可视化界面回放。
 
-## 2. AgentConfig 参数详解
+## AgentConfig 参数详解
 
 `AgentConfig` 定义于 `evalscope.api.agent`，作为 `TaskConfig.agent_config` 的取值。
 
@@ -74,7 +74,7 @@ AgentLoop 在每一轮迭代中执行：**生成 → 解析 → 工具调用 →
 
 - `system_prompt` (`str`)：覆盖策略默认的系统提示词，例如让模型优先调用 `python_exec` 进行计算。
 
-## 3. 通用 Benchmark 走 Agent 模式
+## 通用 Benchmark 走 Agent 模式
 
 ### 3.1 用例 A：GSM8K + function_calling + python_exec + Docker
 
@@ -171,7 +171,7 @@ run_task(task_config)
 - `agent_config` 同样支持以字典形式传入，TaskConfig 会自动转换为 `AgentConfig` 实例。
 ```
 
-## 4. SWE-bench Agentic 用例 {#swe-bench-agentic-用例}
+## SWE-bench Agentic 用例
 
 `swe_bench_*_agentic` 系列基准（`swe_bench_verified_agentic`、`swe_bench_verified_mini_agentic`、`swe_bench_lite_agentic`）由 `AgentLoopAdapter` 子类直接驱动 AgentLoop，**不读取 `TaskConfig.agent_config`**。所有循环参数通过 `dataset_args` 的 `extra_params` 传入。
 
@@ -233,7 +233,7 @@ run_task(task_config)
 - 数据集说明请见 [SWE-bench benchmark 文档](../third_party/swe_bench.md)。
 ```
 
-## 5. Trace 可视化 {#trace-可视化}
+## Trace 可视化
 
 启用 Agent 模式后，每条样本的评测结果会附带 `agent_trace` 字段。通过 EvalScope 的 Web 可视化界面可以按步骤回放完整的代理交互轨迹：
 
@@ -255,7 +255,7 @@ run_task(task_config)
 评测可视化的整体使用说明（仪表盘、报告对比、预测视图等）请参考 [可视化](../get_started/visualization.md)。
 ```
 
-## 6. 常见问题
+## 常见问题
 
 **Q1：何时使用全局 `agent_config`，何时依赖基准内置 AgentLoop？**
 

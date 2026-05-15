@@ -2,7 +2,7 @@
 
 EvalScope provides an **Agent Evaluation Mode** that lets the model complete evaluation tasks inside a controlled multi-turn tool-calling loop (AgentLoop). It is designed for evaluating end-to-end agentic capabilities such as tool use, multi-step reasoning, and code repair, and records a full interaction trajectory (AgentTrace) for every sample so that runs can be replayed and visualized.
 
-## 1. Overview
+## Overview
 
 There are two ways to enable Agent mode:
 
@@ -19,7 +19,7 @@ In each iteration AgentLoop performs **generate → parse → tool call → obse
 
 Key events of every step (model generation, tool call, tool result, environment command, error, nudge, submit) are recorded into `AgentTrace.events` in a structured form, and persisted alongside the evaluation result in the `agent_trace` field of `reviews/<model_id>/<dataset>.jsonl` so that the HTML report and the Web dashboard can replay them.
 
-## 2. AgentConfig Reference
+## AgentConfig Reference
 
 `AgentConfig` is defined in `evalscope.api.agent` and is the value type of `TaskConfig.agent_config`.
 
@@ -74,7 +74,7 @@ When `environment='docker'` is enabled, EvalScope reuses the ms-enclave infrastr
 
 - `system_prompt` (`str`): override the strategy's default system prompt, e.g. force the model to call `python_exec` for calculations.
 
-## 3. Running Generic Benchmarks in Agent Mode
+## Running Generic Benchmarks in Agent Mode
 
 ### 3.1 Case A: GSM8K + function_calling + python_exec + Docker
 
@@ -171,7 +171,7 @@ Expected outputs:
 - `agent_config` also accepts a plain dict — TaskConfig converts it to an `AgentConfig` instance automatically.
 ```
 
-## 4. SWE-bench Agentic Cases {#swe-bench-agentic-cases}
+## SWE-bench Agentic Cases
 
 The `swe_bench_*_agentic` family of benchmarks (`swe_bench_verified_agentic`, `swe_bench_verified_mini_agentic`, `swe_bench_lite_agentic`) is driven directly by `AgentLoopAdapter` subclasses and **does not read `TaskConfig.agent_config`**. All loop parameters are passed via `extra_params` under `dataset_args`.
 
@@ -233,7 +233,7 @@ run_task(task_config)
 - For dataset details, see the [SWE-bench benchmark docs](../third_party/swe_bench.md).
 ```
 
-## 5. Trace Visualization {#trace-visualization}
+## Trace Visualization
 
 When Agent mode is enabled, every sample's evaluation result carries an `agent_trace` field. EvalScope's Web dashboard can replay the full agent trajectory step by step:
 
@@ -255,7 +255,7 @@ The view shows the following core elements in chronological order:
 For the full visualization guide (dashboard, report comparison, predictions view, etc.), see [Visualization](../get_started/visualization.md).
 ```
 
-## 6. FAQ
+## FAQ
 
 **Q1: When should I use the global `agent_config` versus benchmark-built-in AgentLoop?**
 
