@@ -280,13 +280,24 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
         # message (model didn't follow the sentinel protocol).
         try:
             from swebench.inference.make_datasets.utils import extract_diff
+
+            from evalscope.agent.strategies.swe_bench.swe_bench_toolcall import (
+                _strip_observation_envelope,
+                _strip_patch_txt_pollution,
+            )
             last_assistant = ''
             for msg in reversed(result.messages):
                 if msg.role == 'assistant':
                     last_assistant = str(msg.content or '') or msg.text or ''
                     if last_assistant:
                         break
-            return extract_diff(last_assistant) or ''
+            recovered = extract_diff(last_assistant) or ''
+            # Defense in depth: even on the fallback path, scrub the same
+            # XML envelope tail and ``patch.txt`` self-pollution that the
+            # strategy-level extractor already removes.
+            recovered = _strip_observation_envelope(recovered)
+            recovered = _strip_patch_txt_pollution(recovered)
+            return recovered
         except Exception:  # pragma: no cover - defensive
             return ''
 

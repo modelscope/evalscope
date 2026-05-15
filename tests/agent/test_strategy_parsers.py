@@ -547,5 +547,125 @@ class TestFCNoToolCallSemantics(unittest.TestCase):
         self.assertTrue(self.strategy.is_done(parsed, self.ctx))
 
 
+# ---------------------------------------------------------------------------
+# _sentinel_payload sanitisation (XML envelope + patch.txt self-pollution)
+# ---------------------------------------------------------------------------
+
+class TestSentinelPayloadSanitisation(unittest.TestCase):
+    """Verify ``_sentinel_payload`` removes the trailing ``</output>`` XML
+    envelope tag and any ``patch.txt`` self-pollution that arises when the
+    SWE-bench submission protocol pipes ``git diff --cached`` into a file
+    that has itself just been ``git add``ed.
+
+    Reproduces the corruption observed in
+    ``outputs/20260514_223847/swebench_log/django__django-{11790,11815,11848}/
+    patch.diff`` and asserts the cleaned payload is a sound unified diff.
+    """
+
+    def setUp(self):
+        from evalscope.agent.strategies.swe_bench.swe_bench_toolcall import (
+            SUBMIT_SENTINEL,
+            _sentinel_payload,
+            _strip_observation_envelope,
+            _strip_patch_txt_pollution,
+        )
+        self.sentinel = SUBMIT_SENTINEL
+        self.extract = _sentinel_payload
+        self.strip_envelope = _strip_observation_envelope
+        self.strip_patch_txt = _strip_patch_txt_pollution
+
+    def _wrap(self, body: str) -> str:
+        """Wrap a payload in the same XML envelope ``format_exec_observation`` produces."""
+        return f'<output>\n{self.sentinel}\n{body}\n</output>'
+
+    def test_envelope_close_tag_stripped(self):
+        """`</output>` at the tail must not leak into the patch."""
+        payload = self.extract(self._wrap('diff --git a/foo.py b/foo.py'))
+        self.assertIsNotNone(payload)
+        self.assertNotIn('</output>', payload)
+        self.assertIn('diff --git a/foo.py', payload)
+
+    def test_empty_patch_txt_yields_blank_payload(self):
+        """The django-11848 case: model cat'd an empty patch.txt; the
+        only diff hunk references ``patch.txt`` itself, which after
+        sanitisation must collapse to an empty payload."""
+        body = (
+            'diff --git a/patch.txt b/patch.txt\n'
+            'new file mode 100644\n'
+            'index 0000000000..e69de29bb2'
+        )
+        payload = self.extract(self._wrap(body))
+        self.assertIsNotNone(payload)
+        self.assertEqual(payload.strip(), '')
+
+    def test_nested_patch_txt_stripped_keeps_real_diff(self):
+        """The django-11790 case: real source diff + nested patch.txt
+        replay.  The replayed copy must be removed but the genuine
+        forms.py change preserved verbatim."""
+        body = (
+            'diff --git a/django/contrib/auth/forms.py b/django/contrib/auth/forms.py\n'
+            'index a0cfed0995..f22b0547ae 100644\n'
+            '--- a/django/contrib/auth/forms.py\n'
+            '+++ b/django/contrib/auth/forms.py\n'
+            '@@ -165,7 +165,7 @@ class AuthenticationForm(forms.Form):\n'
+            '-    username = UsernameField(widget=forms.TextInput(attrs={\'autofocus\': True}))\n'
+            '+    username = UsernameField(max_length=150, widget=forms.TextInput(attrs={\'autofocus\': True}, max_length=150))\n'
+            'diff --git a/patch.txt b/patch.txt\n'
+            'new file mode 100644\n'
+            'index 0000000000..47df474355\n'
+            '--- /dev/null\n'
+            '+++ b/patch.txt\n'
+            '@@ -0,0 +1,32 @@\n'
+            '+diff --git a/django/contrib/auth/forms.py b/django/contrib/auth/forms.py'
+        )
+        payload = self.extract(self._wrap(body))
+        self.assertIsNotNone(payload)
+        self.assertNotIn('diff --git a/patch.txt', payload)
+        self.assertNotIn('</output>', payload)
+        self.assertIn('django/contrib/auth/forms.py', payload)
+        self.assertIn('UsernameField(max_length=150', payload)
+
+    def test_clean_diff_passes_through(self):
+        """A pristine patch (no patch.txt segments) must be untouched
+        save for the trailing envelope tag."""
+        body = (
+            'diff --git a/foo.py b/foo.py\n'
+            '--- a/foo.py\n'
+            '+++ b/foo.py\n'
+            '@@ -1 +1 @@\n'
+            '-old\n'
+            '+new'
+        )
+        payload = self.extract(self._wrap(body))
+        self.assertIsNotNone(payload)
+        self.assertNotIn('</output>', payload)
+        self.assertIn('-old', payload)
+        self.assertIn('+new', payload)
+
+    def test_patch_txt_at_start_of_payload(self):
+        """``patch.txt`` may appear as the first/only diff segment;
+        regex must still match (anchored on ``^|\\n``)."""
+        body = (
+            'diff --git a/patch.txt b/patch.txt\n'
+            'new file mode 100644\n'
+            'index 0000000000..e69de29bb2'
+        )
+        cleaned = self.strip_patch_txt(body)
+        self.assertEqual(cleaned, '')
+
+    def test_envelope_helper_idempotent(self):
+        """Running envelope strip twice must not corrupt clean input."""
+        body = 'diff --git a/foo.py'
+        once = self.strip_envelope(body)
+        twice = self.strip_envelope(once)
+        self.assertEqual(once, twice)
+        self.assertEqual(once, body)
+
+    def test_no_sentinel_returns_none(self):
+        """Without the sentinel, payload must be ``None`` — sanitisation
+        only kicks in once submission is detected."""
+        self.assertIsNone(self.extract('<output>\nno sentinel here\n</output>'))
+
+
 if __name__ == '__main__':
     unittest.main()
