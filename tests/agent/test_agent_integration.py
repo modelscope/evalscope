@@ -11,7 +11,7 @@ Plan 覆盖点:
 
 import asyncio
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import evalscope  # noqa: F401 - trigger strategy registration
 from evalscope.api.agent import AgentConfig, AgentTrace, EventType
@@ -30,10 +30,14 @@ from evalscope.config import TaskConfig
 def _mock_model_generate_final(content: str = 'ok'):
     """Return a MagicMock model whose .generate() yields an assistant with no tool_calls."""
     model = MagicMock()
-    model.generate.return_value = ModelOutput(
+    output = ModelOutput(
         model='mock',
         choices=[ChatCompletionChoice(message=ChatMessageAssistant(content=content))],
     )
+    model.generate.return_value = output
+    # AgentLoop awaits ``generate_async``; mock both so sync/agent paths share
+    # the same return value.
+    model.generate_async = AsyncMock(return_value=output)
     return model
 
 
@@ -41,10 +45,12 @@ def _mock_model_generate_submit(answer: str = 'ok'):
     """Return a MagicMock model whose .generate() yields a submit tool call."""
     submit_call = ToolCall(id='sc1', function=ToolFunction(name='submit', arguments={'answer': answer}))
     model = MagicMock()
-    model.generate.return_value = ModelOutput(
+    output = ModelOutput(
         model='mock',
         choices=[ChatCompletionChoice(message=ChatMessageAssistant(content='', tool_calls=[submit_call]))],
     )
+    model.generate.return_value = output
+    model.generate_async = AsyncMock(return_value=output)
     return model
 
 

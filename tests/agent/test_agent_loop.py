@@ -12,7 +12,7 @@ Plan 覆盖点:
 import asyncio
 import unittest
 from typing import List, Optional
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import evalscope  # noqa: F401 - trigger strategy registration
 from evalscope.api.agent import AgentContext, AgentLoop, AgentTrace, EventType, ParsedAction, ToolExecutor
@@ -87,16 +87,16 @@ class TestAgentLoopCore(unittest.TestCase):
         """Model must call submit to finish; nudge injected when no tool used."""
         submit_call = ToolCall(id='sc1', function=ToolFunction(name='submit', arguments={'answer': '42'}))
         model = MagicMock()
-        model.generate.side_effect = [
+        model.generate_async = AsyncMock(side_effect=[
             _make_output(content='the answer is 42'),  # no tool call → nudge
             _make_output(tool_calls=[submit_call]),     # submit → done
-        ]
+        ])
 
         loop = self._build_loop(model)
         ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='q')])
         result = asyncio.run(loop.run(ctx))
 
-        self.assertEqual(model.generate.call_count, 2)
+        self.assertEqual(model.generate_async.call_count, 2)
         # user + assistant(text) + nudge(user) + assistant(submit)
         self.assertEqual(len(result.messages), 4)
 
@@ -111,10 +111,10 @@ class TestAgentLoopCore(unittest.TestCase):
         model = MagicMock()
         # 第 1 轮发起 tool_call; 第 2 轮调用 submit
         submit_call = ToolCall(id='sc1', function=ToolFunction(name='submit', arguments={'answer': 'done'}))
-        model.generate.side_effect = [
+        model.generate_async = AsyncMock(side_effect=[
             _make_output(tool_calls=[_tool_call(name='echo', args={'x': 7})]),
             _make_output(tool_calls=[submit_call]),
-        ]
+        ])
 
         async def echo_handler(call, env):
             return f"echoed:{call.function.arguments['x']}"
@@ -123,7 +123,7 @@ class TestAgentLoopCore(unittest.TestCase):
         ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='run echo')])
         result = asyncio.run(loop.run(ctx))
 
-        self.assertEqual(model.generate.call_count, 2)
+        self.assertEqual(model.generate_async.call_count, 2)
         # user + assistant(tool_call) + tool + assistant(submit)
         self.assertEqual(len(result.messages), 4)
         tool_msg = result.messages[2]
@@ -146,10 +146,10 @@ class TestAgentLoopCore(unittest.TestCase):
     def test_unknown_tool_yields_error_observation_without_aborting(self):
         model = MagicMock()
         submit_call = ToolCall(id='sc1', function=ToolFunction(name='submit', arguments={'answer': 'recovered'}))
-        model.generate.side_effect = [
+        model.generate_async = AsyncMock(side_effect=[
             _make_output(tool_calls=[_tool_call(name='missing')]),
             _make_output(tool_calls=[submit_call]),
-        ]
+        ])
         loop = self._build_loop(model, handlers={})
         ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='go')])
         result = asyncio.run(loop.run(ctx))
@@ -164,7 +164,7 @@ class TestAgentLoopCore(unittest.TestCase):
     def test_max_steps_exhaustion_emits_error_event(self):
         model = MagicMock()
         # 每轮都返回 tool_call → 循环永远不收敛 → 触发 max_steps
-        model.generate.return_value = _make_output(tool_calls=[_tool_call(name='echo')])
+        model.generate_async = AsyncMock(return_value=_make_output(tool_calls=[_tool_call(name='echo')]))
 
         async def echo_handler(call, env):
             return 'obs'
@@ -173,7 +173,7 @@ class TestAgentLoopCore(unittest.TestCase):
         ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='q')], max_steps=2)
         result = asyncio.run(loop.run(ctx))
 
-        self.assertEqual(model.generate.call_count, 2)
+        self.assertEqual(model.generate_async.call_count, 2)
 
         # 最末事件应为 ERROR + max_steps_exceeded
         last = result.trace.events[-1]
@@ -204,7 +204,7 @@ class TestAgentLoopCore(unittest.TestCase):
                 return []
 
         model = MagicMock()
-        model.generate.return_value = _make_output(content='ok')
+        model.generate_async = AsyncMock(return_value=_make_output(content='ok'))
         executor = ToolExecutor(handlers={}, environment=None)
         loop = AgentLoop(
             model=model,

@@ -14,17 +14,19 @@ streaming generation in the future.  ``AgentAdapter._on_inference`` bridges
 it into the synchronous evaluation pipeline through ``AsyncioLoopRunner``.
 """
 
+import logging
 import time
-from typing import List, Optional
+from typing import Any, List, Optional, Tuple
 
-from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
+from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.model import Model, ModelOutput
 from evalscope.utils.logger import get_logger
+from .constants import NUDGE_PROMPT, LoopMessages, MetadataKeys, SubmissionSources, ToolSchemaModes, TraceSources
 from .environment import AgentEnvironment
 from .strategy import AgentStrategy
 from .tool_executor import ToolExecutor
 from .trace import AgentTrace, EventType
-from .types import AgentContext, AgentLoopResult
+from .types import AgentContext, AgentLoopResult, ParsedAction
 
 logger = get_logger()
 
@@ -58,254 +60,327 @@ class AgentLoop:
             max_steps=max_steps,
         )
 
-    async def run(
-        self,
-        ctx: AgentContext,
-    ) -> AgentLoopResult:
+    # ------------------------------------------------------------------
+    # Public entry point
+    # ------------------------------------------------------------------
+
+    async def run(self, ctx: AgentContext) -> AgentLoopResult:
         """Drive the loop until the strategy signals completion or ``max_steps``.
 
         The provided ``ctx.messages`` is mutated in place: each iteration
-        appends the new assistant reply and any tool observations, so the
-        caller can inspect the final conversation afterwards.
+        appends the new assistant reply and any tool observations.  The
+        returned ``AgentLoopResult.messages`` is a shallow copy so that
+        post-run mutations on either side cannot pollute the other.
         """
-        # Inject the system prompt once at step 0 (if provided).
-        system_prompt = self.strategy.build_system_prompt(ctx)
-        if system_prompt and not any(m.role == 'system' for m in ctx.messages):
-            ctx.messages.insert(0, ChatMessageSystem(content=system_prompt))
+        self._inject_system_prompt(ctx)
 
         final_output: Optional[ModelOutput] = None
+        terminated_by_strategy = False
 
         while ctx.step < self.max_steps:
             # ---- generate ----
-            generate_messages = self.strategy.prepare_messages(ctx)
-            mode = self.strategy.tool_schema_mode()
-            tools = self.strategy.tools(ctx) if mode == 'function_calling' else []
-
-            logger.debug(
-                f'[AgentLoop] sample={ctx.sample_id} step={ctx.step}/{self.max_steps} '
-                f'strategy={getattr(self.strategy, "name", "?")} mode={mode} '
-                f'tools=[{", ".join(t.name for t in tools)}] '
-                f'messages_count={len(generate_messages)}'
-            )
-
-            started = time.monotonic()
-            output = await self.model.generate_async(input=generate_messages, tools=tools or None)
-            latency_ms = (time.monotonic() - started) * 1000
-            ctx.last_output = output
+            output, latency_ms = await self._generate(ctx)
             final_output = output
-
-            # Deep-copy before appending to ctx.messages so that downstream
-            # adapter code (e.g. ``output.completion = final_text`` in
-            # ``DefaultDataAdapter._extract_final_answer``) cannot retro-
-            # actively mutate the message we are about to persist to JSONL.
-            # Without this, the assistant's reasoning text gets overwritten
-            # by the extracted final answer because ``output.message`` and
-            # ``ctx.messages[-1]`` would otherwise share the same object.
-            assistant_msg = output.message.model_copy(deep=True)
+            assistant_msg = self._snapshot_assistant_message(output)
             ctx.messages.append(assistant_msg)
-
-            logger.debug(
-                f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} generate done '
-                f'latency={latency_ms:.0f}ms stop_reason={output.stop_reason} '
-                f'tool_calls={assistant_msg.tool_calls} '
-                f'content={assistant_msg.text}'
-            )
-
-            self.trace.add_event(
-                step=ctx.step,
-                type=EventType.MODEL_GENERATE,
-                message_id=assistant_msg.id,
-                latency_ms=latency_ms,
-                token_usage=_extract_usage(output),
-                payload={'stop_reason': output.stop_reason},
-            )
+            self._emit_generate(ctx, assistant_msg, output, latency_ms)
 
             # ---- parse ----
             parsed = self.strategy.parse_output(output, ctx)
             if parsed.error:
-                logger.debug(f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} parse_error: {parsed.error}')
-                self.trace.add_event(
-                    step=ctx.step,
-                    type=EventType.ERROR,
-                    message_id=assistant_msg.id,
-                    payload={
-                        'source': 'parse',
-                        'message': parsed.error
-                    },
-                )
+                self._emit_parse_error(ctx, assistant_msg, parsed)
 
-            # ---- terminate? ----
+            # ---- terminate from parse? ----
             if self.strategy.is_done(parsed, ctx):
-                logger.debug(
-                    f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} is_done=True '
-                    f'final_answer={str(parsed.final_answer)[:100]!r}'
-                )
-                if parsed.final_answer is not None:
-                    self.trace.add_event(
-                        step=ctx.step,
-                        type=EventType.SUBMIT,
-                        message_id=assistant_msg.id,
-                        payload={'final_answer': parsed.final_answer},
-                    )
+                self._emit_submit(ctx, assistant_msg, parsed)
+                terminated_by_strategy = True
                 break
 
-            # ---- no tool calls but not done → nudge ----
-            # The model didn't call any tool and didn't submit a final
-            # answer.  Ask the strategy whether a nudge is appropriate.
+            # ---- no tool calls but not done → nudge or implicit submit ----
             if not parsed.tool_calls:
-                logger.debug(
-                    f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} '
-                    f'no_tool_calls, should_nudge={self.strategy.should_nudge(parsed, ctx)}'
-                )
-                if self.strategy.should_nudge(parsed, ctx):
-                    nudge = ChatMessageUser(
-                        content='No tool was called. Please use an available tool '
-                        'or call the submit tool with your final answer.',
-                    )
-                    ctx.messages.append(nudge)
-                    self.trace.add_event(
-                        step=ctx.step,
-                        type=EventType.NUDGE,
-                        message_id=nudge.id,
-                        payload={
-                            'source': 'nudge',
-                            'message': 'no_tool_call_reminder'
-                        },
-                    )
-                    ctx.step += 1
+                if self._try_nudge(parsed, ctx):
                     continue
-                else:
-                    # Strategy declines nudge; treat as implicit final answer.
-                    final = parsed.raw_text or ''
-                    self.trace.add_event(
-                        step=ctx.step,
-                        type=EventType.SUBMIT,
-                        message_id=None,
-                        payload={
-                            'final_answer': final,
-                            'source': 'implicit_no_nudge'
-                        },
-                    )
-                    break
+                self._emit_implicit_submit(ctx, parsed)
+                terminated_by_strategy = True
+                break
 
-            # ---- tool execution ----
-            if parsed.tool_calls:
-                logger.debug(
-                    f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} '
-                    f'executing {len(parsed.tool_calls)} tool call(s): '
-                    f'{[c.function.name for c in parsed.tool_calls]}'
-                )
-                last_obs_id: Optional[str] = None
-                done_after_tool = False
-                for call in parsed.tool_calls:
-                    self.trace.add_event(
-                        step=ctx.step,
-                        type=EventType.TOOL_CALL,
-                        message_id=assistant_msg.id,
-                        payload={
-                            'name': call.function.name,
-                            'arguments': call.function.arguments,
-                            'id': call.id,
-                        },
-                    )
-                    observation, error, duration = await self.tool_executor.execute(call)
-                    logger.debug(
-                        f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} '
-                        f'tool={call.function.name} duration={duration*1000:.0f}ms '
-                        f'error={error.type if error else None} '
-                        f'obs_len={len(observation) if isinstance(observation, str) else 0}'
-                    )
-                    # Let the strategy decide how to format the observation
-                    # (ChatMessageTool for FC, ChatMessageUser for textual_block).
-                    # Strategies may also signal completion here by mutating
-                    # ``parsed`` (typically setting ``parsed.final_answer``);
-                    # the post-execution ``is_done`` check below handles it.
-                    obs_msg = self.strategy.format_observation(call, observation, error, parsed, ctx)
-                    ctx.messages.append(obs_msg)
-                    last_obs_id = obs_msg.id
-                    self.trace.add_event(
-                        step=ctx.step,
-                        type=EventType.TOOL_RESULT,
-                        message_id=obs_msg.id,
-                        latency_ms=duration * 1000,
-                        payload={
-                            'name': call.function.name,
-                            'id': call.id,
-                            'error': error.type if error else None,
-                            'preview': observation[:500] if isinstance(observation, str) else None,
-                        },
-                    )
-
-                    # Post-tool termination check.  Strategies like
-                    # ``swe_bench_toolcall`` / ``swe_bench_backticks`` detect
-                    # completion sentinels inside the tool observation, which
-                    # is only available *after* execution.  Single signal:
-                    # ``parsed.final_answer`` set by ``format_observation``.
-                    if self.strategy.is_done(parsed, ctx):
-                        self.trace.add_event(
-                            step=ctx.step,
-                            type=EventType.SUBMIT,
-                            message_id=last_obs_id,
-                            latency_ms=duration * 1000,
-                            payload={
-                                'source': ctx.metadata.get('submission_source', 'post_tool'),
-                                'name': call.function.name,
-                                'id': call.id,
-                                'final_answer_preview': str(parsed.final_answer)[:120],
-                            },
-                        )
-                        logger.debug(
-                            f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} '
-                            f'is_done after tool {call.function.name}; '
-                            f'final_answer_len={len(str(parsed.final_answer or ""))}'
-                        )
-                        done_after_tool = True
-                        break
-
-                # Inner for-loop set parsed.final_answer → exit outer while
-                # without re-invoking ``is_done`` (the flag is authoritative).
-                if done_after_tool:
-                    break
+            # ---- tool execution (may set parsed.final_answer post-hoc) ----
+            if await self._run_tools(parsed, ctx, assistant_msg):
+                terminated_by_strategy = True
+                break
 
             ctx.step += 1
 
-        if ctx.step >= self.max_steps:
-            logger.info(f'AgentLoop reached max_steps={self.max_steps} '
-                        f'for sample {ctx.sample_id}; terminating.')
-            if logger.isEnabledFor(10):  # DEBUG level
-                logger.debug(
-                    f'[AgentLoop] sample={ctx.sample_id} max_steps_exceeded '
-                    f'total_messages={len(ctx.messages)}'
-                )
-            self.trace.add_event(
-                step=ctx.step,
-                type=EventType.ERROR,
-                payload={
-                    'source': 'loop',
-                    'message': 'max_steps_exceeded'
-                },
-            )
+        if not terminated_by_strategy:
+            self._emit_max_steps_exceeded(ctx)
 
-        assert final_output is not None, 'AgentLoop.run ended without any generate() call'
+        if final_output is None:
+            raise RuntimeError('AgentLoop.run ended without any generate() call')
+
         return AgentLoopResult(
-            messages=ctx.messages,
+            messages=list(ctx.messages),
             final_output=final_output,
             trace=self.trace,
         )
+
+    # ------------------------------------------------------------------
+    # Stage methods
+    # ------------------------------------------------------------------
+
+    def _inject_system_prompt(self, ctx: AgentContext) -> None:
+        """Insert the strategy's system prompt at index 0 if absent."""
+        system_prompt = self.strategy.build_system_prompt(ctx)
+        if system_prompt and not any(m.role == 'system' for m in ctx.messages):
+            ctx.messages.insert(0, ChatMessageSystem(content=system_prompt))
+
+    async def _generate(self, ctx: AgentContext) -> Tuple[ModelOutput, float]:
+        """Run one ``model.generate_async`` round and return (output, latency_ms)."""
+        generate_messages = self.strategy.prepare_messages(ctx)
+        mode = self.strategy.tool_schema_mode()
+        tools = self.strategy.tools(ctx) if mode == ToolSchemaModes.FUNCTION_CALLING else []
+
+        self._dbg(
+            ctx,
+            f'{ctx.step}/{self.max_steps} '
+            f'strategy={getattr(self.strategy, "name", "?")} mode={mode} '
+            f'tools=[{", ".join(t.name for t in tools)}] '
+            f'messages_count={len(generate_messages)}',
+        )
+
+        started = time.monotonic()
+        output = await self.model.generate_async(input=generate_messages, tools=tools or None)
+        latency_ms = (time.monotonic() - started) * 1000
+        ctx.last_output = output
+        return output, latency_ms
+
+    def _snapshot_assistant_message(self, output: ModelOutput) -> ChatMessage:
+        """Deep-copy the assistant message before appending to ``ctx.messages``.
+
+        Without this, ``DefaultDataAdapter._extract_final_answer`` would later
+        overwrite the persisted reasoning text by mutating the same
+        ``output.message`` object that lives in ``ctx.messages``.
+        """
+        return output.message.model_copy(deep=True)
+
+    def _try_nudge(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
+        """Inject a 'please call a tool' reminder if the strategy allows it.
+
+        Returns True when a nudge was injected (caller should ``continue``);
+        False when the strategy declined and the caller should treat the
+        current output as an implicit final answer.
+        """
+        should_nudge = self.strategy.should_nudge(parsed, ctx)
+        self._dbg(ctx, f'no_tool_calls, should_nudge={should_nudge}')
+        if not should_nudge:
+            return False
+
+        nudge = ChatMessageUser(content=NUDGE_PROMPT)
+        ctx.messages.append(nudge)
+        self.trace.add_event(
+            step=ctx.step,
+            type=EventType.NUDGE,
+            message_id=nudge.id,
+            payload={
+                'source': TraceSources.NUDGE,
+                'message': LoopMessages.NO_TOOL_CALL_REMINDER,
+            },
+        )
+        ctx.step += 1
+        return True
+
+    async def _run_tools(
+        self,
+        parsed: ParsedAction,
+        ctx: AgentContext,
+        assistant_msg: ChatMessage,
+    ) -> bool:
+        """Execute every tool call in ``parsed.tool_calls`` sequentially.
+
+        Returns True when ``strategy.is_done`` becomes True after a tool
+        observation (post-tool termination), signalling the outer loop to
+        break without re-checking ``is_done``.
+        """
+        self._dbg(
+            ctx,
+            f'executing {len(parsed.tool_calls)} tool call(s): '
+            f'{[c.function.name for c in parsed.tool_calls]}',
+        )
+        for call in parsed.tool_calls:
+            self.trace.add_event(
+                step=ctx.step,
+                type=EventType.TOOL_CALL,
+                message_id=assistant_msg.id,
+                payload={
+                    'name': call.function.name,
+                    'arguments': call.function.arguments,
+                    'id': call.id,
+                },
+            )
+            observation, error, duration = await self.tool_executor.execute(call)
+            self._dbg(
+                ctx,
+                f'tool={call.function.name} duration={duration*1000:.0f}ms '
+                f'error={error.type if error else None} '
+                f'obs_len={len(observation) if isinstance(observation, str) else 0}',
+            )
+            # ``format_observation`` may signal completion by mutating
+            # ``parsed.final_answer``; the post-execution ``is_done`` check
+            # below picks it up.
+            obs_msg = self.strategy.format_observation(call, observation, error, parsed, ctx)
+            ctx.messages.append(obs_msg)
+            self.trace.add_event(
+                step=ctx.step,
+                type=EventType.TOOL_RESULT,
+                message_id=obs_msg.id,
+                latency_ms=duration * 1000,
+                payload={
+                    'name': call.function.name,
+                    'id': call.id,
+                    'error': error.type if error else None,
+                    'preview': observation[:500] if isinstance(observation, str) else None,
+                },
+            )
+
+            if self.strategy.is_done(parsed, ctx):
+                self._emit_post_tool_submit(ctx, obs_msg, call, parsed, duration)
+                return True
+
+        return False
+
+    # ------------------------------------------------------------------
+    # Trace event emitters
+    # ------------------------------------------------------------------
+
+    def _emit_generate(
+        self,
+        ctx: AgentContext,
+        assistant_msg: ChatMessage,
+        output: ModelOutput,
+        latency_ms: float,
+    ) -> None:
+        self._dbg(
+            ctx,
+            f'generate done latency={latency_ms:.0f}ms '
+            f'stop_reason={output.stop_reason} '
+            f'tool_calls={assistant_msg.tool_calls} '
+            f'content={assistant_msg.text}',
+        )
+        self.trace.add_event(
+            step=ctx.step,
+            type=EventType.MODEL_GENERATE,
+            message_id=assistant_msg.id,
+            latency_ms=latency_ms,
+            token_usage=_extract_usage(output),
+            payload={'stop_reason': output.stop_reason},
+        )
+
+    def _emit_parse_error(
+        self,
+        ctx: AgentContext,
+        assistant_msg: ChatMessage,
+        parsed: ParsedAction,
+    ) -> None:
+        self._dbg(ctx, f'parse_error: {parsed.error}')
+        self.trace.add_event(
+            step=ctx.step,
+            type=EventType.ERROR,
+            message_id=assistant_msg.id,
+            payload={
+                'source': TraceSources.PARSE,
+                'message': parsed.error,
+            },
+        )
+
+    def _emit_submit(
+        self,
+        ctx: AgentContext,
+        assistant_msg: ChatMessage,
+        parsed: ParsedAction,
+    ) -> None:
+        self._dbg(
+            ctx,
+            f'is_done=True final_answer={str(parsed.final_answer)[:100]!r}',
+        )
+        if parsed.final_answer is not None:
+            self.trace.add_event(
+                step=ctx.step,
+                type=EventType.SUBMIT,
+                message_id=assistant_msg.id,
+                payload={'final_answer': parsed.final_answer},
+            )
+
+    def _emit_implicit_submit(self, ctx: AgentContext, parsed: ParsedAction) -> None:
+        final = parsed.raw_text or ''
+        self.trace.add_event(
+            step=ctx.step,
+            type=EventType.SUBMIT,
+            message_id=None,
+            payload={
+                'final_answer': final,
+                'source': SubmissionSources.IMPLICIT_NO_NUDGE,
+            },
+        )
+
+    def _emit_post_tool_submit(
+        self,
+        ctx: AgentContext,
+        obs_msg: ChatMessage,
+        call: Any,
+        parsed: ParsedAction,
+        duration: float,
+    ) -> None:
+        source = ctx.metadata.get(MetadataKeys.SUBMISSION_SOURCE, SubmissionSources.POST_TOOL)
+        self.trace.add_event(
+            step=ctx.step,
+            type=EventType.SUBMIT,
+            message_id=obs_msg.id,
+            latency_ms=duration * 1000,
+            payload={
+                'source': source,
+                'name': call.function.name,
+                'id': call.id,
+                'final_answer_preview': str(parsed.final_answer)[:120],
+            },
+        )
+        self._dbg(
+            ctx,
+            f'is_done after tool {call.function.name}; '
+            f'final_answer_len={len(str(parsed.final_answer or ""))}',
+        )
+
+    def _emit_max_steps_exceeded(self, ctx: AgentContext) -> None:
+        logger.info(f'AgentLoop reached max_steps={self.max_steps} '
+                    f'for sample {ctx.sample_id}; terminating.')
+        if logger.isEnabledFor(logging.DEBUG):
+            self._dbg(ctx, f'max_steps_exceeded total_messages={len(ctx.messages)}')
+        self.trace.add_event(
+            step=ctx.step,
+            type=EventType.ERROR,
+            payload={
+                'source': TraceSources.LOOP,
+                'message': LoopMessages.MAX_STEPS_EXCEEDED,
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Logging helper
+    # ------------------------------------------------------------------
+
+    def _dbg(self, ctx: AgentContext, msg: str) -> None:
+        """Emit a DEBUG log line with a uniform sample/step prefix."""
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} {msg}')
 
 
 def _extract_usage(output: ModelOutput) -> Optional[dict]:
     usage = output.usage
     if usage is None:
         return None
-    try:
-        return {
-            'input': int(getattr(usage, 'input_tokens', 0) or 0),
-            'output': int(getattr(usage, 'output_tokens', 0) or 0),
-            'total': int(getattr(usage, 'total_tokens', 0) or 0),
-        }
-    except Exception:  # noqa: BLE001
-        return None
+    return {
+        'input': int(getattr(usage, 'input_tokens', 0) or 0),
+        'output': int(getattr(usage, 'output_tokens', 0) or 0),
+        'total': int(getattr(usage, 'total_tokens', 0) or 0),
+    }
 
 
 __all__ = ['AgentLoop']

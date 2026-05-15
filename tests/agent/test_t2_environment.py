@@ -15,7 +15,7 @@ import os
 import pytest
 import tempfile
 from typing import Any, Dict, List, Optional
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import evalscope  # noqa: F401 – trigger strategy / env / tool registration
 from evalscope.api.agent import (
@@ -436,7 +436,7 @@ class TestAgentLoopWithEnvironment:
         second_output = _make_output(content='', tool_calls=[submit_call])
 
         model = MagicMock()
-        model.generate.side_effect = [first_output, second_output]
+        model.generate_async = AsyncMock(side_effect=[first_output, second_output])
 
         strategy = get_strategy('function_calling')()
         tool_executor = ToolExecutor(handlers=handlers, environment=env)
@@ -497,6 +497,8 @@ class TestDefaultAdapterEnvPath:
         final_out = _make_output(content='done')
         model = MagicMock()
         model.generate.return_value = final_out
+        # AgentLoop awaits ``generate_async``.
+        model.generate_async = AsyncMock(return_value=final_out)
 
         sample = MagicMock()
         sample.id = 'x'
@@ -506,7 +508,7 @@ class TestDefaultAdapterEnvPath:
         output = adapter._on_inference(model, sample)
 
         # Verify model was called with bash ToolInfo in the tools list
-        call_args = model.generate.call_args
+        call_args = model.generate_async.call_args
         tools_passed = call_args[1].get('tools') or call_args[0][1] if len(call_args[0]) > 1 else None
         # tools_passed may be None if strategy decided not to pass them;
         # at minimum verify execution completed without error.

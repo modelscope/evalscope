@@ -20,7 +20,7 @@ class TestAgentBenchmark(TestBenchmark):
     def setUp(self):
         """Setup common test configuration."""
         self.base_config = {
-            'model': 'qwen-plus',
+            'model': 'qwen3-max',
             'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'api_key': env.get('DASHSCOPE_API_KEY'),
             'eval_type': EvalType.OPENAI_API,
