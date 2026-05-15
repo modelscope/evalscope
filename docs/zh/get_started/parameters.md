@@ -105,7 +105,7 @@
 | `aggregation` | `str` | 评测结果聚合方式，默认`mean`。可选：`mean_and_pass_at_k`、`mean_and_vote_at_k`、`mean_and_pass_hat_k`（均需设置`repeats=k`）。<br>• `pass_at_k`：同一样例生成k次至少一次通过的概率（如`humaneval`设`repeats=5`）<br>• `vote_at_k`：对同一样例k次结果投票后计分<br>• `pass_hat_k`：同一样例k次全部通过的概率（如`tau2_bench`设`repeats=3`） |
 | `filters` | `dict` | 输出过滤器<br>• `remove_until`: 过滤指定字符串之前的内容<br>• `extract`: 提取正则匹配的内容 |
 | `force_redownload` | `bool` | 是否强制重新下载数据集 |
-| `extra_params` | `dict` | 数据集相关的**额外参数**，具体参考[各数据集说明](./supported_dataset/index.md)，指定`{<param_name>:<value>}`即可, `value`的类型(`type`)和选择范围(`choices`)根据具体参数而定 |
+| `extra_params` | `dict` | 数据集相关的**额外参数**，具体参考[各数据集说明](./supported_dataset/index.md)，指定`{<param_name>:<value>}`即可, `value`的类型(`type`)和选择范围(`choices`)根据具体参数而定。SWE-bench agentic 等基准的扩展参数请参见 [Agent 评测](../user_guides/agent.md#swe-bench-agentic-用例) |
 | `sandbox_config` | `dict` | Sandbox配置（详见下方Sandbox参数） |
 
 **sandbox_config 配置项：**
@@ -221,11 +221,42 @@ After providing your explanation, you must rate the response on a scale of 0 (wo
 
 ## Sandbox参数
 
+EvalScope 使用嵌套的 `--sandbox` 配置（对应 `SandboxTaskConfig`）统一管理沙箱设置。
+
+### --sandbox 配置项
+
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
-| `--use-sandbox` | `bool` | 是否使用[ms-enclave](https://github.com/modelscope/ms-enclave)隔离代码运行环境<br>目前仅对代码评测任务（如`humaneval`）有效 | `false` |
-| `--sandbox-manager-config` | `str` | Sandbox管理器配置（JSON字符串）<br>• `base_url`: 管理器URL（默认`None`为本地管理器） | `{}` |
-| `--sandbox-type` | `str` | Sandbox类型 | `docker` |
+| `enabled` | `bool` | 是否启用沙箱 | `false` |
+| `engine` | `str` | 沙箱引擎，可选 `docker`、`volcengine` 等 | `docker` |
+| `default_config` | `dict` | 任务级沙箱配置，将与 `BenchmarkMeta.sandbox_config` 合并；同时作为 Agent 模式中每个样本环境的默认配置 | `{}` |
+| `manager_config` | `dict` | 转发给 ms_enclave manager 构造函数的参数（如远端 docker daemon 的 `base_url`、volcengine 凭证等） | `{}` |
+| `pool_size` | `int \| None` | 池化执行的预热池大小，`None` 时与 `eval_batch_size` 对齐 | `None` |
+
+完整使用方法（含本地与远端管理器配置示例）请参考 [沙箱环境使用](../user_guides/sandbox.md)。
+
+## Agent 参数
+
+`--agent-config` / `agent_config` 用于启用 [Agent 评测模式](../user_guides/agent.md)：当设置后，所有基于 `DefaultDataAdapter` 的基准会改用多轮 AgentLoop 进行推理。`AgentLoopAdapter` 子类（如 `swe_bench_*_agentic`）会忽略该全局配置，改用 `dataset_args.extra_params`。
+
+| 参数 | 类型 | 说明 | 默认值 |
+|------|------|------|--------|
+| `--agent-config` | `dict \| AgentConfig` | Agent 全局配置，详见下表 | `None`（关闭 Agent 模式） |
+
+### agent-config 配置项
+
+| 字段 | 类型 | 说明 | 默认值 |
+|------|------|------|--------|
+| `strategy` | `str` | 策略名称：`function_calling` / `react` / `swe_bench_toolcall` / `swe_bench_backticks` | `function_calling` |
+| `tools` | `list[str]` | 工具白名单：`bash` / `python_exec`（`submit` 由策略自动注入） | `[]` |
+| `environment` | `str \| None` | 工具运行环境：`local`（子进程）/ `docker`（隔离沙箱） | `None` |
+| `max_steps` | `int` | 循环迭代硬上限 | `10` |
+| `extra` | `dict` | 策略构造参数，例如 `{'system_prompt': '...'}` | `{}` |
+| `environment_extra` | `dict` | 环境构造参数。`local` 支持 `working_dir`/`env_vars`；`docker` 支持 `image`/`timeout`/`environment` | `{}` |
+
+```{seealso}
+完整使用说明、用例与 Trace 可视化请参见 [Agent 评测](../user_guides/agent.md)。
+```
 
 ## 其他参数
 

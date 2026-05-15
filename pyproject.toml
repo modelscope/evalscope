@@ -82,3 +82,10 @@ all = {file = [
   "requirements/aigc.txt",
   "requirements/service.txt"
 ]}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["*test*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-s -v"

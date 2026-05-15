@@ -12,6 +12,7 @@ turn_index)`` so downstream consumers can inspect / filter per-turn or
 per-sample breakdowns while aggregate statistics are always computed at the
 request granularity.
 """
+import math
 import pandas as pd
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
@@ -38,10 +39,20 @@ def _series_stats(s: pd.Series) -> dict:
 
     Returns keys: mean / std / min / 25% / 50% / 75% / 90% / 99% / max,
     all rounded to 6 decimal places.  std uses pandas default ddof=1.
+
+    NaN values (e.g. ``std`` when only a single sample exists, since
+    ``ddof=1`` makes the denominator zero) are returned as ``None`` so the
+    output remains valid JSON — Python's ``json`` module would otherwise
+    emit the non-standard literal ``NaN``, which browsers' ``JSON.parse``
+    rejects.
     """
     desc = s.describe(percentiles=_PERCENTILES)
     keys = ['mean', 'std', 'min', '25%', '50%', '75%', '90%', '99%', 'max']
-    return {k: round(float(desc[k]), 6) for k in keys}
+    out: dict = {}
+    for k in keys:
+        v = float(desc[k])
+        out[k] = None if math.isnan(v) else round(v, 6)
+    return out
 
 
 class PerfCollector:

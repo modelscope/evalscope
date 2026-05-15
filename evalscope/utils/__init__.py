@@ -7,7 +7,7 @@ from .import_utils import _LazyModule
 if TYPE_CHECKING:
     from .argument_utils import BaseArgument, get_supported_params, parse_int_or_float
     from .deprecation_utils import deprecated
-    from .function_utils import run_once, thread_safe
+    from .function_utils import async_retry_call, run_once, thread_safe
     from .import_utils import get_module_path, is_module_installed
     from .io_utils import (
         OutputsStructure,
@@ -47,6 +47,7 @@ else:
         'function_utils': [
             'thread_safe',
             'run_once',
+            'async_retry_call',
         ],
         'io_utils': [
             'OutputsStructure',
@@ -62,7 +63,6 @@ else:
             'gen_hash',
             'get_valid_list',
             'safe_filename',
-            'thread_safe',
         ],
         'deprecation_utils': [
             'deprecated',

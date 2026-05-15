@@ -105,7 +105,14 @@
   --warning-color: #f59e0b;
   --warning-bg: rgba(245, 158, 11, 0.08);
   --warning-border: rgba(245, 158, 11, 0.20);
+  --warning-text: #b45309;
   --info: #60a5fa;
+  --success: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.08);
+  --success-border: rgba(16, 185, 129, 0.20);
+
+  /* Text on filled/colored backgrounds (badges, chips) */
+  --color-on-filled: #ffffff;
 
   /* Compare palette — per-model slot */
   --compare-0-dot: #818cf8;
@@ -157,6 +164,9 @@
   --bubble-tool-color: #fbbf24;
   --bubble-system-bg: rgba(148, 163, 184, 0.06);
   --bubble-system-border: rgba(148, 163, 184, 0.20);
+
+  /* Media player */
+  --media-video-bg: #000000;
 }
 
 /* ------------------------------------------------------------------ */
@@ -239,7 +249,14 @@
   --warning-color: #d97706;
   --warning-bg: rgba(217, 119, 6, 0.08);
   --warning-border: rgba(217, 119, 6, 0.22);
+  --warning-text: #92400e;
   --info: #3b82f6;
+  --success: #059669;
+  --success-bg: rgba(5, 150, 105, 0.08);
+  --success-border: rgba(5, 150, 105, 0.22);
+
+  /* Text on filled/colored backgrounds (badges, chips) */
+  --color-on-filled: #ffffff;
 
   /* Compare palette — per-model slot */
   --compare-0-dot: #6c57e8;
@@ -291,6 +308,9 @@
   --bubble-tool-color: #b26200;
   --bubble-system-bg: rgba(90, 99, 120, 0.08);
   --bubble-system-border: rgba(90, 99, 120, 0.22);
+
+  /* Media player */
+  --media-video-bg: #0d0d0d;
 }
 
 /* ------------------------------------------------------------------ */

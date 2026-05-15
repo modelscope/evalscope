@@ -46,7 +46,7 @@ class TestCodeBenchmark(TestBenchmark):
 
     def test_humaneval(self):
         """Test Humaneval dataset."""
-        self._run_dataset_test('humaneval', limit=5, repeats=2, model='qwen2.5-0.5b-instruct')
+        self._run_dataset_test('humaneval', limit=5, repeats=2)
 
     def test_humaneval_remote_sandbox(self):
         """Test Humaneval dataset with remote sandbox manager."""

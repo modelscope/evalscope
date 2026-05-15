@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict
 
-from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessage, dict_to_chat_message
@@ -52,7 +52,7 @@ ToolBench-Static is a benchmark for evaluating AI models' ability to use tools a
         eval_split='test',
     )
 )
-class ToolBenchAdapter(AgentAdapter):
+class ToolBenchAdapter(DefaultDataAdapter):
     """
     ToolBench adapter using the new data processing framework.
     """

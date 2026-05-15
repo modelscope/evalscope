@@ -113,6 +113,22 @@ def retry_call(func, *args, retries=3, sleep_interval=0, **kwargs):
                 raise
 
 
+async def async_retry_call(
+    func: Callable[..., Awaitable[T]], *args, retries: int = 3, sleep_interval: float = 0, **kwargs
+) -> T:
+    """Async version of retry_call. Retries an async function call up to `retries` times if an exception occurs."""
+    for attempt in range(retries):
+        try:
+            return await func(*args, **kwargs)
+        except Exception as e:
+            if attempt < retries - 1:
+                if sleep_interval > 0:
+                    logger.warning(f'Attempt {attempt + 1} / {retries} failed: {e}. Retrying...')
+                    await asyncio.sleep(sleep_interval)
+            else:
+                raise
+
+
 class AsyncioLoopRunner:
     """Singleton background asyncio loop runner for sync→async bridging."""
     _instance: Optional['AsyncioLoopRunner'] = None

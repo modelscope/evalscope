@@ -1,4 +1,6 @@
 import abc
+import asyncio
+from functools import partial
 from pydantic_core import to_jsonable_python
 from typing import TYPE_CHECKING, Any, Dict, Generator, List, Literal, Optional, Sequence, Union
 
@@ -66,6 +68,41 @@ class ModelAPI(abc.ABC):
            ModelOutput
         """
         ...
+
+    async def generate_async(
+        self,
+        input: List[ChatMessage],
+        tools: List[ToolInfo],
+        tool_choice: ToolChoice,
+        config: GenerateConfig,
+    ) -> ModelOutput:
+        """Async version of generate().
+
+        Default implementation wraps the synchronous generate() in a thread
+        pool executor so it does not block the event loop.  Subclasses (e.g.
+        OpenAI-compatible models) may override this with a native async
+        implementation for better performance.
+
+        Args:
+          input: Chat message input.
+          tools: Tools available for the model to call.
+          tool_choice: Directives to the model as to which tools to prefer.
+          config: Model configuration.
+
+        Returns:
+           ModelOutput
+        """
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            None,
+            partial(
+                self.generate,
+                input=input,
+                tools=tools,
+                tool_choice=tool_choice,
+                config=config,
+            ),
+        )
 
     def max_tokens(self) -> Optional[int]:
         """Default max_tokens."""
@@ -164,6 +201,44 @@ class Model:
         )
 
         # return output
+        return output
+
+    async def generate_async(
+        self,
+        input: Union[str, List[ChatMessage]],
+        tools: Optional[Sequence[ToolInfo]] = None,
+        tool_choice: Optional[ToolChoice] = None,
+        config: Optional[GenerateConfig] = None,
+    ) -> ModelOutput:
+        """Async version of generate().
+
+        Delegates to the underlying ModelAPI.generate_async() after
+        preprocessing input.  The default ModelAPI implementation offloads
+        the synchronous generate() to a thread pool; concrete subclasses
+        (e.g. OpenAICompatibleAPI) may provide a native async implementation.
+
+        Args:
+          input: Chat message input (if a `str` is passed it is converted
+            to a `ChatMessageUser`).
+          tools: Tools available for the model to call.
+          tool_choice: Directives to the model as to which tools to prefer.
+          config: Model configuration.
+
+        Returns:
+           ModelOutput
+        """
+        processed_input, processed_tools, processed_tool_choice, processed_config = self._preprocess_input(
+            input, tools, tool_choice, config
+        )
+
+        # Call the model's async generate method
+        output = await self.api.generate_async(
+            input=processed_input,
+            tools=processed_tools,
+            tool_choice=processed_tool_choice,
+            config=processed_config,
+        )
+
         return output
 
     def _preprocess_input(

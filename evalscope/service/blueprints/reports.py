@@ -5,6 +5,7 @@ React SPA frontend can load reports, predictions and analyses without
 direct filesystem access.
 """
 import json
+import mimetypes
 import os
 import plotly.express as px
 import plotly.graph_objects as go
@@ -41,6 +42,70 @@ logger = get_logger()
 bp_reports = Blueprint('reports', __name__, url_prefix='/api/v1/reports')
 
 _DEFAULT_ROOT = OUTPUT_DIR
+
+# Allowed extensions for the media proxy (security: do not serve arbitrary files)
+_MEDIA_EXTENSIONS = {
+    # image
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.gif',
+    '.webp',
+    '.bmp',
+    '.svg',
+    '.ico',
+    # video
+    '.mp4',
+    '.webm',
+    '.ogg',
+    '.ogv',
+    '.mov',
+    '.avi',
+    '.mkv',
+    # audio
+    '.mp3',
+    '.wav',
+    '.flac',
+    '.aac',
+    '.m4a',
+    '.opus',
+}
+
+
+@bp_reports.route('/media/file', methods=['GET'])
+def serve_media_file():
+    """Serve a local media file (image / audio / video) via HTTP.
+
+    This proxy endpoint allows the browser to load server-side local file
+    paths that are stored inside prediction records (e.g. video paths from
+    MVBench datasets).
+
+    Query params:
+        path (str): Absolute path to the media file on the server.
+
+    Security:
+        - Only files with known media extensions are served.
+        - The file must exist and be a regular file.
+    """
+    file_path = request.args.get('path', '').strip()
+    if not file_path:
+        return jsonify({'error': 'path parameter is required'}), 400
+
+    # Normalise to absolute path and reject directory traversal
+    file_path = os.path.realpath(file_path)
+
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext not in _MEDIA_EXTENSIONS:
+        return jsonify({'error': f'File type {ext!r} is not allowed'}), 403
+
+    if not os.path.isfile(file_path):
+        return jsonify({'error': 'File not found'}), 404
+
+    mime_type, _ = mimetypes.guess_type(file_path)
+    if mime_type is None:
+        mime_type = 'application/octet-stream'
+
+    return send_file(file_path, mimetype=mime_type)
 
 
 def _root_path() -> str:

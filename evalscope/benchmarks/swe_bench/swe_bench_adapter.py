@@ -6,7 +6,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.import_utils import check_import
+from evalscope.utils.import_utils import check_import, is_build_doc
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -85,6 +85,12 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
         self.pull_remote_images_if_available: bool = self.extra_params.get('pull_remote_images_if_available', True)
         self.inference_dataset_id: str = self.extra_params.get('inference_dataset_id', 'princeton-nlp/SWE-bench_oracle')
         self.force_arch: str = self.extra_params.get('force_arch', '')
+
+        # Skip docker image build/pull during documentation generation (BUILD_DOC=1)
+        # to avoid slow/unnecessary image pulls when running `make docs-pipeline`.
+        if is_build_doc():
+            self.build_docker_images = False
+            self.pull_remote_images_if_available = False
 
     def load(self):
         logger.info(f'Loading oracle dataset: {self.inference_dataset_id}')

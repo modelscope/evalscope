@@ -510,7 +510,10 @@ def content_from_openai(
 
 
 def chat_message_assistant_from_openai(
-    model: str, message: ChatCompletionMessage, tools: List[ToolInfo]
+    model: str,
+    message: ChatCompletionMessage,
+    tools: List[ToolInfo],
+    reasoning_tokens: Optional[int] = None,
 ) -> ChatMessageAssistant:
     refusal = getattr(message, 'refusal', None)
     reasoning = getattr(message, 'reasoning_content', None) or getattr(message, 'reasoning', None)
@@ -518,7 +521,7 @@ def chat_message_assistant_from_openai(
     msg_content = refusal or message.content or ''
     if reasoning is not None:
         content: Union[str, List[Content]] = [
-            ContentReasoning(reasoning=str(reasoning)),
+            ContentReasoning(reasoning=str(reasoning), reasoning_tokens=reasoning_tokens),
             ContentText(text=msg_content, refusal=True if refusal else None),
         ]
     elif refusal is not None:
@@ -568,11 +571,21 @@ def chat_choices_from_openai(response: ChatCompletion, tools: List[ToolInfo]) ->
             f'model={getattr(response, "model", "unknown")}. '
             f'This may indicate the model returned an empty or malformed response.'
         )
+    # Extract reasoning_tokens from usage.completion_tokens_details if available
+    reasoning_tokens: Optional[int] = None
+    if response.usage and getattr(response.usage, 'completion_tokens_details', None) is not None:
+        reasoning_tokens = getattr(response.usage.completion_tokens_details, 'reasoning_tokens', None)
+
     choices = list(response.choices)
     choices.sort(key=lambda c: c.index)
     return [
         ChatCompletionChoice(
-            message=chat_message_assistant_from_openai(response.model, choice.message, tools),
+            message=chat_message_assistant_from_openai(
+                response.model,
+                choice.message,
+                tools,
+                reasoning_tokens=reasoning_tokens,
+            ),
             stop_reason=as_stop_reason(choice.finish_reason),
             logprobs=(
                 Logprobs(**choice.logprobs.model_dump())
@@ -689,6 +702,126 @@ def collect_stream_response(
     ttft: Optional[float] = None
 
     for chunk in response_stream:
+        collected_chunks.append(chunk)
+        for choice in chunk.choices:
+            # Detect first meaningful content chunk for TTFT
+            has_content = ((choice.delta.content is not None and choice.delta.content != '') or (
+                hasattr(choice.delta, 'reasoning_content') and choice.delta.reasoning_content is not None
+                and choice.delta.reasoning_content != ''
+            ) or (hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls))
+            if ttft is None and has_content:
+                ttft = time.monotonic() - t_start
+
+            # Handle reasoning content
+            if hasattr(choice.delta, 'reasoning_content') and choice.delta.reasoning_content is not None:
+                collected_reasoning[choice.index].append(choice.delta.reasoning_content)
+
+            # Handle regular content
+            if choice.delta.content is not None:
+                collected_messages[choice.index].append(choice.delta.content)
+
+            # Handle tool calls
+            if hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls:
+                for tool_call in choice.delta.tool_calls:
+                    tool_id = tool_call.index
+
+                    # Initialize tool call if not present
+                    if tool_id not in collected_tool_calls[choice.index]:
+                        collected_tool_calls[choice.index][tool_id] = {
+                            'id': tool_call.id if hasattr(tool_call, 'id') and tool_call.id else None,
+                            'type': tool_call.type if hasattr(tool_call, 'type') and tool_call.type else None,
+                            'function': {
+                                'name': '',
+                                'arguments': ''
+                            }
+                        }
+
+                    # Update tool call with new chunks
+                    if hasattr(tool_call, 'function'):
+                        if hasattr(tool_call.function, 'name') and tool_call.function.name:
+                            collected_tool_calls[choice.index][tool_id]['function']['name'] = tool_call.function.name
+
+                        if hasattr(tool_call.function, 'arguments') and tool_call.function.arguments:
+                            collected_tool_calls[choice.index
+                                                 ][tool_id]['function']['arguments'] += tool_call.function.arguments
+
+                    # Update ID if it was received later
+                    if hasattr(tool_call, 'id') and tool_call.id:
+                        collected_tool_calls[choice.index][tool_id]['id'] = tool_call.id
+
+    # Get all unique choice indices from all collections
+    all_indices = set(collected_messages.keys()) | set(collected_reasoning.keys()) | set(collected_tool_calls.keys())
+
+    choices = []
+    for index in all_indices:
+        full_reply_content = ''.join(collected_messages.get(index, []))
+        reasoning = ''.join(collected_reasoning.get(index, []))
+
+        # Process tool_calls for this choice if any exists
+        tool_calls_list = None
+        if index in collected_tool_calls and collected_tool_calls[index]:
+            tool_calls_list = list(collected_tool_calls[index].values())
+            # Filter out any tool calls with None id (incomplete tool calls)
+            tool_calls_list = [tc for tc in tool_calls_list if tc['id'] is not None]
+
+        # use the finish_reason from the last chunk that generated this choice
+        finish_reason = None
+        for chunk in reversed(collected_chunks):
+            if chunk.choices and chunk.choices[0].index == index:
+                finish_reason = chunk.choices[0].finish_reason
+                break
+
+        message_kwargs = {'role': 'assistant', 'content': full_reply_content}
+
+        if reasoning:
+            message_kwargs['reasoning_content'] = reasoning
+
+        if tool_calls_list:
+            message_kwargs['tool_calls'] = tool_calls_list
+
+        choice = Choice(
+            finish_reason=finish_reason or 'stop', index=index, message=ChatCompletionMessage(**message_kwargs)
+        )
+        choices.append(choice)
+
+    # build the final completion object
+    return ChatCompletion(
+        id=collected_chunks[0].id,
+        choices=choices,
+        created=collected_chunks[0].created,
+        model=collected_chunks[0].model,
+        object='chat.completion',
+        usage=collected_chunks[-1].usage  # use the usage from the last chunk
+    ), ttft
+
+
+async def async_collect_stream_response(
+    response_stream,
+    request_start: Optional[float] = None,
+) -> Tuple[ChatCompletion, Optional[float]]:
+    """Async version of :func:`collect_stream_response`.
+
+    Consumes an ``AsyncStream[ChatCompletionChunk]`` returned by
+    ``AsyncOpenAI.chat.completions.create(stream=True)`` and assembles the
+    chunks into a single :class:`ChatCompletion`.
+
+    Args:
+        response_stream: Async iterable of ``ChatCompletionChunk`` objects.
+        request_start: ``time.monotonic()`` timestamp for TTFT measurement.
+
+    Returns:
+        A tuple of the assembled ``ChatCompletion`` and TTFT in seconds
+        (or ``None`` if no content chunk was observed).
+    """
+    collected_chunks: List[ChatCompletionChunk] = []
+    collected_messages = defaultdict(list)
+    collected_reasoning = defaultdict(list)
+    collected_tool_calls = defaultdict(dict)
+
+    t_start = request_start if request_start is not None else time.monotonic()
+    ttft: Optional[float] = None
+
+    async for chunk in response_stream:
         collected_chunks.append(chunk)
         for choice in chunk.choices:
             # Detect first meaningful content chunk for TTFT

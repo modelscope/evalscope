@@ -1,6 +1,6 @@
 import os
 import time
-from openai import APIStatusError, BadRequestError, OpenAI, PermissionDeniedError, UnprocessableEntityError
+from openai import APIStatusError, AsyncOpenAI, BadRequestError, OpenAI, PermissionDeniedError, UnprocessableEntityError
 from openai._types import NOT_GIVEN
 from openai.types.chat import ChatCompletion
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -11,8 +11,9 @@ from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, 
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_supported_params
-from evalscope.utils.function_utils import retry_call
+from evalscope.utils.function_utils import async_retry_call, retry_call
 from .utils.openai import (
+    async_collect_stream_response,
     chat_choices_from_openai,
     collect_stream_response,
     model_output_from_openai,
@@ -57,6 +58,13 @@ class OpenAICompatibleAPI(ModelAPI):
 
         # create http client
         self.client = OpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            **model_args,
+        )
+
+        # create async http client (same parameters)
+        self.async_client = AsyncOpenAI(
             api_key=self.api_key,
             base_url=self.base_url,
             **model_args,
@@ -115,6 +123,78 @@ class OpenAICompatibleAPI(ModelAPI):
             output = model_output_from_openai(completion, choices)
 
             # Populate timing fields
+            output.time = total_time
+            usage = output.usage
+            output.message.perf_metrics = PerformanceMetrics(
+                latency=total_time,
+                ttft=ttft,
+                input_tokens=usage.input_tokens if usage else 0,
+                output_tokens=usage.output_tokens if usage else 0,
+            )
+            return output
+
+        except (BadRequestError, UnprocessableEntityError, PermissionDeniedError) as ex:
+            return self.handle_bad_request(ex)
+        except ValueError as ex:
+            logger.error(f'Model [{self.model_name}] returned an invalid response: {ex}')
+            raise
+
+    async def generate_async(
+        self,
+        input: List[ChatMessage],
+        tools: List[ToolInfo],
+        tool_choice: ToolChoice,
+        config: GenerateConfig,
+    ) -> ModelOutput:
+        """Native async generation using AsyncOpenAI client.
+
+        Uses ``self.async_client`` for non-blocking HTTP calls, keeping the
+        event loop free for concurrent tasks.  Request construction and
+        response parsing are identical to the synchronous ``generate()``.
+        """
+        request: Dict[str, Any] = {}
+
+        tools, tool_choice, config = self.resolve_tools(tools, tool_choice, config)
+
+        completion_params = self.completion_params(
+            config=config,
+            tools=len(tools) > 0,
+        )
+
+        request = dict(
+            messages=openai_chat_messages(input),
+            tools=openai_chat_tools(tools) if len(tools) > 0 else NOT_GIVEN,
+            tool_choice=openai_chat_tool_choice(tool_choice) if len(tools) > 0 else NOT_GIVEN,
+            **completion_params,
+        )
+
+        self.validate_request_params(request)
+
+        try:
+            t_start = time.monotonic()
+            ttft: Optional[float] = None
+
+            # Async generation with retry
+            completion = await async_retry_call(
+                self.async_client.chat.completions.create,
+                retries=config.retries,
+                sleep_interval=config.retry_interval,
+                **request,
+            )
+
+            # Handle streaming response
+            if not isinstance(completion, ChatCompletion):
+                completion, ttft = await async_collect_stream_response(completion, request_start=t_start)
+
+            total_time = time.monotonic() - t_start
+
+            response = completion.model_dump()
+            self.on_response(response)
+
+            # Return output
+            choices = self.chat_choices_from_completion(completion, tools)
+            output = model_output_from_openai(completion, choices)
+
             output.time = total_time
             usage = output.usage
             output.message.perf_metrics = PerformanceMetrics(

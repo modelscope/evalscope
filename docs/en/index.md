@@ -38,6 +38,7 @@ user_guides/stress_test/index.md
 user_guides/aigc/index.md
 user_guides/arena.md
 user_guides/sandbox.md
+user_guides/agent.md
 user_guides/service.md
 :::
 
@@ -48,6 +49,7 @@ advanced_guides/collection/index.md
 advanced_guides/custom_dataset/index.md
 advanced_guides/custom_model.md
 advanced_guides/add_benchmark.md
+advanced_guides/sandbox.md
 :::
 
 :::{toctree}

@@ -10,6 +10,45 @@
 ```{tip}
 - 数据集默认的**沙箱环境配置**可以在数据集配置中查看，例如[HumanEval](../benchmarks/humaneval.md)。
 - **沙箱工作进程数** 需要根据本地机器的资源情况进行调整，建议设置为不超过本地CPU核心数的一半，例如本地有8核CPU，则建议设置为4，尤其是多语言镜像(`volcengine/sandbox-fusion`)，其消耗资源更多，建议适当减少工作进程数。
+- 同一套沙箱基础设施同时驱动 [Agent 评测](agent.md) 中的 `environment='docker'`，可在 `agent_config.environment_extra` 中复用 `image` / `timeout` 等参数。
+```
+
+## 0. 统一 Sandbox 配置
+
+EvalScope 通过嵌套字段 `TaskConfig.sandbox`（对应 `SandboxTaskConfig`）来统一管理沙箱设置。
+
+`SandboxTaskConfig` 字段：
+
+| 字段 | 类型 | 说明 | 默认值 |
+|------|------|------|--------|
+| `enabled` | `bool` | 是否启用沙箱 | `false` |
+| `engine` | `str` | 沙箱引擎：`docker` / `volcengine` 等 | `docker` |
+| `default_config` | `dict` | 任务级沙箱配置，会与 `BenchmarkMeta.sandbox_config` 合并；同时作为 Agent 模式中每个样本环境的默认配置 | `{}` |
+| `manager_config` | `dict` | 转发给 ms_enclave manager 的参数（远端 docker 的 `base_url`、volcengine 凭证等） | `{}` |
+| `pool_size` | `int \| None` | 池化执行的预热池大小，`None` 时跟随 `eval_batch_size` | `None` |
+
+`sandbox` 字段同时接受 `SandboxTaskConfig` 实例与等价字典，两种写法行为一致：
+
+```python
+from evalscope.config import SandboxTaskConfig
+
+# 方式 A：使用 SandboxTaskConfig（推荐，享有类型提示）
+TaskConfig(
+    sandbox=SandboxTaskConfig(
+        enabled=True,
+        engine='docker',
+        manager_config={'base_url': 'http://remote:1234'},
+    ),
+)
+
+# 方式 B：直接传 dict
+TaskConfig(
+    sandbox={
+        'enabled': True,
+        'engine': 'docker',
+        'manager_config': {'base_url': 'http://remote:1234'},
+    },
+)
 ```
 
 ## 1. 本地使用
@@ -27,7 +66,7 @@ pip install evalscope[sandbox]
 ```
 
 ### 配置参数
-在运行评测时，添加`use_sandbox`和`sandbox_type`参数以自动启用沙箱环境，其余参数与普通评测相同：
+在运行评测时，通过 `sandbox` 字段启用沙箱环境，其余参数与普通评测相同：
 
 下面是一个在HumanEval上进行模型评测的完整示例代码：
 ```python
@@ -48,8 +87,10 @@ task_config = TaskConfig(
         'temperature': 0.0,
         'seed': 42,
     },
-    use_sandbox=True, # 启用沙箱
-    sandbox_type='docker', # 指定沙箱类型
+    sandbox={
+        'enabled': True,    # 启用沙箱
+        'engine': 'docker', # 指定沙箱引擎
+    },
 )
 
 run_task(task_config)
@@ -97,7 +138,7 @@ pip install evalscope[sandbox]
 
 ### 配置参数
 
-在运行评测时，添加`use_sandbox`参数以自动启用沙箱环境，并在`sandbox_manager_config`中指定远端沙箱服务器的API地址：
+在运行评测时，通过 `sandbox` 字段启用沙箱环境，并在 `manager_config` 中指定远端沙箱服务器的API地址：
 
 完整示例代码如下：
 ```python
@@ -118,10 +159,12 @@ task_config = TaskConfig(
         'temperature': 0.0,
         'seed': 42,
     },
-    use_sandbox=True, # 启用沙箱
-    sandbox_type='docker', # 指定沙箱类型
-    sandbox_manager_config={
-        'base_url': 'http://<remote_host>:1234'  # 远端沙箱管理器URL
+    sandbox={
+        'enabled': True,    # 启用沙箱
+        'engine': 'docker', # 指定沙箱引擎
+        'manager_config': {
+            'base_url': 'http://<remote_host>:1234'  # 远端沙箱管理器URL
+        },
     },
 )
 
@@ -149,19 +192,21 @@ docker run -it -p 8080:8080 vemlp-cn-beijing.cr.volces.com/preset-images/code-sa
 ```
 
 3. **配置评测参数**：
-使用VolcEngine沙箱环境时，只需将`sandbox_type`参数设置为`volcengine`，并确保远端机器上已安装并运行了VolcEngine沙箱服务器。
+使用VolcEngine沙箱环境时，只需将`engine`参数设置为`volcengine`，并确保远端机器上已安装并运行了VolcEngine沙箱服务器。
 
 ```python
     ...
-    use_sandbox=True, # 启用沙箱
-    sandbox_type='volcengine', # 指定使用VolcEngine沙箱
-    sandbox_manager_config={
-        'base_url': 'http://<remote_host>:8080',  # 远端VolcEngine沙箱管理器URL
-        "dataset_language_map": {  # 可选，指定数据集对应的编程语言
-                "r": "R",
-                "d_ut": "D_ut",
-                "ts": "typescript"
-            }
+    sandbox={
+        'enabled': True,        # 启用沙箱
+        'engine': 'volcengine', # 指定使用VolcEngine沙箱
+        'manager_config': {
+            'base_url': 'http://<remote_host>:8080',  # 远端VolcEngine沙箱管理器URL
+            'dataset_language_map': {  # 可选，指定数据集对应的编程语言
+                'r': 'R',
+                'd_ut': 'D_ut',
+                'ts': 'typescript',
+            },
+        },
     },
     ...
 ```

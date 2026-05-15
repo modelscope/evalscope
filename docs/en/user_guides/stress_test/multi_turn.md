@@ -153,9 +153,9 @@ Example output:
 - `Avg Turns/Req: 1.60`: Each request carried an average of 1.60 turns of context during the test, consistent with the `--min-turns 2 --max-turns 5` random sampling distribution.
 - `Approx Cache Hit: 58.1%`: About 58% of input tokens came from conversation history.
 
-### share_gpt_zh_multi_turn / share_gpt_en_multi_turn
+### share_gpt_multi_turn
 
-Uses real conversation data from [swift/sharegpt](https://www.modelscope.cn/datasets/swift/sharegpt) (~70k Chinese / English conversations), preserving the full user + assistant alternation, making it suitable for evaluating models against realistic conversation distributions.
+Includes two datasets: `share_gpt_zh_multi_turn` (Chinese) and `share_gpt_en_multi_turn` (English). Uses real conversation data from [swift/sharegpt](https://www.modelscope.cn/datasets/swift/sharegpt) (~70k Chinese / English conversations), preserving the full user + assistant alternation, making it suitable for evaluating models against realistic conversation distributions.
 
 - **Auto download**: When `--dataset-path` is not specified, the dataset is automatically downloaded from ModelScope.
 - **Local data support**: Provide a local JSONL file via `--dataset-path` (one `conversation` object per line).

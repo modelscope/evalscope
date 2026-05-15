@@ -568,3 +568,107 @@ def _append_content_block(
     elif text:
         # Text block
         content_blocks.append(TextBlock(type='text', text=text))
+
+
+async def async_collect_stream_response(
+    response_stream: Any,
+    request_start: Optional[float] = None,
+) -> Tuple[Message, Optional[float]]:
+    """Async version of :func:`collect_stream_response`.
+
+    Consumes an ``AsyncStream`` returned by
+    ``AsyncAnthropic.messages.create(stream=True)`` and assembles events
+    into a single :class:`Message`.
+
+    Args:
+        response_stream: Async iterable of Anthropic streaming events.
+        request_start: ``time.monotonic()`` timestamp for TTFT measurement.
+
+    Returns:
+        A tuple of the assembled ``Message`` and TTFT in seconds
+        (or ``None`` if no content chunk was observed).
+    """
+    from anthropic.types import (
+        ContentBlockDeltaEvent,
+        ContentBlockStartEvent,
+        MessageDeltaEvent,
+        MessageStartEvent,
+        Usage,
+    )
+
+    message_id: str = ''
+    model: str = ''
+    role: str = 'assistant'
+    content_blocks: List[ContentBlock] = []
+    stop_reason: Optional[str] = None
+    usage_input_tokens: int = 0
+    usage_output_tokens: int = 0
+
+    current_block_index: int = -1
+    current_text: str = ''
+    current_tool_input: str = ''
+    current_tool_id: str = ''
+    current_tool_name: str = ''
+
+    t_start = request_start if request_start is not None else time.monotonic()
+    ttft: Optional[float] = None
+
+    async for event in response_stream:
+        if isinstance(event, MessageStartEvent):
+            message_id = event.message.id
+            model = event.message.model
+            if event.message.role is not None:
+                role = event.message.role
+            if event.message.usage:
+                usage_input_tokens = event.message.usage.input_tokens
+
+        elif isinstance(event, ContentBlockStartEvent):
+            if current_block_index >= 0:
+                _append_content_block(
+                    content_blocks, current_text, current_tool_id, current_tool_name, current_tool_input
+                )
+
+            current_block_index = event.index
+            current_text = ''
+            current_tool_input = ''
+            current_tool_id = ''
+            current_tool_name = ''
+
+            if hasattr(event.content_block, 'text'):
+                current_text = event.content_block.text or ''
+            elif hasattr(event.content_block, 'id'):
+                current_tool_id = event.content_block.id
+                current_tool_name = getattr(event.content_block, 'name', '')
+
+        elif isinstance(event, ContentBlockDeltaEvent):
+            delta_text = ''
+            delta_tool = ''
+            if hasattr(event.delta, 'text'):
+                delta_text = event.delta.text or ''
+                current_text += delta_text
+            elif hasattr(event.delta, 'partial_json'):
+                delta_tool = event.delta.partial_json or ''
+                current_tool_input += delta_tool
+
+            if ttft is None and (delta_text or delta_tool):
+                ttft = time.monotonic() - t_start
+
+        elif isinstance(event, MessageDeltaEvent):
+            stop_reason = event.delta.stop_reason
+            if event.usage:
+                usage_output_tokens = event.usage.output_tokens
+
+    # Append the last block
+    if current_block_index >= 0:
+        _append_content_block(content_blocks, current_text, current_tool_id, current_tool_name, current_tool_input)
+
+    return Message(
+        id=message_id,
+        type='message',
+        role=role,  # type: ignore
+        model=model,
+        content=content_blocks,
+        stop_reason=stop_reason,  # type: ignore
+        stop_sequence=None,
+        usage=Usage(input_tokens=usage_input_tokens, output_tokens=usage_output_tokens),
+    ), ttft

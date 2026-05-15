@@ -105,7 +105,7 @@ The `--generation-config` parameter supports the following options (comma-separa
 | `aggregation` | `str` | Aggregation method for evaluation results, default is `mean`. Options: `mean_and_pass_at_k`, `mean_and_vote_at_k`, `mean_and_pass_hat_k` (all require setting `repeats=k`).<br>• `pass_at_k`: Probability that the same sample passes at least once in k generations (e.g., set `repeats=5` for `humaneval`)<br>• `vote_at_k`: Scoring by voting on k results for the same sample<br>• `pass_hat_k`: Probability that the same sample passes all k times (e.g., set `repeats=3` for `tau2_bench`) |
 | `filters` | `dict` | Output filters<br>• `remove_until`: Remove content before specified string<br>• `extract`: Extract regex-matched content |
 | `force_redownload` | `bool` | Whether to force re-download the dataset |
-| `extra_params` | `dict` | Dataset-related extra parameters, refer to [dataset documentation](./supported_dataset/index.md), specify `{<param_name>:<value>}` as needed, where the type (`type`) and choices (`choices`) of `value` depend on the specific parameter |
+| `extra_params` | `dict` | Dataset-related extra parameters, refer to [dataset documentation](./supported_dataset/index.md), specify `{<param_name>:<value>}` as needed, where the type (`type`) and choices (`choices`) of `value` depend on the specific parameter. For SWE-bench agentic and similar benchmarks, see [Agent Evaluation](../user_guides/agent.md#swe-bench-agentic-cases) |
 | `sandbox_config` | `dict` | Sandbox configuration (see Sandbox Parameters below) |
 
 **sandbox_config Options:**
@@ -225,11 +225,42 @@ After providing your explanation, you must rate the response on a scale of 0 (wo
 
 ## Sandbox Parameters
 
+EvalScope manages sandbox settings via the nested `--sandbox` configuration (mapped to `SandboxTaskConfig`).
+
+### --sandbox Options
+
+| Field | Type | Description | Default |
+|-------|------|-------------|---------|
+| `enabled` | `bool` | Whether to enable the sandbox | `false` |
+| `engine` | `str` | Sandbox engine: `docker`, `volcengine`, etc. | `docker` |
+| `default_config` | `dict` | Task-level sandbox config; merged with `BenchmarkMeta.sandbox_config`, and used as the default per-sample environment config in Agent mode | `{}` |
+| `manager_config` | `dict` | Forwarded to the ms_enclave manager (e.g. `base_url` for remote docker, volcengine credentials) | `{}` |
+| `pool_size` | `int \| None` | Warmup pool size for pooled execution; falls back to `eval_batch_size` when `None` | `None` |
+
+For full usage including local and remote manager examples, see [Sandbox Environment Usage](../user_guides/sandbox.md).
+
+## Agent Parameters
+
+`--agent-config` / `agent_config` enables [Agent Evaluation Mode](../user_guides/agent.md): once set, all benchmarks based on `DefaultDataAdapter` switch to multi-turn AgentLoop inference. `AgentLoopAdapter` subclasses (such as `swe_bench_*_agentic`) ignore this global config and rely on `dataset_args.extra_params` instead.
+
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `--use-sandbox` | `bool` | Whether to use [ms-enclave](https://github.com/modelscope/ms-enclave) to isolate code execution environment<br>Currently only effective for code evaluation tasks (e.g., `humaneval`) | `false` |
-| `--sandbox-manager-config` | `str` | Sandbox manager configuration (JSON string)<br>• `base_url`: Manager URL (default `None` for local manager) | `{}` |
-| `--sandbox-type` | `str` | Sandbox type | `docker` |
+| `--agent-config` | `dict \| AgentConfig` | Global Agent configuration (see below) | `None` (Agent mode disabled) |
+
+### agent-config Options
+
+| Field | Type | Description | Default |
+|-------|------|-------------|---------|
+| `strategy` | `str` | Strategy name: `function_calling` / `react` / `swe_bench_toolcall` / `swe_bench_backticks` | `function_calling` |
+| `tools` | `list[str]` | Tool whitelist: `bash` / `python_exec` (`submit` is auto-injected by the strategy) | `[]` |
+| `environment` | `str \| None` | Tool execution environment: `local` (subprocess) / `docker` (isolated sandbox) | `None` |
+| `max_steps` | `int` | Hard upper bound of loop iterations | `10` |
+| `extra` | `dict` | Strategy constructor kwargs, e.g. `{'system_prompt': '...'}` | `{}` |
+| `environment_extra` | `dict` | Environment constructor kwargs. `local` supports `working_dir`/`env_vars`; `docker` supports `image`/`timeout`/`environment` | `{}` |
+
+```{seealso}
+For full usage, examples and Trace visualization, see [Agent Evaluation](../user_guides/agent.md).
+```
 
 ## Other Parameters
 
