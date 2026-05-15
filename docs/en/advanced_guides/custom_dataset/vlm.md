@@ -29,6 +29,7 @@ messages	answer
   - Text content: `{"type": "text", "text": "question text"}`
   - Image URL: `{"type": "image_url", "image_url": {"url": "path or base64"}}`
   - Audio input: `{"type": "input_audio", "input_audio": {"data": "path or base64", "format": "wav"}}`
+  - Video URL: `{"type": "video_url", "video_url": {"url": "path or base64"}}`
   - System message: `{"role": "system", "content": "system prompt"}`
 - `answer`: Reference answer (optional, used to calculate BLEU and Rouge scores)
 
@@ -41,6 +42,12 @@ messages	answer
 - Local path: `"data": "custom_eval/multimodal/audio/sample.wav"`
 - Base64 encoding: `"data": "data:audio/wav;base64,UklGRiQ..."`
 - Audio format (`format` field): supports `"wav"` and `"mp3"`
+
+**Supported Video Formats**:
+- Local path: `"url": "custom_eval/multimodal/videos/sample.mp4"`
+- HTTP URL: `"url": "https://example.com/video.mp4"` (requires model service support)
+- Base64 encoding: `"url": "data:video/mp4;base64,AAAAIGZ0eX..."`
+- Video format is inferred from the path, URL, or data URI; supported formats are `"mp4"`, `"mpeg"`, and `"mov"`.
 
 **Multi-image Input**
 
@@ -153,6 +160,30 @@ You can also use base64-encoded audio data:
     }
   ],
   "answer": "Hello, world."
+}
+```
+
+**Video Input**
+
+Supports video content input using OpenAI-compatible `video_url` format. The `url` field accepts either a local file path, HTTP URL, or base64-encoded data URL:
+
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "Describe the content of this video clip."},
+        {
+          "type": "video_url",
+          "video_url": {
+            "url": "custom_eval/multimodal/videos/sample.mp4"
+          }
+        }
+      ]
+    }
+  ],
+  "answer": "A short video clip."
 }
 ```
 
@@ -294,18 +325,21 @@ Evaluation will output accuracy metrics:
 
 ### 1. Data Preparation
 
-General-VMCQ adopts a structure similar to MMMU: question text can contain image placeholders `<image x>`; `options` is a Python list string, options can be text or image placeholders.
+General-VMCQ adopts a structure similar to MMMU: question text can contain image placeholders `<image x>` and video placeholders `<video x>`; `options` is a Python list string, options can be text or media placeholders.
 
-Images support two forms (both strings):
-- Local or remote path/URL: `"custom_eval/multimodal/images/dog.jpg"` or `"https://.../dog.jpg"`
-- Base64 Data URL: `"data:image/jpeg;base64,/9j/4AAQSk..."`
+Media support the following forms (all strings):
+- Image local or remote path/URL: `"custom_eval/multimodal/images/dog.jpg"` or `"https://.../dog.jpg"`
+- Image Base64 Data URL: `"data:image/jpeg;base64,/9j/4AAQSk..."`
+- Video local or remote path/URL: `"custom_eval/multimodal/videos/sample.mp4"` or `"https://.../sample.mp4"`
+- Video Base64 Data URL: `"data:video/mp4;base64,AAAAIGZ0eX..."`
 
-Supports up to 100 images (`image_1` to `image_100`). When text contains a non-existent image placeholder, parsing will stop directly (break).
+Supports up to 100 images (`image_1` to `image_100`) and 100 videos (`video_1` to `video_100`). Missing media placeholders are ignored.
 
 **JSONL Example** (`example.jsonl`):
 ```json
 {"question": "Which image shows a dog?", "options": ["<image 1>", "<image 2>", "<image 3>", "<image 4>"], "image_1": "custom_eval/multimodal/images/dog.jpg", "image_2": "custom_eval/multimodal/images/AMNH.jpg", "image_3": "custom_eval/multimodal/images/tesla.jpg", "image_4": "custom_eval/multimodal/images/tokyo.jpg", "answer": "A"}
 {"question": "<image 1> What building is this?", "options": ["School", "Hospital", "Park", "Museum"], "image_1": "custom_eval/multimodal/images/AMNH.jpg", "answer": "D"}
+{"question": "<video 1> What type of media is provided in this sample?", "options": ["Image", "Audio", "Video", "Text"], "video_1": "custom_eval/multimodal/videos/sample.mp4", "answer": "C"}
 ```
 
 **TSV Example** (`example.tsv`):
@@ -316,10 +350,12 @@ Which image shows a dog?	["<image 1>", "<image 2>", "<image 3>", "<image 4>"]	A	
 ```
 
 **Field Descriptions**:
-- `question`: Question text, can contain `<image x>` placeholders
-- `options`: List (JSON array), elements can be text (e.g., `"School"`) or image placeholders (e.g., `"<image 1>"`), no need to add prefixes like `A.`, `B.`
+- `question`: Question text, can contain `<image x>` or `<video x>` placeholders
+- `options`: List (JSON array), elements can be text (e.g., `"School"`) or media placeholders (e.g., `"<image 1>"`, `"<video 1>"`), no need to add prefixes like `A.`, `B.`
 - `answer`: Correct answer letter (e.g., `"A"`, `"B"`)
 - `image_k`: Image string (local/remote path or base64 Data URL), k ∈ [1, 100]
+- `video_k`: Video string (local/remote path or base64 Data URL), k ∈ [1, 100]
+- `video_k_format`: Optional video format hint; supports `"mp4"`, `"mpeg"`, and `"mov"`
 
 ### 2. Configure Evaluation Task
 

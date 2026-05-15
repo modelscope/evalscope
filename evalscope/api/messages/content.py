@@ -75,10 +75,19 @@ class ContentVideo(ContentBase):
     """Type."""
 
     video: str
-    """Audio file path or base64 encoded data URL."""
+    """Video file path, URL, or base64 encoded data URL."""
 
     format: Literal['mp4', 'mpeg', 'mov']
     """Format of video data ('mp4', 'mpeg', or 'mov')"""
+
+    start: Optional[float] = Field(default=None)
+    """Optional start time of the relevant video segment in seconds."""
+
+    end: Optional[float] = Field(default=None)
+    """Optional end time of the relevant video segment in seconds."""
+
+    fps: Optional[float] = Field(default=None)
+    """Optional sampling rate hint for providers that support video frame sampling."""
 
 
 class ContentData(ContentBase):

@@ -1,7 +1,8 @@
 import re
-from typing import Dict, List
+from typing import Any, Dict, List, Optional, Union
 
-from evalscope.api.messages.content import Content, ContentImage, ContentText
+from evalscope.api.messages.content import Content, ContentImage, ContentText, ContentVideo
+from evalscope.utils.url_utils import guess_video_format
 from .default_data_adapter import DefaultDataAdapter
 
 
@@ -22,10 +23,22 @@ class VisionLanguageAdapter(DefaultDataAdapter):
         Returns:
             list: List of Content objects (text and images interleaved)
         """
+        return self._parse_text_with_media(text=text, image_map=image_map)
+
+    def _parse_text_with_media(
+        self,
+        text: str,
+        image_map: Optional[Dict[int, str]] = None,
+        video_map: Optional[Dict[int, Union[str, Dict[str, Any]]]] = None,
+    ) -> List[Content]:
+        """
+        Parse text and replace <image x>/<video x> placeholders with media content.
+        """
+        image_map = image_map or {}
+        video_map = video_map or {}
         content_list: List[Content] = []
 
-        # Pattern to match <image x> where x is a number
-        pattern = r'<image[_ ](\d+)>'
+        pattern = r'<(image|video)[_ ](\d+)>'
         last_end = 0
 
         for match in re.finditer(pattern, text):
@@ -35,10 +48,12 @@ class VisionLanguageAdapter(DefaultDataAdapter):
                 if text_segment.strip():
                     content_list.append(ContentText(text=text_segment))
 
-            # Add the image
-            image_num = int(match.group(1))
-            if image_num in image_map:
-                content_list.append(ContentImage(image=image_map[image_num]))
+            media_type = match.group(1)
+            media_num = int(match.group(2))
+            if media_type == 'image' and image_map.get(media_num):
+                content_list.append(ContentImage(image=image_map[media_num]))
+            elif media_type == 'video' and video_map.get(media_num):
+                content_list.append(self._content_video_from_value(video_map[media_num]))
 
             last_end = match.end()
 
@@ -49,3 +64,21 @@ class VisionLanguageAdapter(DefaultDataAdapter):
                 content_list.append(ContentText(text=remaining_text))
 
         return content_list
+
+    @staticmethod
+    def _content_video_from_value(video_value: Union[str, Dict[str, Any]]) -> ContentVideo:
+        if isinstance(video_value, dict):
+            video = video_value.get('url') or video_value.get('video') or video_value.get('data')
+            if not video:
+                raise ValueError('Video field must include one of "url", "video", or "data".')
+            video_format = video_value.get('format') or guess_video_format(str(video))
+            start = video_value.get('start')
+            end = video_value.get('end')
+            fps = video_value.get('fps')
+        else:
+            video = video_value
+            video_format = guess_video_format(video)
+            start = None
+            end = None
+            fps = None
+        return ContentVideo(video=str(video), format=video_format, start=start, end=end, fps=fps)

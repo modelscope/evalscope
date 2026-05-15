@@ -44,6 +44,7 @@ from evalscope.api.messages import (
     ContentImage,
     ContentReasoning,
     ContentText,
+    ContentVideo,
     parse_content_with_reasoning,
 )
 from evalscope.api.model import (
@@ -56,7 +57,14 @@ from evalscope.api.model import (
     as_stop_reason,
 )
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, parse_tool_call
-from evalscope.utils.url_utils import data_uri_to_base64, file_as_data_uri, is_http_url
+from evalscope.utils.url_utils import (
+    data_uri_to_base64,
+    file_as_data_uri,
+    guess_video_format,
+    is_data_uri,
+    is_http_url,
+    video_as_data_uri,
+)
 
 BASE_64_DATA_REMOVED = '<base64-data-removed>'
 
@@ -87,7 +95,7 @@ def openai_chat_tool_call_param(tool_call: ToolCall) -> ChatCompletionMessageToo
     )
 
 
-def openai_chat_completion_part(content: Content) -> ChatCompletionContentPartParam:
+def openai_chat_completion_part(content: Content) -> Union[ChatCompletionContentPartParam, Dict[str, Any]]:
     if content.type == 'text':
         return ChatCompletionContentPartTextParam(type='text', text=content.text)
     elif content.type == 'image':
@@ -110,9 +118,13 @@ def openai_chat_completion_part(content: Content) -> ChatCompletionContentPartPa
         return ChatCompletionContentPartInputAudioParam(
             type='input_audio', input_audio=dict(data=audio_uri, format=content.format)
         )
-
+    elif content.type == 'video':
+        video_url = content.video
+        if not is_http_url(video_url) and not is_data_uri(video_url):
+            video_url = video_as_data_uri(video_url, content.format)
+        return {'type': 'video_url', 'video_url': {'url': video_url}}
     else:
-        raise RuntimeError('Video content is not currently supported by Open AI chat models.')
+        raise RuntimeError(f'Content type {content.type} is not currently supported by OpenAI chat models.')
 
 
 def openai_chat_message(
@@ -475,6 +487,21 @@ def content_from_openai(
             audio=content['input_audio']['data'],
             format=content['input_audio']['format'],
         )]
+    elif content['type'] == 'video_url':  # type: ignore[comparison-overlap]
+        video_url = content['video_url']
+        if isinstance(video_url, str):
+            video = video_url
+            video_format = guess_video_format(video)
+            start = None
+            end = None
+            fps = None
+        else:
+            video = video_url['url']
+            video_format = video_url.get('format') or guess_video_format(video)
+            start = video_url.get('start')
+            end = video_url.get('end')
+            fps = video_url.get('fps')
+        return [ContentVideo(video=video, format=video_format, start=start, end=end, fps=fps)]
     elif content['type'] == 'refusal':
         return [ContentText(text=content['refusal'], refusal=True)]
     else:
@@ -592,6 +619,11 @@ def openai_media_filter(key: Optional[JsonValue], value: JsonValue) -> JsonValue
     elif key == 'input_audio' and isinstance(value, dict) and 'data' in value:
         value = copy(value)
         value.update(data=BASE_64_DATA_REMOVED)
+    elif key == 'video_url' and isinstance(value, dict) and 'url' in value:
+        url = str(value.get('url'))
+        if url.startswith('data:'):
+            value = copy(value)
+            value.update(url=BASE_64_DATA_REMOVED)
     return value
 
 

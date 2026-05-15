@@ -30,6 +30,7 @@
 | `mm_star` | [MMStar](../../benchmarks/mm_star.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `mmmu` | [MMMU](../../benchmarks/mmmu.md) | `Knowledge`, `MultiModal`, `QA` |
 | `mmmu_pro` | [MMMU-PRO](../../benchmarks/mmmu_pro.md) | `Knowledge`, `MCQ`, `MultiModal` |
+| `mvbench` | [MVBench](../../benchmarks/mvbench.md) | `MCQ`, `MultiModal` |
 | `ocr_bench` | [OCRBench](../../benchmarks/ocr_bench.md) | `Knowledge`, `MultiModal`, `QA` |
 | `ocr_bench_v2` | [OCRBench-v2](../../benchmarks/ocr_bench_v2.md) | `Knowledge`, `MultiModal`, `QA` |
 | `olympiad_bench` | [OlympiadBench](../../benchmarks/olympiad_bench.md) | `Math`, `Reasoning` |
@@ -42,6 +43,7 @@
 | `simple_vqa` | [SimpleVQA](../../benchmarks/simple_vqa.md) | `MultiModal`, `QA`, `Reasoning` |
 | `tir_bench` | [TIR-Bench](../../benchmarks/tir_bench.md) | `MultiModal`, `QA`, `Reasoning` |
 | `torgo` | [TORGO](../../benchmarks/torgo.md) | `Audio`, `SpeechRecognition` |
+| `videomme_v2` | [Video-MME-v2](../../benchmarks/videomme_v2.md) | `MCQ`, `MultiModal` |
 | `visulogic` | [VisuLogic](../../benchmarks/visulogic.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `vstar_bench` | [V*Bench](../../benchmarks/vstar_bench.md) | `Grounding`, `MCQ`, `MultiModal` |
 | `zerobench` | [ZeroBench](../../benchmarks/zerobench.md) | `Knowledge`, `MultiModal`, `QA` |
@@ -76,6 +78,7 @@
 ../../benchmarks/mm_star.md
 ../../benchmarks/mmmu.md
 ../../benchmarks/mmmu_pro.md
+../../benchmarks/mvbench.md
 ../../benchmarks/ocr_bench.md
 ../../benchmarks/ocr_bench_v2.md
 ../../benchmarks/olympiad_bench.md
@@ -88,6 +91,7 @@
 ../../benchmarks/simple_vqa.md
 ../../benchmarks/tir_bench.md
 ../../benchmarks/torgo.md
+../../benchmarks/videomme_v2.md
 ../../benchmarks/visulogic.md
 ../../benchmarks/vstar_bench.md
 ../../benchmarks/zerobench.md

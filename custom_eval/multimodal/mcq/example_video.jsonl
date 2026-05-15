@@ -1,0 +1,1 @@
+{"question": "<video 1> What type of media is provided in this sample?", "options": ["Image", "Audio", "Video", "Text"], "video_1": "custom_eval/multimodal/videos/sample.mp4", "answer": "C"}
