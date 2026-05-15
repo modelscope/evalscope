@@ -108,13 +108,6 @@ class AgentLoopResult:
     messages: List[ChatMessage]
     final_output: ModelOutput
     trace: 'AgentTrace'
-    final_submission: Optional[str] = None
-    """Sentinel-detected submission payload, set when a strategy raises
-    :class:`evalscope.api.agent.exceptions.Submitted` during the loop.
-
-    Strategies that rely on the sentinel protocol (e.g. ``swe_bench_toolcall``)
-    read this in :meth:`extract_final_answer` instead of scanning messages.
-    """
 
 
 __all__ = [

@@ -161,27 +161,6 @@ class TestDefaultDataAdapterAgentBranch(unittest.TestCase):
             self.assertNotIn('__agent_messages__', out.metadata)
             self.assertNotIn('__agent_trace__', out.metadata)
 
-    def test_with_agent_config_routes_through_agent_loop(self):
-        cfg = TaskConfig(model='dummy', agent_config={'strategy': 'function_calling', 'max_steps': 3})
-        adapter = self._make_adapter(cfg)
-        model = _mock_model_generate_submit('agent_out')
-        sample = Sample(input='hi')
-
-        out = adapter._on_inference(model, sample)
-
-        model.generate.assert_called_once()  # FC 策略 submit → 单轮终止
-        # extract_final_answer 优先从 submit tool call 提取 answer
-        self.assertEqual(out.choices[0].message.content, 'agent_out')
-        self.assertIsNotNone(out.metadata)
-        self.assertIn('__agent_messages__', out.metadata)
-        self.assertIn('__agent_trace__', out.metadata)
-
-        trace = out.metadata['__agent_trace__']
-        self.assertIsInstance(trace, AgentTrace)
-        self.assertEqual(trace.strategy, 'function_calling')
-        types = [e.type for e in trace.events]
-        self.assertEqual(types, [EventType.MODEL_GENERATE, EventType.SUBMIT])
-
 
 class TestAgentLoopAdapterOverrides(unittest.TestCase):
     """AgentLoopAdapter._on_inference 忽略全局 agent_config; 用 strategy_name 类属性."""

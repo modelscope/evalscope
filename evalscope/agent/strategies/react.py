@@ -127,6 +127,8 @@ class ReactStrategy:
         call: ToolCall,
         observation: str,
         error: Optional[ToolCallError],
+        parsed: ParsedAction,
+        ctx: AgentContext,
     ) -> ChatMessage:
         # FC mode → standard ChatMessageTool.
         return ChatMessageTool(

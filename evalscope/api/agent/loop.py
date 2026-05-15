@@ -4,6 +4,11 @@ Takes a model + strategy + environment + tool executor and drives the
 generate → parse → tool_call → observe loop.  It does NOT decide prompt
 formats or termination semantics; those belong to :class:`AgentStrategy`.
 
+Termination has a **single** signal: ``ParsedAction.final_answer`` set by
+the strategy (in either ``parse_output`` or ``format_observation``).
+The loop checks ``strategy.is_done(parsed, ctx)`` after each phase and
+breaks when it returns True.  No exceptions are used for control flow.
+
 The loop is async so it can naturally express parallel tool execution and
 streaming generation in the future.  ``AgentAdapter._on_inference`` bridges
 it into the synchronous evaluation pipeline through ``AsyncioLoopRunner``.
@@ -12,11 +17,10 @@ it into the synchronous evaluation pipeline through ``AsyncioLoopRunner``.
 import time
 from typing import List, Optional
 
-from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageTool, ChatMessageUser
+from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.model import Model, ModelOutput
 from evalscope.utils.logger import get_logger
 from .environment import AgentEnvironment
-from .exceptions import Submitted
 from .strategy import AgentStrategy
 from .tool_executor import ToolExecutor
 from .trace import AgentTrace, EventType
@@ -70,7 +74,6 @@ class AgentLoop:
             ctx.messages.insert(0, ChatMessageSystem(content=system_prompt))
 
         final_output: Optional[ModelOutput] = None
-        final_submission: Optional[str] = None
 
         while ctx.step < self.max_steps:
             # ---- generate ----
@@ -193,6 +196,7 @@ class AgentLoop:
                     f'{[c.function.name for c in parsed.tool_calls]}'
                 )
                 last_obs_id: Optional[str] = None
+                done_after_tool = False
                 for call in parsed.tool_calls:
                     self.trace.add_event(
                         step=ctx.step,
@@ -213,40 +217,10 @@ class AgentLoop:
                     )
                     # Let the strategy decide how to format the observation
                     # (ChatMessageTool for FC, ChatMessageUser for textual_block).
-                    # Strategies may raise ``Submitted`` to short-circuit the
-                    # loop when they detect a completion sentinel in the raw
-                    # tool output (mirrors mini-swe-agent's pattern).
-                    try:
-                        obs_msg = self.strategy.format_observation(call, observation, error)
-                    except Submitted as exc:
-                        # Persist the (clean) submission as a tool message so
-                        # downstream code that scans ``result.messages`` still
-                        # sees a final observation entry for this tool call.
-                        obs_msg = ChatMessageTool(
-                            content=exc.submission,
-                            tool_call_id=call.id,
-                            function=call.function.name,
-                        )
-                        ctx.messages.append(obs_msg)
-                        last_obs_id = obs_msg.id
-                        self.trace.add_event(
-                            step=ctx.step,
-                            type=EventType.SUBMIT,
-                            message_id=obs_msg.id,
-                            latency_ms=duration * 1000,
-                            payload={
-                                'source': 'sentinel',
-                                'exit_status': exc.exit_status,
-                                'name': call.function.name,
-                                'id': call.id,
-                            },
-                        )
-                        final_submission = exc.submission
-                        logger.debug(
-                            f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} '
-                            f'submitted via sentinel; submission_len={len(exc.submission)}'
-                        )
-                        break
+                    # Strategies may also signal completion here by mutating
+                    # ``parsed`` (typically setting ``parsed.final_answer``);
+                    # the post-execution ``is_done`` check below handles it.
+                    obs_msg = self.strategy.format_observation(call, observation, error, parsed, ctx)
                     ctx.messages.append(obs_msg)
                     last_obs_id = obs_msg.id
                     self.trace.add_event(
@@ -262,24 +236,35 @@ class AgentLoop:
                         },
                     )
 
-                # If the inner for-loop broke out via ``Submitted``, exit
-                # the outer while-loop too without running the post-execution
-                # is_done check.
-                if final_submission is not None:
-                    break
+                    # Post-tool termination check.  Strategies like
+                    # ``swe_bench_toolcall`` / ``swe_bench_backticks`` detect
+                    # completion sentinels inside the tool observation, which
+                    # is only available *after* execution.  Single signal:
+                    # ``parsed.final_answer`` set by ``format_observation``.
+                    if self.strategy.is_done(parsed, ctx):
+                        self.trace.add_event(
+                            step=ctx.step,
+                            type=EventType.SUBMIT,
+                            message_id=last_obs_id,
+                            latency_ms=duration * 1000,
+                            payload={
+                                'source': ctx.metadata.get('submission_source', 'post_tool'),
+                                'name': call.function.name,
+                                'id': call.id,
+                                'final_answer_preview': str(parsed.final_answer)[:120],
+                            },
+                        )
+                        logger.debug(
+                            f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} '
+                            f'is_done after tool {call.function.name}; '
+                            f'final_answer_len={len(str(parsed.final_answer or ""))}'
+                        )
+                        done_after_tool = True
+                        break
 
-                # Post-execution termination check.  Strategies like
-                # ``swe_bench_backticks`` detect completion sentinels in the
-                # tool observation, which is only available *after*
-                # execution.  FC strategies return False here because
-                # parsed.tool_calls is still non-empty.
-                if self.strategy.is_done(parsed, ctx):
-                    self.trace.add_event(
-                        step=ctx.step,
-                        type=EventType.SUBMIT,
-                        message_id=last_obs_id,
-                        payload={'source': 'post_execution_check'},
-                    )
+                # Inner for-loop set parsed.final_answer → exit outer while
+                # without re-invoking ``is_done`` (the flag is authoritative).
+                if done_after_tool:
                     break
 
             ctx.step += 1
@@ -306,7 +291,6 @@ class AgentLoop:
             messages=ctx.messages,
             final_output=final_output,
             trace=self.trace,
-            final_submission=final_submission,
         )
 
 

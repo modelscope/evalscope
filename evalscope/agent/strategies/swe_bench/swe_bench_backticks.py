@@ -20,7 +20,7 @@ import re
 import uuid
 from typing import List, Optional
 
-from evalscope.api.agent import AgentContext, AgentLoopResult, AgentStrategy, ParsedAction, Submitted, ToolSchemaMode
+from evalscope.api.agent import AgentContext, AgentLoopResult, AgentStrategy, ParsedAction, ToolSchemaMode
 from evalscope.api.messages import ChatMessage, ChatMessageUser
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_strategy
@@ -93,9 +93,10 @@ class SweBenchBackticksStrategy(AgentStrategy):
         return ParsedAction(tool_calls=[call], raw_text=content)
 
     def is_done(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
-        # The primary completion path is ``Submitted`` raised by
-        # ``format_observation``; this is a defensive fallback.
-        return False
+        # Single termination signal: ``parsed.final_answer`` set by
+        # ``format_observation`` after detecting the completion sentinel
+        # in the bash output.
+        return parsed.final_answer is not None
 
     def should_nudge(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
         # Allow one nudge per missing/format-error response.  Cap globally
@@ -117,6 +118,8 @@ class SweBenchBackticksStrategy(AgentStrategy):
         call: ToolCall,
         observation: str,
         error: Optional[ToolCallError],
+        parsed: ParsedAction,
+        ctx: AgentContext,
     ) -> ChatMessage:
         if error is not None:
             content = format_exec_observation('', error_message=error.message)
@@ -124,9 +127,15 @@ class SweBenchBackticksStrategy(AgentStrategy):
 
         # Detect the completion sentinel BEFORE rendering any envelope —
         # mirrors mini-swe-agent ``DockerEnvironment._check_finished``.
+        # On a hit we mutate ``parsed`` in place so the loop's single
+        # ``is_done`` check terminates the run, and we archive the raw
+        # submission payload (no XML envelope) so downstream patch
+        # extraction never sees ``</output>``-style tags.
         submission = check_sentinel(observation)
         if submission is not None:
-            raise Submitted(submission=submission)
+            parsed.final_answer = submission
+            ctx.metadata['submission_source'] = 'sentinel'
+            return ChatMessageUser(content=submission)
 
         content = format_exec_observation(observation)
         # Textbased models expect observations as user messages — they do
@@ -134,10 +143,34 @@ class SweBenchBackticksStrategy(AgentStrategy):
         return ChatMessageUser(content=content)
 
     def extract_final_answer(self, result: AgentLoopResult) -> str:
-        """Return the sentinel-detected submission, if any."""
-        submission = getattr(result, 'final_submission', None)
-        if submission:
-            return submission.strip()
+        """Recover the sentinel-triggered submission from messages.
+
+        The backticks strategy archives the sentinel payload as a user
+        message whose content is the raw submission (no XML envelope).
+        We scan in reverse for the most recent user message that is
+        neither a ``<returncode>`` envelope nor a ``Tool call error``
+        block — that's our submission payload.  Skip any user messages
+        that don't look like envelopes either (e.g. the original task
+        description) by stopping at the first non-system, non-assistant
+        message after the last assistant turn.
+        """
+        # Walk backwards collecting user messages produced AFTER the last
+        # assistant turn — those are tool observations.
+        observations: list[str] = []
+        for msg in reversed(result.messages):
+            if msg.role == 'assistant':
+                break
+            if msg.role == 'user':
+                observations.append(str(msg.content or ''))
+        for content in observations:
+            if not content:
+                continue
+            stripped = content.lstrip()
+            if stripped.startswith('<returncode>'):
+                continue
+            if stripped.startswith('Tool call error'):
+                continue
+            return content.strip()
         return ''
 
 

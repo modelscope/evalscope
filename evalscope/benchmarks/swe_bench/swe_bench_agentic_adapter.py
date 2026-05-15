@@ -339,9 +339,11 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
     # ------------------------------------------------------------------
 
     def _extract_final_answer(self, result, strategy: AgentStrategy) -> str:
-        # Strategy already implements sentinel scanning via the
-        # ``Submitted`` exception path; ``final_submission`` is set by
-        # the AgentLoop when the sentinel fires.
+        # Strategy implements sentinel scanning by mutating
+        # ``ParsedAction.final_answer`` from ``format_observation`` and
+        # archiving the raw submission payload as the last tool/user
+        # message; ``strategy.extract_final_answer`` recovers it from
+        # ``result.messages``.
         answer = strategy.extract_final_answer(result)
         if answer:
             return answer

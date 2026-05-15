@@ -81,6 +81,8 @@ class FunctionCallingStrategy(AgentStrategy):
         call: ToolCall,
         observation: str,
         error: Optional[ToolCallError],
+        parsed: ParsedAction,
+        ctx: AgentContext,
     ) -> ChatMessage:
         """Format tool observations as :class:`ChatMessageTool` (FC default)."""
         return ChatMessageTool(

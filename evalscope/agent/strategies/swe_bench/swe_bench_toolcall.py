@@ -6,9 +6,9 @@ signals task completion by emitting the literal sentinel
 ``COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`` followed by the final git patch in
 its bash output (NOT by calling a ``submit`` tool).
 
-When the sentinel is detected, ``format_observation`` raises
-:class:`evalscope.api.agent.exceptions.Submitted` so the AgentLoop can
-short-circuit just like mini-swe-agent's ``DockerEnvironment`` does.
+When the sentinel is detected, ``format_observation`` mutates the shared
+``ParsedAction`` (sets ``parsed.final_answer``) so the AgentLoop's single
+post-execution ``is_done(parsed, ctx)`` check breaks out of the loop.
 
 This strategy is **not** a general-purpose strategy: do not register it as
 the default ``function_calling`` replacement.  It is selected explicitly by
@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from evalscope.api.agent import AgentContext, AgentLoopResult, AgentStrategy, ParsedAction, Submitted, ToolSchemaMode
+from evalscope.api.agent import AgentContext, AgentLoopResult, AgentStrategy, ParsedAction, ToolSchemaMode
 from evalscope.api.messages import ChatMessage, ChatMessageTool
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_strategy
@@ -35,10 +35,10 @@ class SweBenchToolcallStrategy(AgentStrategy):
       * Does **not** auto-inject the ``submit`` tool — adapter must supply
         ``bash`` (and only ``bash``) so the sentinel protocol is the only
         completion path.
-      * ``format_observation`` short-circuits the loop by raising
-        :class:`Submitted` when the bash output starts with the
-        completion sentinel.  ``is_done`` is therefore only a defensive
-        fallback.
+      * ``format_observation`` mutates the shared :class:`ParsedAction`
+        by setting ``parsed.final_answer`` to the sentinel-detected
+        submission payload.  The loop's post-execution ``is_done`` check
+        then terminates without raising any exception.
       * Observation envelope mirrors mini-swe-agent's
         ``observation_template`` (``<returncode>`` + ``<output>`` /
         head/tail truncation) for reliable model parsing.
@@ -78,10 +78,11 @@ class SweBenchToolcallStrategy(AgentStrategy):
         return ParsedAction(raw_text=message.text)
 
     def is_done(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
-        # The primary completion path is ``Submitted`` raised by
-        # ``format_observation``.  Returning False here is safe because
-        # the loop has already exited via the exception.
-        return False
+        # Single termination signal: ``parsed.final_answer`` set either at
+        # parse time (not used here — model-emitted submit calls are
+        # rejected by ``parse_output``) or by ``format_observation`` after
+        # detecting the completion sentinel in the bash output.
+        return parsed.final_answer is not None
 
     def should_nudge(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
         # Allow at most one nudge; matches the ``FunctionCallingStrategy``
@@ -103,6 +104,8 @@ class SweBenchToolcallStrategy(AgentStrategy):
         call: ToolCall,
         observation: str,
         error: Optional[ToolCallError],
+        parsed: ParsedAction,
+        ctx: AgentContext,
     ) -> ChatMessage:
         if error is not None:
             content = format_exec_observation('', error_message=error.message)
@@ -115,9 +118,19 @@ class SweBenchToolcallStrategy(AgentStrategy):
 
         # Detect the completion sentinel BEFORE rendering any envelope —
         # mirrors mini-swe-agent ``DockerEnvironment._check_finished``.
+        # On a hit we mutate ``parsed`` in place so the loop's single
+        # ``is_done`` check terminates the run, and we archive the raw
+        # submission payload (no XML envelope) into ``ctx.messages`` so
+        # downstream patch extraction never sees ``</output>``-style tags.
         submission = check_sentinel(observation)
         if submission is not None:
-            raise Submitted(submission=submission)
+            parsed.final_answer = submission
+            ctx.metadata['submission_source'] = 'sentinel'
+            return ChatMessageTool(
+                content=submission,
+                tool_call_id=call.id,
+                function=call.function.name,
+            )
 
         content = format_exec_observation(observation)
         return ChatMessageTool(
@@ -128,10 +141,26 @@ class SweBenchToolcallStrategy(AgentStrategy):
         )
 
     def extract_final_answer(self, result: AgentLoopResult) -> str:
-        """Return the sentinel-detected submission, if any."""
-        submission = getattr(result, 'final_submission', None)
-        if submission:
-            return submission.strip()
+        """Recover the sentinel-triggered submission from messages.
+
+        ``format_observation`` archives the sentinel payload as a tool
+        message whose content is the raw submission (no XML envelope).
+        We scan in reverse for the most recent tool message that is
+        neither a ``<returncode>`` envelope nor a ``Tool call error``
+        block — that's our submission payload.
+        """
+        for msg in reversed(result.messages):
+            if msg.role != 'tool':
+                continue
+            content = str(msg.content or '')
+            if not content:
+                continue
+            stripped = content.lstrip()
+            if stripped.startswith('<returncode>'):
+                continue
+            if stripped.startswith('Tool call error'):
+                continue
+            return content.strip()
         return ''
 
 
