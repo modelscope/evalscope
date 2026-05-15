@@ -1,15 +1,21 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 """Unit tests for agent strategy parsers.
 
-Tests the parse_output / is_done / format_observation / extract_final_answer
-logic for ReAct, SWE-bench strategies, and FunctionCallingStrategy (submit
-interception) without making any API calls.
+Covers:
+* ReAct / FunctionCalling submit interception, tools(), system prompt.
+* SWE-bench toolcall + backticks strategies after the mini-swe-agent
+  alignment refactor (sentinel-based submission via
+  :class:`evalscope.api.agent.exceptions.Submitted`).
+* The pure observation parser in
+  ``evalscope.agent.strategies.swe_bench._observation`` (returncode
+  reverse-engineering, sentinel detection, mini-style envelope).
+
+No API calls; all tests are deterministic.
 """
 
 import unittest
-from unittest.mock import MagicMock
 
-from evalscope.api.agent import AgentContext, AgentLoopResult, ParsedAction
+from evalscope.api.agent import AgentContext, AgentLoopResult, ParsedAction, Submitted
 from evalscope.api.agent.trace import AgentTrace
 from evalscope.api.messages import ChatMessageAssistant, ChatMessageTool, ChatMessageUser
 from evalscope.api.model import ModelOutput
@@ -66,7 +72,6 @@ class TestSweBenchBackticksParseOutput(unittest.TestCase):
     def test_no_bash_block_returns_raw_text(self):
         output = _make_output(text='The answer is 42')
         parsed = self.strategy.parse_output(output, self.ctx)
-        # No fenced block → raw_text set, final_answer is None (nudge path).
         self.assertIsNone(parsed.final_answer)
         self.assertEqual(parsed.raw_text, 'The answer is 42')
 
@@ -87,49 +92,6 @@ class TestSweBenchBackticksParseOutput(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# SweBenchBackticksStrategy is_done
-# ---------------------------------------------------------------------------
-
-class TestSweBenchBackticksIsDone(unittest.TestCase):
-    """Tests for SweBenchBackticksStrategy.is_done (sentinel detection)."""
-
-    def setUp(self):
-        from evalscope.agent.strategies.swe_bench.swe_bench_backticks import SweBenchBackticksStrategy
-        from evalscope.agent.strategies.swe_bench.swe_bench_toolcall import SUBMIT_SENTINEL
-        self.strategy = SweBenchBackticksStrategy()
-        self.sentinel = SUBMIT_SENTINEL
-
-    def test_sentinel_on_own_line_is_done(self):
-        ctx = _make_ctx(messages=[
-            ChatMessageUser(content=f'<output>\n{self.sentinel}\npatch content\n</output>'),
-        ])
-        parsed = ParsedAction(tool_calls=[_tool_call('bash')])
-        self.assertTrue(self.strategy.is_done(parsed, ctx))
-
-    def test_sentinel_substring_not_done(self):
-        ctx = _make_ctx(messages=[
-            ChatMessageUser(content=f'please run {self.sentinel} at the end'),
-        ])
-        parsed = ParsedAction(tool_calls=[_tool_call('bash')])
-        self.assertFalse(self.strategy.is_done(parsed, ctx))
-
-    def test_no_sentinel_not_done(self):
-        ctx = _make_ctx(messages=[
-            ChatMessageUser(content='normal output'),
-        ])
-        parsed = ParsedAction(tool_calls=[_tool_call('bash')])
-        self.assertFalse(self.strategy.is_done(parsed, ctx))
-
-    def test_tool_message_ignored(self):
-        """Backticks uses user messages, not tool messages."""
-        ctx = _make_ctx(messages=[
-            ChatMessageTool(content=f'{self.sentinel}\npatch', tool_call_id='tc-1', function='bash'),
-        ])
-        parsed = ParsedAction(tool_calls=[_tool_call('bash')])
-        self.assertFalse(self.strategy.is_done(parsed, ctx))
-
-
-# ---------------------------------------------------------------------------
 # SweBenchBackticksStrategy format_observation
 # ---------------------------------------------------------------------------
 
@@ -137,8 +99,10 @@ class TestSweBenchBackticksFormatObservation(unittest.TestCase):
     """Tests for SweBenchBackticksStrategy.format_observation."""
 
     def setUp(self):
+        from evalscope.agent.strategies.swe_bench._observation import SUBMIT_SENTINEL
         from evalscope.agent.strategies.swe_bench.swe_bench_backticks import SweBenchBackticksStrategy
         self.strategy = SweBenchBackticksStrategy()
+        self.sentinel = SUBMIT_SENTINEL
 
     def test_normal_observation_returns_user_message(self):
         call = _tool_call('bash', {'command': 'ls'})
@@ -146,6 +110,7 @@ class TestSweBenchBackticksFormatObservation(unittest.TestCase):
         self.assertIsInstance(msg, ChatMessageUser)
         self.assertEqual(msg.role, 'user')
         self.assertIn('file1.txt', msg.content)
+        self.assertIn('<returncode>0</returncode>', msg.content)
         self.assertIn('<output>', msg.content)
 
     def test_error_observation(self):
@@ -154,6 +119,22 @@ class TestSweBenchBackticksFormatObservation(unittest.TestCase):
         msg = self.strategy.format_observation(call, '', error)
         self.assertIsInstance(msg, ChatMessageUser)
         self.assertIn('<error>', msg.content)
+        self.assertIn('command timed out', msg.content)
+
+    def test_sentinel_first_line_raises_submitted(self):
+        call = _tool_call('bash', {'command': 'cat patch.txt'})
+        observation = f'{self.sentinel}\ndiff --git a/foo.py b/foo.py\n+fix'
+        with self.assertRaises(Submitted) as cm:
+            self.strategy.format_observation(call, observation, None)
+        self.assertIn('diff --git a/foo.py', cm.exception.submission)
+
+    def test_sentinel_with_nonzero_exit_no_submitted(self):
+        call = _tool_call('bash', {'command': 'cat patch.txt'})
+        observation = f'{self.sentinel}\ndiff content\n[exit 2]'
+        msg = self.strategy.format_observation(call, observation, None)
+        self.assertIsInstance(msg, ChatMessageUser)
+        self.assertIn('<returncode>2</returncode>', msg.content)
+        self.assertIn(self.sentinel, msg.content)
 
 
 # ---------------------------------------------------------------------------
@@ -161,42 +142,37 @@ class TestSweBenchBackticksFormatObservation(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestSweBenchBackticksExtractFinalAnswer(unittest.TestCase):
-    """Tests for SweBenchBackticksStrategy.extract_final_answer."""
+    """``extract_final_answer`` reads ``result.final_submission``."""
 
     def setUp(self):
         from evalscope.agent.strategies.swe_bench.swe_bench_backticks import SweBenchBackticksStrategy
-        from evalscope.agent.strategies.swe_bench.swe_bench_toolcall import SUBMIT_SENTINEL
         self.strategy = SweBenchBackticksStrategy()
-        self.sentinel = SUBMIT_SENTINEL
 
-    def _make_result(self, messages):
+    def _make_result(self, *, submission=None, messages=None):
         output = _make_output(text='done')
-        return AgentLoopResult(messages=messages, final_output=output, trace=AgentTrace())
+        return AgentLoopResult(
+            messages=messages or [],
+            final_output=output,
+            trace=AgentTrace(),
+            final_submission=submission,
+        )
 
-    def test_sentinel_answer_extracted(self):
-        messages = [
-            ChatMessageUser(content=f'{self.sentinel}\n42'),
-        ]
-        result = self._make_result(messages)
+    def test_final_submission_extracted(self):
+        result = self._make_result(submission='diff --git a/foo.py\n+fix\n')
         answer = self.strategy.extract_final_answer(result)
-        self.assertEqual(answer, '42')
+        self.assertEqual(answer, 'diff --git a/foo.py\n+fix')
 
-    def test_no_sentinel_returns_empty(self):
-        messages = [
-            ChatMessageAssistant(content='I think the answer is 7', model='test', source='generate'),
-        ]
-        result = self._make_result(messages)
-        answer = self.strategy.extract_final_answer(result)
-        self.assertEqual(answer, '')
+    def test_no_submission_returns_empty(self):
+        result = self._make_result(submission=None)
+        self.assertEqual(self.strategy.extract_final_answer(result), '')
 
-    def test_no_messages_returns_empty(self):
-        result = self._make_result([])
-        answer = self.strategy.extract_final_answer(result)
-        self.assertEqual(answer, '')
+    def test_empty_submission_returns_empty(self):
+        result = self._make_result(submission='')
+        self.assertEqual(self.strategy.extract_final_answer(result), '')
 
 
 # ---------------------------------------------------------------------------
-# SweBenchToolcallStrategy parse_output / is_done / extract
+# SweBenchToolcallStrategy parse_output / extract
 # ---------------------------------------------------------------------------
 
 class TestSweBenchToolcallParseOutput(unittest.TestCase):
@@ -226,77 +202,222 @@ class TestSweBenchToolcallParseOutput(unittest.TestCase):
         self.assertEqual(parsed.raw_text, 'just thinking')
 
 
-class TestSweBenchToolcallIsDone(unittest.TestCase):
-    """Tests for SweBenchToolcallStrategy.is_done (sentinel in tool message)."""
+class TestSweBenchToolcallFormatObservation(unittest.TestCase):
+    """``format_observation`` is the sentinel interception point."""
 
     def setUp(self):
-        from evalscope.agent.strategies.swe_bench.swe_bench_toolcall import SUBMIT_SENTINEL, SweBenchToolcallStrategy
+        from evalscope.agent.strategies.swe_bench._observation import SUBMIT_SENTINEL
+        from evalscope.agent.strategies.swe_bench.swe_bench_toolcall import SweBenchToolcallStrategy
         self.strategy = SweBenchToolcallStrategy()
         self.sentinel = SUBMIT_SENTINEL
 
-    def test_sentinel_in_tool_message_is_done(self):
-        ctx = _make_ctx(messages=[
-            ChatMessageTool(
-                content=f'<output>\n{self.sentinel}\npatch_line\n</output>',
-                tool_call_id='tc-1', function='bash'),
-        ])
-        parsed = ParsedAction(tool_calls=[_tool_call('bash')])
-        self.assertTrue(self.strategy.is_done(parsed, ctx))
+    def test_normal_observation_returns_tool_message(self):
+        call = _tool_call('bash', {'command': 'ls'})
+        msg = self.strategy.format_observation(call, 'file1.txt\nfile2.txt', None)
+        self.assertIsInstance(msg, ChatMessageTool)
+        self.assertEqual(msg.role, 'tool')
+        self.assertEqual(msg.tool_call_id, 'tc-1')
+        self.assertIn('<returncode>0</returncode>', msg.content)
+        self.assertIn('file1.txt', msg.content)
 
-    def test_user_message_ignored(self):
-        """Toolcall mode scans tool messages only."""
-        ctx = _make_ctx(messages=[
-            ChatMessageUser(content=f'{self.sentinel}\npatch'),
-        ])
-        parsed = ParsedAction(tool_calls=[_tool_call('bash')])
-        self.assertFalse(self.strategy.is_done(parsed, ctx))
+    def test_sentinel_first_line_raises_submitted(self):
+        call = _tool_call('bash', {'command': 'cat patch.txt'})
+        observation = f'{self.sentinel}\ndiff --git a/foo.py b/foo.py\n+fix'
+        with self.assertRaises(Submitted) as cm:
+            self.strategy.format_observation(call, observation, None)
+        self.assertIn('diff --git a/foo.py', cm.exception.submission)
+        self.assertNotIn(self.sentinel, cm.exception.submission)
 
-    def test_no_sentinel_not_done(self):
-        ctx = _make_ctx(messages=[
-            ChatMessageTool(content='normal output', tool_call_id='tc-1', function='bash'),
-        ])
-        parsed = ParsedAction(tool_calls=[_tool_call('bash')])
-        self.assertFalse(self.strategy.is_done(parsed, ctx))
+    def test_sentinel_in_middle_no_submitted(self):
+        call = _tool_call('bash', {'command': 'echo'})
+        observation = f'preamble line\n{self.sentinel}\nmore content'
+        msg = self.strategy.format_observation(call, observation, None)
+        self.assertIsInstance(msg, ChatMessageTool)
+        self.assertIn(self.sentinel, msg.content)
 
-    def test_sentinel_strict_line_match(self):
-        """Sentinel embedded in prose must NOT trigger completion."""
-        ctx = _make_ctx(messages=[
-            ChatMessageTool(
-                content=f'run echo {self.sentinel} to submit',
-                tool_call_id='tc-1', function='bash'),
-        ])
-        parsed = ParsedAction(tool_calls=[_tool_call('bash')])
-        self.assertFalse(self.strategy.is_done(parsed, ctx))
+    def test_sentinel_with_nonzero_exit_no_submitted(self):
+        call = _tool_call('bash', {'command': 'cat patch.txt'})
+        observation = f'{self.sentinel}\ndiff content\n[exit 1]'
+        msg = self.strategy.format_observation(call, observation, None)
+        self.assertIsInstance(msg, ChatMessageTool)
+        self.assertIn('<returncode>1</returncode>', msg.content)
+
+    def test_error_observation_uses_format_error_template(self):
+        call = _tool_call('bash', {'command': 'ls'})
+        error = ToolCallError(type='timeout', message='command timed out')
+        msg = self.strategy.format_observation(call, '', error)
+        self.assertIsInstance(msg, ChatMessageTool)
+        self.assertIn('<error>', msg.content)
+        self.assertIn('command timed out', msg.content)
+        self.assertIn('Tool call error', msg.content)
+
+    def test_sentinel_strips_trailing_stderr(self):
+        call = _tool_call('bash', {'command': 'cat patch.txt'})
+        observation = (
+            f'{self.sentinel}\n'
+            'diff --git a/foo.py b/foo.py\n'
+            '+fix\n'
+            '[stderr]\n'
+            'warning: trailing whitespace.'
+        )
+        with self.assertRaises(Submitted) as cm:
+            self.strategy.format_observation(call, observation, None)
+        self.assertIn('diff --git', cm.exception.submission)
+        self.assertNotIn('[stderr]', cm.exception.submission)
+        self.assertNotIn('trailing whitespace', cm.exception.submission)
 
 
 class TestSweBenchToolcallExtractFinalAnswer(unittest.TestCase):
-    """Tests for SweBenchToolcallStrategy.extract_final_answer."""
+    """``extract_final_answer`` reads ``result.final_submission``."""
 
     def setUp(self):
-        from evalscope.agent.strategies.swe_bench.swe_bench_toolcall import SUBMIT_SENTINEL, SweBenchToolcallStrategy
+        from evalscope.agent.strategies.swe_bench.swe_bench_toolcall import SweBenchToolcallStrategy
         self.strategy = SweBenchToolcallStrategy()
-        self.sentinel = SUBMIT_SENTINEL
 
-    def _make_result(self, messages):
+    def _make_result(self, *, submission=None, messages=None):
         output = _make_output(text='done')
-        return AgentLoopResult(messages=messages, final_output=output, trace=AgentTrace())
+        return AgentLoopResult(
+            messages=messages or [],
+            final_output=output,
+            trace=AgentTrace(),
+            final_submission=submission,
+        )
 
-    def test_patch_extracted_from_tool_message(self):
-        messages = [
-            ChatMessageTool(
-                content=f'{self.sentinel}\ndiff --git a/foo.py\n+fix',
-                tool_call_id='tc-1', function='bash'),
-        ]
-        result = self._make_result(messages)
-        answer = self.strategy.extract_final_answer(result)
-        self.assertIn('diff --git', answer)
+    def test_final_submission_extracted(self):
+        result = self._make_result(submission='diff --git a/foo.py\n+fix\n')
+        self.assertEqual(self.strategy.extract_final_answer(result), 'diff --git a/foo.py\n+fix')
 
-    def test_no_sentinel_returns_empty(self):
-        messages = [
-            ChatMessageTool(content='just output', tool_call_id='tc-1', function='bash'),
-        ]
-        result = self._make_result(messages)
+    def test_no_submission_returns_empty(self):
+        result = self._make_result(submission=None)
         self.assertEqual(self.strategy.extract_final_answer(result), '')
+
+
+# ---------------------------------------------------------------------------
+# _observation.py: pure parsers (returncode reverse-engineering, sentinel,
+# mini-style envelope rendering).
+# ---------------------------------------------------------------------------
+
+class TestParseExecMetadata(unittest.TestCase):
+    """``parse_exec_metadata`` reverses bash tool's tail markers."""
+
+    def setUp(self):
+        from evalscope.agent.strategies.swe_bench._observation import parse_exec_metadata
+        self.parse = parse_exec_metadata
+
+    def test_exit_marker_extracts_returncode(self):
+        rc, timed_out, body = self.parse('hello\n[exit 1]')
+        self.assertEqual(rc, 1)
+        self.assertFalse(timed_out)
+        self.assertEqual(body, 'hello')
+
+    def test_negative_exit_marker(self):
+        rc, _, body = self.parse('crashed\n[exit -9]')
+        self.assertEqual(rc, -9)
+        self.assertEqual(body, 'crashed')
+
+    def test_no_marker_assumes_success(self):
+        rc, timed_out, body = self.parse('plain output')
+        self.assertEqual(rc, 0)
+        self.assertFalse(timed_out)
+        self.assertEqual(body, 'plain output')
+
+    def test_no_output_literal(self):
+        rc, _, body = self.parse('(no output)')
+        self.assertEqual(rc, 0)
+        self.assertEqual(body, '')
+
+    def test_timeout_marker(self):
+        rc, timed_out, body = self.parse('partial\n[TIMEOUT]')
+        self.assertTrue(timed_out)
+        self.assertEqual(rc, 124)
+        self.assertEqual(body, 'partial')
+
+
+class TestCheckSentinel(unittest.TestCase):
+    """``check_sentinel`` mirrors ``DockerEnvironment._check_finished``."""
+
+    def setUp(self):
+        from evalscope.agent.strategies.swe_bench._observation import SUBMIT_SENTINEL, check_sentinel
+        self.sentinel = SUBMIT_SENTINEL
+        self.check = check_sentinel
+
+    def test_first_line_match_returns_payload(self):
+        observation = f'{self.sentinel}\ndiff --git a/foo.py'
+        self.assertEqual(self.check(observation), 'diff --git a/foo.py')
+
+    def test_returncode_nonzero_rejects(self):
+        observation = f'{self.sentinel}\ndiff\n[exit 1]'
+        self.assertIsNone(self.check(observation))
+
+    def test_timeout_rejects(self):
+        observation = f'{self.sentinel}\ndiff\n[TIMEOUT]'
+        self.assertIsNone(self.check(observation))
+
+    def test_sentinel_in_middle_rejected(self):
+        observation = f'preamble\n{self.sentinel}\ndiff'
+        self.assertIsNone(self.check(observation))
+
+    def test_sentinel_substring_rejected(self):
+        observation = f'echo {self.sentinel} done'
+        self.assertIsNone(self.check(observation))
+
+    def test_no_sentinel_returns_none(self):
+        self.assertIsNone(self.check('regular output'))
+
+    def test_empty_input_returns_none(self):
+        self.assertIsNone(self.check(''))
+        self.assertIsNone(self.check(None))
+
+    def test_strips_trailing_stderr_block(self):
+        observation = (
+            f'{self.sentinel}\n'
+            'diff body\n'
+            '[stderr]\n'
+            'a warning'
+        )
+        payload = self.check(observation)
+        self.assertIsNotNone(payload)
+        self.assertIn('diff body', payload)
+        self.assertNotIn('[stderr]', payload)
+        self.assertNotIn('a warning', payload)
+
+
+class TestFormatExecObservation(unittest.TestCase):
+    """``format_exec_observation`` renders mini-style envelopes."""
+
+    def setUp(self):
+        from evalscope.agent.strategies.swe_bench._observation import format_exec_observation
+        self.fmt = format_exec_observation
+
+    def test_short_success_envelope(self):
+        out = self.fmt('hello world')
+        self.assertIn('<returncode>0</returncode>', out)
+        self.assertIn('<output>\nhello world\n</output>', out)
+
+    def test_nonzero_exit_envelope(self):
+        out = self.fmt('boom\n[exit 42]')
+        self.assertIn('<returncode>42</returncode>', out)
+        self.assertIn('<output>\nboom\n</output>', out)
+        self.assertNotIn('[exit 42]', out)
+
+    def test_timeout_envelope(self):
+        out = self.fmt('abc\n[TIMEOUT]')
+        self.assertIn('<returncode>124</returncode>', out)
+        self.assertIn('<exception>Command timed out.</exception>', out)
+
+    def test_long_output_truncates_with_head_tail(self):
+        body = ('A' * 5000) + ('B' * 2000) + ('C' * 5000)
+        out = self.fmt(body, max_chars=10000, head=5000, tail=5000)
+        self.assertIn('<output_head>', out)
+        self.assertIn('<output_tail>', out)
+        self.assertIn('<elided_chars>', out)
+        self.assertIn('2000 characters elided', out)
+
+    def test_error_message_uses_error_template(self):
+        out = self.fmt('', error_message='boom')
+        self.assertIn('<error>', out)
+        self.assertIn('boom', out)
+        self.assertIn('Tool call error', out)
 
 
 # ---------------------------------------------------------------------------
@@ -326,7 +447,7 @@ class TestReactParseOutput(unittest.TestCase):
         self.assertIsNone(parsed.final_answer)
 
     def test_no_tool_calls_not_done(self):
-        """No tool calls → final_answer is None, loop should continue (nudge)."""
+        """No tool calls -> final_answer is None, loop should continue (nudge)."""
         output = _make_output(text='The answer is 42')
         parsed = self.strategy.parse_output(output, self.ctx)
         self.assertIsNone(parsed.final_answer)
@@ -449,8 +570,6 @@ class TestReactExtractFinalAnswer(unittest.TestCase):
         self.strategy = ReactStrategy()
 
     def _make_result(self, messages):
-        # Build final_output from the last assistant message so
-        # result.final_output.message.content matches expectations.
         last_asst_content = ''
         last_asst_tool_calls = None
         for msg in reversed(messages):
@@ -499,8 +618,6 @@ class TestFCExtractFinalAnswer(unittest.TestCase):
         self.strategy = FunctionCallingStrategy()
 
     def _make_result(self, messages):
-        # Build final_output from the last assistant message so
-        # result.final_output.message.content matches expectations.
         last_asst_content = ''
         last_asst_tool_calls = None
         for msg in reversed(messages):
@@ -528,7 +645,7 @@ class TestFCExtractFinalAnswer(unittest.TestCase):
 
 
 class TestFCNoToolCallSemantics(unittest.TestCase):
-    """Tests for FC strategy: no tool calls → not done (must use submit)."""
+    """Tests for FC strategy: no tool calls -> not done (must use submit)."""
 
     def setUp(self):
         from evalscope.agent.strategies.function_calling import FunctionCallingStrategy
@@ -545,126 +662,6 @@ class TestFCNoToolCallSemantics(unittest.TestCase):
         parsed = self.strategy.parse_output(_make_output(tool_calls=[submit_call]), self.ctx)
         self.assertEqual(parsed.final_answer, 'yes')
         self.assertTrue(self.strategy.is_done(parsed, self.ctx))
-
-
-# ---------------------------------------------------------------------------
-# _sentinel_payload sanitisation (XML envelope + patch.txt self-pollution)
-# ---------------------------------------------------------------------------
-
-class TestSentinelPayloadSanitisation(unittest.TestCase):
-    """Verify ``_sentinel_payload`` removes the trailing ``</output>`` XML
-    envelope tag and any ``patch.txt`` self-pollution that arises when the
-    SWE-bench submission protocol pipes ``git diff --cached`` into a file
-    that has itself just been ``git add``ed.
-
-    Reproduces the corruption observed in
-    ``outputs/20260514_223847/swebench_log/django__django-{11790,11815,11848}/
-    patch.diff`` and asserts the cleaned payload is a sound unified diff.
-    """
-
-    def setUp(self):
-        from evalscope.agent.strategies.swe_bench.swe_bench_toolcall import (
-            SUBMIT_SENTINEL,
-            _sentinel_payload,
-            _strip_observation_envelope,
-            _strip_patch_txt_pollution,
-        )
-        self.sentinel = SUBMIT_SENTINEL
-        self.extract = _sentinel_payload
-        self.strip_envelope = _strip_observation_envelope
-        self.strip_patch_txt = _strip_patch_txt_pollution
-
-    def _wrap(self, body: str) -> str:
-        """Wrap a payload in the same XML envelope ``format_exec_observation`` produces."""
-        return f'<output>\n{self.sentinel}\n{body}\n</output>'
-
-    def test_envelope_close_tag_stripped(self):
-        """`</output>` at the tail must not leak into the patch."""
-        payload = self.extract(self._wrap('diff --git a/foo.py b/foo.py'))
-        self.assertIsNotNone(payload)
-        self.assertNotIn('</output>', payload)
-        self.assertIn('diff --git a/foo.py', payload)
-
-    def test_empty_patch_txt_yields_blank_payload(self):
-        """The django-11848 case: model cat'd an empty patch.txt; the
-        only diff hunk references ``patch.txt`` itself, which after
-        sanitisation must collapse to an empty payload."""
-        body = (
-            'diff --git a/patch.txt b/patch.txt\n'
-            'new file mode 100644\n'
-            'index 0000000000..e69de29bb2'
-        )
-        payload = self.extract(self._wrap(body))
-        self.assertIsNotNone(payload)
-        self.assertEqual(payload.strip(), '')
-
-    def test_nested_patch_txt_stripped_keeps_real_diff(self):
-        """The django-11790 case: real source diff + nested patch.txt
-        replay.  The replayed copy must be removed but the genuine
-        forms.py change preserved verbatim."""
-        body = (
-            'diff --git a/django/contrib/auth/forms.py b/django/contrib/auth/forms.py\n'
-            'index a0cfed0995..f22b0547ae 100644\n'
-            '--- a/django/contrib/auth/forms.py\n'
-            '+++ b/django/contrib/auth/forms.py\n'
-            '@@ -165,7 +165,7 @@ class AuthenticationForm(forms.Form):\n'
-            '-    username = UsernameField(widget=forms.TextInput(attrs={\'autofocus\': True}))\n'
-            '+    username = UsernameField(max_length=150, widget=forms.TextInput(attrs={\'autofocus\': True}, max_length=150))\n'
-            'diff --git a/patch.txt b/patch.txt\n'
-            'new file mode 100644\n'
-            'index 0000000000..47df474355\n'
-            '--- /dev/null\n'
-            '+++ b/patch.txt\n'
-            '@@ -0,0 +1,32 @@\n'
-            '+diff --git a/django/contrib/auth/forms.py b/django/contrib/auth/forms.py'
-        )
-        payload = self.extract(self._wrap(body))
-        self.assertIsNotNone(payload)
-        self.assertNotIn('diff --git a/patch.txt', payload)
-        self.assertNotIn('</output>', payload)
-        self.assertIn('django/contrib/auth/forms.py', payload)
-        self.assertIn('UsernameField(max_length=150', payload)
-
-    def test_clean_diff_passes_through(self):
-        """A pristine patch (no patch.txt segments) must be untouched
-        save for the trailing envelope tag."""
-        body = (
-            'diff --git a/foo.py b/foo.py\n'
-            '--- a/foo.py\n'
-            '+++ b/foo.py\n'
-            '@@ -1 +1 @@\n'
-            '-old\n'
-            '+new'
-        )
-        payload = self.extract(self._wrap(body))
-        self.assertIsNotNone(payload)
-        self.assertNotIn('</output>', payload)
-        self.assertIn('-old', payload)
-        self.assertIn('+new', payload)
-
-    def test_patch_txt_at_start_of_payload(self):
-        """``patch.txt`` may appear as the first/only diff segment;
-        regex must still match (anchored on ``^|\\n``)."""
-        body = (
-            'diff --git a/patch.txt b/patch.txt\n'
-            'new file mode 100644\n'
-            'index 0000000000..e69de29bb2'
-        )
-        cleaned = self.strip_patch_txt(body)
-        self.assertEqual(cleaned, '')
-
-    def test_envelope_helper_idempotent(self):
-        """Running envelope strip twice must not corrupt clean input."""
-        body = 'diff --git a/foo.py'
-        once = self.strip_envelope(body)
-        twice = self.strip_envelope(once)
-        self.assertEqual(once, twice)
-        self.assertEqual(once, body)
-
-    def test_no_sentinel_returns_none(self):
-        """Without the sentinel, payload must be ``None`` — sanitisation
-        only kicks in once submission is detected."""
-        self.assertIsNone(self.extract('<output>\nno sentinel here\n</output>'))
 
 
 if __name__ == '__main__':

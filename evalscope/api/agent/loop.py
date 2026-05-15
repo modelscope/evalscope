@@ -16,6 +16,7 @@ from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageTo
 from evalscope.api.model import Model, ModelOutput
 from evalscope.utils.logger import get_logger
 from .environment import AgentEnvironment
+from .exceptions import Submitted
 from .strategy import AgentStrategy
 from .tool_executor import ToolExecutor
 from .trace import AgentTrace, EventType
@@ -69,6 +70,7 @@ class AgentLoop:
             ctx.messages.insert(0, ChatMessageSystem(content=system_prompt))
 
         final_output: Optional[ModelOutput] = None
+        final_submission: Optional[str] = None
 
         while ctx.step < self.max_steps:
             # ---- generate ----
@@ -211,7 +213,40 @@ class AgentLoop:
                     )
                     # Let the strategy decide how to format the observation
                     # (ChatMessageTool for FC, ChatMessageUser for textual_block).
-                    obs_msg = self.strategy.format_observation(call, observation, error)
+                    # Strategies may raise ``Submitted`` to short-circuit the
+                    # loop when they detect a completion sentinel in the raw
+                    # tool output (mirrors mini-swe-agent's pattern).
+                    try:
+                        obs_msg = self.strategy.format_observation(call, observation, error)
+                    except Submitted as exc:
+                        # Persist the (clean) submission as a tool message so
+                        # downstream code that scans ``result.messages`` still
+                        # sees a final observation entry for this tool call.
+                        obs_msg = ChatMessageTool(
+                            content=exc.submission,
+                            tool_call_id=call.id,
+                            function=call.function.name,
+                        )
+                        ctx.messages.append(obs_msg)
+                        last_obs_id = obs_msg.id
+                        self.trace.add_event(
+                            step=ctx.step,
+                            type=EventType.SUBMIT,
+                            message_id=obs_msg.id,
+                            latency_ms=duration * 1000,
+                            payload={
+                                'source': 'sentinel',
+                                'exit_status': exc.exit_status,
+                                'name': call.function.name,
+                                'id': call.id,
+                            },
+                        )
+                        final_submission = exc.submission
+                        logger.debug(
+                            f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} '
+                            f'submitted via sentinel; submission_len={len(exc.submission)}'
+                        )
+                        break
                     ctx.messages.append(obs_msg)
                     last_obs_id = obs_msg.id
                     self.trace.add_event(
@@ -226,6 +261,12 @@ class AgentLoop:
                             'preview': observation[:500] if isinstance(observation, str) else None,
                         },
                     )
+
+                # If the inner for-loop broke out via ``Submitted``, exit
+                # the outer while-loop too without running the post-execution
+                # is_done check.
+                if final_submission is not None:
+                    break
 
                 # Post-execution termination check.  Strategies like
                 # ``swe_bench_backticks`` detect completion sentinels in the
@@ -265,6 +306,7 @@ class AgentLoop:
             messages=ctx.messages,
             final_output=final_output,
             trace=self.trace,
+            final_submission=final_submission,
         )
 
 

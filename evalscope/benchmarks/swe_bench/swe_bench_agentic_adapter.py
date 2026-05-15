@@ -43,45 +43,112 @@ logger = get_logger()
 
 INSTANCE_TEMPLATE = """\
 <pr_description>
+Consider the following PR description:
 {problem_statement}
 </pr_description>
 
-You are an expert software engineer. Solve the issue described in the
-<pr_description> by editing the source code in /testbed.
+<instructions>
+# Task Instructions
 
-# Modification boundary
-- Modify ONLY non-test, non-configuration source files. Do NOT edit
-  files under tests/, conftest.py, setup.py, setup.cfg, pyproject.toml,
-  or any test fixture data.
-- Do NOT add new dependencies.
+## Overview
 
-# Recommended workflow
-1. Reproduce the failing behaviour from the description.
-2. Locate the relevant source files (use grep / find / sed).
-3. Implement the minimum-impact fix.
-4. Verify your change addresses the issue and consider edge cases.
-5. Submit (see below).
+You're a software engineer interacting continuously with a computer by submitting commands.
+You'll be helping implement necessary changes to meet requirements in the PR description.
+Your task is specifically to make changes to non-test files in the current directory in order to fix the issue described in the PR description in a way that is general and consistent with the codebase.
+<IMPORTANT>This is an interactive process where you will think and issue AT LEAST ONE command, see the result, then think and issue your next command(s).</important>
 
-# Submission protocol — follow EXACTLY
-When you are confident the patch is complete, run these commands in order
-through the bash tool. Do NOT inline the patch in plain prose: it MUST
-appear in stdout following the sentinel.
+For each response:
 
-  Step 1: cd /testbed && git add -A && git diff --cached > patch.txt
-  Step 2: cat patch.txt
-  Step 3: echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT && cat patch.txt
+1. Include a THOUGHT section explaining your reasoning and what you're trying to accomplish
+2. Provide one or more bash tool calls to execute
 
-Step 3 prints the literal sentinel COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT
-on its own line, immediately followed by the patch contents.  The
-evaluator detects this sentinel and submits everything after it as the
-final patch.
+## Important Boundaries
 
-# CRITICAL
-- The sentinel COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT must appear on its
-  OWN LINE in the bash output (not merely mentioned in your prose).
-- Each bash tool call runs in a fresh shell, so prefix commands with
-  `cd /testbed && ...` if cwd matters.
-- Keep responses focused; long outputs will be head/tail truncated.
+- MODIFY: Regular source code files in /testbed (this is the working directory for all your subsequent commands)
+- DO NOT MODIFY: Tests, configuration files (pyproject.toml, setup.cfg, etc.)
+
+## Recommended Workflow
+
+1. Analyze the codebase by finding and reading relevant files
+2. Create a script to reproduce the issue
+3. Edit the source code to resolve the issue
+4. Verify your fix works by running your script again
+5. Test edge cases to ensure your fix is robust
+
+## Command Execution Rules
+
+You are operating in an environment where
+
+1. You issue at least one command
+2. The system executes the command(s) in a subshell
+3. You see the result(s)
+4. You write your next command(s)
+
+Each response should include:
+
+1. **Reasoning text** where you explain your analysis and plan
+2. At least one tool call with your command
+
+**CRITICAL REQUIREMENTS:**
+
+- Your response SHOULD include reasoning text explaining what you're doing
+- Your response MUST include AT LEAST ONE bash tool call. You can make MULTIPLE tool calls in a single response when the commands are independent (e.g., searching multiple files, reading different parts of the codebase).
+- Directory or environment variable changes are not persistent. Every action is executed in a new subshell.
+- However, you can prefix any action with `MY_ENV_VAR=MY_VALUE cd /path/to/working/dir && ...` or write/load environment variables from files
+
+Example of a CORRECT response:
+<example_response>
+I need to understand the Builder-related code. Let me find relevant files and check the project structure.
+
+[Makes multiple bash tool calls: {{"command": "ls -la"}}, {{"command": "find src -name '*.java' | grep -i builder"}}, {{"command": "cat README.md | head -50"}}]
+</example_response>
+
+## Environment Details
+
+- You have a full Linux shell environment
+- Always use non-interactive flags (-y, -f) for commands
+- Avoid interactive tools like vi, nano, or any that require user input
+- You can use bash commands or invoke any tool that is available in the environment
+- You can also create new tools or scripts to help you with the task
+- If a tool isn't available, you can also install it
+
+## Submission
+
+When you've completed your work, you MUST submit your changes as a git patch.
+Follow these steps IN ORDER, with SEPARATE commands:
+
+Step 1: Create the patch file
+Run `git diff -- path/to/file1 path/to/file2 > patch.txt` listing only the source files you modified.
+Do NOT commit your changes.
+
+<IMPORTANT>
+The patch must only contain changes to the specific source files you modified to fix the issue.
+Do not submit file creations or changes to any of the following files:
+
+- test and reproduction files
+- helper scripts, tests, or tools that you created
+- installation, build, packaging, configuration, or setup scripts unless they are directly part of the issue you were fixing (you can assume that the environment is already set up for your client)
+- binary or compiled files
+</IMPORTANT>
+
+Step 2: Verify your patch
+Inspect patch.txt to confirm it only contains your intended changes and headers show `--- a/` and `+++ b/` paths.
+
+Step 3: Submit (EXACT command required)
+You MUST use this EXACT command to submit:
+
+```bash
+echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT && cat patch.txt
+```
+
+If the command fails (nonzero exit status), it will not submit.
+
+<CRITICAL>
+- Creating/viewing the patch and submitting it MUST be separate commands (not combined with &&).
+- If you modify patch.txt after verifying, you SHOULD verify again before submitting.
+- You CANNOT continue working (reading, editing, testing) in any way on this task after submitting.
+</CRITICAL>
+</instructions>
 """
 
 # ---------------------------------------------------------------------------
@@ -272,7 +339,9 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
     # ------------------------------------------------------------------
 
     def _extract_final_answer(self, result, strategy: AgentStrategy) -> str:
-        # Strategy already implements sentinel scanning.
+        # Strategy already implements sentinel scanning via the
+        # ``Submitted`` exception path; ``final_submission`` is set by
+        # the AgentLoop when the sentinel fires.
         answer = strategy.extract_final_answer(result)
         if answer:
             return answer
@@ -281,23 +350,13 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
         try:
             from swebench.inference.make_datasets.utils import extract_diff
 
-            from evalscope.agent.strategies.swe_bench.swe_bench_toolcall import (
-                _strip_observation_envelope,
-                _strip_patch_txt_pollution,
-            )
             last_assistant = ''
             for msg in reversed(result.messages):
                 if msg.role == 'assistant':
                     last_assistant = str(msg.content or '') or msg.text or ''
                     if last_assistant:
                         break
-            recovered = extract_diff(last_assistant) or ''
-            # Defense in depth: even on the fallback path, scrub the same
-            # XML envelope tail and ``patch.txt`` self-pollution that the
-            # strategy-level extractor already removes.
-            recovered = _strip_observation_envelope(recovered)
-            recovered = _strip_patch_txt_pollution(recovered)
-            return recovered
+            return extract_diff(last_assistant) or ''
         except Exception:  # pragma: no cover - defensive
             return ''
 

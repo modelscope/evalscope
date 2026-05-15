@@ -6,6 +6,7 @@ live in ``evalscope/agent``.
 """
 
 from .environment import AgentEnvironment
+from .exceptions import Submitted
 from .loop import AgentLoop
 from .strategy import AgentStrategy
 from .tool_executor import ToolExecutor, ToolHandler
@@ -24,6 +25,7 @@ __all__ = [
     'EventType',
     'ExecResult',
     'ParsedAction',
+    'Submitted',
     'ToolExecutor',
     'ToolHandler',
     'ToolSchemaMode',

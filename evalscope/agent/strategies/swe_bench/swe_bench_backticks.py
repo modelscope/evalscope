@@ -20,13 +20,12 @@ import re
 import uuid
 from typing import List, Optional
 
-from evalscope.api.agent import AgentContext, AgentLoopResult, AgentStrategy, ParsedAction, ToolSchemaMode
+from evalscope.api.agent import AgentContext, AgentLoopResult, AgentStrategy, ParsedAction, Submitted, ToolSchemaMode
 from evalscope.api.messages import ChatMessage, ChatMessageUser
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_strategy
 from evalscope.api.tool import ToolCall, ToolCallError, ToolFunction, ToolInfo
-from ._observation import format_exec_observation
-from .swe_bench_toolcall import SUBMIT_SENTINEL, _sentinel_payload
+from ._observation import SUBMIT_SENTINEL, check_sentinel, format_exec_observation
 
 # Regex for ``` ```mswea_bash_command ... ``` ``` fenced blocks (mirrors
 # the original mini-swe-agent textbased action_regex).
@@ -35,7 +34,9 @@ _BASH_BLOCK_RE = re.compile(r'```mswea_bash_command\n(.*?)\n```', re.DOTALL)
 # Minimal system prompt: SWE-bench business rules (workflow, submission
 # protocol, modification boundary) are injected by the adapter as the first
 # user (instance) message, not here.
-SWE_BENCH_BACKTICKS_SYSTEM_PROMPT = ('You are a helpful assistant that can interact with a computer shell.')
+SWE_BENCH_BACKTICKS_SYSTEM_PROMPT = (
+    'You are a helpful assistant that can interact with a computer shell to solve programming tasks.'
+)
 
 _FORMAT_ERROR_TEMPLATE = (
     'Your response must contain exactly one '
@@ -92,16 +93,9 @@ class SweBenchBackticksStrategy(AgentStrategy):
         return ParsedAction(tool_calls=[call], raw_text=content)
 
     def is_done(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
-        # Pre-execution: nothing terminates here.
-        # Post-execution: scan the most recent observation (a user message
-        # in textbased mode, since ``format_observation`` returns
-        # ChatMessageUser).
-        if not ctx.messages:
-            return False
-        last = ctx.messages[-1]
-        if last.role != 'user':
-            return False
-        return _sentinel_payload(str(last.content or '')) is not None
+        # The primary completion path is ``Submitted`` raised by
+        # ``format_observation``; this is a defensive fallback.
+        return False
 
     def should_nudge(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
         # Allow one nudge per missing/format-error response.  Cap globally
@@ -126,22 +120,25 @@ class SweBenchBackticksStrategy(AgentStrategy):
     ) -> ChatMessage:
         if error is not None:
             content = format_exec_observation('', error_message=error.message)
-        else:
-            content = format_exec_observation(observation)
+            return ChatMessageUser(content=content)
+
+        # Detect the completion sentinel BEFORE rendering any envelope —
+        # mirrors mini-swe-agent ``DockerEnvironment._check_finished``.
+        submission = check_sentinel(observation)
+        if submission is not None:
+            raise Submitted(submission=submission)
+
+        content = format_exec_observation(observation)
         # Textbased models expect observations as user messages — they do
         # not interpret the OpenAI ``tool`` role.
         return ChatMessageUser(content=content)
 
     def extract_final_answer(self, result: AgentLoopResult) -> str:
-        """Return patch text following the most recent sentinel marker."""
-        for msg in reversed(result.messages):
-            if msg.role == 'user':
-                payload = _sentinel_payload(str(msg.content or ''))
-                if payload is not None:
-                    return payload.strip()
-        # Fallback: empty string lets the adapter try ``extract_diff`` on
-        # the last assistant content as a best-effort recovery.
+        """Return the sentinel-detected submission, if any."""
+        submission = getattr(result, 'final_submission', None)
+        if submission:
+            return submission.strip()
         return ''
 
 
-__all__ = ['SweBenchBackticksStrategy', 'SUBMIT_SENTINEL']
+__all__ = ['SUBMIT_SENTINEL', 'SweBenchBackticksStrategy']
