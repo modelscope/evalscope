@@ -9,20 +9,22 @@ General-MCQ is a customizable multiple-choice question answering benchmark for e
 
 - **Task Type**: Multiple-Choice Question Answering
 - **Input**: Question with 2-10 answer choices (A through J)
-- **Output**: Selected answer choice
-- **Flexibility**: Supports custom datasets via local files
+- **Output**: Selected answer choice(s)
+- **Flexibility**: Supports custom datasets via local files, single or multiple correct answers
 
 ## Key Features
 
 - Flexible number of choices (A through J)
 - Custom dataset support via local file loading
-- Chinese single-answer prompt template
+- Chinese single-/multiple-answer prompt templates (optional CoT variants)
 - Configurable few-shot examples
 - Accuracy-based evaluation
 
 ## Evaluation Notes
 
-- Default configuration uses **0-shot** evaluation
+- Default configuration uses **0-shot** evaluation with single-answer template
+- Set `extra_params.multiple_correct=True` to evaluate questions with multiple correct answers
+- Set `extra_params.use_cot=True` to switch to chain-of-thought prompt templates
 - Primary metric: **Accuracy**
 - Train split: **dev**, Eval split: **val**
 - See [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#mcq) for dataset format
@@ -62,6 +64,13 @@ General-MCQ is a customizable multiple-choice question answering benchmark for e
 
 ```
 
+## Extra Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `multiple_correct` | `bool` | `False` | Whether the dataset contains questions with multiple correct answers. When True, switches to the multiple-answer prompt template and parser, and requires the `answer` field to be a list of letters (e.g., ["A", "C"]). |
+| `use_cot` | `bool` | `False` | Whether to use the chain-of-thought (CoT) prompt template variant. |
+
 ## Usage
 
 ### Using CLI
@@ -86,6 +95,11 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['general_mcq'],
+    dataset_args={
+        'general_mcq': {
+            # extra_params: {}  # uses default extra parameters
+        }
+    },
     limit=10,  # Remove this line for formal evaluation
 )
 

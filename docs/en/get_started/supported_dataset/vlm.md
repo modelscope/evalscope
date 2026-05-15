@@ -6,6 +6,8 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 |------------|----------|----------|
 | `a_okvqa` | [A-OKVQA](../../benchmarks/a_okvqa.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `ai2d` | [AI2D](../../benchmarks/ai2d.md) | `Knowledge`, `MultiModal`, `QA` |
+| `air_bench_chat` | [AIR-Bench-Chat](../../benchmarks/air_bench_chat.md) | `Audio`, `InstructionFollowing`, `QA` |
+| `air_bench_foundation` | [AIR-Bench-Foundation](../../benchmarks/air_bench_foundation.md) | `Audio`, `Knowledge`, `MCQ` |
 | `blink` | [BLINK](../../benchmarks/blink.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `cc_bench` | [CCBench](../../benchmarks/cc_bench.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](../../benchmarks/chartqa.md) | `Knowledge`, `MultiModal`, `QA` |
@@ -52,6 +54,8 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 
 ../../benchmarks/a_okvqa.md
 ../../benchmarks/ai2d.md
+../../benchmarks/air_bench_chat.md
+../../benchmarks/air_bench_foundation.md
 ../../benchmarks/blink.md
 ../../benchmarks/cc_bench.md
 ../../benchmarks/chartqa.md
