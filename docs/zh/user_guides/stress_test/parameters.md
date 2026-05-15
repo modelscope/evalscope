@@ -131,10 +131,10 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 
 | 模式 | 说明 | 支持dataset-path |
 |------|------|------------------|
-| `random_multi_turn` | 合成多轮对话，每轮随机生成 token 序列<br>**必需 `--tokenizer-path`、`--max-turns`**<br>[使用示例](./multi_turn.md#1-使用-random_multi_turn合成多轮对话) | ✗ |
-| `share_gpt_zh_multi_turn` | 从 ModelScope 自动下载中文 [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) 数据集（约 70k 条），保留完整多轮对话<br>[使用示例](./multi_turn.md#2-使用-share_gpt_zh_multi_turn真实中文对话) | ✓ |
+| `random_multi_turn` | 合成多轮对话，每轮随机生成 token 序列<br>**必需 `--tokenizer-path`、`--max-turns`**<br>[使用示例](./multi_turn.md#random_multi_turn) | ✗ |
+| `share_gpt_zh_multi_turn` | 从 ModelScope 自动下载中文 [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) 数据集（约 70k 条），保留完整多轮对话<br>[使用示例](./multi_turn.md#share_gpt_multi_turn) | ✓ |
 | `share_gpt_en_multi_turn` | 从 ModelScope 自动下载英文 [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) 数据集（约 70k 条），保留完整多轮对话 | ✓ |
-| `custom_multi_turn` | 使用本地 JSONL 文件作为自定义多轮对话数据集<br>每行为 OpenAI messages 格式的 JSON 数组，适合已有对话数据直接压测<br>**必需提供`dataset_path`**<br>[使用示例](./multi_turn.md#3-使用-custom_multi_turn自定义本地对话) | ✓（必需） |
+| `custom_multi_turn` | 使用本地 JSONL 文件作为自定义多轮对话数据集<br>每行为 OpenAI messages 格式的 JSON 数组，适合已有对话数据直接压测<br>**必需提供`dataset_path`**<br>[使用示例](./multi_turn.md#custom_multi_turn) | ✓（必需） |
 
 ## 模型设置
 

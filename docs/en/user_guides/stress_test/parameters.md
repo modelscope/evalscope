@@ -130,10 +130,10 @@ Must be used with `--multi-turn`. See the [Multi-turn Benchmark Guide](./multi_t
 
 | Mode | Description | Supports dataset-path |
 |------|-------------|----------------------|
-| `random_multi_turn` | Synthetic multi-turn conversations; each turn randomly generates a token sequence<br>**Requires `--tokenizer-path` and `--max-turns`**<br>[Usage example](./multi_turn.md#1-using-random_multi_turn-synthetic-multi-turn-conversations) | ✗ |
-| `share_gpt_zh_multi_turn` | Automatically downloads the Chinese [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) dataset (~70k conversations) from ModelScope, preserving full multi-turn conversations<br>[Usage example](./multi_turn.md#2-using-share_gpt_zh_multi_turn-real-chinese-conversations) | ✓ |
+| `random_multi_turn` | Synthetic multi-turn conversations; each turn randomly generates a token sequence<br>**Requires `--tokenizer-path` and `--max-turns`**<br>[Usage example](./multi_turn.md#random_multi_turn) | ✗ |
+| `share_gpt_zh_multi_turn` | Automatically downloads the Chinese [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) dataset (~70k conversations) from ModelScope, preserving full multi-turn conversations<br>[Usage example](./multi_turn.md#share_gpt_multi_turn) | ✓ |
 | `share_gpt_en_multi_turn` | Automatically downloads the English [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) dataset (~70k conversations) from ModelScope, preserving full multi-turn conversations | ✓ |
-| `custom_multi_turn` | Uses a local JSONL file as a custom multi-turn dataset<br>Each line must be a JSON array of OpenAI message dicts; ideal for benchmarking with your own conversation data<br>**Requires `--dataset-path`**<br>[Usage example](./multi_turn.md#3-using-custom_multi_turn-custom-local-conversations) | ✓ (Required) |
+| `custom_multi_turn` | Uses a local JSONL file as a custom multi-turn dataset<br>Each line must be a JSON array of OpenAI message dicts; ideal for benchmarking with your own conversation data<br>**Requires `--dataset-path`**<br>[Usage example](./multi_turn.md#custom_multi_turn) | ✓ (Required) |
 
 ## Model Settings
 

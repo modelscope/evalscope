@@ -162,7 +162,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets mbpp \
-    --use-sandbox \
+    --sandbox '{"enabled": true}' \
     --limit 10  # Remove this line for formal evaluation
 ```
 
@@ -177,7 +177,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['mbpp'],
-    use_sandbox=True,
+    sandbox={'enabled': True},
     limit=10,  # Remove this line for formal evaluation
 )
 

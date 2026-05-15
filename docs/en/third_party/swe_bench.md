@@ -2,62 +2,85 @@
 
 ## Introduction
 
-[SWE-bench](https://www.swebench.com/) is a benchmark suite for evaluating the performance of Large Language Models (LLMs) on software engineering tasks. It contains various programming challenges covering multiple aspects from code generation to debugging and optimization. SWE-bench aims to provide researchers and developers with a standardized platform to compare the performance of different LLMs on practical software development tasks. Using EvalScope's integration with SWE-bench, you can conveniently run and evaluate the performance of various LLMs on these tasks.
+[SWE-bench](https://www.swebench.com/) is a benchmark suite for evaluating Large Language Models (LLMs) on real-world software engineering tasks. Each sample corresponds to a real Issue–PR pair from a GitHub repository, and the model is required to produce a code patch that passes the hidden unit tests.
 
-### Supported Evaluation Datasets
+EvalScope's SWE-bench integration provides two evaluation modes:
 
-The following datasets form the core evaluation system of SWE-bench, designed to test AI systems' ability to automatically resolve real GitHub issues. They evaluate model performance through Issue-Pull Request pairing and unit test verification, ranging from comprehensive evaluation (Verified) to lightweight testing (Mini) to curated subsets (Lite), meeting evaluation needs for different scenarios.
+- **Oracle single-turn mode**: The retrieved relevant code context is provided to the model in one shot, and the model directly generates a patch.
+- **Agentic multi-turn mode**: Only the issue description is provided. The model drives a multi-turn agent loop inside a per-instance SWE-bench Docker container, exploring the codebase via `bash`, editing source files and finally submitting a patch (compatible with the [mini-swe-agent](https://github.com/princeton-nlp/mini-swe-agent) pipeline).
 
-- **SWE-bench Verified (`swe_bench_verified`)**: 500 manually verified samples selected from the SWE-bench test set, used to test systems' ability to automatically resolve GitHub issues, with strictly controlled quality
+## Comparison Between the Two Modes
 
-- **SWE-bench Verified Mini (`swe_bench_verified_mini`)**: A lightweight subset containing 50 data points, requiring only 5GB storage (compared to the original 130GB), maintaining the same performance distribution and difficulty characteristics as the original dataset
+| Dimension | Oracle Single-turn | Agentic Multi-turn |
+|-----------|--------------------|--------------------|
+| Input | `problem_statement` + pre-retrieved code context | `problem_statement` only |
+| Context source | Pre-injected via `inference_dataset_id` (oracle / BM25) | Model autonomously explores `/testbed` via `bash` |
+| Model interaction | Single request, patch produced directly | Multi-turn agent loop (default cap 250 steps) |
+| Tool use | None | `bash` tool, supports `toolcall` / `backticks` protocols |
+| Submission mechanism | Model's diff output is the submission | Model prints sentinel `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`, system collects `git diff` |
+| Docker stage | Evaluation stage only (running tests) | Both inference and evaluation stages |
+| Datasets | `swe_bench_verified` / `swe_bench_verified_mini` / `swe_bench_lite` | `swe_bench_verified_agentic` / `swe_bench_verified_mini_agentic` / `swe_bench_lite_agentic` |
+| Cost | Lower, single-turn inference | Higher, multi-turn inference + long-running containers |
 
-- **SWE-bench Lite (`swe_bench_lite`)**: Contains 300 Issue-PR pairs from 11 popular Python projects, evaluated through unit test verification, using post-PR merge behavior as the reference solution
+**When to choose which**
 
-### Supported Inference Datasets
+- **Oracle mode**: Suitable for quickly establishing a baseline, comparing different retrieval strategies, or running low-cost trials when compute/time is limited.
+- **Agentic mode**: Suitable for evaluating the model's end-to-end capability as a "software engineering agent" (autonomous code exploration, patch authoring, iterative debugging) — closer to a real development workflow.
 
-The following datasets are different retrieval-augmented versions of SWE-bench, specifically formatted and optimized for language models to generate code patches. All datasets guide models to generate standard patch format output (diff format), which can be directly used with SWE-bench inference scripts. The main differences lie in the retrieval method and size limitations of code context.
+## Datasets
 
-- **princeton-nlp/SWE-bench_bm25_13K**: Dataset formatted using Pyserini's BM25 retrieval, with code context limited to 13,000 tokens (cl100k_base), can be directly used for LM to generate patch format files
+### Core evaluation datasets (shared name roots)
 
-- **princeton-nlp/SWE-bench_bm25_27K**: Dataset formatted using Pyserini's BM25 retrieval, with code context limited to 27,000 tokens (cl100k_base), providing a larger context window for generating patch files
+These datasets evaluate models through Issue–PR pairing and unit-test verification, ranging from full to curated subsets:
 
-- **princeton-nlp/SWE-bench_bm25_40K**: Dataset formatted using Pyserini's BM25 retrieval, with code context limited to 40,000 tokens (cl100k_base), providing the largest context window to support complex issue fixes
+- **SWE-bench Verified (`swe_bench_verified`)**: 500 manually verified samples from the SWE-bench test set, with strictly controlled quality.
+- **SWE-bench Verified Mini (`swe_bench_verified_mini`)**: A 50-sample lightweight subset, ~5GB storage (vs ~130GB for the full set), preserving the difficulty distribution of the original.
+- **SWE-bench Lite (`swe_bench_lite`)**: 300 Issue–PR pairs from 11 popular Python projects.
 
-- **princeton-nlp/SWE-bench_oracle**: Dataset formatted using the "Oracle" retrieval setting, providing idealized retrieval results as an upper bound baseline, can be directly used to generate standard patch format files
+### Oracle-only: inference datasets (`inference_dataset_id`)
 
-## Usage
+Differently-retrieval-formatted SWE-bench versions; they differ in the retrieval method and the size limit on code context:
 
-### Install Dependencies
+- **`princeton-nlp/SWE-bench_oracle`**: Oracle retrieval (idealized retrieval as upper-bound baseline). **Default value.**
+- **`princeton-nlp/SWE-bench_bm25_13K`**: BM25 retrieval, code context capped at 13,000 tokens (cl100k_base).
+- **`princeton-nlp/SWE-bench_bm25_27K`**: BM25 retrieval, capped at 27,000 tokens.
+- **`princeton-nlp/SWE-bench_bm25_40K`**: BM25 retrieval, capped at 40,000 tokens.
+
+### Agentic-only: evaluation datasets
+
+Append the `_agentic` suffix to a core dataset name to trigger the agentic multi-turn evaluation:
+
+- **`swe_bench_verified_agentic`** — SWE-bench Verified (500 samples)
+- **`swe_bench_verified_mini_agentic`** — SWE-bench Verified Mini (50 samples, ~5GB)
+- **`swe_bench_lite_agentic`** — SWE-bench Lite (300 samples)
+
+## Install Dependencies
 
 SWE-bench uses Docker to ensure evaluation reproducibility.
 
-1. **Install Docker**: Please refer to the [Docker Installation Guide](https://docs.docker.com/engine/install/) to install Docker on your machine
-
-2. **Additional Configuration for Linux Users**: If you are configuring on a Linux system, it is recommended to check the [Post-installation steps](https://docs.docker.com/engine/install/linux-postinstall/) for a better user experience
-
-3. Install the following dependencies before running evaluation:
+1. **Install Docker**: Refer to the [Docker Installation Guide](https://docs.docker.com/engine/install/) to install Docker on your machine.
+2. **Additional configuration for Linux users**: It is recommended to follow the [post-installation steps](https://docs.docker.com/engine/install/linux-postinstall/) for a better experience.
+3. Install the Python dependencies:
 
 ```bash
 pip install evalscope
 pip install swebench==4.1.0
 ```
 
-**Tip**: Properly configuring Docker is a prerequisite for running SWE-bench evaluations. Please ensure the Docker service is running normally after installation.
-
-
-### Run Evaluation
+**Tip**: A properly configured Docker is a prerequisite for running SWE-bench evaluations. Make sure the Docker service is running after installation.
 
 ```{note}
-When running swe_bench tasks for the first time, the system needs to build/download necessary Docker images. This process has high resource requirements:
+On the first run of a swe_bench task, the system needs to build/download the required Docker images, which is resource-intensive:
 
-- **Time Consumption**: For the complete SWE-bench Verified dataset, build time may take several hours
-- **Storage Requirements**: Approximately 130GB of storage space is needed. For the lightweight SWE-bench Verified Mini dataset, storage requirements are about 5GB
+- **Time**: Building images for the full SWE-bench Verified can take several hours.
+- **Storage**: ~130GB for the full set; ~5GB for the Mini set.
 
-**Recommendation**: Please ensure sufficient disk space and time budget. It is recommended to choose an environment with good network conditions for the first run.
+**Recommendation**: Make sure you have enough disk space and time budget for the first run, and prefer an environment with a stable network.
 ```
-Run the following code to start evaluation. Below is an example using the qwen-plus model for evaluation.
 
+## Oracle Single-turn Evaluation
+
+Below is an example of evaluating `swe_bench_verified` with the `qwen-plus` model:
 
 ```python
 import os
@@ -68,18 +91,18 @@ task_cfg = TaskConfig(
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
     api_key=os.getenv('DASHSCOPE_API_KEY'),
     eval_type='openai_api',  # Use API model service
-    datasets=['swe_bench_verified'], # Select evaluation dataset, can also choose 'swe_bench_verified_mini' or 'swe_bench_lite'
+    datasets=['swe_bench_verified'],  # Can also be 'swe_bench_verified_mini' or 'swe_bench_lite'
     dataset_args={
         'swe_bench_verified': {
             'extra_params': {
-                'build_docker_images': True, # Whether to build Docker images required for evaluation, recommended to set to True for first run
-                'pull_remote_images_if_available': True, # Pull remote images if available, recommended to set to True
-                'inference_dataset_id': 'princeton-nlp/SWE-bench_oracle' # Select inference dataset, options: 'princeton-nlp/SWE-bench_bm25_13K', 'princeton-nlp/SWE-bench_bm25_27K', 'princeton-nlp/SWE-bench_bm25_40K' or 'princeton-nlp/SWE-bench_oracle'
+                'build_docker_images': True,                              # Build Docker images required for evaluation. Recommended for first run.
+                'pull_remote_images_if_available': True,                  # Prefer pulling pre-built remote images when available. Recommended.
+                'inference_dataset_id': 'princeton-nlp/SWE-bench_oracle'  # Inference dataset: BM25_13K / 27K / 40K / oracle
             }
         }
     },
-    eval_batch_size=5,  # Batch size for inference / number of worker threads for parallel evaluation (docker containers)
-    limit=5,  # Limit evaluation quantity for quick testing, recommended to remove this for formal evaluation
+    eval_batch_size=5,  # Inference batch size / number of parallel evaluation workers (Docker containers)
+    limit=5,            # Limit samples for quick testing; remove for formal evaluation
     generation_config={
         'temperature': 0.1,
     }
@@ -87,71 +110,79 @@ task_cfg = TaskConfig(
 run_task(task_cfg=task_cfg)
 ```
 
-Example output:
-
-Intermediate evaluation results will be saved in the `outputs/xxxxx/swebench_log` directory, including files such as `patch.diff`. The final evaluation result example is as follows:
+Intermediate evaluation artifacts are saved under `outputs/xxxxx/swebench_log`, including `patch.diff` and other files. Example final result:
 
 ```text
 +-----------+--------------------+----------+----------+-------+---------+---------+
 | Model     | Dataset            | Metric   | Subset   |   Num |   Score | Cat.0   |
 +===========+====================+==========+==========+=======+=========+=========+
 | qwen-plus | swe_bench_verified | mean_acc | default  |     5 |     0.2 | default |
-+-----------+--------------------+----------+----------+-------+---------+---------+ 
++-----------+--------------------+----------+----------+-------+---------+---------+
 ```
 
-## Agentic Mode (mini-swe-agent compatible)
+## Agentic Multi-turn Evaluation
 
-In addition to the standard oracle single-turn evaluation above, EvalScope provides an **agentic multi-turn evaluation mode** that mirrors the [mini-swe-agent](https://github.com/princeton-nlp/mini-swe-agent) pipeline.
-
-In agentic mode, the model is given only the raw `problem_statement` (no oracle retrieval context) and drives a multi-turn agent loop inside a per-instance SWE-bench Docker container. The model uses `bash` commands to explore `/testbed`, edit source files, and submits a `git diff` patch by printing the sentinel `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`.
-
-### Agentic Evaluation Datasets
-
-- **`swe_bench_verified_agentic`** — SWE-bench Verified (500 samples)
-- **`swe_bench_verified_mini_agentic`** — SWE-bench Verified Mini (50 samples, ~5GB)
-- **`swe_bench_lite_agentic`** — SWE-bench Lite (300 samples)
+In agentic mode, the model receives only the raw `problem_statement` (no oracle context) and drives a multi-turn agent loop inside a per-instance SWE-bench Docker container: it uses `bash` to explore `/testbed`, edit source files, and finally submits a `git diff` by printing the sentinel `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`.
 
 ### Action Protocol
 
 The `action_protocol` parameter controls how the model interacts with bash:
 
-| Protocol | Description | Best For |
+| Protocol | Description | Best for |
 |----------|-------------|----------|
 | `toolcall` (default) | OpenAI function-calling with a single `bash` tool, supports parallel tool calls | Models with function-calling support |
 | `backticks` | Model wraps commands in `` ```mswea_bash_command ... ``` `` fenced blocks, one command per turn | Models without function-calling |
 
-### Run Agentic Evaluation
+### Run Example
+
+The example below mirrors `test_swe_bench_verified_mini_agentic` in [tests/benchmark/test_agent.py](https://github.com/modelscope/evalscope/blob/main/tests/benchmark/test_agent.py):
 
 ```python
 import os
 from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
-    model='qwen-plus',
+    model='qwen3-max',
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
     api_key=os.getenv('DASHSCOPE_API_KEY'),
     eval_type='openai_api',
-    datasets=['swe_bench_verified_mini_agentic'],
+    datasets=['swe_bench_verified_mini_agentic'],  # Can also be 'swe_bench_verified_agentic' or 'swe_bench_lite_agentic'
     dataset_args={
         'swe_bench_verified_mini_agentic': {
             'extra_params': {
-                'action_protocol': 'toolcall',  # or 'backticks'
-                'max_steps': 250,
-                'command_timeout': 60,
-                'build_docker_images': True,
-                'pull_remote_images_if_available': True,
+                'action_protocol': 'toolcall',           # Action protocol: 'toolcall' or 'backticks'
+                'max_steps': 250,                        # Maximum agent loop steps
+                'command_timeout': 60.0,                 # Per-bash-command timeout (seconds)
+                'working_dir': '/testbed',               # Working directory inside the container
+                'build_docker_images': True,             # Prepare images required for evaluation; recommended for first run
+                'pull_remote_images_if_available': True, # Prefer pulling pre-built remote images
+                # 'force_arch': 'arm64',                 # Apple Silicon users may explicitly set 'arm64'; default '' = auto-detect
             }
         }
     },
-    eval_batch_size=2,
-    limit=5,
+    eval_batch_size=5,  # Number of parallel containers
+    limit=3,            # Limit samples for quick testing; remove for formal evaluation
     generation_config={
-        'temperature': 0,
+        'temperature': 0.7,
+        'parallel_tool_calls': True,
+        'stream': True,
     }
 )
 run_task(task_cfg=task_cfg)
 ```
 
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `action_protocol` | str | `toolcall` | Bash interaction protocol: `toolcall` or `backticks` |
+| `max_steps` | int | `250` | Maximum agent loop steps per sample |
+| `command_timeout` | float | `60.0` | Per-bash-command timeout in seconds |
+| `working_dir` | str | `/testbed` | Working directory inside the container (SWE-bench image convention) |
+| `build_docker_images` | bool | `True` | Whether to prepare Docker images (build or pull) |
+| `pull_remote_images_if_available` | bool | `True` | Prefer pulling pre-built remote images when available |
+| `force_arch` | str | `''` | Force the image architecture: `''` / `arm64` / `x86_64`. Empty means auto-detect. |
+
 ```{note}
-Agentic mode requires Docker to be running during **both** inference and evaluation. Each sample spawns its own container from pre-built SWE-bench images. The `max_steps` parameter (default 250) controls the upper bound on agent loop iterations per sample.
+Agentic mode requires Docker to be running during **both** the inference and evaluation stages. Each sample spawns its own container from a pre-built SWE-bench image, so `eval_batch_size` effectively controls the number of concurrently running containers — tune it according to your machine resources.
 ```

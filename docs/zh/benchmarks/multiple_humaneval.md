@@ -17,16 +17,16 @@ MultiPL-E HumanEval 是一个源自 OpenAI HumanEval 的多语言代码生成基
 - 覆盖 18 种编程语言的多语言评估
 - 基于执行的测试用例评估
 - 支持代码生成的 pass@k 指标
-- 使用 Docker 沙箱环境确保安全执行
+- 使用 Docker 沙箱环境进行安全代码执行
 - 源自 HumanEval，保持一致的问题难度
 
 ## 评估说明
 
 - **需要沙箱**：需使用沙箱环境以确保代码安全执行
-- 默认使用 **test** 切分进行评估
-- 主要指标：**Accuracy**，采用 **pass@k** 聚合方式
+- 默认评估使用 **test** 划分
+- 主要指标：**准确率（Accuracy）**，采用 **pass@k** 聚合方式
 - 每个测试用例超时时间：30 秒
-- 沙箱环境设置请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
+- 沙箱设置详见 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
 
 ## 属性
 
@@ -38,7 +38,7 @@ MultiPL-E HumanEval 是一个源自 OpenAI HumanEval 的多语言代码生成基
 | **标签** | `Coding` |
 | **指标** | `acc` |
 | **默认示例数** | 0-shot |
-| **评估切分** | `test` |
+| **评估划分** | `test` |
 | **聚合方式** | `mean_and_pass_at_k` |
 
 
@@ -50,7 +50,7 @@ MultiPL-E HumanEval 是一个源自 OpenAI HumanEval 的多语言代码生成基
 | 提示词长度（平均） | 696.59 字符 |
 | 提示词长度（最小/最大） | 285 / 2463 字符 |
 
-**各子集统计数据：**
+**各子集统计信息：**
 
 | 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
 |--------|---------|-------------|------------|------------|
@@ -100,7 +100,7 @@ MultiPL-E HumanEval 是一个源自 OpenAI HumanEval 的多语言代码生成基
 }
 ```
 
-*注：部分内容因展示需要已截断。*
+*注：部分内容因展示需要已被截断。*
 
 ## 提示模板
 
@@ -136,8 +136,8 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets multiple_humaneval \
-    --use-sandbox \
-    --limit 10  # 正式评估时请移除此行
+    --sandbox '{"enabled": true}' \
+    --limit 10  # 正式评估时请删除此行
 ```
 
 ### 使用 Python
@@ -151,13 +151,13 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['multiple_humaneval'],
-    use_sandbox=True,
+    sandbox={'enabled': True},
     dataset_args={
         'multiple_humaneval': {
-            # subset_list: ['humaneval-cpp', 'humaneval-ts', 'humaneval-sh']  # 可选，用于指定评估特定子集
+            # subset_list: ['humaneval-cpp', 'humaneval-ts', 'humaneval-sh']  # 可选，用于评估特定子集
         }
     },
-    limit=10,  # 正式评估时请移除此行
+    limit=10,  # 正式评估时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

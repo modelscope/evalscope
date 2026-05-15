@@ -160,6 +160,10 @@ evalscope service --outputs examples/viz
 - **评分详情**：可折叠的 JSON 视图，展示评分计算的完整信息。
 - **元数据**：可折叠的 JSON 视图，展示样本的附加元信息。
 
+```{tip}
+当评测启用 [Agent 评测模式](../user_guides/agent.md) 时，预测视图会自动检测样本的 `agent_trace` 并按 `step` 分组渲染 Agent Trace 视图（含工具调用、环境命令、nudge、错误等）。完整说明与示意图见 [Agent 评测 → Trace 可视化](../user_guides/agent.md#trace-可视化)。
+```
+
 #### 数据集导航
 
 在详情和预测标签中，左侧提供数据集导航侧边栏（移动端为顶部横向滚动条），可快速切换当前查看的数据集。
@@ -226,5 +230,5 @@ Web 界面支持直接提交评测和压测任务，无需命令行操作。
 - **任务监控**：实时显示压测进度和日志，任务完成后可直接查看压测报告。
 
 ```{note}
-在线评测和压测功能的详细配置说明，请参考[评测快速开始](quick_start.md)和[压测快速开始](../user_guides/stress_test/quick_start.md)。
+在线评测和压测功能的详细配置说明，请参考[评测快速开始](basic_usage.md)和[压测快速开始](../user_guides/stress_test/quick_start.md)。
 ```

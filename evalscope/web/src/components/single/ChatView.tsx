@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import type { PredictionRow } from '@/api/types'
 import { hasSystemPrompt, parseSystemUser } from './chat/chatHelpers'
 import { MessageRow, SystemPromptRow, HeaderPerfChip } from './chat/MessageComponents'

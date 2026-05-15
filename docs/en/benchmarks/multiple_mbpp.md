@@ -135,7 +135,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets multiple_mbpp \
-    --use-sandbox \
+    --sandbox '{"enabled": true}' \
     --limit 10  # Remove this line for formal evaluation
 ```
 
@@ -150,7 +150,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['multiple_mbpp'],
-    use_sandbox=True,
+    sandbox={'enabled': True},
     dataset_args={
         'multiple_mbpp': {
             # subset_list: ['mbpp-cpp', 'mbpp-ts', 'mbpp-sh']  # optional, evaluate specific subsets

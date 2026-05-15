@@ -37,6 +37,7 @@ evalscope eval --model your-model-name --api-url $OPENAI_API_BASE_URL --api-key 
 - **📚 Comprehensive Evaluation Benchmarks**: Built-in multiple industry-recognized evaluation benchmarks including MMLU, C-Eval, GSM8K, and more.
 - **🧩 Multi-modal and Multi-domain Support**: Supports evaluation of various model types including Large Language Models (LLM), Vision Language Models (VLM), Embedding, Reranker, AIGC, and more.
 - **🚀 Multi-backend Integration**: Seamlessly integrates multiple evaluation backends including OpenCompass, VLMEvalKit, RAGEval to meet different evaluation needs.
+- **🤖 Agent Evaluation Mode**: Drives benchmarks (e.g. GSM8K, AIME, SWE-bench Agentic) inside a controlled multi-turn AgentLoop with pluggable strategies, tools and Docker sandbox; full per-sample Agent Trace is recorded and visualizable.
 - **⚡ Inference Performance Testing**: Provides powerful model service stress testing tools, supporting multiple performance metrics such as TTFT, TPOT.
 - **📊 Interactive Reports**: Provides WebUI visualization interface, supporting multi-dimensional model comparison, report overview and detailed inspection.
 - **⚔️ Arena Mode**: Supports multi-model battles (Pairwise Battle), intuitively ranking and evaluating models.
@@ -73,6 +74,7 @@ For details, please refer to [📖 Visualizing Evaluation Results](https://evals
 
 ## 🎉 What's New
 
+- 🔥 **[2026.05.15]** Introduced **Agent Evaluation Mode**: any benchmark based on `DefaultDataAdapter` (GSM8K, AIME, IFEval, etc.) can now be driven through a multi-turn AgentLoop with pluggable strategies (`function_calling` / `react` / `swe_bench_*`), tools (`bash` / `python_exec` / `submit`) and `local` / `docker` environments. Per-sample `agent_trace` is recorded and rendered step-by-step in the dashboard's Predictions tab. See the [Agent Evaluation guide](https://evalscope.readthedocs.io/en/latest/user_guides/agent.html) for details.
 - 🔥 **[2026.05.08]** Partnered with [LightSeek](https://lightseek.org/) to launch [TokenSpeed](https://lightseek.org/blog/lightseek-tokenspeed.html), a speed-of-light LLM inference engine for agentic workloads. EvalScope provides the SWE-smith benchmarking pipeline — using real coding-agent traces to measure per-GPU throughput (TPM) and per-user latency (TPS) — serving as the official benchmark tool for TokenSpeed performance evaluation. Refer to the [SWE-smith usage guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/multi_turn.html#swe-smith) to get started.
 - 🔥 **[2026.05.07]** Replaced the Gradio-based WebUI with a new React + Vite web interface for better performance and user experience.
 - 🔥 **[2026.04.23]** Added support for recording performance (perf) metrics during evaluation tasks, enabling simultaneous tracking of model accuracy and inference efficiency metrics such as TTFT, TPOT, and throughput in a single evaluation run.

@@ -10,6 +10,45 @@ The following introduces two different sandbox usage methods:
 ```{tip}
 - The default **sandbox environment configuration** for datasets can be viewed in the dataset configuration, such as [HumanEval](../benchmarks/humaneval.md).
 - The **number of sandbox worker processes** needs to be adjusted according to the resource situation of the local machine. It is recommended to set it to no more than half of the local CPU cores. For example, if the local machine has 8 CPU cores, it is recommended to set it to 4. Especially for multi-language images (`volcengine/sandbox-fusion`), which consume more resources, it is recommended to appropriately reduce the number of worker processes.
+- The same sandbox infrastructure also powers `environment='docker'` in [Agent Evaluation](agent.md); fields such as `image` / `timeout` can be reused in `agent_config.environment_extra`.
+```
+
+## 0. Unified Sandbox Configuration
+
+EvalScope manages sandbox settings via the nested field `TaskConfig.sandbox` (mapped to `SandboxTaskConfig`).
+
+`SandboxTaskConfig` fields:
+
+| Field | Type | Description | Default |
+|-------|------|-------------|---------|
+| `enabled` | `bool` | Whether to enable the sandbox | `false` |
+| `engine` | `str` | Sandbox engine: `docker` / `volcengine`, etc. | `docker` |
+| `default_config` | `dict` | Task-level sandbox config; merged with `BenchmarkMeta.sandbox_config`, and used as the default per-sample environment config in Agent mode | `{}` |
+| `manager_config` | `dict` | Forwarded to the ms_enclave manager (e.g. `base_url` for remote docker, volcengine credentials) | `{}` |
+| `pool_size` | `int \| None` | Warmup pool size for pooled execution; falls back to `eval_batch_size` when `None` | `None` |
+
+`sandbox` accepts both a `SandboxTaskConfig` instance and an equivalent dict — the two forms behave identically:
+
+```python
+from evalscope.config import SandboxTaskConfig
+
+# Option A: use SandboxTaskConfig (recommended; type hints available)
+TaskConfig(
+    sandbox=SandboxTaskConfig(
+        enabled=True,
+        engine='docker',
+        manager_config={'base_url': 'http://remote:1234'},
+    ),
+)
+
+# Option B: pass a plain dict
+TaskConfig(
+    sandbox={
+        'enabled': True,
+        'engine': 'docker',
+        'manager_config': {'base_url': 'http://remote:1234'},
+    },
+)
 ```
 
 ## 1. Local Usage
@@ -27,7 +66,7 @@ pip install evalscope[sandbox]
 ```
 
 ### Parameter Configuration
-When running evaluations, add the `use_sandbox` and `sandbox_type` parameters to automatically enable the sandbox environment. Other parameters remain the same as regular evaluations:
+Use the `sandbox` field on `TaskConfig` to enable the sandbox; other parameters remain the same as regular evaluations:
 
 Here's a complete example code for model evaluation on HumanEval:
 ```python
@@ -48,8 +87,10 @@ task_config = TaskConfig(
         'temperature': 0.0,
         'seed': 42,
     },
-    use_sandbox=True, # enable sandbox
-    sandbox_type='docker', # specify sandbox type
+    sandbox={
+        'enabled': True,    # enable sandbox
+        'engine': 'docker', # specify sandbox engine
+    },
 )
 
 run_task(task_config)
@@ -97,7 +138,7 @@ pip install evalscope[sandbox]
 
 ### Parameter Configuration
 
-When running evaluations, add the `use_sandbox` parameter to automatically enable the sandbox environment, and specify the remote sandbox server's API address in `sandbox_manager_config`:
+Use the `sandbox` field on `TaskConfig` to enable the sandbox, and specify the remote sandbox server's API address in `manager_config`:
 
 Complete example code is as follows:
 ```python
@@ -118,10 +159,12 @@ task_config = TaskConfig(
         'temperature': 0.0,
         'seed': 42,
     },
-    use_sandbox=True, # enable sandbox
-    sandbox_type='docker', # specify sandbox type
-    sandbox_manager_config={
-        'base_url': 'http://<remote_host>:1234'  # remote sandbox manager URL
+    sandbox={
+        'enabled': True,    # enable sandbox
+        'engine': 'docker', # specify sandbox engine
+        'manager_config': {
+            'base_url': 'http://<remote_host>:1234'  # remote sandbox manager URL
+        },
     },
 )
 
@@ -149,19 +192,21 @@ docker run -it -p 8080:8080 vemlp-cn-beijing.cr.volces.com/preset-images/code-sa
 ```
 
 3. **Configure Evaluation Parameters**:
-When using the VolcEngine sandbox environment, simply set the `sandbox_type` parameter to `volcengine`, and ensure that the VolcEngine sandbox server has been installed and is running on the remote machine.
+When using the VolcEngine sandbox environment, set the `engine` parameter to `volcengine`, and ensure that the VolcEngine sandbox server has been installed and is running on the remote machine.
 
 ```python
     ...
-    use_sandbox=True, # Enable sandbox
-    sandbox_type='volcengine', # Specify using VolcEngine sandbox
-    sandbox_manager_config={
-        'base_url': 'http://<remote_host>:8080',  # Remote VolcEngine sandbox manager URL
-        "dataset_language_map": {  # Optional, specify programming languages for datasets
-                "r": "R",
-                "d_ut": "D_ut",
-                "ts": "typescript"
-            }
+    sandbox={
+        'enabled': True,        # Enable sandbox
+        'engine': 'volcengine', # Use the VolcEngine sandbox
+        'manager_config': {
+            'base_url': 'http://<remote_host>:8080',  # Remote VolcEngine sandbox manager URL
+            'dataset_language_map': {  # Optional, specify programming languages for datasets
+                'r': 'R',
+                'd_ut': 'D_ut',
+                'ts': 'typescript',
+            },
+        },
     },
     ...
 ```

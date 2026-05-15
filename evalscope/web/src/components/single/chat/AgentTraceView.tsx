@@ -1,7 +1,5 @@
 import React from 'react'
 import {
-  ChevronDown,
-  ChevronRight,
   AlertTriangle,
   Cpu,
   Sparkles,

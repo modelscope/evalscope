@@ -164,6 +164,9 @@
   --bubble-tool-color: #fbbf24;
   --bubble-system-bg: rgba(148, 163, 184, 0.06);
   --bubble-system-border: rgba(148, 163, 184, 0.20);
+
+  /* Media player */
+  --media-video-bg: #000000;
 }
 
 /* ------------------------------------------------------------------ */
@@ -305,6 +308,9 @@
   --bubble-tool-color: #b26200;
   --bubble-system-bg: rgba(90, 99, 120, 0.08);
   --bubble-system-border: rgba(90, 99, 120, 0.22);
+
+  /* Media player */
+  --media-video-bg: #0d0d0d;
 }
 
 /* ------------------------------------------------------------------ */

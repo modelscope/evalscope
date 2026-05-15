@@ -32,7 +32,7 @@ from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.import_utils import check_import
+from evalscope.utils.import_utils import check_import, is_build_doc
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -229,6 +229,12 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
         self.build_docker_images: bool = self.extra_params.get('build_docker_images', True)
         self.pull_remote_images_if_available: bool = self.extra_params.get('pull_remote_images_if_available', True)
         self.force_arch: str = self.extra_params.get('force_arch', '')
+
+        # Skip docker image build/pull during documentation generation (BUILD_DOC=1)
+        # to avoid slow/unnecessary image pulls when running `make docs-pipeline`.
+        if is_build_doc():
+            self.build_docker_images = False
+            self.pull_remote_images_if_available = False
 
     # ------------------------------------------------------------------
     # Dataset loading

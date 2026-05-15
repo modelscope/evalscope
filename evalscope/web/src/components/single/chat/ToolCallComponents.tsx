@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { ChevronDown, ChevronRight, Wrench } from 'lucide-react'
 import type { ChatMessage } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
