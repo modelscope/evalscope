@@ -115,8 +115,11 @@ def init_swanlab(args: Arguments) -> None:
         init_kwargs['workspace'] = workspace
 
     swanlab_host = args.swanlab_host or os.getenv('SWANLAB_HOST')
-    if isinstance(args.swanlab_api_key, str) and not args.swanlab_api_key == 'local':
-        login_kwargs = {'api_key': args.swanlab_api_key}
+    is_local = args.swanlab_api_key == 'local'
+    if not is_local and (isinstance(args.swanlab_api_key, str) or swanlab_host):
+        login_kwargs = {}
+        if isinstance(args.swanlab_api_key, str):
+            login_kwargs['api_key'] = args.swanlab_api_key
         if swanlab_host:
             login_kwargs['host'] = swanlab_host
         swanlab.login(**login_kwargs)
