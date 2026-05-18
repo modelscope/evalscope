@@ -182,6 +182,9 @@ class Arguments(BaseArgument):
     swanlab_api_key: Optional[str] = None
     """Will be deprecated in the future."""
 
+    swanlab_host: Optional[str] = None
+    """SwanLab host URL for self-hosted deployments. Falls back to SWANLAB_HOST env var."""
+
     name: Optional[str] = None
     """Name for the run."""
 
@@ -575,6 +578,11 @@ def add_argument(parser: argparse.ArgumentParser):
                         choices=[VisualizerType.WANDB, VisualizerType.SWANLAB, VisualizerType.CLEARML, None], help='The visualizer to use, default None')  # noqa: E501
     parser.add_argument('--wandb-api-key', type=str, default=None, help='The wandb API key')
     parser.add_argument('--swanlab-api-key', type=str, default=None, help='The swanlab API key')
+    parser.add_argument(
+        '--swanlab-host',
+        type=str,
+        default=None,
+        help='SwanLab host URL for self-hosted deployments (also reads SWANLAB_HOST env var)')
     parser.add_argument('--name', type=str, help='The wandb/swanlab/clearml result name and result db name')
     parser.add_argument('--enable-progress-tracker', action='store_true', default=False, help='Enable progress tracker')
 
