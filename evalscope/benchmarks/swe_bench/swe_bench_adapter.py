@@ -130,9 +130,9 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
         """Build images in post process samples"""
         from .build_images import build_images
 
-        if self.build_docker_images:
-            samples = self.test_dataset[self.default_subset]
+        samples = self.test_dataset[self.default_subset]
 
+        if self.build_docker_images:
             # build images
             id_to_docker_image_map = build_images(
                 samples=samples,
