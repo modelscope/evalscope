@@ -26,6 +26,7 @@ from .utils import (
     load_bfcl_data,
     process_test_entries,
     run_prereq_inference,
+    synthesize_agent_messages,
 )
 
 logger = get_logger()
@@ -183,7 +184,6 @@ class BFCLV4Adapter(AgentAdapter):
     def _prereq_inference(self):
         if self.prereq_finished:
             return
-        # MOVED: delegate prereq processing to utils
         run_prereq_inference(
             handler=self.handler,
             prereq_entries=self.prereq_entries,
@@ -197,14 +197,22 @@ class BFCLV4Adapter(AgentAdapter):
         try:
             self._init_handler()
 
-            result, _ = self.handler.inference(
-                deepcopy(sample.metadata), include_input_log=False, exclude_state_log=False
+            result, metadata = self.handler.inference(
+                deepcopy(sample.metadata), include_input_log=False, exclude_state_log=True
             )
 
             output = ModelOutput.from_content(
                 model=model.name,
                 content=json.dumps(result),
             )
+            agent_messages = synthesize_agent_messages(
+                prompt_entry=sample.metadata,
+                model_result=result,
+                is_fc_model=self.is_fc_model,
+                inference_log=metadata.get('inference_log') if isinstance(metadata, dict) else None,
+            )
+            if agent_messages:
+                output.metadata = {'__agent_messages__': agent_messages}
         except Exception as e:
             # This is usually the case when the model getting stuck on one particular test case.
             # For example, timeout error or FC model returning invalid JSON response.
@@ -257,5 +265,4 @@ class BFCLV4Adapter(AgentAdapter):
         """
 
         # noqa: E501
-        # MOVED: delegate aggregation logic to utils
         compute_aggregate_subsets(report)

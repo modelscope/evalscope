@@ -1,12 +1,22 @@
 from __future__ import annotations
 
+import json
 import traceback
+import uuid
 from collections import defaultdict
 from copy import deepcopy
 from pathlib import Path
 from tqdm import tqdm
 from typing import Any, Dict, List, Tuple
 
+from evalscope.api.messages.chat_message import (
+    ChatMessage,
+    ChatMessageAssistant,
+    ChatMessageSystem,
+    ChatMessageTool,
+    ChatMessageUser,
+)
+from evalscope.api.tool import ToolCall, ToolFunction
 from evalscope.report import (
     Category,
     Report,
@@ -242,6 +252,120 @@ def run_prereq_inference(
             entry.pop('_group_backend', None)
             entry.pop('_group_scenario', None)
             entry.pop('_scenario_idx', None)
+
+
+# ----------------------------
+# Visualization helpers
+# ----------------------------
+
+
+def synthesize_agent_messages(
+    prompt_entry: Dict[str, Any],
+    model_result: Any,
+    is_fc_model: bool,
+    inference_log: Any = None,
+) -> List[ChatMessage]:
+    """Synthesize a ChatMessage list for review/visualization from a BFCL entry.
+
+    BFCL's ``handler.inference`` returns ``model_result`` (per-turn / per-step
+    response payloads) but does NOT expose the underlying chat history. This
+    helper reconstructs an approximate conversation from:
+
+    * ``prompt_entry['question']`` — list of turns, each a list of role/content
+      dicts (the genuine user/system messages sent into the handler);
+    * ``model_result`` — list of turns, each a list of step responses. In FC
+      mode each step response is a list of ``{name: args}`` dicts; in
+      prompting mode it is a string.
+    * ``inference_log`` (optional) — multi-turn inference log used to recover
+      per-step ``tool`` role messages (function execution results). Single-turn
+      AST categories don't execute tools, so passing ``None`` is fine.
+
+    Reasoning content is intentionally not recovered.
+    """
+
+    def _as_str(content: Any) -> str:
+        if isinstance(content, str):
+            return content
+        try:
+            return json.dumps(content, ensure_ascii=False)
+        except (TypeError, ValueError):
+            return str(content)
+
+    def _user_or_system(entry: Dict[str, Any]) -> ChatMessage:
+        role = entry.get('role')
+        content = _as_str(entry.get('content', ''))
+        if role == 'system':
+            return ChatMessageSystem(content=content)
+        return ChatMessageUser(content=content)
+
+    def _build_tool_calls(step_response: Any) -> List[ToolCall]:
+        if not isinstance(step_response, list):
+            return []
+        tool_calls: List[ToolCall] = []
+        for item in step_response:
+            if not isinstance(item, dict) or len(item) != 1:
+                return []
+            name, args = next(iter(item.items()))
+            if isinstance(args, str):
+                try:
+                    args_dict = json.loads(args)
+                except (TypeError, ValueError):
+                    args_dict = {'_raw': args}
+            elif isinstance(args, dict):
+                args_dict = args
+            else:
+                return []
+            tool_calls.append(
+                ToolCall(
+                    id=f'call_{uuid.uuid4().hex[:16]}',
+                    function=ToolFunction(name=name, arguments=args_dict),
+                )
+            )
+        return tool_calls
+
+    def _assistant_from_step(step_response: Any) -> ChatMessageAssistant:
+        if is_fc_model:
+            tool_calls = _build_tool_calls(step_response)
+            if tool_calls:
+                return ChatMessageAssistant(content='', tool_calls=tool_calls)
+        return ChatMessageAssistant(content=_as_str(step_response))
+
+    messages: List[ChatMessage] = []
+    questions: List[List[Dict[str, Any]]] = prompt_entry.get('question', []) or []
+    turns: List[Any] = model_result if isinstance(model_result, list) else []
+    # Inference_log mixes per-turn dicts and bare state-log lists; keep only
+    # the per-turn dicts so they align positionally with ``turns``.
+    turn_logs: List[Dict[str, Any]] = ([t for t in inference_log
+                                        if isinstance(t, dict)] if isinstance(inference_log, list) else [])
+    n_turns = max(len(questions), len(turns))
+
+    for i in range(n_turns):
+        if i < len(questions):
+            for q in questions[i] or []:
+                if isinstance(q, dict):
+                    messages.append(_user_or_system(q))
+        if i >= len(turns):
+            continue
+        turn_steps = turns[i] if isinstance(turns[i], list) else [turns[i]]
+        turn_log = turn_logs[i] if i < len(turn_logs) else {}
+        for step_idx, step in enumerate(turn_steps):
+            asst = _assistant_from_step(step)
+            messages.append(asst)
+            step_entries = turn_log.get(f'step_{step_idx}', []) if isinstance(turn_log, dict) else []
+            if not isinstance(step_entries, list):
+                continue
+            tool_entries = [e for e in step_entries if isinstance(e, dict) and e.get('role') == 'tool']
+            tool_calls = asst.tool_calls or []
+            for j, entry in enumerate(tool_entries):
+                tc = tool_calls[j] if j < len(tool_calls) else None
+                messages.append(
+                    ChatMessageTool(
+                        content=_as_str(entry.get('content', '')),
+                        tool_call_id=tc.id if tc is not None else None,
+                        function=tc.function.name if tc is not None else None,
+                    )
+                )
+    return messages
 
 
 # ----------------------------

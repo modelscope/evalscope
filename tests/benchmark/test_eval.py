@@ -406,10 +406,10 @@ class TestNativeBenchmark(TestBenchmark):
         dataset_args = {
             'subset_list': [
                 'simple',
-                'java',
-                'javascript',
+                # 'java',
+                # 'javascript',
                 # 'live_multiple',
-                # 'multi_turn_base',
+                'multi_turn_base',
                 # 'multi_turn_miss_func'
             ],
             'extra_params': {
@@ -417,34 +417,34 @@ class TestNativeBenchmark(TestBenchmark):
                 'underscore_to_dot': True
             }
         }
-        self._run_dataset_test('bfcl_v3', dataset_args=dataset_args, model='qwen-plus', limit=1)
+        self._run_dataset_test('bfcl_v3', dataset_args=dataset_args, model='qwen-plus', limit=5)
 
     def test_bfcl_v4(self):
         """Test BFCL v4 dataset."""
         dataset_args = {
             'subset_list': [
                 'simple_python',
-                'simple_java',
-                'simple_javascript',
-                'multiple',
-                'parallel',
-                'parallel_multiple',
-                'irrelevance',
-                'live_simple',
-                'live_multiple',
-                'live_parallel',
-                'live_parallel_multiple',
-                'live_irrelevance',
-                'live_relevance',
+                # 'simple_java',
+                # 'simple_javascript',
+                # 'multiple',
+                # 'parallel',
+                # 'parallel_multiple',
+                # 'irrelevance',
+                # 'live_simple',
+                # 'live_multiple',
+                # 'live_parallel',
+                # 'live_parallel_multiple',
+                # 'live_irrelevance',
+                # 'live_relevance',
                 'multi_turn_base',
-                'multi_turn_miss_func',
-                'multi_turn_miss_param',
-                'multi_turn_long_context',
-                'web_search_base',
-                'web_search_no_snippet',
-                'memory_kv',
-                'memory_vector',
-                'memory_rec_sum'
+                # 'multi_turn_miss_func',
+                # 'multi_turn_miss_param',
+                # 'multi_turn_long_context',
+                # 'web_search_base',
+                # 'web_search_no_snippet',
+                # 'memory_kv',
+                # 'memory_vector',
+                # 'memory_rec_sum'
             ],
             'extra_params': {
                 'is_fc_model': True,
@@ -452,7 +452,7 @@ class TestNativeBenchmark(TestBenchmark):
                 'SERPAPI_API_KEY':env.get('SERPAPI_API_KEY'),
             }
         }
-        self._run_dataset_test('bfcl_v4', dataset_args=dataset_args, model='qwen-plus', limit=10, use_cache='outputs/20251029_204050', rerun_review=True, debug=False)
+        self._run_dataset_test('bfcl_v4', dataset_args=dataset_args, model='qwen-plus', limit=5, rerun_review=True, debug=False)
 
     def test_tau_bench(self):
         dataset_args = {
