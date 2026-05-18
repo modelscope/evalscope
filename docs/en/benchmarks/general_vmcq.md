@@ -3,20 +3,21 @@
 
 ## Overview
 
-General-VMCQ is a customizable visual multiple-choice question answering benchmark for multimodal models. It uses MMMU-style format with image placeholders in text, supporting flexible image inputs.
+General-VMCQ is a customizable visual multiple-choice question answering benchmark for multimodal models.
+It uses MMMU-style format with image/video placeholders in text, supporting flexible media inputs.
 
 ## Task Description
 
 - **Task Type**: Visual Multiple-Choice Question Answering
-- **Input**: Question with `<image N>` placeholders + choice options + images
+- **Input**: Question with `<image N>`/`<video N>` placeholders + choice options + media
 - **Output**: Selected answer choice
 - **Flexibility**: Supports custom datasets via local files
 
 ## Key Features
 
 - MMMU-style format (not OpenAI message format)
-- Supports up to 100 images per sample
-- Flexible image input (path, URL, or base64 data URL)
+- Supports up to 100 images and 100 videos per sample
+- Flexible image/video input (path, URL, or base64 data URL)
 - Chain-of-thought prompt template option
 - Custom dataset support via local file loading
 
@@ -25,7 +26,7 @@ General-VMCQ is a customizable visual multiple-choice question answering benchma
 - Default configuration uses **0-shot** evaluation
 - Primary metric: **Accuracy**
 - Train split: **dev**, Eval split: **val**
-- Images are plain strings (do not wrap in `{{"url": ...}}`)
+- Images/videos are plain strings (do not wrap in `{{"url": ...}}`)
 - See [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/vlm.html) for dataset format
 
 

@@ -49,7 +49,7 @@ The official leaderboard uses `gpt-4-0125-preview` as the judge model. If that e
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `air_bench_chat` |
-| **Dataset ID** | [evalscope/AIR-Bench-Dataset](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset/summary) |
+| **Dataset ID** | [evalscope/AIR-Bench](https://modelscope.cn/datasets/evalscope/AIR-Bench/summary) |
 | **Paper** | [Paper](https://aclanthology.org/2024.acl-long.109/) |
 | **Tags** | `Audio`, `InstructionFollowing`, `QA` |
 | **Metrics** | `gpt_score`, `win_rate` |

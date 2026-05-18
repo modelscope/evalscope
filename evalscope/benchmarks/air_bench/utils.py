@@ -15,7 +15,7 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-HF_REPO_ID = 'evalscope/AIR-Bench-Dataset'
+HF_REPO_ID = 'evalscope/AIR-Bench'
 
 # Mapping from Foundation track sub-directory name -> high-level audio category.
 # The 25 directory names correspond to the 19 logical tasks described in the
