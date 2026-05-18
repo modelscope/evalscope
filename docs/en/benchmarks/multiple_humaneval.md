@@ -137,7 +137,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets multiple_humaneval \
-    --use-sandbox \
+    --sandbox '{"enabled": true}' \
     --limit 10  # Remove this line for formal evaluation
 ```
 
@@ -152,7 +152,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['multiple_humaneval'],
-    use_sandbox=True,
+    sandbox={'enabled': True},
     dataset_args={
         'multiple_humaneval': {
             # subset_list: ['humaneval-cpp', 'humaneval-ts', 'humaneval-sh']  # optional, evaluate specific subsets

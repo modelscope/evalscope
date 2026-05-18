@@ -79,6 +79,8 @@ def create_app(outputs: str = None):
             'error': 'Endpoint not found',
             'available_endpoints': {
                 'GET  /health': 'Health check',
+                'GET  /api/v1/config': 'Get runtime configuration',
+                'GET  /api/v1/reports/media/file': 'Serve a local media file (image/audio/video) by path',
                 'POST /api/v1/eval/invoke': 'Run model evaluation task (blocking)',
                 'GET  /api/v1/eval/benchmarks': 'List supported benchmarks with descriptions',
                 'GET  /api/v1/eval/log': 'Get evaluation log',

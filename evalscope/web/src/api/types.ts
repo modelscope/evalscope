@@ -105,6 +105,8 @@ export interface ContentBlock {
   // text / reasoning fields
   text?: string
   reasoning?: string
+  /** Number of reasoning tokens reported by the model API. */
+  reasoning_tokens?: number
   // multimodal fields (present when type === 'image' | 'audio' | 'video')
   image?: string
   audio?: string
@@ -117,12 +119,75 @@ export interface ContentBlock {
   data?: Record<string, unknown>
 }
 
+/** A single tool call invocation emitted by an assistant message.
+ *
+ * Mirrors the backend ``ToolCall`` model (``api/tool/tool_call.py``),
+ * flattened for the wire format – ``function`` is the plain function name
+ * and ``arguments`` is the parsed JSON object.
+ */
+export interface ToolCall {
+  id: string
+  function: string
+  arguments: Record<string, unknown>
+}
+
+/** Error payload attached to a tool message on failure. */
+export interface ToolMessageError {
+  type?: string | null
+  message: string
+}
+
 /** A single chat message in a conversation (system / user / assistant / tool). */
 export interface ChatMessage {
   id?: string
   role: 'system' | 'user' | 'assistant' | 'tool'
   content: string | ContentBlock[]
   perf_metrics?: SamplePerfMetrics | null
+  // Assistant-only ---------------------------------------------------------
+  /** Tool calls emitted by the model in this turn. */
+  tool_calls?: ToolCall[] | null
+  /** Model identifier that produced this assistant message. */
+  model?: string | null
+  // Tool-only --------------------------------------------------------------
+  /** ID of the originating tool_call this message is a response for. */
+  tool_call_id?: string | null
+  /** Name of the function this tool observation is for. */
+  function?: string | null
+  /** Error info, when the tool invocation failed. */
+  error?: ToolMessageError | null
+}
+
+// ------------------------------------------------------------------ //
+// Agent Trace types (mirrors Python api/agent/trace.py)               //
+// ------------------------------------------------------------------ //
+
+/** Canonical event kinds emitted by the AgentLoop. */
+export type AgentTraceEventType =
+  | 'model_generate'
+  | 'tool_call'
+  | 'tool_result'
+  | 'env_exec'
+  | 'error'
+  | 'nudge'
+  | 'submit'
+
+/** Single structured event in an agent trajectory. */
+export interface AgentTraceEvent {
+  step: number
+  timestamp: number
+  type: AgentTraceEventType
+  message_id?: string | null
+  latency_ms?: number | null
+  token_usage?: { input?: number; output?: number; total?: number } | null
+  payload: Record<string, unknown>
+}
+
+/** Complete agent trajectory attached to a sample. */
+export interface AgentTrace {
+  strategy?: string | null
+  environment?: string | null
+  max_steps: number
+  events: AgentTraceEvent[]
 }
 
 export interface PredictionRow {
@@ -137,6 +202,8 @@ export interface PredictionRow {
   PerfMetrics?: SamplePerfMetrics | null
   /** Structured message list; present for all new-format caches. */
   Messages?: ChatMessage[] | null
+  /** Agent trajectory; only populated for agent-mode runs. */
+  AgentTrace?: AgentTrace | null
 }
 
 export interface PredictionsResponse {

@@ -28,8 +28,8 @@
 
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
-| `first_turn_length` | `int` | 第 1 轮目标 prompt token 数；从原始轨迹中截取恰好达到该长度的消息片段 | `65000` |
-| `subsequent_turn_length` | `int` | 后续每轮在上一轮基础上新增的目标 token 数；决定每轮 delta 的大小 | `500` |
+| `first_turn_length` | `int` 或 `[int, int]` | 第 1 轮目标 prompt token 数；从原始轨迹中截取恰好达到该长度的消息片段<br>• 单个整数：固定值，如 `65000`<br>• 两个整数的列表：`[最小值, 最大值]`，每条对话独立均匀随机采样，如 `[32000, 65000]` | `65000` |
+| `subsequent_turn_length` | `int` 或 `[int, int]` | 后续每轮在上一轮基础上新增的目标 token 数；决定每轮 delta 的大小<br>• 单个整数：固定值<br>• 两个整数的列表：`[最小值, 最大值]`，每条对话独立均匀随机采样 | `500` |
 | `chars_per_token` | `float` | 无 tokenizer 时的字符/token 估算比，用于预过滤原始轨迹 | `3.0` |
 | `num_workers` | `int` | live 构建模式下并行 worker 数量（>1 使用 multiprocessing.Pool） | `4` |
 
@@ -153,9 +153,9 @@ evalscope perf \
 - `Avg Turns/Req: 1.60`：测试期间每次请求平均携带 1.60 轮上下文，符合 `--min-turns 2 --max-turns 5` 的随机采样分布（第 1 轮无历史，后续轮次历史逐步增长）。
 - `Approx Cache Hit: 58.1%`：约 58% 的输入 token 来自历史对话。
 
-### share_gpt_zh_multi_turn / share_gpt_en_multi_turn
+### share_gpt_multi_turn
 
-使用来自 [swift/sharegpt](https://www.modelscope.cn/datasets/swift/sharegpt) 的真实对话数据（约 70k 条中文 / 英文对话），保留完整的 user + assistant 轮次交替结构，适合评测模型在真实对话分布下的表现。
+包含两个数据集：`share_gpt_zh_multi_turn`（中文）与 `share_gpt_en_multi_turn`（英文）。使用来自 [swift/sharegpt](https://www.modelscope.cn/datasets/swift/sharegpt) 的真实对话数据（约 70k 条中文 / 英文对话），保留完整的 user + assistant 轮次交替结构，适合评测模型在真实对话分布下的表现。
 
 - **数据自动下载**：未指定 `--dataset-path` 时，自动从 ModelScope 下载数据集
 - **支持本地数据**：通过 `--dataset-path` 指定本地 JSONL 文件（每行一条 `conversation` 对象）
@@ -367,12 +367,12 @@ evalscope perf \
   --api openai \
   --dataset swe_smith \
   --tokenizer-path YOUR_MODEL \
-  --max-tokens 512 \
+  --max-tokens 512 1024 \
   --min-tokens 512 \
   --multi-turn \
   --multi-turn-args '{
-      "first_turn_length": 8192,
-      "subsequent_turn_length": 1024
+      "first_turn_length": [4096, 8192],
+      "subsequent_turn_length": [512, 1024]
   }' \
   --min-turns 3 \
   --max-turns 8 \

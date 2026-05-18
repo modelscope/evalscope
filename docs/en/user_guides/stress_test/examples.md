@@ -233,59 +233,55 @@ evalscope perf \
  --extra-args '{"num_documents": 5, "document_length_ratio": 3}'
 ```
 
-## Visualizing Test Results
+## Warmup Benchmarking
 
-### Using WandB
-Please install wandb using the following command:
+Send a batch of warmup requests before the formal benchmark to eliminate cold-start effects (e.g. KV-cache filling, JIT compilation, connection pool initialization) and produce more accurate performance metrics.
+
+Warmup requests are sent with the same concurrency and rate as the benchmark but **excluded from performance metrics** (latency, throughput, percentiles, etc.).
+
+**1. Absolute Count Mode**
+
+Specify the exact number of warmup requests:
+
 ```bash
-pip install wandb
-```
-Add the following parameters before starting the test:
-```bash
---visualizer wandb
---name 'name_of_wandb_log'
-```
-
-![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
-
-
-### Using SwanLab
-
-Please install SwanLab using the following command:
-```bash
-pip install swanlab
-```
-
-Add the following parameters before starting the test:
-```bash
-# You can use the SWANLAB_PROJ_NAME environment variable to specify the project name
---visualizer swanlab
---name 'name_of_swanlab_log'
-```  
-
-![swanlab sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/swanlab.png)
-
-
-### Using ClearML
-Please install ClearML using the following command:
-```bash
-pip install clearml
+evalscope perf \
+  --url 'http://127.0.0.1:8000/v1/chat/completions' \
+  --parallel 10 \
+  --model 'qwen2.5' \
+  --number 100 \
+  --warmup-num 10 \
+  --api openai \
+  --dataset openqa \
+  --stream
 ```
 
-Initialize the ClearML server:
+The above command sends 10 warmup requests first, then 100 benchmark requests. Metrics are computed only from the latter 100 requests.
+
+**2. Ratio Mode**
+
+Use a float between 0 and 1 to compute warmup count as a proportion of `--number`. This is especially useful for sweep mode where each run has a different `--number`:
+
 ```bash
-clearml-init
+evalscope perf \
+  --url 'http://127.0.0.1:8000/v1/chat/completions' \
+  --parallel 10 \
+  --model 'qwen2.5' \
+  --number 100 \
+  --warmup-num 0.1 \
+  --api openai \
+  --dataset openqa \
+  --stream
 ```
 
-Add the following parameters before starting the test:
-```bash
-# You can use the CLEARML_PROJECT_NAME environment variable to specify the project name
---visualizer clearml
---name 'name_of_clearml_task'
+`--warmup-num 0.1` means the warmup count is 10% of `--number`, i.e. `max(1, int(0.1 * 100)) = 10` warmup requests.
+
+```{note}
+**Important Notes**
+
+- Warmup requests use the same dataset and request parameters as the benchmark.
+- During warmup, a separate progress bar is displayed (`Warmup[...]`), which automatically switches to the benchmark progress bar (`Processing[...]`) once warmup completes.
+- In multi-turn mode, `--warmup-num` specifies the number of warmup conversations (consistent with the `--number` semantics); all turns within a warmup conversation are excluded from metrics.
 ```
-
-![clearml sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/clearml_vis.jpg)
-
 
 ## Open-loop Mode
 
@@ -343,3 +339,56 @@ Use the `--debug` option to output the requests and responses.
 2024-11-27 20:02:25,113 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":50,"completion_tokens":260,"total_tokens":310}}
 2024-11-27 20:02:25,113 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: [DONE]
 ```
+
+## Visualizing Test Results
+
+### Using WandB
+Please install wandb using the following command:
+```bash
+pip install wandb
+```
+Add the following parameters before starting the test:
+```bash
+--visualizer wandb
+--name 'name_of_wandb_log'
+```
+
+![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
+
+
+### Using SwanLab
+
+Please install SwanLab using the following command:
+```bash
+pip install swanlab
+```
+
+Add the following parameters before starting the test:
+```bash
+# You can use the SWANLAB_PROJ_NAME environment variable to specify the project name
+--visualizer swanlab
+--name 'name_of_swanlab_log'
+```  
+
+![swanlab sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/swanlab.png)
+
+
+### Using ClearML
+Please install ClearML using the following command:
+```bash
+pip install clearml
+```
+
+Initialize the ClearML server:
+```bash
+clearml-init
+```
+
+Add the following parameters before starting the test:
+```bash
+# You can use the CLEARML_PROJECT_NAME environment variable to specify the project name
+--visualizer clearml
+--name 'name_of_clearml_task'
+```
+
+![clearml sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/clearml_vis.jpg)

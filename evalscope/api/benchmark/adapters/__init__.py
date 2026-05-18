@@ -1,4 +1,5 @@
 from .agent_adapter import AgentAdapter
+from .agent_loop_adapter import AgentLoopAdapter
 from .default_data_adapter import DefaultDataAdapter
 from .image_edit_adapter import ImageEditAdapter
 from .multi_choice_adapter import MultiChoiceAdapter

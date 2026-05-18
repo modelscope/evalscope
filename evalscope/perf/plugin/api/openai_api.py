@@ -5,6 +5,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
+from evalscope.perf.multi_turn_args import _sample_int_or_range
 from evalscope.perf.plugin.api.default_api import DefaultApiPlugin
 from evalscope.perf.plugin.datasets.utils import tokenize_chat_messages
 from evalscope.perf.plugin.registry import register_api
@@ -33,11 +34,11 @@ class OpenaiPlugin(DefaultApiPlugin):
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: Union[List[Dict], str, List[int]], param: Arguments = None) -> Dict:
+    def build_request(self, messages: Union[List[Dict], str, List[int], Dict], param: Arguments = None) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:
-            messages (List[Dict] | str | List[int]): The basic message to generator query.
+            messages (List[Dict] | str | List[int] | Dict): The basic message to generator query.
                 When param.tokenize_prompt is True, this may also be a list of token IDs
                 (List[int]) produced by the random dataset plugin.
             param (QueryParameters): The query parameters.
@@ -52,7 +53,7 @@ class OpenaiPlugin(DefaultApiPlugin):
         try:
             # --tokenize-prompt path: convert messages/text/token-IDs to a token-ID list
             # and send as a /v1/completions request with `prompt=[int, ...]`.
-            if param.tokenize_prompt:
+            if param.tokenize_prompt and not isinstance(messages, dict):
                 token_ids = self._messages_to_token_ids(messages, param)
                 query = {'prompt': token_ids}
                 return self.__compose_query_from_parameter(query, param)
@@ -70,6 +71,8 @@ class OpenaiPlugin(DefaultApiPlugin):
 
                 # replace template messages with input messages.
                 query['messages'] = messages
+            elif isinstance(messages, dict):
+                query = messages
             elif isinstance(messages, str):
                 query = {'prompt': messages}
             else:
@@ -113,7 +116,7 @@ class OpenaiPlugin(DefaultApiPlugin):
     def __compose_query_from_parameter(self, payload: Dict, param: Arguments):
         payload['model'] = param.model
         if param.max_tokens is not None:
-            payload['max_tokens'] = param.max_tokens
+            payload['max_tokens'] = _sample_int_or_range(param.max_tokens)
         if param.min_tokens is not None:
             payload['min_tokens'] = param.min_tokens
         if param.frequency_penalty is not None:

@@ -16,18 +16,18 @@ SciCode 是一个具有挑战性的基准测试，旨在评估语言模型在生
 
 - 问题源自真实科研场景
 - 覆盖 5 个科学领域的 16 个子领域
-- 多步骤问题，需结合知识回忆、推理与综合能力
+- 多步骤问题，涉及知识回忆、推理与综合
 - 可选提供科学背景信息
 - 需要沙箱环境以安全执行代码
 
 ## 评估说明
 
-- **必须使用沙箱环境**执行代码
+- **需要沙箱环境** 执行代码
 - 请参考 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
 - 跟踪两个指标：
   - `main_problem_pass_rate`：完整问题解决率
-  - `subproblem_pass_rate`：各子问题成功率
-- 通过配置 `provide_background` 参数决定是否包含科学背景上下文
+  - `subproblem_pass_rate`：单个子问题成功率
+- 配置 `provide_background` 以包含科学背景上下文
 - 使用自定义 Docker 镜像：`scicode-benchmark:latest`
 
 
@@ -241,7 +241,7 @@ SciCode 是一个具有挑战性的基准测试，旨在评估语言模型在生
 }
 ```
 
-*注：部分内容因显示原因已被截断。*
+*注意：部分内容因显示原因已被截断。*
 
 ## 提示模板
 
@@ -328,8 +328,8 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets scicode \
-    --use-sandbox \
-    --limit 10  # 正式评估时请移除此行
+    --sandbox '{"enabled": true}' \
+    --limit 10  # 正式评估时请删除此行
 ```
 
 ### 使用 Python
@@ -343,13 +343,13 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['scicode'],
-    use_sandbox=True,
+    sandbox={'enabled': True},
     dataset_args={
         'scicode': {
             # extra_params: {}  # 使用默认额外参数
         }
     },
-    limit=10,  # 正式评估时请移除此行
+    limit=10,  # 正式评估时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

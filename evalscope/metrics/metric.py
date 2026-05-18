@@ -258,9 +258,10 @@ class SemScore(SingletonMetric):
 @register_metric(name='VQAScore')
 class VQAScore(T2IMetric):
 
-    def _init_once(self, model: str = 'clip-flant5-xxl'):
+    def _init_once(self, model: str = 'clip-flant5-xxl', device=None, cache_dir=None, **kwargs):
+        device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.vqascore import VQAScore
-        self.model = VQAScore(model=model)
+        self.model = VQAScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
         return self.model(images, texts, **kwargs)
@@ -269,9 +270,10 @@ class VQAScore(T2IMetric):
 @register_metric(name='PickScore')
 class PickScore(T2IMetric):
 
-    def _init_once(self, model: str = 'pickscore-v1'):
+    def _init_once(self, model: str = 'pickscore-v1', device=None, cache_dir=None, **kwargs):
+        device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.clipscore import CLIPScore
-        self.model = CLIPScore(model=model)
+        self.model = CLIPScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
         return self.model(images, texts, **kwargs)
@@ -280,9 +282,10 @@ class PickScore(T2IMetric):
 @register_metric(name='CLIPScore')
 class CLIPScore(T2IMetric):
 
-    def _init_once(self, model: str = 'openai:ViT-L-14-336'):
+    def _init_once(self, model: str = 'openai:ViT-L-14-336', device=None, cache_dir=None, **kwargs):
+        device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.clipscore import CLIPScore
-        self.model = CLIPScore(model=model)
+        self.model = CLIPScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
         return self.model(images, texts, **kwargs)
@@ -291,9 +294,10 @@ class CLIPScore(T2IMetric):
 @register_metric(name='BLIPv2Score')
 class BLIPv2Score(T2IMetric):
 
-    def _init_once(self, model: str = 'blip2-itm'):
+    def _init_once(self, model: str = 'blip2-itm', device=None, cache_dir=None, **kwargs):
+        device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.itmscore import ITMScore
-        self.model = ITMScore(model=model)
+        self.model = ITMScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
         return self.model(images, texts, **kwargs)
@@ -302,9 +306,10 @@ class BLIPv2Score(T2IMetric):
 @register_metric(name='HPSv2Score')
 class HPSv2Score(T2IMetric):
 
-    def _init_once(self, model: str = 'hpsv2'):
+    def _init_once(self, model: str = 'hpsv2', device=None, cache_dir=None, **kwargs):
+        device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.clipscore import CLIPScore
-        self.model = CLIPScore(model=model)
+        self.model = CLIPScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
         return self.model(images, texts, **kwargs)
@@ -313,9 +318,10 @@ class HPSv2Score(T2IMetric):
 @register_metric(name='HPSv2.1Score')
 class HPSv2_1Score(T2IMetric):
 
-    def _init_once(self, model: str = 'hpsv2.1'):
+    def _init_once(self, model: str = 'hpsv2.1', device=None, cache_dir=None, **kwargs):
+        device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.clipscore import CLIPScore
-        self.model = CLIPScore(model=model)
+        self.model = CLIPScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
         return self.model(images, texts, **kwargs)
@@ -324,9 +330,10 @@ class HPSv2_1Score(T2IMetric):
 @register_metric(name='ImageRewardScore')
 class ImageRewardScore(T2IMetric):
 
-    def _init_once(self, model: str = 'image-reward-v1'):
+    def _init_once(self, model: str = 'image-reward-v1', device=None, cache_dir=None, **kwargs):
+        device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.itmscore import ITMScore
-        self.model = ITMScore(model=model)
+        self.model = ITMScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
         return self.model(images, texts, **kwargs)
@@ -335,9 +342,10 @@ class ImageRewardScore(T2IMetric):
 @register_metric(name='FGA_BLIP2Score')
 class FGA_BLIP2Score(T2IMetric):
 
-    def _init_once(self, model: str = 'fga_blip2'):
+    def _init_once(self, model: str = 'fga_blip2', device=None, cache_dir=None, **kwargs):
+        device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.itmscore import ITMScore
-        self.model = ITMScore(model=model)
+        self.model = ITMScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
         return self.model(images, texts, **kwargs)
@@ -346,9 +354,10 @@ class FGA_BLIP2Score(T2IMetric):
 @register_metric(name='MPS')
 class MPS(T2IMetric):
 
-    def _init_once(self, model: str = 'mps'):
+    def _init_once(self, model: str = 'mps', device=None, cache_dir=None, **kwargs):
+        device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.clipscore import CLIPScore
-        self.model = CLIPScore(model=model)
+        self.model = CLIPScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
         return self.model(images, texts, **kwargs)

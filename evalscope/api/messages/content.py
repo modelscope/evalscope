@@ -38,6 +38,9 @@ class ContentReasoning(ContentBase):
     redacted: bool = Field(default=False)
     """Indicates that the explicit content of this reasoning block has been redacted."""
 
+    reasoning_tokens: Optional[int] = Field(default=None)
+    """Number of reasoning tokens reported by the model API (e.g. from completion_tokens_details.reasoning_tokens)."""
+
 
 class ContentImage(ContentBase):
     """Image content."""
@@ -75,10 +78,19 @@ class ContentVideo(ContentBase):
     """Type."""
 
     video: str
-    """Audio file path or base64 encoded data URL."""
+    """Video file path, URL, or base64 encoded data URL."""
 
     format: Literal['mp4', 'mpeg', 'mov']
     """Format of video data ('mp4', 'mpeg', or 'mov')"""
+
+    start: Optional[float] = Field(default=None)
+    """Optional start time of the relevant video segment in seconds."""
+
+    end: Optional[float] = Field(default=None)
+    """Optional end time of the relevant video segment in seconds."""
+
+    fps: Optional[float] = Field(default=None)
+    """Optional sampling rate hint for providers that support video frame sampling."""
 
 
 class ContentData(ContentBase):

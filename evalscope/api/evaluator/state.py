@@ -1,9 +1,8 @@
-import time
 from dataclasses import dataclass
-from pydantic import BaseModel, Field
 from random import Random
 from typing import Any, Dict, List, Optional, Sequence, Union, overload
 
+from evalscope.api.agent import AgentTrace
 from evalscope.api.dataset import Sample
 from evalscope.api.messages import ChatMessage, ChatMessageUser, messages_pretty_str, messages_to_markdown
 from evalscope.api.model import ModelOutput
@@ -124,25 +123,6 @@ class Choices(Sequence[Choice]):
         self._choices = shuffled_choices
 
 
-class TrajectoryStep(BaseModel):
-    """Record a single processing step during evaluation."""
-
-    step_name: str
-    """solver / processor name"""
-
-    step_type: str
-    """e.g. 'solver', 'scorer', 'tool', 'generate'"""
-
-    timestamp: float = Field(default_factory=time.time)
-    """time.time() when the step was recorded"""
-
-    messages_snapshot: Optional[List[ChatMessage]] = None
-    """messages produced/observed by this step"""
-
-    metadata: Optional[Dict[str, Any]] = None
-    """extra metadata (e.g. token usage, tool call info)"""
-
-
 class TaskState:
     """
     The `TaskState` represents the internal state of the `Task` being run for a single `Sample`.
@@ -171,7 +151,7 @@ class TaskState:
         self._messages: List[ChatMessage] = messages if messages is not None else []
         self._output = output if output else ModelOutput(model=str(model))
         self._completed = completed
-        self._trajectory: List[TrajectoryStep] = []
+        self._agent_trace: Optional[AgentTrace] = None
         if sample.choices:
             self._choices = Choices(sample.choices)
         else:
@@ -310,24 +290,10 @@ class TaskState:
         self._target = Target(text)
 
     @property
-    def trajectory(self) -> List[TrajectoryStep]:
-        """The trajectory of processing steps for this sample."""
-        return self._trajectory
+    def agent_trace(self) -> Optional[AgentTrace]:
+        """Agent loop trajectory for this sample (None for non-agent runs)."""
+        return self._agent_trace
 
-    def add_trajectory_step(
-        self,
-        step_name: str,
-        step_type: str,
-        messages: Optional[List[ChatMessage]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        """Record a processing step in the trajectory."""
-        self._trajectory.append(
-            TrajectoryStep(
-                step_name=step_name,
-                step_type=step_type,
-                timestamp=time.time(),
-                messages_snapshot=messages,
-                metadata=metadata,
-            )
-        )
+    @agent_trace.setter
+    def agent_trace(self, trace: Optional[AgentTrace]) -> None:
+        self._agent_trace = trace

@@ -160,6 +160,10 @@ The predictions tab allows browsing each sample's detailed prediction results on
 - **Scoring Details**: A collapsible JSON view showing the complete information of the score calculation.
 - **Metadata**: A collapsible JSON view showing the sample's additional metadata.
 
+```{tip}
+When [Agent Evaluation Mode](../user_guides/agent.md) is enabled, the predictions view automatically detects the sample's `agent_trace` and renders an Agent Trace view grouped by `step` (with tool calls, environment commands, nudges, errors, etc.). See [Agent Evaluation → Trace Visualization](../user_guides/agent.md#trace-visualization) for the full description and a screenshot.
+```
+
 #### Dataset Navigation
 
 In the details and predictions tabs, a dataset navigation sidebar is provided on the left (horizontal scroll bar at the top on mobile), allowing quick switching of the currently viewed dataset.
@@ -226,5 +230,5 @@ The stress test task page provides a configuration form and task monitoring pane
 - **Task Monitoring**: Displays the stress test progress and logs in real time. After the task is completed, you can directly view the stress test report.
 
 ```{note}
-For detailed configuration instructions on online evaluation and stress test features, please refer to [Evaluation Quick Start](quick_start.md) and [Stress Test Quick Start](../user_guides/stress_test/quick_start.md).
+For detailed configuration instructions on online evaluation and stress test features, please refer to [Evaluation Quick Start](basic_usage.md) and [Stress Test Quick Start](../user_guides/stress_test/quick_start.md).
 ```

@@ -94,7 +94,7 @@ pygments_style_dark = 'one-dark'
 # Auto-generated header anchors
 myst_heading_anchors = 3
 # Enable "colon_fence" extension of myst.
-myst_enable_extensions = ['colon_fence', 'dollarmath']
+myst_enable_extensions = ['colon_fence', 'dollarmath', 'attrs_inline', 'attrs_block']
 
 napoleon_custom_sections = [
     # Custom sections for data elements.

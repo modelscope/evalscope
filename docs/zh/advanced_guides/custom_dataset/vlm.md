@@ -29,6 +29,7 @@ messages	answer
   - 文本内容：`{"type": "text", "text": "问题文本"}`
   - 图片 URL：`{"type": "image_url", "image_url": {"url": "路径或base64"}}`
   - 音频输入：`{"type": "input_audio", "input_audio": {"data": "路径或base64", "format": "wav"}}`
+  - 视频 URL：`{"type": "video_url", "video_url": {"url": "路径或base64"}}`
   - 系统消息：`{"role": "system", "content": "系统提示"}`
 - `answer`: 参考答案（可选，用于计算 BLEU 和 Rouge 分数）
 
@@ -41,6 +42,12 @@ messages	answer
 - 本地路径：`"data": "custom_eval/multimodal/audio/sample.wav"`
 - Base64 编码：`"data": "data:audio/wav;base64,UklGRiQ..."`
 - 音频格式（`format` 字段）：支持 `"wav"` 和 `"mp3"`
+
+**支持的视频格式**：
+- 本地路径：`"url": "custom_eval/multimodal/videos/sample.mp4"`
+- HTTP URL：`"url": "https://example.com/video.mp4"`（需模型服务侧支持）
+- Base64 编码：`"url": "data:video/mp4;base64,AAAAIGZ0eX..."`
+- 视频格式会从路径、URL 或 data URI 中推断；支持 `"mp4"`、`"mpeg"` 和 `"mov"`。
 
 **多图片输入**
 
@@ -153,6 +160,30 @@ messages	answer
     }
   ],
   "answer": "你好，世界。"
+}
+```
+
+**视频输入**
+
+支持视频内容输入，使用 OpenAI-compatible `video_url` 格式，`url` 字段支持本地路径、HTTP URL 或 base64 编码：
+
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "请描述这段视频的内容。"},
+        {
+          "type": "video_url",
+          "video_url": {
+            "url": "custom_eval/multimodal/videos/sample.mp4"
+          }
+        }
+      ]
+    }
+  ],
+  "answer": "这是一段短视频。"
 }
 ```
 
@@ -294,18 +325,21 @@ evalscope eval \
 
 ### 1. 数据准备
 
-General-VMCQ 采用与 MMMU 相似的结构：问题文本中可包含图片占位符 `<image x>`；`options` 为 Python 列表字符串，选项可为文本或图片占位符。
+General-VMCQ 采用与 MMMU 相似的结构：问题文本中可包含图片占位符 `<image x>` 和视频占位符 `<video x>`；`options` 为 Python 列表字符串，选项可为文本或媒体占位符。
 
-支持图片两种形式（均为字符串）：
-- 本地或远程路径/URL：`"custom_eval/multimodal/images/dog.jpg"` 或 `"https://.../dog.jpg"`
-- Base64 Data URL：`"data:image/jpeg;base64,/9j/4AAQSk..."`
+支持以下媒体形式（均为字符串）：
+- 图片本地或远程路径/URL：`"custom_eval/multimodal/images/dog.jpg"` 或 `"https://.../dog.jpg"`
+- 图片 Base64 Data URL：`"data:image/jpeg;base64,/9j/4AAQSk..."`
+- 视频本地或远程路径/URL：`"custom_eval/multimodal/videos/sample.mp4"` 或 `"https://.../sample.mp4"`
+- 视频 Base64 Data URL：`"data:video/mp4;base64,AAAAIGZ0eX..."`
 
-支持最多 100 张图片（`image_1` 到 `image_100`）。当文本中出现不存在的图片占位符时，会直接停止解析后续内容（break）。
+支持最多 100 张图片（`image_1` 到 `image_100`）和 100 个视频（`video_1` 到 `video_100`）。不存在的媒体占位符会被忽略。
 
 **JSONL 示例**（`example.jsonl`）：
 ```json
 {"question": "Which image shows a dog?", "options": ["<image 1>", "<image 2>", "<image 3>", "<image 4>"], "image_1": "custom_eval/multimodal/images/dog.jpg", "image_2": "custom_eval/multimodal/images/AMNH.jpg", "image_3": "custom_eval/multimodal/images/tesla.jpg", "image_4": "custom_eval/multimodal/images/tokyo.jpg", "answer": "A"}
 {"question": "<image 1> What building is this?", "options": ["School", "Hospital", "Park", "Museum"], "image_1": "custom_eval/multimodal/images/AMNH.jpg", "answer": "D"}
+{"question": "<video 1> What type of media is provided in this sample?", "options": ["Image", "Audio", "Video", "Text"], "video_1": "custom_eval/multimodal/videos/sample.mp4", "answer": "C"}
 ```
 
 **TSV 示例**（`example.tsv`）：
@@ -316,10 +350,12 @@ Which image shows a dog?	["<image 1>", "<image 2>", "<image 3>", "<image 4>"]	A	
 ```
 
 **字段说明**：
-- `question`: 问题文本，可包含 `<image x>` 占位符
-- `options`: 列表（JSON 数组），元素可以是文本（如 `"School"`）或图片占位符（如 `"<image 1>"`），不需要添加 `A.`、`B.` 等前缀
+- `question`: 问题文本，可包含 `<image x>` 或 `<video x>` 占位符
+- `options`: 列表（JSON 数组），元素可以是文本（如 `"School"`）或媒体占位符（如 `"<image 1>"`、`"<video 1>"`），不需要添加 `A.`、`B.` 等前缀
 - `answer`: 正确答案字母（如 `"A"`、`"B"`）
 - `image_k`: 图片字符串（本地/远程路径或 base64 Data URL），k ∈ [1, 100]
+- `video_k`: 视频字符串（本地/远程路径或 base64 Data URL），k ∈ [1, 100]
+- `video_k_format`: 可选的视频格式提示；支持 `"mp4"`、`"mpeg"` 和 `"mov"`
 
 ### 2. 配置评测任务
 

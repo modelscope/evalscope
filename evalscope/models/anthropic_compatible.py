@@ -1,6 +1,6 @@
 import os
 import time
-from anthropic import Anthropic, APIStatusError, BadRequestError, PermissionDeniedError
+from anthropic import Anthropic, APIStatusError, AsyncAnthropic, BadRequestError, PermissionDeniedError
 from anthropic.types import Message
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -10,13 +10,14 @@ from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, 
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_supported_params
-from evalscope.utils.function_utils import retry_call
+from evalscope.utils.function_utils import async_retry_call, retry_call
 from .utils.anthropic import (
     anthropic_chat_messages,
     anthropic_chat_tool_choice,
     anthropic_chat_tools,
     anthropic_completion_params,
     anthropic_handle_bad_request,
+    async_collect_stream_response,
     chat_choices_from_anthropic,
     collect_stream_response,
     model_output_from_anthropic,
@@ -72,6 +73,9 @@ class AnthropicCompatibleAPI(ModelAPI):
             client_kwargs['base_url'] = self.base_url
 
         self.client = Anthropic(**client_kwargs)
+
+        # Create async client (same parameters)
+        self.async_client = AsyncAnthropic(**client_kwargs)
 
     def generate(
         self,
@@ -146,6 +150,80 @@ class AnthropicCompatibleAPI(ModelAPI):
             self.on_response(response)
 
             # Build output and populate timing + perf metrics
+            choices = self.chat_choices_from_message(message, tools)
+            output = model_output_from_anthropic(message, choices)
+            output.time = total_time
+            usage = output.usage
+            output.message.perf_metrics = PerformanceMetrics(
+                latency=total_time,
+                ttft=ttft,
+                input_tokens=usage.input_tokens if usage else 0,
+                output_tokens=usage.output_tokens if usage else 0,
+            )
+            return output
+
+        except (BadRequestError, PermissionDeniedError) as ex:
+            return self.handle_bad_request(ex)
+
+    async def generate_async(
+        self,
+        input: List[ChatMessage],
+        tools: List[ToolInfo],
+        tool_choice: ToolChoice,
+        config: GenerateConfig,
+    ) -> ModelOutput:
+        """Native async generation using AsyncAnthropic client.
+
+        Uses ``self.async_client`` for non-blocking HTTP calls.  Request
+        construction and response parsing are identical to the synchronous
+        ``generate()``.
+        """
+        request: Dict[str, Any] = {}
+
+        tools, tool_choice, config = self.resolve_tools(tools, tool_choice, config)
+
+        completion_params = self.completion_params(config)
+
+        system_message, messages = anthropic_chat_messages(input)
+
+        request = dict(
+            messages=messages,
+            **completion_params,
+        )
+
+        if system_message:
+            request['system'] = system_message
+
+        if len(tools) > 0:
+            request['tools'] = anthropic_chat_tools(tools)
+            request['tool_choice'] = anthropic_chat_tool_choice(tool_choice)
+
+        if config.stream:
+            request['stream'] = True
+
+        self.validate_request_params(request)
+
+        try:
+            t_start = time.monotonic()
+            ttft: Optional[float] = None
+
+            # Async generation with retry
+            message = await async_retry_call(
+                self.async_client.messages.create,
+                retries=config.retries,
+                sleep_interval=config.retry_interval,
+                **request,
+            )
+
+            # Handle streaming response
+            if not isinstance(message, Message):
+                message, ttft = await async_collect_stream_response(message, request_start=t_start)
+
+            total_time = time.monotonic() - t_start
+
+            response = message.model_dump()
+            self.on_response(response)
+
             choices = self.chat_choices_from_message(message, tools)
             output = model_output_from_anthropic(message, choices)
             output.time = total_time

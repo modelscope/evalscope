@@ -407,3 +407,30 @@ class TestVLMBenchmark(TestBenchmark):
 
     def test_tir_bench_load(self):
         self._run_dataset_load_test('tir_bench')
+
+    def test_air_bench_foundation(self):
+        dataset_args = {
+            # 'subset_list': ['Music_AQA_music_avqa'],
+        }
+        self._run_dataset_test('air_bench_foundation', dataset_args=dataset_args, limit=2, model='qwen3-omni-flash', ignore_errors=True)
+
+    def test_air_bench_chat(self):
+        dataset_args = {
+            'extra_params': {
+                'tasks': ['speech_QA'],
+                'do_swap': False,
+            },
+        }
+        self._run_dataset_test('air_bench_chat', dataset_args=dataset_args, limit=2, model='qwen3-omni-flash', ignore_errors=True)
+
+    def test_mvbench(self):
+        dataset_args={
+            'subset_list': ['action_antonym'],
+        }
+        self._run_dataset_test('mvbench', dataset_args=dataset_args, limit=10)
+
+    def test_videomme_v2(self):
+        dataset_args = {
+            'subset_list': ['level_1']
+        }
+        self._run_dataset_test('videomme_v2', dataset_args=dataset_args, limit=10)

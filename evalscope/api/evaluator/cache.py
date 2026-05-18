@@ -3,6 +3,7 @@ import os
 from pydantic import BaseModel, Field, model_validator
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from evalscope.api.agent import AgentTrace
 from evalscope.api.dataset import Dataset
 from evalscope.api.messages import ChatMessage, messages_pretty_str, messages_to_markdown
 from evalscope.api.metric import SampleScore
@@ -10,7 +11,7 @@ from evalscope.api.model import ModelOutput
 from evalscope.constants import DumpMode
 from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
 from evalscope.utils.logger import get_logger
-from .state import TaskState, TrajectoryStep
+from .state import TaskState
 
 logger = get_logger()
 
@@ -346,8 +347,8 @@ class ReviewResult(BaseModel):
     messages: List[ChatMessage] = Field(default_factory=list)
     """Full chat message history exchanged during evaluation."""
 
-    trajectory: List[TrajectoryStep] = Field(default_factory=list)
-    """Solver/tool trajectory steps recorded during evaluation."""
+    agent_trace: Optional[AgentTrace] = None
+    """Structured agent trajectory (only populated for agent-mode runs)."""
 
     sample_score: SampleScore
     """The computed evaluation score for this sample."""
@@ -355,11 +356,11 @@ class ReviewResult(BaseModel):
     @model_validator(mode='before')
     @classmethod
     def _migrate_legacy_input(cls, data: Any) -> Any:
-        """Migrate legacy ``input: str`` into a synthetic user message.
+        """Migrate legacy ``input: str`` / ``trajectory`` into the new shape.
 
-        Older review caches stored only a rendered input string. To keep
-        those caches loadable we synthesize a single user message so
-        downstream consumers (markdown/text views) keep working.
+        Older review caches stored only a rendered input string and an unused
+        ``trajectory`` field.  We keep load-compat by synthesizing a user
+        message and silently dropping the legacy trajectory payload.
         """
         if not isinstance(data, dict):
             return data
@@ -369,6 +370,10 @@ class ReviewResult(BaseModel):
                 'role': 'user',
                 'content': legacy_input,
             }]
+        # Drop obsolete TrajectoryStep list (the new ``agent_trace`` has a
+        # different shape; legacy values are not useful and would fail
+        # validation).
+        data.pop('trajectory', None)
         return data
 
     @property
@@ -403,7 +408,7 @@ class ReviewResult(BaseModel):
             index=state.sample_id,
             target=state.target,
             messages=state.messages,
-            trajectory=state.trajectory,
+            agent_trace=state.agent_trace,
             sample_score=sample_score,
         )
 

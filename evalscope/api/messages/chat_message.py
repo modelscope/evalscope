@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field, JsonValue, model_validator
 from typing import Any, Dict, List, Literal, Optional, Type, Union
 
 from evalscope.api.tool import ToolCall, ToolCallError
-from .content import Content, ContentAudio, ContentImage, ContentReasoning, ContentText
+from .content import Content, ContentAudio, ContentImage, ContentReasoning, ContentText, ContentVideo
 from .perf_metrics import PerformanceMetrics
 from .utils import parse_content_with_reasoning
 
@@ -238,6 +238,11 @@ def messages_to_markdown(messages: List[ChatMessage], max_length: Optional[int] 
                     if max_length and len(audio_base64_or_url) > max_length:
                         audio_base64_or_url = audio_base64_or_url[:max_length]
                     content_parts.append(f"<audio controls src='{audio_base64_or_url}'></audio>")
+                elif isinstance(content_item, ContentVideo):
+                    video_base64_or_url = content_item.video
+                    if max_length and len(video_base64_or_url) > max_length:
+                        video_base64_or_url = video_base64_or_url[:max_length]
+                    content_parts.append(f"<video controls src='{video_base64_or_url}'></video>")
                 elif isinstance(content_item, ContentReasoning):
                     content_parts.append(f'**Reasoning:** {content_item.reasoning}')
 

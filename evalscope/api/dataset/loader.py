@@ -11,6 +11,7 @@ from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType
 from evalscope.utils import get_logger
 from evalscope.utils.io_utils import csv_to_list, gen_hash, jsonl_to_list, safe_filename, tsv_to_list
 from .dataset import Dataset, FieldSpec, MemoryDataset, Sample
+from .hub import DatasetHub
 from .utils import data_to_samples, shuffle_choices_if_requested
 
 logger = get_logger()
@@ -86,10 +87,7 @@ class RemoteDataLoader(DataLoader):
 
     def load(self) -> Dataset:
         import datasets
-        from datasets import DownloadMode as HFDownloadMode
         from datasets.features import Audio, Image
-        from modelscope import MsDataset
-        from modelscope.utils.constant import DownloadMode as MSDownloadMode
 
         path = self.data_id_or_path
         # resolve data_to_sample function
@@ -112,39 +110,13 @@ class RemoteDataLoader(DataLoader):
             logger.info(
                 f'Loading dataset {path} from {self.data_source} > subset: {self.subset} > split: {self.split} ...'
             )
-            # prepare download_mode for both backends when force_redownload is requested
-            hf_download_mode = None if not self.force_redownload else HFDownloadMode.FORCE_REDOWNLOAD
-            ms_download_mode = None if not self.force_redownload else MSDownloadMode.FORCE_REDOWNLOAD
-
-            if self.data_source == HubType.MODELSCOPE:
-                dataset = MsDataset.load(
-                    dataset_name=path,
-                    split=self.split,
-                    subset_name=self.subset,
-                    version=self.version,
-                    trust_remote_code=self.trust_remote,
-                    download_mode=ms_download_mode,
-                    **self.kwargs,
-                )
-                # convert to Huggingface dataset if necessary
-                if not isinstance(dataset, datasets.Dataset):
-                    dataset = dataset.to_hf_dataset()
-            elif self.data_source in [HubType.HUGGINGFACE, HubType.LOCAL]:
-                # remove dataset_infos.json file if exists, since datasets will occur an error if it exists.
-                dataset_infos_path = os.path.join(path, 'dataset_infos.json')
-                if os.path.exists(dataset_infos_path):
-                    logger.info(f'Removing dataset_infos.json file at {dataset_infos_path} to avoid datasets errors.')
-                    os.remove(dataset_infos_path)
-                # load dataset from Huggingface or local path
-                dataset = datasets.load_dataset(
-                    path=path,
-                    name=self.subset if self.subset != 'default' else None,
-                    split=self.split,
-                    revision=self.version,
-                    trust_remote_code=self.trust_remote,
-                    download_mode=hf_download_mode,
-                    **self.kwargs,
-                )
+            dataset = DatasetHub(
+                data_id_or_path=path,
+                data_source=self.data_source,
+                revision=self.version,
+                trust_remote=self.trust_remote,
+                force_redownload=self.force_redownload,
+            ).load(split=self.split, subset=self.subset, **self.kwargs)
 
             # Only save to disk if not loading from local path
             if self.data_source != HubType.LOCAL:

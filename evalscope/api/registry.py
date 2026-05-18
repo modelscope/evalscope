@@ -1,12 +1,14 @@
 import copy
-from typing import TYPE_CHECKING, Callable, Dict, Optional, Type, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Type, Union
 
 if TYPE_CHECKING:
+    from evalscope.api.agent import AgentEnvironment, AgentStrategy, ToolHandler
     from evalscope.api.benchmark import BenchmarkMeta, DataAdapter
     from evalscope.api.evaluator import Evaluator
     from evalscope.api.filter import Filter
     from evalscope.api.metric import Aggregator, Metric
     from evalscope.api.model.model import ModelAPI
+    from evalscope.api.tool import ToolInfo
     from evalscope.config import TaskConfig
     from evalscope.utils.io_utils import OutputsStructure
 
@@ -242,3 +244,127 @@ def create_evaluator(
 
 
 # END: Registry for evaluators
+
+# BEGIN: Registry for agent strategies, environments and tools
+# Pluggable pieces that compose the Agent Loop.  Concrete strategy /
+# environment / tool classes self-register via the decorators below.
+STRATEGY_REGISTRY: Dict[str, Type['AgentStrategy']] = {}
+ENVIRONMENT_REGISTRY: Dict[str, Type['AgentEnvironment']] = {}
+AGENT_TOOL_REGISTRY: Dict[str, 'ToolHandler'] = {}
+AGENT_TOOL_INFO_REGISTRY: Dict[str, 'ToolInfo'] = {}
+"""Maps tool name → :class:`ToolInfo` schema.  Populated by :func:`register_agent_tool`
+when an ``info`` kwarg is supplied."""
+
+
+def register_strategy(name: str) -> Callable[[Type['AgentStrategy']], Type['AgentStrategy']]:
+    """Register an :class:`AgentStrategy` implementation under ``name``."""
+
+    def decorator(cls: Type['AgentStrategy']) -> Type['AgentStrategy']:
+        if name in STRATEGY_REGISTRY:
+            raise ValueError(f"Agent strategy '{name}' is already registered.")
+        STRATEGY_REGISTRY[name] = cls
+        return cls
+
+    return decorator
+
+
+def get_strategy(name: str) -> Type['AgentStrategy']:
+    if name not in STRATEGY_REGISTRY:
+        raise ValueError(
+            f"Agent strategy '{name}' is not registered. "
+            f'Available: {sorted(STRATEGY_REGISTRY.keys())}'
+        )
+    return STRATEGY_REGISTRY[name]
+
+
+def list_strategies() -> List[str]:
+    return sorted(STRATEGY_REGISTRY.keys())
+
+
+def register_environment(name: str) -> Callable[[Type['AgentEnvironment']], Type['AgentEnvironment']]:
+    """Register an :class:`AgentEnvironment` implementation under ``name``."""
+
+    def decorator(cls: Type['AgentEnvironment']) -> Type['AgentEnvironment']:
+        if name in ENVIRONMENT_REGISTRY:
+            raise ValueError(f"Agent environment '{name}' is already registered.")
+        ENVIRONMENT_REGISTRY[name] = cls
+        return cls
+
+    return decorator
+
+
+def get_environment(name: str) -> Type['AgentEnvironment']:
+    if name not in ENVIRONMENT_REGISTRY:
+        raise ValueError(
+            f"Agent environment '{name}' is not registered. "
+            f'Available: {sorted(ENVIRONMENT_REGISTRY.keys())}'
+        )
+    return ENVIRONMENT_REGISTRY[name]
+
+
+def list_environments() -> List[str]:
+    return sorted(ENVIRONMENT_REGISTRY.keys())
+
+
+def register_agent_tool(
+    name: str,
+    info: Optional['ToolInfo'] = None,
+) -> Callable[['ToolHandler'], 'ToolHandler']:
+    """Register an async tool handler under ``name``.
+
+    The decorated callable must match :data:`ToolHandler`:
+    ``async def run(call: ToolCall, env: Optional[AgentEnvironment]) -> str``.
+
+    Args:
+        name:  Registry key (also used as the tool function name exposed to the model).
+        info:  Optional :class:`~evalscope.api.tool.ToolInfo` schema.  When provided, it
+               is stored in :data:`AGENT_TOOL_INFO_REGISTRY` so that
+               :func:`resolve_tool_infos` can surface it to ``model.generate``.
+    """
+
+    def decorator(fn: 'ToolHandler') -> 'ToolHandler':
+        if name in AGENT_TOOL_REGISTRY:
+            raise ValueError(f"Agent tool '{name}' is already registered.")
+        AGENT_TOOL_REGISTRY[name] = fn
+        if info is not None:
+            AGENT_TOOL_INFO_REGISTRY[name] = info
+        return fn
+
+    return decorator
+
+
+def get_agent_tool(name: str) -> 'ToolHandler':
+    if name not in AGENT_TOOL_REGISTRY:
+        raise ValueError(f"Agent tool '{name}' is not registered. "
+                         f'Available: {sorted(AGENT_TOOL_REGISTRY.keys())}')
+    return AGENT_TOOL_REGISTRY[name]
+
+
+def list_agent_tools() -> List[str]:
+    return sorted(AGENT_TOOL_REGISTRY.keys())
+
+
+def resolve_tools(names: Optional[List[str]]) -> Dict[str, 'ToolHandler']:
+    """Look up multiple tool handlers by name.  ``None`` / empty → ``{}``."""
+    if not names:
+        return {}
+    return {name: get_agent_tool(name) for name in names}
+
+
+def get_agent_tool_info(name: str) -> Optional['ToolInfo']:
+    """Return the :class:`ToolInfo` schema for a registered tool, or ``None``."""
+    return AGENT_TOOL_INFO_REGISTRY.get(name)
+
+
+def resolve_tool_infos(names: Optional[List[str]]) -> List['ToolInfo']:
+    """Return :class:`ToolInfo` schemas for the named tools that have one.
+
+    Tools registered without an ``info`` argument are silently skipped.
+    ``None`` / empty → ``[]``.
+    """
+    if not names:
+        return []
+    return [AGENT_TOOL_INFO_REGISTRY[n] for n in names if n in AGENT_TOOL_INFO_REGISTRY]
+
+
+# END: Registry for agent strategies, environments and tools

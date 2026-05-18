@@ -46,7 +46,7 @@ class TestCodeBenchmark(TestBenchmark):
 
     def test_humaneval(self):
         """Test Humaneval dataset."""
-        self._run_dataset_test('humaneval', limit=5, repeats=2, model='qwen2.5-0.5b-instruct')
+        self._run_dataset_test('humaneval', limit=5, repeats=2)
 
     def test_humaneval_remote_sandbox(self):
         """Test Humaneval dataset with remote sandbox manager."""
@@ -58,11 +58,6 @@ class TestCodeBenchmark(TestBenchmark):
         use_sandbox=True
         sandbox_manager_config={
             'base_url': 'http://127.0.0.1:8080',
-            'dataset_language_map': {
-                'r': 'R',
-                'd_ut': 'D_ut',
-                'ts': 'typescript'
-            }
         }
         self._run_dataset_test('humaneval', limit=5, sandbox_type=sandbox_type, use_sandbox=use_sandbox, sandbox_manager_config=sandbox_manager_config)
 
@@ -177,3 +172,33 @@ class TestCodeBenchmark(TestBenchmark):
     def test_mbpp_plus(self):
         """Test MBPP+ dataset."""
         self._run_dataset_test('mbpp_plus', limit=10)
+
+    def test_multipl_e_humaneval_volcengine_sandbox(self):
+        sandbox_type='volcengine'
+        use_sandbox=True
+        sandbox_manager_config={
+            'base_url': 'http://127.0.0.1:8080',
+        }
+        dataset_args = {
+            'subset_list': [
+                'humaneval-cpp', # ok
+                # 'humaneval-ts', # ok
+                # 'humaneval-sh', # ok
+                # 'humaneval-cs', # need x86_64 docker image
+                # 'humaneval-go', # ok
+                # 'humaneval-java', # ok
+                # 'humaneval-lua', # ok
+                # 'humaneval-js', # ok
+                # 'humaneval-php', # ok
+                # 'humaneval-pl', # ok
+                # 'humaneval-rkt', # ok
+                # 'humaneval-r', # ok
+                # 'humaneval-rs', # ok
+                # 'humaneval-scala', # ok
+                # 'humaneval-swift', # ok
+                # 'humaneval-rb', # ok
+                # 'humaneval-d', # ok
+                # 'humaneval-jl', # ok
+        ],
+        }
+        self._run_dataset_test('multiple_humaneval', dataset_args=dataset_args, limit=10, sandbox_type=sandbox_type, use_sandbox=use_sandbox, sandbox_manager_config=sandbox_manager_config)

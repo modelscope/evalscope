@@ -3,6 +3,7 @@ import httpx
 import mimetypes
 import os
 import re
+from typing import Literal, Optional, cast
 
 from evalscope.utils.logger import get_logger
 
@@ -34,10 +35,47 @@ def data_uri_to_base64(data_uri: str) -> str:
     return stripped_uri
 
 
-def file_as_data(file: str) -> tuple[bytes, str]:
+VideoFormat = Literal['mp4', 'mpeg', 'mov']
+SUPPORTED_VIDEO_FORMATS: tuple[VideoFormat, ...] = ('mp4', 'mpeg', 'mov')
+VIDEO_FORMAT_TO_MIME_TYPE: dict[VideoFormat, str] = {
+    'mp4': 'video/mp4',
+    'mpeg': 'video/mpeg',
+    'mov': 'video/quicktime',
+}
+
+
+def video_format_to_mime_type(video_format: VideoFormat) -> str:
+    return VIDEO_FORMAT_TO_MIME_TYPE[video_format]
+
+
+def guess_video_format(video: Optional[str], default: VideoFormat = 'mp4') -> VideoFormat:
+    """Infer a supported video format from a data URI, URL, or local path."""
+    if not video:
+        return default
+
+    mime_type = data_uri_mime_type(video)
+    if not mime_type:
+        path_like = video.split('?', 1)[0].split('#', 1)[0]
+        mime_type, _ = mimetypes.guess_type(path_like, strict=False)
+
+    if mime_type and mime_type.startswith('video/'):
+        subtype = mime_type.split('/', 1)[1].lower()
+        if subtype == 'quicktime':
+            return 'mov'
+        if subtype in SUPPORTED_VIDEO_FORMATS:
+            return cast(VideoFormat, subtype)
+
+    ext = os.path.splitext(video.split('?', 1)[0].split('#', 1)[0])[1].lstrip('.').lower()
+    if ext in SUPPORTED_VIDEO_FORMATS:
+        return cast(VideoFormat, ext)
+
+    return default
+
+
+def file_as_data(file: str, default_mime_type: str = 'image/png') -> tuple[bytes, str]:
     if is_data_uri(file):
         # resolve mime type and base64 content
-        mime_type = data_uri_mime_type(file) or 'image/png'
+        mime_type = data_uri_mime_type(file) or default_mime_type
         file_base64 = data_uri_to_base64(file)
         file_bytes = base64.b64decode(file_base64)
     else:
@@ -46,7 +84,7 @@ def file_as_data(file: str) -> tuple[bytes, str]:
         if type:
             mime_type = type
         else:
-            mime_type = 'image/png'
+            mime_type = default_mime_type
 
         # handle url or file
         if is_http_url(file):
@@ -60,14 +98,21 @@ def file_as_data(file: str) -> tuple[bytes, str]:
     return file_bytes, mime_type
 
 
-def file_as_data_uri(file: str) -> str:
+def file_as_data_uri(file: str, default_mime_type: str = 'image/png') -> str:
     if is_data_uri(file):
         return file
     else:
-        file_bytes, mime_type = file_as_data(file)
+        file_bytes, mime_type = file_as_data(file, default_mime_type=default_mime_type)
         base64_file = base64.b64encode(file_bytes).decode('utf-8')
         file = f'data:{mime_type};base64,{base64_file}'
         return file
+
+
+def video_as_data_uri(video: str, video_format: Optional[VideoFormat] = None) -> str:
+    if is_data_uri(video):
+        return video
+    video_format = video_format or guess_video_format(video)
+    return file_as_data_uri(video, default_mime_type=video_format_to_mime_type(video_format))
 
 
 def download_url(url: str, save_path: str, num_retries: int = 3):

@@ -229,7 +229,7 @@ def _format_usage_section(
         f'    --datasets {name} \\',
     ]
     if sandbox_config:
-        cli_lines.append('    --use-sandbox \\')
+        cli_lines.append("    --sandbox '{\"enabled\": true}' \\")
     cli_lines.append('    --limit 10  # Remove this line for formal evaluation')
 
     # Build Python code
@@ -242,7 +242,7 @@ def _format_usage_section(
     }},
 '''
 
-    python_use_sandbox = '    use_sandbox=True,\n' if sandbox_config else ''
+    python_use_sandbox = "    sandbox={'enabled': True},\n" if sandbox_config else ''
 
     python_code = f'''from evalscope import run_task
 from evalscope.config import TaskConfig

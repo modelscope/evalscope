@@ -86,6 +86,57 @@ Results:
 +---------------------+-------------+-----------------+----------+-------+---------+---------+
 ```
 
+### Multiple Correct Answers
+
+When a question has more than one correct option, enable multiple-answer mode via `extra_params`. In this mode the `answer` field **must be a list of letters** (JSONL format only).
+
+**Data format**
+
+```text
+mcq/
+├── example_multi_dev.jsonl  # (Optional) Few-shot samples, answer is also a list
+└── example_multi_val.jsonl  # Evaluation data
+```
+
+Example record:
+
+```json
+{"id": "1", "category": "Biology", "question": "Which of the following are mammals?", "A": "Whale", "B": "Snake", "C": "Bat", "D": "Shark", "answer": ["A", "C"]}
+```
+
+**extra_params**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `multiple_correct` | bool | `False` | When `True`, switches to `CHINESE_MULTIPLE_ANSWER_TEMPLATE` and requires `answer` to be a list of letters |
+| `use_cot` | bool | `False` | When `True`, uses the CoT variant (`*_COT`). Can be combined with `multiple_correct` |
+
+**Configuration example**
+
+```python
+from evalscope import TaskConfig, run_task
+
+task_cfg = TaskConfig(
+    model='Qwen/Qwen2-0.5B-Instruct',
+    datasets=['general_mcq'],
+    dataset_args={
+        'general_mcq': {
+            'local_path': 'custom_eval/text/mcq',
+            'subset_list': ['example_multi'],
+            'extra_params': {
+                'multiple_correct': True,
+                # 'use_cot': True,  # Optional: enable CoT template
+            }
+        }
+    },
+)
+run_task(task_cfg=task_cfg)
+```
+
+```{note}
+When `multiple_correct=True`, a `ValueError` is raised at data-loading time if the `answer` field is not a list (e.g., a string like `"AC"`), to make the format mismatch easy to diagnose.
+```
+
 ## Question-Answering Format (QA)
 
 This framework accommodates two formats for question-and-answer tasks: those with reference answers and those without.

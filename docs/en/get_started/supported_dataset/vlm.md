@@ -6,6 +6,8 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 |------------|----------|----------|
 | `a_okvqa` | [A-OKVQA](../../benchmarks/a_okvqa.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `ai2d` | [AI2D](../../benchmarks/ai2d.md) | `Knowledge`, `MultiModal`, `QA` |
+| `air_bench_chat` | [AIR-Bench-Chat](../../benchmarks/air_bench_chat.md) | `Audio`, `InstructionFollowing`, `QA` |
+| `air_bench_foundation` | [AIR-Bench-Foundation](../../benchmarks/air_bench_foundation.md) | `Audio`, `Knowledge`, `MCQ` |
 | `blink` | [BLINK](../../benchmarks/blink.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `cc_bench` | [CCBench](../../benchmarks/cc_bench.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](../../benchmarks/chartqa.md) | `Knowledge`, `MultiModal`, `QA` |
@@ -28,6 +30,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `mm_star` | [MMStar](../../benchmarks/mm_star.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `mmmu` | [MMMU](../../benchmarks/mmmu.md) | `Knowledge`, `MultiModal`, `QA` |
 | `mmmu_pro` | [MMMU-PRO](../../benchmarks/mmmu_pro.md) | `Knowledge`, `MCQ`, `MultiModal` |
+| `mvbench` | [MVBench](../../benchmarks/mvbench.md) | `MCQ`, `MultiModal` |
 | `ocr_bench` | [OCRBench](../../benchmarks/ocr_bench.md) | `Knowledge`, `MultiModal`, `QA` |
 | `ocr_bench_v2` | [OCRBench-v2](../../benchmarks/ocr_bench_v2.md) | `Knowledge`, `MultiModal`, `QA` |
 | `olympiad_bench` | [OlympiadBench](../../benchmarks/olympiad_bench.md) | `Math`, `Reasoning` |
@@ -40,6 +43,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `simple_vqa` | [SimpleVQA](../../benchmarks/simple_vqa.md) | `MultiModal`, `QA`, `Reasoning` |
 | `tir_bench` | [TIR-Bench](../../benchmarks/tir_bench.md) | `MultiModal`, `QA`, `Reasoning` |
 | `torgo` | [TORGO](../../benchmarks/torgo.md) | `Audio`, `SpeechRecognition` |
+| `videomme_v2` | [Video-MME-v2](../../benchmarks/videomme_v2.md) | `MCQ`, `MultiModal` |
 | `visulogic` | [VisuLogic](../../benchmarks/visulogic.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `vstar_bench` | [V*Bench](../../benchmarks/vstar_bench.md) | `Grounding`, `MCQ`, `MultiModal` |
 | `zerobench` | [ZeroBench](../../benchmarks/zerobench.md) | `Knowledge`, `MultiModal`, `QA` |
@@ -50,6 +54,8 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 
 ../../benchmarks/a_okvqa.md
 ../../benchmarks/ai2d.md
+../../benchmarks/air_bench_chat.md
+../../benchmarks/air_bench_foundation.md
 ../../benchmarks/blink.md
 ../../benchmarks/cc_bench.md
 ../../benchmarks/chartqa.md
@@ -72,6 +78,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/mm_star.md
 ../../benchmarks/mmmu.md
 ../../benchmarks/mmmu_pro.md
+../../benchmarks/mvbench.md
 ../../benchmarks/ocr_bench.md
 ../../benchmarks/ocr_bench_v2.md
 ../../benchmarks/olympiad_bench.md
@@ -84,6 +91,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/simple_vqa.md
 ../../benchmarks/tir_bench.md
 ../../benchmarks/torgo.md
+../../benchmarks/videomme_v2.md
 ../../benchmarks/visulogic.md
 ../../benchmarks/vstar_bench.md
 ../../benchmarks/zerobench.md

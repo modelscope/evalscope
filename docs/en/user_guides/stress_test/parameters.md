@@ -36,6 +36,7 @@ Execute `evalscope perf --help` to get a full parameter description.
 | `--stream` | `bool` | Whether to use SSE stream output<br>Must be enabled to measure TTFT (Time to First Token) metric | `True` |
 | `--sleep-interval` | `int` | Sleep time between each performance test (seconds)<br>Helps avoid overloading the server | `5` |
 | `--open-loop` | `bool` | Enable open-loop mode: dispatch requests following a Poisson arrival schedule without semaphore backpressure.<br>Requests are fired at the rate set by `--rate` regardless of whether the server has finished processing previous requests.<br>• `--rate` becomes the sweep variable (accepts multiple values), replacing `--parallel` to drive multi-run iterations<br>• `--number` must have the same length as `--rate`; each pair `(rate, number)` corresponds to one independent run<br>• `--parallel` is ignored in this mode (internally set to -1 / INF)<br>See [Usage Example](./examples.md#open-loop-mode) | `False` |
+| `--warmup-num` | `float` | Number or ratio of warmup requests:<br>• `0`: disabled (default)<br>• `>= 1`: absolute count, e.g. `--warmup-num 10` sends 10 warmup requests<br>• `0 < value < 1`: ratio mode, e.g. `--warmup-num 0.1` = 10% of `--number`<br>Warmup requests are sent with the same concurrency/rate as the benchmark but **excluded from performance metrics**<br>Useful for eliminating cold-start effects (KV-cache filling, JIT compilation, etc.)<br>See [Usage Example](./examples.md#warmup-benchmarking) | `0` |
 
 ```{tip}
 **Closed-loop (default)** vs **Open-loop** (`--open-loop`) — parameter behaviour comparison:
@@ -129,10 +130,10 @@ Must be used with `--multi-turn`. See the [Multi-turn Benchmark Guide](./multi_t
 
 | Mode | Description | Supports dataset-path |
 |------|-------------|----------------------|
-| `random_multi_turn` | Synthetic multi-turn conversations; each turn randomly generates a token sequence<br>**Requires `--tokenizer-path` and `--max-turns`**<br>[Usage example](./multi_turn.md#1-using-random_multi_turn-synthetic-multi-turn-conversations) | ✗ |
-| `share_gpt_zh_multi_turn` | Automatically downloads the Chinese [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) dataset (~70k conversations) from ModelScope, preserving full multi-turn conversations<br>[Usage example](./multi_turn.md#2-using-share_gpt_zh_multi_turn-real-chinese-conversations) | ✓ |
+| `random_multi_turn` | Synthetic multi-turn conversations; each turn randomly generates a token sequence<br>**Requires `--tokenizer-path` and `--max-turns`**<br>[Usage example](./multi_turn.md#random_multi_turn) | ✗ |
+| `share_gpt_zh_multi_turn` | Automatically downloads the Chinese [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) dataset (~70k conversations) from ModelScope, preserving full multi-turn conversations<br>[Usage example](./multi_turn.md#share_gpt_multi_turn) | ✓ |
 | `share_gpt_en_multi_turn` | Automatically downloads the English [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) dataset (~70k conversations) from ModelScope, preserving full multi-turn conversations | ✓ |
-| `custom_multi_turn` | Uses a local JSONL file as a custom multi-turn dataset<br>Each line must be a JSON array of OpenAI message dicts; ideal for benchmarking with your own conversation data<br>**Requires `--dataset-path`**<br>[Usage example](./multi_turn.md#3-using-custom_multi_turn-custom-local-conversations) | ✓ (Required) |
+| `custom_multi_turn` | Uses a local JSONL file as a custom multi-turn dataset<br>Each line must be a JSON array of OpenAI message dicts; ideal for benchmarking with your own conversation data<br>**Requires `--dataset-path`**<br>[Usage example](./multi_turn.md#custom_multi_turn) | ✓ (Required) |
 
 ## Model Settings
 

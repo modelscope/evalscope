@@ -235,6 +235,113 @@ evalscope perf \
  --extra-args '{"num_documents": 5, "document_length_ratio": 3}'
 ```
 
+## Open-loop 开放环路模式
+
+Open-loop 模式下，请求按泊松到达调度（由 `--rate` 控制）立即发出，不等待服务端返回，从而模拟真实流量中请求到达与服务时间无关的场景。通过一次命令指定多个速率点，可自动扫描吞吐-延迟曲线。
+
+以下示例在 5、10、20 req/s 三个速率点各发送 500、1000、2000 个请求，观察不同负载下的延迟与吞吐变化：
+
+```bash
+evalscope perf \
+  --url 'http://127.0.0.1:8000/v1/chat/completions' \
+  --model 'qwen2.5' \
+  --api openai \
+  --dataset openqa \
+  --open-loop \
+  --rate 5 10 20 \
+  --number 500 1000 2000 \
+  --max-tokens 1024 \
+  --stream
+```
+
+```{note}
+**注意事项**
+
+- `--rate` 所有值必须 **> 0**；open-loop 模式下不支持 `rate=-1`（无限速）。
+- `--number` 与 `--rate` 必须**等长**，每对 `(rate, number)` 对应一轮独立压测。
+- `--parallel` 在 open-loop 模式下**被忽略**（内部自动设为 INF），无需手动指定。
+- open-loop 并发上限为无穷大，若服务端处理能力不足，在高速率下可能积压大量飞行中的请求，请根据服务端资源合理设置速率上限。
+- 本模式与 closed-loop（默认）模式的核心区别：closed-loop 每个 worker 等待响应后再发下一条（背压保护），open-loop 不等待、按调度直接发出（更接近真实流量）。
+```
+
+## Warmup 预热压测
+
+在正式压测前发送一批预热请求，消除冷启动影响（如 KV-cache 填充、JIT 编译、连接池初始化等），使性能指标更准确。
+
+预热请求使用与正式压测相同的并发和速率发送，但**不计入性能指标**（延迟、吞吐、百分位等均排除预热数据）。
+
+**1. 绝对数量模式**
+
+指定预热请求的绝对数量：
+
+```bash
+evalscope perf \
+  --url 'http://127.0.0.1:8000/v1/chat/completions' \
+  --parallel 10 \
+  --model 'qwen2.5' \
+  --number 100 \
+  --warmup-num 10 \
+  --api openai \
+  --dataset openqa \
+  --stream
+```
+
+上述命令会先发送 10 个预热请求，再发送 100 个正式压测请求，指标仅统计后 100 个请求。
+
+**2. 比例模式**
+
+使用 0~1 之间的浮点数，按 `--number` 的比例计算预热数量，适用于 sweep 模式（多轮 `--number` 不同时自动适配）：
+
+```bash
+evalscope perf \
+  --url 'http://127.0.0.1:8000/v1/chat/completions' \
+  --parallel 10 \
+  --model 'qwen2.5' \
+  --number 100 \
+  --warmup-num 0.1 \
+  --api openai \
+  --dataset openqa \
+  --stream
+```
+
+`--warmup-num 0.1` 表示预热数量为 `--number` 的 10%，即 `max(1, int(0.1 * 100)) = 10` 个预热请求。
+
+```{note}
+**注意事项**
+
+- 预热请求与正式请求使用相同的数据集和请求参数。
+- 预热期间的进度条会单独显示（`Warmup[...]`），完成后自动切换到正式压测进度条（`Processing[...]`）。
+- 多轮对话模式下，`--warmup-num` 表示预热的对话数量（与 `--number` 语义一致），预热对话内的所有 turn 均不计入指标。
+```
+
+## 调试请求
+使用 `--debug` 选项，我们将输出请求和响应，输出示例如下：
+
+**非`stream`模式输出示例**
+
+```text
+2024-11-27 11:25:34,161 - evalscope - http_client.py - on_request_start - 116 - DEBUG - Starting request: <TraceRequestStartParams(method='POST', url=URL('http://127.0.0.1:8000/v1/completions'), headers=<CIMultiDict('Content-Type': 'application/json', 'user-agent': 'modelscope_bench', 'Authorization': 'Bearer EMPTY')>)>
+2024-11-27 11:25:34,163 - evalscope - http_client.py - on_request_chunk_sent - 128 - DEBUG - Request sent: <method='POST',  url=URL('http://127.0.0.1:8000/v1/completions'), truncated_chunk='{"prompt": "hello", "model": "qwen2.5"}'>
+2024-11-27 11:25:38,172 - evalscope - http_client.py - on_response_chunk_received - 140 - DEBUG - Request received: <method='POST',  url=URL('http://127.0.0.1:8000/v1/completions'), truncated_chunk='{"id":"cmpl-a4565eb4fc6b4a5697f38c0adaf9b70b","object":"text_completion","created":1732677934,"model":"qwen2.5","choices":[{"index":0,"text":"，everyone！今天我给您撒个谎哦。 ))\\n\\n今天开心的事。","logprobs":null,"finish_reason":"length","stop_reason":null,"prompt_logprobs":null}],"usage":{"prompt_tokens":1,"total_tokens":17,"completion_tokens":16}}'>
+```
+
+**`stream`模式输出示例**
+
+```text
+2024-11-27 20:02:24,760 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"重要的"},"finish_reason":null}],"usage":null}
+2024-11-27 20:02:24,803 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":""},"finish_reason":null}],"usage":null}
+2024-11-27 20:02:24,847 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"，以便"},"finish_reason":null}],"usage":null}
+2024-11-27 20:02:24,890 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"及时"},"finish_reason":null}],"usage":null}
+2024-11-27 20:02:24,933 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"得到"},"finish_reason":null}],"usage":null}
+2024-11-27 20:02:24,976 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"帮助"},"finish_reason":null}],"usage":null}
+2024-11-27 20:02:25,023 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"和支持"},"finish_reason":null}],"usage":null}
+2024-11-27 20:02:25,066 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":""},"finish_reason":null}],"usage":null}
+2024-11-27 20:02:25,109 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":""},"finish_reason":null}],"usage":null}
+2024-11-27 20:02:25,111 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"。<|im_end|>"},"finish_reason":null}],"usage":null}
+2024-11-27 20:02:25,113 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":50,"completion_tokens":260,"total_tokens":310}}
+2024-11-27 20:02:25,113 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: [DONE]
+```
+
 ## 可视化测试结果
 
 ### 使用WandB
@@ -287,61 +394,3 @@ clearml-init
 ```
 
 ![clearml sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/clearml_vis.jpg)
-
-
-## Open-loop 开放环路模式
-
-Open-loop 模式下，请求按泊松到达调度（由 `--rate` 控制）立即发出，不等待服务端返回，从而模拟真实流量中请求到达与服务时间无关的场景。通过一次命令指定多个速率点，可自动扫描吞吐-延迟曲线。
-
-以下示例在 5、10、20 req/s 三个速率点各发送 500、1000、2000 个请求，观察不同负载下的延迟与吞吐变化：
-
-```bash
-evalscope perf \
-  --url 'http://127.0.0.1:8000/v1/chat/completions' \
-  --model 'qwen2.5' \
-  --api openai \
-  --dataset openqa \
-  --open-loop \
-  --rate 5 10 20 \
-  --number 500 1000 2000 \
-  --max-tokens 1024 \
-  --stream
-```
-
-```{note}
-**注意事项**
-
-- `--rate` 所有值必须 **> 0**；open-loop 模式下不支持 `rate=-1`（无限速）。
-- `--number` 与 `--rate` 必须**等长**，每对 `(rate, number)` 对应一轮独立压测。
-- `--parallel` 在 open-loop 模式下**被忽略**（内部自动设为 INF），无需手动指定。
-- open-loop 并发上限为无穷大，若服务端处理能力不足，在高速率下可能积压大量飞行中的请求，请根据服务端资源合理设置速率上限。
-- 本模式与 closed-loop（默认）模式的核心区别：closed-loop 每个 worker 等待响应后再发下一条（背压保护），open-loop 不等待、按调度直接发出（更接近真实流量）。
-```
-
-## 调试请求
-使用 `--debug` 选项，我们将输出请求和响应，输出示例如下：
-
-**非`stream`模式输出示例**
-
-```text
-2024-11-27 11:25:34,161 - evalscope - http_client.py - on_request_start - 116 - DEBUG - Starting request: <TraceRequestStartParams(method='POST', url=URL('http://127.0.0.1:8000/v1/completions'), headers=<CIMultiDict('Content-Type': 'application/json', 'user-agent': 'modelscope_bench', 'Authorization': 'Bearer EMPTY')>)>
-2024-11-27 11:25:34,163 - evalscope - http_client.py - on_request_chunk_sent - 128 - DEBUG - Request sent: <method='POST',  url=URL('http://127.0.0.1:8000/v1/completions'), truncated_chunk='{"prompt": "hello", "model": "qwen2.5"}'>
-2024-11-27 11:25:38,172 - evalscope - http_client.py - on_response_chunk_received - 140 - DEBUG - Request received: <method='POST',  url=URL('http://127.0.0.1:8000/v1/completions'), truncated_chunk='{"id":"cmpl-a4565eb4fc6b4a5697f38c0adaf9b70b","object":"text_completion","created":1732677934,"model":"qwen2.5","choices":[{"index":0,"text":"，everyone！今天我给您撒个谎哦。 ))\\n\\n今天开心的事。","logprobs":null,"finish_reason":"length","stop_reason":null,"prompt_logprobs":null}],"usage":{"prompt_tokens":1,"total_tokens":17,"completion_tokens":16}}'>
-```
-
-**`stream`模式输出示例**
-
-```text
-2024-11-27 20:02:24,760 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"重要的"},"finish_reason":null}],"usage":null}
-2024-11-27 20:02:24,803 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":""},"finish_reason":null}],"usage":null}
-2024-11-27 20:02:24,847 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"，以便"},"finish_reason":null}],"usage":null}
-2024-11-27 20:02:24,890 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"及时"},"finish_reason":null}],"usage":null}
-2024-11-27 20:02:24,933 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"得到"},"finish_reason":null}],"usage":null}
-2024-11-27 20:02:24,976 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"帮助"},"finish_reason":null}],"usage":null}
-2024-11-27 20:02:25,023 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"和支持"},"finish_reason":null}],"usage":null}
-2024-11-27 20:02:25,066 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":""},"finish_reason":null}],"usage":null}
-2024-11-27 20:02:25,109 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":""},"finish_reason":null}],"usage":null}
-2024-11-27 20:02:25,111 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"。<|im_end|>"},"finish_reason":null}],"usage":null}
-2024-11-27 20:02:25,113 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":50,"completion_tokens":260,"total_tokens":310}}
-2024-11-27 20:02:25,113 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: [DONE]
-```
