@@ -1,67 +1,80 @@
 # Video-MME-v2
 
+
 ## 概述
 
-Video-MME-v2 是一个公开视频理解评测集，用于评估多模态模型的综合视频理解能力。它包含 800 个视频、3,200 条多选问答样本，以及带时间戳的词级字幕文件。
-
-这个原生适配器刻意复用了与 MVBench 相同的视频 benchmark 路径：通过 `DatasetHub` 加载标注，通过同一个 hub 抽象解析可选媒体归档，并使用 `ContentVideo` 与 OpenAI 兼容的 `video_url` 内容路径构造样本。
+Video-MME-v2 是一个公开的综合性视频理解基准测试。它包含 800 个视频、3,200 个多选问答样本，以及带有时间戳的词级字幕。该基准测试的原生适配器使用共享的 `DatasetHub` 抽象来加载标注数据并可选地下载媒体归档文件，因此其复用了与 MVBench 相同的可重用视频基准测试路径。
 
 ## 任务描述
 
-- **任务类型**：视频多选问答
-- **输入**：公开视频 URL 或官方归档 MP4 + 问题 + 候选答案
-- **输出**：单个答案字母
-- **默认子集**：`all`
-- **完整评测**：800 个视频上的 3,200 条问答样本
-
-## 主要特性
-
-- 使用公开评测集中的真实视频输入
-- 复用 `VisionLanguageAdapter`、`MultiChoiceAdapter`、`DatasetHub` 和 `ContentVideo`
-- 支持轻量的公开视频 URL 模式，便于小批量 smoke test
-- 通过 `extra_params.video_source = "archive"` 支持官方 MP4 归档模式
-- 可通过 `extra_params.use_subtitles = true` 将词级字幕加入 prompt
-- 支持子集：`all`、`level_1`、`level_2`、`level_3`、`logic`、`relevance`
+- **任务类型**：视频多选问答（MCQ）
+- **输入**：视频 URL 或归档的 MP4 文件 + 问题 + 答案选项
+- **输出**：单个正确答案字母
+- **子集**：`all`、`level_1`、`level_2`、`level_3`、`logic`、`relevance`
 
 ## 评估说明
 
 - 默认配置使用 **0-shot** 评估
 - 主要指标：**准确率（Accuracy）**
-- 公开 ModelScope 数据集将官方视频存放在 40 个大型 zip 归档中；URL 模式可避免小批量测试时下载多 GB 视频包
-- 归档模式更利于复现，但即使只评测一个样本也可能下载数 GB
+- 默认视频源为公开的 `url` 字段，用于轻量级冒烟测试
+- 将 `extra_params.video_source` 设置为 `archive` 以下载并使用官方 MP4 归档文件
+- 将 `extra_params.use_subtitles` 设置为 `true` 以在提示中包含词级字幕
 
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `videomme_v2` |
-| **数据集ID** | [MME-Benchmarks/Video-MME-v2](https://modelscope.cn/datasets/MME-Benchmarks/Video-MME-v2) |
-| **论文** | [Video-MME-v2](https://arxiv.org/abs/2604.05015) |
+| **数据集ID** | [MME-Benchmarks/Video-MME-v2](https://modelscope.cn/datasets/MME-Benchmarks/Video-MME-v2/summary) |
+| **论文** | [Paper](https://arxiv.org/abs/2604.05015) |
 | **标签** | `MCQ`, `MultiModal` |
 | **指标** | `acc` |
-| **默认示例数量** | 0-shot |
-| **评估数据划分** | `test` |
+| **默认示例数** | 0-shot |
+| **评估划分** | `test` |
+
 
 ## 数据统计
 
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 3,200 |
-| 视频数量 | 800 |
-| 每个视频的问题数 | 4 |
+
+**各子集统计信息：**
+
+| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
+|--------|---------|-------------|------------|------------|
+| `all` | 3,200 | N/A | N/A | N/A |
+| `level_1` | 686 | N/A | N/A | N/A |
+| `level_2` | 834 | N/A | N/A | N/A |
+| `level_3` | 837 | N/A | N/A | N/A |
+| `logic` | 1,124 | N/A | N/A | N/A |
+| `relevance` | 2,076 | N/A | N/A | N/A |
 
 ## 样例示例
 
-```json
-{
-  "video_id": "001",
-  "url": "https://www.youtube.com/watch?v=AYSYelOQtQI",
-  "question_id": "001-1",
-  "question": "What is the ethnicity of the protagonist's mother?",
-  "options": "A. Malaysian.\nB. British.\nC. Singaporean.\nD. German.\nE. Canadian.\nF. Chinese.\nG. American.\nH. Cannot be determined.",
-  "answer": "F"
-}
+*样例示例不可用。*
+
+## 提示模板
+
+**提示模板：**
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
 ```
+
+## 额外参数
+
+| 参数 | 类型 | 默认值 | 描述 |
+|-----------|------|---------|-------------|
+| `dataset_id` | `str` | `MME-Benchmarks/Video-MME-v2` | Video-MME-v2 的数据集仓库 ID 或本地数据集根目录。 |
+| `dataset_hub` | `str` | `modelscope` | 用于加载标注、字幕和可选视频归档的 dataset hub。选项：['huggingface', 'modelscope', 'local'] |
+| `dataset_revision` | `str` | `` | 可选的数据集版本；留空则使用 hub 默认版本。 |
+| `video_source` | `str` | `url` | 使用公开 URL 字段进行轻量级测试，或使用官方归档的 MP4 文件。选项：['url', 'archive'] |
+| `use_subtitles` | `bool` | `False` | 在提示中包含 Video-MME-v2 的字幕文本。 |
+| `subtitle_word_limit` | `int` | `512` | 启用字幕时，每个样本最多包含的字幕词数。 |
 
 ## 使用方法
 
@@ -73,8 +86,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets videomme_v2 \
-    --dataset-args '{"videomme_v2": {"subset_list": ["all"], "extra_params": {"dataset_hub": "modelscope", "video_source": "url", "use_subtitles": true, "subtitle_word_limit": 512}}}' \
-    --limit 2
+    --limit 10  # 正式评估时请删除此行
 ```
 
 ### 使用 Python
@@ -90,16 +102,11 @@ task_cfg = TaskConfig(
     datasets=['videomme_v2'],
     dataset_args={
         'videomme_v2': {
-            'subset_list': ['all'],
-            'extra_params': {
-                'dataset_hub': 'modelscope',
-                'video_source': 'url',
-                'use_subtitles': True,
-                'subtitle_word_limit': 512,
-            },
+            # subset_list: ['all', 'level_1', 'level_2']  # 可选，用于评估特定子集
+            # extra_params: {}  # 使用默认额外参数
         }
     },
-    limit=2,
+    limit=10,  # 正式评估时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

@@ -3,7 +3,7 @@
 
 ## 概述
 
-AIR-Bench Foundation 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio InstRuction Benchmark，ACL 2024 主会）的判别任务部分——这是首个面向大型音频-语言模型（LALMs）的指令遵循基准测试，涵盖**人类语音、自然声音和音乐**。Foundation 轨道包含约 25,000 道单选题，横跨三大音频类别中的 19 项逻辑任务。
+AIR-Bench Foundation 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio InstRuction Benchmark，ACL 2024 主会）的判别任务部分——这是首个面向大型音频-语言模型（LALMs）的指令遵循基准测试，涵盖**人类语音、自然声音和音乐**。Foundation 轨道包含约 2.5 万道单选题，横跨三大音频类别中的 19 项逻辑任务。
 
 ## 任务描述
 
@@ -13,9 +13,9 @@ AIR-Bench Foundation 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio I
 
 ## 类别（19 项任务 / 25 个源数据集子集）
 
-- **语音**（11 个目录 / 9 项任务）：语音定位、语言识别、性别识别、情感识别（IEMOCAP+MELD）、年龄预测、语音实体识别、意图分类、说话人数量统计、合成语音检测。
-- **声音**（6 个目录 / 4 项任务）：音频定位、人声分类、声学场景分类（CochlScene+TUT2017）、声音问答（avqa+clothoaqa）。
-- **音乐**（8 个目录 / 6 项任务）：乐器识别、流派识别、MIDI 音高分析、MIDI 力度分析、音乐问答、音乐情感识别。
+- **语音**（11 个子集 / 9 项任务）：语音定位、语言识别、性别识别、情感识别（IEMOCAP+MELD）、年龄预测、语音实体识别、意图分类、说话人数量统计、合成语音检测。
+- **声音**（6 个子集 / 4 项任务）：音频定位、人声分类、声学场景分类（CochlScene+TUT2017）、声音问答（avqa+clothoaqa）。
+- **音乐**（8 个子集 / 6 项任务）：乐器识别、流派识别、MIDI 音高分析、MIDI 力度分析、音乐问答、音乐情感识别。
 
 ## 提示模板（与官方 `Inference_Foundation.py` 一致）
 
@@ -30,14 +30,14 @@ D. {choice_d}
 
 ## 数据集获取
 
-- 该数据集托管在 ModelScope 上：[`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset)。采用 *audiofolder + JSON 元数据* 的布局。evalscope 在首次运行时通过 `modelscope.dataset_snapshot_download` 按需下载；完整数据集约 49 GB，建议通过 `extra_params` 参数限制下载的子集。
+- 该数据集托管于 ModelScope：[`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset)。采用 *audiofolder + JSON metadata* 的布局。evalscope 在首次运行时通过 `modelscope.dataset_snapshot_download` 按需下载；完整数据集约 49 GB，建议通过 `extra_params` 参数限制下载的子集。
 - 如果数据集已存在于本地磁盘，请传入 `dataset_args={'air_bench_foundation': {'local_path': '/path/to/AIR-Bench-Dataset'}}`；本地根目录应包含 `Foundation/` 文件夹。
-- 部分 Foundation 样本为 FLAC 格式。为兼容 OpenAI 音频输入，evalscope 会将其转换为缓存的 WAV 文件，这需要安装 `soundfile`（`pip install "evalscope[air_bench]"`）或系统中存在可用的 `ffmpeg` 二进制文件。
+- 部分 Foundation 样本为 FLAC 格式。为兼容 OpenAI 风格的音频输入，evalscope 会将其转换为缓存的 WAV 文件，这需要安装 `soundfile`（`pip install "evalscope[air_bench]"`）或系统中存在可用的 `ffmpeg` 二进制文件。
 
 ## 评估说明
 
 - **指标**：**准确率**（按源数据集子集计算，并按类别聚合）。
-- 默认提示模板遵循官方 `Inference_Foundation.py` 的格式，以复现现有 AIR-Bench 排行榜结果。
+- 默认提示模板遵循官方 `Inference_Foundation.py` 的格式，因此可复现现有的 AIR-Bench 排行榜结果。
 - 设置 `extra_params={'subsets': [...]}` 可限制评估范围至 25 个源目录中的部分子集——适用于仅下载了部分数据的情况。
 
 ## 属性
@@ -45,12 +45,12 @@ D. {choice_d}
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `air_bench_foundation` |
-| **数据集ID** | [evalscope/AIR-Bench-Dataset](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset/summary) |
+| **数据集 ID** | [evalscope/AIR-Bench](https://modelscope.cn/datasets/evalscope/AIR-Bench/summary) |
 | **论文** | [Paper](https://aclanthology.org/2024.acl-long.109/) |
 | **标签** | `Audio`, `Knowledge`, `MCQ` |
 | **指标** | `acc` |
 | **默认示例数** | 0-shot |
-| **评估分割** | `test` |
+| **评估划分** | `test` |
 
 
 ## 数据统计

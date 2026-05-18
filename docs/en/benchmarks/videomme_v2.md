@@ -1,67 +1,84 @@
 # Video-MME-v2
 
+
 ## Overview
 
-Video-MME-v2 is a public comprehensive video understanding benchmark for multimodal models. It contains 800 videos, 3,200 multiple-choice QA instances, and word-level subtitle files with timestamps.
-
-This native adapter is intentionally built on the same reusable video benchmark path as MVBench: annotations are loaded through `DatasetHub`, optional media archives are resolved through the same hub abstraction, and samples use `ContentVideo` plus the OpenAI-compatible `video_url` path.
+Video-MME-v2 is a public comprehensive video understanding benchmark. It contains 800 videos,
+3,200 multiple-choice QA instances, and word-level subtitles with timestamps. The native adapter
+uses the shared `DatasetHub` abstraction for both annotation loading and optional media archive
+downloads, so it exercises the same reusable video benchmark path as MVBench.
 
 ## Task Description
 
-- **Task Type**: Video Multiple-Choice Question Answering
-- **Input**: Video URL or official archived MP4 + question + answer choices
-- **Output**: Single answer letter
-- **Default Subset**: `all`
-- **Full Benchmark**: 3,200 QA instances over 800 videos
-
-## Key Features
-
-- Public video benchmark with real video inputs
-- Reuses `VisionLanguageAdapter`, `MultiChoiceAdapter`, `DatasetHub`, and `ContentVideo`
-- Supports lightweight public-URL mode for small smoke tests
-- Supports official MP4 archive mode through `extra_params.video_source = "archive"`
-- Can include word-level subtitles in the prompt with `extra_params.use_subtitles = true`
-- Supports subsets: `all`, `level_1`, `level_2`, `level_3`, `logic`, `relevance`
+- **Task Type**: Video multiple-choice question answering
+- **Input**: Video URL or archived MP4 + question + answer choices
+- **Output**: Single correct answer letter
+- **Subsets**: `all`, `level_1`, `level_2`, `level_3`, `logic`, `relevance`
 
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation
 - Primary metric: **Accuracy**
-- The public ModelScope dataset stores official videos in 40 large zip archives; URL mode avoids downloading multi-GB archives for small tests
-- Archive mode is more reproducible but can download several GB even for one sample
+- The default video source is the public `url` field for lightweight smoke tests
+- Set `extra_params.video_source` to `archive` to download and use the official MP4 archives
+- Set `extra_params.use_subtitles` to `true` to include word-level subtitles in the prompt
+
 
 ## Properties
 
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `videomme_v2` |
-| **Dataset ID** | [MME-Benchmarks/Video-MME-v2](https://modelscope.cn/datasets/MME-Benchmarks/Video-MME-v2) |
-| **Paper** | [Video-MME-v2](https://arxiv.org/abs/2604.05015) |
+| **Dataset ID** | [MME-Benchmarks/Video-MME-v2](https://modelscope.cn/datasets/MME-Benchmarks/Video-MME-v2/summary) |
+| **Paper** | [Paper](https://arxiv.org/abs/2604.05015) |
 | **Tags** | `MCQ`, `MultiModal` |
 | **Metrics** | `acc` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
+
 
 ## Data Statistics
 
 | Metric | Value |
 |--------|-------|
 | Total Samples | 3,200 |
-| Videos | 800 |
-| Questions per Video | 4 |
+
+**Per-Subset Statistics:**
+
+| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
+|--------|---------|-------------|------------|------------|
+| `all` | 3,200 | N/A | N/A | N/A |
+| `level_1` | 686 | N/A | N/A | N/A |
+| `level_2` | 834 | N/A | N/A | N/A |
+| `level_3` | 837 | N/A | N/A | N/A |
+| `logic` | 1,124 | N/A | N/A | N/A |
+| `relevance` | 2,076 | N/A | N/A | N/A |
 
 ## Sample Example
 
-```json
-{
-  "video_id": "001",
-  "url": "https://www.youtube.com/watch?v=AYSYelOQtQI",
-  "question_id": "001-1",
-  "question": "What is the ethnicity of the protagonist's mother?",
-  "options": "A. Malaysian.\nB. British.\nC. Singaporean.\nD. German.\nE. Canadian.\nF. Chinese.\nG. American.\nH. Cannot be determined.",
-  "answer": "F"
-}
+*Sample example not available.*
+
+## Prompt Template
+
+**Prompt Template:**
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
 ```
+
+## Extra Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `dataset_id` | `str` | `MME-Benchmarks/Video-MME-v2` | Dataset repository ID or local dataset root for Video-MME-v2. |
+| `dataset_hub` | `str` | `modelscope` | Dataset hub used to load annotations, subtitles, and optional video archives. Choices: ['huggingface', 'modelscope', 'local'] |
+| `dataset_revision` | `str` | `` | Optional dataset revision; leave empty to use the hub default. |
+| `video_source` | `str` | `url` | Use public URL fields for lightweight tests or official archived MP4 files. Choices: ['url', 'archive'] |
+| `use_subtitles` | `bool` | `False` | Include Video-MME-v2 subtitle text in the prompt. |
+| `subtitle_word_limit` | `int` | `512` | Maximum number of subtitle words included per sample when subtitles are enabled. |
 
 ## Usage
 
@@ -73,8 +90,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets videomme_v2 \
-    --dataset-args '{"videomme_v2": {"subset_list": ["all"], "extra_params": {"dataset_hub": "modelscope", "video_source": "url", "use_subtitles": true, "subtitle_word_limit": 512}}}' \
-    --limit 2
+    --limit 10  # Remove this line for formal evaluation
 ```
 
 ### Using Python
@@ -90,17 +106,14 @@ task_cfg = TaskConfig(
     datasets=['videomme_v2'],
     dataset_args={
         'videomme_v2': {
-            'subset_list': ['all'],
-            'extra_params': {
-                'dataset_hub': 'modelscope',
-                'video_source': 'url',
-                'use_subtitles': True,
-                'subtitle_word_limit': 512,
-            },
+            # subset_list: ['all', 'level_1', 'level_2']  # optional, evaluate specific subsets
+            # extra_params: {}  # uses default extra parameters
         }
     },
-    limit=2,
+    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)
 ```
+
+

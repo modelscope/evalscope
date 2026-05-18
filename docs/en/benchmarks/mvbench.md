@@ -1,73 +1,76 @@
 # MVBench
 
+
 ## Overview
 
-MVBench is a public video understanding benchmark for multimodal models. It evaluates temporal perception, attribute/state reasoning, symbolic ordering, and high-level cognition through video multiple-choice questions. This native adapter uses the `PKU-Alignment/MVBench` ModelScope mirror by default, which provides the original annotations plus optimized video archives.
+MVBench is a public multimodal video understanding benchmark covering temporal perception,
+attribute/state reasoning, symbolic ordering, and high-level cognition. This native adapter uses
+the ModelScope `PKU-Alignment/MVBench` mirror by default, which provides JSON annotations plus
+optimized video archives.
 
 ## Task Description
 
-- **Task Type**: Video Multiple-Choice Question Answering
+- **Task Type**: Video multiple-choice question answering
 - **Input**: Video + question + answer choices
-- **Output**: Single answer letter
-- **Default Subset**: `action_antonym` for lightweight smoke testing
-- **Full Benchmark**: 20 subsets, 200 samples per subset
-
-## Key Features
-
-- Public video benchmark with real MP4 inputs
-- Uses existing `VisionLanguageAdapter` and `MultiChoiceAdapter` flow
-- Loads annotations and video archives through the shared `dataset_hub` abstraction
-- Lazily extracts only the videos referenced by the selected samples
-- Sends local videos through the OpenAI-compatible `video_url` content path
-- Preserves optional `start`/`end`/`fps` video metadata and adds a segment instruction when a record is time-bounded
-- Supports selecting MVBench subsets through `dataset_args`
+- **Output**: Single correct answer letter
+- **Subsets**: 20 MVBench tasks; the default smoke-test subset is `action_antonym`
 
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation
 - Primary metric: **Accuracy**
-- The default `action_antonym` subset downloads the small `ssv2_video.zip` archive and is suitable for CI-style validation
-- Full MVBench evaluation requires downloading the corresponding public video archives for selected subsets
-- The adapter defaults to ModelScope for better availability in China; Hugging Face or local mirrors can be selected with `extra_params.dataset_hub` and `extra_params.dataset_id`
+- The default `action_antonym` subset downloads a small public MP4 archive for quick validation
+- Full benchmark evaluation can be requested by setting `subset_list` to additional MVBench subsets
+- Time-bounded records keep start/end metadata and add a short segment instruction to the prompt
+
 
 ## Properties
 
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `mvbench` |
-| **Dataset ID** | [PKU-Alignment/MVBench](https://modelscope.cn/datasets/PKU-Alignment/MVBench) |
-| **Paper** | [MVBench](https://arxiv.org/abs/2311.17005) |
+| **Dataset ID** | [PKU-Alignment/MVBench](https://modelscope.cn/datasets/PKU-Alignment/MVBench/summary) |
+| **Paper** | [Paper](https://arxiv.org/abs/2311.17005) |
 | **Tags** | `MCQ`, `MultiModal` |
 | **Metrics** | `acc` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
+
 
 ## Data Statistics
 
 | Metric | Value |
 |--------|-------|
 | Total Samples | 4,000 |
-| Subsets | 20 |
-| Samples per Subset | 200 |
 
-## Supported Subsets
+**Per-Subset Statistics:**
 
-`action_antonym`, `action_count`, `action_localization`, `action_prediction`, `action_sequence`, `character_order`, `counterfactual_inference`, `egocentric_navigation`, `episodic_reasoning`, `fine_grained_action`, `fine_grained_pose`, `moving_attribute`, `moving_count`, `moving_direction`, `object_existence`, `object_interaction`, `object_shuffle`, `scene_transition`, `state_change`, `unexpected_action`.
+| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
+|--------|---------|-------------|------------|------------|
+| `action_antonym` | 200 | N/A | N/A | N/A |
+| `action_count` | 200 | N/A | N/A | N/A |
+| `action_localization` | 200 | N/A | N/A | N/A |
+| `action_prediction` | 200 | N/A | N/A | N/A |
+| `action_sequence` | 200 | N/A | N/A | N/A |
+| `character_order` | 200 | N/A | N/A | N/A |
+| `counterfactual_inference` | 200 | N/A | N/A | N/A |
+| `egocentric_navigation` | 200 | N/A | N/A | N/A |
+| `episodic_reasoning` | 200 | N/A | N/A | N/A |
+| `fine_grained_action` | 200 | N/A | N/A | N/A |
+| `fine_grained_pose` | 200 | N/A | N/A | N/A |
+| `moving_attribute` | 200 | N/A | N/A | N/A |
+| `moving_count` | 200 | N/A | N/A | N/A |
+| `moving_direction` | 200 | N/A | N/A | N/A |
+| `object_existence` | 200 | N/A | N/A | N/A |
+| `object_interaction` | 200 | N/A | N/A | N/A |
+| `object_shuffle` | 200 | N/A | N/A | N/A |
+| `scene_transition` | 200 | N/A | N/A | N/A |
+| `state_change` | 200 | N/A | N/A | N/A |
+| `unexpected_action` | 200 | N/A | N/A | N/A |
 
 ## Sample Example
 
-```json
-{
-  "video": "166583.mp4",
-  "question": "What is the action performed by the person in the video?",
-  "candidates": [
-    "Not sure",
-    "Scattering something down",
-    "Piling something up"
-  ],
-  "answer": "Piling something up"
-}
-```
+*Sample example not available.*
 
 ## Prompt Template
 
@@ -80,6 +83,14 @@ Answer the following multiple choice question. The last line of your response sh
 {choices}
 ```
 
+## Extra Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `dataset_id` | `str` | `PKU-Alignment/MVBench` | Dataset repository ID or local dataset root for MVBench annotations and videos. |
+| `dataset_hub` | `str` | `modelscope` | Dataset hub used to load annotations and video archives. Choices: ['huggingface', 'modelscope', 'local'] |
+| `dataset_revision` | `str` | `` | Optional dataset revision; leave empty to use the hub default. |
+
 ## Usage
 
 ### Using CLI
@@ -90,8 +101,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets mvbench \
-    --dataset-args '{"mvbench": {"subset_list": ["action_antonym"], "extra_params": {"dataset_hub": "modelscope"}}}' \
-    --limit 10
+    --limit 10  # Remove this line for formal evaluation
 ```
 
 ### Using Python
@@ -107,14 +117,14 @@ task_cfg = TaskConfig(
     datasets=['mvbench'],
     dataset_args={
         'mvbench': {
-            'subset_list': ['action_antonym'],
-            'extra_params': {
-                'dataset_hub': 'modelscope',
-            },
+            # subset_list: ['action_antonym', 'action_count', 'action_localization']  # optional, evaluate specific subsets
+            # extra_params: {}  # uses default extra parameters
         }
     },
-    limit=10,
+    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)
 ```
+
+

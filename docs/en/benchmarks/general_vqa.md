@@ -3,19 +3,20 @@
 
 ## Overview
 
-General-VQA is a customizable visual question answering benchmark for evaluating multimodal models. It supports OpenAI-compatible message format with flexible image input (local paths, URLs, or base64).
+General-VQA is a customizable visual question answering benchmark for evaluating multimodal models.
+It supports OpenAI-compatible message format with flexible image/video input (local paths, URLs, or base64).
 
 ## Task Description
 
 - **Task Type**: Visual Question Answering
-- **Input**: Images + questions in OpenAI chat format
+- **Input**: Images/videos + questions in OpenAI chat format
 - **Output**: Free-form text answer
 - **Flexibility**: Supports custom datasets via TSV/JSONL files
 
 ## Key Features
 
 - OpenAI-compatible message format
-- Supports multiple image input methods (path, URL, base64)
+- Supports multiple image/video input methods (path, URL, base64)
 - Flexible evaluation with BLEU and Rouge metrics
 - Custom dataset support via local file loading
 - Extensible for various VQA use cases
