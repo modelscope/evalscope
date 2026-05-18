@@ -476,8 +476,8 @@ class TestNativeBenchmark(TestBenchmark):
         dataset_args = {
             'subset_list': [
                 'airline',
-                # 'retail',
-                # 'telecom'
+                'retail',
+                'telecom'
             ],
             'extra_params': {
                 'user_model': 'qwen-plus',
@@ -489,7 +489,7 @@ class TestNativeBenchmark(TestBenchmark):
                 }
             }
         }
-        self._run_dataset_test('tau2_bench', dataset_args, limit=5, repeats=1, model='qwen-plus', stream=True)
+        self._run_dataset_test('tau2_bench', dataset_args, limit=None, repeats=1, model='qwen-plus', stream=True)
 
     def test_r1_collection(self):
         dataset_args = {

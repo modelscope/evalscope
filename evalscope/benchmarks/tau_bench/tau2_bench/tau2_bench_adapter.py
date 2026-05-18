@@ -115,7 +115,6 @@ class Tau2BenchAdapter(AgentAdapter):
         os.environ['TAU2_DATA_DIR'] = dataset_path
 
         # Load data for each domain
-        from tau2.agent.llm_agent import LLMGTAgent
         from tau2.registry import registry
 
         data_dict = defaultdict(dict)
@@ -124,7 +123,6 @@ class Tau2BenchAdapter(AgentAdapter):
             # Get tasks
             task_loader = registry.get_tasks_loader(domain_name)
             tasks = task_loader()
-            tasks = [task for task in tasks if LLMGTAgent.check_valid_task(task)]
             tasks = [task.model_dump(exclude_unset=True) for task in tasks]
 
             # load dataset
