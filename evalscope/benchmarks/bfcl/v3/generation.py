@@ -3,6 +3,7 @@ import time
 from typing import Any
 
 from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import dict_to_chat_message
 from evalscope.api.model import ChatCompletionChoice, Model, ModelOutput, ModelUsage
 from evalscope.api.tool.tool_info import ToolInfo
@@ -11,7 +12,7 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-def predict(model: Model, sample: Sample) -> ModelOutput:
+def predict(model: Model, sample: Sample) -> InferenceResult:
     """Main prediction function for BFCL using the new API framework."""
     # Extract the row data from sample metadata
     row = sample.metadata
@@ -24,14 +25,13 @@ def predict(model: Model, sample: Sample) -> ModelOutput:
 
     sample.metadata['generation'] = response
     agent_messages = [m if not isinstance(m, dict) else dict_to_chat_message(m) for m in history]
-    # wrap response with openai types
-    return ModelOutput(
+    output = ModelOutput(
         model=model.name,
         choices=[ChatCompletionChoice.from_content(json.dumps(response, ensure_ascii=False, indent=2))],
         model_usage=model_usage,
         time=time.time(),
-        metadata={'__agent_messages__': agent_messages},
     )
+    return InferenceResult(output=output, messages=agent_messages)
 
 
 def generate_turn(model: Model, row: dict[str, Any]):

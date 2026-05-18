@@ -67,6 +67,10 @@ class Subset(BaseModel):
     name: str = 'default_subset'
     score: float = 0.0
     num: int = 0
+    is_aggregate: bool = False
+    """True for derived/summary subsets (e.g. BFCL OVERALL, MULTI_TURN) that
+    aggregate other real subsets. Excluded from num/score totals so they
+    don't double-count, and hidden by the webview subset table."""
 
     @field_validator('score', mode='after')
     @classmethod
@@ -95,9 +99,10 @@ class Category(BaseModel):
 
     @model_validator(mode='after')
     def _compute_aggregates(self) -> Self:
-        self.num = sum(subset.num for subset in self.subsets)
-        self.score = normalize_score(micro_mean(self.subsets))
-        self.macro_score = normalize_score(macro_mean(self.subsets))
+        real = [s for s in self.subsets if not s.is_aggregate]
+        self.num = sum(s.num for s in real)
+        self.score = normalize_score(micro_mean(real)) if real else 0.0
+        self.macro_score = normalize_score(macro_mean(real)) if real else 0.0
         return self
 
 
@@ -110,9 +115,12 @@ class Metric(BaseModel):
 
     @model_validator(mode='after')
     def _compute_aggregates(self) -> Self:
-        self.num = sum(category.num for category in self.categories)
-        self.score = normalize_score(micro_mean(self.categories))
-        self.macro_score = normalize_score(macro_mean(self.categories))
+        # Categories whose subsets are all is_aggregate end up with num=0; skip them
+        # so they don't drag down macro_mean.
+        real = [c for c in self.categories if c.num > 0]
+        self.num = sum(c.num for c in real)
+        self.score = normalize_score(micro_mean(real)) if real else 0.0
+        self.macro_score = normalize_score(macro_mean(real)) if real else 0.0
         return self
 
 
@@ -160,7 +168,7 @@ class Report(BaseModel):
         first = self.metrics[0] if self.metrics else None
         if first is None:
             return 0
-        return sum(s.num for c in first.categories for s in c.subsets)
+        return sum(s.num for c in first.categories for s in c.subsets if not s.is_aggregate)
 
     def to_dict(self) -> Dict[str, Any]:
         # model_dump includes computed_field 'num' automatically
@@ -191,7 +199,8 @@ class Report(BaseModel):
         self,
         flatten_metrics: bool = True,
         flatten_categories: bool = True,
-        add_overall_metric: bool = False
+        add_overall_metric: bool = False,
+        include_aggregate: bool = False,
     ) -> pd.DataFrame:
         """
         Convert the report to a pandas DataFrame.
@@ -199,6 +208,9 @@ class Report(BaseModel):
             flatten_metrics (bool): Whether to flatten the metrics to a single row.
             flatten_categories (bool): Whether to flatten the categories to multiple rows.
             add_overall_metric (bool): Whether to add an overall metric row.
+            include_aggregate (bool): Whether to emit derived/summary subsets
+                (those with ``is_aggregate=True``). Off by default so they
+                don't pollute per-subset tables in CLI/web views.
         Returns:
             pd.DataFrame: The report as a pandas DataFrame.
         """
@@ -207,6 +219,8 @@ class Report(BaseModel):
             metric_count = 0
             for category in metric.categories:
                 for subset in category.subsets:
+                    if subset.is_aggregate and not include_aggregate:
+                        continue
                     metric_count += 1
                     table[ReportKey.model_name].append(self.model_name)
                     table[ReportKey.dataset_name].append(self.dataset_name)

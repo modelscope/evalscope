@@ -529,6 +529,7 @@ def compute_aggregate_subsets(report: Report) -> None:
             if subset_name in subset_dict and subset_dict[subset_name].num > 0:
                 subset = subset_dict[subset_name]
                 subset.name = subset_name.upper()
+                subset.is_aggregate = True
                 dummy_subsets.append(subset)
         dummy_category = Category(name='-', subsets=dummy_subsets)
         metric.categories.append(dummy_category)

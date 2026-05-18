@@ -543,7 +543,7 @@ class TestDefaultAdapterEnvPath:
         output = adapter._on_inference(model, sample)
         assert output is not None
         # The environment was created and closed; trace environment name should match
-        trace = output.metadata.get('__agent_trace__')
+        trace = output.trace
         assert trace is not None
         assert trace.environment == 'local'
 

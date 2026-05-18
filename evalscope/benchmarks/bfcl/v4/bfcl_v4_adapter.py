@@ -9,8 +9,9 @@ from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.dataset.dataset import DatasetDict
 from evalscope.api.dataset.loader import DictDataLoader
-from evalscope.api.evaluator import TaskState
-from evalscope.api.messages.chat_message import ChatMessageUser
+from evalscope.api.evaluator import InferenceResult, TaskState
+from evalscope.api.messages.chat_message import ChatMessageAssistant, ChatMessageUser
+from evalscope.api.messages.perf_metrics import PerformanceMetrics
 from evalscope.api.metric import Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
@@ -193,7 +194,7 @@ class BFCLV4Adapter(AgentAdapter):
         )
         self.prereq_finished = True
 
-    def _on_inference(self, model: Model, sample: Sample) -> ModelOutput:
+    def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
         try:
             self._init_handler()
 
@@ -211,8 +212,8 @@ class BFCLV4Adapter(AgentAdapter):
                 is_fc_model=self.is_fc_model,
                 inference_log=metadata.get('inference_log') if isinstance(metadata, dict) else None,
             )
-            if agent_messages:
-                output.metadata = {'__agent_messages__': agent_messages}
+            self._attach_perf_metrics(output, agent_messages, metadata)
+            return InferenceResult(output=output, messages=agent_messages or None)
         except Exception as e:
             # This is usually the case when the model getting stuck on one particular test case.
             # For example, timeout error or FC model returning invalid JSON response.
@@ -221,14 +222,70 @@ class BFCLV4Adapter(AgentAdapter):
             logger.error(f'Error during inference for sample ID {sample.metadata.get("id")}: {e}')
             logger.error(traceback.format_exc())
 
-            output = ModelOutput.from_content(
+            return ModelOutput.from_content(
                 model=model.name,
                 content=json.dumps({
                     'error': str(e),
                     'error_message': traceback.format_exc(),
                 }),
             )
-        return output
+
+    @staticmethod
+    def _attach_perf_metrics(output: ModelOutput, agent_messages, metadata) -> None:
+        """Translate bfcl handler `metadata` into per-step PerformanceMetrics.
+
+        Single-turn metadata holds scalar latency / token counts; multi-turn
+        holds list[list[float]] indexed by [turn][step]. Each ChatMessageAssistant
+        in `agent_messages` corresponds positionally to one (turn, step), so we
+        attach one PerformanceMetrics per assistant message. The full call's
+        totals are also stored on `output.message.perf_metrics` for aggregate
+        reporting. TTFT is unavailable (handler is non-streaming).
+        """
+        if not isinstance(metadata, dict):
+            return
+        latency = metadata.get('latency')
+        if latency is None:
+            return
+        in_tok = metadata.get('input_token_count')
+        out_tok = metadata.get('output_token_count')
+
+        def _flatten(x):
+            if isinstance(x, list):
+                for y in x:
+                    yield from _flatten(y)
+            else:
+                yield x
+
+        if isinstance(latency, list):
+            lat_list = list(_flatten(latency))
+            in_list = list(_flatten(in_tok)) if isinstance(in_tok, list) else [in_tok] * len(lat_list)
+            out_list = list(_flatten(out_tok)) if isinstance(out_tok, list) else [out_tok] * len(lat_list)
+        else:
+            lat_list = [latency]
+            in_list = [in_tok if in_tok is not None else 0]
+            out_list = [out_tok if out_tok is not None else 0]
+
+        idx = 0
+        for msg in agent_messages or []:
+            if idx >= len(lat_list):
+                break
+            if isinstance(msg, ChatMessageAssistant):
+                msg.perf_metrics = PerformanceMetrics(
+                    latency=float(lat_list[idx] or 0.0),
+                    ttft=None,
+                    input_tokens=int(in_list[idx] or 0),
+                    output_tokens=int(out_list[idx] or 0),
+                )
+                idx += 1
+
+        total_lat = float(sum(l or 0.0 for l in lat_list))
+        output.message.perf_metrics = PerformanceMetrics(
+            latency=total_lat,
+            ttft=None,
+            input_tokens=int(sum(i or 0 for i in in_list)),
+            output_tokens=int(sum(o or 0 for o in out_list)),
+        )
+        output.time = total_lat
 
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState

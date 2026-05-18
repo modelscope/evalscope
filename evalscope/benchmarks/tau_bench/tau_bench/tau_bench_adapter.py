@@ -7,7 +7,7 @@ from evalscope.api.dataset.dataset import DatasetDict
 from evalscope.api.dataset.loader import DictDataLoader
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
-from evalscope.api.model import Model, ModelOutput
+from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils import get_logger
@@ -172,7 +172,7 @@ class TauBenchAdapter(AgentAdapter):
             metadata=record  # Store the full record for evaluation
         )
 
-    def _on_inference(self, model: Model, sample: Sample) -> ModelOutput:
+    def _on_inference(self, model: Model, sample: Sample):
         from .generation import predict
         return predict(model, sample)
 

@@ -6,9 +6,10 @@ from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.dataset.dataset import DatasetDict
 from evalscope.api.dataset.loader import DictDataLoader
+from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
-from evalscope.api.model import Model, ModelOutput
+from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils import get_logger
@@ -150,7 +151,7 @@ class Tau2BenchAdapter(AgentAdapter):
             metadata=record  # Store the full record for evaluation
         )
 
-    def _on_inference(self, model: Model, sample: Sample) -> ModelOutput:
+    def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
         from .generation import predict
         return predict(model, sample, adapter_instance=self)
 
