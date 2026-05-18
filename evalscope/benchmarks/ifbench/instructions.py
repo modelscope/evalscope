@@ -28,6 +28,12 @@ from collections import Counter
 from evalscope.utils.resource_utils import check_nltk_data
 from . import instructions_util
 
+
+def _word_tokens_without_punctuation(text):
+    """Tokenize text while excluding standalone punctuation tokens."""
+    return [token for token in instructions_util.nltk.word_tokenize(text) if any(ch.isalnum() for ch in token)]
+
+
 # The number of keywords.
 _NUM_KEYWORDS = 2
 
@@ -1936,7 +1942,7 @@ class KeywordSpecificPositionChecker(Instruction):
         sentences = instructions_util.split_into_sentences(value)
         if len(sentences) < self._n:
             return False
-        words = instructions_util.nltk.word_tokenize(sentences[self._n - 1])
+        words = _word_tokens_without_punctuation(sentences[self._n - 1])
         if len(words) < self._m:
             return False
         if words[self._m - 1] == self._keyword:
@@ -2076,8 +2082,8 @@ class RepeatSpanChecker(Instruction):
         """Build the instruction description.
 
 		  Args:
-		  n_start: An integer representing the start index of the span.
-		  n_end: An integer representing the end index of the span.
+		  n_start: An integer representing the inclusive start character index of the span.
+		  n_end: An integer representing the inclusive end character index of the span.
 
 		  Returns:
 		  A string representing the instruction description.
@@ -2086,12 +2092,12 @@ class RepeatSpanChecker(Instruction):
             raise ValueError('prompt_to_repeat must be set.')
         else:
             self._prompt_to_repeat = prompt_to_repeat
-        if not n_start:
-            self._n_start = random.randint(0, len(self._prompt_to_repeat.split()) - 2)
+        if n_start is None:
+            self._n_start = random.randint(0, len(self._prompt_to_repeat) - 2)
         else:
             self._n_start = n_start
-        if not n_end:
-            self._n_end = random.randint(self._n_start + 1, len(self._prompt_to_repeat.split()) - 1)
+        if n_end is None:
+            self._n_end = random.randint(self._n_start + 1, len(self._prompt_to_repeat) - 1)
         else:
             self._n_end = n_end
         self._description_pattern = (
@@ -2111,7 +2117,8 @@ class RepeatSpanChecker(Instruction):
 
     def check_following(self, value):
         """Checks if the response contains the expected number of phrases with the correct modifications."""
-        if value.strip().lower().split() == self._prompt_to_repeat.strip().lower().split()[self._n_start:self._n_end]:
+        expected_span = self._prompt_to_repeat[self._n_start:self._n_end + 1]
+        if value.strip().lower() == expected_span.strip().lower():
             return True
         return False
 
