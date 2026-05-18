@@ -154,6 +154,9 @@ class TestDefaultDataAdapterAgentBranch(unittest.TestCase):
         return adapter
 
     def test_no_agent_config_uses_plain_generate(self):
+        from evalscope.api.evaluator import InferenceResult
+        from evalscope.api.model import ModelOutput
+
         adapter = self._make_adapter(TaskConfig(model='dummy'))
         model = _mock_model_generate_final('plain')
         sample = Sample(input='hi')
@@ -161,11 +164,10 @@ class TestDefaultDataAdapterAgentBranch(unittest.TestCase):
         out = adapter._on_inference(model, sample)
 
         model.generate.assert_called_once()
+        # 普通分支返回纯 ModelOutput, 不应是 InferenceResult
+        self.assertIsInstance(out, ModelOutput)
+        self.assertNotIsInstance(out, InferenceResult)
         self.assertEqual(out.choices[0].message.content, 'plain')
-        # 普通分支不写 agent metadata
-        if out.metadata:
-            self.assertNotIn('__agent_messages__', out.metadata)
-            self.assertNotIn('__agent_trace__', out.metadata)
 
 
 class TestAgentLoopAdapterOverrides(unittest.TestCase):
@@ -186,8 +188,8 @@ class TestAgentLoopAdapterOverrides(unittest.TestCase):
         sample = Sample(input='hi')
         out = adapter._on_inference(model, sample)
 
-        self.assertEqual(out.choices[0].message.content, 'native_agent')
-        trace = out.metadata['__agent_trace__']
+        self.assertEqual(out.output.choices[0].message.content, 'native_agent')
+        trace = out.trace
         # 用了 AgentLoopAdapter 自己的 strategy_name, 不是全局 'react'
         self.assertEqual(trace.strategy, 'function_calling')
         self.assertEqual(trace.max_steps, AgentLoopAdapter.max_steps_default)

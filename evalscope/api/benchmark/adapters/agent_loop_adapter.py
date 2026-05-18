@@ -15,8 +15,9 @@ from typing import Any, Dict, List, Optional
 
 from evalscope.api.agent import AgentEnvironment, AgentLoopResult, AgentStrategy, ToolHandler
 from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessageUser
-from evalscope.api.model import Model, ModelOutput
+from evalscope.api.model import Model
 from evalscope.api.registry import get_strategy
 from ._agent_loop_runner import run_agent_loop
 from .agent_adapter import AgentAdapter
@@ -87,7 +88,7 @@ class AgentLoopAdapter(AgentAdapter):
     # Overridden inference hook
     # ------------------------------------------------------------------
 
-    def _on_inference(self, model: Model, sample: Sample) -> ModelOutput:
+    def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
         """Drive :class:`AgentLoop` for this sample and return the final output.
 
         Ignores ``TaskConfig.agent_config`` entirely; native AgentLoop
@@ -117,11 +118,7 @@ class AgentLoopAdapter(AgentAdapter):
 
         output = result.final_output
         output.completion = final_text
-        if output.metadata is None:
-            output.metadata = {}
-        output.metadata['__agent_messages__'] = result.messages
-        output.metadata['__agent_trace__'] = result.trace
-        return output
+        return InferenceResult(output=output, messages=result.messages, trace=result.trace)
 
     def _extract_final_answer(self, result: AgentLoopResult, strategy: AgentStrategy) -> str:
         """Override hook for adapters that need custom prediction extraction.

@@ -9,6 +9,7 @@ from tau2.utils.llm_utils import to_litellm_messages
 from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from evalscope.api.dataset.dataset import Sample
+from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages.chat_message import dict_to_chat_message
 from evalscope.api.model import GenerateConfig, get_model
 from evalscope.api.model.model import Model
@@ -126,17 +127,24 @@ def patched_generate(
     tool_calls = tool_calls or None
     usage = completion.usage.model_dump(exclude_none=True)
 
+    raw_data = completion.model_dump()
+    # Stash assistant-level perf_metrics so predict() can reattach it after
+    # tau2 strips evalscope-specific fields during its own message conversions.
+    perf = completion.message.perf_metrics
+    if perf is not None:
+        raw_data['_perf_metrics'] = perf.model_dump()
+
     return AssistantMessage(
         role='assistant',
         content=msg.content,
         tool_calls=tool_calls,
         cost=None,
         usage=usage,
-        raw_data=completion.model_dump(),
+        raw_data=raw_data,
     )
 
 
-def predict(model: Model, sample: Sample, adapter_instance) -> ModelOutput:
+def predict(model: Model, sample: Sample, adapter_instance) -> InferenceResult:
 
     build_model(agent_model=model, adapter_instance=adapter_instance)
 
@@ -152,7 +160,26 @@ def predict(model: Model, sample: Sample, adapter_instance) -> ModelOutput:
     )
 
     sample.metadata['task_result'] = res.reward_info.model_dump()
-    return ModelOutput(
+
+    from evalscope.api.messages.chat_message import ChatMessageAssistant
+    from evalscope.api.messages.perf_metrics import PerformanceMetrics
+
+    raw_msgs = res.messages or []
+    li_msgs = to_litellm_messages(raw_msgs)
+    agent_messages = []
+    for raw, li in zip(raw_msgs, li_msgs):
+        try:
+            chat_msg = dict_to_chat_message(li)
+        except Exception:
+            continue
+        if isinstance(chat_msg, ChatMessageAssistant) and isinstance(raw, AssistantMessage):
+            perf = (raw.raw_data or {}).get('_perf_metrics') if raw.raw_data else None
+            if perf:
+                chat_msg.perf_metrics = PerformanceMetrics(**perf)
+        agent_messages.append(chat_msg)
+
+    output = ModelOutput(
         model=model.name,
         choices=[ChatCompletionChoice.from_content(res.model_dump_json(indent=2))],
     )
+    return InferenceResult(output=output, messages=agent_messages or None)

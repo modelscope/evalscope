@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import dict_to_chat_message
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.model.model_output import ChatCompletionChoice
@@ -48,6 +49,11 @@ def _patch_agent_solve(model: Model):
             oai_res = openai_chat_choices(res.choices, include_reasoning=False)
 
             next_message = oai_res[0].message.model_dump(exclude_none=True)
+            # Stash per-call perf_metrics on the dict so _to_agent_messages can
+            # re-attach it to the resulting ChatMessageAssistant. Stripped
+            # before the dict is passed back into model.generate next step.
+            if res.message.perf_metrics is not None:
+                next_message['_perf_metrics'] = res.message.perf_metrics.model_dump()
 
             action = message_to_action(next_message)
 
@@ -91,16 +97,13 @@ def _patch_agent_solve(model: Model):
     return 'ToolCallingAgent.solve patched successfully'
 
 
-def predict(model: Model, sample: Sample) -> ModelOutput:
+def predict(model: Model, sample: Sample):
     """
     Generate predictions for tau_bench tasks using the model.
 
-    Args:
-        model: The model to use for prediction
-        sample: The sample containing task metadata
-
-    Returns:
-        ModelOutput containing the prediction results
+    Returns either an :class:`InferenceResult` (success path, includes the
+    full conversation messages for visualization) or a plain
+    :class:`ModelOutput` (error path).
     """
     from tau_bench.agents.tool_calling_agent import ToolCallingAgent
     from tau_bench.envs import get_env
@@ -133,10 +136,12 @@ def predict(model: Model, sample: Sample) -> ModelOutput:
         res = agent.solve(env=isolated_env, task_index=task_index)
 
         sample.metadata['task_result'] = res.model_dump(exclude_none=True)
-        return ModelOutput(
+        agent_messages = _to_agent_messages(res.messages)
+        output = ModelOutput(
             model=model.name,
             choices=[ChatCompletionChoice.from_content(res.model_dump_json(indent=2))],
         )
+        return InferenceResult(output=output, messages=agent_messages or None)
 
     except Exception as e:
         logger.error(f'Error in tau_bench prediction: {str(e)}')
@@ -145,3 +150,21 @@ def predict(model: Model, sample: Sample) -> ModelOutput:
             model=model.name,
             choices=[ChatCompletionChoice.from_content('')],
         )
+
+
+def _to_agent_messages(raw_messages: List[Dict[str, Any]]):
+    """Convert tau_bench raw message dicts into ChatMessage objects for visualization."""
+    from evalscope.api.messages import ChatMessage, ChatMessageAssistant, dict_to_chat_message
+    from evalscope.api.messages.perf_metrics import PerformanceMetrics
+
+    converted: List[ChatMessage] = []
+    for msg in raw_messages or []:
+        try:
+            perf = msg.pop('_perf_metrics', None) if isinstance(msg, dict) else None
+            chat_msg = dict_to_chat_message(msg)
+            if perf and isinstance(chat_msg, ChatMessageAssistant):
+                chat_msg.perf_metrics = PerformanceMetrics(**perf)
+            converted.append(chat_msg)
+        except Exception as e:
+            logger.debug(f'Skipping unconvertible tau_bench message: {e}')
+    return converted

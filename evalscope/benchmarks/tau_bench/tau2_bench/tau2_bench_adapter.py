@@ -6,9 +6,10 @@ from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.dataset.dataset import DatasetDict
 from evalscope.api.dataset.loader import DictDataLoader
+from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
-from evalscope.api.model import Model, ModelOutput
+from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils import get_logger
@@ -114,7 +115,6 @@ class Tau2BenchAdapter(AgentAdapter):
         os.environ['TAU2_DATA_DIR'] = dataset_path
 
         # Load data for each domain
-        from tau2.agent.llm_agent import LLMGTAgent
         from tau2.registry import registry
 
         data_dict = defaultdict(dict)
@@ -123,7 +123,6 @@ class Tau2BenchAdapter(AgentAdapter):
             # Get tasks
             task_loader = registry.get_tasks_loader(domain_name)
             tasks = task_loader()
-            tasks = [task for task in tasks if LLMGTAgent.check_valid_task(task)]
             tasks = [task.model_dump(exclude_unset=True) for task in tasks]
 
             # load dataset
@@ -150,7 +149,7 @@ class Tau2BenchAdapter(AgentAdapter):
             metadata=record  # Store the full record for evaluation
         )
 
-    def _on_inference(self, model: Model, sample: Sample) -> ModelOutput:
+    def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
         from .generation import predict
         return predict(model, sample, adapter_instance=self)
 

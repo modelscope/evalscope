@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from uuid import uuid4
 
-from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import DatasetDict, DictDataLoader, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
@@ -82,7 +82,7 @@ Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 
         }
     )
 )
-class TerminalBenchV2Adapter(DefaultDataAdapter):
+class TerminalBenchV2Adapter(AgentAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

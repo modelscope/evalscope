@@ -12,6 +12,7 @@
 | `swe_bench_verified_mini_agentic` | [SWE-bench_Verified_Mini_Agentic](../../benchmarks/swe_bench_verified_mini_agentic.md) | `Coding` |
 | `tau2_bench` | [τ²-bench](../../benchmarks/tau2_bench.md) | `Agent`, `FunctionCalling`, `Reasoning` |
 | `tau_bench` | [τ-bench](../../benchmarks/tau_bench.md) | `Agent`, `FunctionCalling`, `Reasoning` |
+| `terminal_bench_v2` | [Terminal-Bench-2.0](../../benchmarks/terminal_bench_v2.md) | `Coding` |
 
 :::{toctree}
 :hidden:
@@ -25,4 +26,5 @@
 ../../benchmarks/swe_bench_verified_mini_agentic.md
 ../../benchmarks/tau2_bench.md
 ../../benchmarks/tau_bench.md
+../../benchmarks/terminal_bench_v2.md
 :::
