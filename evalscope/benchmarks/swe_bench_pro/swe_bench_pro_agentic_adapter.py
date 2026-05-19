@@ -327,6 +327,8 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
         sandbox_config = {
             'image': image,
             'working_dir': self.working_dir,
+            'pull_progress': True,
+            'pull_progress_interval': 5.0,
             'environment': {
                 'PAGER': 'cat',
                 'MANPAGER': 'cat',

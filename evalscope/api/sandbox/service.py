@@ -108,8 +108,16 @@ class SandboxService:
     def __init__(self) -> None:
         # (engine, frozen-config) → started SandboxManager
         self._managers: Dict[Tuple[SandboxEngine, str], 'SandboxManager'] = {}
-        self._manager_lock: Optional[asyncio.Lock] = None
+        # threading.Lock guards the cache itself + per-key startup events.
+        # We deliberately do NOT use asyncio.Lock here: the SandboxService
+        # is a process-level singleton and is now reachable from many event
+        # loops (one per worker thread, see AsyncioLoopRunner). asyncio.Lock
+        # binds to the loop it's first awaited on and would raise
+        # "attached to a different event loop" from the second loop onward.
         self._thread_lock = threading.Lock()
+        # Per-key threading.Event used to coordinate concurrent first-time
+        # manager.start() calls without holding the cache lock across await.
+        self._manager_starting: Dict[Tuple[SandboxEngine, str], threading.Event] = {}
 
     # ------------------------------------------------------------------
     # Manager cache
@@ -120,30 +128,60 @@ class SandboxService:
         engine: SandboxEngine,
         manager_config: Optional[Dict[str, Any]] = None,
     ) -> 'SandboxManager':
-        """Return a started manager for ``(engine, manager_config)``; create if needed."""
+        """Return a started manager for ``(engine, manager_config)``; create if needed.
+
+        Multi-loop safe: the cache lookup, manager construction, and the
+        startup-coordination Event are guarded by ``threading.Lock`` (not
+        asyncio.Lock). ``manager.start()`` is awaited *without* holding any
+        lock so concurrent loops can't deadlock each other.
+        """
         key = (engine, _freeze(manager_config))
 
+        # Fast path: already-cached, ready manager.
         existing = self._managers.get(key)
         if existing is not None:
             return existing
 
-        # asyncio.Lock must be created inside a running loop.
-        if self._manager_lock is None:
-            self._manager_lock = asyncio.Lock()
-
-        async with self._manager_lock:
+        # Slow path: this thread either becomes the starter or waits for it.
+        with self._thread_lock:
             existing = self._managers.get(key)
             if existing is not None:
                 return existing
 
-            manager = self._construct_manager(engine, manager_config or {})
+            starting_event = self._manager_starting.get(key)
+            if starting_event is not None:
+                # Another thread is in the middle of starting this manager.
+                is_starter = False
+            else:
+                starting_event = threading.Event()
+                self._manager_starting[key] = starting_event
+                is_starter = True
+                # Construct the manager object synchronously while the lock is held;
+                # this is cheap (no IO) and ensures only one is ever built per key.
+                manager = self._construct_manager(engine, manager_config or {})
+
+        if not is_starter:
+            # Block (off-loop) until the starter finishes, then read the result.
+            await asyncio.to_thread(starting_event.wait)
+            cached = self._managers.get(key)
+            if cached is None:
+                raise RuntimeError(f'SandboxService: peer failed to start manager for {engine.value}')
+            return cached
+
+        # Starter path: run the (potentially long) start() outside any lock.
+        try:
             await manager.start()
-            self._managers[key] = manager
+            with self._thread_lock:
+                self._managers[key] = manager
             logger.info(
                 f'SandboxService: manager started for engine={engine.value} '
                 f'(total_managers={len(self._managers)}).'
             )
             return manager
+        finally:
+            with self._thread_lock:
+                self._manager_starting.pop(key, None)
+            starting_event.set()
 
     def _construct_manager(self, engine: SandboxEngine, manager_config: Dict[str, Any]) -> 'SandboxManager':
         _, _, manager_cls, manager_config_cls = get_enclave_types(engine)

@@ -99,7 +99,7 @@ class TestAgentBenchmark(TestBenchmark):
                 'docker_platform': 'linux/amd64',
             }
         }
-        self._run_dataset_test('swe_bench_pro', dataset_args, limit=3)
+        self._run_dataset_test('swe_bench_pro', dataset_args, limit=5)
 
     def test_swe_bench_verified_agentic_backticks(self):
         """Test SWE-bench-verified agentic dataset with backticks protocol."""

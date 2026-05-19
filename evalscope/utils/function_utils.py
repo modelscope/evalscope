@@ -1,9 +1,10 @@
 import asyncio
+import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
-from typing import Any, Awaitable, Callable, List, Optional, Sequence, TypeVar, Union
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence, TypeVar, Union
 
 from evalscope.utils.logger import get_logger
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
@@ -129,55 +130,156 @@ async def async_retry_call(
                 raise
 
 
+class _LoopHandle:
+    """One asyncio loop running on its own daemon thread.
+
+    Owned by ``AsyncioLoopRunner`` and stored thread-locally so each
+    calling worker thread gets its own isolated event loop.
+    """
+
+    __slots__ = ('loop', 'thread', '_health_task')
+
+    def __init__(self, owner_thread_name: str) -> None:
+        self.loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
+        self._health_task: Optional[asyncio.Handle] = None
+
+        def _run() -> None:
+            asyncio.set_event_loop(self.loop)
+            self.loop.run_forever()
+
+        self.thread = threading.Thread(
+            target=_run,
+            daemon=True,
+            name=f'EvalLoop[{owner_thread_name}]',
+        )
+        self.thread.start()
+
+        if _LOOP_HEALTH_ENABLED:
+            self.loop.call_soon_threadsafe(_install_loop_health_monitor, self.loop, owner_thread_name)
+
+    def stop(self, join_timeout: float = 5.0) -> None:
+        try:
+            self.loop.call_soon_threadsafe(self.loop.stop)
+        except Exception:
+            pass
+        self.thread.join(timeout=join_timeout)
+        try:
+            self.loop.close()
+        except Exception:
+            pass
+
+
+# Health monitor: schedules a periodic call_soon and measures the wall-clock
+# delay between scheduling and execution. A delay > _LOOP_HEALTH_THRESHOLD_S
+# indicates the loop is being blocked by a sync call, which is the exact
+# bug class this runner refactor is designed to surface.
+_LOOP_HEALTH_ENABLED: bool = os.environ.get('EVALSCOPE_LOOP_HEALTH', '0') in ('1', 'true', 'TRUE')
+_LOOP_HEALTH_INTERVAL_S: float = float(os.environ.get('EVALSCOPE_LOOP_HEALTH_INTERVAL', '0.5') or 0.5)
+_LOOP_HEALTH_THRESHOLD_S: float = float(os.environ.get('EVALSCOPE_LOOP_HEALTH_THRESHOLD', '0.5') or 0.5)
+
+
+def _install_loop_health_monitor(loop: asyncio.AbstractEventLoop, label: str) -> None:
+    """Schedule a self-renewing heartbeat on ``loop`` to detect blocking."""
+    state = {'last': time.monotonic()}
+
+    def _tick() -> None:
+        now = time.monotonic()
+        delay = now - state['last'] - _LOOP_HEALTH_INTERVAL_S
+        if delay > _LOOP_HEALTH_THRESHOLD_S:
+            logger.warning(f'[loop-health] {label}: loop blocked for {delay * 1000:.0f}ms')
+        state['last'] = now
+        loop.call_later(_LOOP_HEALTH_INTERVAL_S, _tick)
+
+    loop.call_later(_LOOP_HEALTH_INTERVAL_S, _tick)
+
+
 class AsyncioLoopRunner:
-    """Singleton background asyncio loop runner for sync→async bridging."""
-    _instance: Optional['AsyncioLoopRunner'] = None
-    _inst_lock = threading.Lock()
+    """Per-thread asyncio loop runner for sync→async bridging.
 
-    def __init__(self) -> None:
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
-        self._thread: Optional[threading.Thread] = None
-        self._start_loop()
+    Each calling thread that invokes :meth:`run` gets its own dedicated
+    asyncio event loop running on its own daemon thread. This isolates
+    samples from each other: a sync block in one sample's coroutine cannot
+    pause another sample's loop.
 
-    def _start_loop(self) -> None:
-        loop = asyncio.new_event_loop()
-        self._loop = loop
+    Use :meth:`shutdown_for_thread` from the worker thread when it's done
+    (e.g. in a ``finally`` block at the end of a worker function) to release
+    the loop and its background thread.
+    """
 
-        def run_loop() -> None:
-            asyncio.set_event_loop(loop)
-            loop.run_forever()
-
-        self._thread = threading.Thread(target=run_loop, daemon=True, name='AsyncioLoopRunner')
-        self._thread.start()
+    _local = threading.local()
+    _all_handles_lock = threading.Lock()
+    _all_handles: List[_LoopHandle] = []  # for atexit cleanup
 
     @classmethod
-    def instance(cls) -> 'AsyncioLoopRunner':
-        if cls._instance is not None:
-            return cls._instance
-        with cls._inst_lock:
-            if cls._instance is None:
-                cls._instance = AsyncioLoopRunner()
-        return cls._instance
+    def _get_handle(cls) -> _LoopHandle:
+        handle: Optional[_LoopHandle] = getattr(cls._local, 'handle', None)
+        if handle is not None:
+            return handle
+        owner_name = threading.current_thread().name
+        handle = _LoopHandle(owner_name)
+        cls._local.handle = handle
+        with cls._all_handles_lock:
+            cls._all_handles.append(handle)
+        return handle
 
     @classmethod
     def run(cls, coro: Awaitable[T], timeout: Optional[float] = None) -> T:
-        """Submit a coroutine to the background loop and wait for result."""
-        inst = cls.instance()
-        fut = asyncio.run_coroutine_threadsafe(coro, inst._loop)
-        return fut.result(timeout=timeout)
+        """Submit a coroutine to *this thread's* loop and wait for result."""
+        handle = cls._get_handle()
+        fut = asyncio.run_coroutine_threadsafe(coro, handle.loop)
+        try:
+            return fut.result(timeout=timeout)
+        except Exception:
+            # On timeout/cancel, request the running coroutine to cancel as
+            # well so it doesn't keep running on the background loop.
+            try:
+                fut.cancel()
+            except Exception:
+                pass
+            raise
 
-    @property
-    def loop(self) -> Optional[asyncio.AbstractEventLoop]:
-        """Access the underlying event loop (read-only use)."""
-        return self._loop
+    @classmethod
+    def shutdown_for_thread(cls, join_timeout: float = 5.0) -> None:
+        """Stop and release the loop bound to the calling thread (if any).
 
-    def stop(self, join_timeout: float = 5.0) -> None:
-        """Optional shutdown of the background loop (generally not needed)."""
-        if not self._loop:
+        Idempotent. Worker threads that call :meth:`run` should invoke this
+        in a ``finally`` block to avoid leaking a daemon thread + loop per
+        worker.
+        """
+        handle: Optional[_LoopHandle] = getattr(cls._local, 'handle', None)
+        if handle is None:
             return
-        self._loop.call_soon_threadsafe(self._loop.stop)
-        if self._thread:
-            self._thread.join(timeout=join_timeout)
+        handle.stop(join_timeout=join_timeout)
+        cls._local.handle = None
+        with cls._all_handles_lock:
+            try:
+                cls._all_handles.remove(handle)
+            except ValueError:
+                pass
+
+    @classmethod
+    def shutdown_all(cls, join_timeout: float = 5.0) -> None:
+        """Stop every loop ever created by this runner. For atexit only."""
+        with cls._all_handles_lock:
+            handles = list(cls._all_handles)
+            cls._all_handles.clear()
+        for h in handles:
+            h.stop(join_timeout=join_timeout)
+
+    @classmethod
+    def loop_for_current_thread(cls) -> Optional[asyncio.AbstractEventLoop]:
+        """Read-only access to the calling thread's loop, if one exists."""
+        handle: Optional[_LoopHandle] = getattr(cls._local, 'handle', None)
+        return handle.loop if handle is not None else None
+
+
+# Process-level safety net: if any per-thread loops are still alive at
+# interpreter exit (typically because a worker thread exited without
+# calling shutdown_for_thread), tear them down so we don't leak file
+# descriptors (httpx connection pools, sandbox sockets, etc.).
+import atexit as _atexit  # noqa: E402
+
+_atexit.register(AsyncioLoopRunner.shutdown_all)
 
 
 def run_in_threads_with_progress(
@@ -249,6 +351,16 @@ def run_in_threads_with_progress(
 
     # Bound max_workers to actual workload size to avoid unnecessarily large thread pools
     effective_max_workers = max(1, min(max_workers, len(indexed_work_items)))
+
+    # Wrap the worker so the per-thread asyncio loop (if any was lazily created
+    # by AsyncioLoopRunner during the worker call) is shut down when the
+    # worker returns. This avoids leaking one daemon thread + one event loop
+    # per ThreadPoolExecutor worker across the eval lifetime.
+    def _worker_with_loop_cleanup(item: T) -> R:
+        try:
+            return worker(item)
+        finally:
+            AsyncioLoopRunner.shutdown_for_thread()
 
     with ThreadPoolExecutor(max_workers=effective_max_workers) as executor:
         with tqdm(

@@ -1,4 +1,6 @@
+import asyncio
 import os
+import threading
 import time
 from openai import APIStatusError, AsyncOpenAI, BadRequestError, OpenAI, PermissionDeniedError, UnprocessableEntityError
 from openai._types import NOT_GIVEN
@@ -56,19 +58,44 @@ class OpenAICompatibleAPI(ModelAPI):
         # remove trailing slash from base_url
         self.base_url = self.base_url.rstrip('/').removesuffix('/chat/completions')
 
-        # create http client
+        # create http client (sync; reused across threads)
         self.client = OpenAI(
             api_key=self.api_key,
             base_url=self.base_url,
             **model_args,
         )
 
-        # create async http client (same parameters)
-        self.async_client = AsyncOpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url,
+        # AsyncOpenAI wraps an httpx.AsyncClient whose internal anyio
+        # primitives bind to the event loop they first run on. Since
+        # AsyncioLoopRunner is now per-thread (each worker thread has its
+        # own loop), we must build a separate AsyncOpenAI per loop.
+        # See plan: ms-enlave-evalscope-asynciolooprunner-radiant-sphinx.md
+        self._async_client_kwargs: Dict[str, Any] = {
+            'api_key': self.api_key,
+            'base_url': self.base_url,
             **model_args,
-        )
+        }
+        self._async_clients: Dict[int, AsyncOpenAI] = {}
+        self._async_clients_lock = threading.Lock()
+
+    @property
+    def async_client(self) -> AsyncOpenAI:
+        """Return an AsyncOpenAI bound to the currently running event loop.
+
+        Lazily constructed once per loop and cached. Callers must invoke
+        from within a coroutine running on a real event loop.
+        """
+        loop = asyncio.get_running_loop()
+        loop_id = id(loop)
+        client = self._async_clients.get(loop_id)
+        if client is not None:
+            return client
+        with self._async_clients_lock:
+            client = self._async_clients.get(loop_id)
+            if client is None:
+                client = AsyncOpenAI(**self._async_client_kwargs)
+                self._async_clients[loop_id] = client
+            return client
 
     def generate(
         self,

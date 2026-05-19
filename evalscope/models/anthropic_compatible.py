@@ -1,4 +1,6 @@
+import asyncio
 import os
+import threading
 import time
 from anthropic import Anthropic, APIStatusError, AsyncAnthropic, BadRequestError, PermissionDeniedError
 from anthropic.types import Message
@@ -74,8 +76,27 @@ class AnthropicCompatibleAPI(ModelAPI):
 
         self.client = Anthropic(**client_kwargs)
 
-        # Create async client (same parameters)
-        self.async_client = AsyncAnthropic(**client_kwargs)
+        # AsyncAnthropic, like AsyncOpenAI, wraps an httpx.AsyncClient
+        # whose internal anyio primitives bind to the event loop they
+        # first run on. Build one per loop (AsyncioLoopRunner is per-thread).
+        self._async_client_kwargs: Dict[str, Any] = client_kwargs
+        self._async_clients: Dict[int, AsyncAnthropic] = {}
+        self._async_clients_lock = threading.Lock()
+
+    @property
+    def async_client(self) -> AsyncAnthropic:
+        """Return an AsyncAnthropic bound to the currently running event loop."""
+        loop = asyncio.get_running_loop()
+        loop_id = id(loop)
+        client = self._async_clients.get(loop_id)
+        if client is not None:
+            return client
+        with self._async_clients_lock:
+            client = self._async_clients.get(loop_id)
+            if client is None:
+                client = AsyncAnthropic(**self._async_client_kwargs)
+                self._async_clients[loop_id] = client
+            return client
 
     def generate(
         self,
