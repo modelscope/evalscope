@@ -105,11 +105,17 @@ class _LoopHandle:
     calling worker thread gets its own isolated event loop.
     """
 
-    __slots__ = ('loop', 'thread', '_health_task')
+    __slots__ = ('loop', 'thread', '_health_task', '_close_callbacks', '_close_callbacks_lock')
 
     def __init__(self, owner_thread_name: str) -> None:
         self.loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
         self._health_task: Optional[asyncio.Handle] = None
+        # Async cleanup callbacks to run on this loop just before it stops.
+        # Used by per-loop resource caches (e.g. AsyncOpenAI / AsyncAnthropic
+        # clients) to close their httpx connection pools while the loop they
+        # were bound to is still alive.
+        self._close_callbacks: List[Callable[[], Awaitable[None]]] = []
+        self._close_callbacks_lock = threading.Lock()
 
         def _run() -> None:
             asyncio.set_event_loop(self.loop)
@@ -125,7 +131,28 @@ class _LoopHandle:
         if _LOOP_HEALTH_ENABLED:
             self.loop.call_soon_threadsafe(_install_loop_health_monitor, self.loop, owner_thread_name)
 
+    def add_close_callback(self, cb: Callable[[], Awaitable[None]]) -> None:
+        """Register an async cleanup callback to run before this loop stops."""
+        with self._close_callbacks_lock:
+            self._close_callbacks.append(cb)
+
+    def _run_close_callbacks(self, per_cb_timeout: float) -> None:
+        """Run registered close callbacks on this loop. Runs from external thread."""
+        with self._close_callbacks_lock:
+            callbacks = list(self._close_callbacks)
+            self._close_callbacks.clear()
+        for cb in callbacks:
+            try:
+                fut = asyncio.run_coroutine_threadsafe(cb(), self.loop)
+                fut.result(timeout=per_cb_timeout)
+            except Exception as e:
+                logger.warning(f'loop close callback failed: {e}')
+
     def stop(self, join_timeout: float = 5.0) -> None:
+        # Drain async cleanup hooks while the loop is still running, so
+        # resources like httpx pools tied to this loop get closed properly.
+        if self.loop.is_running():
+            self._run_close_callbacks(per_cb_timeout=join_timeout)
         try:
             self.loop.call_soon_threadsafe(self.loop.stop)
         except Exception:
@@ -233,6 +260,27 @@ class AsyncioLoopRunner:
             cls._all_handles.clear()
         for h in handles:
             h.stop(join_timeout=join_timeout)
+
+    @classmethod
+    def register_close_callback(cls, cb: Callable[[], Awaitable[None]]) -> bool:
+        """Register an async cleanup callback on the currently running loop.
+
+        Intended to be called from inside a coroutine running on a runner-owned
+        loop. The callback is awaited on that loop just before it stops, so
+        resources bound to it (e.g. AsyncOpenAI / AsyncAnthropic httpx pools)
+        can close cleanly. Returns True if the running loop is one of ours and
+        the callback was registered.
+        """
+        try:
+            running = asyncio.get_running_loop()
+        except RuntimeError:
+            return False
+        with cls._all_handles_lock:
+            for handle in cls._all_handles:
+                if handle.loop is running:
+                    handle.add_close_callback(cb)
+                    return True
+        return False
 
     @classmethod
     def loop_for_current_thread(cls) -> Optional[asyncio.AbstractEventLoop]:
@@ -351,7 +399,7 @@ def run_in_threads_with_progress(
                 """Submit the next item from the iterator into the thread pool, if any remain."""
                 try:
                     item_index, item = next(item_iter)
-                    fut = executor.submit(worker, item)
+                    fut = executor.submit(_worker_with_loop_cleanup, item)
                     future_index_map[fut] = item_index
                     pending_futures.add(fut)
                 except StopIteration:

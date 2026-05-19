@@ -13,7 +13,7 @@ from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, 
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_supported_params
-from evalscope.utils.function_utils import async_retry_call, retry_call
+from evalscope.utils.function_utils import AsyncioLoopRunner, async_retry_call, retry_call
 from .utils.openai import (
     async_collect_stream_response,
     chat_choices_from_openai,
@@ -95,7 +95,21 @@ class OpenAICompatibleAPI(ModelAPI):
             if client is None:
                 client = AsyncOpenAI(**self._async_client_kwargs)
                 self._async_clients[loop_id] = client
+                self._register_loop_close_cleanup(loop_id, client)
             return client
+
+    def _register_loop_close_cleanup(self, loop_id: int, client: AsyncOpenAI) -> None:
+        """Close the per-loop AsyncOpenAI when its loop shuts down."""
+
+        async def _cleanup() -> None:
+            try:
+                await client.close()
+            finally:
+                with self._async_clients_lock:
+                    if self._async_clients.get(loop_id) is client:
+                        self._async_clients.pop(loop_id, None)
+
+        AsyncioLoopRunner.register_close_callback(_cleanup)
 
     def generate(
         self,
