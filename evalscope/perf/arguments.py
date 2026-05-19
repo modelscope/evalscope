@@ -33,7 +33,9 @@ class Arguments(BaseArgument):
     """Attention implementation, only for local inference."""
 
     api: str = 'openai'
-    """API to be used (default: 'openai')."""
+    """Service API protocol. One of: 'openai' (chat/completions), 'openai_embedding'/'embedding'
+    (embeddings), 'openai_rerank'/'rerank' (reranks), or 'local'/'local_vllm' for in-process
+    inference. The endpoint path is auto-appended onto `--url` based on this value."""
 
     tokenizer_path: Optional[str] = None
     """Path to the tokenizer."""
@@ -177,10 +179,12 @@ class Arguments(BaseArgument):
     """Visualizer for logging, supports 'swanlab' or 'wandb'."""
 
     wandb_api_key: Optional[str] = None
-    """Will be deprecated in the future."""
+    """API key for wandb visualizer. [Deprecated] Prefer the WANDB_API_KEY env var; this field
+    will be removed in a future release."""
 
     swanlab_api_key: Optional[str] = None
-    """Will be deprecated in the future."""
+    """API key for swanlab visualizer. [Deprecated] Prefer the SWANLAB_API_KEY env var; this
+    field will be removed in a future release."""
 
     name: Optional[str] = None
     """Name for the run."""
@@ -229,7 +233,9 @@ class Arguments(BaseArgument):
 
     # Dataset settings
     dataset: str = 'openqa'
-    """Dataset type (default: 'line_by_line')."""
+    """Dataset name registered in evalscope.perf.plugin.datasets (default: 'openqa').
+    Examples: 'openqa', 'random', 'random_vl', 'random_multi_turn', 'share_gpt_zh_multi_turn',
+    'share_gpt_en_multi_turn', 'custom', 'custom_multi_turn', 'swe_smith', 'speed_benchmark*'."""
 
     dataset_path: Optional[str] = None
     """Path to the dataset."""
@@ -523,7 +529,7 @@ def add_argument(parser: argparse.ArgumentParser):
     # Model and API
     parser.add_argument('--model', type=str, required=True, help='The test model name.')
     parser.add_argument('--attn-implementation', required=False, default=None, help='Attention implementaion')
-    parser.add_argument('--api', type=str, default='openai', help='Specify the service API')
+    parser.add_argument('--api', type=str, default='openai', help='Service API protocol: openai | openai_embedding/embedding | openai_rerank/rerank | local/local_vllm. Determines the auto-appended endpoint path on --url.')  # noqa: E501
     parser.add_argument(
         '--tokenizer-path', type=str, required=False, default=None, help='Specify the tokenizer weight path')
 
@@ -665,8 +671,8 @@ def add_argument(parser: argparse.ArgumentParser):
         help=(
             'Maximum number of user turns per conversation. '
             'For random_multi_turn: required, caps the sampled turn count. '
-            'For ShareGPT multi-turn datasets: optional, truncates long conversations. '
-            'Deprecated: use --multi-turn-args instead.'
+            'For ShareGPT / custom multi-turn datasets: optional, truncates long conversations. '
+            'For swe_smith: upper bound for per-conversation turn count sampling; defaults to --min-turns when unset.'
         ),
     )
     parser.add_argument(

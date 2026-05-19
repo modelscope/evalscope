@@ -144,7 +144,7 @@ The `--generation-config` parameter supports the following options (comma-separa
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `--eval-type` | `str` | Evaluation type<br>• `llm_ckpt`: Local model inference (transformers)<br>• `openai_api`: OpenAI-compatible API service<br>• `anthropic_api`: Anthropic Claude API service<br>• `litellm`: LiteLLM multi-provider routing (supports 100+ LLM providers)<br>• `text2image`: Text-to-image model (diffusers)<br>• `mock_llm`: Simulated inference (for verification) | `None` (auto-detect) |
+| `--eval-type` | `str` | Evaluation type<br>• `llm_ckpt`: Local model inference (transformers)<br>• `openai_api`: OpenAI-compatible API service<br>• `anthropic_api`: Anthropic Claude API service<br>• `litellm`: LiteLLM multi-provider routing (supports 100+ LLM providers)<br>• `text2image`: Text-to-image model (diffusers)<br>• `image_editing`: Image editing model<br>• `mock_llm`: Simulated inference (for verification)<br>• `custom`: Custom evaluation type | `None` (auto-detect) |
 | `--eval-batch-size` | `int` | Evaluation batch size, applies to the following stages:<br>• Inference: concurrent requests (service mode) or batch size (checkpoint mode)<br>• LLM-judge review: number of concurrent threads<br>• `batch_calculate_metrics`: number of samples per batch window | `1` (service mode: `8`) |
 | `--eval-backend` | `str` | Evaluation backend<br>• `Native`: Default backend<br>• `OpenCompass`: LLM evaluation<br>• `VLMEvalKit`: Multimodal model evaluation<br>• `RAGEval`: RAG/Embedding/Reranker/CLIP evaluation<br>• `ThirdParty`: Special task evaluation | `Native` |
 | `--eval-config` | `str` | Configuration file path for non-Native backends | - |
@@ -269,7 +269,7 @@ For full usage, examples and Trace visualization, see [Agent Evaluation](../user
 | `--work-dir` | `str` | Evaluation output path (see directory structure below) | `./outputs` |
 | `--no-timestamp` | `bool` | Do not add timestamp to work_dir | `false` |
 | `--use-cache` | `str` | Reuse local cache path (e.g., `outputs/20241210_194434`)<br>Reuses inference and evaluation results | `None` |
-| `--rerun-review` | `bool` | Only rerun evaluation (reuses inference results) | `false` |
+| `--rerun-review` | `bool` | Used with `--use-cache`: deletes the existing reviews cache and re-runs the review/scoring stage while still reusing prediction cache | `false` |
 | `--enable-progress-tracker` | `bool` | Whether to enable progress tracking, writing hierarchical evaluation progress to `progress.json` in real time, queryable via the service API | `false` |
 | `--collect-perf` | `bool` | Collect per-request performance metrics (latency, TTFT, token usage) and write them into the evaluation report. TTFT requires `--generation-config stream=true`. Use `--no-collect-perf` to disable | `true` |
 | `--seed` | `int` | Random seed | `42` |

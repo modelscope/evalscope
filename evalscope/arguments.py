@@ -3,7 +3,7 @@ import argparse
 import ast
 import json
 
-from evalscope.constants import EvalBackend, JudgeStrategy, ModelTask
+from evalscope.constants import EvalBackend, EvalType, JudgeStrategy, ModelTask
 
 
 class ParseStrArgsAction(argparse.Action):
@@ -61,7 +61,9 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--generation-config', type=str, action=ParseStrArgsAction, help='The generation config, should be a string.')  # noqa: E501
 
     # Evaluation-related arguments
-    parser.add_argument('--eval-type', type=str, help='The type for evaluating.')
+    parser.add_argument('--eval-type', type=str,
+                        choices=[EvalType.CHECKPOINT, EvalType.OPENAI_API, EvalType.ANTHROPIC_API, EvalType.LITELLM, EvalType.MOCK_LLM, EvalType.TEXT2IMAGE, EvalType.IMAGE_EDITING, EvalType.CUSTOM],
+                        help='Evaluation backend type. Auto-inferred from --api-url / --model when omitted.')  # noqa: E501
     parser.add_argument('--eval-backend', type=str, help='The evaluation backend to use.',
                         choices=[EvalBackend.NATIVE, EvalBackend.OPEN_COMPASS, EvalBackend.VLM_EVAL_KIT, EvalBackend.RAG_EVAL])  # noqa: E501
     parser.add_argument('--eval-config', type=str, required=False, help='The eval task config file path for evaluation backend.')  # noqa: E501
@@ -70,8 +72,8 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--repeats', type=int, default=1, help='Number of times to repeat the dataset items for k-metrics.')  # noqa: E501
 
     # Cache and working directory arguments
-    parser.add_argument('--use-cache', type=str, help='Path to reuse the cached results.')
-    parser.add_argument('--rerun-review', action='store_true', default=False, help='Rerun the review process when use_cache.')
+    parser.add_argument('--use-cache', type=str, help='Path to a previous output directory (e.g. outputs/20260519_120000) to resume from. Reuses cached predictions and reviews matched by sample_id.')  # noqa: E501
+    parser.add_argument('--rerun-review', action='store_true', default=False, help='When --use-cache is set, force re-running the review/scoring step (deletes existing reviews cache) while still reusing prediction cache.')  # noqa: E501
     parser.add_argument('--work-dir', type=str, help='The root cache dir.')
     parser.add_argument('--no-timestamp', action='store_true', default=False, help='Do not add timestamp to work_dir to avoid overwriting previous results.')  # noqa: E501
     parser.add_argument('--enable-progress-tracker', action='store_true', default=False, help='Enable progress tracker.')
@@ -82,8 +84,8 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducibility.')
     parser.add_argument('--api-key', type=str, default='EMPTY', help='The API key for the remote API model.')
     parser.add_argument('--api-url', type=str, default=None, help='The API url for the remote API model.')
-    parser.add_argument('--timeout', type=float, default=None, help='The timeout for the remote API model.')
-    parser.add_argument('--stream', action='store_true', default=None, help='Stream mode.')  # noqa: E501
+    parser.add_argument('--timeout', type=float, default=None, help='[Deprecated] Use --generation-config timeout=... instead. Will be removed in v2.0.0.')  # noqa: E501
+    parser.add_argument('--stream', action='store_true', default=None, help='[Deprecated] Use --generation-config stream=True instead. Will be removed in v2.0.0.')  # noqa: E501
 
     # LLMJudge arguments
     parser.add_argument('--judge-strategy', type=str, default=JudgeStrategy.AUTO, help='The judge strategy.')
