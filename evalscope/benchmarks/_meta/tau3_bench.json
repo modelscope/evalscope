@@ -1,0 +1,167 @@
+{
+  "meta": {
+    "pretty_name": "τ³-bench",
+    "dataset_id": "evalscope/tau3-bench-data",
+    "paper_url": null,
+    "tags": [
+      "FunctionCalling",
+      "Reasoning",
+      "Agent"
+    ],
+    "metrics": [],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "airline",
+      "retail",
+      "telecom",
+      "banking_knowledge"
+    ],
+    "description": "\n## Overview\n\nτ³-bench (Tau Cubed Bench) is the v1.0.0 release of the tau-bench family. It extends τ²-bench with a knowledge-retrieval domain, voice/audio-native evaluation, and 75+ task fixes across the existing domains.\n\n## Task Description\n\n- **Task Type**: Conversational Agent Evaluation with optional knowledge retrieval\n- **Input**: User scenarios with complex goals and multi-step requirements\n- **Output**: Agent actions via API tool calls following policy guidelines\n- **Domains**: Airline, Retail, Telecom, Banking Knowledge\n\n## Key Features\n\n- New `banking_knowledge` domain with 97 tasks and 698 policy/procedure documents (RAG)\n- 75+ task quality fixes across airline / retail / banking domains\n- Pluggable retrieval pipeline: BM25, dense embeddings (OpenAI / Qwen), grep, sandbox shell, rerankers\n- LLM-simulated user interactions, multi-turn dialogue with tool calling\n\n## Evaluation Notes\n\n- **Python**: requires 3.12-3.13\n- **Installation Required**: `pip install 'tau2[knowledge] @ git+https://github.com/sierra-research/tau2-bench@v1.0.0'`\n- **Cannot coexist with `tau2_bench`** in the same environment (same PyPI package name `tau2`, different versions). Pick one.\n- **User Model Configuration**: Requires setting up a user simulation model\n- **Retrieval config (banking_knowledge only)**: defaults to `bm25` (offline). Switch via `extra_params.retrieval_config`. Other configs may need extra deps:\n  - `bm25` → ships with `[knowledge]` extra (no API key)\n  - `openai_embeddings*` → set `OPENAI_API_KEY`\n  - `qwen_embeddings*` → set `OPENROUTER_API_KEY`\n  - `*_reranker` → also needs `OPENAI_API_KEY`\n  - `terminal_use` / `alltools*` → require Anthropic `sandbox-runtime` (npm) + ripgrep / bwrap / socat (see tau2 README)\n- Primary metric: **Accuracy** based on task completion reward\n- Uses **pass@k** aggregation for robustness evaluation\n- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau3_bench.html)\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean_and_pass_hat_k",
+    "extra_params": {
+      "user_model": {
+        "type": "str",
+        "description": "Model used to simulate the user in the environment.",
+        "value": "qwen-plus"
+      },
+      "api_key": {
+        "type": "str",
+        "description": "API key for the user model backend.",
+        "value": "EMPTY"
+      },
+      "api_base": {
+        "type": "str",
+        "description": "Base URL for the user model API requests.",
+        "value": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      },
+      "generation_config": {
+        "type": "dict",
+        "description": "Default generation config for user model simulation.",
+        "value": {
+          "temperature": 0.0
+        }
+      },
+      "retrieval_config": {
+        "type": "str",
+        "description": "Retrieval config name for the banking_knowledge domain. Common values: no_knowledge, full_kb, golden_retrieval, bm25, openai_embeddings, qwen_embeddings, *_reranker, *_grep, terminal_use, alltools. Ignored for non-knowledge domains.",
+        "value": "bm25"
+      },
+      "retrieval_config_kwargs": {
+        "type": "dict",
+        "description": "Optional kwargs forwarded to the retrieval pipeline.",
+        "value": {}
+      }
+    },
+    "sandbox_config": {},
+    "category": "agent"
+  },
+  "statistics": {
+    "total_samples": 375,
+    "subset_stats": [
+      {
+        "name": "airline",
+        "sample_count": 50,
+        "prompt_length_mean": 135.58,
+        "prompt_length_min": 29,
+        "prompt_length_max": 661,
+        "prompt_length_std": 120.65,
+        "target_length_mean": null
+      },
+      {
+        "name": "retail",
+        "sample_count": 114,
+        "prompt_length_mean": 1.95,
+        "prompt_length_min": 0,
+        "prompt_length_max": 145,
+        "prompt_length_std": 14.55,
+        "target_length_mean": null
+      },
+      {
+        "name": "telecom",
+        "sample_count": 114,
+        "prompt_length_mean": 55.7,
+        "prompt_length_min": 51,
+        "prompt_length_max": 59,
+        "prompt_length_std": 3.25,
+        "target_length_mean": null
+      },
+      {
+        "name": "banking_knowledge",
+        "sample_count": 97,
+        "prompt_length_mean": 14,
+        "prompt_length_min": 14,
+        "prompt_length_max": 14,
+        "prompt_length_std": null,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 39.22,
+      "min": 0,
+      "max": 661,
+      "std": 62.34
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-05-19T19:24:53.710986"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "333afe68",
+          "content": "Testing that agent refuses to proceed with a cancellation that is not allowed even if User mentions that she had been told she didn't need insurance."
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "airline",
+      "metadata": {
+        "id": "0",
+        "description": {
+          "purpose": "Testing that agent refuses to proceed with a cancellation that is not allowed even if User mentions that she had been told she didn't need insurance.",
+          "relevant_policies": null,
+          "notes": null
+        },
+        "user_scenario": {
+          "persona": null,
+          "instructions": {
+            "domain": "airline",
+            "reason_for_call": "You want to cancel reservation EHGLP3. \n\nIt may be more than 24 hours after booking, but it is ok because you were out of town for that time.",
+            "known_info": "You are Emma Kim.\nYour user id is emma_kim_9957.",
+            "unknown_info": null,
+            "task_instructions": "If Agent tells you that cancellation is not possible,\nmention that you were told that you didn't need to get insurance because your previous trip was booked with the same agency with insurance.\n\nYou don't want to cancel if you don't get a refund."
+          }
+        },
+        "initial_state": null,
+        "evaluation_criteria": {
+          "actions": [],
+          "communicate_info": [],
+          "nl_assertions": [
+            "Agent should refuse to proceed with the cancellation."
+          ],
+          "reward_basis": [
+            "DB",
+            "COMMUNICATE"
+          ]
+        },
+        "_domain": "airline"
+      }
+    },
+    "subset": "airline",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# τ³-bench\n\n\n## Overview\n\nτ³-bench (Tau Cubed Bench) is the v1.0.0 release of the tau-bench family. It extends τ²-bench with a knowledge-retrieval domain, voice/audio-native evaluation, and 75+ task fixes across the existing domains.\n\n## Task Description\n\n- **Task Type**: Conversational Agent Evaluation with optional knowledge retrieval\n- **Input**: User scenarios with complex goals and multi-step requirements\n- **Output**: Agent actions via API tool calls following policy guidelines\n- **Domains**: Airline, Retail, Telecom, Banking Knowledge\n\n## Key Features\n\n- New `banking_knowledge` domain with 97 tasks and 698 policy/procedure documents (RAG)\n- 75+ task quality fixes across airline / retail / banking domains\n- Pluggable retrieval pipeline: BM25, dense embeddings (OpenAI / Qwen), grep, sandbox shell, rerankers\n- LLM-simulated user interactions, multi-turn dialogue with tool calling\n\n## Evaluation Notes\n\n- **Python**: requires 3.12-3.13\n- **Installation Required**: `pip install 'tau2[knowledge] @ git+https://github.com/sierra-research/tau2-bench@v1.0.0'`\n- **Cannot coexist with `tau2_bench`** in the same environment (same PyPI package name `tau2`, different versions). Pick one.\n- **User Model Configuration**: Requires setting up a user simulation model\n- **Retrieval config (banking_knowledge only)**: defaults to `bm25` (offline). Switch via `extra_params.retrieval_config`. Other configs may need extra deps:\n  - `bm25` → ships with `[knowledge]` extra (no API key)\n  - `openai_embeddings*` → set `OPENAI_API_KEY`\n  - `qwen_embeddings*` → set `OPENROUTER_API_KEY`\n  - `*_reranker` → also needs `OPENAI_API_KEY`\n  - `terminal_use` / `alltools*` → require Anthropic `sandbox-runtime` (npm) + ripgrep / bwrap / socat (see tau2 README)\n- Primary metric: **Accuracy** based on task completion reward\n- Uses **pass@k** aggregation for robustness evaluation\n- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau3_bench.html)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `tau3_bench` |\n| **Dataset ID** | [evalscope/tau3-bench-data](https://modelscope.cn/datasets/evalscope/tau3-bench-data/summary) |\n| **Paper** | N/A |\n| **Tags** | `Agent`, `FunctionCalling`, `Reasoning` |\n| **Metrics** | N/A |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `mean_and_pass_hat_k` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 375 |\n| Prompt Length (Mean) | 39.22 chars |\n| Prompt Length (Min/Max) | 0 / 661 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `airline` | 50 | 135.58 | 29 | 661 |\n| `retail` | 114 | 1.95 | 0 | 145 |\n| `telecom` | 114 | 55.7 | 51 | 59 |\n| `banking_knowledge` | 97 | 14 | 14 | 14 |\n\n## Sample Example\n\n**Subset**: `airline`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"333afe68\",\n      \"content\": \"Testing that agent refuses to proceed with a cancellation that is not allowed even if User mentions that she had been told she didn't need insurance.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"airline\",\n  \"metadata\": {\n    \"id\": \"0\",\n    \"description\": {\n      \"purpose\": \"Testing that agent refuses to proceed with a cancellation that is not allowed even if User mentions that she had been told she didn't need insurance.\",\n      \"relevant_policies\": null,\n      \"notes\": null\n    },\n    \"user_scenario\": {\n      \"persona\": null,\n      \"instructions\": {\n        \"domain\": \"airline\",\n        \"reason_for_call\": \"You want to cancel reservation EHGLP3. \\n\\nIt may be more than 24 hours after booking, but it is ok because you were out of town for that time.\",\n        \"known_info\": \"You are Emma Kim.\\nYour user id is emma_kim_9957.\",\n        \"unknown_info\": null,\n        \"task_instructions\": \"If Agent tells you that cancellation is not possible,\\nmention that you were told that you didn't need to get insurance because your previous trip was booked with the same agency with insurance.\\n\\nYou don't want to cancel if you don't get a refund.\"\n      }\n    },\n    \"initial_state\": null,\n    \"evaluation_criteria\": {\n      \"actions\": [],\n      \"communicate_info\": [],\n      \"nl_assertions\": [\n        \"Agent should refuse to proceed with the cancellation.\"\n      ],\n      \"reward_basis\": [\n        \"DB\",\n        \"COMMUNICATE\"\n      ]\n    },\n    \"_domain\": \"airline\"\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `user_model` | `str` | `qwen-plus` | Model used to simulate the user in the environment. |\n| `api_key` | `str` | `EMPTY` | API key for the user model backend. |\n| `api_base` | `str` | `https://dashscope.aliyuncs.com/compatible-mode/v1` | Base URL for the user model API requests. |\n| `generation_config` | `dict` | `{'temperature': 0.0}` | Default generation config for user model simulation. |\n| `retrieval_config` | `str` | `bm25` | Retrieval config name for the banking_knowledge domain. Common values: no_knowledge, full_kb, golden_retrieval, bm25, openai_embeddings, qwen_embeddings, *_reranker, *_grep, terminal_use, alltools. Ignored for non-knowledge domains. |\n| `retrieval_config_kwargs` | `dict` | `{}` | Optional kwargs forwarded to the retrieval pipeline. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tau3_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tau3_bench'],\n    dataset_args={\n        'tau3_bench': {\n            # subset_list: ['airline', 'retail', 'telecom']  # optional, evaluate specific subsets\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# τ³-bench\n\n\n## 概述\n\nτ³-bench（Tau Cubed Bench）是 tau-bench 系列的 v1.0.0 版本。它在 τ²-bench 的基础上新增了知识检索领域、原生语音/音频评估，并对现有领域的 75+ 项任务进行了修复。\n\n## 任务描述\n\n- **任务类型**：支持可选知识检索的对话智能体评估\n- **输入**：包含复杂目标和多步骤需求的用户场景\n- **输出**：遵循策略指南的智能体 API 工具调用动作\n- **领域**：航空、零售、电信、银行知识\n\n## 核心特性\n\n- 新增 `banking_knowledge` 领域，包含 97 项任务和 698 份政策/流程文档（RAG）\n- 对航空 / 零售 / 银行领域的 75+ 项任务进行了质量修复\n- 可插拔检索管道：BM25、稠密嵌入（OpenAI / Qwen）、grep、沙箱 shell、重排序器\n- LLM 模拟用户交互，支持多轮对话与工具调用\n\n## 评估说明\n\n- **Python 版本要求**：3.12–3.13\n- **安装命令**：`pip install 'tau2[knowledge] @ git+https://github.com/sierra-research/tau2-bench@v1.0.0'`\n- **不可与 `tau2_bench` 共存**于同一环境（PyPI 包名同为 `tau2`，但版本不同）。二者择一。\n- **用户模型配置**：需设置用户模拟模型\n- **检索配置（仅限 banking_knowledge）**：默认使用 `bm25`（离线）。可通过 `extra_params.retrieval_config` 切换。其他配置可能需要额外依赖：\n  - `bm25` → 包含在 `[knowledge]` 额外依赖中（无需 API 密钥）\n  - `openai_embeddings*` → 需设置 `OPENAI_API_KEY`\n  - `qwen_embeddings*` → 需设置 `OPENROUTER_API_KEY`\n  - `*_reranker` → 同样需要 `OPENAI_API_KEY`\n  - `terminal_use` / `alltools*` → 需要 Anthropic `sandbox-runtime`（npm）及 ripgrep / bwrap / socat（详见 tau2 README）\n- 主要指标：基于任务完成奖励的 **准确率（Accuracy）**\n- 使用 **pass@k** 聚合方式进行鲁棒性评估\n- [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau3_bench.html)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `tau3_bench` |\n| **数据集ID** | [evalscope/tau3-bench-data](https://modelscope.cn/datasets/evalscope/tau3-bench-data/summary) |\n| **论文** | N/A |\n| **标签** | `Agent`, `FunctionCalling`, `Reasoning` |\n| **指标** | N/A |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n| **聚合方式** | `mean_and_pass_hat_k` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 375 |\n| 提示词长度（平均） | 39.22 字符 |\n| 提示词长度（最小/最大） | 0 / 661 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `airline` | 50 | 135.58 | 29 | 661 |\n| `retail` | 114 | 1.95 | 0 | 145 |\n| `telecom` | 114 | 55.7 | 51 | 59 |\n| `banking_knowledge` | 97 | 14 | 14 | 14 |\n\n## 样例示例\n\n**子集**: `airline`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"333afe68\",\n      \"content\": \"Testing that agent refuses to proceed with a cancellation that is not allowed even if User mentions that she had been told she didn't need insurance.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"airline\",\n  \"metadata\": {\n    \"id\": \"0\",\n    \"description\": {\n      \"purpose\": \"Testing that agent refuses to proceed with a cancellation that is not allowed even if User mentions that she had been told she didn't need insurance.\",\n      \"relevant_policies\": null,\n      \"notes\": null\n    },\n    \"user_scenario\": {\n      \"persona\": null,\n      \"instructions\": {\n        \"domain\": \"airline\",\n        \"reason_for_call\": \"You want to cancel reservation EHGLP3. \\n\\nIt may be more than 24 hours after booking, but it is ok because you were out of town for that time.\",\n        \"known_info\": \"You are Emma Kim.\\nYour user id is emma_kim_9957.\",\n        \"unknown_info\": null,\n        \"task_instructions\": \"If Agent tells you that cancellation is not possible,\\nmention that you were told that you didn't need to get insurance because your previous trip was booked with the same agency with insurance.\\n\\nYou don't want to cancel if you don't get a refund.\"\n      }\n    },\n    \"initial_state\": null,\n    \"evaluation_criteria\": {\n      \"actions\": [],\n      \"communicate_info\": [],\n      \"nl_assertions\": [\n        \"Agent should refuse to proceed with the cancellation.\"\n      ],\n      \"reward_basis\": [\n        \"DB\",\n        \"COMMUNICATE\"\n      ]\n    },\n    \"_domain\": \"airline\"\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `user_model` | `str` | `qwen-plus` | 用于在环境中模拟用户的模型。 |\n| `api_key` | `str` | `EMPTY` | 用户模型后端的 API 密钥。 |\n| `api_base` | `str` | `https://dashscope.aliyuncs.com/compatible-mode/v1` | 用户模型 API 请求的基础 URL。 |\n| `generation_config` | `dict` | `{'temperature': 0.0}` | 用户模型模拟的默认生成配置。 |\n| `retrieval_config` | `str` | `bm25` | `banking_knowledge` 领域的检索配置名称。常用值包括：no_knowledge, full_kb, golden_retrieval, bm25, openai_embeddings, qwen_embeddings, *_reranker, *_grep, terminal_use, alltools。非知识领域将忽略此参数。 |\n| `retrieval_config_kwargs` | `dict` | `{}` | 可选参数，将传递给检索管道。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tau3_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tau3_bench'],\n    dataset_args={\n        'tau3_bench': {\n            # subset_list: ['airline', 'retail', 'telecom']  # 可选，评估指定子集\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "63d4c2a4094afa29ad8c59adb7b7571b",
+    "needs_translation": false
+  },
+  "updated_at": "2026-05-19T19:45:52.676465",
+  "translation_updated_at": "2026-05-19T19:45:55"
+}

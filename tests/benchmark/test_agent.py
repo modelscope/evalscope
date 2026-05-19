@@ -7,6 +7,7 @@ env = dotenv_values('.env')
 
 import unittest
 
+from evalscope.config import SandboxTaskConfig
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
 from evalscope.utils.logger import get_logger
 from tests.common import TestBenchmark
@@ -53,7 +54,6 @@ class TestAgentBenchmark(TestBenchmark):
                 'action_protocol': 'toolcall',
                 'max_steps': 250,
                 'command_timeout': 60.0,
-                'working_dir': '/testbed',
                 'build_docker_images': True,
                 'pull_remote_images_if_available': True,
                 'force_arch': 'arm64',
@@ -68,7 +68,6 @@ class TestAgentBenchmark(TestBenchmark):
                 'action_protocol': 'toolcall',
                 'max_steps': 250,
                 'command_timeout': 60.0,
-                'working_dir': '/testbed',
                 'build_docker_images': True,
                 'pull_remote_images_if_available': True,
                 'force_arch': 'arm64',
@@ -83,13 +82,33 @@ class TestAgentBenchmark(TestBenchmark):
                 'action_protocol': 'toolcall',
                 'max_steps': 250,
                 'command_timeout': 60.0,
-                'working_dir': '/testbed',
                 'build_docker_images': True,
                 'pull_remote_images_if_available': True,
                 'force_arch': 'arm64',
             }
         }
         self._run_dataset_test('swe_bench_lite_agentic', dataset_args, limit=1)
+
+    def test_swe_bench_pro(self):
+        """Test SWE-bench_Pro agentic dataset using docker environment."""
+        dataset_args = {
+            'extra_params': {
+                'action_protocol': 'toolcall',
+                'max_steps': 250,
+                'command_timeout': 60.0,
+                'eval_timeout': 1800,
+            }
+        }
+        self._run_dataset_test(
+            'swe_bench_pro',
+            dataset_args,
+            limit=5,
+            use_cache='outputs/20260519_155200',
+            rerun_review=True,
+            sandbox=SandboxTaskConfig(
+                default_config={'platform': 'linux/amd64', 'memory_limit': '12g', 'cpu_limit': 4.0},
+            ),
+        )
 
     def test_swe_bench_verified_agentic_backticks(self):
         """Test SWE-bench-verified agentic dataset with backticks protocol."""
@@ -98,7 +117,6 @@ class TestAgentBenchmark(TestBenchmark):
                 'action_protocol': 'backticks',
                 'max_steps': 250,
                 'command_timeout': 60.0,
-                'working_dir': '/testbed',
                 'build_docker_images': True,
                 'pull_remote_images_if_available': True,
                 'force_arch': 'arm64',

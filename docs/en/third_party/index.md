@@ -9,8 +9,10 @@ Before using these benchmarks, please follow the instructions in each benchmark'
 
 terminal_bench.md
 swe_bench.md
+swe_bench_pro.md
 tau_bench.md
 tau2_bench.md
+tau3_bench.md
 bfcl_v3.md
 bfcl_v4.md
 needle_haystack.md

@@ -127,7 +127,9 @@ class TaskConfig(BaseArgument):
 
     # Evaluation-related arguments
     eval_type: Optional[str] = None
-    """Type of evaluation: checkpoint, service, or mock."""
+    """Evaluation backend type. One of: 'llm_ckpt' (local checkpoint), 'openai_api',
+    'anthropic_api', 'litellm', 'mock_llm', 'text2image', 'image_editing', 'custom'.
+    Deprecated aliases: 'checkpoint' -> 'llm_ckpt', 'server' -> 'openai_api'."""
 
     eval_backend: str = EvalBackend.NATIVE
     """Backend framework to use for evaluation."""
@@ -148,13 +150,16 @@ class TaskConfig(BaseArgument):
 
     # Cache and working directory arguments
     use_cache: Optional[str] = None
-    """Whether to use cached results and which cache strategy to apply."""
+    """Path to a previous output directory (e.g. 'outputs/20260519_120000') to resume from.
+    Reuses cached predictions and reviews matched by sample_id; set None to start fresh."""
 
     rerun_review: bool = False
-    """Whether to rerun the review process even if results exist."""
+    """When use_cache is set, force re-running the review/scoring step
+    (deletes existing reviews cache) while still reusing prediction cache."""
 
     work_dir: str = DEFAULT_WORK_DIR
-    """Working directory for storing evaluation results and temporary files."""
+    """Root directory for evaluation outputs (predictions/, reviews/, reports/, logs/).
+    A timestamped subdirectory is appended unless `no_timestamp=True` or `use_cache` is set."""
 
     no_timestamp: bool = False
     """Do not add timestamp to the work_dir to avoid overwriting previous results."""
@@ -181,14 +186,21 @@ class TaskConfig(BaseArgument):
     """API key for authenticating with server-based models."""
 
     timeout: Optional[float] = None
-    """Request timeout in seconds for server-based models."""
+    """[Deprecated] Use `generation_config.timeout` instead. Will be removed in v2.0.0.
+    When set, value is forwarded to `generation_config.timeout` with a deprecation warning."""
 
     stream: Optional[bool] = None
-    """Whether to use streaming responses for server-based models."""
+    """[Deprecated] Use `generation_config.stream` instead. Will be removed in v2.0.0.
+    When set, value is forwarded to `generation_config.stream` with a deprecation warning."""
 
     # LLMJudge arguments
     judge_strategy: str = JudgeStrategy.AUTO
-    """Strategy for LLM-based judgment (auto, single, pairwise)."""
+    """How to score model outputs. One of:
+    - 'auto': follow the benchmark's default (LLM judge only if the benchmark needs one).
+    - 'rule': force rule-based scoring; never invoke an LLM judge.
+    - 'llm': force LLM judge for every sample.
+    - 'llm_recall': run rule-based scoring first, then pass the rule score to the LLM
+       judge to produce the final score (useful when LLM should refine/recall rule misses)."""
 
     judge_worker_num: Optional[int] = None
     """[Deprecated] Use `eval_batch_size` instead. Will be removed in v2.0.0."""
@@ -200,7 +212,8 @@ class TaskConfig(BaseArgument):
     """Whether to generate detailed analysis reports after evaluation."""
 
     collect_perf: bool = True
-    """Whether to collect per-request performance metrics during evaluation."""
+    """Whether to collect per-request performance metrics (latency, TTFT, token usage)
+    during evaluation. TTFT requires streaming (set `generation_config.stream=True`)."""
 
     # Sandbox configuration arguments
     sandbox: Optional[SandboxTaskConfig] = None

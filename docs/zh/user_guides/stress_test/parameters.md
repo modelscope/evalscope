@@ -171,8 +171,8 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
 | `--multi-turn` | `bool` | 启用多轮对话压测模式；`--number` 表示总发送 turn 数，`--parallel` 表示并发 turn 数 | `False` |
-| `--min-turns` | `int` | 每个对话最少用户轮数，仅 `random_multi_turn` 使用 | `1` |
-| `--max-turns` | `int` | 每个对话最多用户轮数；`random_multi_turn` 必需；ShareGPT 数据集可选，用于截断过长对话 | `None` |
+| `--min-turns` | `int` | 每个对话最少用户轮数；`random_multi_turn` 与 `swe_smith` 使用 | `1` |
+| `--max-turns` | `int` | 每个对话最多用户轮数；`random_multi_turn` 必需；ShareGPT/`custom_multi_turn` 可选（截断过长对话）；`swe_smith` 用作每个对话轮数采样上界，未设置时回退到 `--min-turns` | `None` |
 
 ```{seealso}
 多轮对话压测使用详见[多轮对话压测指南](./multi_turn.md)。

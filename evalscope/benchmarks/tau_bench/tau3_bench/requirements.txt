@@ -1,0 +1,17 @@
+aiohttp
+deepgram-sdk
+elevenlabs
+jiwer
+
+# Upstream v1.0.0 has eager voice imports even on the text-only path,
+# so the following lightweight voice-related deps must be present.
+# pyaudio additionally requires `brew install portaudio` on macOS
+# or `apt install portaudio19-dev` on Ubuntu/Debian.
+pyaudio
+pydub
+scipy
+# Git-only dependency: cannot be installed via pip install evalscope[tau3_bench]
+# Requires Python 3.12-3.13. Cannot coexist with tau2_bench (same package name, different versions).
+# Install manually (include the [knowledge] extra to enable the banking_knowledge domain):
+tau2[knowledge] @ git+https://github.com/sierra-research/tau2-bench@v1.0.0
+websockets

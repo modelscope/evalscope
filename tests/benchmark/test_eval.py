@@ -491,6 +491,27 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('tau2_bench', dataset_args, limit=None, repeats=1, model='qwen-plus', stream=True)
 
+    def test_tau3_bench(self):
+        dataset_args = {
+            'subset_list': [
+                'airline',
+                'retail',
+                'telecom',
+                'banking_knowledge'
+            ],
+            'extra_params': {
+                'user_model': 'qwen-plus',
+                'api_key': env.get('DASHSCOPE_API_KEY'),
+                'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'generation_config': {
+                    'temperature': 0.0,
+                    'stream': True
+                },
+                'retrieval_config': 'bm25',
+            }
+        }
+        self._run_dataset_test('tau3_bench', dataset_args, limit=1, repeats=1, model='qwen-plus', stream=True)
+
     def test_r1_collection(self):
         dataset_args = {
             'dataset_id': 'evalscope/R1-Distill-Math-Test-v2'

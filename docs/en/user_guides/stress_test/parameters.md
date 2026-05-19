@@ -170,8 +170,8 @@ Must be used with `--multi-turn`. See the [Multi-turn Benchmark Guide](./multi_t
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `--multi-turn` | `bool` | Enable multi-turn conversation benchmark mode; `--number` is the total number of turns to send and `--parallel` is the number of concurrent turn-level requests | `False` |
-| `--min-turns` | `int` | Minimum number of user turns per conversation; used by `random_multi_turn` only | `1` |
-| `--max-turns` | `int` | Maximum number of user turns per conversation; required for `random_multi_turn`; optional for ShareGPT datasets to truncate long conversations | `None` |
+| `--min-turns` | `int` | Minimum number of user turns per conversation; used by `random_multi_turn` and `swe_smith` | `1` |
+| `--max-turns` | `int` | Maximum number of user turns per conversation; required for `random_multi_turn`; optional for ShareGPT / `custom_multi_turn` (truncates long conversations); for `swe_smith` it's the upper bound for per-conversation turn sampling, falling back to `--min-turns` when unset | `None` |
 
 ```{seealso}
 For details on using the multi-turn benchmark feature, see the [Multi-turn Benchmark Guide](./multi_turn.md).

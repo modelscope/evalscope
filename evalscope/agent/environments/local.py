@@ -47,7 +47,7 @@ class LocalAgentEnvironment(AgentEnvironment):
         effective_cwd = cwd or self._working_dir
         env = {**os.environ, **self._env_vars} if self._env_vars else None
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         started = loop.time()
 
         proc = await asyncio.create_subprocess_exec(
