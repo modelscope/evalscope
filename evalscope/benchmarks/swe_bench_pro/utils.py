@@ -4,8 +4,10 @@ import re
 import subprocess
 import traceback
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
+from evalscope.api.sandbox import SandboxEngine, build_sandbox_config, get_sandbox_service, merge_sandbox_config_dicts
+from evalscope.utils.function_utils import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -178,21 +180,24 @@ def eval_instance(
     image: str,
     log_dir: str = 'outputs',
     timeout: int = 3600,
-    platform: str = 'linux/amd64',
-    block_network: bool = False,
+    sandbox_config: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """Run the SWE-bench_Pro evaluation for one instance via local Docker.
+    """Run the SWE-bench_Pro evaluation for one instance via ms-enclave.
+
+    ``sandbox_config`` is a base ms_enclave ``DockerSandboxConfig`` dict
+    (memory_limit / cpu_limit / platform / network_enabled / ...). Stage-required
+    fields (``image``, ``volumes``) are always injected and cannot be overridden.
 
     Returns dict: {completed, resolved, report}.
     """
-    import docker
-
     instance_id = metadata['instance_id']
     workspace_root = Path(log_dir) / 'swe_bench_pro_log' / instance_id
     workspace = workspace_root / 'workspace'
     workspace.mkdir(parents=True, exist_ok=True)
 
     cleaned_patch = strip_binary_hunks(pred or '')
+    if cleaned_patch and not cleaned_patch.endswith('\n'):
+        cleaned_patch += '\n'
     files = {
         'patch.diff': cleaned_patch,
         'run_script.sh': resources['run_script'],
@@ -207,62 +212,43 @@ def eval_instance(
     output_json: Any = None
     error: str = ''
 
-    try:
-        client = docker.from_env()
-        try:
-            client.images.get(image)
-            logger.info(f'[{instance_id}] image already present locally: {image}')
-        except docker.errors.ImageNotFound:
-            logger.info(f'[{instance_id}] pulling image {image} (platform={platform})...')
-            try:
-                last_status = ''
-                for line in client.api.pull(image, platform=platform, stream=True, decode=True):
-                    status = line.get('status', '')
-                    progress_id = line.get('id', '')
-                    if status and status != last_status:
-                        logger.info(f'[{instance_id}] pull: {status}{(" " + progress_id) if progress_id else ""}')
-                        last_status = status
-                logger.info(f'[{instance_id}] pull complete.')
-            except Exception as pull_err:
-                try:
-                    client.images.get(image)
-                    logger.info(f'[{instance_id}] pull stream errored but image is present: {pull_err}')
-                except Exception:
-                    raise RuntimeError(f'Failed to pull image {image}: {pull_err}')
+    defaults = {'tools_config': {'shell_executor': {}}}
+    stage_required = {
+        'image': image,
+        'volumes': {
+            str(workspace.resolve()): {
+                'bind': '/workspace',
+                'mode': 'rw',
+            }
+        },
+        'pull_progress': True,
+        'pull_progress_interval': 5.0,
+    }
+    cfg_dict = merge_sandbox_config_dicts(defaults, sandbox_config, stage_required)
 
-        run_kwargs: Dict[str, Any] = {
-            'volumes': {
-                str(workspace.resolve()): {
-                    'bind': '/workspace',
-                    'mode': 'rw'
-                }
-            },
-            'detach': True,
-            'remove': False,
-            'entrypoint': '/bin/bash',
-            'command': ['-c', 'bash /workspace/entryscript.sh'],
-            'platform': platform,
-        }
-        if block_network:
-            run_kwargs['network_mode'] = 'none'
-
-        logger.info(f'Running container for {instance_id} on image {image}...')
-        container = client.containers.run(image, **run_kwargs)
+    async def _run() -> str:
+        service = get_sandbox_service()
+        sbx_cfg = build_sandbox_config(SandboxEngine.DOCKER, cfg_dict)
+        handle = await service.create_sandbox(SandboxEngine.DOCKER, sbx_cfg)
         try:
-            result = container.wait(timeout=timeout)
-            status_code = result.get('StatusCode', 1) if isinstance(result, dict) else 1
-            try:
-                logs = container.logs().decode('utf-8', errors='replace')
-                (workspace_root / 'container.log').write_text(logs)
-            except Exception:
-                pass
-            if status_code != 0:
-                logger.warning(f'Entryscript for {instance_id} returned non-zero exit: {status_code}')
+            result = await handle.execute_tool(
+                'shell_executor',
+                {
+                    'command': 'bash /workspace/entryscript.sh',
+                    'timeout': int(timeout),
+                },
+            )
+            return f'{result.output or ""}\n{result.error or ""}'
         finally:
-            try:
-                container.remove(force=True)
-            except Exception:
-                pass
+            await handle.close()
+
+    try:
+        logger.info(f'Running container for {instance_id} on image {image}...')
+        container_log = AsyncioLoopRunner.run(_run(), timeout=timeout + 60)
+        try:
+            (workspace_root / 'container.log').write_text(container_log)
+        except Exception:
+            pass
 
         output_path = workspace / 'output.json'
         if output_path.is_file():

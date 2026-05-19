@@ -9,6 +9,7 @@
 
 terminal_bench.md
 swe_bench.md
+swe_bench_pro.md
 tau_bench.md
 tau2_bench.md
 bfcl_v3.md

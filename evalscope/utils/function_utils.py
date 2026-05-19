@@ -68,38 +68,6 @@ def run_once(func: Callable[..., T]) -> Callable[..., T]:
     return wrapper
 
 
-def retry_wrapper(retries=3, sleep_interval=0):
-    """
-    Decorator that retries a function call up to `retries` times if an exception occurs.
-
-    Args:
-        retries: Maximum number of retry attempts (default: 3)
-        sleep_interval: Seconds to wait between retries (default: 0)
-
-    Returns:
-        Decorated function that implements retry logic with logging
-    """
-
-    def decorator(func):
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            for attempt in range(retries):
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    if attempt < retries - 1:
-                        if sleep_interval > 0:
-                            logger.warning(f'Attempt {attempt + 1} / {retries} failed: {e}. Retrying...')
-                            time.sleep(sleep_interval)
-                    else:
-                        raise
-
-        return wrapper
-
-    return decorator
-
-
 def retry_call(func, *args, retries=3, sleep_interval=0, **kwargs):
     """Function that retries a function call up to `retries` times if an exception occurs."""
     for attempt in range(retries):

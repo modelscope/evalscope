@@ -25,6 +25,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
+from evalscope.api.sandbox import merge_sandbox_config_dicts
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import, is_build_doc
 from evalscope.utils.logger import get_logger
@@ -157,7 +158,11 @@ SWE-bench_Pro is a challenging benchmark from Scale AI evaluating LLMs/Agents on
 
 - Requires `pip install evalscope[sandbox]` (provides Docker SDK via ms-enclave)
 - Requires the `scaleapi/SWE-bench_Pro-os` repository for per-instance run scripts and Dockerfiles. By default this is auto-cloned to `~/.cache/evalscope/swe_bench_pro/SWE-bench_Pro-os` and pinned to commit `ca10a60`. To use an existing clone, set `extra_params.swe_bench_pro_repo_path`.
-- Docker images are pulled on demand with `platform=linux/amd64` (required on Apple Silicon).
+- Both the agent loop and the per-instance evaluation share a single sandbox configuration via `TaskConfig.sandbox.default_config` (passed straight to ms_enclave `DockerSandboxConfig`). Set `memory_limit` / `cpu_limit` there to avoid OOM-Killed test runs (e.g. NodeBB); `platform` defaults to `linux/amd64` so amd64-only sweap-images work on Apple Silicon out of the box.
+
+See the user guide for setup, parameters, and troubleshooting:
+- English: <https://evalscope.readthedocs.io/en/latest/third_party/swe_bench_pro.html>
+- 中文：<https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench_pro.html>
 """
 
 _EXTRA_PARAMS: Dict[str, Any] = {
@@ -199,20 +204,6 @@ _EXTRA_PARAMS: Dict[str, Any] = {
         'description': 'Per-instance evaluation timeout in seconds.',
         'value': 3600,
     },
-    'docker_platform': {
-        'type': 'str',
-        'description': (
-            'Docker platform for image pull/run. SWE-bench_Pro images are built for linux/amd64; '
-            'linux/amd64 is required on Apple Silicon (will run under emulation).'
-        ),
-        'value': 'linux/amd64',
-        'choices': ['linux/amd64', 'linux/arm64', ''],
-    },
-    'block_network': {
-        'type': 'bool',
-        'description': 'Disable network inside the eval container.',
-        'value': False,
-    },
 }
 
 
@@ -244,8 +235,6 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
         # Hardcoded: must match the ``cd /app`` in utils.build_entry_script.
         self.working_dir: str = '/app'
         self.eval_timeout: int = int(self.extra_params.get('eval_timeout', 3600))
-        self.docker_platform: str = self.extra_params.get('docker_platform', 'linux/amd64')
-        self.block_network: bool = bool(self.extra_params.get('block_network', False))
         self.dockerhub_username: str = self.extra_params.get('dockerhub_username', 'jefzda')
 
         if is_build_doc():
@@ -315,6 +304,22 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
     def build_tools(self, sample: Sample):
         return {'bash': run_bash}
 
+    def _user_sandbox_config(self) -> Dict[str, Any]:
+        """Read ``TaskConfig.sandbox.default_config`` as the user-tunable base.
+
+        Both the agent loop sandbox and the per-instance eval sandbox consume
+        this dict, so users configure memory_limit / cpu_limit / platform /
+        network_enabled / ... in **one** place. Ignores ``sandbox.enabled`` —
+        SWE-bench_Pro is always sandboxed. Defaults ``platform`` to
+        ``linux/amd64`` so the amd64-only sweap-images work on Apple Silicon
+        without extra configuration.
+        """
+        cfg: Dict[str, Any] = {}
+        if self._task_config is not None and self._task_config.sandbox is not None:
+            cfg = dict(self._task_config.sandbox.default_config or {})
+        cfg.setdefault('platform', 'linux/amd64')
+        return cfg
+
     def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
         from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 
@@ -324,7 +329,7 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
                 f"docker_image missing for instance {sample.metadata.get('instance_id')!r}; "
                 'did _post_process_samples run?'
             )
-        sandbox_config = {
+        agent_required = {
             'image': image,
             'working_dir': self.working_dir,
             'pull_progress': True,
@@ -337,6 +342,7 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
                 'TQDM_DISABLE': '1',
             },
         }
+        sandbox_config = merge_sandbox_config_dicts(self._user_sandbox_config(), agent_required)
         return EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config=sandbox_config,
@@ -400,8 +406,7 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
             image=md['docker_image'],
             log_dir=self._task_config.work_dir,
             timeout=self.eval_timeout,
-            platform=self.docker_platform,
-            block_network=self.block_network,
+            sandbox_config=self._user_sandbox_config(),
         )
         score.value = {'acc': float(result.get('resolved', 0.0))}
         score.metadata = result
