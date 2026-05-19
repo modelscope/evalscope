@@ -177,11 +177,6 @@ _AGENTIC_EXTRA_PARAMS: Dict[str, Any] = {
         'description': 'Default per-bash-command timeout in seconds.',
         'value': 60.0,
     },
-    'working_dir': {
-        'type': 'str',
-        'description': 'Working directory inside the SWE-bench container.',
-        'value': '/testbed',
-    },
     'build_docker_images': {
         'type': 'bool',
         'description': 'Build Docker images locally for each sample.',
@@ -225,7 +220,8 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
             )
         self.max_steps = int(self.extra_params.get('max_steps', 250))
         self.command_timeout = float(self.extra_params.get('command_timeout', 60.0))
-        self.working_dir: str = self.extra_params.get('working_dir', '/testbed')
+        # Hardcoded: must match the /testbed path used by swebench harness eval_script.
+        self.working_dir: str = '/testbed'
         self.build_docker_images: bool = self.extra_params.get('build_docker_images', True)
         self.pull_remote_images_if_available: bool = self.extra_params.get('pull_remote_images_if_available', True)
         self.force_arch: str = self.extra_params.get('force_arch', '')

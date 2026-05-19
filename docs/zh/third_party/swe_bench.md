@@ -153,7 +153,6 @@ task_cfg = TaskConfig(
                 'action_protocol': 'toolcall',           # 动作协议：'toolcall' 或 'backticks'
                 'max_steps': 250,                        # agent 循环最大步数
                 'command_timeout': 60.0,                 # 单条 bash 命令的超时（秒）
-                'working_dir': '/testbed',               # 容器内工作目录
                 'build_docker_images': True,             # 准备评测所需镜像，首次运行建议 True
                 'pull_remote_images_if_available': True, # 远程有可用镜像时优先拉取
                 # 'force_arch': 'arm64',                 # Apple Silicon 用户可显式指定为 'arm64'，默认 '' 自动检测
@@ -178,7 +177,6 @@ run_task(task_cfg=task_cfg)
 | `action_protocol` | str | `toolcall` | 模型与 bash 的交互协议，可选 `toolcall` / `backticks` |
 | `max_steps` | int | `250` | 每个样本 agent 循环的最大步数 |
 | `command_timeout` | float | `60.0` | 单条 bash 命令超时秒数 |
-| `working_dir` | str | `/testbed` | 容器内的工作目录（SWE-bench 镜像约定路径） |
 | `build_docker_images` | bool | `True` | 是否准备 Docker 镜像（构建或拉取） |
 | `pull_remote_images_if_available` | bool | `True` | 是否优先从远程仓库拉取已构建好的镜像 |
 | `force_arch` | str | `''` | 强制指定镜像架构，可选 `''` / `arm64` / `x86_64`，留空自动检测 |

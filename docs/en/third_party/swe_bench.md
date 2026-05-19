@@ -153,7 +153,6 @@ task_cfg = TaskConfig(
                 'action_protocol': 'toolcall',           # Action protocol: 'toolcall' or 'backticks'
                 'max_steps': 250,                        # Maximum agent loop steps
                 'command_timeout': 60.0,                 # Per-bash-command timeout (seconds)
-                'working_dir': '/testbed',               # Working directory inside the container
                 'build_docker_images': True,             # Prepare images required for evaluation; recommended for first run
                 'pull_remote_images_if_available': True, # Prefer pulling pre-built remote images
                 # 'force_arch': 'arm64',                 # Apple Silicon users may explicitly set 'arm64'; default '' = auto-detect
@@ -178,7 +177,6 @@ run_task(task_cfg=task_cfg)
 | `action_protocol` | str | `toolcall` | Bash interaction protocol: `toolcall` or `backticks` |
 | `max_steps` | int | `250` | Maximum agent loop steps per sample |
 | `command_timeout` | float | `60.0` | Per-bash-command timeout in seconds |
-| `working_dir` | str | `/testbed` | Working directory inside the container (SWE-bench image convention) |
 | `build_docker_images` | bool | `True` | Whether to prepare Docker images (build or pull) |
 | `pull_remote_images_if_available` | bool | `True` | Prefer pulling pre-built remote images when available |
 | `force_arch` | str | `''` | Force the image architecture: `''` / `arm64` / `x86_64`. Empty means auto-detect. |
