@@ -58,6 +58,7 @@ logger = get_logger()
   - `terminal_use` / `alltools*` → require Anthropic `sandbox-runtime` (npm) + ripgrep / bwrap / socat (see tau2 README)
 - Primary metric: **Accuracy** based on task completion reward
 - Uses **pass@k** aggregation for robustness evaluation
+- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau3_bench.html)
 """,  # noqa: E501
         dataset_id='evalscope/tau3-bench-data',
         subset_list=['airline', 'retail', 'telecom', 'banking_knowledge'],

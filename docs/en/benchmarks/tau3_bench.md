@@ -33,6 +33,7 @@
   - `terminal_use` / `alltools*` → require Anthropic `sandbox-runtime` (npm) + ripgrep / bwrap / socat (see tau2 README)
 - Primary metric: **Accuracy** based on task completion reward
 - Uses **pass@k** aggregation for robustness evaluation
+- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau3_bench.html)
 
 
 ## Properties
