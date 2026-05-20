@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Tuple, Union
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.multi_turn_args import _sample_int_or_range
 from evalscope.perf.plugin.api.default_api import DefaultApiPlugin
-from evalscope.perf.plugin.datasets.utils import tokenize_chat_messages
+from evalscope.perf.plugin.datasets.utils import load_tokenizer, tokenize_chat_messages
 from evalscope.perf.plugin.registry import register_api
 from evalscope.utils.io_utils import base64_to_PIL
 from evalscope.utils.logger import get_logger
@@ -29,8 +29,7 @@ class OpenaiPlugin(DefaultApiPlugin):
         """
         super().__init__(param=param)
         if param.tokenizer_path is not None:
-            from modelscope import AutoTokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(param.tokenizer_path, trust_remote_code=True)
+            self.tokenizer = load_tokenizer(param.tokenizer_path)
         else:
             self.tokenizer = None
 

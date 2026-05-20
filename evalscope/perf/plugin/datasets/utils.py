@@ -1,5 +1,40 @@
+import logging
 import numpy as np
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
+
+logger = logging.getLogger(__name__)
+
+
+def load_tokenizer(tokenizer_path: str) -> Optional[object]:
+    """Load a tokenizer from the given path, with a fallback for models that lack ``max_position_embeddings``.
+
+    Some model configs (e.g. DeepSeek-V3) do not define ``max_position_embeddings``, which causes
+    ``transformers >= 5.x`` to raise an ``AttributeError`` inside ``standardize_rope_params()`` when
+    ``trust_remote_code=True`` is used.  This helper retries with ``trust_remote_code=False`` in that
+    case so evaluation can continue without manual intervention.
+
+    Args:
+        tokenizer_path (str): Local path or ModelScope/HuggingFace model ID for the tokenizer.
+
+    Returns:
+        The loaded tokenizer instance.
+
+    Raises:
+        AttributeError: Re-raised if the error is unrelated to ``max_position_embeddings``.
+        Exception: Any other exception from ``AutoTokenizer.from_pretrained`` is propagated as-is.
+    """
+    from modelscope import AutoTokenizer
+
+    try:
+        return AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=True)
+    except AttributeError as e:
+        if 'max_position_embeddings' in str(e):
+            logger.warning(
+                f'Tokenizer loading with trust_remote_code=True failed: {e}. '
+                'Retrying with trust_remote_code=False.'
+            )
+            return AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=False)
+        raise
 
 
 def tokenize_chat_messages(tokenizer, messages: List[Dict], add_generation_prompt: bool = True) -> List[int]:
