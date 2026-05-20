@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.base import ApiPluginBase
+from evalscope.perf.plugin.datasets.utils import load_tokenizer
 from evalscope.perf.plugin.registry import register_api
 from evalscope.perf.utils.benchmark_util import BenchmarkData
 from evalscope.utils.logger import get_logger
@@ -37,8 +38,7 @@ class OpenaiRerankPlugin(ApiPluginBase):
         """
         super().__init__(param=param)
         if param.tokenizer_path is not None:
-            from modelscope import AutoTokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(param.tokenizer_path, trust_remote_code=True)
+            self.tokenizer = load_tokenizer(param.tokenizer_path)
         else:
             self.tokenizer = None
 

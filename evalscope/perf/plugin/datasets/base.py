@@ -3,7 +3,7 @@ from abc import abstractmethod
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.plugin.datasets.utils import tokenize_chat_messages
+from evalscope.perf.plugin.datasets.utils import load_tokenizer, tokenize_chat_messages
 
 Message = Dict[str, Any]  # single OpenAI message: {"role": ..., "content": ...}
 Messages = List[Message]  # delta messages for one turn
@@ -19,8 +19,7 @@ class DatasetPluginBase:
         """
         self.query_parameters = query_parameters
         if query_parameters.tokenizer_path:
-            from modelscope import AutoTokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(query_parameters.tokenizer_path, trust_remote_code=True)
+            self.tokenizer = load_tokenizer(query_parameters.tokenizer_path)
         else:
             self.tokenizer = None
 
