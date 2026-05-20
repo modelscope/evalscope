@@ -652,6 +652,77 @@ def convert_image_base64_format(image_base64: str) -> Tuple[str, str]:
         return image_base64, detected_format
 
 
+def parse_size(value: Optional[Union[int, float, str]]) -> Optional[int]:
+    """Parse a human-readable size string or numeric value to an integer byte count.
+
+    Accepts:
+    - ``None``: returns ``None``.
+    - ``int`` / ``float``: returned as ``int`` directly (interpreted as bytes).
+    - Numeric string (e.g., ``'5000000'``): converted to ``int``.
+    - Human-readable string with unit suffix (case-insensitive), e.g.::
+
+          '500b'   -> 500
+          '10kb'   -> 10_240
+          '5mb'    -> 5_242_880
+          '1.5gb'  -> 1_610_612_736
+          '2TB'    -> 2_199_023_255_552
+
+    Supported units: ``b``, ``kb``, ``mb``, ``gb``, ``tb``.
+
+    Args:
+        value: A ``None``, numeric value, or size string to parse.
+
+    Returns:
+        The size in bytes as an ``int``, or ``None`` if *value* is ``None``.
+
+    Raises:
+        ValueError: If *value* is a non-empty string that cannot be parsed.
+    """
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        result = int(value)
+        if result <= 0:
+            raise ValueError(f'Size must be positive, got: {value}')
+        return result
+
+    value = str(value).strip()
+    if not value:
+        return None
+
+    _UNITS: Dict[str, int] = {
+        'b': 1,
+        'kb': 1024,
+        'mb': 1024**2,
+        'gb': 1024**3,
+        'tb': 1024**4,
+    }
+
+    # Try plain numeric string first (no unit suffix)
+    try:
+        result = int(float(value))
+        if result <= 0:
+            raise ValueError(f'Size must be positive, got: {value}')
+        return result
+    except ValueError:
+        pass
+
+    # Match optional float + unit suffix
+    match = re.fullmatch(r'([0-9]*\.?[0-9]+)\s*([a-zA-Z]+)', value)
+    if not match:
+        raise ValueError(f'Cannot parse size value: {value!r}')
+
+    number_str, unit_str = match.group(1), match.group(2).lower()
+    multiplier = _UNITS.get(unit_str)
+    if multiplier is None:
+        raise ValueError(f'Unknown size unit {unit_str!r} in {value!r}. Supported: {list(_UNITS.keys())}')
+
+    result = int(float(number_str) * multiplier)
+    if result <= 0:
+        raise ValueError(f'Size must be positive, got: {value}')
+    return result
+
+
 def compress_image_to_limit(
     image_bytes: bytes,
     max_bytes: int = 10_000_000,

@@ -2,6 +2,7 @@ import re
 from typing import Any, Dict, List, Optional, Union
 
 from evalscope.api.messages.content import Content, ContentImage, ContentText, ContentVideo
+from evalscope.utils.io_utils import bytes_to_base64, compress_image_to_limit, parse_size
 from evalscope.utils.url_utils import guess_video_format
 from .default_data_adapter import DefaultDataAdapter
 
@@ -11,6 +12,35 @@ class VisionLanguageAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        # Optional image size limit; None means no compression is applied.
+        # Can be configured via dataset_args: {'<benchmark_name>': {'max_image_bytes': <int|str>}}
+        # Accepts integers (bytes) or human-readable strings like '5mb', '500kb', '1.5gb'.
+        self._max_image_bytes: Optional[int] = parse_size(self._benchmark_meta.max_image_bytes)
+
+    def _image_bytes_to_base64(self, image_bytes: bytes, default_format: str = 'png') -> str:
+        """Convert raw image bytes to a base64 data-URI, compressing first if needed.
+
+        This is the recommended helper for subclasses that obtain images as raw
+        bytes.  It applies the optional size-limit compression configured via
+        ``max_image_bytes`` before base64-encoding.
+
+        Args:
+            image_bytes (bytes): Raw image bytes.
+            default_format (str): Image format used when no compression is
+                applied.  Defaults to ``'png'``.
+
+        Returns:
+            str: Base64-encoded data-URI string with MIME header.
+        """
+        if self._max_image_bytes is not None:
+            compressed_bytes, fmt = compress_image_to_limit(image_bytes, self._max_image_bytes)
+            # compress_image_to_limit returns fmt='png' when no compression was applied,
+            # which is a sentinel value — not the actual image format.  In that case,
+            # fall back to the caller's default_format for the correct MIME type.
+            if fmt == 'png':
+                fmt = default_format
+            return bytes_to_base64(compressed_bytes, format=fmt, add_header=True)
+        return bytes_to_base64(image_bytes, format=default_format, add_header=True)
 
     def _parse_text_with_images(self, text: str, image_map: Dict[int, str]) -> List[Content]:
         """
