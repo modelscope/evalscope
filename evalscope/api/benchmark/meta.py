@@ -114,6 +114,14 @@ class BenchmarkMeta:
     sandbox_config: Optional[Dict[str, Any]] = field(default_factory=dict)
     """Configuration for sandboxed code execution environments. """
 
+    max_image_bytes: Optional[Union[int, str]] = None
+    """Maximum image size for vision-language benchmarks.
+    When set, images exceeding this limit are re-encoded (JPEG compression + downscale)
+    via ``compress_image_to_limit`` before base64 encoding.  ``None`` disables compression.
+    Accepts an integer byte count or a human-readable string such as ``'5mb'``, ``'500kb'``,
+    ``'1.5gb'`` (parsed by ``parse_size``).
+    Useful for avoiding 413 errors when sending multi-image payloads to APIs."""
+
     def __post_init__(self):
         """Validate fields after initialization."""
         if self.few_shot_num < 0:

@@ -75,6 +75,7 @@ class TestVLMBenchmark(TestBenchmark):
                 'Accounting',
                 # 'Agriculture',
             ],
+            'max_image_bytes': '5mb',
             'extra_params': {
                 'dataset_format': 'standard (4 options)',  # 'standard (4 options)', 'standard (10 options)', 'vision'
             },

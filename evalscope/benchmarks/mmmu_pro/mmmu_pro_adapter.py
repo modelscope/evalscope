@@ -6,7 +6,6 @@ from evalscope.api.dataset import Sample
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_character, prompt
 
@@ -134,14 +133,14 @@ class MMMUPROAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
             image = record.get('image')
             if image:
-                content_list.append(ContentImage(image=bytes_to_base64(image['bytes'], format='png', add_header=True)))
+                content_list.append(ContentImage(image=self._image_bytes_to_base64(image['bytes'], 'png')))
         else:
             # Prepare image map
             image_map: Dict[int, str] = {}
             for i in range(MMMUPROAdapter.MAX_IMAGES):
                 image = record.get(f'image_{i+1}')
                 if image:
-                    image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
+                    image_base64 = self._image_bytes_to_base64(image['bytes'], 'png')
                     image_map[i + 1] = image_base64
 
             # Build prompt text
