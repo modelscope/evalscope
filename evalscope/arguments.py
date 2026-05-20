@@ -62,7 +62,17 @@ def add_argument(parser: argparse.ArgumentParser):
 
     # Evaluation-related arguments
     parser.add_argument('--eval-type', type=str,
-                        choices=[EvalType.CHECKPOINT, EvalType.OPENAI_API, EvalType.ANTHROPIC_API, EvalType.LITELLM, EvalType.MOCK_LLM, EvalType.TEXT2IMAGE, EvalType.IMAGE_EDITING, EvalType.CUSTOM],
+                        choices=[
+                            EvalType.CHECKPOINT,
+                            EvalType.OPENAI_API,
+                            EvalType.OPENAI_RESPONSES_API,
+                            EvalType.ANTHROPIC_API,
+                            EvalType.LITELLM,
+                            EvalType.MOCK_LLM,
+                            EvalType.TEXT2IMAGE,
+                            EvalType.IMAGE_EDITING,
+                            EvalType.CUSTOM,
+                        ],
                         help='Evaluation backend type. Auto-inferred from --api-url / --model when omitted.')  # noqa: E501
     parser.add_argument('--eval-backend', type=str, help='The evaluation backend to use.',
                         choices=[EvalBackend.NATIVE, EvalBackend.OPEN_COMPASS, EvalBackend.VLM_EVAL_KIT, EvalBackend.RAG_EVAL])  # noqa: E501

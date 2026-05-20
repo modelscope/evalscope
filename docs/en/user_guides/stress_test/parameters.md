@@ -7,9 +7,9 @@ Execute `evalscope perf --help` to get a full parameter description.
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `--model` | `str` | Name or path of the test model | - |
-| `--url` | `str` | API address, supporting `/chat/completion` and `/completion` endpoints | - |
+| `--url` | `str` | API address, supporting `/chat/completions`, `/completions`, and `/responses` endpoints | - |
 | `--name` | `str` | Name for wandb/swanlab database result and result database | `{model_name}_{current_time}` |
-| `--api` | `str` | Service API type<br>• `openai`: OpenAI-compatible API (requires `--url`)<br>• `openai_embedding`: OpenAI-compatible Embedding API<br>• `openai_rerank`: OpenAI/Cohere-compatible Rerank API<br>• `local`: Start local transformers inference<br>• `local_vllm`: Start local vLLM inference service<br>• Custom: See [Custom API Guide](./custom.md#custom-api-requests) | - |
+| `--api` | `str` | Service API type<br>• `openai`: OpenAI-compatible Chat Completions API (requires `--url`)<br>• `openai_responses`: OpenAI official Responses API<br>• `openai_embedding`: OpenAI-compatible Embedding API<br>• `openai_rerank`: OpenAI/Cohere-compatible Rerank API<br>• `local`: Start local transformers inference<br>• `local_vllm`: Start local vLLM inference service<br>• Custom: See [Custom API Guide](./custom.md#custom-api-requests) | - |
 | `--port` | `int` | Port for local inference service<br>Only applicable to `local` and `local_vllm` | `8877` |
 | `--attn-implementation` | `str` | Attention implementation method<br>Only effective when `api=local` | `None`<br>(Optional: `flash_attention_2`, `eager`, `sdpa`) |
 | `--api-key` | `str` | API key | `None` |

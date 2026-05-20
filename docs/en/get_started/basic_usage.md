@@ -180,6 +180,18 @@ evalscope eval \
  --limit 10
 ```
 
+For OpenAI's official Responses API, use `--eval-type openai_responses_api` and point `--api-url` at the API root:
+```shell
+evalscope eval \
+ --model gpt-4.1-mini \
+ --api-url https://api.openai.com/v1 \
+ --api-key $OPENAI_API_KEY \
+ --eval-type openai_responses_api \
+ --datasets gsm8k \
+ --limit 10 \
+ --generation-config '{"stream": true, "max_tokens": 512}'
+```
+
 ### Using Judge Models for Assessment
 
 For certain subjective or open-ended tasks (such as `simple_qa`), you can specify a powerful "judge model" to evaluate the target model's output.

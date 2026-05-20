@@ -1,4 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import os
+
 from evalscope.perf.main import run_perf_benchmark
 
 
@@ -25,6 +27,21 @@ def run_perf_stream():
         'dataset': 'openqa',
         'stream': True,
         'debug': True,
+    }
+    run_perf_benchmark(task_cfg)
+
+
+def run_perf_openai_responses():
+    task_cfg = {
+        'url': 'https://api.openai.com/v1',
+        'parallel': 1,
+        'model': 'gpt-4.1-mini',
+        'number': 5,
+        'api': 'openai_responses',
+        'api_key': os.getenv('OPENAI_API_KEY'),
+        'dataset': 'openqa',
+        'stream': True,
+        'max_tokens': 128,
     }
     run_perf_benchmark(task_cfg)
 

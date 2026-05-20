@@ -14,6 +14,9 @@ logger = get_logger()
 
 _OPENAI_API_ENDPOINT_MAP = {
     'openai': 'chat/completions',
+    'openai_responses': 'responses',
+    'openai_response': 'responses',
+    'responses': 'responses',
     'openai_embedding': 'embeddings',
     'embedding': 'embeddings',
     'openai_rerank': 'reranks',
@@ -33,9 +36,10 @@ class Arguments(BaseArgument):
     """Attention implementation, only for local inference."""
 
     api: str = 'openai'
-    """Service API protocol. One of: 'openai' (chat/completions), 'openai_embedding'/'embedding'
-    (embeddings), 'openai_rerank'/'rerank' (reranks), or 'local'/'local_vllm' for in-process
-    inference. The endpoint path is auto-appended onto `--url` based on this value."""
+    """Service API protocol. One of: 'openai' (chat/completions), 'openai_responses'
+    (Responses API), 'openai_embedding'/'embedding' (embeddings), 'openai_rerank'/'rerank'
+    (reranks), or 'local'/'local_vllm' for in-process inference. The endpoint path is
+    auto-appended onto `--url` based on this value."""
 
     tokenizer_path: Optional[str] = None
     """Path to the tokenizer."""
@@ -445,8 +449,12 @@ class Arguments(BaseArgument):
         if self.api in _OPENAI_API_ENDPOINT_MAP:
             _stripped = self.url.rstrip('/')
             _expected_suffix = _OPENAI_API_ENDPOINT_MAP[self.api]
-            _known_endpoints = ('chat/completions', 'completions', 'embeddings', 'reranks')
-            if not any(_stripped.endswith('/' + ep) for ep in _known_endpoints):
+            _known_endpoints = ('chat/completions', 'completions', 'responses', 'embeddings', 'reranks')
+            if self.api in ('openai_responses', 'openai_response',
+                            'responses') and _stripped.endswith('/chat/completions'):
+                self.url = _stripped[:-len('chat/completions')] + 'responses'
+                logger.warning(f'OpenAI Responses API selected: URL auto-adjusted to responses endpoint: {self.url}')
+            elif not any(_stripped.endswith('/' + ep) for ep in _known_endpoints):
                 self.url = _stripped + '/' + _expected_suffix
                 logger.warning(
                     f'URL "{_stripped}" has no endpoint path, auto-appended "/{_expected_suffix}". '
@@ -455,6 +463,8 @@ class Arguments(BaseArgument):
 
         # When tokenize_prompt is enabled, redirect to the completions endpoint.
         if self.tokenize_prompt:
+            if self.api in ('openai_responses', 'openai_response', 'responses'):
+                raise ValueError('--tokenize-prompt is not supported with the OpenAI Responses API.')
             if not self.tokenizer_path:
                 raise ValueError('--tokenizer-path is required when --tokenize-prompt is set.')
             _stripped = self.url.rstrip('/')
@@ -532,7 +542,7 @@ def add_argument(parser: argparse.ArgumentParser):
     # Model and API
     parser.add_argument('--model', type=str, required=True, help='The test model name.')
     parser.add_argument('--attn-implementation', required=False, default=None, help='Attention implementaion')
-    parser.add_argument('--api', type=str, default='openai', help='Service API protocol: openai | openai_embedding/embedding | openai_rerank/rerank | local/local_vllm. Determines the auto-appended endpoint path on --url.')  # noqa: E501
+    parser.add_argument('--api', type=str, default='openai', help='Service API protocol: openai | openai_responses/responses | openai_embedding/embedding | openai_rerank/rerank | local/local_vllm. Determines the auto-appended endpoint path on --url.')  # noqa: E501
     parser.add_argument(
         '--tokenizer-path', type=str, required=False, default=None, help='Specify the tokenizer weight path')
 
