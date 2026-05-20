@@ -128,8 +128,9 @@ class TaskConfig(BaseArgument):
     # Evaluation-related arguments
     eval_type: Optional[str] = None
     """Evaluation backend type. One of: 'llm_ckpt' (local checkpoint), 'openai_api',
-    'anthropic_api', 'litellm', 'mock_llm', 'text2image', 'image_editing', 'custom'.
-    Deprecated aliases: 'checkpoint' -> 'llm_ckpt', 'server' -> 'openai_api'."""
+    'openai_responses_api', 'anthropic_api', 'litellm', 'mock_llm', 'text2image',
+    'image_editing', 'custom'. Deprecated aliases: 'checkpoint' -> 'llm_ckpt',
+    'server' -> 'openai_api'."""
 
     eval_backend: str = EvalBackend.NATIVE
     """Backend framework to use for evaluation."""
@@ -365,7 +366,7 @@ class TaskConfig(BaseArgument):
         elif self.model_task == ModelTask.TEXT_GENERATION:
             if self.eval_type == EvalType.CHECKPOINT:
                 return DEFAULT_TEXT_GEN_CHECKPOINT_CONFIG.copy()
-            elif self.eval_type == EvalType.OPENAI_API:
+            elif self.eval_type in (EvalType.OPENAI_API, EvalType.OPENAI_RESPONSES_API):
                 return DEFAULT_TEXT_GEN_SERVICE_CONFIG.copy()
 
         return {}

@@ -19,7 +19,7 @@
 |------|------|------|--------|
 | `--model` | `str` | 被评测的模型名称<br>• ModelScope模型ID（如`Qwen/Qwen2.5-0.5B-Instruct`）<br>• 本地模型路径（如`/path/to/model`）<br>• API服务的模型ID（如`Qwen2.5-0.5B-Instruct`） | - |
 | `--model-id` | `str` | 模型别名，用于报告展示 | `model`的最后一部分 |
-| `--api-url` | `str` | 模型API端点，支持OpenAI兼容格式<br>示例：`http://127.0.0.1:8000/v1` | `None` |
+| `--api-url` | `str` | 模型API端点，支持OpenAI兼容格式和OpenAI Responses API根路径<br>示例：`http://127.0.0.1:8000/v1` 或 `https://api.openai.com/v1` | `None` |
 | `--api-key` | `str` | 模型API端点密钥 | `EMPTY` |
 | `--model-args` | `str` | 模型加载参数，逗号分隔的`key=value`或JSON字符串<br>• `revision`: 模型版本<br>• `precision`: 模型精度<br>• `device_map`: 设备分配 | `revision=master`<br>`precision=torch.float16`<br>`device_map=auto` |
 | `--model-task` | `str` | 模型任务类型 | `text_generation`<br>（可选：`image_generation`） |
@@ -144,7 +144,7 @@
 
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
-| `--eval-type` | `str` | 评测类型<br>• `llm_ckpt`: 本地模型推理（transformers）<br>• `openai_api`: OpenAI兼容API服务<br>• `anthropic_api`: Anthropic Claude API服务<br>• `litellm`: LiteLLM多厂商路由（支持100+ LLM提供商）<br>• `text2image`: 文本转图像模型（diffusers）<br>• `image_editing`: 图像编辑模型<br>• `mock_llm`: 模拟推理（功能验证）<br>• `custom`: 自定义评测类型 | `None`（自动判断） |
+| `--eval-type` | `str` | 评测类型<br>• `llm_ckpt`: 本地模型推理（transformers）<br>• `openai_api`: OpenAI兼容Chat Completions API服务<br>• `openai_responses_api`: OpenAI官方Responses API服务<br>• `anthropic_api`: Anthropic Claude API服务<br>• `litellm`: LiteLLM多厂商路由（支持100+ LLM服务商）<br>• `text2image`: 文本转图像模型（diffusers）<br>• `image_editing`: 图像编辑模型<br>• `mock_llm`: 模拟推理（功能验证）<br>• `custom`: 自定义评测类型 | `None`（自动判断） |
 | `--eval-batch-size` | `int` | 评测批量大小，作用于以下阶段：<br>• 推理阶段：并发请求数（service模式）或批量大小（checkpoint模式）<br>• LLM-judge 评审阶段：并发线程数<br>• batch_calculate_metrics 阶段：每批次处理的样本数 | `1`（service模式为`8`） |
 | `--eval-backend` | `str` | 评测后端<br>• `Native`: 默认后端<br>• `OpenCompass`: 大语言模型评测<br>• `VLMEvalKit`: 多模态模型评测<br>• `RAGEval`: RAG/Embedding/Reranker/CLIP评测<br>• `ThirdParty`: 特殊任务评测 | `Native` |
 | `--eval-config` | `str` | 非Native后端的配置文件路径 | - |

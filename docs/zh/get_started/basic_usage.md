@@ -158,6 +158,18 @@ evalscope eval \
  --limit 10
 ```
 
+如需评测 OpenAI 官方 Responses API，请设置 `--eval-type openai_responses_api`，并将 `--api-url` 指向 API 根路径：
+```shell
+evalscope eval \
+ --model gpt-4.1-mini \
+ --api-url https://api.openai.com/v1 \
+ --api-key $OPENAI_API_KEY \
+ --eval-type openai_responses_api \
+ --datasets gsm8k \
+ --limit 10 \
+ --generation-config '{"stream": true, "max_tokens": 512}'
+```
+
 ### 自定义评测参数
 
 **示例1. 调整模型加载和推理生成参数** 
