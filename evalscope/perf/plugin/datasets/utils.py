@@ -1,11 +1,12 @@
-import logging
 import numpy as np
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
-logger = logging.getLogger(__name__)
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
-def load_tokenizer(tokenizer_path: str) -> Optional[object]:
+def load_tokenizer(tokenizer_path: str) -> object:
     """Load a tokenizer from the given path, with a fallback for models that lack ``max_position_embeddings``.
 
     Some model configs (e.g. DeepSeek-V3) do not define ``max_position_embeddings``, which causes
