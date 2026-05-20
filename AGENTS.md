@@ -14,9 +14,9 @@ Python ≥ 3.10 (3.10 / 3.11 / 3.12). Dependencies: `requirements/framework.txt`
 ## Build, lint, test
 
 ```bash
-make lint                                                                       # required before commit (yapf + isort + flake8 + codespell)
+make lint                                                                       # required before commit (yapf + isort + flake8 + basic pre-commit hooks)
 pytest tests/cli/test_all.py::TestRun::test_ci_lite -v -s -p no:warnings        # CI smoke test
-pytest tests/perf/test_perf.py::TestPerf::test_run_perf_multi_parallel -v -s    # perf
+pytest tests/perf/test_perf_basic.py::TestPerfBasic::test_multi_parallel_sweep -v -s    # perf
 ```
 
 Commits failing `make lint` are rejected on `main`.
@@ -52,7 +52,7 @@ run_task(TaskConfig(model='Qwen/Qwen2.5-0.5B-Instruct', datasets=['gsm8k'], limi
 | Handler function | `handle_` prefix |
 | Benchmark adapter file | `<name>_adapter.py` |
 
-**flake8 ignore list** (`setup.cfg`): `F401, F403, F405, F821, W503, E251, W504, F824, F541, E501, E226, E121-E131`. Do not expand — new ignores must be justified in the PR.
+**flake8 ignore list** (`setup.cfg`): `F401, F403, F405, F821, W503, E251, W504, F824, F541, E501, E226, E121-E129, E131, E741`. Do not expand — new ignores must be justified in the PR.
 
 ## Design rules
 
@@ -106,7 +106,7 @@ Don't try to learn the architecture from this file — read these and grep:
 - Models are memoized by `(name, config, base_url, api_key, args)`.
 - Use `@thread_safe` for model creation, `run_in_threads_with_progress` for concurrent eval.
 - Outputs land in `outputs/<timestamp>/{logs,predictions,reviews,reports,configs}/` (see `OutputsStructure`). `use_cache` resumes runs; `rerun_review` recomputes scores only.
-- `evalscope/app/` is **deprecated** — use `evalscope service` for the Web dashboard.
+- `evalscope app` CLI command is **deprecated** (see `evalscope/cli/start_app.py`) — use `evalscope service` for the Web dashboard.
 
 ## Submission
 
