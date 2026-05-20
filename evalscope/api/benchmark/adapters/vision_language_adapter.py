@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 from evalscope.api.messages.content import Content, ContentImage, ContentText, ContentVideo
 from evalscope.utils.io_utils import bytes_to_base64, compress_image_to_limit, parse_size
@@ -17,26 +17,6 @@ class VisionLanguageAdapter(DefaultDataAdapter):
         # Accepts integers (bytes) or human-readable strings like '5mb', '500kb', '1.5gb'.
         self._max_image_bytes: Optional[int] = parse_size(self._benchmark_meta.max_image_bytes)
 
-    def _process_image_bytes(self, image_bytes: bytes) -> Tuple[bytes, str]:
-        """Optionally compress image bytes to the configured size limit.
-
-        If ``max_image_bytes`` is set (non-None), the image will be re-encoded
-        via :func:`compress_image_to_limit` to ensure it does not exceed the
-        limit.  Otherwise the original bytes are returned unchanged with format
-        ``'png'``.
-
-        Args:
-            image_bytes (bytes): Raw image bytes to process.
-
-        Returns:
-            Tuple[bytes, str]: A 2-tuple of ``(processed_bytes, format_str)``
-            where *format_str* is ``'png'`` when no compression was applied and
-            ``'jpeg'`` otherwise.
-        """
-        if self._max_image_bytes is not None:
-            return compress_image_to_limit(image_bytes, self._max_image_bytes)
-        return image_bytes, 'png'
-
     def _image_bytes_to_base64(self, image_bytes: bytes, default_format: str = 'png') -> str:
         """Convert raw image bytes to a base64 data-URI, compressing first if needed.
 
@@ -46,15 +26,20 @@ class VisionLanguageAdapter(DefaultDataAdapter):
 
         Args:
             image_bytes (bytes): Raw image bytes.
-            default_format (str): Image format hint used when no compression is
+            default_format (str): Image format used when no compression is
                 applied.  Defaults to ``'png'``.
 
         Returns:
             str: Base64-encoded data-URI string with MIME header.
         """
         if self._max_image_bytes is not None:
-            processed_bytes, fmt = compress_image_to_limit(image_bytes, self._max_image_bytes)
-            return bytes_to_base64(processed_bytes, format=fmt, add_header=True)
+            compressed_bytes, fmt = compress_image_to_limit(image_bytes, self._max_image_bytes)
+            # compress_image_to_limit returns fmt='png' when no compression was applied,
+            # which is a sentinel value — not the actual image format.  In that case,
+            # fall back to the caller's default_format for the correct MIME type.
+            if fmt == 'png':
+                fmt = default_format
+            return bytes_to_base64(compressed_bytes, format=fmt, add_header=True)
         return bytes_to_base64(image_bytes, format=default_format, add_header=True)
 
     def _parse_text_with_images(self, text: str, image_map: Dict[int, str]) -> List[Content]:

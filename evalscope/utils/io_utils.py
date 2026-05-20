@@ -681,7 +681,10 @@ def parse_size(value: Optional[Union[int, float, str]]) -> Optional[int]:
     if value is None:
         return None
     if isinstance(value, (int, float)):
-        return int(value)
+        result = int(value)
+        if result <= 0:
+            raise ValueError(f'Size must be positive, got: {value}')
+        return result
 
     value = str(value).strip()
     if not value:
@@ -697,7 +700,10 @@ def parse_size(value: Optional[Union[int, float, str]]) -> Optional[int]:
 
     # Try plain numeric string first (no unit suffix)
     try:
-        return int(float(value))
+        result = int(float(value))
+        if result <= 0:
+            raise ValueError(f'Size must be positive, got: {value}')
+        return result
     except ValueError:
         pass
 
@@ -711,7 +717,10 @@ def parse_size(value: Optional[Union[int, float, str]]) -> Optional[int]:
     if multiplier is None:
         raise ValueError(f'Unknown size unit {unit_str!r} in {value!r}. Supported: {list(_UNITS.keys())}')
 
-    return int(float(number_str) * multiplier)
+    result = int(float(number_str) * multiplier)
+    if result <= 0:
+        raise ValueError(f'Size must be positive, got: {value}')
+    return result
 
 
 def compress_image_to_limit(
