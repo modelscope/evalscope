@@ -23,7 +23,7 @@ class BaseAgentConfig(BaseModel):
 
     Both :class:`NativeAgentConfig` (the AgentLoop path) and
     :class:`ExternalAgentConfig` (the external-CLI bridge path) need an
-    :class:`AgentEnvironment` plus a free-form ``extra`` channel; lifting
+    :class:`AgentEnvironment` plus a free-form ``kwargs`` channel; lifting
     them here avoids duplicating the schema across both subclasses.
     """
 
@@ -33,8 +33,9 @@ class BaseAgentConfig(BaseModel):
     environment_extra: Dict[str, Any] = Field(default_factory=dict)
     """Free-form environment-specific options (passed to environment constructor)."""
 
-    extra: Dict[str, Any] = Field(default_factory=dict)
-    """Free-form variant-specific options (passed to strategy / runner constructor)."""
+    kwargs: Dict[str, Any] = Field(default_factory=dict)
+    """Free-form variant-specific options.  Native: forwarded to the
+    strategy constructor.  External: forwarded to the runner constructor."""
 
 
 class NativeAgentConfig(BaseAgentConfig):

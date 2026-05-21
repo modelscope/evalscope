@@ -26,7 +26,7 @@ def _output(text: str, *, tool_calls=None, usage=None) -> ModelOutput:
 
 def test_first_turn_emits_user_prompt_then_model_generate():
     rec = BridgeTraceRecorder(trial_id='t1', framework='mock', model_name='mock')
-    rec.record_run_start(framework='mock', cmd_summary='Mock', env_summary=[], cwd=None)
+    rec.record_run_start(framework='mock', cmd_summary='Mock')
     rec.record_anthropic_turn(
         request_body={'messages': [{'role': 'user', 'content': 'hello'}]},
         output=_output('world', usage=ModelUsage(input_tokens=3, output_tokens=2, total_tokens=5)),
@@ -109,7 +109,7 @@ def test_total_usage_accumulates_across_turns():
 
 def test_run_end_records_error_and_returncode():
     rec = BridgeTraceRecorder(trial_id='t4', framework='mock')
-    rec.record_run_start(framework='mock', cmd_summary='Mock', env_summary=[], cwd=None)
+    rec.record_run_start(framework='mock', cmd_summary='Mock')
     rec.record_run_end(returncode=137, timed_out=True, wall_time=12.5, error='killed by signal')
     end = [ev for ev in rec.snapshot().events if ev.type == EventType.RUN_END][0]
     assert end.payload['returncode'] == 137

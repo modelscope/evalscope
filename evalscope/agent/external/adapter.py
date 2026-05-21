@@ -18,7 +18,7 @@ from evalscope.utils.function_utils import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
 from .bridge import ModelProxyServer
 from .config import ExternalAgentConfig
-from .runners import ExternalAgentTask, get_runner
+from .runners import ExternalAgentTask, RunnerTimeoutError, get_runner
 
 if TYPE_CHECKING:
     from evalscope.api.dataset import Sample
@@ -64,46 +64,40 @@ async def _run_async(
 
     env_cls = get_environment(config.environment)
 
-    async with proxy.trial_session(
-        model=model,
-        framework=config.framework,
-        bridge_config=config.bridge,
-    ) as session:
+    async with proxy.trial_session(model=model, framework=config.framework) as session:
         env: AgentEnvironment = env_cls(**config.environment_extra)
-        run_started = time.monotonic()
-        run_error: Optional[str] = None
-        run_returncode = 0
-        try:
-            await env.__aenter__()
-            await runner.setup(env)
-            task = ExternalAgentTask(
-                instruction=instruction,
-                cwd=None,
-                timeout=config.timeout,
-                metadata={'sample_id': getattr(sample, 'id', None)},
-            )
+        task = ExternalAgentTask(
+            instruction=instruction,
+            timeout=config.timeout,
+            metadata={'sample_id': getattr(sample, 'id', None)},
+        )
+        async with env:
             session.recorder.record_run_start(
                 framework=config.framework,
                 cmd_summary=runner_cls.__name__,
-                env_summary=[],
-                cwd=task.cwd,
             )
+            run_started = time.monotonic()
+            run_error: Optional[str] = None
+            run_returncode = -1
+            run_timed_out = False
             try:
+                await runner.setup(env)
                 result = await runner.run(task=task, env=env, bridge=session.endpoint_view())
+                run_returncode = int(result.metrics.get('returncode', 0))
+            except RunnerTimeoutError as exc:
+                run_error = repr(exc)
+                run_timed_out = True
+                raise
             except Exception as exc:
                 run_error = repr(exc)
-                run_returncode = -1
                 raise
-            else:
-                run_returncode = int(result.metrics.get('returncode', 0))
-        finally:
-            session.recorder.record_run_end(
-                returncode=run_returncode,
-                timed_out=False,
-                wall_time=time.monotonic() - run_started,
-                error=run_error,
-            )
-            await env.__aexit__(None, None, None)
+            finally:
+                session.recorder.record_run_end(
+                    returncode=run_returncode,
+                    timed_out=run_timed_out,
+                    wall_time=time.monotonic() - run_started,
+                    error=run_error,
+                )
 
         trace: AgentTrace = session.recorder.snapshot()
         trace.environment = config.environment
@@ -130,5 +124,5 @@ def _instruction_from_sample(sample: 'Sample') -> str:
 def _to_model_output(text: str, *, model_name: str) -> ModelOutput:
     """Wrap the agent's final answer in a single-choice ModelOutput."""
     choice = ChatCompletionChoice.from_content(text)
-    meta: Dict[str, Any] = {'source': 'external_agent'}
+    meta: Dict[str, Any] = {'source': 'agent.external'}
     return ModelOutput(model=model_name, choices=[choice], metadata=meta)

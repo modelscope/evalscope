@@ -572,9 +572,9 @@ class TestAgentConfigEnvironmentExtra:
         d = cfg.model_dump()
         assert d['environment_extra'] == {'key': 'val'}
 
-    def test_extra_and_environment_extra_independent(self):
-        cfg = AgentConfig(extra={'system_prompt': 'hi'}, environment_extra={'image': 'x'})
-        assert 'system_prompt' in cfg.extra
+    def test_kwargs_and_environment_extra_independent(self):
+        cfg = AgentConfig(kwargs={'system_prompt': 'hi'}, environment_extra={'image': 'x'})
+        assert 'system_prompt' in cfg.kwargs
         assert 'system_prompt' not in cfg.environment_extra
         assert 'image' in cfg.environment_extra
-        assert 'image' not in cfg.extra
+        assert 'image' not in cfg.kwargs

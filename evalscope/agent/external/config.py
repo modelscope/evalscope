@@ -7,7 +7,7 @@ The ``mode`` literal serves as the Pydantic discriminator on the
 """
 
 from pydantic import BaseModel, Field, field_validator
-from typing import Any, Dict, Literal, Optional
+from typing import Literal, Optional
 
 from evalscope.api.agent.types import BaseAgentConfig
 
@@ -32,10 +32,6 @@ class BridgeConfig(BaseModel):
     """Knobs for the reverse-proxy bridge that sits between an external
     agent CLI and EvalScope's model layer.
     """
-
-    record_trajectory: bool = Field(default=True)
-    """When True the bridge records every request/response into the
-    :class:`AgentTrace` returned via ``InferenceResult.trace``."""
 
     proxy_host: str = Field(default='127.0.0.1')
     """Host the proxy binds to.  ``0.0.0.0`` is required when the agent
@@ -63,9 +59,6 @@ class ExternalAgentConfig(BaseAgentConfig):
     built-in set.  Validated at construction time against
     :data:`evalscope.api.registry.RUNNER_REGISTRY` — unknown names fail
     fast with an "Available: [...]" hint."""
-
-    kwargs: Dict[str, Any] = Field(default_factory=dict)
-    """Runner-specific keyword arguments forwarded to the runner ctor."""
 
     bridge: BridgeConfig = Field(default_factory=BridgeConfig)
     """Bridge-level options."""

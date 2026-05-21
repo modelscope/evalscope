@@ -473,7 +473,7 @@ class DefaultDataAdapter(DataAdapter):
         """
         cfg = self._task_config.agent_config
         strategy_cls = get_strategy(cfg.strategy)
-        strategy = strategy_cls(**cfg.extra)
+        strategy = strategy_cls(**cfg.kwargs)
 
         handlers = resolve_tools(cfg.tools)
 

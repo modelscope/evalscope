@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
-from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask
+from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
 
 logger = get_logger()
 
@@ -135,16 +135,17 @@ class ClaudeCodeRunner(AgentRunner):
 
         result = await env.exec(
             cmd,
-            cwd=task.cwd,
             timeout=task.timeout,
             env=env_vars,
         )
-        if result.returncode != 0 or result.timed_out:
-            tail_stderr = (result.stderr or '').strip()[-2000:]
-            raise RuntimeError(
-                f'claude-code exited with code {result.returncode} '
-                f'(timed_out={result.timed_out}): {tail_stderr}'
+        if result.timed_out:
+            raise RunnerTimeoutError(
+                f'claude-code timed out after {task.timeout}s '
+                f'(returncode={result.returncode})'
             )
+        if result.returncode != 0:
+            tail_stderr = (result.stderr or '').strip()[-2000:]
+            raise RuntimeError(f'claude-code exited with code {result.returncode}: {tail_stderr}')
         return AgentRunResult(
             output=result.stdout.strip(),
             metrics={

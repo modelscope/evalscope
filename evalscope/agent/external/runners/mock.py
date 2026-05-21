@@ -13,7 +13,7 @@ import sys
 from typing import Any, Dict
 
 from evalscope.api.registry import register_runner
-from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask
+from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
 
 # The body of the mock-agent CLI.  Lives as a string so it runs in any
 # Python interpreter available inside the sandbox (no module import).
@@ -100,11 +100,12 @@ class MockAgentRunner(AgentRunner):
 
         result = await env.exec(
             [sys.executable, '-c', _MOCK_AGENT_SCRIPT],
-            cwd=task.cwd,
             input=task.instruction,
             timeout=task.timeout,
             env=env_vars,
         )
+        if result.timed_out:
+            raise RunnerTimeoutError(f'mock agent timed out after {task.timeout}s')
         if result.returncode != 0:
             stderr = (result.stderr or '').strip()
             raise RuntimeError(f'mock agent exited with code {result.returncode}: {stderr}')

@@ -1,11 +1,9 @@
 """Bridge-side recorder that writes :class:`AgentTrace` directly.
 
-Replaces the legacy ``TrajectoryRecorder`` which maintained its own
-``Trajectory`` / ``Step`` schema.  This recorder emits the same
-:class:`AgentTraceEvent` shapes the native :class:`AgentLoop` does, so
-downstream metric / serialization layers see a single trace format
-regardless of whether the run was driven by AgentLoop or by an external
-CLI through the bridge.
+Emits the same :class:`AgentTraceEvent` shapes the native
+:class:`AgentLoop` does, so downstream metric / serialization layers see
+a single trace format regardless of whether the run was driven by
+AgentLoop or by an external CLI through the bridge.
 
 Step semantics mirror :class:`AgentLoop`:
 
@@ -125,14 +123,7 @@ class BridgeTraceRecorder:
                     },
                 )
 
-    def record_run_start(
-        self,
-        *,
-        framework: str,
-        cmd_summary: str,
-        env_summary: Optional[List[str]] = None,
-        cwd: Optional[str] = None,
-    ) -> None:
+    def record_run_start(self, *, framework: str, cmd_summary: str) -> None:
         """Record CLI launch.  Step stays -1 because no generate happened yet."""
         with self._lock:
             self._trace.add_event(
@@ -141,8 +132,6 @@ class BridgeTraceRecorder:
                 payload={
                     'framework': framework,
                     'cmd': cmd_summary,
-                    'env_keys': env_summary or [],
-                    'cwd': cwd,
                 },
             )
 
@@ -175,9 +164,15 @@ class BridgeTraceRecorder:
             return self._trace.model_copy(deep=True)
 
     def messages(self) -> List[ChatMessage]:
-        """Shallow copy of the reconstructed message transcript."""
+        """Deep copy of the reconstructed message transcript.
+
+        Mirrors :meth:`AgentLoop._snapshot_assistant_message` so callers can
+        freely mutate the returned messages without polluting recorder state
+        (e.g. an extractor that rewrites assistant text in-place must not
+        retroactively alter the recorded turn).
+        """
         with self._lock:
-            return list(self._messages)
+            return [m.model_copy(deep=True) for m in self._messages]
 
     # ------------------------------------------------------------------
     # Internals
@@ -228,11 +223,12 @@ class BridgeTraceRecorder:
         src = output.message
         tool_calls: List[ToolCall] = []
         for tc in src.tool_calls or []:
-            if isinstance(tc.function, ToolFunction):
-                fn = tc.function
-            else:
-                fn = ToolFunction(name=str(tc.function), arguments={})
-            tool_calls.append(ToolCall(id=tc.id, function=fn, type='function'))
+            name, args = unpack_tool_call(tc)
+            tool_calls.append(ToolCall(
+                id=tc.id,
+                function=ToolFunction(name=name, arguments=args),
+                type='function',
+            ))
         return ChatMessageAssistant(
             content=src.text or '',
             tool_calls=tool_calls or None,

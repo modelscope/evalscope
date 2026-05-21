@@ -18,7 +18,6 @@ from typing import Any, AsyncIterator, Dict, Optional
 from evalscope.api.model import GenerateConfig, Model
 from evalscope.utils.function_utils import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
-from ..config import BridgeConfig
 from ..runners.base import BridgeEndpoint
 from .sse_anthropic import stream_anthropic_response
 from .trace_recorder import BridgeTraceRecorder
@@ -194,14 +193,12 @@ class ModelProxyServer:
         self,
         model: Model,
         framework: str,
-        bridge_config: Optional[BridgeConfig] = None,
     ) -> AsyncIterator[TrialSession]:
         """Register a trial → model mapping for the duration of the run.
 
         Yields a :class:`TrialSession` whose ``base_url`` / ``token`` should
         be injected into the agent's environment variables.
         """
-        _ = bridge_config or BridgeConfig()  # reserved for future bridge-level knobs
         trial_id = uuid.uuid4().hex
         token = f'{_TRIAL_TOKEN_PREFIX}{trial_id}'
         recorder = BridgeTraceRecorder(

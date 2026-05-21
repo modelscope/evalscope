@@ -24,14 +24,19 @@ class BridgeEndpoint(BaseModel):
     :class:`TrialSession` (format: ``trial-<hex>``)."""
 
 
+class RunnerTimeoutError(RuntimeError):
+    """Raised by an :class:`AgentRunner` when the wrapped CLI exceeded its
+    ``task.timeout`` budget.  The adapter catches this distinctly so the
+    bridge ``RUN_END`` event can record ``timed_out=True`` instead of
+    masking it as a generic runtime failure.
+    """
+
+
 class ExternalAgentTask(BaseModel):
     """One unit of work passed to :meth:`AgentRunner.run`."""
 
     instruction: str
     """Natural-language task description forwarded to the agent CLI."""
-
-    cwd: Optional[str] = Field(default=None)
-    """Working directory inside the sandbox (e.g. ``/testbed`` for SWE-bench)."""
 
     timeout: Optional[float] = Field(default=None)
     """Per-sample wall-clock budget; runner enforces via ``env.exec(timeout=...)``."""
