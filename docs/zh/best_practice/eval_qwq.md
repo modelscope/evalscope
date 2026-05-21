@@ -106,7 +106,7 @@ dataset_args={
 
 ### 评测代码能力
 
-我们使用[LiveCodeBench](https://www.modelscope.cn/datasets/AI-ModelScope/code_generation_lite)来评测模型的代码能力，需进行如下配置：
+我们使用[LiveCodeBench](https://www.modelscope.cn/datasets/evalscope/livecodebench_code_generation_lite_parquet)来评测模型的代码能力，需进行如下配置：
 
 ```python
 # ...

@@ -271,7 +271,7 @@ class TestNativeBenchmark(TestBenchmark):
                 'start_date': '2024-08-01',
                 'end_date': '2025-02-28'
             },
-            'local_path': '/root/.cache/modelscope/hub/datasets/AI-ModelScope/code_generation_lite'
+            'local_path': '/root/.cache/modelscope/hub/datasets/evalscope/livecodebench_code_generation_lite_parquet'
         }
         self._run_dataset_test('live_code_bench', dataset_args)
 

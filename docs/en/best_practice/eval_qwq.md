@@ -106,7 +106,7 @@ The results will be:
 
 ### Evaluating Code Capability
 
-We use [LiveCodeBench](https://www.modelscope.cn/datasets/AI-ModelScope/code_generation_lite) to evaluate the model's code capability. The following configuration is required:
+We use [LiveCodeBench](https://www.modelscope.cn/datasets/evalscope/livecodebench_code_generation_lite_parquet) to evaluate the model's code capability. The following configuration is required:
 
 ```python
 # ...
