@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from evalscope.api.model.model import ModelAPI
     from evalscope.api.tool import ToolInfo
     from evalscope.config import TaskConfig
+    from evalscope.external_agent.runners.base import AgentRunner
     from evalscope.utils.io_utils import OutputsStructure
 
 # BEGIN: Registry for benchmarks
@@ -304,6 +305,38 @@ def get_environment(name: str) -> Type['AgentEnvironment']:
 
 def list_environments() -> List[str]:
     return sorted(ENVIRONMENT_REGISTRY.keys())
+
+
+# BEGIN: Registry for external-agent runners
+RUNNER_REGISTRY: Dict[str, Type['AgentRunner']] = {}
+
+
+def register_runner(name: str) -> Callable[[Type['AgentRunner']], Type['AgentRunner']]:
+    """Register an :class:`AgentRunner` implementation under ``name``.
+
+    Mirrors :func:`register_environment`.  The ``name`` is what
+    :class:`ExternalAgentConfig.framework` resolves through
+    :func:`get_runner` at TaskConfig validation time.
+    """
+
+    def decorator(cls: Type['AgentRunner']) -> Type['AgentRunner']:
+        if name in RUNNER_REGISTRY:
+            raise ValueError(f"Agent runner '{name}' is already registered.")
+        RUNNER_REGISTRY[name] = cls
+        cls.framework = name
+        return cls
+
+    return decorator
+
+
+def get_runner(name: str) -> Type['AgentRunner']:
+    if name not in RUNNER_REGISTRY:
+        raise ValueError(f"Agent runner '{name}' is not registered. " + f'Available: {sorted(RUNNER_REGISTRY.keys())}')
+    return RUNNER_REGISTRY[name]
+
+
+def list_runners() -> List[str]:
+    return sorted(RUNNER_REGISTRY.keys())
 
 
 def register_agent_tool(

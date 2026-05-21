@@ -241,6 +241,21 @@ class TaskConfig(BaseArgument):
     ``model.generate`` call.  AgentAdapter subclasses (e.g. SWE-bench_Pro)
     ignore this field and use their own settings."""
 
+    external_agent: Optional[Any] = None
+    """External-agent configuration (``ExternalAgentConfig`` at runtime).
+
+    When set, every DefaultDataAdapter-based benchmark routes inference
+    through an external agent CLI (claude-code, codex, mock, ...) whose
+    LLM traffic is reverse-proxied through the in-process bridge.
+    Mutually exclusive with ``agent_config`` — if both are set the
+    external agent path wins and ``agent_config`` is ignored.
+
+    Typed as ``Any`` so a bare ``from evalscope.config import TaskConfig``
+    does not pull in the external-agent runner stack (which would
+    side-register ``mock`` / ``claude-code`` runners just to look up the
+    Pydantic type).  ``_validate_external_agent`` coerces input into a
+    proper ``ExternalAgentConfig`` lazily."""
+
     evalscope_version: Optional[str] = _evalscope_version
     """EvalScope version used for the evaluation."""
 
@@ -286,6 +301,23 @@ class TaskConfig(BaseArgument):
         if isinstance(v, dict):
             return AgentConfig.model_validate(v)
         raise ValueError(f'`agent_config` must be a dict, AgentConfig or None, got {type(v).__name__}.')
+
+    @field_validator('external_agent', mode='before')
+    @classmethod
+    def _validate_external_agent(cls, v):
+        if v is None:
+            return v
+        # Lazy import keeps the external-agent runner stack out of every
+        # ``from evalscope.config import TaskConfig`` call site.
+        from evalscope.external_agent import ExternalAgentConfig
+        if isinstance(v, ExternalAgentConfig):
+            return v
+        if isinstance(v, str):
+            # Bare framework name (typical CLI: ``--external-agent claude-code``).
+            return ExternalAgentConfig(framework=v)
+        if isinstance(v, dict):
+            return ExternalAgentConfig.model_validate(v)
+        raise ValueError(f'`external_agent` must be a str, dict, ExternalAgentConfig or None, got {type(v).__name__}.')
 
     @field_validator('sandbox', mode='before')
     @classmethod

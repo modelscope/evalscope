@@ -131,6 +131,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         cwd: Optional[str] = None,
         input: Optional[str] = None,  # noqa: A002 - mirrors ABC signature
         timeout: Optional[float] = None,
+        env: Optional[Dict[str, str]] = None,
     ) -> ExecResult:
         handle = await self._ensure_sandbox()
 
@@ -138,6 +139,13 @@ class EnclaveAgentEnvironment(AgentEnvironment):
             command = ' '.join(shlex.quote(c) for c in cmd)
         else:
             command = str(cmd)
+        if env:
+            # Prepend ``KEY=VAL`` pairs so the agent CLI inherits them.
+            # Using ``env -- ... <cmd>`` would be cleaner but is not always
+            # available inside minimal images; inline assignment works in any
+            # POSIX shell.
+            prefix = ' '.join(f'{k}={shlex.quote(v)}' for k, v in env.items())
+            command = f'{prefix} {command}' if prefix else command
         if cwd:
             command = f'cd {shlex.quote(cwd)} && {command}'
 
