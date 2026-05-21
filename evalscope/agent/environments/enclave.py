@@ -42,7 +42,7 @@ _DEFAULT_WORKDIR = '/workspace'
 _DEFAULT_TOOLS: List[str] = ['shell_executor', 'python_executor']
 
 
-@register_environment('enclave')
+@register_environment(['enclave', 'docker', 'volcengine'])
 class EnclaveAgentEnvironment(AgentEnvironment):
     """Per-sample sandbox via :class:`SandboxService`.
 
@@ -190,15 +190,5 @@ class EnclaveAgentEnvironment(AgentEnvironment):
             finally:
                 self._handle = None
 
-
-# ---------------------------------------------------------------------------
-# Additional registry aliases.
-#
-# ``@register_environment`` rejects duplicate names, so the second and third
-# aliases are registered manually.  All three names map to the same class.
-# ---------------------------------------------------------------------------
-
-register_environment('docker')(EnclaveAgentEnvironment)
-register_environment('volcengine')(EnclaveAgentEnvironment)
 
 __all__ = ['EnclaveAgentEnvironment']

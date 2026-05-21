@@ -1,5 +1,5 @@
 import copy
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type, TypeVar, Union
 
 if TYPE_CHECKING:
     from evalscope.agent.external.runners.base import AgentRunner
@@ -13,9 +13,66 @@ if TYPE_CHECKING:
     from evalscope.config import TaskConfig
     from evalscope.utils.io_utils import OutputsStructure
 
+# BEGIN: Registry base
+T = TypeVar('T')
+
+
+class Registry(Dict[str, T]):
+    """Generic name → object registry with alias support.
+
+    Subclasses ``dict`` so existing call sites that use ``.keys()``, ``.values()``,
+    ``.items()``, ``in``, ``[]`` and ``.pop()`` keep working unchanged.
+    """
+
+    def __init__(
+        self,
+        kind: str,
+        *,
+        on_register: Optional[Callable[[Any, List[str]], None]] = None,
+    ) -> None:
+        super().__init__()
+        self.kind = kind
+        self._on_register = on_register
+
+    def register(self, name: Union[str, List[str]]) -> Callable[[T], T]:
+        """Decorator that registers a value under one or more names.
+
+        Passing a list registers the value under every name, with the first
+        entry treated as the canonical / primary name.
+        """
+        names = [name] if isinstance(name, str) else list(name)
+        if not names:
+            raise ValueError(f'{self.kind} registration requires at least one name.')
+
+        def decorator(obj: T) -> T:
+            for n in names:
+                if n in self:
+                    raise ValueError(f"{self.kind} '{n}' is already registered.")
+            if self._on_register is not None:
+                self._on_register(obj, names)
+            for n in names:
+                self[n] = obj
+            return obj
+
+        return decorator
+
+    def lookup(self, name: str) -> T:
+        """Get the value registered under ``name`` or raise with the available list."""
+        if name not in self:
+            raise ValueError(f"{self.kind} '{name}' is not registered. "
+                             f'Available: {sorted(self.keys())}')
+        return self[name]
+
+    def list_keys(self) -> List[str]:
+        return sorted(self.keys())
+
+
+# END: Registry base
+
 # BEGIN: Registry for benchmarks
-# Registry for benchmarks, allowing dynamic registration and retrieval of benchmark metadata and data adapters.
-BENCHMARK_REGISTRY: Dict[str, 'BenchmarkMeta'] = {}
+# Stores BenchmarkMeta (not the adapter class) because the adapter is attached
+# to the metadata at registration time.
+BENCHMARK_REGISTRY: Registry['BenchmarkMeta'] = Registry('Benchmark')
 
 
 def register_benchmark(metadata: 'BenchmarkMeta'):
@@ -44,7 +101,7 @@ def get_benchmark(name: str, config: Optional['TaskConfig'] = None) -> 'DataAdap
     # copy to avoid modifying the original metadata
     metadata = copy.deepcopy(BENCHMARK_REGISTRY.get(name))
     if not metadata:
-        raise ValueError(f'Benchmark {name} not found, available benchmarks: {list(sorted(BENCHMARK_REGISTRY.keys()))}')
+        raise ValueError(f'Benchmark {name} not found, available benchmarks: {BENCHMARK_REGISTRY.list_keys()}')
 
     # Update metadata with dataset-specific configuration
     if config is not None:
@@ -57,161 +114,76 @@ def get_benchmark(name: str, config: Optional['TaskConfig'] = None) -> 'DataAdap
 # END: Registry for benchmarks
 
 # BEGIN: Registry for model APIs
-# Registry for model APIs, allowing dynamic registration and retrieval of model API classes.
-MODEL_APIS: Dict[str, Type['ModelAPI']] = {}
+MODEL_APIS: Registry[Type['ModelAPI']] = Registry('Model API')
 
 
-def register_model_api(name: str):
-    """
-    Decorator to register a model API class with a given name.
-
-    :param name: The name of the model API.
-    """
-
-    def decorator(api_class: Type['ModelAPI']):
-        if name in MODEL_APIS:
-            raise ValueError(f"Model API '{name}' is already registered.")
-        MODEL_APIS[name] = api_class
-        return api_class
-
-    return decorator
+def register_model_api(name: Union[str, List[str]]):
+    """Decorator to register a model API class under one or more names."""
+    return MODEL_APIS.register(name)
 
 
 def get_model_api(name: str) -> Type['ModelAPI']:
-    """
-    Retrieve a registered model API class by name.
-
-    :param name: The name of the model API.
-    :return: The model API class.
-    """
-    if name not in MODEL_APIS:
-        raise ValueError(f"Model API '{name}' is not registered. Available model APIs: {list(MODEL_APIS.keys())}")
-
-    wrapped = MODEL_APIS[name]
+    """Retrieve a registered model API class by name."""
+    wrapped = MODEL_APIS.lookup(name)
     if not isinstance(wrapped, type):
         return wrapped()
-    else:
-        return wrapped
+    return wrapped
 
 
 # END: Registry for model APIs
 
 # BEGIN: Registry for metrics
-METRIC_REGISTRY: Dict[str, Type['Metric']] = {}
+METRIC_REGISTRY: Registry[Type['Metric']] = Registry('Metric')
 
 
-def register_metric(name: str):
-
-    def decorate(fn):
-        if name in METRIC_REGISTRY:
-            raise ValueError(f"Metric named '{name}' conflicts with existing registered metric!")
-
-        METRIC_REGISTRY[name] = fn
-        return fn
-
-    return decorate
+def register_metric(name: Union[str, List[str]]):
+    return METRIC_REGISTRY.register(name)
 
 
 def get_metric(name: str) -> Type['Metric']:
-    if name in METRIC_REGISTRY:
-        return METRIC_REGISTRY[name]
-    else:
-        raise ValueError(
-            f"Metric '{name}' not found in the registry. Available metrics: {list(METRIC_REGISTRY.keys())}"
-        )
+    return METRIC_REGISTRY.lookup(name)
 
 
 # END: Registry for metrics
 
 # BEGIN: Registry for filters
+FILTER_REGISTRY: Registry[Type['Filter']] = Registry('Filter')
 
-FILTER_REGISTRY: Dict[str, Type['Filter']] = {}
 
-
-def register_filter(name):
-
-    def decorate(cls):
-        if name in FILTER_REGISTRY:
-            raise ValueError(f'Registering filter `{name}` that is already in Registry {FILTER_REGISTRY}')
-        FILTER_REGISTRY[name] = cls
-        return cls
-
-    return decorate
+def register_filter(name: Union[str, List[str]]):
+    return FILTER_REGISTRY.register(name)
 
 
 def get_filter(filter_name: str) -> Type['Filter']:
-    if filter_name not in FILTER_REGISTRY:
-        raise KeyError(
-            f"Filter '{filter_name}' not found in the registry. Available filters: {list(FILTER_REGISTRY.keys())}"
-        )
-    return FILTER_REGISTRY[filter_name]
+    return FILTER_REGISTRY.lookup(filter_name)
 
 
 # END: Registry for filters
 
 # BEGIN: Registry for aggregation functions
-AGGREGATION_REGISTRY: Dict[str, Type['Aggregator']] = {}
+AGGREGATION_REGISTRY: Registry[Type['Aggregator']] = Registry('Aggregation function')
 
 
-def register_aggregation(name: str):
-    """
-    Decorator to register an aggregation function with a given name.
-
-    :param name: The name of the aggregation function.
-    """
-
-    def decorator(aggregation_fn: 'Aggregator'):
-        if name in AGGREGATION_REGISTRY:
-            raise ValueError(f"Aggregation function '{name}' is already registered.")
-        AGGREGATION_REGISTRY[name] = aggregation_fn
-        return aggregation_fn
-
-    return decorator
+def register_aggregation(name: Union[str, List[str]]):
+    """Decorator to register an aggregation function under one or more names."""
+    return AGGREGATION_REGISTRY.register(name)
 
 
 def get_aggregation(name: str) -> Type['Aggregator']:
-    """
-    Retrieve a registered aggregation function by name.
-
-    :param name: The name of the aggregation function.
-    :return: The aggregation function.
-    """
-    if name not in AGGREGATION_REGISTRY:
-        raise ValueError(
-            f"Aggregation function '{name}' is not registered. "
-            f'Available aggregations: {list(AGGREGATION_REGISTRY.keys())}'
-        )
-    return AGGREGATION_REGISTRY[name]
+    """Retrieve a registered aggregation function by name."""
+    return AGGREGATION_REGISTRY.lookup(name)
 
 
 # END: Registry for aggregation functions
 
 # BEGIN: Registry for evaluators
-# Registry for evaluators, allowing benchmarks to register a custom Evaluator class.
 # Concrete evaluator classes self-register via @register_evaluator('name').
-EVALUATOR_REGISTRY: Dict[str, Type['Evaluator']] = {}
+EVALUATOR_REGISTRY: Registry[Type['Evaluator']] = Registry('Evaluator')
 
 
-def register_evaluator(name: str):
-    """
-    Decorator to register an Evaluator class under a given name.
-
-    Usage::
-
-        @register_evaluator('default')
-        class DefaultEvaluator(Evaluator):
-            ...
-
-    :param name: Registry key (e.g. ``'default'`` or a benchmark name).
-    """
-
-    def decorator(cls: Type['Evaluator']) -> Type['Evaluator']:
-        if name in EVALUATOR_REGISTRY:
-            raise ValueError(f"Evaluator '{name}' is already registered.")
-        EVALUATOR_REGISTRY[name] = cls
-        return cls
-
-    return decorator
+def register_evaluator(name: Union[str, List[str]]):
+    """Decorator to register an Evaluator class under one or more names."""
+    return EVALUATOR_REGISTRY.register(name)
 
 
 def create_evaluator(
@@ -225,15 +197,6 @@ def create_evaluator(
 
     Looks up ``benchmark.name`` in :data:`EVALUATOR_REGISTRY`; if not found,
     falls back to the ``'default'`` entry (i.e. :class:`DefaultEvaluator`).
-
-    Args:
-        benchmark: The data adapter for the benchmark to evaluate.
-        model: The model to be evaluated.
-        outputs: Output directory structure for saving results.
-        task_config: The task configuration.
-
-    Returns:
-        A fully initialised :class:`Evaluator` instance.
     """
     evaluator_cls = EVALUATOR_REGISTRY.get(benchmark.name) or EVALUATOR_REGISTRY['default']
     return evaluator_cls(
@@ -246,135 +209,101 @@ def create_evaluator(
 
 # END: Registry for evaluators
 
-# BEGIN: Registry for agent strategies, environments and tools
-# Pluggable pieces that compose the Agent Loop.  Concrete strategy /
-# environment / tool classes self-register via the decorators below.
-STRATEGY_REGISTRY: Dict[str, Type['AgentStrategy']] = {}
-ENVIRONMENT_REGISTRY: Dict[str, Type['AgentEnvironment']] = {}
-AGENT_TOOL_REGISTRY: Dict[str, 'ToolHandler'] = {}
+# BEGIN: Registry for agent strategies, environments, runners and tools
+STRATEGY_REGISTRY: Registry[Type['AgentStrategy']] = Registry('Agent strategy')
+ENVIRONMENT_REGISTRY: Registry[Type['AgentEnvironment']] = Registry('Agent environment')
+AGENT_TOOL_REGISTRY: Registry['ToolHandler'] = Registry('Agent tool')
 AGENT_TOOL_INFO_REGISTRY: Dict[str, 'ToolInfo'] = {}
 """Maps tool name → :class:`ToolInfo` schema.  Populated by :func:`register_agent_tool`
 when an ``info`` kwarg is supplied."""
 
 
-def register_strategy(name: str) -> Callable[[Type['AgentStrategy']], Type['AgentStrategy']]:
-    """Register an :class:`AgentStrategy` implementation under ``name``."""
-
-    def decorator(cls: Type['AgentStrategy']) -> Type['AgentStrategy']:
-        if name in STRATEGY_REGISTRY:
-            raise ValueError(f"Agent strategy '{name}' is already registered.")
-        STRATEGY_REGISTRY[name] = cls
-        return cls
-
-    return decorator
+def register_strategy(name: Union[str, List[str]]) -> Callable[[Type['AgentStrategy']], Type['AgentStrategy']]:
+    """Register an :class:`AgentStrategy` implementation under one or more names."""
+    return STRATEGY_REGISTRY.register(name)
 
 
 def get_strategy(name: str) -> Type['AgentStrategy']:
-    if name not in STRATEGY_REGISTRY:
-        raise ValueError(
-            f"Agent strategy '{name}' is not registered. "
-            f'Available: {sorted(STRATEGY_REGISTRY.keys())}'
-        )
-    return STRATEGY_REGISTRY[name]
+    return STRATEGY_REGISTRY.lookup(name)
 
 
 def list_strategies() -> List[str]:
-    return sorted(STRATEGY_REGISTRY.keys())
+    return STRATEGY_REGISTRY.list_keys()
 
 
-def register_environment(name: str) -> Callable[[Type['AgentEnvironment']], Type['AgentEnvironment']]:
-    """Register an :class:`AgentEnvironment` implementation under ``name``."""
-
-    def decorator(cls: Type['AgentEnvironment']) -> Type['AgentEnvironment']:
-        if name in ENVIRONMENT_REGISTRY:
-            raise ValueError(f"Agent environment '{name}' is already registered.")
-        ENVIRONMENT_REGISTRY[name] = cls
-        return cls
-
-    return decorator
+def register_environment(name: Union[str, List[str]]) -> Callable[[Type['AgentEnvironment']], Type['AgentEnvironment']]:
+    """Register an :class:`AgentEnvironment` implementation under one or more names."""
+    return ENVIRONMENT_REGISTRY.register(name)
 
 
 def get_environment(name: str) -> Type['AgentEnvironment']:
-    if name not in ENVIRONMENT_REGISTRY:
-        raise ValueError(
-            f"Agent environment '{name}' is not registered. "
-            f'Available: {sorted(ENVIRONMENT_REGISTRY.keys())}'
-        )
-    return ENVIRONMENT_REGISTRY[name]
+    return ENVIRONMENT_REGISTRY.lookup(name)
 
 
 def list_environments() -> List[str]:
-    return sorted(ENVIRONMENT_REGISTRY.keys())
+    return ENVIRONMENT_REGISTRY.list_keys()
 
 
-# BEGIN: Registry for external-agent runners
-RUNNER_REGISTRY: Dict[str, Type['AgentRunner']] = {}
+# Runner registry: the first registered name becomes the canonical framework
+# label on the class (consumed by bridge/server.py and the external adapter).
+def _set_runner_framework(cls: Type['AgentRunner'], names: List[str]) -> None:
+    cls.framework = names[0]
 
 
-def register_runner(name: str) -> Callable[[Type['AgentRunner']], Type['AgentRunner']]:
-    """Register an :class:`AgentRunner` implementation under ``name``.
+RUNNER_REGISTRY: Registry[Type['AgentRunner']] = Registry('Agent runner', on_register=_set_runner_framework)
 
-    Mirrors :func:`register_environment`.  The ``name`` is what
-    :class:`ExternalAgentConfig.framework` resolves through
-    :func:`get_runner` at TaskConfig validation time.
+
+def register_runner(name: Union[str, List[str]]) -> Callable[[Type['AgentRunner']], Type['AgentRunner']]:
+    """Register an :class:`AgentRunner` implementation under one or more names.
+
+    Mirrors :func:`register_environment`.  The first ``name`` becomes the
+    canonical ``cls.framework`` value that :class:`ExternalAgentConfig.framework`
+    resolves through :func:`get_runner` at TaskConfig validation time.
     """
-
-    def decorator(cls: Type['AgentRunner']) -> Type['AgentRunner']:
-        if name in RUNNER_REGISTRY:
-            raise ValueError(f"Agent runner '{name}' is already registered.")
-        RUNNER_REGISTRY[name] = cls
-        cls.framework = name
-        return cls
-
-    return decorator
+    return RUNNER_REGISTRY.register(name)
 
 
 def get_runner(name: str) -> Type['AgentRunner']:
-    if name not in RUNNER_REGISTRY:
-        raise ValueError(f"Agent runner '{name}' is not registered. " + f'Available: {sorted(RUNNER_REGISTRY.keys())}')
-    return RUNNER_REGISTRY[name]
+    return RUNNER_REGISTRY.lookup(name)
 
 
 def list_runners() -> List[str]:
-    return sorted(RUNNER_REGISTRY.keys())
+    return RUNNER_REGISTRY.list_keys()
 
 
 def register_agent_tool(
-    name: str,
+    name: Union[str, List[str]],
     info: Optional['ToolInfo'] = None,
 ) -> Callable[['ToolHandler'], 'ToolHandler']:
-    """Register an async tool handler under ``name``.
+    """Register an async tool handler under one or more names.
 
     The decorated callable must match :data:`ToolHandler`:
     ``async def run(call: ToolCall, env: Optional[AgentEnvironment]) -> str``.
 
     Args:
-        name:  Registry key (also used as the tool function name exposed to the model).
+        name:  Registry key(s) (also used as the tool function name exposed to the model).
         info:  Optional :class:`~evalscope.api.tool.ToolInfo` schema.  When provided, it
-               is stored in :data:`AGENT_TOOL_INFO_REGISTRY` so that
+               is stored in :data:`AGENT_TOOL_INFO_REGISTRY` under every name so that
                :func:`resolve_tool_infos` can surface it to ``model.generate``.
     """
+    names = [name] if isinstance(name, str) else list(name)
 
     def decorator(fn: 'ToolHandler') -> 'ToolHandler':
-        if name in AGENT_TOOL_REGISTRY:
-            raise ValueError(f"Agent tool '{name}' is already registered.")
-        AGENT_TOOL_REGISTRY[name] = fn
+        AGENT_TOOL_REGISTRY.register(names)(fn)
         if info is not None:
-            AGENT_TOOL_INFO_REGISTRY[name] = info
+            for n in names:
+                AGENT_TOOL_INFO_REGISTRY[n] = info
         return fn
 
     return decorator
 
 
 def get_agent_tool(name: str) -> 'ToolHandler':
-    if name not in AGENT_TOOL_REGISTRY:
-        raise ValueError(f"Agent tool '{name}' is not registered. "
-                         f'Available: {sorted(AGENT_TOOL_REGISTRY.keys())}')
-    return AGENT_TOOL_REGISTRY[name]
+    return AGENT_TOOL_REGISTRY.lookup(name)
 
 
 def list_agent_tools() -> List[str]:
-    return sorted(AGENT_TOOL_REGISTRY.keys())
+    return AGENT_TOOL_REGISTRY.list_keys()
 
 
 def resolve_tools(names: Optional[List[str]]) -> Dict[str, 'ToolHandler']:
@@ -400,4 +329,4 @@ def resolve_tool_infos(names: Optional[List[str]]) -> List['ToolInfo']:
     return [AGENT_TOOL_INFO_REGISTRY[n] for n in names if n in AGENT_TOOL_INFO_REGISTRY]
 
 
-# END: Registry for agent strategies, environments and tools
+# END: Registry for agent strategies, environments, runners and tools
