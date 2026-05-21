@@ -4,25 +4,17 @@ from functools import partial
 from overrides import override
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
-from evalscope.api.agent import AgentEnvironment, AgentLoopResult
+from evalscope.api.agent import AgentLoopResult
 from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, LocalDataLoader, RemoteDataLoader, Sample
 from evalscope.api.evaluator import InferenceResult, InferenceReturn, TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
-from evalscope.api.registry import (
-    get_aggregation,
-    get_environment,
-    get_metric,
-    get_strategy,
-    resolve_tool_infos,
-    resolve_tools,
-)
+from evalscope.api.registry import get_aggregation, get_metric
 from evalscope.constants import HubType, JudgeStrategy
 from evalscope.report import Report, ReportGenerator
 from evalscope.utils import get_logger
 from ..benchmark import DataAdapter
-from ._agent_loop_runner import run_agent_loop
 
 logger = get_logger()
 
@@ -471,93 +463,16 @@ class DefaultDataAdapter(DataAdapter):
         block regardless of loop outcome.  ``agent_config.environment_extra``
         is forwarded as keyword arguments to the environment constructor.
         """
-        cfg = self._task_config.agent_config
-        strategy_cls = get_strategy(cfg.strategy)
-        strategy = strategy_cls(**cfg.kwargs)
+        # Local import to keep orchestration imports out of the adapter module.
+        from evalscope.agent.runner import run_native_agent
 
-        handlers = resolve_tools(cfg.tools)
-
-        # Resolve ToolInfo schemas from the registry so the model can see them.
-        registered_tool_infos = resolve_tool_infos(cfg.tools)
-
-        # Determine environment class (if any) – instantiated inside the async
-        # coroutine so its constructor can be async-safe.
-        env_cls: Optional[type] = None
-        if cfg.environment is not None:
-            env_cls = get_environment(cfg.environment)
-
-        # Build environment kwargs.  Priority (lowest → highest):
-        #   1. TaskConfig.sandbox (engine / default_config / manager_config) –
-        #      shared with SandboxMixin so users configure sandbox **once**.
-        #   2. build_sandbox_config(sample) – per-sample override hook.
-        #   3. agent_config.environment_extra – user-supplied raw kwargs.
-        env_kwargs = self._resolve_env_kwargs(cfg, sample)
-        environment: Optional[AgentEnvironment] = env_cls(**env_kwargs) if env_cls is not None else None
-
-        if isinstance(sample.input, list):
-            initial_messages = list(sample.input)
-        else:
-            initial_messages = [ChatMessageUser(content=sample.input)]
-
-        # Merge sample-level tools with agent-config tools.
-        sample_tools = list(sample.tools or [])
-        all_tools = sample_tools + [t for t in registered_tool_infos if t not in sample_tools]
-
-        result: AgentLoopResult = run_agent_loop(
+        return run_native_agent(
+            task_config=self._task_config,
             model=model,
-            strategy=strategy,
-            handlers=handlers,
-            environment=environment,
-            initial_messages=initial_messages,
-            all_tools=all_tools,
-            max_steps=cfg.max_steps,
-            sample_id=sample.id,
-            trace_strategy_name=cfg.strategy,
-            trace_env_name=cfg.environment,
+            sample=sample,
+            build_sandbox_config=self.build_sandbox_config,
+            extract_final_answer=self._extract_final_answer,
         )
-
-        # Extract final prediction through the strategy → adapter hook chain.
-        # Benchmarks can override ``_extract_final_answer`` for custom logic
-        # (e.g. SWE-bench_Pro extracting a git patch from the message history).
-        final_text = self._extract_final_answer(result, strategy)
-        output = result.final_output
-        output.completion = final_text  # normalise content via existing setter
-        return InferenceResult(output=output, messages=result.messages, trace=result.trace)
-
-    def _resolve_env_kwargs(self, cfg: Any, sample: Sample) -> Dict[str, Any]:
-        """Merge task-level + per-sample sandbox config into environment kwargs.
-
-        Precedence (lowest -> highest):
-          1. ``TaskConfig.sandbox`` — engine / default_config / manager_config
-             carried alongside the pooled SandboxMixin so sandbox settings
-             are defined **once** at the task level.
-          2. :meth:`build_sandbox_config(sample)` — per-sample override.
-          3. ``agent_config.environment_extra`` — raw kwargs forwarded verbatim
-             to the environment constructor (last word for power users).
-        """
-        env_kwargs: Dict[str, Any] = {}
-        base_sandbox_cfg: Dict[str, Any] = {}
-
-        task_sandbox = self._task_config.sandbox
-        if task_sandbox is not None and task_sandbox.enabled:
-            env_kwargs['engine'] = task_sandbox.engine
-            base_sandbox_cfg = dict(task_sandbox.default_config or {})
-            if task_sandbox.manager_config:
-                env_kwargs['manager_config'] = dict(task_sandbox.manager_config)
-
-        try:
-            per_sample_cfg = self.build_sandbox_config(sample) or {}
-        except Exception as exc:  # pragma: no cover - defensive
-            logger.warning(f'build_sandbox_config raised {exc!r}; falling back to task-level sandbox config.')
-            per_sample_cfg = {}
-
-        merged_sandbox_cfg: Dict[str, Any] = {**base_sandbox_cfg, **per_sample_cfg}
-        if merged_sandbox_cfg:
-            env_kwargs['sandbox_config'] = merged_sandbox_cfg
-
-        # environment_extra wins over everything above.
-        env_kwargs.update(cfg.environment_extra)
-        return env_kwargs
 
     def _extract_final_answer(self, result: AgentLoopResult, strategy: Any) -> str:
         """Return the final prediction string from a completed agent loop.
