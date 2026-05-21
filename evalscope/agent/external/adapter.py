@@ -5,9 +5,11 @@ that the branch added to ``DefaultDataAdapter._on_inference`` stays narrow
 and every benchmark gets external-agent support for free.
 """
 
+import time
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from evalscope.api.agent import AgentEnvironment
+from evalscope.api.agent import AgentEnvironment, AgentTrace
+from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.model.model_output import ChatCompletionChoice
@@ -28,13 +30,13 @@ def run_external_agent(
     config: ExternalAgentConfig,
     model: Model,
     sample: 'Sample',
-) -> ModelOutput:
+) -> InferenceResult:
     """Synchronously drive one sample through an external agent runner.
 
-    Returns a :class:`ModelOutput` whose completion text is the agent's
-    final answer.  The full trajectory is attached to
-    ``sample.metadata['external_agent_trajectory']`` so downstream metric
-    and serialization layers can inspect it.
+    Returns an :class:`InferenceResult` whose ``output`` text is the
+    agent's final stdout, ``messages`` is the bridge-reconstructed
+    transcript, and ``trace`` is the shared :class:`AgentTrace` (same
+    shape as native AgentLoop runs, distinguished by ``framework``).
 
     Uses :class:`AsyncioLoopRunner` to submit the coroutine to the calling
     thread's long-lived background loop.  That loop is reused across
@@ -50,7 +52,7 @@ async def _run_async(
     model: Model,
     sample: 'Sample',
     instruction: str,
-) -> ModelOutput:
+) -> InferenceResult:
     proxy = await ModelProxyServer.get_or_start(
         host=config.bridge.proxy_host,
         port=config.bridge.proxy_port,
@@ -68,6 +70,9 @@ async def _run_async(
         bridge_config=config.bridge,
     ) as session:
         env: AgentEnvironment = env_cls(**config.environment_extra)
+        run_started = time.monotonic()
+        run_error: Optional[str] = None
+        run_returncode = 0
         try:
             await env.__aenter__()
             await runner.setup(env)
@@ -77,19 +82,35 @@ async def _run_async(
                 timeout=config.timeout,
                 metadata={'sample_id': getattr(sample, 'id', None)},
             )
-            result = await runner.run(task=task, env=env, bridge=session.endpoint_view())
+            session.recorder.record_run_start(
+                framework=config.framework,
+                cmd_summary=runner_cls.__name__,
+                env_summary=[],
+                cwd=task.cwd,
+            )
+            try:
+                result = await runner.run(task=task, env=env, bridge=session.endpoint_view())
+            except Exception as exc:
+                run_error = repr(exc)
+                run_returncode = -1
+                raise
+            else:
+                run_returncode = int(result.metrics.get('returncode', 0))
         finally:
+            session.recorder.record_run_end(
+                returncode=run_returncode,
+                timed_out=False,
+                wall_time=time.monotonic() - run_started,
+                error=run_error,
+            )
             await env.__aexit__(None, None, None)
 
-        trajectory = session.recorder.snapshot() if config.bridge.record_trajectory else None
+        trace: AgentTrace = session.recorder.snapshot()
+        trace.environment = config.environment
+        messages = session.recorder.messages()
 
-    if trajectory is not None:
-        sample.metadata = sample.metadata or {}
-        sample.metadata['external_agent_trajectory'] = trajectory.model_dump()
-        sample.metadata['external_agent_framework'] = config.framework
-        sample.metadata['external_agent_metrics'] = result.metrics
-
-    return _to_model_output(result.output, model_name=getattr(model, 'name', '') or '', trajectory=trajectory)
+    output = _to_model_output(result.output, model_name=getattr(model, 'name', '') or '')
+    return InferenceResult(output=output, messages=messages, trace=trace)
 
 
 def _instruction_from_sample(sample: 'Sample') -> str:
@@ -106,15 +127,8 @@ def _instruction_from_sample(sample: 'Sample') -> str:
     return '\n\n'.join(p for p in parts if p)
 
 
-def _to_model_output(
-    text: str,
-    *,
-    model_name: str,
-    trajectory: Optional[Any] = None,
-) -> ModelOutput:
+def _to_model_output(text: str, *, model_name: str) -> ModelOutput:
     """Wrap the agent's final answer in a single-choice ModelOutput."""
     choice = ChatCompletionChoice.from_content(text)
     meta: Dict[str, Any] = {'source': 'external_agent'}
-    if trajectory is not None:
-        meta['trajectory_steps'] = len(trajectory.steps)
     return ModelOutput(model=model_name, choices=[choice], metadata=meta)

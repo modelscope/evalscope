@@ -430,26 +430,30 @@ class DefaultDataAdapter(DataAdapter):
             (bundling output + agent messages/trace) for multi-turn / agent
             benchmarks.
         """
-        if self._task_config is not None and self._task_config.external_agent is not None:
-            return self._on_external_agent_inference(model, sample)
-        if self._task_config is not None and self._task_config.agent_config is not None:
+        ac = self._task_config.agent_config if self._task_config is not None else None
+        if ac is not None:
+            # Local import to avoid pulling the bridge stack at module load.
+            from evalscope.agent.external.config import ExternalAgentConfig
+            if isinstance(ac, ExternalAgentConfig):
+                return self._on_external_agent_inference(model, sample)
             return self._on_agent_inference(model, sample)
         # Execute model inference with the processed input and any tools
         model_output = model.generate(input=sample.input, tools=sample.tools)
         return model_output
 
-    def _on_external_agent_inference(self, model: Model, sample: Sample) -> ModelOutput:
+    def _on_external_agent_inference(self, model: Model, sample: Sample) -> InferenceResult:
         """Drive the sample through an external agent CLI via the bridge.
 
-        Returns a plain :class:`ModelOutput` whose completion text is the
-        agent's final stdout.  The full trajectory is attached to
-        ``sample.metadata['external_agent_trajectory']``.
+        Returns an :class:`InferenceResult` whose ``output`` text is the
+        agent's final stdout, ``messages`` is the bridge-reconstructed
+        transcript, and ``trace`` is the shared :class:`AgentTrace`
+        (distinguished from native runs by ``trace.framework``).
         """
         # Local import to avoid pulling aiohttp at module load time.
-        from evalscope.external_agent.adapter import run_external_agent
+        from evalscope.agent.external.adapter import run_external_agent
 
         return run_external_agent(
-            config=self._task_config.external_agent,
+            config=self._task_config.agent_config,
             model=model,
             sample=sample,
         )

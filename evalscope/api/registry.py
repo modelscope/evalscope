@@ -2,6 +2,7 @@ import copy
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Type, Union
 
 if TYPE_CHECKING:
+    from evalscope.agent.external.runners.base import AgentRunner
     from evalscope.api.agent import AgentEnvironment, AgentStrategy, ToolHandler
     from evalscope.api.benchmark import BenchmarkMeta, DataAdapter
     from evalscope.api.evaluator import Evaluator
@@ -10,7 +11,6 @@ if TYPE_CHECKING:
     from evalscope.api.model.model import ModelAPI
     from evalscope.api.tool import ToolInfo
     from evalscope.config import TaskConfig
-    from evalscope.external_agent.runners.base import AgentRunner
     from evalscope.utils.io_utils import OutputsStructure
 
 # BEGIN: Registry for benchmarks

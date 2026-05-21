@@ -3,17 +3,20 @@
 Builds a real aiohttp bridge on a random port, points the embedded
 :class:`MockAgentRunner` at it via ``LocalAgentEnvironment``, and asserts
 the round-trip (agent → bridge → MockLLM → bridge → agent → adapter)
-produces the expected ``ModelOutput`` and a populated trajectory.
+produces the expected ``InferenceResult`` and a populated
+:class:`AgentTrace`.
 """
 
 import asyncio
 import pytest
 
+from evalscope.agent.external import ExternalAgentConfig
+from evalscope.agent.external.adapter import run_external_agent
+from evalscope.agent.external.bridge import ModelProxyServer
+from evalscope.api.agent import AgentTrace, EventType
 from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import InferenceResult
 from evalscope.api.model import GenerateConfig, Model, ModelOutput
-from evalscope.external_agent import ExternalAgentConfig
-from evalscope.external_agent.adapter import run_external_agent
-from evalscope.external_agent.bridge import ModelProxyServer
 from evalscope.models.mockllm import MockLLM
 from evalscope.utils.function_utils import AsyncioLoopRunner
 
@@ -43,21 +46,29 @@ def test_walking_skeleton_round_trip():
     sample = Sample(input='what is 6 * 7?', target='42', id=1)
 
     config = ExternalAgentConfig(framework='mock', environment='local')
-    output = run_external_agent(config=config, model=model, sample=sample)
+    result = run_external_agent(config=config, model=model, sample=sample)
 
-    assert isinstance(output, ModelOutput)
-    assert output.choices, 'expected at least one choice'
-    assert output.choices[0].message.text == expected
+    assert isinstance(result, InferenceResult)
+    assert isinstance(result.output, ModelOutput)
+    assert result.output.choices, 'expected at least one choice'
+    assert result.output.choices[0].message.text == expected
 
-    trajectory = sample.metadata.get('external_agent_trajectory')
-    assert trajectory is not None
-    assert trajectory['framework'] == 'mock'
-    assert trajectory['model'] == 'mock-claude'
-    # The mock makes exactly one LLM call → one agent step (no tool step
-    # because no tool_result observation precedes it).
-    agent_steps = [s for s in trajectory['steps'] if s['source'] == 'agent']
-    assert len(agent_steps) == 1
-    assert agent_steps[0]['message'] == expected
+    trace = result.trace
+    assert isinstance(trace, AgentTrace)
+    assert trace.framework == 'mock'
+    assert trace.trial_id, 'trial_id should be set by the bridge'
+    assert trace.environment == 'local'
+    # The mock makes exactly one LLM call → exactly one MODEL_GENERATE event
+    # plus RUN_START / RUN_END brackets.
+    types = [ev.type for ev in trace.events]
+    assert EventType.RUN_START in types
+    assert EventType.MODEL_GENERATE in types
+    assert EventType.RUN_END in types
+    assert types.count(EventType.MODEL_GENERATE) == 1
+    # Messages reconstructed from the bridge transcript: user prompt + 1 assistant.
+    roles = [m.role for m in (result.messages or [])]
+    assert roles == ['user', 'assistant']
+    assert result.messages[1].text == expected
 
 
 def test_unknown_framework_raises():

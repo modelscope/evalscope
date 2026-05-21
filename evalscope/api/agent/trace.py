@@ -10,9 +10,11 @@ from enum import Enum
 from pydantic import BaseModel, Field
 from typing import Any, Dict, List, Optional
 
+from evalscope.api.model import ModelUsage
+
 
 class EventType(str, Enum):
-    """Canonical event kinds emitted by the AgentLoop."""
+    """Canonical event kinds emitted by the AgentLoop or external-agent bridge."""
 
     MODEL_GENERATE = 'model_generate'
     """A round of ``model.generate`` returned."""
@@ -34,6 +36,12 @@ class EventType(str, Enum):
 
     NUDGE = 'nudge'
     """System-injected reminder when model fails to call tools."""
+
+    RUN_START = 'run_start'
+    """External-agent CLI was launched (framework, cmd/env summary, cwd)."""
+
+    RUN_END = 'run_end'
+    """External-agent CLI exited (returncode, timed_out, wall_time)."""
 
 
 class AgentTraceEvent(BaseModel):
@@ -73,16 +81,32 @@ class AgentTraceEvent(BaseModel):
 
 
 class AgentTrace(BaseModel):
-    """Complete agent trajectory attached to a sample."""
+    """Complete agent trajectory attached to a sample.
+
+    Shared by both the native :class:`AgentLoop` (``framework='native'``) and
+    the external-agent bridge (``framework`` set to the runner name, e.g.
+    ``'claude-code'`` / ``'mock'``).  ``trial_id`` and ``total_usage`` are
+    only populated on the external path.
+    """
+
+    framework: Optional[str] = None
+    """Where this trace originated: ``'native'`` for AgentLoop runs, the
+    registered runner name for external-agent runs."""
 
     strategy: Optional[str] = None
-    """Registered strategy name used for this run."""
+    """Registered strategy name used for this run (native only)."""
 
     environment: Optional[str] = None
     """Registered environment name used for this run, if any."""
 
     max_steps: int = 0
-    """Configured ``max_steps`` cap."""
+    """Configured ``max_steps`` cap (native only; 0 for external)."""
+
+    trial_id: Optional[str] = None
+    """Bridge trial id (external only) for correlating with bridge logs."""
+
+    total_usage: Optional[ModelUsage] = None
+    """Aggregate token usage across every ``MODEL_GENERATE`` event."""
 
     events: List[AgentTraceEvent] = Field(default_factory=list)
     """Ordered event log."""

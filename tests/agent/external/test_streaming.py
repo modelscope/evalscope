@@ -9,8 +9,8 @@ asserts the SDK parses the full event sequence (``message_start`` …
 import anthropic
 import pytest
 
+from evalscope.agent.external.bridge import ModelProxyServer
 from evalscope.api.model import GenerateConfig, Model, ModelOutput
-from evalscope.external_agent.bridge import ModelProxyServer
 from evalscope.models.mockllm import MockLLM
 from evalscope.utils.function_utils import AsyncioLoopRunner
 

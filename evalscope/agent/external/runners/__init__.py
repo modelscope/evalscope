@@ -1,6 +1,11 @@
-"""External-agent runner abstractions and built-in implementations."""
+"""External-agent runner abstractions and built-in implementations.
 
-from evalscope.api.registry import RUNNER_REGISTRY, get_runner, list_runners, register_runner
+Registry helpers (``register_runner`` / ``get_runner`` / ...) live in
+:mod:`evalscope.api.registry`; this subpackage only exposes runner
+classes plus their value types.
+"""
+
+from evalscope.api.registry import get_runner
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask
 from .claude_code import ClaudeCodeRunner  # noqa: F401  (side-effect: registers 'claude-code')
 from .mock import MockAgentRunner  # noqa: F401  (side-effect: registers 'mock')
@@ -12,8 +17,5 @@ __all__ = [
     'ClaudeCodeRunner',
     'ExternalAgentTask',
     'MockAgentRunner',
-    'RUNNER_REGISTRY',
     'get_runner',
-    'list_runners',
-    'register_runner',
 ]

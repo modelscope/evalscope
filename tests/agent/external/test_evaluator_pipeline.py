@@ -21,7 +21,7 @@ from evalscope.run import run_task
 
 # Resolve relative to the repo root so the test does not silently skip
 # depending on pytest's invocation directory.
-_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 _MCQ_FIXTURE = os.path.join(_REPO_ROOT, 'custom_eval', 'text', 'mcq')
 
 # The MockLLM emits exactly this text; the first general_mcq sample expects ``B``.
@@ -57,7 +57,7 @@ def test_external_agent_through_evaluator(tmp_path):
                 'subset_list': ['example'],
             },
         },
-        external_agent={'framework': 'mock', 'environment': 'local'},
+        agent_config={'mode': 'external', 'framework': 'mock', 'environment': 'local'},
         eval_batch_size=1,
         limit=1,
         analysis_report=False,
@@ -75,21 +75,21 @@ def test_external_agent_through_evaluator(tmp_path):
     assert report.score == pytest.approx(1.0), f'expected perfect score, got {report.score}'
 
     # Spot-check that the external-agent path actually ran by looking at the
-    # serialized prediction file — adapter writes external_agent_trajectory
-    # into sample.metadata before scoring.  run_task injects a timestamp
-    # segment under work_dir and predictions are nested under
-    # ``predictions/<model_id>/<dataset>_<subset>.jsonl``.
+    # serialized review file — adapter returns InferenceResult whose trace
+    # is persisted as ``ReviewResult.agent_trace``.  run_task injects a
+    # timestamp segment under work_dir and reviews are nested under
+    # ``reviews/<model_id>/<dataset>_<subset>.jsonl``.
     matches = []
     for root, _, files in os.walk(tmp_path):
-        if 'predictions' not in root.split(os.sep):
+        if 'reviews' not in root.split(os.sep):
             continue
         for fname in files:
             if fname.endswith(('.jsonl', '.json')):
                 with open(os.path.join(root, fname), encoding='utf-8') as fp:
                     matches.append((fname, fp.read()))
-    assert matches, f'no prediction files written under {tmp_path}'
+    assert matches, f'no review files written under {tmp_path}'
     blob = matches[0][1]
-    assert 'external_agent_trajectory' in blob, (
-        f'expected external_agent_trajectory in {matches[0][0]}; '
-        f'the bridge path did not record metadata')
+    assert 'agent_trace' in blob, (
+        f'expected agent_trace in {matches[0][0]}; '
+        f'the bridge path did not surface the trace')
     assert '"mock"' in blob, f'expected framework "mock" recorded in {matches[0][0]}'

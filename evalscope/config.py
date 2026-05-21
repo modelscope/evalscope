@@ -5,9 +5,10 @@ import json
 import os
 from argparse import Namespace
 from pydantic import Field, field_validator, model_validator
-from typing import Any, Dict, List, Optional, Union
+from typing import Annotated, Any, Dict, List, Optional, Union
 
-from evalscope.api.agent import AgentConfig
+from evalscope.agent.external.config import ExternalAgentConfig
+from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.model import GenerateConfig, Model, ModelAPI
 from evalscope.constants import (
     DEFAULT_DATASET_CACHE_DIR,
@@ -24,6 +25,11 @@ from evalscope.utils.import_utils import check_import
 from evalscope.utils.io_utils import dict_to_yaml, gen_hash, json_to_dict, safe_filename, yaml_to_dict
 from evalscope.utils.logger import get_logger
 from evalscope.version import __version__ as _evalscope_version
+
+AgentConfigUnion = Annotated[
+    Union[NativeAgentConfig, ExternalAgentConfig],
+    Field(discriminator='mode'),
+]
 
 logger = get_logger()
 
@@ -234,27 +240,23 @@ class TaskConfig(BaseArgument):
     """[Deprecated] Use ``sandbox.manager_config`` instead.  Kept as an
     alias for backward compatibility; will be removed in a future release."""
 
-    # Agent-loop configuration
-    agent_config: Optional[AgentConfig] = None
-    """Global agent-loop configuration. When set, every DefaultDataAdapter-based
-    benchmark routes inference through the AgentLoop instead of a single
-    ``model.generate`` call.  AgentAdapter subclasses (e.g. SWE-bench_Pro)
-    ignore this field and use their own settings."""
+    # Agent configuration (native AgentLoop OR external-agent bridge,
+    # discriminated by the ``mode`` field on the embedded config).
+    agent_config: Optional[AgentConfigUnion] = None
+    """Per-task agent configuration.
 
-    external_agent: Optional[Any] = None
-    """External-agent configuration (``ExternalAgentConfig`` at runtime).
+    Discriminated union driven by the ``mode`` field:
 
-    When set, every DefaultDataAdapter-based benchmark routes inference
-    through an external agent CLI (claude-code, codex, mock, ...) whose
-    LLM traffic is reverse-proxied through the in-process bridge.
-    Mutually exclusive with ``agent_config`` — if both are set the
-    external agent path wins and ``agent_config`` is ignored.
+    * ``mode='native'`` (default) → :class:`NativeAgentConfig`; every
+      DefaultDataAdapter-based benchmark routes inference through the
+      :class:`AgentLoop`.
+    * ``mode='external'`` → :class:`ExternalAgentConfig`; inference is
+      delegated to a third-party CLI (claude-code, mock, ...) and the
+      bridge captures the LLM traffic into the same :class:`AgentTrace`.
 
-    Typed as ``Any`` so a bare ``from evalscope.config import TaskConfig``
-    does not pull in the external-agent runner stack (which would
-    side-register ``mock`` / ``claude-code`` runners just to look up the
-    Pydantic type).  ``_validate_external_agent`` coerces input into a
-    proper ``ExternalAgentConfig`` lazily."""
+    AgentAdapter subclasses (e.g. SWE-bench_Pro) ignore this field and use
+    their own settings.  ``dict`` inputs accept ``{'mode': 'external',
+    'framework': 'claude-code'}`` style payloads."""
 
     evalscope_version: Optional[str] = _evalscope_version
     """EvalScope version used for the evaluation."""
@@ -296,28 +298,19 @@ class TaskConfig(BaseArgument):
     @field_validator('agent_config', mode='before')
     @classmethod
     def _validate_agent_config(cls, v):
-        if v is None or isinstance(v, AgentConfig):
+        if v is None or isinstance(v, (NativeAgentConfig, ExternalAgentConfig)):
             return v
         if isinstance(v, dict):
-            return AgentConfig.model_validate(v)
-        raise ValueError(f'`agent_config` must be a dict, AgentConfig or None, got {type(v).__name__}.')
-
-    @field_validator('external_agent', mode='before')
-    @classmethod
-    def _validate_external_agent(cls, v):
-        if v is None:
-            return v
-        # Lazy import keeps the external-agent runner stack out of every
-        # ``from evalscope.config import TaskConfig`` call site.
-        from evalscope.external_agent import ExternalAgentConfig
-        if isinstance(v, ExternalAgentConfig):
-            return v
-        if isinstance(v, str):
-            # Bare framework name (typical CLI: ``--external-agent claude-code``).
-            return ExternalAgentConfig(framework=v)
-        if isinstance(v, dict):
-            return ExternalAgentConfig.model_validate(v)
-        raise ValueError(f'`external_agent` must be a str, dict, ExternalAgentConfig or None, got {type(v).__name__}.')
+            mode = v.get('mode', 'native')
+            if mode == 'external':
+                return ExternalAgentConfig.model_validate(v)
+            if mode == 'native':
+                return NativeAgentConfig.model_validate(v)
+            raise ValueError(f'`agent_config.mode` must be "native" or "external", got {mode!r}.')
+        raise ValueError(
+            f'`agent_config` must be a dict, NativeAgentConfig, ExternalAgentConfig or None, '
+            f'got {type(v).__name__}.'
+        )
 
     @field_validator('sandbox', mode='before')
     @classmethod

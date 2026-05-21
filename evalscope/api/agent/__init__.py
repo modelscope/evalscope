@@ -10,7 +10,16 @@ from .loop import AgentLoop
 from .strategy import AgentStrategy
 from .tool_executor import ToolExecutor, ToolHandler
 from .trace import AgentTrace, AgentTraceEvent, EventType
-from .types import AgentConfig, AgentContext, AgentLoopResult, ExecResult, ParsedAction, ToolSchemaMode
+from .types import (
+    AgentConfig,
+    AgentContext,
+    AgentLoopResult,
+    BaseAgentConfig,
+    ExecResult,
+    NativeAgentConfig,
+    ParsedAction,
+    ToolSchemaMode,
+)
 
 __all__ = [
     'AgentConfig',
@@ -21,8 +30,10 @@ __all__ = [
     'AgentStrategy',
     'AgentTrace',
     'AgentTraceEvent',
+    'BaseAgentConfig',
     'EventType',
     'ExecResult',
+    'NativeAgentConfig',
     'ParsedAction',
     'ToolExecutor',
     'ToolHandler',

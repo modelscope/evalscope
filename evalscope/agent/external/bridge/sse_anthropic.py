@@ -24,7 +24,7 @@ import uuid
 from typing import Any, AsyncIterator, Dict, List, Optional
 
 from evalscope.api.model import ModelOutput
-from .translate_anthropic import map_stop_reason_to_anthropic
+from .translate_anthropic import map_stop_reason_to_anthropic, unpack_tool_call
 
 _TEXT_CHUNK = 48
 _TOOL_INPUT_CHUNK = 20
@@ -162,9 +162,7 @@ async def _emit_text_block(text: str, index: int) -> AsyncIterator[bytes]:
 
 
 async def _emit_tool_use_block(tool_call: Any, index: int) -> AsyncIterator[bytes]:
-    fn = tool_call.function
-    name = fn.name if not isinstance(fn, str) else fn
-    args = fn.arguments if not isinstance(fn, str) else {}
+    name, args = unpack_tool_call(tool_call)
     yield _sse(
         'content_block_start', {
             'type': 'content_block_start',
@@ -177,7 +175,7 @@ async def _emit_tool_use_block(tool_call: Any, index: int) -> AsyncIterator[byte
             },
         }
     )
-    encoded = json.dumps(args or {}, ensure_ascii=False)
+    encoded = json.dumps(args, ensure_ascii=False)
     for chunk in _iter_chunks(encoded, _TOOL_INPUT_CHUNK):
         yield _sse(
             'content_block_delta', {

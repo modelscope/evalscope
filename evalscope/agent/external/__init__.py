@@ -3,7 +3,8 @@
 Drives third-party agent CLIs (claude-code, codex, openhands, ...) inside a
 sandbox while routing their LLM calls through an in-process reverse proxy
 that forwards to EvalScope's model layer.  The bridge captures the full
-LLM request/response stream into an ATIF-style trajectory.
+LLM request/response stream into the shared :class:`AgentTrace` format
+(same one populated by :class:`AgentLoop` for native runs).
 """
 
 from evalscope.api.registry import RUNNER_REGISTRY, get_runner, list_runners, register_runner

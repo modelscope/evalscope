@@ -9,6 +9,7 @@ runner injects into the agent's environment.
 
 import asyncio
 import json
+import time
 import uuid
 from aiohttp import web
 from contextlib import asynccontextmanager
@@ -19,8 +20,8 @@ from evalscope.utils.function_utils import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
 from ..config import BridgeConfig
 from ..runners.base import BridgeEndpoint
-from ..trajectory.recorder import TrajectoryRecorder
 from .sse_anthropic import stream_anthropic_response
+from .trace_recorder import BridgeTraceRecorder
 from .translate_anthropic import (
     anthropic_request_to_messages,
     anthropic_tools_to_tool_infos,
@@ -41,9 +42,8 @@ class TrialSession:
         token: str,
         base_url: str,
         model: Model,
-        recorder: TrajectoryRecorder,
+        recorder: BridgeTraceRecorder,
         framework: str,
-        override_mode: str,
     ) -> None:
         self.trial_id = trial_id
         self.token = token
@@ -51,7 +51,6 @@ class TrialSession:
         self.model = model
         self.recorder = recorder
         self.framework = framework
-        self.override_mode = override_mode
 
     def endpoint_view(self) -> BridgeEndpoint:
         """Return the runner-facing view (base_url + trial_token)."""
@@ -202,13 +201,13 @@ class ModelProxyServer:
         Yields a :class:`TrialSession` whose ``base_url`` / ``token`` should
         be injected into the agent's environment variables.
         """
-        cfg = bridge_config or BridgeConfig()
+        _ = bridge_config or BridgeConfig()  # reserved for future bridge-level knobs
         trial_id = uuid.uuid4().hex
         token = f'{_TRIAL_TOKEN_PREFIX}{trial_id}'
-        recorder = TrajectoryRecorder(
+        recorder = BridgeTraceRecorder(
             trial_id=trial_id,
             framework=framework,
-            model=getattr(model, 'name', None),
+            model_name=getattr(model, 'name', None),
         )
         session = TrialSession(
             trial_id=trial_id,
@@ -217,7 +216,6 @@ class ModelProxyServer:
             model=model,
             recorder=recorder,
             framework=framework,
-            override_mode=cfg.override_mode,
         )
         async with self._sessions_lock:
             self._sessions[trial_id] = session
@@ -252,7 +250,7 @@ class ModelProxyServer:
         body = await request.json()
         chat_messages = anthropic_request_to_messages(body)
         tool_infos = anthropic_tools_to_tool_infos(body.get('tools') or [])
-        gen_config = _build_generate_config(body, session.override_mode)
+        gen_config = _build_generate_config(body)
 
         if body.get('stream'):
             return await self._respond_streaming(request, session, body, chat_messages, tool_infos, gen_config)
@@ -266,6 +264,7 @@ class ModelProxyServer:
         tool_infos: list,
         gen_config: 'GenerateConfig',
     ) -> web.StreamResponse:
+        started = time.monotonic()
         try:
             output = await session.model.generate_async(
                 input=chat_messages,
@@ -285,7 +284,8 @@ class ModelProxyServer:
                 status=502,
             )
 
-        session.recorder.record_anthropic_turn(body, output)
+        latency_ms = (time.monotonic() - started) * 1000
+        session.recorder.record_anthropic_turn(body, output, latency_ms=latency_ms)
         return web.json_response(model_output_to_anthropic_response(output, request_model=body.get('model')))
 
     async def _respond_streaming(
@@ -313,6 +313,7 @@ class ModelProxyServer:
         )
         await response.prepare(request)
 
+        started = time.monotonic()
         generate_task = asyncio.create_task(
             session.model.generate_async(
                 input=chat_messages,
@@ -326,7 +327,8 @@ class ModelProxyServer:
             # Recorder needs the resolved output; awaiting the task is a no-op
             # because the streamer already drained it.
             output = await generate_task
-            session.recorder.record_anthropic_turn(body, output)
+            latency_ms = (time.monotonic() - started) * 1000
+            session.recorder.record_anthropic_turn(body, output, latency_ms=latency_ms)
         except Exception as exc:  # pragma: no cover - upstream-dependent
             logger.exception(f'bridge: streaming generate failed (trial={session.trial_id})')
             error_event = (
@@ -370,11 +372,8 @@ def _extract_bearer_token(request: web.Request) -> Optional[str]:
     return xkey.strip() if xkey else None
 
 
-def _build_generate_config(body: Dict[str, Any], override_mode: str) -> GenerateConfig:
+def _build_generate_config(body: Dict[str, Any]) -> GenerateConfig:
     """Translate Anthropic generation params into ``GenerateConfig``.
-
-    P0 ``override_mode`` is L1 only: forward whatever the agent sent.  L2
-    and L3 are accepted but only logged — implemented in a later iteration.
 
     ``stream`` is forwarded to the upstream model: when the client asks
     for SSE (``stream=true``) and max_tokens is high enough that the
@@ -383,11 +382,6 @@ def _build_generate_config(body: Dict[str, Any], override_mode: str) -> Generate
     Streaming is required ...``.  Mirroring the client's stream choice
     keeps both ends honest.
     """
-    if override_mode != 'L1':
-        logger.warning(
-            f'BridgeConfig.override_mode={override_mode!r} is accepted but not yet enforced — '
-            'P0 behaves as L1 (no overrides).'
-        )
     kwargs: Dict[str, Any] = {}
     if 'max_tokens' in body:
         kwargs['max_tokens'] = body['max_tokens']

@@ -6,7 +6,7 @@ P0 scope: text + ``tool_use`` + ``tool_result`` blocks, no streaming, no
 """
 
 import uuid
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from evalscope.api.messages import (
     ChatMessage,
@@ -17,6 +17,20 @@ from evalscope.api.messages import (
 )
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolCallError, ToolFunction, ToolInfo, ToolParams
+
+
+def unpack_tool_call(tool_call: Any) -> Tuple[str, Dict[str, Any]]:
+    """Return ``(name, arguments)`` for a :class:`ToolCall`.
+
+    ``ToolCall.function`` is normally a :class:`ToolFunction` but some
+    upstream paths leave it as a bare string; handle both shapes here so
+    every emitter / translator can call this instead of re-doing the
+    isinstance dance.
+    """
+    fn = tool_call.function
+    if isinstance(fn, ToolFunction):
+        return fn.name, fn.arguments or {}
+    return str(fn), {}
 
 
 def anthropic_request_to_messages(body: Dict[str, Any]) -> List[ChatMessage]:
@@ -160,14 +174,12 @@ def model_output_to_anthropic_response(
         if text:
             blocks.append({'type': 'text', 'text': text})
         for tc in message.tool_calls or []:
-            fn = tc.function
-            name = getattr(fn, 'name', fn) if not isinstance(fn, str) else fn
-            args = getattr(fn, 'arguments', {}) if not isinstance(fn, str) else {}
+            name, args = unpack_tool_call(tc)
             blocks.append({
                 'type': 'tool_use',
                 'id': tc.id,
                 'name': name,
-                'input': args or {},
+                'input': args,
             })
     if not blocks:
         blocks.append({'type': 'text', 'text': ''})

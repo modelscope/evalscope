@@ -533,7 +533,7 @@ class TestDefaultAdapterEnvPath:
 
         final_out = _make_output(content='env done')
         model = MagicMock()
-        model.generate.return_value = final_out
+        model.generate_async = AsyncMock(return_value=final_out)
 
         sample = MagicMock()
         sample.id = 'env-test'

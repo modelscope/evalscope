@@ -104,11 +104,12 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--analysis-report', action='store_true', default=False, help='Generate analysis report for the evaluation results using judge model.')  # noqa: E501
     parser.add_argument('--collect-perf', action=argparse.BooleanOptionalAction, default=True, help='Collect per-request performance metrics (latency, TTFT, token usage) during evaluation. TTFT requires streaming (--generation-config stream=True). Use --no-collect-perf to disable.')  # noqa: E501
 
-    # External-agent: single JSON-object flag carrying the full ExternalAgentConfig
-    # (framework + kwargs + environment + environment_extra + bridge + timeout) so
-    # the field set stays forward-compatible.  Python / YAML users typically
-    # construct ExternalAgentConfig directly; the CLI only needs the JSON form.
-    parser.add_argument('--external-agent', type=json.loads, default=None, help='External-agent config as a JSON object matching ExternalAgentConfig, e.g. \'{"framework":"claude-code","kwargs":{"model_name":"claude-opus-4-6"},"environment":"docker","environment_extra":{"image":"python:3.11-slim"},"timeout":600}\'.')  # noqa: E501
+    # Agent-config (native AgentLoop or external-agent bridge, distinguished
+    # by ``mode``).  Native example:
+    #   --agent-config '{"mode":"native","strategy":"react","max_steps":5}'
+    # External example:
+    #   --agent-config '{"mode":"external","framework":"claude-code","kwargs":{"model_name":"claude-opus-4-6"},"environment":"docker"}'
+    parser.add_argument('--agent-config', type=json.loads, default=None, help='Agent configuration as a JSON object. Mode discriminated: {"mode":"native", ...} for AgentLoop, {"mode":"external","framework":"claude-code", ...} for external CLI bridge.')  # noqa: E501
 
     # Sandbox-related arguments
     parser.add_argument('--sandbox', type=json.loads, default=None, help='Unified sandbox configuration as a JSON string, e.g. \'{"enabled": true, "engine": "docker"}\'. Maps to TaskConfig.sandbox / SandboxTaskConfig.')  # noqa: E501

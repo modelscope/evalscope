@@ -16,10 +16,10 @@ import os
 import pytest
 import shutil
 
+from evalscope.agent.external import ExternalAgentConfig
+from evalscope.agent.external.adapter import run_external_agent
 from evalscope.api.dataset import Sample
 from evalscope.api.model import GenerateConfig, Model
-from evalscope.external_agent import ExternalAgentConfig
-from evalscope.external_agent.adapter import run_external_agent
 from evalscope.models.anthropic_compatible import AnthropicCompatibleAPI
 from evalscope.utils.function_utils import AsyncioLoopRunner
 
@@ -115,11 +115,12 @@ def test_claude_code_through_bridge_to_idealab():
         environment='local',
         timeout=120.0,
     )
-    output = run_external_agent(config=config, model=model, sample=sample)
-    text = (output.message.text or '').strip()
-    assert text, f'empty agent output; trajectory={sample.metadata.get("external_agent_trajectory")}'
+    result = run_external_agent(config=config, model=model, sample=sample)
+    text = (result.output.message.text or '').strip()
+    assert text, f'empty agent output; trace_events={[e.type for e in result.trace.events]}'
     # The model often appends explanations; just check the keyword appears.
     assert 'PONG' in text.upper(), f'unexpected agent output: {text!r}'
-    trajectory = sample.metadata['external_agent_trajectory']
-    assert trajectory['framework'] == 'claude-code'
-    assert any(s['source'] == 'agent' for s in trajectory['steps'])
+    trace = result.trace
+    assert trace.framework == 'claude-code'
+    from evalscope.api.agent import EventType
+    assert any(ev.type == EventType.MODEL_GENERATE for ev in trace.events)

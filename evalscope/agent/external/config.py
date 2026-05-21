@@ -1,12 +1,15 @@
 """Pydantic configuration for external-agent runs.
 
-Mirrors the design in ``.qoder/plans/agent_bridge_design.md`` §7.2.
-P0 keeps the shape minimal (only fields actually consumed); fairness levels
-(L2 / L3 overrides) are accepted but not enforced yet.
+Lives under the shared :class:`BaseAgentConfig` so ``environment`` /
+``environment_extra`` are not duplicated against :class:`NativeAgentConfig`.
+The ``mode`` literal serves as the Pydantic discriminator on the
+:attr:`TaskConfig.agent_config` union.
 """
 
 from pydantic import BaseModel, Field, field_validator
 from typing import Any, Dict, Literal, Optional
+
+from evalscope.api.agent.types import BaseAgentConfig
 
 
 class ExternalAgentFramework:
@@ -30,14 +33,9 @@ class BridgeConfig(BaseModel):
     agent CLI and EvalScope's model layer.
     """
 
-    override_mode: Literal['L1', 'L2', 'L3'] = Field(default='L1')
-    """Fairness level.  P0 implements L1 only (no overrides) — L2 / L3 are
-    accepted for forward compatibility and logged as ``not yet enforced``.
-    """
-
     record_trajectory: bool = Field(default=True)
-    """When True the bridge records every request/response into a
-    ``Trajectory`` snapshot attached to the sample metadata."""
+    """When True the bridge records every request/response into the
+    :class:`AgentTrace` returned via ``InferenceResult.trace``."""
 
     proxy_host: str = Field(default='127.0.0.1')
     """Host the proxy binds to.  ``0.0.0.0`` is required when the agent
@@ -49,13 +47,16 @@ class BridgeConfig(BaseModel):
     recommended unless you need a stable URL."""
 
 
-class ExternalAgentConfig(BaseModel):
-    """Carried by ``TaskConfig.external_agent``.
+class ExternalAgentConfig(BaseAgentConfig):
+    """Carried by ``TaskConfig.agent_config`` when ``mode == 'external'``.
 
-    When set, every ``DefaultDataAdapter``-based benchmark routes inference
-    through an external agent CLI driven by :class:`AgentRunner`, instead
-    of issuing a single ``model.generate`` call.
+    Every ``DefaultDataAdapter``-based benchmark routes inference through
+    an external agent CLI driven by :class:`AgentRunner`, instead of
+    issuing a single ``model.generate`` call.
     """
+
+    mode: Literal['external'] = Field(default='external')
+    """Union discriminator — fixed value for the external-agent path."""
 
     framework: str
     """Registered runner name; see :class:`ExternalAgentFramework` for the
@@ -65,18 +66,6 @@ class ExternalAgentConfig(BaseModel):
 
     kwargs: Dict[str, Any] = Field(default_factory=dict)
     """Runner-specific keyword arguments forwarded to the runner ctor."""
-
-    environment: str = Field(default='local')
-    """Registered environment name (see
-    :data:`evalscope.api.registry.ENVIRONMENT_REGISTRY`).  Built-ins:
-    ``'local'`` / ``'enclave'`` / ``'docker'`` / ``'volcengine'``.
-    Mirrors :attr:`evalscope.api.agent.AgentConfig.environment`."""
-
-    environment_extra: Dict[str, Any] = Field(default_factory=dict)
-    """Kwargs forwarded verbatim to the environment constructor (e.g.
-    ``working_dir``, ``env_vars`` for ``local``; ``engine``,
-    ``sandbox_config``, ``manager_config``, ``timeout`` for ``enclave``).
-    Mirrors :attr:`evalscope.api.agent.AgentConfig.environment_extra`."""
 
     bridge: BridgeConfig = Field(default_factory=BridgeConfig)
     """Bridge-level options."""
