@@ -34,7 +34,7 @@ LiveCodeBench is a contamination-free benchmark for evaluating code generation m
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `live_code_bench` |
-| **Dataset ID** | [AI-ModelScope/code_generation_lite](https://modelscope.cn/datasets/AI-ModelScope/code_generation_lite/summary) |
+| **Dataset ID** | [evalscope/livecodebench_code_generation_lite_parquet](https://modelscope.cn/datasets/evalscope/livecodebench_code_generation_lite_parquet/summary) |
 | **Paper** | N/A |
 | **Tags** | `Coding` |
 | **Metrics** | `acc` |
