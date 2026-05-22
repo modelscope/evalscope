@@ -33,6 +33,7 @@ type Action =
   | { type: 'CLEAR_COMPARE' }
 
 const INITIAL_ROOT = './outputs' // fallback; will be overridden by /api/v1/config
+const REPORT_CACHE_LIMIT = 32 // bound the in-memory cache so long sessions don't grow unbounded
 
 const initialState: ReportsState = {
   rootPath: INITIAL_ROOT,
@@ -52,8 +53,18 @@ function reducer(state: ReportsState, action: Action): ReportsState {
       return { ...state, availableReports: action.reports }
     case 'SET_SELECTED':
       return { ...state, selectedReports: action.reports }
-    case 'CACHE_REPORT':
-      return { ...state, reportCache: { ...state.reportCache, [action.name]: action.data } }
+    case 'CACHE_REPORT': {
+      const next = { ...state.reportCache, [action.name]: action.data }
+      const keys = Object.keys(next)
+      if (keys.length > REPORT_CACHE_LIMIT) {
+        // Drop oldest insertion-order keys (skip the entry we just added).
+        const drop = keys.length - REPORT_CACHE_LIMIT
+        for (let i = 0; i < drop; i++) {
+          if (keys[i] !== action.name) delete next[keys[i]]
+        }
+      }
+      return { ...state, reportCache: next }
+    }
     case 'SET_MULTI':
       return { ...state, multiReportList: action.list }
     case 'SET_LOADING':
@@ -110,10 +121,13 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const userSetRootRef = useRef(false)
+  const stateRef = useRef(state)
+  useEffect(() => { stateRef.current = state }, [state])
 
   const setRootPath = useCallback((p: string) => {
     userSetRootRef.current = true
     dispatch({ type: 'SET_ROOT', rootPath: p })
+    dispatch({ type: 'CLEAR_CACHE' })
   }, [])
 
   const scanReportsAction = useCallback(async () => {
@@ -147,13 +161,19 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     async (names: string[]) => {
       dispatch({ type: 'SET_LOADING', loading: true })
       try {
-        // Load each report individually to preserve the source reportName mapping.
-        // This avoids data collisions when multiple reports share the same model_name.
+        // Load via cache-aware path so repeat loads in compare view don't refetch.
+        // Per-report tagging preserves source mapping when reports share model_name.
+        const { rootPath, reportCache } = stateRef.current
         const results = await Promise.all(
-          names.map((name) => reportsApi.loadReport(state.rootPath, name))
+          names.map(async (name) => {
+            if (reportCache[name]) return reportCache[name]
+            const data = await reportsApi.loadReport(rootPath, name)
+            dispatch({ type: 'CACHE_REPORT', name, data })
+            return data
+          }),
         )
         const list = results.flatMap((res, i) =>
-          res.report_list.map((r) => ({ ...r, _reportName: names[i] }))
+          res.report_list.map((r) => ({ ...r, _reportName: names[i] })),
         )
         dispatch({ type: 'SET_MULTI', list })
         return list
@@ -161,7 +181,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'SET_LOADING', loading: false })
       }
     },
-    [state.rootPath],
+    [],
   )
 
   const toggleSelectForCompare = useCallback(

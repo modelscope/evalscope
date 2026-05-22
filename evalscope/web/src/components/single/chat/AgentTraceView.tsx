@@ -5,6 +5,8 @@ import {
   Sparkles,
   Wrench,
   Check,
+  Play,
+  Square,
 } from 'lucide-react'
 import type { ChatMessage, AgentTrace, AgentTraceEvent, ToolCall } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
@@ -351,6 +353,10 @@ export function TraceEventPill({ event }: { event: AgentTraceEvent }) {
         return { Icon: AlertTriangle, color: 'var(--warning-color)', labelKey: 'trace.nudge' }
       case 'submit':
         return { Icon: Check, color: 'var(--success)', labelKey: 'trace.submit' }
+      case 'run_start':
+        return { Icon: Play, color: 'var(--text-muted)', labelKey: 'trace.runStart' }
+      case 'run_end':
+        return { Icon: Square, color: 'var(--text-muted)', labelKey: 'trace.runEnd' }
       default:
         return { Icon: Wrench, color: 'var(--text-muted)', labelKey: event.type }
     }

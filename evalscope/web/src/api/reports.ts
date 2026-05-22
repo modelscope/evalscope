@@ -5,7 +5,6 @@ import type {
   ListReportsResponse,
   LoadReportResponse,
   PredictionsResponse,
-  ReportData,
   ScanResponse,
 } from './types'
 
@@ -23,17 +22,18 @@ export async function listReports(params: {
   page?: number
   pageSize?: number
 }): Promise<ListReportsResponse> {
-  const body: Record<string, unknown> = { root_path: params.rootPath }
-  if (params.search) body.search = params.search
-  if (params.models?.length) body.models = params.models.join(';')
-  if (params.datasets?.length) body.datasets = params.datasets.join(';')
-  if (params.scoreMin != null) body.score_min = params.scoreMin
-  if (params.scoreMax != null) body.score_max = params.scoreMax
-  if (params.sortBy) body.sort_by = params.sortBy
-  if (params.sortOrder) body.sort_order = params.sortOrder
-  if (params.page != null) body.page = params.page
-  if (params.pageSize != null) body.page_size = params.pageSize
-  return api<ListReportsResponse>(`${BASE}/list`, body)
+  return api<ListReportsResponse>(`${BASE}/list`, {
+    root_path: params.rootPath,
+    search: params.search,
+    models: params.models?.join(';'),
+    datasets: params.datasets?.join(';'),
+    score_min: params.scoreMin,
+    score_max: params.scoreMax,
+    sort_by: params.sortBy,
+    sort_order: params.sortOrder,
+    page: params.page,
+    page_size: params.pageSize,
+  })
 }
 
 export async function scanReports(rootPath: string): Promise<string[]> {
@@ -45,19 +45,18 @@ export async function loadReport(rootPath: string, reportName: string): Promise<
   return api<LoadReportResponse>(`${BASE}/load`, { root_path: rootPath, report_name: reportName })
 }
 
-export async function loadMultiReport(rootPath: string, names: string[]): Promise<{ report_list: ReportData[] }> {
-  return api(`${BASE}/load_multi`, { root_path: rootPath, report_names: names.join(';') })
-}
-
 export async function getDataFrame(
   rootPath: string,
   reportName: string,
   type: 'acc' | 'compare' | 'dataset' = 'acc',
   datasetName?: string,
 ): Promise<DataFrameResponse> {
-  const params: Record<string, string> = { root_path: rootPath, report_name: reportName, type }
-  if (datasetName) params.dataset_name = datasetName
-  return api<DataFrameResponse>(`${BASE}/dataframe`, params)
+  return api<DataFrameResponse>(`${BASE}/dataframe`, {
+    root_path: rootPath,
+    report_name: reportName,
+    type,
+    dataset_name: datasetName,
+  })
 }
 
 export async function getPredictions(

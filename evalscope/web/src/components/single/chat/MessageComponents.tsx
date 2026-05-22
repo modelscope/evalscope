@@ -1,9 +1,7 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react'
+import React, { useEffect, useRef, type CSSProperties } from 'react'
 import {
   Copy,
   Check,
-  ChevronDown,
-  ChevronRight,
   Shield,
   Clock,
   Zap,
@@ -13,7 +11,9 @@ import {
 } from 'lucide-react'
 import type { ContentBlock } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useCopy } from '@/hooks/useCopy'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
+import Collapsible from '@/components/ui/Collapsible'
 import { fmtMs } from '@/utils/formatUtils'
 import { contentToText } from './chatHelpers'
 import { type Role, rolePalette } from './roleConfig'
@@ -21,28 +21,22 @@ import { renderContentBlocks } from './MediaBlocks'
 
 /* ─── CopyIconButton ───────────────────────────────────────── */
 
+const CHIP_BASE_STYLE: CSSProperties = {
+  padding: '1px 7px',
+  borderRadius: 4,
+  background: 'var(--bg-deep)',
+  border: '1px solid var(--color-border-subtle)',
+  fontSize: '0.65rem',
+  fontFamily: 'var(--font-mono, monospace)',
+  color: 'var(--text-muted)',
+}
+
 export function CopyIconButton({ text }: { text: string }) {
   const { t } = useLocale()
-  const [copied, setCopied] = useState(false)
-  const handleCopy = useCallback(async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    try {
-      await navigator.clipboard.writeText(text)
-    } catch {
-      const el = document.createElement('textarea')
-      el.value = text
-      document.body.appendChild(el)
-      el.select()
-      document.execCommand('copy')
-      document.body.removeChild(el)
-    }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }, [text])
-
+  const { copied, copy } = useCopy()
   return (
     <button
-      onClick={handleCopy}
+      onClick={(e) => { e.stopPropagation(); copy(text) }}
       title={t('prediction.copyContent')}
       style={{
         display: 'inline-flex',
@@ -59,8 +53,8 @@ export function CopyIconButton({ text }: { text: string }) {
         transition: 'opacity 0.15s, color 0.15s',
         flexShrink: 0,
       }}
-      onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-      onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}
+      onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+      onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
     >
       {copied ? <Check size={12} /> : <Copy size={12} />}
     </button>
@@ -71,25 +65,10 @@ export function CopyIconButton({ text }: { text: string }) {
 
 export function MsgIdChip({ msgId }: { msgId: string }) {
   const { t } = useLocale()
-  const [copied, setCopied] = useState(false)
-  const handleCopy = useCallback(async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    try {
-      await navigator.clipboard.writeText(msgId)
-    } catch {
-      const el = document.createElement('textarea')
-      el.value = msgId
-      document.body.appendChild(el)
-      el.select()
-      document.execCommand('copy')
-      document.body.removeChild(el)
-    }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }, [msgId])
+  const { copied, copy } = useCopy()
   return (
     <button
-      onClick={handleCopy}
+      onClick={(e) => { e.stopPropagation(); copy(msgId) }}
       title={t('prediction.copyMsgId')}
       style={{
         display: 'inline-flex',
@@ -106,8 +85,8 @@ export function MsgIdChip({ msgId }: { msgId: string }) {
         opacity: 0.7,
         transition: 'opacity 0.15s, color 0.15s',
       }}
-      onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-      onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}
+      onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+      onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
     >
       {copied ? <Check size={10} /> : <Copy size={10} />}
       <span>{msgId}</span>
@@ -116,6 +95,8 @@ export function MsgIdChip({ msgId }: { msgId: string }) {
 }
 
 /* ─── HeaderPerfChip ───────────────────────────────────────── */
+
+const PERF_CHIP_STYLE: CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: '2px' }
 
 /** Compact perf chip rendered inline inside a message header. */
 export function HeaderPerfChip({
@@ -134,59 +115,25 @@ export function HeaderPerfChip({
   stopReason?: string
 }) {
   const items: React.ReactNode[] = []
-  const chipStyle: React.CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '2px',
-  }
   const iconSize = 10
 
   if (latency != null) {
-    items.push(
-      <span key="lat" style={chipStyle}>
-        <Clock size={iconSize} style={{ opacity: 0.7 }} />
-        {fmtMs(latency)}
-      </span>
-    )
+    items.push(<span key="lat" style={PERF_CHIP_STYLE}><Clock size={iconSize} style={{ opacity: 0.7 }} />{fmtMs(latency)}</span>)
   }
   if (ttft != null) {
-    items.push(
-      <span key="ttft" style={chipStyle}>
-        <Zap size={iconSize} style={{ opacity: 0.7 }} />
-        TTFT {fmtMs(ttft * 1000)}
-      </span>
-    )
+    items.push(<span key="ttft" style={PERF_CHIP_STYLE}><Zap size={iconSize} style={{ opacity: 0.7 }} />TTFT {fmtMs(ttft * 1000)}</span>)
   }
   if (tpot != null) {
-    items.push(
-      <span key="tpot" style={chipStyle}>
-        <Activity size={iconSize} style={{ opacity: 0.7 }} />
-        TPOT {fmtMs(tpot * 1000)}
-      </span>
-    )
+    items.push(<span key="tpot" style={PERF_CHIP_STYLE}><Activity size={iconSize} style={{ opacity: 0.7 }} />TPOT {fmtMs(tpot * 1000)}</span>)
   }
   if (inTok != null) {
-    items.push(
-      <span key="in" style={chipStyle}>
-        <ArrowDownToLine size={iconSize} style={{ opacity: 0.7 }} />
-        in {inTok}
-      </span>
-    )
+    items.push(<span key="in" style={PERF_CHIP_STYLE}><ArrowDownToLine size={iconSize} style={{ opacity: 0.7 }} />in {inTok}</span>)
   }
   if (outTok != null) {
-    items.push(
-      <span key="out" style={chipStyle}>
-        <ArrowUpFromLine size={iconSize} style={{ opacity: 0.7 }} />
-        out {outTok}
-      </span>
-    )
+    items.push(<span key="out" style={PERF_CHIP_STYLE}><ArrowUpFromLine size={iconSize} style={{ opacity: 0.7 }} />out {outTok}</span>)
   }
   if (stopReason) {
-    items.push(
-      <span key="stop" style={chipStyle}>
-        stop:{stopReason}
-      </span>
-    )
+    items.push(<span key="stop" style={PERF_CHIP_STYLE}>stop:{stopReason}</span>)
   }
 
   if (items.length === 0) return null
@@ -289,45 +236,11 @@ export function MessageRow({
             }}
           >
             <RoleIcon size={13} style={{ color: palette.labelColor, flexShrink: 0 }} />
-            <span
-              style={{
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                color: palette.labelColor,
-              }}
-            >
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: palette.labelColor }}>
               {labelOverride ?? palette.label}
             </span>
-            {toolFunction && (
-              <span
-                style={{
-                  padding: '1px 7px',
-                  borderRadius: 4,
-                  background: 'var(--bg-deep)',
-                  border: '1px solid var(--color-border-subtle)',
-                  fontSize: '0.65rem',
-                  fontFamily: 'var(--font-mono, monospace)',
-                  color: 'var(--text-muted)',
-                }}
-              >
-                {toolFunction}
-              </span>
-            )}
-            {model && (
-              <span
-                style={{
-                  padding: '1px 7px',
-                  borderRadius: 4,
-                  background: 'var(--bg-deep)',
-                  border: '1px solid var(--color-border-subtle)',
-                  fontSize: '0.65rem',
-                  fontFamily: 'var(--font-mono, monospace)',
-                  color: 'var(--text-muted)',
-                }}
-              >
-                {model}
-              </span>
-            )}
+            {toolFunction && <span style={CHIP_BASE_STYLE}>{toolFunction}</span>}
+            {model && <span style={CHIP_BASE_STYLE}>{model}</span>}
             {headerExtra}
             <span style={{ flex: 1 }} />
             {msgId && <MsgIdChip msgId={msgId} />}
@@ -378,66 +291,51 @@ export function SystemPromptRow({
   highlightId?: string
 }) {
   const { t } = useLocale()
-  const [open, setOpen] = useState(false)
   const text = contentToText(content)
   const preview = text.replace(/\s+/g, ' ').trim()
   const previewShort = preview.length > 120 ? preview.slice(0, 120) + '…' : preview
 
   return (
-    <div
+    <Collapsible
+      header={(open) => (
+        <>
+          <Shield size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+          <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+            {t('prediction.systemPrompt')}
+          </span>
+          {!open && (
+            <span
+              style={{
+                fontSize: '0.7rem',
+                color: 'var(--text-muted)',
+                opacity: 0.6,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                flex: 1,
+                fontFamily: 'var(--font-mono, monospace)',
+              }}
+            >
+              {previewShort}
+            </span>
+          )}
+          {msgId && <MsgIdChip msgId={msgId} />}
+        </>
+      )}
       style={{
         borderLeft: '3px solid var(--text-muted)',
         borderRadius: '0.5rem',
         background: 'var(--bubble-system-bg)',
         overflow: 'hidden',
       }}
+      headerStyle={{ gap: '0.45rem', padding: '0.45rem 0.75rem' }}
+      bodyStyle={{ padding: '0 0.75rem 0.6rem 1.6rem' }}
     >
-      <button
-        onClick={() => setOpen(v => !v)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.45rem',
-          width: '100%',
-          padding: '0.45rem 0.75rem',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          textAlign: 'left',
-        }}
-      >
-        {open ? <ChevronDown size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} /> : <ChevronRight size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />}
-        <Shield size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-        <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-          {t('prediction.systemPrompt')}
-        </span>
-        {!open && (
-          <span
-            style={{
-              fontSize: '0.7rem',
-              color: 'var(--text-muted)',
-              opacity: 0.6,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              flex: 1,
-              fontFamily: 'var(--font-mono, monospace)',
-            }}
-          >
-            {previewShort}
-          </span>
-        )}
-        {msgId && <MsgIdChip msgId={msgId} />}
-      </button>
-      {open && (
-        <div style={{ padding: '0 0.75rem 0.6rem 1.6rem' }}>
-          <div style={{ fontSize: '0.82rem', lineHeight: 1.55 }}>
-            {Array.isArray(content)
-              ? renderContentBlocks(content, { includeReasoning: false })
-              : <MarkdownRenderer content={content} />}
-          </div>
-        </div>
-      )}
-    </div>
+      <div style={{ fontSize: '0.82rem', lineHeight: 1.55 }}>
+        {Array.isArray(content)
+          ? renderContentBlocks(content, { includeReasoning: false })
+          : <MarkdownRenderer content={content} />}
+      </div>
+    </Collapsible>
   )
 }

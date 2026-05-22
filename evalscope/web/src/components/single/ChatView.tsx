@@ -11,6 +11,32 @@ interface Props {
   highlightMsgId?: string
 }
 
+/** Plain input/output rendering when no structured Messages or AgentTrace are available. */
+function LegacyMessages({ prediction }: { prediction: PredictionRow }) {
+  const isSystemMsg = hasSystemPrompt(prediction.Input)
+  const { system, user } = isSystemMsg
+    ? parseSystemUser(prediction.Input)
+    : { system: '', user: prediction.Input }
+  const headerPerf = prediction.PerfMetrics ? (
+    <HeaderPerfChip
+      latency={prediction.PerfMetrics.latency != null ? prediction.PerfMetrics.latency * 1000 : null}
+      ttft={prediction.PerfMetrics.ttft}
+      tpot={prediction.PerfMetrics.tpot}
+      inTok={prediction.PerfMetrics.input_tokens}
+      outTok={prediction.PerfMetrics.output_tokens}
+    />
+  ) : undefined
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      {system && <SystemPromptRow content={system} />}
+      <MessageRow role="user" content={user || prediction.Input} />
+      {prediction.Generated && (
+        <MessageRow role="assistant" content={prediction.Generated} headerExtra={headerPerf} />
+      )}
+    </div>
+  )
+}
+
 export default function ChatView({ prediction, threshold = 0.99, highlightMsgId }: Props) {
   const showPred =
     prediction.Pred &&
@@ -50,34 +76,7 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId 
           <StructuredMessages messages={messages!} highlightId={highlightMsgId} />
         </div>
       ) : (
-        (() => {
-          const isSystemMsg = hasSystemPrompt(prediction.Input)
-          const { system, user } = isSystemMsg
-            ? parseSystemUser(prediction.Input)
-            : { system: '', user: prediction.Input }
-          const headerPerf = prediction.PerfMetrics ? (
-            <HeaderPerfChip
-              latency={prediction.PerfMetrics.latency != null ? prediction.PerfMetrics.latency * 1000 : null}
-              ttft={prediction.PerfMetrics.ttft}
-              tpot={prediction.PerfMetrics.tpot}
-              inTok={prediction.PerfMetrics.input_tokens}
-              outTok={prediction.PerfMetrics.output_tokens}
-            />
-          ) : undefined
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {system && <SystemPromptRow content={system} />}
-              <MessageRow role="user" content={user || prediction.Input} />
-              {prediction.Generated && (
-                <MessageRow
-                  role="assistant"
-                  content={prediction.Generated}
-                  headerExtra={headerPerf}
-                />
-              )}
-            </div>
-          )
-        })()
+        <LegacyMessages prediction={prediction} />
       )}
 
       <div style={{ borderTop: '1px solid var(--color-border-subtle)' }} />

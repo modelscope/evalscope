@@ -60,7 +60,7 @@ const MODEL_PALETTE = [
 export default function ComparePage() {
   const { t } = useLocale()
   const qp = useQueryParams()
-  const { rootPath: ctxRootPath, setRootPath, loadMultiReports, loading, loadReport, reportCache } = useReports()
+  const { rootPath: ctxRootPath, setRootPath, loadMultiReports, loading, reportCache } = useReports()
 
   // URL params — limit to 3 models
   const rootPath = qp.get('root_path') || ctxRootPath
@@ -97,7 +97,7 @@ export default function ComparePage() {
     if (rootPath && rootPath !== ctxRootPath) setRootPath(rootPath)
   }, [rootPath, ctxRootPath, setRootPath])
 
-  // Load score data for all reports
+  // Load score data and per-report cache (datasets/subsets) in one cache-aware pass
   useEffect(() => {
     if (reportNames.length < 2) return
     setDataLoaded(false)
@@ -105,12 +105,6 @@ export default function ComparePage() {
       .then((list) => { setReports(list); setDataLoaded(true) })
       .catch(() => setDataLoaded(true))
   }, [reportNames, loadMultiReports])
-
-  // Load individual reports (needed for dataset/subset lists)
-  useEffect(() => {
-    if (reportNames.length < 2) return
-    reportNames.forEach((name) => loadReport(name))
-  }, [reportNames, loadReport])
 
   // ------------------------------------------------------------------ //
   // Score Tab Data                                                      //

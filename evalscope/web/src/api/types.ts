@@ -170,6 +170,8 @@ export type AgentTraceEventType =
   | 'error'
   | 'nudge'
   | 'submit'
+  | 'run_start'
+  | 'run_end'
 
 /** Single structured event in an agent trajectory. */
 export interface AgentTraceEvent {
