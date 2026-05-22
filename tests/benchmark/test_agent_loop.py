@@ -16,6 +16,9 @@ Scenarios
 """
 
 import json
+import os
+import shutil
+import subprocess
 import unittest
 from dotenv import dotenv_values, load_dotenv
 from pathlib import Path
@@ -36,6 +39,55 @@ _API_KEY = env.get('DASHSCOPE_API_KEY')
 _API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1'
 
 requires_api = unittest.skipUnless(_API_KEY, 'Requires DASHSCOPE_API_KEY in .env')
+
+
+# ---------------------------------------------------------------------------
+# Helpers for the external-agent (claude-code) e2e tests below
+# ---------------------------------------------------------------------------
+
+_IDEALAB_TOKEN = env.get('EVALSCOPE_IDEALAB_TOKEN') or os.environ.get('EVALSCOPE_IDEALAB_TOKEN')
+_IDEALAB_URL = (
+    env.get('EVALSCOPE_IDEALAB_BASE_URL') or os.environ.get('EVALSCOPE_IDEALAB_BASE_URL')
+    or 'https://idealab.alibaba-inc.com/api/anthropic'
+)
+_IDEALAB_MODEL = env.get('EVALSCOPE_IDEALAB_MODEL') or os.environ.get('EVALSCOPE_IDEALAB_MODEL') or 'claude-opus-4-6'
+_CLAUDE_CODE_IMAGE = (
+    env.get('EVALSCOPE_CLAUDE_CODE_IMAGE') or os.environ.get('EVALSCOPE_CLAUDE_CODE_IMAGE')
+    or 'evalscope/claude-code:dev'
+)
+
+
+def _docker_image_present(image: str) -> bool:
+    """Cheap local probe for a docker image (no daemon call when CLI missing)."""
+    if shutil.which('docker') is None:
+        return False
+    try:
+        out = subprocess.run(
+            ['docker', 'image', 'inspect', '--format', '{{.Id}}', image],
+            capture_output=True, text=True, timeout=15,
+        )
+        return out.returncode == 0
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return False
+
+
+# Two-pronged gate: real LLM credentials AND the pre-baked claude-code image
+# must be available. Build the image with
+# ``bash evalscope/agent/external/runners/_assets/build_claude_code_image.sh``.
+requires_claude_code_e2e = unittest.skipUnless(
+    bool(_IDEALAB_TOKEN) and _docker_image_present(_CLAUDE_CODE_IMAGE),
+    f'Requires EVALSCOPE_IDEALAB_TOKEN in .env and docker image {_CLAUDE_CODE_IMAGE!r} '
+    f'(build via build_claude_code_image.sh).',
+)
+
+# The SWE-bench_Pro test needs a local clone of the upstream repo (auto-clone
+# requires network). Reuses the cache the SWE-bench_Pro adapter would create.
+_SWE_BENCH_PRO_REPO = Path.home() / '.cache' / 'evalscope' / 'swe_bench_pro' / 'SWE-bench_Pro-os'
+requires_swe_bench_pro_repo = unittest.skipUnless(
+    _SWE_BENCH_PRO_REPO.is_dir(),
+    f'Requires SWE-bench_Pro-os clone at {_SWE_BENCH_PRO_REPO} '
+    f'(see swe_bench_pro_repo_path docs).',
+)
 
 
 def _base_cfg(**overrides) -> dict:
@@ -286,6 +338,223 @@ class TestAIMEReActFC(unittest.TestCase):
             # ReAct FC mode should have TOOL_CALL events when tools are used.
             if EventType.TOOL_CALL in types:
                 self.assertIn(EventType.TOOL_RESULT, types)
+
+
+# ---------------------------------------------------------------------------
+# 8. GSM8K + external agent (claude-code) inside the pre-baked docker image
+# ---------------------------------------------------------------------------
+
+
+class _ScrubAnthropicEnvMixin:
+    """Strip ``ANTHROPIC_AUTH_TOKEN`` / ``ANTHROPIC_API_KEY`` /
+    ``ANTHROPIC_BASE_URL`` for the duration of one test.
+
+    Idealab rejects requests carrying both ``Authorization`` and
+    ``x-api-key``; the Anthropic SDK auto-populates the former from
+    ``ANTHROPIC_AUTH_TOKEN``, so any ``.env`` leakage breaks the test.
+    """
+
+    _SCRUB_KEYS = ('ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_API_KEY', 'ANTHROPIC_BASE_URL')
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._saved_env = {k: os.environ.pop(k, None) for k in self._SCRUB_KEYS}
+
+    def tearDown(self) -> None:
+        for k, v in self._saved_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        super().tearDown()
+
+
+@requires_claude_code_e2e
+class TestGSM8KExternalClaudeCode(_ScrubAnthropicEnvMixin, unittest.TestCase):
+    """End-to-end: gsm8k → external claude-code CLI inside the pre-baked
+    ``evalscope/claude-code:dev`` container → bridge → idealab Anthropic.
+
+    Validates the full external-agent loop for a generic single-turn
+    benchmark (no per-instance sandbox image needed; the runner image is
+    the playground). Skipped unless the image is built AND idealab
+    credentials are in ``.env``.
+    """
+
+    def test_gsm8k_through_external_claude_code(self):
+        cfg = TaskConfig(
+            model=_IDEALAB_MODEL,
+            api_url=_IDEALAB_URL,
+            api_key=_IDEALAB_TOKEN,
+            eval_type='anthropic_api',
+            # Idealab User-Agent whitelist: only claude-cli traffic passes.
+            model_args={
+                'default_headers': {
+                    'User-Agent': 'claude-cli/2.1.146 (external, cli)',
+                },
+            },
+            datasets=['gsm8k'],
+            dataset_args={'gsm8k': {'few_shot_num': 0}},
+            agent_config={
+                'mode': 'external',
+                'framework': 'claude-code',
+                'environment': 'docker',
+                # The pre-baked image already has node + claude on PATH;
+                # ``install_node=False`` short-circuits ``setup()``'s probe.
+                'environment_extra': {
+                    'sandbox_config': {
+                        'image': _CLAUDE_CODE_IMAGE,
+                        'working_dir': '/workspace',
+                    },
+                    'timeout': 180.0,
+                },
+                'kwargs': {
+                    'model_name': _IDEALAB_MODEL,
+                    'install_node': False,
+                    # Empty string = inherit the inside-container HOME.
+                    'home_override': '',
+                },
+                'timeout': 300.0,
+            },
+            eval_batch_size=1,
+            limit=1,
+        )
+        result = run_task(cfg)
+        self.assertIn('gsm8k', result)
+
+        # Trace must reflect the external-agent path (framework='claude-code',
+        # environment='docker') — proves the external dispatch fired and the
+        # docker env flowed through.
+        reviews = _read_review_results('gsm8k', model=_IDEALAB_MODEL, work_dir=cfg.work_dir)
+        self.assertGreater(len(reviews), 0)
+        for r in reviews:
+            trace_dict = r.get('agent_trace')
+            self.assertIsNotNone(trace_dict, 'external-agent path must populate agent_trace')
+            trace = AgentTrace.model_validate(trace_dict)
+            self.assertEqual(trace.framework, 'claude-code')
+            # EnclaveAgentEnvironment's instance ``name`` is always 'enclave'
+            # regardless of the 'docker' / 'volcengine' registry alias used.
+            self.assertEqual(trace.environment, 'enclave')
+            types = [e.type for e in trace.events]
+            self.assertIn(EventType.RUN_START, types)
+            self.assertIn(EventType.MODEL_GENERATE, types)
+            self.assertIn(EventType.RUN_END, types)
+
+
+# ---------------------------------------------------------------------------
+# 9. SWE-bench_Pro + external agent (claude-code) — full pipeline including
+#    eval container + scored Report. Pins that evaluation logs / artifacts
+#    look normal (predictions / reviews / reports directories populated,
+#    swe_bench_pro_log artefacts written, score numeric).
+# ---------------------------------------------------------------------------
+
+
+@requires_claude_code_e2e
+@requires_swe_bench_pro_repo
+class TestSWEBenchProExternalClaudeCode(_ScrubAnthropicEnvMixin, unittest.TestCase):
+    """End-to-end SWE-bench_Pro through external claude-code.
+
+    Slow / expensive: pulls a per-instance sweap-image (~5–15GB),
+    installs claude-code at runtime, runs claude against a real LLM,
+    then runs the SWE-bench_Pro evaluation container.
+
+    Asserts the pipeline *executes* and writes its normal evaluation
+    artifacts (predictions / reviews / reports / swe_bench_pro_log) —
+    not the resolved flag, which is model-quality dependent.
+    """
+
+    def test_swe_bench_pro_through_external_claude_code(self):
+        cfg = TaskConfig(
+            model=_IDEALAB_MODEL,
+            api_url=_IDEALAB_URL,
+            api_key=_IDEALAB_TOKEN,
+            eval_type='anthropic_api',
+            model_args={
+                'default_headers': {
+                    'User-Agent': 'claude-cli/2.1.146 (external, cli)',
+                },
+            },
+            datasets=['swe_bench_pro'],
+            dataset_args={
+                'swe_bench_pro': {
+                    'extra_params': {
+                        # Skip the auto-clone + ``git fetch`` (flaky on
+                        # locked-down corp networks); the @requires_swe_bench_pro_repo
+                        # guard already asserts the path exists.
+                        'swe_bench_pro_repo_path': str(_SWE_BENCH_PRO_REPO),
+                    },
+                },
+            },
+            agent_config={
+                'mode': 'external',
+                'framework': 'claude-code',
+                # ``environment`` / ``environment_extra`` are intentionally
+                # absent: AgentLoopAdapter uses the benchmark's own
+                # ``build_environment(sample)`` (per-instance sweap-image).
+                'kwargs': {
+                    'model_name': _IDEALAB_MODEL,
+                    # sweap-images ship Node out of the box; the runner
+                    # auto-detects and skips apt+nodesource (only ``npm
+                    # install -g claude-code`` runs, ~20s).
+                    'install_node': True,
+                },
+                'timeout': 1500.0,
+            },
+            # NodeBB (and other heavy JS samples) spawn Redis + jest under
+            # the agent's bash steps and OOM with the docker default. The
+            # SWE-bench_Pro adapter explicitly documents this as the fix.
+            sandbox={
+                'default_config': {
+                    'memory_limit': '8g',
+                    'cpu_limit': 4,
+                },
+            },
+            # Don't let one OOM'd sample short-circuit the whole batch —
+            # this test needs both samples to write predictions/reviews
+            # to validate the multi-sample path.
+            ignore_errors=True,
+            eval_batch_size=2,
+            limit=2,
+        )
+        result = run_task(cfg)
+        self.assertIn('swe_bench_pro', result)
+
+        # Evaluation log artifacts must be present — pins that the
+        # adapter's ``match_score`` actually ran ``eval_instance`` inside
+        # the secondary container (the part that signals "evaluation
+        # logging is normal").
+        work_dir = Path(cfg.work_dir)
+        swe_logs = work_dir / 'swe_bench_pro_log'
+        self.assertTrue(
+            swe_logs.is_dir(),
+            f'expected swe_bench_pro_log under {work_dir} — eval_instance did not run',
+        )
+        # At least one instance directory with an output.json (or stderr.log).
+        instance_dirs = [p for p in swe_logs.iterdir() if p.is_dir()]
+        self.assertGreater(len(instance_dirs), 0, 'no per-instance log directory written')
+        for inst_dir in instance_dirs:
+            workspace = inst_dir / 'workspace'
+            self.assertTrue(workspace.is_dir(), f'no workspace under {inst_dir}')
+            # The eval entry script + parser are always staged; the
+            # patch may be empty if the agent did nothing.
+            self.assertTrue((workspace / 'entryscript.sh').is_file())
+            self.assertTrue((workspace / 'patch.diff').is_file())
+
+        # Standard EvalScope outputs.
+        for sub in ('predictions', 'reviews', 'reports'):
+            self.assertTrue(
+                (work_dir / sub).is_dir(),
+                f'standard output dir {sub!r} missing under {work_dir}',
+            )
+
+        # Trace surfaces in the review with the right framework / env.
+        reviews = _read_review_results('swe_bench_pro', model=_IDEALAB_MODEL, work_dir=cfg.work_dir)
+        self.assertGreater(len(reviews), 0)
+        for r in reviews:
+            trace_dict = r.get('agent_trace')
+            self.assertIsNotNone(trace_dict)
+            trace = AgentTrace.model_validate(trace_dict)
+            self.assertEqual(trace.framework, 'claude-code')
+            self.assertEqual(trace.environment, 'enclave')
 
 
 if __name__ == '__main__':

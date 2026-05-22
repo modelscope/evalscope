@@ -105,6 +105,21 @@ class EnclaveAgentEnvironment(AgentEnvironment):
     # Sandbox lifecycle
     # ------------------------------------------------------------------
 
+    def merge_sandbox_config(self, overlay: Dict[str, Any]) -> None:
+        """Merge ``overlay`` into the pending sandbox config.
+
+        Used by the adapter layer to inject env-specific fields (e.g.
+        ``extra_hosts`` for ``host.docker.internal:host-gateway`` on
+        Linux) **before** the sandbox is created. Raises if the sandbox
+        is already running — caller would otherwise see no effect.
+        """
+        if self._handle is not None:
+            raise RuntimeError(
+                'EnclaveAgentEnvironment.merge_sandbox_config: sandbox '
+                f'{self._handle.sandbox_id} is already running; merge before exec.'
+            )
+        self._sandbox_config_dict = merge_sandbox_config_dicts(self._sandbox_config_dict, overlay)
+
     async def _ensure_sandbox(self) -> SandboxHandle:
         if self._handle is None:
             service = get_sandbox_service()
@@ -149,6 +164,10 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         if cwd:
             command = f'cd {shlex.quote(cwd)} && {command}'
 
+        # ms_enclave's shell_executor splits a bare string with no shell
+        # wrapping; wrap as ``bash -c`` so cd/&&/env-prefix/quoting survive.
+        shell_argv = ['bash', '-c', command]
+
         timeout_s = float(timeout or self._timeout)
 
         from ms_enclave.sandbox.model import ExecutionStatus
@@ -156,7 +175,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         result = await handle.execute_tool(
             'shell_executor',
             {
-                'command': command,
+                'command': shell_argv,
                 'timeout': timeout_s,
             },
         )

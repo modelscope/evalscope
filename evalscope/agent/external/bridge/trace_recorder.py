@@ -51,6 +51,11 @@ class BridgeTraceRecorder:
         self._messages: List[ChatMessage] = []
         self._seen_first_user = False
 
+    @property
+    def current_step(self) -> int:
+        """Latest step that emitted a ``MODEL_GENERATE``; ``-1`` before any turn."""
+        return self._step
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------

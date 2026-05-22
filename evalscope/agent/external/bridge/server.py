@@ -13,7 +13,8 @@ import time
 import uuid
 from aiohttp import web
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Dict, Optional
+from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, Optional
+from urllib.parse import urlsplit, urlunsplit
 
 from evalscope.api.model import GenerateConfig, Model
 from evalscope.utils.function_utils import AsyncioLoopRunner
@@ -27,9 +28,46 @@ from .translate_anthropic import (
     model_output_to_anthropic_response,
 )
 
+if TYPE_CHECKING:
+    from evalscope.api.agent import AgentEnvironment
+
 logger = get_logger()
 
 _TRIAL_TOKEN_PREFIX = 'trial-'
+
+#: Env names whose runtime is a Docker container — for these we rewrite
+#: the bridge's loopback host to ``host.docker.internal`` so the agent
+#: inside the container can reach the bridge on the host. Shared with
+#: :mod:`evalscope.agent.external.adapter`.
+DOCKER_ENV_NAMES = frozenset({'enclave', 'docker', 'volcengine'})
+
+#: Loopback hosts the bridge may bind to — these are the strings that
+#: have no meaning inside a container and must be translated.
+_LOOPBACK_HOSTS = frozenset({'127.0.0.1', '0.0.0.0', 'localhost', '::1'})
+
+
+def _rewrite_for_env(base_url: str, env: 'Optional[AgentEnvironment]') -> str:
+    """Return ``base_url`` with the host swapped for a value the agent
+    can dial from inside ``env``.
+
+    No-op when ``env`` is ``None`` (caller did not opt in), when the env
+    is not a Docker variant, or when the bound host is already routable
+    from the container (anything outside the loopback set). Otherwise
+    swap to ``host.docker.internal`` — Docker Desktop provides it natively
+    on macOS / Windows; on Linux the adapter must inject an
+    ``extra_hosts: host.docker.internal:host-gateway`` mapping into the
+    sandbox config (see :mod:`evalscope.agent.external.adapter`).
+    """
+    if env is None:
+        return base_url
+    env_name = getattr(env, 'name', '') or ''
+    if env_name not in DOCKER_ENV_NAMES:
+        return base_url
+    parts = urlsplit(base_url)
+    if parts.hostname not in _LOOPBACK_HOSTS:
+        return base_url
+    new_netloc = f'host.docker.internal:{parts.port}' if parts.port else 'host.docker.internal'
+    return urlunsplit((parts.scheme, new_netloc, parts.path, parts.query, parts.fragment))
 
 
 class TrialSession:
@@ -51,9 +89,18 @@ class TrialSession:
         self.recorder = recorder
         self.framework = framework
 
-    def endpoint_view(self) -> BridgeEndpoint:
-        """Return the runner-facing view (base_url + trial_token)."""
-        return BridgeEndpoint(base_url=self.base_url, trial_token=self.token)
+    def endpoint_view(self, for_env: 'Optional[AgentEnvironment]' = None) -> BridgeEndpoint:
+        """Return the runner-facing view (base_url + trial_token).
+
+        When ``for_env`` is supplied and resolves to a Docker-backed
+        environment, the loopback host in ``base_url`` is swapped for
+        ``host.docker.internal`` so the agent inside the container can
+        reach the bridge running on the host. Pass ``None`` (the default)
+        to inherit the host the bridge actually bound to — used by the
+        Local environment, where the runner shares the host network.
+        """
+        base_url = _rewrite_for_env(self.base_url, for_env)
+        return BridgeEndpoint(base_url=base_url, trial_token=self.token)
 
 
 class ModelProxyServer:
@@ -118,6 +165,17 @@ class ModelProxyServer:
                 return web.json_response({'ok': True})
 
             app.router.add_get('/healthz', _healthz)
+
+            async def _head_probe(_request: web.Request) -> web.Response:
+                # Anthropic SDKs (claude-code among them) issue an
+                # endpoint reachability HEAD before the first POST. A
+                # HEAD has no body per HTTP semantics, so 200 with no
+                # payload is the right answer and avoids polluting the
+                # bridge log with one-off "unhandled HEAD" warnings on
+                # every fresh trial session.
+                return web.Response(status=200)
+
+            app.router.add_route('HEAD', '/{tail:.*}', _head_probe)
 
             async def _catchall(request: web.Request) -> web.Response:
                 logger.warning(f'bridge: unhandled {request.method} {request.path} '
@@ -283,6 +341,7 @@ class ModelProxyServer:
 
         latency_ms = (time.monotonic() - started) * 1000
         session.recorder.record_anthropic_turn(body, output, latency_ms=latency_ms)
+        _log_turn(session, output, latency_ms, mode='json')
         return web.json_response(model_output_to_anthropic_response(output, request_model=body.get('model')))
 
     async def _respond_streaming(
@@ -326,6 +385,7 @@ class ModelProxyServer:
             output = await generate_task
             latency_ms = (time.monotonic() - started) * 1000
             session.recorder.record_anthropic_turn(body, output, latency_ms=latency_ms)
+            _log_turn(session, output, latency_ms, mode='stream')
         except Exception as exc:  # pragma: no cover - upstream-dependent
             logger.exception(f'bridge: streaming generate failed (trial={session.trial_id})')
             error_event = (
@@ -359,6 +419,26 @@ class _BridgeAuthError(Exception):
     pass
 
 
+def _log_turn(session: 'TrialSession', output, latency_ms: float, *, mode: str) -> None:
+    """Emit a one-line INFO heartbeat per upstream LLM turn.
+
+    Without this, a 5–10 min agent run looks indistinguishable from a
+    hang in the main eval log. One line per ``model_generate`` round
+    trip gives operators ``step / latency / tokens / stop_reason`` at a
+    glance and lets them tell ``stuck on network`` from ``running fine``.
+    """
+    usage = getattr(output, 'usage', None)
+    in_tok = getattr(usage, 'input_tokens', 0) if usage else 0
+    out_tok = getattr(usage, 'output_tokens', 0) if usage else 0
+    logger.info(
+        f'bridge[{session.framework}/{session.trial_id[:8]}] '
+        f'step={session.recorder.current_step} {mode} '
+        f'latency={latency_ms / 1000:.2f}s '
+        f'tokens={in_tok}+{out_tok} '
+        f'stop={getattr(output, "stop_reason", None)!r}'
+    )
+
+
 def _extract_bearer_token(request: web.Request) -> Optional[str]:
     # claude-code sends ANTHROPIC_AUTH_TOKEN as ``Authorization: Bearer <token>``
     # plus an ``x-api-key`` mirror for compatibility.  Accept either.
@@ -372,14 +452,12 @@ def _extract_bearer_token(request: web.Request) -> Optional[str]:
 def _build_generate_config(body: Dict[str, Any]) -> GenerateConfig:
     """Translate Anthropic generation params into ``GenerateConfig``.
 
-    ``stream`` is forwarded to the upstream model: when the client asks
-    for SSE (``stream=true``) and max_tokens is high enough that the
-    Anthropic SDK's non-streaming guard kicks in (>10-min projected
-    completion), the upstream call would otherwise raise ``ValueError:
-    Streaming is required ...``.  Mirroring the client's stream choice
-    keeps both ends honest.
+    Forces ``stream=True`` upstream regardless of the client's choice:
+    claude-code sends ``max_tokens=32000`` which trips the SDK's
+    ``Streaming is required ...`` guard otherwise. The client-facing
+    response shape is decided independently from ``body.get('stream')``.
     """
-    kwargs: Dict[str, Any] = {}
+    kwargs: Dict[str, Any] = {'stream': True}
     if 'max_tokens' in body:
         kwargs['max_tokens'] = body['max_tokens']
     if 'temperature' in body:
@@ -388,8 +466,6 @@ def _build_generate_config(body: Dict[str, Any]) -> GenerateConfig:
         kwargs['top_p'] = body['top_p']
     if 'stop_sequences' in body and body['stop_sequences']:
         kwargs['stop_seqs'] = list(body['stop_sequences'])
-    if body.get('stream'):
-        kwargs['stream'] = True
     return GenerateConfig(**kwargs)
 
 

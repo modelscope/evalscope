@@ -52,6 +52,10 @@ class ClaudeCodeRunner(AgentRunner):
 
     framework: str = 'claude-code'
 
+    #: Wall-clock budget (seconds) per install step. Cold apt+nodesource
+    #: can take 2+ min; past this, assume the image is broken.
+    _INSTALL_TIMEOUT_S: float = 300.0
+
     def __init__(
         self,
         *,
@@ -62,6 +66,9 @@ class ClaudeCodeRunner(AgentRunner):
         bare: bool = False,
         extra_args: Optional[List[str]] = None,
         home_override: Optional[str] = None,
+        install_node: bool = True,
+        node_setup_url: str = 'https://deb.nodesource.com/setup_20.x',
+        npm_package: str = '@anthropic-ai/claude-code',
         **_: Any,
     ) -> None:
         self._model_name = model_name
@@ -71,21 +78,120 @@ class ClaudeCodeRunner(AgentRunner):
         self._bare = bare
         self._extra_args = list(extra_args or [])
         self._home_override = home_override
+        self._install_node = install_node
+        self._node_setup_url = node_setup_url
+        self._npm_package = npm_package
 
     async def setup(self, env: AgentEnvironment) -> None:
-        """Verify the ``claude`` CLI is reachable inside ``env``.
+        """Make sure the ``claude`` CLI is reachable inside ``env``.
 
-        Installation is out of scope for P0 — the CLI must already be on
-        PATH (locally or pre-baked into the sandbox image).
+        First probes ``claude --version``; if the binary is already on
+        PATH (pre-baked image case) we are done. Otherwise — and only
+        when ``install_node=True`` — install Node.js + the
+        ``@anthropic-ai/claude-code`` npm package via apt + nodesource.
+
+        The install path targets Debian / Ubuntu derivatives (covers
+        SWE-bench / SWE-bench_Pro images). Non-apt images (Alpine,
+        rhel-family) need either a pre-baked claude binary or
+        ``install_node=False`` plus a custom prep step, and will surface
+        a clear error from this method rather than silently mis-running.
         """
-        probe = await env.exec(['bash', '-c', 'command -v claude && claude --version'])
-        if probe.returncode != 0:
+        if await self._claude_present(env):
+            return
+        if not self._install_node:
             raise RuntimeError(
-                'claude CLI not found in the agent environment. Install it with '
-                '`npm install -g @anthropic-ai/claude-code` (or bake into the sandbox image).'
-                f' stderr={probe.stderr!r}'
+                'claude CLI not found in the agent environment and install_node=False. '
+                'Either bake claude-code into the image or pass install_node=True.'
             )
-        logger.debug(f'claude-code probe: {probe.stdout.strip()!r}')
+        await self._install_claude_code(env)
+        if not await self._claude_present(env):
+            raise RuntimeError(
+                'claude CLI install reported success but `claude --version` still fails. '
+                'Inspect the install logs above for the underlying cause.'
+            )
+
+    async def _claude_present(self, env: AgentEnvironment) -> bool:
+        probe = await env.exec(['bash', '-c', 'command -v claude && claude --version'])
+        if probe.returncode == 0:
+            logger.debug(f'claude-code probe: {probe.stdout.strip()!r}')
+            return True
+        return False
+
+    async def _install_claude_code(self, env: AgentEnvironment) -> None:
+        """Install Node.js (when missing) and the claude-code npm package.
+
+        Skips the Node install when ``node`` / ``npm`` are already on
+        PATH — lets users opt into Node-preinstalled base images (e.g.
+        ``node:20-slim``) to avoid the apt + nodesource detour and the
+        in-container DNS dependency it implies.
+
+        Each command runs as a single ``bash -c`` so apt's locking and
+        ``set -e`` semantics are honoured. The combined script is also
+        idempotent on retry: ``apt-get install`` short-circuits when the
+        package is present, and ``npm install -g`` no-ops when the
+        package version already matches.
+        """
+        if not await self._node_present(env):
+            await self._install_node_via_apt(env)
+        # Discard npm's stdout (multi-MB on cold installs); keep stderr for diagnostics.
+        npm = await env.exec(
+            ['bash', '-c', f'set -e; npm install -g --no-fund --no-audit {self._npm_package} >/dev/null'],
+            timeout=self._INSTALL_TIMEOUT_S,
+        )
+        if npm.returncode != 0:
+            raise RuntimeError(
+                f'ClaudeCodeRunner.setup: `npm install -g {self._npm_package}` failed '
+                f'(rc={npm.returncode}). stderr={npm.stderr.strip()[-1000:]!r}'
+            )
+
+    async def _node_present(self, env: AgentEnvironment) -> bool:
+        probe = await env.exec(['bash', '-c', 'command -v node && command -v npm'])
+        return probe.returncode == 0
+
+    async def _install_node_via_apt(self, env: AgentEnvironment) -> None:
+        """Install Node.js via nodesource (Debian / Ubuntu only path).
+
+        Two-step: first the prerequisite apt packages, then the
+        nodesource setup script + ``apt-get install nodejs``. Surfaces
+        explicit errors when the image is not apt-based or has no
+        network to reach the Ubuntu / Debian / nodesource mirrors.
+        """
+        logger.info(
+            f'ClaudeCodeRunner.setup: installing Node.js via {self._node_setup_url} '
+            f'(this is a one-shot per sample today; planned npm cache volume '
+            f'will amortise the cost across samples).'
+        )
+        # Step 1: prerequisites for the nodesource installer (curl + gnupg).
+        prep = await env.exec(
+            [
+                'bash', '-c', 'set -e; export DEBIAN_FRONTEND=noninteractive; '
+                'apt-get update -qq && '
+                'apt-get install -y --no-install-recommends curl ca-certificates gnupg'
+            ],
+            timeout=self._INSTALL_TIMEOUT_S,
+        )
+        if prep.returncode != 0:
+            raise RuntimeError(
+                f'ClaudeCodeRunner.setup: apt prerequisite install failed (rc={prep.returncode}). '
+                f'This runner currently expects a Debian/Ubuntu-based image with network access, '
+                f'or a base image where Node.js is already installed (e.g. node:20-slim). '
+                f'stderr={prep.stderr.strip()[-1000:]!r}'
+            )
+        # Step 2: pull nodesource setup script + apt-install nodejs.
+        node = await env.exec(
+            [
+                'bash', '-c', 'set -e; export DEBIAN_FRONTEND=noninteractive; '
+                f'curl -fsSL {self._node_setup_url} | bash - && '
+                'apt-get install -y --no-install-recommends nodejs'
+            ],
+            timeout=self._INSTALL_TIMEOUT_S,
+        )
+        if node.returncode != 0:
+            raise RuntimeError(
+                f'ClaudeCodeRunner.setup: Node.js install failed (rc={node.returncode}). '
+                f'Network access from inside the sandbox is required for runtime install. '
+                f'stderr={node.stderr.strip()[-1000:]!r}'
+            )
 
     async def run(
         self,
@@ -133,10 +239,23 @@ class ClaudeCodeRunner(AgentRunner):
         cmd.extend(self._extra_args)
         cmd.append(task.instruction)
 
+        sample_id = (task.metadata or {}).get('sample_id')
+        env_name = getattr(env, 'name', type(env).__name__)
+        logger.info(
+            f'claude-code launching: sample={sample_id} env={env_name} '
+            f'model={self._model_name or "<bridge-default>"} '
+            f'timeout={task.timeout}s instruction_chars={len(task.instruction)}'
+        )
         result = await env.exec(
             cmd,
             timeout=task.timeout,
             env=env_vars,
+        )
+        logger.info(
+            f'claude-code exited: sample={sample_id} rc={result.returncode} '
+            f'wall={result.duration:.1f}s '
+            f'stdout={len(result.stdout or "")}B stderr={len(result.stderr or "")}B '
+            f'timed_out={result.timed_out}'
         )
         if result.timed_out:
             raise RunnerTimeoutError(
