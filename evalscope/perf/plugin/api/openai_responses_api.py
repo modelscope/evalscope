@@ -1,7 +1,7 @@
 import json
 import time
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union, Optional
 
 from evalscope.models.utils.openai_responses import (
     normalize_responses_input,

@@ -378,11 +378,14 @@ class Arguments(BaseArgument):
     def _validate_max_turn_tokens(cls, v):
         if v is None:
             return v
+        # Coerce single int to list for programmatic API support
+        if isinstance(v, (int, float)):
+            v = [int(v)]
         if isinstance(v, list):
             if not v:
                 raise ValueError('--max-turn-tokens must contain at least one value')
-            if any(x < 1 for x in v):
-                raise ValueError(f'--max-turn-tokens values must be >= 1, got {v}')
+            if any(x < 0 for x in v):
+                raise ValueError(f'--max-turn-tokens values must be >= 0, got {v}')
         return v
 
     @field_validator('multi_turn_args', mode='before')

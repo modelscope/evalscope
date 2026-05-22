@@ -303,7 +303,7 @@ evalscope perf \\
 | Turns 2-9 | 150 | Simulate intermediate tool calls |
 | Turn 10 | 1000 | Final complete answer |
 
-> **Tip**: The list is automatically extended by reusing the last value. For example, `--max-turn-tokens 150 1000` in a 10-turn conversation results in `[150, 150, 150, 150, 150, 150, 150, 150, 150, 1000]`.
+> **Tip**: The list is automatically extended by reusing the last value for all subsequent turns. For example, `--max-turn-tokens 150 1000` in a 10-turn conversation results in `[150, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]` (the first turn is 150, and all subsequent turns are 1000).
 
 **Usage example**: You have conversation data already in OpenAI messages format and want to benchmark directly without any format conversion.
 
