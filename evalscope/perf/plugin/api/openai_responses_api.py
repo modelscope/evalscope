@@ -30,7 +30,7 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: Union[List[Dict], str, Dict], param: Arguments = None) -> Dict:
+    def build_request(self, messages: Union[List[Dict], str, Dict], param: Arguments = None, turn_index: Optional[int] = None) -> Dict:
         param = param or self.param
         try:
             if param.query_template is not None:
@@ -42,7 +42,7 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                     query['input'] = normalize_responses_input(query.pop('messages'))
             else:
                 query = {'input': normalize_responses_input(messages)}
-            return self._compose_query_from_parameter(query, param)
+            return self._compose_query_from_parameter(query, param, turn_index)
         except Exception as e:
             logger.exception(e)
             return None
@@ -190,9 +190,12 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
             if cached is not None:
                 output.real_cached_tokens = cached
 
-    def _compose_query_from_parameter(self, payload: Dict, param: Arguments) -> Dict:
+    def _compose_query_from_parameter(self, payload: Dict, param: Arguments, turn_index: Optional[int] = None) -> Dict:
         payload['model'] = param.model
-        if param.max_tokens is not None:
+        if param.max_turn_tokens is not None and turn_index is not None:
+            idx = min(turn_index, len(param.max_turn_tokens) - 1)
+            payload['max_output_tokens'] = param.max_turn_tokens[idx]
+        elif param.max_tokens is not None:
             payload['max_output_tokens'] = _sample_int_or_range(param.max_tokens)
         if param.stream is not None:
             payload['stream'] = param.stream

@@ -33,7 +33,7 @@ class OpenaiPlugin(DefaultApiPlugin):
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: Union[List[Dict], str, List[int], Dict], param: Arguments = None) -> Dict:
+    def build_request(self, messages: Union[List[Dict], str, List[int], Dict], param: Arguments = None, turn_index: Optional[int] = None) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:
@@ -41,6 +41,8 @@ class OpenaiPlugin(DefaultApiPlugin):
                 When param.tokenize_prompt is True, this may also be a list of token IDs
                 (List[int]) produced by the random dataset plugin.
             param (QueryParameters): The query parameters.
+            turn_index (int, optional): Current turn index in multi-turn mode.
+                Used for per-turn max_tokens override via ``--max-turn-tokens``.
 
         Raises:
             Exception: NotImplemented
@@ -55,7 +57,7 @@ class OpenaiPlugin(DefaultApiPlugin):
             if param.tokenize_prompt and not isinstance(messages, dict):
                 token_ids = self._messages_to_token_ids(messages, param)
                 query = {'prompt': token_ids}
-                return self.__compose_query_from_parameter(query, param)
+                return self.__compose_query_from_parameter(query, param, turn_index)
 
             if param.query_template is not None:
                 if param.query_template.startswith('@'):
@@ -76,7 +78,7 @@ class OpenaiPlugin(DefaultApiPlugin):
                 query = {'prompt': messages}
             else:
                 query = {'messages': messages}
-            return self.__compose_query_from_parameter(query, param)
+            return self.__compose_query_from_parameter(query, param, turn_index)
         except Exception as e:
             logger.exception(e)
             return None
@@ -112,9 +114,13 @@ class OpenaiPlugin(DefaultApiPlugin):
         logger.warning(f'_messages_to_token_ids: unexpected messages type {type(messages)}, returning []')
         return []
 
-    def __compose_query_from_parameter(self, payload: Dict, param: Arguments):
+    def __compose_query_from_parameter(self, payload: Dict, param: Arguments, turn_index: Optional[int] = None):
         payload['model'] = param.model
-        if param.max_tokens is not None:
+        if param.max_turn_tokens is not None and turn_index is not None:
+            # Per-turn max_tokens override for multi-turn mode.
+            idx = min(turn_index, len(param.max_turn_tokens) - 1)
+            payload['max_tokens'] = param.max_turn_tokens[idx]
+        elif param.max_tokens is not None:
             payload['max_tokens'] = _sample_int_or_range(param.max_tokens)
         if param.min_tokens is not None:
             payload['min_tokens'] = param.min_tokens

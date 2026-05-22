@@ -116,7 +116,7 @@ class MultiTurnStrategy(BenchmarkStrategy):
                     await asyncio.sleep(interval)
 
                 # Send the turn.
-                request = self.api_plugin.build_request(list(context))
+                request = self.api_plugin.build_request(list(context), turn_index=turn_idx)
                 benchmark_data = await self.client.post(request)
 
                 # Inject multi-turn specific metadata.

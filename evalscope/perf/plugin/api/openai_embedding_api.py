@@ -41,7 +41,7 @@ class OpenaiEmbeddingPlugin(ApiPluginBase):
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: Union[List[Dict], str, List[str]], param: Arguments = None) -> Dict:
+    def build_request(self, messages: Union[List[Dict], str, List[str]], param: Arguments = None, turn_index: Optional[int] = None) -> Dict:
         """Build the OpenAI embedding format request.
 
         Args:

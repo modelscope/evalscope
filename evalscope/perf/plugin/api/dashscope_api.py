@@ -17,7 +17,7 @@ class DashScopeApiPlugin(ApiPluginBase):
     def __init__(self, param: Arguments):
         super().__init__(param)
 
-    def build_request(self, messages: List[Dict], param: Arguments = None) -> Dict:
+    def build_request(self, messages: List[Dict], param: Arguments = None, turn_index: Optional[int] = None) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:

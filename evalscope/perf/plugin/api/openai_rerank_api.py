@@ -42,7 +42,7 @@ class OpenaiRerankPlugin(ApiPluginBase):
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: Union[List[Dict], str, Dict], param: Arguments = None) -> Dict:
+    def build_request(self, messages: Union[List[Dict], str, Dict], param: Arguments = None, turn_index: Optional[int] = None) -> Dict:
         """Build the rerank format request.
 
         Args:

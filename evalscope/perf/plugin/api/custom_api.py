@@ -37,7 +37,7 @@ class CustomPlugin(ApiPluginBase):
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: Union[List[Dict], str], param: Arguments = None) -> Dict:
+    def build_request(self, messages: Union[List[Dict], str], param: Arguments = None, turn_index: Optional[int] = None) -> Dict:
         """Build a custom API request body based on the input messages and parameters.
 
         This method formats the input messages into the expected request format
