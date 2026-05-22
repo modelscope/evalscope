@@ -19,6 +19,7 @@
 | `--min-turns` | `int` | 每个对话最少用户轮数，仅 `random_multi_turn` 使用 | `1` |
 | `--max-turns` | `int` | 每个对话最多用户轮数；`random_multi_turn` **必须设置**；ShareGPT / `custom_multi_turn` 等数据集可选，用于截断过长对话；`swe_smith` live 构建时每条对话轮次从 `[min_turns, max_turns]` 随机采样 | `None` |
 | `--dataset-offset` | `int` | 跳过数据集前 N 条对话，用于分片测试或避免缓存命中 | `0` |
+| `--max-turn-tokens` | `list[int]` | 逐轮 `max_tokens` 覆盖值；接受一个整数列表，按 turn index（从 0 开始）指定每轮的最大输出 token 数。列表短于实际轮数时，复用最后一个值。仅在 `--multi-turn` 模式下生效 | `None` |
 
 ### `multi_turn_args`（`swe_smith` 专属参数）
 
@@ -265,6 +266,44 @@ evalscope perf \
 ```
 
 > **说明**：数据集中的 `assistant` 消息仅用于标识对话结构，**不会**被直接发送给模型。运行时 worker 始终将模型的实际输出追加到上下文，保证历史准确。
+
+### 逐轮控制输出长度（`--max-turn-tokens`）
+
+在模拟 Agent 工具调用性能的场景中，开源模型无法像实际模型那样输出工具调用结构，导致每轮输出长度与实际模型不同。通过 `--max-turn-tokens` 可以逐轮限制模型的输出长度，从而近似模拟实际模型的上下文增长行为。
+
+**使用示例**：10 轮对话，前 9 轮模拟工具调用（各 150 token），最后一轮输出完整回答（1000 token）。
+
+首先准备 JSONL 数据文件（每行一条 10 轮对话，system prompt 约 4000 token）：
+
+```json
+[{"role": "system", "content": "<4000 token 的系统提示>"}, {"role": "user", "content": "帮我分析这段代码"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "继续"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "继续"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "继续"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "继续"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "继续"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "继续"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "继续"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "继续"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "请给出完整的最终回答"}]
+```
+
+> **说明**：assistant 消息仅定义对话结构，实际运行中会被模型的真实输出替换。
+
+然后运行压测：
+
+```bash
+evalscope perf \\
+  --model YOUR_MODEL \\
+  --url OPENAI_API_COMPAT_URL \\
+  --api openai \\
+  --dataset custom_multi_turn \\
+  --dataset-path /path/to/tool_call_sim.jsonl \\
+  --multi-turn \\
+  --max-turn-tokens 150 150 150 150 150 150 150 150 150 1000 \\
+  --number 50 \\
+  --parallel 10 \\
+  --extra-args '{"ignore_eos": true}'
+```
+
+| 轮次 | `max_tokens` | 模拟效果 |
+|------|-------------|---------|
+| 第 1 轮 | 150 | 模拟首次工具调用 |
+| 第 2-9 轮 | 150 | 模拟中间轮工具调用 |
+| 第 10 轮 | 1000 | 最终完整回答 |
+
+> **提示**：列表长度不足时自动复用最后一个值。例如 `--max-turn-tokens 150 1000` 在 10 轮对话中效果为 `[150, 150, 150, 150, 150, 150, 150, 150, 150, 1000]`。
 
 **使用示例**：适用场景：已有 OpenAI messages 格式的对话数据，直接用于多轮压测，无需转换格式。
 

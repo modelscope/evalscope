@@ -144,6 +144,7 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `--frequency-penalty` | `float` | frequency_penalty值 | - |
 | `--logprobs` | `bool` | 是否返回对数概率 | - |
 | `--max-tokens` | `int` 或 `int int` | 可以生成的最大token数量<br>• 单个整数：固定值，如 `--max-tokens 2048`<br>• 两个整数：`最小值 最大值`，每次请求从该范围均匀随机采样，如 `--max-tokens 512 2048` | `2048` |
+| `--max-turn-tokens` | `int list` | **多轮模式专属**：逐轮覆盖 `max_tokens`<br>• 接受整数列表，按 turn index（0-based）指定每轮的最大输出 token 数<br>• 列表短于实际轮数时，复用最后一个值<br>• 仅在 `--multi-turn` 模式下生效，否则忽略<br>• 示例：`--max-turn-tokens 150 150 150 1000` | `None` |
 | `--min-tokens` | `int` | 生成的最少token数量<br>注意：并非所有模型服务都支持<br>对于`vLLM>=0.8.1`，需额外设置<br>`--extra-args '{"ignore_eos": true}'` | - |
 | `--n-choices` | `int` | 生成的补全选择数量 | - |
 | `--seed` | `int` | 随机种子 | `None` |

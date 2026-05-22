@@ -19,6 +19,7 @@ The multi-turn conversation benchmark allows you to test a model service in real
 | `--min-turns` | `int` | Minimum number of user turns per conversation; used by `random_multi_turn` only | `1` |
 | `--max-turns` | `int` | Maximum number of user turns per conversation; **required** for `random_multi_turn`; optional for ShareGPT / `custom_multi_turn` datasets to truncate long conversations; for `swe_smith` live construction, the per-conversation turn count is sampled from `[min_turns, max_turns]` | `None` |
 | `--dataset-offset` | `int` | Skip the first N conversations in the dataset; useful for sharded testing or avoiding cache hits | `0` |
+| `--max-turn-tokens` | `list[int]` | Per-turn `max_tokens` override; accepts a list of integers specifying the maximum output tokens for each turn by index (0-based). When the list is shorter than the actual turn count, the last value is reused. Only effective in `--multi-turn` mode | `None` |
 
 ### `multi_turn_args` (swe_smith-specific parameters)
 
@@ -265,6 +266,44 @@ Runtime context structure (when sending turn 2):
 ```
 
 > **Note**: The `assistant` messages in the dataset are used only to identify conversation structure and are **never** sent directly to the model. At runtime, workers always append the model's actual output to the context to ensure accurate history.
+
+### Per-turn Output Length Control (`--max-turn-tokens`)
+
+When simulating Agent tool-calling performance, an open-source model cannot produce tool-call structured outputs like the actual model, resulting in different per-turn output lengths. `--max-turn-tokens` allows you to limit the model's output length on a per-turn basis, approximating the context growth behavior of the real model.
+
+**Usage example**: A 10-turn conversation where the first 9 turns simulate tool calls (150 tokens each) and the final turn produces a complete answer (1000 tokens).
+
+First, prepare a JSONL data file (one 10-turn conversation per line, with a system prompt of ~4000 tokens):
+
+```json
+[{"role": "system", "content": "<4000 token system prompt>"}, {"role": "user", "content": "Analyze this code"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "Continue"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "Continue"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "Continue"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "Continue"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "Continue"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "Continue"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "Continue"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "Continue"}, {"role": "assistant", "content": "x"}, {"role": "user", "content": "Provide the final answer"}]
+```
+
+> **Note**: The `assistant` messages only define the conversation structure and are replaced by the model's real outputs at runtime.
+
+Then run the benchmark:
+
+```bash
+evalscope perf \\
+  --model YOUR_MODEL \\
+  --url OPENAI_API_COMPAT_URL \\
+  --api openai \\
+  --dataset custom_multi_turn \\
+  --dataset-path /path/to/tool_call_sim.jsonl \\
+  --multi-turn \\
+  --max-turn-tokens 150 150 150 150 150 150 150 150 150 1000 \\
+  --number 50 \\
+  --parallel 10 \\
+  --extra-args '{"ignore_eos": true}'
+```
+
+| Turn | `max_tokens` | Simulated behavior |
+|------|-------------|--------------------|
+| Turn 1 | 150 | Simulate initial tool call |
+| Turns 2-9 | 150 | Simulate intermediate tool calls |
+| Turn 10 | 1000 | Final complete answer |
+
+> **Tip**: The list is automatically extended by reusing the last value. For example, `--max-turn-tokens 150 1000` in a 10-turn conversation results in `[150, 150, 150, 150, 150, 150, 150, 150, 150, 1000]`.
 
 **Usage example**: You have conversation data already in OpenAI messages format and want to benchmark directly without any format conversion.
 
