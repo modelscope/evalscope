@@ -146,7 +146,6 @@ class CustomMultiTurnDatasetPlugin(DatasetPluginBase):
 
 
 if __name__ == '__main__':
-    from evalscope.perf.arguments import Arguments
     from evalscope.perf.main import run_perf_benchmark
 
     args = Arguments(
