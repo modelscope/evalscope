@@ -1,4 +1,5 @@
 import abc
+import copy
 import random
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -340,8 +341,10 @@ class DatasetDict:
             if limit is not None:
                 if isinstance(limit, float):
                     limit = int(len(samples) * limit)
-                total_limit = limit * repeats
-                samples = samples[:total_limit]
+                samples = samples[:limit]
+            # Repeat k times
+            if repeats > 1:
+                samples = [copy.deepcopy(sample) for sample in samples for _ in range(repeats)]
             cur_dataset = MemoryDataset(samples, name=dataset.name)
             # Reindex the dataset to ensure consistent IDs and group IDs
             cur_dataset.reindex(group_size=repeats)
