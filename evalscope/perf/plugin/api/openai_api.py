@@ -14,6 +14,23 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
+_TOOL_CONTEXT_KEY = "__evalscope_tools__"
+
+
+def _extract_tools(messages) -> Optional[List[Dict]]:
+    """Extract tools definitions from messages if embedded by the dataset plugin.
+
+    Scans the first message for the internal tools key. If found, removes it
+    from the message to keep the payload clean before sending.
+    """
+    if not isinstance(messages, list):
+        return None
+    for msg in messages:
+        if isinstance(msg, dict) and _TOOL_CONTEXT_KEY in msg:
+            tools = msg.pop(_TOOL_CONTEXT_KEY)
+            return tools
+    return None
+
 
 @register_api(['openai', 'local_vllm', 'local'])
 class OpenaiPlugin(DefaultApiPlugin):
@@ -52,12 +69,15 @@ class OpenaiPlugin(DefaultApiPlugin):
         """
         param = param or self.param
         try:
+            # Extract tools definitions embedded by the dataset plugin.
+            tools = _extract_tools(messages)
+
             # --tokenize-prompt path: convert messages/text/token-IDs to a token-ID list
             # and send as a /v1/completions request with `prompt=[int, ...]`.
             if param.tokenize_prompt and not isinstance(messages, dict):
                 token_ids = self._messages_to_token_ids(messages, param)
                 query = {'prompt': token_ids}
-                return self.__compose_query_from_parameter(query, param, turn_index)
+                return self.__compose_query_from_parameter(query, param, turn_index, tools)
 
             if param.query_template is not None:
                 if param.query_template.startswith('@'):
@@ -78,7 +98,7 @@ class OpenaiPlugin(DefaultApiPlugin):
                 query = {'prompt': messages}
             else:
                 query = {'messages': messages}
-            return self.__compose_query_from_parameter(query, param, turn_index)
+            return self.__compose_query_from_parameter(query, param, turn_index, tools)
         except Exception as e:
             logger.exception(e)
             return None
@@ -114,8 +134,10 @@ class OpenaiPlugin(DefaultApiPlugin):
         logger.warning(f'_messages_to_token_ids: unexpected messages type {type(messages)}, returning []')
         return []
 
-    def __compose_query_from_parameter(self, payload: Dict, param: Arguments, turn_index: Optional[int] = None):
+    def __compose_query_from_parameter(self, payload: Dict, param: Arguments, turn_index: Optional[int] = None, tools: Optional[List[Dict]] = None):
         payload['model'] = param.model
+        if tools:
+            payload['tools'] = tools
         if param.max_turn_tokens is not None and turn_index is not None:
             # Per-turn max_tokens override for multi-turn mode.
             idx = min(turn_index, len(param.max_turn_tokens) - 1)
