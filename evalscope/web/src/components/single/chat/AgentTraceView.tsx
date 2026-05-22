@@ -215,6 +215,55 @@ export interface StepGroup {
   totalLatencyMs: number | null
 }
 
+/** Cross-step linkage built once from the full message list and trace.
+ *
+ * Some recorders (e.g. the Claude Code external bridge) emit a tool_call on
+ * step N but the matching tool_result on step N+1 (when observed in the next
+ * request). Per-step lookups would then fail to inline the result under the
+ * call. These globals let StepBlock resolve results regardless of the step
+ * the result event landed on.
+ */
+export interface TraceContext {
+  /** All tool messages indexed by their tool_call_id. */
+  toolMsgByCallId: Map<string, ChatMessage>
+  /** All tool_result trace events indexed by payload.id (= tool_call id). */
+  toolResultEvByCallId: Map<string, AgentTraceEvent>
+  /** Tool message ids already consumed as a result inside some assistant's
+   *  tool_calls — should be excluded from any step's residualTools. */
+  consumedToolMsgIds: Set<string>
+}
+
+export function buildTraceContext(
+  messages: ChatMessage[],
+  trace: AgentTrace,
+  groups: StepGroup[]
+): TraceContext {
+  const toolMsgByCallId = new Map<string, ChatMessage>()
+  for (const m of messages) {
+    if (m.role === 'tool' && m.tool_call_id) {
+      toolMsgByCallId.set(m.tool_call_id, m)
+    }
+  }
+
+  const toolResultEvByCallId = new Map<string, AgentTraceEvent>()
+  for (const ev of trace.events) {
+    if (ev.type !== 'tool_result') continue
+    const id = typeof ev.payload?.id === 'string' ? ev.payload.id : null
+    if (id) toolResultEvByCallId.set(id, ev)
+  }
+
+  const consumedToolMsgIds = new Set<string>()
+  for (const g of groups) {
+    if (!g.assistant?.tool_calls) continue
+    for (const tc of g.assistant.tool_calls) {
+      const tm = toolMsgByCallId.get(tc.id)
+      if (tm?.id) consumedToolMsgIds.add(tm.id)
+    }
+  }
+
+  return { toolMsgByCallId, toolResultEvByCallId, consumedToolMsgIds }
+}
+
 export function buildStepGroups(messages: ChatMessage[], trace: AgentTrace): StepGroup[] {
   const messageById = new Map<string, ChatMessage>()
   for (const m of messages) if (m.id) messageById.set(m.id, m)
@@ -339,11 +388,13 @@ export function StepBlock({
   highlightId,
   highlighted,
   onStepClick,
+  ctx,
 }: {
   group: StepGroup
   highlightId?: string
   highlighted: boolean
   onStepClick: (step: number) => void
+  ctx?: TraceContext
 }) {
   const { t } = useLocale()
 
@@ -404,24 +455,33 @@ export function StepBlock({
   )
 
   // Build ToolCallEntry[] — prefer assistant.tool_calls, fallback to tool_call events.
-  const toolResultByCallId = new Map<string, AgentTraceEvent>()
-  for (const ev of toolResultEvents) {
-    const id = typeof ev.payload.id === 'string' ? ev.payload.id : null
-    if (id) toolResultByCallId.set(id, ev)
-  }
-  const toolMsgByCallId = new Map<string, ChatMessage>()
-  for (const m of group.tools) {
-    if (m.tool_call_id) toolMsgByCallId.set(m.tool_call_id, m)
-  }
-  // Also link via trace tool_result events (for mini-swe where observations
-  // are ChatMessageUser without tool_call_id).
-  for (const ev of toolResultEvents) {
-    const callId = typeof ev.payload.id === 'string' ? ev.payload.id : null
-    if (callId && !toolMsgByCallId.has(callId) && ev.message_id) {
-      const msg = group.tools.find(m => m.id === ev.message_id)
-      if (msg) toolMsgByCallId.set(callId, msg)
+  // Use global ctx maps when available so results emitted on a different step
+  // (e.g. Claude Code bridge emits tool_result on step+1) still get linked.
+  const toolResultByCallId = ctx?.toolResultEvByCallId ?? (() => {
+    const m = new Map<string, AgentTraceEvent>()
+    for (const ev of toolResultEvents) {
+      const id = typeof ev.payload.id === 'string' ? ev.payload.id : null
+      if (id) m.set(id, ev)
     }
-  }
+    return m
+  })()
+
+  const toolMsgByCallId = ctx?.toolMsgByCallId ?? (() => {
+    const m = new Map<string, ChatMessage>()
+    for (const tm of group.tools) {
+      if (tm.tool_call_id) m.set(tm.tool_call_id, tm)
+    }
+    // Also link via trace tool_result events (for mini-swe where observations
+    // are ChatMessageUser without tool_call_id).
+    for (const ev of toolResultEvents) {
+      const callId = typeof ev.payload.id === 'string' ? ev.payload.id : null
+      if (callId && !m.has(callId) && ev.message_id) {
+        const msg = group.tools.find(t => t.id === ev.message_id)
+        if (msg) m.set(callId, msg)
+      }
+    }
+    return m
+  })()
 
   let entries: ToolCallEntry[] = []
   if (group.assistant?.tool_calls && group.assistant.tool_calls.length > 0) {
@@ -452,10 +512,17 @@ export function StepBlock({
     })
   }
 
-  // Residual tool messages not linked to any call (rare; textual_block mode)
+  // Residual tool messages not linked to any call (rare; textual_block mode).
+  // Exclude this step's own linked results AND any tool message consumed by
+  // another step's assistant.tool_calls (cross-step tool_result placement).
   const linkedToolIds = new Set<string>()
   for (const e of entries) if (e.result?.id) linkedToolIds.add(e.result.id)
-  const residualTools = group.tools.filter(m => !(m.id && linkedToolIds.has(m.id)))
+  const residualTools = group.tools.filter(m => {
+    if (!m.id) return true
+    if (linkedToolIds.has(m.id)) return false
+    if (ctx?.consumedToolMsgIds.has(m.id)) return false
+    return true
+  })
 
   return (
     <div
@@ -569,17 +636,25 @@ export function StepBlock({
 
 export function TracedTimeline({
   groups,
+  messages,
+  trace,
   highlightStep,
   highlightId,
   onStepClick,
 }: {
   groups: StepGroup[]
+  messages: ChatMessage[]
+  trace: AgentTrace
   highlightStep: number | null
   highlightId?: string
   onStepClick: (step: number) => void
 }) {
   const preGroup = groups.find(g => g.step === -1)
   const agentGroups = groups.filter(g => g.step >= 0)
+  const ctx = React.useMemo(
+    () => buildTraceContext(messages, trace, groups),
+    [messages, trace, groups]
+  )
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
@@ -589,6 +664,7 @@ export function TracedTimeline({
           highlightId={highlightId}
           highlighted={false}
           onStepClick={onStepClick}
+          ctx={ctx}
         />
       )}
       {agentGroups.map((g) => {
@@ -600,6 +676,7 @@ export function TracedTimeline({
             highlightId={highlightId}
             highlighted={isActive}
             onStepClick={onStepClick}
+            ctx={ctx}
           />
         )
       })}

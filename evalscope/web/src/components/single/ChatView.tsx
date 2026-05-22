@@ -36,9 +36,11 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId 
 
   return (
     <div className="flex flex-col gap-4 py-2">
-      {hasTrace && stepGroups ? (
+      {hasTrace && stepGroups && messages && agentTrace ? (
         <TracedTimeline
           groups={stepGroups}
+          messages={messages}
+          trace={agentTrace}
           highlightStep={highlightedStep}
           highlightId={highlightMsgId}
           onStepClick={handleStepClick}

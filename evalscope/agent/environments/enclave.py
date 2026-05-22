@@ -20,6 +20,7 @@ shared ``atexit`` hook.
 from __future__ import annotations
 
 import shlex
+import time
 from typing import Any, Dict, List, Optional, Union
 
 from evalscope.api.agent import AgentEnvironment
@@ -172,6 +173,10 @@ class EnclaveAgentEnvironment(AgentEnvironment):
 
         from ms_enclave.sandbox.model import ExecutionStatus
 
+        # ms_enclave's ExecutionResult.execution_time is unreliable (often
+        # ``None`` / ``0`` for shell_executor). Wall-time it locally so
+        # ``ExecResult.duration`` always reflects real elapsed time.
+        started = time.monotonic()
         result = await handle.execute_tool(
             'shell_executor',
             {
@@ -179,6 +184,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
                 'timeout': timeout_s,
             },
         )
+        elapsed = time.monotonic() - started
 
         stdout = str(result.output or '')
         stderr = str(result.error or '')
@@ -193,12 +199,17 @@ class EnclaveAgentEnvironment(AgentEnvironment):
             _m = _re.search(r'exit code (\d+)', stderr)
             returncode = int(_m.group(1)) if _m else 1
 
+        # Prefer upstream-reported time when it's a positive number;
+        # otherwise fall back to our locally measured wall-clock.
+        upstream_duration = float(result.execution_time or 0.0)
+        duration = upstream_duration if upstream_duration > 0 else elapsed
+
         return ExecResult(
             returncode=returncode,
             stdout=stdout,
             stderr=stderr,
             timed_out=timed_out,
-            duration=float(result.execution_time or 0.0),
+            duration=duration,
         )
 
     async def close(self) -> None:

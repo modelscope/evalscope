@@ -327,7 +327,7 @@ class ModelProxyServer:
                 config=gen_config,
             )
         except Exception as exc:  # pragma: no cover - upstream-dependent
-            logger.exception(f'bridge: model.generate_async failed (trial={session.trial_id})')
+            _log_upstream_failure(session, exc, mode='json')
             return web.json_response(
                 {
                     'type': 'error',
@@ -387,7 +387,7 @@ class ModelProxyServer:
             session.recorder.record_anthropic_turn(body, output, latency_ms=latency_ms)
             _log_turn(session, output, latency_ms, mode='stream')
         except Exception as exc:  # pragma: no cover - upstream-dependent
-            logger.exception(f'bridge: streaming generate failed (trial={session.trial_id})')
+            _log_upstream_failure(session, exc, mode='stream')
             error_event = (
                 f'event: error\ndata: '
                 f'{json.dumps({"type": "error", "error": {"type": "api_error", "message": repr(exc)}})}'
@@ -417,6 +417,47 @@ class ModelProxyServer:
 
 class _BridgeAuthError(Exception):
     pass
+
+
+#: Exception class names treated as "upstream business error" (rate
+#: limit, auth, model-side failure). Matched by class name so we don't
+#: take a hard dependency on the ``anthropic`` package at import time.
+_UPSTREAM_BUSINESS_ERRORS = frozenset({
+    'APIError',
+    'APIStatusError',
+    'APIConnectionError',
+    'APITimeoutError',
+    'RateLimitError',
+    'AuthenticationError',
+    'PermissionDeniedError',
+    'NotFoundError',
+    'BadRequestError',
+    'UnprocessableEntityError',
+    'InternalServerError',
+})
+
+
+def _log_upstream_failure(session: 'TrialSession', exc: BaseException, *, mode: str) -> None:
+    """Log an upstream LLM call failure at the right severity.
+
+    Anthropic / OpenAI ``APIError`` subclasses raised by the model layer
+    are "business as usual" — the agent client (claude-code, codex, ...)
+    receives the error event and retries on its own. Bridge is just a
+    faithful conduit; tracebacks of these errors are noise that hides
+    real bridge bugs. We surface them as ``WARNING`` with a one-line
+    message instead.
+
+    Anything else (TypeError, attribute errors, unexpected internals)
+    keeps the full ``logger.exception`` traceback because it likely
+    points at a real bridge-side bug.
+    """
+    cls_name = type(exc).__name__
+    tag = f'bridge[{session.framework}/{session.trial_id[:8]}]'
+    if cls_name in _UPSTREAM_BUSINESS_ERRORS:
+        # Compact one-liner: class + first 200 chars of the message.
+        logger.warning(f'{tag} upstream {mode} {cls_name}: {str(exc)[:200]}')
+        return
+    logger.exception(f'{tag} {mode} generate failed')
 
 
 def _log_turn(session: 'TrialSession', output, latency_ms: float, *, mode: str) -> None:
