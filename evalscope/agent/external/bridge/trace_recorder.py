@@ -67,17 +67,50 @@ class BridgeTraceRecorder:
         *,
         latency_ms: Optional[float] = None,
     ) -> None:
-        """Append events for one Anthropic request/response round-trip.
+        """Append events for one Anthropic request/response round-trip."""
+        self._record_turn(
+            request_body,
+            output,
+            latency_ms=latency_ms,
+            extract_tool_results=self._extract_tool_results,
+        )
 
-        Order: first surface any ``tool_result`` blocks from the latest
-        user message as ``TOOL_RESULT`` events on the *next* step, then
-        emit ``MODEL_GENERATE`` (incrementing step) + per-tool-call
-        ``TOOL_CALL`` events on the new step.
+    def record_openai_turn(
+        self,
+        request_body: Dict[str, Any],
+        output: ModelOutput,
+        *,
+        latency_ms: Optional[float] = None,
+    ) -> None:
+        """Append events for one OpenAI Chat Completions round-trip."""
+        self._record_turn(
+            request_body,
+            output,
+            latency_ms=latency_ms,
+            extract_tool_results=self._extract_openai_tool_results,
+        )
+
+    def _record_turn(
+        self,
+        request_body: Dict[str, Any],
+        output: ModelOutput,
+        *,
+        latency_ms: Optional[float],
+        extract_tool_results,
+    ) -> None:
+        """Shared per-turn recorder for both wire protocols.
+
+        Order: surface any tool results from the previous turn as
+        ``TOOL_RESULT`` events on the *next* step, then ``MODEL_GENERATE``
+        (incrementing step) + per-tool-call ``TOOL_CALL`` events on the new
+        step. ``extract_tool_results`` returns ``(tc_id, text, is_error)``
+        tuples — protocols that don't surface a structured error flag pass
+        ``is_error=False`` (the slot is reserved for future use).
         """
         with self._lock:
             self._ingest_initial_user_message(request_body)
 
-            tool_results = self._extract_tool_results(request_body.get('messages') or [])
+            tool_results = extract_tool_results(request_body.get('messages') or [])
             if tool_results:
                 next_step = self._step + 1
                 for tc_id, text, is_error in tool_results:
@@ -186,7 +219,11 @@ class BridgeTraceRecorder:
     def _ingest_initial_user_message(self, request_body: Dict[str, Any]) -> None:
         """Capture the very first user prompt the agent sent — used for
         the messages() transcript so downstream consumers see the original
-        instruction, not just observations + assistant turns."""
+        instruction, not just observations + assistant turns.
+
+        Shared by both anthropic and openai paths; ``_user_text_from_content``
+        handles both wire formats' content-block shapes.
+        """
         if self._seen_first_user:
             return
         messages = request_body.get('messages') or []
@@ -198,6 +235,38 @@ class BridgeTraceRecorder:
                 self._messages.append(ChatMessageUser(content=text))
                 self._seen_first_user = True
             return
+
+    @staticmethod
+    def _extract_openai_tool_results(messages: List[Any]) -> List[tuple]:
+        """Surface tail ``role:'tool'`` entries — they're the tool_result
+        payloads the agent observed after the previous assistant turn.
+
+        Walks backwards from the end of ``messages[]`` collecting consecutive
+        tool entries; stops at the first non-tool message. Preserves order.
+
+        Assumes the agent appends tool results immediately before the next
+        request (true for codex / claude-code style loops). Tool results that
+        are followed by a user message in the same request are silently
+        dropped from this turn's TOOL_RESULT events — they were already
+        recorded on the prior turn that surfaced them.
+
+        Returns ``(tool_call_id, text, is_error)``; ``is_error`` is always
+        ``False`` because the OpenAI Chat Completions spec has no structured
+        error flag on tool messages (slot kept for protocol parity).
+        """
+        if not messages:
+            return []
+        tail: List[Dict[str, Any]] = []
+        for entry in reversed(messages):
+            if not isinstance(entry, dict) or entry.get('role') != 'tool':
+                break
+            tail.append(entry)
+        tail.reverse()
+        out: List[tuple] = []
+        for entry in tail:
+            text = _user_text_from_content(entry.get('content', ''))
+            out.append((entry.get('tool_call_id'), text, False))
+        return out
 
     @staticmethod
     def _extract_tool_results(messages: List[Any]) -> List[tuple]:
@@ -241,10 +310,22 @@ class BridgeTraceRecorder:
 
 
 def _user_text_from_content(content: Any) -> str:
+    """Flatten an Anthropic-or-OpenAI message ``content`` to plain text.
+
+    Accepts ``str`` or a list of content-parts; recognises ``type='text'``
+    (Anthropic + OpenAI) and ``type='input_text'`` (OpenAI Responses /
+    multi-modal). Non-text blocks (image, tool_use, etc.) are dropped.
+    """
     if isinstance(content, str):
         return content
     if isinstance(content, list):
-        return '\n'.join(b.get('text', '') for b in content if isinstance(b, dict) and b.get('type') == 'text').strip()
+        parts: List[str] = []
+        for block in content:
+            if not isinstance(block, dict):
+                continue
+            if block.get('type') in ('text', 'input_text'):
+                parts.append(block.get('text', '') or '')
+        return '\n'.join(p for p in parts if p).strip()
     return ''
 
 

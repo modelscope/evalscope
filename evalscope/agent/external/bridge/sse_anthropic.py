@@ -21,23 +21,16 @@ Event sequence (per Anthropic SSE spec):
 import asyncio
 import json
 import uuid
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any, AsyncIterator, Dict, Optional
 
 from evalscope.api.model import ModelOutput
+from ._sse_common import PING_INTERVAL_S, TEXT_CHUNK, TOOL_INPUT_CHUNK, iter_chunks
 from .translate_anthropic import map_stop_reason_to_anthropic, unpack_tool_call
-
-_TEXT_CHUNK = 48
-_TOOL_INPUT_CHUNK = 20
-_PING_INTERVAL_S = 5.0
 
 
 def _sse(event_type: str, data: Dict[str, Any]) -> bytes:
     """Encode one SSE event (Anthropic uses ``event:`` + ``data:`` lines)."""
     return f'event: {event_type}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n'.encode('utf-8')
-
-
-def _iter_chunks(text: str, max_len: int) -> List[str]:
-    return [text[i:i + max_len] for i in range(0, len(text), max_len)] or ['']
 
 
 async def stream_anthropic_response(
@@ -80,7 +73,7 @@ async def stream_anthropic_response(
     output: ModelOutput
     while True:
         try:
-            output = await asyncio.wait_for(asyncio.shield(generate_task), timeout=_PING_INTERVAL_S)
+            output = await asyncio.wait_for(asyncio.shield(generate_task), timeout=PING_INTERVAL_S)
             break
         except asyncio.TimeoutError:
             yield _sse('ping', {'type': 'ping'})
@@ -143,7 +136,7 @@ async def _emit_text_block(text: str, index: int) -> AsyncIterator[bytes]:
             },
         }
     )
-    for chunk in _iter_chunks(text, _TEXT_CHUNK):
+    for chunk in iter_chunks(text, TEXT_CHUNK):
         yield _sse(
             'content_block_delta', {
                 'type': 'content_block_delta',
@@ -176,7 +169,7 @@ async def _emit_tool_use_block(tool_call: Any, index: int) -> AsyncIterator[byte
         }
     )
     encoded = json.dumps(args, ensure_ascii=False)
-    for chunk in _iter_chunks(encoded, _TOOL_INPUT_CHUNK):
+    for chunk in iter_chunks(encoded, TOOL_INPUT_CHUNK):
         yield _sse(
             'content_block_delta', {
                 'type': 'content_block_delta',

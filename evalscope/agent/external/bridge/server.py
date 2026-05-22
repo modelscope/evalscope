@@ -21,11 +21,18 @@ from evalscope.utils.function_utils import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
 from ..runners.base import BridgeEndpoint
 from .sse_anthropic import stream_anthropic_response
+from .sse_openai import stream_openai_response
 from .trace_recorder import BridgeTraceRecorder
 from .translate_anthropic import (
     anthropic_request_to_messages,
     anthropic_tools_to_tool_infos,
     model_output_to_anthropic_response,
+)
+from .translate_openai import (
+    model_output_to_openai_response,
+    openai_request_to_messages,
+    openai_tool_choice,
+    openai_tools_to_tool_infos,
 )
 
 if TYPE_CHECKING:
@@ -160,6 +167,7 @@ class ModelProxyServer:
                 return
             app = web.Application()
             app.router.add_post('/anthropic/v1/messages', self._handle_anthropic_messages)
+            app.router.add_post('/openai/v1/chat/completions', self._handle_openai_chat_completions)
 
             async def _healthz(_request: web.Request) -> web.Response:
                 return web.json_response({'ok': True})
@@ -207,7 +215,7 @@ class ModelProxyServer:
             AsyncioLoopRunner.register_close_callback(self.shutdown)
             logger.info(
                 f'ModelProxyServer started on http://{self._host}:{self._actual_port} '
-                f'(Anthropic route: /anthropic/v1/messages)'
+                f'(routes: /anthropic/v1/messages, /openai/v1/chat/completions)'
             )
 
     @staticmethod
@@ -310,6 +318,128 @@ class ModelProxyServer:
         if body.get('stream'):
             return await self._respond_streaming(request, session, body, chat_messages, tool_infos, gen_config)
         return await self._respond_json(session, body, chat_messages, tool_infos, gen_config)
+
+    async def _handle_openai_chat_completions(self, request: web.Request) -> web.StreamResponse:
+        logger.debug(
+            f'bridge: POST /openai/v1/chat/completions from {request.remote} '
+            f'auth={request.headers.get("Authorization") or request.headers.get("x-api-key")!r}'
+        )
+        try:
+            session = await self._lookup_session(request)
+        except _BridgeAuthError as exc:
+            logger.debug(f'bridge: auth failed — {exc}')
+            return web.json_response(
+                {'error': {
+                    'type': 'invalid_request_error',
+                    'code': 'invalid_api_key',
+                    'message': str(exc),
+                }},
+                status=401,
+            )
+
+        body = await request.json()
+        chat_messages = openai_request_to_messages(body)
+        tool_infos = openai_tools_to_tool_infos(body.get('tools') or [])
+        tool_choice = openai_tool_choice(body.get('tool_choice'))
+        gen_config = _build_openai_generate_config(body)
+
+        stream_opts = body.get('stream_options') or {}
+        include_usage = bool(stream_opts.get('include_usage')) if isinstance(stream_opts, dict) else False
+
+        if body.get('stream'):
+            return await self._respond_streaming_openai(
+                request, session, body, chat_messages, tool_infos, tool_choice, gen_config, include_usage
+            )
+        return await self._respond_json_openai(session, body, chat_messages, tool_infos, tool_choice, gen_config)
+
+    async def _respond_json_openai(
+        self,
+        session: TrialSession,
+        body: Dict[str, Any],
+        chat_messages: list,
+        tool_infos: list,
+        tool_choice,
+        gen_config: 'GenerateConfig',
+    ) -> web.StreamResponse:
+        started = time.monotonic()
+        try:
+            output = await session.model.generate_async(
+                input=chat_messages,
+                tools=tool_infos or None,
+                tool_choice=tool_choice,
+                config=gen_config,
+            )
+        except Exception as exc:  # pragma: no cover - upstream-dependent
+            _log_upstream_failure(session, exc, mode='json')
+            return web.json_response(
+                {'error': {
+                    'type': 'api_error',
+                    'message': repr(exc)
+                }},
+                status=502,
+            )
+
+        latency_ms = (time.monotonic() - started) * 1000
+        session.recorder.record_openai_turn(body, output, latency_ms=latency_ms)
+        _log_turn(session, output, latency_ms, mode='json')
+        return web.json_response(model_output_to_openai_response(output, request_model=body.get('model')))
+
+    async def _respond_streaming_openai(
+        self,
+        request: web.Request,
+        session: TrialSession,
+        body: Dict[str, Any],
+        chat_messages: list,
+        tool_infos: list,
+        tool_choice,
+        gen_config: 'GenerateConfig',
+        include_usage: bool,
+    ) -> web.StreamResponse:
+        response = web.StreamResponse(
+            status=200,
+            headers={
+                'Content-Type': 'text/event-stream; charset=utf-8',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+            },
+        )
+        await response.prepare(request)
+
+        started = time.monotonic()
+        generate_task = asyncio.create_task(
+            session.model.generate_async(
+                input=chat_messages,
+                tools=tool_infos or None,
+                tool_choice=tool_choice,
+                config=gen_config,
+            )
+        )
+        try:
+            async for chunk in stream_openai_response(
+                generate_task,
+                request_model=body.get('model'),
+                include_usage=include_usage,
+            ):
+                await response.write(chunk)
+            output = await generate_task
+            latency_ms = (time.monotonic() - started) * 1000
+            session.recorder.record_openai_turn(body, output, latency_ms=latency_ms)
+            _log_turn(session, output, latency_ms, mode='stream')
+        except Exception as exc:  # pragma: no cover - upstream-dependent
+            _log_upstream_failure(session, exc, mode='stream')
+            error_event = (
+                f'data: {json.dumps({"error": {"type": "api_error", "message": repr(exc)}})}\n\n'
+                f'data: [DONE]\n\n'
+            ).encode('utf-8')
+            try:
+                await response.write(error_event)
+            except ConnectionResetError:
+                pass
+        finally:
+            if not generate_task.done():
+                generate_task.cancel()
+        await response.write_eof()
+        return response
 
     async def _respond_json(
         self,
@@ -507,6 +637,36 @@ def _build_generate_config(body: Dict[str, Any]) -> GenerateConfig:
         kwargs['top_p'] = body['top_p']
     if 'stop_sequences' in body and body['stop_sequences']:
         kwargs['stop_seqs'] = list(body['stop_sequences'])
+    return GenerateConfig(**kwargs)
+
+
+def _build_openai_generate_config(body: Dict[str, Any]) -> GenerateConfig:
+    """Translate OpenAI chat-completion generation params into ``GenerateConfig``.
+
+    Forces ``stream=True`` upstream (same as the anthropic path) so the
+    synthesizer drives a uniform pipeline; the client-facing response shape
+    is decided independently from ``body.get('stream')``.
+
+    TODO: ``frequency_penalty`` / ``presence_penalty`` / ``logit_bias`` /
+    ``response_format`` are not yet forwarded — add when a downstream
+    backend that respects them is wired up.
+    """
+    kwargs: Dict[str, Any] = {'stream': True}
+    if 'max_tokens' in body:
+        kwargs['max_tokens'] = body['max_tokens']
+    if 'max_completion_tokens' in body and 'max_tokens' not in body:
+        kwargs['max_tokens'] = body['max_completion_tokens']
+    if 'temperature' in body:
+        kwargs['temperature'] = body['temperature']
+    if 'top_p' in body:
+        kwargs['top_p'] = body['top_p']
+    if 'seed' in body:
+        kwargs['seed'] = body['seed']
+    if 'parallel_tool_calls' in body:
+        kwargs['parallel_tool_calls'] = bool(body['parallel_tool_calls'])
+    stop = body.get('stop')
+    if stop:
+        kwargs['stop_seqs'] = [stop] if isinstance(stop, str) else list(stop)
     return GenerateConfig(**kwargs)
 
 
