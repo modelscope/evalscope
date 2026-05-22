@@ -1,6 +1,7 @@
-import type { ReactNode, CSSProperties } from 'react'
+import type { ReactNode } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { PerfMetrics, PercentileStats } from '@/api/types'
+import { cn } from '@/lib/utils'
 
 interface PerfMetricsPanelProps {
   perfMetrics: PerfMetrics
@@ -37,21 +38,14 @@ function PercTable({ stats, unit, accentCol = 'var(--accent)', scale = 1 }: Perc
   ]
 
   return (
-    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <table className="w-full border-collapse">
       <thead>
         <tr>
           {cols.map((c) => (
             <th
               key={c.label}
-              style={{
-                fontSize: '0.68rem',
-                fontWeight: 500,
-                color: c.accent ? accentCol : 'var(--text-muted)',
-                padding: '0.25rem 0.5rem',
-                textAlign: 'right',
-                borderBottom: '1px solid var(--border)',
-                whiteSpace: 'nowrap',
-              }}
+              className="type-table-xs px-2 py-1 text-right border-b border-[var(--border)] whitespace-nowrap"
+              style={c.accent ? { color: accentCol } : undefined}
             >
               {c.label}
             </th>
@@ -63,15 +57,10 @@ function PercTable({ stats, unit, accentCol = 'var(--accent)', scale = 1 }: Perc
           {cols.map((c) => (
             <td
               key={c.label}
-              style={{
-                fontSize: '0.82rem',
-                fontVariantNumeric: 'tabular-nums',
-                color: c.accent ? 'var(--text)' : 'var(--text-muted)',
-                fontWeight: c.accent ? 500 : 400,
-                padding: '0.3rem 0.5rem',
-                textAlign: 'right',
-                whiteSpace: 'nowrap',
-              }}
+              className={cn(
+                'type-body-sm tabular-nums px-2 py-1.5 text-right whitespace-nowrap',
+                c.accent ? 'text-[var(--text)] font-medium' : 'text-[var(--text-muted)]',
+              )}
             >
               {fmt(stats[c.key] as number)}{unit}
             </td>
@@ -94,32 +83,20 @@ interface MetricSectionProps {
 
 function MetricSection({ color, label, sublabel, children }: MetricSectionProps) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
         <div
-          style={{
-            width: '3px',
-            height: '1rem',
-            borderRadius: '2px',
-            background: color,
-            flexShrink: 0,
-          }}
+          className="w-[3px] h-4 rounded-[2px] shrink-0"
+          style={{ background: color }}
         />
-        <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text)' }}>
-          {label}
-        </span>
+        <span className="type-body-sm-strong text-[var(--text)]">{label}</span>
         {sublabel && (
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-            {sublabel}
-          </span>
+          <span className="type-body-xs text-[var(--text-muted)]">{sublabel}</span>
         )}
       </div>
       <div
-        style={{
-          borderLeft: `2px solid ${color}20`,
-          marginLeft: '1px',
-          paddingLeft: '0.85rem',
-        }}
+        className="ml-px pl-3.5 border-l-2"
+        style={{ borderColor: `${color}33` }}
       >
         {children}
       </div>
@@ -153,30 +130,20 @@ function TokenTable({ usage, labels }: TokenTableProps) {
 
   const headers = ['', 'Mean', '±Std', 'P50', 'P99', 'Min', 'Max', ...(hasCount ? [labels.totalCount] : [])]
 
-  const cellBase: CSSProperties = {
-    fontSize: '0.8rem',
-    fontVariantNumeric: 'tabular-nums',
-    padding: '0.3rem 0.5rem',
-    textAlign: 'right',
-    whiteSpace: 'nowrap',
-  }
+  const cellBase = 'type-body-sm tabular-nums px-2 py-1.5 text-right whitespace-nowrap'
 
   return (
-    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <table className="w-full border-collapse">
       <thead>
         <tr>
           {headers.map((h) => (
             <th
               key={h}
-              style={{
-                fontSize: '0.68rem',
-                fontWeight: 500,
-                color: h === labels.totalCount ? 'var(--text)' : 'var(--text-muted)',
-                padding: '0.25rem 0.5rem',
-                textAlign: h === '' ? 'left' : 'right',
-                borderBottom: '1px solid var(--border)',
-                whiteSpace: 'nowrap',
-              }}
+              className={cn(
+                'type-table-xs px-2 py-1 border-b border-[var(--border)] whitespace-nowrap',
+                h === '' ? 'text-left' : 'text-right',
+                h === labels.totalCount && 'text-[var(--text)]',
+              )}
             >
               {h}
             </th>
@@ -187,31 +154,31 @@ function TokenTable({ usage, labels }: TokenTableProps) {
         {rows.map((row, i) => (
           <tr
             key={row.label}
-            style={{ borderBottom: i < rows.length - 1 ? '1px solid var(--border)' : 'none' }}
+            className={i < rows.length - 1 ? 'border-b border-[var(--border)]' : ''}
           >
-            <td style={{ ...cellBase, textAlign: 'left', color: 'var(--text-muted)', fontWeight: 500 }}>
+            <td className={cn(cellBase, 'text-left text-[var(--text-muted)] font-medium')}>
               {row.label}
             </td>
-            <td style={{ ...cellBase, color: 'var(--text)', fontWeight: 500 }}>
+            <td className={cn(cellBase, 'text-[var(--text)] font-medium')}>
               {row.stats.mean.toFixed(0)}
             </td>
-            <td style={{ ...cellBase, color: 'var(--text-muted)' }}>
+            <td className={cn(cellBase, 'text-[var(--text-muted)]')}>
               {row.stats.std.toFixed(0)}
             </td>
-            <td style={{ ...cellBase, color: 'var(--text-muted)' }}>
+            <td className={cn(cellBase, 'text-[var(--text-muted)]')}>
               {row.stats['50%'].toFixed(0)}
             </td>
-            <td style={{ ...cellBase, color: 'var(--text-muted)' }}>
+            <td className={cn(cellBase, 'text-[var(--text-muted)]')}>
               {row.stats['99%'].toFixed(0)}
             </td>
-            <td style={{ ...cellBase, color: 'var(--text-muted)' }}>
+            <td className={cn(cellBase, 'text-[var(--text-muted)]')}>
               {row.stats.min.toFixed(0)}
             </td>
-            <td style={{ ...cellBase, color: 'var(--text-muted)' }}>
+            <td className={cn(cellBase, 'text-[var(--text-muted)]')}>
               {row.stats.max.toFixed(0)}
             </td>
             {hasCount && (
-              <td style={{ ...cellBase, color: 'var(--text)', fontWeight: 600 }}>
+              <td className={cn(cellBase, 'text-[var(--text)] font-semibold')}>
                 {row.count !== undefined ? row.count.toLocaleString() : '—'}
               </td>
             )}
@@ -230,44 +197,22 @@ function KpiStrip({
   items: { label: string; value: string; color: string }[]
 }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        gap: '0',
-        background: 'var(--bg-deep)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-sm)',
-        overflow: 'hidden',
-      }}
-    >
+    <div className="flex bg-[var(--bg-deep)] border border-[var(--border)] rounded-[var(--radius-sm)] overflow-hidden">
       {items.map((item, i) => (
         <div
           key={item.label}
-          style={{
-            flex: 1,
-            padding: '0.65rem 0.75rem',
-            borderRight: i < items.length - 1 ? '1px solid var(--border)' : 'none',
-          }}
+          className={cn(
+            'flex-1 px-3 py-2.5',
+            i < items.length - 1 && 'border-r border-[var(--border)]',
+          )}
         >
           <div
-            style={{
-              fontSize: '1.1rem',
-              fontWeight: 600,
-              fontVariantNumeric: 'tabular-nums',
-              color: item.color,
-              lineHeight: 1.2,
-            }}
+            className="text-lg font-semibold tabular-nums leading-tight"
+            style={{ color: item.color }}
           >
             {item.value}
           </div>
-          <div
-            style={{
-              fontSize: '0.65rem',
-              color: 'var(--text-muted)',
-              marginTop: '0.15rem',
-              whiteSpace: 'nowrap',
-            }}
-          >
+          <div className="text-[10px] text-[var(--text-muted)] mt-0.5 whitespace-nowrap">
             {item.label}
           </div>
         </div>
@@ -279,7 +224,7 @@ function KpiStrip({
 // ── Separator ─────────────────────────────────────────────────────────────────
 
 function Sep() {
-  return <div style={{ height: '1px', background: 'var(--border)' }} />
+  return <div className="h-px bg-[var(--border)]" />
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -319,7 +264,7 @@ export default function PerfMetricsPanel({ perfMetrics }: PerfMetricsPanelProps)
   ]
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div className="flex flex-col gap-4">
 
       {/* Overview strip */}
       <KpiStrip items={kpis} />
@@ -328,7 +273,7 @@ export default function PerfMetricsPanel({ perfMetrics }: PerfMetricsPanelProps)
 
       {/* Latency distribution */}
       <MetricSection color={C_LATENCY} label={t('reportDetail.latencyDist')} sublabel="(s)">
-        <div style={{ overflowX: 'auto' }}>
+        <div className="overflow-x-auto">
           <PercTable stats={latency} unit="s" accentCol={C_LATENCY} />
         </div>
       </MetricSection>
@@ -342,7 +287,7 @@ export default function PerfMetricsPanel({ perfMetrics }: PerfMetricsPanelProps)
             label={t('reportDetail.ttft')}
             sublabel={`${t('reportDetail.ttftDesc')} (ms)`}
           >
-            <div style={{ overflowX: 'auto' }}>
+            <div className="overflow-x-auto">
               <PercTable stats={ttft} unit="ms" accentCol={C_TTFT} scale={1000} />
             </div>
           </MetricSection>
@@ -358,7 +303,7 @@ export default function PerfMetricsPanel({ perfMetrics }: PerfMetricsPanelProps)
             label={t('reportDetail.tpot')}
             sublabel={`${t('reportDetail.tpotDesc')} (ms)`}
           >
-            <div style={{ overflowX: 'auto' }}>
+            <div className="overflow-x-auto">
               <PercTable stats={tpot} unit="ms" accentCol={C_TPOT} scale={1000} />
             </div>
           </MetricSection>
@@ -369,7 +314,7 @@ export default function PerfMetricsPanel({ perfMetrics }: PerfMetricsPanelProps)
 
       {/* Token usage */}
       <MetricSection color={C_TOKEN} label={t('reportDetail.tokenUsage')} sublabel="(tokens)">
-        <div style={{ overflowX: 'auto' }}>
+        <div className="overflow-x-auto">
           <TokenTable
             usage={usage}
             labels={{

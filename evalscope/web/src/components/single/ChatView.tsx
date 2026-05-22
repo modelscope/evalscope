@@ -79,7 +79,7 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId 
         <LegacyMessages prediction={prediction} />
       )}
 
-      <div style={{ borderTop: '1px solid var(--color-border-subtle)' }} />
+      <div style={{ borderTop: '1px solid var(--border)' }} />
 
       <EvalResultPanel
         pred={prediction.Pred}

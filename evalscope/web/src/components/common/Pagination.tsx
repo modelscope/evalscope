@@ -13,17 +13,17 @@ export default function Pagination({ page, total, onChange }: Props) {
       <button
         disabled={page <= 1}
         onClick={() => onChange(page - 1)}
-        className="p-1 rounded hover:bg-[var(--color-surface-hover)] disabled:opacity-30"
+        className="p-1 rounded hover:bg-[var(--bg-card2)] disabled:opacity-30"
       >
         <ChevronLeft size={16} />
       </button>
-      <span className="text-[var(--color-ink-muted)] min-w-[5rem] text-center">
+      <span className="text-[var(--text-muted)] min-w-[5rem] text-center">
         {page} / {total}
       </span>
       <button
         disabled={page >= total}
         onClick={() => onChange(page + 1)}
-        className="p-1 rounded hover:bg-[var(--color-surface-hover)] disabled:opacity-30"
+        className="p-1 rounded hover:bg-[var(--bg-card2)] disabled:opacity-30"
       >
         <ChevronRight size={16} />
       </button>

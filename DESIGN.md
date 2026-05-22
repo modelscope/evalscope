@@ -17,7 +17,7 @@ colors:
   # Text (3-step ladder)
   text: "#e2e8f0"
   text-muted: "#8896aa"
-  text-dim: "#505870"
+  text-dim: "#7a8195"
   on-filled: "#ffffff"
 
   # Hairline borders
@@ -39,10 +39,14 @@ colors:
   bg-light: "#f5f6fa"
   bg-card-light: "#ffffff"
   bg-card2-light: "#eef0f7"
+  bg-deep-light: "#e8eaf2"
   accent-light: "#6c57e8"
   text-light: "#1a1f2e"
   text-muted-light: "#5a6378"
-  text-dim-light: "#9aa0b4"
+  text-dim-light: "#7c8497"
+  border-light: "rgba(108,87,232,0.20)"
+  border-md-light: "rgba(108,87,232,0.30)"
+  border-strong-light: "rgba(108,87,232,0.40)"
 
   # Compare slot accents (per-model tagging in compare view)
   compare-0: "#818cf8"
@@ -131,8 +135,8 @@ typography:
     letterSpacing: normal
     lineHeight: 1.4
 fontFamily:
-  sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
-  mono: '"SF Mono", "Cascadia Code", "Fira Code", monospace'
+  sans: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+  mono: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", "DejaVu Sans Mono", "Courier New", monospace'
 rounded:
   none: 0px
   xs: 4px
@@ -152,11 +156,18 @@ spacing:
   4xl: 48px
   5xl: 64px
 shadows:
+  # Dark theme — single deep drop (works on near-black surfaces).
   sm: "0 2px 8px rgba(0,0,0,0.4)"
   md: "0 4px 20px rgba(0,0,0,0.55)"
   lg: "0 8px 40px rgba(0,0,0,0.6)"
   glow: "0 0 20px rgba(129,109,248,0.25)"
   glow-soft: "0 0 12px rgba(129,109,248,0.2)"
+  # Light theme — two-stop stacks so cards lift off the near-white page.
+  sm-light: "0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.06)"
+  md-light: "0 4px 16px rgba(15,23,42,0.08), 0 12px 32px rgba(15,23,42,0.06)"
+  lg-light: "0 12px 24px rgba(15,23,42,0.10), 0 24px 48px rgba(15,23,42,0.08)"
+  glow-light: "0 0 20px rgba(108,87,232,0.22)"
+  glow-soft-light: "0 0 12px rgba(108,87,232,0.18)"
 gradients:
   brand: "linear-gradient(135deg, #816DF8 0%, #a78bfa 100%)"
   accent: "linear-gradient(135deg, #0F9C7E 0%, #06b6d4 100%)"
@@ -191,7 +202,7 @@ score-formula:
 
 EvalScope's web dashboard is a developer-platform brand for **LLM evaluation and benchmarking** — the page is an instrument panel for engineers running evals, written for people who already know the syntax. It earns that posture with a stark dark-indigo system: near-black `{colors.bg}` canvas, ice-cool `{colors.text}` body, a 3-step text contrast ladder (`{colors.text}` → `{colors.text-muted}` → `{colors.text-dim}`) that gives every label, value, and metadata caption its own deliberate step. The only place the brand introduces saturation at console scale is the single brand violet `{colors.accent}` (`#816DF8`) — applied to active states, primary CTAs, focus rings, and the wordmark accent — and the *dynamic HSL score gradient* that maps a 0-1 metric to a `red → yellow → green` chip color. That score gradient is the entire emotional payload of the product: a benchmark either passes or fails, and the UI must say so at a glance.
 
-Type is the second decisive voice. The brand uses **the native system stack** (no web font is loaded) — `-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, ...` for narrative and `"SF Mono", "Cascadia Code", "Fira Code"` for technical labels. The intent is "feels native to your OS, never a marketing site." Headlines are sentence-case with `tracking-tight` on display numbers; **all-caps + `tracking-wider`** is reserved for tiny section eyebrows (12 px / 10 px), never for headlines. Weight ceiling for the sans is **700** (Tailwind `font-bold`); the typical working set is 400 / 500 / 600 / 700.
+Type is the second decisive voice. The brand uses **cross-platform system font stacks** (no web font is loaded) — `system-ui, -apple-system, "Segoe UI", Roboto, ...` for narrative and `ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", ...` for technical labels. Each OS resolves to its own native UI face (SF Pro / Segoe UI / Roboto for sans; SF Mono / Consolas / Liberation Mono for mono). The intent is "feels native to your OS, never a marketing site." Headlines are sentence-case with `tracking-tight` on display numbers; **all-caps + `tracking-wider`** is reserved for tiny section eyebrows (12 px / 10 px), never for headlines. Weight ceiling for the sans is **700** (Tailwind `font-bold`); the typical working set is 400 / 500 / 600 / 700.
 
 Surfaces use a four-step indigo ladder: `{colors.bg}` (the page itself), `{colors.bg-deep}` (sunken — inputs, nav pills), `{colors.bg-card}` (the default card surface), `{colors.bg-card2}` (hover and elevated rows). Shadows on dark are intentionally **deeper than they look** — `0 4px 20px rgba(0,0,0,0.55)` is the default card shadow — because near-black surfaces eat soft drops. Cards never float on a single heavy blur; they sit on the page held by a 1-px violet-tinted hairline + a tight stacked drop. A companion **light theme** flips polarity (paper-white page, white cards, `#6c57e8` accent) — the design assumes the user will toggle, but the dashboard is engineered dark-first.
 
@@ -231,7 +242,7 @@ The brand operates with a 4-step indigo ladder, sunken-to-elevated:
 
 - **Ink** (`{colors.text}` — `#e2e8f0` / `#1a1f2e`): All headings, body, table cell values, button labels on non-filled surfaces.
 - **Muted** (`{colors.text-muted}` — `#8896aa` / `#5a6378`): Secondary labels, nav-link inactive text, card-header micro-labels, button "ghost" idle text. *This is also the color section-eyebrow uppercase labels are set in.*
-- **Dim** (`{colors.text-dim}` — `#505870` / `#9aa0b4`): Lowest-priority text — placeholder text, timestamps in compact rows, table empty-state. ⚠️ See *Do's and Don'ts* — this token sits near the AA contrast floor on dark cards (~3.5:1); reserve for ≥ 14 px non-essential metadata.
+- **Dim** (`{colors.text-dim}` — `#7a8195` / `#7c8497`): Lowest-priority text — placeholder text, timestamps in compact rows, table empty-state. **Contrast tuned to ~3.6 : 1** against `{colors.bg-card}` on both themes — sits just above the WCAG AA Large floor (3 : 1), still **below AA Normal (4.5 : 1)**. ⚠️ Reserve for ≥ 14 px non-essential metadata. Earlier values `#505870` / `#9aa0b4` measured at only ~2.6 : 1 (fails AA Large) and were lifted in May 2026 — do not regress.
 - **On Filled** (`{colors.on-filled}` — `#ffffff` / `#ffffff`): Text on `{colors.accent}` and other saturated fills.
 
 ### Semantic
@@ -289,12 +300,12 @@ Always applied to the 40 × 40 `{rounded.md}` icon tile inside a `{components.kp
 
 ### Font Family
 
-Two faces carry the entire system — **both are the user's OS-native faces** (no `@font-face` is loaded; this is deliberate):
+Two cross-platform **system font stacks** carry the entire system — each OS resolves to its own native UI face. No `@font-face` is loaded; this is deliberate. Each stack starts with the modern CSS `system-ui` / `ui-monospace` generic family and falls back to named faces for older browsers and per-OS targets:
 
-1. **System sans** (`{typography.font-sans}` — `-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`): Every display, body, button, link, and label. Working weights: 400 / 500 / 600 / 700.
-2. **System mono** (`{typography.font-mono}` — `"SF Mono", "Cascadia Code", "Fira Code", monospace`): Timestamps, scores, model IDs, and any tabular-numeric data. Weight 400 only.
+1. **System sans** (`{typography.font-sans}` — `system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`): Every display, body, button, link, and label. Working weights: 400 / 500 / 600 / 700. Resolves to **SF Pro** on macOS / iOS, **Segoe UI** on Windows, **Roboto** on Android / ChromeOS, and the desktop default (Cantarell / Noto / DejaVu) on Linux.
+2. **System mono** (`{typography.font-mono}` — `ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", "DejaVu Sans Mono", "Courier New", monospace`): Timestamps, scores, model IDs, and any tabular-numeric data. Weight 400 only. Resolves to **SF Mono** on macOS, **Consolas** on Windows, **Liberation Mono / DejaVu Sans Mono** on Linux. The full chain matters — without the OS-specific named fallbacks, non-mac users land on `Courier New`, breaking the tabular-numeric look.
 
-Antialiasing is forced (`-webkit-font-smoothing: antialiased`). No web font is loaded — the brand reads as "native developer tool, not marketing site" precisely because of this.
+Antialiasing is forced (`-webkit-font-smoothing: antialiased`). No web font is loaded — the brand reads as "native developer tool, not marketing site" precisely because of this. The trade-off is per-OS rendering variance; if pixel-identical screenshots across platforms are required, see *Note on Font Substitutes* below.
 
 ### Hierarchy
 
@@ -394,13 +405,15 @@ The top-nav icon-only buttons (tablet) are 32 × 32 — *under the 44 × 44 WCAG
 | Level | Treatment | Use |
 |---|---|---|
 | **L0 — Flat** | No border, no shadow. | Page body, large empty regions, full-bleed dark sections. |
-| **L1 — Hairline** | 1-px `{colors.border}` (violet at ~10-12 % alpha) only. | Default content cards (`{components.card}`), table chrome, form inputs. |
-| **L2 — Lifted** | `{shadows.sm}` (`0 2px 8px rgba(0,0,0,0.4)` dark / `0 2px 8px rgba(0,0,0,0.07)` light) + L1 hairline. | KPI cards, path-bar at the top of the dashboard, anything that needs to read as "above the page." |
-| **L3 — Floating** | `{shadows.md}` (`0 4px 20px rgba(0,0,0,0.55)` dark) + L1 hairline. | Default for the primary card variants when the page already has heavy chrome. |
-| **L4 — Elevated** | `{shadows.lg}` (`0 8px 40px rgba(0,0,0,0.6)` dark) + `{colors.border-strong}` border. | Hover state for clickable cards, modal / dialog surfaces, dropdown menus. |
-| **L5 — Glow** | `{shadows.glow}` (`0 0 20px rgba(129,109,248,0.25)`) on top of L1-L3. | The signature violet halo — primary button hover, active nav pill, sometimes active tab. |
+| **L1 — Hairline** | 1-px `{colors.border}` only. Dark: violet at **10 %** alpha (the near-black page lets even a faint hairline read). Light: violet at **20 %** alpha (a 10-12 % hairline disappears against a near-white page; cards lose definition). | Default content cards (`{components.card}`), table chrome, form inputs. |
+| **L2 — Lifted** | `{shadows.sm}` + L1 hairline. Dark: single deep drop `0 2px 8px rgba(0,0,0,0.4)`. Light: two-stop stack `0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.06)` — a single weak drop on white reads as "smudged page," not as "lifted card." | KPI cards, path-bar at the top of the dashboard, anything that needs to read as "above the page." |
+| **L3 — Floating** | `{shadows.md}` + L1 hairline. Dark `0 4px 20px rgba(0,0,0,0.55)`. Light `0 4px 16px rgba(15,23,42,0.08), 0 12px 32px rgba(15,23,42,0.06)`. | Default for the primary card variants when the page already has heavy chrome. |
+| **L4 — Elevated** | `{shadows.lg}` + `{colors.border-strong}`. Dark `0 8px 40px rgba(0,0,0,0.6)`. Light `0 12px 24px rgba(15,23,42,0.10), 0 24px 48px rgba(15,23,42,0.08)`. | Hover state for clickable cards, modal / dialog surfaces, dropdown menus. |
+| **L5 — Glow** | `{shadows.glow}` on top of L1-L3. Dark `0 0 20px rgba(129,109,248,0.25)`. Light `0 0 20px rgba(108,87,232,0.22)`. | The signature violet halo — primary button hover, active nav pill, sometimes active tab. |
 
-**Brand rule**: dark surfaces require *deeper* shadows than light surfaces. The dark theme's `--shadow` is `rgba(0,0,0,0.55)` because lighter values disappear against `{colors.bg-card}`. Don't simply downscale a light-theme shadow into the dark theme.
+**Brand rule (depth)**: dark and light themes are *not* the same shadow scaled down. Dark surfaces use a **single deep drop** (`rgba(0,0,0,0.4-0.6)`) — the near-black canvas eats soft drops. Light surfaces use a **two-stop stack** (`0 1px tight + 0 4px diffuse`) tinted to slate (`rgba(15,23,42,*)`) rather than pure black — a single `rgba(0,0,0,0.07)` drop on white reads as "page smudge," not as a card lifting off the surface.
+
+**Brand rule (hairlines)**: light theme borders sit at **20 % alpha**, not 10-12 %. Against `{colors.bg}` (#f5f6fa), a 10 % violet hairline composites to within a few luminance steps of the page — the card boundary visually dissolves. The dark theme can run at 10 % because the bg-to-card luminance delta is already doing most of the boundary work.
 
 ### Decorative Depth
 
@@ -592,7 +605,9 @@ Disabled = `opacity: 0.5` + `cursor: not-allowed`. Transitions use `{tokens.tran
 - Don't introduce a 6th brand hue or a 4th compare-slot color. The palette is closed at violet + emerald + amber + red + slate (plus the dynamic HSL score). New accents flatten the voice.
 - Don't render headlines in all-caps. UPPERCASE is the eyebrow voice (12 px / 10 px micro-labels) — never the title voice. Card titles and model names stay sentence-case.
 - Don't promote the sans to `font-extrabold` / `font-black`. The display weight ceiling is **700**.
-- Don't use `{colors.text-dim}` for essential UI text on dark cards — its ~3.5:1 contrast against `{colors.bg-card}` is below WCAG AA for normal body. Reserve for ≥ 14 px non-essential metadata (timestamps, "empty" labels, scrollbar thumb).
+- Don't use `{colors.text-dim}` for essential UI text on either theme — its ~3.6 : 1 contrast against `{colors.bg-card}` clears AA Large (3 : 1) but is below WCAG AA Normal (4.5 : 1). Reserve for ≥ 14 px non-essential metadata (timestamps, "empty" labels, scrollbar thumb). Every code-side use must carry the inline note `// text-dim allowed: non-essential ≥14px metadata (DESIGN.md §Text)` so reviewers can audit it.
+- Don't reuse a dark-theme shadow value verbatim on light. The light palette stacks two slate-tinted drops (`rgba(15,23,42,0.04)` + `rgba(15,23,42,0.06)`) — a single `rgba(0,0,0,0.07)` drop on white reads as a page smudge, not as a lifted card. See *Elevation & Depth*.
+- Don't drop the light-theme `{colors.border}` below 18 % alpha. At 10-12 % (the dark-theme value) the violet hairline composites into the near-white page and cards lose their boundary. Light theme borders sit at 20 %.
 - Don't drop a single heavy 8-px-blur drop-shadow on a card. The dark theme requires *deeper* multi-stop shadows (`rgba(0,0,0,0.55)` at 20-40 px) — soft drops disappear on near-black.
 - Don't apply `{gradients.brand}` to body text or table cells. Gradient-text is for hero / wordmark moments only.
 - Don't bypass `{components.button}` to write custom `bg-[var(--accent)]` buttons inline. The button variants encode the glow, the scale-press, and the disabled state — re-deriving them by hand drifts the brand.

@@ -15,6 +15,7 @@ import { contentToText } from './chatHelpers'
 import { type Role } from './roleConfig'
 import { MessageRow, SystemPromptRow, HeaderPerfChip } from './MessageComponents'
 import { type ToolCallEntry, ToolCallsGroup } from './ToolCallComponents'
+import { bubbleAccent } from '@/components/ui/ChatBubble'
 
 /* ─── EnvExecRow ───────────────────────────────────────────── */
 
@@ -29,11 +30,11 @@ export function EnvExecRow({ event }: { event: AgentTraceEvent }) {
         gap: '0.5rem',
         padding: '0.35rem 0.6rem',
         background: 'var(--bg-deep)',
-        border: '1px solid var(--color-border-subtle)',
+        border: '1px solid var(--border)',
         borderRadius: '0.4rem',
         fontSize: '0.72rem',
         fontFamily: 'var(--font-mono, monospace)',
-        color: 'var(--color-ink-muted)',
+        color: 'var(--text-muted)',
         marginTop: '0.4rem',
       }}
     >
@@ -340,11 +341,11 @@ export function TraceEventPill({ event }: { event: AgentTraceEvent }) {
   const cfg = (() => {
     switch (event.type) {
       case 'model_generate':
-        return { Icon: Sparkles, color: 'var(--bubble-bot-color)', labelKey: 'trace.modelGenerate' }
+        return { Icon: Sparkles, color: bubbleAccent('bot'), labelKey: 'trace.modelGenerate' }
       case 'tool_call':
-        return { Icon: Wrench, color: 'var(--bubble-user-color)', labelKey: 'trace.toolCall' }
+        return { Icon: Wrench, color: bubbleAccent('user'), labelKey: 'trace.toolCall' }
       case 'tool_result':
-        return { Icon: Wrench, color: 'var(--bubble-tool-color)', labelKey: 'trace.toolResult' }
+        return { Icon: Wrench, color: bubbleAccent('tool'), labelKey: 'trace.toolResult' }
       case 'env_exec':
         return { Icon: Cpu, color: 'var(--text-muted)', labelKey: 'trace.envExec' }
       case 'error':
@@ -550,7 +551,7 @@ export function StepBlock({
           width: '100%',
           background: 'none',
           border: 'none',
-          borderBottom: '1px dashed var(--color-border-subtle)',
+          borderBottom: '1px dashed var(--border)',
           padding: '0.3rem 0 0.4rem 0',
           marginBottom: '0.5rem',
           cursor: 'pointer',

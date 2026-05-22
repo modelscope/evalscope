@@ -6,10 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EvalScope</title>
     <script>
-      // Apply saved theme before first paint to avoid flash
+      // Apply theme before first paint to avoid FOUC.
+      // Order: explicit user preference (localStorage) > OS preference (prefers-color-scheme) > dark.
       ;(function () {
-        const t = localStorage.getItem('evalscope-theme')
-        document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark')
+        var saved = localStorage.getItem('evalscope-theme')
+        var theme
+        if (saved === 'light' || saved === 'dark') {
+          theme = saved
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+          theme = 'light'
+        } else {
+          theme = 'dark'
+        }
+        document.documentElement.setAttribute('data-theme', theme)
       })()
     </script>
   </head>

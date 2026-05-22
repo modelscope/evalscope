@@ -14,6 +14,9 @@ import Button from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
 import Skeleton from '@/components/ui/Skeleton'
 import Badge from '@/components/ui/Badge'
+import ScoreBadge from '@/components/ui/ScoreBadge'
+import Eyebrow from '@/components/ui/Eyebrow'
+import { cn } from '@/lib/utils'
 import PlotlyChart from '@/components/charts/PlotlyChart'
 import ChatView from '@/components/single/ChatView'
 import { Plus, ChevronLeft, ChevronRight, AlertCircle, CircleCheck, CircleX } from 'lucide-react'
@@ -32,6 +35,10 @@ interface MergedPrediction {
 type PerModelFilter = 'any' | 'pass' | 'fail'
 
 // Distinct accent color palette for each model column (up to 3)
+// DESIGN.md §Compare Slots: only 3 brand-color slots exist.
+// Do NOT add a 4th entry to this palette — extra models must collapse to a
+// numbered legend instead. Iteration paths use `MODEL_PALETTE[idx] ?? MODEL_PALETTE[0]`
+// as a safety fallback in case slicing is bypassed upstream.
 const MODEL_PALETTE = [
   {
     dot: 'var(--compare-0-dot)',
@@ -52,6 +59,7 @@ const MODEL_PALETTE = [
     headerBg: 'var(--compare-2-bg-header)',
   },
 ]
+const MAX_COMPARE_SLOTS = MODEL_PALETTE.length
 
 // ------------------------------------------------------------------ //
 // Main Component                                                      //
@@ -63,10 +71,12 @@ export default function ComparePage() {
   const { rootPath: ctxRootPath, setRootPath, loadMultiReports, loading, reportCache } = useReports()
 
   // URL params — limit to 3 models
+  // DESIGN.md §Compare Slots: only 3 brand-color slots exist. We hard-clamp here;
+  // do NOT invent a 4th brand color — extra reports are dropped from the comparison.
   const rootPath = qp.get('root_path') || ctxRootPath
   const reportsParam = qp.get('reports') || ''
   const reportNames = useMemo(
-    () => reportsParam.split(';').filter(Boolean).slice(0, 3),
+    () => reportsParam.split(';').filter(Boolean).slice(0, MAX_COMPARE_SLOTS),
     [reportsParam],
   )
 
@@ -283,6 +293,7 @@ export default function ComparePage() {
       <div className="page-enter">
         <Breadcrumb items={[{ label: t('reports.title'), href: '/reports' }, { label: t('compare.title') }]} />
         <div className="flex flex-col items-center justify-center gap-4 py-20">
+          {/* text-dim allowed: empty-state alert icon (DESIGN.md §Text) */}
           <AlertCircle size={48} className="text-[var(--text-dim)]" />
           <p className="text-[var(--text-muted)] text-lg">{t('compare.needTwo')}</p>
         </div>
@@ -324,7 +335,7 @@ export default function ComparePage() {
               {t('compare.addModel')}
             </Button>
           ))}
-          <span className="text-xs text-[var(--text-dim)] ml-auto">{t('compare.maxThreeHint')}</span>
+          <span className="text-xs text-[var(--text-muted)] ml-auto">{t('compare.maxThreeHint')}</span>
         </div>
       </Card>
 
@@ -416,28 +427,27 @@ function ScoreTab({
 
       <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden shadow-[var(--shadow-sm)]">
         <div className="flex items-center border-b border-[var(--border)] px-5 py-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-            {t('multi.modelScores')}
-          </h3>
+          <h3 className="type-label-xs">{t('multi.modelScores')}</h3>
         </div>
 
         {scoreTableData.length === 0 ? (
+          // text-dim allowed: non-essential ≥14px metadata (DESIGN.md §Text)
           <div className="py-12 text-center text-sm text-[var(--text-dim)]">{t('common.noData')}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="text-sm border-collapse w-full">
               <thead>
                 <tr className="border-b border-[var(--border)]">
-                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)] sticky left-0 bg-[var(--bg-card)] z-10 border-r border-[var(--border)] w-32">
+                  <th className="px-3 py-2.5 text-left type-table-xs sticky left-0 bg-[var(--bg-card)] z-10 border-r border-[var(--border)] w-32">
                     Model
                   </th>
                   {datasetNames.map((ds) => (
-                    <th key={ds} className="py-2.5 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)] whitespace-nowrap w-[100px]">
+                    <th key={ds} className="py-2.5 text-center type-table-xs whitespace-nowrap w-[100px]">
                       {ds}
                     </th>
                   ))}
                   {avgRow && (
-                    <th className="py-2.5 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--accent)] whitespace-nowrap border-l border-[var(--border)] w-[100px]">
+                    <th className="py-2.5 text-center type-table-xs !text-[var(--accent)] whitespace-nowrap border-l border-[var(--border)] w-[100px]">
                       {t('compare.average')}
                     </th>
                   )}
@@ -466,6 +476,7 @@ function ScoreTab({
                               {(score * 100).toFixed(1)}%
                             </div>
                           ) : (
+                            // text-dim allowed: em-dash placeholder, decorative non-essential glyph (DESIGN.md §Text)
                             <div className="w-full py-1.5 px-2 text-xs text-center text-[var(--text-dim)] bg-[var(--bg-deep)] rounded-[var(--radius-xs)]">—</div>
                           )}
                         </td>
@@ -572,6 +583,7 @@ function PredictionTab({
     return (
       <Card>
         <div className="flex flex-col items-center justify-center gap-3 py-12">
+          {/* text-dim allowed: empty-state alert icon (DESIGN.md §Text) */}
           <AlertCircle size={32} className="text-[var(--text-dim)]" />
           <p className="text-[var(--text-muted)]">{t('compare.noCommon')}</p>
         </div>
@@ -633,32 +645,19 @@ function PredictionTab({
       <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-4 flex flex-col gap-3">
         {/* Quick preset row */}
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-dim)]">
-            {t('compare.filterByModel')}
-          </span>
-          <div
-            style={{
-              display: 'inline-flex',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--border)',
-              overflow: 'hidden',
-            }}
-          >
+          <Eyebrow as="span">{t('compare.filterByModel')}</Eyebrow>
+          <div className="inline-flex rounded-[var(--radius-sm)] border border-[var(--border)] overflow-hidden">
             {presets.map(({ label, active, onClick }, idx, arr) => (
               <button
                 key={label}
                 onClick={onClick}
-                style={{
-                  padding: '0.3rem 0.85rem',
-                  fontSize: '0.78rem',
-                  fontWeight: 500,
-                  background: active ? 'var(--accent)' : 'transparent',
-                  color: active ? 'var(--bg)' : 'var(--text-muted)',
-                  border: 'none',
-                  borderRight: idx < arr.length - 1 ? '1px solid var(--border)' : 'none',
-                  cursor: 'pointer',
-                  transition: 'background 0.15s, color 0.15s',
-                }}
+                className={cn(
+                  'px-3.5 py-1.5 type-button-sm transition-colors cursor-pointer',
+                  active
+                    ? 'bg-[var(--accent)] text-[var(--text-on-filled)]'
+                    : 'bg-transparent text-[var(--text-muted)] hover:text-[var(--text)]',
+                  idx < arr.length - 1 && 'border-r border-[var(--border)]',
+                )}
               >
                 {label}
               </button>
@@ -674,8 +673,8 @@ function PredictionTab({
             const rate = passRates[name]
             const chips: { key: PerModelFilter; label: string; icon?: ReactNode; activeBg: string }[] = [
               { key: 'any', label: t('compare.any'), activeBg: 'var(--accent)' },
-              { key: 'pass', label: t('common.pass'), icon: <CircleCheck size={12} />, activeBg: 'var(--color-pass)' },
-              { key: 'fail', label: t('common.fail'), icon: <CircleX size={12} />, activeBg: 'var(--color-fail)' },
+              { key: 'pass', label: t('common.pass'), icon: <CircleCheck size={12} />, activeBg: 'var(--pass)' },
+              { key: 'fail', label: t('common.fail'), icon: <CircleX size={12} />, activeBg: 'var(--fail)' },
             ]
             return (
               <div key={name} className="flex items-center gap-3 flex-wrap">
@@ -692,27 +691,19 @@ function PredictionTab({
                 </div>
 
                 {/* Tri-state chips */}
-                <div style={{ display: 'inline-flex', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+                <div className="inline-flex rounded-[var(--radius-sm)] border border-[var(--border)] overflow-hidden">
                   {chips.map(({ key, label, icon, activeBg }, ci, ca) => {
                     const isActive = cur === key
                     return (
                       <button
                         key={key}
                         onClick={() => { setModelFilter(name, key); setPage(1) }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.25rem',
-                          padding: '0.3rem 0.7rem',
-                          fontSize: '0.75rem',
-                          fontWeight: 500,
-                          background: isActive ? activeBg : 'transparent',
-                          color: isActive ? 'var(--bg)' : 'var(--text-dim)',
-                          border: 'none',
-                          borderRight: ci < ca.length - 1 ? '1px solid var(--border)' : 'none',
-                          cursor: 'pointer',
-                          transition: 'background 0.15s, color 0.15s',
-                        }}
+                        className={cn(
+                          'flex items-center gap-1 px-2.5 py-1.5 type-button-sm transition-colors cursor-pointer',
+                          !isActive && 'bg-transparent text-[var(--text-muted)] hover:text-[var(--text)]',
+                          ci < ca.length - 1 && 'border-r border-[var(--border)]',
+                        )}
+                        style={isActive ? { background: activeBg, color: 'var(--text-on-filled)' } : undefined}
                       >
                         {icon}
                         {label}
@@ -783,7 +774,6 @@ function PredictionTab({
             const palette = MODEL_PALETTE[idx] ?? MODEL_PALETTE[0]
             const modelRow = currentRow.models[name]
             if (!modelRow) return null
-            const pass = modelRow.NScore >= threshold
             return (
               <div
                 key={name}
@@ -808,15 +798,11 @@ function PredictionTab({
                       {displayNames[name] ?? (parseReportName(name).model || name)}
                     </span>
                   </div>
-                  <span
-                    className="text-xs font-mono font-semibold ml-2 shrink-0 px-2 py-0.5 rounded"
-                    style={{
-                      backgroundColor: pass ? 'var(--color-accent-muted)' : 'var(--danger-bg)',
-                      color: pass ? 'var(--bubble-bot-color)' : 'var(--danger)',
-                    }}
-                  >
-                    {modelRow.NScore.toFixed(4)}
-                  </span>
+                  <ScoreBadge
+                    score={modelRow.NScore}
+                    threshold={threshold}
+                    className="ml-2 shrink-0 !font-mono"
+                  />
                 </div>
 
                 {/* ChatView */}
@@ -835,6 +821,7 @@ function PredictionTab({
       {/* ── Empty state ── */}
       {!predictionsLoading && mergedPredictions.length > 0 && filtered.length === 0 && (
         <Card>
+          {/* text-dim allowed: non-essential ≥14px metadata (DESIGN.md §Text) */}
           <div className="text-center py-8 text-[var(--text-dim)]">{t('common.noData')}</div>
         </Card>
       )}

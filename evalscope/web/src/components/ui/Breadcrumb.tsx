@@ -19,6 +19,7 @@ export default function Breadcrumb({ items, className }: BreadcrumbProps) {
         const isLast = i === items.length - 1
         return (
           <span key={i} className="flex items-center gap-1.5">
+            {/* text-dim allowed: chevron separator icon (DESIGN.md §Text) */}
             {i > 0 && <ChevronRight size={12} className="text-[var(--text-dim)]" />}
             {item.href && !isLast ? (
               <Link

@@ -12,10 +12,17 @@ const ThemeContext = createContext<ThemeCtx>({
   toggleTheme: () => {},
 })
 
+function resolveInitialTheme(): Theme {
+  const saved = localStorage.getItem('evalscope-theme')
+  if (saved === 'light' || saved === 'dark') return saved
+  if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: light)').matches) {
+    return 'light'
+  }
+  return 'dark'
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(
-    () => (localStorage.getItem('evalscope-theme') as Theme) || 'dark',
-  )
+  const [theme, setThemeState] = useState<Theme>(resolveInitialTheme)
 
   useEffect(() => {
     const root = document.documentElement

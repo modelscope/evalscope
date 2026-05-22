@@ -2,6 +2,7 @@ import { Wrench } from 'lucide-react'
 import type { ChatMessage } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
 import Collapsible from '@/components/ui/Collapsible'
+import { bubbleAccent, bubbleBorder } from '@/components/ui/ChatBubble'
 import { fmtMs } from '@/utils/formatUtils'
 import { contentToText, argsPreview } from './chatHelpers'
 
@@ -23,7 +24,7 @@ export function ToolObservation({ msg }: { msg: ChatMessage }) {
 
   return (
     <Collapsible
-      style={{ borderLeft: '2px solid var(--bubble-tool-border)', paddingLeft: '0.6rem', marginTop: '0.25rem' }}
+      style={{ borderLeft: `2px solid ${bubbleBorder('tool')}`, paddingLeft: '0.6rem', marginTop: '0.25rem' }}
       headerStyle={{ color: headerColor, fontSize: '0.72rem' }}
       chevronSize={11}
       chevronColor={headerColor}
@@ -35,7 +36,7 @@ export function ToolObservation({ msg }: { msg: ChatMessage }) {
               width: 6,
               height: 6,
               borderRadius: '50%',
-              background: hasError ? 'var(--danger)' : 'var(--bubble-bot-color)',
+              background: hasError ? 'var(--danger)' : bubbleAccent('bot'),
               flexShrink: 0,
             }}
           />
@@ -69,7 +70,7 @@ export function ToolObservation({ msg }: { msg: ChatMessage }) {
           borderRadius: '0.35rem',
           fontSize: '0.7rem',
           fontFamily: 'var(--font-mono, monospace)',
-          color: 'var(--color-ink-muted)',
+          color: 'var(--text-muted)',
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-all',
           maxHeight: 260,
@@ -132,18 +133,18 @@ export function ToolCallEntryRow({ entry }: { entry: ToolCallEntry }) {
   const preview = argsPreview(entry.arguments)
 
   return (
-    <div style={{ borderLeft: '3px solid var(--bubble-tool-border)', paddingLeft: '0.7rem' }}>
+    <div style={{ borderLeft: `3px solid ${bubbleBorder('tool')}`, paddingLeft: '0.7rem' }}>
       <Collapsible
         headerStyle={{ gap: '0.45rem' }}
         header={
           <>
-            <Wrench size={12} style={{ color: 'var(--bubble-tool-color)', flexShrink: 0 }} />
+            <Wrench size={12} style={{ color: bubbleAccent('tool'), flexShrink: 0 }} />
             <span
               style={{
                 fontSize: '0.75rem',
                 fontFamily: 'var(--font-mono, monospace)',
                 fontWeight: 600,
-                color: 'var(--bubble-tool-color)',
+                color: bubbleAccent('tool'),
               }}
             >
               {entry.function}
@@ -217,7 +218,7 @@ export function ToolCallEntryRow({ entry }: { entry: ToolCallEntry }) {
                 borderRadius: '0.35rem',
                 fontSize: '0.7rem',
                 fontFamily: 'var(--font-mono, monospace)',
-                color: 'var(--color-ink-muted)',
+                color: 'var(--text-muted)',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-all',
                 maxHeight: 200,

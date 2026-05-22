@@ -14,9 +14,10 @@ import { useLocale } from '@/contexts/LocaleContext'
 import { useCopy } from '@/hooks/useCopy'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import Collapsible from '@/components/ui/Collapsible'
+import ChatBubble from '@/components/ui/ChatBubble'
 import { fmtMs } from '@/utils/formatUtils'
 import { contentToText } from './chatHelpers'
-import { type Role, rolePalette } from './roleConfig'
+import { type Role, rolePalette, roleToBubble } from './roleConfig'
 import { renderContentBlocks } from './MediaBlocks'
 
 /* ─── CopyIconButton ───────────────────────────────────────── */
@@ -25,7 +26,7 @@ const CHIP_BASE_STYLE: CSSProperties = {
   padding: '1px 7px',
   borderRadius: 4,
   background: 'var(--bg-deep)',
-  border: '1px solid var(--color-border-subtle)',
+  border: '1px solid var(--border)',
   fontSize: '0.65rem',
   fontFamily: 'var(--font-mono, monospace)',
   color: 'var(--text-muted)',
@@ -45,7 +46,7 @@ export function CopyIconButton({ text }: { text: string }) {
         width: 24,
         height: 24,
         borderRadius: 4,
-        border: '1px solid var(--color-border-subtle)',
+        border: '1px solid var(--border)',
         background: 'transparent',
         color: copied ? 'var(--accent)' : 'var(--text-muted)',
         cursor: 'pointer',
@@ -76,7 +77,7 @@ export function MsgIdChip({ msgId }: { msgId: string }) {
         gap: 3,
         padding: '1px 6px',
         borderRadius: 4,
-        border: '1px solid var(--color-border-subtle)',
+        border: '1px solid var(--border)',
         background: 'var(--bg-deep)',
         color: copied ? 'var(--accent)' : 'var(--text-muted)',
         fontSize: '0.62rem',
@@ -204,26 +205,14 @@ export function MessageRow({
     }
   }, [isHighlighted])
 
-  const bgColor = isHighlighted ? palette.tintBgHl : palette.tintBg
-  const borderLeft = isHighlighted
-    ? `3px solid ${palette.borderHl}`
-    : `3px solid ${palette.barColor}`
-
   return (
-    <div
-      ref={ref}
-      style={{
-        display: 'flex',
-        width: '100%',
-        background: bgColor,
-        borderLeft,
-        borderRadius: '0.5rem',
-        padding: '0.6rem 0.85rem',
-        transition: 'background 0.3s, border-color 0.3s',
-        animation: 'fadeInUp 240ms ease-out both',
-      }}
+    <ChatBubble
+      role={roleToBubble(role)}
+      highlighted={isHighlighted}
+      className="flex w-full px-3.5 py-2.5"
+      style={{ animation: 'fadeInUp 240ms ease-out both' }}
     >
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div ref={ref} style={{ flex: 1, minWidth: 0 }}>
         {/* Header row */}
         {!compact && (
           <div
@@ -276,7 +265,7 @@ export function MessageRow({
 
         {children}
       </div>
-    </div>
+    </ChatBubble>
   )
 }
 
@@ -296,46 +285,42 @@ export function SystemPromptRow({
   const previewShort = preview.length > 120 ? preview.slice(0, 120) + '…' : preview
 
   return (
-    <Collapsible
-      header={(open) => (
-        <>
-          <Shield size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-          <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-            {t('prediction.systemPrompt')}
-          </span>
-          {!open && (
-            <span
-              style={{
-                fontSize: '0.7rem',
-                color: 'var(--text-muted)',
-                opacity: 0.6,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                flex: 1,
-                fontFamily: 'var(--font-mono, monospace)',
-              }}
-            >
-              {previewShort}
+    <ChatBubble role="system" className="overflow-hidden">
+      <Collapsible
+        header={(open) => (
+          <>
+            <Shield size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+            <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+              {t('prediction.systemPrompt')}
             </span>
-          )}
-          {msgId && <MsgIdChip msgId={msgId} />}
-        </>
-      )}
-      style={{
-        borderLeft: '3px solid var(--text-muted)',
-        borderRadius: '0.5rem',
-        background: 'var(--bubble-system-bg)',
-        overflow: 'hidden',
-      }}
-      headerStyle={{ gap: '0.45rem', padding: '0.45rem 0.75rem' }}
-      bodyStyle={{ padding: '0 0.75rem 0.6rem 1.6rem' }}
-    >
-      <div style={{ fontSize: '0.82rem', lineHeight: 1.55 }}>
-        {Array.isArray(content)
-          ? renderContentBlocks(content, { includeReasoning: false })
-          : <MarkdownRenderer content={content} />}
-      </div>
-    </Collapsible>
+            {!open && (
+              <span
+                className="font-mono"
+                style={{
+                  fontSize: '0.7rem',
+                  color: 'var(--text-muted)',
+                  opacity: 0.6,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  flex: 1,
+                }}
+              >
+                {previewShort}
+              </span>
+            )}
+            {msgId && <MsgIdChip msgId={msgId} />}
+          </>
+        )}
+        headerStyle={{ gap: '0.45rem', padding: '0.45rem 0.75rem' }}
+        bodyStyle={{ padding: '0 0.75rem 0.6rem 1.6rem' }}
+      >
+        <div style={{ fontSize: '0.82rem', lineHeight: 1.55 }}>
+          {Array.isArray(content)
+            ? renderContentBlocks(content, { includeReasoning: false })
+            : <MarkdownRenderer content={content} />}
+        </div>
+      </Collapsible>
+    </ChatBubble>
   )
 }

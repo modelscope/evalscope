@@ -170,6 +170,7 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
         ) : analysis && analysis !== 'N/A' ? (
           <MarkdownRenderer content={analysis} />
         ) : (
+          // text-dim allowed: non-essential ≥14px metadata (DESIGN.md §Text)
           <p className="text-sm text-[var(--text-dim)]">{t('common.noData')}</p>
         )}
       </Card>

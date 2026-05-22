@@ -4,6 +4,7 @@ import type { ContentBlock } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import ImageLightbox from '@/components/common/ImageLightbox'
+import ChatBubble, { bubbleAccent } from '@/components/ui/ChatBubble'
 
 /**
  * Resolve a server-side path / URL / base64 payload to a browser-loadable src.
@@ -25,7 +26,7 @@ const IMG_INLINE_STYLE: React.CSSProperties = {
   maxWidth: '100%',
   maxHeight: '360px',
   borderRadius: '0.5rem',
-  border: '1px solid var(--color-border-subtle)',
+  border: '1px solid var(--border)',
   display: 'block',
 }
 
@@ -67,7 +68,7 @@ export function VideoBlock({ src, format }: { src: string; format?: string }) {
           maxWidth: '100%',
           maxHeight: '360px',
           borderRadius: '0.5rem',
-          border: '1px solid var(--color-border-subtle)',
+          border: '1px solid var(--border)',
           display: 'block',
           background: 'var(--media-video-bg)',
         }}
@@ -81,51 +82,27 @@ export function ReasoningBlock({ text, tokens }: { text: string; tokens?: number
   const { t } = useLocale()
   const [open, setOpen] = useState(false)
   return (
-    <div
-      style={{
-        marginBottom: '0.5rem',
-        borderRadius: '0.5rem',
-        border: '1px solid var(--bubble-reasoning-border)',
-        background: 'var(--bubble-reasoning-bg)',
-        overflow: 'hidden',
-      }}
-    >
+    <ChatBubble role="reasoning" variant="card" className="mb-2 overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.35rem',
-          width: '100%',
-          padding: '0.35rem 0.7rem',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          color: 'var(--bubble-bot-color)',
-          fontSize: '0.7rem',
-          fontWeight: 600,
-          letterSpacing: '0.04em',
-        }}
+        className="flex items-center gap-1.5 w-full px-2.5 py-1.5 bg-transparent border-none cursor-pointer text-xs font-semibold"
+        style={{ color: bubbleAccent('reasoning'), letterSpacing: '0.04em' }}
       >
         {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         {open ? t('prediction.hideReasoning') : t('prediction.showReasoning')}
-        <span style={{ opacity: 0.5, fontWeight: 400 }}>
+        <span className="opacity-50 font-normal">
           · {tokens != null ? `${tokens} tokens` : `${text.length} chars`}
         </span>
       </button>
       {open && (
         <div
-          style={{
-            padding: '0.5rem 0.75rem 0.75rem',
-            fontSize: '0.8rem',
-            color: 'var(--text)',
-            borderTop: '1px solid var(--bubble-reasoning-border)',
-          }}
+          className="px-3 pb-3 pt-2 text-[0.8rem] text-[var(--text)] border-t"
+          style={{ borderColor: 'var(--border)' }}
         >
           <MarkdownRenderer content={text} />
         </div>
       )}
-    </div>
+    </ChatBubble>
   )
 }
 

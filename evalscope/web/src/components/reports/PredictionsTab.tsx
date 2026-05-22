@@ -228,7 +228,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
       </div>
 
       {/* 分隔线 */}
-      <hr style={{ border: 'none', borderTop: '1px solid var(--color-border-subtle)', margin: '0' }} />
+      <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '0' }} />
 
       {loading && <Skeleton lines={4} />}
 
@@ -408,6 +408,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
       )}
 
       {!loading && predictions.length === 0 && selectedSubset && (
+        // text-dim allowed: non-essential ≥14px metadata (DESIGN.md §Text)
         <p className="text-sm text-[var(--text-dim)] py-4">{t('common.noData')}</p>
       )}
     </div>

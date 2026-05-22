@@ -42,7 +42,7 @@ export default function MarkdownRenderer({ content }: Props) {
         )
       }
       return (
-        <code className="bg-[var(--color-surface)] px-1.5 py-0.5 rounded text-[0.85em] font-mono">
+        <code className="bg-[var(--bg-card)] px-1.5 py-0.5 rounded text-[0.85em] font-mono">
           {children}
         </code>
       )

@@ -74,7 +74,7 @@ export default function ReportSummaryStats({ reports }: Props) {
         >
           <ScoreRing score={card.norm} size={72} />
           <div className="flex flex-col gap-0.5 min-w-0">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)]">
+            <span className="type-table-xs">
               {card.label}
             </span>
             <span
@@ -94,7 +94,7 @@ export default function ReportSummaryStats({ reports }: Props) {
 
       {/* Total Samples — plain number card */}
       <div className="flex flex-col justify-center gap-1 p-4 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)]">
+        <span className="type-table-xs">
           {t('reportDetail.totalSamples')}
         </span>
         <span className="text-2xl font-bold font-mono tabular-nums" style={{ color: 'var(--accent)' }}>

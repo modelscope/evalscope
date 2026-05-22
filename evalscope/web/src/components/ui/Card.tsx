@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { ChevronDown } from 'lucide-react'
+import Eyebrow from './Eyebrow'
 
 interface CardProps {
   children: ReactNode
@@ -29,12 +30,11 @@ export default function Card({ children, className, title, badge, collapsible }:
           onClick={collapsible ? () => setCollapsed((c) => !c) : undefined}
         >
           <div className="flex items-center gap-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-              {title}
-            </h3>
+            <Eyebrow>{title}</Eyebrow>
             {badge}
           </div>
           {collapsible && (
+            // text-dim allowed: chevron toggle icon (DESIGN.md §Text)
             <ChevronDown
               size={14}
               className={cn(

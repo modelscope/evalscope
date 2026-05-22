@@ -11,7 +11,7 @@ interface Props {
   className?: string
 }
 
-const DEFAULT_INLINE = 'rounded-lg cursor-zoom-in border border-[var(--color-border)] hover:border-[var(--color-border-strong)] transition-all hover:scale-[1.02]'
+const DEFAULT_INLINE = 'rounded-lg cursor-zoom-in border border-[var(--border)] hover:border-[var(--border-strong)] transition-all hover:scale-[1.02]'
 
 /** Click-to-zoom image with portal-rendered overlay. Used by both Markdown img and ContentBlock images. */
 export default function ImageLightbox({ src, alt = '', style, className }: Props) {
@@ -35,7 +35,7 @@ export default function ImageLightbox({ src, alt = '', style, className }: Props
           <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setOpen(false)}
-              className="absolute -top-3 -right-3 z-10 rounded-full p-1 bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surface-hover)] transition-colors"
+              className="absolute -top-3 -right-3 z-10 rounded-full p-1 bg-[var(--bg-card)] border border-[var(--border)] hover:bg-[var(--bg-card2)] transition-colors"
             >
               <X size={16} />
             </button>

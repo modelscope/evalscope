@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
-import ScoreBadge from '@/components/common/ScoreBadge'
+import ScoreBadge from '@/components/ui/ScoreBadge'
 import JsonViewer from '@/components/common/JsonViewer'
 
 /* ─── CollapsibleJson ──────────────────────────────────────── */
@@ -44,7 +44,7 @@ export function CollapsibleJson({
           alignItems: 'center',
           gap: '0.3rem',
           fontSize: '0.7rem',
-          color: 'var(--color-ink-muted)',
+          color: 'var(--text-muted)',
           opacity: 0.7,
           background: 'none',
           border: 'none',
@@ -62,7 +62,7 @@ export function CollapsibleJson({
             marginTop: '0.3rem',
             borderRadius: '0.4rem',
             overflow: 'hidden',
-            border: '1px solid var(--color-border-subtle)',
+            border: '1px solid var(--border)',
           }}
         >
           <JsonViewer value={value} maxHeight={maxHeight} />
@@ -123,14 +123,14 @@ export function EvalResultPanel({
           background: 'var(--bg-deep)',
         }}
       >
-        <ClipboardCheck size={13} style={{ color: 'var(--color-ink-muted)', opacity: 0.6 }} />
+        <ClipboardCheck size={13} style={{ color: 'var(--text-muted)', opacity: 0.6 }} />
         <span
           style={{
             fontSize: '0.65rem',
             fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
-            color: 'var(--color-ink-muted)',
+            color: 'var(--text-muted)',
             opacity: 0.7,
           }}
         >
@@ -169,7 +169,7 @@ export function EvalResultPanel({
               <span
                 style={{
                   fontSize: '0.75rem',
-                  color: 'var(--color-ink-muted)',
+                  color: 'var(--text-muted)',
                   opacity: 0.5,
                   fontStyle: 'italic',
                 }}
@@ -232,7 +232,7 @@ export function EvalResultPanel({
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
             <ScoreBadge score={nScore} threshold={threshold} />
-            <span style={{ fontSize: '0.65rem', color: 'var(--color-ink-muted)', opacity: 0.5 }}>
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', opacity: 0.5 }}>
               thr: {threshold}
             </span>
           </div>

@@ -18,7 +18,7 @@ export default function ReportViewerPage() {
 
   if (!rawUrl) {
     return (
-      <div className="flex items-center justify-center h-[60vh] text-[var(--color-ink-muted)]">
+      <div className="flex items-center justify-center h-[60vh] text-[var(--text-muted)]">
         <p>No report URL specified. Add <code>?url=...</code> to the URL.</p>
       </div>
     )
@@ -26,7 +26,7 @@ export default function ReportViewerPage() {
 
   if (!url) {
     return (
-      <div className="flex items-center justify-center h-[60vh] text-[var(--color-ink-muted)]">
+      <div className="flex items-center justify-center h-[60vh] text-[var(--text-muted)]">
         <p>Invalid report URL. Only same-origin report paths are allowed.</p>
       </div>
     )
@@ -40,7 +40,7 @@ export default function ReportViewerPage() {
           href={url}
           target="_blank"
           rel="noreferrer"
-          className="text-sm text-[var(--color-primary)] hover:underline"
+          className="text-sm text-[var(--accent)] hover:underline"
         >
           {t('common.openNewTab')}
         </a>
@@ -48,7 +48,7 @@ export default function ReportViewerPage() {
       <iframe
         src={url}
         title="Report"
-        className="w-full border border-[var(--color-border)] rounded-lg bg-[var(--bg-card)]"
+        className="w-full border border-[var(--border)] rounded-lg bg-[var(--bg-card)]"
         style={{ height: 'calc(100vh - 140px)' }}
         sandbox="allow-scripts allow-same-origin"
       />
