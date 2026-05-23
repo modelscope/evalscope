@@ -3,7 +3,8 @@ import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportData } from '@/api/types'
 import { getChartUrl } from '@/api/reports'
 import Card from '@/components/ui/Card'
-import Table, { scoreColor } from '@/components/ui/Table'
+import Table from '@/components/ui/Table'
+import { scoreColor } from '@/utils/colorScale'
 import PlotlyChart from '@/components/charts/PlotlyChart'
 import ReportSummaryStats from './ReportSummaryStats'
 import JsonViewer from '@/components/common/JsonViewer'
@@ -56,10 +57,7 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
         const norm = score > 1 ? score / 100 : score
         return (
           <div className="flex items-center gap-2">
-            <div
-              className="h-1.5 rounded-full bg-[var(--border)] overflow-hidden"
-              style={{ width: '60px', minWidth: '60px' }}
-            >
+            <div className="h-1.5 w-[60px] min-w-[60px] rounded-full bg-[var(--border)] overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-300"
                 style={{

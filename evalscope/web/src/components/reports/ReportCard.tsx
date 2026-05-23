@@ -3,7 +3,7 @@ import type { MouseEvent } from 'react'
 import { cn } from '@/lib/utils'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportSummary } from '@/api/types'
-import { scoreColor } from '@/components/ui/Table'
+import { scoreColor } from '@/utils/colorScale'
 
 interface ReportCardProps {
   report: ReportSummary

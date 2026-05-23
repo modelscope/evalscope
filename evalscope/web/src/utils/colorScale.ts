@@ -2,24 +2,30 @@
  * Score → color helpers.
  * The product's emotional core — see DESIGN.md §Score Gradient.
  *
- *   foreground: `hsl(score * 120, 70%, 45%)`  (0 → red, 0.5 → yellow, 1 → green)
- *   background: same hue, low alpha
+ *   foreground: `hsl(score * 120, var(--score-fg-s), var(--score-fg-l))`
+ *   background: RGB-interpolated, alpha scaled by `var(--score-bg-a-mul)`
  *
- * These helpers back `<ScoreChip>`, `<ScoreBadge>`, dataset chips and the
- * group-header best-score callouts. Anything that paints a dynamic score MUST
- * funnel through here — do not roll a parallel palette.
+ * Saturation, lightness, and bg alpha are driven by per-theme CSS vars so
+ * yellow mid-tones stay legible on the warm-cream light canvas without
+ * breaking the dark theme's established appearance. See index.css
+ * `--score-fg-s` / `--score-fg-l` / `--score-bg-a-mul`.
+ *
+ * These helpers back `<ScoreChip>`, `<ScoreBadge>`, `<ScoreRing>`, dataset
+ * chips and the group-header best-score callouts. Anything that paints a
+ * dynamic score MUST funnel through here — do not roll a parallel palette.
  */
 
-/** HSL foreground: `hsl(score * 120, 70%, 45%)` clamped to [0, 1]. */
+/** HSL foreground: `hsl(hue var(--score-fg-s) var(--score-fg-l))` clamped to [0, 1]. */
 export function scoreColor(score: number): string {
   const hue = Math.round(Math.max(0, Math.min(1, score)) * 120)
-  return `hsl(${hue}, 70%, 45%)`
+  return `hsl(${hue} var(--score-fg-s, 70%) var(--score-fg-l, 45%))`
 }
 
 /**
  * Translucent score background. RGB-interpolated for richer mid-tones than a
  * single HSL alpha (kept for visual continuity with existing chips/badges).
- * Default alpha 0.35 matches the existing chip/badge appearance.
+ * Final alpha is `alpha * var(--score-bg-a-mul, 1)` — light theme boosts the
+ * multiplier so washed-out yellows actually paint a visible pill on cream.
  */
 export function scoreBg(score: number, alpha = 0.35): string {
   const t = Math.max(0, Math.min(1, score))
@@ -36,5 +42,5 @@ export function scoreBg(score: number, alpha = 0.35): string {
     g = 255 + (150 - 255) * s
     b = 0 + (65 - 0) * s
   }
-  return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${alpha})`
+  return `rgb(${Math.round(r)} ${Math.round(g)} ${Math.round(b)} / calc(${alpha} * var(--score-bg-a-mul, 1)))`
 }

@@ -1,26 +1,26 @@
 ---
-name: EvalScope Dark Console
+name: EvalScope Console
 colors:
-  # Brand & Accent
+  # Brand & Accent — IDENTICAL across both themes. Violet is the brand constant.
   accent: "#816DF8"
   accent-dark: "#5B3FD6"
   accent-dim: "rgba(129,109,248,0.12)"
   purple: "#a78bfa"
 
-  # Surface ladder (sunken → elevated)
+  # Surface ladder (sunken → elevated) — DARK
   bg: "#0c0c1a"
   bg-deep: "#09091a"
   bg-card: "#12122b"
   bg-card2: "#16163a"
   surface-glass: "rgba(18,18,43,0.7)"
 
-  # Text (3-step ladder)
+  # Text (3-step ladder) — DARK
   text: "#e2e8f0"
   text-muted: "#8896aa"
   text-dim: "#7a8195"
   on-filled: "#ffffff"
 
-  # Hairline borders
+  # Hairline borders — DARK (translucent violet, the near-black bg lets even 10% read)
   border: "rgba(129,109,248,0.10)"
   border-md: "rgba(129,109,248,0.18)"
   border-strong: "rgba(129,109,248,0.28)"
@@ -35,18 +35,34 @@ colors:
   pass: "rgb(45,104,62)"
   fail: "rgb(151,31,44)"
 
-  # Light-theme companions (used when [data-theme="light"])
-  bg-light: "#f5f6fa"
-  bg-card-light: "#ffffff"
-  bg-card2-light: "#eef0f7"
-  bg-deep-light: "#e8eaf2"
+  # ────────────────────────────────────────────────────────────────
+  # Light theme — warm-cream Console (used when [data-theme="light"])
+  # Distinct palette philosophy: warm-neutral surfaces, solid warm-grey
+  # hairlines (NOT translucent violet), warm ink text. Same violet accent.
+  # ────────────────────────────────────────────────────────────────
+
+  # Surface ladder — warm-cream, sunken → elevated
+  bg-light: "#faf9f5"            # warm cream canvas — was cool #f5f6fa
+  bg-deep-light: "#f0ebe1"       # input wells, one step below canvas — was cool #e8eaf2
+  bg-card-light: "#ffffff"       # pure white — strongest possible contrast against cream canvas
+  bg-card2-light: "#f5f0e7"      # hover / elevated — warm cream-soft, was cool #eef0f7
+  surface-glass-light: "rgba(250,249,245,0.80)"  # warm-tinted glass — was pure white
+
+  # Accent (unchanged from dark — violet is the brand constant)
   accent-light: "#6c57e8"
-  text-light: "#1a1f2e"
-  text-muted-light: "#5a6378"
-  text-dim-light: "#7c8497"
-  border-light: "rgba(108,87,232,0.20)"
-  border-md-light: "rgba(108,87,232,0.30)"
-  border-strong-light: "rgba(108,87,232,0.40)"
+  accent-dim-light: "rgba(108,87,232,0.14)"   # slightly stronger on white card
+
+  # Text — warm-ink ladder
+  text-light: "#141413"          # warm near-black — was cool #1a1f2e
+  text-muted-light: "#6c6a64"    # warm grey — was cool #5a6378
+  text-dim-light: "#8e8b82"      # warm grey — was cool #7c8497
+
+  # Hairlines — SOLID warm hex, not translucent violet. Three concrete tones.
+  # Critical: translucent violet at 0.20 alpha composites to near-invisible
+  # on white cards. Solid warm-grey gives every card a definite boundary.
+  border-light: "#e6dfd8"        # standard hairline — was rgba(violet,0.20)
+  border-md-light: "#d6cdbe"     # emphasized — was rgba(violet,0.30)
+  border-strong-light: "#c1b6a3" # hover / focus boundary — was rgba(violet,0.40)
 
   # Compare slot accents (per-model tagging in compare view)
   compare-0: "#818cf8"
@@ -162,10 +178,12 @@ shadows:
   lg: "0 8px 40px rgba(0,0,0,0.6)"
   glow: "0 0 20px rgba(129,109,248,0.25)"
   glow-soft: "0 0 12px rgba(129,109,248,0.2)"
-  # Light theme — two-stop stacks so cards lift off the near-white page.
-  sm-light: "0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.06)"
-  md-light: "0 4px 16px rgba(15,23,42,0.08), 0 12px 32px rgba(15,23,42,0.06)"
-  lg-light: "0 12px 24px rgba(15,23,42,0.10), 0 24px 48px rgba(15,23,42,0.08)"
+  # Light theme — two-stop stacks tinted with warm-ink (matches text colour),
+  # not slate. Slate-tinted drops on cream read as a cool-grey smudge and break
+  # the warm canvas. Warm-ink stays consistent with the rest of the palette.
+  sm-light: "0 1px 2px rgba(20,20,19,0.04), 0 4px 12px rgba(20,20,19,0.06)"
+  md-light: "0 4px 16px rgba(20,20,19,0.07), 0 12px 32px rgba(20,20,19,0.05)"
+  lg-light: "0 12px 24px rgba(20,20,19,0.09), 0 24px 48px rgba(20,20,19,0.07)"
   glow-light: "0 0 20px rgba(108,87,232,0.22)"
   glow-soft-light: "0 0 12px rgba(108,87,232,0.18)"
 gradients:
@@ -191,59 +209,74 @@ container:
   page-padding-x: 16px
   page-padding-y: 20px
 score-formula:
-  foreground: "hsl(score * 120, 70%, 45%)"
-  background: "hsl(score * 120, 70%, 45% / 0.15)"
-  description: "0 → red, 0.5 → yellow, 1 → green — used for all dynamic score chips and badges"
+  foreground: "hsl(score * 120, var(--score-fg-s), var(--score-fg-l))  # dark: 70%/45%, light: 85%/32%"
+  background: "RGB-interpolated translucent companion, alpha * var(--score-bg-a-mul)  # dark: ×1, light: ×1.6"
+  description: "0 → red, 0.5 → yellow, 1 → green — used for all dynamic score chips, badges, and SVG rings. Saturation, lightness, and bg alpha multiplier are theme-scoped CSS vars so yellow mid-tones stay legible on warm-cream without re-coding the brand HSL. Light theme bumps saturation +15pt to compensate for the lightness compression at hue ≈ 60 (olive)."
 ---
 
-# Design System: EvalScope Dark Console
+# Design System: EvalScope Console
 
 ## Overview
 
-EvalScope's web dashboard is a developer-platform brand for **LLM evaluation and benchmarking** — the page is an instrument panel for engineers running evals, written for people who already know the syntax. It earns that posture with a stark dark-indigo system: near-black `{colors.bg}` canvas, ice-cool `{colors.text}` body, a 3-step text contrast ladder (`{colors.text}` → `{colors.text-muted}` → `{colors.text-dim}`) that gives every label, value, and metadata caption its own deliberate step. The only place the brand introduces saturation at console scale is the single brand violet `{colors.accent}` (`#816DF8`) — applied to active states, primary CTAs, focus rings, and the wordmark accent — and the *dynamic HSL score gradient* that maps a 0-1 metric to a `red → yellow → green` chip color. That score gradient is the entire emotional payload of the product: a benchmark either passes or fails, and the UI must say so at a glance.
+EvalScope's web dashboard is a developer-platform brand for **LLM evaluation and benchmarking** — the page is an instrument panel for engineers running evals, written for people who already know the syntax. It earns that posture through **two equally weighted themes** rather than one canonical mode with a translated companion. Both themes share the same vocabulary — same type, same spacing, same radii, same components — but each carries its own surface philosophy. They are two voices of one brand, not one design re-tinted.
 
-Type is the second decisive voice. The brand uses **cross-platform system font stacks** (no web font is loaded) — `system-ui, -apple-system, "Segoe UI", Roboto, ...` for narrative and `ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", ...` for technical labels. Each OS resolves to its own native UI face (SF Pro / Segoe UI / Roboto for sans; SF Mono / Consolas / Liberation Mono for mono). The intent is "feels native to your OS, never a marketing site." Headlines are sentence-case with `tracking-tight` on display numbers; **all-caps + `tracking-wider`** is reserved for tiny section eyebrows (12 px / 10 px), never for headlines. Weight ceiling for the sans is **700** (Tailwind `font-bold`); the typical working set is 400 / 500 / 600 / 700.
+**Dark Console** (default) is a stark dark-indigo system: near-black `{colors.bg}` canvas, ice-cool `{colors.text}` body, a 3-step text ladder. Hairlines are translucent violet at 10-28 % alpha because the near-black bg lets even a faint violet tint read as a definite edge. Shadows are single deep drops at `rgba(0,0,0,0.55)` — near-black eats soft shadows. The mood is *late-night terminal session*: low-light, low-distraction, the violet glow on a primary CTA is the only saturated thing on screen.
 
-Surfaces use a four-step indigo ladder: `{colors.bg}` (the page itself), `{colors.bg-deep}` (sunken — inputs, nav pills), `{colors.bg-card}` (the default card surface), `{colors.bg-card2}` (hover and elevated rows). Shadows on dark are intentionally **deeper than they look** — `0 4px 20px rgba(0,0,0,0.55)` is the default card shadow — because near-black surfaces eat soft drops. Cards never float on a single heavy blur; they sit on the page held by a 1-px violet-tinted hairline + a tight stacked drop. A companion **light theme** flips polarity (paper-white page, white cards, `#6c57e8` accent) — the design assumes the user will toggle, but the dashboard is engineered dark-first.
+**Warm Console** (light theme) is a warm-cream system: cream `{colors.bg-light}` canvas (`#faf9f5`), pure white `{colors.bg-card-light}` cards, warm-ink `{colors.text-light}` body (`#141413`). Hairlines are **solid warm-grey** (`{colors.border-light}` `#e6dfd8`, `#d6cdbe`, `#c1b6a3`) — *not* translucent violet, because violet at 20 % alpha disappears against a white card and leaves every card boundary undefined. Shadows are two-stop stacks tinted with the same warm-ink as the text, so cards lift off the cream without printing a cool slate smudge. The mood is *morning code review*: high-contrast, restful on the eyes, the violet CTA is the only cool note in an otherwise warm palette.
+
+The brand constant across both themes is the single violet `{colors.accent}` (`#816DF8` dark / `#6c57e8` light) used for primary CTAs, active nav states, focus rings, and the wordmark accent — plus the dynamic HSL score gradient (`hsl(score × 120, 70%, 45%)`) that maps a 0-1 metric to red → yellow → green. Both signals work over either canvas. Everything else — surface ladder, hairline material, shadow tint, on-canvas text colour — is theme-specific by design, because dark and light surfaces need *different* materials to produce the same hierarchy.
+
+Type is the second decisive voice and is **theme-agnostic**. The brand uses cross-platform system font stacks (no web font is loaded) — `system-ui, -apple-system, "Segoe UI", Roboto, ...` for narrative and `ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", ...` for technical labels. Each OS resolves to its own native UI face. Headlines are sentence-case with `tracking-tight` on display numbers; **all-caps + `tracking-wider`** is reserved for tiny section eyebrows (12 px / 10 px), never headlines. Weight ceiling is **700**; the working set is 400 / 500 / 600 / 700.
 
 **Key Characteristics:**
 
-- A single violet primary CTA `{colors.accent}` carries every conversion target, paired with a transparent **ghost** secondary action. The brand uses a `{rounded.sm}` 8-px button shape for primary/secondary in the *console* (no marketing pills — this is an in-product surface).
-- The primary CTA **glows on hover** (`box-shadow: 0 0 20px rgba(129,109,248,0.25)`). That violet glow is the brand's signature interaction.
+- **Dual-theme parity, not dual-theme translation.** Dark uses translucent violet hairlines on near-black; light uses solid warm-grey hairlines on cream. They produce the same hierarchy through opposite material choices. Theme is persisted to `localStorage` and applied via `data-theme` on `<html>` before first paint to avoid a flash.
+- A single violet primary CTA `{colors.accent}` carries every conversion target on both themes, paired with a transparent **ghost** secondary. The brand uses a `{rounded.sm}` 8-px button shape for primary/secondary in the *console* (no marketing pills — this is an in-product surface).
+- The primary CTA **glows on hover** with violet at 20-25 % alpha on both themes. That violet glow is the brand's signature interaction — identical animation, identical colour, identical timing across themes.
 - Every card section title, form label, and table header sets in `{typography.label-xs}` — 12 px (10 px for tables), `font-semibold`, **UPPERCASE**, `tracking-wider`, muted color. Body and titles stay sentence-case. The contrast between these two voices does most of the hierarchy work.
-- A dynamic HSL **score chip** (`hsl(score × 120, 70%, 45%)`) is the second-most-recognizable component after the brand violet — it is how the product communicates pass/fail.
-- The dashboard has both a **dark theme** (default, the natural state of the product) and a **light theme** (companion). Tokens are shared by name; only values flip. Theme is persisted to `localStorage` and applied via `data-theme` on `<html>` before first paint to avoid a flash.
+- A dynamic HSL **score chip** (`hsl(score × 120, 70%, 45%)`) is the second-most-recognizable component after the brand violet — it is how the product communicates pass/fail. Identical formula on both themes; the chip's saturation works over cream and over near-black.
+- **Light theme uses solid hex hairlines, not translucent violet.** This is the most important light-theme rule, and the one most often broken on first attempt: a violet alpha overlay disappears into a near-white page, so light surfaces require concrete warm-grey edges (`#e6dfd8` / `#d6cdbe` / `#c1b6a3`) to keep their boundaries.
 - A complete domain token set exists for **chat bubbles** (5 semantic roles: user / bot / tool / reasoning / system), **compare slots** (3 per-model accent colors), and **KPI gradients** (4 named gradient pairs) — these are first-class brand tokens, not ad-hoc colors.
-- A glassmorphic sticky top-nav (52 px, 12 px backdrop-blur, 1-px violet-to-transparent gradient hairline along the top edge) is the only "marketing-y" flourish the product allows itself.
+- A glassmorphic sticky top-nav (52 px, 12 px backdrop-blur, 1-px violet-to-transparent gradient hairline along the top edge) is the only "marketing-y" flourish the product allows itself. Dark uses translucent indigo glass; light uses translucent cream glass.
 
 ## Colors
 
 > **Note on dual theme.** Every color token below has a *dark* (default) and *light* value. Hex pairs are listed as `dark / light`. Components reference tokens by name — never by raw hex — so theme switching is free.
+>
+> **Light values use SOLID hex for hairlines, not translucent violet.** This is the structural difference from earlier light-theme generations and the single most-broken light-theme rule. See `{colors.border-light}` below and *Elevation & Depth* for the reason.
 
 ### Brand & Accent
+
+The accent family is **identical in spirit on both themes** — a single violet handles every conversion target. Slightly different hex values per theme (the dark violet is brighter to read on near-black; the light violet is a half-step deeper to hold weight against white cards) but the same brand voltage.
 
 - **Violet** (`{colors.accent}` — `#816DF8` / `#6c57e8`): The single brand color. Primary CTA fill, active nav fill, focus ring, brand-wordmark accent, table-header active-sort color. Used sparingly — should occupy under ~10 % of any screen.
 - **Violet Deep** (`{colors.accent-dark}` — `#5B3FD6` / `#4f3ec8`): Hover state for primary CTAs.
 - **Lavender** (`{colors.purple}` — `#a78bfa` / `#7c6be0`): The gradient companion stop; the second half of `{gradients.brand}`.
-- **Violet Mist** (`{colors.accent-dim}` — `rgba(129,109,248,0.12)` / `rgba(108,87,232,0.10)`): The 8-12 % alpha violet used as pill background and focus-ring fill.
-- **Violet Glow** (`{shadows.glow}` — `0 0 20px rgba(129,109,248,0.25)`): The signature hover halo on primary buttons and active nav.
+- **Violet Mist** (`{colors.accent-dim}` — `rgba(129,109,248,0.12)` / `rgba(108,87,232,0.14)`): The low-alpha violet used as pill background and focus-ring fill. Light theme runs slightly stronger (0.14 vs 0.12) because white cards need a touch more saturation to read the mist.
+- **Violet Glow** (`{shadows.glow}` — `0 0 20px rgba(129,109,248,0.25)` / `0 0 20px rgba(108,87,232,0.22)`): The signature hover halo on primary buttons and active nav. Same effect, same magnitude, on both themes.
 
 ### Surface
 
-The brand operates with a 4-step indigo ladder, sunken-to-elevated:
+Each theme operates with a 4-step surface ladder, sunken-to-elevated. The **ladder structure is shared**; the **material is different** — dark walks an indigo ladder, light walks a warm-cream ladder. The semantic of each step is the same: `bg-deep` is *below* the page, `bg-card` is the working surface, `bg-card2` is the elevated state.
 
-- **Page** (`{colors.bg}` — `#0c0c1a` / `#f5f6fa`): The page body. Sets the dark instrument-panel mood.
-- **Sunken** (`{colors.bg-deep}` — `#09091a` / `#ebebf5`): One step *below* the page — used for input wells, the deep-well that holds pill-style tab containers, and the icon tile in empty-states.
-- **Card** (`{colors.bg-card}` — `#12122b` / `#ffffff`): The default card / dialog / table surface.
-- **Card Elevated** (`{colors.bg-card2}` — `#16163a` / `#eef0f7`): Hover state for clickable cards and rows; also the inactive-tab fill in pill-tab containers.
-- **Glass** (`{colors.surface-glass}` — `rgba(18,18,43,0.7)` / `rgba(255,255,255,0.80)`): Translucent indigo for the sticky top-nav, used with a 12-px backdrop-blur.
+- **Page** (`{colors.bg}` — `#0c0c1a` / `#faf9f5`): The page body. Dark = near-black instrument-panel mood. Light = warm cream canvas (Claude-style), deliberately not cool grey-white — the cool variant (`#f5f6fa`) reads as "any other SaaS dashboard" and washes out white cards.
+- **Sunken** (`{colors.bg-deep}` — `#09091a` / `#f0ebe1`): One step *below* the page — used for input wells, the deep-well that holds pill-style tab containers, and the icon tile in empty-states. Dark goes deeper-black; light goes warmer-cream. On both themes, inputs read as "wells" because they're one step below the surface that contains them.
+- **Card** (`{colors.bg-card}` — `#12122b` / `#ffffff`): The default card / dialog / table surface. Dark = indigo card on near-black page. Light = pure white card on cream canvas — the cream-to-white contrast (ΔL ≈ 7) is what gives a light-theme card its lift, NOT a heavy shadow.
+- **Card Elevated** (`{colors.bg-card2}` — `#16163a` / `#f5f0e7`): Hover state for clickable cards and rows; also the inactive-tab fill in pill-tab containers. Light theme's elevated state is warm-cream-soft — the elevated state is darker on dark theme but lighter-than-card-but-warmer on light theme (the white card with a soft-cream hover reads as "depressed into the cream canvas").
+- **Glass** (`{colors.surface-glass}` — `rgba(18,18,43,0.7)` / `rgba(250,249,245,0.80)`): Translucent surface for the sticky top-nav, used with a 12-px backdrop-blur. Light theme uses tinted cream glass (matches the canvas), NOT pure white — white glass on cream reads as a foreign sheet floating in space.
 
 ### Text
 
-- **Ink** (`{colors.text}` — `#e2e8f0` / `#1a1f2e`): All headings, body, table cell values, button labels on non-filled surfaces.
-- **Muted** (`{colors.text-muted}` — `#8896aa` / `#5a6378`): Secondary labels, nav-link inactive text, card-header micro-labels, button "ghost" idle text. *This is also the color section-eyebrow uppercase labels are set in.*
-- **Dim** (`{colors.text-dim}` — `#7a8195` / `#7c8497`): Lowest-priority text — placeholder text, timestamps in compact rows, table empty-state. **Contrast tuned to ~3.6 : 1** against `{colors.bg-card}` on both themes — sits just above the WCAG AA Large floor (3 : 1), still **below AA Normal (4.5 : 1)**. ⚠️ Reserve for ≥ 14 px non-essential metadata. Earlier values `#505870` / `#9aa0b4` measured at only ~2.6 : 1 (fails AA Large) and were lifted in May 2026 — do not regress.
-- **On Filled** (`{colors.on-filled}` — `#ffffff` / `#ffffff`): Text on `{colors.accent}` and other saturated fills.
+- **Ink** (`{colors.text}` — `#e2e8f0` / `#141413`): All headings, body, table cell values, button labels on non-filled surfaces. Light theme uses warm-near-black (`#141413`, ≈ the same value Claude.com uses) rather than a cool slate (`#1a1f2e`), so the text temperature matches the canvas temperature.
+- **Muted** (`{colors.text-muted}` — `#8896aa` / `#6c6a64`): Secondary labels, nav-link inactive text, card-header micro-labels, button "ghost" idle text. *This is also the color section-eyebrow uppercase labels are set in.* Light theme uses warm-grey (`#6c6a64`) rather than cool-slate (`#5a6378`) to stay coherent with the warm canvas.
+- **Dim** (`{colors.text-dim}` — `#7a8195` / `#8e8b82`): Lowest-priority text — placeholder text, timestamps in compact rows, table empty-state. **Contrast tuned to ~3.6 : 1** against `{colors.bg-card}` on both themes — sits just above the WCAG AA Large floor (3 : 1), still **below AA Normal (4.5 : 1)**. ⚠️ Reserve for ≥ 14 px non-essential metadata. Light theme uses a warm-grey at the same luminance step as the dark theme's cool-grey — the perceived hierarchy stays identical.
+- **On Filled** (`{colors.on-filled}` — `#ffffff` / `#ffffff`): Text on `{colors.accent}` and other saturated fills. Identical on both themes — the violet CTA is dark enough on both that white text holds.
+
+### Hairlines (the structural difference between themes)
+
+- **Border** (`{colors.border}` — `rgba(129,109,248,0.10)` / `#e6dfd8`): The default 1-px card / input / divider boundary. **Dark uses translucent violet at 10 % alpha** because the near-black bg-to-card luminance step already does most of the boundary work — the violet hairline just tints it. **Light uses a SOLID warm-grey hex** (`#e6dfd8`, Claude-style cream-hairline) because the white-card-on-cream luminance step is gentle enough that a translucent violet overlay disappears into the page. Borders on light theme are concrete materials, not tints.
+- **Border Emphasized** (`{colors.border-md}` — `rgba(129,109,248,0.18)` / `#d6cdbe`): One step stronger — used on form inputs after focus, on the active-state of hover cards, on the boundary between a card and a nested section.
+- **Border Strong** (`{colors.border-strong}` — `rgba(129,109,248,0.28)` / `#c1b6a3`): The strongest boundary — used by `{components.card-hover}` on hover lift, and by elevated cards in modal contexts. On both themes this is the "this thing is grabbing attention" hairline.
 
 ### Semantic
 
@@ -256,6 +289,18 @@ The brand operates with a 4-step indigo ladder, sunken-to-elevated:
 ### Score Gradient (Signature)
 
 The product's emotional core. A 0-1 score maps to **`hsl(score × 120, 70%, 45%)`**: 0 → red, 0.5 → yellow, 1 → green. Used as both foreground and translucent background on score chips, dataset chips, and group-header best-score callouts. This is computed inline (`scoreColor` / `scoreBg` helpers), never stored as a static palette. **Treat the formula as a brand asset** — do not reskin to a 5-step bucket, do not introduce a 4th hue.
+
+Foreground uses HSL for predictable hue progression; background uses an RGB-interpolated stop pair (rich mid-tones, more saturated yellows) for visual continuity with the existing chip/badge appearance. Do not rewrite the bg to HSL alpha — the mid-tone shift will break existing visual reads.
+
+**Per-theme legibility knobs**: `hsl(h 70%, 45%)` reads cleanly on the near-black dark canvas but the yellow mid (hue ≈ 60) collapses into warm-cream `#faf9f5` on the light theme. To keep the brand formula intact while fixing legibility, three CSS vars scope per-theme:
+
+- **`--score-fg-s`** — saturation for the HSL foreground. Dark: `70%`. Light: `85%` (the +15pt bump compensates for the lightness compression at hue ≈ 60; without it, mid scores render as washed-out olive on cream).
+- **`--score-fg-l`** — lightness for the HSL foreground. Dark: `45%`. Light: `32%` (darker olive/forest/maroon read cleanly on cream).
+- **`--score-bg-a-mul`** — alpha multiplier for the RGB-interpolated bg. Dark: `1`. Light: `1.6` (boosts washed-out yellows so the pill bg is actually visible).
+
+`scoreColor` / `scoreBg` emit CSS expressions (`hsl(h var(--score-fg-s) var(--score-fg-l))`, `rgb(r g b / calc(α * var(--score-bg-a-mul)))`) — the browser picks the right value per active theme. **Do not** hardcode these in JS or fork separate light/dark helpers.
+
+**Score Ring** (`{components.score-ring}` — SVG circular progress used in `<ReportSummaryStats>` and the "Overall Score" callout in `<DetailsTab>`): the active arc is `stroke={scoreColor(score)}`. Stroke width must be **≥6 px** for the 48 × 48 mini ring and **8 px** for the 72 × 80 summary ring — anything thinner reduces the colored area to the point where the mid-hue olive stops carrying. Background arc uses `var(--border)` for a neutral track.
 
 ### Compare Slots
 
@@ -289,6 +334,19 @@ Four named linear gradients for the four hero KPI tiles on the dashboard:
 - **Pink→Violet** (`{gradients.kpi-3}` — `linear-gradient(135deg, #ec4899, #8b5cf6)`)
 
 Always applied to the 40 × 40 `{rounded.md}` icon tile inside a `{components.kpi-card}`. **Same gradient values on both themes** — they're saturated enough to work over either canvas.
+
+### Chart Palette (Perf Metrics)
+
+Four hue tokens used to mark perf-metric series (latency / TTFT / TPOT / token-usage) across the KPI strip, the chart series legends, and the percentile-table accent headers in `<PerfMetricsPanel>`. **The two themes use different RGB values for the same hue** — unlike the KPI gradients, these aren't shared across themes:
+
+- **Latency** (`{chart.latency}` — `#60a5fa` dark / `#2563eb` light)
+- **TTFT** (`{chart.ttft}` — `#34d399` dark / `#047857` light)
+- **TPOT** (`{chart.tpot}` — `#a78bfa` dark / `#5b48e0` light)
+- **Token** (`{chart.token}` — `#94a3b8` dark / `#5a6378` light)
+
+**Why the fork**: warm-cream bg (`{colors.bg-card-light}` / `{colors.bg-deep-light}`) compresses cool hues via simultaneous contrast. Mid-tone slate blue / violet that pop on near-black dark canvases read as washed-out lavender on cream. The light palette pulls each hue darker **and** more saturated to restore the data-bearing punch of the same hue family. Same hue identity, different RGB — not a re-tint.
+
+**KPI strip surface**: the strip in `<PerfMetricsPanel>` uses `{colors.bg-card}` (matching the outer card), not `{colors.bg-deep}`. On light theme, `{colors.bg-deep}` is even warmer than the cards and pushes the chart hues into the warm-on-warm range — losing the contrast that makes the colored numbers carry. Visual separation comes from the border + dividers, not bg differentiation.
 
 ### Brand Gradients (Decorative)
 
@@ -405,15 +463,15 @@ The top-nav icon-only buttons (tablet) are 32 × 32 — *under the 44 × 44 WCAG
 | Level | Treatment | Use |
 |---|---|---|
 | **L0 — Flat** | No border, no shadow. | Page body, large empty regions, full-bleed dark sections. |
-| **L1 — Hairline** | 1-px `{colors.border}` only. Dark: violet at **10 %** alpha (the near-black page lets even a faint hairline read). Light: violet at **20 %** alpha (a 10-12 % hairline disappears against a near-white page; cards lose definition). | Default content cards (`{components.card}`), table chrome, form inputs. |
-| **L2 — Lifted** | `{shadows.sm}` + L1 hairline. Dark: single deep drop `0 2px 8px rgba(0,0,0,0.4)`. Light: two-stop stack `0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.06)` — a single weak drop on white reads as "smudged page," not as "lifted card." | KPI cards, path-bar at the top of the dashboard, anything that needs to read as "above the page." |
-| **L3 — Floating** | `{shadows.md}` + L1 hairline. Dark `0 4px 20px rgba(0,0,0,0.55)`. Light `0 4px 16px rgba(15,23,42,0.08), 0 12px 32px rgba(15,23,42,0.06)`. | Default for the primary card variants when the page already has heavy chrome. |
-| **L4 — Elevated** | `{shadows.lg}` + `{colors.border-strong}`. Dark `0 8px 40px rgba(0,0,0,0.6)`. Light `0 12px 24px rgba(15,23,42,0.10), 0 24px 48px rgba(15,23,42,0.08)`. | Hover state for clickable cards, modal / dialog surfaces, dropdown menus. |
-| **L5 — Glow** | `{shadows.glow}` on top of L1-L3. Dark `0 0 20px rgba(129,109,248,0.25)`. Light `0 0 20px rgba(108,87,232,0.22)`. | The signature violet halo — primary button hover, active nav pill, sometimes active tab. |
+| **L1 — Hairline** | 1-px `{colors.border}` only. Dark: **translucent violet at 10 % alpha** (the near-black page lets even a faint hairline read; the slight violet tint stays on-brand). Light: **solid warm-grey hex** `#e6dfd8` (translucent violet at any plausible alpha composites to invisible against a white card on cream — solid hex is the only thing that reads). | Default content cards (`{components.card}`), table chrome, form inputs. |
+| **L2 — Lifted** | `{shadows.sm}` + L1 hairline. Dark: single deep drop `0 2px 8px rgba(0,0,0,0.4)`. Light: two-stop stack `0 1px 2px rgba(20,20,19,0.04), 0 4px 12px rgba(20,20,19,0.06)` — warm-ink tinted (matches `{colors.text-light}`), not slate. Slate-tinted drops on cream read as a cool-grey smudge against the warm canvas. | KPI cards, path-bar at the top of the dashboard, anything that needs to read as "above the page." |
+| **L3 — Floating** | `{shadows.md}` + L1 hairline. Dark `0 4px 20px rgba(0,0,0,0.55)`. Light `0 4px 16px rgba(20,20,19,0.07), 0 12px 32px rgba(20,20,19,0.05)`. | Default for the primary card variants when the page already has heavy chrome. |
+| **L4 — Elevated** | `{shadows.lg}` + `{colors.border-strong}`. Dark `0 8px 40px rgba(0,0,0,0.6)`. Light `0 12px 24px rgba(20,20,19,0.09), 0 24px 48px rgba(20,20,19,0.07)`. | Hover state for clickable cards, modal / dialog surfaces, dropdown menus. |
+| **L5 — Glow** | `{shadows.glow}` on top of L1-L3. Dark `0 0 20px rgba(129,109,248,0.25)`. Light `0 0 20px rgba(108,87,232,0.22)`. | The signature violet halo — primary button hover, active nav pill, sometimes active tab. Identical magnitude across themes — the glow is the brand's interaction constant. |
 
-**Brand rule (depth)**: dark and light themes are *not* the same shadow scaled down. Dark surfaces use a **single deep drop** (`rgba(0,0,0,0.4-0.6)`) — the near-black canvas eats soft drops. Light surfaces use a **two-stop stack** (`0 1px tight + 0 4px diffuse`) tinted to slate (`rgba(15,23,42,*)`) rather than pure black — a single `rgba(0,0,0,0.07)` drop on white reads as "page smudge," not as a card lifting off the surface.
+**Brand rule (depth)**: dark and light themes are *not* the same shadow scaled down. Dark surfaces use a **single deep drop** (`rgba(0,0,0,0.4-0.6)`) — the near-black canvas eats soft drops. Light surfaces use a **two-stop stack** tinted with warm-ink `rgba(20,20,19,*)` (the same hex as `{colors.text-light}`), NOT slate `rgba(15,23,42,*)` — the warm-ink tint stays coherent with the cream canvas and the warm-ink body text. Light cards lift through the *combination* of cream-to-white surface contrast + a solid warm-grey hairline + the two-stop warm-ink shadow stack — no single layer carries the weight.
 
-**Brand rule (hairlines)**: light theme borders sit at **20 % alpha**, not 10-12 %. Against `{colors.bg}` (#f5f6fa), a 10 % violet hairline composites to within a few luminance steps of the page — the card boundary visually dissolves. The dark theme can run at 10 % because the bg-to-card luminance delta is already doing most of the boundary work.
+**Brand rule (hairlines)**: light theme borders are **SOLID HEX**, not translucent violet at any alpha. The earlier light-theme generation used `rgba(108,87,232,0.20-0.40)` and the violet alpha composited to within a few luminance steps of the white card — borders effectively dissolved, especially on outline buttons (`Go to Index`, `Find msg id`) and on input rings (`Score Threshold` field). The current system uses three concrete warm-grey hex values (`#e6dfd8` / `#d6cdbe` / `#c1b6a3`) — each step is a definite material, not a tint. The dark theme keeps translucent violet at 10-28 % because the indigo-bg-to-card luminance delta is already doing most of the boundary work; light theme has no such luminance assist and must rely on the hairline alone.
 
 ### Decorative Depth
 
@@ -531,7 +589,8 @@ Disabled = `opacity: 0.5` + `cursor: not-allowed`. Transitions use `{tokens.tran
 - Same pill shape as `{components.badge}`, with an optional 3.5 × 3.5 circular dismiss button (`X` icon).
 
 **`{components.score-chip}`** — the signature dynamic-score pill.
-- `{rounded.full}`, 8/2 padding, `{typography.caption-mono}`, **HSL-computed foreground and background** (`scoreColor` / `scoreBg`). Format: `"benchmark-name 87.3"` — the chip *is* the data point. Used in the eval timeline, dashboard tiles, and the leaderboard rows.
+- `{rounded.full}`, 8/2 padding, `{typography.caption-mono}`, **outline treatment**: transparent bg + 1-px `scoreColor` border + `scoreColor` text. Format: `"benchmark-name 87.3"` — the chip *is* the data point. Used in the eval timeline, dashboard tiles, and the leaderboard rows.
+- Outline (not filled) on purpose: a filled pill at hue ≈ 60 paints high-luminance yellow (`rgb(255, 255, 0)`) which dominates whatever surface it sits on, regardless of theme. Outline keeps hue legible while letting the chip recede into the row.
 
 ### Signature Components
 
@@ -542,6 +601,10 @@ Disabled = `opacity: 0.5` + `cursor: not-allowed`. Transitions use `{tokens.tran
 
 **`{components.chat-bubble}`** — five-role chat surface.
 - `{rounded.md}` container with role-specific bg / border / icon-bg / icon-border / color from the `{colors.bubble-*}` token family (user / bot / tool / reasoning / system). Hover strengthens border via `*-hl` variants.
+
+**Two variants**:
+- `bar` (default in chat lists) — `rounded-sm` container, 3-px left vertical accent in the role's color, role's tint as bg. Used by the streaming chat log where many bubbles stack and visual weight must stay low.
+- `card` — `rounded-md` container with role's full bg + 1-px border. Used in standalone bubbles outside a scrolling list (eval result preview, single-message dialogs).
 
 **`{components.empty-state}`** — first-contact / no-data state.
 - Vertical-center stack: 64 × 64 `{rounded.lg}` deep-well tile holding a 28-px Lucide icon (`{colors.accent}` for welcome states, `{colors.text-dim}` for empty/no-results), followed by a 2-line message — title in `{typography.body-sm}` `{colors.text}` (welcome) or `{colors.text-muted}` (empty), hint in `{typography.body-xs}` `{colors.text-dim}`.
@@ -595,8 +658,9 @@ Disabled = `opacity: 0.5` + `cursor: not-allowed`. Transitions use `{tokens.tran
 - Set every section eyebrow, form label, and table header in `{typography.label-xs}` — UPPERCASE + `tracking-wider`. This is the brand's hierarchy signal; without it, the design flattens.
 - Use `{typography.caption-mono}` + `tabular-nums` for any numeric column — scores, timestamps, percentages. Treat numbers as data, not prose.
 - Compute score colors with `hsl(score × 120, 70%, 45%)` and use the same formula for foreground and a translucent background. The dynamic chip is the product's emotional signal.
-- Layer stacked shadows (a deep multi-stop shadow + a 1-px violet hairline) rather than single heavy drops. Cards sit on the page, not above it.
-- Cycle page chrome through the indigo ladder `{colors.bg}` → `{colors.bg-deep}` → `{colors.bg-card}` → `{colors.bg-card2}`. Inputs sit *deeper* than cards; hover sits *higher*.
+- Layer stacked shadows (a deep multi-stop shadow + a 1-px hairline) rather than single heavy drops. Cards sit on the page, not above it. On dark the hairline is translucent violet; on light the hairline is solid warm-grey hex — see `{colors.border}`.
+- Cycle page chrome through the surface ladder `{colors.bg}` → `{colors.bg-deep}` → `{colors.bg-card}` → `{colors.bg-card2}`. The ladder semantics are theme-agnostic: inputs sit *deeper* than cards, hover sits *higher* — even though dark walks an indigo ladder and light walks a warm-cream ladder.
+- **Theme parity:** when adding a new colour token, define BOTH a dark and a light value at the same time, in the same commit. The light value is not a translation of the dark — pick it for the warm-cream context. Token names without a light pair will eventually fall back to a default that breaks one of the themes.
 - Animate page transitions with `fadeInUp` (12 px translate + opacity, 400 ms ease-out) and stagger children at 60 ms. The motion is subtle — don't lengthen it.
 - Persist the `data-theme` to `localStorage` and apply it pre-paint in `index.html` to avoid FOUC. Tokens are theme-agnostic by name; values flip.
 
@@ -606,8 +670,9 @@ Disabled = `opacity: 0.5` + `cursor: not-allowed`. Transitions use `{tokens.tran
 - Don't render headlines in all-caps. UPPERCASE is the eyebrow voice (12 px / 10 px micro-labels) — never the title voice. Card titles and model names stay sentence-case.
 - Don't promote the sans to `font-extrabold` / `font-black`. The display weight ceiling is **700**.
 - Don't use `{colors.text-dim}` for essential UI text on either theme — its ~3.6 : 1 contrast against `{colors.bg-card}` clears AA Large (3 : 1) but is below WCAG AA Normal (4.5 : 1). Reserve for ≥ 14 px non-essential metadata (timestamps, "empty" labels, scrollbar thumb). Every code-side use must carry the inline note `// text-dim allowed: non-essential ≥14px metadata (DESIGN.md §Text)` so reviewers can audit it.
-- Don't reuse a dark-theme shadow value verbatim on light. The light palette stacks two slate-tinted drops (`rgba(15,23,42,0.04)` + `rgba(15,23,42,0.06)`) — a single `rgba(0,0,0,0.07)` drop on white reads as a page smudge, not as a lifted card. See *Elevation & Depth*.
-- Don't drop the light-theme `{colors.border}` below 18 % alpha. At 10-12 % (the dark-theme value) the violet hairline composites into the near-white page and cards lose their boundary. Light theme borders sit at 20 %.
+- Don't reuse a dark-theme shadow value verbatim on light. The light palette stacks two **warm-ink-tinted** drops (`rgba(20,20,19,0.04)` + `rgba(20,20,19,0.06)`) — a single `rgba(0,0,0,0.07)` drop on cream reads as a page smudge, not as a lifted card. Do not slate-tint the light shadows either (`rgba(15,23,42,*)`) — slate on cream reads as a cool-grey smear that fights the warm canvas. See *Elevation & Depth*.
+- **Don't use translucent violet for light-theme hairlines.** This is the most-broken light-theme rule. The light `{colors.border-light}` is a SOLID warm-grey hex (`#e6dfd8`) — translucent violet at *any* plausible alpha (0.10 / 0.20 / 0.30 / 0.40) composites to near-invisible against a white card on cream and leaves every card boundary undefined. Outline buttons and input rings will vanish. The dark theme uses translucent violet because the near-black bg-to-card luminance delta carries the boundary; the light theme has no such delta and must use a concrete material.
+- Don't introduce a cool-grey or pure-white surface to the light theme. The light palette is warm-cream by design (`#faf9f5` canvas, `#f0ebe1` deep, `#f5f0e7` elevated, `#ffffff` cards). A cool-grey `#f5f6fa` or `#eef0f7` band breaks the warm-coherent rhythm and reverts the system to "any other AI dashboard."
 - Don't drop a single heavy 8-px-blur drop-shadow on a card. The dark theme requires *deeper* multi-stop shadows (`rgba(0,0,0,0.55)` at 20-40 px) — soft drops disappear on near-black.
 - Don't apply `{gradients.brand}` to body text or table cells. Gradient-text is for hero / wordmark moments only.
 - Don't bypass `{components.button}` to write custom `bg-[var(--accent)]` buttons inline. The button variants encode the glow, the scale-press, and the disabled state — re-deriving them by hand drifts the brand.

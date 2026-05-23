@@ -36,35 +36,17 @@ export function CollapsibleJson({
     value === '{}'
   if (isEmpty) return null
   return (
-    <div style={{ marginTop: '0.4rem' }}>
+    <div className="mt-[0.4rem]">
       <button
         onClick={() => setOpen(v => !v)}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.3rem',
-          fontSize: '0.7rem',
-          color: 'var(--text-muted)',
-          opacity: 0.7,
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          padding: '0.1rem 0',
-        }}
+        className="inline-flex items-center gap-[0.3rem] text-[0.7rem] text-[var(--text-muted)] opacity-70 bg-transparent border-0 cursor-pointer py-[0.1rem] px-0"
       >
         {open ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
-        {icon && <span style={{ display: 'inline-flex', alignItems: 'center' }}>{icon}</span>}
+        {icon && <span className="inline-flex items-center">{icon}</span>}
         <span className="uppercase tracking-wide font-semibold">{label}</span>
       </button>
       {open && (
-        <div
-          style={{
-            marginTop: '0.3rem',
-            borderRadius: '0.4rem',
-            overflow: 'hidden',
-            border: '1px solid var(--border)',
-          }}
-        >
+        <div className="mt-[0.3rem] rounded-[0.4rem] overflow-hidden border border-[var(--border)]">
           <JsonViewer value={value} maxHeight={maxHeight} />
         </div>
       )}
@@ -83,6 +65,8 @@ export interface EvalResultPanelProps {
   threshold: number
   showPred: boolean
 }
+
+const eyebrowBase = 'text-[0.65rem] font-bold uppercase tracking-[0.08em] mb-[0.35rem] flex items-center gap-[0.25rem]'
 
 export function EvalResultPanel({
   pred,
@@ -104,135 +88,58 @@ export function EvalResultPanel({
 
   return (
     <div
-      style={{
-        borderRadius: '0.75rem',
-        border: '1px solid var(--border-md)',
-        background: 'var(--bg-card2)',
-        overflow: 'hidden',
-        boxShadow: 'var(--shadow-sm)',
-        animation: 'fadeInUp 300ms ease-out 160ms both',
-      }}
+      className="rounded-xl border border-[var(--border-md)] bg-[var(--bg-card2)] overflow-hidden shadow-[var(--shadow-sm)]"
+      style={{ animation: 'fadeInUp 300ms ease-out 160ms both' }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          padding: '0.5rem 1rem',
-          borderBottom: '1px solid var(--border-md)',
-          background: 'var(--bg-deep)',
-        }}
-      >
-        <ClipboardCheck size={13} style={{ color: 'var(--text-muted)', opacity: 0.6 }} />
-        <span
-          style={{
-            fontSize: '0.65rem',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            color: 'var(--text-muted)',
-            opacity: 0.7,
-          }}
-        >
+      <div className="flex items-center gap-[0.4rem] px-4 py-2 border-b border-[var(--border-md)] bg-[var(--bg-deep)]">
+        <ClipboardCheck size={13} className="text-[var(--text-muted)] opacity-60" />
+        <span className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[var(--text-muted)] opacity-70">
           {t('prediction.evalResult')}
         </span>
       </div>
 
       <div
+        className="grid gap-0 px-4 py-3"
         style={{
-          display: 'grid',
           gridTemplateColumns: showPred ? 'minmax(80px,auto) 1fr minmax(100px,auto)' : '1fr minmax(100px,auto)',
-          gap: 0,
-          padding: '0.75rem 1rem',
         }}
       >
         {showPred && (
-          <div style={{ paddingRight: '1rem', borderRight: '1px solid var(--border-md)' }}>
-            <div
-              style={{
-                fontSize: '0.65rem',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: 'var(--purple)',
-                opacity: 0.8,
-                marginBottom: '0.35rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.25rem',
-              }}
-            >
+          <div className="pr-4 border-r border-[var(--border-md)]">
+            <div className={`${eyebrowBase} text-[var(--purple)] opacity-80`}>
               <Scissors size={11} />
               {t('prediction.extractedAnswer')}
             </div>
             {isSameAsGenerated ? (
-              <span
-                style={{
-                  fontSize: '0.75rem',
-                  color: 'var(--text-muted)',
-                  opacity: 0.5,
-                  fontStyle: 'italic',
-                }}
-              >
+              <span className="text-xs text-[var(--text-muted)] opacity-50 italic">
                 = Generated
               </span>
             ) : (
-              <div style={{ fontSize: '0.875rem' }}>
+              <div className="text-sm">
                 <MarkdownRenderer content={pred} />
               </div>
             )}
           </div>
         )}
 
-        <div
-          style={{
-            padding: showPred ? '0 1rem' : '0 1rem 0 0',
-            borderRight: '1px solid var(--border-md)',
-          }}
-        >
-          <div
-            style={{
-              fontSize: '0.65rem',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: 'var(--yellow)',
-              opacity: 0.9,
-              marginBottom: '0.35rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-          >
+        <div className={`${showPred ? 'px-4' : 'pr-4'} border-r border-[var(--border-md)]`}>
+          <div className={`${eyebrowBase} text-[var(--yellow)] opacity-90`}>
             <Target size={11} />
             {t('prediction.expectedAnswer')}
           </div>
-          <div style={{ fontSize: '0.875rem' }}>
+          <div className="text-sm">
             <MarkdownRenderer content={gold} />
           </div>
         </div>
 
-        <div style={{ paddingLeft: '1rem' }}>
-          <div
-            style={{
-              fontSize: '0.65rem',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: 'var(--cyan)',
-              opacity: 0.9,
-              marginBottom: '0.35rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-          >
+        <div className="pl-4">
+          <div className={`${eyebrowBase} text-[var(--cyan)] opacity-90`}>
             <Gauge size={11} />
             {t('prediction.score')}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <div className="flex flex-col gap-1">
             <ScoreBadge score={nScore} threshold={threshold} />
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', opacity: 0.5 }}>
+            <span className="text-[0.65rem] text-[var(--text-muted)] opacity-50">
               thr: {threshold}
             </span>
           </div>
@@ -240,14 +147,7 @@ export function EvalResultPanel({
       </div>
 
       {(Object.keys(score).length > 0 || hasMetadata) && (
-        <div
-          style={{
-            padding: '0 1rem 0.75rem',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.25rem',
-          }}
-        >
+        <div className="flex flex-col gap-1 px-4 pb-3">
           {Object.keys(score).length > 0 && (
             <CollapsibleJson
               label={t('prediction.scoreJson')}

@@ -4,7 +4,7 @@ import { useLocale } from '@/contexts/LocaleContext'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import { formatScore } from '@/utils/formatUtils'
-import { scoreColor } from '@/components/ui/Table'
+import { scoreColor } from '@/utils/colorScale'
 
 interface Props {
   modelName: string

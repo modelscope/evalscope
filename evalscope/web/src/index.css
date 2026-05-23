@@ -29,6 +29,15 @@
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Score gradient per-theme knobs (overridden in [data-theme="light"]). */
+  /* See DESIGN.md §Score Gradient — fg saturation/lightness + bg alpha mul   */
+  /* let yellow mids stay legible on warm-cream without re-coding the brand   */
+  /* HSL. Light theme also boosts saturation so the mid hue (≈60 olive) gets  */
+  /* enough chroma to read on the SVG ring stroke / large display digits.    */
+  --score-fg-s: 70%;
+  --score-fg-l: 45%;
+  --score-bg-a-mul: 1;
 }
 
 /* ------------------------------------------------------------------ */
@@ -170,36 +179,39 @@
 /* Light theme                                                         */
 /* ------------------------------------------------------------------ */
 [data-theme="light"] {
-  /* Backgrounds */
-  --bg: #f5f6fa;
+  /* Backgrounds — warm-cream surface ladder (DESIGN.md §Surface, warm console) */
+  --bg: #faf9f5;
   --bg-card: #ffffff;
-  --bg-card2: #eef0f7;
-  --bg-deep: #e8eaf2;
+  --bg-card2: #f5f0e7;
+  --bg-deep: #f0ebe1;
 
   /* Accent — keep same hue, tune lightness for light bg */
   --accent: #6c57e8;
-  --accent-dim: rgba(108, 87, 232, 0.10);
+  --accent-dim: rgba(108, 87, 232, 0.14);
   --accent-dark: #4f3ec8;
   --purple: #7c6be0;
   --green: #0a8a6e;
   --yellow: #d97706;
   --cyan: #0891b2;
 
-  /* Text */
-  --text: #1a1f2e;
-  --text-muted: #5a6378;
-  --text-dim: #7c8497;
+  /* Text — warm-ink ladder (DESIGN.md §Text, warm console) */
+  --text: #141413;
+  --text-muted: #6c6a64;
+  --text-dim: #8e8b82;
   --text-on-filled: #ffffff;
 
-  /* Borders — light theme runs at ≥20% alpha so hairlines don't dissolve into the near-white page (DESIGN.md §Hairlines) */
-  --border: rgba(108, 87, 232, 0.20);
-  --border-md: rgba(108, 87, 232, 0.30);
-  --border-strong: rgba(108, 87, 232, 0.40);
+  /* Borders — solid warm-grey hairlines, NOT translucent violet (DESIGN.md §Hairlines). */
+  /* Translucent violet at 0.20 alpha composites to near-invisible on white cards; solid */
+  /* warm-grey gives every card a definite boundary. */
+  --border: #e6dfd8;
+  --border-md: #d6cdbe;
+  --border-strong: #c1b6a3;
 
-  /* Shadows — two-stop slate-tinted stack so cards lift off white (DESIGN.md §Elevation) */
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.06);
-  --shadow: 0 4px 16px rgba(15, 23, 42, 0.08), 0 12px 32px rgba(15, 23, 42, 0.06);
-  --shadow-lg: 0 12px 24px rgba(15, 23, 42, 0.10), 0 24px 48px rgba(15, 23, 42, 0.08);
+  /* Shadows — two-stop warm-ink stacks (matches text colour, not slate). */
+  /* Slate drops on cream read as a cool-grey smudge and break the warm canvas. */
+  --shadow-sm: 0 1px 2px rgba(20, 20, 19, 0.04), 0 4px 12px rgba(20, 20, 19, 0.06);
+  --shadow: 0 4px 16px rgba(20, 20, 19, 0.07), 0 12px 32px rgba(20, 20, 19, 0.05);
+  --shadow-lg: 0 12px 24px rgba(20, 20, 19, 0.09), 0 24px 48px rgba(20, 20, 19, 0.07);
   --shadow-glow: 0 0 20px rgba(108, 87, 232, 0.22);
   --shadow-glow-soft: 0 0 12px rgba(108, 87, 232, 0.18);
 
@@ -216,8 +228,16 @@
   /* Overlay / tooltip backdrop */
   --overlay-bg: rgba(0, 0, 0, 0.55);
 
-  /* Glassmorphic surface — sticky top-nav (DESIGN.md §Surface) */
-  --surface-glass: rgba(255, 255, 255, 0.80);
+  /* Glassmorphic surface — warm-tinted (DESIGN.md §Surface, warm console) */
+  --surface-glass: rgba(250, 249, 245, 0.80);
+
+  /* Score gradient — darker fg lightness + higher saturation + boosted bg   */
+  /* alpha so yellow mids stay legible on warm-cream. The +15pt saturation    */
+  /* bump compensates for the lightness compression at mid hues (≈60 olive). */
+  /* See DESIGN.md §Score Gradient. */
+  --score-fg-s: 85%;
+  --score-fg-l: 32%;
+  --score-bg-a-mul: 1.6;
 
   /* Semantic color tokens */
   --danger: #dc2626;
@@ -247,10 +267,14 @@
   --compare-2-bg: rgba(217, 119, 6, 0.07);
   --compare-2-bg-header: rgba(217, 119, 6, 0.12);
 
-  /* Chart colors */
-  --chart-latency: #3b82f6;
-  --chart-ttft: #0a8a6e;
-  --chart-tpot: #7c6be0;
+  /* Chart colors — light-theme palette is deeper + more saturated than dark's */
+  /* counterpart, because warm-cream bg (`--bg-card` / `--bg-deep`) compresses */
+  /* cool hues via simultaneous contrast. Mid-tone slate blue / violet read    */
+  /* as washed-out on cream; pulling lightness down and saturation up restores */
+  /* the "data-bearing" punch of the same hue family. */
+  --chart-latency: #2563eb;
+  --chart-ttft: #047857;
+  --chart-tpot: #5b48e0;
   --chart-token: #5a6378;
 
   /* KPI card gradients — saturated enough to work on both themes */

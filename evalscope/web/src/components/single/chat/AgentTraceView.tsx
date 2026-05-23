@@ -23,25 +23,11 @@ export function EnvExecRow({ event }: { event: AgentTraceEvent }) {
   const cmd = typeof event.payload.command === 'string' ? event.payload.command : ''
   if (!cmd) return null
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '0.5rem',
-        padding: '0.35rem 0.6rem',
-        background: 'var(--bg-deep)',
-        border: '1px solid var(--border)',
-        borderRadius: '0.4rem',
-        fontSize: '0.72rem',
-        fontFamily: 'var(--font-mono, monospace)',
-        color: 'var(--text-muted)',
-        marginTop: '0.4rem',
-      }}
-    >
-      <Cpu size={12} style={{ color: 'var(--text-muted)', marginTop: 2, flexShrink: 0 }} />
-      <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', flex: 1 }}>$ {cmd}</span>
+    <div className="flex items-start gap-2 px-[0.6rem] py-[0.35rem] bg-[var(--bg-deep)] border border-[var(--border)] rounded-[0.4rem] text-[0.72rem] font-mono text-[var(--text-muted)] mt-[0.4rem]">
+      <Cpu size={12} className="text-[var(--text-muted)] mt-[2px] shrink-0" />
+      <span className="whitespace-pre-wrap break-all flex-1">$ {cmd}</span>
       {event.latency_ms != null && (
-        <span style={{ opacity: 0.6, whiteSpace: 'nowrap' }}>{fmtMs(event.latency_ms)}</span>
+        <span className="opacity-60 whitespace-nowrap">{fmtMs(event.latency_ms)}</span>
       )}
     </div>
   )
@@ -53,23 +39,9 @@ export function LoopErrorRow({ event }: { event: AgentTraceEvent }) {
   const msg = event.payload.message != null ? String(event.payload.message) : ''
   if (!msg) return null
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '0.5rem',
-        padding: '0.4rem 0.6rem',
-        background: 'var(--danger-bg)',
-        border: '1px solid var(--danger-border, var(--danger))',
-        borderRadius: '0.4rem',
-        fontSize: '0.72rem',
-        fontFamily: 'var(--font-mono, monospace)',
-        color: 'var(--danger)',
-        marginTop: '0.4rem',
-      }}
-    >
-      <AlertTriangle size={12} style={{ marginTop: 2, flexShrink: 0 }} />
-      <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', flex: 1 }}>{msg}</span>
+    <div className="flex items-start gap-2 px-[0.6rem] py-[0.4rem] bg-[var(--danger-bg)] border border-[var(--danger-border)] rounded-[0.4rem] text-[0.72rem] font-mono text-[var(--danger)] mt-[0.4rem]">
+      <AlertTriangle size={12} className="mt-[2px] shrink-0" />
+      <span className="whitespace-pre-wrap break-all flex-1">{msg}</span>
     </div>
   )
 }
@@ -80,23 +52,9 @@ export function LoopErrorRow({ event }: { event: AgentTraceEvent }) {
 export function NudgeRow({ msg }: { msg: ChatMessage }) {
   const text = contentToText(msg.content)
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.4rem',
-        padding: '0.35rem 0.6rem',
-        background: 'var(--warning-bg)',
-        border: '1px solid var(--warning-border)',
-        borderRadius: '0.4rem',
-        fontSize: '0.72rem',
-        fontFamily: 'var(--font-mono, monospace)',
-        color: 'var(--warning-text)',
-        marginTop: '0.25rem',
-      }}
-    >
-      <AlertTriangle size={12} style={{ flexShrink: 0 }} />
-      <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', flex: 1 }}>{text}</span>
+    <div className="flex items-center gap-[0.4rem] px-[0.6rem] py-[0.35rem] bg-[var(--warning-bg)] border border-[var(--warning-border)] rounded-[0.4rem] text-[0.72rem] font-mono text-[var(--warning-text)] mt-1">
+      <AlertTriangle size={12} className="shrink-0" />
+      <span className="whitespace-pre-wrap break-all flex-1">{text}</span>
     </div>
   )
 }
@@ -366,21 +324,8 @@ export function TraceEventPill({ event }: { event: AgentTraceEvent }) {
   const label = t(cfg.labelKey)
   return (
     <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 3,
-        padding: '1px 6px',
-        borderRadius: 3,
-        background: 'transparent',
-        border: `1px solid ${cfg.color}`,
-        color: cfg.color,
-        fontSize: '0.58rem',
-        fontFamily: 'var(--font-mono, monospace)',
-        fontWeight: 500,
-        opacity: 0.85,
-        whiteSpace: 'nowrap',
-      }}
+      className="inline-flex items-center gap-[3px] px-[6px] py-[1px] rounded-[3px] bg-transparent border text-[0.58rem] font-mono font-medium opacity-85 whitespace-nowrap"
+      style={{ borderColor: cfg.color, color: cfg.color }}
     >
       <Icon size={9} />
       {label === cfg.labelKey ? event.type : label}
@@ -408,7 +353,7 @@ export function StepBlock({
   // Pre-agent messages (system/user) — render as-is, no wrapper
   if (group.step === -1) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      <div className="flex flex-col gap-2">
         {group.preAgentMessages.map((msg, idx) =>
           msg.role === 'system' ? (
             <SystemPromptRow
@@ -533,62 +478,40 @@ export function StepBlock({
 
   return (
     <div
-      style={{
-        borderRadius: '0.6rem',
-        background: highlighted ? 'var(--accent-dim)' : 'transparent',
-        borderLeft: highlighted ? '2px solid var(--accent)' : '2px solid transparent',
-        padding: highlighted ? '0.2rem 0 0.2rem 0.4rem' : '0.2rem 0',
-        transition: 'background 0.3s, border-color 0.3s',
-      }}
+      className={[
+        'rounded-[0.6rem] border-l-2 transition-[background-color,border-color] duration-300',
+        highlighted
+          ? 'bg-[var(--accent-dim)] border-[var(--accent)] py-[0.2rem] pl-[0.4rem] pr-0'
+          : 'bg-transparent border-transparent py-[0.2rem] px-0',
+      ].join(' ')}
     >
       {/* Step header strip */}
       <button
         onClick={() => onStepClick(group.step)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          width: '100%',
-          background: 'none',
-          border: 'none',
-          borderBottom: '1px dashed var(--border)',
-          padding: '0.3rem 0 0.4rem 0',
-          marginBottom: '0.5rem',
-          cursor: 'pointer',
-        }}
+        className="flex items-center gap-2 w-full bg-transparent border-0 border-b border-dashed border-[var(--border)] pt-[0.3rem] pb-[0.4rem] mb-2 cursor-pointer"
       >
         <span
-          style={{
-            fontSize: '0.7rem',
-            fontWeight: 700,
-            fontFamily: 'var(--font-mono, monospace)',
-            color: highlighted ? 'var(--accent)' : 'var(--text-muted)',
-            letterSpacing: '0.04em',
-          }}
+          className={[
+            'text-[0.7rem] font-bold font-mono tracking-[0.04em]',
+            highlighted ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]',
+          ].join(' ')}
         >
           {t('trace.step')} {group.step}
         </span>
         {group.totalLatencyMs != null && (
-          <span
-            style={{
-              fontSize: '0.65rem',
-              fontFamily: 'var(--font-mono, monospace)',
-              color: 'var(--text-muted)',
-              opacity: 0.7,
-            }}
-          >
+          <span className="text-[0.65rem] font-mono text-[var(--text-muted)] opacity-70">
             {fmtMs(group.totalLatencyMs)}
           </span>
         )}
         {/* Event pills */}
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flex: 1 }}>
+        <div className="flex flex-wrap flex-1 gap-1">
           {group.traceEvents.map((ev, i) => (
             <TraceEventPill key={i} event={ev} />
           ))}
         </div>
       </button>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      <div className="flex flex-col gap-2">
         {/* Assistant row */}
         {group.assistant && (
           <MessageRow
@@ -664,7 +587,7 @@ export function TracedTimeline({
   )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+    <div className="flex flex-col gap-[0.6rem]">
       {preGroup && (
         <StepBlock
           group={preGroup}

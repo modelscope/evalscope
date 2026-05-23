@@ -197,7 +197,7 @@ function KpiStrip({
   items: { label: string; value: string; color: string }[]
 }) {
   return (
-    <div className="flex bg-[var(--bg-deep)] border border-[var(--border)] rounded-[var(--radius-sm)] overflow-hidden">
+    <div className="flex bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-sm)] overflow-hidden">
       {items.map((item, i) => (
         <div
           key={item.label}

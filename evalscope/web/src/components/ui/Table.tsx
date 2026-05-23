@@ -1,11 +1,6 @@
 import { type ReactNode, useState, useMemo } from 'react'
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { scoreColor } from '@/utils/colorScale'
-
-// Re-export so existing `from '@/components/ui/Table'` imports keep working.
-// New code should import directly from `@/utils/colorScale`.
-export { scoreColor }
 
 type SortDir = 'asc' | 'desc'
 

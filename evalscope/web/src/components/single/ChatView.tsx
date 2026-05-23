@@ -27,7 +27,7 @@ function LegacyMessages({ prediction }: { prediction: PredictionRow }) {
     />
   ) : undefined
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+    <div className="flex flex-col gap-2">
       {system && <SystemPromptRow content={system} />}
       <MessageRow role="user" content={user || prediction.Input} />
       {prediction.Generated && (
@@ -72,14 +72,14 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId 
           onStepClick={handleStepClick}
         />
       ) : hasStructured ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div className="flex flex-col gap-2">
           <StructuredMessages messages={messages!} highlightId={highlightMsgId} />
         </div>
       ) : (
         <LegacyMessages prediction={prediction} />
       )}
 
-      <div style={{ borderTop: '1px solid var(--border)' }} />
+      <div className="border-t border-[var(--border)]" />
 
       <EvalResultPanel
         pred={prediction.Pred}

@@ -31,52 +31,23 @@ export function ToolObservation({ msg }: { msg: ChatMessage }) {
       header={
         <>
           <span
-            style={{
-              display: 'inline-block',
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              background: hasError ? 'var(--danger)' : bubbleAccent('bot'),
-              flexShrink: 0,
-            }}
+            className="inline-block w-[6px] h-[6px] rounded-full shrink-0"
+            style={{ background: hasError ? 'var(--danger)' : bubbleAccent('bot') }}
           />
-          <span
-            style={{
-              fontFamily: 'var(--font-mono, monospace)',
-              fontSize: '0.7rem',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              flex: 1,
-            }}
-          >
+          <span className="font-mono text-[0.7rem] overflow-hidden text-ellipsis whitespace-nowrap flex-1">
             {hasError
               ? `${t('trace.error')}: ${msg.error?.message ?? ''}`
               : previewShort || t('trace.stdout')}
           </span>
           {msg.id && (
-            <span style={{ opacity: 0.4, fontSize: '0.6rem', fontFamily: 'var(--font-mono, monospace)' }}>
+            <span className="opacity-40 text-[0.6rem] font-mono">
               {msg.id}
             </span>
           )}
         </>
       }
     >
-      <pre
-        style={{
-          margin: '0.25rem 0 0.4rem 0',
-          padding: '0.4rem 0.6rem',
-          background: 'var(--bg-deep)',
-          borderRadius: '0.35rem',
-          fontSize: '0.7rem',
-          fontFamily: 'var(--font-mono, monospace)',
-          color: 'var(--text-muted)',
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-all',
-          maxHeight: 260,
-          overflow: 'auto',
-        }}
-      >
+      <pre className="mt-1 mb-[0.4rem] mx-0 px-[0.6rem] py-[0.4rem] bg-[var(--bg-deep)] rounded-[0.35rem] text-[0.7rem] font-mono text-[var(--text-muted)] whitespace-pre-wrap break-all max-h-[260px] overflow-auto">
         {text}
       </pre>
     </Collapsible>
@@ -119,7 +90,7 @@ export function ToolCallsGroup({ calls }: { calls: ToolCallEntry[] }) {
         opacity: 0.85,
       }}
       bodyStyle={{ marginTop: '0.4rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
-      header={<span style={{ fontWeight: 600 }}>{summaryLabel}</span>}
+      header={<span className="font-semibold">{summaryLabel}</span>}
     >
       {calls.map((call, i) => (
         <ToolCallEntryRow key={call.id || i} entry={call} />
@@ -131,63 +102,32 @@ export function ToolCallsGroup({ calls }: { calls: ToolCallEntry[] }) {
 export function ToolCallEntryRow({ entry }: { entry: ToolCallEntry }) {
   const { t } = useLocale()
   const preview = argsPreview(entry.arguments)
+  const toolAccent = bubbleAccent('tool')
 
   return (
-    <div style={{ borderLeft: `3px solid ${bubbleBorder('tool')}`, paddingLeft: '0.7rem' }}>
+    <div className="pl-[0.7rem] border-l-[3px]" style={{ borderLeftColor: bubbleBorder('tool') }}>
       <Collapsible
         headerStyle={{ gap: '0.45rem' }}
         header={
           <>
-            <Wrench size={12} style={{ color: bubbleAccent('tool'), flexShrink: 0 }} />
-            <span
-              style={{
-                fontSize: '0.75rem',
-                fontFamily: 'var(--font-mono, monospace)',
-                fontWeight: 600,
-                color: bubbleAccent('tool'),
-              }}
-            >
+            <Wrench size={12} className="shrink-0" style={{ color: toolAccent }} />
+            <span className="text-xs font-mono font-semibold" style={{ color: toolAccent }}>
               {entry.function}
             </span>
             {preview && (
-              <span
-                style={{
-                  fontSize: '0.7rem',
-                  fontFamily: 'var(--font-mono, monospace)',
-                  color: 'var(--text-muted)',
-                  opacity: 0.75,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  flex: 1,
-                }}
-              >
+              <span className="text-[0.7rem] font-mono text-[var(--text-muted)] opacity-75 overflow-hidden text-ellipsis whitespace-nowrap flex-1">
                 {preview}
               </span>
             )}
             {entry.latencyMs != null && (
-              <span
-                style={{
-                  fontSize: '0.65rem',
-                  fontFamily: 'var(--font-mono, monospace)',
-                  color: 'var(--text-muted)',
-                  opacity: 0.6,
-                  whiteSpace: 'nowrap',
-                }}
-              >
+              <span className="text-[0.65rem] font-mono text-[var(--text-muted)] opacity-60 whitespace-nowrap">
                 {fmtMs(entry.latencyMs)}
               </span>
             )}
             {entry.id && (
               <span
-                style={{
-                  fontSize: '0.6rem',
-                  fontFamily: 'var(--font-mono, monospace)',
-                  color: 'var(--text-dim)',
-                  opacity: 0.5,
-                  whiteSpace: 'nowrap',
-                }}
                 title={entry.id}
+                className="text-[0.6rem] font-mono text-[var(--text-dim)] opacity-50 whitespace-nowrap"
               >
                 #{shortToolId(entry.id)}
               </span>
@@ -196,35 +136,11 @@ export function ToolCallEntryRow({ entry }: { entry: ToolCallEntry }) {
         }
       >
         {entry.arguments != null && (
-          <div style={{ marginTop: '0.3rem' }}>
-            <div
-              style={{
-                fontSize: '0.62rem',
-                color: 'var(--text-muted)',
-                opacity: 0.6,
-                marginBottom: '0.2rem',
-                letterSpacing: '0.04em',
-                textTransform: 'uppercase',
-                fontWeight: 600,
-              }}
-            >
+          <div className="mt-[0.3rem]">
+            <div className="text-[0.62rem] text-[var(--text-muted)] opacity-60 mb-[0.2rem] tracking-[0.04em] uppercase font-semibold">
               {t('trace.arguments')}
             </div>
-            <pre
-              style={{
-                margin: 0,
-                padding: '0.4rem 0.6rem',
-                background: 'var(--bg-deep)',
-                borderRadius: '0.35rem',
-                fontSize: '0.7rem',
-                fontFamily: 'var(--font-mono, monospace)',
-                color: 'var(--text-muted)',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all',
-                maxHeight: 200,
-                overflow: 'auto',
-              }}
-            >
+            <pre className="m-0 px-[0.6rem] py-[0.4rem] bg-[var(--bg-deep)] rounded-[0.35rem] text-[0.7rem] font-mono text-[var(--text-muted)] whitespace-pre-wrap break-all max-h-[200px] overflow-auto">
               {typeof entry.arguments === 'string'
                 ? entry.arguments
                 : JSON.stringify(entry.arguments, null, 2)}

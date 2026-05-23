@@ -21,22 +21,14 @@ function resolveMediaSrc(src: string, mimeType: string): string {
   return `data:${mimeType};base64,${src}`
 }
 
-const IMG_INLINE_CLASS = 'cursor-zoom-in hover:scale-[1.02] transition-transform'
-const IMG_INLINE_STYLE: React.CSSProperties = {
-  maxWidth: '100%',
-  maxHeight: '360px',
-  borderRadius: '0.5rem',
-  border: '1px solid var(--border)',
-  display: 'block',
-}
+const IMG_INLINE_CLASS = 'cursor-zoom-in hover:scale-[1.02] transition-transform max-w-full max-h-[360px] rounded-lg border border-[var(--border)] block'
 
 export function ImageBlock({ src }: { src: string }) {
   return (
-    <div style={{ marginTop: '0.5rem', marginBottom: '0.25rem' }}>
+    <div className="mt-2 mb-1">
       <ImageLightbox
         src={resolveMediaSrc(src, 'image/jpeg')}
         className={IMG_INLINE_CLASS}
-        style={IMG_INLINE_STYLE}
       />
     </div>
   )
@@ -47,9 +39,9 @@ const AUDIO_MIMES: Record<string, string> = { mp3: 'audio/mpeg', wav: 'audio/wav
 export function AudioBlock({ src, format }: { src: string; format?: string }) {
   const mimeType = AUDIO_MIMES[format ?? ''] ?? 'audio/mpeg'
   return (
-    <div style={{ marginTop: '0.5rem', marginBottom: '0.25rem' }}>
+    <div className="mt-2 mb-1">
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-      <audio controls src={resolveMediaSrc(src, mimeType)} style={{ width: '100%', borderRadius: '0.4rem' }} />
+      <audio controls src={resolveMediaSrc(src, mimeType)} className="w-full rounded-[0.4rem]" />
     </div>
   )
 }
@@ -59,19 +51,12 @@ const VIDEO_MIMES: Record<string, string> = { webm: 'video/webm', ogg: 'video/og
 export function VideoBlock({ src, format }: { src: string; format?: string }) {
   const mimeType = VIDEO_MIMES[format ?? ''] ?? 'video/mp4'
   return (
-    <div style={{ marginTop: '0.5rem', marginBottom: '0.25rem' }}>
+    <div className="mt-2 mb-1">
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <video
         controls
         src={resolveMediaSrc(src, mimeType)}
-        style={{
-          maxWidth: '100%',
-          maxHeight: '360px',
-          borderRadius: '0.5rem',
-          border: '1px solid var(--border)',
-          display: 'block',
-          background: 'var(--media-video-bg)',
-        }}
+        className="max-w-full max-h-[360px] rounded-lg border border-[var(--border)] block bg-[var(--media-video-bg)]"
       />
     </div>
   )
@@ -95,10 +80,7 @@ export function ReasoningBlock({ text, tokens }: { text: string; tokens?: number
         </span>
       </button>
       {open && (
-        <div
-          className="px-3 pb-3 pt-2 text-[0.8rem] text-[var(--text)] border-t"
-          style={{ borderColor: 'var(--border)' }}
-        >
+        <div className="px-3 pb-3 pt-2 text-[0.8rem] text-[var(--text)] border-t border-[var(--border)]">
           <MarkdownRenderer content={text} />
         </div>
       )}
