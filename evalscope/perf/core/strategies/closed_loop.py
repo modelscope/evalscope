@@ -69,21 +69,25 @@ class ClosedLoopStrategy(BenchmarkStrategy):
         n = len(requests)
         rate = self.args.rate
 
-        # Pre-compute absolute dispatch offsets when pacing is enabled.
-        delay_ts = None
-        start = None
+        # Pre-compute absolute dispatch timestamps when pacing is enabled.
+        # ``target_times`` is anchored just before the dispatch loop so that
+        # each iteration only needs a single subtraction + index lookup.
+        target_times = None
         if rate != -1 and n > 0:
             intervals = np.random.exponential(1.0 / rate, size=n)
             delay_ts = np.cumsum(intervals)
             target_total_s = n / rate
             if delay_ts[-1] > 0:
-                delay_ts = delay_ts * (target_total_s / delay_ts[-1])
-            start = time.perf_counter()
+                delay_ts *= (target_total_s / delay_ts[-1])
+            # Keep ``perf_counter()`` adjacent to the loop entry – do not
+            # insert any other awaits between this line and the loop,
+            # otherwise the anchor will skew.
+            target_times = delay_ts + time.perf_counter()
 
         for i, request in enumerate(requests):
             # Sleep until the absolute target dispatch time (drift-corrected).
-            if delay_ts is not None:
-                sleep_s = (start + float(delay_ts[i])) - time.perf_counter()
+            if target_times is not None:
+                sleep_s = target_times[i] - time.perf_counter()
                 if sleep_s > 0:
                     await asyncio.sleep(sleep_s)
 

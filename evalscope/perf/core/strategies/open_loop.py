@@ -100,12 +100,18 @@ class OpenLoopStrategy(BenchmarkStrategy):
             #    locked to the configured value across runs / seeds.
             target_total_s = n / rate
             if delay_ts[-1] > 0:
-                delay_ts = delay_ts * (target_total_s / delay_ts[-1])
+                delay_ts *= (target_total_s / delay_ts[-1])
 
-            # 4) Anchor the schedule to a monotonic clock and drive dispatch.
-            start = time.perf_counter()
+            # 4) Anchor the schedule to absolute monotonic timestamps and
+            #    drive dispatch.  We pre-compute ``target_times`` (a numpy
+            #    vector) right before the dispatch loop so the per-iteration
+            #    cost is a single subtraction + index, not an add + float()
+            #    cast.  Keep ``perf_counter()`` adjacent to the loop entry –
+            #    do not insert any other awaits between this line and the
+            #    loop, otherwise the anchor will skew.
+            target_times = delay_ts + time.perf_counter()
             for i, request in enumerate(requests):
-                sleep_s = (start + float(delay_ts[i])) - time.perf_counter()
+                sleep_s = target_times[i] - time.perf_counter()
                 if sleep_s > 0:
                     await asyncio.sleep(sleep_s)
                 # If sleep_s <= 0 we are behind schedule; dispatch immediately
