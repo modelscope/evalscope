@@ -1,5 +1,6 @@
 import asyncio
 import numpy as np
+import time
 from typing import TYPE_CHECKING, List
 
 from evalscope.perf.arguments import Arguments
@@ -54,19 +55,63 @@ class OpenLoopStrategy(BenchmarkStrategy):
         await self._run_phase(benchmark_requests, is_warmup=False)
 
     async def _run_phase(self, requests: List[dict], is_warmup: bool) -> None:
-        """Fire all requests in this phase and wait for all to complete."""
+        """Fire all requests in this phase and wait for all to complete.
+
+        Uses absolute-time scheduling (à la vLLM ``benchmarks/serve.py``):
+        all per-request inter-arrival intervals are pre-computed once, then
+        accumulated into absolute wake-up timestamps relative to a phase
+        anchor ``start``.  Each iteration sleeps until ``start + delay_ts[i]``
+        instead of sleeping a freshly-sampled relative interval.
+
+        Why this matters
+        ----------------
+        The previous implementation did
+        ``await asyncio.sleep(np.random.exponential(1/rate))`` in every
+        iteration.  That is *relative* pacing and accumulates drift: any
+        event-loop jitter (long-running coroutines, GC, GIL contention from
+        SSE chunk handling, etc.) extends each sleep by ``Δ``, and the
+        ``Δ`` is never recovered, so the effective send rate decays
+        monotonically over time.  Empirically this manifested as server-side
+        QPM falling from the target value to ~70-80% over the duration of a
+        run, even though the dispatcher *thought* it was still on schedule.
+
+        Absolute-time scheduling self-corrects: if iteration ``i`` is late by
+        ``Δ`` ms, iteration ``i+1`` simply computes a smaller (or negative)
+        ``sleep_s`` and dispatches immediately, catching up.  The long-run
+        average rate stays locked to ``args.rate``.
+        """
         in_flight: set[asyncio.Task] = set()
+        n = len(requests)
+        rate = self.args.rate
 
-        for request in requests:
-            # Apply Poisson inter-arrival sleep so open-loop semantics are
-            # preserved: the interval elapses *before* each dispatch, not
-            # during pre-collection.
-            if self.args.rate != -1:
-                interval = np.random.exponential(1.0 / self.args.rate)
-                await asyncio.sleep(interval)
+        if rate == -1 or n == 0:
+            # Unlimited rate: fire all requests as fast as the loop allows.
+            for request in requests:
+                task = asyncio.create_task(_send_request_open_loop(request, is_warmup, self.queue, self.client))
+                in_flight.add(task)
+        else:
+            # 1) Sample n Poisson inter-arrival intervals (mean = 1/rate).
+            intervals = np.random.exponential(1.0 / rate, size=n)
+            # 2) Accumulate into absolute offsets from the phase start.
+            delay_ts = np.cumsum(intervals)
+            # 3) Re-scale so total phase duration is exactly n / rate.
+            #    This eliminates the 1-2% bias that ``np.random.exponential``
+            #    accumulates over n samples and keeps the realised QPS
+            #    locked to the configured value across runs / seeds.
+            target_total_s = n / rate
+            if delay_ts[-1] > 0:
+                delay_ts = delay_ts * (target_total_s / delay_ts[-1])
 
-            task = asyncio.create_task(_send_request_open_loop(request, is_warmup, self.queue, self.client))
-            in_flight.add(task)
+            # 4) Anchor the schedule to a monotonic clock and drive dispatch.
+            start = time.perf_counter()
+            for i, request in enumerate(requests):
+                sleep_s = (start + float(delay_ts[i])) - time.perf_counter()
+                if sleep_s > 0:
+                    await asyncio.sleep(sleep_s)
+                # If sleep_s <= 0 we are behind schedule; dispatch immediately
+                # to absorb the drift.
+                task = asyncio.create_task(_send_request_open_loop(request, is_warmup, self.queue, self.client))
+                in_flight.add(task)
 
         # Phase barrier: wait for all in-flight requests before returning.
         if in_flight:
