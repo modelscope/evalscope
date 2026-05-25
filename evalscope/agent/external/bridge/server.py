@@ -22,6 +22,7 @@ from evalscope.utils.logger import get_logger
 from ..runners.base import BridgeEndpoint
 from .sse_anthropic import stream_anthropic_response
 from .sse_openai import stream_openai_response
+from .sse_responses import stream_responses_payload
 from .trace_recorder import BridgeTraceRecorder
 from .translate_anthropic import (
     anthropic_request_to_messages,
@@ -33,6 +34,13 @@ from .translate_openai import (
     openai_request_to_messages,
     openai_tool_choice,
     openai_tools_to_tool_infos,
+)
+from .translate_responses import (
+    model_output_to_responses_payload,
+    responses_request_to_messages,
+    responses_tool_choice,
+    responses_tools_to_tool_infos,
+    warn_unsupported_previous_response_id,
 )
 
 if TYPE_CHECKING:
@@ -168,6 +176,7 @@ class ModelProxyServer:
             app = web.Application()
             app.router.add_post('/anthropic/v1/messages', self._handle_anthropic_messages)
             app.router.add_post('/openai/v1/chat/completions', self._handle_openai_chat_completions)
+            app.router.add_post('/openai/v1/responses', self._handle_openai_responses)
 
             async def _healthz(_request: web.Request) -> web.Response:
                 return web.json_response({'ok': True})
@@ -215,7 +224,7 @@ class ModelProxyServer:
             AsyncioLoopRunner.register_close_callback(self.shutdown)
             logger.info(
                 f'ModelProxyServer started on http://{self._host}:{self._actual_port} '
-                f'(routes: /anthropic/v1/messages, /openai/v1/chat/completions)'
+                f'(routes: /anthropic/v1/messages, /openai/v1/chat/completions, /openai/v1/responses)'
             )
 
     @staticmethod
@@ -324,18 +333,9 @@ class ModelProxyServer:
             f'bridge: POST /openai/v1/chat/completions from {request.remote} '
             f'auth={request.headers.get("Authorization") or request.headers.get("x-api-key")!r}'
         )
-        try:
-            session = await self._lookup_session(request)
-        except _BridgeAuthError as exc:
-            logger.debug(f'bridge: auth failed — {exc}')
-            return web.json_response(
-                {'error': {
-                    'type': 'invalid_request_error',
-                    'code': 'invalid_api_key',
-                    'message': str(exc),
-                }},
-                status=401,
-            )
+        session = await self._auth_check_openai(request)
+        if isinstance(session, web.Response):
+            return session
 
         body = await request.json()
         chat_messages = openai_request_to_messages(body)
@@ -395,15 +395,7 @@ class ModelProxyServer:
         gen_config: 'GenerateConfig',
         include_usage: bool,
     ) -> web.StreamResponse:
-        response = web.StreamResponse(
-            status=200,
-            headers={
-                'Content-Type': 'text/event-stream; charset=utf-8',
-                'Cache-Control': 'no-cache',
-                'Connection': 'keep-alive',
-            },
-        )
-        await response.prepare(request)
+        response = await self._prepare_sse_response(request)
 
         started = time.monotonic()
         generate_task = asyncio.create_task(
@@ -438,6 +430,118 @@ class ModelProxyServer:
         finally:
             if not generate_task.done():
                 generate_task.cancel()
+        await response.write_eof()
+        return response
+
+    async def _handle_openai_responses(self, request: web.Request) -> web.StreamResponse:
+        logger.debug(
+            f'bridge: POST /openai/v1/responses from {request.remote} '
+            f'auth={request.headers.get("Authorization") or request.headers.get("x-api-key")!r}'
+        )
+        session = await self._auth_check_openai(request)
+        if isinstance(session, web.Response):
+            return session
+
+        body = await request.json()
+        warn_unsupported_previous_response_id(body)
+        chat_messages = responses_request_to_messages(body)
+        tool_infos = responses_tools_to_tool_infos(body.get('tools') or [])
+        tool_choice = responses_tool_choice(body.get('tool_choice'))
+        gen_config = _build_responses_generate_config(body)
+
+        if body.get('stream'):
+            return await self._respond_streaming_responses(
+                request, session, body, chat_messages, tool_infos, tool_choice, gen_config
+            )
+        return await self._respond_json_responses(session, body, chat_messages, tool_infos, tool_choice, gen_config)
+
+    async def _respond_json_responses(
+        self,
+        session: TrialSession,
+        body: Dict[str, Any],
+        chat_messages: list,
+        tool_infos: list,
+        tool_choice,
+        gen_config: 'GenerateConfig',
+    ) -> web.StreamResponse:
+        started = time.monotonic()
+        try:
+            output = await session.model.generate_async(
+                input=chat_messages,
+                tools=tool_infos or None,
+                tool_choice=tool_choice,
+                config=gen_config,
+            )
+        except Exception as exc:  # pragma: no cover - upstream-dependent
+            _log_upstream_failure(session, exc, mode='json')
+            return web.json_response(
+                {'error': {
+                    'type': 'api_error',
+                    'message': repr(exc)
+                }},
+                status=502,
+            )
+
+        latency_ms = (time.monotonic() - started) * 1000
+        session.recorder.record_responses_turn(body, output, latency_ms=latency_ms)
+        _log_turn(session, output, latency_ms, mode='json')
+        return web.json_response(model_output_to_responses_payload(output, request_model=body.get('model')))
+
+    async def _respond_streaming_responses(
+        self,
+        request: web.Request,
+        session: TrialSession,
+        body: Dict[str, Any],
+        chat_messages: list,
+        tool_infos: list,
+        tool_choice,
+        gen_config: 'GenerateConfig',
+    ) -> web.StreamResponse:
+        """Pre-resolve the model output, then slice into Responses SSE frames.
+
+        Unlike the anthropic / openai chat paths we do not interleave
+        keep-alive pings — the synthesizer emits the full event sequence
+        once the generation resolves. If DashScope first-byte latency
+        ever exceeds codex's tolerance in practice, revisit with a keep
+        alive in_progress frame loop (see PR2 plan).
+        """
+        response = await self._prepare_sse_response(request)
+
+        started = time.monotonic()
+        try:
+            output = await session.model.generate_async(
+                input=chat_messages,
+                tools=tool_infos or None,
+                tool_choice=tool_choice,
+                config=gen_config,
+            )
+            latency_ms = (time.monotonic() - started) * 1000
+            session.recorder.record_responses_turn(body, output, latency_ms=latency_ms)
+            _log_turn(session, output, latency_ms, mode='stream')
+            payload = model_output_to_responses_payload(output, request_model=body.get('model'))
+            async for chunk in stream_responses_payload(payload):
+                await response.write(chunk)
+        except Exception as exc:  # pragma: no cover - upstream-dependent
+            _log_upstream_failure(session, exc, mode='stream')
+            # Responses error frame shape per OpenAI SDK ``ResponseErrorEvent``:
+            # event name ``error`` (NOT ``response.failed`` — that one requires
+            # a fully-constructed ``Response`` object with id/created_at/output/usage,
+            # which is overkill for an upstream failure where we have nothing to emit).
+            # Fields: type='error', code, message, param, sequence_number (flat shape).
+            err_payload = {
+                'type': 'error',
+                'code': 'api_error',
+                'message': repr(exc),
+                'param': None,
+                # No frames have gone out (we failed before stream_responses_payload
+                # ran), so this is the first and only event — sequence_number=1.
+                'sequence_number': 1,
+            }
+            error_event = f'event: error\ndata: {json.dumps(err_payload)}\n\n'.encode('utf-8')
+            try:
+                await response.write(error_event)
+            except ConnectionResetError:
+                pass
         await response.write_eof()
         return response
 
@@ -489,15 +593,7 @@ class ModelProxyServer:
         the synthesizer can emit ``ping`` events while it runs, then slice
         the final ``ModelOutput`` into ``content_block_*`` events.
         """
-        response = web.StreamResponse(
-            status=200,
-            headers={
-                'Content-Type': 'text/event-stream; charset=utf-8',
-                'Cache-Control': 'no-cache',
-                'Connection': 'keep-alive',
-            },
-        )
-        await response.prepare(request)
+        response = await self._prepare_sse_response(request)
 
         started = time.monotonic()
         generate_task = asyncio.create_task(
@@ -531,6 +627,44 @@ class ModelProxyServer:
             if not generate_task.done():
                 generate_task.cancel()
         await response.write_eof()
+        return response
+
+    async def _auth_check_openai(self, request: web.Request) -> 'TrialSession | web.Response':
+        """Look up the trial session; return a 401 :class:`web.Response` with
+        the **OpenAI-shape error body** if auth fails. Caller short-circuits
+        on the response variant.
+
+        Used by both ``/openai/v1/chat/completions`` and ``/openai/v1/responses``
+        — they share the same 401 shape. The anthropic route has its own
+        401 shape (``{type:'error', error:{type:'authentication_error', ...}}``)
+        and does not use this helper.
+        """
+        try:
+            return await self._lookup_session(request)
+        except _BridgeAuthError as exc:
+            logger.debug(f'bridge: auth failed — {exc}')
+            return web.json_response(
+                {'error': {
+                    'type': 'invalid_request_error',
+                    'code': 'invalid_api_key',
+                    'message': str(exc),
+                }},
+                status=401,
+            )
+
+    @staticmethod
+    async def _prepare_sse_response(request: web.Request) -> web.StreamResponse:
+        """Allocate and ``prepare()`` an SSE :class:`web.StreamResponse` with the
+        standard text/event-stream headers. Shared by all three streaming paths."""
+        response = web.StreamResponse(
+            status=200,
+            headers={
+                'Content-Type': 'text/event-stream; charset=utf-8',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+            },
+        )
+        await response.prepare(request)
         return response
 
     async def _lookup_session(self, request: web.Request) -> TrialSession:
@@ -667,6 +801,36 @@ def _build_openai_generate_config(body: Dict[str, Any]) -> GenerateConfig:
     stop = body.get('stop')
     if stop:
         kwargs['stop_seqs'] = [stop] if isinstance(stop, str) else list(stop)
+    return GenerateConfig(**kwargs)
+
+
+def _build_responses_generate_config(body: Dict[str, Any]) -> GenerateConfig:
+    """Translate OpenAI Responses generation params into ``GenerateConfig``.
+
+    Field name differences vs chat completions:
+    * ``max_output_tokens`` (Responses) ↔ ``max_tokens`` (chat)
+    * ``reasoning`` (e.g. ``{effort: 'high'}``) — Responses-only, currently
+      log-warned and dropped (no downstream backend wired up).
+
+    Forces ``stream=True`` upstream so the pre-resolve synthesizer drives
+    a uniform pipeline regardless of ``body.get('stream')``.
+    """
+    kwargs: Dict[str, Any] = {'stream': True}
+    if 'max_output_tokens' in body:
+        kwargs['max_tokens'] = body['max_output_tokens']
+    elif 'max_tokens' in body:
+        kwargs['max_tokens'] = body['max_tokens']
+    if 'temperature' in body:
+        kwargs['temperature'] = body['temperature']
+    if 'top_p' in body:
+        kwargs['top_p'] = body['top_p']
+    if 'parallel_tool_calls' in body:
+        kwargs['parallel_tool_calls'] = bool(body['parallel_tool_calls'])
+    if body.get('reasoning') is not None:
+        logger.warning(
+            f'bridge: /openai/v1/responses received reasoning={body["reasoning"]!r}; '
+            f'PR2 does not forward Responses reasoning controls yet — dropping'
+        )
     return GenerateConfig(**kwargs)
 
 

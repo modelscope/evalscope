@@ -27,6 +27,9 @@ class ExternalAgentFramework:
     CLAUDE_CODE = 'claude-code'
     """Anthropic's official ``claude --print`` CLI."""
 
+    CODEX = 'codex'
+    """OpenAI's official ``codex exec`` CLI (uses the Responses API)."""
+
 
 class BridgeConfig(BaseModel):
     """Knobs for the reverse-proxy bridge that sits between an external

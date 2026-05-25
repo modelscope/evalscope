@@ -25,7 +25,10 @@ from evalscope.api.agent.trace import AgentTrace, EventType
 from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessageTool, ChatMessageUser
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolCallError, ToolFunction
+from evalscope.utils.logger import get_logger
 from .translate_anthropic import unpack_tool_call
+
+logger = get_logger()
 
 
 class BridgeTraceRecorder:
@@ -90,6 +93,22 @@ class BridgeTraceRecorder:
             extract_tool_results=self._extract_openai_tool_results,
         )
 
+    def record_responses_turn(
+        self,
+        request_body: Dict[str, Any],
+        output: ModelOutput,
+        *,
+        latency_ms: Optional[float] = None,
+    ) -> None:
+        """Append events for one OpenAI Responses API round-trip."""
+        self._record_turn(
+            request_body,
+            output,
+            latency_ms=latency_ms,
+            extract_tool_results=self._extract_responses_tool_results,
+            messages_key='input',
+        )
+
     def _record_turn(
         self,
         request_body: Dict[str, Any],
@@ -97,8 +116,9 @@ class BridgeTraceRecorder:
         *,
         latency_ms: Optional[float],
         extract_tool_results,
+        messages_key: str = 'messages',
     ) -> None:
-        """Shared per-turn recorder for both wire protocols.
+        """Shared per-turn recorder for all three wire protocols.
 
         Order: surface any tool results from the previous turn as
         ``TOOL_RESULT`` events on the *next* step, then ``MODEL_GENERATE``
@@ -106,11 +126,15 @@ class BridgeTraceRecorder:
         step. ``extract_tool_results`` returns ``(tc_id, text, is_error)``
         tuples — protocols that don't surface a structured error flag pass
         ``is_error=False`` (the slot is reserved for future use).
+
+        ``messages_key`` selects the request-body field that holds the
+        per-turn message list: ``'messages'`` for anthropic / openai chat,
+        ``'input'`` for openai responses.
         """
         with self._lock:
-            self._ingest_initial_user_message(request_body)
+            self._ingest_initial_user_message(request_body, messages_key=messages_key)
 
-            tool_results = extract_tool_results(request_body.get('messages') or [])
+            tool_results = extract_tool_results(request_body.get(messages_key) or [])
             if tool_results:
                 next_step = self._step + 1
                 for tc_id, text, is_error in tool_results:
@@ -216,19 +240,32 @@ class BridgeTraceRecorder:
     # Internals
     # ------------------------------------------------------------------
 
-    def _ingest_initial_user_message(self, request_body: Dict[str, Any]) -> None:
+    def _ingest_initial_user_message(
+        self,
+        request_body: Dict[str, Any],
+        *,
+        messages_key: str = 'messages',
+    ) -> None:
         """Capture the very first user prompt the agent sent — used for
         the messages() transcript so downstream consumers see the original
         instruction, not just observations + assistant turns.
 
-        Shared by both anthropic and openai paths; ``_user_text_from_content``
-        handles both wire formats' content-block shapes.
+        Shared by anthropic / openai chat / openai responses paths.
+        Responses ``input[]`` items carry a ``type`` discriminator (``message``
+        / ``function_call`` / ``function_call_output`` / ``reasoning``);
+        chat-style ``messages[]`` items don't. Entries with a ``type`` that
+        isn't ``'message'`` are skipped so we never mis-ingest a
+        ``function_call_output`` as a user prompt.
         """
         if self._seen_first_user:
             return
-        messages = request_body.get('messages') or []
-        for entry in messages:
-            if not isinstance(entry, dict) or entry.get('role') != 'user':
+        for entry in request_body.get(messages_key) or []:
+            if not isinstance(entry, dict):
+                continue
+            entry_type = entry.get('type')
+            if entry_type is not None and entry_type != 'message':
+                continue
+            if entry.get('role') != 'user':
                 continue
             text = _user_text_from_content(entry.get('content'))
             if text:
@@ -266,6 +303,82 @@ class BridgeTraceRecorder:
         for entry in tail:
             text = _user_text_from_content(entry.get('content', ''))
             out.append((entry.get('tool_call_id'), text, False))
+        return out
+
+    @staticmethod
+    def _extract_responses_tool_results(items: List[Any]) -> List[tuple]:
+        """Surface tail ``*_call_output`` entries from a Responses ``input[]``
+        array — they're the tool-call observations the agent fed back from
+        the previous turn.
+
+        Recognised output types: ``function_call_output``,
+        ``custom_tool_call_output``, ``computer_call_output``,
+        ``local_shell_call_output`` (must match the
+        ``_TOOL_OUTPUT_ITEM_TYPES`` set in :mod:`translate_responses`).
+
+        Walks backwards collecting consecutive output items; stops at the
+        first non-output item. If an output item appears *mid-input[]* (not
+        in the tail), emits a single WARN — that's a signal the agent's
+        message ordering doesn't match our tail-only assumption and the
+        TOOL_RESULT trace event will be missing for that observation.
+
+        ``is_error`` is always ``False`` (Responses spec has no structured
+        error flag, parity with the openai chat path).
+        """
+        if not items:
+            return []
+        # Set duplicated to avoid a circular import from translate_responses.
+        OUTPUT_TYPES = {
+            'function_call_output',
+            'custom_tool_call_output',
+            'computer_call_output',
+            'local_shell_call_output',
+        }
+        tail: List[Dict[str, Any]] = []
+        cut_idx = len(items)
+        for i in range(len(items) - 1, -1, -1):
+            entry = items[i]
+            if not isinstance(entry, dict) or entry.get('type') not in OUTPUT_TYPES:
+                cut_idx = i + 1
+                break
+            tail.append(entry)
+        else:
+            cut_idx = 0
+        tail.reverse()
+        # Mid-stream tool outputs (anything in items[:cut_idx] with an output type)
+        # are silently dropped from this turn's TOOL_RESULT events — warn once.
+        for entry in items[:cut_idx]:
+            if isinstance(entry, dict) and entry.get('type') in OUTPUT_TYPES:
+                logger.warning(
+                    f'bridge.trace: Responses input[] contains a *_call_output item '
+                    f'(call_id={entry.get("call_id")!r}, type={entry.get("type")!r}) '
+                    f'NOT in the tail; TOOL_RESULT event will be missing from the trace '
+                    f'for this observation. This indicates the agent re-ordered messages '
+                    f'in a way the bridge does not yet handle.'
+                )
+                break  # one warning per turn is enough
+
+        out: List[tuple] = []
+        for entry in tail:
+            raw_output = entry.get('output', '')
+            if isinstance(raw_output, dict):
+                # computer_call_output.output is typically {'image_url': '...'}.
+                # Render to placeholder text since downstream model can't see
+                # screenshots (chat-only LLMs).
+                if 'image_url' in raw_output:
+                    text = f'[image: {raw_output["image_url"]}]'
+                else:
+                    text = str(raw_output)
+            elif isinstance(raw_output, list):
+                # function_call_output.output may be a typed content-parts list
+                text = '\n'.join(
+                    b.get('text', '')
+                    for b in raw_output
+                    if isinstance(b, dict) and b.get('type') in ('input_text', 'output_text', 'text')
+                )
+            else:
+                text = str(raw_output)
+            out.append((entry.get('call_id'), text, False))
         return out
 
     @staticmethod
