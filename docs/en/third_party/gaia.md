@@ -119,8 +119,9 @@ GAIA's bash-only sandbox can `curl` / `wget` raw HTML, but cannot run a JS-rende
 
 ```bash
 pip install evalscope[mcp]
-pip install mcp-server-fetch
 ```
+
+`evalscope[mcp]` ships with `mcp-server-fetch` already bundled, so no further install is needed for the example below.
 
 ```python
 import sys

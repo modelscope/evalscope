@@ -119,8 +119,9 @@ GAIA 默认只有 bash 沙箱，可以 `curl`/`wget` 原始 HTML，但无法跑 
 
 ```bash
 pip install evalscope[mcp]
-pip install mcp-server-fetch
 ```
+
+`evalscope[mcp]` 已经把 `mcp-server-fetch` 一起装进来,下面的示例可以直接跑,无需额外安装。
 
 ```python
 import sys

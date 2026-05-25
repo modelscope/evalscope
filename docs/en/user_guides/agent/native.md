@@ -97,11 +97,11 @@ This is how to plug in `fetch`, web search, GitHub, filesystem and the rest of t
 
 ```bash
 pip install evalscope[mcp]
-# Plus whichever MCP servers you want to use, e.g.:
-pip install mcp-server-fetch
 ```
 
-The `mcp` Python SDK is imported lazily, so configurations with empty `mcp_servers` (the default) need no extra install.
+`evalscope[mcp]` bundles the official `mcp` Python SDK plus `mcp-server-fetch` (universal HTTP fetching, no API key). Other MCP servers — e.g. `mcp-server-brave-search`, `mcp-server-github`, `mcp-server-filesystem`, `mcp-server-puppeteer` — install on top via plain `pip install <name>` or run on demand through `uvx <name>` / `npx <name>`.
+
+The `mcp` Python SDK is imported lazily, so configurations with empty `mcp_servers` (the default) need no extra install at runtime.
 
 ### Quick start
 
