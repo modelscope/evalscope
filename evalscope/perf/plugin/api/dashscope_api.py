@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Dict, Iterator, List
+from typing import Any, Dict, Iterator, List, Optional
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.multi_turn_args import _sample_int_or_range
@@ -17,7 +17,7 @@ class DashScopeApiPlugin(ApiPluginBase):
     def __init__(self, param: Arguments):
         super().__init__(param)
 
-    def build_request(self, messages: List[Dict], param: Arguments = None) -> Dict:
+    def build_request(self, messages: List[Dict], param: Arguments = None, turn_index: Optional[int] = None) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:

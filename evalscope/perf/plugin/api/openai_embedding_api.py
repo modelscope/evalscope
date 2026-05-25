@@ -4,7 +4,7 @@ import json
 import sys
 import time
 import traceback
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union, Optional
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.base import ApiPluginBase
@@ -41,7 +41,7 @@ class OpenaiEmbeddingPlugin(ApiPluginBase):
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: Union[List[Dict], str, List[str]], param: Arguments = None) -> Dict:
+    def build_request(self, messages: Union[List[Dict], str, List[str]], param: Arguments = None, turn_index: Optional[int] = None) -> Dict:
         """Build the OpenAI embedding format request.
 
         Args:

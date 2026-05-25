@@ -143,6 +143,7 @@ Must be used with `--multi-turn`. See the [Multi-turn Benchmark Guide](./multi_t
 | `--frequency-penalty` | `float` | frequency_penalty value | - |
 | `--logprobs` | `bool` | Whether to return logarithmic probabilities | - |
 | `--max-tokens` | `int` | Maximum number of tokens that can be generated | - |
+| `--max-turn-tokens` | `int list` | **Multi-turn mode only**: Per-turn override of `max_tokens`<br>• Accepts a list of integers specifying max tokens per turn (0-based index)<br>• Last value is reused if the list is shorter than the actual turn count<br>• Only effective in `--multi-turn` mode<br>• Example: `--max-turn-tokens 150 150 150 1000` | `None` |
 | `--min-tokens` | `int` | Minimum number of tokens to generate<br>Note: Not all model services support this parameter<br>For `vLLM>=0.8.1`, you need to additionally set<br>`--extra-args '{"ignore_eos": true}'` | - |
 | `--n-choices` | `int` | Number of completion choices to generate | - |
 | `--seed` | `int` | Random seed | `None` |

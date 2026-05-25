@@ -1,6 +1,6 @@
 import aiohttp
 import json
-from typing import Any, AsyncGenerator, Dict, List, Tuple, Union
+from typing import Any, AsyncGenerator, Dict, List, Tuple, Union, Optional
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.multi_turn_args import _sample_int_or_range
@@ -37,7 +37,7 @@ class CustomPlugin(ApiPluginBase):
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: Union[List[Dict], str], param: Arguments = None) -> Dict:
+    def build_request(self, messages: Union[List[Dict], str], param: Arguments = None, turn_index: Optional[int] = None) -> Dict:
         """Build a custom API request body based on the input messages and parameters.
 
         This method formats the input messages into the expected request format

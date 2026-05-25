@@ -1,7 +1,7 @@
 import json
 import time
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union, Optional
 
 from evalscope.models.utils.openai_responses import (
     normalize_responses_input,
@@ -18,6 +18,19 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
+_TOOL_CONTEXT_KEY = "__evalscope_tools__"
+
+
+def _extract_tools(messages) -> Optional[List[Dict]]:
+    """Extract tools definitions from messages if embedded by the dataset plugin."""
+    if not isinstance(messages, list):
+        return None
+    for msg in messages:
+        if isinstance(msg, dict) and _TOOL_CONTEXT_KEY in msg:
+            tools = msg.pop(_TOOL_CONTEXT_KEY)
+            return tools
+    return None
+
 
 @register_api(['openai_responses', 'openai_response', 'responses'])
 class OpenAIResponsesPlugin(DefaultApiPlugin):
@@ -30,9 +43,12 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: Union[List[Dict], str, Dict], param: Arguments = None) -> Dict:
+    def build_request(self, messages: Union[List[Dict], str, Dict], param: Arguments = None, turn_index: Optional[int] = None) -> Dict:
         param = param or self.param
         try:
+            # Extract tools definitions embedded by the dataset plugin.
+            tools = _extract_tools(messages)
+
             if param.query_template is not None:
                 query = self._load_query_template(param.query_template)
                 query['input'] = normalize_responses_input(messages)
@@ -42,7 +58,7 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                     query['input'] = normalize_responses_input(query.pop('messages'))
             else:
                 query = {'input': normalize_responses_input(messages)}
-            return self._compose_query_from_parameter(query, param)
+            return self._compose_query_from_parameter(query, param, turn_index, tools)
         except Exception as e:
             logger.exception(e)
             return None
@@ -190,9 +206,14 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
             if cached is not None:
                 output.real_cached_tokens = cached
 
-    def _compose_query_from_parameter(self, payload: Dict, param: Arguments) -> Dict:
+    def _compose_query_from_parameter(self, payload: Dict, param: Arguments, turn_index: Optional[int] = None, tools: Optional[List[Dict]] = None) -> Dict:
         payload['model'] = param.model
-        if param.max_tokens is not None:
+        if tools:
+            payload['tools'] = tools
+        if param.max_turn_tokens is not None and turn_index is not None:
+            idx = min(turn_index, len(param.max_turn_tokens) - 1)
+            payload['max_output_tokens'] = param.max_turn_tokens[idx]
+        elif param.max_tokens is not None:
             payload['max_output_tokens'] = _sample_int_or_range(param.max_tokens)
         if param.stream is not None:
             payload['stream'] = param.stream

@@ -275,6 +275,19 @@ class Arguments(BaseArgument):
     Accepts an int or a ``[min, max]`` list for uniform sampling per request.
     """
 
+    max_turn_tokens: Optional[List[int]] = None
+    """Per-turn max_tokens override for multi-turn mode.
+
+    A list of integers specifying max_tokens for each turn index (0-based).
+    Example: ``[150, 150, 150, 150, 150, 150, 150, 150, 150, 1000]`` for a
+    10-turn conversation where the first 9 turns are limited to 150 tokens
+    and the final turn allows 1000 tokens.
+
+    When set, this overrides ``--max-tokens`` on a per-turn basis in
+    ``--multi-turn`` mode.  If the list is shorter than the actual turn count,
+    the last element is reused for remaining turns.
+    """
+
     min_tokens: Optional[int] = None
     """Minimum number of tokens in the response."""
 
@@ -358,6 +371,21 @@ class Arguments(BaseArgument):
                 raise ValueError(f'--max-tokens range min must be <= max, got {v}')
             if v[0] < 0:
                 raise ValueError(f'--max-tokens range values must be >= 0, got {v}')
+        return v
+
+    @field_validator('max_turn_tokens', mode='before')
+    @classmethod
+    def _validate_max_turn_tokens(cls, v):
+        if v is None:
+            return v
+        # Coerce single int to list for programmatic API support
+        if isinstance(v, (int, float)):
+            v = [int(v)]
+        if isinstance(v, list):
+            if not v:
+                raise ValueError('--max-turn-tokens must contain at least one value')
+            if any(x < 0 for x in v):
+                raise ValueError(f'--max-turn-tokens values must be >= 0, got {v}')
         return v
 
     @field_validator('multi_turn_args', mode='before')
@@ -642,6 +670,12 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument(
         '--max-tokens', type=int, nargs='+', help='The maximum number of tokens that can be generated. '
         'Accepts 1 value (fixed) or 2 values min max for uniform sampling per request.', default=2048)
+    parser.add_argument(
+        '--max-turn-tokens', type=int, nargs='+', default=None,
+        help='Per-turn max_tokens override for multi-turn mode. '
+        'Pass a list of integers, one per turn (0-based). '
+        'If shorter than the turn count, the last value is reused. '
+        'Example: --max-turn-tokens 150 150 150 150 150 150 150 150 150 1000')
     parser.add_argument(
         '--min-tokens', type=int, help='The minimum number of tokens that can be generated', default=None)
     parser.add_argument('--n-choices', type=int, help='How many completion choices to generate', default=None)
