@@ -102,13 +102,18 @@ class AgentLoopAdapter(AgentAdapter):
     def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
         """Drive :class:`AgentLoop` for this sample and return the final output.
 
-        Ignores :class:`NativeAgentConfig` entirely (native agentic
-        benchmarks are self-contained by design), but routes
-        :class:`ExternalAgentConfig` through the bridge stack so a CLI
-        agent can replace the native loop while still using this
-        adapter's per-sample sandbox / scoring pipeline.
+        ``NativeAgentConfig.mcp_servers`` (if any) is forwarded to
+        :func:`run_agent_loop` so MCP-advertised tools merge into this
+        adapter's tool set without any benchmark-side change. Other
+        ``NativeAgentConfig`` fields are ignored — agentic benchmarks
+        are self-contained by design.
+
+        :class:`ExternalAgentConfig` still routes through the bridge
+        stack so a CLI agent can replace the native loop while reusing
+        this adapter's per-sample sandbox / scoring pipeline.
         """
         ac = self._task_config.agent_config if self._task_config is not None else None
+        mcp_configs: Optional[List[Any]] = None
         if ac is not None:
             # Local import to keep the bridge stack out of the adapter's
             # module-load-time imports (no aiohttp dependency for non-
@@ -116,6 +121,9 @@ class AgentLoopAdapter(AgentAdapter):
             from evalscope.agent.external.config import ExternalAgentConfig
             if isinstance(ac, ExternalAgentConfig):
                 return self._on_external_agent_inference(ac, model, sample)
+            # NativeAgentConfig: forward only ``mcp_servers``; benchmark
+            # adapters own their strategy / tools / max_steps.
+            mcp_configs = list(getattr(ac, 'mcp_servers', None) or []) or None
 
         strategy = self.build_strategy(sample)
         handlers = self.build_tools(sample)
@@ -132,6 +140,7 @@ class AgentLoopAdapter(AgentAdapter):
             sample_id=sample.id,
             trace_strategy_name=getattr(strategy, 'name', None),
             trace_env_name=environment.name if environment else None,
+            mcp_configs=mcp_configs,
         )
 
         # Resolve the final prediction through the strategy → adapter hook

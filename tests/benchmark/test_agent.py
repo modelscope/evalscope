@@ -123,6 +123,28 @@ class TestAgentBenchmark(TestBenchmark):
         }
         self._run_dataset_test('gaia', dataset_args, limit=1)
 
+    def test_gaia_with_mcp(self):
+        """GAIA + MCP fetch server, exercising the host-side MCP plumbing."""
+        from evalscope.api.agent import NativeAgentConfig
+        from evalscope.api.agent.mcp import MCPServerConfigStdio
+        dataset_args = {
+            'subset_list': ['2023_level1'],
+            'extra_params': {
+                'max_steps': 30,
+                'command_timeout': 180.0,
+                'docker_image': 'python:3.11',
+                'network_enabled': True,
+            }
+        }
+        agent_config = NativeAgentConfig(mcp_servers=[
+            MCPServerConfigStdio(
+                command='uvx',
+                args=['mcp-server-fetch'],
+                name='fetch',
+            ),
+        ])
+        self._run_dataset_test('gaia', dataset_args, limit=1, agent_config=agent_config)
+
     def test_swe_bench_verified_agentic_backticks(self):
         """Test SWE-bench-verified agentic dataset with backticks protocol."""
         dataset_args = {
