@@ -21,7 +21,7 @@ export default function DatasetNav({ datasets, active, onChange }: Props) {
         overflowY: 'auto',
       }}
     >
-      <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)]">
+      <div className="px-3 pb-2 type-table-xs">
         Datasets
       </div>
       {datasets.map((ds) => {

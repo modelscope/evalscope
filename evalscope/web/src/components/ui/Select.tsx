@@ -45,6 +45,7 @@ export default function Select({
             'bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)]',
             'focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-dim)]',
             'transition-all duration-[var(--transition)]',
+            // text-dim allowed: select placeholder state (DESIGN.md §Text)
             !value && 'text-[var(--text-dim)]',
             className,
           )}
@@ -60,6 +61,7 @@ export default function Select({
             </option>
           ))}
         </select>
+        {/* text-dim allowed: select chevron icon (DESIGN.md §Text) */}
         <ChevronDown
           size={14}
           className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-dim)] pointer-events-none"

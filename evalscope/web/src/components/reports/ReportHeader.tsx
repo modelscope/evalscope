@@ -4,7 +4,7 @@ import { useLocale } from '@/contexts/LocaleContext'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import { formatScore } from '@/utils/formatUtils'
-import { scoreColor } from '@/components/ui/Table'
+import { scoreColor } from '@/utils/colorScale'
 
 interface Props {
   modelName: string
@@ -41,11 +41,13 @@ export default function ReportHeader({
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-xl font-bold text-[var(--text)]">{modelName}</h1>
+            {/* text-dim allowed: decorative separator glyph (DESIGN.md §Text) */}
             <span className="text-[var(--text-dim)]">×</span>
             {datasets && datasets.length > 0 ? (
               <div className="flex items-center gap-1.5 flex-wrap">
                 {datasets.map((ds, idx) => (
                   <span key={ds} className="flex items-center gap-1.5">
+                    {/* text-dim allowed: decorative comma separator (DESIGN.md §Text) */}
                     {idx > 0 && <span className="text-[var(--text-dim)]">,</span>}
                     {onDatasetClick ? (
                       <button

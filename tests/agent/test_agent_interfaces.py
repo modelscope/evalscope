@@ -135,7 +135,7 @@ class TestAgentTypesBehavior(unittest.TestCase):
         self.assertEqual(cfg.tools, [])
         self.assertEqual(cfg.max_steps, 10)
         self.assertIsNone(cfg.environment)
-        self.assertEqual(cfg.extra, {})
+        self.assertEqual(cfg.kwargs, {})
 
     def test_agent_config_dict_validate(self):
         cfg = AgentConfig.model_validate({'strategy': 'function_calling', 'max_steps': 5})

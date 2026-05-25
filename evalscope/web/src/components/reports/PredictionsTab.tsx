@@ -161,13 +161,16 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
     { key: 'Fail', icon: <CircleX size={13} />, count: failCount },
   ] as const
 
+  const navBtnBase = 'bg-transparent border border-[var(--border)] rounded-full w-8 h-8 flex items-center justify-center text-[var(--text)] transition-colors'
+  const searchInputBase = 'pl-7 pr-2 py-[0.3rem] text-[0.8rem] w-[120px] bg-[var(--bg-deep)] rounded-[var(--radius-sm)] text-[var(--text)] outline-none transition-colors'
+
   return (
     <div className="flex flex-col gap-3">
 
       {/* ── 行 1：全局配置区 — Subset（左）+ Threshold（右） ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+      <div className="flex items-end justify-between gap-4 flex-wrap">
         {/* 左：Subset 选择器 */}
-        <div style={{ flex: '0 0 auto', maxWidth: '280px', minWidth: '160px' }}>
+        <div className="flex-none max-w-[280px] min-w-[160px]">
           <Select
             label={t('reportDetail.selectSubset')}
             options={subsetOptions}
@@ -178,11 +181,8 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
         </div>
 
         {/* 右：Score Threshold + ? 图标 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0, paddingBottom: '2px' }}>
-          <label
-            className="text-xs"
-            style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}
-          >
+        <div className="flex items-center gap-[0.4rem] shrink-0 pb-[2px]">
+          <label className="text-xs text-[var(--text-muted)] whitespace-nowrap">
             {t('single.scoreThreshold')}
           </label>
           <input
@@ -195,7 +195,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
             className="w-20 px-2 py-1 text-sm rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
           />
           <span
-            style={{ position: 'relative', display: 'inline-flex', cursor: 'help', color: 'var(--text-dim)' }}
+            className="relative inline-flex cursor-help text-[var(--text-dim)]"
             onMouseEnter={e => {
               const tip = document.createElement('div')
               tip.id = '__threshold_tip'
@@ -228,55 +228,41 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
       </div>
 
       {/* 分隔线 */}
-      <hr style={{ border: 'none', borderTop: '1px solid var(--color-border-subtle)', margin: '0' }} />
+      <hr className="border-none border-t border-[var(--border)] m-0" />
 
       {loading && <Skeleton lines={4} />}
 
       {!loading && predictions.length > 0 && (
         <>
           {/* ── 行 2：操作区 — 过滤器（左）+ 搜索框（右） ── */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             {/* 左：All / Pass / Fail 按钮组 */}
-            <div style={{
-              display: 'inline-flex',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--border-md)',
-              overflow: 'hidden',
-            }}>
+            <div className="inline-flex rounded-[var(--radius)] border border-[var(--border-md)] overflow-hidden">
               {filterBtns.map(({ key, icon, count }, idx) => {
                 const isActive = mode === key
                 return (
                   <button
                     key={key}
                     onClick={() => { setMode(key); setPage(1) }}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      fontSize: '0.875rem',
-                      fontWeight: 500,
-                      background: isActive ? 'var(--accent)' : 'var(--bg-card2)',
-                      color: isActive ? 'var(--bg)' : 'var(--text-muted)',
-                      border: 'none',
-                      borderRight: idx < filterBtns.length - 1 ? '1px solid var(--border-md)' : 'none',
-                      cursor: 'pointer',
-                      transition: 'var(--transition)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                    }}
+                    className={[
+                      'flex items-center gap-[0.4rem] px-4 py-2 text-sm font-medium border-0 cursor-pointer transition-colors',
+                      idx < filterBtns.length - 1 ? 'border-r border-[var(--border-md)]' : '',
+                      isActive ? 'bg-[var(--accent)] text-[var(--bg)]' : 'bg-[var(--bg-card2)] text-[var(--text-muted)]',
+                    ].join(' ')}
                   >
                     {icon}
                     <span>{key}</span>
-                    <span style={{ opacity: 0.65, fontSize: '0.8rem' }}>{count}</span>
+                    <span className="opacity-65 text-[0.8rem]">{count}</span>
                   </button>
                 )
               })}
             </div>
 
             {/* 右：搜索跳转框 */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="flex items-center gap-2">
               {/* Sample index search */}
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <Search size={12} style={{ position: 'absolute', left: '0.5rem', color: 'var(--text-dim)', pointerEvents: 'none' }} />
+              <div className="relative flex items-center">
+                <Search size={12} className="absolute left-2 text-[var(--text-dim)] pointer-events-none" />
                 <input
                   ref={indexInputRef}
                   type="text"
@@ -284,31 +270,18 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
                   onChange={e => { setIndexSearch(e.target.value); setIndexError(false) }}
                   onKeyDown={e => e.key === 'Enter' && handleIndexSearch()}
                   placeholder={t('prediction.searchByIndex')}
-                  style={{
-                    paddingLeft: '1.75rem',
-                    paddingRight: '0.5rem',
-                    paddingTop: '0.3rem',
-                    paddingBottom: '0.3rem',
-                    fontSize: '0.8rem',
-                    width: '120px',
-                    background: 'var(--bg-deep)',
-                    border: `1px solid ${indexError ? 'var(--danger)' : 'var(--border)'}`,
-                    borderRadius: 'var(--radius-sm)',
-                    color: 'var(--text)',
-                    outline: 'none',
-                    transition: 'border 0.2s',
-                  }}
+                  className={`${searchInputBase} border ${indexError ? 'border-[var(--danger)]' : 'border-[var(--border)]'}`}
                 />
                 {indexError && (
-                  <span style={{ position: 'absolute', right: '-1.2rem', color: 'var(--danger)', display: 'inline-flex' }}>
+                  <span className="absolute -right-5 text-[var(--danger)] inline-flex">
                     <AlertCircle size={13} />
                   </span>
                 )}
               </div>
 
               {/* Message id search */}
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <MessageSquare size={12} style={{ position: 'absolute', left: '0.5rem', color: 'var(--text-dim)', pointerEvents: 'none' }} />
+              <div className="relative flex items-center">
+                <MessageSquare size={12} className="absolute left-2 text-[var(--text-dim)] pointer-events-none" />
                 <input
                   ref={msgIdInputRef}
                   type="text"
@@ -316,23 +289,10 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
                   onChange={e => { setMsgIdSearch(e.target.value); setMsgIdError(false) }}
                   onKeyDown={e => e.key === 'Enter' && handleMsgIdSearch()}
                   placeholder={t('prediction.searchByMsgId')}
-                  style={{
-                    paddingLeft: '1.75rem',
-                    paddingRight: '0.5rem',
-                    paddingTop: '0.3rem',
-                    paddingBottom: '0.3rem',
-                    fontSize: '0.8rem',
-                    width: '120px',
-                    background: 'var(--bg-deep)',
-                    border: `1px solid ${msgIdError ? 'var(--danger)' : 'var(--border)'}`,
-                    borderRadius: 'var(--radius-sm)',
-                    color: 'var(--text)',
-                    outline: 'none',
-                    transition: 'border 0.2s',
-                  }}
+                  className={`${searchInputBase} border ${msgIdError ? 'border-[var(--danger)]' : 'border-[var(--border)]'}`}
                 />
                 {msgIdError && (
-                  <span style={{ position: 'absolute', right: '-1.2rem', color: 'var(--danger)', display: 'inline-flex' }}>
+                  <span className="absolute -right-5 text-[var(--danger)] inline-flex">
                     <AlertCircle size={13} />
                   </span>
                 )}
@@ -341,35 +301,22 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
           </div>
 
           {/* Row 2: Sample nav */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div className="flex items-center gap-3">
             {/* Left arrow */}
             <button
               onClick={() => { setPage(p => Math.max(1, p - 1)); setHighlightMsgId(undefined) }}
               disabled={page <= 1}
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--border)',
-                borderRadius: '50%',
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: page <= 1 ? 'not-allowed' : 'pointer',
-                opacity: page <= 1 ? 0.3 : 1,
-                color: 'var(--text)',
-                transition: 'var(--transition)',
-              }}
+              className={`${navBtnBase} ${page <= 1 ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
             >
               <ChevronLeft size={16} />
             </button>
 
             {/* Sample X / Y with hash icon */}
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontVariantNumeric: 'tabular-nums', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <Hash size={13} style={{ opacity: 0.5 }} />
+            <span className="flex items-center gap-[0.3rem] text-[var(--text-muted)] text-sm tabular-nums">
+              <Hash size={13} className="opacity-50" />
               Sample {page} / {totalPages}
               {row && (
-                <span style={{ fontSize: '0.75rem', opacity: 0.5, marginLeft: '0.25rem' }}>
+                <span className="text-xs opacity-50 ml-1">
                   (index: {row.Index})
                 </span>
               )}
@@ -379,20 +326,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
             <button
               onClick={() => { setPage(p => Math.min(totalPages, p + 1)); setHighlightMsgId(undefined) }}
               disabled={page >= totalPages}
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--border)',
-                borderRadius: '50%',
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: page >= totalPages ? 'not-allowed' : 'pointer',
-                opacity: page >= totalPages ? 0.3 : 1,
-                color: 'var(--text)',
-                transition: 'var(--transition)',
-              }}
+              className={`${navBtnBase} ${page >= totalPages ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
             >
               <ChevronRight size={16} />
             </button>
@@ -408,6 +342,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
       )}
 
       {!loading && predictions.length === 0 && selectedSubset && (
+        // text-dim allowed: non-essential ≥14px metadata (DESIGN.md §Text)
         <p className="text-sm text-[var(--text-dim)] py-4">{t('common.noData')}</p>
       )}
     </div>

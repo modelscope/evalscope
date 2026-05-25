@@ -13,8 +13,8 @@ export default function FilterBar({ modes, active, onChange }: Props) {
           onClick={() => onChange(m)}
           className={`px-3 py-1 text-xs rounded-full transition-colors ${
             active === m
-              ? 'bg-[var(--color-primary)] text-white'
-              : 'bg-[var(--color-surface)] text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]'
+              ? 'bg-[var(--accent)] text-white'
+              : 'bg-[var(--bg-card)] text-[var(--text-muted)] hover:bg-[var(--bg-card2)] border border-[var(--border)]'
           }`}
         >
           {m}

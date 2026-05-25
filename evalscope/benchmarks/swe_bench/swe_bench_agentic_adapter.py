@@ -337,6 +337,23 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
         return [ChatMessageUser(content=rendered)]
 
     # ------------------------------------------------------------------
+    # External agent prediction (recover patch via git diff)
+    # ------------------------------------------------------------------
+
+    async def _external_extract_prediction(self, env: AgentEnvironment, run_result: Any, sample: Sample) -> str:
+        """Recover the agent's patch from ``self.working_dir`` (``/testbed``).
+
+        External CLI agents do not implement the
+        ``COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`` sentinel protocol, so
+        the patch is reconstructed from the working tree against
+        ``HEAD`` instead. The returned diff is fed straight into
+        :meth:`match_score`'s ``eval_instance``, reusing the entire
+        SWE-bench evaluation pipeline.
+        """
+        from evalscope.agent.external.helpers import extract_patch
+        return await extract_patch(env, cwd=self.working_dir)
+
+    # ------------------------------------------------------------------
     # Final answer extraction
     # ------------------------------------------------------------------
 

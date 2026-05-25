@@ -62,7 +62,7 @@ Rules:
 
 
 @register_strategy('react')
-class ReactStrategy:
+class ReactStrategy(AgentStrategy):
     """ReAct strategy that uses the model's native function-calling API with
     a reasoning-encouraging system prompt and ``submit`` tool support."""
 

@@ -10,7 +10,7 @@ The following introduces two different sandbox usage methods:
 ```{tip}
 - The default **sandbox environment configuration** for datasets can be viewed in the dataset configuration, such as [HumanEval](../benchmarks/humaneval.md).
 - The **number of sandbox worker processes** needs to be adjusted according to the resource situation of the local machine. It is recommended to set it to no more than half of the local CPU cores. For example, if the local machine has 8 CPU cores, it is recommended to set it to 4. Especially for multi-language images (`volcengine/sandbox-fusion`), which consume more resources, it is recommended to appropriately reduce the number of worker processes.
-- The same sandbox infrastructure also powers `environment='docker'` in [Agent Evaluation](agent.md); fields such as `image` / `timeout` can be reused in `agent_config.environment_extra`.
+- The same sandbox infrastructure also powers `environment='docker'` in [Agent Evaluation](agent/index.md); fields such as `image` / `timeout` can be reused in `agent_config.environment_extra`.
 ```
 
 ## 0. Unified Sandbox Configuration

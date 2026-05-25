@@ -34,40 +34,10 @@ export default class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) return this.props.fallback
 
       return (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '60vh',
-          }}
-        >
-          <div
-            style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius)',
-              padding: '2.5rem',
-              maxWidth: 420,
-              width: '100%',
-              textAlign: 'center',
-              boxShadow: 'var(--shadow)',
-            }}
-          >
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius)] p-10 max-w-[420px] w-full text-center shadow-[var(--shadow)]">
             {/* Error icon */}
-            <div
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 16,
-                background: 'var(--danger-bg)',
-                border: '1px solid var(--danger-border)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 16,
-              }}
-            >
+            <div className="w-14 h-14 rounded-2xl bg-[var(--danger-bg)] border border-[var(--danger-border)] inline-flex items-center justify-center mb-4">
               <svg
                 width={24}
                 height={24}
@@ -83,41 +53,15 @@ export default class ErrorBoundary extends Component<Props, State> {
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
             </div>
-            <h2
-              style={{
-                color: 'var(--text)',
-                fontSize: '1.125rem',
-                fontWeight: 600,
-                margin: '0 0 8px',
-              }}
-            >
+            <h2 className="text-[var(--text)] text-lg font-semibold mb-2 mt-0">
               Something went wrong
             </h2>
-            <p
-              style={{
-                color: 'var(--text-muted)',
-                fontSize: '0.875rem',
-                margin: '0 0 20px',
-                lineHeight: 1.5,
-              }}
-            >
+            <p className="text-[var(--text-muted)] text-sm mb-5 mt-0 leading-normal">
               {this.state.error?.message || 'An unexpected error occurred.'}
             </p>
             <button
               onClick={this.handleReload}
-              style={{
-                background: 'var(--accent)',
-                color: 'var(--bg)',
-                border: 'none',
-                borderRadius: 'var(--radius-sm)',
-                padding: '0.5rem 1.5rem',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'opacity 0.15s',
-              }}
-              onMouseOver={(e) => (e.currentTarget.style.opacity = '0.85')}
-              onMouseOut={(e) => (e.currentTarget.style.opacity = '1')}
+              className="bg-[var(--accent)] text-[var(--bg)] border-0 rounded-[var(--radius-sm)] px-6 py-2 text-sm font-medium cursor-pointer transition-opacity duration-150 hover:opacity-85"
             >
               Reload
             </button>

@@ -59,6 +59,7 @@ function MultiSelectDropdown({
         <span className="truncate max-w-[120px]">
           {selected.length > 0 ? `${label} (${selected.length})` : label}
         </span>
+        {/* text-dim allowed: dropdown chevron icon (DESIGN.md §Text) */}
         <ChevronDown size={14} className={cn('text-[var(--text-dim)] transition-transform', open && 'rotate-180')} />
       </button>
       {open && (
@@ -66,6 +67,7 @@ function MultiSelectDropdown({
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute z-20 top-full mt-1 left-0 min-w-[200px] max-h-[240px] overflow-y-auto rounded-[var(--radius)] bg-[var(--bg-card)] border border-[var(--border)] shadow-[var(--shadow-lg)] py-1">
             {options.length === 0 ? (
+              // text-dim allowed: decorative em-dash placeholder (DESIGN.md §Text)
               <div className="px-3 py-2 text-xs text-[var(--text-dim)]">—</div>
             ) : (
               options.map((opt) => (
@@ -175,6 +177,7 @@ export default function ReportFiltersBar({
             onChange={(e) => update({ scoreMin: parseFloat(e.target.value) || 0 })}
             className="w-[60px] px-2 py-1.5 text-xs rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
           />
+          {/* text-dim allowed: decorative em-dash range separator (DESIGN.md §Text) */}
           <span className="text-[var(--text-dim)]">—</span>
           <input
             type="number"

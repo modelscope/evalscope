@@ -3,6 +3,17 @@
 @plugin "@tailwindcss/typography";
 
 /* ------------------------------------------------------------------ */
+/* Tailwind theme — font stacks (drives Tailwind font-sans / font-mono) */
+/* Cross-platform OS-native stacks per DESIGN.md §Typography.          */
+/* ------------------------------------------------------------------ */
+@theme {
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+               "Liberation Mono", "DejaVu Sans Mono", "Courier New", monospace;
+}
+
+/* ------------------------------------------------------------------ */
 /* Design tokens — shared structural vars                              */
 /* ------------------------------------------------------------------ */
 :root {
@@ -19,9 +30,14 @@
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Font */
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "SF Mono", "Cascadia Code", "Fira Code", monospace;
+  /* Score gradient per-theme knobs (overridden in [data-theme="light"]). */
+  /* See DESIGN.md §Score Gradient — fg saturation/lightness + bg alpha mul   */
+  /* let yellow mids stay legible on warm-cream without re-coding the brand   */
+  /* HSL. Light theme also boosts saturation so the mid hue (≈60 olive) gets  */
+  /* enough chroma to read on the SVG ring stroke / large display digits.    */
+  --score-fg-s: 70%;
+  --score-fg-l: 45%;
+  --score-bg-a-mul: 1;
 }
 
 /* ------------------------------------------------------------------ */
@@ -44,12 +60,13 @@
   --yellow: #fbbf24;
   --cyan: #22d3ee;
 
-  /* Text */
+  /* Text — 3-step ladder + on-filled (named tokens per DESIGN.md §Text) */
   --text: #e2e8f0;
   --text-muted: #8896aa;
-  --text-dim: #505870;
+  --text-dim: #7a8195;
+  --text-on-filled: #ffffff;
 
-  /* Borders */
+  /* Borders — three steps per DESIGN.md §Hairline borders */
   --border: rgba(129, 109, 248, 0.10);
   --border-md: rgba(129, 109, 248, 0.18);
   --border-strong: rgba(129, 109, 248, 0.28);
@@ -58,6 +75,8 @@
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
   --shadow: 0 4px 20px rgba(0, 0, 0, 0.55);
   --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px rgba(129, 109, 248, 0.25);
+  --shadow-glow-soft: 0 0 12px rgba(129, 109, 248, 0.20);
 
   /* Gradients */
   --gradient-primary: linear-gradient(135deg, #816DF8 0%, #a78bfa 100%);
@@ -65,37 +84,15 @@
   --gradient-warm: linear-gradient(135deg, #fbbf24 0%, #ef4444 100%);
   --gradient-surface: linear-gradient(135deg, rgba(129, 109, 248, 0.08) 0%, rgba(167, 139, 250, 0.05) 100%);
 
-  /* Pass / Fail */
-  --color-pass: rgb(45, 104, 62);
-  --color-fail: rgb(151, 31, 44);
+  /* Deep saturated pass / fail — boolean badges (DESIGN.md §Semantic) */
+  --pass: rgb(45, 104, 62);
+  --fail: rgb(151, 31, 44);
 
   /* Overlay / tooltip backdrop */
   --overlay-bg: rgba(0, 0, 0, 0.82);
 
-  /* Legacy aliases — kept for backward compat, point to semantic tokens */
-  --color-primary: var(--accent);
-  --color-primary-hover: var(--accent-dark);
-  --color-primary-muted: var(--accent-dim);
-  --color-primary-glow: rgba(129, 109, 248, 0.3);
-  --color-accent: var(--green);
-  --color-accent-muted: rgba(15, 156, 126, 0.15);
-  --color-danger: var(--danger);
-  --color-warning: var(--warning-color);
-  --color-ink: var(--text);
-  --color-ink-muted: var(--text-muted);
-  --color-ink-faint: var(--text-dim);
-  --color-bg-page: var(--bg);
-  --color-bg-subtle: var(--bg-card);
-  --color-surface: var(--bg-card);
-  --color-surface-2: var(--bg-card2);
-  --color-surface-hover: var(--bg-card2);
-  --color-surface-glass: rgba(18, 18, 43, 0.7);
-  --color-border: var(--border);
-  --color-border-subtle: rgba(148, 163, 184, 0.08);
-  --color-border-strong: var(--border-strong);
-  --shadow-card: var(--shadow);
-  --shadow-elevated: var(--shadow-lg);
-  --shadow-glow: 0 0 20px rgba(129, 109, 248, 0.25);
+  /* Glassmorphic surface — sticky top-nav (DESIGN.md §Surface) */
+  --surface-glass: rgba(18, 18, 43, 0.7);
 
   /* Semantic color tokens */
   --danger: #ef4444;
@@ -110,9 +107,6 @@
   --success: #10b981;
   --success-bg: rgba(16, 185, 129, 0.08);
   --success-border: rgba(16, 185, 129, 0.20);
-
-  /* Text on filled/colored backgrounds (badges, chips) */
-  --color-on-filled: #ffffff;
 
   /* Compare palette — per-model slot */
   --compare-0-dot: #818cf8;
@@ -156,14 +150,26 @@
   --bubble-bot-icon-border: rgba(16, 185, 129, 0.30);
   --bubble-bot-color: #34d399;
   --bubble-reasoning-bg: rgba(16, 185, 129, 0.06);
+  --bubble-reasoning-bg-hl: rgba(16, 185, 129, 0.12);
   --bubble-reasoning-border: rgba(16, 185, 129, 0.25);
+  --bubble-reasoning-border-hl: rgba(16, 185, 129, 0.45);
+  --bubble-reasoning-icon-bg: rgba(16, 185, 129, 0.10);
+  --bubble-reasoning-icon-border: rgba(16, 185, 129, 0.25);
+  --bubble-reasoning-color: #34d399;
   --bubble-tool-bg: rgba(245, 158, 11, 0.05);
+  --bubble-tool-bg-hl: rgba(245, 158, 11, 0.12);
   --bubble-tool-border: rgba(245, 158, 11, 0.25);
+  --bubble-tool-border-hl: rgba(245, 158, 11, 0.50);
   --bubble-tool-icon-bg: rgba(245, 158, 11, 0.15);
   --bubble-tool-icon-border: rgba(245, 158, 11, 0.30);
   --bubble-tool-color: #fbbf24;
   --bubble-system-bg: rgba(148, 163, 184, 0.06);
+  --bubble-system-bg-hl: rgba(148, 163, 184, 0.12);
   --bubble-system-border: rgba(148, 163, 184, 0.20);
+  --bubble-system-border-hl: rgba(148, 163, 184, 0.40);
+  --bubble-system-icon-bg: rgba(148, 163, 184, 0.12);
+  --bubble-system-icon-border: rgba(148, 163, 184, 0.25);
+  --bubble-system-color: rgba(148, 163, 184, 1);
 
   /* Media player */
   --media-video-bg: #000000;
@@ -173,35 +179,41 @@
 /* Light theme                                                         */
 /* ------------------------------------------------------------------ */
 [data-theme="light"] {
-  /* Backgrounds */
-  --bg: #f5f6fa;
+  /* Backgrounds — warm-cream surface ladder (DESIGN.md §Surface, warm console) */
+  --bg: #faf9f5;
   --bg-card: #ffffff;
-  --bg-card2: #eef0f7;
-  --bg-deep: #ebebf5;
+  --bg-card2: #f5f0e7;
+  --bg-deep: #f0ebe1;
 
   /* Accent — keep same hue, tune lightness for light bg */
   --accent: #6c57e8;
-  --accent-dim: rgba(108, 87, 232, 0.10);
+  --accent-dim: rgba(108, 87, 232, 0.14);
   --accent-dark: #4f3ec8;
   --purple: #7c6be0;
   --green: #0a8a6e;
   --yellow: #d97706;
   --cyan: #0891b2;
 
-  /* Text */
-  --text: #1a1f2e;
-  --text-muted: #5a6378;
-  --text-dim: #9aa0b4;
+  /* Text — warm-ink ladder (DESIGN.md §Text, warm console) */
+  --text: #141413;
+  --text-muted: #6c6a64;
+  --text-dim: #8e8b82;
+  --text-on-filled: #ffffff;
 
-  /* Borders */
-  --border: rgba(108, 87, 232, 0.12);
-  --border-md: rgba(108, 87, 232, 0.22);
-  --border-strong: rgba(108, 87, 232, 0.35);
+  /* Borders — solid warm-grey hairlines, NOT translucent violet (DESIGN.md §Hairlines). */
+  /* Translucent violet at 0.20 alpha composites to near-invisible on white cards; solid */
+  /* warm-grey gives every card a definite boundary. */
+  --border: #e6dfd8;
+  --border-md: #d6cdbe;
+  --border-strong: #c1b6a3;
 
-  /* Shadows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.07);
-  --shadow: 0 4px 20px rgba(0, 0, 0, 0.10);
-  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.14);
+  /* Shadows — two-stop warm-ink stacks (matches text colour, not slate). */
+  /* Slate drops on cream read as a cool-grey smudge and break the warm canvas. */
+  --shadow-sm: 0 1px 2px rgba(20, 20, 19, 0.04), 0 4px 12px rgba(20, 20, 19, 0.06);
+  --shadow: 0 4px 16px rgba(20, 20, 19, 0.07), 0 12px 32px rgba(20, 20, 19, 0.05);
+  --shadow-lg: 0 12px 24px rgba(20, 20, 19, 0.09), 0 24px 48px rgba(20, 20, 19, 0.07);
+  --shadow-glow: 0 0 20px rgba(108, 87, 232, 0.22);
+  --shadow-glow-soft: 0 0 12px rgba(108, 87, 232, 0.18);
 
   /* Gradients */
   --gradient-primary: linear-gradient(135deg, #6c57e8 0%, #7c6be0 100%);
@@ -209,37 +221,23 @@
   --gradient-warm: linear-gradient(135deg, #d97706 0%, #dc2626 100%);
   --gradient-surface: linear-gradient(135deg, rgba(108, 87, 232, 0.06) 0%, rgba(124, 107, 224, 0.03) 100%);
 
-  /* Pass / Fail */
-  --color-pass: rgb(16, 108, 55);
-  --color-fail: rgb(180, 30, 42);
+  /* Deep saturated pass / fail */
+  --pass: rgb(16, 108, 55);
+  --fail: rgb(180, 30, 42);
 
   /* Overlay / tooltip backdrop */
   --overlay-bg: rgba(0, 0, 0, 0.55);
 
-  /* Legacy aliases — kept for backward compat, point to semantic tokens */
-  --color-primary: var(--accent);
-  --color-primary-hover: var(--accent-dark);
-  --color-primary-muted: var(--accent-dim);
-  --color-primary-glow: rgba(108, 87, 232, 0.25);
-  --color-accent: var(--green);
-  --color-accent-muted: rgba(10, 138, 110, 0.12);
-  --color-danger: var(--danger);
-  --color-warning: var(--warning-color);
-  --color-ink: var(--text);
-  --color-ink-muted: var(--text-muted);
-  --color-ink-faint: var(--text-dim);
-  --color-bg-page: var(--bg);
-  --color-bg-subtle: var(--bg-card);
-  --color-surface: var(--bg-card);
-  --color-surface-2: var(--bg-card2);
-  --color-surface-hover: var(--bg-card2);
-  --color-surface-glass: rgba(255, 255, 255, 0.80);
-  --color-border: var(--border);
-  --color-border-subtle: rgba(108, 87, 232, 0.08);
-  --color-border-strong: var(--border-strong);
-  --shadow-card: var(--shadow);
-  --shadow-elevated: var(--shadow-lg);
-  --shadow-glow: 0 0 20px rgba(108, 87, 232, 0.18);
+  /* Glassmorphic surface — warm-tinted (DESIGN.md §Surface, warm console) */
+  --surface-glass: rgba(250, 249, 245, 0.80);
+
+  /* Score gradient — darker fg lightness + higher saturation + boosted bg   */
+  /* alpha so yellow mids stay legible on warm-cream. The +15pt saturation    */
+  /* bump compensates for the lightness compression at mid hues (≈60 olive). */
+  /* See DESIGN.md §Score Gradient. */
+  --score-fg-s: 85%;
+  --score-fg-l: 32%;
+  --score-bg-a-mul: 1.6;
 
   /* Semantic color tokens */
   --danger: #dc2626;
@@ -255,9 +253,6 @@
   --success-bg: rgba(5, 150, 105, 0.08);
   --success-border: rgba(5, 150, 105, 0.22);
 
-  /* Text on filled/colored backgrounds (badges, chips) */
-  --color-on-filled: #ffffff;
-
   /* Compare palette — per-model slot */
   --compare-0-dot: #6c57e8;
   --compare-0-border: rgba(108, 87, 232, 0.35);
@@ -272,13 +267,17 @@
   --compare-2-bg: rgba(217, 119, 6, 0.07);
   --compare-2-bg-header: rgba(217, 119, 6, 0.12);
 
-  /* Chart colors */
-  --chart-latency: #3b82f6;
-  --chart-ttft: #0a8a6e;
-  --chart-tpot: #7c6be0;
+  /* Chart colors — light-theme palette is deeper + more saturated than dark's */
+  /* counterpart, because warm-cream bg (`--bg-card` / `--bg-deep`) compresses */
+  /* cool hues via simultaneous contrast. Mid-tone slate blue / violet read    */
+  /* as washed-out on cream; pulling lightness down and saturation up restores */
+  /* the "data-bearing" punch of the same hue family. */
+  --chart-latency: #2563eb;
+  --chart-ttft: #047857;
+  --chart-tpot: #5b48e0;
   --chart-token: #5a6378;
 
-  /* KPI card gradients */
+  /* KPI card gradients — saturated enough to work on both themes */
   --kpi-grad-0: linear-gradient(135deg, #6366f1, #8b5cf6);
   --kpi-grad-1: linear-gradient(135deg, #10b981, #06b6d4);
   --kpi-grad-2: linear-gradient(135deg, #f59e0b, #f97316);
@@ -300,14 +299,26 @@
   --bubble-bot-icon-border: rgba(10, 138, 110, 0.35);
   --bubble-bot-color: #0a8a6e;
   --bubble-reasoning-bg: rgba(10, 138, 110, 0.08);
+  --bubble-reasoning-bg-hl: rgba(10, 138, 110, 0.14);
   --bubble-reasoning-border: rgba(10, 138, 110, 0.28);
+  --bubble-reasoning-border-hl: rgba(10, 138, 110, 0.50);
+  --bubble-reasoning-icon-bg: rgba(10, 138, 110, 0.12);
+  --bubble-reasoning-icon-border: rgba(10, 138, 110, 0.28);
+  --bubble-reasoning-color: #0a8a6e;
   --bubble-tool-bg: rgba(180, 100, 0, 0.07);
+  --bubble-tool-bg-hl: rgba(180, 100, 0, 0.14);
   --bubble-tool-border: rgba(180, 100, 0, 0.28);
+  --bubble-tool-border-hl: rgba(180, 100, 0, 0.50);
   --bubble-tool-icon-bg: rgba(180, 100, 0, 0.12);
   --bubble-tool-icon-border: rgba(180, 100, 0, 0.32);
   --bubble-tool-color: #b26200;
   --bubble-system-bg: rgba(90, 99, 120, 0.08);
+  --bubble-system-bg-hl: rgba(90, 99, 120, 0.14);
   --bubble-system-border: rgba(90, 99, 120, 0.22);
+  --bubble-system-border-hl: rgba(90, 99, 120, 0.45);
+  --bubble-system-icon-bg: rgba(90, 99, 120, 0.14);
+  --bubble-system-icon-border: rgba(90, 99, 120, 0.28);
+  --bubble-system-color: #5a6378;
 
   /* Media player */
   --media-video-bg: #0d0d0d;
@@ -337,12 +348,32 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
+/* Typography utility classes — aligned to DESIGN.md §Typography 12-token */
+/* These give us a single source of truth so Tabs / Toolbars / new pages */
+/* don't re-hand-write `text-sm font-medium`, `text-xs ... uppercase`, etc. */
+/* ------------------------------------------------------------------ */
+@layer utilities {
+  .type-display-xl     { @apply text-2xl font-bold tracking-tight; }
+  .type-title-md       { @apply text-base font-bold; }
+  .type-body-sm        { @apply text-sm; }
+  .type-body-sm-strong { @apply text-sm font-medium; }
+  .type-body-xs        { @apply text-xs; }
+  .type-label-xs       { @apply text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]; }
+  .type-table-xs       { @apply text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)]; }
+  .type-caption-mono   { @apply text-xs font-mono tabular-nums; }
+  .type-code           { @apply text-[13px] font-mono; }
+  .type-button-sm      { @apply text-xs font-medium; }
+  .type-button-md      { @apply text-sm font-medium; }
+  .type-button-lg      { @apply text-base font-medium; }
+}
+
+/* ------------------------------------------------------------------ */
 /* Utility classes                                                     */
 /* ------------------------------------------------------------------ */
 
 /* Glass card */
 .glass-card {
-  background: var(--color-surface-glass);
+  background: var(--surface-glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
@@ -366,7 +397,7 @@ body {
 
 /* Glow button */
 .btn-glow {
-  box-shadow: 0 0 0 0 var(--color-primary-glow);
+  box-shadow: 0 0 0 0 var(--accent-dim);
   transition: box-shadow var(--transition), transform var(--transition);
 }
 .btn-glow:hover {
@@ -449,3 +480,15 @@ body {
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--text-dim); border-radius: 3px; }
+
+/* ------------------------------------------------------------------ */
+/* Reduced-motion fallback — WCAG 2.1 SC 2.3.3                         */
+/* Honors user/OS preference for less animation; keeps layout intact.  */
+/* ------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

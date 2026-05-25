@@ -19,7 +19,7 @@ import time
 from typing import Any, List, Optional, Tuple
 
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
-from evalscope.api.model import Model, ModelOutput
+from evalscope.api.model import Model, ModelOutput, ModelUsage
 from evalscope.utils.logger import get_logger
 from .constants import NUDGE_PROMPT, LoopMessages, MetadataKeys, SubmissionSources, ToolSchemaModes, TraceSources
 from .environment import AgentEnvironment
@@ -55,6 +55,7 @@ class AgentLoop:
         self.environment = environment
         self.max_steps = max_steps
         self.trace = trace or AgentTrace(
+            framework='native',
             strategy=getattr(strategy, 'name', None),
             environment=environment.name if environment else None,
             max_steps=max_steps,
@@ -265,6 +266,10 @@ class AgentLoop:
             f'tool_calls={assistant_msg.tool_calls} '
             f'content={assistant_msg.text}',
         )
+        if output.usage is not None:
+            self.trace.total_usage = (
+                output.usage if self.trace.total_usage is None else self.trace.total_usage + output.usage
+            )
         self.trace.add_event(
             step=ctx.step,
             type=EventType.MODEL_GENERATE,

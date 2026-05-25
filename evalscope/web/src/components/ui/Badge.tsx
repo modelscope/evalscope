@@ -11,7 +11,7 @@ interface BadgeProps {
 
 const variantStyles: Record<BadgeVariant, string> = {
   default: 'bg-[var(--accent-dim)] text-[var(--accent)]',
-  success: 'bg-[var(--color-accent-muted)] text-[var(--green)]',
+  success: 'bg-[var(--success-bg)] text-[var(--success)]',
   warning: 'bg-[var(--warning-bg)] text-[var(--yellow)]',
   danger: 'bg-[var(--danger-bg)] text-[var(--danger)]',
 }

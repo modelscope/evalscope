@@ -104,6 +104,13 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--analysis-report', action='store_true', default=False, help='Generate analysis report for the evaluation results using judge model.')  # noqa: E501
     parser.add_argument('--collect-perf', action=argparse.BooleanOptionalAction, default=True, help='Collect per-request performance metrics (latency, TTFT, token usage) during evaluation. TTFT requires streaming (--generation-config stream=True). Use --no-collect-perf to disable.')  # noqa: E501
 
+    # Agent-config (native AgentLoop or external-agent bridge, distinguished
+    # by ``mode``).  Native example:
+    #   --agent-config '{"mode":"native","strategy":"react","max_steps":5}'
+    # External example:
+    #   --agent-config '{"mode":"external","framework":"claude-code","kwargs":{"model_name":"claude-opus-4-6"},"environment":"docker"}'
+    parser.add_argument('--agent-config', type=json.loads, default=None, help='Agent configuration as a JSON object. Mode discriminated: {"mode":"native", ...} for AgentLoop, {"mode":"external","framework":"claude-code", ...} for external CLI bridge.')  # noqa: E501
+
     # Sandbox-related arguments
     parser.add_argument('--sandbox', type=json.loads, default=None, help='Unified sandbox configuration as a JSON string, e.g. \'{"enabled": true, "engine": "docker"}\'. Maps to TaskConfig.sandbox / SandboxTaskConfig.')  # noqa: E501
     parser.add_argument('--use-sandbox', action='store_true', default=False, help='[Deprecated] Use --sandbox instead. Whether to use sandbox for model evaluation.')  # noqa: E501

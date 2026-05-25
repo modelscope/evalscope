@@ -31,9 +31,9 @@ export default function EvalTaskPage() {
     try {
       const res = await submitEvalTask(config, id)
       setResult(res)
-      if (res.status === 'error') setRunning(false)
     } catch (e) {
       setResult({ status: 'error', task_id: id, error: String(e) })
+    } finally {
       setRunning(false)
     }
   }

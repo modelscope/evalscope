@@ -27,9 +27,9 @@ export default function PerfTaskPage() {
     try {
       const res = await submitPerfTask(config, id)
       setResult(res)
-      if (res.status === 'error') setRunning(false)
     } catch (e) {
       setResult({ status: 'error', task_id: id, error: String(e) })
+    } finally {
       setRunning(false)
     }
   }

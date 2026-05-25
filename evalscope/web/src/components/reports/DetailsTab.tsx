@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { getAnalysis, getDataFrame } from '@/api/reports'
 import Card from '@/components/ui/Card'
-import Table, { scoreColor } from '@/components/ui/Table'
+import Table from '@/components/ui/Table'
+import { scoreColor } from '@/utils/colorScale'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import Skeleton from '@/components/ui/Skeleton'
 import PerfMetricsPanel from '@/components/reports/PerfMetricsPanel'
@@ -90,10 +91,7 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
         // Inline score bar
         return (
           <div className="flex items-center gap-2">
-            <div
-              className="h-1.5 rounded-full bg-[var(--border)] overflow-hidden"
-              style={{ width: '60px', minWidth: '60px' }}
-            >
+            <div className="h-1.5 w-[60px] min-w-[60px] rounded-full bg-[var(--border)] overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-300"
                 style={{
@@ -137,15 +135,15 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
               {(normOverall * 100).toFixed(2)}
             </span>
           </div>
-          {/* mini progress ring */}
+          {/* mini progress ring — 6px stroke (DESIGN.md `{components.score-ring}`) */}
           <svg width="48" height="48" viewBox="0 0 48 48" style={{ transform: 'rotate(-90deg)' }}>
-            <circle cx="24" cy="24" r="20" fill="none" stroke="var(--border)" strokeWidth="4" />
+            <circle cx="24" cy="24" r="19" fill="none" stroke="var(--border)" strokeWidth="6" />
             <circle
-              cx="24" cy="24" r="20" fill="none"
+              cx="24" cy="24" r="19" fill="none"
               stroke={scoreColor(normOverall)}
-              strokeWidth="4"
-              strokeDasharray={`${2 * Math.PI * 20}`}
-              strokeDashoffset={`${2 * Math.PI * 20 * (1 - normOverall)}`}
+              strokeWidth="6"
+              strokeDasharray={`${2 * Math.PI * 19}`}
+              strokeDashoffset={`${2 * Math.PI * 19 * (1 - normOverall)}`}
               strokeLinecap="round"
             />
           </svg>
@@ -170,6 +168,7 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
         ) : analysis && analysis !== 'N/A' ? (
           <MarkdownRenderer content={analysis} />
         ) : (
+          // text-dim allowed: non-essential ≥14px metadata (DESIGN.md §Text)
           <p className="text-sm text-[var(--text-dim)]">{t('common.noData')}</p>
         )}
       </Card>

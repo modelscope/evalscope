@@ -1,6 +1,8 @@
 import { useState, type SyntheticEvent } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import Button from '@/components/ui/Button'
+import FormField from '@/components/ui/FormField'
+import { FORM_INPUT_CLASS, inputClass } from '@/components/ui/formStyles'
 
 interface Props {
   onSubmit: (config: Record<string, unknown>) => void
@@ -51,97 +53,65 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
     onSubmit(config)
   }
 
-  const inputStyle =
-    'w-full px-3 py-2 text-sm rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-dim)] transition-all'
-  const labelStyle = 'block text-xs font-medium text-[var(--text-muted)] mb-1'
-  const errorInputStyle = 'border-[var(--danger)] focus:border-[var(--danger)] focus:ring-[var(--danger-bg)]'
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Model Name */}
-        <div>
-          <label className={labelStyle}>
-            {t('eval.modelName')} <span className="text-[var(--danger)]">*</span>
-          </label>
+        <FormField label={t('eval.modelName')} required error={errors.model}>
           <input
             value={model}
             onChange={(e) => { setModel(e.target.value); if (errors.model) setErrors((p) => ({ ...p, model: '' })) }}
-            className={`${inputStyle} ${errors.model ? errorInputStyle : ''}`}
+            className={inputClass(errors.model)}
             placeholder="Qwen/Qwen2.5-0.5B-Instruct"
           />
-          {errors.model && <p className="text-xs text-[var(--danger)] mt-1">{errors.model}</p>}
-        </div>
+        </FormField>
 
-        {/* API Type */}
-        <div>
-          <label className={labelStyle}>{t('perf.apiType')}</label>
-          <select value={api} onChange={(e) => setApi(e.target.value)} className={inputStyle}>
+        <FormField label={t('perf.apiType')}>
+          <select value={api} onChange={(e) => setApi(e.target.value)} className={FORM_INPUT_CLASS}>
             <option value="openai">OpenAI</option>
             <option value="dashscope">DashScope</option>
             <option value="local">Local</option>
           </select>
-        </div>
+        </FormField>
 
-        {/* API URL */}
-        <div>
-          <label className={labelStyle}>{t('eval.apiUrl')}</label>
-          <input value={url} onChange={(e) => setUrl(e.target.value)} className={inputStyle} placeholder="http://localhost:8000/v1" />
-        </div>
+        <FormField label={t('eval.apiUrl')}>
+          <input value={url} onChange={(e) => setUrl(e.target.value)} className={FORM_INPUT_CLASS} placeholder="http://localhost:8000/v1" />
+        </FormField>
 
-        {/* API Key */}
-        <div>
-          <label className={labelStyle}>{t('eval.apiKey')}</label>
-          <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} className={inputStyle} placeholder="sk-..." />
-        </div>
+        <FormField label={t('eval.apiKey')}>
+          <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} className={FORM_INPUT_CLASS} placeholder="sk-..." />
+        </FormField>
 
-        {/* Parallel */}
-        <div>
-          <label className={labelStyle}>{t('perf.parallel')}</label>
-          <input value={parallel} onChange={(e) => setParallel(e.target.value)} className={inputStyle} placeholder="1, 4, 8" />
-        </div>
+        <FormField label={t('perf.parallel')}>
+          <input value={parallel} onChange={(e) => setParallel(e.target.value)} className={FORM_INPUT_CLASS} placeholder="1, 4, 8" />
+        </FormField>
 
-        {/* Number */}
-        <div>
-          <label className={labelStyle}>{t('perf.number')}</label>
-          <input value={number} onChange={(e) => setNumber(e.target.value)} className={inputStyle} placeholder="10, 100" />
-        </div>
+        <FormField label={t('perf.number')}>
+          <input value={number} onChange={(e) => setNumber(e.target.value)} className={FORM_INPUT_CLASS} placeholder="10, 100" />
+        </FormField>
 
-        {/* Rate */}
-        <div>
-          <label className={labelStyle}>{t('perf.rate')}</label>
-          <input type="number" value={rate} onChange={(e) => setRate(e.target.value)} className={inputStyle} />
-        </div>
+        <FormField label={t('perf.rate')}>
+          <input type="number" value={rate} onChange={(e) => setRate(e.target.value)} className={FORM_INPUT_CLASS} />
+        </FormField>
 
-        {/* Max Tokens */}
-        <div>
-          <label className={labelStyle}>{t('perf.maxTokens')}</label>
-          <input type="number" value={maxTokens} onChange={(e) => setMaxTokens(e.target.value)} className={inputStyle} />
-        </div>
+        <FormField label={t('perf.maxTokens')}>
+          <input type="number" value={maxTokens} onChange={(e) => setMaxTokens(e.target.value)} className={FORM_INPUT_CLASS} />
+        </FormField>
 
-        {/* Min Tokens */}
-        <div>
-          <label className={labelStyle}>{t('perf.minTokens')}</label>
-          <input type="number" value={minTokens} onChange={(e) => setMinTokens(e.target.value)} className={inputStyle} />
-        </div>
+        <FormField label={t('perf.minTokens')}>
+          <input type="number" value={minTokens} onChange={(e) => setMinTokens(e.target.value)} className={FORM_INPUT_CLASS} />
+        </FormField>
 
-        {/* Dataset */}
-        <div>
-          <label className={labelStyle}>{t('perf.dataset')}</label>
-          <input value={dataset} onChange={(e) => setDataset(e.target.value)} className={inputStyle} placeholder="openqa" />
-        </div>
+        <FormField label={t('perf.dataset')}>
+          <input value={dataset} onChange={(e) => setDataset(e.target.value)} className={FORM_INPUT_CLASS} placeholder="openqa" />
+        </FormField>
 
-        {/* Max Prompt Length */}
-        <div>
-          <label className={labelStyle}>{t('perf.maxPromptLen')}</label>
-          <input type="number" value={maxPromptLen} onChange={(e) => setMaxPromptLen(e.target.value)} className={inputStyle} />
-        </div>
+        <FormField label={t('perf.maxPromptLen')}>
+          <input type="number" value={maxPromptLen} onChange={(e) => setMaxPromptLen(e.target.value)} className={FORM_INPUT_CLASS} />
+        </FormField>
 
-        {/* Min Prompt Length */}
-        <div>
-          <label className={labelStyle}>{t('perf.minPromptLen')}</label>
-          <input type="number" value={minPromptLen} onChange={(e) => setMinPromptLen(e.target.value)} className={inputStyle} />
-        </div>
+        <FormField label={t('perf.minPromptLen')}>
+          <input type="number" value={minPromptLen} onChange={(e) => setMinPromptLen(e.target.value)} className={FORM_INPUT_CLASS} />
+        </FormField>
       </div>
 
       <Button type="submit" variant="primary" disabled={disabled} className="btn-glow">
