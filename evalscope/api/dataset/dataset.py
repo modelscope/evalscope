@@ -342,9 +342,9 @@ class DatasetDict:
                 if isinstance(limit, float):
                     limit = int(len(samples) * limit)
                 samples = samples[:limit]
-            # Repeat k times
-            if repeats > 1:
-                samples = [copy.deepcopy(sample) for sample in samples for _ in range(repeats)]
+            # Repeat k times; always deepcopy to avoid mutating the original dataset
+            # (repeats=0 yields empty list; repeats=1 yields one isolated copy per sample)
+            samples = [copy.deepcopy(sample) for sample in samples for _ in range(repeats)]
             cur_dataset = MemoryDataset(samples, name=dataset.name)
             # Reindex the dataset to ensure consistent IDs and group IDs
             cur_dataset.reindex(group_size=repeats)

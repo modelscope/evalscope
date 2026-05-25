@@ -143,6 +143,37 @@ class TestDatasetDictFromDatasetRepeats(unittest.TestCase):
             self.assertEqual(samples[i * 3 + 1].input, base)
             self.assertEqual(samples[i * 3 + 2].input, base)
 
+    # ------------------------------------------------------------------
+    # regression: repeats=0 must not raise ZeroDivisionError
+    # ------------------------------------------------------------------
+
+    def test_repeats_zero_returns_empty(self):
+        """repeats=0 must produce an empty dataset without raising ZeroDivisionError."""
+        dataset = _make_dataset(5)
+        # Should not raise, and should return empty samples
+        result = DatasetDict.from_dataset(dataset, subset_list=[SUBSET], limit=3, repeats=0)
+        samples = self._get_samples(result)
+        self.assertEqual(len(samples), 0, 'repeats=0 must yield zero samples')
+
+    # ------------------------------------------------------------------
+    # regression: repeats=1 must not mutate original dataset samples
+    # ------------------------------------------------------------------
+
+    def test_repeats_one_does_not_mutate_original(self):
+        """repeats=1 must not mutate the id/group_id fields of the original input samples."""
+        dataset = _make_dataset(5)
+        original_ids = [s.id for s in dataset.samples]  # all None before call
+
+        DatasetDict.from_dataset(dataset, subset_list=[SUBSET], limit=3, repeats=1)
+
+        # Original dataset samples must remain unmodified
+        for original, sample in zip(original_ids, dataset.samples):
+            self.assertEqual(
+                sample.id,
+                original,
+                f'Original sample.id was mutated from {original} to {sample.id} (deepcopy required for repeats=1)',
+            )
+
 
 if __name__ == '__main__':
     unittest.main()
