@@ -14,7 +14,6 @@ import sys
 import unittest
 
 import evalscope  # noqa: F401 - trigger registration
-
 from evalscope.api.agent.mcp import MCPServer, MCPServerConfigStdio, mcp_tools
 from evalscope.api.tool import ToolCall
 from evalscope.api.tool.tool_call import ToolFunction

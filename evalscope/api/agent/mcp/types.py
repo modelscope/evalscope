@@ -45,7 +45,6 @@ class MCPServerConfigHTTP(_MCPServerConfigBase):
 
 MCPServerConfig = Annotated[Union[MCPServerConfigStdio, MCPServerConfigHTTP], Field(discriminator='type')]
 
-
 __all__ = [
     'MCPServerConfig',
     'MCPServerConfigStdio',
