@@ -45,7 +45,7 @@ Apply via Tailwind class — these cover every DESIGN.md `{typography.*}` token.
 ### Score color helpers
 
 `scoreColor(s)` / `scoreBg(s)` from `@/utils/colorScale` are the single source for the HSL score
-gradient (`hsl(score × 120, 70%, 45%)`). `Table.tsx` re-exports `scoreColor` for legacy imports.
+gradient (`hsl(score × 120, 70%, 45%)`).
 
 ### Rules
 

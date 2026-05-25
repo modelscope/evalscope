@@ -32,7 +32,7 @@ task_config = TaskConfig(
         environment='docker',
         environment_extra={'image': 'python:3.11-slim'},
         max_steps=5,
-        extra={'system_prompt': 'Use python_exec to verify your calculations.'},
+        kwargs={'system_prompt': 'Use python_exec to verify your calculations.'},
     ),
 )
 run_task(task_config)
@@ -126,7 +126,7 @@ run_task(task_config)
 1. 检查 `tools` 中的工具名拼写。
 2. 确认模型支持 function-calling;不支持的可换 `swe_bench_backticks` 等文本协议。
 3. 查看 `agent_trace.events` 是否出现 `nudge`(系统已提醒模型调用工具)或 `error`(解析 / 执行报错)。
-4. 用 `extra={'system_prompt': '...'}` 显式要求模型调用某个工具。
+4. 用 `kwargs={'system_prompt': '...'}` 显式要求模型调用某个工具。
 
 **`max_steps` 应该设多大**
 

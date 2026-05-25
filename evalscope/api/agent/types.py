@@ -7,7 +7,7 @@ import from ``evalscope.api.agent`` to participate.
 """
 
 from dataclasses import dataclass, field
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 
 from evalscope.api.messages import ChatMessage
@@ -26,6 +26,11 @@ class BaseAgentConfig(BaseModel):
     :class:`AgentEnvironment` plus a free-form ``kwargs`` channel; lifting
     them here avoids duplicating the schema across both subclasses.
     """
+
+    # ``extra='forbid'`` so legacy ``extra=...`` configs (renamed to
+    # ``kwargs``) and field typos surface as ValidationError instead of
+    # silently being dropped — agent_config is a public surface.
+    model_config = ConfigDict(extra='forbid')
 
     environment: Optional[str] = Field(default=None)
     """Registered environment name.  ``None`` means no sandbox (local tools only)."""

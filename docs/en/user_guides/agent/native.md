@@ -32,7 +32,7 @@ task_config = TaskConfig(
         environment='docker',
         environment_extra={'image': 'python:3.11-slim'},
         max_steps=5,
-        extra={'system_prompt': 'Use python_exec to verify your calculations.'},
+        kwargs={'system_prompt': 'Use python_exec to verify your calculations.'},
     ),
 )
 run_task(task_config)
@@ -126,7 +126,7 @@ Prerequisites: `pip install evalscope[swe_bench]`, Docker installed locally. A g
 1. Check tool-name spelling in `tools`.
 2. Confirm the model supports function calling; if not, switch to a text protocol like `swe_bench_backticks`.
 3. Inspect `agent_trace.events` for `nudge` (system already reminded the model) or `error` (parse / execution failure).
-4. Use `extra={'system_prompt': '...'}` to explicitly require a specific tool.
+4. Use `kwargs={'system_prompt': '...'}` to explicitly require a specific tool.
 
 **How big should `max_steps` be?**
 

@@ -9,6 +9,7 @@ runner injects into the agent's environment.
 
 import asyncio
 import json
+import threading
 import time
 import uuid
 from aiohttp import web
@@ -132,7 +133,11 @@ class ModelProxyServer:
     """
 
     _instances: Dict[int, 'ModelProxyServer'] = {}
-    _instances_lock = asyncio.Lock()
+    # Plain ``threading.Lock`` rather than ``asyncio.Lock``: the registry is
+    # shared across event loops (one per AsyncioLoopRunner worker) and an
+    # asyncio.Lock binds to the loop of its first ``await acquire()``, making
+    # subsequent acquisitions from a different loop raise ``RuntimeError``.
+    _instances_lock = threading.Lock()
 
     def __init__(self, host: str, port: Optional[int]) -> None:
         self._host = host
@@ -159,7 +164,7 @@ class ModelProxyServer:
         to a different loop are unreachable from here anyway.
         """
         loop_key = id(asyncio.get_running_loop())
-        async with cls._instances_lock:
+        with cls._instances_lock:
             inst = cls._instances.get(loop_key)
             if inst is None:
                 inst = cls(host=host, port=port)
@@ -259,7 +264,7 @@ class ModelProxyServer:
         self._runner = None
         self._app = None
         loop_key = id(asyncio.get_running_loop())
-        async with self._instances_lock:
+        with self._instances_lock:
             if ModelProxyServer._instances.get(loop_key) is self:
                 ModelProxyServer._instances.pop(loop_key, None)
 

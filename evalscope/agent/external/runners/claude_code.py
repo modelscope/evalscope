@@ -12,6 +12,7 @@ token (typical dev box), the CLI prefers the keychain over
 default to a fresh ``HOME`` per run to force env-var-driven routing.
 """
 
+import shutil
 import tempfile
 from typing import Any, Dict, List, Optional
 
@@ -227,60 +228,68 @@ class ClaudeCodeRunner(AgentRunner):
             'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC': '1',
         }
         home_dir = self._resolve_home()
+        # Only the default-path branch (``home_override is None``) creates a
+        # fresh tempdir we own; user-supplied paths and the inherit case must
+        # not be deleted out from under them.
+        owns_home_dir = home_dir is not None and self._home_override is None
         if home_dir is not None:
             env_vars['HOME'] = home_dir
 
-        # Pass the prompt as the trailing positional argument (matches
-        # claude-code's documented invocation pattern).  Avoid variadic
-        # flags like ``--allowedTools <tools...>`` before the positional
-        # because they would consume the prompt as a tool value.
-        cmd: List[str] = ['claude', '--print', '--no-session-persistence', '--output-format', 'text']
-        if self._bare:
-            cmd.append('--bare')
-        if self._skip_permissions:
-            cmd.append('--dangerously-skip-permissions')
-        if self._model_name:
-            cmd.extend(['--model', self._model_name])
-        if self._allowed_tools is not None:
-            cmd.extend(['--allowedTools', self._allowed_tools])
-        if self._disallowed_tools is not None:
-            cmd.extend(['--disallowedTools', self._disallowed_tools])
-        cmd.extend(self._extra_args)
-        cmd.append(task.instruction)
+        try:
+            # Pass the prompt as the trailing positional argument (matches
+            # claude-code's documented invocation pattern).  Avoid variadic
+            # flags like ``--allowedTools <tools...>`` before the positional
+            # because they would consume the prompt as a tool value.
+            cmd: List[str] = ['claude', '--print', '--no-session-persistence', '--output-format', 'text']
+            if self._bare:
+                cmd.append('--bare')
+            if self._skip_permissions:
+                cmd.append('--dangerously-skip-permissions')
+            if self._model_name:
+                cmd.extend(['--model', self._model_name])
+            if self._allowed_tools is not None:
+                cmd.extend(['--allowedTools', self._allowed_tools])
+            if self._disallowed_tools is not None:
+                cmd.extend(['--disallowedTools', self._disallowed_tools])
+            cmd.extend(self._extra_args)
+            cmd.append(task.instruction)
 
-        sample_id = (task.metadata or {}).get('sample_id')
-        env_name = getattr(env, 'name', type(env).__name__)
-        logger.info(
-            f'claude-code launching: sample={sample_id} env={env_name} '
-            f'model={self._model_name or "<bridge-default>"} '
-            f'timeout={task.timeout}s instruction_chars={len(task.instruction)}'
-        )
-        result = await env.exec(
-            cmd,
-            timeout=task.timeout,
-            env=env_vars,
-        )
-        logger.info(
-            f'claude-code exited: sample={sample_id} rc={result.returncode} '
-            f'wall={result.duration:.1f}s '
-            f'stdout={len(result.stdout or "")}B stderr={len(result.stderr or "")}B '
-            f'timed_out={result.timed_out}'
-        )
-        if result.timed_out:
-            raise RunnerTimeoutError(
-                f'claude-code timed out after {task.timeout}s '
-                f'(returncode={result.returncode})'
+            sample_id = (task.metadata or {}).get('sample_id')
+            env_name = getattr(env, 'name', type(env).__name__)
+            logger.info(
+                f'claude-code launching: sample={sample_id} env={env_name} '
+                f'model={self._model_name or "<bridge-default>"} '
+                f'timeout={task.timeout}s instruction_chars={len(task.instruction)}'
             )
-        if result.returncode != 0:
-            tail_stderr = (result.stderr or '').strip()[-2000:]
-            raise RuntimeError(f'claude-code exited with code {result.returncode}: {tail_stderr}')
-        return AgentRunResult(
-            output=result.stdout.strip(),
-            metrics={
-                'wall_time': result.duration,
-                'returncode': result.returncode,
-            },
-        )
+            result = await env.exec(
+                cmd,
+                timeout=task.timeout,
+                env=env_vars,
+            )
+            logger.info(
+                f'claude-code exited: sample={sample_id} rc={result.returncode} '
+                f'wall={result.duration:.1f}s '
+                f'stdout={len(result.stdout or "")}B stderr={len(result.stderr or "")}B '
+                f'timed_out={result.timed_out}'
+            )
+            if result.timed_out:
+                raise RunnerTimeoutError(
+                    f'claude-code timed out after {task.timeout}s '
+                    f'(returncode={result.returncode})'
+                )
+            if result.returncode != 0:
+                tail_stderr = (result.stderr or '').strip()[-2000:]
+                raise RuntimeError(f'claude-code exited with code {result.returncode}: {tail_stderr}')
+            return AgentRunResult(
+                output=result.stdout.strip(),
+                metrics={
+                    'wall_time': result.duration,
+                    'returncode': result.returncode,
+                },
+            )
+        finally:
+            if owns_home_dir and home_dir:
+                shutil.rmtree(home_dir, ignore_errors=True)
 
     def _resolve_home(self) -> Optional[str]:
         """Pick the ``HOME`` value used for the subprocess.
