@@ -87,6 +87,92 @@ Most-used `AgentConfig` fields:
 - With `docker` you reuse the [sandbox infrastructure](../sandbox.md); you may explicitly set `TaskConfig.sandbox = SandboxTaskConfig(enabled=True, engine='docker')`.
 ```
 
+## MCP server tools
+
+Beyond the built-in tools (`bash` / `python_exec` / ...), `AgentConfig` accepts arbitrary [MCP (Model Context Protocol)](https://modelcontextprotocol.io) servers via `mcp_servers`. Their advertised tools are listed at sample start, merged into the loop's tool set alongside the benchmark-native tools, and torn down when the sample finishes — **no benchmark-side change required**.
+
+This is how to plug in `fetch`, web search, GitHub, filesystem and the rest of the MCP ecosystem without writing a custom EvalScope tool.
+
+### Install
+
+```bash
+pip install evalscope[mcp]
+# Plus whichever MCP servers you want to use, e.g.:
+pip install mcp-server-fetch
+```
+
+The `mcp` Python SDK is imported lazily, so configurations with empty `mcp_servers` (the default) need no extra install.
+
+### Quick start
+
+```python
+import sys
+from evalscope import TaskConfig, run_task
+from evalscope.api.agent import NativeAgentConfig
+from evalscope.api.agent.mcp import MCPServerConfigStdio, MCPServerConfigHTTP
+
+task_config = TaskConfig(
+    model='qwen3-max',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    eval_type='openai_api',
+    datasets=['gaia'],
+    agent_config=NativeAgentConfig(
+        mcp_servers=[
+            # Stdio: spawn a local Python MCP server.
+            MCPServerConfigStdio(
+                command=sys.executable,
+                args=['-m', 'mcp_server_fetch', '--ignore-robots-txt'],
+                name='fetch',
+            ),
+            # Stdio: use uvx so end users don't have to pip-install first.
+            MCPServerConfigStdio(
+                command='uvx',
+                args=['mcp-server-brave-search'],
+                env={'BRAVE_API_KEY': 'sk-...'},
+                name='brave_search',
+            ),
+            # HTTP: connect to a remote MCP endpoint.
+            MCPServerConfigHTTP(
+                url='https://my-mcp.example.com',
+                headers={'Authorization': 'Bearer ...'},
+                name='internal',
+            ),
+        ],
+    ),
+    dataset_args={'gaia': {'subset_list': ['2023_level1']}},
+    limit=5,
+)
+run_task(task_config)
+```
+
+Inside the agent loop the model now sees `bash`, `submit`, **and** every tool the MCP servers advertised (e.g. `fetch`, `brave_web_search`). It picks tools by name as usual.
+
+### Configuration
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `command` (stdio) | str | Executable to spawn (`sys.executable` / `uvx` / `npx` / absolute path). |
+| `args` (stdio) | list[str] | Arguments passed to `command`. |
+| `env` (stdio) | dict[str, str] | Extra environment variables for the child process. |
+| `cwd` (stdio) | str | Working directory for the child. |
+| `url` (http) | str | Streamable HTTP endpoint of the MCP server. |
+| `headers` (http) | dict[str, str] | HTTP headers (typically auth). |
+| `timeout` (http) | float | HTTP read timeout in seconds (default `30.0`). |
+| `name` | str | Display name used in logs and the trace UI. Defaults to `command` / `url`. |
+| `tools` | `'all'` or list[str] | Whitelist; `'all'` (default) exposes every tool the server advertises. |
+
+```{tip}
+- `python -m mcp_server_<x>` after `pip install` is the most deterministic for CI/tests — no per-run package fetch.
+- `uvx mcp-server-<x>` is convenient for ad-hoc runs; first call downloads the package.
+- For benchmarks that already drive their own loop (`AgentLoopAdapter` subclasses like GAIA / SWE-bench-agentic), MCP servers from the global `agent_config` are still picked up via `agent_config.mcp_servers` and merged into the loop's tool set.
+```
+
+### Trace / debugging
+
+`MCPServer[<name>]: initialised` and `MCPServer[<name>]: closed` log lines bracket the per-sample server lifecycle. Tool calls appear in `agent_trace.events` like any other `tool_call` / `tool_result` pair — the tool `name` is the MCP-advertised name.
+
+If a MCP tool call fails, the observation comes back as `[error] <body>` so the model can recover and try a different approach without crashing the loop.
+
 ## SWE-bench agentic benchmarks
 
 The `swe_bench_*_agentic` family (`swe_bench_verified_agentic`, `swe_bench_verified_mini_agentic`, `swe_bench_lite_agentic`) ships its own AgentLoop and **ignores** the global `agent_config`. All loop parameters go through `dataset_args.extra_params`.

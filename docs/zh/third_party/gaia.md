@@ -113,6 +113,47 @@ GAIA 每个 sample 一个独立 Docker 容器，结束后销毁。`eval_batch_si
 
 不使用 LLM judge。Agent 必须输出经上述归一化后**严格匹配**的答案——通常通过自动注入的 `submit(answer=...)` 工具调用完成。
 
+## 通过 MCP 接入网页能力
+
+GAIA 默认只有 bash 沙箱，可以 `curl`/`wget` 原始 HTML，但无法跑 JS 渲染浏览器，也接不到需要 API key 的搜索引擎。最简洁的补足方式是接入 MCP 服务器（例如 `mcp-server-fetch` 抓 HTTP，`mcp-server-brave-search` 关键词搜索）—— 这些 MCP server **跑在 host 进程**，不进 docker 沙箱，**镜像不需要改**。
+
+```bash
+pip install evalscope[mcp]
+pip install mcp-server-fetch
+```
+
+```python
+import sys
+from evalscope import TaskConfig, run_task
+from evalscope.api.agent import NativeAgentConfig
+from evalscope.api.agent.mcp import MCPServerConfigStdio
+
+task_cfg = TaskConfig(
+    model='qwen3-max',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    eval_type='openai_api',
+    datasets=['gaia'],
+    dataset_args={'gaia': {'subset_list': ['2023_level1']}},
+    agent_config=NativeAgentConfig(
+        mcp_servers=[
+            MCPServerConfigStdio(
+                command=sys.executable,
+                # ``--ignore-robots-txt``：上游 robots.txt 偶尔会请求失败，加上这个
+                # 让 fetch 直接尝试目标 URL，避免把所有调用都挡在前面这一步。
+                args=['-m', 'mcp_server_fetch', '--ignore-robots-txt'],
+                name='fetch',
+            ),
+        ],
+    ),
+    limit=5,
+)
+run_task(task_cfg)
+```
+
+Agent 此时会看到 `bash`、`submit` 和 `fetch` 三个工具，可以直接 `fetch(url=...)` 抓网页 —— 不需要在 docker 里装额外库，也不再依赖 `curl` 拼凑。
+
+完整配置参考见 [Native Agent Loop → MCP 工具接入](../user_guides/agent/native.md#mcp-工具接入)（stdio / HTTP transport、工具白名单、env 变量等）。
+
 ## 已知限制
 
 - **暂无 `web_search` / `web_browser` 工具**：Phase-1 仅提供 `bash`。Agent 可以用 `curl` / `wget` 加 `python3` 解析 HTML，但 JS 渲染页面和需要 API key 的搜索引擎无法直接使用。浏览类题目分数会明显低于具备真实浏览器工具的实现。

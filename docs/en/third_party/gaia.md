@@ -113,6 +113,47 @@ The scorer is a verbatim port of the [official GAIA leaderboard scorer](https://
 
 No LLM judge is involved. The agent must produce an answer that **exactly matches** the canonical normalization above — typically by calling the auto-injected `submit(answer=...)` tool.
 
+## Adding web access via MCP
+
+GAIA's bash-only sandbox can `curl` / `wget` raw HTML, but cannot run a JS-rendered browser or hit gated search APIs. The simplest way to give the agent real browsing power is to plug an MCP server (e.g. `mcp-server-fetch` for HTTP, `mcp-server-brave-search` for keyword search) — the host-side MCP servers run **outside** the per-sample Docker, no sandbox image change needed.
+
+```bash
+pip install evalscope[mcp]
+pip install mcp-server-fetch
+```
+
+```python
+import sys
+from evalscope import TaskConfig, run_task
+from evalscope.api.agent import NativeAgentConfig
+from evalscope.api.agent.mcp import MCPServerConfigStdio
+
+task_cfg = TaskConfig(
+    model='qwen3-max',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    eval_type='openai_api',
+    datasets=['gaia'],
+    dataset_args={'gaia': {'subset_list': ['2023_level1']}},
+    agent_config=NativeAgentConfig(
+        mcp_servers=[
+            MCPServerConfigStdio(
+                command=sys.executable,
+                # ``--ignore-robots-txt`` avoids stalling when the upstream
+                # robots.txt request is intermittently blocked.
+                args=['-m', 'mcp_server_fetch', '--ignore-robots-txt'],
+                name='fetch',
+            ),
+        ],
+    ),
+    limit=5,
+)
+run_task(task_cfg)
+```
+
+The agent now sees `bash`, `submit` and `fetch` as tools and can call `fetch(url=...)` to read web pages directly — no docker-side library install, no `curl` plumbing.
+
+See [Native Agent Loop → MCP server tools](../user_guides/agent/native.md#mcp-server-tools) for the full configuration reference (stdio / HTTP transports, tool whitelist, env vars, etc.).
+
 ## Known Limitations
 
 - **No `web_search` / `web_browser` tool yet**: GAIA Phase-1 ships only the `bash` tool. The agent can `curl` / `wget` and parse HTML with `python3`, but JavaScript-rendered pages and gated search APIs cannot be reached. Browsing-heavy questions will score significantly lower than implementations with a real browser tool.
