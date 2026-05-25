@@ -8,9 +8,8 @@ covers both the warning path and the "request still succeeds" property.
 import asyncio
 import json
 import logging
-import urllib.request
-
 import pytest
+import urllib.request
 
 from evalscope.agent.external.bridge import ModelProxyServer
 from evalscope.api.messages import ChatMessageAssistant

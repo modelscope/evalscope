@@ -47,11 +47,9 @@ from .translate_openai import (
 
 logger = get_logger()
 
-
 # ---------------------------------------------------------------------------
 # Request: Responses input[] → ChatMessage[]
 # ---------------------------------------------------------------------------
-
 
 # Item types treated as "user-triggered tool outputs" — they share the
 # function_call_output handling path (mapped to ChatMessageTool).

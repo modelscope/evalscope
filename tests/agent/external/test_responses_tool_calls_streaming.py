@@ -8,10 +8,9 @@ the full arguments JSON for every call.
 
 import asyncio
 import json
+import pytest
 import urllib.request
 from collections import defaultdict
-
-import pytest
 
 from evalscope.agent.external.bridge import ModelProxyServer
 from evalscope.api.messages import ChatMessageAssistant

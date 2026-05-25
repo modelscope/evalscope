@@ -172,7 +172,7 @@ def test_claude_code_through_docker_bridge_with_mock_llm(tmp_path):
         framework='claude-code',
         kwargs={
             'model_name': 'mock-model',
-            'install_node': True,
+            'auto_install': True,
             # NOTE: do NOT pass ``allowed_tools=''`` — ``--allowedTools``
             # is variadic and would swallow the trailing prompt
             # (landmine #3 in the agent_bridge_design plan).
@@ -274,7 +274,7 @@ def test_swe_bench_pro_real_e2e(tmp_path, monkeypatch):
             'timeout': 1200.0,
             'kwargs': {
                 'model_name': target_model,
-                'install_node': True,
+                'auto_install': True,
             },
         },
         eval_batch_size=1,

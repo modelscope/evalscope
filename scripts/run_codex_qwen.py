@@ -16,7 +16,6 @@ import os
 import shutil
 import sys
 import tempfile
-
 from dotenv import load_dotenv
 
 
@@ -53,11 +52,7 @@ def main() -> int:
             'framework': 'codex',
             'environment': 'local',
             'timeout': 300.0,
-            'kwargs': {
-                'model_name': target_model,
-                'sandbox': 'workspace-write',
-                'yolo': True,
-            },
+            'kwargs': {},
         },
         eval_batch_size=1,
         limit=1,

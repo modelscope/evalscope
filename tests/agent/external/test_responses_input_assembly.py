@@ -1,14 +1,19 @@
-"""Top-level ``instructions`` + input[]-embedded system messages merge in order.
+"""``input[]`` walker correctness — ordering and content-block assembly.
 
-Responses API has two ways to push system context: a top-level
-``instructions`` string and ``{type:'message', role:'system'|'developer',...}``
-items in ``input[]``. The bridge merges both into the ``ChatMessage[]``
-the model layer sees, preserving the spec'd order (instructions first,
-then any input[] system items as they appear).
+Covers the cross-item invariants the translator must respect:
+* Top-level ``instructions`` becomes a system message and lands BEFORE
+  any user message
+* ``input[]``-embedded ``role:'system'|'developer'`` items follow
+  ``instructions`` in document order
+* A ``reasoning`` item immediately followed by an assistant ``message``
+  belongs to the same turn — the resulting assistant message must hold
+  ``ContentReasoning`` then ``ContentText`` in that order
 
-This test pokes the translator directly (``responses_request_to_messages``)
-rather than going through the HTTP layer — the translator is the
-canonical place where the merge is decided.
+These pokes the translator (:func:`responses_request_to_messages`)
+directly rather than going through the HTTP layer — the translator is
+the canonical place where ordering is decided. Per-item-type semantics
+(custom/computer/web_search/mcp/...) live in
+``test_responses_extended_item_types.py``.
 """
 
 from evalscope.agent.external.bridge.translate_responses import responses_request_to_messages
@@ -82,3 +87,31 @@ def test_no_instructions_only_input_system_works():
     roles = [m.role for m in messages]
     assert roles == ['system', 'user']
     assert messages[0].text == 'only input system'
+
+
+def test_reasoning_then_message_keeps_reasoning_in_front_of_text():
+    """A ``reasoning`` item immediately followed by an assistant ``message``
+    must collapse into a single assistant turn with the ContentReasoning
+    block leading the ContentText (chain-of-thought → answer ordering)."""
+    body = {
+        'input': [
+            {'type': 'message', 'role': 'user', 'content': [{'type': 'input_text', 'text': 'why?'}]},
+            {
+                'type': 'reasoning',
+                'summary': [{'type': 'summary_text', 'text': 'because of physics'}],
+            },
+            {
+                'type': 'message',
+                'role': 'assistant',
+                'content': [{'type': 'output_text', 'text': 'the answer is 42'}],
+            },
+        ],
+    }
+    messages = responses_request_to_messages(body)
+    assert [m.role for m in messages] == ['user', 'assistant']
+    assistant = messages[1]
+    assert isinstance(assistant.content, list)
+    types = [type(b).__name__ for b in assistant.content]
+    assert types == ['ContentReasoning', 'ContentText']
+    assert assistant.content[0].reasoning == 'because of physics'
+    assert assistant.content[1].text == 'the answer is 42'

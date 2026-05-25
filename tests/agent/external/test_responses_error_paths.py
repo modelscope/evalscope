@@ -13,10 +13,9 @@ Python SDK v2.x.
 
 import asyncio
 import json
+import pytest
 import urllib.error
 import urllib.request
-
-import pytest
 
 from evalscope.agent.external.bridge import ModelProxyServer
 from evalscope.api.model import GenerateConfig, Model

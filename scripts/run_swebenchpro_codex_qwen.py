@@ -16,7 +16,7 @@ against real DashScope, then runs the per-instance test suite. Budget:
 Known risk: ``npm install -g @openai/codex`` may stall inside the
 sandbox if the container's egress goes through the same slow CDN path
 that hung the host install. If you see ``CodexRunner.setup`` time out
-after 300s, set ``install_codex=False`` and bake codex into the
+after 300s, set ``auto_install=False`` and bake codex into the
 sweap-image yourself, or wait for the GH-binary fallback to land in
 ``CodexRunner._install_codex_cli``.
 """
@@ -24,7 +24,6 @@ sweap-image yourself, or wait for the GH-binary fallback to land in
 import os
 import sys
 import tempfile
-
 from dotenv import load_dotenv
 
 
@@ -56,18 +55,11 @@ def main() -> int:
             'framework': 'codex',
             'environment': 'enclave',
             'timeout': 1800.0,
-            'kwargs': {
-                'model_name': target_model,
-                'install_codex': True,
-                # codex sandbox is its own thing — workspace-write lets the
-                # agent edit the SWE-bench Pro repo files in /app.
-                'sandbox': 'workspace-write',
-                'yolo': True,
-                # codex writes its final assistant message here; we read it
-                # back to populate AgentRunResult.output. The path must be
-                # writable in codex's workspace-write sandbox.
-                'output_last_message_path': '/tmp/evalscope-codex-last.txt',
-            },
+            # CodexRunner defaults cover the SWE-bench Pro path:
+            # sandbox=workspace-write hardcoded (lets the agent edit
+            # /app), non-interactive always on, auto-install enabled,
+            # model_name auto-inherited from TaskConfig.model.
+            'kwargs': {},
         },
         eval_batch_size=1,
         limit=1,

@@ -399,7 +399,7 @@ class TestGSM8KExternalClaudeCode(_ScrubAnthropicEnvMixin, unittest.TestCase):
                 'framework': 'claude-code',
                 'environment': 'docker',
                 # The pre-baked image already has node + claude on PATH;
-                # ``install_node=False`` short-circuits ``setup()``'s probe.
+                # ``auto_install=False`` short-circuits ``setup()``'s probe.
                 'environment_extra': {
                     'sandbox_config': {
                         'image': _CLAUDE_CODE_IMAGE,
@@ -408,8 +408,7 @@ class TestGSM8KExternalClaudeCode(_ScrubAnthropicEnvMixin, unittest.TestCase):
                     'timeout': 180.0,
                 },
                 'kwargs': {
-                    'model_name': _IDEALAB_MODEL,
-                    'install_node': False,
+                    'auto_install': False,
                     # Empty string = inherit the inside-container HOME.
                     'home_override': '',
                 },
@@ -490,13 +489,10 @@ class TestSWEBenchProExternalClaudeCode(_ScrubAnthropicEnvMixin, unittest.TestCa
                 # ``environment`` / ``environment_extra`` are intentionally
                 # absent: AgentLoopAdapter uses the benchmark's own
                 # ``build_environment(sample)`` (per-instance sweap-image).
-                'kwargs': {
-                    'model_name': _IDEALAB_MODEL,
-                    # sweap-images ship Node out of the box; the runner
-                    # auto-detects and skips apt+nodesource (only ``npm
-                    # install -g claude-code`` runs, ~20s).
-                    'install_node': True,
-                },
+                # sweap-images ship Node out of the box; auto_install
+                # auto-detects and skips apt+nodesource (only
+                # ``npm install -g claude-code`` runs, ~20s).
+                'kwargs': {},
                 'timeout': 1500.0,
             },
             # NodeBB (and other heavy JS samples) spawn Redis + jest under
@@ -555,6 +551,117 @@ class TestSWEBenchProExternalClaudeCode(_ScrubAnthropicEnvMixin, unittest.TestCa
             trace = AgentTrace.model_validate(trace_dict)
             self.assertEqual(trace.framework, 'claude-code')
             self.assertEqual(trace.environment, 'enclave')
+
+
+# ---------------------------------------------------------------------------
+# 10. SWE-bench_Pro + external agent (codex) → bridge Responses API
+#     → DashScope qwen3-max. Mirrors the claude-code variant above but
+#     drives the OpenAI Responses route (PR2) end-to-end.
+# ---------------------------------------------------------------------------
+
+
+@requires_api
+@requires_swe_bench_pro_repo
+class TestSWEBenchProExternalCodex(unittest.TestCase):
+    """End-to-end SWE-bench_Pro through external codex CLI × qwen3-max.
+
+    Differences vs ``TestSWEBenchProExternalClaudeCode``:
+
+    * ``framework='codex'`` → bridge ``POST /openai/v1/responses`` route
+      (codex v0.133+ refuses chat completions).
+    * Backend is DashScope qwen3-max via the OpenAI-compatible endpoint;
+      no idealab User-Agent whitelist needed.
+    * No ``_ScrubAnthropicEnvMixin`` — codex talks OpenAI; no Anthropic
+      SDK env-var conflict can arise.
+    * No pre-baked image gate: ``CodexRunner.setup`` installs
+      ``@openai/codex`` via apt+nodesource+npm inside the per-instance
+      sweap-image (~30s amortised on first sample of a series; previously
+      verified end-to-end in PR2's NodeBB 37-turn run).
+
+    Slow / expensive: pulls per-instance sweap-images (~5-15 GB each),
+    runs codex × qwen3-max against the real DashScope API, then runs the
+    SWE-bench_Pro evaluation container. Budget per sample: 5-20 min wall,
+    ¥0.5-5 in DashScope tokens.
+    """
+
+    def test_swe_bench_pro_through_external_codex(self):
+        cfg = TaskConfig(
+            model='qwen3-max',
+            api_url=_API_URL,
+            api_key=_API_KEY,
+            eval_type=EvalType.OPENAI_API,
+            datasets=['swe_bench_pro'],
+            dataset_args={
+                'swe_bench_pro': {
+                    'extra_params': {
+                        # Same auto-clone-skip as the claude-code variant.
+                        'swe_bench_pro_repo_path': str(_SWE_BENCH_PRO_REPO),
+                    },
+                },
+            },
+            agent_config={
+                'mode': 'external',
+                'framework': 'codex',
+                # AgentLoopAdapter uses the benchmark's per-instance
+                # sweap-image; no environment / environment_extra override
+                # (parity with the claude-code variant). Kwargs are empty:
+                # CodexRunner defaults already cover the SWE-bench Pro path
+                # (sandbox=workspace-write hardcoded, non-interactive,
+                # auto-install enabled, model_name auto-inherited from
+                # TaskConfig.model).
+                'kwargs': {},
+                'timeout': 1500.0,
+            },
+            # Same memory / cpu fix as the claude-code variant — codex's
+            # apply_patch + exec_command can spawn the same heavy JS test
+            # stacks (Redis, jest, etc.) under workspace-write.
+            sandbox={
+                'default_config': {
+                    'memory_limit': '8g',
+                    'cpu_limit': 4,
+                },
+            },
+            ignore_errors=True,
+            eval_batch_size=3,
+            limit=3,
+        )
+        result = run_task(cfg)
+        self.assertIn('swe_bench_pro', result)
+
+        # Pin the same evaluation-log structure the claude-code variant pins.
+        work_dir = Path(cfg.work_dir)
+        swe_logs = work_dir / 'swe_bench_pro_log'
+        self.assertTrue(
+            swe_logs.is_dir(),
+            f'expected swe_bench_pro_log under {work_dir} — eval_instance did not run',
+        )
+        instance_dirs = [p for p in swe_logs.iterdir() if p.is_dir()]
+        self.assertGreater(len(instance_dirs), 0, 'no per-instance log directory written')
+        for inst_dir in instance_dirs:
+            workspace = inst_dir / 'workspace'
+            self.assertTrue(workspace.is_dir(), f'no workspace under {inst_dir}')
+            self.assertTrue((workspace / 'entryscript.sh').is_file())
+            self.assertTrue((workspace / 'patch.diff').is_file())
+
+        for sub in ('predictions', 'reviews', 'reports'):
+            self.assertTrue(
+                (work_dir / sub).is_dir(),
+                f'standard output dir {sub!r} missing under {work_dir}',
+            )
+
+        # Trace must reflect the external-agent codex path.
+        reviews = _read_review_results('swe_bench_pro', model='qwen3-max', work_dir=cfg.work_dir)
+        self.assertGreater(len(reviews), 0)
+        for r in reviews:
+            trace_dict = r.get('agent_trace')
+            self.assertIsNotNone(trace_dict, 'external-agent path must populate agent_trace')
+            trace = AgentTrace.model_validate(trace_dict)
+            self.assertEqual(trace.framework, 'codex')
+            self.assertEqual(trace.environment, 'enclave')
+            types = [e.type for e in trace.events]
+            self.assertIn(EventType.RUN_START, types)
+            self.assertIn(EventType.MODEL_GENERATE, types)
+            self.assertIn(EventType.RUN_END, types)
 
 
 if __name__ == '__main__':

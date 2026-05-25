@@ -11,9 +11,8 @@ sequence; PR2 mirrors it field-for-field.
 """
 
 import json
-from typing import Any, Dict, List, Tuple
-
 import pytest
+from typing import Any, Dict, List, Tuple
 
 from evalscope.agent.external.bridge.sse_responses import stream_responses_payload
 from evalscope.utils.function_utils import AsyncioLoopRunner

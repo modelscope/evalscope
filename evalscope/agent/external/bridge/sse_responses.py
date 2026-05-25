@@ -129,12 +129,14 @@ async def _emit_message_content(
             part_for_added['text'] = ''
         elif ctype == 'refusal':
             part_for_added['refusal'] = ''
-        yield frame_fn('response.content_part.added', {
-            'item_id': item_id,
-            'output_index': output_index,
-            'content_index': content_index,
-            'part': part_for_added,
-        })
+        yield frame_fn(
+            'response.content_part.added', {
+                'item_id': item_id,
+                'output_index': output_index,
+                'content_index': content_index,
+                'part': part_for_added,
+            }
+        )
 
         if ctype == 'output_text':
             text = cpart.get('text', '') or ''
@@ -161,26 +163,32 @@ async def _emit_message_content(
         elif ctype == 'refusal':
             refusal = cpart.get('refusal', '') or ''
             for chunk in iter_chunks(refusal, TEXT_CHUNK):
-                yield frame_fn('response.refusal.delta', {
+                yield frame_fn(
+                    'response.refusal.delta', {
+                        'item_id': item_id,
+                        'output_index': output_index,
+                        'content_index': content_index,
+                        'delta': chunk,
+                    }
+                )
+                await asyncio.sleep(0)
+            yield frame_fn(
+                'response.refusal.done', {
                     'item_id': item_id,
                     'output_index': output_index,
                     'content_index': content_index,
-                    'delta': chunk,
-                })
-                await asyncio.sleep(0)
-            yield frame_fn('response.refusal.done', {
+                    'refusal': refusal,
+                }
+            )
+
+        yield frame_fn(
+            'response.content_part.done', {
                 'item_id': item_id,
                 'output_index': output_index,
                 'content_index': content_index,
-                'refusal': refusal,
-            })
-
-        yield frame_fn('response.content_part.done', {
-            'item_id': item_id,
-            'output_index': output_index,
-            'content_index': content_index,
-            'part': cpart,
-        })
+                'part': cpart,
+            }
+        )
 
 
 async def _emit_function_call(
@@ -191,17 +199,21 @@ async def _emit_function_call(
 ) -> AsyncIterator[bytes]:
     args = item.get('arguments', '') or ''
     for chunk in iter_chunks(args, _FUNCTION_ARG_CHUNK):
-        yield frame_fn('response.function_call_arguments.delta', {
+        yield frame_fn(
+            'response.function_call_arguments.delta', {
+                'item_id': item_id,
+                'output_index': output_index,
+                'delta': chunk,
+            }
+        )
+        await asyncio.sleep(0)
+    yield frame_fn(
+        'response.function_call_arguments.done', {
             'item_id': item_id,
             'output_index': output_index,
-            'delta': chunk,
-        })
-        await asyncio.sleep(0)
-    yield frame_fn('response.function_call_arguments.done', {
-        'item_id': item_id,
-        'output_index': output_index,
-        'arguments': args,
-    })
+            'arguments': args,
+        }
+    )
 
 
 async def _emit_reasoning(
@@ -211,12 +223,14 @@ async def _emit_reasoning(
     frame_fn,
 ) -> AsyncIterator[bytes]:
     for summary_index, summary in enumerate(item.get('summary') or []):
-        yield frame_fn('response.reasoning_summary_part.added', {
-            'item_id': item_id,
-            'output_index': output_index,
-            'summary_index': summary_index,
-            'part': summary,
-        })
+        yield frame_fn(
+            'response.reasoning_summary_part.added', {
+                'item_id': item_id,
+                'output_index': output_index,
+                'summary_index': summary_index,
+                'part': summary,
+            }
+        )
         if summary.get('type') == 'summary_text':
             text = summary.get('text', '') or ''
             for chunk in iter_chunks(text, TEXT_CHUNK):
@@ -229,18 +243,22 @@ async def _emit_reasoning(
                     }
                 )
                 await asyncio.sleep(0)
-            yield frame_fn('response.reasoning_summary_text.done', {
+            yield frame_fn(
+                'response.reasoning_summary_text.done', {
+                    'item_id': item_id,
+                    'output_index': output_index,
+                    'summary_index': summary_index,
+                    'text': text,
+                }
+            )
+        yield frame_fn(
+            'response.reasoning_summary_part.done', {
                 'item_id': item_id,
                 'output_index': output_index,
                 'summary_index': summary_index,
-                'text': text,
-            })
-        yield frame_fn('response.reasoning_summary_part.done', {
-            'item_id': item_id,
-            'output_index': output_index,
-            'summary_index': summary_index,
-            'part': summary,
-        })
+                'part': summary,
+            }
+        )
 
 
 __all__ = ['stream_responses_payload']

@@ -18,9 +18,8 @@ covers reasoning translation.
 """
 
 import os
-import shutil
-
 import pytest
+import shutil
 
 from evalscope.agent.external import ExternalAgentConfig
 from evalscope.agent.external.adapter import run_external_agent
@@ -81,11 +80,10 @@ def test_codex_exec_through_bridge_responses_to_qwen3_max():
     sample = Sample(input='What is 6 * 7? Reply with just the number.', target='42', id=1)
     config = ExternalAgentConfig(
         framework='codex',
-        kwargs={
-            'model_name': TARGET_MODEL,
-            'sandbox': 'workspace-write',
-            'yolo': True,
-        },
+        # Defaults cover everything: sandbox=workspace-write hardcoded,
+        # non-interactive always on, model_name auto-inherited from
+        # the Model passed to run_external_agent.
+        kwargs={},
         environment='local',
         timeout=180.0,
     )

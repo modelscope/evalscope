@@ -1,12 +1,19 @@
-"""End-to-end walking-skeleton test for the external-agent bridge.
+"""End-to-end walking-skeleton tests for the external-agent bridge.
 
 Builds a real aiohttp bridge on a random port, points the embedded
 :class:`MockAgentRunner` at it via ``LocalAgentEnvironment``, and asserts
 the round-trip (agent → bridge → MockLLM → bridge → agent → adapter)
 produces the expected ``InferenceResult`` and a populated
 :class:`AgentTrace`.
+
+Also covers:
+* Config-level validation (unknown framework name → fail-fast)
+* Auth rejection (unknown trial token → 401)
+* Anthropic SDK streaming round-trip — verifies the synthesized SSE
+  event sequence is parseable by the official ``anthropic`` client.
 """
 
+import anthropic
 import asyncio
 import pytest
 
@@ -107,3 +114,46 @@ def test_bridge_rejects_unknown_trial_token(tmp_path):
 
     status = AsyncioLoopRunner.run(_go())
     assert status == 401
+
+
+def test_anthropic_sdk_streaming_round_trip():
+    """Synthesized Anthropic SSE events must round-trip through the official
+    ``anthropic.AsyncAnthropic`` client: full event sequence parses cleanly
+    and text deltas reassemble to the original assistant content."""
+    expected = 'streamed answer: 42' * 3  # spans multiple text_delta chunks
+
+    async def _go() -> tuple[set, str]:
+        model = _build_mock_model(expected)
+        proxy = await ModelProxyServer.get_or_start()
+        async with proxy.trial_session(model=model, framework='mock') as session:
+            client = anthropic.AsyncAnthropic(
+                base_url=f'{proxy.base_url}/anthropic',
+                auth_token=session.token,
+            )
+            event_types: set = set()
+            collected_text = ''
+            async with client.messages.stream(
+                model='mock-claude',
+                max_tokens=256,
+                messages=[{'role': 'user', 'content': 'streaming?'}],
+            ) as stream:
+                async for event in stream:
+                    etype = getattr(event, 'type', None)
+                    if etype:
+                        event_types.add(etype)
+                    if etype == 'content_block_delta' and hasattr(event.delta, 'text'):
+                        collected_text += event.delta.text
+            await client.close()
+            return event_types, collected_text
+
+    event_types, collected_text = AsyncioLoopRunner.run(_go())
+    for expected_event in (
+        'message_start',
+        'content_block_start',
+        'content_block_delta',
+        'content_block_stop',
+        'message_delta',
+        'message_stop',
+    ):
+        assert expected_event in event_types, f'missing SSE event: {expected_event}'
+    assert collected_text == expected

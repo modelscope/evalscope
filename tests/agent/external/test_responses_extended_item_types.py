@@ -15,11 +15,10 @@ in the other test files.
 """
 
 import logging
-
 import pytest
 
 from evalscope.agent.external.bridge.translate_responses import responses_request_to_messages
-from evalscope.api.messages import ChatMessageAssistant, ChatMessageTool, ContentReasoning, ContentText
+from evalscope.api.messages import ChatMessageAssistant, ChatMessageTool, ContentText
 
 
 @pytest.fixture
@@ -135,31 +134,6 @@ def test_builtin_tool_call_items_render_as_placeholder_text():
     assert 'mc_001' in joined
     assert "server_label='demo-server'" in joined
     assert "name='lookup'" in joined
-
-
-def test_reasoning_then_message_keeps_reasoning_in_front_of_text():
-    body = {
-        'input': [
-            {'type': 'message', 'role': 'user', 'content': [{'type': 'input_text', 'text': 'why?'}]},
-            {
-                'type': 'reasoning',
-                'summary': [{'type': 'summary_text', 'text': 'because of physics'}],
-            },
-            {
-                'type': 'message',
-                'role': 'assistant',
-                'content': [{'type': 'output_text', 'text': 'the answer is 42'}],
-            },
-        ],
-    }
-    messages = responses_request_to_messages(body)
-    assert [m.role for m in messages] == ['user', 'assistant']
-    assistant = messages[1]
-    assert isinstance(assistant.content, list)
-    types = [type(b).__name__ for b in assistant.content]
-    assert types == ['ContentReasoning', 'ContentText']
-    assert assistant.content[0].reasoning == 'because of physics'
-    assert assistant.content[1].text == 'the answer is 42'
 
 
 def test_item_reference_logs_warning_and_drops(caplog_evalscope):

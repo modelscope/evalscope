@@ -46,10 +46,7 @@ def main() -> int:
             'framework': 'claude-code',
             'environment': 'enclave',
             'timeout': 1800.0,
-            'kwargs': {
-                'model_name': target_model,
-                'install_node': True,
-            },
+            'kwargs': {},
         },
         eval_batch_size=1,
         limit=1,

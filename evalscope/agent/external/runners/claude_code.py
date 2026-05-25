@@ -48,6 +48,9 @@ class ClaudeCodeRunner(AgentRunner):
       logged-in OAuth token from the host keychain and bypass the bridge.
       Pass an explicit path to reuse user settings, or ``''`` to inherit
       the parent shell's ``HOME``.
+    * ``auto_install`` — when True (default), apt+nodesource+npm installs
+      Node.js + ``@anthropic-ai/claude-code`` if ``claude --version``
+      fails on probe. Set False for pre-baked images.
     """
 
     framework: str = 'claude-code'
@@ -66,7 +69,7 @@ class ClaudeCodeRunner(AgentRunner):
         bare: bool = False,
         extra_args: Optional[List[str]] = None,
         home_override: Optional[str] = None,
-        install_node: bool = True,
+        auto_install: bool = True,
         node_setup_url: str = 'https://deb.nodesource.com/setup_20.x',
         npm_package: str = '@anthropic-ai/claude-code',
         **_: Any,
@@ -78,7 +81,7 @@ class ClaudeCodeRunner(AgentRunner):
         self._bare = bare
         self._extra_args = list(extra_args or [])
         self._home_override = home_override
-        self._install_node = install_node
+        self._auto_install = auto_install
         self._node_setup_url = node_setup_url
         self._npm_package = npm_package
 
@@ -87,21 +90,21 @@ class ClaudeCodeRunner(AgentRunner):
 
         First probes ``claude --version``; if the binary is already on
         PATH (pre-baked image case) we are done. Otherwise — and only
-        when ``install_node=True`` — install Node.js + the
+        when ``auto_install=True`` — install Node.js + the
         ``@anthropic-ai/claude-code`` npm package via apt + nodesource.
 
         The install path targets Debian / Ubuntu derivatives (covers
         SWE-bench / SWE-bench_Pro images). Non-apt images (Alpine,
         rhel-family) need either a pre-baked claude binary or
-        ``install_node=False`` plus a custom prep step, and will surface
+        ``auto_install=False`` plus a custom prep step, and will surface
         a clear error from this method rather than silently mis-running.
         """
         if await self._claude_present(env):
             return
-        if not self._install_node:
+        if not self._auto_install:
             raise RuntimeError(
-                'claude CLI not found in the agent environment and install_node=False. '
-                'Either bake claude-code into the image or pass install_node=True.'
+                'claude CLI not found in the agent environment and auto_install=False. '
+                'Either bake claude-code into the image or pass auto_install=True.'
             )
         await self._install_claude_code(env)
         if not await self._claude_present(env):

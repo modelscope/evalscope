@@ -305,61 +305,45 @@ class BridgeTraceRecorder:
             out.append((entry.get('tool_call_id'), text, False))
         return out
 
-    @staticmethod
-    def _extract_responses_tool_results(items: List[Any]) -> List[tuple]:
-        """Surface tail ``*_call_output`` entries from a Responses ``input[]``
-        array — they're the tool-call observations the agent fed back from
-        the previous turn.
+    def _extract_responses_tool_results(self, items: List[Any]) -> List[tuple]:
+        """Return ``*_call_output`` entries that haven't been recorded yet.
 
-        Recognised output types: ``function_call_output``,
-        ``custom_tool_call_output``, ``computer_call_output``,
-        ``local_shell_call_output`` (must match the
-        ``_TOOL_OUTPUT_ITEM_TYPES`` set in :mod:`translate_responses`).
+        codex re-sends the **entire** transcript on every turn — each
+        ``(function_call, function_call_output)`` pair stays wherever it
+        originally appeared, NOT clumped at the tail. So we can't use the
+        anthropic / openai-chat tail-only shortcut; instead we scan the
+        whole list and dedup against ``self._messages`` (every previously
+        recorded tool result is a :class:`ChatMessageTool` carrying its
+        ``tool_call_id``).
 
-        Walks backwards collecting consecutive output items; stops at the
-        first non-output item. If an output item appears *mid-input[]* (not
-        in the tail), emits a single WARN — that's a signal the agent's
-        message ordering doesn't match our tail-only assumption and the
-        TOOL_RESULT trace event will be missing for that observation.
-
-        ``is_error`` is always ``False`` (Responses spec has no structured
-        error flag, parity with the openai chat path).
+        Recognised output types must match the ``_TOOL_OUTPUT_ITEM_TYPES``
+        set in :mod:`translate_responses`. ``is_error`` is always ``False``
+        (Responses spec has no structured error flag, parity with the
+        openai chat path).
         """
         if not items:
             return []
-        # Set duplicated to avoid a circular import from translate_responses.
         OUTPUT_TYPES = {
             'function_call_output',
             'custom_tool_call_output',
             'computer_call_output',
             'local_shell_call_output',
         }
-        tail: List[Dict[str, Any]] = []
-        cut_idx = len(items)
-        for i in range(len(items) - 1, -1, -1):
-            entry = items[i]
+        already_recorded = {
+            m.tool_call_id
+            for m in self._messages
+            if isinstance(m, ChatMessageTool) and m.tool_call_id is not None
+        }
+        new_entries: List[Dict[str, Any]] = []
+        for entry in items:
             if not isinstance(entry, dict) or entry.get('type') not in OUTPUT_TYPES:
-                cut_idx = i + 1
-                break
-            tail.append(entry)
-        else:
-            cut_idx = 0
-        tail.reverse()
-        # Mid-stream tool outputs (anything in items[:cut_idx] with an output type)
-        # are silently dropped from this turn's TOOL_RESULT events — warn once.
-        for entry in items[:cut_idx]:
-            if isinstance(entry, dict) and entry.get('type') in OUTPUT_TYPES:
-                logger.warning(
-                    f'bridge.trace: Responses input[] contains a *_call_output item '
-                    f'(call_id={entry.get("call_id")!r}, type={entry.get("type")!r}) '
-                    f'NOT in the tail; TOOL_RESULT event will be missing from the trace '
-                    f'for this observation. This indicates the agent re-ordered messages '
-                    f'in a way the bridge does not yet handle.'
-                )
-                break  # one warning per turn is enough
+                continue
+            if entry.get('call_id') in already_recorded or entry.get('call_id') is None:
+                continue
+            new_entries.append(entry)
 
         out: List[tuple] = []
-        for entry in tail:
+        for entry in new_entries:
             raw_output = entry.get('output', '')
             if isinstance(raw_output, dict):
                 # computer_call_output.output is typically {'image_url': '...'}.

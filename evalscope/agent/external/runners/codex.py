@@ -26,34 +26,52 @@ from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask
 
 logger = get_logger()
 
+#: codex writes its final assistant message here; the runner reads it back.
+#: Hard-coded — implementation detail, never exposed as a kwarg. If a future
+#: sandbox forbids writes to /tmp, switch this constant in lockstep with the
+#: caller side and add a kwarg.
+_CODEX_OUTPUT_FILE = '/tmp/evalscope-codex-last.txt'
+
+#: codex sandbox mode used by the runner. ``workspace-write`` lets codex
+#: edit files under its CWD + run shell commands while still blocking writes
+#: outside the workspace — safe default for both Local and Enclave runs.
+#: ``danger-full-access`` would lift all in-process limits, which is unsafe
+#: for ``LocalAgentEnvironment`` (codex would have full host access). Bench
+#: cases that genuinely need full access can be re-introduced behind an
+#: explicit kwarg later; PR2 SWE-bench Pro verified ``workspace-write`` is
+#: sufficient for ``apply_patch`` + ``exec_command``.
+_CODEX_SANDBOX_MODE = 'workspace-write'
+
 
 @register_runner('codex')
 class CodexRunner(AgentRunner):
     """Drive ``codex exec`` for one sample.
 
-    Kwargs forwarded from ``ExternalAgentConfig.kwargs``:
+    Kwargs forwarded from ``ExternalAgentConfig.kwargs`` (all optional —
+    pass an empty ``kwargs={}`` for the default behaviour):
 
-    * ``model_name``  — model id the bridge dials. Forwarded both as
-      codex ``model=`` config and inside the request body.
-    * ``sandbox``     — codex sandbox mode (``read-only`` /
-      ``workspace-write`` / ``danger-full-access``). Default
-      ``workspace-write`` matches claude-code's effective scope.
-    * ``yolo``        — when True (default), passes
-      ``--dangerously-bypass-approvals-and-sandbox`` so codex doesn't
-      prompt mid-run.
+    * ``model_name``  — model id the bridge dials. Defaults to the model
+      configured on :class:`TaskConfig` (the adapter auto-injects it).
+      Override only when you want codex to advertise a different model
+      string than evalscope-side ``Model``.
     * ``extra_args``  — verbatim args appended before the prompt
       positional.
-    * ``extra_config`` — additional ``-c key=value`` overrides
+    * ``extra_config`` — additional ``-c key=value`` codex overrides
       (already-quoted TOML values).
     * ``home_override`` — optional ``HOME`` path. Defaults to a fresh
       per-run tempdir so codex cannot reuse a logged-in token from the
       host keychain (mirrors :class:`ClaudeCodeRunner`'s default).
-    * ``output_last_message_path`` — file codex writes the final
-      assistant message to (``--output-last-message``). Default
-      ``/tmp/evalscope-codex-last.txt``; override if the sandbox does
-      not permit writes to ``/tmp``.
-    * ``install_codex`` — when True (default), apt+nodesource+npm
-      installs ``@openai/codex`` if ``codex --version`` fails on probe.
+    * ``auto_install`` — when True (default), apt+nodesource+npm installs
+      ``@openai/codex`` if ``codex --version`` fails on probe. Set False
+      for pre-baked images.
+
+    Hard-coded for safety / simplicity (not exposed as kwargs):
+
+    * Sandbox mode = ``workspace-write`` (safe for both Local and
+      Enclave; sufficient for SWE-bench Pro per PR2 verification)
+    * ``--dangerously-bypass-approvals-and-sandbox`` always set
+      (evalscope is batch-only; interactive prompts have no operator)
+    * Final answer file = ``/tmp/evalscope-codex-last.txt``
     """
 
     framework: str = 'codex'
@@ -65,25 +83,19 @@ class CodexRunner(AgentRunner):
         self,
         *,
         model_name: str = '',
-        sandbox: str = 'workspace-write',
-        yolo: bool = True,
         extra_args: Optional[List[str]] = None,
         extra_config: Optional[Dict[str, str]] = None,
         home_override: Optional[str] = None,
-        output_last_message_path: str = '/tmp/evalscope-codex-last.txt',
-        install_codex: bool = True,
+        auto_install: bool = True,
         node_setup_url: str = 'https://deb.nodesource.com/setup_20.x',
         npm_package: str = '@openai/codex',
         **_: Any,
     ) -> None:
         self._model_name = model_name
-        self._sandbox = sandbox
-        self._yolo = yolo
         self._extra_args = list(extra_args or [])
         self._extra_config = dict(extra_config or {})
         self._home_override = home_override
-        self._output_last_message_path = output_last_message_path
-        self._install_codex = install_codex
+        self._auto_install = auto_install
         self._node_setup_url = node_setup_url
         self._npm_package = npm_package
 
@@ -94,10 +106,10 @@ class CodexRunner(AgentRunner):
     async def setup(self, env: AgentEnvironment) -> None:
         if await self._codex_present(env):
             return
-        if not self._install_codex:
+        if not self._auto_install:
             raise RuntimeError(
-                'codex CLI not found in the agent environment and install_codex=False. '
-                'Either bake codex into the image or pass install_codex=True.'
+                'codex CLI not found in the agent environment and auto_install=False. '
+                'Either bake codex into the image or pass auto_install=True.'
             )
         await self._install_codex_cli(env)
         if not await self._codex_present(env):
@@ -211,10 +223,11 @@ class CodexRunner(AgentRunner):
         cmd: List[str] = ['codex', 'exec']
         for pair in config_pairs:
             cmd.extend(['-c', pair])
-        cmd.extend(['--sandbox', self._sandbox])
-        if self._yolo:
-            cmd.append('--dangerously-bypass-approvals-and-sandbox')
-        cmd.extend(['--output-last-message', self._output_last_message_path])
+        cmd.extend(['--sandbox', _CODEX_SANDBOX_MODE])
+        # Always non-interactive: evalscope is a batch harness, there is no
+        # operator to answer codex's permission prompts.
+        cmd.append('--dangerously-bypass-approvals-and-sandbox')
+        cmd.extend(['--output-last-message', _CODEX_OUTPUT_FILE])
         cmd.extend(self._extra_args)
         # Positional prompt avoids the Enclave stdin gap (ms_enclave's
         # shell_executor does not pipe stdin to the child process).
@@ -235,9 +248,7 @@ class CodexRunner(AgentRunner):
             f'timed_out={result.timed_out}'
         )
         if result.timed_out:
-            raise RunnerTimeoutError(
-                f'codex timed out after {task.timeout}s (returncode={result.returncode})'
-            )
+            raise RunnerTimeoutError(f'codex timed out after {task.timeout}s (returncode={result.returncode})')
         if result.returncode != 0:
             tail_stderr = (result.stderr or '').strip()[-2000:]
             raise RuntimeError(f'codex exited with code {result.returncode}: {tail_stderr}')
@@ -247,11 +258,11 @@ class CodexRunner(AgentRunner):
         # arbitrary file reads. ``|| true`` so a missing file (codex
         # never produced a final message) yields empty rather than a
         # spurious non-zero exit.
-        cat = await env.exec(['bash', '-c', f'cat {self._output_last_message_path} 2>/dev/null || true'])
+        cat = await env.exec(['bash', '-c', f'cat {_CODEX_OUTPUT_FILE} 2>/dev/null || true'])
         output = cat.stdout.strip()
         if not output:
             logger.warning(
-                f'codex: --output-last-message file {self._output_last_message_path!r} '
+                f'codex: --output-last-message file {_CODEX_OUTPUT_FILE!r} '
                 f'empty or unreadable; final answer extraction may fail downstream'
             )
         return AgentRunResult(
