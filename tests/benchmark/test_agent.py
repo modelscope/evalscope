@@ -110,6 +110,21 @@ class TestAgentBenchmark(TestBenchmark):
             ),
         )
 
+    def test_gaia(self):
+        """Test GAIA benchmark using docker environment with react + bash."""
+        dataset_args = {
+            'subset_list': ['2023_level1', '2023_level2', '2023_level3'],
+            'extra_params': {
+                'max_steps': 50,
+                'command_timeout': 180.0,
+                'docker_image': 'python:3.11',
+                'network_enabled': True,
+            }
+        }
+        # Long bash outputs can occasionally exceed the model's input length on
+        # level 3 questions; let the rest of the run finish when that happens.
+        self._run_dataset_test('gaia', dataset_args, limit=5, ignore_errors=True)
+
     def test_swe_bench_verified_agentic_backticks(self):
         """Test SWE-bench-verified agentic dataset with backticks protocol."""
         dataset_args = {
