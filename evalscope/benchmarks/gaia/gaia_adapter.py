@@ -33,7 +33,6 @@ from evalscope.api.registry import get_strategy, register_benchmark
 from evalscope.constants import HubType, Tags
 from evalscope.utils.import_utils import is_build_doc
 from evalscope.utils.logger import get_logger
-
 from .scorer import question_scorer
 
 logger = get_logger()
@@ -265,5 +264,3 @@ class GaiaAdapter(AgentLoopAdapter):
             explanation=explanation,
             metadata={'target': target},
         )
-
-

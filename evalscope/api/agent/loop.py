@@ -86,6 +86,17 @@ class AgentLoop:
             ctx.messages.append(assistant_msg)
             self._emit_generate(ctx, assistant_msg, output, latency_ms)
 
+            # ---- terminate on model context overflow ----
+            # Provider layer (openai_handle_bad_request / anthropic_handle_bad_request)
+            # converts BadRequestError → stop_reason='model_length' instead of raising;
+            # we surface that here as a graceful loop end so the rest of the
+            # evaluation continues. Compaction / message-trimming recovery
+            # (cf. inspect_ai's _handle_overflow) is intentionally out of scope.
+            if output.stop_reason == 'model_length':
+                self._emit_context_overflow(ctx)
+                terminated_by_strategy = True
+                break
+
             # ---- parse ----
             parsed = self.strategy.parse_output(output, ctx)
             if parsed.error:
@@ -364,6 +375,22 @@ class AgentLoop:
             payload={
                 'source': TraceSources.LOOP,
                 'message': LoopMessages.MAX_STEPS_EXCEEDED,
+            },
+        )
+
+    def _emit_context_overflow(self, ctx: AgentContext) -> None:
+        logger.warning(
+            f'AgentLoop sample={ctx.sample_id} step={ctx.step}: '
+            'model context window exceeded; terminating gracefully.'
+        )
+        if logger.isEnabledFor(logging.DEBUG):
+            self._dbg(ctx, f'context_overflow total_messages={len(ctx.messages)}')
+        self.trace.add_event(
+            step=ctx.step,
+            type=EventType.ERROR,
+            payload={
+                'source': TraceSources.LOOP,
+                'message': LoopMessages.MODEL_CONTEXT_OVERFLOW,
             },
         )
 

@@ -121,9 +121,7 @@ class TestAgentBenchmark(TestBenchmark):
                 'network_enabled': True,
             }
         }
-        # Long bash outputs can occasionally exceed the model's input length on
-        # level 3 questions; let the rest of the run finish when that happens.
-        self._run_dataset_test('gaia', dataset_args, limit=5, ignore_errors=True)
+        self._run_dataset_test('gaia', dataset_args, limit=1)
 
     def test_swe_bench_verified_agentic_backticks(self):
         """Test SWE-bench-verified agentic dataset with backticks protocol."""
