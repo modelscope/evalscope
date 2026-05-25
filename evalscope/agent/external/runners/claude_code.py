@@ -51,12 +51,16 @@ class ClaudeCodeRunner(AgentRunner):
     * ``auto_install`` — when True (default), apt+nodesource+npm installs
       Node.js + ``@anthropic-ai/claude-code`` if ``claude --version``
       fails on probe. Set False for pre-baked images.
+    * ``install_timeout_s`` — per-step wall-clock budget (default 300s)
+      for the apt / nodesource / npm install commands. Bump on slow
+      networks or when the npm registry / GitHub CDN is rate-limiting.
     """
 
     framework: str = 'claude-code'
 
-    #: Wall-clock budget (seconds) per install step. Cold apt+nodesource
-    #: can take 2+ min; past this, assume the image is broken.
+    #: Default wall-clock budget (seconds) per install step. Cold apt+nodesource
+    #: can take 2+ min; past this, assume the image is broken. Overridable
+    #: per-instance via the ``install_timeout_s`` kwarg.
     _INSTALL_TIMEOUT_S: float = 300.0
 
     def __init__(
@@ -70,6 +74,7 @@ class ClaudeCodeRunner(AgentRunner):
         extra_args: Optional[List[str]] = None,
         home_override: Optional[str] = None,
         auto_install: bool = True,
+        install_timeout_s: float = _INSTALL_TIMEOUT_S,
         node_setup_url: str = 'https://deb.nodesource.com/setup_20.x',
         npm_package: str = '@anthropic-ai/claude-code',
         **_: Any,
@@ -82,6 +87,7 @@ class ClaudeCodeRunner(AgentRunner):
         self._extra_args = list(extra_args or [])
         self._home_override = home_override
         self._auto_install = auto_install
+        self._install_timeout_s = install_timeout_s
         self._node_setup_url = node_setup_url
         self._npm_package = npm_package
 
@@ -139,7 +145,7 @@ class ClaudeCodeRunner(AgentRunner):
         # Discard npm's stdout (multi-MB on cold installs); keep stderr for diagnostics.
         npm = await env.exec(
             ['bash', '-c', f'set -e; npm install -g --no-fund --no-audit {self._npm_package} >/dev/null'],
-            timeout=self._INSTALL_TIMEOUT_S,
+            timeout=self._install_timeout_s,
         )
         if npm.returncode != 0:
             raise RuntimeError(
@@ -171,7 +177,7 @@ class ClaudeCodeRunner(AgentRunner):
                 'apt-get update -qq && '
                 'apt-get install -y --no-install-recommends curl ca-certificates gnupg'
             ],
-            timeout=self._INSTALL_TIMEOUT_S,
+            timeout=self._install_timeout_s,
         )
         if prep.returncode != 0:
             raise RuntimeError(
@@ -187,7 +193,7 @@ class ClaudeCodeRunner(AgentRunner):
                 f'curl -fsSL {self._node_setup_url} | bash - && '
                 'apt-get install -y --no-install-recommends nodejs'
             ],
-            timeout=self._INSTALL_TIMEOUT_S,
+            timeout=self._install_timeout_s,
         )
         if node.returncode != 0:
             raise RuntimeError(

@@ -1,0 +1,134 @@
+# 内置 AgentLoop 模式
+
+让常规基准(GSM8K、AIME、IFEval、SWE-bench 等)变成**多轮工具调用**任务,评测模型自身的工具使用与多步推理能力。EvalScope 在每一轮执行 **生成 → 解析 → 调用工具 → 观察 → 再生成**,直到模型提交最终答案或达到步数上限,整个轨迹记录到 `AgentTrace` 用于 [可视化回放](index.md#trace-可视化)。
+
+> 想直接评测 Claude Code / Codex 等成品 Agent CLI,请参见 [外部 Agent Bridge 模式](bridge.md)。
+
+## 何时使用
+
+- 评测模型在数学题中是否会正确调用 `python_exec` 验证计算
+- 让模型在 ReAct 模式下使用 `bash` 工具自主探索
+- 在 SWE-bench 等代码修复基准上测试模型的多步交互能力
+
+## 快速开始
+
+最小可运行示例:让 qwen-plus 在求解 GSM8K 时通过 `python_exec` 验证计算。
+
+```python
+from evalscope import TaskConfig, run_task
+from evalscope.api.agent import AgentConfig
+
+task_config = TaskConfig(
+    model='qwen-plus',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key='<your-key>',
+    eval_type='openai_api',
+    datasets=['gsm8k'],
+    limit=5,
+    generation_config={'parallel_tool_calls': True},
+    agent_config=AgentConfig(
+        strategy='function_calling',
+        tools=['python_exec'],
+        environment='docker',
+        environment_extra={'image': 'python:3.11-slim'},
+        max_steps=5,
+        extra={'system_prompt': 'Use python_exec to verify your calculations.'},
+    ),
+)
+run_task(task_config)
+```
+
+EvalScope 自动给模型注入 `python_exec` 工具定义,在 Docker 容器里执行模型生成的 Python 代码,把 stdout/stderr 作为观察回填给模型,直到模型用 `submit` 工具提交答案。
+
+## 三个核心组件
+
+每次 AgentLoop 都由这三块拼成,在 `AgentConfig` 中分别配置:
+
+**Strategy** — 控制模型与循环的交互方式:
+
+| 名称 | 适用 |
+|------|------|
+| `function_calling`(默认) | 模型支持原生 function-calling 时使用 |
+| `react` | ReAct 风格,推理优先,适合让模型先思考再行动 |
+| `swe_bench_toolcall` | SWE-bench 工具调用协议(模型支持 function-calling) |
+| `swe_bench_backticks` | SWE-bench 反引号文本协议(模型不支持 function-calling) |
+
+**Tools** — 模型可用的能力白名单:
+
+| 名称 | 说明 |
+|------|------|
+| `bash` | 执行 shell 命令 |
+| `python_exec` | 执行 Python 代码 |
+| `submit` | 提交最终答案(`function_calling` / `react` 自动注入,无需手动配置) |
+
+**Environment** — 工具实际跑在哪:
+
+| 名称 | 说明 |
+|------|------|
+| `local` | 本地子进程,无文件系统隔离,**仅推荐开发调试** |
+| `docker` | 基于 [ms-enclave](https://github.com/modelscope/ms-enclave) 的容器,生产推荐 |
+
+## 常用配置
+
+`AgentConfig` 常用字段:
+
+| 字段 | 说明 | 推荐值 |
+|------|------|--------|
+| `strategy` | 选哪种交互协议 | `function_calling`(默认) |
+| `tools` | 工具白名单 | 按需,如 `['python_exec']` / `['bash']` |
+| `environment` | 工具执行环境 | `local`(开发)/ `docker`(生产) |
+| `environment_extra` | 沙箱构造参数 | `docker` 时常用 `{'image': '...', 'timeout': 60}`;详见 [沙箱环境](../sandbox.md) |
+| `max_steps` | 单样本最大轮数 | 数学/QA `5-10`,代码修复 `100+` |
+| `extra` | 策略相关参数 | 最常用 `{'system_prompt': '...'}` 引导模型 |
+
+```{tip}
+- `local` 环境无隔离,生产请改用 `docker`。
+- `agent_config` 也接受字典形式,`TaskConfig` 会自动转成 `AgentConfig`。
+- 启用 `docker` 时复用 [沙箱基础设施](../sandbox.md),可显式 `TaskConfig.sandbox = SandboxTaskConfig(enabled=True, engine='docker')`。
+```
+
+## SWE-bench Agentic 基准
+
+`swe_bench_*_agentic` 系列(`swe_bench_verified_agentic`、`swe_bench_verified_mini_agentic`、`swe_bench_lite_agentic`)是自带 AgentLoop 的基准,**不读取**全局 `agent_config`,所有循环参数通过 `dataset_args.extra_params` 传入。
+
+```python
+task_config = TaskConfig(
+    model='qwen-plus',
+    api_url='...',
+    api_key='...',
+    eval_type='openai_api',
+    datasets=['swe_bench_verified_mini_agentic'],
+    dataset_args={
+        'swe_bench_verified_mini_agentic': {
+            'extra_params': {
+                'action_protocol': 'toolcall',  # 或 'backticks'(模型不支持 function-calling 时)
+                'max_steps': 250,
+                'command_timeout': 60.0,
+            },
+        },
+    },
+    limit=3,
+    generation_config={'max_tokens': 4096, 'temperature': 0.0},
+)
+run_task(task_config)
+```
+
+常用 `extra_params`:`action_protocol`、`max_steps`、`command_timeout`、`working_dir`、`build_docker_images`、`pull_remote_images_if_available`、`force_arch`。完整说明见 [SWE-bench 数据集文档](../../third_party/swe_bench.md)。
+
+```{important}
+前置依赖:`pip install evalscope[swe_bench]`,本机已装好 Docker。同时配置了 `agent_config` 也会被**忽略**。
+```
+
+## 常见问题
+
+**模型完全没有调用工具**
+
+1. 检查 `tools` 中的工具名拼写。
+2. 确认模型支持 function-calling;不支持的可换 `swe_bench_backticks` 等文本协议。
+3. 查看 `agent_trace.events` 是否出现 `nudge`(系统已提醒模型调用工具)或 `error`(解析 / 执行报错)。
+4. 用 `extra={'system_prompt': '...'}` 显式要求模型调用某个工具。
+
+**`max_steps` 应该设多大**
+
+- 数学 / 简单 QA:`3`–`10` 通常够用。
+- 代码修复 / SWE-bench 类:沿用默认 `250`,过低会大量出现 `max_steps_exceeded`。

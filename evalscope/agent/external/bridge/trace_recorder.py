@@ -22,7 +22,13 @@ import threading
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.agent.trace import AgentTrace, EventType
-from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessageTool, ChatMessageUser
+from evalscope.api.messages import (
+    ChatMessage,
+    ChatMessageAssistant,
+    ChatMessageSystem,
+    ChatMessageTool,
+    ChatMessageUser,
+)
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolCallError, ToolFunction
 from evalscope.utils.logger import get_logger
@@ -52,7 +58,6 @@ class BridgeTraceRecorder:
         self._model_name = model_name
         self._step = -1
         self._messages: List[ChatMessage] = []
-        self._seen_first_user = False
 
     @property
     def current_step(self) -> int:
@@ -132,7 +137,7 @@ class BridgeTraceRecorder:
         ``'input'`` for openai responses.
         """
         with self._lock:
-            self._ingest_initial_user_message(request_body, messages_key=messages_key)
+            self._ingest_initial_messages(request_body, messages_key=messages_key)
 
             tool_results = extract_tool_results(request_body.get(messages_key) or [])
             if tool_results:
@@ -240,38 +245,58 @@ class BridgeTraceRecorder:
     # Internals
     # ------------------------------------------------------------------
 
-    def _ingest_initial_user_message(
+    def _ingest_initial_messages(
         self,
         request_body: Dict[str, Any],
         *,
         messages_key: str = 'messages',
     ) -> None:
-        """Capture the very first user prompt the agent sent — used for
-        the messages() transcript so downstream consumers see the original
-        instruction, not just observations + assistant turns.
+        """Capture every initial context message the agent sent on its very
+        first turn — top-level ``instructions``, all ``role: system /
+        developer`` items, AND **all** ``role: user`` items, in document
+        order — so the transcript shows the full setup downstream consumers
+        need (the model itself sees all of it).
 
-        Shared by anthropic / openai chat / openai responses paths.
-        Responses ``input[]`` items carry a ``type`` discriminator (``message``
-        / ``function_call`` / ``function_call_output`` / ``reasoning``);
-        chat-style ``messages[]`` items don't. Entries with a ``type`` that
-        isn't ``'message'`` are skipped so we never mis-ingest a
-        ``function_call_output`` as a user prompt.
+        Why "all user items", not just the first one: codex splits its
+        initial prompt across multiple ``role: 'user'`` messages, e.g.
+
+        * ``input[1]`` = auto-discovered ``AGENTS.md`` + environment context
+        * ``input[2]`` = the actual task description (positional argv prompt)
+
+        Capturing only the first user item drops the task description from
+        the transcript — exactly the SWE-bench Pro symptom that motivated
+        this rewrite. Subsequent turns re-send the same initial messages
+        plus tool calls + results; we use ``self._step == -1`` to detect
+        "still on the first turn" and skip on every later request.
+
+        Responses ``input[]`` items carry a ``type`` discriminator
+        (``message`` / ``function_call`` / ``function_call_output`` /
+        ``reasoning``); chat-style ``messages[]`` items don't. Entries
+        with a non-``'message'`` ``type`` are skipped — those are tool
+        calls / reasoning, not initial setup. ``role: 'assistant'``
+        message items are also skipped: model output is captured from
+        :class:`ModelOutput` via :meth:`_build_assistant_message`.
         """
-        if self._seen_first_user:
-            return
+        if self._step >= 0:
+            return  # past the first turn; later requests just re-send history.
+
+        if instr := request_body.get('instructions'):
+            self._messages.append(ChatMessageSystem(content=str(instr)))
+
         for entry in request_body.get(messages_key) or []:
             if not isinstance(entry, dict):
                 continue
             entry_type = entry.get('type')
             if entry_type is not None and entry_type != 'message':
                 continue
-            if entry.get('role') != 'user':
-                continue
+            role = entry.get('role')
             text = _user_text_from_content(entry.get('content'))
-            if text:
+            if not text:
+                continue
+            if role in ('system', 'developer'):
+                self._messages.append(ChatMessageSystem(content=text))
+            elif role == 'user':
                 self._messages.append(ChatMessageUser(content=text))
-                self._seen_first_user = True
-            return
 
     @staticmethod
     def _extract_openai_tool_results(messages: List[Any]) -> List[tuple]:

@@ -161,7 +161,7 @@ The predictions tab allows browsing each sample's detailed prediction results on
 - **Metadata**: A collapsible JSON view showing the sample's additional metadata.
 
 ```{tip}
-When [Agent Evaluation Mode](../user_guides/agent.md) is enabled, the predictions view automatically detects the sample's `agent_trace` and renders an Agent Trace view grouped by `step` (with tool calls, environment commands, nudges, errors, etc.). See [Agent Evaluation → Trace Visualization](../user_guides/agent.md#trace-visualization) for the full description and a screenshot.
+When [Agent Evaluation](../user_guides/agent/index.md) is enabled, the predictions view automatically detects the sample's `agent_trace` and renders an Agent Trace view grouped by `step` (with tool calls, environment commands, nudges, errors, etc.). See [Agent Evaluation → Trace Visualization](../user_guides/agent/index.md#trace-visualization) for the full description and a screenshot.
 ```
 
 #### Dataset Navigation

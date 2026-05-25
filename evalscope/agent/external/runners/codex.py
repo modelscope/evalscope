@@ -64,6 +64,9 @@ class CodexRunner(AgentRunner):
     * ``auto_install`` — when True (default), apt+nodesource+npm installs
       ``@openai/codex`` if ``codex --version`` fails on probe. Set False
       for pre-baked images.
+    * ``install_timeout_s`` — per-step wall-clock budget (default 600s)
+      for the apt / nodesource / npm install commands. Bump on slow
+      networks or when the npm registry / GitHub CDN is rate-limiting.
 
     Hard-coded for safety / simplicity (not exposed as kwargs):
 
@@ -76,8 +79,9 @@ class CodexRunner(AgentRunner):
 
     framework: str = 'codex'
 
-    #: Wall-clock budget (seconds) per install step.
-    _INSTALL_TIMEOUT_S: float = 300.0
+    #: Default wall-clock budget (seconds) per install step. Overridable per-instance
+    #: via the ``install_timeout_s`` kwarg.
+    _INSTALL_TIMEOUT_S: float = 600.0
 
     def __init__(
         self,
@@ -87,6 +91,7 @@ class CodexRunner(AgentRunner):
         extra_config: Optional[Dict[str, str]] = None,
         home_override: Optional[str] = None,
         auto_install: bool = True,
+        install_timeout_s: float = _INSTALL_TIMEOUT_S,
         node_setup_url: str = 'https://deb.nodesource.com/setup_20.x',
         npm_package: str = '@openai/codex',
         **_: Any,
@@ -96,6 +101,7 @@ class CodexRunner(AgentRunner):
         self._extra_config = dict(extra_config or {})
         self._home_override = home_override
         self._auto_install = auto_install
+        self._install_timeout_s = install_timeout_s
         self._node_setup_url = node_setup_url
         self._npm_package = npm_package
 
@@ -137,7 +143,7 @@ class CodexRunner(AgentRunner):
             await self._install_node_via_apt(env)
         npm = await env.exec(
             ['bash', '-c', f'set -e; npm install -g --no-fund --no-audit {self._npm_package} >/dev/null'],
-            timeout=self._INSTALL_TIMEOUT_S,
+            timeout=self._install_timeout_s,
         )
         if npm.returncode != 0:
             raise RuntimeError(
@@ -160,7 +166,7 @@ class CodexRunner(AgentRunner):
                 'apt-get update -qq && '
                 'apt-get install -y --no-install-recommends curl ca-certificates gnupg'
             ],
-            timeout=self._INSTALL_TIMEOUT_S,
+            timeout=self._install_timeout_s,
         )
         if prep.returncode != 0:
             raise RuntimeError(
@@ -175,7 +181,7 @@ class CodexRunner(AgentRunner):
                 f'curl -fsSL {self._node_setup_url} | bash - && '
                 'apt-get install -y --no-install-recommends nodejs'
             ],
-            timeout=self._INSTALL_TIMEOUT_S,
+            timeout=self._install_timeout_s,
         )
         if node.returncode != 0:
             raise RuntimeError(

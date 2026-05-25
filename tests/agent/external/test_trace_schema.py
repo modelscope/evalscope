@@ -9,7 +9,7 @@ import pytest
 
 from evalscope.agent.external.bridge.trace_recorder import BridgeTraceRecorder
 from evalscope.api.agent import AgentTrace, EventType
-from evalscope.api.messages import ChatMessageAssistant, ChatMessageTool, ChatMessageUser
+from evalscope.api.messages import ChatMessageAssistant, ChatMessageSystem, ChatMessageTool, ChatMessageUser
 from evalscope.api.model import ModelOutput, ModelUsage
 from evalscope.api.model.model_output import ChatCompletionChoice
 from evalscope.api.tool import ToolCall, ToolFunction
@@ -116,3 +116,138 @@ def test_run_end_records_error_and_returncode():
     assert end.payload['timed_out'] is True
     assert end.payload['wall_time'] == pytest.approx(12.5)
     assert end.payload['error'] == 'killed by signal'
+
+
+def test_responses_first_turn_ingests_instructions_and_system_before_user():
+    """Responses path: top-level ``instructions`` + embedded ``role:'system'``
+    items must land in the transcript as :class:`ChatMessageSystem` BEFORE the
+    first user message, in document order. Captures the bug where codex was
+    putting the SWE-bench Pro task in ``instructions`` and the recorder
+    silently dropped it (review transcript missing the task description)."""
+    rec = BridgeTraceRecorder(trial_id='t5', framework='codex', model_name='qwen3-max')
+    rec.record_run_start(framework='codex', cmd_summary='CodexRunner')
+    rec.record_responses_turn(
+        request_body={
+            'instructions': '<SWE-bench Pro task description>',
+            'input': [
+                {
+                    'type': 'message',
+                    'role': 'system',
+                    'content': [{'type': 'input_text', 'text': 'extra codex system note'}],
+                },
+                {
+                    'type': 'message',
+                    'role': 'user',
+                    'content': [{'type': 'input_text', 'text': '<environment_context>'}],
+                },
+            ],
+        },
+        output=_output('thinking...', usage=ModelUsage(input_tokens=10, output_tokens=2, total_tokens=12)),
+        latency_ms=1.0,
+    )
+    rec.record_run_end(returncode=0, timed_out=False, wall_time=0.1)
+
+    msgs = rec.messages()
+    roles = [m.role for m in msgs]
+    assert roles == ['system', 'system', 'user', 'assistant']
+    assert isinstance(msgs[0], ChatMessageSystem)
+    assert msgs[0].text == '<SWE-bench Pro task description>'
+    assert isinstance(msgs[1], ChatMessageSystem)
+    assert msgs[1].text == 'extra codex system note'
+    assert msgs[2].text == '<environment_context>'
+
+
+def test_responses_first_turn_ingests_all_user_messages_not_just_first():
+    """codex splits the initial prompt across multiple ``role:'user'``
+    items (AGENTS.md auto-discovery in one, the actual positional-argv
+    task description in another). The transcript must capture **both** —
+    stopping at the first user item drops the task description, which
+    was the SWE-bench Pro symptom that prompted the rewrite."""
+    rec = BridgeTraceRecorder(trial_id='t7', framework='codex')
+    rec.record_run_start(framework='codex', cmd_summary='CodexRunner')
+    rec.record_responses_turn(
+        request_body={
+            'instructions': '<codex system prompt>',
+            'input': [
+                {
+                    'type': 'message',
+                    'role': 'developer',
+                    'content': [{'type': 'input_text', 'text': '<permissions>'}],
+                },
+                {
+                    'type': 'message',
+                    'role': 'user',
+                    'content': [{'type': 'input_text', 'text': 'AGENTS.md + env context'}],
+                },
+                {
+                    'type': 'message',
+                    'role': 'user',
+                    'content': [{'type': 'input_text', 'text': 'What is 6 * 7?'}],
+                },
+            ],
+        },
+        output=_output('42'),
+        latency_ms=1.0,
+    )
+    msgs = rec.messages()
+    assert [m.role for m in msgs] == ['system', 'system', 'user', 'user', 'assistant']
+    assert msgs[0].text == '<codex system prompt>'
+    assert msgs[1].text == '<permissions>'
+    assert msgs[2].text == 'AGENTS.md + env context'
+    assert msgs[3].text == 'What is 6 * 7?'  # the actual task — must survive
+
+
+def test_responses_subsequent_turns_do_not_re_ingest_initial_messages():
+    """codex re-sends the entire initial setup on every turn. The recorder
+    must only ingest it once (on the first turn, gated by ``self._step``)."""
+    rec = BridgeTraceRecorder(trial_id='t8', framework='codex')
+    initial = {
+        'instructions': '<task>',
+        'input': [
+            {'type': 'message', 'role': 'user', 'content': [{'type': 'input_text', 'text': 'hello'}]},
+        ],
+    }
+    rec.record_responses_turn(request_body=initial, output=_output('ok'), latency_ms=1.0)
+    rec.record_responses_turn(
+        # Turn 2: full initial setup re-sent + assistant's prior reply + a new tool result.
+        request_body={
+            'instructions': '<task>',
+            'input': [
+                {'type': 'message', 'role': 'user', 'content': [{'type': 'input_text', 'text': 'hello'}]},
+                {'type': 'function_call_output', 'call_id': 'call-1', 'output': 'tool result'},
+            ],
+        },
+        output=_output('done'),
+        latency_ms=1.0,
+    )
+    msgs = rec.messages()
+    # Initial setup ingested ONCE: system + user. Then assistant, then
+    # tool result, then second assistant.
+    roles = [m.role for m in msgs]
+    assert roles == ['system', 'user', 'assistant', 'tool', 'assistant']
+
+
+def test_responses_first_turn_ingests_instructions_when_user_message_empty():
+    """When codex sends a non-empty ``instructions`` but the first user
+    message is empty (or codex put everything into instructions and only
+    sent ``<environment_context>`` as user), the system message still
+    surfaces in the transcript so downstream consumers see the task."""
+    rec = BridgeTraceRecorder(trial_id='t6', framework='codex')
+    rec.record_run_start(framework='codex', cmd_summary='CodexRunner')
+    rec.record_responses_turn(
+        request_body={
+            'instructions': '<full task description>',
+            'input': [
+                {
+                    'type': 'message',
+                    'role': 'user',
+                    'content': [{'type': 'input_text', 'text': '<env>'}],
+                },
+            ],
+        },
+        output=_output('ok'),
+        latency_ms=1.0,
+    )
+    msgs = rec.messages()
+    assert [m.role for m in msgs] == ['system', 'user', 'assistant']
+    assert msgs[0].text == '<full task description>'
