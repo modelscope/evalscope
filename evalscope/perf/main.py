@@ -16,70 +16,13 @@ from .benchmark import run_benchmark
 from .multi_turn_benchmark import run_multi_turn_benchmark
 from .sla.sla_run import run_sla_auto_tune
 from .utils.db_util import get_output_path
-from .utils.handler import add_signal_handlers
+from .utils.handler import add_signal_handlers, install_uvloop_if_available
 from .utils.local_server import start_app
 from .utils.log_utils import init_visualizer
 from .utils.report.generate_report import gen_perf_html_report
 from .utils.rich_display import print_summary
 
 logger = get_logger()
-
-# Module-level flag so we only attempt to install uvloop once per process,
-# even when ``run_one_benchmark`` is invoked repeatedly from a sweep
-# (see ``run_multi_benchmark``).
-_UVLOOP_INSTALL_ATTEMPTED = False
-
-
-def _install_uvloop_if_available() -> None:
-    """Best-effort enable uvloop as the asyncio event loop policy.
-
-    Why this exists
-    ---------------
-    The default CPython selector loop has visible scheduling jitter under
-    high-concurrency LLM benchmarking (many concurrent SSE streams + bursty
-    chunk callbacks contending for the same loop tick).  That jitter shows
-    up as a small but persistent shortfall between the configured request
-    rate (``--rate``) and the rate actually realised by the dispatcher.
-    uvloop is a libuv-backed loop that drives ``asyncio.sleep`` and I/O
-    callbacks with substantially higher precision and throughput, which
-    keeps the realised QPS closer to the target.
-
-    Behaviour
-    ---------
-    * Skipped on Windows (uvloop has no Windows support; the existing
-      ``WindowsSelectorEventLoopPolicy`` branch below stays intact).
-    * Skipped if uvloop is not installed -- evalscope continues to work
-      with the default loop, just with slightly looser rate control.
-    * Can be force-disabled by setting ``EVALSCOPE_DISABLE_UVLOOP=1`` as
-      an escape hatch for environments where uvloop misbehaves.
-    * Idempotent: only attempts the install once per process.
-    """
-    global _UVLOOP_INSTALL_ATTEMPTED
-    if _UVLOOP_INSTALL_ATTEMPTED:
-        return
-    _UVLOOP_INSTALL_ATTEMPTED = True
-
-    if platform.system() == 'Windows':
-        return
-    if os.environ.get('EVALSCOPE_DISABLE_UVLOOP', '').strip() in ('1', 'true', 'True'):
-        logger.info('uvloop disabled via EVALSCOPE_DISABLE_UVLOOP; using default asyncio loop')
-        return
-
-    try:
-        import uvloop  # type: ignore
-    except ImportError:
-        logger.info(
-            'uvloop not installed; using default asyncio loop. '
-            'Install with `pip install uvloop` (or `pip install evalscope[perf]`) '
-            'for tighter rate control under high concurrency.'
-        )
-        return
-
-    try:
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-        logger.info('uvloop event loop policy installed (asyncio.sleep precision improved)')
-    except Exception as e:  # noqa: BLE001 -- never let event-loop choice break a run
-        logger.warning(f'Failed to install uvloop policy ({e}); falling back to default asyncio loop')
 
 
 def run_one_benchmark(args: Arguments, output_path: str = None):
@@ -99,7 +42,7 @@ def run_one_benchmark(args: Arguments, output_path: str = None):
     else:
         # Try to upgrade to uvloop on POSIX systems for higher-precision
         # ``asyncio.sleep`` / I/O dispatch.  No-op on failure.
-        _install_uvloop_if_available()
+        install_uvloop_if_available()
 
     loop = asyncio.new_event_loop()
     # Only add signal handlers in main thread
