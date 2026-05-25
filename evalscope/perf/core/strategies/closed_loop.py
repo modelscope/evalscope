@@ -1,5 +1,6 @@
 import asyncio
 import numpy as np
+import time
 from typing import TYPE_CHECKING, List
 
 from evalscope.perf.arguments import Arguments
@@ -54,18 +55,41 @@ class ClosedLoopStrategy(BenchmarkStrategy):
         await self._run_phase(benchmark_requests, is_warmup=False)
 
     async def _run_phase(self, requests: List[dict], is_warmup: bool) -> None:
-        """Dispatch one phase of requests and wait for all to complete."""
+        """Dispatch one phase of requests and wait for all to complete.
+
+        When ``args.rate`` is configured, request pacing uses absolute-time
+        scheduling (see :class:`~evalscope.perf.core.strategies.OpenLoopStrategy`
+        for the rationale).  Pre-compute a cumulative delay vector anchored to
+        a phase ``start`` timestamp so that event-loop jitter can be absorbed
+        instead of accumulating into a slow drift of the realised QPS.
+        """
         semaphore = asyncio.Semaphore(self.args.parallel)
         max_in_flight = self.args.parallel * self.args.in_flight_task_multiplier
         in_flight: set[asyncio.Task] = set()
+        n = len(requests)
+        rate = self.args.rate
 
-        for request in requests:
-            # Apply Poisson inter-arrival sleep when rate is set.
-            # Closed-loop combines back-pressure (semaphore) with arrival-rate
-            # control (rate), allowing both concurrency cap and request pacing.
-            if self.args.rate != -1:
-                interval = np.random.exponential(1.0 / self.args.rate)
-                await asyncio.sleep(interval)
+        # Pre-compute absolute dispatch timestamps when pacing is enabled.
+        # ``target_times`` is anchored just before the dispatch loop so that
+        # each iteration only needs a single subtraction + index lookup.
+        target_times = None
+        if rate != -1 and n > 0:
+            intervals = np.random.exponential(1.0 / rate, size=n)
+            delay_ts = np.cumsum(intervals)
+            target_total_s = n / rate
+            if delay_ts[-1] > 0:
+                delay_ts *= (target_total_s / delay_ts[-1])
+            # Keep ``perf_counter()`` adjacent to the loop entry – do not
+            # insert any other awaits between this line and the loop,
+            # otherwise the anchor will skew.
+            target_times = delay_ts + time.perf_counter()
+
+        for i, request in enumerate(requests):
+            # Sleep until the absolute target dispatch time (drift-corrected).
+            if target_times is not None:
+                sleep_s = target_times[i] - time.perf_counter()
+                if sleep_s > 0:
+                    await asyncio.sleep(sleep_s)
 
             # Keep the number of scheduled tasks bounded to avoid OOM.
             if len(in_flight) >= max_in_flight:

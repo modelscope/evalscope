@@ -16,7 +16,7 @@ from .benchmark import run_benchmark
 from .multi_turn_benchmark import run_multi_turn_benchmark
 from .sla.sla_run import run_sla_auto_tune
 from .utils.db_util import get_output_path
-from .utils.handler import add_signal_handlers
+from .utils.handler import add_signal_handlers, install_uvloop_if_available
 from .utils.local_server import start_app
 from .utils.log_utils import init_visualizer
 from .utils.report.generate_report import gen_perf_html_report
@@ -39,6 +39,10 @@ def run_one_benchmark(args: Arguments, output_path: str = None):
 
     if platform.system() == 'Windows':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    else:
+        # Try to upgrade to uvloop on POSIX systems for higher-precision
+        # ``asyncio.sleep`` / I/O dispatch.  No-op on failure.
+        install_uvloop_if_available()
 
     loop = asyncio.new_event_loop()
     # Only add signal handlers in main thread
