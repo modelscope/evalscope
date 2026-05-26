@@ -613,6 +613,19 @@ def openai_handle_bad_request(model_name: str, e: APIStatusError) -> Union[Model
     ):
         stop_reason = 'content_filter'
 
+    # Provider-specific message-pattern fallback for non-OpenAI APIs that
+    # surface context-window overflow under generic error codes (e.g. DashScope
+    # uses code='invalid_parameter_error' with "Range of input length ...").
+    if stop_reason is None:
+        msg = (content or '').lower()
+        if any(p in msg for p in (
+            'input length',
+            'maximum context length',
+            'context window',
+            'too many tokens',
+        )):
+            stop_reason = 'model_length'
+
     if stop_reason:
         return ModelOutput.from_content(model=model_name, content=content, stop_reason=stop_reason)
     else:

@@ -245,7 +245,7 @@ For full usage including local and remote manager examples, see [Sandbox Environ
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `--agent-config` | `dict \| AgentConfig` | Global Agent configuration (see below) | `None` (Agent mode disabled) |
+| `--agent-config` | `dict \| NativeAgentConfig` | Global Agent configuration (see below) | `None` (Agent mode disabled) |
 
 ### agent-config Options
 

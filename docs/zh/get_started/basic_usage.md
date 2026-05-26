@@ -240,6 +240,45 @@ run_task(task_cfg=task_cfg)
 关于裁判模型的详细配置，请参考：[裁判模型参数](./parameters.md#judge参数)
 ```
 
+### 使用 Hugging Face 数据集
+
+EvalScope 默认从 ModelScope 加载数据集。如需改用 Hugging Face Hub，将 `--dataset-hub` 设置为 `huggingface` 即可。当某个数据集在 Hugging Face 与 ModelScope 上的仓库 ID 不一致时，再通过 `--dataset-args` 覆盖该数据集的 `dataset_id`。
+
+以 `ocr_bench` 为例，其默认 ID 为 ModelScope 上的 `evalscope/OCRBench`，对应 Hugging Face 仓库为 `echo840/OCRBench`：
+
+```shell
+evalscope eval \
+ --model Qwen/Qwen2.5-VL-7B-Instruct \
+ --datasets ocr_bench \
+ --dataset-hub huggingface \
+ --dataset-args '{"ocr_bench": {"dataset_id": "echo840/OCRBench"}}' \
+ --limit 5
+```
+
+等价的 Python 写法：
+
+```python
+from evalscope import TaskConfig, run_task
+
+task_cfg = TaskConfig(
+    model='Qwen/Qwen2.5-VL-7B-Instruct',
+    datasets=['ocr_bench'],
+    dataset_hub='huggingface',
+    dataset_args={
+        'ocr_bench': {
+            'dataset_id': 'echo840/OCRBench',
+        },
+    },
+    limit=5,
+)
+
+run_task(task_cfg=task_cfg)
+```
+
+```{tip}
+若数据集在 Hugging Face 与 ModelScope 上的仓库 ID 相同，只需设置 `--dataset-hub huggingface`，无需再传 `dataset_id`。
+```
+
 ### 离线评测
 
 在无网络环境下，您可以使用本地缓存的模型和数据集进行评测。

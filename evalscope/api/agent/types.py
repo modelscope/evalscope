@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolInfo
+from .mcp.types import MCPServerConfig
 
 if TYPE_CHECKING:
     from .trace import AgentTrace
@@ -65,9 +66,15 @@ class NativeAgentConfig(BaseAgentConfig):
     max_steps: int = Field(default=10)
     """Hard upper bound on loop iterations."""
 
+    mcp_servers: List[MCPServerConfig] = Field(default_factory=list)
+    """List of MCP servers spawned alongside this agent's per-sample loop.
 
-AgentConfig = NativeAgentConfig
-"""Backwards-compat alias.  Prefer :class:`NativeAgentConfig` in new code."""
+    Each entry runs a host-side MCP server (stdio or HTTP) and merges its
+    advertised tools into the loop's tool set, alongside any benchmark-
+    native tools.  The ``mcp`` Python SDK is imported lazily inside
+    :class:`MCPServer.__aenter__`, so configurations with empty
+    ``mcp_servers`` (the default) do not require ``pip install mcp``.
+    """
 
 
 class ExecResult(BaseModel):
@@ -135,7 +142,6 @@ class AgentLoopResult:
 
 
 __all__ = [
-    'AgentConfig',
     'AgentContext',
     'AgentLoopResult',
     'BaseAgentConfig',

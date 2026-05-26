@@ -16,7 +16,7 @@ Smallest runnable example — have `qwen-plus` verify GSM8K answers with `python
 
 ```python
 from evalscope import TaskConfig, run_task
-from evalscope.api.agent import AgentConfig
+from evalscope.api.agent import NativeAgentConfig
 
 task_config = TaskConfig(
     model='qwen-plus',
@@ -26,7 +26,7 @@ task_config = TaskConfig(
     datasets=['gsm8k'],
     limit=5,
     generation_config={'parallel_tool_calls': True},
-    agent_config=AgentConfig(
+    agent_config=NativeAgentConfig(
         strategy='function_calling',
         tools=['python_exec'],
         environment='docker',
@@ -42,7 +42,7 @@ EvalScope auto-injects the `python_exec` tool definition into the model's contex
 
 ## Three core components
 
-Every AgentLoop is composed of three pieces, configured on `AgentConfig`:
+Every AgentLoop is composed of three pieces, configured on `NativeAgentConfig`:
 
 **Strategy** — how the model talks to the loop:
 
@@ -70,7 +70,7 @@ Every AgentLoop is composed of three pieces, configured on `AgentConfig`:
 
 ## Common configuration
 
-Most-used `AgentConfig` fields:
+Most-used `NativeAgentConfig` fields:
 
 | Field | Description | Recommended |
 |-------|-------------|-------------|
@@ -83,9 +83,108 @@ Most-used `AgentConfig` fields:
 
 ```{tip}
 - `local` has no isolation; use `docker` in production.
-- `agent_config` also accepts a plain dict; `TaskConfig` converts it to `AgentConfig` automatically.
+- `agent_config` also accepts a plain dict; `TaskConfig` converts it to `NativeAgentConfig` automatically.
 - With `docker` you reuse the [sandbox infrastructure](../sandbox.md); you may explicitly set `TaskConfig.sandbox = SandboxTaskConfig(enabled=True, engine='docker')`.
 ```
+
+## MCP server tools
+
+Beyond the built-in tools (`bash` / `python_exec` / ...), `NativeAgentConfig` accepts arbitrary [MCP (Model Context Protocol)](https://modelcontextprotocol.io) servers via `mcp_servers`. Their advertised tools are merged into the loop's tool set alongside the benchmark-native tools — **no benchmark-side change required**.
+
+This is how to plug in `fetch`, web search, GitHub, filesystem and the rest of the MCP ecosystem without writing a custom EvalScope tool.
+
+### Install
+
+```bash
+pip install evalscope[mcp]
+```
+
+`evalscope[mcp]` bundles the official `mcp` Python SDK plus `mcp-server-fetch` (universal HTTP fetching, no API key). Other MCP servers — e.g. `mcp-server-brave-search`, `mcp-server-github`, `mcp-server-filesystem`, `mcp-server-puppeteer` — install on top via plain `pip install <name>` or run on demand through `uvx <name>` / `npx <name>`.
+
+The `mcp` Python SDK is imported lazily, so configurations with empty `mcp_servers` (the default) need no extra install at runtime.
+
+### Quick start
+
+```python
+import sys
+from evalscope import TaskConfig, run_task
+from evalscope.api.agent import NativeAgentConfig
+from evalscope.api.agent.mcp import MCPServerConfigStdio, MCPServerConfigHTTP, MCPServerConfigSSE
+
+task_config = TaskConfig(
+    model='qwen3-max',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    eval_type='openai_api',
+    datasets=['gaia'],
+    agent_config=NativeAgentConfig(
+        mcp_servers=[
+            # Stdio: spawn a local Python MCP server.
+            MCPServerConfigStdio(
+                command=sys.executable,
+                args=['-m', 'mcp_server_fetch', '--ignore-robots-txt'],
+                name='fetch',
+            ),
+            # Stdio: use uvx so end users don't have to pip-install first.
+            MCPServerConfigStdio(
+                command='uvx',
+                args=['mcp-server-brave-search'],
+                env={'BRAVE_API_KEY': 'sk-...'},
+                name='brave_search',
+            ),
+            # Streamable HTTP: connect to a remote MCP endpoint (recommended).
+            # Example: ModelScope MCP marketplace, URLs usually end in /mcp.
+            MCPServerConfigHTTP(
+                url='https://mcp.api-inference.modelscope.net/<server-id>/mcp',
+                headers={'Authorization': 'Bearer <MODELSCOPE_SDK_TOKEN>'},
+                name='ms_fetch',
+            ),
+            # SSE: legacy MCP HTTP transport, URLs usually end in /sse.
+            MCPServerConfigSSE(
+                url='https://mcp.api-inference.modelscope.net/<server-id>/sse',
+                headers={'Authorization': 'Bearer <MODELSCOPE_SDK_TOKEN>'},
+                name='ms_fetch_sse',
+            ),
+        ],
+    ),
+    dataset_args={'gaia': {'subset_list': ['2023_level1']}},
+    limit=5,
+)
+run_task(task_config)
+```
+
+```{tip}
+**Streamable HTTP vs SSE**: Streamable HTTP is the newer MCP HTTP transport; SSE is the legacy one. The two endpoints are functionally equivalent — when both are offered prefer `/mcp` (Streamable HTTP). `MCPServerConfigSSE` is mainly for older servers that only expose `/sse`.
+```
+
+Inside the agent loop the model now sees `bash`, `submit`, **and** every tool the MCP servers advertised (e.g. `fetch`, `brave_web_search`). It picks tools by name as usual.
+
+### Configuration
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `command` (stdio) | str | Executable to spawn (`sys.executable` / `uvx` / `npx` / absolute path). |
+| `args` (stdio) | list[str] | Arguments passed to `command`. |
+| `env` (stdio) | dict[str, str] | Extra environment variables for the child process. |
+| `cwd` (stdio) | str | Working directory for the child. |
+| `url` (http / sse) | str | Streamable HTTP endpoint (`http`) or SSE endpoint (`sse`). |
+| `headers` (http / sse) | dict[str, str] | HTTP headers (typically auth). |
+| `timeout` (http) | float | HTTP read timeout in seconds (default `30.0`). |
+| `timeout` (sse) | float | HTTP timeout in seconds for non-streaming ops (default `5.0`). |
+| `sse_read_timeout` (sse) | float | Seconds to wait for the next SSE event before disconnecting (default `300.0`). |
+| `name` | str | Display name used in logs and the trace UI. Defaults to `command` / `url`. |
+| `tools` | `'all'` or list[str] | Whitelist; `'all'` (default) exposes every tool the server advertises. |
+
+```{tip}
+- `python -m mcp_server_<x>` after `pip install` is the most deterministic for CI/tests — no per-run package fetch.
+- `uvx mcp-server-<x>` is convenient for ad-hoc runs; first call downloads the package.
+- For benchmarks that already drive their own loop (`AgentLoopAdapter` subclasses like GAIA / SWE-bench-agentic), MCP servers from the global `agent_config` are still picked up via `agent_config.mcp_servers` and merged into the loop's tool set.
+```
+
+### Trace / debugging
+
+Each MCP server logs `MCPServer[<name>]: initialised` / `closed` when it starts and stops. Tool calls appear in `agent_trace.events` like any other `tool_call` / `tool_result` pair, with the MCP-advertised tool `name`.
+
+If a MCP tool call fails, the observation comes back as `[error] <body>` so the model can recover and try a different approach without crashing the loop.
 
 ## SWE-bench agentic benchmarks
 

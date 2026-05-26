@@ -14,7 +14,7 @@ then check ``(fail_to_pass | pass_to_pass) ⊆ PASSED``.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
 from evalscope.api.agent import AgentEnvironment, AgentStrategy
@@ -29,6 +29,9 @@ from evalscope.api.sandbox import merge_sandbox_config_dicts
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import is_build_doc
 from evalscope.utils.logger import get_logger
+
+if TYPE_CHECKING:
+    from evalscope.agent.external.runners import AgentRunResult
 
 logger = get_logger()
 
@@ -355,7 +358,9 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
     # External agent prediction (recover patch via git diff)
     # ------------------------------------------------------------------
 
-    async def _external_extract_prediction(self, env: AgentEnvironment, run_result: Any, sample: Sample) -> str:
+    async def _external_extract_prediction(
+        self, env: AgentEnvironment, run_result: AgentRunResult, sample: Sample
+    ) -> str:
         """Recover the agent's patch from ``self.working_dir`` (``/app``).
 
         External CLI agents do not implement the

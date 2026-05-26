@@ -8,6 +8,7 @@ Before using these benchmarks, please follow the instructions in each benchmark'
 :maxdepth: 1
 
 terminal_bench.md
+gaia.md
 swe_bench.md
 swe_bench_pro.md
 tau_bench.md

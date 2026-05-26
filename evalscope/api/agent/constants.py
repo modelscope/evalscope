@@ -46,6 +46,7 @@ class LoopMessages:
     """Stable ``payload['message']`` strings asserted by tests."""
 
     MAX_STEPS_EXCEEDED = 'max_steps_exceeded'
+    MODEL_CONTEXT_OVERFLOW = 'model_context_overflow'
     NO_TOOL_CALL_REMINDER = 'no_tool_call_reminder'
 
 

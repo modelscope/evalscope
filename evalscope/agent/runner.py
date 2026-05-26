@@ -96,6 +96,7 @@ def run_native_agent(
         sample_id=sample.id,
         trace_strategy_name=cfg.strategy,
         trace_env_name=cfg.environment,
+        mcp_configs=list(cfg.mcp_servers) or None,
     )
 
     final_text = extract_final_answer(result, strategy)

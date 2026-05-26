@@ -36,12 +36,18 @@ export function EnvExecRow({ event }: { event: AgentTraceEvent }) {
 /* ─── LoopErrorRow ─────────────────────────────────────────── */
 
 export function LoopErrorRow({ event }: { event: AgentTraceEvent }) {
+  const { t } = useLocale()
   const msg = event.payload.message != null ? String(event.payload.message) : ''
   if (!msg) return null
+  // Look up a human-readable label for known loop messages
+  // (e.g. ``model_context_overflow``); fall back to the raw identifier
+  // when no translation exists.
+  const label = t(`trace.loopMessage.${msg}`)
+  const display = label === `trace.loopMessage.${msg}` ? msg : label
   return (
     <div className="flex items-start gap-2 px-[0.6rem] py-[0.4rem] bg-[var(--danger-bg)] border border-[var(--danger-border)] rounded-[0.4rem] text-[0.72rem] font-mono text-[var(--danger)] mt-[0.4rem]">
       <AlertTriangle size={12} className="mt-[2px] shrink-0" />
-      <span className="whitespace-pre-wrap break-all flex-1">{msg}</span>
+      <span className="whitespace-pre-wrap break-all flex-1">{display}</span>
     </div>
   )
 }

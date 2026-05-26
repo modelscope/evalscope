@@ -110,6 +110,51 @@ class TestAgentBenchmark(TestBenchmark):
             ),
         )
 
+    def test_gaia(self):
+        """Test GAIA benchmark using docker environment with react + bash."""
+        dataset_args = {
+            'subset_list': ['2023_level1', '2023_level2', '2023_level3'],
+            'extra_params': {
+                'max_steps': 50,
+                'command_timeout': 180.0,
+                'docker_image': 'python:3.11',
+                'network_enabled': True,
+            }
+        }
+        self._run_dataset_test('gaia', dataset_args, limit=1)
+
+    def test_gaia_with_mcp(self):
+        """GAIA + MCP fetch server, exercising the host-side MCP plumbing.
+
+        Requires ``pip install mcp-server-fetch`` in the eval environment.
+        Using ``python -m mcp_server_fetch`` (rather than ``uvx``) keeps the
+        test deterministic — no per-run package fetch / venv creation.
+        """
+        import sys
+
+        from evalscope.api.agent import NativeAgentConfig
+        from evalscope.api.agent.mcp import MCPServerConfigStdio
+        dataset_args = {
+            'subset_list': ['2023_level1'],
+            'extra_params': {
+                'max_steps': 30,
+                'command_timeout': 180.0,
+                'docker_image': 'python:3.11',
+                'network_enabled': True,
+            }
+        }
+        agent_config = NativeAgentConfig(mcp_servers=[
+            MCPServerConfigStdio(
+                command=sys.executable,
+                # ``--ignore-robots-txt`` lets the server fetch sites whose
+                # robots.txt is unreachable (transient network failures /
+                # CDN-blocked UAs commonly seen during offline-ish CI runs).
+                args=['-m', 'mcp_server_fetch', '--ignore-robots-txt'],
+                name='fetch',
+            ),
+        ])
+        self._run_dataset_test('gaia', dataset_args, limit=1, agent_config=agent_config)
+
     def test_swe_bench_verified_agentic_backticks(self):
         """Test SWE-bench-verified agentic dataset with backticks protocol."""
         dataset_args = {

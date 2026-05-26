@@ -1,0 +1,6 @@
+mcp>=1.0
+# Bundled starter MCP server — the most commonly demoed one (no API key,
+# universal HTTP fetching). Power users with different needs can install
+# additional MCP servers (e.g. mcp-server-brave-search, mcp-server-github,
+# mcp-server-filesystem, mcp-server-puppeteer) on top of evalscope[mcp].
+mcp-server-fetch

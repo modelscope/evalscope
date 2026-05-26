@@ -143,7 +143,7 @@ class ReactStrategy(AgentStrategy):
 
         Prioritises the ``submit`` tool call's ``answer`` argument
         (the authoritative answer source), then falls back to the
-        raw message content.
+        last assistant message's plain text content.
         """
         # Scan messages in reverse for a submit tool call.
         for msg in reversed(result.messages):
@@ -153,8 +153,10 @@ class ReactStrategy(AgentStrategy):
                         answer = tc.function.arguments.get('answer', '')
                         if answer:
                             return str(answer)
-        # Fallback: last model output content.
-        return str(result.final_output.message.content or '')
+        # Fallback: text-only content of the last model output. Using
+        # ``.text`` (not ``str(content)``) so multimodal/reasoning
+        # content parts don't leak their Python repr into the answer.
+        return result.final_output.message.text or ''
 
 
 __all__ = ['ReactStrategy']
