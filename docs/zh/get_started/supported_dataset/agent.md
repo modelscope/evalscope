@@ -6,6 +6,7 @@
 |------------|----------|----------|
 | `bfcl_v3` | [BFCL-v3](../../benchmarks/bfcl_v3.md) | `Agent`, `FunctionCalling` |
 | `bfcl_v4` | [BFCL-v4](../../benchmarks/bfcl_v4.md) | `Agent`, `FunctionCalling` |
+| `gaia` | [GAIA](../../benchmarks/gaia.md) | `Agent`, `MultiTurn`, `Reasoning` |
 | `general_fc` | [General-FunctionCalling](../../benchmarks/general_fc.md) | `Agent`, `Custom`, `FunctionCalling` |
 | `swe_bench_lite_agentic` | [SWE-bench_Lite_Agentic](../../benchmarks/swe_bench_lite_agentic.md) | `Coding` |
 | `swe_bench_pro` | [SWE-bench_Pro](../../benchmarks/swe_bench_pro.md) | `Coding` |
@@ -22,6 +23,7 @@
 
 ../../benchmarks/bfcl_v3.md
 ../../benchmarks/bfcl_v4.md
+../../benchmarks/gaia.md
 ../../benchmarks/general_fc.md
 ../../benchmarks/swe_bench_lite_agentic.md
 ../../benchmarks/swe_bench_pro.md
