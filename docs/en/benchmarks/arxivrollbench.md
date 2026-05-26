@@ -25,7 +25,7 @@ ArxivRollBench is a rolling benchmark built from recent arXiv papers. It evaluat
 - Default configuration uses **0-shot** evaluation
 - The default `arxivrollbench` benchmark uses compact `-50` datasets
 - Use `arxivrollbench_full` for the complete public splits
-- Each subset is resolved to its public Hugging Face dataset under the `liangzid` namespace
+- Each subset is loaded from the public ModelScope mirror under the `liangzid` namespace
 - Answers are normalized to A-D and evaluated with accuracy
 
 ## Properties

@@ -6,7 +6,7 @@ from typing import Any, Dict
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import RemoteDataLoader, Sample
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import HubType, Tags
+from evalscope.constants import Tags
 
 PROMPT_TEMPLATE = """Answer the following ArxivRollBench multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
@@ -16,21 +16,20 @@ PROMPT_TEMPLATE = """Answer the following ArxivRollBench multiple choice questio
 """.strip()
 
 DOMAINS = [
-    ('cs', 'cs'),
-    ('q_fin', 'q-fin'),
-    ('math', 'math'),
-    ('physics', 'physics'),
-    ('stat', 'stat'),
-    ('q_bio', 'q-bio'),
-    ('econ', 'econ'),
-    ('eess', 'eess'),
+    'cs',
+    'q_fin',
+    'math',
+    'physics',
+    'stat',
+    'q_bio',
+    'econ',
+    'eess',
 ]
 RELEASES = ['2024b', '2025a', '2026a']
 TASK_TYPES = ['s', 'c', 'p']
 SUBSET_LIST = [
-    f'{release}_{domain}_{task_type}' for release in RELEASES for domain, _ in DOMAINS for task_type in TASK_TYPES
+    f'{release}_{domain}_{task_type}' for release in RELEASES for domain in DOMAINS for task_type in TASK_TYPES
 ]
-DOMAIN_TO_HF = dict(DOMAINS)
 
 DESCRIPTION = """
 ## Overview
@@ -58,17 +57,9 @@ ArxivRollBench is a rolling benchmark built from recent arXiv papers. It evaluat
 - Default configuration uses **0-shot** evaluation
 - The default `arxivrollbench` benchmark uses compact `-50` datasets
 - Use `arxivrollbench_full` for the complete public splits
-- Each subset is resolved to its public Hugging Face dataset under the `liangzid` namespace
+- Each subset is loaded from the public ModelScope mirror under the `liangzid` namespace
 - Answers are normalized to A-D and evaluated with accuracy
 """.strip()
-
-
-def _dataset_path(release: str, hf_domain: str, task_type: str, compact: bool) -> str:
-    suffix = '-50' if compact else ''
-    if release == '2024b':
-        return f'liangzid/robench2024b_all_set{hf_domain}SCP-{task_type}{suffix}'
-    return (f'liangzid/robench{release}_test_all_category_set'
-            f'{hf_domain}SCP-{task_type}{suffix}')
 
 
 def _parse_subset(subset: str) -> tuple[str, str, str]:
@@ -89,24 +80,18 @@ class ArxivRollBenchBaseAdapter(MultiChoiceAdapter):
     compact = True
 
     def load_subset(self, subset: str, data_loader=RemoteDataLoader):
-        release, domain, task_type = _parse_subset(subset)
-        dataset_id = _dataset_path(
-            release=release,
-            hf_domain=DOMAIN_TO_HF[domain],
-            task_type=task_type,
-            compact=self.compact,
-        )
+        _parse_subset(subset)
         loader = data_loader(
-            data_id_or_path=dataset_id,
+            data_id_or_path=self.dataset_id,
             split='train',
-            subset='default',
+            subset=subset,
             sample_fields=self.record_to_sample,
             filter_func=self.sample_filter,
             limit=self.limit,
             repeats=self.repeats,
             shuffle=self.shuffle,
             shuffle_choices=self.shuffle_choices,
-            data_source=HubType.HUGGINGFACE,
+            data_source=self.dataset_hub,
             force_redownload=self.force_redownload,
             dataset_dir=self.dataset_dir,
         )

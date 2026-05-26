@@ -25,7 +25,7 @@ ArxivRollBench 是一个基于近期 arXiv 论文构建的滚动基准。`arxivr
 - 默认配置使用 **0-shot** 评估
 - `arxivrollbench_full` 基准使用完整公开数据集
 - 如需成本可控的紧凑划分，请使用 `arxivrollbench`
-- 每个子集都会解析到 `liangzid` 命名空间下对应的公开 Hugging Face 数据集
+- 每个子集都会从 `liangzid` 命名空间下对应的公开 ModelScope 镜像加载
 - 答案会标准化为 A-D，并使用准确率进行评估
 
 ## 属性
