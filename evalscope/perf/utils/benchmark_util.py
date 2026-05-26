@@ -59,6 +59,16 @@ class BenchmarkData:
     """True when this BenchmarkData is the final turn of its conversation.
     Used by the metrics consumer to advance the per-conversation progress bar."""
 
+    is_first_turn: bool = False
+    """True when this BenchmarkData is the first turn of its conversation.
+    Used by per-turn-position metric grouping (cold vs. warm TTFT).
+    Always False for single-turn benchmarks."""
+
+    trace_id: Optional[str] = None
+    """Stable identifier of the conversation this BenchmarkData belongs to,
+    for trace-level aggregation in multi-turn benchmarks.  None for single-turn
+    runs.  Format is opaque (e.g. ``trace-42`` from MultiTurnStrategy)."""
+
     # --- Warmup ---
     is_warmup: bool = False
     """True when this request is a warmup request, excluded from final metrics."""

@@ -14,6 +14,7 @@ from typing import List, Tuple
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.strategies import ClosedLoopStrategy, MultiTurnStrategy, OpenLoopStrategy
 from evalscope.perf.core.strategies.base import BenchmarkStrategy
+from evalscope.perf.plugin.datasets.base import Turn
 from evalscope.perf.utils.benchmark_util import BenchmarkData
 
 # ---------------------------------------------------------------------------
@@ -242,7 +243,7 @@ class _MultiTurnFakeClient(_FakeClient):
 
 
 def _mk_conversations(total: int, turns_per_conv: int = 2):
-    """Build ``total`` synthetic conversations, each with ``turns_per_conv`` turns.
+    """Build ``total`` synthetic conversations, each with ``turns_per_conv`` Turns.
 
     Every user message carries its ``conv_idx`` so the fake client can attribute
     each turn back to its originating conversation.
@@ -250,8 +251,10 @@ def _mk_conversations(total: int, turns_per_conv: int = 2):
     convs = []
     for ci in range(total):
         convs.append([
-            [{'role': 'user', 'content': f'conv{ci}-t{ti}', 'conv_idx': ci}]
-            for ti in range(turns_per_conv)
+            Turn(
+                messages=[{'role': 'user', 'content': f'conv{ci}-t{ti}', 'conv_idx': ci}],
+                is_final=(ti == turns_per_conv - 1),
+            ) for ti in range(turns_per_conv)
         ])
     return convs
 
@@ -312,6 +315,114 @@ class TestMultiTurnPhaseBarrier(unittest.TestCase):
         items = asyncio.run(_go())
         self.assertTrue(all(not d.is_warmup for d in items))
         self.assertEqual(len(items), 6)  # 3 convs * 2 turns
+
+
+class TestClosedLoopDurationCancel(unittest.TestCase):
+    """Verify ``--duration`` hard-cancels a closed-loop run when the deadline hits."""
+
+    def test_duration_terminates_phase_early(self):
+        async def _go():
+            args = _mk_args(parallel=2, number=200, warmup_num=0)
+            args.duration = 0.05
+            queue: asyncio.Queue = asyncio.Queue()
+            # 20ms per request × 200 requests > 50ms deadline; we expect a partial run.
+            client = _FakeClient(warmup_delay=0.02, benchmark_delay=0.02)
+            gen = _single_turn_generator(warmup_count=0, benchmark_count=args.number)
+            strategy = ClosedLoopStrategy(args, _FakeApiPlugin(), client, queue, gen)
+            await strategy.run()
+            return await _collect_queue(queue)
+
+        items = asyncio.run(_go())
+        self.assertLess(len(items), 200, 'deadline should have stopped the run before exhausting budget')
+        self.assertTrue(all(not d.is_warmup for d in items))
+
+
+class TestOpenLoopDurationCancel(unittest.TestCase):
+    """Verify ``--duration`` caps an open-loop run at the deadline."""
+
+    def test_duration_terminates_phase_early(self):
+        async def _go():
+            # rate=20 over 200 requests => target wall-clock 10s; deadline 0.05s
+            # cuts dispatch off after ~1 request and cancels any in-flight.
+            args = _mk_args(parallel=-1, number=200, warmup_num=0, rate=20.0, open_loop=True)
+            args.duration = 0.05
+            queue: asyncio.Queue = asyncio.Queue()
+            client = _FakeClient(warmup_delay=0.02, benchmark_delay=0.02)
+            gen = _single_turn_generator(warmup_count=0, benchmark_count=args.number)
+            strategy = OpenLoopStrategy(args, _FakeApiPlugin(), client, queue, gen)
+            await strategy.run()
+            return await _collect_queue(queue)
+
+        items = asyncio.run(_go())
+        self.assertLess(len(items), 200, 'deadline should have stopped the run before exhausting budget')
+
+
+class TestMultiTurnDurationCancel(unittest.TestCase):
+    """Verify --duration hard-cancels in-flight workers when the deadline hits.
+
+    Configures a budget far in excess of what can finish before the deadline
+    and asserts the run terminates at the deadline with fewer items than the
+    budget.
+    """
+
+    def test_duration_terminates_phase_early(self):
+        async def _go():
+            args = _mk_args(parallel=2, number=200, warmup_num=0)
+            args.duration = 0.05  # tight deadline
+            queue: asyncio.Queue = asyncio.Queue()
+            # Per-turn delay >> deadline / num_turns: workers can't complete
+            # all 200 conversations in the 50ms window.
+            client = _MultiTurnFakeClient(warmup_delay=0.02, benchmark_delay=0.02)
+            conversations = _mk_conversations(total=200, turns_per_conv=2)
+            strategy = MultiTurnStrategy(args, _FakeApiPlugin(), client, queue, conversations)
+            await strategy.run()
+            return await _collect_queue(queue)
+
+        items = asyncio.run(_go())
+        # With 2 workers, 20ms per turn, 2 turns per conv -> ~40ms per conv;
+        # in 50ms we expect at most a handful of conversations to finish.
+        self.assertLess(
+            len(items), 200 * 2,
+            'duration deadline should have cancelled workers before budget exhausted'
+        )
+        # And we should still have *some* completed turns (the deadline didn't
+        # fire before any work was dispatched).
+        self.assertGreater(len(items), 0)
+        # Every produced item carries a trace_id from the strategy.
+        self.assertTrue(all(d.trace_id is not None for d in items))
+
+
+class TestMultiTurnTraceIdAndFirstTurn(unittest.TestCase):
+    """Verify trace_id and is_first_turn metadata are populated correctly."""
+
+    def test_trace_id_and_first_turn_flags(self):
+        async def _go():
+            args = _mk_args(parallel=2, number=3, warmup_num=0)
+            queue: asyncio.Queue = asyncio.Queue()
+            client = _MultiTurnFakeClient()
+            conversations = _mk_conversations(total=5, turns_per_conv=3)
+            strategy = MultiTurnStrategy(args, _FakeApiPlugin(), client, queue, conversations)
+            await strategy.run()
+            return await _collect_queue(queue)
+
+        items = asyncio.run(_go())
+        self.assertEqual(len(items), 9)  # 3 convs * 3 turns
+
+        # Every item must have a trace_id with the "bench-" prefix.
+        self.assertTrue(all(d.trace_id and d.trace_id.startswith('bench-') for d in items))
+
+        # Group by trace_id; exactly 3 traces expected.
+        by_trace = {}
+        for d in items:
+            by_trace.setdefault(d.trace_id, []).append(d)
+        self.assertEqual(len(by_trace), 3)
+
+        # Each trace must have exactly one first-turn item, in order.
+        for trace_items in by_trace.values():
+            trace_items.sort(key=lambda d: d.input_num_turns)
+            self.assertEqual(sum(1 for d in trace_items if d.is_first_turn), 1)
+            self.assertTrue(trace_items[0].is_first_turn)
+            self.assertTrue(all(not d.is_first_turn for d in trace_items[1:]))
 
 
 if __name__ == '__main__':

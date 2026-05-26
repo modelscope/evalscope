@@ -1,5 +1,6 @@
 import json
 from abc import abstractmethod
+from dataclasses import dataclass, field
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
@@ -7,6 +8,27 @@ from evalscope.perf.plugin.datasets.utils import load_tokenizer, tokenize_chat_m
 
 Message = Dict[str, Any]  # single OpenAI message: {"role": ..., "content": ...}
 Messages = List[Message]  # delta messages for one turn
+
+
+@dataclass
+class Turn:
+    """One turn within a multi-turn conversation.
+
+    ``messages`` is the delta to append to the running context (typically one
+    user / tool message).  Trace-replay datasets additionally set ``max_tokens``
+    (per-turn output cap from the recorded length sequence) and
+    ``tool_call_latency`` (seconds to sleep before sending this turn, simulating
+    tool execution wait).  ``is_final`` flags the last turn of the trace.
+    """
+
+    messages: Messages
+    max_tokens: Optional[int] = None
+    tool_call_latency: Optional[float] = None
+    is_final: bool = False
+
+
+# Type alias for a full conversation (list of turn deltas).
+Conversation = List[Turn]
 
 
 class DatasetPluginBase:
@@ -33,13 +55,15 @@ class DatasetPluginBase:
 
     @abstractmethod
     def build_messages(self) -> Iterator[List[Dict]]:
-        """Build the request.
+        """Build the request payload.
+
+        Single-turn plugins yield a single-message list ``[{role, content}]``
+        per request.  Multi-turn plugins yield a ``Conversation`` (``List[Turn]``)
+        per conversation; each ``Turn`` may carry per-turn ``max_tokens`` and
+        ``tool_call_latency`` overrides.
 
         Raises:
-            NotImplementedError: The request is not impletion.
-
-        Yields:
-            Iterator[List[Dict]]: Yield request messages.
+            NotImplementedError: Subclass must implement.
         """
         raise NotImplementedError
 

@@ -51,10 +51,16 @@ class ClosedLoopStrategy(BenchmarkStrategy):
         warmup_requests, benchmark_requests = await self._partition_requests(self._request_generator)
 
         if warmup_requests:
-            await self._run_phase(warmup_requests, is_warmup=True)
-        await self._run_phase(benchmark_requests, is_warmup=False)
+            # Warmup ignores --duration; it must finish in full before the
+            # timed benchmark window begins.
+            await self._run_phase(warmup_requests, is_warmup=True, deadline=None)
+        await self._run_phase(
+            benchmark_requests,
+            is_warmup=False,
+            deadline=self._compute_deadline(self.args.duration),
+        )
 
-    async def _run_phase(self, requests: List[dict], is_warmup: bool) -> None:
+    async def _run_phase(self, requests: List[dict], is_warmup: bool, deadline: float = None) -> None:
         """Dispatch one phase of requests and wait for all to complete.
 
         When ``args.rate`` is configured, request pacing uses absolute-time
@@ -62,6 +68,10 @@ class ClosedLoopStrategy(BenchmarkStrategy):
         for the rationale).  Pre-compute a cumulative delay vector anchored to
         a phase ``start`` timestamp so that event-loop jitter can be absorbed
         instead of accumulating into a slow drift of the realised QPS.
+
+        ``deadline``: optional ``time.perf_counter()`` timestamp; when set, the
+        dispatch loop exits on reaching it and any in-flight requests are
+        hard-cancelled (trie-style).
         """
         semaphore = asyncio.Semaphore(self.args.parallel)
         max_in_flight = self.args.parallel * self.args.in_flight_task_multiplier
@@ -84,7 +94,16 @@ class ClosedLoopStrategy(BenchmarkStrategy):
             # otherwise the anchor will skew.
             target_times = delay_ts + time.perf_counter()
 
+        dispatched = 0
         for i, request in enumerate(requests):
+            # Duration cap: stop dispatching new requests once the deadline is hit.
+            if deadline is not None and time.perf_counter() >= deadline:
+                logger.info(
+                    f'Duration deadline reached after dispatching {dispatched}/{n} requests; '
+                    'stopping further dispatches.'
+                )
+                break
+
             # Sleep until the absolute target dispatch time (drift-corrected).
             if target_times is not None:
                 sleep_s = target_times[i] - time.perf_counter()
@@ -98,7 +117,7 @@ class ClosedLoopStrategy(BenchmarkStrategy):
 
             task = asyncio.create_task(_send_request(semaphore, request, is_warmup, self.queue, self.client))
             in_flight.add(task)
+            dispatched += 1
 
-        # Phase barrier: wait for all in-flight requests before returning.
-        if in_flight:
-            await asyncio.gather(*in_flight, return_exceptions=True)
+        # Phase barrier: wait for all in-flight requests; hard-cancel at deadline.
+        await self._gather_with_deadline(in_flight, deadline=deadline)

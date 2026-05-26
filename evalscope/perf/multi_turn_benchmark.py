@@ -47,7 +47,7 @@ from evalscope.perf.core.http_client import AioHttpClient
 from evalscope.perf.core.metrics_consumer import connect_test, data_process_completed_event, statistic_benchmark_metric
 from evalscope.perf.core.strategies import MultiTurnStrategy
 from evalscope.perf.plugin import ApiRegistry, DatasetRegistry
-from evalscope.perf.plugin.datasets.base import Message, Messages
+from evalscope.perf.plugin.datasets.base import Conversation
 from evalscope.perf.utils.db_util import summary_result
 from evalscope.perf.utils.handler import exception_handler
 from evalscope.utils.logger import get_logger
@@ -83,7 +83,7 @@ async def run_multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     # into the benchmark portion.
     _max_preload = args.total_count
     with tqdm(desc='Loading[conversations]', logger=logger) as pbar:
-        all_conversations: List[List[Messages]] = []
+        all_conversations: List[Conversation] = []
         for conv in dataset_plugin.build_messages():
             all_conversations.append(conv)
             pbar.update(1)

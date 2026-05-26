@@ -129,6 +129,22 @@ class Arguments(BaseArgument):
     sleep_interval: int = 5
     """Sleep interval between performance runs, in seconds."""
 
+    duration: Optional[float] = None
+    """Wall-clock budget for one benchmark run, in seconds.
+
+    When set, the dispatcher stops sending new requests once the deadline is
+    reached and hard-cancels any in-flight requests (matches the behavior of
+    [applied-compute/trie](https://github.com/applied-compute/trie)).
+    Cancelled in-flight requests are dropped from the metrics aggregate.
+
+    Honored in all benchmark modes (single-turn closed-loop, single-turn
+    open-loop, and multi-turn).  Warmup phases ignore ``--duration`` and run
+    in full; the deadline only applies to the benchmark phase.  When both
+    ``--number`` and ``--duration`` are set, whichever limit is reached first
+    ends the run.  Sweep mode (list-valued ``--number`` / ``--parallel`` /
+    ``--rate``) applies ``--duration`` to each individual run.
+    """
+
     # SLA Auto-tuning
     sla_auto_tune: bool = False
     """Enable SLA auto-tuning."""
@@ -571,6 +587,12 @@ def add_argument(parser: argparse.ArgumentParser):
                              'semaphore backpressure. Use with --rate (list) and matching --number (list).')  # noqa: E501
     parser.add_argument(
         '--sleep-interval', type=int, default=5, help='Sleep interval between performance runs, in seconds. Default 5')  # noqa: E501
+    parser.add_argument(
+        '--duration', type=float, default=None,
+        help='Wall-clock budget in seconds for one benchmark run (applies to all modes). '
+             'Once reached, no new requests are dispatched and in-flight ones are hard-cancelled '
+             '(trie-compatible). Warmup ignores this. When both --number and --duration are set, '
+             'whichever limit is reached first ends the run.')  # noqa: E501
 
     # SLA Auto-tuning
     parser.add_argument('--sla-auto-tune', action='store_true', default=False, help='Enable SLA auto-tuning')
