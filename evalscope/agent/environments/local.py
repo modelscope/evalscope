@@ -43,9 +43,13 @@ class LocalAgentEnvironment(AgentEnvironment):
         cwd: Optional[str] = None,
         input: Optional[str] = None,
         timeout: Optional[float] = None,
+        env: Optional[Dict[str, str]] = None,
     ) -> ExecResult:
         effective_cwd = cwd or self._working_dir
-        env = {**os.environ, **self._env_vars} if self._env_vars else None
+        if self._env_vars or env:
+            merged_env = {**os.environ, **self._env_vars, **(env or {})}
+        else:
+            merged_env = None
 
         loop = asyncio.get_running_loop()
         started = loop.time()
@@ -56,7 +60,7 @@ class LocalAgentEnvironment(AgentEnvironment):
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=effective_cwd,
-            env=env,
+            env=merged_env,
         )
         try:
             stdout_bytes, stderr_bytes = await asyncio.wait_for(

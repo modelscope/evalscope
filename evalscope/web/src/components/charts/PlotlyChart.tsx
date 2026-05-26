@@ -33,9 +33,7 @@ export default function PlotlyChart({ src, height = 400, className, title }: Plo
     >
       {title && (
         <div className="px-4 py-2.5 border-b border-[var(--border)]">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-            {title}
-          </h4>
+          <h4 className="type-label-xs">{title}</h4>
         </div>
       )}
       <div className="relative" style={{ height }}>
@@ -45,7 +43,7 @@ export default function PlotlyChart({ src, height = 400, className, title }: Plo
           </div>
         )}
         {error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[var(--text-dim)]">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[var(--text-muted)]">
             <AlertTriangle size={24} />
             <span className="text-sm">Failed to load chart</span>
           </div>

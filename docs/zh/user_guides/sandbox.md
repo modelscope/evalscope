@@ -10,7 +10,7 @@
 ```{tip}
 - 数据集默认的**沙箱环境配置**可以在数据集配置中查看，例如[HumanEval](../benchmarks/humaneval.md)。
 - **沙箱工作进程数** 需要根据本地机器的资源情况进行调整，建议设置为不超过本地CPU核心数的一半，例如本地有8核CPU，则建议设置为4，尤其是多语言镜像(`volcengine/sandbox-fusion`)，其消耗资源更多，建议适当减少工作进程数。
-- 同一套沙箱基础设施同时驱动 [Agent 评测](agent.md) 中的 `environment='docker'`，可在 `agent_config.environment_extra` 中复用 `image` / `timeout` 等参数。
+- 同一套沙箱基础设施同时驱动 [Agent 评测](agent/index.md) 中的 `environment='docker'`，可在 `agent_config.environment_extra` 中复用 `image` / `timeout` 等参数。
 ```
 
 ## 0. 统一 Sandbox 配置

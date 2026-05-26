@@ -340,6 +340,7 @@ export default function ReportsPage() {
             }, [])
             .map((item, idx) =>
               item === 'ellipsis' ? (
+                // text-dim allowed: decorative pagination ellipsis (DESIGN.md §Text)
                 <span key={`e${idx}`} className="px-1 text-[var(--text-dim)]">
                   ...
                 </span>
@@ -381,6 +382,7 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-3">
+      {/* text-dim allowed: empty-state icon (DESIGN.md §Text) */}
       <div className="text-[var(--text-dim)]">{icon}</div>
       <h3 className="text-lg font-semibold text-[var(--text)]">{title}</h3>
       <p className="text-sm text-[var(--text-muted)]">{subtitle}</p>

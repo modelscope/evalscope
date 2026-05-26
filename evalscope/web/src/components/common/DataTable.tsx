@@ -12,12 +12,12 @@ export default function DataTable({ columns, data, scoreColumns = [] }: Props) {
   const scoreCols = new Set(scoreColumns.length ? scoreColumns : columns.filter((c) => c.toLowerCase().includes('score')))
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-[var(--color-border)]">
+    <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-[var(--color-surface)]">
+          <tr className="bg-[var(--bg-card)]">
             {columns.map((col) => (
-              <th key={col} className="px-3 py-2 text-left font-medium text-[var(--color-ink-muted)] whitespace-nowrap">
+              <th key={col} className="px-3 py-2 text-left font-medium text-[var(--text-muted)] whitespace-nowrap">
                 {col}
               </th>
             ))}
@@ -25,7 +25,7 @@ export default function DataTable({ columns, data, scoreColumns = [] }: Props) {
         </thead>
         <tbody>
           {data.map((row, i) => (
-            <tr key={i} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-hover)]">
+            <tr key={i} className="border-t border-[var(--border)] hover:bg-[var(--bg-card2)]">
               {columns.map((col) => {
                 const val = row[col]
                 const isScore = scoreCols.has(col) && typeof val === 'number'

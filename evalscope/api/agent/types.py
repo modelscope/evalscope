@@ -7,7 +7,7 @@ import from ``evalscope.api.agent`` to participate.
 """
 
 from dataclasses import dataclass, field
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 
 from evalscope.api.messages import ChatMessage
@@ -18,14 +18,43 @@ if TYPE_CHECKING:
     from .trace import AgentTrace
 
 
-class AgentConfig(BaseModel):
-    """Global agent configuration carried by ``TaskConfig.agent_config``.
+class BaseAgentConfig(BaseModel):
+    """Fields shared by every agent-config variant.
 
-    When set, every ``DefaultDataAdapter``-based benchmark will route
-    inference through the AgentLoop instead of calling ``model.generate``
-    once.  Individual AgentAdapter subclasses (e.g. SWE-bench_Pro) ignore
-    this global config and use their own settings to avoid double wrapping.
+    Both :class:`NativeAgentConfig` (the AgentLoop path) and
+    :class:`ExternalAgentConfig` (the external-CLI bridge path) need an
+    :class:`AgentEnvironment` plus a free-form ``kwargs`` channel; lifting
+    them here avoids duplicating the schema across both subclasses.
     """
+
+    # ``extra='forbid'`` so legacy ``extra=...`` configs (renamed to
+    # ``kwargs``) and field typos surface as ValidationError instead of
+    # silently being dropped — agent_config is a public surface.
+    model_config = ConfigDict(extra='forbid')
+
+    environment: Optional[str] = Field(default=None)
+    """Registered environment name.  ``None`` means no sandbox (local tools only)."""
+
+    environment_extra: Dict[str, Any] = Field(default_factory=dict)
+    """Free-form environment-specific options (passed to environment constructor)."""
+
+    kwargs: Dict[str, Any] = Field(default_factory=dict)
+    """Free-form variant-specific options.  Native: forwarded to the
+    strategy constructor.  External: forwarded to the runner constructor."""
+
+
+class NativeAgentConfig(BaseAgentConfig):
+    """AgentLoop-driven agent configuration.
+
+    When carried by ``TaskConfig.agent_config``, every
+    ``DefaultDataAdapter``-based benchmark routes inference through the
+    AgentLoop instead of calling ``model.generate`` once.  Individual
+    AgentAdapter subclasses (e.g. SWE-bench_Pro) ignore this global config
+    and use their own settings to avoid double wrapping.
+    """
+
+    mode: Literal['native'] = Field(default='native')
+    """Union discriminator — fixed value for the native AgentLoop path."""
 
     strategy: str = Field(default='function_calling')
     """Registered strategy name (``function_calling`` / ``react`` / ...)."""
@@ -36,14 +65,9 @@ class AgentConfig(BaseModel):
     max_steps: int = Field(default=10)
     """Hard upper bound on loop iterations."""
 
-    environment: Optional[str] = Field(default=None)
-    """Registered environment name.  ``None`` means no sandbox (local tools only)."""
 
-    extra: Dict[str, Any] = Field(default_factory=dict)
-    """Free-form strategy-specific options (passed to strategy constructor)."""
-
-    environment_extra: Dict[str, Any] = Field(default_factory=dict)
-    """Free-form environment-specific options (passed to environment constructor)."""
+AgentConfig = NativeAgentConfig
+"""Backwards-compat alias.  Prefer :class:`NativeAgentConfig` in new code."""
 
 
 class ExecResult(BaseModel):
@@ -114,7 +138,9 @@ __all__ = [
     'AgentConfig',
     'AgentContext',
     'AgentLoopResult',
+    'BaseAgentConfig',
     'ExecResult',
+    'NativeAgentConfig',
     'ParsedAction',
     'ToolSchemaMode',
 ]

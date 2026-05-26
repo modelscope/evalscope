@@ -11,6 +11,7 @@ interface SearchInputProps {
 export default function SearchInput({ value, onChange, placeholder, className }: SearchInputProps) {
   return (
     <div className={cn('relative', className)}>
+      {/* text-dim allowed: search input icons (DESIGN.md §Text) */}
       <Search
         size={14}
         className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-dim)]"
@@ -29,6 +30,7 @@ export default function SearchInput({ value, onChange, placeholder, className }:
         )}
       />
       {value && (
+        // text-dim allowed: clear-search icon button (DESIGN.md §Text)
         <button
           onClick={() => onChange('')}
           className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer"

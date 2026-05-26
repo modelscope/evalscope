@@ -21,12 +21,6 @@ interface TableProps<T> {
   defaultSort?: { key: string; dir: SortDir }
 }
 
-/** Convert a 0–1 score to an HSL color string (red → yellow → green) */
-export function scoreColor(score: number): string {
-  const hue = Math.round(score * 120) // 0=red, 60=yellow, 120=green
-  return `hsl(${hue}, 70%, 45%)`
-}
-
 export default function Table<T extends Record<string, unknown>>({
   columns,
   data,
@@ -84,9 +78,9 @@ export default function Table<T extends Record<string, unknown>>({
                   key={col.key}
                   onClick={() => handleHeaderClick(col)}
                   className={cn(
-                    'px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)] select-none',
+                    'px-4 py-3 text-left type-table-xs select-none',
                     isSortable && 'cursor-pointer hover:text-[var(--text)]',
-                    isActive && 'text-[var(--accent)]',
+                    isActive && '!text-[var(--accent)]',
                   )}
                 >
                   <span className="inline-flex items-center gap-1">
@@ -127,6 +121,7 @@ export default function Table<T extends Record<string, unknown>>({
             <tr>
               <td
                 colSpan={columns.length}
+                // text-dim allowed: non-essential ≥14px metadata (DESIGN.md §Text)
                 className="px-4 py-8 text-center text-[var(--text-dim)]"
               >
                 No data

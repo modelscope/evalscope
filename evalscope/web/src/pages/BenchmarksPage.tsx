@@ -186,7 +186,7 @@ export default function BenchmarksPage() {
                   className={[
                     'px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-[var(--transition)] cursor-pointer border',
                     selectedTags.includes(tag)
-                      ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-[0_0_12px_rgba(129,109,248,0.2)]'
+                      ? 'bg-[var(--accent)] text-[var(--text-on-filled)] border-[var(--accent)] shadow-[var(--shadow-glow-soft)]'
                       : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border)] hover:border-[var(--accent-dim)] hover:text-[var(--accent)]',
                   ].join(' ')}
                 >
@@ -251,7 +251,7 @@ export default function BenchmarksPage() {
                     <Badge variant="warning" className="text-[9px] shrink-0">VLM</Badge>
                   )}
                 </div>
-                <p className="text-[11px] text-[var(--text-dim)] font-mono mt-0.5">{entry.name}</p>
+                <p className="text-[11px] text-[var(--text-muted)] font-mono mt-0.5">{entry.name}</p>
               </div>
             </div>
 
@@ -261,7 +261,7 @@ export default function BenchmarksPage() {
             </p>
 
             {/* Meta info row */}
-            <div className="flex items-center gap-3 mt-3 text-[11px] text-[var(--text-dim)]">
+            <div className="flex items-center gap-3 mt-3 text-[11px] text-[var(--text-muted)]">
               {entry.total_samples > 0 && (
                 <span className="inline-flex items-center gap-1">
                   <Database size={10} />
@@ -320,9 +320,9 @@ export default function BenchmarksPage() {
                     <Badge variant="warning" className="text-[10px] shrink-0">VLM</Badge>
                   )}
                 </div>
-                <p className="text-xs text-[var(--text-dim)] font-mono mt-0.5">{selectedEntry.name}</p>
+                <p className="text-xs text-[var(--text-muted)] font-mono mt-0.5">{selectedEntry.name}</p>
                 {/* Meta row */}
-                <div className="flex items-center gap-3 mt-2 text-xs text-[var(--text-dim)]">
+                <div className="flex items-center gap-3 mt-2 text-xs text-[var(--text-muted)]">
                   {selectedEntry.total_samples > 0 && (
                     <span className="inline-flex items-center gap-1">
                       <Database size={11} />
@@ -363,7 +363,7 @@ export default function BenchmarksPage() {
               </div>
               <button
                 onClick={closeDetail}
-                className="shrink-0 p-1.5 rounded-[var(--radius-sm)] text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-[var(--bg-card2)] transition-colors cursor-pointer"
+                className="shrink-0 p-1.5 rounded-[var(--radius-sm)] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card2)] transition-colors cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -389,6 +389,7 @@ export default function BenchmarksPage() {
       {items.length === 0 && !loading && (
         <div className="text-center py-16">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[var(--bg-deep)] mb-4">
+            {/* text-dim allowed: empty-state icon (DESIGN.md §Text) */}
             <BookOpen size={24} className="text-[var(--text-dim)]" />
           </div>
           <p className="text-sm text-[var(--text-muted)]">{t('benchmarks.noResults')}</p>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useReports } from '@/contexts/ReportsContext'
 import { useLocale } from '@/contexts/LocaleContext'
@@ -6,22 +6,23 @@ import { listReports } from '@/api/reports'
 import type { ReportSummary } from '@/api/types'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
-import Button from '@/components/ui/Button'
 import Skeleton from '@/components/ui/Skeleton'
+import KpiCard from '@/components/ui/KpiCard'
+import ScoreChip from '@/components/ui/ScoreChip'
+import ScoreBadge from '@/components/ui/ScoreBadge'
+import PathBar from '@/components/ui/PathBar'
+import EvalRunCard from '@/components/ui/EvalRunCard'
+import ModelGroupHeader from '@/components/ui/ModelGroupHeader'
+import EmptyState from '@/components/common/EmptyState'
 import {
   FileText,
   Cpu,
   Database,
   Clock,
-  Search,
   Inbox,
-  FolderInput,
   FolderOpen,
-  ChevronDown,
-  ChevronRight,
 } from 'lucide-react'
-import { scoreColor } from '@/components/ui/Table'
-import { scoreBg } from '@/utils/colorScale'
+import { cn } from '@/lib/utils'
 
 // ------------------------------------------------------------------ //
 // Helpers                                                              //
@@ -38,126 +39,6 @@ function formatTimestampShort(ts: string): string {
 }
 
 // ------------------------------------------------------------------ //
-// KPI Card                                                            //
-// ------------------------------------------------------------------ //
-interface KpiCardProps {
-  icon: ReactNode
-  value: string
-  label: string
-  gradient: string
-  delay?: number
-  onClick?: () => void
-}
-
-function KpiCard({ icon, value, label, gradient, delay = 0, onClick }: KpiCardProps) {
-  return (
-    <div
-      className={`kpi-card group${onClick ? ' cursor-pointer' : ''}`}
-      onClick={onClick}
-      style={{
-        animationDelay: `${delay}ms`,
-        background: 'var(--gradient-surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius)',
-        padding: '1.25rem',
-        backdropFilter: 'blur(12px)',
-        transition: 'border-color 0.15s, transform 0.15s',
-      }}
-      onMouseEnter={onClick ? (e) => {
-        const el = e.currentTarget as HTMLDivElement
-        el.style.borderColor = 'var(--border-md)'
-        el.style.transform = 'scale(1.02)'
-      } : undefined}
-      onMouseLeave={onClick ? (e) => {
-        const el = e.currentTarget as HTMLDivElement
-        el.style.borderColor = 'var(--border)'
-        el.style.transform = 'scale(1)'
-      } : undefined}
-    >
-      <div className="flex items-start justify-between mb-3">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-white"
-          style={{ background: gradient }}
-        >
-          {icon}
-        </div>
-      </div>
-      <div className="text-2xl font-bold text-[var(--text)] tracking-tight">{value}</div>
-      <div className="text-xs text-[var(--text-muted)] mt-0.5 font-medium">{label}</div>
-    </div>
-  )
-}
-
-// ------------------------------------------------------------------ //
-// Dataset Score Chip                                                   //
-// ------------------------------------------------------------------ //
-function DatasetChip({ name, score }: { name: string; score: number }) {
-  const fg = scoreColor(score)
-  const bg = scoreBg(score)
-  return (
-    <span
-      className="px-2 py-0.5 rounded-full text-xs font-mono whitespace-nowrap"
-      style={{ background: bg, color: fg }}
-    >
-      {name} {(score * 100).toFixed(1)}
-    </span>
-  )
-}
-
-// ------------------------------------------------------------------ //
-// EvalRunCard (Timeline view)                                          //
-// ------------------------------------------------------------------ //
-interface EvalRunCardProps {
-  report: ReportSummary
-  onClick: () => void
-}
-
-function EvalRunCard({ report, onClick }: EvalRunCardProps) {
-  const score = report.score
-  const fg = scoreColor(score)
-  const bg = scoreBg(score)
-  const dsScores = report.dataset_scores
-
-  return (
-    <button
-      onClick={onClick}
-      className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--border-md)] transition-colors p-4 sm:p-5 cursor-pointer w-full text-left"
-    >
-      {/* First row: model name + score badge */}
-      <div className="flex items-center gap-2">
-        <span className="text-base font-bold text-[var(--text)] truncate flex-1 min-w-0">
-          {report.model_name}
-        </span>
-        <span
-          className="shrink-0 px-2.5 py-0.5 rounded-full text-sm font-bold tabular-nums"
-          style={{ background: bg, color: fg }}
-        >
-          {(score * 100).toFixed(1)}%
-        </span>
-      </div>
-
-      {/* Second row: timestamp + dataset chips */}
-      <div className="flex items-center gap-2 mt-2 flex-wrap">
-        {report.timestamp && (
-          <span className="text-xs font-mono text-[var(--text-dim)] shrink-0">
-            {formatTimestamp(report.timestamp)}
-          </span>
-        )}
-        <div className="flex flex-wrap gap-1.5">
-          {dsScores && Object.keys(dsScores).length > 0 ? (
-            Object.entries(dsScores).map(([ds, s]) => (
-              <DatasetChip key={ds} name={ds} score={s} />
-            ))
-          ) : (
-            <span className="text-xs text-[var(--text-dim)] font-mono">{report.dataset_name}</span>
-          )}
-        </div>
-      </div>
-    </button>
-  )
-}
-
-// ------------------------------------------------------------------ //
 // CompactRunRow (Grouped view)                                         //
 // ------------------------------------------------------------------ //
 interface CompactRunRowProps {
@@ -166,9 +47,6 @@ interface CompactRunRowProps {
 }
 
 function CompactRunRow({ report, onClick }: CompactRunRowProps) {
-  const score = report.score
-  const fg = scoreColor(score)
-  const bg = scoreBg(score)
   const dsScores = report.dataset_scores
 
   return (
@@ -177,26 +55,52 @@ function CompactRunRow({ report, onClick }: CompactRunRowProps) {
       className="flex items-center gap-3 py-2.5 px-3 rounded-[var(--radius-sm)] hover:bg-[var(--bg-card2)] transition-colors w-full text-left"
     >
       {report.timestamp && (
-        <span className="text-xs font-mono text-[var(--text-dim)] shrink-0 w-[110px]">
+        <span className="type-caption-mono text-[var(--text-muted)] shrink-0 w-[110px]">
           {formatTimestampShort(report.timestamp)}
         </span>
       )}
       <div className="flex flex-wrap gap-1 flex-1 min-w-0">
         {dsScores && Object.keys(dsScores).length > 0 ? (
-          Object.entries(dsScores).map(([ds, s]) => (
-            <DatasetChip key={ds} name={ds} score={s} />
-          ))
+          Object.entries(dsScores).map(([ds, s]) => <ScoreChip key={ds} label={ds} score={s} />)
         ) : (
-          <span className="text-xs text-[var(--text-dim)] font-mono">{report.dataset_name}</span>
+          <span className="type-caption-mono text-[var(--text-muted)]">{report.dataset_name}</span>
         )}
       </div>
-      <span
-        className="shrink-0 px-2 py-0.5 rounded-full text-xs font-bold tabular-nums"
-        style={{ background: bg, color: fg }}
-      >
-        {(score * 100).toFixed(1)}%
-      </span>
+      <ScoreBadge score={report.score} className="shrink-0 !text-xs !px-2" />
     </button>
+  )
+}
+
+// ------------------------------------------------------------------ //
+// View toggle (segmented control)                                      //
+// ------------------------------------------------------------------ //
+type DashboardView = 'timeline' | 'grouped' | 'byDataset'
+
+interface ViewToggleProps {
+  value: DashboardView
+  onChange: (v: DashboardView) => void
+  labels: Record<DashboardView, string>
+}
+
+function ViewToggle({ value, onChange, labels }: ViewToggleProps) {
+  const items: DashboardView[] = ['timeline', 'grouped', 'byDataset']
+  return (
+    <div className="inline-flex rounded-[var(--radius-sm)] border border-[var(--border-md)] overflow-hidden">
+      {items.map((key) => (
+        <button
+          key={key}
+          onClick={() => onChange(key)}
+          className={cn(
+            'px-3.5 py-1.5 type-button-sm transition-colors cursor-pointer',
+            value === key
+              ? 'bg-[var(--accent)] text-[var(--text-on-filled)]'
+              : 'bg-[var(--bg-card2)] text-[var(--text-muted)] hover:text-[var(--text)]',
+          )}
+        >
+          {labels[key]}
+        </button>
+      ))}
+    </div>
   )
 }
 
@@ -234,7 +138,7 @@ export default function DashboardPage() {
   const [scanned, setScanned] = useState(false)
 
   // Evaluation list state
-  const [view, setView] = useState<'timeline' | 'grouped' | 'byDataset'>('timeline')
+  const [view, setView] = useState<DashboardView>('timeline')
   const evalListRef = useRef<HTMLDivElement>(null)
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('time')
@@ -333,43 +237,25 @@ export default function DashboardPage() {
 
   const hasData = scanned && reports.length > 0
 
+  const viewLabels: Record<DashboardView, string> = {
+    timeline: t('dashboard.timelineView'),
+    grouped: t('dashboard.groupedView'),
+    byDataset: t('dashboard.byDatasetView'),
+  }
+
   return (
     <div className="flex flex-col gap-5 min-h-0">
       {/* ── Path Bar ── */}
-      <div
-        className="flex items-center gap-3 p-3 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]"
-        style={{ boxShadow: 'var(--shadow-sm)' }}
-      >
-        <FolderInput size={18} className="text-[var(--accent)] shrink-0" />
-        <input
-          type="text"
-          value={pathInput}
-          onChange={(e) => setPathInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleScan()}
-          placeholder={t('dashboard.pathPlaceholder')}
-          className="flex-1 min-w-0 px-3 py-2 text-sm rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-dim)] transition-all duration-150"
-        />
-        <Button
-          onClick={handleScan}
-          disabled={scanning || !pathInput.trim()}
-          size="md"
-        >
-          {scanning ? (
-            <span className="flex items-center gap-1.5">
-              <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
-                <circle cx="12" cy="12" r="9" strokeOpacity={0.25} />
-                <path d="M21 12a9 9 0 11-9-9" />
-              </svg>
-              {t('dashboard.scanning')}
-            </span>
-          ) : (
-            <span className="flex items-center gap-1.5">
-              <Search size={14} />
-              {t('dashboard.scanBtn')}
-            </span>
-          )}
-        </Button>
-      </div>
+      <PathBar
+        value={pathInput}
+        onChange={setPathInput}
+        onSubmit={handleScan}
+        placeholder={t('dashboard.pathPlaceholder')}
+        submitLabel={t('dashboard.scanBtn')}
+        scanningLabel={t('dashboard.scanning')}
+        scanning={scanning}
+        disabled={!pathInput.trim()}
+      />
 
       {/* ── KPI Cards ── */}
       {scanning ? (
@@ -420,221 +306,144 @@ export default function DashboardPage() {
 
       {/* ── Unified Evaluation List ── */}
       {hasData && !scanning && (
-        <div ref={evalListRef}><Card
-          title={t('dashboard.evaluations')}
-          badge={<Badge>{sortedReports.length}</Badge>}
-        >
-          {/* Controls bar */}
-          <div className="flex items-center gap-3 flex-wrap mb-4">
-            {/* View toggle */}
-            <div
-              style={{
-                display: 'inline-flex',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--border-md)',
-                overflow: 'hidden',
-              }}
-            >
-              <button
-                onClick={() => setView('timeline')}
-                style={{
-                  padding: '6px 14px',
-                  fontSize: '12px',
-                  background: view === 'timeline' ? 'var(--accent)' : 'var(--bg-card2)',
-                  color: view === 'timeline' ? 'var(--bg)' : 'var(--text-muted)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}
+        <div ref={evalListRef}>
+          <Card title={t('dashboard.evaluations')} badge={<Badge>{sortedReports.length}</Badge>}>
+            {/* Controls bar */}
+            <div className="flex items-center gap-3 flex-wrap mb-4">
+              <ViewToggle value={view} onChange={setView} labels={viewLabels} />
+
+              {/* Search */}
+              <input
+                type="text"
+                placeholder={t('dashboard.searchPlaceholder')}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="flex-1 min-w-[160px] max-w-[300px] px-3 py-1.5 type-body-xs rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)] placeholder-[var(--text-dim)]"
+              />
+
+              {/* Sort */}
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value)}
+                className="px-3 py-1.5 type-body-xs rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)]"
               >
-                {t('dashboard.timelineView')}
-              </button>
-              <button
-                onClick={() => setView('grouped')}
-                style={{
-                  padding: '6px 14px',
-                  fontSize: '12px',
-                  background: view === 'grouped' ? 'var(--accent)' : 'var(--bg-card2)',
-                  color: view === 'grouped' ? 'var(--bg)' : 'var(--text-muted)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {t('dashboard.groupedView')}
-              </button>
-              <button
-                onClick={() => setView('byDataset')}
-                style={{
-                  padding: '6px 14px',
-                  fontSize: '12px',
-                  background: view === 'byDataset' ? 'var(--accent)' : 'var(--bg-card2)',
-                  color: view === 'byDataset' ? 'var(--bg)' : 'var(--text-muted)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {t('dashboard.byDatasetView')}
-              </button>
+                <option value="time">{t('dashboard.sortTime')}</option>
+                <option value="score">{t('dashboard.sortScore')}</option>
+                <option value="model">{t('dashboard.sortModel')}</option>
+              </select>
             </div>
 
-            {/* Search */}
-            <input
-              type="text"
-              placeholder={t('dashboard.searchPlaceholder')}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="flex-1 min-w-[160px] max-w-[300px] px-3 py-1.5 text-xs rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)] placeholder-[var(--text-dim)]"
-            />
+            {/* List content */}
+            <div className="overflow-y-auto max-h-[calc(100vh-300px)]">
+              {sortedReports.length === 0 ? (
+                <div className="text-center py-8 type-body-sm text-[var(--text-muted)]">
+                  {t('dashboard.noEvals')}
+                </div>
+              ) : view === 'timeline' ? (
+                /* ── Timeline view ── */
+                <div className="flex flex-col gap-3">
+                  {sortedReports.map((report) => (
+                    <EvalRunCard
+                      key={`${report.name}-${report.dataset_name}`}
+                      report={report}
+                      onClick={() => navigateToReport(report)}
+                    />
+                  ))}
+                </div>
+              ) : view === 'grouped' ? (
+                /* ── Grouped view ── */
+                <div className="flex flex-col gap-2">
+                  {grouped.map(([model, runs]) => {
+                    const expanded = expandedGroups.has(model)
+                    const bestScore = Math.max(...runs.map(r => r.score))
 
-            {/* Sort */}
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
-              className="px-3 py-1.5 text-xs rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)]"
-            >
-              <option value="time">{t('dashboard.sortTime')}</option>
-              <option value="score">{t('dashboard.sortScore')}</option>
-              <option value="model">{t('dashboard.sortModel')}</option>
-            </select>
-          </div>
+                    return (
+                      <div key={model} className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
+                        <ModelGroupHeader
+                          title={model}
+                          count={runs.length}
+                          runsLabel={t('dashboard.runs')}
+                          bestScore={bestScore}
+                          bestScoreLabel={t('dashboard.bestScore')}
+                          expanded={expanded}
+                          onToggle={() => toggleGroup(model)}
+                        />
 
-          {/* List content */}
-          <div style={{ maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}>
-            {sortedReports.length === 0 ? (
-              <div className="text-center py-8 text-sm text-[var(--text-dim)]">
-                {t('dashboard.noEvals')}
-              </div>
-            ) : view === 'timeline' ? (
-              /* ── Timeline view ── */
-              <div className="flex flex-col gap-3">
-                {sortedReports.map((report) => (
-                  <EvalRunCard
-                    key={`${report.name}-${report.dataset_name}`}
-                    report={report}
-                    onClick={() => navigateToReport(report)}
-                  />
-                ))}
-              </div>
-            ) : view === 'grouped' ? (
-              /* ── Grouped view ── */
-              <div className="flex flex-col gap-2">
-                {grouped.map(([model, runs]) => {
-                  const expanded = expandedGroups.has(model)
-                  const bestScore = Math.max(...runs.map(r => r.score))
-                  const bestFg = scoreColor(bestScore)
-
-                  return (
-                    <div key={model} className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
-                      {/* Group header */}
-                      <button
-                        onClick={() => toggleGroup(model)}
-                        className="flex items-center gap-2 w-full px-4 py-3 hover:bg-[var(--bg-card2)] transition-colors text-left"
-                      >
-                        {expanded ? (
-                          <ChevronDown size={14} className="text-[var(--text-dim)] shrink-0" />
-                        ) : (
-                          <ChevronRight size={14} className="text-[var(--text-dim)] shrink-0" />
+                        {expanded && (
+                          <div className="border-t border-[var(--border)]">
+                            {runs.map((report) => (
+                              <CompactRunRow
+                                key={`${report.name}-${report.dataset_name}`}
+                                report={report}
+                                onClick={() => navigateToReport(report)}
+                              />
+                            ))}
+                          </div>
                         )}
-                        <span className="text-base font-bold text-[var(--text)]">{model}</span>
-                        <span className="text-sm text-[var(--text-dim)] font-mono">
-                          ({runs.length} {t('dashboard.runs')})
-                        </span>
-                        <span className="ml-auto text-sm font-mono" style={{ color: bestFg }}>
-                          {t('dashboard.bestScore')}: {(bestScore * 100).toFixed(1)}%
-                        </span>
-                      </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : view === 'byDataset' ? (
+                /* ── By Dataset view ── */
+                <div className="flex flex-col gap-2">
+                  {groupedByDataset.map(([dataset, runs]) => {
+                    const expanded = expandedGroups.has(dataset)
+                    const bestScore = Math.max(...runs.map(r => r.score))
 
-                      {/* Group entries */}
-                      {expanded && (
-                        <div className="border-t border-[var(--border)]">
-                          {runs.map((report) => (
-                            <CompactRunRow
-                              key={`${report.name}-${report.dataset_name}`}
-                              report={report}
-                              onClick={() => navigateToReport(report)}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            ) : view === 'byDataset' ? (
-              /* ── By Dataset view ── */
-              <div className="flex flex-col gap-2">
-                {groupedByDataset.map(([dataset, runs]) => {
-                  const expanded = expandedGroups.has(dataset)
-                  const bestScore = Math.max(...runs.map(r => r.score))
-                  const bestFg = scoreColor(bestScore)
+                    return (
+                      <div key={dataset} className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
+                        <ModelGroupHeader
+                          title={dataset}
+                          count={runs.length}
+                          runsLabel={t('dashboard.runs')}
+                          bestScore={bestScore}
+                          bestScoreLabel={t('dashboard.bestScore')}
+                          expanded={expanded}
+                          onToggle={() => toggleGroup(dataset)}
+                        />
 
-                  return (
-                    <div key={dataset} className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
-                      {/* Group header */}
-                      <button
-                        onClick={() => toggleGroup(dataset)}
-                        className="flex items-center gap-2 w-full px-4 py-3 hover:bg-[var(--bg-card2)] transition-colors text-left"
-                      >
-                        {expanded ? (
-                          <ChevronDown size={14} className="text-[var(--text-dim)] shrink-0" />
-                        ) : (
-                          <ChevronRight size={14} className="text-[var(--text-dim)] shrink-0" />
+                        {expanded && (
+                          <div className="border-t border-[var(--border)]">
+                            {runs.map((report) => (
+                              <CompactRunRow
+                                key={`${report.name}-${report.dataset_name}`}
+                                report={report}
+                                onClick={() => navigateToReport(report)}
+                              />
+                            ))}
+                          </div>
                         )}
-                        <span className="text-base font-bold text-[var(--text)]">{dataset}</span>
-                        <span className="text-sm text-[var(--text-dim)] font-mono">
-                          ({runs.length} {t('dashboard.runs')})
-                        </span>
-                        <span className="ml-auto text-sm font-mono" style={{ color: bestFg }}>
-                          {t('dashboard.bestScore')}: {(bestScore * 100).toFixed(1)}%
-                        </span>
-                      </button>
-
-                      {/* Group entries */}
-                      {expanded && (
-                        <div className="border-t border-[var(--border)]">
-                          {runs.map((report) => (
-                            <CompactRunRow
-                              key={`${report.name}-${report.dataset_name}`}
-                              report={report}
-                              onClick={() => navigateToReport(report)}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            ) : null}
-          </div>
-        </Card></div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : null}
+            </div>
+          </Card>
+        </div>
       )}
 
       {/* ── Empty state after scan ── */}
       {scanned && !hasData && !scanning && (
-        <div className="flex flex-col items-center justify-center py-16 gap-4 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
-          <div className="w-16 h-16 rounded-2xl bg-[var(--bg-deep)] border border-[var(--border)] flex items-center justify-center">
-            <Inbox size={28} className="text-[var(--text-dim)]" />
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-medium text-[var(--text-muted)]">{t('dashboard.noReportsYet')}</p>
-            <p className="text-xs text-[var(--text-dim)] mt-1">{t('dashboard.noReportsHint')}</p>
-          </div>
+        <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
+          <EmptyState
+            icon={<Inbox size={28} strokeWidth={1.5} />}
+            title={t('dashboard.noReportsYet')}
+            hint={t('dashboard.noReportsHint')}
+          />
         </div>
       )}
 
       {/* ── Welcome state (before any scan) ── */}
       {!scanned && !scanning && (
-        <div className="flex flex-col items-center justify-center py-12 gap-4 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
-          <div className="w-16 h-16 rounded-2xl bg-[var(--bg-deep)] border border-[var(--border)] flex items-center justify-center">
-            <FolderOpen size={28} className="text-[var(--accent)]" />
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-semibold text-[var(--text)]">{t('dashboard.welcomeTitle')}</p>
-            <p className="text-xs text-[var(--text-muted)] mt-1">{t('dashboard.welcomeDesc')}</p>
-          </div>
+        <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
+          <EmptyState
+            variant="welcome"
+            icon={<FolderOpen size={28} strokeWidth={1.5} />}
+            title={t('dashboard.welcomeTitle')}
+            hint={t('dashboard.welcomeDesc')}
+          />
         </div>
       )}
     </div>

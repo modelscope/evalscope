@@ -7,7 +7,7 @@ live in ``evalscope/agent/environments/``.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from .types import ExecResult
 
@@ -30,8 +30,15 @@ class AgentEnvironment(ABC):
         cwd: Optional[str] = None,
         input: Optional[str] = None,
         timeout: Optional[float] = None,
+        env: Optional[Dict[str, str]] = None,
     ) -> ExecResult:
-        """Run a command inside the environment and return its result."""
+        """Run a command inside the environment and return its result.
+
+        ``env`` (when provided) is merged on top of the environment's default
+        variables before the command runs.  Subclasses that cannot honour
+        ``env`` should raise ``NotImplementedError`` rather than silently
+        dropping the request.
+        """
         ...
 
     @abstractmethod

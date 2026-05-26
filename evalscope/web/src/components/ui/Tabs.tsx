@@ -27,7 +27,7 @@ export default function Tabs({ tabs, activeKey, onChange, className }: TabsProps
           className={cn(
             'px-4 py-1.5 text-sm font-medium rounded-[var(--radius-sm)] transition-all duration-[var(--transition)] cursor-pointer',
             activeKey === tab.key
-              ? 'bg-[var(--accent)] text-white shadow-[0_0_12px_rgba(129,109,248,0.2)]'
+              ? 'bg-[var(--accent)] text-[var(--text-on-filled)] shadow-[var(--shadow-glow-soft)]'
               : 'text-[var(--text-muted)] hover:text-[var(--text)] bg-[var(--bg-card)] hover:bg-[var(--bg-card2)]',
           )}
         >

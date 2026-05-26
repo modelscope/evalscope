@@ -8,14 +8,14 @@ import { BarChart3, Gauge, FlaskConical, BookOpen, FileText, Menu, X } from 'luc
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
     isActive
-      ? 'bg-[var(--accent)] text-white shadow-[0_0_12px_rgba(129,109,248,0.3)]'
+      ? 'bg-[var(--accent)] text-[var(--text-on-filled)] shadow-[var(--shadow-glow-soft)]'
       : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card2)]'
   }`
 
 const iconLinkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
     isActive
-      ? 'bg-[var(--accent)] text-white shadow-[0_0_12px_rgba(129,109,248,0.3)]'
+      ? 'bg-[var(--accent)] text-[var(--text-on-filled)] shadow-[var(--shadow-glow-soft)]'
       : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card2)]'
   }`
 
@@ -39,7 +39,7 @@ export default function TopNav() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--color-surface-glass)] backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--surface-glass)] backdrop-blur-xl">
       {/* Subtle gradient line at top */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-40" />
       <div className="flex items-center justify-between px-4 max-w-[1600px] mx-auto" style={{ height: '52px' }}>

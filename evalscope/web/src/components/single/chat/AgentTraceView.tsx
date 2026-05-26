@@ -5,6 +5,8 @@ import {
   Sparkles,
   Wrench,
   Check,
+  Play,
+  Square,
 } from 'lucide-react'
 import type { ChatMessage, AgentTrace, AgentTraceEvent, ToolCall } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
@@ -13,6 +15,7 @@ import { contentToText } from './chatHelpers'
 import { type Role } from './roleConfig'
 import { MessageRow, SystemPromptRow, HeaderPerfChip } from './MessageComponents'
 import { type ToolCallEntry, ToolCallsGroup } from './ToolCallComponents'
+import { bubbleAccent } from '@/components/ui/ChatBubble'
 
 /* ─── EnvExecRow ───────────────────────────────────────────── */
 
@@ -20,25 +23,11 @@ export function EnvExecRow({ event }: { event: AgentTraceEvent }) {
   const cmd = typeof event.payload.command === 'string' ? event.payload.command : ''
   if (!cmd) return null
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '0.5rem',
-        padding: '0.35rem 0.6rem',
-        background: 'var(--bg-deep)',
-        border: '1px solid var(--color-border-subtle)',
-        borderRadius: '0.4rem',
-        fontSize: '0.72rem',
-        fontFamily: 'var(--font-mono, monospace)',
-        color: 'var(--color-ink-muted)',
-        marginTop: '0.4rem',
-      }}
-    >
-      <Cpu size={12} style={{ color: 'var(--text-muted)', marginTop: 2, flexShrink: 0 }} />
-      <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', flex: 1 }}>$ {cmd}</span>
+    <div className="flex items-start gap-2 px-[0.6rem] py-[0.35rem] bg-[var(--bg-deep)] border border-[var(--border)] rounded-[0.4rem] text-[0.72rem] font-mono text-[var(--text-muted)] mt-[0.4rem]">
+      <Cpu size={12} className="text-[var(--text-muted)] mt-[2px] shrink-0" />
+      <span className="whitespace-pre-wrap break-all flex-1">$ {cmd}</span>
       {event.latency_ms != null && (
-        <span style={{ opacity: 0.6, whiteSpace: 'nowrap' }}>{fmtMs(event.latency_ms)}</span>
+        <span className="opacity-60 whitespace-nowrap">{fmtMs(event.latency_ms)}</span>
       )}
     </div>
   )
@@ -50,23 +39,9 @@ export function LoopErrorRow({ event }: { event: AgentTraceEvent }) {
   const msg = event.payload.message != null ? String(event.payload.message) : ''
   if (!msg) return null
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '0.5rem',
-        padding: '0.4rem 0.6rem',
-        background: 'var(--danger-bg)',
-        border: '1px solid var(--danger-border, var(--danger))',
-        borderRadius: '0.4rem',
-        fontSize: '0.72rem',
-        fontFamily: 'var(--font-mono, monospace)',
-        color: 'var(--danger)',
-        marginTop: '0.4rem',
-      }}
-    >
-      <AlertTriangle size={12} style={{ marginTop: 2, flexShrink: 0 }} />
-      <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', flex: 1 }}>{msg}</span>
+    <div className="flex items-start gap-2 px-[0.6rem] py-[0.4rem] bg-[var(--danger-bg)] border border-[var(--danger-border)] rounded-[0.4rem] text-[0.72rem] font-mono text-[var(--danger)] mt-[0.4rem]">
+      <AlertTriangle size={12} className="mt-[2px] shrink-0" />
+      <span className="whitespace-pre-wrap break-all flex-1">{msg}</span>
     </div>
   )
 }
@@ -77,23 +52,9 @@ export function LoopErrorRow({ event }: { event: AgentTraceEvent }) {
 export function NudgeRow({ msg }: { msg: ChatMessage }) {
   const text = contentToText(msg.content)
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.4rem',
-        padding: '0.35rem 0.6rem',
-        background: 'var(--warning-bg)',
-        border: '1px solid var(--warning-border)',
-        borderRadius: '0.4rem',
-        fontSize: '0.72rem',
-        fontFamily: 'var(--font-mono, monospace)',
-        color: 'var(--warning-text)',
-        marginTop: '0.25rem',
-      }}
-    >
-      <AlertTriangle size={12} style={{ flexShrink: 0 }} />
-      <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', flex: 1 }}>{text}</span>
+    <div className="flex items-center gap-[0.4rem] px-[0.6rem] py-[0.35rem] bg-[var(--warning-bg)] border border-[var(--warning-border)] rounded-[0.4rem] text-[0.72rem] font-mono text-[var(--warning-text)] mt-1">
+      <AlertTriangle size={12} className="shrink-0" />
+      <span className="whitespace-pre-wrap break-all flex-1">{text}</span>
     </div>
   )
 }
@@ -215,6 +176,55 @@ export interface StepGroup {
   totalLatencyMs: number | null
 }
 
+/** Cross-step linkage built once from the full message list and trace.
+ *
+ * Some recorders (e.g. the Claude Code external bridge) emit a tool_call on
+ * step N but the matching tool_result on step N+1 (when observed in the next
+ * request). Per-step lookups would then fail to inline the result under the
+ * call. These globals let StepBlock resolve results regardless of the step
+ * the result event landed on.
+ */
+export interface TraceContext {
+  /** All tool messages indexed by their tool_call_id. */
+  toolMsgByCallId: Map<string, ChatMessage>
+  /** All tool_result trace events indexed by payload.id (= tool_call id). */
+  toolResultEvByCallId: Map<string, AgentTraceEvent>
+  /** Tool message ids already consumed as a result inside some assistant's
+   *  tool_calls — should be excluded from any step's residualTools. */
+  consumedToolMsgIds: Set<string>
+}
+
+export function buildTraceContext(
+  messages: ChatMessage[],
+  trace: AgentTrace,
+  groups: StepGroup[]
+): TraceContext {
+  const toolMsgByCallId = new Map<string, ChatMessage>()
+  for (const m of messages) {
+    if (m.role === 'tool' && m.tool_call_id) {
+      toolMsgByCallId.set(m.tool_call_id, m)
+    }
+  }
+
+  const toolResultEvByCallId = new Map<string, AgentTraceEvent>()
+  for (const ev of trace.events) {
+    if (ev.type !== 'tool_result') continue
+    const id = typeof ev.payload?.id === 'string' ? ev.payload.id : null
+    if (id) toolResultEvByCallId.set(id, ev)
+  }
+
+  const consumedToolMsgIds = new Set<string>()
+  for (const g of groups) {
+    if (!g.assistant?.tool_calls) continue
+    for (const tc of g.assistant.tool_calls) {
+      const tm = toolMsgByCallId.get(tc.id)
+      if (tm?.id) consumedToolMsgIds.add(tm.id)
+    }
+  }
+
+  return { toolMsgByCallId, toolResultEvByCallId, consumedToolMsgIds }
+}
+
 export function buildStepGroups(messages: ChatMessage[], trace: AgentTrace): StepGroup[] {
   const messageById = new Map<string, ChatMessage>()
   for (const m of messages) if (m.id) messageById.set(m.id, m)
@@ -289,11 +299,11 @@ export function TraceEventPill({ event }: { event: AgentTraceEvent }) {
   const cfg = (() => {
     switch (event.type) {
       case 'model_generate':
-        return { Icon: Sparkles, color: 'var(--bubble-bot-color)', labelKey: 'trace.modelGenerate' }
+        return { Icon: Sparkles, color: bubbleAccent('bot'), labelKey: 'trace.modelGenerate' }
       case 'tool_call':
-        return { Icon: Wrench, color: 'var(--bubble-user-color)', labelKey: 'trace.toolCall' }
+        return { Icon: Wrench, color: bubbleAccent('user'), labelKey: 'trace.toolCall' }
       case 'tool_result':
-        return { Icon: Wrench, color: 'var(--bubble-tool-color)', labelKey: 'trace.toolResult' }
+        return { Icon: Wrench, color: bubbleAccent('tool'), labelKey: 'trace.toolResult' }
       case 'env_exec':
         return { Icon: Cpu, color: 'var(--text-muted)', labelKey: 'trace.envExec' }
       case 'error':
@@ -302,6 +312,10 @@ export function TraceEventPill({ event }: { event: AgentTraceEvent }) {
         return { Icon: AlertTriangle, color: 'var(--warning-color)', labelKey: 'trace.nudge' }
       case 'submit':
         return { Icon: Check, color: 'var(--success)', labelKey: 'trace.submit' }
+      case 'run_start':
+        return { Icon: Play, color: 'var(--text-muted)', labelKey: 'trace.runStart' }
+      case 'run_end':
+        return { Icon: Square, color: 'var(--text-muted)', labelKey: 'trace.runEnd' }
       default:
         return { Icon: Wrench, color: 'var(--text-muted)', labelKey: event.type }
     }
@@ -310,21 +324,8 @@ export function TraceEventPill({ event }: { event: AgentTraceEvent }) {
   const label = t(cfg.labelKey)
   return (
     <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 3,
-        padding: '1px 6px',
-        borderRadius: 3,
-        background: 'transparent',
-        border: `1px solid ${cfg.color}`,
-        color: cfg.color,
-        fontSize: '0.58rem',
-        fontFamily: 'var(--font-mono, monospace)',
-        fontWeight: 500,
-        opacity: 0.85,
-        whiteSpace: 'nowrap',
-      }}
+      className="inline-flex items-center gap-[3px] px-[6px] py-[1px] rounded-[3px] bg-transparent border text-[0.58rem] font-mono font-medium opacity-85 whitespace-nowrap"
+      style={{ borderColor: cfg.color, color: cfg.color }}
     >
       <Icon size={9} />
       {label === cfg.labelKey ? event.type : label}
@@ -339,18 +340,20 @@ export function StepBlock({
   highlightId,
   highlighted,
   onStepClick,
+  ctx,
 }: {
   group: StepGroup
   highlightId?: string
   highlighted: boolean
   onStepClick: (step: number) => void
+  ctx?: TraceContext
 }) {
   const { t } = useLocale()
 
   // Pre-agent messages (system/user) — render as-is, no wrapper
   if (group.step === -1) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      <div className="flex flex-col gap-2">
         {group.preAgentMessages.map((msg, idx) =>
           msg.role === 'system' ? (
             <SystemPromptRow
@@ -404,24 +407,33 @@ export function StepBlock({
   )
 
   // Build ToolCallEntry[] — prefer assistant.tool_calls, fallback to tool_call events.
-  const toolResultByCallId = new Map<string, AgentTraceEvent>()
-  for (const ev of toolResultEvents) {
-    const id = typeof ev.payload.id === 'string' ? ev.payload.id : null
-    if (id) toolResultByCallId.set(id, ev)
-  }
-  const toolMsgByCallId = new Map<string, ChatMessage>()
-  for (const m of group.tools) {
-    if (m.tool_call_id) toolMsgByCallId.set(m.tool_call_id, m)
-  }
-  // Also link via trace tool_result events (for mini-swe where observations
-  // are ChatMessageUser without tool_call_id).
-  for (const ev of toolResultEvents) {
-    const callId = typeof ev.payload.id === 'string' ? ev.payload.id : null
-    if (callId && !toolMsgByCallId.has(callId) && ev.message_id) {
-      const msg = group.tools.find(m => m.id === ev.message_id)
-      if (msg) toolMsgByCallId.set(callId, msg)
+  // Use global ctx maps when available so results emitted on a different step
+  // (e.g. Claude Code bridge emits tool_result on step+1) still get linked.
+  const toolResultByCallId = ctx?.toolResultEvByCallId ?? (() => {
+    const m = new Map<string, AgentTraceEvent>()
+    for (const ev of toolResultEvents) {
+      const id = typeof ev.payload.id === 'string' ? ev.payload.id : null
+      if (id) m.set(id, ev)
     }
-  }
+    return m
+  })()
+
+  const toolMsgByCallId = ctx?.toolMsgByCallId ?? (() => {
+    const m = new Map<string, ChatMessage>()
+    for (const tm of group.tools) {
+      if (tm.tool_call_id) m.set(tm.tool_call_id, tm)
+    }
+    // Also link via trace tool_result events (for mini-swe where observations
+    // are ChatMessageUser without tool_call_id).
+    for (const ev of toolResultEvents) {
+      const callId = typeof ev.payload.id === 'string' ? ev.payload.id : null
+      if (callId && !m.has(callId) && ev.message_id) {
+        const msg = group.tools.find(t => t.id === ev.message_id)
+        if (msg) m.set(callId, msg)
+      }
+    }
+    return m
+  })()
 
   let entries: ToolCallEntry[] = []
   if (group.assistant?.tool_calls && group.assistant.tool_calls.length > 0) {
@@ -452,69 +464,54 @@ export function StepBlock({
     })
   }
 
-  // Residual tool messages not linked to any call (rare; textual_block mode)
+  // Residual tool messages not linked to any call (rare; textual_block mode).
+  // Exclude this step's own linked results AND any tool message consumed by
+  // another step's assistant.tool_calls (cross-step tool_result placement).
   const linkedToolIds = new Set<string>()
   for (const e of entries) if (e.result?.id) linkedToolIds.add(e.result.id)
-  const residualTools = group.tools.filter(m => !(m.id && linkedToolIds.has(m.id)))
+  const residualTools = group.tools.filter(m => {
+    if (!m.id) return true
+    if (linkedToolIds.has(m.id)) return false
+    if (ctx?.consumedToolMsgIds.has(m.id)) return false
+    return true
+  })
 
   return (
     <div
-      style={{
-        borderRadius: '0.6rem',
-        background: highlighted ? 'var(--accent-dim)' : 'transparent',
-        borderLeft: highlighted ? '2px solid var(--accent)' : '2px solid transparent',
-        padding: highlighted ? '0.2rem 0 0.2rem 0.4rem' : '0.2rem 0',
-        transition: 'background 0.3s, border-color 0.3s',
-      }}
+      className={[
+        'rounded-[0.6rem] border-l-2 transition-[background-color,border-color] duration-300',
+        highlighted
+          ? 'bg-[var(--accent-dim)] border-[var(--accent)] py-[0.2rem] pl-[0.4rem] pr-0'
+          : 'bg-transparent border-transparent py-[0.2rem] px-0',
+      ].join(' ')}
     >
       {/* Step header strip */}
       <button
         onClick={() => onStepClick(group.step)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          width: '100%',
-          background: 'none',
-          border: 'none',
-          borderBottom: '1px dashed var(--color-border-subtle)',
-          padding: '0.3rem 0 0.4rem 0',
-          marginBottom: '0.5rem',
-          cursor: 'pointer',
-        }}
+        className="flex items-center gap-2 w-full bg-transparent border-0 border-b border-dashed border-[var(--border)] pt-[0.3rem] pb-[0.4rem] mb-2 cursor-pointer"
       >
         <span
-          style={{
-            fontSize: '0.7rem',
-            fontWeight: 700,
-            fontFamily: 'var(--font-mono, monospace)',
-            color: highlighted ? 'var(--accent)' : 'var(--text-muted)',
-            letterSpacing: '0.04em',
-          }}
+          className={[
+            'text-[0.7rem] font-bold font-mono tracking-[0.04em]',
+            highlighted ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]',
+          ].join(' ')}
         >
           {t('trace.step')} {group.step}
         </span>
         {group.totalLatencyMs != null && (
-          <span
-            style={{
-              fontSize: '0.65rem',
-              fontFamily: 'var(--font-mono, monospace)',
-              color: 'var(--text-muted)',
-              opacity: 0.7,
-            }}
-          >
+          <span className="text-[0.65rem] font-mono text-[var(--text-muted)] opacity-70">
             {fmtMs(group.totalLatencyMs)}
           </span>
         )}
         {/* Event pills */}
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flex: 1 }}>
+        <div className="flex flex-wrap flex-1 gap-1">
           {group.traceEvents.map((ev, i) => (
             <TraceEventPill key={i} event={ev} />
           ))}
         </div>
       </button>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      <div className="flex flex-col gap-2">
         {/* Assistant row */}
         {group.assistant && (
           <MessageRow
@@ -569,26 +566,35 @@ export function StepBlock({
 
 export function TracedTimeline({
   groups,
+  messages,
+  trace,
   highlightStep,
   highlightId,
   onStepClick,
 }: {
   groups: StepGroup[]
+  messages: ChatMessage[]
+  trace: AgentTrace
   highlightStep: number | null
   highlightId?: string
   onStepClick: (step: number) => void
 }) {
   const preGroup = groups.find(g => g.step === -1)
   const agentGroups = groups.filter(g => g.step >= 0)
+  const ctx = React.useMemo(
+    () => buildTraceContext(messages, trace, groups),
+    [messages, trace, groups]
+  )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+    <div className="flex flex-col gap-[0.6rem]">
       {preGroup && (
         <StepBlock
           group={preGroup}
           highlightId={highlightId}
           highlighted={false}
           onStepClick={onStepClick}
+          ctx={ctx}
         />
       )}
       {agentGroups.map((g) => {
@@ -600,6 +606,7 @@ export function TracedTimeline({
             highlightId={highlightId}
             highlighted={isActive}
             onStepClick={onStepClick}
+            ctx={ctx}
           />
         )
       })}

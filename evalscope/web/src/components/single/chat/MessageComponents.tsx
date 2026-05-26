@@ -1,9 +1,7 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 import {
   Copy,
   Check,
-  ChevronDown,
-  ChevronRight,
   Shield,
   Clock,
   Zap,
@@ -13,54 +11,31 @@ import {
 } from 'lucide-react'
 import type { ContentBlock } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useCopy } from '@/hooks/useCopy'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
+import Collapsible from '@/components/ui/Collapsible'
+import ChatBubble from '@/components/ui/ChatBubble'
 import { fmtMs } from '@/utils/formatUtils'
 import { contentToText } from './chatHelpers'
-import { type Role, rolePalette } from './roleConfig'
+import { type Role, rolePalette, roleToBubble } from './roleConfig'
 import { renderContentBlocks } from './MediaBlocks'
 
 /* ─── CopyIconButton ───────────────────────────────────────── */
 
+const CHIP_CLASS = 'px-[7px] py-[1px] rounded-[4px] bg-[var(--bg-deep)] border border-[var(--border)] text-[0.65rem] font-mono text-[var(--text-muted)]'
+
 export function CopyIconButton({ text }: { text: string }) {
   const { t } = useLocale()
-  const [copied, setCopied] = useState(false)
-  const handleCopy = useCallback(async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    try {
-      await navigator.clipboard.writeText(text)
-    } catch {
-      const el = document.createElement('textarea')
-      el.value = text
-      document.body.appendChild(el)
-      el.select()
-      document.execCommand('copy')
-      document.body.removeChild(el)
-    }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }, [text])
-
+  const { copied, copy } = useCopy()
   return (
     <button
-      onClick={handleCopy}
+      onClick={(e) => { e.stopPropagation(); copy(text) }}
       title={t('prediction.copyContent')}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 24,
-        height: 24,
-        borderRadius: 4,
-        border: '1px solid var(--color-border-subtle)',
-        background: 'transparent',
-        color: copied ? 'var(--accent)' : 'var(--text-muted)',
-        cursor: 'pointer',
-        opacity: 0.6,
-        transition: 'opacity 0.15s, color 0.15s',
-        flexShrink: 0,
-      }}
-      onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-      onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}
+      className={[
+        'inline-flex items-center justify-center w-6 h-6 rounded-[4px] border border-[var(--border)] bg-transparent cursor-pointer shrink-0',
+        'opacity-60 hover:opacity-100 transition-[opacity,color] duration-150',
+        copied ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]',
+      ].join(' ')}
     >
       {copied ? <Check size={12} /> : <Copy size={12} />}
     </button>
@@ -71,43 +46,16 @@ export function CopyIconButton({ text }: { text: string }) {
 
 export function MsgIdChip({ msgId }: { msgId: string }) {
   const { t } = useLocale()
-  const [copied, setCopied] = useState(false)
-  const handleCopy = useCallback(async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    try {
-      await navigator.clipboard.writeText(msgId)
-    } catch {
-      const el = document.createElement('textarea')
-      el.value = msgId
-      document.body.appendChild(el)
-      el.select()
-      document.execCommand('copy')
-      document.body.removeChild(el)
-    }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }, [msgId])
+  const { copied, copy } = useCopy()
   return (
     <button
-      onClick={handleCopy}
+      onClick={(e) => { e.stopPropagation(); copy(msgId) }}
       title={t('prediction.copyMsgId')}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 3,
-        padding: '1px 6px',
-        borderRadius: 4,
-        border: '1px solid var(--color-border-subtle)',
-        background: 'var(--bg-deep)',
-        color: copied ? 'var(--accent)' : 'var(--text-muted)',
-        fontSize: '0.62rem',
-        fontFamily: 'var(--font-mono, monospace)',
-        cursor: 'pointer',
-        opacity: 0.7,
-        transition: 'opacity 0.15s, color 0.15s',
-      }}
-      onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-      onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}
+      className={[
+        'inline-flex items-center gap-[3px] px-[6px] py-[1px] rounded-[4px] border border-[var(--border)] bg-[var(--bg-deep)]',
+        'text-[0.62rem] font-mono cursor-pointer opacity-70 hover:opacity-100 transition-[opacity,color] duration-150',
+        copied ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]',
+      ].join(' ')}
     >
       {copied ? <Check size={10} /> : <Copy size={10} />}
       <span>{msgId}</span>
@@ -116,6 +64,8 @@ export function MsgIdChip({ msgId }: { msgId: string }) {
 }
 
 /* ─── HeaderPerfChip ───────────────────────────────────────── */
+
+const PERF_CHIP_CLASS = 'inline-flex items-center gap-[2px]'
 
 /** Compact perf chip rendered inline inside a message header. */
 export function HeaderPerfChip({
@@ -134,76 +84,30 @@ export function HeaderPerfChip({
   stopReason?: string
 }) {
   const items: React.ReactNode[] = []
-  const chipStyle: React.CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '2px',
-  }
   const iconSize = 10
 
   if (latency != null) {
-    items.push(
-      <span key="lat" style={chipStyle}>
-        <Clock size={iconSize} style={{ opacity: 0.7 }} />
-        {fmtMs(latency)}
-      </span>
-    )
+    items.push(<span key="lat" className={PERF_CHIP_CLASS}><Clock size={iconSize} className="opacity-70" />{fmtMs(latency)}</span>)
   }
   if (ttft != null) {
-    items.push(
-      <span key="ttft" style={chipStyle}>
-        <Zap size={iconSize} style={{ opacity: 0.7 }} />
-        TTFT {fmtMs(ttft * 1000)}
-      </span>
-    )
+    items.push(<span key="ttft" className={PERF_CHIP_CLASS}><Zap size={iconSize} className="opacity-70" />TTFT {fmtMs(ttft * 1000)}</span>)
   }
   if (tpot != null) {
-    items.push(
-      <span key="tpot" style={chipStyle}>
-        <Activity size={iconSize} style={{ opacity: 0.7 }} />
-        TPOT {fmtMs(tpot * 1000)}
-      </span>
-    )
+    items.push(<span key="tpot" className={PERF_CHIP_CLASS}><Activity size={iconSize} className="opacity-70" />TPOT {fmtMs(tpot * 1000)}</span>)
   }
   if (inTok != null) {
-    items.push(
-      <span key="in" style={chipStyle}>
-        <ArrowDownToLine size={iconSize} style={{ opacity: 0.7 }} />
-        in {inTok}
-      </span>
-    )
+    items.push(<span key="in" className={PERF_CHIP_CLASS}><ArrowDownToLine size={iconSize} className="opacity-70" />in {inTok}</span>)
   }
   if (outTok != null) {
-    items.push(
-      <span key="out" style={chipStyle}>
-        <ArrowUpFromLine size={iconSize} style={{ opacity: 0.7 }} />
-        out {outTok}
-      </span>
-    )
+    items.push(<span key="out" className={PERF_CHIP_CLASS}><ArrowUpFromLine size={iconSize} className="opacity-70" />out {outTok}</span>)
   }
   if (stopReason) {
-    items.push(
-      <span key="stop" style={chipStyle}>
-        stop:{stopReason}
-      </span>
-    )
+    items.push(<span key="stop" className={PERF_CHIP_CLASS}>stop:{stopReason}</span>)
   }
 
   if (items.length === 0) return null
   return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        fontSize: '0.65rem',
-        fontFamily: 'var(--font-mono, monospace)',
-        color: 'var(--text-muted)',
-        opacity: 0.85,
-        whiteSpace: 'nowrap',
-        flexWrap: 'wrap',
-      }}
-    >
+    <span className="inline-flex items-center gap-2 text-[0.65rem] font-mono text-[var(--text-muted)] opacity-85 whitespace-nowrap flex-wrap">
       {items}
     </span>
   )
@@ -257,79 +161,25 @@ export function MessageRow({
     }
   }, [isHighlighted])
 
-  const bgColor = isHighlighted ? palette.tintBgHl : palette.tintBg
-  const borderLeft = isHighlighted
-    ? `3px solid ${palette.borderHl}`
-    : `3px solid ${palette.barColor}`
-
   return (
-    <div
-      ref={ref}
-      style={{
-        display: 'flex',
-        width: '100%',
-        background: bgColor,
-        borderLeft,
-        borderRadius: '0.5rem',
-        padding: '0.6rem 0.85rem',
-        transition: 'background 0.3s, border-color 0.3s',
-        animation: 'fadeInUp 240ms ease-out both',
-      }}
+    <ChatBubble
+      role={roleToBubble(role)}
+      highlighted={isHighlighted}
+      className="flex w-full px-3.5 py-2.5"
+      style={{ animation: 'fadeInUp 240ms ease-out both' }}
     >
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div ref={ref} className="flex-1 min-w-0">
         {/* Header row */}
         {!compact && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              marginBottom: '0.4rem',
-              flexWrap: 'wrap',
-            }}
-          >
-            <RoleIcon size={13} style={{ color: palette.labelColor, flexShrink: 0 }} />
-            <span
-              style={{
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                color: palette.labelColor,
-              }}
-            >
+          <div className="flex items-center gap-2 mb-[0.4rem] flex-wrap">
+            <RoleIcon size={13} className="shrink-0" style={{ color: palette.labelColor }} />
+            <span className="text-xs font-semibold" style={{ color: palette.labelColor }}>
               {labelOverride ?? palette.label}
             </span>
-            {toolFunction && (
-              <span
-                style={{
-                  padding: '1px 7px',
-                  borderRadius: 4,
-                  background: 'var(--bg-deep)',
-                  border: '1px solid var(--color-border-subtle)',
-                  fontSize: '0.65rem',
-                  fontFamily: 'var(--font-mono, monospace)',
-                  color: 'var(--text-muted)',
-                }}
-              >
-                {toolFunction}
-              </span>
-            )}
-            {model && (
-              <span
-                style={{
-                  padding: '1px 7px',
-                  borderRadius: 4,
-                  background: 'var(--bg-deep)',
-                  border: '1px solid var(--color-border-subtle)',
-                  fontSize: '0.65rem',
-                  fontFamily: 'var(--font-mono, monospace)',
-                  color: 'var(--text-muted)',
-                }}
-              >
-                {model}
-              </span>
-            )}
+            {toolFunction && <span className={CHIP_CLASS}>{toolFunction}</span>}
+            {model && <span className={CHIP_CLASS}>{model}</span>}
             {headerExtra}
-            <span style={{ flex: 1 }} />
+            <span className="flex-1" />
             {msgId && <MsgIdChip msgId={msgId} />}
             {copyText && <CopyIconButton text={copyText} />}
           </div>
@@ -337,25 +187,14 @@ export function MessageRow({
 
         {/* Tool error banner */}
         {toolError && (
-          <div
-            style={{
-              marginBottom: '0.4rem',
-              padding: '0.4rem 0.6rem',
-              borderRadius: '0.4rem',
-              background: 'var(--danger-bg)',
-              border: '1px solid var(--danger-border, var(--danger))',
-              color: 'var(--danger)',
-              fontSize: '0.72rem',
-              fontFamily: 'var(--font-mono, monospace)',
-            }}
-          >
+          <div className="mb-[0.4rem] px-[0.6rem] py-[0.4rem] rounded-[0.4rem] bg-[var(--danger-bg)] border border-[var(--danger-border)] text-[var(--danger)] text-[0.72rem] font-mono">
             {toolError.type ? `[${toolError.type}] ` : ''}
             {toolError.message}
           </div>
         )}
 
         {/* Content */}
-        <div style={{ fontSize: '0.85rem', lineHeight: 1.55 }}>
+        <div className="text-[0.85rem] leading-[1.55]">
           {Array.isArray(content)
             ? renderContentBlocks(content, { includeReasoning: role === 'assistant' })
             : <MarkdownRenderer content={content} />}
@@ -363,7 +202,7 @@ export function MessageRow({
 
         {children}
       </div>
-    </div>
+    </ChatBubble>
   )
 }
 
@@ -378,66 +217,36 @@ export function SystemPromptRow({
   highlightId?: string
 }) {
   const { t } = useLocale()
-  const [open, setOpen] = useState(false)
   const text = contentToText(content)
   const preview = text.replace(/\s+/g, ' ').trim()
   const previewShort = preview.length > 120 ? preview.slice(0, 120) + '…' : preview
 
   return (
-    <div
-      style={{
-        borderLeft: '3px solid var(--text-muted)',
-        borderRadius: '0.5rem',
-        background: 'var(--bubble-system-bg)',
-        overflow: 'hidden',
-      }}
-    >
-      <button
-        onClick={() => setOpen(v => !v)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.45rem',
-          width: '100%',
-          padding: '0.45rem 0.75rem',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          textAlign: 'left',
-        }}
-      >
-        {open ? <ChevronDown size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} /> : <ChevronRight size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />}
-        <Shield size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-        <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-          {t('prediction.systemPrompt')}
-        </span>
-        {!open && (
-          <span
-            style={{
-              fontSize: '0.7rem',
-              color: 'var(--text-muted)',
-              opacity: 0.6,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              flex: 1,
-              fontFamily: 'var(--font-mono, monospace)',
-            }}
-          >
-            {previewShort}
-          </span>
+    <ChatBubble role="system" className="overflow-hidden">
+      <Collapsible
+        header={(open) => (
+          <>
+            <Shield size={12} className="text-[var(--text-muted)] shrink-0" />
+            <span className="text-[0.72rem] font-semibold text-[var(--text-muted)]">
+              {t('prediction.systemPrompt')}
+            </span>
+            {!open && (
+              <span className="font-mono text-[0.7rem] text-[var(--text-muted)] opacity-60 overflow-hidden text-ellipsis whitespace-nowrap flex-1">
+                {previewShort}
+              </span>
+            )}
+            {msgId && <MsgIdChip msgId={msgId} />}
+          </>
         )}
-        {msgId && <MsgIdChip msgId={msgId} />}
-      </button>
-      {open && (
-        <div style={{ padding: '0 0.75rem 0.6rem 1.6rem' }}>
-          <div style={{ fontSize: '0.82rem', lineHeight: 1.55 }}>
-            {Array.isArray(content)
-              ? renderContentBlocks(content, { includeReasoning: false })
-              : <MarkdownRenderer content={content} />}
-          </div>
+        headerStyle={{ gap: '0.45rem', padding: '0.45rem 0.75rem' }}
+        bodyStyle={{ padding: '0 0.75rem 0.6rem 1.6rem' }}
+      >
+        <div className="text-[0.82rem] leading-[1.55]">
+          {Array.isArray(content)
+            ? renderContentBlocks(content, { includeReasoning: false })
+            : <MarkdownRenderer content={content} />}
         </div>
-      )}
-    </div>
+      </Collapsible>
+    </ChatBubble>
   )
 }

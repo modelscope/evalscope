@@ -1,25 +1,26 @@
 import { useMemo } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportData } from '@/api/types'
-import { scoreColor } from '@/components/ui/Table'
+import { scoreColor } from '@/utils/colorScale'
 
 interface Props {
   reports: ReportData[]
 }
 
-/** SVG circular progress ring */
+/** SVG circular progress ring — 8px stroke (DESIGN.md `{components.score-ring}`). */
 function ScoreRing({ score, size = 80 }: { score: number; size?: number }) {
-  const r = (size - 8) / 2
+  const stroke = 8
+  const r = (size - stroke) / 2
   const circ = 2 * Math.PI * r
   const offset = circ * (1 - Math.min(1, score))
   const color = scoreColor(score)
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth="5" />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
       <circle
         cx={size / 2} cy={size / 2} r={r} fill="none"
         stroke={color}
-        strokeWidth="5"
+        strokeWidth={stroke}
         strokeDasharray={circ}
         strokeDashoffset={offset}
         strokeLinecap="round"
@@ -74,7 +75,7 @@ export default function ReportSummaryStats({ reports }: Props) {
         >
           <ScoreRing score={card.norm} size={72} />
           <div className="flex flex-col gap-0.5 min-w-0">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)]">
+            <span className="type-table-xs">
               {card.label}
             </span>
             <span
@@ -94,10 +95,10 @@ export default function ReportSummaryStats({ reports }: Props) {
 
       {/* Total Samples — plain number card */}
       <div className="flex flex-col justify-center gap-1 p-4 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)]">
+        <span className="type-table-xs">
           {t('reportDetail.totalSamples')}
         </span>
-        <span className="text-2xl font-bold font-mono tabular-nums" style={{ color: 'var(--accent)' }}>
+        <span className="text-2xl font-bold font-mono tabular-nums text-[var(--accent)]">
           {stats.totalSamples.toLocaleString()}
         </span>
       </div>

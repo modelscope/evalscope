@@ -188,6 +188,8 @@ const en: Dict = {
     arguments: 'Arguments',
     expandDetails: 'Show details',
     nudge: 'System Nudge',
+    runStart: 'Run Start',
+    runEnd: 'Run End',
   },
   reports: {
     title: 'Reports',
@@ -517,6 +519,8 @@ const zh: Dict = {
     arguments: '参数',
     expandDetails: '展开详情',
     nudge: '系统提醒',
+    runStart: '运行开始',
+    runEnd: '运行结束',
   },
   reports: {
     title: '报告',

@@ -20,6 +20,7 @@ shared ``atexit`` hook.
 from __future__ import annotations
 
 import shlex
+import time
 from typing import Any, Dict, List, Optional, Union
 
 from evalscope.api.agent import AgentEnvironment
@@ -42,7 +43,7 @@ _DEFAULT_WORKDIR = '/workspace'
 _DEFAULT_TOOLS: List[str] = ['shell_executor', 'python_executor']
 
 
-@register_environment('enclave')
+@register_environment(['enclave', 'docker', 'volcengine'])
 class EnclaveAgentEnvironment(AgentEnvironment):
     """Per-sample sandbox via :class:`SandboxService`.
 
@@ -105,6 +106,21 @@ class EnclaveAgentEnvironment(AgentEnvironment):
     # Sandbox lifecycle
     # ------------------------------------------------------------------
 
+    def merge_sandbox_config(self, overlay: Dict[str, Any]) -> None:
+        """Merge ``overlay`` into the pending sandbox config.
+
+        Used by the adapter layer to inject env-specific fields (e.g.
+        ``extra_hosts`` for ``host.docker.internal:host-gateway`` on
+        Linux) **before** the sandbox is created. Raises if the sandbox
+        is already running — caller would otherwise see no effect.
+        """
+        if self._handle is not None:
+            raise RuntimeError(
+                'EnclaveAgentEnvironment.merge_sandbox_config: sandbox '
+                f'{self._handle.sandbox_id} is already running; merge before exec.'
+            )
+        self._sandbox_config_dict = merge_sandbox_config_dicts(self._sandbox_config_dict, overlay)
+
     async def _ensure_sandbox(self) -> SandboxHandle:
         if self._handle is None:
             service = get_sandbox_service()
@@ -131,6 +147,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         cwd: Optional[str] = None,
         input: Optional[str] = None,  # noqa: A002 - mirrors ABC signature
         timeout: Optional[float] = None,
+        env: Optional[Dict[str, str]] = None,
     ) -> ExecResult:
         handle = await self._ensure_sandbox()
 
@@ -138,20 +155,36 @@ class EnclaveAgentEnvironment(AgentEnvironment):
             command = ' '.join(shlex.quote(c) for c in cmd)
         else:
             command = str(cmd)
+        if env:
+            # Prepend ``KEY=VAL`` pairs so the agent CLI inherits them.
+            # Using ``env -- ... <cmd>`` would be cleaner but is not always
+            # available inside minimal images; inline assignment works in any
+            # POSIX shell.
+            prefix = ' '.join(f'{k}={shlex.quote(v)}' for k, v in env.items())
+            command = f'{prefix} {command}' if prefix else command
         if cwd:
             command = f'cd {shlex.quote(cwd)} && {command}'
+
+        # ms_enclave's shell_executor splits a bare string with no shell
+        # wrapping; wrap as ``bash -c`` so cd/&&/env-prefix/quoting survive.
+        shell_argv = ['bash', '-c', command]
 
         timeout_s = float(timeout or self._timeout)
 
         from ms_enclave.sandbox.model import ExecutionStatus
 
+        # ms_enclave's ExecutionResult.execution_time is unreliable (often
+        # ``None`` / ``0`` for shell_executor). Wall-time it locally so
+        # ``ExecResult.duration`` always reflects real elapsed time.
+        started = time.monotonic()
         result = await handle.execute_tool(
             'shell_executor',
             {
-                'command': command,
+                'command': shell_argv,
                 'timeout': timeout_s,
             },
         )
+        elapsed = time.monotonic() - started
 
         stdout = str(result.output or '')
         stderr = str(result.error or '')
@@ -166,12 +199,17 @@ class EnclaveAgentEnvironment(AgentEnvironment):
             _m = _re.search(r'exit code (\d+)', stderr)
             returncode = int(_m.group(1)) if _m else 1
 
+        # Prefer upstream-reported time when it's a positive number;
+        # otherwise fall back to our locally measured wall-clock.
+        upstream_duration = float(result.execution_time or 0.0)
+        duration = upstream_duration if upstream_duration > 0 else elapsed
+
         return ExecResult(
             returncode=returncode,
             stdout=stdout,
             stderr=stderr,
             timed_out=timed_out,
-            duration=float(result.execution_time or 0.0),
+            duration=duration,
         )
 
     async def close(self) -> None:
@@ -182,15 +220,5 @@ class EnclaveAgentEnvironment(AgentEnvironment):
             finally:
                 self._handle = None
 
-
-# ---------------------------------------------------------------------------
-# Additional registry aliases.
-#
-# ``@register_environment`` rejects duplicate names, so the second and third
-# aliases are registered manually.  All three names map to the same class.
-# ---------------------------------------------------------------------------
-
-register_environment('docker')(EnclaveAgentEnvironment)
-register_environment('volcengine')(EnclaveAgentEnvironment)
 
 __all__ = ['EnclaveAgentEnvironment']

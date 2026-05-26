@@ -161,7 +161,7 @@ evalscope service --outputs examples/viz
 - **元数据**：可折叠的 JSON 视图，展示样本的附加元信息。
 
 ```{tip}
-当评测启用 [Agent 评测模式](../user_guides/agent.md) 时，预测视图会自动检测样本的 `agent_trace` 并按 `step` 分组渲染 Agent Trace 视图（含工具调用、环境命令、nudge、错误等）。完整说明与示意图见 [Agent 评测 → Trace 可视化](../user_guides/agent.md#trace-可视化)。
+当评测启用 [Agent 评测](../user_guides/agent/index.md) 时，预测视图会自动检测样本的 `agent_trace` 并按 `step` 分组渲染 Agent Trace 视图（含工具调用、环境命令、nudge、错误等）。完整说明与示意图见 [Agent 评测 → Trace 可视化](../user_guides/agent/index.md#trace-可视化)。
 ```
 
 #### 数据集导航

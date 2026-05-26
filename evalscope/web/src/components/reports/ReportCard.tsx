@@ -3,7 +3,7 @@ import type { MouseEvent } from 'react'
 import { cn } from '@/lib/utils'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportSummary } from '@/api/types'
-import { scoreColor } from '@/components/ui/Table'
+import { scoreColor } from '@/utils/colorScale'
 
 interface ReportCardProps {
   report: ReportSummary
@@ -93,7 +93,7 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
               {report.model_name}
             </span>
             {formattedDate && (
-              <span className="text-xs text-[var(--text-dim)] font-mono shrink-0">
+              <span className="text-xs text-[var(--text-muted)] font-mono shrink-0">
                 {formattedDate}
               </span>
             )}
@@ -103,7 +103,7 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
             <span className="text-sm text-[var(--text-muted)] truncate">
               {report.dataset_name}
             </span>
-            <span className="text-xs text-[var(--text-dim)] shrink-0">
+            <span className="text-xs text-[var(--text-muted)] shrink-0">
               {t('reports.samples')}: {report.num_samples}
             </span>
           </div>
@@ -125,6 +125,7 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
         onClick={handleDetailClick}
         className="shrink-0 flex items-center justify-center rounded p-0.5 transition-colors cursor-pointer opacity-40 group-hover:opacity-100 hover:bg-[var(--bg-card2)]"
       >
+        {/* text-dim allowed: detail-nav chevron icon (DESIGN.md §Text) */}
         <ChevronRight
           size={16}
           className="text-[var(--text-dim)] transition-colors"

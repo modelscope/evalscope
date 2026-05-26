@@ -9,3 +9,7 @@ sse_starlette
 # for tokenizer
 transformers
 uvicorn
+# Higher-precision asyncio event loop (libuv-backed) used by `evalscope perf`
+# for tighter rate control under high concurrency.  Optional & POSIX-only;
+# evalscope falls back to the default selector loop if it is missing.
+uvloop; sys_platform != "win32"

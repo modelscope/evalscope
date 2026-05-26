@@ -6,12 +6,20 @@ Builds on :class:`AgentAdapter` (a pure marker base) by taking over
 :class:`AgentLoop` per sample.
 
 Subclasses typically only override :meth:`build_strategy`,
-:meth:`build_tools` and :meth:`build_environment`. Global
-``TaskConfig.agent_config`` is intentionally **ignored** here — benchmarks
-deriving from this class already define their own Agent harness.
+:meth:`build_tools` and :meth:`build_environment`.
+
+When ``TaskConfig.agent_config`` carries an
+:class:`ExternalAgentConfig`, ``_on_inference`` swaps the native loop
+out for an external CLI runner (claude-code / codex / ...) executed
+inside the sandbox produced by :meth:`build_environment`. The runner
+talks to the bridge instead of EvalScope's :class:`Model` directly,
+and the prediction is recovered via :meth:`_external_extract_prediction`
+— SWE-bench-style adapters override that hook to ``extract_patch`` the
+working tree before the env closes. ``NativeAgentConfig`` is still
+ignored here; agentic benchmarks define their own native harness.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from evalscope.api.agent import AgentEnvironment, AgentLoopResult, AgentStrategy, ToolHandler
 from evalscope.api.dataset import Sample
@@ -21,6 +29,9 @@ from evalscope.api.model import Model
 from evalscope.api.registry import get_strategy
 from ._agent_loop_runner import run_agent_loop
 from .agent_adapter import AgentAdapter
+
+if TYPE_CHECKING:
+    from evalscope.agent.external.config import ExternalAgentConfig
 
 
 class AgentLoopAdapter(AgentAdapter):
@@ -91,9 +102,21 @@ class AgentLoopAdapter(AgentAdapter):
     def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
         """Drive :class:`AgentLoop` for this sample and return the final output.
 
-        Ignores ``TaskConfig.agent_config`` entirely; native AgentLoop
-        benchmarks are self-contained by design.
+        Ignores :class:`NativeAgentConfig` entirely (native agentic
+        benchmarks are self-contained by design), but routes
+        :class:`ExternalAgentConfig` through the bridge stack so a CLI
+        agent can replace the native loop while still using this
+        adapter's per-sample sandbox / scoring pipeline.
         """
+        ac = self._task_config.agent_config if self._task_config is not None else None
+        if ac is not None:
+            # Local import to keep the bridge stack out of the adapter's
+            # module-load-time imports (no aiohttp dependency for non-
+            # external benchmark runs).
+            from evalscope.agent.external.config import ExternalAgentConfig
+            if isinstance(ac, ExternalAgentConfig):
+                return self._on_external_agent_inference(ac, model, sample)
+
         strategy = self.build_strategy(sample)
         handlers = self.build_tools(sample)
         environment = self.build_environment(sample)
@@ -119,6 +142,64 @@ class AgentLoopAdapter(AgentAdapter):
         output = result.final_output
         output.completion = final_text
         return InferenceResult(output=output, messages=result.messages, trace=result.trace)
+
+    # ------------------------------------------------------------------
+    # External-agent dispatch
+    # ------------------------------------------------------------------
+
+    def _on_external_agent_inference(
+        self,
+        config: 'ExternalAgentConfig',
+        model: Model,
+        sample: Sample,
+    ) -> InferenceResult:
+        """Run the sample through an external CLI agent inside the
+        adapter's per-sample sandbox.
+
+        The adapter's :meth:`build_environment` provides the sandbox
+        (e.g. SWE-bench's per-instance Docker image), and
+        :meth:`build_initial_messages` provides the rendered prompt.
+        :meth:`_external_extract_prediction` recovers the prediction
+        before the environment closes — SWE-bench adapters override it
+        to ``extract_patch`` the working tree.
+        """
+        from evalscope.agent.external.adapter import run_external_agent
+
+        environment = self.build_environment(sample)
+        instruction = self._instruction_text_from_messages(self.build_initial_messages(sample))
+
+        return run_external_agent(
+            config=config,
+            model=model,
+            sample=sample,
+            environment_override=environment,
+            instruction_override=instruction,
+            post_run_hook=self._external_extract_prediction,
+        )
+
+    async def _external_extract_prediction(
+        self,
+        env: AgentEnvironment,
+        run_result: Any,
+        sample: Sample,
+    ) -> str:
+        """Recover the prediction text from the sandbox after the
+        external agent finishes.
+
+        Default implementation forwards the runner's stdout. SWE-bench
+        adapters override this to call
+        :func:`evalscope.agent.external.helpers.extract_patch`.
+        """
+        return run_result.output
+
+    @staticmethod
+    def _instruction_text_from_messages(messages: List[Any]) -> str:
+        """Flatten an initial-message list into a single instruction string.
+
+        External agent CLIs take the prompt as a single argument; system /
+        user message text bodies are concatenated in order.
+        """
+        return '\n\n'.join(m.text for m in messages if getattr(m, 'text', ''))
 
     def _extract_final_answer(self, result: AgentLoopResult, strategy: AgentStrategy) -> str:
         """Override hook for adapters that need custom prediction extraction.

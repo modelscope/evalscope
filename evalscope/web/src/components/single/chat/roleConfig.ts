@@ -1,60 +1,37 @@
 import React from 'react'
 import { User, Bot, Shield, Wrench } from 'lucide-react'
+import { bubbleAccent, type BubbleRole } from '@/components/ui/ChatBubble'
 
 export type Role = 'system' | 'user' | 'assistant' | 'tool'
 
 export interface RolePalette {
   icon: React.FC<{ size?: number; style?: React.CSSProperties; className?: string }>
-  barColor: string
-  tintBg: string
-  tintBgHl: string
-  borderHl: string
+  /** Accent color for the icon stroke and label text. */
   labelColor: string
   label: string
+}
+
+/** Map the chat-domain `Role` to the canonical `BubbleRole` token family in ChatBubble. */
+export function roleToBubble(role: Role): BubbleRole {
+  switch (role) {
+    case 'assistant': return 'bot'
+    case 'user': return 'user'
+    case 'tool': return 'tool'
+    case 'system':
+    default: return 'system'
+  }
 }
 
 export function rolePalette(role: Role, t: (k: string) => string): RolePalette {
   switch (role) {
     case 'user':
-      return {
-        icon: User,
-        barColor: 'var(--bubble-user-color)',
-        tintBg: 'var(--bubble-user-bg)',
-        tintBgHl: 'var(--bubble-user-bg-hl)',
-        borderHl: 'var(--bubble-user-border-hl)',
-        labelColor: 'var(--bubble-user-color)',
-        label: 'User',
-      }
+      return { icon: User, labelColor: bubbleAccent('user'), label: 'User' }
     case 'assistant':
-      return {
-        icon: Bot,
-        barColor: 'var(--bubble-bot-color)',
-        tintBg: 'transparent',
-        tintBgHl: 'var(--bubble-bot-bg-hl)',
-        borderHl: 'var(--bubble-bot-border-hl)',
-        labelColor: 'var(--bubble-bot-color)',
-        label: 'Assistant',
-      }
+      return { icon: Bot, labelColor: bubbleAccent('bot'), label: 'Assistant' }
     case 'tool':
-      return {
-        icon: Wrench,
-        barColor: 'var(--bubble-tool-color)',
-        tintBg: 'var(--bubble-tool-bg)',
-        tintBgHl: 'var(--bubble-tool-bg)',
-        borderHl: 'var(--bubble-tool-border)',
-        labelColor: 'var(--bubble-tool-color)',
-        label: t('prediction.toolResult'),
-      }
+      return { icon: Wrench, labelColor: bubbleAccent('tool'), label: t('prediction.toolResult') }
     case 'system':
     default:
-      return {
-        icon: Shield,
-        barColor: 'var(--text-muted)',
-        tintBg: 'var(--bubble-system-bg)',
-        tintBgHl: 'var(--bubble-system-bg)',
-        borderHl: 'var(--bubble-system-border)',
-        labelColor: 'var(--text-muted)',
-        label: t('prediction.systemPrompt'),
-      }
+      return { icon: Shield, labelColor: 'var(--text-muted)', label: t('prediction.systemPrompt') }
   }
 }

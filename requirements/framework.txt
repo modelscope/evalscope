@@ -1,3 +1,4 @@
+aiohttp
 colorlog
 docstring_parser
 dotenv
