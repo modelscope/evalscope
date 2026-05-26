@@ -1,5 +1,6 @@
 import asyncio
 import numpy as np
+import time
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from evalscope.perf.arguments import Arguments
@@ -53,10 +54,12 @@ class MultiTurnStrategy(BenchmarkStrategy):
         # Per-phase dispatch state.  Reset at the start of every phase by
         # ``_run_phase``.  ``_phase_counter`` tracks how many conversations
         # this phase has already claimed; ``_phase_budget`` caps that count;
-        # ``_phase_is_warmup`` tags every enqueued ``BenchmarkData``.
+        # ``_phase_is_warmup`` tags every enqueued ``BenchmarkData``;
+        # ``_phase_deadline`` is the trace-soft-exit cutoff (None disables it).
         self._phase_counter = 0
         self._phase_budget = 0
         self._phase_is_warmup = False
+        self._phase_deadline: Optional[float] = None
 
         # Trace identity:  monotonic across phases; each claimed conversation
         # gets a unique ``trace_id`` string for trace-level metric aggregation.
@@ -83,6 +86,12 @@ class MultiTurnStrategy(BenchmarkStrategy):
     async def _worker(self, worker_id: int) -> None:
         """Process conversations until the current phase budget is reached."""
         while True:
+            # Trace-level soft exit: stop claiming new conversations once the
+            # duration deadline has elapsed.  An already-claimed conversation
+            # below will still run all its remaining turns to completion so
+            # trace-level metrics stay coherent (matches trie's semantics).
+            if self._phase_deadline is not None and time.perf_counter() >= self._phase_deadline:
+                return
             # Atomically claim a conversation slot before awaiting to prevent
             # other workers from overshooting the phase budget.
             if self._phase_counter >= self._phase_budget:
@@ -228,13 +237,21 @@ class MultiTurnStrategy(BenchmarkStrategy):
     async def _run_phase(self, budget: int, is_warmup: bool, deadline: Optional[float] = None) -> None:
         """Spawn ``args.parallel`` workers and drain them within one phase.
 
-        When ``deadline`` is set, workers are hard-cancelled at the deadline
-        (in-flight turns are dropped from metrics).  ``budget`` is still
-        honored as a soft upper bound; whichever limit (count or wall-clock)
-        is reached first ends the phase.
+        When ``deadline`` is set, workers stop claiming new conversations once
+        wall-clock crosses it, but any conversation already in progress is
+        allowed to finish all its turns (trace-level soft exit, matches trie).
+        ``budget`` is still honoured as an upper bound on the number of
+        conversations claimed; whichever limit (count or wall-clock) is hit
+        first ends the phase.
         """
         self._phase_counter = 0
         self._phase_budget = budget
         self._phase_is_warmup = is_warmup
+        self._phase_deadline = deadline
         workers = [asyncio.create_task(self._worker(worker_id=i)) for i in range(self.args.parallel)]
-        await self._gather_with_deadline(workers, deadline=deadline)
+        if deadline is not None:
+            logger.info(
+                f'Phase deadline set: workers will stop claiming new conversations after '
+                f'{max(0.0, deadline - time.perf_counter()):.1f}s; in-flight traces are allowed to finish.'
+            )
+        await asyncio.gather(*workers, return_exceptions=True)

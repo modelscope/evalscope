@@ -318,7 +318,11 @@ class TestMultiTurnPhaseBarrier(unittest.TestCase):
 
 
 class TestClosedLoopDurationCancel(unittest.TestCase):
-    """Verify ``--duration`` hard-cancels a closed-loop run when the deadline hits."""
+    """Verify ``--duration`` stops new dispatch when the deadline hits.
+
+    Soft exit: the dispatch loop stops scheduling new requests at the
+    deadline, but already in-flight requests are allowed to finish.
+    """
 
     def test_duration_terminates_phase_early(self):
         async def _go():
@@ -333,17 +337,18 @@ class TestClosedLoopDurationCancel(unittest.TestCase):
             return await _collect_queue(queue)
 
         items = asyncio.run(_go())
-        self.assertLess(len(items), 200, 'deadline should have stopped the run before exhausting budget')
+        self.assertLess(len(items), 200, 'deadline should have stopped dispatch before exhausting budget')
         self.assertTrue(all(not d.is_warmup for d in items))
 
 
 class TestOpenLoopDurationCancel(unittest.TestCase):
-    """Verify ``--duration`` caps an open-loop run at the deadline."""
+    """Verify ``--duration`` caps an open-loop run at the deadline (soft exit)."""
 
     def test_duration_terminates_phase_early(self):
         async def _go():
             # rate=20 over 200 requests => target wall-clock 10s; deadline 0.05s
-            # cuts dispatch off after ~1 request and cancels any in-flight.
+            # cuts dispatch off after ~1 request; already-fired requests still
+            # complete (soft exit), but no new ones are fired.
             args = _mk_args(parallel=-1, number=200, warmup_num=0, rate=20.0, open_loop=True)
             args.duration = 0.05
             queue: asyncio.Queue = asyncio.Queue()
@@ -354,15 +359,15 @@ class TestOpenLoopDurationCancel(unittest.TestCase):
             return await _collect_queue(queue)
 
         items = asyncio.run(_go())
-        self.assertLess(len(items), 200, 'deadline should have stopped the run before exhausting budget')
+        self.assertLess(len(items), 200, 'deadline should have stopped dispatch before exhausting budget')
 
 
 class TestMultiTurnDurationCancel(unittest.TestCase):
-    """Verify --duration hard-cancels in-flight workers when the deadline hits.
+    """Verify --duration stops claiming new conversations once deadline hits.
 
-    Configures a budget far in excess of what can finish before the deadline
-    and asserts the run terminates at the deadline with fewer items than the
-    budget.
+    Trace-level soft exit (matches trie): workers stop claiming new
+    conversations at the deadline, but any conversation already in progress
+    runs every remaining turn so trace-level metrics stay coherent.
     """
 
     def test_duration_terminates_phase_early(self):
@@ -382,14 +387,19 @@ class TestMultiTurnDurationCancel(unittest.TestCase):
         # With 2 workers, 20ms per turn, 2 turns per conv -> ~40ms per conv;
         # in 50ms we expect at most a handful of conversations to finish.
         self.assertLess(
-            len(items), 200 * 2,
-            'duration deadline should have cancelled workers before budget exhausted'
+            len(items), 200 * 2, 'duration deadline should have prevented full budget from being claimed'
         )
         # And we should still have *some* completed turns (the deadline didn't
         # fire before any work was dispatched).
         self.assertGreater(len(items), 0)
         # Every produced item carries a trace_id from the strategy.
         self.assertTrue(all(d.trace_id is not None for d in items))
+        # Trace-level soft exit invariant: any conversation that produced *any*
+        # turn must have produced *all* of its turns.  No partial traces.
+        from collections import Counter
+        per_trace_counts = Counter(d.trace_id for d in items)
+        for trace_id, count in per_trace_counts.items():
+            self.assertEqual(count, 2, f'trace {trace_id} produced {count}/2 turns (partial trace not allowed)')
 
 
 class TestMultiTurnTraceIdAndFirstTurn(unittest.TestCase):

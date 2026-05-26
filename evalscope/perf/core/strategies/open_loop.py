@@ -137,5 +137,10 @@ class OpenLoopStrategy(BenchmarkStrategy):
                 task = asyncio.create_task(_send_request_open_loop(request, is_warmup, self.queue, self.client))
                 in_flight.add(task)
 
-        # Phase barrier: wait for all in-flight requests; hard-cancel at deadline.
-        await self._gather_with_deadline(in_flight, deadline=deadline)
+        # Phase barrier: let already-fired requests finish even past the
+        # deadline (soft exit, matches trie).  The dispatch loop has already
+        # stopped firing new requests once deadline was hit above.
+        if in_flight:
+            if deadline is not None and time.perf_counter() >= deadline:
+                logger.info(f'Duration deadline reached; awaiting {len(in_flight)} in-flight request(s).')
+            await asyncio.gather(*in_flight, return_exceptions=True)

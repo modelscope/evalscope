@@ -1,7 +1,7 @@
 import asyncio
 import time
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, AsyncIterator, Iterable, List, Optional, Tuple
+from typing import TYPE_CHECKING, AsyncIterator, List, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.utils.logger import get_logger
@@ -53,37 +53,6 @@ class BenchmarkStrategy(ABC):
     def _compute_deadline(duration: Optional[float]) -> Optional[float]:
         """Translate a duration (seconds, may be ``None``) into a ``perf_counter`` deadline."""
         return None if duration is None else time.perf_counter() + duration
-
-    @staticmethod
-    async def _gather_with_deadline(
-        tasks: Iterable[asyncio.Task],
-        deadline: Optional[float] = None,
-    ) -> None:
-        """Await ``tasks`` with optional hard-cancel at ``deadline``.
-
-        Behaves like ``asyncio.gather(*tasks, return_exceptions=True)`` when
-        ``deadline`` is ``None``.  Otherwise, if the deadline is exceeded while
-        waiting, all still-pending tasks are cancelled and re-gathered to drain
-        their cancellations.  Matches the trie-style "stop new dispatches at
-        deadline, drop in-flight" semantic shared by all benchmark strategies.
-        """
-        tasks = list(tasks)
-        if not tasks:
-            return
-        if deadline is None:
-            await asyncio.gather(*tasks, return_exceptions=True)
-            return
-        remaining = max(0.0, deadline - time.perf_counter())
-        try:
-            await asyncio.wait_for(
-                asyncio.gather(*tasks, return_exceptions=True),
-                timeout=remaining,
-            )
-        except asyncio.TimeoutError:
-            logger.info(f'Duration deadline reached; cancelling {len(tasks)} in-flight task(s).')
-            for t in tasks:
-                t.cancel()
-            await asyncio.gather(*tasks, return_exceptions=True)
 
     @staticmethod
     async def _partition_requests(gen: AsyncIterator[Tuple[dict, bool]], ) -> Tuple[List[dict], List[dict]]:

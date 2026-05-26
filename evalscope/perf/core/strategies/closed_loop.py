@@ -70,8 +70,8 @@ class ClosedLoopStrategy(BenchmarkStrategy):
         instead of accumulating into a slow drift of the realised QPS.
 
         ``deadline``: optional ``time.perf_counter()`` timestamp; when set, the
-        dispatch loop exits on reaching it and any in-flight requests are
-        hard-cancelled (trie-style).
+        dispatch loop exits on reaching it but already in-flight requests are
+        awaited to completion (soft-exit, matches trie's semantics).
         """
         semaphore = asyncio.Semaphore(self.args.parallel)
         max_in_flight = self.args.parallel * self.args.in_flight_task_multiplier
@@ -123,5 +123,11 @@ class ClosedLoopStrategy(BenchmarkStrategy):
             in_flight.add(task)
             dispatched += 1
 
-        # Phase barrier: wait for all in-flight requests; hard-cancel at deadline.
-        await self._gather_with_deadline(in_flight, deadline=deadline)
+        # Phase barrier: wait for all in-flight requests to finish.  Even when
+        # the duration deadline has elapsed we let in-flight requests complete
+        # (soft exit), matching trie: cap is "stop starting new requests at the
+        # deadline", not "kill in-flight work".
+        if in_flight:
+            if deadline is not None and time.perf_counter() >= deadline:
+                logger.info(f'Duration deadline reached; awaiting {len(in_flight)} in-flight request(s).')
+            await asyncio.gather(*in_flight, return_exceptions=True)
