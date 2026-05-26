@@ -15,11 +15,7 @@ from unittest.mock import patch
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.main import run_perf_benchmark
 from evalscope.perf.plugin.datasets.base import Turn
-from evalscope.perf.plugin.datasets.trie import (
-    TrieAgenticCodingPlugin,
-    TrieCodeQaPlugin,
-    TrieOfficeWorkPlugin,
-)
+from evalscope.perf.plugin.datasets.trie import TrieAgenticCodingPlugin, TrieCodeQaPlugin, TrieOfficeWorkPlugin
 from tests.perf.perf_test_base import DASHSCOPE_CHAT_URL, PerfTestBase
 
 

@@ -1,7 +1,7 @@
 import asyncio
 import numpy as np
 import time
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.strategies.base import BenchmarkStrategy
@@ -59,7 +59,7 @@ class OpenLoopStrategy(BenchmarkStrategy):
             deadline=self._compute_deadline(self.args.duration),
         )
 
-    async def _run_phase(self, requests: List[dict], is_warmup: bool, deadline: float = None) -> None:
+    async def _run_phase(self, requests: List[dict], is_warmup: bool, deadline: Optional[float] = None) -> None:
         """Fire all requests in this phase and wait for all to complete.
 
         Uses absolute-time scheduling (à la vLLM ``benchmarks/serve.py``):
@@ -126,6 +126,10 @@ class OpenLoopStrategy(BenchmarkStrategy):
                     )
                     break
                 sleep_s = target_times[i] - time.perf_counter()
+                # Cap the sleep at the remaining time-to-deadline so we don't
+                # sleep past the cancellation point.
+                if deadline is not None:
+                    sleep_s = min(sleep_s, deadline - time.perf_counter())
                 if sleep_s > 0:
                     await asyncio.sleep(sleep_s)
                 # If sleep_s <= 0 we are behind schedule; dispatch immediately

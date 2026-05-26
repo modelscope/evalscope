@@ -1,7 +1,7 @@
 import asyncio
 import numpy as np
 import time
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.strategies.base import BenchmarkStrategy
@@ -60,7 +60,7 @@ class ClosedLoopStrategy(BenchmarkStrategy):
             deadline=self._compute_deadline(self.args.duration),
         )
 
-    async def _run_phase(self, requests: List[dict], is_warmup: bool, deadline: float = None) -> None:
+    async def _run_phase(self, requests: List[dict], is_warmup: bool, deadline: Optional[float] = None) -> None:
         """Dispatch one phase of requests and wait for all to complete.
 
         When ``args.rate`` is configured, request pacing uses absolute-time
@@ -105,8 +105,12 @@ class ClosedLoopStrategy(BenchmarkStrategy):
                 break
 
             # Sleep until the absolute target dispatch time (drift-corrected).
+            # Cap the sleep at the remaining time-to-deadline so we don't sleep
+            # past the cancellation point.
             if target_times is not None:
                 sleep_s = target_times[i] - time.perf_counter()
+                if deadline is not None:
+                    sleep_s = min(sleep_s, deadline - time.perf_counter())
                 if sleep_s > 0:
                     await asyncio.sleep(sleep_s)
 

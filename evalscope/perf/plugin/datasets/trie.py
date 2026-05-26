@@ -117,9 +117,10 @@ class TrieReplayBase(RandomDatasetPlugin):
         tool_call_latency = trace['tool_call_latency']
         final_response_length = int(trace['final_assistant_response_length'])
 
-        if not (len(assistant_response_length) == num_turns
-                and len(tool_call_output_length) == num_turns
-                and len(tool_call_latency) == num_turns):
+        if not (
+            len(assistant_response_length) == num_turns and len(tool_call_output_length) == num_turns
+            and len(tool_call_latency) == num_turns
+        ):
             raise ValueError(
                 f'trace length mismatch: num_turns={num_turns}, '
                 f'len(assistant_response_length)={len(assistant_response_length)}, '
@@ -131,7 +132,10 @@ class TrieReplayBase(RandomDatasetPlugin):
         # Turn 0: initial user prompt
         turns.append(
             Turn(
-                messages=[{'role': 'user', 'content': self._synth_prompt(input_prompt_length)}],
+                messages=[{
+                    'role': 'user',
+                    'content': self._synth_prompt(input_prompt_length)
+                }],
                 max_tokens=int(assistant_response_length[0]) if num_turns > 0 else final_response_length,
                 tool_call_latency=None,
                 is_final=(num_turns == 0),
@@ -141,10 +145,7 @@ class TrieReplayBase(RandomDatasetPlugin):
         # Turns 1..num_turns: tool output + assistant response cap
         for i in range(num_turns):
             is_last = (i == num_turns - 1)
-            next_max_tokens = (
-                final_response_length if is_last
-                else int(assistant_response_length[i + 1])
-            )
+            next_max_tokens = (final_response_length if is_last else int(assistant_response_length[i + 1]))
             turns.append(
                 Turn(
                     messages=[{
@@ -169,7 +170,7 @@ class TrieReplayBase(RandomDatasetPlugin):
             trace = json.loads(line)
             try:
                 yield self._trace_to_conversation(trace)
-            except (KeyError, ValueError) as e:
+            except (KeyError, ValueError, TypeError) as e:
                 logger.warning(f'Skipping malformed trace: {e}')
                 continue
 

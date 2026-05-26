@@ -1,6 +1,6 @@
 import asyncio
 import numpy as np
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.strategies.base import BenchmarkStrategy
@@ -134,7 +134,13 @@ class MultiTurnStrategy(BenchmarkStrategy):
                 # Send the turn.  Per-turn ``max_tokens`` (from trace replay)
                 # overrides the global ``--max-tokens`` when set.
                 request = self.api_plugin.build_request(list(context))
-                if request is not None and turn.max_tokens is not None:
+                if request is None:
+                    logger.error(
+                        f'worker={worker_id} turn={turn_idx}: build_request returned None; '
+                        'abandoning conversation.'
+                    )
+                    break
+                if turn.max_tokens is not None:
                     request['max_tokens'] = turn.max_tokens
                 benchmark_data = await self.client.post(request)
 
@@ -219,7 +225,7 @@ class MultiTurnStrategy(BenchmarkStrategy):
             deadline=self._compute_deadline(self.args.duration),
         )
 
-    async def _run_phase(self, budget: int, is_warmup: bool, deadline: float = None) -> None:
+    async def _run_phase(self, budget: int, is_warmup: bool, deadline: Optional[float] = None) -> None:
         """Spawn ``args.parallel`` workers and drain them within one phase.
 
         When ``deadline`` is set, workers are hard-cancelled at the deadline
