@@ -40,11 +40,10 @@ import numpy as np
 from dataclasses import dataclass, field
 from pydantic import BaseModel, ConfigDict, Field
 from tabulate import tabulate
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List
 
 if TYPE_CHECKING:
     from evalscope.perf.utils.benchmark_util import BenchmarkData
-
 
 # ---------------------------------------------------------------------------
 # Internal per-trace state
