@@ -8,6 +8,9 @@
 | `bfcl_v4` | [BFCL-v4](../../benchmarks/bfcl_v4.md) | `Agent`, `FunctionCalling` |
 | `gaia` | [GAIA](../../benchmarks/gaia.md) | `Agent`, `MultiTurn`, `Reasoning` |
 | `general_fc` | [General-FunctionCalling](../../benchmarks/general_fc.md) | `Agent`, `Custom`, `FunctionCalling` |
+| `k2_verifier` | [K2-Vendor-Verifier](../../benchmarks/k2_verifier.md) | `Agent`, `FunctionCalling` |
+| `kimi_verifier` | [Kimi-Vendor-Verifier (Param Compliance)](../../benchmarks/kimi_verifier.md) | `Agent`, `FunctionCalling` |
+| `minimax_verifier` | [MiniMax-Vendor-Verifier](../../benchmarks/minimax_verifier.md) | `Agent`, `FunctionCalling` |
 | `swe_bench_lite_agentic` | [SWE-bench_Lite_Agentic](../../benchmarks/swe_bench_lite_agentic.md) | `Coding` |
 | `swe_bench_pro` | [SWE-bench_Pro](../../benchmarks/swe_bench_pro.md) | `Coding` |
 | `swe_bench_verified_agentic` | [SWE-bench_Verified_Agentic](../../benchmarks/swe_bench_verified_agentic.md) | `Coding` |
@@ -25,6 +28,9 @@
 ../../benchmarks/bfcl_v4.md
 ../../benchmarks/gaia.md
 ../../benchmarks/general_fc.md
+../../benchmarks/k2_verifier.md
+../../benchmarks/kimi_verifier.md
+../../benchmarks/minimax_verifier.md
 ../../benchmarks/swe_bench_lite_agentic.md
 ../../benchmarks/swe_bench_pro.md
 ../../benchmarks/swe_bench_verified_agentic.md

@@ -2,18 +2,14 @@
 import json
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
+from evalscope.api.benchmark import BenchmarkMeta, VendorVerifierAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import dict_to_chat_message
 from evalscope.api.metric import AggScore, SampleScore, Score
-from evalscope.api.model.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
-from evalscope.api.tool import ToolCall, ToolInfo
+from evalscope.api.tool import ToolInfo
 from evalscope.constants import Tags
-from evalscope.utils.logger import get_logger
-
-logger = get_logger()
 
 
 @register_benchmark(
@@ -60,7 +56,7 @@ General-FunctionCalling is a customizable benchmark for evaluating function call
         eval_split='test',
     )
 )
-class GeneralFCAdapter(AgentAdapter):
+class GeneralFCAdapter(VendorVerifierAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -91,19 +87,6 @@ class GeneralFCAdapter(AgentAdapter):
                 'tools': tools,
             }
         )
-
-    def _on_inference(self, model: Model, sample: Sample) -> ModelOutput:
-        # Execute model inference with the processed input and any tools
-        try:
-            model_output = model.generate(input=sample.input, tools=sample.tools)
-            return model_output
-        except Exception as e:
-            logger.error(f'Error during model inference: {e}')
-            return ModelOutput.from_content(
-                content='',
-                stop_reason='stop',
-                error=str(e),
-            )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state: TaskState) -> Score:
         score = Score(
@@ -151,40 +134,6 @@ class GeneralFCAdapter(AgentAdapter):
             }
 
         return score
-
-    @staticmethod
-    def validate_tool_call(tool_calls: List[ToolCall], tools: List[Dict[str, Any]]) -> Tuple[bool, str]:
-        from jsonschema import ValidationError, validate
-
-        try:
-            for tool_call in tool_calls:
-                tool_name = tool_call.function.name
-                # Find corresponding tool schema
-                schema = next(
-                    (t['function']['parameters'] for t in tools if t['function']['name'] == tool_name),
-                    None,
-                )
-                if not schema:
-                    return False, f"No schema found for tool '{tool_name}'"
-
-                # Parse arguments (may be string or dict)
-                args = tool_call.function.arguments
-                if isinstance(args, str):
-                    try:
-                        args = json.loads(args)
-                    except json.JSONDecodeError as e:
-                        return False, f"JSON parse failed for tool '{tool_name}' arguments: {e}"
-
-                # Validate using jsonschema
-                validate(instance=args, schema=schema)
-
-        except ValidationError as e:
-            return False, f"Schema validation failed for tool '{tool_name}': {e.message}"
-        except KeyError as e:
-            return False, f'Tool call format error, missing field: {e}'
-        except Exception as e:
-            return False, f'Unexpected error during validation: {e}'
-        return True, ''
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         """

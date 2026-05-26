@@ -7,6 +7,7 @@ from .adapters import (
     MultiTurnAdapter,
     NERAdapter,
     Text2ImageAdapter,
+    VendorVerifierAdapter,
     VisionLanguageAdapter,
 )
 from .benchmark import DataAdapter
