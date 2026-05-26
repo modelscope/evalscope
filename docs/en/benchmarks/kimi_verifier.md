@@ -25,8 +25,9 @@ Kimi-Vendor-Verifier is a pre-flight compliance check for Kimi K2 / K2-Thinking 
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** synthetic probes
-- Metrics: **param_immutable_reject_rate**, **param_default_accept_rate**
-- A correctly-deployed Kimi K2 vendor should report both metrics at **1.0**; anything less indicates a parameter-enforcement gap
+- Metrics: **param_immutable_reject_rate**, **param_default_accept_rate**, **inference_error_rate**
+- Only HTTP 400 (``BadRequestError``) counts as a real parameter rejection; transport errors (5xx / timeout / 429) are excluded from the reject/accept denominators and surfaced via ``inference_error_rate`` so a flaky vendor doesn't get a free pass
+- A correctly-deployed Kimi K2 vendor should report both rate metrics at **1.0** with ``inference_error_rate = 0``; anything less indicates a parameter-enforcement gap or transport instability
 - For non-Kimi models, expect ``param_immutable_reject_rate = 0`` (no K2 spec to enforce) and ``param_default_accept_rate = 1.0`` (sensible defaults accepted)
 - Select subset via ``dataset_args={'kimi_verifier': {'subset_list': ['kimi']}}`` (or ``opensource`` / ``none``)
 
@@ -39,7 +40,7 @@ Kimi-Vendor-Verifier is a pre-flight compliance check for Kimi K2 / K2-Thinking 
 | **Dataset ID** | `kimi_verifier` |
 | **Paper** | N/A |
 | **Tags** | `Agent`, `FunctionCalling` |
-| **Metrics** | `param_immutable_reject_rate`, `param_default_accept_rate` |
+| **Metrics** | `param_immutable_reject_rate`, `param_default_accept_rate`, `inference_error_rate` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 
@@ -68,7 +69,7 @@ Kimi-Vendor-Verifier is a pre-flight compliance check for Kimi K2 / K2-Thinking 
 {
   "input": [
     {
-      "id": "8847cec6",
+      "id": "03c069db",
       "content": "Say 'OK' and nothing else."
     }
   ],

@@ -25,23 +25,44 @@ _CYRILLIC_END = 0x04FF
 # Common command prefixes that indicate a merged shell argument when followed
 # by a space — see MiniMax tool_calls.py is_valid_array_command.
 _COMMON_COMMANDS = (
-    'ls ', 'cat ', 'git ', 'npm ', 'npx ', 'cd ', 'cp ', 'mv ', 'rm ', 'mkdir ',
-    'chmod ', 'chown ', 'find ', 'grep ', 'curl ', 'wget ', 'pip ',
+    'ls ',
+    'cat ',
+    'git ',
+    'npm ',
+    'npx ',
+    'cd ',
+    'cp ',
+    'mv ',
+    'rm ',
+    'mkdir ',
+    'chmod ',
+    'chown ',
+    'find ',
+    'grep ',
+    'curl ',
+    'wget ',
+    'pip ',
 )
-
 
 # ---------------------------------------------------------------------------
 # tool_calls
 # ---------------------------------------------------------------------------
+
 
 def _is_shell_c_invocation(cmd: list) -> bool:
     if not cmd or len(cmd) < 3:
         return False
     shell = cmd[0]
     if shell not in (
-        'bash', 'sh', 'zsh',
-        '/bin/bash', '/bin/sh', '/bin/zsh',
-        '/usr/bin/bash', '/usr/bin/sh', '/usr/bin/zsh',
+        'bash',
+        'sh',
+        'zsh',
+        '/bin/bash',
+        '/bin/sh',
+        '/bin/zsh',
+        '/usr/bin/bash',
+        '/usr/bin/sh',
+        '/usr/bin/zsh',
     ):
         return False
     for arg in cmd[1:]:
@@ -98,8 +119,7 @@ def validate_tool_call_with_array_command(tool_call: Any, tools: List[Dict[str, 
         # Extra: command-array soundness check
         for param_name, param_schema in (schema.get('properties') or {}).items():
             if (
-                param_name == 'command'
-                and param_schema.get('type') == 'array'
+                param_name == 'command' and param_schema.get('type') == 'array'
                 and (param_schema.get('items') or {}).get('type') == 'string'
             ):
                 if not is_valid_array_command(args.get(param_name)):
@@ -115,6 +135,7 @@ def validate_tool_call_with_array_command(tool_call: Any, tools: List[Dict[str, 
 # Language following (Cyrillic absence)
 # ---------------------------------------------------------------------------
 
+
 def has_no_cyrillic_chars(text: str) -> bool:
     """Return True iff ``text`` contains no Cyrillic-block code points."""
     if not text:
@@ -126,12 +147,26 @@ def has_no_cyrillic_chars(text: str) -> bool:
 # n-gram repeat
 # ---------------------------------------------------------------------------
 
+
 def has_no_repeated_ngram(text: str, n: int = _NGRAM_N, repeat_count: int = _NGRAM_REPEAT_THRESHOLD) -> bool:
-    """Return True iff no length-``n`` substring appears ``repeat_count`` or more times."""
+    """Return True iff no length-``n`` substring appears ``repeat_count`` or more times.
+
+    Uses a single-pass sliding-window ``Counter`` to narrow down candidates,
+    then verifies each candidate's non-overlapping count with ``str.count``
+    to preserve the upstream semantics (the original implementation used
+    overlap-counting from ``text.count``, but its outer loop made it O(L²);
+    the sliding count is a strict upper bound on the non-overlapping count,
+    so candidates filtered out here are guaranteed to also be safe under
+    ``text.count``).
+    """
+    from collections import Counter
+
     if not text or len(text) < n:
         return True
-    for i in range(len(text) - n + 1):
-        ngram = text[i:i + n]
+    sliding_counts = Counter(text[i:i + n] for i in range(len(text) - n + 1))
+    for ngram, count in sliding_counts.items():
+        if count < repeat_count:
+            continue
         if text.count(ngram) >= repeat_count:
             return False
     return True
@@ -140,6 +175,7 @@ def has_no_repeated_ngram(text: str, n: int = _NGRAM_N, repeat_count: int = _NGR
 # ---------------------------------------------------------------------------
 # Scenario check (JSON key order preservation)
 # ---------------------------------------------------------------------------
+
 
 def _strip_think_blocks(text: str) -> str:
     """Drop ``<think>...</think>`` blocks to leave the user-visible reply."""
@@ -154,8 +190,14 @@ def extract_expected_param_order(tools: List[Dict[str, Any]]) -> Optional[List[s
     if 'properties' in params:
         return list((params.get('properties') or {}).keys())
     schema_keywords = {
-        'type', 'description', 'required', 'additionalProperties',
-        '$schema', 'items', 'enum', 'default',
+        'type',
+        'description',
+        'required',
+        'additionalProperties',
+        '$schema',
+        'items',
+        'enum',
+        'default',
     }
     keys = [k for k in params.keys() if k not in schema_keywords]
     return keys if keys else None

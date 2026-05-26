@@ -26,7 +26,6 @@ from evalscope.api.model.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
-
 from .param_spec import IMMUTABLE_PARAMS, thinking_extra_body
 
 logger = get_logger()
@@ -59,8 +58,9 @@ Kimi-Vendor-Verifier is a pre-flight compliance check for Kimi K2 / K2-Thinking 
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** synthetic probes
-- Metrics: **param_immutable_reject_rate**, **param_default_accept_rate**
-- A correctly-deployed Kimi K2 vendor should report both metrics at **1.0**; anything less indicates a parameter-enforcement gap
+- Metrics: **param_immutable_reject_rate**, **param_default_accept_rate**, **inference_error_rate**
+- Only HTTP 400 (``BadRequestError``) counts as a real parameter rejection; transport errors (5xx / timeout / 429) are excluded from the reject/accept denominators and surfaced via ``inference_error_rate`` so a flaky vendor doesn't get a free pass
+- A correctly-deployed Kimi K2 vendor should report both rate metrics at **1.0** with ``inference_error_rate = 0``; anything less indicates a parameter-enforcement gap or transport instability
 - For non-Kimi models, expect ``param_immutable_reject_rate = 0`` (no K2 spec to enforce) and ``param_default_accept_rate = 1.0`` (sensible defaults accepted)
 - Select subset via ``dataset_args={'kimi_verifier': {'subset_list': ['kimi']}}`` (or ``opensource`` / ``none``)
 """
@@ -76,6 +76,7 @@ Kimi-Vendor-Verifier is a pre-flight compliance check for Kimi K2 / K2-Thinking 
         metric_list=[
             'param_immutable_reject_rate',
             'param_default_accept_rate',
+            'inference_error_rate',
         ],
         aggregation='mean',
         subset_list=list(_THINK_MODES),
@@ -134,21 +135,25 @@ class KimiVerifierAdapter(VendorVerifierAdapter):
         ]
         for spec in IMMUTABLE_PARAMS:
             default_value = spec.think_default if thinking else spec.non_think_default
-            probes.append(cls._make_probe(
-                think_mode=think_mode,
-                thinking=thinking,
-                param_name=spec.name,
-                test_value=default_value,
-                expected_reject=False,
-            ))
-            if spec.wrong_value != default_value:
-                probes.append(cls._make_probe(
+            probes.append(
+                cls._make_probe(
                     think_mode=think_mode,
                     thinking=thinking,
                     param_name=spec.name,
-                    test_value=spec.wrong_value,
-                    expected_reject=True,
-                ))
+                    test_value=default_value,
+                    expected_reject=False,
+                )
+            )
+            if spec.wrong_value != default_value:
+                probes.append(
+                    cls._make_probe(
+                        think_mode=think_mode,
+                        thinking=thinking,
+                        param_name=spec.name,
+                        test_value=spec.wrong_value,
+                        expected_reject=True,
+                    )
+                )
         return probes
 
     @staticmethod
@@ -178,7 +183,16 @@ class KimiVerifierAdapter(VendorVerifierAdapter):
     # --------------------------------------------------------------------
 
     def _on_inference(self, model: Model, sample: Sample) -> ModelOutput:
-        """One chat completion per probe; capture HTTP 400 as expected reject signal."""
+        """One chat completion per probe.
+
+        Distinguishes vendor parameter rejection (``BadRequestError`` → HTTP
+        400) from generic transport/server errors (timeouts, 5xx, 429, ...).
+        Only a real 400 counts as ``was_rejected``; transport errors are
+        flagged via ``stop_reason='unknown'`` so ``match_score`` can drop the
+        probe from the rate denominators rather than miscounting it.
+        """
+        from openai import BadRequestError
+
         meta = sample.metadata
         extra_body = thinking_extra_body(meta['thinking'], meta['think_mode'])
 
@@ -193,13 +207,24 @@ class KimiVerifierAdapter(VendorVerifierAdapter):
 
         try:
             return model.generate(input=sample.input, config=cfg)
-        except Exception as e:
-            # Both raw httpx-level 400s and openai.BadRequestError surface here.
-            # We treat any error as a "rejected" response; the score logic
-            # decides whether that was expected or a failure.
+        except BadRequestError as e:
+            # HTTP 400 — the vendor rejected the request. This is the expected
+            # signal for "reject" probes; ``match_score`` will compare against
+            # ``expected_reject``.
             return ModelOutput.from_content(
+                model=model.name,
                 content='',
                 stop_reason='stop',
+                error=f'BadRequestError: {e}',
+            )
+        except Exception as e:
+            # Transport / 5xx / timeout / 429 — NOT a parameter-rejection
+            # signal. Flag via stop_reason='unknown' so match_score can drop
+            # the probe from the rate denominators.
+            return ModelOutput.from_content(
+                model=model.name,
+                content='',
+                stop_reason='unknown',
                 error=f'{type(e).__name__}: {e}',
             )
 
@@ -213,30 +238,53 @@ class KimiVerifierAdapter(VendorVerifierAdapter):
             extracted_prediction=filtered_prediction,
         )
         meta = task_state.metadata
+        output = task_state.output
         expected_reject = bool(meta.get('expected_reject', False))
-        was_rejected = bool(task_state.output.error)
 
-        passed = (was_rejected == expected_reject)
-        score.value = {
-            'passed': int(passed),
-            'expected_reject': int(expected_reject),
-            'was_rejected': int(was_rejected),
-        }
+        # _on_inference marks transport / non-400 errors with stop_reason='unknown';
+        # only a real BadRequestError (stop_reason='stop' with error set) counts.
+        is_inference_error = bool(output.error) and output.stop_reason == 'unknown'
+        was_rejected = bool(output.error) and not is_inference_error
+
+        if is_inference_error:
+            # Probe couldn't run cleanly; don't count toward reject/accept rates.
+            score.value = {
+                'inference_error': 1,
+                'expected_reject': int(expected_reject),
+                'was_rejected': 0,
+                'passed': 0,
+            }
+        else:
+            passed = (was_rejected == expected_reject)
+            score.value = {
+                'inference_error': 0,
+                'expected_reject': int(expected_reject),
+                'was_rejected': int(was_rejected),
+                'passed': int(passed),
+            }
         score.metadata = {
             'param_name': meta.get('param_name'),
             'test_value': meta.get('test_value'),
             'thinking': meta.get('thinking'),
             'think_mode': meta.get('think_mode'),
-            'error': task_state.output.error,
+            'error': output.error,
         }
         return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         reject_total = reject_correct = 0
         accept_total = accept_correct = 0
+        inference_errors = 0
+        total = len(sample_scores)
 
         for ss in sample_scores:
             v = ss.score.value or {}
+            if v.get('inference_error'):
+                # Transport / 5xx / timeout probes are not parameter rejections;
+                # exclude them from both numerator and denominator so a flaky
+                # vendor doesn't get a free pass on reject_rate.
+                inference_errors += 1
+                continue
             expected_reject = int(v.get('expected_reject', 0))
             passed = int(v.get('passed', 0))
             if expected_reject:
@@ -252,4 +300,10 @@ class KimiVerifierAdapter(VendorVerifierAdapter):
         return [
             AggScore(metric_name='param_immutable_reject_rate', score=reject_rate, num=reject_total, metadata={}),
             AggScore(metric_name='param_default_accept_rate', score=accept_rate, num=accept_total, metadata={}),
+            AggScore(
+                metric_name='inference_error_rate',
+                score=inference_errors / total if total else 0.0,
+                num=total,
+                metadata={'inference_errors': inference_errors}
+            ),
         ]

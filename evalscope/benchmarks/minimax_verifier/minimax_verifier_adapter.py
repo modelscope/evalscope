@@ -22,7 +22,6 @@ from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolInfo
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
-
 from ._validators import (
     check_param_order_preserved,
     extract_expected_param_order,
@@ -193,9 +192,7 @@ class MiniMaxVerifierAdapter(VendorVerifierAdapter):
             value['tool_calls_finish_tool_calls'] = int(is_call_tool)
             value['tool_calls_count'] = len(tool_calls)
             if is_call_tool and tool_calls:
-                all_valid = all(
-                    validate_tool_call_with_array_command(tc, tools_raw) for tc in tool_calls
-                )
+                all_valid = all(validate_tool_call_with_array_command(tc, tools_raw) for tc in tool_calls)
                 value['tool_calls_schema_valid'] = int(all_valid)
             else:
                 value['tool_calls_schema_valid'] = 0
@@ -302,7 +299,4 @@ class MiniMaxVerifierAdapter(VendorVerifierAdapter):
             ('repeat_ngram_pass_rate', rate(rep_valid, rep_checked), rep_checked),
             ('scenario_check_pass_rate', rate(sc_valid, sc_checked), sc_checked),
         ]
-        return [
-            AggScore(metric_name=name, score=score, num=num, metadata={})
-            for name, score, num in metrics
-        ]
+        return [AggScore(metric_name=name, score=score, num=num, metadata={}) for name, score, num in metrics]
