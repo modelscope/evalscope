@@ -50,6 +50,22 @@ class TestWorkloadTimelineFeed(unittest.TestCase):
         # completion / wall = 45 / 4 = 11.25
         self.assertAlmostEqual(last_overall[3], 11.25)
 
+    def test_wall_start_locked_on_first_feed(self):
+        """A later request with a smaller start_time must not retroactively
+        shift wall_start; otherwise already-appended ``t`` offsets would
+        silently become wrong (they are never rewritten).
+        """
+        tl = WorkloadTimeline()
+        tl.feed(_ok(start=100.0, completed=101.0, prompt=10, completion=5))
+        # Second request started *earlier* but completed later (worker race).
+        tl.feed(_ok(start=99.0, completed=102.0, prompt=10, completion=5))
+        # wall_start stayed at 100; second point's t = 102 - 100 = 2.0.
+        # Old "min" logic would have made wall_start=99 and silently broken
+        # the first point's already-stored t (left at 1.0 instead of 2.0).
+        self.assertEqual(tl._wall_start, 100.0)
+        self.assertAlmostEqual(tl._points[0].t, 1.0)
+        self.assertAlmostEqual(tl._points[1].t, 2.0)
+
     def test_new_prompt_clamped_when_cached_exceeds_prompt(self):
         tl = WorkloadTimeline()
         # Pathological: server reports cached > prompt (chat-template inflation).

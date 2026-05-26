@@ -12,7 +12,7 @@ from evalscope.perf.utils.db_util import create_result_table, get_result_db_path
 from evalscope.perf.utils.handler import exception_handler
 from evalscope.perf.utils.log_utils import maybe_log_to_visualizer
 from evalscope.perf.utils.trace_metrics import TraceAccumulator, TraceLevelSummary
-from evalscope.perf.utils.workload_timeline import WorkloadThroughput, WorkloadTimeline
+from evalscope.perf.utils.workload_timeline import WorkloadTimeline
 from evalscope.utils.logger import get_logger
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 

@@ -29,13 +29,12 @@ Per-point fields:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 from tabulate import tabulate
 from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
     from evalscope.perf.utils.benchmark_util import BenchmarkData
-
 
 # ---------------------------------------------------------------------------
 # Internal point
@@ -49,6 +48,10 @@ class _Point:
     cum_new_prompt: int
     cum_cached_prompt: int
 
+
+# Zero-anchor used for the "Overall" window: makes overall_rates share the
+# same code path as the windowed rates without a special-case branch.
+_ORIGIN = _Point(t=0.0, cum_completion=0, cum_new_prompt=0, cum_cached_prompt=0)
 
 # ---------------------------------------------------------------------------
 # Aggregator
@@ -80,10 +83,13 @@ class WorkloadTimeline:
         if data.completed_time <= 0 or data.completed_time < data.start_time:
             return
 
+        # Lock wall_start on the first feed so already-appended points keep
+        # their ``t`` value stable.  Lowering wall_start later would silently
+        # invalidate every prior point's offset (they don't get rewritten).
+        # Sub-second start_time jitter between workers is negligible at the
+        # window sizes we report on (30s tail, 20% steady-state).
         if self._wall_start is None:
             self._wall_start = data.start_time
-        else:
-            self._wall_start = min(self._wall_start, data.start_time)
 
         prompt = data.prompt_tokens or 0
         completion = data.completion_tokens or 0
@@ -121,20 +127,21 @@ class WorkloadTimeline:
             return 0.0
         return max(self._points[-1].t, 0.0)
 
-    def _rates(self, *, t_start: float, t_end: float, cum_completion_start: int,
-               cum_new_prompt_start: int, cum_cached_prompt_start: int) -> List[float]:
+    def _rates_from(self, anchor: _Point) -> List[float]:
         """Return [total_prompt, new_prompt, cached_prompt, completion] tok/s
-        for a window bounded by absolute timestamps and starting cumulative counts.
+        for the window from ``anchor`` to the latest point.
 
         Returns zeros when the window has no width or no points.
         """
-        if not self._points or t_end <= t_start:
+        if not self._points:
             return [0.0, 0.0, 0.0, 0.0]
         last = self._points[-1]
-        dt = t_end - t_start
-        d_new_prompt = last.cum_new_prompt - cum_new_prompt_start
-        d_cached_prompt = last.cum_cached_prompt - cum_cached_prompt_start
-        d_completion = last.cum_completion - cum_completion_start
+        dt = last.t - anchor.t
+        if dt <= 0:
+            return [0.0, 0.0, 0.0, 0.0]
+        d_new_prompt = last.cum_new_prompt - anchor.cum_new_prompt
+        d_cached_prompt = last.cum_cached_prompt - anchor.cum_cached_prompt
+        d_completion = last.cum_completion - anchor.cum_completion
         return [
             (d_new_prompt + d_cached_prompt) / dt,
             d_new_prompt / dt,
@@ -143,13 +150,7 @@ class WorkloadTimeline:
         ]
 
     def overall_rates(self) -> List[float]:
-        return self._rates(
-            t_start=0.0,
-            t_end=self.wall_time,
-            cum_completion_start=0,
-            cum_new_prompt_start=0,
-            cum_cached_prompt_start=0,
-        )
+        return self._rates_from(_ORIGIN)
 
     def last_window_rates(self, window_s: float) -> List[float]:
         """Sliding tail window of length ``window_s`` seconds.
@@ -162,17 +163,9 @@ class WorkloadTimeline:
         wall = self.wall_time
         if wall <= window_s:
             return self.overall_rates()
-
-        t_start = wall - window_s
-        # Find the cumulative counts at or just before t_start to compute deltas.
-        anchor = self._find_anchor(t_start)
-        return self._rates(
-            t_start=anchor.t,
-            t_end=self._points[-1].t,
-            cum_completion_start=anchor.cum_completion,
-            cum_new_prompt_start=anchor.cum_new_prompt,
-            cum_cached_prompt_start=anchor.cum_cached_prompt,
-        )
+        # Anchor at the latest point with t <= (wall - window_s) so the window
+        # length closely matches window_s while staying on a real sample.
+        return self._rates_from(self._find_anchor(wall - window_s))
 
     def steady_state_rates(self, warmup_frac: float = 0.2) -> List[float]:
         """Drop the first ``warmup_frac`` of wall_time and rate over what remains.
@@ -187,20 +180,12 @@ class WorkloadTimeline:
         wall = self.wall_time
         if wall <= 0 or warmup_frac <= 0:
             return self.overall_rates()
-
-        cutoff_t = wall * warmup_frac
-        anchor = self._find_anchor(cutoff_t)
+        anchor = self._find_anchor(wall * warmup_frac)
         # If the anchor *is* the last point, the steady-state window has no
         # data; fall back to overall rather than returning zeros.
         if anchor is self._points[-1]:
             return self.overall_rates()
-        return self._rates(
-            t_start=anchor.t,
-            t_end=self._points[-1].t,
-            cum_completion_start=anchor.cum_completion,
-            cum_new_prompt_start=anchor.cum_new_prompt,
-            cum_cached_prompt_start=anchor.cum_cached_prompt,
-        )
+        return self._rates_from(anchor)
 
     def _find_anchor(self, t_target: float) -> _Point:
         """Return the latest point with ``t <= t_target`` (or the first point)."""
@@ -246,14 +231,12 @@ class WorkloadTimeline:
         """Export raw cumulative-token points for downstream pandas / plots."""
         return {
             'wall_start': self._wall_start,
-            'points': [
-                {
-                    't': round(p.t, 6),
-                    'cum_completion': p.cum_completion,
-                    'cum_new_prompt': p.cum_new_prompt,
-                    'cum_cached_prompt': p.cum_cached_prompt,
-                } for p in self._points
-            ],
+            'points': [{
+                't': round(p.t, 6),
+                'cum_completion': p.cum_completion,
+                'cum_new_prompt': p.cum_new_prompt,
+                'cum_cached_prompt': p.cum_cached_prompt,
+            } for p in self._points],
         }
 
 
@@ -264,8 +247,6 @@ class WorkloadTimeline:
 
 class WorkloadThroughputRow(BaseModel):
     """One throughput row across Overall / Last-window / Steady-state columns."""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     metric: str
     overall: float = 0.0
@@ -287,16 +268,10 @@ class WorkloadThroughput(BaseModel):
     rows: List[WorkloadThroughputRow] = Field(default_factory=list)
 
     def is_empty(self) -> bool:
-        return self.n_samples == 0 or not self.rows
+        return not self.rows
 
     def to_dict(self) -> dict:
-        return {
-            'n_samples': self.n_samples,
-            'wall_time_s': self.wall_time_s,
-            'last_window_s': self.last_window_s,
-            'warmup_frac': self.warmup_frac,
-            'rows': [r.model_dump() for r in self.rows],
-        }
+        return self.model_dump()
 
     def to_table(self) -> str:
         if self.is_empty():
