@@ -16,7 +16,7 @@ Public classes
 from __future__ import annotations
 
 import json
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from tabulate import tabulate
 from typing import Any, Dict, List, Optional
 
@@ -67,6 +67,14 @@ class BenchmarkSummary(BaseModel):
     # --- Speculative decoding (optional) ---
     avg_decoded_tokens_per_iter: Optional[float] = Field(None, alias=Metrics.AVERAGE_DECODED_TOKENS_PER_ITER)
     approx_spec_acceptance_rate: Optional[float] = Field(None, alias=Metrics.APPROX_SPECULATIVE_ACCEPTANCE_RATE)
+
+    # Multi-run averaging produces fractional ints; round before validation.
+    @field_validator('concurrency', 'total_requests', 'succeed_requests', 'failed_requests', mode='before')
+    @classmethod
+    def _round_to_int(cls, v):
+        if isinstance(v, float):
+            return round(v)
+        return v
 
     # -----------------------------------------------------------------------
     # Derived properties
