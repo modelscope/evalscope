@@ -135,10 +135,10 @@ async def run_multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
         await queue.join()
         data_process_completed_event.set()
 
-        metrics, result_db_path = await statistic_task
+        metrics, trace_summary, result_db_path = await statistic_task
 
     # ------------------------------------------------------------------
     # 8. Summarise and return
     # ------------------------------------------------------------------
-    metrics_result, percentile_result = summary_result(args, metrics, result_db_path)
+    metrics_result, percentile_result = summary_result(args, metrics, result_db_path, trace_summary=trace_summary)
     return metrics_result, percentile_result

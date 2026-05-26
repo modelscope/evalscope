@@ -12,6 +12,7 @@ from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
+from evalscope.perf.utils.trace_metrics import TraceLevelSummary
 from evalscope.utils.io_utils import current_time
 from evalscope.utils.logger import get_logger
 
@@ -230,8 +231,12 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Percent
     return PercentileResult.from_transposed(transposed)
 
 
-def summary_result(args: Arguments, metrics: BenchmarkMetrics,
-                   result_db_path: str) -> Tuple['BenchmarkSummary', 'PercentileResult']:
+def summary_result(
+    args: Arguments,
+    metrics: BenchmarkMetrics,
+    result_db_path: str,
+    trace_summary: 'TraceLevelSummary' = None,
+) -> Tuple['BenchmarkSummary', 'PercentileResult']:
     result_path = os.path.dirname(result_db_path)
     write_json_file(args.to_dict(), os.path.join(result_path, 'benchmark_args.json'))
 
@@ -250,6 +255,12 @@ def summary_result(args: Arguments, metrics: BenchmarkMetrics,
         # Print percentile results in a table (transposed: rows=metrics, cols=percentiles)
         table = percentile_result.to_table()
         logger.info('\nPercentile results:\n' + table)
+
+    # Per-trace summary (multi-turn only).  Skip entirely when no traces were
+    # observed so single-turn output stays unchanged.
+    if trace_summary is not None and not trace_summary.is_empty():
+        write_json_file(trace_summary.to_dict(), os.path.join(result_path, 'trace_summary.json'))
+        logger.info(f'\nPer-trace summary ({trace_summary.n_traces} traces):\n' + trace_summary.to_table())
 
     if args.dataset.startswith('speed_benchmark'):
         speed_benchmark_result(result_db_path)
