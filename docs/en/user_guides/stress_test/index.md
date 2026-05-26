@@ -8,6 +8,7 @@ quick_start.md
 parameters.md
 examples.md
 multi_turn.md
+trace_replay.md
 sla_auto_tune.md
 speed_benchmark.md
 vs_vllm_bench.md

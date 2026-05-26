@@ -91,6 +91,12 @@ The number of turns per conversation is sampled from `[--min-turns, --max-turns]
 
 ## Datasets
 
+evalscope provides 4 generic multi-turn datasets plus 1 family dedicated to agentic trace replay (the trie workloads). The latter has its own page; this section only covers the 4 generic ones:
+
+```{seealso}
+For agentic trace replay (`trie_agentic_coding` / `trie_code_qa` / `trie_office_work`), see [Agentic Trace Replay](./trace_replay.md).
+```
+
 ### random_multi_turn
 
 Generates synthetic token sequences based on the `random` dataset. Each conversation contains `[min_turns, max_turns]` user turns. No external data file is required, making it ideal for quick benchmarking and performance comparisons.

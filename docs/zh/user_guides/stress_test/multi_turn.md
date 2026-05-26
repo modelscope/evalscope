@@ -91,6 +91,12 @@
 
 ## 数据集
 
+evalscope 提供 4 类多轮数据集 + 1 类专用于 agentic trace 重放的数据集（trie workload）。后者文档单独成页，本节只介绍前 4 类：
+
+```{seealso}
+agentic trace 重放（`trie_agentic_coding` / `trie_code_qa` / `trie_office_work`）请见 [Agentic Trace 重放压测](./trace_replay.md)。
+```
+
 ### random_multi_turn
 
 基于 `random` 数据集随机生成 token 序列，每个对话包含 `[min_turns, max_turns]` 轮用户消息，无需外部数据文件，适合快速基准测试和性能对比。
