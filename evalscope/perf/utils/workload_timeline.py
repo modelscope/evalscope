@@ -191,8 +191,9 @@ class WorkloadTimeline:
         """Return the latest point with ``t <= t_target`` (or the first point)."""
         if not self._points or t_target <= self._points[0].t:
             return self._points[0]
-        # Linear scan from the end - timelines are at most a few thousand entries
-        # and inserts are append-only so we don't import bisect just for this.
+        # Linear forward scan: points are append-only sorted by t (wall_start is
+        # locked on first feed), so we can break at the first point past t_target.
+        # Timelines are at most a few thousand entries so bisect isn't worth importing.
         chosen = self._points[0]
         for p in self._points:
             if p.t <= t_target:

@@ -132,10 +132,12 @@ class Arguments(BaseArgument):
     duration: Optional[float] = None
     """Wall-clock budget for one benchmark run, in seconds.
 
-    When set, the dispatcher stops sending new requests once the deadline is
-    reached and hard-cancels any in-flight requests (matches the behavior of
-    [applied-compute/trie](https://github.com/applied-compute/trie)).
-    Cancelled in-flight requests are dropped from the metrics aggregate.
+    Soft-exit semantics (matches [applied-compute/trie](https://github.com/applied-compute/trie)):
+    once the deadline is reached the dispatcher stops scheduling new requests,
+    but already in-flight requests are awaited to completion.  In multi-turn
+    mode "in-flight" is per-trace: an already-claimed conversation runs every
+    remaining turn so per-trace metrics stay coherent and ``trace_summary.json``
+    never contains partial traces.
 
     Honored in all benchmark modes (single-turn closed-loop, single-turn
     open-loop, and multi-turn).  Warmup phases ignore ``--duration`` and run
@@ -590,8 +592,9 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument(
         '--duration', type=float, default=None,
         help='Wall-clock budget in seconds for one benchmark run (applies to all modes). '
-             'Once reached, no new requests are dispatched and in-flight ones are hard-cancelled '
-             '(trie-compatible). Warmup ignores this. When both --number and --duration are set, '
+             'Soft exit: once reached, no new requests are dispatched but in-flight ones run to '
+             'completion (multi-turn finishes every remaining turn of any already-claimed trace, '
+             'matching trie). Warmup ignores this. When both --number and --duration are set, '
              'whichever limit is reached first ends the run.')  # noqa: E501
 
     # SLA Auto-tuning

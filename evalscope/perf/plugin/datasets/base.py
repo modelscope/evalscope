@@ -54,13 +54,13 @@ class DatasetPluginBase:
         return self.build_messages()
 
     @abstractmethod
-    def build_messages(self) -> Iterator[List[Dict]]:
+    def build_messages(self) -> Iterator[Union[Messages, Conversation]]:
         """Build the request payload.
 
         Single-turn plugins yield a single-message list ``[{role, content}]``
-        per request.  Multi-turn plugins yield a ``Conversation`` (``List[Turn]``)
-        per conversation; each ``Turn`` may carry per-turn ``max_tokens`` and
-        ``tool_call_latency`` overrides.
+        per request (``Messages``).  Multi-turn plugins yield a ``Conversation``
+        (``List[Turn]``) per conversation; each ``Turn`` may carry per-turn
+        ``max_tokens`` and ``tool_call_latency`` overrides.
 
         Raises:
             NotImplementedError: Subclass must implement.
