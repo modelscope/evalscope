@@ -1,14 +1,19 @@
 # External Agent Bridge Mode
 
-Evaluate off-the-shelf agent CLIs such as Claude Code or Codex directly through EvalScope. You point `TaskConfig` at an evaluation model, EvalScope transparently forwards every LLM request from the CLI to that model, and the whole interaction is recorded as an `AgentTrace` for [replay in the UI](index.md#trace-visualization). The CLI itself is untouched.
+Evaluate off-the-shelf agent CLIs such as Claude Code or Codex directly through EvalScope. You point `TaskConfig` at an evaluation model, and EvalScope sits between the CLI and the backend model as a **protocol translator** (claude-code speaks Anthropic Messages, codex v0.133+ speaks OpenAI Responses, while the backend only needs to support OpenAI Chat Completions). The whole interaction is recorded as an `AgentTrace` for [replay in the UI](index.md#trace-visualization). The CLI itself is untouched.
 
 > To wrap GSM8K / AIME and other regular benchmarks in the model's own multi-turn tool-use loop, see [Native AgentLoop Mode](native.md).
 
 ## When to use
 
-- Benchmark Claude Code on SWE-bench Pro's code-fix tasks.
-- Pipe Codex into your own model and compare the same agent CLI across backend models.
-- Reuse the tool system of an official Anthropic / OpenAI agent framework without reimplementing it.
+- **Benchmark an off-the-shelf agent CLI on a specific dataset.**
+  e.g. Claude Code's code-fix score on SWE-bench Pro, Codex's tool-use ability on GAIA.
+
+- **Compare the same agent CLI across different backend models.**
+  e.g. point claude-code at qwen3-max, deepseek-v3, your own fine-tuned model on the same task set to see which backend best supports agentic workloads.
+
+- **Your backend only speaks OpenAI Chat Completions, but you still want to drive claude-code / codex.**
+  The bridge transparently translates Anthropic Messages / OpenAI Responses into Chat Completions on the way out — the backend never needs to support those protocols natively.
 
 ## Quick start
 
@@ -34,6 +39,8 @@ run_task(task_config)
 ```
 
 EvalScope prepares Claude Code in a local subprocess (auto `npm install` if needed), routes its API requests to `qwen-plus`, writes the results to `outputs/`, and lets you replay the agent trajectory step by step in the Web UI.
+
+> Note that `qwen-plus` speaks OpenAI Chat Completions while claude-code emits Anthropic Messages — the bridge translates between them transparently, so the backend never needs to support the Anthropic protocol natively.
 
 ## Supported agent CLIs
 
