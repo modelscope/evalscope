@@ -223,6 +223,45 @@ run_task(task_cfg=task_cfg)
 For detailed configuration of judge models, please refer to: [Judge Model Parameters](./parameters.md#judge-parameters)
 ```
 
+### Loading Datasets from Hugging Face
+
+EvalScope loads datasets from ModelScope by default. To use Hugging Face Hub instead, set `--dataset-hub` to `huggingface`. When a dataset uses different repository IDs on Hugging Face and ModelScope, override the dataset's `dataset_id` via `--dataset-args`.
+
+For example, the default ID for `ocr_bench` is `evalscope/OCRBench` on ModelScope, while its Hugging Face counterpart is `echo840/OCRBench`:
+
+```shell
+evalscope eval \
+ --model Qwen/Qwen2.5-VL-7B-Instruct \
+ --datasets ocr_bench \
+ --dataset-hub huggingface \
+ --dataset-args '{"ocr_bench": {"dataset_id": "echo840/OCRBench"}}' \
+ --limit 5
+```
+
+Equivalent Python usage:
+
+```python
+from evalscope import TaskConfig, run_task
+
+task_cfg = TaskConfig(
+    model='Qwen/Qwen2.5-VL-7B-Instruct',
+    datasets=['ocr_bench'],
+    dataset_hub='huggingface',
+    dataset_args={
+        'ocr_bench': {
+            'dataset_id': 'echo840/OCRBench',
+        },
+    },
+    limit=5,
+)
+
+run_task(task_cfg=task_cfg)
+```
+
+```{tip}
+If a dataset uses the same repository ID on both Hugging Face and ModelScope, just set `--dataset-hub huggingface` — no need to override `dataset_id`.
+```
+
 ### Offline Evaluation
 
 In offline environments, you can use locally cached models and datasets for evaluation.

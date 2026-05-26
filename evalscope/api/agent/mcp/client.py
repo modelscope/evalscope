@@ -63,9 +63,9 @@ class MCPServer:
                 )
                 read_stream, write_stream = await self._stack.enter_async_context(stdio_client(params))
             elif isinstance(self.config, MCPServerConfigHTTP):
-                from mcp.client.streamable_http import streamablehttp_client
+                from mcp.client.streamable_http import streamable_http_client
 
-                streams_ctx = streamablehttp_client(
+                streams_ctx = streamable_http_client(
                     url=self.config.url,
                     headers=dict(self.config.headers) or None,
                     timeout=datetime.timedelta(seconds=self.config.timeout),
