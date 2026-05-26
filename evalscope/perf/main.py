@@ -54,16 +54,30 @@ def run_one_benchmark(args: Arguments, output_path: str = None):
 
     with args.output_context(output_path):
         if args.multi_turn:
-            metrics_result, percentile_result = loop.run_until_complete(run_multi_turn_benchmark(args))
+            metrics_result, percentile_result, trace_summary, workload_throughput = loop.run_until_complete(
+                run_multi_turn_benchmark(args)
+            )
         else:
-            metrics_result, percentile_result = loop.run_until_complete(run_benchmark(args))
+            metrics_result, percentile_result, trace_summary, workload_throughput = loop.run_until_complete(
+                run_benchmark(args)
+            )
 
-    # Return unified format; key reflects the sweep dimension
+    # Return unified format; key reflects the sweep dimension.  trace_summary
+    # is None for single-turn runs; workload_throughput is None for runs with
+    # no successful requests.  Downstream rendering (rich_display) checks for
+    # None before drawing the extra tables.
     if args.open_loop:
         key = f'rate_{args.rate}_number_{args.number}'
     else:
         key = f'parallel_{args.parallel}_number_{args.number}'
-    return {key: {'metrics': metrics_result, 'percentiles': percentile_result}}
+    return {
+        key: {
+            'metrics': metrics_result,
+            'percentiles': percentile_result,
+            'trace_summary': trace_summary,
+            'workload_throughput': workload_throughput,
+        }
+    }
 
 
 def run_multi_benchmark(args: Arguments, output_path: str = None):

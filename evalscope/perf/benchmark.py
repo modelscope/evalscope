@@ -135,11 +135,10 @@ async def run_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
 
         metrics, trace_summary, workload_timeline, result_db_path = await statistic_task
 
-    metrics_result, percentile_result = summary_result(
+    return summary_result(
         args,
         metrics,
         result_db_path,
         trace_summary=trace_summary,
         workload_timeline=workload_timeline,
     )
-    return metrics_result, percentile_result

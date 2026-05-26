@@ -10,6 +10,8 @@ from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
+from evalscope.perf.utils.trace_metrics import TraceLevelSummary
+from evalscope.perf.utils.workload_timeline import WorkloadThroughput
 from evalscope.utils.logger import get_logger
 from .perf_constants import Metrics, PercentileMetrics
 
@@ -525,6 +527,91 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
     def _render_extra_tables(self, result: AnalysisResult, dc: DualConsole):
         if result.all_results is not None:
             self._render_request_metrics(result.all_results, dc)
+            self._render_trace_summary(result.all_results, dc)
+            self._render_workload_throughput(result.all_results, dc)
+
+    def _render_trace_summary(self, all_results, dc: DualConsole) -> None:
+        """Render per-trace mean/min/p50/p90/p95/p99/max table for any run that
+        produced multi-turn trace data.  Skipped for single-turn benchmarks.
+        """
+        runs = self._iter_run_entries(all_results)
+        # Show one block per run that has trace data so sweeps remain readable.
+        for run_label, run_entry in runs:
+            trace_summary = run_entry.get('trace_summary') if isinstance(run_entry, dict) else None
+            if not isinstance(trace_summary, TraceLevelSummary) or trace_summary.is_empty():
+                continue
+            table = Table(
+                title=f'Per-trace Summary ({trace_summary.n_traces} traces)' + (f' [{run_label}]' if run_label else ''),
+                show_header=True,
+                header_style='bold cyan',
+                border_style='blue',
+                pad_edge=False,
+                expand=False,
+            )
+            table.add_column('Metric', justify='left', style='cyan')
+            for stat in ('mean', 'min', 'p50', 'p90', 'p95', 'p99', 'max'):
+                table.add_column(stat, justify='right')
+            for row in trace_summary.rows:
+                table.add_row(
+                    row.metric,
+                    f'{row.mean:.2f}',
+                    f'{row.min:.2f}',
+                    f'{row.p50:.2f}',
+                    f'{row.p90:.2f}',
+                    f'{row.p95:.2f}',
+                    f'{row.p99:.2f}',
+                    f'{row.max:.2f}',
+                )
+            dc.print('\n')
+            dc.print(table)
+
+    def _render_workload_throughput(self, all_results, dc: DualConsole) -> None:
+        """Render the workload-level Overall / Last-window / Steady-state
+        throughput table whenever timeline data was collected.
+        """
+        runs = self._iter_run_entries(all_results)
+        for run_label, run_entry in runs:
+            throughput = run_entry.get('workload_throughput') if isinstance(run_entry, dict) else None
+            if not isinstance(throughput, WorkloadThroughput) or throughput.is_empty():
+                continue
+            last_label = f'Last {int(throughput.last_window_s)}s'
+            steady_label = f'Steady (drop {int(throughput.warmup_frac * 100)}%)'
+            table = Table(
+                title=f'Workload Throughput ({throughput.n_samples} samples)' +
+                (f' [{run_label}]' if run_label else ''),
+                show_header=True,
+                header_style='bold cyan',
+                border_style='blue',
+                pad_edge=False,
+                expand=False,
+            )
+            table.add_column('Metric (tok/s)', justify='left', style='cyan')
+            table.add_column('Overall', justify='right')
+            table.add_column(last_label, justify='right')
+            table.add_column(steady_label, justify='right', style='green')
+            for row in throughput.rows:
+                table.add_row(
+                    row.metric,
+                    f'{row.overall:.2f}',
+                    f'{row.last_window:.2f}',
+                    f'{row.steady_state:.2f}',
+                )
+            dc.print('\n')
+            dc.print(table)
+
+    @staticmethod
+    def _iter_run_entries(all_results):
+        """Yield ``(run_label, run_entry_dict)`` for each sweep run.  The label
+        is shown next to the table title when there's more than one run so a
+        reader can tell tables apart in sweep mode.
+        """
+        if not isinstance(all_results, dict):
+            return []
+        items = list(all_results.items())
+        # Only emit a label when there's >1 run, to keep single-run output clean.
+        if len(items) <= 1:
+            return [('', entry) for _, entry in items]
+        return items
 
     def _render_request_metrics(self, all_results, dc: DualConsole):
         """Render the per-concurrency request-level token / turn metrics table."""
