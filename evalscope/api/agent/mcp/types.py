@@ -43,10 +43,31 @@ class MCPServerConfigHTTP(_MCPServerConfigBase):
     """HTTP read timeout in seconds."""
 
 
-MCPServerConfig = Annotated[Union[MCPServerConfigStdio, MCPServerConfigHTTP], Field(discriminator='type')]
+class MCPServerConfigSSE(_MCPServerConfigBase):
+    """Connect to a remote MCP server over Server-Sent Events (SSE).
+
+    SSE is the legacy MCP HTTP transport; prefer :class:`MCPServerConfigHTTP`
+    (Streamable HTTP) when the server supports both.
+    """
+
+    type: Literal['sse'] = Field(default='sse')
+
+    url: str
+    headers: Dict[str, str] = Field(default_factory=dict)
+    timeout: float = Field(default=5.0)
+    """HTTP timeout in seconds for non-streaming operations."""
+    sse_read_timeout: float = Field(default=300.0)
+    """How long (seconds) to wait for the next SSE event before disconnecting."""
+
+
+MCPServerConfig = Annotated[
+    Union[MCPServerConfigStdio, MCPServerConfigHTTP, MCPServerConfigSSE],
+    Field(discriminator='type'),
+]
 
 __all__ = [
     'MCPServerConfig',
     'MCPServerConfigStdio',
     'MCPServerConfigHTTP',
+    'MCPServerConfigSSE',
 ]

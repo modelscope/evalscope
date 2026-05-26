@@ -32,6 +32,7 @@ from .agent_adapter import AgentAdapter
 
 if TYPE_CHECKING:
     from evalscope.agent.external.config import ExternalAgentConfig
+    from evalscope.api.agent.mcp import MCPServerConfig
 
 
 class AgentLoopAdapter(AgentAdapter):
@@ -113,7 +114,7 @@ class AgentLoopAdapter(AgentAdapter):
         this adapter's per-sample sandbox / scoring pipeline.
         """
         ac = self._task_config.agent_config if self._task_config is not None else None
-        mcp_configs: Optional[List[Any]] = None
+        mcp_configs: Optional[List['MCPServerConfig']] = None
         if ac is not None:
             # Local import to keep the bridge stack out of the adapter's
             # module-load-time imports (no aiohttp dependency for non-

@@ -61,7 +61,7 @@ def question_scorer(model_answer: str, ground_truth: str) -> Tuple[bool, str]:
         if len(gt_elems) != len(ma_elems):
             return (
                 False,
-                f'Evaluated {model_answer} as a comma separated list, returned False because lists have different lenghts.',
+                f'Evaluated {model_answer} as a comma separated list, returned False because lists have different lengths.',
             )
 
         comparisons = []

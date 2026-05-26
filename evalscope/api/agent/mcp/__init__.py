@@ -12,7 +12,7 @@ so users who don't configure any MCP server pay no cost.
 
 from .client import MCPServer
 from .source import mcp_tools
-from .types import MCPServerConfig, MCPServerConfigHTTP, MCPServerConfigStdio
+from .types import MCPServerConfig, MCPServerConfigHTTP, MCPServerConfigSSE, MCPServerConfigStdio
 
 __all__ = [
     'MCPServer',
@@ -20,4 +20,5 @@ __all__ = [
     'MCPServerConfig',
     'MCPServerConfigStdio',
     'MCPServerConfigHTTP',
+    'MCPServerConfigSSE',
 ]

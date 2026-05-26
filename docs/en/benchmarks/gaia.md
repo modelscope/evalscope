@@ -17,7 +17,7 @@ GAIA (General AI Assistants) is a benchmark of 450+ questions targeting next-gen
 - ReAct agent loop with a single ``bash`` tool inside a Docker sandbox (default image ``python:3.11``, includes ``curl`` / ``wget`` / ``git``).
 - Attachment files are mounted read-only at ``/shared_files`` inside the sandbox.
 - Rule-based scorer ported verbatim from the official GAIA leaderboard (no LLM judge).
-- Dataset downloaded from ModelScope (``gaia-benchmark/GAIA``); falls back to HuggingFace via ``dataset_hub``.
+- Dataset downloaded from ModelScope (``gaia-benchmark/GAIA``) by default; set ``dataset_hub='huggingface'`` to load from Hugging Face instead.
 
 ## Evaluation Notes
 

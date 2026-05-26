@@ -160,4 +160,3 @@ Agent 此时会看到 `bash`、`submit` 和 `fetch` 三个工具，可以直接 
 - **暂无 `web_search` / `web_browser` 工具**：Phase-1 仅提供 `bash`。Agent 可以用 `curl` / `wget` 加 `python3` 解析 HTML，但 JS 渲染页面和需要 API key 的搜索引擎无法直接使用。浏览类题目分数会明显低于具备真实浏览器工具的实现。
 - **不支持 `test` 划分**：仅支持 `validation`（有公开答案）。如需向官方 leaderboard 提交，请自行收集模型预测并按 leaderboard 要求格式化。
 - **长 bash 输出可能撑爆模型 input 长度**：`curl` 一个大 HTML 页会让消息历史快速膨胀，难度高的样本上偶尔会触发模型最大 input 长度限制。在 `TaskConfig`（或测试中）设置 `ignore_errors=True` 可让评测在遇到此类异常时继续跑剩余样本。
-- **Phase-2 计划**：通用 MCP（Model Context Protocol）接入是规划中的解决方案——一旦落地，用户接入 `mcp-server-fetch` / `mcp-server-brave-search` 等社区 MCP server 即可让 agent 拥有搜索/浏览能力，无需修改 GAIA 任何代码。

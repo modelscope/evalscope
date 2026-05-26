@@ -104,7 +104,7 @@ GAIA (General AI Assistants) is a benchmark of 450+ questions targeting next-gen
 - ReAct agent loop with a single ``bash`` tool inside a Docker sandbox (default image ``python:3.11``, includes ``curl`` / ``wget`` / ``git``).
 - Attachment files are mounted read-only at ``/shared_files`` inside the sandbox.
 - Rule-based scorer ported verbatim from the official GAIA leaderboard (no LLM judge).
-- Dataset downloaded from ModelScope (``gaia-benchmark/GAIA``); falls back to HuggingFace via ``dataset_hub``.
+- Dataset downloaded from ModelScope (``gaia-benchmark/GAIA``) by default; set ``dataset_hub='huggingface'`` to load from Hugging Face instead.
 
 ## Evaluation Notes
 
@@ -188,12 +188,21 @@ class GaiaAdapter(AgentLoopAdapter):
 
         if self.dataset_hub == HubType.LOCAL or os.path.exists(self.dataset_id):
             self._snapshot_dir = os.path.abspath(self.dataset_id)
+        elif self.dataset_hub == HubType.HUGGINGFACE:
+            from huggingface_hub import snapshot_download
+
+            logger.info(f'Downloading GAIA snapshot from Hugging Face (split={self.eval_split})...')
+            self._snapshot_dir = snapshot_download(
+                repo_id=self.dataset_id,
+                repo_type='dataset',
+                allow_patterns=[f'2023/{self.eval_split}/*'],
+            )
         else:
             from modelscope import dataset_snapshot_download
 
-            logger.info(f'Downloading GAIA snapshot for attachment files (split={self.eval_split})...')
+            logger.info(f'Downloading GAIA snapshot from ModelScope (split={self.eval_split})...')
             self._snapshot_dir = dataset_snapshot_download(
-                _GAIA_DATASET_ID,
+                self.dataset_id,
                 allow_file_pattern=[f'2023/{self.eval_split}/*'],
             )
 

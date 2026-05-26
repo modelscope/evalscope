@@ -1,8 +1,8 @@
 """Async client wrapper around the official ``mcp`` Python SDK.
 
 Provides a single ``MCPServer`` async context manager that hides the
-stdio-vs-HTTP transport plumbing and exposes ``list_tools`` / ``call_tool``
-that return EvalScope-friendly types.
+stdio / Streamable HTTP / SSE transport plumbing and exposes
+``list_tools`` / ``call_tool`` that return EvalScope-friendly types.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
-from .types import MCPServerConfig, MCPServerConfigHTTP, MCPServerConfigStdio
+from .types import MCPServerConfig, MCPServerConfigHTTP, MCPServerConfigSSE, MCPServerConfigStdio
 
 logger = get_logger()
 
@@ -63,14 +63,35 @@ class MCPServer:
                 )
                 read_stream, write_stream = await self._stack.enter_async_context(stdio_client(params))
             elif isinstance(self.config, MCPServerConfigHTTP):
+                import httpx
                 from mcp.client.streamable_http import streamable_http_client
+
+                # Newer mcp SDK's ``streamable_http_client`` only accepts
+                # ``url`` / ``http_client`` / ``terminate_on_close``: per-call
+                # ``headers`` and ``timeout`` were moved to a caller-provided
+                # ``httpx.AsyncClient``. We enter the client into our stack
+                # so its connection pool is closed alongside the MCP session.
+                http_client = httpx.AsyncClient(
+                    headers=dict(self.config.headers) or None,
+                    timeout=self.config.timeout,
+                )
+                await self._stack.enter_async_context(http_client)
 
                 streams_ctx = streamable_http_client(
                     url=self.config.url,
-                    headers=dict(self.config.headers) or None,
-                    timeout=datetime.timedelta(seconds=self.config.timeout),
+                    http_client=http_client,
                 )
                 read_stream, write_stream, _ = await self._stack.enter_async_context(streams_ctx)
+            elif isinstance(self.config, MCPServerConfigSSE):
+                from mcp.client.sse import sse_client
+
+                streams_ctx = sse_client(
+                    url=self.config.url,
+                    headers=dict(self.config.headers) or None,
+                    timeout=self.config.timeout,
+                    sse_read_timeout=self.config.sse_read_timeout,
+                )
+                read_stream, write_stream = await self._stack.enter_async_context(streams_ctx)
             else:
                 raise TypeError(f'Unexpected MCP server config type: {type(self.config)!r}')
 

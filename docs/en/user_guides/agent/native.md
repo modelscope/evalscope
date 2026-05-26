@@ -89,7 +89,7 @@ Most-used `AgentConfig` fields:
 
 ## MCP server tools
 
-Beyond the built-in tools (`bash` / `python_exec` / ...), `AgentConfig` accepts arbitrary [MCP (Model Context Protocol)](https://modelcontextprotocol.io) servers via `mcp_servers`. Their advertised tools are listed at sample start, merged into the loop's tool set alongside the benchmark-native tools, and torn down when the sample finishes — **no benchmark-side change required**.
+Beyond the built-in tools (`bash` / `python_exec` / ...), `AgentConfig` accepts arbitrary [MCP (Model Context Protocol)](https://modelcontextprotocol.io) servers via `mcp_servers`. Their advertised tools are merged into the loop's tool set alongside the benchmark-native tools — **no benchmark-side change required**.
 
 This is how to plug in `fetch`, web search, GitHub, filesystem and the rest of the MCP ecosystem without writing a custom EvalScope tool.
 
@@ -109,7 +109,7 @@ The `mcp` Python SDK is imported lazily, so configurations with empty `mcp_serve
 import sys
 from evalscope import TaskConfig, run_task
 from evalscope.api.agent import NativeAgentConfig
-from evalscope.api.agent.mcp import MCPServerConfigStdio, MCPServerConfigHTTP
+from evalscope.api.agent.mcp import MCPServerConfigStdio, MCPServerConfigHTTP, MCPServerConfigSSE
 
 task_config = TaskConfig(
     model='qwen3-max',
@@ -131,11 +131,18 @@ task_config = TaskConfig(
                 env={'BRAVE_API_KEY': 'sk-...'},
                 name='brave_search',
             ),
-            # HTTP: connect to a remote MCP endpoint.
+            # Streamable HTTP: connect to a remote MCP endpoint (recommended).
+            # Example: ModelScope MCP marketplace, URLs usually end in /mcp.
             MCPServerConfigHTTP(
-                url='https://my-mcp.example.com',
-                headers={'Authorization': 'Bearer ...'},
-                name='internal',
+                url='https://mcp.api-inference.modelscope.net/<server-id>/mcp',
+                headers={'Authorization': 'Bearer <MODELSCOPE_SDK_TOKEN>'},
+                name='ms_fetch',
+            ),
+            # SSE: legacy MCP HTTP transport, URLs usually end in /sse.
+            MCPServerConfigSSE(
+                url='https://mcp.api-inference.modelscope.net/<server-id>/sse',
+                headers={'Authorization': 'Bearer <MODELSCOPE_SDK_TOKEN>'},
+                name='ms_fetch_sse',
             ),
         ],
     ),
@@ -143,6 +150,10 @@ task_config = TaskConfig(
     limit=5,
 )
 run_task(task_config)
+```
+
+```{tip}
+**Streamable HTTP vs SSE**: Streamable HTTP is the newer MCP HTTP transport; SSE is the legacy one. The two endpoints are functionally equivalent — when both are offered prefer `/mcp` (Streamable HTTP). `MCPServerConfigSSE` is mainly for older servers that only expose `/sse`.
 ```
 
 Inside the agent loop the model now sees `bash`, `submit`, **and** every tool the MCP servers advertised (e.g. `fetch`, `brave_web_search`). It picks tools by name as usual.
@@ -155,9 +166,11 @@ Inside the agent loop the model now sees `bash`, `submit`, **and** every tool th
 | `args` (stdio) | list[str] | Arguments passed to `command`. |
 | `env` (stdio) | dict[str, str] | Extra environment variables for the child process. |
 | `cwd` (stdio) | str | Working directory for the child. |
-| `url` (http) | str | Streamable HTTP endpoint of the MCP server. |
-| `headers` (http) | dict[str, str] | HTTP headers (typically auth). |
+| `url` (http / sse) | str | Streamable HTTP endpoint (`http`) or SSE endpoint (`sse`). |
+| `headers` (http / sse) | dict[str, str] | HTTP headers (typically auth). |
 | `timeout` (http) | float | HTTP read timeout in seconds (default `30.0`). |
+| `timeout` (sse) | float | HTTP timeout in seconds for non-streaming ops (default `5.0`). |
+| `sse_read_timeout` (sse) | float | Seconds to wait for the next SSE event before disconnecting (default `300.0`). |
 | `name` | str | Display name used in logs and the trace UI. Defaults to `command` / `url`. |
 | `tools` | `'all'` or list[str] | Whitelist; `'all'` (default) exposes every tool the server advertises. |
 
@@ -169,7 +182,7 @@ Inside the agent loop the model now sees `bash`, `submit`, **and** every tool th
 
 ### Trace / debugging
 
-`MCPServer[<name>]: initialised` and `MCPServer[<name>]: closed` log lines bracket the per-sample server lifecycle. Tool calls appear in `agent_trace.events` like any other `tool_call` / `tool_result` pair — the tool `name` is the MCP-advertised name.
+Each MCP server logs `MCPServer[<name>]: initialised` / `closed` when it starts and stops. Tool calls appear in `agent_trace.events` like any other `tool_call` / `tool_result` pair, with the MCP-advertised tool `name`.
 
 If a MCP tool call fails, the observation comes back as `[error] <body>` so the model can recover and try a different approach without crashing the loop.
 
