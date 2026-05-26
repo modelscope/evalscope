@@ -27,7 +27,7 @@ from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import merge_sandbox_config_dicts
 from evalscope.constants import Tags
-from evalscope.utils.import_utils import check_import, is_build_doc
+from evalscope.utils.import_utils import is_build_doc
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -222,8 +222,6 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-
-        check_import('docker', extra='sandbox', raise_error=True, feature_name=self.pretty_name)
 
         self.action_protocol: str = self.extra_params.get('action_protocol', 'toolcall')
         if self.action_protocol not in {'toolcall', 'backticks'}:
