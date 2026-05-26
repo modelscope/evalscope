@@ -168,6 +168,16 @@ class MetricsAccumulator:
     total_prompt_tokens_for_cache: int = 0  # denominator: prompt_tokens of turns with cached_tokens set
     n_cache_turns: int = 0  # number of turns contributing to the cache ratio
 
+    # First-turn vs subsequent-turn TTFT split (multi-turn only).
+    # First-turn TTFT reflects cold prefill of the initial user prompt; subsequent
+    # turns benefit from prefix-cache reuse and report markedly lower TTFT.
+    # Only turns with input_num_turns > 0 (i.e. multi-turn turns) are bucketed,
+    # so single-turn benchmarks leave both bucket counters at 0.
+    total_first_turn_ttft: float = 0.0
+    n_first_turn: int = 0
+    total_subsequent_turn_ttft: float = 0.0
+    n_subsequent_turn: int = 0
+
     # --- Speculative decoding cumulative sums ---
     total_decoded_tokens_per_iter: float = 0.0
     n_decoded_samples: int = 0
@@ -213,6 +223,15 @@ class MetricsAccumulator:
             # Multi-turn specific
             if data.input_num_turns > 0:
                 self.total_input_turns += data.input_num_turns
+                # Bucket TTFT by turn position so cold prefill vs warm prefix-cache
+                # turns can be reported separately. Single-turn runs (input_num_turns
+                # == 0) are skipped to keep cold/warm distinction meaningful.
+                if data.is_first_turn:
+                    self.total_first_turn_ttft += data.first_chunk_latency
+                    self.n_first_turn += 1
+                else:
+                    self.total_subsequent_turn_ttft += data.first_chunk_latency
+                    self.n_subsequent_turn += 1
             # Token-level cache accumulator: include *every* turn that has
             # cached_tokens set (turn 1 contributes 0 to numerator but its
             # prompt_tokens still count in the denominator).
@@ -282,6 +301,14 @@ class MetricsAccumulator:
                 _safe_div(self.total_decoded_tokens_per_iter, self.n_decoded_samples)
                 if self.n_decoded_samples > 0 else -1
             )
+            # First-turn / subsequent-turn TTFT averages (multi-turn only).
+            # -1 means "not applicable" (no multi-turn data observed).
+            avg_first_turn_ttft = (
+                _safe_div(self.total_first_turn_ttft, self.n_first_turn) if self.n_first_turn > 0 else -1
+            )
+            avg_subsequent_turn_ttft = (
+                _safe_div(self.total_subsequent_turn_ttft, self.n_subsequent_turn) if self.n_subsequent_turn > 0 else -1
+            )
         except ZeroDivisionError as e:
             logger.error(
                 f'ZeroDivisionError while computing metrics: {e}. '
@@ -294,6 +321,7 @@ class MetricsAccumulator:
             avg_time_per_output_token = avg_inter_token_latency = qps = -1
             avg_input_token_throughput = avg_output_token_throughput = avg_total_token_throughput = -1
             avg_turns_per_request = avg_cached_percent = avg_decoded_tokens_per_iter = -1
+            avg_first_turn_ttft = avg_subsequent_turn_ttft = -1
 
         return BenchmarkMetrics(
             concurrency=self.concurrency,
@@ -314,6 +342,8 @@ class MetricsAccumulator:
             avg_total_token_throughput=avg_total_token_throughput,
             avg_turns_per_request=avg_turns_per_request,
             avg_cached_percent=avg_cached_percent,
+            avg_first_turn_ttft=avg_first_turn_ttft,
+            avg_subsequent_turn_ttft=avg_subsequent_turn_ttft,
             avg_decoded_tokens_per_iter=avg_decoded_tokens_per_iter,
         )
 
@@ -358,6 +388,10 @@ class BenchmarkMetrics:
     # --- Multi-turn ---
     avg_turns_per_request: float = -1
     avg_cached_percent: float = -1
+    avg_first_turn_ttft: float = -1
+    """Avg TTFT (seconds) of first-turn requests (cold prefill).  -1 = not applicable."""
+    avg_subsequent_turn_ttft: float = -1
+    """Avg TTFT (seconds) of subsequent-turn requests (warm prefix cache).  -1 = not applicable."""
 
     # --- Speculative decoding ---
     avg_decoded_tokens_per_iter: float = -1
@@ -424,6 +458,12 @@ class BenchmarkMetrics:
         # -1 means "not applicable" (no multi-turn data); 0 means active but no cache hits.
         if self.avg_cached_percent >= 0:
             result[Metrics.AVERAGE_CACHED_PERCENT] = round(self.avg_cached_percent, r)
+        # First-turn / subsequent-turn TTFT split (multi-turn only).  Stored in
+        # seconds; report in ms for consistency with avg_ttft.
+        if self.avg_first_turn_ttft >= 0:
+            result[Metrics.AVERAGE_FIRST_TURN_TTFT] = round(self.avg_first_turn_ttft * 1000, 2)
+        if self.avg_subsequent_turn_ttft >= 0:
+            result[Metrics.AVERAGE_SUBSEQUENT_TURN_TTFT] = round(self.avg_subsequent_turn_ttft * 1000, 2)
         return result
 
     def _build_speculative_decoding_fields(self, r: int) -> dict:

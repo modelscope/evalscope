@@ -48,6 +48,8 @@ class Metrics:
     # Multi-turn specific
     AVERAGE_INPUT_TURNS_PER_REQUEST = 'Avg Turns/Request'
     AVERAGE_CACHED_PERCENT = 'KV Cache Hit Rate (%)'
+    AVERAGE_FIRST_TURN_TTFT = 'First-Turn TTFT (ms)'
+    AVERAGE_SUBSEQUENT_TURN_TTFT = 'Subsequent-Turn TTFT (ms)'
 
     # Speculative decoding specific
     AVERAGE_DECODED_TOKENS_PER_ITER = 'Decoded Tok/Iter'
