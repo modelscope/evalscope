@@ -1,0 +1,795 @@
+{
+  "meta": {
+    "pretty_name": "ArxivRollBench",
+    "dataset_id": "liangzid/arxivrollbench",
+    "paper_url": "https://ojs.aaai.org/index.php/AAAI/article/view/41098",
+    "tags": [
+      "MCQ",
+      "Reasoning",
+      "Knowledge"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "2024b_cs_s",
+      "2024b_cs_c",
+      "2024b_cs_p",
+      "2024b_q_fin_s",
+      "2024b_q_fin_c",
+      "2024b_q_fin_p",
+      "2024b_math_s",
+      "2024b_math_c",
+      "2024b_math_p",
+      "2024b_physics_s",
+      "2024b_physics_c",
+      "2024b_physics_p",
+      "2024b_stat_s",
+      "2024b_stat_c",
+      "2024b_stat_p",
+      "2024b_q_bio_s",
+      "2024b_q_bio_c",
+      "2024b_q_bio_p",
+      "2024b_econ_s",
+      "2024b_econ_c",
+      "2024b_econ_p",
+      "2024b_eess_s",
+      "2024b_eess_c",
+      "2024b_eess_p",
+      "2025a_cs_s",
+      "2025a_cs_c",
+      "2025a_cs_p",
+      "2025a_q_fin_s",
+      "2025a_q_fin_c",
+      "2025a_q_fin_p",
+      "2025a_math_s",
+      "2025a_math_c",
+      "2025a_math_p",
+      "2025a_physics_s",
+      "2025a_physics_c",
+      "2025a_physics_p",
+      "2025a_stat_s",
+      "2025a_stat_c",
+      "2025a_stat_p",
+      "2025a_q_bio_s",
+      "2025a_q_bio_c",
+      "2025a_q_bio_p",
+      "2025a_econ_s",
+      "2025a_econ_c",
+      "2025a_econ_p",
+      "2025a_eess_s",
+      "2025a_eess_c",
+      "2025a_eess_p",
+      "2026a_cs_s",
+      "2026a_cs_c",
+      "2026a_cs_p",
+      "2026a_q_fin_s",
+      "2026a_q_fin_c",
+      "2026a_q_fin_p",
+      "2026a_math_s",
+      "2026a_math_c",
+      "2026a_math_p",
+      "2026a_physics_s",
+      "2026a_physics_c",
+      "2026a_physics_p",
+      "2026a_stat_s",
+      "2026a_stat_c",
+      "2026a_stat_p",
+      "2026a_q_bio_s",
+      "2026a_q_bio_c",
+      "2026a_q_bio_p",
+      "2026a_econ_s",
+      "2026a_econ_c",
+      "2026a_econ_p",
+      "2026a_eess_s",
+      "2026a_eess_c",
+      "2026a_eess_p"
+    ],
+    "description": "## Overview\n\nArxivRollBench is a rolling benchmark built from recent arXiv papers. It evaluates whether large language models can reason over fresh scientific text through three task formats: sequencing, cloze, and next-fragment prediction.\n\n## Task Description\n\n- **Task Type**: Multiple-choice scientific text reasoning\n- **Input**: Recent arXiv text fragments with four answer choices\n- **Output**: Single correct answer letter (A, B, C, or D)\n- **Domains**: Computer Science, Quantitative Finance, Mathematics, Physics, Statistics, Quantitative Biology, Economics, and Electrical Engineering/System Science\n- **Releases**: 2024b, 2025a, and 2026a rolling snapshots\n\n## Key Features\n\n- Time-aware benchmark snapshots reduce contamination-related overestimation\n- Covers multiple arXiv domains and scientific writing styles\n- Includes sequencing, cloze, and prediction formats under the SCP framework\n- Compact `-50` split is suitable for cost-controlled API evaluation\n- Full split is available as `arxivrollbench_full`\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- The default `arxivrollbench` benchmark uses compact `-50` datasets\n- Use `arxivrollbench_full` for the complete public splits\n- Each subset is loaded from the public ModelScope mirror under the `liangzid` namespace\n- Answers are normalized to A-D and evaluated with accuracy",
+    "prompt_template": "Answer the following ArxivRollBench multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 3254,
+    "subset_stats": [
+      {
+        "name": "2024b_cs_s",
+        "sample_count": 42,
+        "prompt_length_mean": 949.6,
+        "prompt_length_min": 590,
+        "prompt_length_max": 1805,
+        "prompt_length_std": 303.01,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_cs_c",
+        "sample_count": 31,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_cs_p",
+        "sample_count": 50,
+        "prompt_length_mean": 2617.32,
+        "prompt_length_min": 922,
+        "prompt_length_max": 7512,
+        "prompt_length_std": 1702.13,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_q_fin_s",
+        "sample_count": 49,
+        "prompt_length_mean": 1042.31,
+        "prompt_length_min": 586,
+        "prompt_length_max": 2329,
+        "prompt_length_std": 425.39,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_q_fin_c",
+        "sample_count": 44,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_q_fin_p",
+        "sample_count": 50,
+        "prompt_length_mean": 3430.52,
+        "prompt_length_min": 872,
+        "prompt_length_max": 9106,
+        "prompt_length_std": 2198.5,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_math_s",
+        "sample_count": 34,
+        "prompt_length_mean": 829.85,
+        "prompt_length_min": 593,
+        "prompt_length_max": 2115,
+        "prompt_length_std": 272.14,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_math_c",
+        "sample_count": 15,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_math_p",
+        "sample_count": 51,
+        "prompt_length_mean": 1957.24,
+        "prompt_length_min": 869,
+        "prompt_length_max": 6260,
+        "prompt_length_std": 1154.89,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_physics_s",
+        "sample_count": 45,
+        "prompt_length_mean": 957.11,
+        "prompt_length_min": 576,
+        "prompt_length_max": 4402,
+        "prompt_length_std": 587.49,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_physics_c",
+        "sample_count": 28,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_physics_p",
+        "sample_count": 51,
+        "prompt_length_mean": 2948.1,
+        "prompt_length_min": 885,
+        "prompt_length_max": 13643,
+        "prompt_length_std": 2277.23,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_stat_s",
+        "sample_count": 45,
+        "prompt_length_mean": 936.4,
+        "prompt_length_min": 582,
+        "prompt_length_max": 1678,
+        "prompt_length_std": 290.43,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_stat_c",
+        "sample_count": 33,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_stat_p",
+        "sample_count": 50,
+        "prompt_length_mean": 2946.44,
+        "prompt_length_min": 861,
+        "prompt_length_max": 7026,
+        "prompt_length_std": 1757.88,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_q_bio_s",
+        "sample_count": 43,
+        "prompt_length_mean": 975,
+        "prompt_length_min": 583,
+        "prompt_length_max": 2555,
+        "prompt_length_std": 433.77,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_q_bio_c",
+        "sample_count": 34,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_q_bio_p",
+        "sample_count": 49,
+        "prompt_length_mean": 3354.53,
+        "prompt_length_min": 883,
+        "prompt_length_max": 8867,
+        "prompt_length_std": 2021.54,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_econ_s",
+        "sample_count": 48,
+        "prompt_length_mean": 1021.58,
+        "prompt_length_min": 586,
+        "prompt_length_max": 2070,
+        "prompt_length_std": 396.49,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_econ_c",
+        "sample_count": 43,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_econ_p",
+        "sample_count": 50,
+        "prompt_length_mean": 3257.76,
+        "prompt_length_min": 846,
+        "prompt_length_max": 8967,
+        "prompt_length_std": 1831.85,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_eess_s",
+        "sample_count": 48,
+        "prompt_length_mean": 1034.56,
+        "prompt_length_min": 574,
+        "prompt_length_max": 2922,
+        "prompt_length_std": 481.94,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_eess_c",
+        "sample_count": 42,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2024b_eess_p",
+        "sample_count": 51,
+        "prompt_length_mean": 2612.69,
+        "prompt_length_min": 882,
+        "prompt_length_max": 8609,
+        "prompt_length_std": 1540.06,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_cs_s",
+        "sample_count": 50,
+        "prompt_length_mean": 921.2,
+        "prompt_length_min": 592,
+        "prompt_length_max": 1632,
+        "prompt_length_std": 278.34,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_cs_c",
+        "sample_count": 44,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_cs_p",
+        "sample_count": 51,
+        "prompt_length_mean": 2895.02,
+        "prompt_length_min": 942,
+        "prompt_length_max": 6540,
+        "prompt_length_std": 1472.96,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_q_fin_s",
+        "sample_count": 50,
+        "prompt_length_mean": 931.08,
+        "prompt_length_min": 589,
+        "prompt_length_max": 2202,
+        "prompt_length_std": 308.42,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_q_fin_c",
+        "sample_count": 43,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_q_fin_p",
+        "sample_count": 51,
+        "prompt_length_mean": 2837.86,
+        "prompt_length_min": 793,
+        "prompt_length_max": 7577,
+        "prompt_length_std": 1565.94,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_math_s",
+        "sample_count": 42,
+        "prompt_length_mean": 852.52,
+        "prompt_length_min": 580,
+        "prompt_length_max": 1595,
+        "prompt_length_std": 240.07,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_math_c",
+        "sample_count": 28,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_math_p",
+        "sample_count": 51,
+        "prompt_length_mean": 2449.49,
+        "prompt_length_min": 889,
+        "prompt_length_max": 6893,
+        "prompt_length_std": 1530.76,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_physics_s",
+        "sample_count": 44,
+        "prompt_length_mean": 939.32,
+        "prompt_length_min": 587,
+        "prompt_length_max": 1874,
+        "prompt_length_std": 303.39,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_physics_c",
+        "sample_count": 34,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_physics_p",
+        "sample_count": 49,
+        "prompt_length_mean": 3568.29,
+        "prompt_length_min": 1001,
+        "prompt_length_max": 9325,
+        "prompt_length_std": 2214.75,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_stat_s",
+        "sample_count": 48,
+        "prompt_length_mean": 932.81,
+        "prompt_length_min": 600,
+        "prompt_length_max": 2063,
+        "prompt_length_std": 290.43,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_stat_c",
+        "sample_count": 42,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_stat_p",
+        "sample_count": 50,
+        "prompt_length_mean": 3115.36,
+        "prompt_length_min": 822,
+        "prompt_length_max": 7349,
+        "prompt_length_std": 1792.01,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_q_bio_s",
+        "sample_count": 49,
+        "prompt_length_mean": 1074.12,
+        "prompt_length_min": 591,
+        "prompt_length_max": 1810,
+        "prompt_length_std": 285.52,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_q_bio_c",
+        "sample_count": 49,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_q_bio_p",
+        "sample_count": 50,
+        "prompt_length_mean": 3639.26,
+        "prompt_length_min": 1038,
+        "prompt_length_max": 8890,
+        "prompt_length_std": 1773.44,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_econ_s",
+        "sample_count": 48,
+        "prompt_length_mean": 982.19,
+        "prompt_length_min": 591,
+        "prompt_length_max": 2322,
+        "prompt_length_std": 346.36,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_econ_c",
+        "sample_count": 45,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_econ_p",
+        "sample_count": 51,
+        "prompt_length_mean": 2860.9,
+        "prompt_length_min": 884,
+        "prompt_length_max": 6494,
+        "prompt_length_std": 1442.3,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_eess_s",
+        "sample_count": 46,
+        "prompt_length_mean": 1017.35,
+        "prompt_length_min": 588,
+        "prompt_length_max": 1807,
+        "prompt_length_std": 314.55,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_eess_c",
+        "sample_count": 42,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2025a_eess_p",
+        "sample_count": 50,
+        "prompt_length_mean": 3541.1,
+        "prompt_length_min": 943,
+        "prompt_length_max": 14112,
+        "prompt_length_std": 2257.92,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_cs_s",
+        "sample_count": 51,
+        "prompt_length_mean": 944.12,
+        "prompt_length_min": 584,
+        "prompt_length_max": 1795,
+        "prompt_length_std": 299.84,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_cs_c",
+        "sample_count": 38,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_cs_p",
+        "sample_count": 51,
+        "prompt_length_mean": 2629.06,
+        "prompt_length_min": 919,
+        "prompt_length_max": 5234,
+        "prompt_length_std": 1228.55,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_q_fin_s",
+        "sample_count": 48,
+        "prompt_length_mean": 1025.44,
+        "prompt_length_min": 608,
+        "prompt_length_max": 2320,
+        "prompt_length_std": 356.85,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_q_fin_c",
+        "sample_count": 45,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_q_fin_p",
+        "sample_count": 51,
+        "prompt_length_mean": 3094.78,
+        "prompt_length_min": 872,
+        "prompt_length_max": 6644,
+        "prompt_length_std": 1554.87,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_math_s",
+        "sample_count": 44,
+        "prompt_length_mean": 844.05,
+        "prompt_length_min": 575,
+        "prompt_length_max": 1381,
+        "prompt_length_std": 228.68,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_math_c",
+        "sample_count": 30,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_math_p",
+        "sample_count": 51,
+        "prompt_length_mean": 2160.27,
+        "prompt_length_min": 860,
+        "prompt_length_max": 12385,
+        "prompt_length_std": 1982.77,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_physics_s",
+        "sample_count": 47,
+        "prompt_length_mean": 1082.04,
+        "prompt_length_min": 599,
+        "prompt_length_max": 2522,
+        "prompt_length_std": 401.85,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_physics_c",
+        "sample_count": 41,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_physics_p",
+        "sample_count": 50,
+        "prompt_length_mean": 3420.58,
+        "prompt_length_min": 894,
+        "prompt_length_max": 8788,
+        "prompt_length_std": 1936.4,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_stat_s",
+        "sample_count": 49,
+        "prompt_length_mean": 1013.47,
+        "prompt_length_min": 575,
+        "prompt_length_max": 2482,
+        "prompt_length_std": 392.82,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_stat_c",
+        "sample_count": 46,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_stat_p",
+        "sample_count": 51,
+        "prompt_length_mean": 2564.47,
+        "prompt_length_min": 955,
+        "prompt_length_max": 6387,
+        "prompt_length_std": 1248.3,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_q_bio_s",
+        "sample_count": 47,
+        "prompt_length_mean": 1019.7,
+        "prompt_length_min": 584,
+        "prompt_length_max": 1707,
+        "prompt_length_std": 274.65,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_q_bio_c",
+        "sample_count": 40,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_q_bio_p",
+        "sample_count": 48,
+        "prompt_length_mean": 3030.71,
+        "prompt_length_min": 954,
+        "prompt_length_max": 6468,
+        "prompt_length_std": 1364.44,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_econ_s",
+        "sample_count": 48,
+        "prompt_length_mean": 989.67,
+        "prompt_length_min": 580,
+        "prompt_length_max": 2320,
+        "prompt_length_std": 377.02,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_econ_c",
+        "sample_count": 47,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_econ_p",
+        "sample_count": 51,
+        "prompt_length_mean": 2920.76,
+        "prompt_length_min": 885,
+        "prompt_length_max": 7061,
+        "prompt_length_std": 1466.0,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_eess_s",
+        "sample_count": 51,
+        "prompt_length_mean": 988.14,
+        "prompt_length_min": 579,
+        "prompt_length_max": 2231,
+        "prompt_length_std": 355.87,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_eess_c",
+        "sample_count": 45,
+        "prompt_length_mean": 307,
+        "prompt_length_min": 307,
+        "prompt_length_max": 307,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      },
+      {
+        "name": "2026a_eess_p",
+        "sample_count": 51,
+        "prompt_length_mean": 2812.61,
+        "prompt_length_min": 922,
+        "prompt_length_max": 5589,
+        "prompt_length_std": 1135.23,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 1514.19,
+      "min": 307,
+      "max": 14112,
+      "std": 1567.99
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-05-26T16:07:01.527197"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "7b220fd6",
+          "content": "Answer the following ArxivRollBench multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nSelect the option that correctly compl ... [TRUNCATED 381 chars] ... m a diagonal matrix into the identity, allows us to write the input matrix as a product of transvections. **C**: Note that row and column operations are effected by left- and right multiplications by transvections\n\nA) BAC\nB) ABC\nC) ACB\nD) BCA"
+        }
+      ],
+      "choices": [
+        "BAC",
+        "ABC",
+        "ACB",
+        "BCA"
+      ],
+      "target": "C",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "original_label": "Selection 3",
+        "task_type": "s/c"
+      }
+    },
+    "subset": "2024b_cs_s",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# ArxivRollBench\n\n## Overview\n\nArxivRollBench is a rolling benchmark built from recent arXiv papers. It evaluates whether large language models can reason over fresh scientific text through three task formats: sequencing, cloze, and next-fragment prediction.\n\n## Task Description\n\n- **Task Type**: Multiple-choice scientific text reasoning\n- **Input**: Recent arXiv text fragments with four answer choices\n- **Output**: Single correct answer letter (A, B, C, or D)\n- **Domains**: Computer Science, Quantitative Finance, Mathematics, Physics, Statistics, Quantitative Biology, Economics, and Electrical Engineering/System Science\n- **Releases**: 2024b, 2025a, and 2026a rolling snapshots\n\n## Key Features\n\n- Time-aware benchmark snapshots reduce contamination-related overestimation\n- Covers multiple arXiv domains and scientific writing styles\n- Includes sequencing, cloze, and prediction formats under the SCP framework\n- Compact `-50` split is suitable for cost-controlled API evaluation\n- Full split is available as `arxivrollbench_full`\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- The default `arxivrollbench` benchmark uses compact `-50` datasets\n- Use `arxivrollbench_full` for the complete public splits\n- Each subset is loaded from the public ModelScope mirror under the `liangzid` namespace\n- Answers are normalized to A-D and evaluated with accuracy\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `arxivrollbench` |\n| **Dataset ID** | [liangzid/arxivrollbench](https://modelscope.cn/datasets/liangzid/arxivrollbench/summary) |\n| **Paper** | [Paper](https://ojs.aaai.org/index.php/AAAI/article/view/41098) |\n| **Tags** | `Knowledge`, `MCQ`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,254 |\n| Prompt Length (Mean) | 1514.19 chars |\n| Prompt Length (Min/Max) | 307 / 14112 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `2024b_cs_s` | 42 | 949.6 | 590 | 1805 |\n| `2024b_cs_c` | 31 | 307 | 307 | 307 |\n| `2024b_cs_p` | 50 | 2617.32 | 922 | 7512 |\n| `2024b_q_fin_s` | 49 | 1042.31 | 586 | 2329 |\n| `2024b_q_fin_c` | 44 | 307 | 307 | 307 |\n| `2024b_q_fin_p` | 50 | 3430.52 | 872 | 9106 |\n| `2024b_math_s` | 34 | 829.85 | 593 | 2115 |\n| `2024b_math_c` | 15 | 307 | 307 | 307 |\n| `2024b_math_p` | 51 | 1957.24 | 869 | 6260 |\n| `2024b_physics_s` | 45 | 957.11 | 576 | 4402 |\n| `2024b_physics_c` | 28 | 307 | 307 | 307 |\n| `2024b_physics_p` | 51 | 2948.1 | 885 | 13643 |\n| `2024b_stat_s` | 45 | 936.4 | 582 | 1678 |\n| `2024b_stat_c` | 33 | 307 | 307 | 307 |\n| `2024b_stat_p` | 50 | 2946.44 | 861 | 7026 |\n| `2024b_q_bio_s` | 43 | 975 | 583 | 2555 |\n| `2024b_q_bio_c` | 34 | 307 | 307 | 307 |\n| `2024b_q_bio_p` | 49 | 3354.53 | 883 | 8867 |\n| `2024b_econ_s` | 48 | 1021.58 | 586 | 2070 |\n| `2024b_econ_c` | 43 | 307 | 307 | 307 |\n| `2024b_econ_p` | 50 | 3257.76 | 846 | 8967 |\n| `2024b_eess_s` | 48 | 1034.56 | 574 | 2922 |\n| `2024b_eess_c` | 42 | 307 | 307 | 307 |\n| `2024b_eess_p` | 51 | 2612.69 | 882 | 8609 |\n| `2025a_cs_s` | 50 | 921.2 | 592 | 1632 |\n| `2025a_cs_c` | 44 | 307 | 307 | 307 |\n| `2025a_cs_p` | 51 | 2895.02 | 942 | 6540 |\n| `2025a_q_fin_s` | 50 | 931.08 | 589 | 2202 |\n| `2025a_q_fin_c` | 43 | 307 | 307 | 307 |\n| `2025a_q_fin_p` | 51 | 2837.86 | 793 | 7577 |\n| `2025a_math_s` | 42 | 852.52 | 580 | 1595 |\n| `2025a_math_c` | 28 | 307 | 307 | 307 |\n| `2025a_math_p` | 51 | 2449.49 | 889 | 6893 |\n| `2025a_physics_s` | 44 | 939.32 | 587 | 1874 |\n| `2025a_physics_c` | 34 | 307 | 307 | 307 |\n| `2025a_physics_p` | 49 | 3568.29 | 1001 | 9325 |\n| `2025a_stat_s` | 48 | 932.81 | 600 | 2063 |\n| `2025a_stat_c` | 42 | 307 | 307 | 307 |\n| `2025a_stat_p` | 50 | 3115.36 | 822 | 7349 |\n| `2025a_q_bio_s` | 49 | 1074.12 | 591 | 1810 |\n| `2025a_q_bio_c` | 49 | 307 | 307 | 307 |\n| `2025a_q_bio_p` | 50 | 3639.26 | 1038 | 8890 |\n| `2025a_econ_s` | 48 | 982.19 | 591 | 2322 |\n| `2025a_econ_c` | 45 | 307 | 307 | 307 |\n| `2025a_econ_p` | 51 | 2860.9 | 884 | 6494 |\n| `2025a_eess_s` | 46 | 1017.35 | 588 | 1807 |\n| `2025a_eess_c` | 42 | 307 | 307 | 307 |\n| `2025a_eess_p` | 50 | 3541.1 | 943 | 14112 |\n| `2026a_cs_s` | 51 | 944.12 | 584 | 1795 |\n| `2026a_cs_c` | 38 | 307 | 307 | 307 |\n| `2026a_cs_p` | 51 | 2629.06 | 919 | 5234 |\n| `2026a_q_fin_s` | 48 | 1025.44 | 608 | 2320 |\n| `2026a_q_fin_c` | 45 | 307 | 307 | 307 |\n| `2026a_q_fin_p` | 51 | 3094.78 | 872 | 6644 |\n| `2026a_math_s` | 44 | 844.05 | 575 | 1381 |\n| `2026a_math_c` | 30 | 307 | 307 | 307 |\n| `2026a_math_p` | 51 | 2160.27 | 860 | 12385 |\n| `2026a_physics_s` | 47 | 1082.04 | 599 | 2522 |\n| `2026a_physics_c` | 41 | 307 | 307 | 307 |\n| `2026a_physics_p` | 50 | 3420.58 | 894 | 8788 |\n| `2026a_stat_s` | 49 | 1013.47 | 575 | 2482 |\n| `2026a_stat_c` | 46 | 307 | 307 | 307 |\n| `2026a_stat_p` | 51 | 2564.47 | 955 | 6387 |\n| `2026a_q_bio_s` | 47 | 1019.7 | 584 | 1707 |\n| `2026a_q_bio_c` | 40 | 307 | 307 | 307 |\n| `2026a_q_bio_p` | 48 | 3030.71 | 954 | 6468 |\n| `2026a_econ_s` | 48 | 989.67 | 580 | 2320 |\n| `2026a_econ_c` | 47 | 307 | 307 | 307 |\n| `2026a_econ_p` | 51 | 2920.76 | 885 | 7061 |\n| `2026a_eess_s` | 51 | 988.14 | 579 | 2231 |\n| `2026a_eess_c` | 45 | 307 | 307 | 307 |\n| `2026a_eess_p` | 51 | 2812.61 | 922 | 5589 |\n\n## Sample Example\n\n**Subset**: `2024b_cs_s`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"7b220fd6\",\n      \"content\": \"Answer the following ArxivRollBench multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nSelect the option that correctly compl ... [TRUNCATED 381 chars] ... m a diagonal matrix into the identity, allows us to write the input matrix as a product of transvections. **C**: Note that row and column operations are effected by left- and right multiplications by transvections\\n\\nA) BAC\\nB) ABC\\nC) ACB\\nD) BCA\"\n    }\n  ],\n  \"choices\": [\n    \"BAC\",\n    \"ABC\",\n    \"ACB\",\n    \"BCA\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"original_label\": \"Selection 3\",\n    \"task_type\": \"s/c\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following ArxivRollBench multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets arxivrollbench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['arxivrollbench'],\n    dataset_args={\n        'arxivrollbench': {\n            # subset_list: ['2024b_cs_s', '2024b_cs_c', '2024b_cs_p']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# ArxivRollBench\n\n## 概述\n\nArxivRollBench 是一个基于近期 arXiv 论文构建的滚动基准测试。它通过三种任务形式（排序、完形填空和下一段预测）评估大语言模型是否能够对最新的科学文本进行推理。\n\n## 任务描述\n\n- **任务类型**：多项选择科学文本推理\n- **输入**：近期 arXiv 文本片段，附带四个选项\n- **输出**：单个正确答案字母（A、B、C 或 D）\n- **领域**：计算机科学、定量金融、数学、物理学、统计学、定量生物学、经济学以及电气工程/系统科学\n- **版本**：2024b、2025a 和 2026a 的滚动快照\n\n## 主要特点\n\n- 时间感知的基准快照可减少因数据污染导致的性能高估\n- 覆盖多个 arXiv 领域及不同科学写作风格\n- 在 SCP 框架下包含排序（sequencing）、完形填空（cloze）和预测（prediction）三种格式\n- 紧凑型 `-50` 子集适用于成本可控的 API 评估\n- 完整子集可通过 `arxivrollbench_full` 获取\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 默认的 `arxivrollbench` 基准使用紧凑型 `-50` 数据集\n- 如需完整公开子集，请使用 `arxivrollbench_full`\n- 每个子集均从 `liangzid` 命名空间下的公开 ModelScope 镜像加载\n- 答案统一归一化为 A-D，并以准确率（accuracy）进行评估\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `arxivrollbench` |\n| **数据集ID** | [liangzid/arxivrollbench](https://modelscope.cn/datasets/liangzid/arxivrollbench/summary) |\n| **论文** | [Paper](https://ojs.aaai.org/index.php/AAAI/article/view/41098) |\n| **标签** | `Knowledge`, `MCQ`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,254 |\n| 提示词长度（平均） | 1514.19 字符 |\n| 提示词长度（最小/最大） | 307 / 14112 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `2024b_cs_s` | 42 | 949.6 | 590 | 1805 |\n| `2024b_cs_c` | 31 | 307 | 307 | 307 |\n| `2024b_cs_p` | 50 | 2617.32 | 922 | 7512 |\n| `2024b_q_fin_s` | 49 | 1042.31 | 586 | 2329 |\n| `2024b_q_fin_c` | 44 | 307 | 307 | 307 |\n| `2024b_q_fin_p` | 50 | 3430.52 | 872 | 9106 |\n| `2024b_math_s` | 34 | 829.85 | 593 | 2115 |\n| `2024b_math_c` | 15 | 307 | 307 | 307 |\n| `2024b_math_p` | 51 | 1957.24 | 869 | 6260 |\n| `2024b_physics_s` | 45 | 957.11 | 576 | 4402 |\n| `2024b_physics_c` | 28 | 307 | 307 | 307 |\n| `2024b_physics_p` | 51 | 2948.1 | 885 | 13643 |\n| `2024b_stat_s` | 45 | 936.4 | 582 | 1678 |\n| `2024b_stat_c` | 33 | 307 | 307 | 307 |\n| `2024b_stat_p` | 50 | 2946.44 | 861 | 7026 |\n| `2024b_q_bio_s` | 43 | 975 | 583 | 2555 |\n| `2024b_q_bio_c` | 34 | 307 | 307 | 307 |\n| `2024b_q_bio_p` | 49 | 3354.53 | 883 | 8867 |\n| `2024b_econ_s` | 48 | 1021.58 | 586 | 2070 |\n| `2024b_econ_c` | 43 | 307 | 307 | 307 |\n| `2024b_econ_p` | 50 | 3257.76 | 846 | 8967 |\n| `2024b_eess_s` | 48 | 1034.56 | 574 | 2922 |\n| `2024b_eess_c` | 42 | 307 | 307 | 307 |\n| `2024b_eess_p` | 51 | 2612.69 | 882 | 8609 |\n| `2025a_cs_s` | 50 | 921.2 | 592 | 1632 |\n| `2025a_cs_c` | 44 | 307 | 307 | 307 |\n| `2025a_cs_p` | 51 | 2895.02 | 942 | 6540 |\n| `2025a_q_fin_s` | 50 | 931.08 | 589 | 2202 |\n| `2025a_q_fin_c` | 43 | 307 | 307 | 307 |\n| `2025a_q_fin_p` | 51 | 2837.86 | 793 | 7577 |\n| `2025a_math_s` | 42 | 852.52 | 580 | 1595 |\n| `2025a_math_c` | 28 | 307 | 307 | 307 |\n| `2025a_math_p` | 51 | 2449.49 | 889 | 6893 |\n| `2025a_physics_s` | 44 | 939.32 | 587 | 1874 |\n| `2025a_physics_c` | 34 | 307 | 307 | 307 |\n| `2025a_physics_p` | 49 | 3568.29 | 1001 | 9325 |\n| `2025a_stat_s` | 48 | 932.81 | 600 | 2063 |\n| `2025a_stat_c` | 42 | 307 | 307 | 307 |\n| `2025a_stat_p` | 50 | 3115.36 | 822 | 7349 |\n| `2025a_q_bio_s` | 49 | 1074.12 | 591 | 1810 |\n| `2025a_q_bio_c` | 49 | 307 | 307 | 307 |\n| `2025a_q_bio_p` | 50 | 3639.26 | 1038 | 8890 |\n| `2025a_econ_s` | 48 | 982.19 | 591 | 2322 |\n| `2025a_econ_c` | 45 | 307 | 307 | 307 |\n| `2025a_econ_p` | 51 | 2860.9 | 884 | 6494 |\n| `2025a_eess_s` | 46 | 1017.35 | 588 | 1807 |\n| `2025a_eess_c` | 42 | 307 | 307 | 307 |\n| `2025a_eess_p` | 50 | 3541.1 | 943 | 14112 |\n| `2026a_cs_s` | 51 | 944.12 | 584 | 1795 |\n| `2026a_cs_c` | 38 | 307 | 307 | 307 |\n| `2026a_cs_p` | 51 | 2629.06 | 919 | 5234 |\n| `2026a_q_fin_s` | 48 | 1025.44 | 608 | 2320 |\n| `2026a_q_fin_c` | 45 | 307 | 307 | 307 |\n| `2026a_q_fin_p` | 51 | 3094.78 | 872 | 6644 |\n| `2026a_math_s` | 44 | 844.05 | 575 | 1381 |\n| `2026a_math_c` | 30 | 307 | 307 | 307 |\n| `2026a_math_p` | 51 | 2160.27 | 860 | 12385 |\n| `2026a_physics_s` | 47 | 1082.04 | 599 | 2522 |\n| `2026a_physics_c` | 41 | 307 | 307 | 307 |\n| `2026a_physics_p` | 50 | 3420.58 | 894 | 8788 |\n| `2026a_stat_s` | 49 | 1013.47 | 575 | 2482 |\n| `2026a_stat_c` | 46 | 307 | 307 | 307 |\n| `2026a_stat_p` | 51 | 2564.47 | 955 | 6387 |\n| `2026a_q_bio_s` | 47 | 1019.7 | 584 | 1707 |\n| `2026a_q_bio_c` | 40 | 307 | 307 | 307 |\n| `2026a_q_bio_p` | 48 | 3030.71 | 954 | 6468 |\n| `2026a_econ_s` | 48 | 989.67 | 580 | 2320 |\n| `2026a_econ_c` | 47 | 307 | 307 | 307 |\n| `2026a_econ_p` | 51 | 2920.76 | 885 | 7061 |\n| `2026a_eess_s` | 51 | 988.14 | 579 | 2231 |\n| `2026a_eess_c` | 45 | 307 | 307 | 307 |\n| `2026a_eess_p` | 51 | 2812.61 | 922 | 5589 |\n\n## 样例示例\n\n**子集**: `2024b_cs_s`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"7b220fd6\",\n      \"content\": \"Answer the following ArxivRollBench multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nSelect the option that correctly compl ... [TRUNCATED 381 chars] ... m a diagonal matrix into the identity, allows us to write the input matrix as a product of transvections. **C**: Note that row and column operations are effected by left- and right multiplications by transvections\\n\\nA) BAC\\nB) ABC\\nC) ACB\\nD) BCA\"\n    }\n  ],\n  \"choices\": [\n    \"BAC\",\n    \"ABC\",\n    \"ACB\",\n    \"BCA\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"original_label\": \"Selection 3\",\n    \"task_type\": \"s/c\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following ArxivRollBench multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets arxivrollbench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['arxivrollbench'],\n    dataset_args={\n        'arxivrollbench': {\n            # subset_list: ['2024b_cs_s', '2024b_cs_c', '2024b_cs_p']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "232b1b73d741148bbfeaf970ef4513c2",
+    "needs_translation": false,
+    "translation_updated_at": "2026-05-24T06:22:03Z"
+  },
+  "updated_at": "2026-05-26T16:07:01.880371",
+  "translation_updated_at": "2026-05-26T16:07:57"
+}

@@ -13,6 +13,8 @@
 | `anat_em` | [AnatEM](../../benchmarks/anat_em.md) | `Knowledge`, `NER` |
 | `arc` | [ARC](../../benchmarks/arc.md) | `MCQ`, `Reasoning` |
 | `arena_hard` | [ArenaHard](../../benchmarks/arena_hard.md) | `Arena`, `InstructionFollowing` |
+| `arxivrollbench` | [ArxivRollBench](../../benchmarks/arxivrollbench.md) | `Knowledge`, `MCQ`, `Reasoning` |
+| `arxivrollbench_full` | [ArxivRollBench-Full](../../benchmarks/arxivrollbench_full.md) | `Knowledge`, `MCQ`, `Reasoning` |
 | `bbh` | [BBH](../../benchmarks/bbh.md) | `Reasoning` |
 | `bc2gm` | [BC2GM](../../benchmarks/bc2gm.md) | `Knowledge`, `NER` |
 | `bc4chemd` | [BC4CHEMD](../../benchmarks/bc4chemd.md) | `Knowledge`, `NER` |
@@ -125,6 +127,8 @@
 ../../benchmarks/anat_em.md
 ../../benchmarks/arc.md
 ../../benchmarks/arena_hard.md
+../../benchmarks/arxivrollbench.md
+../../benchmarks/arxivrollbench_full.md
 ../../benchmarks/bbh.md
 ../../benchmarks/bc2gm.md
 ../../benchmarks/bc4chemd.md
