@@ -785,6 +785,14 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('cl_bench', dataset_args, limit=10)
 
+    def test_arxivrollbench(self):
+        """Test ArxivRollBench dataset."""
+        dataset_args = {
+            'subset_list': ['2026a_cs_s'],
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('arxivrollbench', dataset_args)
+
     def test_longbench_v2(self):
         """Test LongBench-v2 dataset."""
         dataset_args = {
