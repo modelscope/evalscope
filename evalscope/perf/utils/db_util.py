@@ -13,6 +13,7 @@ from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
 from evalscope.perf.utils.trace_metrics import TraceLevelSummary
+from evalscope.perf.utils.workload_timeline import WorkloadTimeline
 from evalscope.utils.io_utils import current_time
 from evalscope.utils.logger import get_logger
 
@@ -236,6 +237,7 @@ def summary_result(
     metrics: BenchmarkMetrics,
     result_db_path: str,
     trace_summary: 'TraceLevelSummary' = None,
+    workload_timeline: 'WorkloadTimeline' = None,
 ) -> Tuple['BenchmarkSummary', 'PercentileResult']:
     result_path = os.path.dirname(result_db_path)
     write_json_file(args.to_dict(), os.path.join(result_path, 'benchmark_args.json'))
@@ -261,6 +263,16 @@ def summary_result(
     if trace_summary is not None and not trace_summary.is_empty():
         write_json_file(trace_summary.to_dict(), os.path.join(result_path, 'trace_summary.json'))
         logger.info(f'\nPer-trace summary ({trace_summary.n_traces} traces):\n' + trace_summary.to_table())
+
+    # Workload-level throughput (Overall / Last-window / Steady-state) plus the
+    # raw cumulative-token timeline.  Surfaced for all runs - single-turn
+    # benchmarks also benefit from steady-state throughput numbers.
+    if workload_timeline is not None and workload_timeline.n_points > 0:
+        throughput = workload_timeline.to_summary()
+        if not throughput.is_empty():
+            write_json_file(throughput.to_dict(), os.path.join(result_path, 'workload_throughput.json'))
+            write_json_file(workload_timeline.to_raw_points_dict(), os.path.join(result_path, 'workload_timeline.json'))
+            logger.info(f'\nWorkload throughput ({throughput.n_samples} samples):\n' + throughput.to_table())
 
     if args.dataset.startswith('speed_benchmark'):
         speed_benchmark_result(result_db_path)
