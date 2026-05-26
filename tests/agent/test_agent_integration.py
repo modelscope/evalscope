@@ -2,7 +2,7 @@
 """T1 骨架 - TaskConfig / TaskState / ReviewResult / Adapter 集成验证.
 
 Plan 覆盖点:
-- ``TaskConfig.agent_config`` 开关 (None / dict / AgentConfig)
+- ``TaskConfig.agent_config`` 开关 (None / dict / NativeAgentConfig)
 - ``TaskState.agent_trace`` 替换旧 ``_trajectory``
 - ``ReviewResult.agent_trace`` 持久化 + 旧 ``trajectory`` 向后兼容丢弃
 - ``DefaultDataAdapter._on_inference`` 根据 ``agent_config`` 自动分支
@@ -14,7 +14,7 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock
 
 import evalscope  # noqa: F401 - trigger strategy registration
-from evalscope.api.agent import AgentConfig, AgentTrace, EventType
+from evalscope.api.agent import AgentTrace, EventType, NativeAgentConfig
 from evalscope.api.benchmark.adapters.agent_loop_adapter import AgentLoopAdapter
 from evalscope.api.benchmark.adapters.default_data_adapter import DefaultDataAdapter
 from evalscope.api.dataset import Sample
@@ -54,7 +54,7 @@ def _mock_model_generate_submit(answer: str = 'ok'):
     return model
 
 
-class TestTaskConfigAgentConfig(unittest.TestCase):
+class TestTaskConfigNativeAgentConfig(unittest.TestCase):
     """TaskConfig 增加的 agent_config 字段与 validator."""
 
     def test_default_is_none(self):
@@ -66,11 +66,11 @@ class TestTaskConfigAgentConfig(unittest.TestCase):
             model='dummy',
             agent_config={'strategy': 'function_calling', 'max_steps': 5, 'tools': []},
         )
-        self.assertIsInstance(cfg.agent_config, AgentConfig)
+        self.assertIsInstance(cfg.agent_config, NativeAgentConfig)
         self.assertEqual(cfg.agent_config.max_steps, 5)
 
     def test_accepts_agent_config_instance(self):
-        inst = AgentConfig(strategy='function_calling', max_steps=3)
+        inst = NativeAgentConfig(strategy='function_calling', max_steps=3)
         cfg = TaskConfig(model='dummy', agent_config=inst)
         self.assertIs(cfg.agent_config, inst)
 

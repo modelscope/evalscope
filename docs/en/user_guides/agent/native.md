@@ -16,7 +16,7 @@ Smallest runnable example — have `qwen-plus` verify GSM8K answers with `python
 
 ```python
 from evalscope import TaskConfig, run_task
-from evalscope.api.agent import AgentConfig
+from evalscope.api.agent import NativeAgentConfig
 
 task_config = TaskConfig(
     model='qwen-plus',
@@ -26,7 +26,7 @@ task_config = TaskConfig(
     datasets=['gsm8k'],
     limit=5,
     generation_config={'parallel_tool_calls': True},
-    agent_config=AgentConfig(
+    agent_config=NativeAgentConfig(
         strategy='function_calling',
         tools=['python_exec'],
         environment='docker',
@@ -42,7 +42,7 @@ EvalScope auto-injects the `python_exec` tool definition into the model's contex
 
 ## Three core components
 
-Every AgentLoop is composed of three pieces, configured on `AgentConfig`:
+Every AgentLoop is composed of three pieces, configured on `NativeAgentConfig`:
 
 **Strategy** — how the model talks to the loop:
 
@@ -70,7 +70,7 @@ Every AgentLoop is composed of three pieces, configured on `AgentConfig`:
 
 ## Common configuration
 
-Most-used `AgentConfig` fields:
+Most-used `NativeAgentConfig` fields:
 
 | Field | Description | Recommended |
 |-------|-------------|-------------|
@@ -83,13 +83,13 @@ Most-used `AgentConfig` fields:
 
 ```{tip}
 - `local` has no isolation; use `docker` in production.
-- `agent_config` also accepts a plain dict; `TaskConfig` converts it to `AgentConfig` automatically.
+- `agent_config` also accepts a plain dict; `TaskConfig` converts it to `NativeAgentConfig` automatically.
 - With `docker` you reuse the [sandbox infrastructure](../sandbox.md); you may explicitly set `TaskConfig.sandbox = SandboxTaskConfig(enabled=True, engine='docker')`.
 ```
 
 ## MCP server tools
 
-Beyond the built-in tools (`bash` / `python_exec` / ...), `AgentConfig` accepts arbitrary [MCP (Model Context Protocol)](https://modelcontextprotocol.io) servers via `mcp_servers`. Their advertised tools are merged into the loop's tool set alongside the benchmark-native tools — **no benchmark-side change required**.
+Beyond the built-in tools (`bash` / `python_exec` / ...), `NativeAgentConfig` accepts arbitrary [MCP (Model Context Protocol)](https://modelcontextprotocol.io) servers via `mcp_servers`. Their advertised tools are merged into the loop's tool set alongside the benchmark-native tools — **no benchmark-side change required**.
 
 This is how to plug in `fetch`, web search, GitHub, filesystem and the rest of the MCP ecosystem without writing a custom EvalScope tool.
 

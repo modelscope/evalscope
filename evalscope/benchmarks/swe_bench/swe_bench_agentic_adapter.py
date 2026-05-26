@@ -20,7 +20,7 @@ and are not affected.
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
 from evalscope.api.agent import AgentEnvironment, AgentStrategy
@@ -34,6 +34,9 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import, is_build_doc
 from evalscope.utils.logger import get_logger
+
+if TYPE_CHECKING:
+    from evalscope.agent.external.runners import AgentRunResult
 
 logger = get_logger()
 
@@ -340,7 +343,9 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
     # External agent prediction (recover patch via git diff)
     # ------------------------------------------------------------------
 
-    async def _external_extract_prediction(self, env: AgentEnvironment, run_result: Any, sample: Sample) -> str:
+    async def _external_extract_prediction(
+        self, env: AgentEnvironment, run_result: AgentRunResult, sample: Sample
+    ) -> str:
         """Recover the agent's patch from ``self.working_dir`` (``/testbed``).
 
         External CLI agents do not implement the

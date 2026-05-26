@@ -26,7 +26,7 @@ from pathlib import Path
 load_dotenv('.env')
 env = dotenv_values('.env')
 
-from evalscope.api.agent import AgentConfig
+from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.agent.trace import AgentTrace, EventType
 from evalscope.config import TaskConfig
 from evalscope.constants import EvalType
@@ -169,7 +169,7 @@ class TestGSM8KAgentNoTools(unittest.TestCase):
             **_base_cfg(
                 datasets=['gsm8k'],
                 dataset_args={'gsm8k': {'few_shot_num': 0}},
-                agent_config=AgentConfig(
+                agent_config=NativeAgentConfig(
                     strategy='function_calling',
                     tools=[],
                     max_steps=3,
@@ -193,7 +193,7 @@ class TestGSM8KAgentPythonExecLocal(unittest.TestCase):
             **_base_cfg(
                 datasets=['gsm8k'],
                 dataset_args={'gsm8k': {'few_shot_num': 0}},
-                agent_config=AgentConfig(
+                agent_config=NativeAgentConfig(
                     strategy='function_calling',
                     tools=['python_exec'],
                     environment='local',
@@ -238,7 +238,7 @@ class TestGSM8KAgentBashLocal(unittest.TestCase):
             **_base_cfg(
                 datasets=['gsm8k'],
                 dataset_args={'gsm8k': {'few_shot_num': 0}},
-                agent_config=AgentConfig(
+                agent_config=NativeAgentConfig(
                     strategy='function_calling',
                     tools=['bash'],
                     environment='local',
@@ -272,7 +272,7 @@ class TestGSM8KAgentPythonExecDocker(unittest.TestCase):
             **_base_cfg(
                 datasets=['gsm8k'],
                 dataset_args={'gsm8k': {'few_shot_num': 0}},
-                agent_config=AgentConfig(
+                agent_config=NativeAgentConfig(
                     strategy='function_calling',
                     tools=['python_exec'],
                     environment='docker',
@@ -314,7 +314,7 @@ class TestAIMEReActFC(unittest.TestCase):
             **_base_cfg(
                 datasets=['aime26'],
                 dataset_args={'aime26': {'few_shot_num': 0}},
-                agent_config=AgentConfig(
+                agent_config=NativeAgentConfig(
                     strategy='react',
                     tools=['bash'],
                     environment='local',

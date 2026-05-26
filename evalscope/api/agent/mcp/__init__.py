@@ -11,12 +11,13 @@ so users who don't configure any MCP server pay no cost.
 """
 
 from .client import MCPServer
-from .source import mcp_tools
+from .source import mcp_tools, resolve_mcp_tools
 from .types import MCPServerConfig, MCPServerConfigHTTP, MCPServerConfigSSE, MCPServerConfigStdio
 
 __all__ = [
     'MCPServer',
     'mcp_tools',
+    'resolve_mcp_tools',
     'MCPServerConfig',
     'MCPServerConfigStdio',
     'MCPServerConfigHTTP',

@@ -77,10 +77,6 @@ class NativeAgentConfig(BaseAgentConfig):
     """
 
 
-AgentConfig = NativeAgentConfig
-"""Backwards-compat alias.  Prefer :class:`NativeAgentConfig` in new code."""
-
-
 class ExecResult(BaseModel):
     """Result of executing a command in an ``AgentEnvironment``."""
 
@@ -146,7 +142,6 @@ class AgentLoopResult:
 
 
 __all__ = [
-    'AgentConfig',
     'AgentContext',
     'AgentLoopResult',
     'BaseAgentConfig',

@@ -8,12 +8,14 @@ from native ones (``bash`` / ``python_exec`` / ...) from the loop's POV.
 
 from __future__ import annotations
 
+from contextlib import AsyncExitStack
 from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.tool import ToolCall, ToolInfo, ToolParams
 from evalscope.utils.json_schema import JSONSchema
 from evalscope.utils.logger import get_logger
 from .client import MCPServer
+from .types import MCPServerConfig
 
 logger = get_logger()
 
@@ -97,4 +99,41 @@ async def mcp_tools(server: MCPServer) -> Tuple[Dict[str, Any], List[ToolInfo]]:
     return handlers, infos
 
 
-__all__ = ['mcp_tools']
+async def resolve_mcp_tools(
+    mcp_configs: List[MCPServerConfig],
+    stack: AsyncExitStack,
+) -> Tuple[Dict[str, Any], List[ToolInfo]]:
+    """Spawn the configured MCP servers for one sample and return their tools.
+
+    Each server is entered into ``stack`` so that enter / exit happen on the
+    same anyio task (the sample's loop coroutine). This is what the
+    underlying mcp transports (``stdio_client`` / ``streamable_http_client``
+    / ``sse_client``) require — they wrap an ``anyio.create_task_group``
+    whose cancel scope refuses to be exited from a different task.
+
+    Lifetime is per-sample: every sample re-spawns its MCP servers. For
+    stdio servers that costs ~0.5-1s of startup; HTTP / SSE transports only
+    rebuild an httpx connection (millisecond-level). If that startup cost
+    matters, point ``mcp_servers`` at a long-running remote endpoint
+    (HTTP / SSE) instead of an on-demand stdio subprocess.
+    """
+    merged_handlers: Dict[str, Any] = {}
+    merged_tool_infos: List[ToolInfo] = []
+
+    for cfg in mcp_configs:
+        server = MCPServer(cfg)
+        await stack.enter_async_context(server)
+        handlers, infos = await mcp_tools(server)
+
+        for tool_name, handler in handlers.items():
+            if tool_name in merged_handlers:
+                logger.warning(
+                    f'MCPServer[{server.name}]: tool {tool_name!r} shadows existing handler; last-write-wins'
+                )
+            merged_handlers[tool_name] = handler
+        merged_tool_infos.extend(infos)
+
+    return merged_handlers, merged_tool_infos
+
+
+__all__ = ['mcp_tools', 'resolve_mcp_tools']

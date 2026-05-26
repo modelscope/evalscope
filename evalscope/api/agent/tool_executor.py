@@ -20,7 +20,7 @@ class ToolExecutor:
     """Dispatches ``ToolCall`` instances to registered async handlers.
 
     Kept stateless on purpose: the AgentLoop creates one per sample with
-    a prebuilt ``{name: handler}`` mapping derived from ``AgentConfig.tools``
+    a prebuilt ``{name: handler}`` mapping derived from ``NativeAgentConfig.tools``
     or ``AgentAdapter.build_tools``.
     """
 

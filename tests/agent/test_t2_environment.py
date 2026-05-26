@@ -8,7 +8,7 @@ Test plan:
   TestDockerEnvironmentTools   – bash + python_exec handlers w/ enclave env
   TestAgentLoopWithEnvironment – full AgentLoop + local env + bash tool
   TestDefaultAdapterEnvPath    – _on_agent_inference environment_extra + tool_infos
-  TestAgentConfigEnvironmentExtra – AgentConfig.environment_extra round-trip
+  TestNativeAgentConfigEnvironmentExtra – NativeAgentConfig.environment_extra round-trip
 """
 
 import os
@@ -27,7 +27,7 @@ from evalscope.api.agent import (
     ExecResult,
     ToolExecutor,
 )
-from evalscope.api.agent.types import AgentConfig
+from evalscope.api.agent.types import NativeAgentConfig
 from evalscope.api.messages import ChatMessageAssistant, ChatMessageUser
 from evalscope.api.model.model_output import ChatCompletionChoice, ModelOutput
 from evalscope.api.registry import (
@@ -488,7 +488,7 @@ class TestDefaultAdapterEnvPath:
 
         # Build a minimal adapter bypassing __init__
         adapter = DefaultDataAdapter.__new__(DefaultDataAdapter)
-        cfg = AgentConfig(strategy='function_calling', tools=['bash'], max_steps=1)
+        cfg = NativeAgentConfig(strategy='function_calling', tools=['bash'], max_steps=1)
         task_cfg = MagicMock()
         task_cfg.agent_config = cfg
         adapter._task_config = task_cfg
@@ -520,7 +520,7 @@ class TestDefaultAdapterEnvPath:
         from evalscope.api.dataset import Sample
 
         adapter = DefaultDataAdapter.__new__(DefaultDataAdapter)
-        cfg = AgentConfig(
+        cfg = NativeAgentConfig(
             strategy='function_calling',
             tools=[],
             max_steps=1,
@@ -549,17 +549,17 @@ class TestDefaultAdapterEnvPath:
 
 
 # ===========================================================================
-# TestAgentConfigEnvironmentExtra  (AgentConfig schema)
+# TestNativeAgentConfigEnvironmentExtra  (NativeAgentConfig schema)
 # ===========================================================================
 
-class TestAgentConfigEnvironmentExtra:
+class TestNativeAgentConfigEnvironmentExtra:
 
     def test_default_environment_extra_is_empty(self):
-        cfg = AgentConfig()
+        cfg = NativeAgentConfig()
         assert cfg.environment_extra == {}
 
     def test_environment_extra_accepted(self):
-        cfg = AgentConfig(
+        cfg = NativeAgentConfig(
             strategy='function_calling',
             environment='docker',
             environment_extra={'image': 'python:3.11-slim', 'working_dir': '/workspace'},
@@ -568,12 +568,12 @@ class TestAgentConfigEnvironmentExtra:
         assert cfg.environment == 'docker'
 
     def test_environment_extra_serialises(self):
-        cfg = AgentConfig(environment_extra={'key': 'val'})
+        cfg = NativeAgentConfig(environment_extra={'key': 'val'})
         d = cfg.model_dump()
         assert d['environment_extra'] == {'key': 'val'}
 
     def test_kwargs_and_environment_extra_independent(self):
-        cfg = AgentConfig(kwargs={'system_prompt': 'hi'}, environment_extra={'image': 'x'})
+        cfg = NativeAgentConfig(kwargs={'system_prompt': 'hi'}, environment_extra={'image': 'x'})
         assert 'system_prompt' in cfg.kwargs
         assert 'system_prompt' not in cfg.environment_extra
         assert 'image' in cfg.environment_extra

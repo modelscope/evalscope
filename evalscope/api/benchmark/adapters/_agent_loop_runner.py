@@ -12,7 +12,7 @@ their adapter-specific hooks (e.g.
 """
 
 from contextlib import AsyncExitStack
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from evalscope.api.agent import (
     AgentContext,
@@ -33,45 +33,6 @@ if TYPE_CHECKING:
     from evalscope.api.agent.mcp import MCPServerConfig
 
 logger = get_logger()
-
-
-async def _resolve_mcp_tools(
-    mcp_configs: List['MCPServerConfig'],
-    stack: AsyncExitStack,
-) -> Tuple[Dict[str, ToolHandler], List[Any]]:
-    """Spawn the configured MCP servers for one sample and return their tools.
-
-    Each server is entered into ``stack`` so that enter / exit happen on the
-    same anyio task (the sample's loop coroutine). This is what the
-    underlying mcp transports (``stdio_client`` / ``streamable_http_client``
-    / ``sse_client``) require — they wrap an ``anyio.create_task_group``
-    whose cancel scope refuses to be exited from a different task.
-
-    Lifetime is per-sample: every sample re-spawns its MCP servers. For
-    stdio servers that costs ~0.5-1s of startup; HTTP / SSE transports only
-    rebuild an httpx connection (millisecond-level). If that startup cost
-    matters, point ``mcp_servers`` at a long-running remote endpoint
-    (HTTP / SSE) instead of an on-demand stdio subprocess.
-    """
-    from evalscope.api.agent.mcp import MCPServer, mcp_tools
-
-    merged_handlers: Dict[str, ToolHandler] = {}
-    merged_tool_infos: List[Any] = []
-
-    for cfg in mcp_configs:
-        server = MCPServer(cfg)
-        await stack.enter_async_context(server)
-        handlers, infos = await mcp_tools(server)
-
-        for tool_name, handler in handlers.items():
-            if tool_name in merged_handlers:
-                logger.warning(
-                    f'MCPServer[{server.name}]: tool {tool_name!r} shadows existing handler; last-write-wins'
-                )
-            merged_handlers[tool_name] = handler
-        merged_tool_infos.extend(infos)
-
-    return merged_handlers, merged_tool_infos
 
 
 def run_agent_loop(
@@ -108,7 +69,7 @@ def run_agent_loop(
         mcp_configs: Optional list of MCP server configs whose advertised
             tools are merged into ``handlers`` / ``all_tools`` for the
             duration of the loop. Servers are spawned per sample (see
-            :func:`_resolve_mcp_tools`).
+            :func:`evalscope.api.agent.mcp.resolve_mcp_tools`).
 
     Returns:
         AgentLoopResult: Completed result with ``messages``, ``trace`` and
@@ -121,7 +82,9 @@ def run_agent_loop(
             merged_tools: List[Any] = list(all_tools)
 
             if mcp_configs:
-                mcp_handler_map, mcp_tool_infos = await _resolve_mcp_tools(mcp_configs, mcp_stack)
+                from evalscope.api.agent.mcp import resolve_mcp_tools
+
+                mcp_handler_map, mcp_tool_infos = await resolve_mcp_tools(mcp_configs, mcp_stack)
                 for tool_name, handler in mcp_handler_map.items():
                     if tool_name in merged_handlers:
                         logger.warning(f'MCP tool {tool_name!r} shadows existing handler; last-write-wins')

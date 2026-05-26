@@ -4,7 +4,7 @@
 Plan 覆盖点:
 - ``api/agent/`` 接口公民一等 API 全部可导入
 - Registry 合并至 ``api/registry.py``; ``evalscope.agent`` 不 re-export
-- AgentConfig / AgentTrace / ParsedAction / ExecResult 基础行为
+- NativeAgentConfig / AgentTrace / ParsedAction / ExecResult 基础行为
 """
 
 import importlib
@@ -14,7 +14,6 @@ import unittest
 # Trigger auto-registration (function_calling strategy).
 import evalscope  # noqa: F401
 from evalscope.api.agent import (
-    AgentConfig,
     AgentContext,
     AgentEnvironment,
     AgentLoop,
@@ -24,6 +23,7 @@ from evalscope.api.agent import (
     AgentTraceEvent,
     EventType,
     ExecResult,
+    NativeAgentConfig,
     ParsedAction,
     ToolExecutor,
     ToolHandler,
@@ -127,10 +127,10 @@ class TestRegistryUnification(unittest.TestCase):
 
 
 class TestAgentTypesBehavior(unittest.TestCase):
-    """AgentConfig / AgentTrace / ParsedAction / ExecResult 基础字段."""
+    """NativeAgentConfig / AgentTrace / ParsedAction / ExecResult 基础字段."""
 
     def test_agent_config_defaults(self):
-        cfg = AgentConfig()
+        cfg = NativeAgentConfig()
         self.assertEqual(cfg.strategy, 'function_calling')
         self.assertEqual(cfg.tools, [])
         self.assertEqual(cfg.max_steps, 10)
@@ -138,7 +138,7 @@ class TestAgentTypesBehavior(unittest.TestCase):
         self.assertEqual(cfg.kwargs, {})
 
     def test_agent_config_dict_validate(self):
-        cfg = AgentConfig.model_validate({'strategy': 'function_calling', 'max_steps': 5})
+        cfg = NativeAgentConfig.model_validate({'strategy': 'function_calling', 'max_steps': 5})
         self.assertEqual(cfg.max_steps, 5)
 
     def test_parsed_action_dataclass_defaults(self):
