@@ -34,6 +34,7 @@ from evalscope.api.sandbox import (
     merge_sandbox_config_dicts,
     resolve_engine,
 )
+from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -76,6 +77,11 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         timeout: float = 60.0,
         **_: Any,
     ) -> None:
+        # ms_enclave is mandatory for this environment. Fail fast at construction
+        # time so missing-dependency errors don't surface as opaque tool errors
+        # inside the agent loop (which the model interprets as a broken sandbox).
+        check_import('ms_enclave', extra='sandbox', raise_error=True, feature_name='EnclaveAgentEnvironment')
+
         self._engine: SandboxEngine = resolve_engine(engine)
         self._timeout = float(timeout)
         self._manager_config: Dict[str, Any] = dict(manager_config or {})
