@@ -101,7 +101,7 @@ class _TerminalBenchBase(AgentAdapter):
     def record_to_sample(self, record) -> Sample:
         return Sample(input='', metadata=record)
 
-    def _on_inference(self, model: Model, sample: Sample):
+    def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
         from harbor.models.trial.config import AgentConfig, EnvironmentConfig
         from harbor.models.trial.config import TaskConfig as TrialTaskConfig
         from harbor.models.trial.config import TrialConfig
@@ -109,7 +109,8 @@ class _TerminalBenchBase(AgentAdapter):
 
         from .utils import HarborLLM
 
-        environment_config = EnvironmentConfig(type=self.environment_type, **self.environment_kwargs)
+        env_kwargs = {k: v for k, v in self.environment_kwargs.items() if k != 'type'}
+        environment_config = EnvironmentConfig(type=self.environment_type, **env_kwargs)
 
         agent_kwargs = {'max_turns': self.max_turns}
         if self.agent_name == 'terminus-2':
@@ -163,8 +164,7 @@ class _TerminalBenchBase(AgentAdapter):
         trace, messages = self._load_harbor_trace(result_dict)
         return InferenceResult(output=output, trace=trace, messages=messages)
 
-    @staticmethod
-    def _load_harbor_trace(result_dict: dict) -> Tuple[Optional[AgentTrace], Optional[List[ChatMessage]]]:
+    def _load_harbor_trace(self, result_dict: dict) -> Tuple[Optional[AgentTrace], Optional[List[ChatMessage]]]:
         trial_uri = result_dict.get('trial_uri') or ''
         if trial_uri.startswith('file://'):
             trajectory_path = Path(trial_uri[7:]) / 'agent' / 'trajectory.json'
@@ -181,7 +181,7 @@ class _TerminalBenchBase(AgentAdapter):
         model_name = agent_info.get('model_name')
         trace = AgentTrace(
             framework=agent_info.get('name', 'harbor'),
-            environment='docker',
+            environment=self.environment_type,
         )
         messages: List[ChatMessage] = []
         prev_ts: Optional[float] = None
