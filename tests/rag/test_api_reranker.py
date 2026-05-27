@@ -1,0 +1,146 @@
+import pytest
+
+torch = pytest.importorskip('torch')
+pytest.importorskip('langchain_openai')
+pytest.importorskip('mteb')
+pytest.importorskip('sentence_transformers')
+
+from evalscope.backend.rag_eval.utils.embedding import APIRerankerModel, EmbeddingModel
+
+
+class MockResponse:
+
+    def __init__(self, data):
+        self.data = data
+
+    def raise_for_status(self):
+        pass
+
+    def json(self):
+        return self.data
+
+
+def test_api_reranker_predict(monkeypatch):
+    calls = []
+
+    def mock_post(self, url, headers, json, timeout):
+        calls.append({'url': url, 'headers': headers, 'json': json, 'timeout': timeout})
+        return MockResponse({
+            'results': [
+                {
+                    'index': 1,
+                    'relevance_score': 0.2,
+                },
+                {
+                    'index': 0,
+                    'relevance_score': 0.9,
+                },
+            ]
+        })
+
+    monkeypatch.setattr('evalscope.backend.rag_eval.utils.embedding.requests.Session.post', mock_post)
+
+    model = APIRerankerModel(
+        model_name='Qwen3-Reranker-8B',
+        api_base='https://aiping.cn/api/v1',
+        api_key='test-key',
+        encode_kwargs={'batch_size': 10},
+    )
+    scores = model.predict([['query', 'document 0', None], ['query', 'document 1', None]])
+
+    assert torch.equal(scores, torch.tensor([0.9, 0.2]))
+    assert calls == [{
+        'url': 'https://aiping.cn/api/v1/rerank',
+        'headers': {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer test-key',
+        },
+        'json': {
+            'model': 'Qwen3-Reranker-8B',
+            'query': 'query',
+            'documents': ['document 0', 'document 1'],
+            'top_n': 2,
+            'return_documents': True,
+        },
+        'timeout': 60,
+    }]
+
+
+def test_api_reranker_keeps_explicit_endpoint(monkeypatch):
+    monkeypatch.delenv('OPENAI_API_KEY', raising=False)
+
+    def mock_post(self, url, headers, json, timeout):
+        return MockResponse({'results': [{'index': 0, 'score': 0.8}]})
+
+    monkeypatch.setattr('evalscope.backend.rag_eval.utils.embedding.requests.Session.post', mock_post)
+
+    model = APIRerankerModel(
+        model_name='reranker',
+        api_base='https://example.com/v1/reranks',
+        encode_kwargs={'batch_size': 1},
+    )
+
+    assert model.rerank_url == 'https://example.com/v1/reranks'
+    assert torch.equal(model.predict([['query', 'document']]), torch.tensor([0.8]))
+
+
+def test_api_reranker_applies_instruction(monkeypatch):
+    monkeypatch.delenv('OPENAI_API_KEY', raising=False)
+    calls = []
+
+    def mock_post(self, url, headers, json, timeout):
+        calls.append(json)
+        return MockResponse({'results': [{'index': 0, 'score': 0.8}]})
+
+    monkeypatch.setattr('evalscope.backend.rag_eval.utils.embedding.requests.Session.post', mock_post)
+
+    model = APIRerankerModel(
+        model_name='reranker',
+        api_base='https://example.com/v1',
+        encode_kwargs={'batch_size': 1},
+    )
+
+    scores = model.predict([['query', 'document', 'instruction']])
+
+    assert torch.equal(scores, torch.tensor([0.8]))
+    assert calls[0]['query'] == 'query instruction'
+
+
+def test_api_reranker_defaults_none_index(monkeypatch):
+    monkeypatch.delenv('OPENAI_API_KEY', raising=False)
+
+    def mock_post(self, url, headers, json, timeout):
+        return MockResponse({'results': [{'index': None, 'score': 0.8}]})
+
+    monkeypatch.setattr('evalscope.backend.rag_eval.utils.embedding.requests.Session.post', mock_post)
+
+    model = APIRerankerModel(
+        model_name='reranker',
+        api_base='https://example.com/v1',
+        encode_kwargs={'batch_size': 1},
+    )
+
+    assert torch.equal(model.predict([['query', 'document']]), torch.tensor([0.8]))
+
+
+def test_api_reranker_uses_openai_api_key_env(monkeypatch):
+    monkeypatch.setenv('OPENAI_API_KEY', 'env-key')
+
+    model = APIRerankerModel(
+        model_name='reranker',
+        api_base='https://example.com/v1',
+        encode_kwargs={'batch_size': 1},
+    )
+
+    assert model.headers['Authorization'] == 'Bearer env-key'
+
+
+def test_load_api_cross_encoder():
+    model = EmbeddingModel.load(
+        model_name='Qwen3-Reranker-8B',
+        api_base='https://aiping.cn/api/v1',
+        api_key='test-key',
+        is_cross_encoder=True,
+    )
+
+    assert isinstance(model, APIRerankerModel)

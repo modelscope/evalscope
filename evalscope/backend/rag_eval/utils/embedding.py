@@ -1,4 +1,5 @@
 import os
+import requests
 import torch
 from langchain_core.embeddings import Embeddings
 from langchain_openai.embeddings import OpenAIEmbeddings
@@ -243,6 +244,87 @@ class APIEmbeddingModel(BaseModel):
         return torch.tensor(embeddings)
 
 
+class APIRerankerModel(BaseModel):
+    """Reranker adapter for OpenAI-compatible rerank APIs."""
+
+    def __init__(self, **kwargs):
+        self.model_name = kwargs.get('model_name')
+        self.api_base = kwargs.get('api_base')
+        self.api_key = kwargs.get('api_key') or os.getenv('OPENAI_API_KEY')
+
+        if not self.api_base:
+            raise ValueError('api_base is required for API reranker model.')
+
+        super().__init__(model_name_or_path=self.model_name, **kwargs)
+
+        self.framework = ['API']
+        self.batch_size = self.encode_kwargs.get('batch_size', 10)
+        self.timeout = kwargs.get('timeout', 60)
+        self.rerank_url = self.api_base.rstrip('/')
+        if not self.rerank_url.endswith(('/rerank', '/reranks')):
+            self.rerank_url = f'{self.rerank_url}/rerank'
+
+        self.headers = {'Content-Type': 'application/json'}
+        if self.api_key:
+            self.headers['Authorization'] = f'Bearer {self.api_key}'
+        self.session = requests.Session()
+
+    def predict(self, sentences: List[List[str]], **kwargs) -> Tensor:
+        self.encode_kwargs.update(kwargs)
+        self.batch_size = self.encode_kwargs.get('batch_size', self.batch_size)
+        if not sentences:
+            return torch.tensor([])
+
+        scores = [0.0] * len(sentences)
+        grouped_sentences = {}
+        prompt = self.prompt or ''
+
+        for idx, sentence in enumerate(sentences):
+            if len(sentence) == 2:
+                query, document = sentence
+            elif len(sentence) == 3:
+                query, document, instruction = sentence
+                if instruction is not None:
+                    query = f'{query} {instruction}'.strip()
+            else:
+                raise ValueError('API reranker expects query-document pairs.')
+            grouped_sentences.setdefault(prompt + query, []).append((idx, document))
+
+        for query, pairs in grouped_sentences.items():
+            for i in range(0, len(pairs), self.batch_size):
+                batch_pairs = pairs[i:i + self.batch_size]
+                documents = [doc for _, doc in batch_pairs]
+                payload = {
+                    'model': self.model_name,
+                    'query': query,
+                    'documents': documents,
+                    'top_n': len(documents),
+                    'return_documents': True,
+                }
+                response = self.session.post(self.rerank_url, headers=self.headers, json=payload, timeout=self.timeout)
+                response.raise_for_status()
+                data = response.json()
+                results = data.get('results')
+                if results is None:
+                    raise ValueError(f'Invalid rerank response: {data}')
+
+                for result_idx, result in enumerate(results):
+                    doc_idx = result.get('index')
+                    if doc_idx is None:
+                        doc_idx = result_idx
+                    else:
+                        try:
+                            doc_idx = int(doc_idx)
+                        except (TypeError, ValueError):
+                            continue
+                    if doc_idx < 0 or doc_idx >= len(batch_pairs):
+                        continue
+                    score = result.get('relevance_score', result.get('score', 0.0))
+                    scores[batch_pairs[doc_idx][0]] = score
+
+        return torch.tensor(scores)
+
+
 class EmbeddingModel:
     """Custom embeddings"""
 
@@ -255,7 +337,9 @@ class EmbeddingModel:
         **kwargs,
     ):
         if kwargs.get('model_name'):
-            # If model_name is provided, use OpenAIEmbeddings
+            if is_cross_encoder:
+                return APIRerankerModel(**kwargs)
+            # API embedding models use the OpenAI-compatible embeddings client.
             return APIEmbeddingModel(**kwargs)
 
         # If model path does not exist and hub is 'modelscope', download the model
