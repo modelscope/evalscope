@@ -28,7 +28,7 @@ from tqdm import tqdm
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.plugin.datasets.base import DatasetPluginBase, Message, Messages
+from evalscope.perf.plugin.datasets.base import Conversation, DatasetPluginBase, Message, Messages, Turn
 from evalscope.perf.plugin.datasets.utils import tokenize_chat_messages
 from evalscope.perf.plugin.registry import register_dataset
 from evalscope.utils.logger import get_logger
@@ -270,10 +270,11 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
     # Public interface
     # ------------------------------------------------------------------
 
-    def build_messages(self) -> Iterator[List[Messages]]:
-        """Yield up to ``args.number`` conversations as lists of per-turn delta Messages.
+    def build_messages(self) -> Iterator[Conversation]:
+        """Yield up to ``args.number`` conversations as ``List[Turn]``.
 
-        Each element is a ``List[Messages]`` (one ``Messages`` per turn).
+        ``max_tokens`` and ``tool_call_latency`` are left ``None``; swe_smith
+        does not specify per-turn output caps or simulated tool waits.
         """
         if self.query_parameters.dataset_path:
             yield from self._load_from_json()
@@ -284,7 +285,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
     # Pre-built JSON mode
     # ------------------------------------------------------------------
 
-    def _load_from_json(self) -> Iterator[List[Messages]]:
+    def _load_from_json(self) -> Iterator[Conversation]:
         """Load pre-built ``agentic_dataset.json`` and yield conversations."""
         dataset_path = self.query_parameters.dataset_path
         logger.info(f'Loading pre-built dataset from {dataset_path}')
@@ -306,16 +307,19 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
 
         for conversation in conversations:
             # Each turn's "messages" list is already the delta (non-assistant).
-            turns: List[Messages] = [turn.get('messages', []) for turn in conversation]
+            messages_per_turn: List[Messages] = [turn.get('messages', []) for turn in conversation]
+            if not messages_per_turn:
+                continue
 
-            if turns:
-                yield turns
+            yield [
+                Turn(messages=m, is_final=(i == len(messages_per_turn) - 1)) for i, m in enumerate(messages_per_turn)
+            ]
 
     # ------------------------------------------------------------------
     # Live construction mode
     # ------------------------------------------------------------------
 
-    def _load_live(self) -> Iterator[List[Messages]]:
+    def _load_live(self) -> Iterator[Conversation]:
         """Pull SWE-smith-trajectories from ModelScope and construct conversations."""
         if self.tokenizer is None:
             raise ValueError(
@@ -452,6 +456,9 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
             )
 
         for conversation in conversations:
-            turns: List[Messages] = [turn.get('messages', []) for turn in conversation]
-            if turns:
-                yield turns
+            messages_per_turn: List[Messages] = [turn.get('messages', []) for turn in conversation]
+            if not messages_per_turn:
+                continue
+            yield [
+                Turn(messages=m, is_final=(i == len(messages_per_turn) - 1)) for i, m in enumerate(messages_per_turn)
+            ]

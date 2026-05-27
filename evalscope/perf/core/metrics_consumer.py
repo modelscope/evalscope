@@ -11,6 +11,8 @@ from evalscope.perf.utils.benchmark_util import Metrics, MetricsAccumulator
 from evalscope.perf.utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data
 from evalscope.perf.utils.handler import exception_handler
 from evalscope.perf.utils.log_utils import maybe_log_to_visualizer
+from evalscope.perf.utils.trace_metrics import TraceAccumulator, TraceLevelSummary
+from evalscope.perf.utils.workload_timeline import WorkloadTimeline
 from evalscope.utils.logger import get_logger
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 
@@ -29,7 +31,7 @@ async def statistic_benchmark_metric(
     benchmark_data_queue: asyncio.Queue,
     args: Arguments,
     api_plugin: 'ApiPluginBase',
-) -> Tuple['MetricsAccumulator', str]:
+) -> Tuple['MetricsAccumulator', 'TraceLevelSummary', 'WorkloadTimeline', str]:
     """Consume benchmark results from the queue, update metrics, and persist to DB.
 
     Args:
@@ -38,9 +40,14 @@ async def statistic_benchmark_metric(
         api_plugin: API plugin used to finalise token counts.
 
     Returns:
-        Tuple of ``(metrics_accumulator_result, result_db_path)``.
+        Tuple of ``(metrics_accumulator_result, trace_level_summary, workload_timeline, result_db_path)``.
+        ``trace_level_summary`` is empty for single-turn runs (no ``trace_id``);
+        ``workload_timeline`` always accumulates regardless of mode, callers
+        may inspect ``n_points`` before rendering downstream tables.
     """
     accumulator = MetricsAccumulator(concurrency=args.parallel, rate=args.rate)
+    trace_acc = TraceAccumulator()
+    workload_timeline = WorkloadTimeline()
     result_db_path = get_result_db_path(args)
     warmup_count = args.warmup_count
 
@@ -94,6 +101,13 @@ async def statistic_benchmark_metric(
 
                 # Update accumulator and write to DB immediately.
                 accumulator.update(benchmark_data, api_plugin)
+                # Feed the per-trace accumulator *after* MetricsAccumulator.update
+                # so finalize() has populated prompt/completion tokens (idempotent).
+                # Single-turn items (trace_id is None) are silently skipped inside.
+                trace_acc.feed(benchmark_data)
+                # Workload timeline tracks cumulative tokens vs time for the
+                # Overall / Last-window / Steady-state throughput breakdown.
+                workload_timeline.feed(benchmark_data)
                 insert_benchmark_data(cursor, benchmark_data)
                 processed_since_commit += 1
                 if processed_since_commit >= commit_every:
@@ -119,7 +133,7 @@ async def statistic_benchmark_metric(
 
         await asyncio.to_thread(con.commit)
 
-    return accumulator.to_result(), result_db_path
+    return accumulator.to_result(), trace_acc.to_summary(), workload_timeline, result_db_path
 
 
 @exception_handler

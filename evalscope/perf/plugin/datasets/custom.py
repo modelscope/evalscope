@@ -2,7 +2,7 @@ import json
 from typing import Any, Dict, Iterator, List
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.plugin.datasets.base import DatasetPluginBase, Message, Messages
+from evalscope.perf.plugin.datasets.base import Conversation, DatasetPluginBase, Message, Messages, Turn
 from evalscope.perf.plugin.registry import register_dataset
 from evalscope.utils import get_logger
 
@@ -85,13 +85,12 @@ class CustomMultiTurnDatasetPlugin(DatasetPluginBase):
             turns.append(current)
         return turns
 
-    def build_messages(self) -> Iterator[List[Messages]]:
-        """Yield complete conversations as ``List[Messages]`` from the JSONL file.
+    def build_messages(self) -> Iterator[Conversation]:
+        """Yield complete conversations as ``Conversation`` (``List[Turn]``) from the JSONL file.
 
-        Each yielded item is a ``List[Messages]`` where every ``Messages``
-        contains the delta for one turn.  The multi-turn benchmark runner
-        extends the growing context with each delta and appends the model's
-        real response after each turn.
+        ``max_tokens`` and ``tool_call_latency`` are left ``None`` on every
+        turn; custom conversations have no per-turn output cap or simulated
+        tool wait.
         """
         max_turns = self.query_parameters.max_turns
 
@@ -115,18 +114,22 @@ class CustomMultiTurnDatasetPlugin(DatasetPluginBase):
                 logger.warning('Skipping line: each message must have "role" and "content" fields.')
                 continue
 
-            turns = self._split_into_turns(messages)
+            messages_per_turn = self._split_into_turns(messages)
 
             # Apply max_turns truncation at the dataset layer
             if max_turns is not None:
-                turns = turns[:max_turns]
+                messages_per_turn = messages_per_turn[:max_turns]
 
             # A valid multi-turn conversation needs at least one turn
-            if not turns:
+            if not messages_per_turn:
                 continue
 
+            turns: Conversation = [
+                Turn(messages=m, is_final=(i == len(messages_per_turn) - 1)) for i, m in enumerate(messages_per_turn)
+            ]
+
             # Length filter: check the first user message of the first turn as a proxy
-            first_msg = next((m for m in turns[0] if m.get('role') == 'user'), None)
+            first_msg = next((m for m in turns[0].messages if m.get('role') == 'user'), None)
             if first_msg is None:
                 yield turns
                 continue

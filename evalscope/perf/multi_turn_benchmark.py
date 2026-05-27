@@ -40,16 +40,22 @@ context and produce meaningless evaluation results.
 """
 
 import asyncio
-from typing import Any, Dict, List, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.http_client import AioHttpClient
 from evalscope.perf.core.metrics_consumer import connect_test, data_process_completed_event, statistic_benchmark_metric
 from evalscope.perf.core.strategies import MultiTurnStrategy
 from evalscope.perf.plugin import ApiRegistry, DatasetRegistry
-from evalscope.perf.plugin.datasets.base import Message, Messages
+from evalscope.perf.plugin.datasets.base import Conversation
 from evalscope.perf.utils.db_util import summary_result
 from evalscope.perf.utils.handler import exception_handler
+
+if TYPE_CHECKING:
+    from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
+    from evalscope.perf.utils.trace_metrics import TraceLevelSummary
+    from evalscope.perf.utils.workload_timeline import WorkloadThroughput
+
 from evalscope.utils.logger import get_logger
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 
@@ -57,7 +63,9 @@ logger = get_logger()
 
 
 @exception_handler
-async def run_multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
+async def run_multi_turn_benchmark(
+    args: Arguments,
+) -> Tuple['BenchmarkSummary', 'PercentileResult', Optional['TraceLevelSummary'], Optional['WorkloadThroughput']]:
     """Run a multi-turn conversation benchmark.
 
     Args:
@@ -66,8 +74,7 @@ async def run_multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
               (number of simultaneously active conversations).
 
     Returns:
-        Tuple of ``(metrics_result, percentile_result)`` dicts, identical in
-        structure to the output of :func:`~evalscope.perf.benchmark.run_benchmark`.
+        4-tuple of ``(summary, percentiles, trace_summary, workload_throughput)``.
     """
     api_plugin_class = ApiRegistry.get_class(args.api)
     api_plugin = api_plugin_class(args)
@@ -83,7 +90,7 @@ async def run_multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     # into the benchmark portion.
     _max_preload = args.total_count
     with tqdm(desc='Loading[conversations]', logger=logger) as pbar:
-        all_conversations: List[List[Messages]] = []
+        all_conversations: List[Conversation] = []
         for conv in dataset_plugin.build_messages():
             all_conversations.append(conv)
             pbar.update(1)
@@ -135,10 +142,15 @@ async def run_multi_turn_benchmark(args: Arguments) -> Tuple[Dict, Dict]:
         await queue.join()
         data_process_completed_event.set()
 
-        metrics, result_db_path = await statistic_task
+        metrics, trace_summary, workload_timeline, result_db_path = await statistic_task
 
     # ------------------------------------------------------------------
     # 8. Summarise and return
     # ------------------------------------------------------------------
-    metrics_result, percentile_result = summary_result(args, metrics, result_db_path)
-    return metrics_result, percentile_result
+    return summary_result(
+        args,
+        metrics,
+        result_db_path,
+        trace_summary=trace_summary,
+        workload_timeline=workload_timeline,
+    )

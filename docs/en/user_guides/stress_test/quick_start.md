@@ -89,12 +89,17 @@ results = run_perf_benchmark(task_cfg)
 
 ### Output Results
 
-The output test report summary is shown in the image below, including basic information, metrics for each concurrency, and performance test suggestions:
+The output test report summary includes basic information (model, dataset, API type, etc.) and the following four tables:
 
-![multi_perf](./images/multi_perf.png)
+1. **Performance Overview**: One row per concurrency config, showing RPS, output throughput, success rate, and other scalar metrics
+2. **Per-Request Metrics**: Distribution metrics (avg / p50 / p99) for latency, TTFT, TPOT, input/output tokens, etc.
+3. **Per-Trace Metrics**: Trace-level metrics for multi-turn conversations (only shown in multi-turn mode)
+4. **Workload Throughput**: Global token throughput rates across time windows (Overall / Last 30s / Steady)
+
+![multi_perf](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/stress_test/multi_perf.jpg)
 
 ```{note}
-- The stress test report in the diagram is a summary of test results across multiple concurrency levels, allowing users to compare model performance under different concurrency settings. No summary report is generated for a single concurrency level.
+- The summary report covers test results across multiple concurrency levels, allowing users to compare model performance under different concurrency settings. No summary report is generated for a single concurrency level.
 - This report will be saved in `outputs/<timestamp>/<model>/performance_summary.txt`, which users can view as needed.
 - For explanations of the metrics in the table below, please refer to the "Metric Descriptions" section that follows. Results will be saved in `outputs/<timestamp>/<model>/benchmark.log`.
 ```
@@ -142,7 +147,7 @@ Percentile results:
 
 ### Metric Descriptions
 
-**Metrics**
+#### Basic Metrics
 
 | Metric | Explanation | Formula |
 |--------|-------------|---------|
@@ -159,12 +164,31 @@ Percentile results:
 | Avg Output Tokens | Average number of output tokens per request | Total output tokens / Successful requests |
 | Output Throughput (tok/s) | Average number of output tokens processed per second | Total output tokens / Test Duration |
 | Total Throughput (tok/s) | Average number of tokens (input + output) processed per second | (Total input tokens + Total output tokens) / Test Duration |
-| Avg Input Turns | Average number of historical dialogue turns per request in multi-turn conversations (1 for single-turn) | Total input turns / Successful requests |
-| KV Cache Hit Rate (%) | Estimated prefix cache hit rate based on the ratio of cached tokens to input tokens (requires prefix caching enabled on the server and `cached_tokens` field returned) | Total cached tokens / Total input tokens × 100% |
-| Avg Decoded Tokens/Iter | In speculative decoding, the average number of tokens accepted per model forward pass (iteration), reflecting draft model accuracy | (Total output tokens − 1) / (Total chunks − 1) |
-| Spec Decode Acceptance (%) | Approximate token acceptance rate for speculative decoding, derived from decoded tokens per iter; closer to 1 means a more accurate draft model | 1 − 1 / (Avg Decoded Tokens/Iter) |
+| Decode toks/s | Number of decoded output tokens per second (excluding first token) | 1000 / TPOT |
 
-**Percentile Metrics**
+#### Multi-Turn Metrics
+
+The following metrics are only shown in multi-turn conversation mode. For details, see [Multi-Turn Stress Testing](./multi_turn.md).
+
+| Metric | Explanation | Formula |
+|--------|-------------|---------|
+| Turns/Req | Average number of historical dialogue turns per request in multi-turn conversations (1 for single-turn) | Total input turns / Successful requests |
+| Cache Hit (%) | Estimated prefix cache hit rate based on the ratio of cached tokens to input tokens (requires prefix caching enabled on the server and `cached_tokens` field returned) | Total cached tokens / Total input tokens × 100% |
+| 1st-Turn TTFT (ms) | Average TTFT for the first turn (cold prefill) in multi-turn conversations | Sum of all first-turn TTFTs / Number of conversations |
+| Subseq. TTFT (ms) | Average TTFT for subsequent turns (can hit prefix cache) in multi-turn conversations | Sum of all subsequent-turn TTFTs / Number of subsequent-turn requests |
+
+#### Speculative Decoding Metrics
+
+The following metrics are only shown in speculative decoding scenarios.
+
+| Metric | Explanation | Formula |
+|--------|-------------|---------|
+| Decoded Tok/Iter | Average number of tokens accepted per model forward pass (iteration), reflecting draft model accuracy | (Total output tokens − 1) / (Total chunks − 1) |
+| Spec. Accept Rate | Approximate token acceptance rate for speculative decoding; closer to 1 means a more accurate draft model | 1 − 1 / (Decoded Tok/Iter) |
+
+#### Percentile Metrics
+
+> Statistics are collected per individual request. Data is divided into 100 equal parts; the nth percentile means n% of data points fall below this value.
 
 | Metric | Explanation |
 |--------|-------------|
@@ -177,6 +201,10 @@ Percentile results:
 | Output (tok/s) | The number of tokens output per second: Output tokens / Latency. |
 | Total (tok/s) | The number of tokens processed per second: (Input tokens + Output tokens) / Latency. |
 | Decode (tok/s) | The number of decoded output tokens per second. |
+
+#### Per-Trace and Workload Throughput Metrics
+
+In multi-turn mode, two additional tables are output: **Per-Trace Metrics** (trace-level distribution metrics) and **Workload Throughput** (global token throughput rates across time windows). For details, see [Multi-Turn Stress Testing — Multi-Turn Output Metrics](./multi_turn.md#multi-turn-output-metrics).
 
 
 ## Visualizing Test Results

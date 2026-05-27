@@ -6,7 +6,7 @@
 
 - **真实上下文累积**：每轮请求成功后，将模型实际输出追加到对话历史，下一轮请求携带完整历史，而非仅发送当前用户消息。
 - **KV 缓存可命中率估算**：基于客户端 token 计数，估算每轮请求中历史对话 token 占总输入 token 的比例，即理论上可被服务端 prefix caching 利用的上限；实际是否命中取决于服务端是否开启并维持了对应缓存。
-- **多数据集支持**：提供随机合成（`random_multi_turn`）、真实对话（`share_gpt_zh_multi_turn` / `share_gpt_en_multi_turn`）、自定义本地数据（`custom_multi_turn`）和真实 Agent 轨迹（`swe_smith`）五种数据集。
+- **多数据集支持**：提供随机合成（`random_multi_turn`）、真实对话（`share_gpt_zh_multi_turn` / `share_gpt_en_multi_turn`）、自定义本地数据（`custom_multi_turn`）、真实 Agent 轨迹（`swe_smith`）和生产 agentic trace 重放（`trie_agentic_coding` / `trie_code_qa` / `trie_office_work`）等数据集。
 - **参数语义一致**：`--number` 为总对话数，`--parallel` 为并发对话数，与普通压测模式语义保持一致。
 
 ## 参数说明
@@ -91,6 +91,8 @@
 
 ## 数据集
 
+evalscope 提供以下多轮数据集：
+
 ### random_multi_turn
 
 基于 `random` 数据集随机生成 token 序列，每个对话包含 `[min_turns, max_turns]` 轮用户消息，无需外部数据文件，适合快速基准测试和性能对比。
@@ -132,26 +134,32 @@ evalscope perf \
 输出示例：
 
 ```text
-                                    Detailed Performance Metrics
-┏━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓
-┃      ┃      ┃      ┃     Avg ┃     P99 ┃     Avg ┃     P99 ┃     Avg ┃    P99 ┃    Gen. ┃ Success┃
-┃Conc. ┃ Rate ┃  RPS ┃ Lat.(s) ┃ Lat.(s) ┃ TTFT(s) ┃ TTFT(s) ┃ TPOT(s) ┃ TPOT(… ┃  toks/s ┃    Rate┃
-┡━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩
-│   10 │  INF │ 4.32 │   2.289 │   3.541 │   0.041 │   0.072 │   0.009 │  0.011 │ 1103.48 │  100.0%│
-└──────┴──────┴──────┴─────────┴─────────┴─────────┴─────────┴─────────┴────────┴─────────┴────────┘
+            Performance Overview
+┏━━━━━━┳━━━━━━┳━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
+┃Conc. ┃ Rate ┃ Num ┃  RPS ┃   Gen/s ┃ Success ┃
+┡━━━━━━╇━━━━━━╇━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
+│   10 │    - │  20 │ 4.32 │ 1103.48 │  100.0% │
+└──────┴──────┴─────┴──────┴─────────┴─────────┘
 
-                                          Request Metrics                                           
-┏━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
-┃      ┃          ┃             ┃     P99 In ┃     Avg Out ┃    P99 Out ┃         Avg ┃      Approx┃
-┃Conc. ┃ Num Reqs ┃ Avg In Toks ┃       Toks ┃        Toks ┃       Toks ┃   Turns/Req ┃   Cache Hit┃
-│   10 │       20 │       315.4 │      650.0 │        92.0 │      128.0 │        1.60 │       58.1%│
-└──────┴──────────┴─────────────┴────────────┴─────────────┴────────────┴─────────────┴────────────┘
+
+                    Per-Request Metrics
+┏━━━━━━┳━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┓
+┃Conc. ┃ Rate ┃ Metric        ┃    avg ┃   p50 ┃   p99 ┃
+┡━━━━━━╇━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━┩
+│   10 │    - │ Latency (s)   │  2.289 │ 2.180 │ 3.541 │
+│      │      │ TTFT (ms)     │   41.0 │  38.0 │  72.0 │
+│      │      │ TPOT (ms)     │    9.0 │   8.8 │  11.0 │
+│      │      │ Input Tokens  │  315.4 │ 280.0 │ 650.0 │
+│      │      │ Output Tokens │   92.0 │  85.0 │ 128.0 │
+│      │      │ Turns/Req     │   1.60 │     - │     - │
+│      │      │ Cache Hit (%) │  58.1% │     - │     - │
+└──────┴──────┴───────────────┴────────┴───────┴───────┘
 ```
 
 **指标解读**：
 
-- `Avg Turns/Req: 1.60`：测试期间每次请求平均携带 1.60 轮上下文，符合 `--min-turns 2 --max-turns 5` 的随机采样分布（第 1 轮无历史，后续轮次历史逐步增长）。
-- `Approx Cache Hit: 58.1%`：约 58% 的输入 token 来自历史对话。
+- `Turns/Req: 1.60`：测试期间每次请求平均携带 1.60 轮上下文，符合 `--min-turns 2 --max-turns 5` 的随机采样分布（第 1 轮无历史，后续轮次历史逐步增长）。
+- `Cache Hit (%): 58.1%`：约 58% 的输入 token 来自历史对话。
 
 ### share_gpt_multi_turn
 
@@ -213,26 +221,32 @@ evalscope perf \
 输出示例：
 
 ```text
-                                    Detailed Performance Metrics
-┏━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓
-┃      ┃      ┃      ┃     Avg ┃     P99 ┃     Avg ┃     P99 ┃     Avg ┃    P99 ┃    Gen. ┃ Success┃
-┃Conc. ┃ Rate ┃  RPS ┃ Lat.(s) ┃ Lat.(s) ┃ TTFT(s) ┃ TTFT(s) ┃ TPOT(s) ┃ TPOT(… ┃  toks/s ┃    Rate┃
-┡━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩
-│   10 │  INF │ 3.87 │   2.571 │   4.103 │   0.055 │   0.098 │   0.010 │  0.013 │  985.21 │  100.0%│
-└──────┴──────┴──────┴─────────┴─────────┴─────────┴─────────┴─────────┴────────┴─────────┴────────┘
+             Performance Overview
+┏━━━━━━┳━━━━━━┳━━━━━┳━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+┃Conc. ┃ Rate ┃ Num ┃  RPS ┃  Gen/s ┃ Success ┃
+┡━━━━━━╇━━━━━━╇━━━━━╇━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+│   10 │    - │ 300 │ 3.87 │ 985.21 │  100.0% │
+└──────┴──────┴─────┴──────┴────────┴─────────┘
 
-                                          Request Metrics                                           
-┏━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
-┃      ┃          ┃             ┃     P99 In ┃     Avg Out ┃    P99 Out ┃         Avg ┃      Approx┃
-┃Conc. ┃ Num Reqs ┃ Avg In Toks ┃       Toks ┃        Toks ┃       Toks ┃   Turns/Req ┃   Cache Hit┃
-│   10 │      300 │       428.7 │      912.0 │       186.3 │      384.0 │        1.98 │       53.7%│
-└──────┴──────────┴─────────────┴────────────┴─────────────┴────────────┴─────────────┴────────────┘
+
+                    Per-Request Metrics
+┏━━━━━━┳━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┓
+┃Conc. ┃ Rate ┃ Metric        ┃    avg ┃   p50 ┃   p99 ┃
+┡━━━━━━╇━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━┩
+│   10 │    - │ Latency (s)   │  2.571 │ 2.340 │ 4.103 │
+│      │      │ TTFT (ms)     │   55.0 │  50.0 │  98.0 │
+│      │      │ TPOT (ms)     │   10.0 │   9.5 │  13.0 │
+│      │      │ Input Tokens  │  428.7 │ 390.0 │ 912.0 │
+│      │      │ Output Tokens │  186.3 │ 160.0 │ 384.0 │
+│      │      │ Turns/Req     │   1.98 │     - │     - │
+│      │      │ Cache Hit (%) │  53.7% │     - │     - │
+└──────┴──────┴───────────────┴────────┴───────┴───────┘
 ```
 
 **指标解读**：
 
-- `Avg Turns/Req: 1.98`：受 `--max-turns 3` 限制，平均每请求包含约 2 轮上下文，符合预期（第 1 轮无历史，第 2、3 轮分别携带 1、2 轮历史，平均约 1.98）。
-- `Approx Cache Hit: 53.7%`：真实对话中上下文较长，历史 token 占比约 54%。
+- `Turns/Req: 1.98`：受 `--max-turns 3` 限制，平均每请求包含约 2 轮上下文，符合预期（第 1 轮无历史，第 2、3 轮分别携带 1、2 轮历史，平均约 1.98）。
+- `Cache Hit (%): 53.7%`：真实对话中上下文较长，历史 token 占比约 54%。
 
 ### custom_multi_turn
 
@@ -382,3 +396,124 @@ evalscope perf \
   --extra-args '{"ignore_eos": true}'
 ```
 
+### trie trace 重放
+
+重放生产环境真实 agentic 工作负载的 token 长度序列，用于测试推理服务在多轮、长尾、含 tool-call 等待的 agent 场景下的性能。数据来自 [applied-compute/trie](https://github.com/applied-compute/trie)（Apache-2.0），evalscope 把三个 workload 重新发布在 [ModelScope dataset `evalscope/trie-workloads`](https://www.modelscope.cn/datasets/evalscope/trie-workloads) 上，使用时自动下载。
+
+每条 trace 只包含 token 长度元数据（每轮的 prompt 长度、输出长度、tool-call 等待时间等），不含真实对话文本。运行时客户端按这些长度自动合成 prompt，保证负载特征与生产 trace 一致。
+
+**三个内置 workload**：
+
+| 数据集别名 | 来源 jsonl | 典型 num_turns | 适用场景 |
+|---|---|---|---|
+| `trie_agentic_coding` | `agentic_coding_8k.jsonl` | 8-15 | coding agent 类应用（IDE 代码补全、refactor agent） |
+| `trie_code_qa` | `code_qa_8k.jsonl` | 5-12 | 代码问答 agent（仓库分析、文档生成） |
+| `trie_office_work` | `office_work_8k.jsonl` | 18-41 | 办公自动化 agent（最长、最重，适合压力上限测试） |
+
+每条 trace 默认初始 prompt 约 8k token，整体 input 量级 25k-50k token / trace。所有 trace 加在一起每个文件约 8000 条，足够长时间跑出统计意义。
+
+想用自己的 trace？把同样格式的 jsonl 喂给 `--dataset-path` 即可：
+
+```bash
+evalscope perf ... --dataset trie_office_work --dataset-path /path/to/your_traces.jsonl
+```
+
+**必需参数**：`--tokenizer-path`（用于合成精确长度的 prompt）
+
+**使用示例**：
+
+```bash
+evalscope perf \
+  --model qwen-plus \
+  --url https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions \
+  --api-key $DASHSCOPE_API_KEY \
+  --api openai \
+  --dataset trie_office_work \
+  --multi-turn \
+  --parallel 4 \
+  --number 10 \
+  --duration 600 \
+  --tokenizer-path Qwen/Qwen2.5-7B-Instruct \
+  --extra-args '{"ignore_eos": true}' \
+  --stream
+```
+
+> **注意**：trie trace 重放依赖 `ignore_eos` 让模型严格生成到录制长度。vLLM 和 SGLang 支持此参数；DashScope / OpenAI API 等云端服务不支持，模型遇到自然 EOS 就停，实际输出会短于录制长度，但不影响 latency / cache hit / decode TPS 的正确性。
+
+## 多轮专属输出指标
+
+除了 Performance Overview 和 Per-Request Metrics 两张表外，多轮模式还会额外输出以下表格。
+
+### Per-Trace Metrics
+
+按对话（trace）维度汇总的指标，跨所有完成的对话算 mean / p50 / p90 / p99 / max：
+
+| 列 | 含义 | 这个数字异常时该看哪里 |
+|---|---|---|
+| **Latency (s)** | 对话第一 turn 开始 → 最后一 turn 完成的墙钟 | 单对话跑得慢 → 看 TTFAT 拆分（是 prefill 慢还是 decode 慢） |
+| **First-Turn TTFT (s)** | 第一 turn 的 TTFT；反映冷 prefill 性能 | 高 → 服务端 prefill 阶段慢 |
+| **TTFAT (s)** | 对话起点 → 末 turn 首 token 的墙钟，端到端「等多久能看到最终回复」 | 对话中间任何 turn 慢都会拉高 TTFAT |
+| **Decode TPS** | 对话内每 turn `(completion-1)/(latency-ttft)` 的算术平均 | 反映 decode 阶段稳态速度 |
+| **Cache Hit Rate (%)** | `sum(cached_tokens) / sum(prompt_tokens)`，含 turn 1（贡献 0 但计入分母） | 低 → 服务端 prefix cache 没开启或 evict 太激进 |
+| **Eligible Cache Hit Rate (%)** | 分母只算「理论上应能 cache 的 prefix」，剔除首 turn 与当前 turn 新增内容 | 与 Cache Hit Rate 接近且都低 → 服务端没开 cache；前者高、后者低 → cache 开了但容量不够 |
+
+同时输出 `trace_summary.json` 到结果目录。
+
+### Workload Throughput
+
+按时间维度汇总的 token 吞吐率，所有模式（单轮 / 多轮）均输出：
+
+```
+┌──────┬──────┬─────────────────────┬─────────┬──────────┬──────────────────┐
+│Conc. │ Rate │ Metric (tok/s)      │ Overall │ Last 30s │ Steady (drop 20%)│
+├──────┼──────┼─────────────────────┼─────────┼──────────┼──────────────────┤
+│   10 │    - │ Total Prompt tok/s  │  ...    │   ...    │           ...    │
+│      │      │ New Prompt tok/s    │  ...    │   ...    │           ...    │
+│      │      │ Cached Prompt tok/s │  ...    │   ...    │           ...    │
+│      │      │ Completion tok/s    │  ...    │   ...    │           ...    │
+└──────┴──────┴─────────────────────┴─────────┴──────────┴──────────────────┘
+```
+
+| 列 | 含义 |
+|---|---|
+| **Overall** | 总 tokens / wall_time，覆盖整段运行 |
+| **Last 30s** | 末 30 秒滑窗 tok/s；运行短于 30 秒时回落到 Overall |
+| **Steady (drop 20%)** | 丢前 20% wall_time 后剩余区间的 tok/s；剔除服务端冷启动阶段的影响 |
+
+| 行 | 含义 |
+|---|---|
+| Total Prompt | New Prompt + Cached Prompt |
+| New Prompt | `prompt_tokens - cached_tokens`，服务端实际算 attention 的部分 |
+| Cached Prompt | 服务端从 prefix cache 命中跳过 prefill 的部分 |
+| Completion | 输出 token 速率 |
+
+Steady-state 是评估「这个 endpoint 稳定状态下能跑多快」的最公平数字；Last 30s 适合看尾部抖动。同时输出 `workload_throughput.json` 和 `workload_timeline.json`（raw cumulative-token 时间序列，pandas 友好）到结果目录。
+
+### First-Turn vs Subsequent-Turn TTFT
+
+Per-Request Metrics 表里的 `TTFT (ms)` 是所有 turn 的均值。在多轮场景下，第一 turn 是冷 prefill，后续 turn 大量命中 prefix cache，两类 TTFT 量级可能差 2-10 倍。Per-Request Metrics 表会额外出现：
+
+- `First-Turn TTFT (ms)`
+- `Subsequent-Turn TTFT (ms)`
+
+只在多轮路径下出现；单轮压测不显示。
+
+## `--duration` 软退出
+
+多轮模式下 `--duration` 采用软退出语义：deadline 到点后**不再启动新对话**，但**已经在跑的对话会跑完所有 turn** 才退出。这保证每条对话都是完整的，不会出现被截断的对话拉偏统计。
+
+三种 cap 组合：
+
+| 命令 | 含义 |
+|---|---|
+| `--number 50` | 跑 50 个对话就停，不限时 |
+| `--duration 300` | 跑 300 秒就停，对话跑多少看运气 |
+| `--number 50 --duration 300` | 两个上限，**先到先停**（推荐） |
+
+副作用：实际 wall_time 可能略大于 `--duration`（多出来的就是 in-flight 对话跑完所需的时间）。
+
+## 常见问题
+
+### Chat template 带来的 token 差异
+
+多轮走 `/v1/chat/completions` 端点时，chat template 每轮会额外增加 10-50 个 token（role marker、special token 等），导致 Cache Hit Rate 比 raw completions 接口低 2-3pp，这是正常现象。

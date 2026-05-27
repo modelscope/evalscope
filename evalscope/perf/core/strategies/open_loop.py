@@ -1,7 +1,7 @@
 import asyncio
 import numpy as np
 import time
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.strategies.base import BenchmarkStrategy
@@ -51,10 +51,15 @@ class OpenLoopStrategy(BenchmarkStrategy):
         warmup_requests, benchmark_requests = await self._partition_requests(self._request_generator)
 
         if warmup_requests:
-            await self._run_phase(warmup_requests, is_warmup=True)
-        await self._run_phase(benchmark_requests, is_warmup=False)
+            # Warmup ignores --duration (must finish in full before timed window).
+            await self._run_phase(warmup_requests, is_warmup=True, deadline=None)
+        await self._run_phase(
+            benchmark_requests,
+            is_warmup=False,
+            deadline=self._compute_deadline(self.args.duration),
+        )
 
-    async def _run_phase(self, requests: List[dict], is_warmup: bool) -> None:
+    async def _run_phase(self, requests: List[dict], is_warmup: bool, deadline: Optional[float] = None) -> None:
         """Fire all requests in this phase and wait for all to complete.
 
         Uses absolute-time scheduling (à la vLLM ``benchmarks/serve.py``):
@@ -87,6 +92,9 @@ class OpenLoopStrategy(BenchmarkStrategy):
         if rate == -1 or n == 0:
             # Unlimited rate: fire all requests as fast as the loop allows.
             for request in requests:
+                if deadline is not None and time.perf_counter() >= deadline:
+                    logger.info('Duration deadline reached; stopping further dispatches.')
+                    break
                 task = asyncio.create_task(_send_request_open_loop(request, is_warmup, self.queue, self.client))
                 in_flight.add(task)
         else:
@@ -111,7 +119,17 @@ class OpenLoopStrategy(BenchmarkStrategy):
             #    loop, otherwise the anchor will skew.
             target_times = delay_ts + time.perf_counter()
             for i, request in enumerate(requests):
+                if deadline is not None and time.perf_counter() >= deadline:
+                    logger.info(
+                        f'Duration deadline reached after dispatching {i}/{n} requests; '
+                        'stopping further dispatches.'
+                    )
+                    break
                 sleep_s = target_times[i] - time.perf_counter()
+                # Cap the sleep at the remaining time-to-deadline so we don't
+                # sleep past the cancellation point.
+                if deadline is not None:
+                    sleep_s = min(sleep_s, deadline - time.perf_counter())
                 if sleep_s > 0:
                     await asyncio.sleep(sleep_s)
                 # If sleep_s <= 0 we are behind schedule; dispatch immediately
@@ -119,6 +137,10 @@ class OpenLoopStrategy(BenchmarkStrategy):
                 task = asyncio.create_task(_send_request_open_loop(request, is_warmup, self.queue, self.client))
                 in_flight.add(task)
 
-        # Phase barrier: wait for all in-flight requests before returning.
+        # Phase barrier: let already-fired requests finish even past the
+        # deadline (soft exit, matches trie).  The dispatch loop has already
+        # stopped firing new requests once deadline was hit above.
         if in_flight:
+            if deadline is not None and time.perf_counter() >= deadline:
+                logger.info(f'Duration deadline reached; awaiting {len(in_flight)} in-flight request(s).')
             await asyncio.gather(*in_flight, return_exceptions=True)

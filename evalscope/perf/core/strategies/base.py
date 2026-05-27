@@ -1,12 +1,16 @@
 import asyncio
+import time
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, AsyncIterator, List, Tuple
+from typing import TYPE_CHECKING, AsyncIterator, List, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
+from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from evalscope.perf.core.http_client import AioHttpClient
     from evalscope.perf.plugin.api.base import ApiPluginBase
+
+logger = get_logger()
 
 
 class BenchmarkStrategy(ABC):
@@ -44,6 +48,11 @@ class BenchmarkStrategy(ABC):
         - awaiting ``queue.join()`` after this coroutine returns.
         - setting ``data_process_completed_event`` to signal the consumer.
         """
+
+    @staticmethod
+    def _compute_deadline(duration: Optional[float]) -> Optional[float]:
+        """Translate a duration (seconds, may be ``None``) into a ``perf_counter`` deadline."""
+        return None if duration is None else time.perf_counter() + duration
 
     @staticmethod
     async def _partition_requests(gen: AsyncIterator[Tuple[dict, bool]], ) -> Tuple[List[dict], List[dict]]:

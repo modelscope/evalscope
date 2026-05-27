@@ -63,6 +63,8 @@ class BenchmarkSummary(BaseModel):
     # --- Multi-turn (optional) ---
     avg_turns: Optional[float] = Field(None, alias=Metrics.AVERAGE_INPUT_TURNS_PER_REQUEST)
     avg_cached_percent: Optional[float] = Field(None, alias=Metrics.AVERAGE_CACHED_PERCENT)
+    avg_first_turn_ttft: Optional[float] = Field(None, alias=Metrics.AVERAGE_FIRST_TURN_TTFT)
+    avg_subsequent_turn_ttft: Optional[float] = Field(None, alias=Metrics.AVERAGE_SUBSEQUENT_TURN_TTFT)
 
     # --- Speculative decoding (optional) ---
     avg_decoded_tokens_per_iter: Optional[float] = Field(None, alias=Metrics.AVERAGE_DECODED_TOKENS_PER_ITER)
@@ -146,12 +148,24 @@ class BenchmarkSummary(BaseModel):
             rows.append((Metrics.INPUT_TOKEN_THROUGHPUT, _fmt(self.input_token_throughput)))
 
         # ── Multi-turn (optional) ──
-        if self.avg_turns is not None or self.avg_cached_percent is not None:
+        multiturn_present = any(
+            v is not None for v in (
+                self.avg_turns,
+                self.avg_cached_percent,
+                self.avg_first_turn_ttft,
+                self.avg_subsequent_turn_ttft,
+            )
+        )
+        if multiturn_present:
             rows.append(('── Multi-turn ──', ''))
             if self.avg_turns is not None:
                 rows.append((Metrics.AVERAGE_INPUT_TURNS_PER_REQUEST, _fmt(self.avg_turns)))
             if self.avg_cached_percent is not None:
                 rows.append((Metrics.AVERAGE_CACHED_PERCENT, _fmt(self.avg_cached_percent)))
+            if self.avg_first_turn_ttft is not None:
+                rows.append((Metrics.AVERAGE_FIRST_TURN_TTFT, _fmt(self.avg_first_turn_ttft)))
+            if self.avg_subsequent_turn_ttft is not None:
+                rows.append((Metrics.AVERAGE_SUBSEQUENT_TURN_TTFT, _fmt(self.avg_subsequent_turn_ttft)))
 
         # ── Speculative Decoding (optional) ──
         if self.avg_decoded_tokens_per_iter is not None or self.approx_spec_acceptance_rate is not None:

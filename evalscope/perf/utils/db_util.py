@@ -6,12 +6,14 @@ import re
 import sqlite3
 import sys
 from tabulate import tabulate
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
+from evalscope.perf.utils.trace_metrics import TraceLevelSummary
+from evalscope.perf.utils.workload_timeline import WorkloadThroughput, WorkloadTimeline
 from evalscope.utils.io_utils import current_time
 from evalscope.utils.logger import get_logger
 
@@ -144,8 +146,11 @@ def calculate_percentiles(data: List[float], percentiles: List[int]) -> Dict[int
     data.sort()
     for percentile in percentiles:
         try:
-            idx = int(n_success_queries * percentile / 100)
-            value = data[idx] if data[idx] is not None else float('nan')
+            if percentile >= 100:
+                value = data[-1] if data else float('nan')
+            else:
+                idx = int(n_success_queries * percentile / 100)
+                value = data[idx] if data[idx] is not None else float('nan')
             results[percentile] = round(value, 2)
         except IndexError:
             results[percentile] = float('nan')
@@ -222,16 +227,23 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Percent
         }
 
     # Calculate percentiles for each metric and build transposed dict
-    transposed: Dict[str, list] = {PercentileMetrics.PERCENTILES: [f'{p}%' for p in percentiles]}
+    percentile_labels = [f'{p}%' for p in percentiles] + ['max']
+    all_percentiles = percentiles + [100]
+    transposed: Dict[str, list] = {PercentileMetrics.PERCENTILES: percentile_labels}
     for metric_name, data in metrics.items():
-        metric_percentiles = calculate_percentiles(data, percentiles)
-        transposed[metric_name] = [metric_percentiles[p] for p in percentiles]
+        metric_percentiles = calculate_percentiles(data, all_percentiles)
+        transposed[metric_name] = [metric_percentiles[p] for p in all_percentiles]
 
     return PercentileResult.from_transposed(transposed)
 
 
-def summary_result(args: Arguments, metrics: BenchmarkMetrics,
-                   result_db_path: str) -> Tuple['BenchmarkSummary', 'PercentileResult']:
+def summary_result(
+    args: Arguments,
+    metrics: BenchmarkMetrics,
+    result_db_path: str,
+    trace_summary: 'TraceLevelSummary' = None,
+    workload_timeline: 'WorkloadTimeline' = None,
+) -> Tuple['BenchmarkSummary', 'PercentileResult', Optional['TraceLevelSummary'], Optional['WorkloadThroughput']]:
     result_path = os.path.dirname(result_db_path)
     write_json_file(args.to_dict(), os.path.join(result_path, 'benchmark_args.json'))
 
@@ -251,12 +263,33 @@ def summary_result(args: Arguments, metrics: BenchmarkMetrics,
         table = percentile_result.to_table()
         logger.info('\nPercentile results:\n' + table)
 
+    # Per-trace summary (multi-turn only).  Skip entirely when no traces were
+    # observed so single-turn output stays unchanged.
+    if trace_summary is not None and not trace_summary.is_empty():
+        write_json_file(trace_summary.to_dict(), os.path.join(result_path, 'trace_summary.json'))
+        logger.info(f'\nPer-trace summary ({trace_summary.n_traces} traces):\n' + trace_summary.to_table())
+
+    # Workload-level throughput (Overall / Last-window / Steady-state) plus the
+    # raw cumulative-token timeline.  Surfaced for all runs - single-turn
+    # benchmarks also benefit from steady-state throughput numbers.
+    throughput: Optional[WorkloadThroughput] = None
+    if workload_timeline is not None and workload_timeline.n_points > 0:
+        candidate = workload_timeline.to_summary()
+        if not candidate.is_empty():
+            throughput = candidate
+            write_json_file(throughput.to_dict(), os.path.join(result_path, 'workload_throughput.json'))
+            write_json_file(workload_timeline.to_raw_points_dict(), os.path.join(result_path, 'workload_timeline.json'))
+            logger.info(f'\nWorkload throughput ({throughput.n_samples} samples):\n' + throughput.to_table())
+
     if args.dataset.startswith('speed_benchmark'):
         speed_benchmark_result(result_db_path)
 
     logger.info(f'Save the summary to: {result_path}')
 
-    return summary, percentile_result
+    # Return trace_summary / throughput so the rich-display layer can render
+    # them next to the per-concurrency tables.  None whenever the data was
+    # unavailable (single-turn for trace_summary, all-failed run for throughput).
+    return summary, percentile_result, trace_summary, throughput
 
 
 def speed_benchmark_result(result_db_path: str):
