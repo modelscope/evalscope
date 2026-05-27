@@ -1,9 +1,9 @@
-# Terminal-Bench-2.0
+# Terminal-Bench-2.1
 
 
 ## Overview
 
-Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 89 real-world, multi-step terminal tasks. Tasks range from compiling and debugging to system administration, running within isolated containers with rigorous validation.
+Terminal-Bench v2.1 is an improved iteration of Terminal-Bench 2.0, with 26 task fixes addressing bugs, timeout adjustments, and reward hacking prevention. Recommended over v2.0 for new evaluations.
 
 ## Task Description
 
@@ -14,8 +14,8 @@ Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 
 
 ## Key Features
 
-- 89 real-world terminal tasks
-- Multi-step task completion requirements
+- Verified iteration of Terminal-Bench 2.0 with 26 task fixes
+- Improved robustness against reward hacking
 - Isolated container execution environment
 - Binary scoring (0/1) with auto-validation
 - Multiple agent types supported (terminus-2, claude-code, codex, etc.)
@@ -33,8 +33,8 @@ Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 
 
 | Property | Value |
 |----------|-------|
-| **Benchmark Name** | `terminal_bench_v2` |
-| **Dataset ID** | [latest](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench-2/latest) |
+| **Benchmark Name** | `terminal_bench_v2_1` |
+| **Dataset ID** | [latest](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench-2-1/latest) |
 | **Paper** | N/A |
 | **Tags** | `Coding` |
 | **Metrics** | `acc` |
@@ -58,7 +58,7 @@ Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 
 {
   "input": [
     {
-      "id": "ccc0d9f5",
+      "id": "d3a63987",
       "content": ""
     }
   ],
@@ -68,11 +68,11 @@ Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 
     "path": null,
     "git_url": null,
     "git_commit_id": null,
-    "name": "terminal-bench/make-mips-interpreter",
-    "ref": "sha256:608e82ecd67ce469824a34181b580cbd0e1096cdfc05fe40edda3e6bfada9773",
+    "name": "terminal-bench/write-compressor",
+    "ref": "sha256:d9ddd9a8e925e2c566b37b2492cbf995afecefe58874e4043ef78d7f3c892c7e",
     "overwrite": false,
-    "download_dir": "/Users/yunlin/.cache/evalscope/terminal_bench_v2",
-    "source": "terminal-bench/terminal-bench-2"
+    "download_dir": "/Users/yunlin/.cache/evalscope/terminal_bench_v2_1",
+    "source": "terminal-bench/terminal-bench-2-1"
   }
 }
 ```
@@ -103,7 +103,7 @@ evalscope eval \
     --model YOUR_MODEL \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
-    --datasets terminal_bench_v2 \
+    --datasets terminal_bench_v2_1 \
     --limit 10  # Remove this line for formal evaluation
 ```
 
@@ -117,9 +117,9 @@ task_cfg = TaskConfig(
     model='YOUR_MODEL',
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
-    datasets=['terminal_bench_v2'],
+    datasets=['terminal_bench_v2_1'],
     dataset_args={
-        'terminal_bench_v2': {
+        'terminal_bench_v2_1': {
             # extra_params: {}  # uses default extra parameters
         }
     },
