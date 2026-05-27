@@ -1,0 +1,87 @@
+{
+  "meta": {
+    "pretty_name": "MiniMax-Vendor-Verifier",
+    "dataset_id": "evalscope/MiniMaxVendorVerifier",
+    "paper_url": null,
+    "tags": [
+      "FunctionCalling",
+      "Agent"
+    ],
+    "metrics": [
+      "tool_calls_match_rate",
+      "schema_accuracy",
+      "error_only_reasoning_rate",
+      "language_following_success_rate",
+      "repeat_ngram_pass_rate",
+      "scenario_check_pass_rate"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nMiniMax-Vendor-Verifier is a multi-validator deployment-correctness check for MiniMax M2 / M2.5 / M2.7 vendors. Each prompt row carries an optional ``check_type`` tag that routes it through specific validators, plus an always-on ``error_only_reasoning`` detector for the most common deployment regression. Adapted from [MiniMax-Provider-Verifier](https://github.com/MiniMax-AI/MiniMax-Provider-Verifier).\n\n## Task Description\n\n- **Task Type**: Vendor-deployment correctness check (multi-dimensional)\n- **Input**: Multi-turn chat messages with optional tool definitions, plus per-row routing tags (``check_type``, ``expected_tool_call``)\n- **Output**: Vendor's chat-completion response, scored against the validator(s) selected for that row\n- **Dispatch**: Rows without ``check_type`` default to the ``tool_calls`` validator; rows with ``check_type`` run only the listed validators\n\n## Key Features\n\n- Five upstream validators ported as pure functions:\n    - ``tool_calls`` — JSON-schema validation of arguments + array-command soundness check, plus a confusion matrix over ``expected_tool_call``\n    - ``error_only_reasoning`` (always-on) — flags responses with reasoning but no content and no tool calls (a deployment regression)\n    - ``contains_russian_characters_unicode`` — language-following check; fails when Cyrillic codepoints leak into the response\n    - ``repeat_n_gram`` — degenerate-repetition detector (any 3-gram appearing 4 or more times)\n    - ``scenario_check`` — verifies the model preserves the declared JSON property order, catching providers that re-sort ``parameters.properties``\n- Per-validator denominator in the report: ``num=0`` indicates no row in the subset triggered that validator (not a failure)\n- Hosted dataset preserves the upstream sample.jsonl plus per-loop baseline traces for M2.5 / M2.7\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation; the ``default`` subset has 102 rows\n- Metrics: **tool_calls_match_rate**, **schema_accuracy**, **error_only_reasoning_rate**, **language_following_success_rate**, **repeat_ngram_pass_rate**, **scenario_check_pass_rate**\n- Per upstream guidance, a correctly-deployed vendor should hit ``tool_calls_match_rate ≈ 0.98``, ``schema_accuracy ≥ 0.98``, ``error_only_reasoning_rate = 0``, and ``scenario_check_pass_rate = 1.0``\n- When using ``--limit``, the rarer ``check_type`` rows (scenario / repeat / language) may not all be sampled; check the per-validator ``num`` column\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "agent"
+  },
+  "statistics": {
+    "total_samples": 102,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 102,
+        "prompt_length_mean": 72251.38,
+        "prompt_length_min": 16,
+        "prompt_length_max": 341252,
+        "prompt_length_std": 79569.77,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 72251.38,
+      "min": 16,
+      "max": 341252,
+      "std": 79569.77
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-05-26T22:52:30.073627"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "6cc50a79",
+          "content": "日本ではどのような時にお年玉を渡しますか？",
+          "role": "user"
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "tools": [],
+      "metadata": {
+        "check_type": [
+          "contains_russian_characters_unicode"
+        ],
+        "expected_tool_call": null,
+        "tools_raw": []
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MiniMax-Vendor-Verifier\n\n\n## Overview\n\nMiniMax-Vendor-Verifier is a multi-validator deployment-correctness check for MiniMax M2 / M2.5 / M2.7 vendors. Each prompt row carries an optional ``check_type`` tag that routes it through specific validators, plus an always-on ``error_only_reasoning`` detector for the most common deployment regression. Adapted from [MiniMax-Provider-Verifier](https://github.com/MiniMax-AI/MiniMax-Provider-Verifier).\n\n## Task Description\n\n- **Task Type**: Vendor-deployment correctness check (multi-dimensional)\n- **Input**: Multi-turn chat messages with optional tool definitions, plus per-row routing tags (``check_type``, ``expected_tool_call``)\n- **Output**: Vendor's chat-completion response, scored against the validator(s) selected for that row\n- **Dispatch**: Rows without ``check_type`` default to the ``tool_calls`` validator; rows with ``check_type`` run only the listed validators\n\n## Key Features\n\n- Five upstream validators ported as pure functions:\n    - ``tool_calls`` — JSON-schema validation of arguments + array-command soundness check, plus a confusion matrix over ``expected_tool_call``\n    - ``error_only_reasoning`` (always-on) — flags responses with reasoning but no content and no tool calls (a deployment regression)\n    - ``contains_russian_characters_unicode`` — language-following check; fails when Cyrillic codepoints leak into the response\n    - ``repeat_n_gram`` — degenerate-repetition detector (any 3-gram appearing 4 or more times)\n    - ``scenario_check`` — verifies the model preserves the declared JSON property order, catching providers that re-sort ``parameters.properties``\n- Per-validator denominator in the report: ``num=0`` indicates no row in the subset triggered that validator (not a failure)\n- Hosted dataset preserves the upstream sample.jsonl plus per-loop baseline traces for M2.5 / M2.7\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation; the ``default`` subset has 102 rows\n- Metrics: **tool_calls_match_rate**, **schema_accuracy**, **error_only_reasoning_rate**, **language_following_success_rate**, **repeat_ngram_pass_rate**, **scenario_check_pass_rate**\n- Per upstream guidance, a correctly-deployed vendor should hit ``tool_calls_match_rate ≈ 0.98``, ``schema_accuracy ≥ 0.98``, ``error_only_reasoning_rate = 0``, and ``scenario_check_pass_rate = 1.0``\n- When using ``--limit``, the rarer ``check_type`` rows (scenario / repeat / language) may not all be sampled; check the per-validator ``num`` column\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `minimax_verifier` |\n| **Dataset ID** | [evalscope/MiniMaxVendorVerifier](https://modelscope.cn/datasets/evalscope/MiniMaxVendorVerifier/summary) |\n| **Paper** | N/A |\n| **Tags** | `Agent`, `FunctionCalling` |\n| **Metrics** | `tool_calls_match_rate`, `schema_accuracy`, `error_only_reasoning_rate`, `language_following_success_rate`, `repeat_ngram_pass_rate`, `scenario_check_pass_rate` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 102 |\n| Prompt Length (Mean) | 72251.38 chars |\n| Prompt Length (Min/Max) | 16 / 341252 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"6cc50a79\",\n      \"content\": \"日本ではどのような時にお年玉を渡しますか？\",\n      \"role\": \"user\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"tools\": [],\n  \"metadata\": {\n    \"check_type\": [\n      \"contains_russian_characters_unicode\"\n    ],\n    \"expected_tool_call\": null,\n    \"tools_raw\": []\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets minimax_verifier \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['minimax_verifier'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MiniMax-Vendor-Verifier\n\n\n## 概述\n\nMiniMax-Vendor-Verifier 是一个用于验证 MiniMax M2 / M2.5 / M2.7 供应商部署正确性的多验证器基准测试。每条提示行可携带一个可选的 ``check_type`` 标签，用于路由到特定的验证器；此外还始终启用 ``error_only_reasoning`` 检测器，以捕获最常见的部署回归问题。本基准测试改编自 [MiniMax-Provider-Verifier](https://github.com/MiniMax-AI/MiniMax-Provider-Verifier)。\n\n## 任务描述\n\n- **任务类型**：供应商部署正确性检查（多维度）\n- **输入**：多轮对话消息（可选工具定义）以及每行的路由标签（``check_type``、``expected_tool_call``）\n- **输出**：供应商的聊天补全响应，并根据该行所选的验证器进行评分\n- **分发逻辑**：未指定 ``check_type`` 的行默认使用 ``tool_calls`` 验证器；指定了 ``check_type`` 的行仅运行所列的验证器\n\n## 核心特性\n\n- 移植了五个上游验证器作为纯函数：\n    - ``tool_calls`` — 对参数进行 JSON Schema 验证，并检查数组命令的合理性，同时基于 ``expected_tool_call`` 生成混淆矩阵\n    - ``error_only_reasoning``（始终启用）— 标记包含推理但无内容且无工具调用的响应（一种部署回归问题）\n    - ``contains_russian_characters_unicode`` — 语言遵循性检查；当响应中出现西里尔字符时判定为失败\n    - ``repeat_n_gram`` — 退化重复检测器（任意 3-gram 出现 4 次或以上即视为失败）\n    - ``scenario_check`` — 验证模型是否保留声明的 JSON 属性顺序，用于发现会重新排序 ``parameters.properties`` 的供应商\n- 报告中每个验证器的分母：``num=0`` 表示该子集中没有行触发此验证器（并非失败）\n- 托管数据集保留了上游的 sample.jsonl 文件，以及 M2.5 / M2.7 的每轮基线追踪数据\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估；``default`` 子集包含 102 行\n- 评估指标：**tool_calls_match_rate**、**schema_accuracy**、**error_only_reasoning_rate**、**language_following_success_rate**、**repeat_ngram_pass_rate**、**scenario_check_pass_rate**\n- 根据上游指导，正确部署的供应商应达到：``tool_calls_match_rate ≈ 0.98``、``schema_accuracy ≥ 0.98``、``error_only_reasoning_rate = 0`` 以及 ``scenario_check_pass_rate = 1.0``\n- 使用 ``--limit`` 时，较稀有的 ``check_type`` 行（scenario / repeat / language）可能不会全部被采样；请检查各验证器对应的 ``num`` 列\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `minimax_verifier` |\n| **数据集ID** | [evalscope/MiniMaxVendorVerifier](https://modelscope.cn/datasets/evalscope/MiniMaxVendorVerifier/summary) |\n| **论文** | N/A |\n| **标签** | `Agent`, `FunctionCalling` |\n| **指标** | `tool_calls_match_rate`, `schema_accuracy`, `error_only_reasoning_rate`, `language_following_success_rate`, `repeat_ngram_pass_rate`, `scenario_check_pass_rate` |\n| **默认 Shots** | 0-shot |\n| **评估分割** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 102 |\n| 提示词长度（平均） | 72251.38 字符 |\n| 提示词长度（最小/最大） | 16 / 341252 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"6cc50a79\",\n      \"content\": \"日本ではどのような時にお年玉を渡しますか？\",\n      \"role\": \"user\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"tools\": [],\n  \"metadata\": {\n    \"check_type\": [\n      \"contains_russian_characters_unicode\"\n    ],\n    \"expected_tool_call\": null,\n    \"tools_raw\": []\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets minimax_verifier \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['minimax_verifier'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "53b16d7af1804ce7c5d9b958e96c960a",
+    "needs_translation": false
+  },
+  "updated_at": "2026-05-26T22:52:30.516097",
+  "translation_updated_at": "2026-05-26T22:52:34"
+}

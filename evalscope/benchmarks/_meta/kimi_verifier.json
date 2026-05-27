@@ -1,0 +1,103 @@
+{
+  "meta": {
+    "pretty_name": "Kimi-Vendor-Verifier (Param Compliance)",
+    "dataset_id": "kimi_verifier",
+    "paper_url": null,
+    "tags": [
+      "FunctionCalling",
+      "Agent"
+    ],
+    "metrics": [
+      "param_immutable_reject_rate",
+      "param_default_accept_rate",
+      "inference_error_rate"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "kimi",
+      "opensource",
+      "none"
+    ],
+    "description": "\n## Overview\n\nKimi-Vendor-Verifier is a pre-flight compliance check for Kimi K2 / K2-Thinking deployments. It sends synthetic probe requests to verify that the vendor API correctly **rejects** non-default values of immutable decoding parameters (``temperature``, ``top_p``, ``presence_penalty``, ``frequency_penalty``, ``n``) and **accepts** their defaults. A vendor that silently accepts wrong values risks producing degraded model output that does not match official Moonshot AI behavior. Adapted from [Kimi-Vendor-Verifier/verify_params.py](https://github.com/MoonshotAI/Kimi-Vendor-Verifier/blob/main/verify_params.py).\n\n## Task Description\n\n- **Task Type**: API parameter-compliance probing (deployment health check)\n- **Input**: A minimal chat message plus a single test parameter and thinking-mode `extra_body`\n- **Output**: Whether the vendor accepted (HTTP 200) or rejected (HTTP 400) the request\n- **Dataset**: Fully synthetic — no external dataset is downloaded; probes are generated in code from the K2 spec\n\n## Key Features\n\n- Synthetic probe set: one ``no_param`` sanity probe + 5 default-value (accept) probes + 5 wrong-value (reject) probes per (subset × thinking) combination\n- Three subsets covering all common Kimi deployment shapes:\n    - ``kimi`` — official Moonshot SaaS API (``extra_body = {\"thinking\": {\"type\": ...}}``); thinking on/off\n    - ``opensource`` — vLLM / SGLang / KTransformers chat-template hook (``extra_body = {\"chat_template_kwargs\": {\"thinking\": ...}}``); thinking on/off\n    - ``none`` — non-hybrid model; no thinking parameter sent\n- HTTP 400 responses are treated as the success signal when a reject was expected\n- Single small request per probe; total cost is negligible compared to a full benchmark\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** synthetic probes\n- Metrics: **param_immutable_reject_rate**, **param_default_accept_rate**, **inference_error_rate**\n- Only HTTP 400 (``BadRequestError``) counts as a real parameter rejection; transport errors (5xx / timeout / 429) are excluded from the reject/accept denominators and surfaced via ``inference_error_rate`` so a flaky vendor doesn't get a free pass\n- A correctly-deployed Kimi K2 vendor should report both rate metrics at **1.0** with ``inference_error_rate = 0``; anything less indicates a parameter-enforcement gap or transport instability\n- For non-Kimi models, expect ``param_immutable_reject_rate = 0`` (no K2 spec to enforce) and ``param_default_accept_rate = 1.0`` (sensible defaults accepted)\n- Select subset via ``dataset_args={'kimi_verifier': {'subset_list': ['kimi']}}`` (or ``opensource`` / ``none``)\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "agent"
+  },
+  "statistics": {
+    "total_samples": 55,
+    "subset_stats": [
+      {
+        "name": "kimi",
+        "sample_count": 22,
+        "prompt_length_mean": 26,
+        "prompt_length_min": 26,
+        "prompt_length_max": 26,
+        "prompt_length_std": null,
+        "target_length_mean": null
+      },
+      {
+        "name": "opensource",
+        "sample_count": 22,
+        "prompt_length_mean": 26,
+        "prompt_length_min": 26,
+        "prompt_length_max": 26,
+        "prompt_length_std": null,
+        "target_length_mean": null
+      },
+      {
+        "name": "none",
+        "sample_count": 11,
+        "prompt_length_mean": 26,
+        "prompt_length_min": 26,
+        "prompt_length_max": 26,
+        "prompt_length_std": null,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 26,
+      "min": 26,
+      "max": 26,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-05-26T23:30:17.223340"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "03c069db",
+          "content": "Say 'OK' and nothing else."
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "kimi",
+      "metadata": {
+        "think_mode": "kimi",
+        "thinking": false,
+        "param_name": null,
+        "test_value": null,
+        "expected_reject": false
+      }
+    },
+    "subset": "kimi",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# Kimi-Vendor-Verifier (Param Compliance)\n\n\n## Overview\n\nKimi-Vendor-Verifier is a pre-flight compliance check for Kimi K2 / K2-Thinking deployments. It sends synthetic probe requests to verify that the vendor API correctly **rejects** non-default values of immutable decoding parameters (``temperature``, ``top_p``, ``presence_penalty``, ``frequency_penalty``, ``n``) and **accepts** their defaults. A vendor that silently accepts wrong values risks producing degraded model output that does not match official Moonshot AI behavior. Adapted from [Kimi-Vendor-Verifier/verify_params.py](https://github.com/MoonshotAI/Kimi-Vendor-Verifier/blob/main/verify_params.py).\n\n## Task Description\n\n- **Task Type**: API parameter-compliance probing (deployment health check)\n- **Input**: A minimal chat message plus a single test parameter and thinking-mode `extra_body`\n- **Output**: Whether the vendor accepted (HTTP 200) or rejected (HTTP 400) the request\n- **Dataset**: Fully synthetic — no external dataset is downloaded; probes are generated in code from the K2 spec\n\n## Key Features\n\n- Synthetic probe set: one ``no_param`` sanity probe + 5 default-value (accept) probes + 5 wrong-value (reject) probes per (subset × thinking) combination\n- Three subsets covering all common Kimi deployment shapes:\n    - ``kimi`` — official Moonshot SaaS API (``extra_body = {\"thinking\": {\"type\": ...}}``); thinking on/off\n    - ``opensource`` — vLLM / SGLang / KTransformers chat-template hook (``extra_body = {\"chat_template_kwargs\": {\"thinking\": ...}}``); thinking on/off\n    - ``none`` — non-hybrid model; no thinking parameter sent\n- HTTP 400 responses are treated as the success signal when a reject was expected\n- Single small request per probe; total cost is negligible compared to a full benchmark\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** synthetic probes\n- Metrics: **param_immutable_reject_rate**, **param_default_accept_rate**, **inference_error_rate**\n- Only HTTP 400 (``BadRequestError``) counts as a real parameter rejection; transport errors (5xx / timeout / 429) are excluded from the reject/accept denominators and surfaced via ``inference_error_rate`` so a flaky vendor doesn't get a free pass\n- A correctly-deployed Kimi K2 vendor should report both rate metrics at **1.0** with ``inference_error_rate = 0``; anything less indicates a parameter-enforcement gap or transport instability\n- For non-Kimi models, expect ``param_immutable_reject_rate = 0`` (no K2 spec to enforce) and ``param_default_accept_rate = 1.0`` (sensible defaults accepted)\n- Select subset via ``dataset_args={'kimi_verifier': {'subset_list': ['kimi']}}`` (or ``opensource`` / ``none``)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `kimi_verifier` |\n| **Dataset ID** | `kimi_verifier` |\n| **Paper** | N/A |\n| **Tags** | `Agent`, `FunctionCalling` |\n| **Metrics** | `param_immutable_reject_rate`, `param_default_accept_rate`, `inference_error_rate` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 55 |\n| Prompt Length (Mean) | 26 chars |\n| Prompt Length (Min/Max) | 26 / 26 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `kimi` | 22 | 26 | 26 | 26 |\n| `opensource` | 22 | 26 | 26 | 26 |\n| `none` | 11 | 26 | 26 | 26 |\n\n## Sample Example\n\n**Subset**: `kimi`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"03c069db\",\n      \"content\": \"Say 'OK' and nothing else.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"kimi\",\n  \"metadata\": {\n    \"think_mode\": \"kimi\",\n    \"thinking\": false,\n    \"param_name\": null,\n    \"test_value\": null,\n    \"expected_reject\": false\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets kimi_verifier \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['kimi_verifier'],\n    dataset_args={\n        'kimi_verifier': {\n            # subset_list: ['kimi', 'opensource', 'none']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Kimi-Vendor-Verifier (Param Compliance)\n\n\n## 概述\n\nKimi-Vendor-Verifier 是 Kimi K2 / K2-Thinking 部署的预检合规性检查工具。它会发送合成探测请求，验证供应商 API 是否正确**拒绝**不可变解码参数（``temperature``、``top_p``、``presence_penalty``、``frequency_penalty``、``n``）的非默认值，并**接受**其默认值。若供应商静默接受错误值，则可能导致模型输出质量下降，无法匹配官方 Moonshot AI 的行为。该工具改编自 [Kimi-Vendor-Verifier/verify_params.py](https://github.com/MoonshotAI/Kimi-Vendor-Verifier/blob/main/verify_params.py)。\n\n## 任务描述\n\n- **任务类型**：API 参数合规性探测（部署健康检查）\n- **输入**：一条最小化聊天消息，加上一个测试参数和 thinking-mode 的 ``extra_body``\n- **输出**：供应商是否接受（HTTP 200）或拒绝（HTTP 400）该请求\n- **数据集**：完全合成 —— 无需下载外部数据集；探测请求根据 K2 规范在代码中生成\n\n## 核心特性\n\n- 合成探测集：每个（子集 × thinking）组合包含一个 ``no_param`` 健康探测 + 5 个默认值（应接受）探测 + 5 个错误值（应拒绝）探测\n- 三个子集覆盖所有常见的 Kimi 部署形态：\n    - ``kimi`` —— 官方 Moonshot SaaS API（``extra_body = {\"thinking\": {\"type\": ...}}``）；开启/关闭 thinking\n    - ``opensource`` —— vLLM / SGLang / KTransformers 的 chat-template 钩子（``extra_body = {\"chat_template_kwargs\": {\"thinking\": ...}}``）；开启/关闭 thinking\n    - ``none`` —— 非混合模型；不发送 thinking 参数\n- 当预期应拒绝时，HTTP 400 响应被视为成功信号\n- 每个探测仅发送一个小型请求；总开销相比完整基准测试可忽略不计\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 合成探测\n- 指标：**param_immutable_reject_rate**、**param_default_accept_rate**、**inference_error_rate**\n- 仅 HTTP 400（``BadRequestError``）被视为真正的参数拒绝；传输错误（5xx / 超时 / 429）不计入拒绝/接受的分母，而是通过 ``inference_error_rate`` 单独体现，避免不稳定的供应商获得“免费通行证”\n- 正确部署的 Kimi K2 供应商应报告两个比率指标均为 **1.0**，且 ``inference_error_rate = 0``；任何低于此标准的结果均表明存在参数强制执行漏洞或传输不稳定\n- 对于非 Kimi 模型，预期 ``param_immutable_reject_rate = 0``（无 K2 规范可强制执行），而 ``param_default_accept_rate = 1.0``（合理默认值被接受）\n- 可通过 ``dataset_args={'kimi_verifier': {'subset_list': ['kimi']}}``（或 ``opensource`` / ``none``）选择子集\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `kimi_verifier` |\n| **数据集ID** | `kimi_verifier` |\n| **论文** | N/A |\n| **标签** | `Agent`, `FunctionCalling` |\n| **指标** | `param_immutable_reject_rate`, `param_default_accept_rate`, `inference_error_rate` |\n| **默认Shots** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 55 |\n| 提示词长度（平均） | 26 字符 |\n| 提示词长度（最小/最大） | 26 / 26 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `kimi` | 22 | 26 | 26 | 26 |\n| `opensource` | 22 | 26 | 26 | 26 |\n| `none` | 11 | 26 | 26 | 26 |\n\n## 样例示例\n\n**子集**: `kimi`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"03c069db\",\n      \"content\": \"Say 'OK' and nothing else.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"kimi\",\n  \"metadata\": {\n    \"think_mode\": \"kimi\",\n    \"thinking\": false,\n    \"param_name\": null,\n    \"test_value\": null,\n    \"expected_reject\": false\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets kimi_verifier \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['kimi_verifier'],\n    dataset_args={\n        'kimi_verifier': {\n            # subset_list: ['kimi', 'opensource', 'none']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "adeed7ad33f06857693684e87eaef2a1",
+    "needs_translation": false
+  },
+  "updated_at": "2026-05-26T23:30:17.224036",
+  "translation_updated_at": "2026-05-26T23:30:19"
+}

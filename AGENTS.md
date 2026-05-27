@@ -21,6 +21,25 @@ pytest tests/perf/test_perf_basic.py::TestPerfBasic::test_multi_parallel_sweep -
 
 Commits failing `make lint` are rejected on `main`.
 
+## Docs generation
+
+Benchmark detail pages (`docs/{zh,en}/benchmarks/<name>.md`) and meta cache (`evalscope/benchmarks/_meta/<name>.json`) are **auto-generated** from each adapter's `BenchmarkMeta.description` + dataset statistics. Do not hand-edit those files.
+
+When you add a benchmark or change its `BenchmarkMeta.description`, run:
+
+```bash
+make docs-pipeline BENCHMARK="<name1> <name2>" FORCE=1   # update _meta JSON + translate descriptions to zh
+make docs-generate                                        # render .md files from _meta
+```
+
+Targets: `docs-update` (meta only), `docs-update-stats` (+ dataset statistics), `docs-translate` (zh), `docs-pipeline` (stats + translate), `docs-generate` (.md), `docs` (full Sphinx HTML build).
+
+Conventions:
+- `BENCHMARK="a b c"` selects benchmarks; omit for `--all`.
+- `FORCE=1` appends `--force` to recompute even if data is cached.
+- `WORKERS=N` parallelism (default 4).
+- `--translate` calls an LLM; needs `DASHSCOPE_API_KEY` (or equivalent) in env.
+
 ## Quick eval
 
 ```bash
