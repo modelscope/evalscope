@@ -26,7 +26,7 @@ MAX_IMAGE_SIDE = 4096
 MAX_IMAGE_BYTES = 1_500_000
 SAFE_RAW_IMAGE_BYTES = 1_000_000
 
-SUBSET_LIST = ['IE', 'VQA', 'parsing', 'spotting', 'json1', 'json2']
+SUBSET_LIST = ['IE', 'VQA', 'parsing', 'json1', 'json2']
 
 TASK_TYPE_MAP = {
     'vqa': 'VQA',
@@ -34,7 +34,6 @@ TASK_TYPE_MAP = {
     'ie': 'IE',
     'parsing': 'parsing',
     'translate': 'parsing',
-    'spotting': 'spotting',
     'json1': 'json1',
     'json2': 'json2',
     'spotting_v1': 'json1',
@@ -55,14 +54,13 @@ TASK_TYPE_MAP = {
 ## Overview
 
 Maritime-OCR-Bench is a comprehensive evaluation benchmark for assessing multimodal large model capabilities
-on OCR-related tasks. It covers six task types with 600 manually curated samples (100 per type).
+on OCR-related tasks. The current released set contains 1,888 manually curated samples across five task types.
 
 ## Task Types
 
 - **VQA**: Visual question answering on document/scene images
 - **IE**: Information extraction requiring strict JSON output
 - **parsing**: Text recognition and parsing from images
-- **spotting**: Text detection with quad coordinates (legacy format)
 - **json1**: Text spotting with JSON v1 structured output
 - **json2**: Text spotting with JSON v2 structured output
 
@@ -71,9 +69,9 @@ on OCR-related tasks. It covers six task types with 600 manually curated samples
 Each task type uses a specialized scoring method:
 - VQA/parsing: Multi-dimensional text similarity (edit distance, char F1, LCS F1, table-aware similarity)
 - IE: Text coverage + JSON strictness (0.5 * coverage + 0.5 * json_strict)
-- spotting/json1/json2: DIoU layout score + text score (0.7 * diou + 0.3 * text)
+- json1/json2: DIoU layout score + text score (0.7 * diou + 0.3 * text)
 """,
-        dataset_id='/home/zhy/projects/MaritimeOCRBench/maritime_ocr_bench.jsonl',
+        dataset_id='/home/zhy/projects/MaritimeOCRBench/eval_all_task_0522_1888_copied.jsonl',
         subset_list=SUBSET_LIST,
         metric_list=['score'],
         eval_split='test',
@@ -189,7 +187,9 @@ class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
                 logger.warning(f'Image not found: {image_path}')
 
         # Normalize task type
-        normalized_type = TASK_TYPE_MAP.get(str(task_type).strip().lower(), 'VQA')
+        normalized_type = TASK_TYPE_MAP.get(str(task_type).strip().lower())
+        if normalized_type is None:
+            raise ValueError(f'Unsupported maritime_ocr_bench task_type: {task_type}')
 
         return Sample(
             input=[ChatMessageUser(content=content_list)],
@@ -219,15 +219,7 @@ class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
         completion = filtered_prediction
         solution = reference
 
-        if task_type == 'spotting':
-            metrics = evaluate_spotting_sample(
-                completion=completion,
-                solution=solution,
-                expected_format='legacy',
-            )
-            score_value = float(metrics['overall_score'])
-
-        elif task_type == 'json1':
+        if task_type == 'json1':
             metrics = evaluate_spotting_sample(
                 completion=completion,
                 solution=solution,
