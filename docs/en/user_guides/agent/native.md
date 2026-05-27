@@ -6,9 +6,14 @@ Turn a regular benchmark (GSM8K, AIME, IFEval, SWE-bench, …) into a **multi-tu
 
 ## When to use
 
-- Check whether a model uses `python_exec` to verify its arithmetic on math problems.
-- Let a ReAct-style model freely explore with the `bash` tool.
-- Benchmark a model's multi-step interaction ability on SWE-bench and similar code-fix tasks.
+- **Evaluate a model's multi-step reasoning and tool-use ability**
+  Example: does qwen-plus proactively call `python_exec` to verify arithmetic on GSM8K? Can it reason step-by-step and self-check on AIME?
+
+- **Let a model autonomously explore code-fix tasks**
+  Example: on SWE-bench, give the model a `bash` tool to read code, run tests, and submit patches — no human in the loop.
+
+- **Plug in MCP ecosystem tools to expand model capabilities**
+  Example: attach `fetch`, Brave Search, or other MCP servers so the model can search the web when running benchmarks like GAIA.
 
 ## Quick start
 
@@ -40,58 +45,44 @@ run_task(task_config)
 
 EvalScope auto-injects the `python_exec` tool definition into the model's context, executes the generated Python in a Docker container, feeds stdout/stderr back as an observation, and loops until the model uses `submit` to deliver its answer.
 
-## Three core components
-
-Every AgentLoop is composed of three pieces, configured on `NativeAgentConfig`:
-
-**Strategy** — how the model talks to the loop:
-
-| Name | Use when |
-|------|----------|
-| `function_calling` (default) | The model supports native function calling |
-| `react` | Reasoning-first; let the model think before acting |
-| `swe_bench_toolcall` | SWE-bench tool-call protocol (model supports function calling) |
-| `swe_bench_backticks` | SWE-bench backticks text protocol (model lacks function calling) |
-
-**Tools** — whitelist of capabilities exposed to the model:
-
-| Name | Description |
-|------|-------------|
-| `bash` | Run shell commands |
-| `python_exec` | Run Python code |
-| `submit` | Submit the final answer (auto-injected by `function_calling` / `react`; do not configure manually) |
-
-**Environment** — where tools actually execute:
-
-| Name | Description |
-|------|-------------|
-| `local` | Host subprocess, no filesystem isolation — **dev / debug only** |
-| `docker` | Container backed by [ms-enclave](https://github.com/modelscope/ms-enclave); recommended for production |
-
 ## Common configuration
 
 Most-used `NativeAgentConfig` fields:
 
 | Field | Description | Recommended |
 |-------|-------------|-------------|
-| `strategy` | Which interaction protocol | `function_calling` (default) |
+| `strategy` | Interaction protocol | `function_calling` (default); use `react` or `swe_bench_backticks` if the model lacks function-calling |
 | `tools` | Tool whitelist | On demand, e.g. `['python_exec']` / `['bash']` |
 | `environment` | Where tools run | `local` (dev) / `docker` (production) |
 | `environment_extra` | Sandbox constructor kwargs | For `docker`: `{'image': '...', 'timeout': 60}`; see [Sandbox Environment](../sandbox.md) |
 | `max_steps` | Max iterations per sample | Math/QA `5-10`, code fixes `100+` |
-| `extra` | Strategy kwargs | Most commonly `{'system_prompt': '...'}` to steer the model |
+| `kwargs` | Strategy kwargs | Most commonly `{'system_prompt': '...'}` to steer the model |
+
+Available `strategy` values:
+
+| Name | Use when |
+|------|----------|
+| `function_calling` (default) | The model supports native function calling |
+| `react` | Reasoning-first; let the model think before acting |
+| `swe_bench_toolcall` | SWE-bench tool-call protocol |
+| `swe_bench_backticks` | SWE-bench backticks text protocol (model lacks function calling) |
+
+Available tools (`tools`):
+
+| Name | Description |
+|------|-------------|
+| `bash` | Run shell commands |
+| `python_exec` | Run Python code |
+| `submit` | Submit the final answer (auto-injected; do not configure manually) |
 
 ```{tip}
-- `local` has no isolation; use `docker` in production.
+- `local` has no filesystem isolation; use `docker` in production.
 - `agent_config` also accepts a plain dict; `TaskConfig` converts it to `NativeAgentConfig` automatically.
-- With `docker` you reuse the [sandbox infrastructure](../sandbox.md); you may explicitly set `TaskConfig.sandbox = SandboxTaskConfig(enabled=True, engine='docker')`.
 ```
 
 ## MCP server tools
 
-Beyond the built-in tools (`bash` / `python_exec` / ...), `NativeAgentConfig` accepts arbitrary [MCP (Model Context Protocol)](https://modelcontextprotocol.io) servers via `mcp_servers`. Their advertised tools are merged into the loop's tool set alongside the benchmark-native tools — **no benchmark-side change required**.
-
-This is how to plug in `fetch`, web search, GitHub, filesystem and the rest of the MCP ecosystem without writing a custom EvalScope tool.
+Beyond the built-in tools, `NativeAgentConfig` accepts arbitrary [MCP (Model Context Protocol)](https://modelcontextprotocol.io) servers via `mcp_servers` — plug in `fetch`, web search, GitHub, and the rest of the MCP ecosystem without writing a custom EvalScope tool.
 
 ### Install
 
@@ -99,17 +90,17 @@ This is how to plug in `fetch`, web search, GitHub, filesystem and the rest of t
 pip install evalscope[mcp]
 ```
 
-`evalscope[mcp]` bundles the official `mcp` Python SDK plus `mcp-server-fetch` (universal HTTP fetching, no API key). Other MCP servers — e.g. `mcp-server-brave-search`, `mcp-server-github`, `mcp-server-filesystem`, `mcp-server-puppeteer` — install on top via plain `pip install <name>` or run on demand through `uvx <name>` / `npx <name>`.
-
-The `mcp` Python SDK is imported lazily, so configurations with empty `mcp_servers` (the default) need no extra install at runtime.
+`evalscope[mcp]` bundles the official `mcp` Python SDK plus `mcp-server-fetch` (universal HTTP fetching, no API key). Other MCP servers can be installed on demand or run via `uvx` / `npx`.
 
 ### Quick start
+
+Attach HTTP fetching and a remote MCP tool to a GAIA evaluation:
 
 ```python
 import sys
 from evalscope import TaskConfig, run_task
 from evalscope.api.agent import NativeAgentConfig
-from evalscope.api.agent.mcp import MCPServerConfigStdio, MCPServerConfigHTTP, MCPServerConfigSSE
+from evalscope.api.agent.mcp import MCPServerConfigStdio, MCPServerConfigHTTP
 
 task_config = TaskConfig(
     model='qwen3-max',
@@ -118,31 +109,17 @@ task_config = TaskConfig(
     datasets=['gaia'],
     agent_config=NativeAgentConfig(
         mcp_servers=[
-            # Stdio: spawn a local Python MCP server.
+            # Spawn a local MCP server process
             MCPServerConfigStdio(
                 command=sys.executable,
                 args=['-m', 'mcp_server_fetch', '--ignore-robots-txt'],
                 name='fetch',
             ),
-            # Stdio: use uvx so end users don't have to pip-install first.
-            MCPServerConfigStdio(
-                command='uvx',
-                args=['mcp-server-brave-search'],
-                env={'BRAVE_API_KEY': 'sk-...'},
-                name='brave_search',
-            ),
-            # Streamable HTTP: connect to a remote MCP endpoint (recommended).
-            # Example: ModelScope MCP marketplace, URLs usually end in /mcp.
+            # Connect to a remote MCP endpoint
             MCPServerConfigHTTP(
                 url='https://mcp.api-inference.modelscope.net/<server-id>/mcp',
-                headers={'Authorization': 'Bearer <MODELSCOPE_SDK_TOKEN>'},
-                name='ms_fetch',
-            ),
-            # SSE: legacy MCP HTTP transport, URLs usually end in /sse.
-            MCPServerConfigSSE(
-                url='https://mcp.api-inference.modelscope.net/<server-id>/sse',
-                headers={'Authorization': 'Bearer <MODELSCOPE_SDK_TOKEN>'},
-                name='ms_fetch_sse',
+                headers={'Authorization': 'Bearer <TOKEN>'},
+                name='modelscope_tool',
             ),
         ],
     ),
@@ -152,39 +129,25 @@ task_config = TaskConfig(
 run_task(task_config)
 ```
 
-```{tip}
-**Streamable HTTP vs SSE**: Streamable HTTP is the newer MCP HTTP transport; SSE is the legacy one. The two endpoints are functionally equivalent — when both are offered prefer `/mcp` (Streamable HTTP). `MCPServerConfigSSE` is mainly for older servers that only expose `/sse`.
-```
+Once configured, the model sees both built-in tools and every tool advertised by the MCP servers, picking them by name. If an MCP tool call fails, the error is fed back to the model so it can retry — the evaluation loop keeps running.
 
-Inside the agent loop the model now sees `bash`, `submit`, **and** every tool the MCP servers advertised (e.g. `fetch`, `brave_web_search`). It picks tools by name as usual.
+### Connection methods
 
-### Configuration
+EvalScope supports three MCP transports:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `command` (stdio) | str | Executable to spawn (`sys.executable` / `uvx` / `npx` / absolute path). |
-| `args` (stdio) | list[str] | Arguments passed to `command`. |
-| `env` (stdio) | dict[str, str] | Extra environment variables for the child process. |
-| `cwd` (stdio) | str | Working directory for the child. |
-| `url` (http / sse) | str | Streamable HTTP endpoint (`http`) or SSE endpoint (`sse`). |
-| `headers` (http / sse) | dict[str, str] | HTTP headers (typically auth). |
-| `timeout` (http) | float | HTTP read timeout in seconds (default `30.0`). |
-| `timeout` (sse) | float | HTTP timeout in seconds for non-streaming ops (default `5.0`). |
-| `sse_read_timeout` (sse) | float | Seconds to wait for the next SSE event before disconnecting (default `300.0`). |
-| `name` | str | Display name used in logs and the trace UI. Defaults to `command` / `url`. |
-| `tools` | `'all'` or list[str] | Whitelist; `'all'` (default) exposes every tool the server advertises. |
+| Config class | When to use | Key parameters |
+|--------------|------------|----------------|
+| `MCPServerConfigStdio` | Spawn a local MCP server process | `command`, `args`, `env` |
+| `MCPServerConfigHTTP` | Connect to a remote Streamable HTTP endpoint (recommended) | `url`, `headers` |
+| `MCPServerConfigSSE` | Connect to a legacy SSE endpoint | `url`, `headers` |
+
+All config classes share `name` (display name in logs) and `tools` (tool whitelist, defaults to `'all'`). For the full parameter list, see the [source](https://github.com/modelscope/evalscope/tree/main/evalscope/api/agent/mcp).
 
 ```{tip}
-- `python -m mcp_server_<x>` after `pip install` is the most deterministic for CI/tests — no per-run package fetch.
+- For CI/production, prefer `python -m mcp_server_<x>` after `pip install` — no per-run package fetch.
 - `uvx mcp-server-<x>` is convenient for ad-hoc runs; first call downloads the package.
-- For benchmarks that already drive their own loop (`AgentLoopAdapter` subclasses like GAIA / SWE-bench-agentic), MCP servers from the global `agent_config` are still picked up via `agent_config.mcp_servers` and merged into the loop's tool set.
+- When a remote service offers both `/mcp` and `/sse`, prefer `/mcp` (Streamable HTTP).
 ```
-
-### Trace / debugging
-
-Each MCP server logs `MCPServer[<name>]: initialised` / `closed` when it starts and stops. Tool calls appear in `agent_trace.events` like any other `tool_call` / `tool_result` pair, with the MCP-advertised tool `name`.
-
-If a MCP tool call fails, the observation comes back as `[error] <body>` so the model can recover and try a different approach without crashing the loop.
 
 ## SWE-bench agentic benchmarks
 
@@ -200,7 +163,7 @@ task_config = TaskConfig(
     dataset_args={
         'swe_bench_verified_mini_agentic': {
             'extra_params': {
-                'action_protocol': 'toolcall',  # or 'backticks' if the model lacks function calling
+                'action_protocol': 'toolcall',  # or 'backticks'
                 'max_steps': 250,
                 'command_timeout': 60.0,
             },
@@ -212,10 +175,10 @@ task_config = TaskConfig(
 run_task(task_config)
 ```
 
-Common `extra_params` keys: `action_protocol`, `max_steps`, `command_timeout`, `working_dir`, `build_docker_images`, `pull_remote_images_if_available`, `force_arch`. Full reference in the [SWE-bench dataset docs](../../third_party/swe_bench.md).
+Common `extra_params` keys: `action_protocol`, `max_steps`, `command_timeout`, `working_dir`. Full reference in the [SWE-bench dataset docs](../../third_party/swe_bench.md).
 
 ```{important}
-Prerequisites: `pip install evalscope[swe_bench]`, Docker installed locally. A globally configured `agent_config` is **ignored** for these benchmarks.
+Prerequisites: `pip install evalscope[swe_bench]`, Docker installed locally.
 ```
 
 ## FAQ
@@ -223,9 +186,8 @@ Prerequisites: `pip install evalscope[swe_bench]`, Docker installed locally. A g
 **The model never calls any tool**
 
 1. Check tool-name spelling in `tools`.
-2. Confirm the model supports function calling; if not, switch to a text protocol like `swe_bench_backticks`.
-3. Inspect `agent_trace.events` for `nudge` (system already reminded the model) or `error` (parse / execution failure).
-4. Use `kwargs={'system_prompt': '...'}` to explicitly require a specific tool.
+2. Confirm the model supports function calling; if not, switch to a text protocol like `react` or `swe_bench_backticks`.
+3. Use `kwargs={'system_prompt': '...'}` to explicitly steer the model toward tool use.
 
 **How big should `max_steps` be?**
 
