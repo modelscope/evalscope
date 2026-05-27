@@ -1,7 +1,7 @@
 import json
 import os
 from collections import defaultdict
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from evalscope.api.metric import Aggregator, AggScore, Metric, SampleScore, SingletonMetric, T2IMetric
 from evalscope.api.registry import register_aggregation, register_metric
@@ -161,6 +161,166 @@ class WER(Metric):
         from .text_normalizer.wer import wer
 
         return [wer([ref], [pred], self.language) for pred, ref in zip(predictions, references)]
+
+
+@register_metric(name='audio_wer')
+class AudioWER(Metric):
+    """WER metric for generated audio using a remote ASR endpoint."""
+
+    def __init__(
+        self,
+        api_base: Optional[str] = None,
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
+        language: str = 'en',
+        api_protocol: Optional[str] = None,
+        prompt: Optional[str] = None,
+        timeout: float = 60,
+    ):
+        self.api_base = (
+            api_base or os.getenv('SEED_TTS_EVAL_ASR_API_BASE') or os.getenv('OPENAI_BASE_URL')
+            or 'https://api.openai.com/v1'
+        ).rstrip('/')
+        self.api_key = api_key or os.getenv('SEED_TTS_EVAL_ASR_API_KEY') or os.getenv('OPENAI_API_KEY')
+        self.model = model or os.getenv('SEED_TTS_EVAL_ASR_MODEL') or 'whisper-1'
+        self.language = self._normalize_language(language)
+        self.api_protocol = (api_protocol or os.getenv('SEED_TTS_EVAL_ASR_API_PROTOCOL') or 'transcriptions').lower()
+        self.prompt = prompt or os.getenv('SEED_TTS_EVAL_ASR_PROMPT') or 'Transcribe the speech. Return only the text.'
+        self.timeout = timeout
+        self.transcriptions: List[str] = []
+
+    def apply(self, predictions: List[str], references: List[str]) -> List[float]:
+        from .text_normalizer.wer import normalize_text, wer
+
+        self.transcriptions = [self._transcribe(prediction) for prediction in predictions]
+        scores = []
+        for transcript, reference in zip(self.transcriptions, references):
+            normalized_prediction = normalize_text(transcript, self.language)
+            normalized_reference = normalize_text(reference, self.language)
+            scores.append(wer([normalized_reference], [normalized_prediction], self.language))
+        return scores
+
+    def _transcribe(self, audio: str) -> str:
+        if not self.api_key:
+            raise ValueError('api_key is required for audio_wer. Set SEED_TTS_EVAL_ASR_API_KEY or OPENAI_API_KEY.')
+
+        if self.api_protocol == 'responses':
+            return self._transcribe_with_responses(audio)
+        if self.api_protocol != 'transcriptions':
+            raise ValueError(f'Unsupported audio_wer api_protocol: {self.api_protocol}')
+        return self._transcribe_with_transcriptions(audio)
+
+    def _transcribe_with_transcriptions(self, audio: str) -> str:
+        import requests
+
+        from evalscope.utils.url_utils import file_as_data, is_data_uri
+
+        endpoint = self._transcription_endpoint()
+        audio_bytes, mime_type = file_as_data(audio, default_mime_type='audio/wav')
+        filename = 'audio.wav' if is_data_uri(audio) else os.path.basename(audio.split('?', 1)[0]) or 'audio.wav'
+        headers = {'Authorization': f'Bearer {self.api_key}'}
+        data = {
+            'model': self.model,
+            'response_format': 'json',
+        }
+        if self.language:
+            data['language'] = 'zh' if self.language == 'cmn_hans' else self.language
+
+        response = requests.post(
+            endpoint,
+            headers=headers,
+            files={'file': (filename, audio_bytes, mime_type)},
+            data=data,
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+
+        try:
+            payload = response.json()
+        except ValueError:
+            return response.text.strip()
+
+        text = payload.get('text') or payload.get('transcription')
+        if text is None and isinstance(payload.get('result'), dict):
+            text = payload['result'].get('text')
+        if text is None:
+            raise ValueError(f'No transcription text found in response: {payload}')
+        return str(text)
+
+    def _transcribe_with_responses(self, audio: str) -> str:
+        import requests
+
+        response = requests.post(
+            self._responses_endpoint(),
+            headers={
+                'Authorization': f'Bearer {self.api_key}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'model': self.model,
+                'input': [{
+                    'role': 'user',
+                    'content': [
+                        {
+                            'type': 'input_audio',
+                            'audio_url': self._audio_url(audio),
+                        },
+                        {
+                            'type': 'input_text',
+                            'text': self.prompt,
+                        },
+                    ],
+                }],
+            },
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+        payload = response.json()
+
+        output_text = payload.get('output_text')
+        if output_text:
+            return str(output_text)
+
+        text_parts: List[str] = []
+        for item in payload.get('output', []):
+            if item.get('type') != 'message':
+                continue
+            for content in item.get('content', []):
+                if content.get('type') in {'output_text', 'text'} and content.get('text'):
+                    text_parts.append(str(content['text']))
+        if not text_parts:
+            raise ValueError(f'No transcription text found in response: {payload}')
+        return '\n'.join(text_parts).strip()
+
+    def _transcription_endpoint(self) -> str:
+        if self.api_base.endswith('/audio/transcriptions'):
+            return self.api_base
+        return f'{self.api_base}/audio/transcriptions'
+
+    def _responses_endpoint(self) -> str:
+        if self.api_base.endswith('/responses'):
+            return self.api_base
+        return f'{self.api_base}/responses'
+
+    @staticmethod
+    def _audio_url(audio: str) -> str:
+        from evalscope.utils.url_utils import file_as_data_uri, is_data_uri, is_http_url
+
+        if is_data_uri(audio) or is_http_url(audio):
+            return audio
+        return file_as_data_uri(audio, default_mime_type='audio/wav')
+
+    @staticmethod
+    def _normalize_language(language: str) -> str:
+        language_map = {
+            'zh': 'cmn_hans',
+            'cn': 'cmn_hans',
+            'cmn': 'cmn_hans',
+            'chinese': 'cmn_hans',
+            'en': 'en',
+            'english': 'en',
+        }
+        return language_map.get((language or '').lower(), language)
 
 
 @register_metric(name='bertscore')
