@@ -2,15 +2,10 @@
 """Unit tests for the refactored LLM rich display tables."""
 import io
 import unittest
-
 from rich.console import Console
 
 from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult, PercentileRow
-from evalscope.perf.utils.rich_display import (
-    AnalysisResult,
-    DualConsole,
-    LLMSummaryRenderer,
-)
+from evalscope.perf.utils.rich_display import AnalysisResult, DualConsole, LLMSummaryRenderer
 from evalscope.perf.utils.trace_metrics import TraceLevelSummary, TraceMetricStats
 from evalscope.perf.utils.workload_timeline import WorkloadThroughput, WorkloadThroughputRow
 
