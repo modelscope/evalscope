@@ -6,7 +6,7 @@ The multi-turn conversation benchmark allows you to test a model service in real
 
 - **Real context accumulation**: After each successful turn, the model's actual output is appended to the conversation history; the next turn sends the complete history rather than just the current user message.
 - **Approx KV cache hit rate estimation**: Based on client-side token counts, estimates the proportion of history tokens relative to the total input tokens in each request — i.e., the theoretical upper bound of tokens that could benefit from server-side prefix caching. Whether caching actually occurs depends on whether the server has prefix caching enabled and has retained the relevant cache.
-- **Multiple dataset support**: Provides five datasets — random synthetic (`random_multi_turn`), real conversations (`share_gpt_zh_multi_turn` / `share_gpt_en_multi_turn`), custom local data (`custom_multi_turn`), and real Agent trajectories (`swe_smith`).
+- **Multiple dataset support**: Provides random synthetic (`random_multi_turn`), real conversations (`share_gpt_zh_multi_turn` / `share_gpt_en_multi_turn`), custom local data (`custom_multi_turn`), real Agent trajectories (`swe_smith`), and production agentic trace replay (`trie_agentic_coding` / `trie_code_qa` / `trie_office_work`) datasets.
 - **Consistent parameter semantics**: `--number` is the total number of conversations and `--parallel` is the number of concurrent conversations, keeping the same semantics as standard benchmark mode.
 
 ## Parameters
@@ -91,11 +91,7 @@ The number of turns per conversation is sampled from `[--min-turns, --max-turns]
 
 ## Datasets
 
-evalscope provides 4 generic multi-turn datasets plus 1 family dedicated to agentic trace replay (the trie workloads). The latter has its own page; this section only covers the 4 generic ones:
-
-```{seealso}
-For agentic trace replay (`trie_agentic_coding` / `trie_code_qa` / `trie_office_work`), see [Agentic Trace Replay](./trace_replay.md).
-```
+evalscope provides the following multi-turn datasets:
 
 ### random_multi_turn
 
@@ -388,4 +384,124 @@ evalscope perf \
   --extra-args '{"ignore_eos": true}'
 ```
 
+### trie Trace Replay
 
+Replays the token-length sequences of real production agentic workloads to measure inference-service performance under multi-turn, long-tail, tool-call-paced load. The traces come from [applied-compute/trie](https://github.com/applied-compute/trie) (Apache-2.0); evalscope re-hosts the three workloads on [ModelScope dataset `evalscope/trie-workloads`](https://www.modelscope.cn/datasets/evalscope/trie-workloads) and downloads them on demand.
+
+Each trace contains only token-length metadata (per-turn prompt length, output length, tool-call wait time, etc.) without real conversation text. At benchmark time the client automatically synthesizes prompts to the recorded lengths, preserving the original load characteristics.
+
+**Three built-in workloads**:
+
+| Dataset alias | Source jsonl | Typical num_turns | When to use |
+|---|---|---|---|
+| `trie_agentic_coding` | `agentic_coding_8k.jsonl` | 8-15 | Coding-agent apps (IDE completion, refactor agents) |
+| `trie_code_qa` | `code_qa_8k.jsonl` | 5-12 | Code-Q&A agents (repo analysis, doc generation) |
+| `trie_office_work` | `office_work_8k.jsonl` | 18-41 | Office-automation agents (longest, heaviest; best for stress-ceiling tests) |
+
+Each trace starts with ~8 k initial-prompt tokens; total input volume per trace is ~25 k-50 k tokens. Each jsonl has ~8000 traces, more than enough for long-running statistically meaningful tests.
+
+Bring your own trace? Feed any jsonl in the same format via `--dataset-path`:
+
+```bash
+evalscope perf ... --dataset trie_office_work --dataset-path /path/to/your_traces.jsonl
+```
+
+**Required**: `--tokenizer-path` (for synthesizing prompts to exact target lengths)
+
+**Usage example**:
+
+```bash
+evalscope perf \
+  --model qwen-plus \
+  --url https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions \
+  --api-key $DASHSCOPE_API_KEY \
+  --api openai \
+  --dataset trie_office_work \
+  --multi-turn \
+  --parallel 4 \
+  --number 10 \
+  --duration 600 \
+  --tokenizer-path Qwen/Qwen2.5-7B-Instruct \
+  --extra-args '{"ignore_eos": true}' \
+  --stream
+```
+
+> **Note**: trie trace replay relies on `ignore_eos` to force the model to generate to the exact recorded length. vLLM and SGLang support this parameter; DashScope / OpenAI API and most cloud services do not — the model stops at natural EOS, so actual output will be shorter than the recorded length. This does not affect latency / cache hit / decode TPS correctness.
+
+## Multi-turn Output Metrics
+
+In addition to the standard Detailed Performance Metrics and Request Metrics tables, multi-turn mode outputs the following additional metrics.
+
+### Per-trace Summary
+
+Per-conversation (trace) metrics, aggregated as mean / min / p50 / p90 / p95 / p99 / max across all completed conversations:
+
+| Column | Meaning | Where to look when it's off |
+|---|---|---|
+| **Latency (s)** | Wall-clock from conversation's first-turn start to last-turn completion | Slow conversation → check TTFAT split (is prefill slow or decode slow?) |
+| **First-Turn TTFT (s)** | TTFT of the first turn; reflects cold-prefill performance | High → server's prefill stage is slow |
+| **TTFAT (s)** | Wall-clock from conversation start to the first token of the final reply; end-to-end "how long until the final answer starts streaming" | Any slow turn in the conversation inflates this |
+| **Decode TPS** | Arithmetic mean over the conversation's turns of `(completion-1)/(latency-ttft)` | Reflects steady-state decode speed |
+| **Cache Hit Rate (%)** | `sum(cached_tokens) / sum(prompt_tokens)`; includes turn 1 (contributes 0 to numerator but counts in denominator) | Low → server prefix cache isn't enabled or evicts too aggressively |
+| **Eligible Cache Hit Rate (%)** | Denominator only counts the theoretically cacheable prefix, excluding turn 1 and the current turn's new content | Both this and Cache Hit Rate low → cache off; this high but Cache Hit low → cache enabled but capacity-bound |
+
+Also outputs `trace_summary.json` to the results directory.
+
+### Workload Throughput
+
+Time-based token throughput rates, output in all modes (single-turn and multi-turn):
+
+```
+┌─────────────────────┬───────────┬────────────┬─────────────────────┐
+│ Metric (tok/s)      │   Overall │   Last 30s │   Steady (drop 20%) │
+├─────────────────────┼───────────┼────────────┼─────────────────────┤
+│ Total Prompt tok/s  │   ...     │   ...      │            ...      │
+│ New Prompt tok/s    │   ...     │   ...      │            ...      │
+│ Cached Prompt tok/s │   ...     │   ...      │            ...      │
+│ Completion tok/s    │   ...     │   ...      │            ...      │
+└─────────────────────┴───────────┴────────────┴─────────────────────┘
+```
+
+| Column | Meaning |
+|---|---|
+| **Overall** | total tokens / wall_time over the whole run |
+| **Last 30s** | 30-second tail-window tok/s; falls back to Overall when the run is shorter than 30s |
+| **Steady (drop 20%)** | tok/s after dropping the first 20% of wall_time; removes the cold-start phase |
+
+| Row | Meaning |
+|---|---|
+| Total Prompt | New Prompt + Cached Prompt |
+| New Prompt | `prompt_tokens - cached_tokens`; the part the server actually runs attention on |
+| Cached Prompt | the part the server skipped via prefix cache hit |
+| Completion | output-token rate |
+
+Steady-state is the fairest number for "how fast can this endpoint sustainably run"; Last 30s is good for tail jitter. Also outputs `workload_throughput.json` and `workload_timeline.json` (raw cumulative-token timeline, pandas-friendly) to the results directory.
+
+### First-Turn vs Subsequent-Turn TTFT
+
+The `Avg TTFT` in the Detailed Performance table averages every turn. In multi-turn scenarios, the first turn is a cold prefill while subsequent turns benefit heavily from prefix cache, so the two TTFT types can differ by 2-10x. The Request Metrics area shows:
+
+- `First-Turn TTFT (ms)`
+- `Subsequent-Turn TTFT (ms)`
+
+These appear only in multi-turn runs; single-turn benchmarks omit them.
+
+## `--duration` Soft Exit
+
+In multi-turn mode, `--duration` uses soft-exit semantics: once the deadline elapses, **no new conversations are claimed**, but **already in-flight conversations run every remaining turn** before exit. This keeps every conversation complete, so partial conversations don't skew statistics.
+
+Three cap combinations:
+
+| Command | Meaning |
+|---|---|
+| `--number 50` | run 50 conversations, no time limit |
+| `--duration 300` | run for 300 seconds, however many conversations fit |
+| `--number 50 --duration 300` | both caps; **whichever is reached first** ends the run (recommended) |
+
+Side effect: actual wall_time may overshoot `--duration` slightly (the overshoot equals the time needed for in-flight conversations to finish).
+
+## FAQs
+
+### Chat-template token overhead
+
+When using the `/v1/chat/completions` endpoint, the chat template adds 10-50 extra tokens per turn (role markers, special tokens, etc.), causing Cache Hit Rate to be 2-3pp lower than raw completions. This is expected behaviour.

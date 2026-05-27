@@ -249,9 +249,4 @@ class MultiTurnStrategy(BenchmarkStrategy):
         self._phase_is_warmup = is_warmup
         self._phase_deadline = deadline
         workers = [asyncio.create_task(self._worker(worker_id=i)) for i in range(self.args.parallel)]
-        if deadline is not None:
-            logger.info(
-                f'Phase deadline set: workers will stop claiming new conversations after '
-                f'{max(0.0, deadline - time.perf_counter()):.1f}s; in-flight traces are allowed to finish.'
-            )
         await asyncio.gather(*workers, return_exceptions=True)
