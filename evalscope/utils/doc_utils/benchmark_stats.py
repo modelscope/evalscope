@@ -18,7 +18,7 @@ import os
 import re
 import statistics as stats_module
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional, Set, Tuple
 
 from evalscope.api.benchmark.statistics import (
     AudioStatistics,
@@ -828,11 +828,30 @@ def get_sample_example(
 
     sample = samples[sample_index]
 
-    return SampleExample.from_sample(
+    example = SampleExample.from_sample(
         sample,
         subset=target_subset,
         max_length=max_length,
     )
+    _sanitize_local_paths(example.data)
+    return example
+
+
+def _sanitize_local_paths(obj: Any) -> None:
+    """Replace absolute home-directory paths with ``~`` in-place."""
+    home = os.path.expanduser('~')
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if isinstance(v, str) and home in v:
+                obj[k] = v.replace(home, '~')
+            else:
+                _sanitize_local_paths(v)
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            if isinstance(v, str) and home in v:
+                obj[i] = v.replace(home, '~')
+            else:
+                _sanitize_local_paths(v)
 
 
 if __name__ == '__main__':

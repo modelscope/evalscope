@@ -1,4 +1,3 @@
-import asyncio
 import os
 from pathlib import Path
 
@@ -8,6 +7,7 @@ from evalscope.api.metric import Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, Tags
+from evalscope.utils.function_utils import AsyncioLoopRunner
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
@@ -74,7 +74,7 @@ class _TerminalBenchBase(AgentAdapter):
         )
 
         logger.info(f'Downloading dataset for {self.pretty_name} from Harbor Hub...')
-        task_configs = asyncio.run(config.get_task_configs())
+        task_configs = AsyncioLoopRunner.run(config.get_task_configs())
 
         datasets = {}
         dataset = DictDataLoader(
@@ -128,10 +128,14 @@ class _TerminalBenchBase(AgentAdapter):
         )
 
         try:
-            trial = asyncio.run(Trial.create(trial_config))
-            if self.agent_name == 'terminus-2':
-                trial.agent._llm = HarborLLM(model=model)
-            result = asyncio.run(trial.run())
+
+            async def _run_trial():
+                trial = await Trial.create(trial_config)
+                if self.agent_name == 'terminus-2':
+                    trial.agent._llm = HarborLLM(model=model)
+                return await trial.run()
+
+            result = AsyncioLoopRunner.run(_run_trial())
         except Exception as e:
             if hasattr(e, 'exceptions'):
                 for i, sub_exc in enumerate(e.exceptions):
