@@ -167,10 +167,10 @@ class TrieReplayBase(RandomDatasetPlugin):
             line = line.strip()
             if not line:
                 continue
-            trace = json.loads(line)
             try:
+                trace = json.loads(line)
                 yield self._trace_to_conversation(trace)
-            except (KeyError, ValueError, TypeError) as e:
+            except (json.JSONDecodeError, KeyError, ValueError, TypeError) as e:
                 logger.warning(f'Skipping malformed trace: {e}')
                 continue
 
