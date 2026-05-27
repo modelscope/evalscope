@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "pretty_name": "Terminal-Bench-2.1",
+    "dataset_id": "https://hub.harborframework.com/datasets/terminal-bench/terminal-bench-2-1/latest",
+    "paper_url": null,
+    "tags": [
+      "Coding"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nTerminal-Bench v2.1 is an improved iteration of Terminal-Bench 2.0, with 26 task fixes addressing bugs, timeout adjustments, and reward hacking prevention. Recommended over v2.0 for new evaluations.\n\n## Task Description\n\n- **Task Type**: Command-Line Agent Evaluation\n- **Input**: Terminal task specification\n- **Output**: Task completion via agent actions\n- **Domains**: System administration, compilation, debugging, file operations\n\n## Key Features\n\n- Verified iteration of Terminal-Bench 2.0 with 26 task fixes\n- Improved robustness against reward hacking\n- Isolated container execution environment\n- Binary scoring (0/1) with auto-validation\n- Multiple agent types supported (terminus-2, claude-code, codex, etc.)\n\n## Evaluation Notes\n\n- Requires **Python>=3.12** and `pip install evalscope[terminal_bench]`\n- Environment options: docker, daytona, e2b, modal\n- Configurable agent types and timeout settings\n- Maximum turns configurable (default: 200)\n- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "environment_type": {
+        "type": "str",
+        "description": "Environment type for running the benchmark.",
+        "value": "docker",
+        "choices": [
+          "docker",
+          "daytona",
+          "e2b",
+          "modal"
+        ]
+      },
+      "agent_name": {
+        "type": "str",
+        "description": "Agent type to be used in Harbor. Only terminus-2 uses the evalscope model for inference; other agents (claude-code, codex, etc.) run as standalone CLI tools with their own API keys.",
+        "value": "terminus-2",
+        "choices": [
+          "oracle",
+          "terminus-2",
+          "claude-code",
+          "codex",
+          "qwen-coder",
+          "openhands",
+          "opencode",
+          "mini-swe-agent"
+        ]
+      },
+      "timeout_multiplier": {
+        "type": "float",
+        "description": "Timeout multiplier. If timeout errors occur, consider increasing this value.",
+        "value": 1.0
+      },
+      "max_turns": {
+        "type": "int",
+        "description": "Maximum number of turns for the agent to complete the task.",
+        "value": 200
+      },
+      "environment_kwargs": {
+        "type": "dict",
+        "description": "Extra kwargs passed to Harbor EnvironmentConfig. Supported keys: override_cpus, override_memory_mb, override_storage_mb, override_gpus, force_build, delete, env, etc.",
+        "value": {}
+      }
+    },
+    "sandbox_config": {},
+    "category": "agent"
+  },
+  "statistics": {
+    "total_samples": 0,
+    "subset_stats": [],
+    "prompt_length": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-05-27T18:11:56.412657"
+  },
+  "sample_example": {},
+  "readme": {
+    "en": "# Terminal-Bench-2.1\n\n\n## Overview\n\nTerminal-Bench v2.1 is an improved iteration of Terminal-Bench 2.0, with 26 task fixes addressing bugs, timeout adjustments, and reward hacking prevention. Recommended over v2.0 for new evaluations.\n\n## Task Description\n\n- **Task Type**: Command-Line Agent Evaluation\n- **Input**: Terminal task specification\n- **Output**: Task completion via agent actions\n- **Domains**: System administration, compilation, debugging, file operations\n\n## Key Features\n\n- Verified iteration of Terminal-Bench 2.0 with 26 task fixes\n- Improved robustness against reward hacking\n- Isolated container execution environment\n- Binary scoring (0/1) with auto-validation\n- Multiple agent types supported (terminus-2, claude-code, codex, etc.)\n\n## Evaluation Notes\n\n- Requires **Python>=3.12** and `pip install evalscope[terminal_bench]`\n- Environment options: docker, daytona, e2b, modal\n- Configurable agent types and timeout settings\n- Maximum turns configurable (default: 200)\n- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `terminal_bench_v2_1` |\n| **Dataset ID** | [latest](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench-2-1/latest) |\n| **Paper** | N/A |\n| **Tags** | `Coding` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `environment_type` | `str` | `docker` | Environment type for running the benchmark. Choices: ['docker', 'daytona', 'e2b', 'modal'] |\n| `agent_name` | `str` | `terminus-2` | Agent type to be used in Harbor. Only terminus-2 uses the evalscope model for inference; other agents (claude-code, codex, etc.) run as standalone CLI tools with their own API keys. Choices: ['oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode', 'mini-swe-agent'] |\n| `timeout_multiplier` | `float` | `1.0` | Timeout multiplier. If timeout errors occur, consider increasing this value. |\n| `max_turns` | `int` | `200` | Maximum number of turns for the agent to complete the task. |\n| `environment_kwargs` | `dict` | `{}` | Extra kwargs passed to Harbor EnvironmentConfig. Supported keys: override_cpus, override_memory_mb, override_storage_mb, override_gpus, force_build, delete, env, etc. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets terminal_bench_v2_1 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['terminal_bench_v2_1'],\n    dataset_args={\n        'terminal_bench_v2_1': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Terminal-Bench-2.1\n\n\n## 概述\n\nTerminal-Bench v2.1 是 Terminal-Bench 2.0 的改进版本，修复了 26 项任务中的 bug、调整了超时设置，并增强了对奖励作弊（reward hacking）的防范。建议在新评估中优先使用 v2.1 而非 v2.0。\n\n## 任务描述\n\n- **任务类型**：命令行智能体评估  \n- **输入**：终端任务规范  \n- **输出**：通过智能体操作完成任务  \n- **领域**：系统管理、编译、调试、文件操作  \n\n## 主要特性\n\n- Terminal-Bench 2.0 的验证版，包含 26 项任务修复  \n- 提升了对奖励作弊的鲁棒性  \n- 隔离的容器化执行环境  \n- 二元评分（0/1），支持自动验证  \n- 支持多种智能体类型（terminus-2、claude-code、codex 等）  \n\n## 评估说明\n\n- 需要 **Python>=3.12** 并安装 `pip install evalscope[terminal_bench]`  \n- 支持的环境选项：docker、daytona、e2b、modal  \n- 可配置智能体类型和超时设置  \n- 最大交互轮次可配置（默认：200）  \n- [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `terminal_bench_v2_1` |\n| **数据集ID** | [latest](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench-2-1/latest) |\n| **论文** | N/A |\n| **标签** | `Coding` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n*统计数据暂不可用。*\n\n## 样例示例\n\n*样例示例暂不可用。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `environment_type` | `str` | `docker` | 运行基准测试的环境类型。可选值：['docker', 'daytona', 'e2b', 'modal'] |\n| `agent_name` | `str` | `terminus-2` | 在 Harbor 中使用的智能体类型。仅 terminus-2 使用 evalscope 模型进行推理；其他智能体（如 claude-code、codex 等）作为独立 CLI 工具运行，需自行提供 API 密钥。可选值：['oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode', 'mini-swe-agent'] |\n| `timeout_multiplier` | `float` | `1.0` | 超时倍率。若出现超时错误，可考虑增大该值。 |\n| `max_turns` | `int` | `200` | 智能体完成任务的最大交互轮次。 |\n| `environment_kwargs` | `dict` | `{}` | 传递给 Harbor EnvironmentConfig 的额外参数。支持的键包括：override_cpus、override_memory_mb、override_storage_mb、override_gpus、force_build、delete、env 等。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets terminal_bench_v2_1 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['terminal_bench_v2_1'],\n    dataset_args={\n        'terminal_bench_v2_1': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "639461790382055829d4ba37fde07145",
+    "needs_translation": false
+  },
+  "updated_at": "2026-05-27T18:11:56.412837",
+  "translation_updated_at": "2026-05-27T18:11:58"
+}

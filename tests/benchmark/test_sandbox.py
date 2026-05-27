@@ -165,6 +165,16 @@ class TestCodeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('terminal_bench_v2', dataset_args, limit=5, use_sandbox=False, rerun_review=True, model='qwen3-coder-plus', eval_batch_size=2)
 
+    def test_terminal_bench_v2_1(self):
+        """Test Terminal-Bench v2.1 dataset with environment_kwargs."""
+        dataset_args = {
+            'extra_params': {
+                'timeout_multiplier': 3,
+                'environment_kwargs': {'override_cpus': 2},
+            },
+        }
+        self._run_dataset_test('terminal_bench_v2_1', dataset_args, limit=5, use_sandbox=False, rerun_review=True, model='qwen3-coder-plus', eval_batch_size=2)
+
     def test_humaneval_plus(self):
         """Test Humaneval+ dataset."""
         self._run_dataset_test('humaneval_plus', limit=10)

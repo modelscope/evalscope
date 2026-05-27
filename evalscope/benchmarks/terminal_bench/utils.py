@@ -48,3 +48,6 @@ class HarborLLM(BaseModel, BaseLLM):
 
     def get_model_context_limit(self):
         return self._model.config.max_tokens or 100_000
+
+    def get_model_output_limit(self):
+        return self._model.config.max_tokens or 16384

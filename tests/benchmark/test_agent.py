@@ -155,6 +155,16 @@ class TestAgentBenchmark(TestBenchmark):
         ])
         self._run_dataset_test('gaia', dataset_args, limit=1, agent_config=agent_config)
 
+    def test_terminal_bench_v2_1(self):
+        """Test Terminal-Bench v2.1 dataset."""
+        dataset_args = {
+            'extra_params': {
+                'timeout_multiplier': 3,
+                'environment_kwargs': {'override_cpus': 2},
+            },
+        }
+        self._run_dataset_test('terminal_bench_v2_1', dataset_args, limit=3, eval_batch_size=3)
+
     def test_swe_bench_verified_agentic_backticks(self):
         """Test SWE-bench-verified agentic dataset with backticks protocol."""
         dataset_args = {
@@ -168,7 +178,6 @@ class TestAgentBenchmark(TestBenchmark):
             }
         }
         self._run_dataset_test('swe_bench_verified_agentic', dataset_args, limit=1)
-
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_agent.TestAgentBenchmark.test_swe_bench_verified_agentic
