@@ -134,26 +134,32 @@ evalscope perf \
 Example output:
 
 ```text
-                                    Detailed Performance Metrics
-┏━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓
-┃      ┃      ┃      ┃     Avg ┃     P99 ┃     Avg ┃     P99 ┃     Avg ┃    P99 ┃    Gen. ┃ Success┃
-┃Conc. ┃ Rate ┃  RPS ┃ Lat.(s) ┃ Lat.(s) ┃ TTFT(s) ┃ TTFT(s) ┃ TPOT(s) ┃ TPOT(… ┃  toks/s ┃    Rate┃
-┡━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩
-│   10 │  INF │ 4.32 │   2.289 │   3.541 │   0.041 │   0.072 │   0.009 │  0.011 │ 1103.48 │  100.0%│
-└──────┴──────┴──────┴─────────┴─────────┴─────────┴─────────┴─────────┴────────┴─────────┴────────┘
+            Performance Overview
+┏━━━━━━┳━━━━━━┳━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
+┃Conc. ┃ Rate ┃ Num ┃  RPS ┃   Gen/s ┃ Success ┃
+┡━━━━━━╇━━━━━━╇━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
+│   10 │    - │  20 │ 4.32 │ 1103.48 │  100.0% │
+└──────┴──────┴─────┴──────┴─────────┴─────────┘
 
-                                          Request Metrics
-┏━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
-┃      ┃          ┃             ┃     P99 In ┃     Avg Out ┃    P99 Out ┃         Avg ┃      Approx┃
-┃Conc. ┃ Num Reqs ┃ Avg In Toks ┃       Toks ┃        Toks ┃       Toks ┃   Turns/Req ┃   Cache Hit┃
-│   10 │       20 │       315.4 │      650.0 │        92.0 │      128.0 │        1.60 │       58.1%│
-└──────┴──────────┴─────────────┴────────────┴─────────────┴────────────┴─────────────┴────────────┘
+
+                    Per-Request Metrics
+┏━━━━━━┳━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┓
+┃Conc. ┃ Rate ┃ Metric        ┃    avg ┃   p50 ┃   p99 ┃
+┡━━━━━━╇━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━┩
+│   10 │    - │ Latency (s)   │  2.289 │ 2.180 │ 3.541 │
+│      │      │ TTFT (ms)     │   41.0 │  38.0 │  72.0 │
+│      │      │ TPOT (ms)     │    9.0 │   8.8 │  11.0 │
+│      │      │ Input Tokens  │  315.4 │ 280.0 │ 650.0 │
+│      │      │ Output Tokens │   92.0 │  85.0 │ 128.0 │
+│      │      │ Turns/Req     │   1.60 │     - │     - │
+│      │      │ Cache Hit (%) │  58.1% │     - │     - │
+└──────┴──────┴───────────────┴────────┴───────┴───────┘
 ```
 
 **Interpreting the metrics**:
 
-- `Avg Turns/Req: 1.60`: Each request carried an average of 1.60 turns of context during the test, consistent with the `--min-turns 2 --max-turns 5` random sampling distribution.
-- `Approx Cache Hit: 58.1%`: About 58% of input tokens came from conversation history.
+- `Turns/Req: 1.60`: Each request carried an average of 1.60 turns of context during the test, consistent with the `--min-turns 2 --max-turns 5` random sampling distribution.
+- `Cache Hit (%): 58.1%`: About 58% of input tokens came from conversation history.
 
 ### share_gpt_multi_turn
 
@@ -215,26 +221,32 @@ evalscope perf \
 Example output:
 
 ```text
-                                    Detailed Performance Metrics
-┏━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓
-┃      ┃      ┃      ┃     Avg ┃     P99 ┃     Avg ┃     P99 ┃     Avg ┃    P99 ┃    Gen. ┃ Success┃
-┃Conc. ┃ Rate ┃  RPS ┃ Lat.(s) ┃ Lat.(s) ┃ TTFT(s) ┃ TTFT(s) ┃ TPOT(s) ┃ TPOT(… ┃  toks/s ┃    Rate┃
-┡━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩
-│   10 │  INF │ 3.87 │   2.571 │   4.103 │   0.055 │   0.098 │   0.010 │  0.013 │  985.21 │  100.0%│
-└──────┴──────┴──────┴─────────┴─────────┴─────────┴─────────┴─────────┴────────┴─────────┴────────┘
+             Performance Overview
+┏━━━━━━┳━━━━━━┳━━━━━┳━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+┃Conc. ┃ Rate ┃ Num ┃  RPS ┃  Gen/s ┃ Success ┃
+┡━━━━━━╇━━━━━━╇━━━━━╇━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+│   10 │    - │ 300 │ 3.87 │ 985.21 │  100.0% │
+└──────┴──────┴─────┴──────┴────────┴─────────┘
 
-                                          Request Metrics
-┏━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
-┃      ┃          ┃             ┃     P99 In ┃     Avg Out ┃    P99 Out ┃         Avg ┃      Approx┃
-┃Conc. ┃ Num Reqs ┃ Avg In Toks ┃       Toks ┃        Toks ┃       Toks ┃   Turns/Req ┃   Cache Hit┃
-│   10 │      300 │       428.7 │      912.0 │       186.3 │      384.0 │        1.98 │       53.7%│
-└──────┴──────────┴─────────────┴────────────┴─────────────┴────────────┴─────────────┴────────────┘
+
+                    Per-Request Metrics
+┏━━━━━━┳━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┓
+┃Conc. ┃ Rate ┃ Metric        ┃    avg ┃   p50 ┃   p99 ┃
+┡━━━━━━╇━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━┩
+│   10 │    - │ Latency (s)   │  2.571 │ 2.340 │ 4.103 │
+│      │      │ TTFT (ms)     │   55.0 │  50.0 │  98.0 │
+│      │      │ TPOT (ms)     │   10.0 │   9.5 │  13.0 │
+│      │      │ Input Tokens  │  428.7 │ 390.0 │ 912.0 │
+│      │      │ Output Tokens │  186.3 │ 160.0 │ 384.0 │
+│      │      │ Turns/Req     │   1.98 │     - │     - │
+│      │      │ Cache Hit (%) │  53.7% │     - │     - │
+└──────┴──────┴───────────────┴────────┴───────┴───────┘
 ```
 
 **Interpreting the metrics**:
 
-- `Avg Turns/Req: 1.98`: Limited by `--max-turns 3`, each request carried approximately 2 turns of context on average, as expected (turn 1 has no history, turns 2 and 3 carry 1 and 2 turns of history respectively, averaging ~1.98).
-- `Approx Cache Hit: 53.7%`: Real conversations have longer context; history tokens account for ~54% of input.
+- `Turns/Req: 1.98`: Limited by `--max-turns 3`, each request carried approximately 2 turns of context on average, as expected (turn 1 has no history, turns 2 and 3 carry 1 and 2 turns of history respectively, averaging ~1.98).
+- `Cache Hit (%): 53.7%`: Real conversations have longer context; history tokens account for ~54% of input.
 
 ### custom_multi_turn
 
@@ -430,11 +442,11 @@ evalscope perf \
 
 ## Multi-turn Output Metrics
 
-In addition to the standard Detailed Performance Metrics and Request Metrics tables, multi-turn mode outputs the following additional metrics.
+In addition to the Performance Overview and Per-Request Metrics tables, multi-turn mode outputs the following additional tables.
 
-### Per-trace Summary
+### Per-Trace Metrics
 
-Per-conversation (trace) metrics, aggregated as mean / min / p50 / p90 / p95 / p99 / max across all completed conversations:
+Per-conversation (trace) metrics, aggregated as mean / p50 / p90 / p99 / max across all completed conversations:
 
 | Column | Meaning | Where to look when it's off |
 |---|---|---|
@@ -452,14 +464,14 @@ Also outputs `trace_summary.json` to the results directory.
 Time-based token throughput rates, output in all modes (single-turn and multi-turn):
 
 ```
-┌─────────────────────┬───────────┬────────────┬─────────────────────┐
-│ Metric (tok/s)      │   Overall │   Last 30s │   Steady (drop 20%) │
-├─────────────────────┼───────────┼────────────┼─────────────────────┤
-│ Total Prompt tok/s  │   ...     │   ...      │            ...      │
-│ New Prompt tok/s    │   ...     │   ...      │            ...      │
-│ Cached Prompt tok/s │   ...     │   ...      │            ...      │
-│ Completion tok/s    │   ...     │   ...      │            ...      │
-└─────────────────────┴───────────┴────────────┴─────────────────────┘
+┌──────┬──────┬─────────────────────┬─────────┬──────────┬──────────────────┐
+│Conc. │ Rate │ Metric (tok/s)      │ Overall │ Last 30s │ Steady (drop 20%)│
+├──────┼──────┼─────────────────────┼─────────┼──────────┼──────────────────┤
+│   10 │    - │ Total Prompt tok/s  │  ...    │   ...    │           ...    │
+│      │      │ New Prompt tok/s    │  ...    │   ...    │           ...    │
+│      │      │ Cached Prompt tok/s │  ...    │   ...    │           ...    │
+│      │      │ Completion tok/s    │  ...    │   ...    │           ...    │
+└──────┴──────┴─────────────────────┴─────────┴──────────┴──────────────────┘
 ```
 
 | Column | Meaning |
@@ -479,7 +491,7 @@ Steady-state is the fairest number for "how fast can this endpoint sustainably r
 
 ### First-Turn vs Subsequent-Turn TTFT
 
-The `Avg TTFT` in the Detailed Performance table averages every turn. In multi-turn scenarios, the first turn is a cold prefill while subsequent turns benefit heavily from prefix cache, so the two TTFT types can differ by 2-10x. The Request Metrics area shows:
+The `TTFT (ms)` in the Per-Request Metrics table averages every turn. In multi-turn scenarios, the first turn is a cold prefill while subsequent turns benefit heavily from prefix cache, so the two TTFT types can differ by 2-10x. The Per-Request Metrics table shows:
 
 - `First-Turn TTFT (ms)`
 - `Subsequent-Turn TTFT (ms)`

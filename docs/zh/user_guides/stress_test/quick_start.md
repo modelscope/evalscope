@@ -89,14 +89,19 @@ results = run_perf_benchmark(task_cfg)
 
 ### 输出结果
 
-输出的测试报告总结如下图所示，包括基础信息、每个并发下的指标、压测建议等：
+输出的测试报告总结包括基础信息（模型、数据集、API类型等）以及以下四张表：
+
+1. **Performance Overview**：每个并发配置一行，展示 RPS、输出吞吐量、成功率等标量指标
+2. **Per-Request Metrics**：每个配置的延迟、TTFT、TPOT、输入/输出 token 数等分布指标（avg / p50 / p99）
+3. **Per-Trace Metrics**：多轮对话模式下的对话级指标（仅多轮模式输出）
+4. **Workload Throughput**：全局时间维度的 token 吞吐率（Overall / Last 30s / Steady）
 
 ![multi_perf](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/stress_test/multi_perf.jpg)
 
 ```{note}
-- 图中压测报告是针对多个并发数的压测结果汇总，方便用户对比不同并发数下的模型性能表现。单个并发数不会生成该汇总报告。
+- 以上汇总报告针对多个并发数的压测结果，方便用户对比不同并发数下的模型性能表现。单个并发数不会生成该汇总报告。
 - 该报告会保存在`outputs/<timestamp>/<model>/performance_summary.txt`中，用户可以根据需要查看。
-- 下表中的各项指标解释请参考后续的“指标说明”部分，结果会保存在`outputs/<timestamp>/<model>/benchmark.log`。
+- 下表中的各项指标解释请参考后续的”指标说明”部分，结果会保存在`outputs/<timestamp>/<model>/benchmark.log`。
 ```
 
 此外，每个并发数的测试结果会单独输出，包含了每个并发数下的请求数量、成功请求数量、失败请求数量、平均延迟时间、平均每token延迟时间等指标。
@@ -141,6 +146,9 @@ Percentile results:
 ```
 
 ### 指标说明
+
+#### 基础指标
+
 | 指标 | 英文名称 | 解释 | 公式 |
 |------|----------|------|------|
 | 测试总时长 | Test Duration (s) | 整个测试过程从开始到结束所花费的总时间 | 最后一个请求结束时间 - 第一个请求开始时间 |
@@ -156,12 +164,29 @@ Percentile results:
 | 平均输出token数 | Avg Output Tokens | 每个请求的平均输出标记数 | 总输出token数 / 成功请求数 |
 | 输出吞吐量 | Output Throughput (tok/s) | 每秒钟输出的平均token数 | 总输出token数 / 测试总时长 |
 | 总吞吐量 | Total Throughput (tok/s) | 每秒钟处理的平均token数（输入+输出） | (总输入token数 + 总输出token数) / 测试总时长 |
-| 平均输入轮数 | Avg Input Turns | 多轮对话中每个请求的平均历史对话轮数（单轮时为1） | 总输入轮数 / 成功请求数 |
-| 近似KV缓存命中率 | KV Cache Hit Rate (%) | 基于cached token占输入token比例估算的前缀缓存命中率（需服务端开启prefix caching并返回cached_tokens字段） | 总cached token数 / 总输入token数 × 100% |
-| 平均每次解码输出token数 | Avg Decoded Tokens/Iter | 投机解码场景下，每次大模型前向推理（iteration）平均接受的token数，反映draft model的命中效果 | (总输出token数 - 1) / (总chunk数 - 1) |
-| 近似投机解码接受率 | Spec Decode Acceptance (%) | 投机解码的近似token接受率，由每次解码输出token数推导，越接近1表示draft model越准确 | 1 - 1 / (平均每次解码输出token数) |
+| 解码速率 | Decode toks/s | 每秒解码输出的token数（不含首token） | 1000 / TPOT |
 
-**百分位指标 (Percentile)**
+#### 多轮对话指标
+
+以下指标仅在多轮对话模式下输出，详细说明请参考[多轮对话压测](./multi_turn.md)。
+
+| 指标 | 英文名称 | 解释 | 公式 |
+|------|----------|------|------|
+| 平均输入轮数 | Turns/Req | 多轮对话中每个请求的平均历史对话轮数（单轮时为1） | 总输入轮数 / 成功请求数 |
+| 近似KV缓存命中率 | Cache Hit (%) | 基于cached token占输入token比例估算的前缀缓存命中率（需服务端开启prefix caching并返回cached_tokens字段） | 总cached token数 / 总输入token数 × 100% |
+| 首轮首token延迟 | 1st-Turn TTFT (ms) | 多轮对话中首轮（冷prefill）的平均首token延迟 | 所有首轮TTFT之和 / 对话数 |
+| 后续轮首token延迟 | Subseq. TTFT (ms) | 多轮对话中后续轮（可命中prefix cache）的平均首token延迟 | 所有后续轮TTFT之和 / 后续轮请求数 |
+
+#### 投机解码指标
+
+以下指标仅在投机解码场景下输出。
+
+| 指标 | 英文名称 | 解释 | 公式 |
+|------|----------|------|------|
+| 平均每次解码输出token数 | Decoded Tok/Iter | 每次大模型前向推理（iteration）平均接受的token数，反映draft model的命中效果 | (总输出token数 - 1) / (总chunk数 - 1) |
+| 近似投机解码接受率 | Spec. Accept Rate | 投机解码的近似token接受率，由每次解码输出token数推导，越接近1表示draft model越准确 | 1 - 1 / (平均每次解码输出token数) |
+
+#### 百分位指标 (Percentile)
 
 > 以单个请求为单位进行统计，数据被分为100个相等部分，第n百分位表示n%的数据点在此值之下。
 
@@ -176,6 +201,10 @@ Percentile results:
 | 输出吞吐量 | Output (tok/s) | 每秒输出的token数量：输出tokens / 端到端延时 |
 | 总吞吐量 | Total (tok/s) | 每秒处理的token数量：(输入tokens + 输出tokens) / 端到端延时 |
 | 解码吞吐量 | Decode (tok/s) | 每秒解码输出的token数量 |
+
+#### Per-Trace 与 Workload Throughput 指标
+
+多轮对话模式下还会输出 **Per-Trace Metrics**（对话级分布指标）和 **Workload Throughput**（全局时间维度token吞吐率）两张表，详细说明请参考[多轮对话压测 — 多轮专属输出指标](./multi_turn.md#多轮专属输出指标)。
 
 
 ## 可视化测试结果

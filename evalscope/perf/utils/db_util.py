@@ -146,8 +146,11 @@ def calculate_percentiles(data: List[float], percentiles: List[int]) -> Dict[int
     data.sort()
     for percentile in percentiles:
         try:
-            idx = int(n_success_queries * percentile / 100)
-            value = data[idx] if data[idx] is not None else float('nan')
+            if percentile >= 100:
+                value = data[-1] if data else float('nan')
+            else:
+                idx = int(n_success_queries * percentile / 100)
+                value = data[idx] if data[idx] is not None else float('nan')
             results[percentile] = round(value, 2)
         except IndexError:
             results[percentile] = float('nan')
@@ -224,10 +227,12 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Percent
         }
 
     # Calculate percentiles for each metric and build transposed dict
-    transposed: Dict[str, list] = {PercentileMetrics.PERCENTILES: [f'{p}%' for p in percentiles]}
+    percentile_labels = [f'{p}%' for p in percentiles] + ['max']
+    all_percentiles = percentiles + [100]
+    transposed: Dict[str, list] = {PercentileMetrics.PERCENTILES: percentile_labels}
     for metric_name, data in metrics.items():
-        metric_percentiles = calculate_percentiles(data, percentiles)
-        transposed[metric_name] = [metric_percentiles[p] for p in percentiles]
+        metric_percentiles = calculate_percentiles(data, all_percentiles)
+        transposed[metric_name] = [metric_percentiles[p] for p in all_percentiles]
 
     return PercentileResult.from_transposed(transposed)
 
