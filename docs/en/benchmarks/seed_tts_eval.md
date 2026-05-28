@@ -16,7 +16,9 @@ Seed-TTS-Eval is an objective benchmark for zero-shot text-to-speech and voice c
 
 - Default subsets: **en** and **zh**
 - The evaluated TTS model must return generated audio as `ContentAudio`, or return an audio path, URL, or data URI as the completion text
-- EvalScope provides `eval_type="text2speech"` for HTTP TTS services. The built-in Volcengine provider follows the Doubao Speech HTTP Chunked/SSE v3 API and can be configured with `model="seed-tts-2.0"`, `api_url="https://openspeech.bytedance.com/api/v3/tts/unidirectional"`, and `model_args={"speaker": "..."}`
+- EvalScope provides `eval_type="text2speech"` for HTTP TTS services.
+  - Volcengine provider: configure `model="seed-tts-2.0"`, `api_url="https://openspeech.bytedance.com/api/v3/tts/unidirectional"`, and `model_args={"speaker": "..."}`
+  - OpenAI provider: configure `model="tts-1"` (or `tts-1-hd`), `api_url="https://api.openai.com/v1"`, and `model_args={"provider": "openai", "voice": "nova"}`
 - Default metric: **audio_wer**, which transcribes generated audio through an OpenAI-compatible `/audio/transcriptions` endpoint and computes WER/CER-style error rate with language-specific normalization
 - Configure the ASR endpoint via `metric_list`, or set `SEED_TTS_EVAL_ASR_API_BASE`, `SEED_TTS_EVAL_ASR_API_KEY`, `SEED_TTS_EVAL_ASR_MODEL`, and `SEED_TTS_EVAL_ASR_API_PROTOCOL`
 - For Volcengine Ark audio-understanding models, set `api_protocol="responses"` and use a model that supports audio input, such as `doubao-seed-2-0-lite-260428`
