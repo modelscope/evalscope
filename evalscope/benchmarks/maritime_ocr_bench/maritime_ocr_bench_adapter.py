@@ -71,7 +71,7 @@ Each task type uses a specialized scoring method:
 - IE: Text coverage + JSON strictness (0.5 * coverage + 0.5 * json_strict)
 - json1/json2: DIoU layout score + text score (0.7 * diou + 0.3 * text)
 """,
-        dataset_id='/home/zhy/projects/MaritimeOCRBench/eval_all_task_0522_1888_copied.jsonl',
+        dataset_id='/home/zhy/projects/MaritimeOCRBench/maritime_ocr_bench.jsonl',
         subset_list=SUBSET_LIST,
         metric_list=['score'],
         eval_split='test',

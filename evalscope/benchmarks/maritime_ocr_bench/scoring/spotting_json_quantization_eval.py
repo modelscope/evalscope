@@ -17,6 +17,7 @@ ExpectedSpottingFormat = Literal['auto', 'legacy', 'v1', 'v2']
 CODE_FENCE_RE = re.compile(r'^\s*```[\w+-]*\s*$')
 QUOTE_FENCE_RE = re.compile(r'^\s*(?:"""|\'\'\')\s*$')
 IMAGE_KEY_RE = re.compile(r'^image_(\d+)$')
+FULL_CODE_BLOCK_RE = re.compile(r'^\s*```(?:[\w+-]+)?[ \t]*\n?([\s\S]*?)\n?```\s*$', re.IGNORECASE)
 
 
 def _ensure_text(value: Any) -> str:
@@ -43,6 +44,9 @@ def _clean_response_text(text: Any) -> str:
     previous = None
     while cleaned != previous:
         previous = cleaned
+        block_match = FULL_CODE_BLOCK_RE.match(cleaned)
+        if block_match:
+            cleaned = block_match.group(1).strip()
         cleaned = _strip_outer_wrappers(cleaned)
     return cleaned.strip()
 

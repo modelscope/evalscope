@@ -21,18 +21,26 @@ def _normalize_text(text: str) -> str:
     return s
 
 
+def _strip_markdown_json_fence(text: str) -> str:
+    raw = (text or '').strip()
+    match = re.fullmatch(r'```(?:json|JSON)?\s*\n([\s\S]*?)\n```', raw)
+    if match:
+        return match.group(1).strip()
+    return raw
+
+
 def _strict_json_parse(text: str) -> Tuple[Optional[object], Optional[str]]:
     """
     严格 JSON 校验：
     - 仅允许完整 JSON 文本（可有首尾空白）
-    - 不接受额外说明文字、不接受 markdown code fence
+    - 若整体被 markdown code fence 包裹，则先去除 code fence 再校验
+    - 不接受额外说明文字
     """
     raw = (text or '').strip()
     if not raw:
         return None, 'empty'
 
-    if raw.startswith('```'):
-        return None, 'markdown_fence_not_allowed'
+    raw = _strip_markdown_json_fence(raw)
 
     try:
         return json.loads(raw), None
