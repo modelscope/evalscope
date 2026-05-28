@@ -247,10 +247,10 @@ class APIEmbeddingModel(BaseModel):
 class APIRerankerModel(BaseModel):
     """Reranker adapter for OpenAI-compatible rerank APIs."""
 
-    def __init__(self, **kwargs):
-        self.model_name = kwargs.get('model_name')
-        self.api_base = kwargs.get('api_base')
-        self.api_key = kwargs.get('api_key') or os.getenv('OPENAI_API_KEY')
+    def __init__(self, **kwargs) -> None:
+        self.model_name: str = kwargs.get('model_name')
+        self.api_base: str = kwargs.get('api_base')
+        self.api_key: Optional[str] = kwargs.get('api_key') or os.getenv('OPENAI_API_KEY')
 
         if not self.api_base:
             raise ValueError('api_base is required for API reranker model.')
@@ -258,13 +258,13 @@ class APIRerankerModel(BaseModel):
         super().__init__(model_name_or_path=self.model_name, **kwargs)
 
         self.framework = ['API']
-        self.batch_size = self.encode_kwargs.get('batch_size', 10)
-        self.timeout = kwargs.get('timeout', 60)
-        self.rerank_url = self.api_base.rstrip('/')
+        self.batch_size: int = self.encode_kwargs.get('batch_size', 10)
+        self.timeout: int = kwargs.get('timeout', 60)
+        self.rerank_url: str = self.api_base.rstrip('/')
         if not self.rerank_url.endswith(('/rerank', '/reranks')):
             self.rerank_url = f'{self.rerank_url}/rerank'
 
-        self.headers = {'Content-Type': 'application/json'}
+        self.headers: Dict[str, str] = {'Content-Type': 'application/json'}
         if self.api_key:
             self.headers['Authorization'] = f'Bearer {self.api_key}'
         self.session = requests.Session()
@@ -275,8 +275,8 @@ class APIRerankerModel(BaseModel):
         if not sentences:
             return torch.tensor([])
 
-        scores = [0.0] * len(sentences)
-        grouped_sentences = {}
+        scores: List[float] = [0.0] * len(sentences)
+        grouped_sentences: Dict[str, List] = {}
         prompt = self.prompt or ''
 
         for idx, sentence in enumerate(sentences):
@@ -299,7 +299,7 @@ class APIRerankerModel(BaseModel):
                     'query': query,
                     'documents': documents,
                     'top_n': len(documents),
-                    'return_documents': True,
+                    'return_documents': False,
                 }
                 response = self.session.post(self.rerank_url, headers=self.headers, json=payload, timeout=self.timeout)
                 response.raise_for_status()
@@ -316,8 +316,10 @@ class APIRerankerModel(BaseModel):
                         try:
                             doc_idx = int(doc_idx)
                         except (TypeError, ValueError):
+                            logger.warning(f'Rerank result has non-integer index: {result.get("index")}, skipping.')
                             continue
                     if doc_idx < 0 or doc_idx >= len(batch_pairs):
+                        logger.warning(f'Rerank result index {doc_idx} out of range [0, {len(batch_pairs)}), skipping.')
                         continue
                     score = result.get('relevance_score', result.get('score', 0.0))
                     scores[batch_pairs[doc_idx][0]] = score

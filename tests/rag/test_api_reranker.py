@@ -60,7 +60,7 @@ def test_api_reranker_predict(monkeypatch):
             'query': 'query',
             'documents': ['document 0', 'document 1'],
             'top_n': 2,
-            'return_documents': True,
+            'return_documents': False,
         },
         'timeout': 60,
     }]
