@@ -56,7 +56,7 @@ SciCode is a challenging benchmark designed to evaluate language model capabilit
   - `main_problem_pass_rate`: Complete problem solved
   - `subproblem_pass_rate`: Individual subproblem success rate
 - Configure `provide_background` to include scientific context
-- Uses custom Docker image: `scicode-benchmark:latest`
+- Uses custom Docker image `scicode-benchmark:latest` (auto-built locally from bundled Dockerfile on first run)
 """,  # noqa: E501
         dataset_id='evalscope/SciCode',
         metric_list=['main_problem_pass_rate', 'subproblem_pass_rate'],
