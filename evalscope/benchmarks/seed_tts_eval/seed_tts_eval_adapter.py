@@ -146,8 +146,9 @@ class SeedTTSEvalAdapter(DefaultDataAdapter):
                 metric_func = metric_cls(**metric_args)
                 metric_score = metric_func(generated_audio, reference)
                 score.value[metric_name] = metric_score
-                if metric_name == 'audio_wer' and getattr(metric_func, 'transcriptions', None):
-                    score.metadata['transcription'] = metric_func.transcriptions[0]
+                transcriptions = getattr(metric_func, 'transcriptions', None)
+                if metric_name == 'audio_wer' and transcriptions:
+                    score.metadata['transcription'] = transcriptions[0]
             except Exception as e:
                 logger.error(f'Error calculating metric {metric}: {e}')
                 score.value[metric_name] = 0

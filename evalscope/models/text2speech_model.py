@@ -277,7 +277,8 @@ class Text2SpeechAPI(ModelAPI):
         }
 
     def _decode_volcengine_events(self, response: requests.Response) -> Iterable[Dict[str, Any]]:
-        text = self._response_text(response)
+        response.encoding = 'utf-8'
+        text = response.text
         payload_parts = self._sse_data_parts(text)
         if not payload_parts:
             payload_parts = [text]
@@ -290,22 +291,14 @@ class Text2SpeechAPI(ModelAPI):
                     index += 1
                 if index >= len(payload):
                     break
-                event, index = decoder.raw_decode(payload, index)
+                try:
+                    event, index = decoder.raw_decode(payload, index)
+                except json.JSONDecodeError as e:
+                    raise RuntimeError(
+                        f'Failed to decode Volcengine TTS response payload: {payload!r}'
+                    ) from e
                 if isinstance(event, dict):
                     yield event
-
-    @staticmethod
-    def _response_text(response: requests.Response) -> str:
-        chunks: List[str] = []
-        for chunk in response.iter_content(chunk_size=8192, decode_unicode=True):
-            if not chunk:
-                continue
-            if isinstance(chunk, bytes):
-                chunk = chunk.decode('utf-8')
-            chunks.append(chunk)
-        if chunks:
-            return ''.join(chunks)
-        return response.text
 
     @staticmethod
     def _sse_data_parts(text: str) -> List[str]:

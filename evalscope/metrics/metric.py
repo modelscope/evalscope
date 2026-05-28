@@ -244,6 +244,8 @@ class AudioWER(Metric):
             payload = response.json()
         except ValueError:
             return response.text.strip()
+        if not isinstance(payload, dict):
+            raise ValueError(f'Unexpected response payload format (expected dict): {payload}')
 
         text = payload.get('text') or payload.get('transcription')
         if text is None and isinstance(payload.get('result'), dict):
@@ -279,6 +281,8 @@ class AudioWER(Metric):
         )
         response.raise_for_status()
         payload = response.json()
+        if not isinstance(payload, dict):
+            raise ValueError(f'Unexpected response payload format (expected dict): {payload}')
 
         output_text = payload.get('output_text')
         if output_text:

@@ -23,6 +23,7 @@ def test_text2speech_volcengine_provider_returns_audio(monkeypatch: Any) -> None
 
         def __init__(self, body: str):
             self.body = body
+            self.text = body
 
         def raise_for_status(self) -> None:
             pass
