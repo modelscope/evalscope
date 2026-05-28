@@ -1,5 +1,6 @@
 import json
 import os
+import requests
 from collections import defaultdict
 from typing import Dict, List, Optional
 
@@ -7,6 +8,11 @@ from evalscope.api.metric import Aggregator, AggScore, Metric, SampleScore, Sing
 from evalscope.api.registry import register_aggregation, register_metric
 from evalscope.utils.import_utils import check_import
 from .metrics import calculate_pass_at_k, calculate_pass_hat_k, mean, normalize_text
+
+DEFAULT_OPENAI_API_BASE = 'https://api.openai.com/v1'
+DEFAULT_SEED_TTS_TRANSCRIPTIONS_PATH = '/audio/transcriptions'
+DEFAULT_SEED_TTS_RESPONSES_PATH = '/responses'
+SUPPORTED_AUDIO_PROTOCOLS = {'transcriptions', 'responses'}
 
 # ##################
 # NLP Metrics ######
@@ -179,15 +185,16 @@ class AudioWER(Metric):
     ):
         self.api_base = (
             api_base or os.getenv('SEED_TTS_EVAL_ASR_API_BASE') or os.getenv('OPENAI_BASE_URL')
-            or 'https://api.openai.com/v1'
+            or DEFAULT_OPENAI_API_BASE
         ).rstrip('/')
         self.api_key = api_key or os.getenv('SEED_TTS_EVAL_ASR_API_KEY') or os.getenv('OPENAI_API_KEY')
         self.model = model or os.getenv('SEED_TTS_EVAL_ASR_MODEL') or 'whisper-1'
         self.language = self._normalize_language(language)
-        self.api_protocol = (api_protocol or os.getenv('SEED_TTS_EVAL_ASR_API_PROTOCOL') or 'transcriptions').lower()
+        self.api_protocol = self._resolve_protocol(api_protocol)
         self.prompt = prompt or os.getenv('SEED_TTS_EVAL_ASR_PROMPT') or 'Transcribe the speech. Return only the text.'
         self.timeout = timeout
         self.transcriptions: List[str] = []
+        self._session = requests.Session()
 
     def apply(self, predictions: List[str], references: List[str]) -> List[float]:
         from .text_normalizer.wer import normalize_text, wer
@@ -211,8 +218,6 @@ class AudioWER(Metric):
         return self._transcribe_with_transcriptions(audio)
 
     def _transcribe_with_transcriptions(self, audio: str) -> str:
-        import requests
-
         from evalscope.utils.url_utils import file_as_data, is_data_uri
 
         endpoint = self._transcription_endpoint()
@@ -226,7 +231,7 @@ class AudioWER(Metric):
         if self.language:
             data['language'] = 'zh' if self.language == 'cmn_hans' else self.language
 
-        response = requests.post(
+        response = self._session.post(
             endpoint,
             headers=headers,
             files={'file': (filename, audio_bytes, mime_type)},
@@ -248,9 +253,7 @@ class AudioWER(Metric):
         return str(text)
 
     def _transcribe_with_responses(self, audio: str) -> str:
-        import requests
-
-        response = requests.post(
+        response = self._session.post(
             self._responses_endpoint(),
             headers={
                 'Authorization': f'Bearer {self.api_key}',
@@ -293,14 +296,10 @@ class AudioWER(Metric):
         return '\n'.join(text_parts).strip()
 
     def _transcription_endpoint(self) -> str:
-        if self.api_base.endswith('/audio/transcriptions'):
-            return self.api_base
-        return f'{self.api_base}/audio/transcriptions'
+        return self._build_api_endpoint(self.api_base, DEFAULT_SEED_TTS_TRANSCRIPTIONS_PATH)
 
     def _responses_endpoint(self) -> str:
-        if self.api_base.endswith('/responses'):
-            return self.api_base
-        return f'{self.api_base}/responses'
+        return self._build_api_endpoint(self.api_base, DEFAULT_SEED_TTS_RESPONSES_PATH)
 
     @staticmethod
     def _audio_url(audio: str) -> str:
@@ -321,6 +320,18 @@ class AudioWER(Metric):
             'english': 'en',
         }
         return language_map.get((language or '').lower(), language)
+
+    @staticmethod
+    def _build_api_endpoint(api_base: str, suffix: str) -> str:
+        if api_base.endswith(suffix):
+            return api_base
+        return f'{api_base.rstrip("/")}/{suffix.lstrip("/")}'
+
+    def _resolve_protocol(self, api_protocol: Optional[str]) -> str:
+        protocol = (api_protocol or os.getenv('SEED_TTS_EVAL_ASR_API_PROTOCOL') or 'transcriptions').lower()
+        if protocol not in SUPPORTED_AUDIO_PROTOCOLS:
+            raise ValueError(f'Unsupported audio_wer api_protocol: {protocol}')
+        return protocol
 
 
 @register_metric(name='bertscore')

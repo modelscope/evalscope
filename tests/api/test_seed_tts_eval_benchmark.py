@@ -1,4 +1,5 @@
 import base64
+import pytest
 from typing import Any, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta
@@ -102,7 +103,7 @@ def test_match_score_uses_generated_audio_path(monkeypatch: Any) -> None:
         assert data['model'] == 'whisper-1'
         return Response()
 
-    monkeypatch.setattr('requests.post', mock_post)
+    monkeypatch.setattr('requests.Session.post', mock_post)
     score = adapter.match_score('', '', 'hello', state)
 
     assert score.value['audio_wer'] == 0.0
@@ -128,7 +129,7 @@ def test_audio_wer_accepts_full_transcription_endpoint(monkeypatch: Any) -> None
         assert url == 'https://asr.test/v1/audio/transcriptions'
         return Response()
 
-    monkeypatch.setattr('requests.post', mock_post)
+    monkeypatch.setattr('requests.Session.post', mock_post)
     metric = AudioWER(api_base='https://asr.test/v1/audio/transcriptions', api_key='test-key')
     score = metric('data:audio/wav;base64,' + base64.b64encode(b'audio').decode('utf-8'), 'hello')
 
@@ -164,7 +165,7 @@ def test_audio_wer_supports_responses_protocol(monkeypatch: Any) -> None:
         assert content[1]['type'] == 'input_text'
         return Response()
 
-    monkeypatch.setattr('requests.post', mock_post)
+    monkeypatch.setattr('requests.Session.post', mock_post)
     metric = AudioWER(
         api_base='https://ark.test/api/v3',
         api_key='test-key',
@@ -175,3 +176,8 @@ def test_audio_wer_supports_responses_protocol(monkeypatch: Any) -> None:
 
     assert score == 0.0
     assert metric.transcriptions == ['hello']
+
+
+def test_audio_wer_rejects_unsupported_protocol() -> None:
+    with pytest.raises(ValueError, match='Unsupported audio_wer api_protocol'):
+        AudioWER(api_base='https://asr.test/v1', api_key='test-key', api_protocol='streaming')

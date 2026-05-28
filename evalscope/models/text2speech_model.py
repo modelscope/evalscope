@@ -16,8 +16,8 @@ from evalscope.utils.io_utils import bytes_to_base64
 class Text2SpeechAPI(ModelAPI):
     """Text-to-speech model provider."""
 
-    VOLCENGINE_TTS_URL = 'https://openspeech.bytedance.com/api/v3/tts/unidirectional'
-    OPENAI_TTS_URL = 'https://api.openai.com/v1'
+    VOLCENGINE_TTS_API_BASE = 'https://openspeech.bytedance.com/api/v3/tts'
+    OPENAI_TTS_API_BASE = 'https://api.openai.com/v1'
     VOLCENGINE_FORMATS = {'mp3', 'wav'}
     OPENAI_FORMATS = {'mp3', 'wav', 'flac', 'opus', 'pcm', 'aac', 'm4a'}
     _TARGET_TEXT_PATTERN = re.compile(r'Target text:\s*(.*?)(?:\n\s*Return only\b|\Z)', re.DOTALL | re.IGNORECASE)
@@ -37,7 +37,7 @@ class Text2SpeechAPI(ModelAPI):
             config=config,
         )
 
-        self.provider = model_args.pop('provider', 'volcengine')
+        self.provider = (model_args.pop('provider', 'volcengine') or 'volcengine').lower()
         self.base_url = (base_url or '').rstrip('/')
         self.timeout = model_args.pop('timeout', 60)
         self.audio_format = model_args.pop('format', 'mp3')
@@ -84,7 +84,11 @@ class Text2SpeechAPI(ModelAPI):
         )
 
     def _init_volcengine(self, model_name: str, api_key: Optional[str], model_args: Dict[str, Any]) -> None:
-        self.url = (self.base_url or self.VOLCENGINE_TTS_URL).rstrip('/')
+        self.url = self._resolve_endpoint(
+            base_url=self.base_url,
+            default_base=self.VOLCENGINE_TTS_API_BASE,
+            endpoint='unidirectional',
+        )
         self.api_key = self._resolve_volcengine_api_key(api_key)
         self.resource_id = model_args.pop('resource_id', model_name)
         self.speaker = model_args.pop('speaker', None)
@@ -106,7 +110,7 @@ class Text2SpeechAPI(ModelAPI):
             raise ValueError('text2speech output format must be "mp3" or "wav" for Volcengine.')
 
     def _init_openai(self, model_name: str, api_key: Optional[str], model_args: Dict[str, Any]) -> None:
-        self.url = self._build_openai_tts_url(self.base_url or self.OPENAI_TTS_URL)
+        self.url = self._build_openai_tts_url(self.base_url or self.OPENAI_TTS_API_BASE)
         self.api_key = self._resolve_openai_api_key(api_key)
         self.voice = model_args.pop('voice', 'alloy')
         self.speed = model_args.pop('speed', None)
@@ -134,6 +138,14 @@ class Text2SpeechAPI(ModelAPI):
         if base.endswith('/audio/speech'):
             return base
         return f'{base}/audio/speech'
+
+    @staticmethod
+    def _resolve_endpoint(base_url: str, default_base: str, endpoint: str) -> str:
+        base = (base_url or default_base).rstrip('/')
+        suffix = endpoint.strip('/')
+        if base.endswith(f'/{suffix}'):
+            return base
+        return f'{base}/{endpoint}'
 
     @staticmethod
     def _resolve_openai_api_key(api_key: Optional[str]) -> Optional[str]:
