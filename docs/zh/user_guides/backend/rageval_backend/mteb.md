@@ -198,7 +198,8 @@ two_stage_task_cfg = {
             - `hub`: `str` 模型来源，可以是 "modelscope" 或 "huggingface"。
         - **对于远程API模型服务支持**：
             - `model_name`: `str` 模型名称。
-            - `api_base`: `str` 模型API服务地址。
+            - `is_cross_encoder`: `bool` 远程API模型是否为reranker，默认为 False；API reranker需设置为 `True`，否则使用embedding API。
+            - `api_base`: `str` 模型API服务地址；API reranker会调用rerank端点，如果地址未以 `/rerank` 或 `/reranks` 结尾，会自动追加 `/rerank`。
             - `api_key`: `str` 模型API密钥。
             - `dimension`: `int` 模型输出维度。
             - `encode_kwargs`: `dict` 编码的关键字参数，默认值为：  
