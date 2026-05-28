@@ -294,9 +294,7 @@ class Text2SpeechAPI(ModelAPI):
                 try:
                     event, index = decoder.raw_decode(payload, index)
                 except json.JSONDecodeError as e:
-                    raise RuntimeError(
-                        f'Failed to decode Volcengine TTS response payload: {payload!r}'
-                    ) from e
+                    raise RuntimeError(f'Failed to decode Volcengine TTS response payload: {payload!r}') from e
                 if isinstance(event, dict):
                     yield event
 
