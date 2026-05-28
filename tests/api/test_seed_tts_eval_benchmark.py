@@ -85,7 +85,12 @@ def test_match_score_uses_generated_audio_path(monkeypatch: Any) -> None:
     state.metadata['generated_audio_path'] = 'data:audio/wav;base64,' + base64.b64encode(b'audio').decode('utf-8')
 
     def mock_post(
-        url: str, headers: dict[str, str], files: dict[str, Any], data: dict[str, str], timeout: float
+        self: Any,
+        url: str,
+        headers: dict[str, str],
+        files: dict[str, Any],
+        data: dict[str, str],
+        timeout: float,
     ) -> Any:
 
         class Response:
@@ -113,7 +118,12 @@ def test_match_score_uses_generated_audio_path(monkeypatch: Any) -> None:
 def test_audio_wer_accepts_full_transcription_endpoint(monkeypatch: Any) -> None:
 
     def mock_post(
-        url: str, headers: dict[str, str], files: dict[str, Any], data: dict[str, str], timeout: float
+        self: Any,
+        url: str,
+        headers: dict[str, str],
+        files: dict[str, Any],
+        data: dict[str, str],
+        timeout: float,
     ) -> Any:
 
         class Response:
@@ -139,7 +149,13 @@ def test_audio_wer_accepts_full_transcription_endpoint(monkeypatch: Any) -> None
 
 def test_audio_wer_supports_responses_protocol(monkeypatch: Any) -> None:
 
-    def mock_post(url: str, headers: dict[str, str], json: dict[str, Any], timeout: float) -> Any:
+    def mock_post(
+        self: Any,
+        url: str,
+        headers: dict[str, str],
+        json: dict[str, Any],
+        timeout: float,
+    ) -> Any:
 
         class Response:
 
