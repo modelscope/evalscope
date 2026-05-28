@@ -1,5 +1,3 @@
-from typing import cast
-
 from evalscope.api.evaluator import TaskState
 
 
@@ -21,7 +19,7 @@ def extract_code(block: str) -> str:
         The extracted code with the code fences and surrounding whitespace removed.
 
     """
-    return block.replace('```python', '').replace('```', '').strip()
+    return block.replace("```python", "").replace("```", "").strip()
 
 
 def get_generated_code(state: TaskState) -> list[str]:
@@ -44,9 +42,11 @@ def get_generated_code(state: TaskState) -> list[str]:
 
     """
     assistant_messages = [
-        extract_code(cast(str, message.content)) for message in state.messages if message.role == 'assistant'
+        extract_code(message.text)
+        for message in state.messages
+        if message.role == "assistant"
     ]
-    assert len(assistant_messages) == len(state.metadata['sub_steps'])
+    assert len(assistant_messages) == len(state.metadata["sub_steps"])
     return assistant_messages
 
 
@@ -73,4 +73,4 @@ def subproblem_str_to_int(num: str) -> int:
     1
 
     """
-    return int(num.split('.')[1])
+    return int(num.split(".")[1])
