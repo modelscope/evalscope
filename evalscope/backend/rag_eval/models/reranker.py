@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import requests
+import time
 import torch
 from torch import Tensor
 from typing import Any, Dict, List, Optional, Union
@@ -85,16 +86,37 @@ class CrossEncoderReranker(BaseReranker):
 
         self._supported_predict_params = get_supported_params(self.model.predict)
 
-    def predict(self, sentences: List[List[str]], **kwargs: Any) -> Array:
+    def predict(self, inputs1, inputs2=None, **kwargs: Any) -> Array:
         """Predict relevance scores for sentence pairs using CrossEncoder.
 
+        Supports both MTEB 2.x DataLoader[BatchedInput] format (inputs1, inputs2)
+        and legacy List[List[str]] format for backward compatibility.
+
         Args:
-            sentences: List of [query, document] pairs.
-            **kwargs: Additional parameters passed to CrossEncoder.predict().
+            inputs1: DataLoader of query batches (MTEB 2.x) or List[List[str]] (legacy).
+            inputs2: DataLoader of document batches (MTEB 2.x), None for legacy format.
+            **kwargs: Additional parameters.
 
         Returns:
             Tensor of relevance scores with shape [n_pairs].
         """
+        from torch.utils.data import DataLoader
+
+        # Pop MTEB metadata kwargs that we don't use
+        kwargs.pop('task_metadata', None)
+        kwargs.pop('hf_split', None)
+        kwargs.pop('hf_subset', None)
+        kwargs.pop('prompt_type', None)
+
+        # Handle MTEB 2.x DataLoader input
+        if isinstance(inputs1, DataLoader):
+            queries = [text for batch in inputs1 for text in batch['text']]
+            docs = [text for batch in inputs2 for text in batch['text']]
+            sentences = list(zip(queries, docs))
+        else:
+            # Legacy: inputs1 is already List[List[str]]
+            sentences = inputs1
+
         # Filter unsupported kwargs
         for key in list(kwargs.keys()):
             if key not in self._supported_predict_params:
@@ -154,10 +176,13 @@ class APIReranker(BaseReranker):
         self.batch_size = batch_size
         self.timeout = timeout
 
-        # Build the rerank URL
+        # Build the rerank URL (default /rerank, DashScope uses /reranks)
         self.rerank_url = api_base.rstrip('/')
         if not self.rerank_url.endswith(('/rerank', '/reranks')):
-            self.rerank_url = f'{self.rerank_url}/rerank'
+            if 'dashscope.aliyuncs.com' in self.rerank_url:
+                self.rerank_url = f'{self.rerank_url}/reranks'
+            else:
+                self.rerank_url = f'{self.rerank_url}/rerank'
 
         # Set up headers
         self.headers: Dict[str, str] = {'Content-Type': 'application/json'}
@@ -167,16 +192,35 @@ class APIReranker(BaseReranker):
 
         self.session = requests.Session()
 
-    def predict(self, sentences: List[List[str]], **kwargs: Any) -> Array:
+    def predict(self, inputs1, inputs2=None, **kwargs: Any) -> Array:
         """Predict relevance scores via the rerank API.
 
+        Supports both MTEB 2.x DataLoader[BatchedInput] format and legacy format.
+
         Args:
-            sentences: List of [query, document] or [query, document, instruction] pairs.
+            inputs1: DataLoader of query batches (MTEB 2.x) or List[List[str]] (legacy).
+            inputs2: DataLoader of document batches (MTEB 2.x), None for legacy format.
             **kwargs: Additional parameters (batch_size override, etc.).
 
         Returns:
             Tensor of relevance scores with shape [n_pairs].
         """
+        from torch.utils.data import DataLoader
+
+        # Pop MTEB metadata kwargs
+        kwargs.pop('task_metadata', None)
+        kwargs.pop('hf_split', None)
+        kwargs.pop('hf_subset', None)
+        kwargs.pop('prompt_type', None)
+
+        # Handle MTEB 2.x DataLoader input
+        if isinstance(inputs1, DataLoader):
+            queries = [text for batch in inputs1 for text in batch['text']]
+            docs = [text for batch in inputs2 for text in batch['text']]
+            sentences = list(zip(queries, docs))
+        else:
+            sentences = inputs1
+
         batch_size = kwargs.pop('batch_size', self.batch_size)
 
         if not sentences:
@@ -199,6 +243,7 @@ class APIReranker(BaseReranker):
             grouped_sentences.setdefault(prompt + query, []).append((idx, document))
 
         # Process each query group in batches
+        max_retries = 3
         for query, pairs in grouped_sentences.items():
             for i in range(0, len(pairs), batch_size):
                 batch_pairs = pairs[i:i + batch_size]
@@ -210,7 +255,20 @@ class APIReranker(BaseReranker):
                     'top_n': len(documents),
                     'return_documents': False,
                 }
-                response = self.session.post(self.rerank_url, headers=self.headers, json=payload, timeout=self.timeout)
+                response = None
+                for attempt in range(max_retries):
+                    response = self.session.post(
+                        self.rerank_url, headers=self.headers, json=payload, timeout=self.timeout
+                    )
+                    if response.status_code < 500:
+                        break
+                    if attempt < max_retries - 1:
+                        wait_time = 2**attempt
+                        logger.warning(
+                            f'Rerank API returned {response.status_code}, retrying in {wait_time}s '
+                            f'(attempt {attempt + 1}/{max_retries})'
+                        )
+                        time.sleep(wait_time)
                 response.raise_for_status()
                 data = response.json()
                 results = data.get('results')

@@ -65,10 +65,20 @@ def setup_work_directory(task_cfg: TaskConfig):
         task_cfg.eval_config['work_dir'] = task_cfg.work_dir
     elif task_cfg.eval_backend == EvalBackend.RAG_EVAL:
         from evalscope.backend.rag_eval import Tools
-        if task_cfg.eval_config['tool'].lower() == Tools.MTEB:
-            task_cfg.eval_config['eval']['output_folder'] = task_cfg.work_dir
-        elif task_cfg.eval_config['tool'].lower() == Tools.CLIP_BENCHMARK:
-            task_cfg.eval_config['eval']['output_dir'] = task_cfg.work_dir
+        eval_cfg = task_cfg.eval_config
+        # Support both Pydantic model and dict
+        tool = getattr(eval_cfg, 'tool', None) or (eval_cfg.get('tool', '') if isinstance(eval_cfg, dict) else '')
+        tool = tool.lower() if tool else ''
+        if tool == Tools.MTEB:
+            if hasattr(eval_cfg, 'eval') and not isinstance(eval_cfg, dict):
+                eval_cfg.eval.output_folder = task_cfg.work_dir
+            elif isinstance(eval_cfg, dict) and 'eval' in eval_cfg:
+                eval_cfg['eval']['output_folder'] = task_cfg.work_dir
+        elif tool == Tools.CLIP_BENCHMARK:
+            if hasattr(eval_cfg, 'eval') and not isinstance(eval_cfg, dict):
+                eval_cfg.eval.output_dir = task_cfg.work_dir
+            elif isinstance(eval_cfg, dict) and 'eval' in eval_cfg:
+                eval_cfg['eval']['output_dir'] = task_cfg.work_dir
     return outputs
 
 

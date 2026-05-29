@@ -13,6 +13,7 @@ class MockResponse:
 
     def __init__(self, data):
         self.data = data
+        self.status_code = 200
 
     def raise_for_status(self):
         pass

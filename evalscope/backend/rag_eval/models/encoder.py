@@ -212,33 +212,41 @@ class APIEncoder(BaseEncoder):
         )
         self._supported_encode_params = get_supported_params(self._client.embed_documents)
 
-    def encode(self, texts: Union[str, List[str]], **kwargs: Any) -> Array:
-        """Encode texts via the embedding API in batches.
+    def encode(self, inputs, **kwargs: Any) -> Array:
+        """Encode texts into embeddings using API.
+
+        Supports both MTEB 2.x DataLoader[BatchedInput] format and legacy
+        str/List[str] format for backward compatibility.
 
         Args:
-            texts: Single text or list of texts to encode.
-            **kwargs: Additional parameters (prompt_type, task_name, etc.).
+            inputs: DataLoader of batched inputs (MTEB 2.x) or str/list[str] (legacy).
+            **kwargs: Additional parameters (task_metadata, prompt_type, hf_split, etc.).
 
         Returns:
             Torch tensor of shape (n_texts, embed_dim).
         """
         from mteb.types import PromptType
+        from torch.utils.data import DataLoader
 
-        # Separate unsupported params
-        extra_params: Dict[str, Any] = {}
-        for key in list(kwargs.keys()):
-            if key not in self._supported_encode_params:
-                extra_params[key] = kwargs.pop(key)
+        # Extract texts from DataLoader (MTEB 2.x API) or use directly
+        if isinstance(inputs, DataLoader):
+            texts = [text for batch in inputs for text in batch['text']]
+        elif isinstance(inputs, str):
+            texts = [inputs]
+        else:
+            texts = list(inputs)
 
-        # Resolve prompt
+        # Extract MTEB metadata before filtering
+        prompt_type = kwargs.pop('prompt_type', None)
+        task_metadata = kwargs.pop('task_metadata', None)
+        kwargs.pop('hf_split', None)
+        kwargs.pop('hf_subset', None)
+
+        # Resolve prompt based on prompt_type
         prompt = None
-        prompt_type = extra_params.pop('prompt_type', '')
-        task_name = extra_params.pop('task_name', '')
-        if prompt_type and prompt_type == PromptType.query:
+        if prompt_type == PromptType.query:
+            task_name = getattr(task_metadata, 'name', '') if task_metadata else ''
             prompt = self.get_prompt(task_name)
-
-        if isinstance(texts, str):
-            texts = [texts]
 
         embeddings: List[List[float]] = []
         for i in tqdm(range(0, len(texts), self.batch_size)):

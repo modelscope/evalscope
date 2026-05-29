@@ -32,42 +32,6 @@ class LLM:
         else:
             return LocalLLM(**kw)
 
-    @staticmethod
-    def load_ragas_llm(**kw):
-        """Load a ragas-native LLM using llm_factory (ragas 0.4.x).
-
-        Falls back to LangchainLLMWrapper if llm_factory is unavailable.
-        """
-        api_base = kw.get('api_base', None)
-        model_name = kw.get('model_name', '')
-        api_key = kw.get('api_key', None)
-
-        if api_base:
-            try:
-                from openai import OpenAI
-                from ragas.llms import llm_factory
-
-                client_kwargs: Dict[str, Any] = {'base_url': api_base}
-                if api_key:
-                    client_kwargs['api_key'] = api_key
-                client = OpenAI(**client_kwargs)
-                return llm_factory(model_name, client=client)
-            except (ImportError, Exception) as e:
-                logger.warning(f'Failed to use ragas llm_factory: {e}, falling back to LangchainLLMWrapper')
-                from ragas.llms.base import LangchainLLMWrapper
-                langchain_llm = ChatOpenAI(
-                    model=model_name,
-                    base_url=api_base,
-                    api_key=api_key or 'EMPTY',
-                    temperature=kw.get('temperature', 0.0),
-                )
-                return LangchainLLMWrapper(langchain_llm)
-        else:
-            # Local model wrapped for ragas
-            from ragas.llms.base import LangchainLLMWrapper
-            local_llm = LocalLLM(**kw)
-            return LangchainLLMWrapper(local_llm)
-
 
 class LocalLLM(BaseLLM):
     """A custom LLM that loads a model from a given path and performs inference."""

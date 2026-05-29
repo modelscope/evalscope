@@ -200,7 +200,7 @@ two_stage_task_cfg = {
       - **For remote API model service support**:
         - `model_name`: `str`: Model name.
         - `is_cross_encoder`: `bool`: Whether the remote API model is a reranker, default is False. Set it to `True` for API rerankers; otherwise the embedding API is used.
-        - `api_base`: `str`: Model API base URL. API rerankers call the rerank endpoint; if the URL does not end with `/rerank` or `/reranks`, `/rerank` is appended automatically.
+        - `api_base`: `str`: Model API base URL. API rerankers call the rerank endpoint; if the URL does not end with `/rerank` or `/reranks`, `/rerank` is appended by default (`/reranks` for DashScope domains).
         - `api_key`: `str`: Model API key.
         - `dimension`: `int`: Model output dimension.
         - `encode_kwargs`: `dict`: Encoding keyword arguments, default is:

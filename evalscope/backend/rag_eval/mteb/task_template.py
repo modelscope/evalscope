@@ -181,6 +181,14 @@ def two_stage_eval(
     return results
 
 
+def _safe_get_task_type(result) -> str:
+    """Get task type safely, handling custom tasks not in mteb registry."""
+    try:
+        return result.task_type
+    except (KeyError, Exception):
+        return 'Custom'
+
+
 def show_results(output_folder: str, model, results: List) -> None:
     """Display evaluation results in a formatted table."""
     model_name = getattr(model, 'model_name_or_path', 'unknown')
@@ -201,7 +209,7 @@ def show_results(output_folder: str, model, results: List) -> None:
             for sub_score in sub_scores:
                 data.append({
                     'Model': str(model_name).replace('eval__', ''),
-                    'Task Type': getattr(main_res, 'task_type', 'N/A'),
+                    'Task Type': _safe_get_task_type(main_res),
                     'Task': getattr(main_res, 'task_name', 'N/A'),
                     'Split': split,
                     'Subset': sub_score.get('hf_subset', 'default'),

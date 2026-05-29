@@ -28,11 +28,26 @@ def patch_tasks_for_modelscope(tasks: List, limits: Optional[int] = None) -> Non
         _patch_single_task(task, limits=limits)
 
 
+def _is_retrieval_task(task) -> bool:
+    """Check if a task requires retrieval-style data loading.
+
+    In MTEB 2.x, Reranking tasks inherit from AbsTaskRetrieval and expect
+    corpus/queries/relevant_docs format, so we check both the metadata type
+    and the class hierarchy.
+    """
+    task_type = getattr(task.metadata, 'type', None)
+    if task_type in ('Retrieval', 'Reranking'):
+        return True
+    try:
+        from mteb.abstasks.retrieval import AbsTaskRetrieval
+        return isinstance(task, AbsTaskRetrieval)
+    except ImportError:
+        return False
+
+
 def _patch_single_task(task, limits: Optional[int] = None) -> None:
     """Patch a single MTEB task's ``load_data`` method for ModelScope loading."""
-    task_type = getattr(task.metadata, 'type', None)
-
-    if task_type == 'Retrieval':
+    if _is_retrieval_task(task):
 
         def ms_load_retrieval(self, **kwargs):
             if getattr(self, 'data_loaded', False):
@@ -106,6 +121,72 @@ def _load_generic_from_modelscope(task, limits: Optional[int] = None) -> None:
     task.data_loaded = True
 
 
+def _apply_retrieval_limits_after_native_load(task, limits: Optional[int] = None) -> None:
+    """Apply query limits to a retrieval task after MTEB native loading.
+
+    When the ModelScope loader fails and falls back to MTEB's native loading,
+    limits are not applied. This function limits the number of queries evaluated
+    by filtering the queries, relevant_docs, and top_ranked datasets.
+
+    MTEB 2.x stores retrieval data as:
+        task.dataset[hf_subset][split] = RetrievalSplitData(
+            corpus=Dataset, queries=Dataset, relevant_docs=Dataset, top_ranked=Dataset|None
+        )
+    """
+    if limits is None or not getattr(task, 'data_loaded', False):
+        return
+
+    if not hasattr(task, 'dataset') or not task.dataset:
+        return
+
+    try:
+        for subset_key, subset_data in task.dataset.items():
+            for split_key, split_data in subset_data.items():
+                if not isinstance(split_data, dict):
+                    continue
+                queries = split_data.get('queries')
+                if queries is None or len(queries) <= limits:
+                    continue
+
+                # Get query IDs to keep
+                limited_queries = queries.select(range(limits))
+                keep_qids = set(str(q) for q in limited_queries['id'])
+
+                split_data['queries'] = limited_queries
+                logger.info(
+                    f"Applied limits={limits} to queries in '{subset_key}/{split_key}' "
+                    f'(was {len(queries)}, now {len(limited_queries)}).'
+                )
+
+                # Filter relevant_docs to keep only limited query IDs
+                relevant_docs = split_data.get('relevant_docs')
+                if relevant_docs is not None:
+                    try:
+                        if isinstance(relevant_docs, dict):
+                            split_data['relevant_docs'] = {k: v for k, v in relevant_docs.items() if k in keep_qids}
+                        elif hasattr(relevant_docs, 'filter'):
+                            split_data['relevant_docs'] = relevant_docs.filter(
+                                lambda x: str(x.get('query-id', x.get('qid', ''))) in keep_qids
+                            )
+                    except Exception as e:
+                        logger.warning(f'Could not filter relevant_docs: {e}')
+
+                # Filter top_ranked to keep only limited query IDs
+                top_ranked = split_data.get('top_ranked')
+                if top_ranked is not None:
+                    try:
+                        if isinstance(top_ranked, dict):
+                            split_data['top_ranked'] = {k: v for k, v in top_ranked.items() if k in keep_qids}
+                        elif hasattr(top_ranked, 'filter'):
+                            split_data['top_ranked'] = top_ranked.filter(
+                                lambda x: str(x.get('query-id', x.get('qid', ''))) in keep_qids
+                            )
+                    except Exception as e:
+                        logger.warning(f'Could not filter top_ranked: {e}')
+    except Exception as e:
+        logger.warning(f'Failed to apply limits after native loading: {e}')
+
+
 def _load_retrieval_from_modelscope(task, limits: Optional[int] = None) -> None:
     """Load a Retrieval MTEB dataset from ModelScope.
 
@@ -133,6 +214,7 @@ def _load_retrieval_from_modelscope(task, limits: Optional[int] = None) -> None:
         )
         task.data_loaded = False
         task.__class__.load_data(task)
+        _apply_retrieval_limits_after_native_load(task, limits=limits)
         return
 
     # Build corpus: {doc_id: {"text": text}}
