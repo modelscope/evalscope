@@ -1,8 +1,11 @@
-langchain>=0.3.0,<0.4.0
+instructor
+langchain>=1.0.0,<2.0.0
 langchain-community>=0.3.0,<0.4.0
-langchain-core>=0.3.0,<0.4.0
-langchain-openai>=0.3.0,<0.4.0
-mteb==1.38.20
-ragas==0.2.14
-torch
+langchain-core>=1.0.0,<2.0.0
+langchain-openai>=1.0.0,<2.0.0
+mteb>=2.7.0,<3.0.0
+openai>=1.0.0
+ragas>=0.4.0,<0.5.0
+sentence-transformers>=3.0.0
+torch>=2.0.0
 webdataset>0.2.0

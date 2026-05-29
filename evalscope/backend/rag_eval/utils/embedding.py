@@ -3,7 +3,7 @@ import requests
 import torch
 from langchain_core.embeddings import Embeddings
 from langchain_openai.embeddings import OpenAIEmbeddings
-from mteb.encoder_interface import PromptType
+from mteb.types import PromptType
 from sentence_transformers import models
 from sentence_transformers.cross_encoder import CrossEncoder
 from sentence_transformers.SentenceTransformer import SentenceTransformer

@@ -329,6 +329,7 @@ class TaskConfig(BaseArgument):
         self._init_default_generation_config()
         self._init_default_model_args()
         self._init_default_sandbox_config()
+        self._parse_rag_eval_config()
 
         # Handle deprecated judge_worker_num -> eval_batch_size
         if self.judge_worker_num is not None:
@@ -338,6 +339,21 @@ class TaskConfig(BaseArgument):
             )
 
         return self
+
+    def _parse_rag_eval_config(self):
+        """Parse eval_config into typed Pydantic models for RAGEval backend."""
+        if self.eval_backend != EvalBackend.RAG_EVAL or not isinstance(self.eval_config, dict):
+            return
+        tool = self.eval_config.get('tool', '').lower()
+        if tool == 'mteb':
+            from evalscope.backend.rag_eval.mteb.arguments import MTEBToolConfig
+            self.eval_config = MTEBToolConfig(**self.eval_config)
+        elif tool == 'ragas':
+            from evalscope.backend.rag_eval.ragas.arguments import RAGASToolConfig
+            self.eval_config = RAGASToolConfig(**self.eval_config)
+        elif tool == 'clip_benchmark':
+            from evalscope.backend.rag_eval.ragas.arguments import ClipBenchmarkToolConfig
+            self.eval_config = ClipBenchmarkToolConfig(**self.eval_config)
 
     def _init_model_and_id(self):
         # Set model to DummyCustomModel if not provided
