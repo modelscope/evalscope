@@ -20,13 +20,23 @@ def import_metric(metric_name: str):
     """
     # Try as ragas built-in first
     try:
+        import re
         from ragas import metrics as ragas_metrics
-        if hasattr(ragas_metrics, metric_name):
-            obj = getattr(ragas_metrics, metric_name)
-            # If it's a class, instantiate it; if it's already an instance, return it
-            if isinstance(obj, type):
-                return obj()
-            return obj
+
+        # Build candidate names: exact, snake_case, lowercase
+        candidates = [metric_name]
+        snake = re.sub(r'(?<!^)(?=[A-Z])', '_', metric_name).lower()
+        if snake != metric_name:
+            candidates.append(snake)
+        if metric_name.lower() not in candidates:
+            candidates.append(metric_name.lower())
+
+        for name in candidates:
+            if hasattr(ragas_metrics, name):
+                obj = getattr(ragas_metrics, name)
+                if isinstance(obj, type):
+                    return obj()
+                return obj
     except ImportError:
         pass
 
@@ -98,7 +108,7 @@ def _build_embeddings(embedding_config) -> Any:
                 client_kwargs['api_key'] = embedding_config.api_key
 
             client = OpenAI(**client_kwargs)
-            return embedding_factory('openai', client=client)
+            return embedding_factory('openai', model=embedding_config.model_name_or_path, client=client)
         except (ImportError, Exception) as e:
             logger.warning(f'Failed to use embedding_factory for openai: {e}')
             from langchain_openai import OpenAIEmbeddings

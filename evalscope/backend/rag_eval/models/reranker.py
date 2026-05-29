@@ -187,6 +187,8 @@ class APIReranker(BaseReranker):
         # Set up headers
         self.headers: Dict[str, str] = {'Content-Type': 'application/json'}
         resolved_api_key = api_key or os.getenv('OPENAI_API_KEY')
+        if not resolved_api_key and 'dashscope.aliyuncs.com' in self.rerank_url:
+            resolved_api_key = os.getenv('DASHSCOPE_API_KEY')
         if resolved_api_key:
             self.headers['Authorization'] = f'Bearer {resolved_api_key}'
 
@@ -257,9 +259,20 @@ class APIReranker(BaseReranker):
                 }
                 response = None
                 for attempt in range(max_retries):
-                    response = self.session.post(
-                        self.rerank_url, headers=self.headers, json=payload, timeout=self.timeout
-                    )
+                    try:
+                        response = self.session.post(
+                            self.rerank_url, headers=self.headers, json=payload, timeout=self.timeout
+                        )
+                    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                        if attempt < max_retries - 1:
+                            wait_time = 2**attempt
+                            logger.warning(
+                                f'Rerank API request failed: {e}, retrying in {wait_time}s '
+                                f'(attempt {attempt + 1}/{max_retries})'
+                            )
+                            time.sleep(wait_time)
+                            continue
+                        raise
                     if response.status_code < 500:
                         break
                     if attempt < max_retries - 1:

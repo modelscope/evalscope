@@ -177,8 +177,10 @@ def _build_retrieval_task(
 
     # Build corpus: {doc_id: {"text": text}}
     corpus = {}
-    for item in corpus_records:
-        doc_id = str(item.get('id', item.get('_id', '')))
+    for idx, item in enumerate(corpus_records):
+        doc_id = str(item.get('id', item.get('_id', ''))).strip()
+        if not doc_id:
+            raise ValueError(f"Corpus document at index {idx} is missing 'id' or '_id' field.")
         text = item.get('text', '')
         title = item.get('title', '')
         if title:
@@ -187,8 +189,10 @@ def _build_retrieval_task(
 
     # Build queries: {qid: text}
     queries = {}
-    for item in queries_records:
-        qid = str(item.get('id', item.get('_id', '')))
+    for idx, item in enumerate(queries_records):
+        qid = str(item.get('id', item.get('_id', ''))).strip()
+        if not qid:
+            raise ValueError(f"Query at index {idx} is missing 'id' or '_id' field.")
         queries[qid] = item.get('text', '')
 
     # Build relevant_docs: {qid: {doc_id: score}}

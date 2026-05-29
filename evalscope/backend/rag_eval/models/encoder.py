@@ -205,8 +205,8 @@ class APIEncoder(BaseEncoder):
 
         self._client = OpenAIEmbeddings(
             model=model_name,
-            openai_api_base=api_base,
-            openai_api_key=api_key,
+            base_url=api_base,
+            api_key=api_key,
             dimensions=dimensions,
             check_embedding_ctx_length=check_embedding_ctx_length,
         )
@@ -225,8 +225,13 @@ class APIEncoder(BaseEncoder):
         Returns:
             Torch tensor of shape (n_texts, embed_dim).
         """
-        from mteb.types import PromptType
         from torch.utils.data import DataLoader
+
+        try:
+            from mteb.types import PromptType
+            _PROMPT_TYPE_QUERY = PromptType.query
+        except ImportError:
+            _PROMPT_TYPE_QUERY = 'query'
 
         # Extract texts from DataLoader (MTEB 2.x API) or use directly
         if isinstance(inputs, DataLoader):
@@ -244,7 +249,7 @@ class APIEncoder(BaseEncoder):
 
         # Resolve prompt based on prompt_type
         prompt = None
-        if prompt_type == PromptType.query:
+        if prompt_type == _PROMPT_TYPE_QUERY:
             task_name = getattr(task_metadata, 'name', '') if task_metadata else ''
             prompt = self.get_prompt(task_name)
 

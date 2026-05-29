@@ -5,7 +5,6 @@ import traceback
 
 os.environ['HF_HUB_OFFLINE'] = '1'
 os.environ['TRANSFORMERS_OFFLINE'] = '1'
-sys.path.insert(0, '/mnt/nas2/yunlin.myl/evalscope')
 
 # Load .env
 from pathlib import Path
@@ -21,7 +20,7 @@ if env_file.exists():
 from evalscope.backend.rag_eval.ragas import RAGASEvalConfig, rag_eval
 
 eval_config = RAGASEvalConfig(
-    testset_file='/mnt/nas2/yunlin.myl/evalscope/tests/rag/ragas_mini_testset.json',
+    testset_file=str(Path(__file__).parent / 'ragas_mini_testset.json'),
     critic_llm={
         'model_name': 'qwen-plus',
         'provider': 'openai',

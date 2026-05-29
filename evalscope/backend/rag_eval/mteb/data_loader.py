@@ -141,6 +141,9 @@ def _apply_retrieval_limits_after_native_load(task, limits: Optional[int] = None
 
     try:
         for subset_key, subset_data in task.dataset.items():
+            # Handle flat DatasetDict (split -> Dataset directly, no subset layer)
+            if not hasattr(subset_data, 'items'):
+                continue
             for split_key, split_data in subset_data.items():
                 if not isinstance(split_data, dict):
                     continue

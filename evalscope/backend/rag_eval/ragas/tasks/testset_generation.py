@@ -65,7 +65,7 @@ def _build_ragas_embeddings(embedding_config) -> Any:
                 client_kwargs['api_key'] = embedding_config.api_key
 
             client = OpenAI(**client_kwargs)
-            return embedding_factory('openai', client=client)
+            return embedding_factory('openai', model=embedding_config.model_name_or_path, client=client)
         except (ImportError, Exception) as e:
             logger.warning(f'Failed to use embedding_factory for openai: {e}')
             from langchain_openai import OpenAIEmbeddings

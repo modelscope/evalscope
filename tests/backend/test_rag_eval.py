@@ -176,6 +176,9 @@ class TestModelFactory:
         assert cfg.api_base == 'http://localhost:8080'
 
 
+mteb = pytest.importorskip('mteb')
+
+
 class TestCustomTask:
     """Test custom dataset task building."""
 
