@@ -107,8 +107,6 @@ class BaseEncoder(ABC):
             List of embeddings as float lists.
         """
         result = self.encode(texts)
-        if isinstance(result, Tensor):
-            return result.tolist()
         return result.tolist()
 
     def embed_query(self, text: str) -> List[float]:
@@ -121,8 +119,6 @@ class BaseEncoder(ABC):
             Embedding as float list.
         """
         result = self.encode(text)
-        if isinstance(result, Tensor):
-            return result.tolist()
         return result.tolist()
 
     def get_prompt(self, task_name: str) -> Optional[str]:

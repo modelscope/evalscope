@@ -18,6 +18,12 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
+try:
+    from mteb.types import PromptType
+    _PROMPT_TYPE_QUERY = PromptType.query
+except ImportError:
+    _PROMPT_TYPE_QUERY = 'query'
+
 
 class SentenceTransformerEncoder(BaseEncoder):
     """Encoder wrapping sentence-transformers SentenceTransformer.
@@ -126,14 +132,9 @@ class SentenceTransformerEncoder(BaseEncoder):
         kwargs.pop('hf_split', None)
         kwargs.pop('hf_subset', None)
 
-        if prompt_type:
-            try:
-                from mteb.types import PromptType
-                if prompt_type == PromptType.query:
-                    task_name = getattr(task_metadata, 'name', '') if task_metadata else ''
-                    prompt = self.get_prompt(task_name)
-            except ImportError:
-                pass
+        if prompt_type == _PROMPT_TYPE_QUERY:
+            task_name = getattr(task_metadata, 'name', '') if task_metadata else ''
+            prompt = self.get_prompt(task_name)
 
         # Filter unsupported params for ST encode
         encode_kwargs = {**self._encode_kwargs}
@@ -226,12 +227,6 @@ class APIEncoder(BaseEncoder):
             Torch tensor of shape (n_texts, embed_dim).
         """
         from torch.utils.data import DataLoader
-
-        try:
-            from mteb.types import PromptType
-            _PROMPT_TYPE_QUERY = PromptType.query
-        except ImportError:
-            _PROMPT_TYPE_QUERY = 'query'
 
         # Extract texts from DataLoader (MTEB 2.x API) or use directly
         if isinstance(inputs, DataLoader):

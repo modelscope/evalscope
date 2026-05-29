@@ -121,17 +121,24 @@ def _load_generic_from_modelscope(task, limits: Optional[int] = None) -> None:
     task.data_loaded = True
 
 
-def _apply_retrieval_limits_after_native_load(task, limits: Optional[int] = None) -> None:
-    """Apply query limits to a retrieval task after MTEB native loading.
+def _get_val(obj, key):
+    """Get value from dict or object attribute."""
+    return obj.get(key) if isinstance(obj, dict) else getattr(obj, key, None)
 
-    When the ModelScope loader fails and falls back to MTEB's native loading,
-    limits are not applied. This function limits the number of queries evaluated
-    by filtering the queries, relevant_docs, and top_ranked datasets.
 
-    MTEB 2.x stores retrieval data as:
-        task.dataset[hf_subset][split] = RetrievalSplitData(
-            corpus=Dataset, queries=Dataset, relevant_docs=Dataset, top_ranked=Dataset|None
-        )
+def _set_val(obj, key, val):
+    """Set value on dict or object attribute."""
+    if isinstance(obj, dict):
+        obj[key] = val
+    else:
+        setattr(obj, key, val)
+
+
+def _apply_retrieval_limits_after_native_load(task, limits=None):
+    """Best-effort application of query limits after MTEB native data loading.
+
+    Handles both nested (subset -> split -> data) and flat (split -> data)
+    DatasetDict structures, as well as dict-based and object-based split data.
     """
     if limits is None or not getattr(task, 'data_loaded', False):
         return
@@ -140,14 +147,18 @@ def _apply_retrieval_limits_after_native_load(task, limits: Optional[int] = None
         return
 
     try:
-        for subset_key, subset_data in task.dataset.items():
-            # Handle flat DatasetDict (split -> Dataset directly, no subset layer)
+        # Normalize: detect flat structure (first value has 'queries')
+        dataset_dict = task.dataset
+        first_val = next(iter(dataset_dict.values()), None)
+        if first_val is not None and ((isinstance(first_val, dict) and 'queries' in first_val)
+                                      or hasattr(first_val, 'queries')):
+            dataset_dict = {'default': dataset_dict}
+
+        for subset_key, subset_data in dataset_dict.items():
             if not hasattr(subset_data, 'items'):
                 continue
             for split_key, split_data in subset_data.items():
-                if not isinstance(split_data, dict):
-                    continue
-                queries = split_data.get('queries')
+                queries = _get_val(split_data, 'queries')
                 if queries is None or len(queries) <= limits:
                     continue
 
@@ -155,34 +166,42 @@ def _apply_retrieval_limits_after_native_load(task, limits: Optional[int] = None
                 limited_queries = queries.select(range(limits))
                 keep_qids = set(str(q) for q in limited_queries['id'])
 
-                split_data['queries'] = limited_queries
+                _set_val(split_data, 'queries', limited_queries)
                 logger.info(
                     f"Applied limits={limits} to queries in '{subset_key}/{split_key}' "
                     f'(was {len(queries)}, now {len(limited_queries)}).'
                 )
 
                 # Filter relevant_docs to keep only limited query IDs
-                relevant_docs = split_data.get('relevant_docs')
+                relevant_docs = _get_val(split_data, 'relevant_docs')
                 if relevant_docs is not None:
                     try:
                         if isinstance(relevant_docs, dict):
-                            split_data['relevant_docs'] = {k: v for k, v in relevant_docs.items() if k in keep_qids}
+                            _set_val(
+                                split_data, 'relevant_docs', {
+                                    k: v
+                                    for k, v in relevant_docs.items()
+                                    if k in keep_qids
+                                }
+                            )
                         elif hasattr(relevant_docs, 'filter'):
-                            split_data['relevant_docs'] = relevant_docs.filter(
-                                lambda x: str(x.get('query-id', x.get('qid', ''))) in keep_qids
+                            _set_val(
+                                split_data, 'relevant_docs',
+                                relevant_docs.filter(lambda x: str(x.get('query-id', x.get('qid', ''))) in keep_qids)
                             )
                     except Exception as e:
                         logger.warning(f'Could not filter relevant_docs: {e}')
 
                 # Filter top_ranked to keep only limited query IDs
-                top_ranked = split_data.get('top_ranked')
+                top_ranked = _get_val(split_data, 'top_ranked')
                 if top_ranked is not None:
                     try:
                         if isinstance(top_ranked, dict):
-                            split_data['top_ranked'] = {k: v for k, v in top_ranked.items() if k in keep_qids}
+                            _set_val(split_data, 'top_ranked', {k: v for k, v in top_ranked.items() if k in keep_qids})
                         elif hasattr(top_ranked, 'filter'):
-                            split_data['top_ranked'] = top_ranked.filter(
-                                lambda x: str(x.get('query-id', x.get('qid', ''))) in keep_qids
+                            _set_val(
+                                split_data, 'top_ranked',
+                                top_ranked.filter(lambda x: str(x.get('query-id', x.get('qid', ''))) in keep_qids)
                             )
                     except Exception as e:
                         logger.warning(f'Could not filter top_ranked: {e}')

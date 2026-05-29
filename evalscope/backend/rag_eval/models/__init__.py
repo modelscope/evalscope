@@ -36,6 +36,10 @@ def load_model(config):
     kwargs = {}
     if hasattr(config, 'to_dict'):
         kwargs = config.to_dict()
+    elif hasattr(config, 'model_dump'):
+        kwargs = config.model_dump()
+    elif hasattr(config, 'dict'):
+        kwargs = config.dict()
     else:
         kwargs = {k: v for k, v in vars(config).items() if not k.startswith('_')}
 
