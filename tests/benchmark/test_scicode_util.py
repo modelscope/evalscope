@@ -9,11 +9,9 @@ def test_get_generated_code_accepts_text_content_blocks():
         model="test",
         sample=Sample(input="77", metadata={"sub_steps": [{}]}),
         messages=[
-            ChatMessageAssistant(
-                content=[
-                    ContentText(text="```python\ndef answer():\n    return 1\n```"),
-                ],
-            ),
+            ChatMessageAssistant(content=[
+                ContentText(text="```python\ndef answer():\n    return 1\n```"),
+            ], ),
         ],
     )
 
