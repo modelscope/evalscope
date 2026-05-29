@@ -6,16 +6,3 @@ from evalscope.backend.rag_eval.models import (
     SentenceTransformerEncoder,
     load_model,
 )
-
-# Backward-compatible aliases
-try:
-    from evalscope.backend.rag_eval.utils.clip import VisionModel
-except ImportError:
-    VisionModel = None
-
-try:
-    from evalscope.backend.rag_eval.utils.llm import LLM, ChatOpenAI, LocalLLM
-except ImportError:
-    LLM = None
-    ChatOpenAI = None
-    LocalLLM = None

@@ -187,6 +187,7 @@ Answer:
     )
 
     items = []
+    max_retries = 3
     for i in tqdm(range(len(testset_df)), desc='Generating Answers'):
         row = testset_df.iloc[i]
         question = row.get('user_input', '')
@@ -194,8 +195,19 @@ Answer:
         contexts = '\n'.join(contexts_raw) if isinstance(contexts_raw, list) else str(contexts_raw)
 
         input_text = template.format(language=language, question=question, contexts=contexts)
-        response = llm.invoke(input_text)
-        answer = response.content if hasattr(response, 'content') else str(response)
+        answer = ''
+        for attempt in range(max_retries):
+            try:
+                response = llm.invoke(input_text)
+                answer = response.content if hasattr(response, 'content') else str(response)
+                break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    logger.warning(f'Failed to generate answer for row {i} (attempt {attempt + 1}): {e}')
+                    import time
+                    time.sleep(2**attempt)
+                else:
+                    logger.warning(f'Failed to generate answer for row {i} after {max_retries} attempts: {e}')
 
         items.append({
             'user_input': question,

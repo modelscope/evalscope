@@ -130,17 +130,6 @@ class TestTaskConfigIntegration:
 class TestBackwardCompat:
     """Test backward compatibility with old config formats."""
 
-    def test_legacy_mteb_config_conversion(self):
-        from evalscope.backend.rag_eval.backend_manager import RAGEvalBackendManager
-        legacy = {
-            'model': [{'model_name_or_path': 'BAAI/bge-base-zh-v1.5'}],
-            'eval': {'tasks': ['T2Reranking'], 'output_folder': 'outputs'}
-        }
-        converted = RAGEvalBackendManager._convert_legacy_mteb_config(legacy)
-        assert 'models' in converted
-        assert converted['eval']['task_names'] == ['T2Reranking']
-        assert 'tasks' not in converted['eval']
-
     def test_new_format_models_key(self):
         from evalscope.backend.rag_eval.backend_manager import RAGEvalBackendManager
         new_format = {

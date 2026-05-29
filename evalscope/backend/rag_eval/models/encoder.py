@@ -248,11 +248,17 @@ class APIEncoder(BaseEncoder):
             task_name = getattr(task_metadata, 'name', '') if task_metadata else ''
             prompt = self.get_prompt(task_name)
 
+        # Filter and pass through supported encode parameters
+        encode_kwargs: Dict[str, Any] = {}
+        for key, val in kwargs.items():
+            if key in self._supported_encode_params:
+                encode_kwargs[key] = val
+
         embeddings: List[List[float]] = []
         for i in tqdm(range(0, len(texts), self.batch_size)):
             batch_texts = texts[i:i + self.batch_size]
             if prompt is not None:
                 batch_texts = [prompt + text for text in batch_texts]
-            response = self._client.embed_documents(batch_texts, chunk_size=self.batch_size)
+            response = self._client.embed_documents(batch_texts, chunk_size=self.batch_size, **encode_kwargs)
             embeddings.extend(response)
         return torch.tensor(embeddings)

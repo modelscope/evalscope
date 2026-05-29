@@ -54,7 +54,7 @@ For retrieval tasks, a sample of 100,000 candidates (including the ground truth)
 ## Environment Setup
 Install dependencies
 ```bash
-pip install "mteb<2"
+pip install evalscope[rag] -U
 ```
 
 ## Configure Evaluation Parameters
@@ -70,30 +70,22 @@ one_stage_task_cfg = {
     "work_dir": "outputs",
     "eval_backend": "RAGEval",
     "eval_config": {
-        "tool": "MTEB",
-        "model": [
+        "tool": "mteb",
+        "models": [
             {
                 "model_name_or_path": "AI-ModelScope/m3e-base",
                 "pooling_mode": None,
                 "max_seq_length": 512,
                 "prompt": "",
                 "model_kwargs": {"torch_dtype": "auto"},
-                "encode_kwargs": {
-                    "batch_size": 128,
-                },
+                "encode_kwargs": {"batch_size": 128},
             }
         ],
         "eval": {
-            "tasks": [
-                "TNews",
-                "CLSClusteringS2S",
-                "T2Reranking",
-                "T2Retrieval",
-                "ATEC",
-            ],
+            "task_names": ["TNews", "CLSClusteringS2S", "T2Reranking", "T2Retrieval", "ATEC"],
             "verbosity": 2,
             "overwrite_results": True,
-            "topk": 10,
+            "top_k": 10,
             "limits": 500,
         },
     },
@@ -664,3 +656,15 @@ The following is an example of the output:
 ```{seealso}
 [Custom Retrieval Dataset](../../../advanced_guides/custom_dataset/embedding.md)
 ```
+
+## Breaking Changes (v0.8.0)
+
+This version upgrades the RAG Eval backend with significant breaking changes:
+
+1. **Config schema**: `model` -> `models`, `eval.tasks` -> `eval.task_names`, `eval.topk` -> `eval.top_k`
+2. **Dependencies**: Requires `mteb>=2.7.0` (was 1.x) and `ragas>=0.4.0` (was 0.2.x)
+3. **Removed imports**:
+   - `from evalscope.backend.rag_eval import EmbeddingModel` -> use `load_model()`
+   - `from evalscope.backend.rag_eval.cmteb import ...` -> use `evalscope.backend.rag_eval.mteb`
+   - `from evalscope.backend.rag_eval.utils.embedding import ...` -> removed
+4. **Dict config no longer supported**: `eval_config` must use the new Pydantic schema

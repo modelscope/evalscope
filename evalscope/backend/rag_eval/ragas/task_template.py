@@ -154,10 +154,18 @@ def _load_dataset(testset_file: str):
     if isinstance(data, list):
         samples = []
         for item in data:
+            raw_ctx = item.get('contexts', item.get('retrieved_contexts', []))
+            if raw_ctx is None:
+                retrieved_contexts = []
+            elif isinstance(raw_ctx, list):
+                retrieved_contexts = raw_ctx
+            else:
+                retrieved_contexts = [str(raw_ctx)]
+
             sample = SingleTurnSample(
                 user_input=item.get('question', item.get('user_input', '')),
                 response=item.get('answer', item.get('response', '')),
-                retrieved_contexts=item.get('contexts', item.get('retrieved_contexts', [])),
+                retrieved_contexts=retrieved_contexts,
                 reference=item.get('ground_truth', item.get('reference', '')),
             )
             samples.append(sample)

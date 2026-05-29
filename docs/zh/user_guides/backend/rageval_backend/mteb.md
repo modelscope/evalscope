@@ -70,27 +70,19 @@ one_stage_task_cfg = {
     "work_dir": "outputs",
     "eval_backend": "RAGEval",
     "eval_config": {
-        "tool": "MTEB",
-        "model": [
+        "tool": "mteb",
+        "models": [
             {
                 "model_name_or_path": "AI-ModelScope/m3e-base",
                 "pooling_mode": None,
                 "max_seq_length": 512,
                 "prompt": "",
                 "model_kwargs": {"torch_dtype": "auto"},
-                "encode_kwargs": {
-                    "batch_size": 128,
-                },
+                "encode_kwargs": {"batch_size": 128},
             }
         ],
         "eval": {
-            "tasks": [
-                "TNews",
-                "CLSClusteringS2S",
-                "T2Reranking",
-                "T2Retrieval",
-                "ATEC",
-            ],
+            "task_names": ["TNews", "CLSClusteringS2S", "T2Reranking", "T2Retrieval", "ATEC"],
             "verbosity": 2,
             "overwrite_results": True,
             "top_k": 10,
@@ -655,3 +647,15 @@ run_task(task_cfg=one_stage_task_cfg)
 ```{seealso}
 [自定义检索评测](../../../advanced_guides/custom_dataset/embedding.md)
 ```
+
+## 破坏性变更 (v0.8.0)
+
+本版本对 RAG Eval 后端进行了重大升级，包含以下破坏性变更：
+
+1. **配置 schema 变更**：`model` -> `models`，`eval.tasks` -> `eval.task_names`，`eval.topk` -> `eval.top_k`
+2. **依赖升级**：要求 `mteb>=2.7.0`（原为 1.x）和 `ragas>=0.4.0`（原为 0.2.x）
+3. **移除的导入路径**：
+   - `from evalscope.backend.rag_eval import EmbeddingModel` -> 使用 `load_model()`
+   - `from evalscope.backend.rag_eval.cmteb import ...` -> 使用 `evalscope.backend.rag_eval.mteb`
+   - `from evalscope.backend.rag_eval.utils.embedding import ...` -> 已移除
+4. **不再支持 dict 格式配置**：`eval_config` 必须使用新的 Pydantic schema

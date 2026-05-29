@@ -217,6 +217,11 @@ class APIReranker(BaseReranker):
 
         # Handle MTEB 2.x DataLoader input
         if isinstance(inputs1, DataLoader):
+            if not isinstance(inputs2, DataLoader):
+                raise ValueError(
+                    'APIReranker.predict: when inputs1 is a DataLoader (MTEB 2.x), '
+                    'inputs2 must also be a DataLoader of documents.'
+                )
             queries = [text for batch in inputs1 for text in batch['text']]
             docs = [text for batch in inputs2 for text in batch['text']]
             sentences = list(zip(queries, docs))
