@@ -9,11 +9,6 @@ from evalscope.backend.rag_eval.models import (
 
 # Backward-compatible aliases
 try:
-    from evalscope.backend.rag_eval.utils.embedding import EmbeddingModel
-except ImportError:
-    EmbeddingModel = None
-
-try:
     from evalscope.backend.rag_eval.utils.clip import VisionModel
 except ImportError:
     VisionModel = None
