@@ -75,9 +75,10 @@ class BaseEncoder(ABC):
     @property
     def mteb_model_meta(self) -> Any:
         """Model metadata for MTEB. Returns a ModelMeta instance from mteb."""
-        from mteb import ModelMeta
+        from mteb.models.model_meta import ModelMeta
 
         return ModelMeta(
+            loader=None,
             name='eval/' + os.path.basename(self.model_name_or_path),
             revision=self.revision,
             languages=None,
@@ -166,9 +167,10 @@ class BaseReranker(ABC):
     @property
     def mteb_model_meta(self) -> Any:
         """Model metadata for MTEB. Returns a ModelMeta instance from mteb."""
-        from mteb import ModelMeta
+        from mteb.models.model_meta import ModelMeta
 
         return ModelMeta(
+            loader=None,
             name='eval/' + os.path.basename(self.model_name_or_path),
             revision=self.revision,
             languages=None,

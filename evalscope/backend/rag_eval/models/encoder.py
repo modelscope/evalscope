@@ -96,32 +96,50 @@ class SentenceTransformerEncoder(BaseEncoder):
         self.model.max_seq_length = self.max_seq_length
         self._supported_encode_params = get_supported_params(self.model.encode)
 
-    def encode(self, texts: Union[str, List[str]], **kwargs: Any) -> Array:
+    def encode(self, inputs, **kwargs: Any) -> Array:
         """Encode texts into embeddings using SentenceTransformer.
 
+        Supports both MTEB 2.x DataLoader[BatchedInput] format and legacy
+        str/List[str] format for backward compatibility.
+
         Args:
-            texts: Single text or list of texts to encode.
-            **kwargs: Additional parameters (prompt_type, task_name, batch_size, etc.).
+            inputs: DataLoader of batched inputs (MTEB 2.x) or str/list[str] (legacy).
+            **kwargs: Additional parameters (task_metadata, prompt_type, hf_split, etc.).
 
         Returns:
             Torch tensor of shape (n_texts, embed_dim) on CPU.
         """
-        from mteb.types import PromptType
+        from torch.utils.data import DataLoader
 
-        # Separate unsupported params
-        extra_params: Dict[str, Any] = {}
-        for key in list(kwargs.keys()):
-            if key not in self._supported_encode_params:
-                extra_params[key] = kwargs.pop(key)
+        # Extract texts from DataLoader (MTEB 2.x API) or use directly
+        if isinstance(inputs, DataLoader):
+            texts = [text for batch in inputs for text in batch['text']]
+        elif isinstance(inputs, str):
+            texts = [inputs]
+        else:
+            texts = list(inputs)
 
-        encode_kwargs = {**self._encode_kwargs, **kwargs}
-
-        # Resolve prompt from task_name / prompt_type
+        # Extract prompt_type and task_metadata for prompt resolution
         prompt = None
-        prompt_type = extra_params.pop('prompt_type', '')
-        task_name = extra_params.pop('task_name', '')
-        if prompt_type and prompt_type == PromptType.query:
-            prompt = self.get_prompt(task_name)
+        prompt_type = kwargs.pop('prompt_type', None)
+        task_metadata = kwargs.pop('task_metadata', None)
+        kwargs.pop('hf_split', None)
+        kwargs.pop('hf_subset', None)
+
+        if prompt_type:
+            try:
+                from mteb.types import PromptType
+                if prompt_type == PromptType.query:
+                    task_name = getattr(task_metadata, 'name', '') if task_metadata else ''
+                    prompt = self.get_prompt(task_name)
+            except ImportError:
+                pass
+
+        # Filter unsupported params for ST encode
+        encode_kwargs = {**self._encode_kwargs}
+        for key, val in kwargs.items():
+            if key in self._supported_encode_params:
+                encode_kwargs[key] = val
 
         embeddings = self.model.encode(texts, prompt=prompt, **encode_kwargs)
         assert isinstance(embeddings, Tensor)

@@ -38,13 +38,14 @@ def run_mteb_eval(config: MTEBToolConfig):
         tasks = resolve_tasks(eval_args)
         has_retrieval = any(getattr(t.metadata, 'type', None) == 'Retrieval' for t in tasks)
         if has_retrieval:
-            two_stage_eval(encoders[0], rerankers[0], eval_args)
+            return two_stage_eval(encoders[0], rerankers[0], eval_args)
         else:
-            one_stage_eval(rerankers[0], eval_args)
-        return
+            return one_stage_eval(rerankers[0], eval_args)
 
+    results = None
     for model_config in models:
-        one_stage_eval(model_config, eval_args)
+        results = one_stage_eval(model_config, eval_args)
+    return results
 
 
 def resolve_tasks(eval_args: MTEBEvalConfig) -> list:
@@ -59,7 +60,7 @@ def resolve_tasks(eval_args: MTEBEvalConfig) -> list:
     are appended to the resolved standard tasks.
     """
     if eval_args.task_names:
-        tasks = list(mteb.get_tasks(task_names=eval_args.task_names))
+        tasks = list(mteb.get_tasks(tasks=eval_args.task_names))
     elif eval_args.task_types or eval_args.languages:
         kwargs = {}
         if eval_args.task_types:
@@ -85,14 +86,14 @@ def resolve_tasks(eval_args: MTEBEvalConfig) -> list:
 
 def _build_evaluate_kwargs(eval_args: MTEBEvalConfig, output_folder: str, prediction_folder=None) -> dict:
     """Build the kwargs dict passed to ``mteb.evaluate``."""
-    eval_kwargs = {
-        'output_folder': output_folder,
-        'overwrite_results': eval_args.overwrite_results,
+    from mteb import ResultCache
+
+    eval_kwargs: dict = {
+        'cache': ResultCache(cache_path=output_folder),
+        'overwrite_strategy': 'always' if eval_args.overwrite_results else 'only-missing',
     }
     if eval_args.encode_kwargs:
         eval_kwargs['encode_kwargs'] = eval_args.encode_kwargs
-    if eval_args.splits:
-        eval_kwargs['splits'] = eval_args.splits
     if prediction_folder is not None:
         eval_kwargs['prediction_folder'] = prediction_folder
     return eval_kwargs
@@ -115,7 +116,7 @@ def one_stage_eval(model_args: MTEBModelConfig, eval_args: MTEBEvalConfig):
         **eval_kwargs,
     )
 
-    show_results(eval_args.output_folder, model, results)
+    show_results(eval_args.output_folder, model, results.task_results)
     return results
 
 
@@ -176,7 +177,7 @@ def two_stage_eval(
         **eval_kwargs_s2,
     )
 
-    show_results(stage2_path, reranker, results)
+    show_results(stage2_path, reranker, results.task_results)
     return results
 
 

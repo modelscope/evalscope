@@ -5,7 +5,6 @@ Patches MTEB task ``load_data`` methods so that datasets are fetched from
 ModelScope instead of HuggingFace. When ``hub`` is anything other than
 ``modelscope``, the patching is a no-op and MTEB loads natively.
 """
-import re
 import types
 from collections import defaultdict
 from datasets import DatasetDict
@@ -51,14 +50,30 @@ def _patch_single_task(task, limits: Optional[int] = None) -> None:
         task.load_data = types.MethodType(ms_load_data, task)
 
 
+# Special naming conventions on ModelScope C-MTEB organization
+_MODELSCOPE_NAME_MAP = {
+    'MMarcoReranking': 'Mmarco-reranking',
+    'CMedQAv1': 'CMedQAv1-reranking',
+    'CMedQAv2': 'CMedQAv2-reranking',
+    'TNews': 'TNews-classification',
+    'IFlyTek': 'IFlyTek-classification',
+    'Ocnli': 'OCNLI',
+}
+
+
 def _get_modelscope_path(path: str) -> str:
-    """Convert a HuggingFace dataset path to the ModelScope equivalent.
+    """Convert HuggingFace dataset path to ModelScope path.
 
     Rules:
-        - ``mteb/xxx`` → ``MTEB/xxx``
-        - other paths are returned unchanged
+        - ``mteb/xxx`` → ``C-MTEB/xxx`` (with special name mapping for some datasets)
+        - Other paths left unchanged
     """
-    return re.sub(r'^mteb/', 'MTEB/', path)
+    if not path.startswith('mteb/'):
+        return path
+    dataset_name = path[len('mteb/'):]
+    # Apply special naming if needed
+    mapped_name = _MODELSCOPE_NAME_MAP.get(dataset_name, dataset_name)
+    return f'C-MTEB/{mapped_name}'
 
 
 def _load_generic_from_modelscope(task, limits: Optional[int] = None) -> None:
