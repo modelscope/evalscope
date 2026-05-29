@@ -65,7 +65,7 @@ class TestRAGAS(unittest.TestCase):
                 'eval': {
                     'testset_file': 'outputs/testset_chinese_with_answer.json',
                     'critic_llm': {
-                        'model_name_or_path': 'Qwen/Qwen2.5-7B-Instruct',
+                        'model_name': 'Qwen/Qwen2.5-7B-Instruct',
                     },
                     'embeddings': {
                         'model_name_or_path': 'AI-ModelScope/m3e-base',
@@ -99,13 +99,10 @@ class TestRAGAS(unittest.TestCase):
                         'api_key': env.get('DASHSCOPE_API_KEY', 'EMPTY'),  # 自定义API密钥
                     },
                     embeddings={
-                        'model_name': 'text-embedding-v1',
+                        'model_name_or_path': 'text-embedding-v1',
+                        'provider': 'openai',
                         'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                         'api_key': env.get('DASHSCOPE_API_KEY', 'EMPTY'),
-                        'dimensions': 1024,
-                        'encode_kwargs': {
-                            'batch_size': 10,
-                        },
                     },
                     metrics=[
                         'Faithfulness',

@@ -34,7 +34,7 @@ class TestMTEB(unittest.TestCase):
             'eval_backend': 'RAGEval',
             'eval_config': {
                 'tool': 'MTEB',
-                'model': [
+                'models': [
                     {
                         'model_name_or_path': 'AI-ModelScope/m3e-base',
                         'pooling_mode': None,  # load from model config
@@ -47,7 +47,7 @@ class TestMTEB(unittest.TestCase):
                     }
                 ],
                 'eval': {
-                    'tasks': [
+                    'task_names': [
                         'TNews',
                         'CLSClusteringS2S',
                         'T2Reranking',
@@ -70,7 +70,7 @@ class TestMTEB(unittest.TestCase):
             eval_backend='RAGEval',
             eval_config={
                 'tool': 'MTEB',
-                'model': [
+                'models': [
                     {
                         'model_name': 'text-embedding-v3',
                         'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -82,7 +82,7 @@ class TestMTEB(unittest.TestCase):
                     }
                 ],
                 'eval': {
-                    'tasks': [
+                    'task_names': [
                         'T2Retrieval',
                     ],
                     'verbosity': 2,
@@ -100,7 +100,7 @@ class TestMTEB(unittest.TestCase):
             'eval_backend': 'RAGEval',
             'eval_config': {
                 'tool': 'MTEB',
-                'model': [
+                'models': [
                     {
                         'model_name_or_path': 'AI-ModelScope/m3e-base',
                         'is_cross_encoder': False,
@@ -123,7 +123,7 @@ class TestMTEB(unittest.TestCase):
                     },
                 ],
                 'eval': {
-                    'tasks': [
+                    'task_names': [
                         'MedicalRetrieval',
                         'T2Retrieval'
                     ],
@@ -143,7 +143,7 @@ class TestMTEB(unittest.TestCase):
             'eval_backend': 'RAGEval',
             'eval_config': {
                 'tool': 'MTEB',
-                'model': [
+                'models': [
                     {
                         'model_name': 'text-embedding-v3',
                         'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -164,7 +164,7 @@ class TestMTEB(unittest.TestCase):
                     },
                 ],
                 'eval': {
-                    'tasks': [
+                    'task_names': [
                         'MedicalRetrieval',
                         # 'T2Retrieval'
                     ],
@@ -184,7 +184,7 @@ class TestMTEB(unittest.TestCase):
             'eval_backend': 'RAGEval',
             'eval_config': {
                 'tool': 'MTEB',
-                'model': [
+                'models': [
                     {
                         'model_name_or_path': 'AI-ModelScope/m3e-base',
                         'pooling_mode': None,  # load from model config

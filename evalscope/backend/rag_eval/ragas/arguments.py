@@ -83,6 +83,11 @@ class RAGASToolConfig(BaseArgument):
     testset_generation: Optional[RAGASTestsetConfig] = None
     eval: Optional[RAGASEvalConfig] = None
 
+    @field_validator('tool', mode='before')
+    @classmethod
+    def normalize_tool(cls, v):
+        return v.lower() if isinstance(v, str) else v
+
     @field_validator('testset_generation', mode='before')
     @classmethod
     def parse_testset_generation(cls, v):
@@ -103,6 +108,11 @@ class ClipBenchmarkToolConfig(BaseArgument):
 
     tool: Literal['clip_benchmark'] = 'clip_benchmark'
     eval: Dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator('tool', mode='before')
+    @classmethod
+    def normalize_tool(cls, v):
+        return v.lower() if isinstance(v, str) else v
 
 
 # Backward-compatible aliases for old config names

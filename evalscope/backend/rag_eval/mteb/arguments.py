@@ -47,6 +47,11 @@ class MTEBToolConfig(BaseArgument):
     models: List[MTEBModelConfig]
     eval: MTEBEvalConfig
 
+    @field_validator('tool', mode='before')
+    @classmethod
+    def normalize_tool(cls, v):
+        return v.lower() if isinstance(v, str) else v
+
     @field_validator('models', mode='before')
     @classmethod
     def parse_models(cls, v):

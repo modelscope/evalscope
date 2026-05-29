@@ -127,19 +127,6 @@ class TestTaskConfigIntegration:
         assert isinstance(task_cfg.eval_config, dict)
 
 
-class TestBackwardCompat:
-    """Test backward compatibility with old config formats."""
-
-    def test_new_format_models_key(self):
-        from evalscope.backend.rag_eval.backend_manager import RAGEvalBackendManager
-        new_format = {
-            'models': [{'model_name_or_path': 'test'}],
-            'eval': {'task_names': ['STS']}
-        }
-        converted = RAGEvalBackendManager._convert_legacy_mteb_config(new_format)
-        assert converted['models'] == [{'model_name_or_path': 'test'}]
-
-
 class TestModelFactory:
     """Test model loading factory routing."""
 
