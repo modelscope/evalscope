@@ -8,9 +8,17 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-def show_results(output_folder, model, results):
+def _get_task_type(main_res, task_types):
+    try:
+        return main_res.task_type
+    except KeyError:
+        return task_types.get(main_res.task_name, 'Unknown')
+
+
+def show_results(output_folder, model, results, tasks=None):
     model_name = model.mteb_model_meta.model_name_as_path()
     revision = model.mteb_model_meta.revision
+    task_types = {task.metadata.name: task.metadata.type for task in tasks or []}
 
     data = []
     for model_res in results:
@@ -20,7 +28,7 @@ def show_results(output_folder, model, results):
                 data.append({
                     'Model': model_name.replace('eval__', ''),
                     'Revision': revision,
-                    'Task Type': main_res.task_type,
+                    'Task Type': _get_task_type(main_res, task_types),
                     'Task': main_res.task_name,
                     'Split': split,
                     'Subset': sub_score['hf_subset'],
@@ -52,7 +60,7 @@ def one_stage_eval(
     results = evaluation.run(model, **eval_args)
 
     # save and log results
-    show_results(eval_args['output_folder'], model, results)
+    show_results(eval_args['output_folder'], model, results, tasks=tasks)
 
 
 def two_stage_eval(
@@ -96,4 +104,4 @@ def two_stage_eval(
         )
 
         # save and log results
-        show_results(second_stage_path, cross_encoder, results)
+        show_results(second_stage_path, cross_encoder, results, tasks=[task])
