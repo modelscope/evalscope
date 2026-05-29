@@ -8,19 +8,28 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-def show_results(output_folder, model, results):
+def show_results(output_folder, model, results, task_type_map=None):
     model_name = model.mteb_model_meta.model_name_as_path()
     revision = model.mteb_model_meta.revision
+    task_type_map = task_type_map or {}
 
     data = []
     for model_res in results:
         main_res = model_res.only_main_score()
+        # Resolve task type from local task instances first; custom tasks (e.g. CustomRetrieval)
+        # are not registered in mteb's TASKS_REGISTRY, so main_res.task_type would raise KeyError.
+        task_type = task_type_map.get(main_res.task_name)
+        if task_type is None:
+            try:
+                task_type = main_res.task_type
+            except KeyError:
+                task_type = 'Custom'
         for split, score in main_res.scores.items():
             for sub_score in score:
                 data.append({
                     'Model': model_name.replace('eval__', ''),
                     'Revision': revision,
-                    'Task Type': main_res.task_type,
+                    'Task Type': task_type,
                     'Task': main_res.task_name,
                     'Split': split,
                     'Subset': sub_score['hf_subset'],
@@ -34,6 +43,7 @@ def show_results(output_folder, model, results):
     )
     logger.info(f'Evaluation results:\n{tabulate(data, headers="keys", tablefmt="grid")}')
     logger.info(f'Evaluation results saved in {os.path.abspath(save_path)}')
+    return data
 
 
 def one_stage_eval(
@@ -52,7 +62,8 @@ def one_stage_eval(
     results = evaluation.run(model, **eval_args)
 
     # save and log results
-    show_results(eval_args['output_folder'], model, results)
+    task_type_map = {task.metadata.name: task.metadata.type for task in tasks}
+    show_results(eval_args['output_folder'], model, results, task_type_map)
 
 
 def two_stage_eval(
@@ -70,6 +81,7 @@ def two_stage_eval(
 
     tasks = cmteb.TaskBase.get_tasks(task_names=eval_args['tasks'])
     for task in tasks:
+        task_type_map = {task.metadata.name: task.metadata.type}
         evaluation = mteb.MTEB(tasks=[task])
 
         # stage 1: run dual encoder
@@ -96,4 +108,4 @@ def two_stage_eval(
         )
 
         # save and log results
-        show_results(second_stage_path, cross_encoder, results)
+        show_results(second_stage_path, cross_encoder, results, task_type_map)
