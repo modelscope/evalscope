@@ -19,7 +19,10 @@ def decode_maybe_json(value: Any, default: Any) -> Any:
     if value is None or value == '':
         return deepcopy(default)
     if isinstance(value, str):
-        return json.loads(value)
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return deepcopy(default)
     return value
 
 
@@ -64,9 +67,9 @@ def split_acebench_messages(question: str) -> List[Dict[str, str]]:
     return messages or [{'role': 'user', 'content': question}]
 
 
-def extract_tool_calls_from_output(model_output: ModelOutput) -> List[Dict[str, Dict[str, Any]]]:
+def extract_tool_calls_from_output(model_output: Optional[ModelOutput]) -> List[Dict[str, Dict[str, Any]]]:
     """Convert native model tool calls to ACEBench's ``[{name: args}]`` representation."""
-    if model_output.empty:
+    if model_output is None or model_output.empty:
         return []
     calls = []
     for tool_call in model_output.message.tool_calls or []:
@@ -74,13 +77,13 @@ def extract_tool_calls_from_output(model_output: ModelOutput) -> List[Dict[str, 
     return calls
 
 
-def parse_call_list(text: str) -> List[Dict[str, Dict[str, Any]]]:
+def parse_call_list(text: Any) -> List[Dict[str, Dict[str, Any]]]:
     """Parse ACEBench text-form function calls into ``[{name: args}]``.
 
     Supports native-looking JSON lists/dicts and Python-call syntax such as
     ``[search(query='x'), save_item(id=1)]``.
     """
-    if not text:
+    if not isinstance(text, str) or not text:
         return []
 
     decoded = _loads_json_like(text)
@@ -390,7 +393,7 @@ def _coerce_arguments(arguments: Any) -> Dict[str, Any]:
 def _calls_from_python_expr(text: str) -> List[Dict[str, Dict[str, Any]]]:
     try:
         parsed = ast.parse(text.strip(), mode='eval')
-    except SyntaxError:
+    except Exception:
         return []
 
     body = parsed.body
@@ -522,10 +525,12 @@ def _values_match(expected: Any, actual: Any, strict_string: bool) -> bool:
 
 
 def _coerce_bool_string(value: Any) -> Any:
-    if value == 'true':
-        return True
-    if value == 'false':
-        return False
+    if isinstance(value, str):
+        normalized = value.lower()
+        if normalized == 'true':
+            return True
+        if normalized == 'false':
+            return False
     return value
 
 

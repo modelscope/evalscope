@@ -7,6 +7,12 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import BENCHMARK_REGISTRY
 from evalscope.benchmarks.acebench.acebench_adapter import AceBenchAdapter
+from evalscope.benchmarks.acebench.utils import (
+    decode_maybe_json,
+    extract_tool_calls_from_output,
+    parse_call_list,
+    score_normal_call,
+)
 
 
 class TestAceBenchAdapter(unittest.TestCase):
@@ -95,6 +101,16 @@ class TestAceBenchAdapter(unittest.TestCase):
 
         self.assertEqual(score.value['acc'], 1.0)
         self.assertEqual(score.value['process_acc'], 1.0)
+
+    def test_defensive_utility_inputs(self) -> None:
+        self.assertEqual(decode_maybe_json('{bad json', {}), {})
+        self.assertEqual(extract_tool_calls_from_output(None), [])
+        self.assertEqual(parse_call_list(123), [])
+        self.assertEqual(parse_call_list('\x00'), [])
+
+        result = score_normal_call([{'SetFlag': {'enabled': 'TRUE'}}], {'SetFlag': {'enabled': True}}, 'normal')
+
+        self.assertEqual(result['acc'], 1.0)
 
     @staticmethod
     def _sample(

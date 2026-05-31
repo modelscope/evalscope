@@ -84,7 +84,7 @@ class AceBenchAdapter(DefaultDataAdapter):
         rubric = decode_maybe_json(record.get('rubric'), {})
         ground_truth = rubric.get('ground_truth', {})
         milestones = rubric.get('mile_stone', [])
-        sub_category = record.get('sub_category') or _category_from_id(record.get('id', ''))
+        sub_category = record.get('sub_category') or _category_from_id(record.get('id') or '')
 
         messages = self._build_input_messages(record=record, functions=functions, sub_category=sub_category)
         target = json.dumps({'ground_truth': ground_truth, 'mile_stone': milestones}, ensure_ascii=False)
@@ -115,7 +115,7 @@ class AceBenchAdapter(DefaultDataAdapter):
         task_state: TaskState,
     ) -> Score:
         score = Score(extracted_prediction=filtered_prediction, prediction=original_prediction)
-        metadata = task_state.metadata
+        metadata = task_state.metadata or {}
         sub_category = metadata.get('sub_category', '')
         predicted_calls = extract_tool_calls_from_output(task_state.output) or parse_call_list(filtered_prediction)
 
