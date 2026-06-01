@@ -170,9 +170,3 @@ examples/api_test/
 node_modules/
 evalscope/web/dist/
 evalscope/web/.vite/
-
-maritime-ocr-bench-开发文档.md
-maritime-ocr-bench-实现总结.md
-hi-dolphin-ocr-bench.md
-test-hi-dolphin-ocr.py
-test-qwen-ocr.py
