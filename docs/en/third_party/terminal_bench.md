@@ -18,7 +18,7 @@ Links:
 
 ```{important}
 - **Python Version**: Must use **Python >= 3.12**.
-- **Docker Environment**: Docker is used by default for evaluation. Please ensure Docker Engine and Docker Compose are installed and running locally.
+- **Docker Environment**: Docker is used by default for evaluation. Please ensure Docker Engine, Docker Compose, and the `docker` CLI are installed and available in the environment running EvalScope.
 - **Network Connection**:
   - The dataset is downloaded from Harbor Hub. Please ensure network connectivity.
   - Container building and runtime may require internet access to download dependencies. Ensure a stable network environment.
@@ -126,5 +126,6 @@ After evaluation completes, a result table similar to the following will be outp
 ## Troubleshooting
 
 1. **Docker Connection Failed**: Please check if Docker Desktop or Docker Engine is running and the current user has permission to access the Docker socket.
-2. **Dataset Download Failed**: The dataset is downloaded via GitHub. Please check network connectivity or configure a proxy.
-3. **Python Version Error**: If you encounter syntax errors or package compatibility issues, please confirm you are using Python 3.12+.
+2. **Docker CLI Not Found**: If EvalScope runs inside a container, mounting `/var/run/docker.sock` is not enough. The container also needs the `docker` command-line client installed.
+3. **Dataset Download Failed**: The dataset is downloaded via GitHub. Please check network connectivity or configure a proxy.
+4. **Python Version Error**: If you encounter syntax errors or package compatibility issues, please confirm you are using Python 3.12+.
