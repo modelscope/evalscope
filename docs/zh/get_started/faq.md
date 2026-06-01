@@ -153,7 +153,7 @@ judge_model_args={
 
 **Q: 如何评测多模态模型（如 Qwen-VL, Gemma3）？**
 
-**A:** 建议使用 vLLM 等框架将多模态模型部署为 API 服务，然后通过 API 方式进行评测。直接本地加载多模态模型进行评测不支持。
+**A:** 推荐使用 Native 后端 + API 方式评测：先用 vLLM、ms-swift、LMDeploy 等框架将多模态模型部署为 OpenAI 兼容服务，再通过 `evalscope eval` 选择多模态评测集（如 `ocr_bench`、`mmmu`、`math_vista` 等，完整列表见 [VLM 评测集](../get_started/supported_dataset/vlm.md)）。Native 后端不支持直接本地加载多模态模型进行评测。如需使用 VLMEvalKit 后端，请参考 [VLMEvalKit 后端](../user_guides/backend/vlmevalkit_backend.md)。
 
 
 **Q: 使用 API 服务评测 `embeddings` 模型时报错 `dimensions is currently not supported`？**
