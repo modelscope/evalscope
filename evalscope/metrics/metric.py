@@ -9,11 +9,6 @@ from evalscope.api.registry import register_aggregation, register_metric
 from evalscope.utils.import_utils import check_import
 from .metrics import calculate_pass_at_k, calculate_pass_hat_k, mean, normalize_text
 
-DEFAULT_OPENAI_API_BASE = 'https://api.openai.com/v1'
-DEFAULT_SEED_TTS_TRANSCRIPTIONS_PATH = '/audio/transcriptions'
-DEFAULT_SEED_TTS_RESPONSES_PATH = '/responses'
-SUPPORTED_AUDIO_PROTOCOLS = {'transcriptions', 'responses'}
-
 # ##################
 # NLP Metrics ######
 # ##################
@@ -173,6 +168,11 @@ class WER(Metric):
 class AudioWER(Metric):
     """WER metric for generated audio using a remote ASR endpoint."""
 
+    DEFAULT_OPENAI_API_BASE = 'https://api.openai.com/v1'
+    DEFAULT_SEED_TTS_TRANSCRIPTIONS_PATH = '/audio/transcriptions'
+    DEFAULT_SEED_TTS_RESPONSES_PATH = '/responses'
+    SUPPORTED_AUDIO_PROTOCOLS = {'transcriptions', 'responses'}
+
     def __init__(
         self,
         api_base: Optional[str] = None,
@@ -185,7 +185,7 @@ class AudioWER(Metric):
     ):
         self.api_base = (
             api_base or os.getenv('SEED_TTS_EVAL_ASR_API_BASE') or os.getenv('OPENAI_BASE_URL')
-            or DEFAULT_OPENAI_API_BASE
+            or self.DEFAULT_OPENAI_API_BASE
         ).rstrip('/')
         self.api_key = api_key or os.getenv('SEED_TTS_EVAL_ASR_API_KEY') or os.getenv('OPENAI_API_KEY')
         self.model = model or os.getenv('SEED_TTS_EVAL_ASR_MODEL') or 'whisper-1'
@@ -300,10 +300,10 @@ class AudioWER(Metric):
         return '\n'.join(text_parts).strip()
 
     def _transcription_endpoint(self) -> str:
-        return self._build_api_endpoint(self.api_base, DEFAULT_SEED_TTS_TRANSCRIPTIONS_PATH)
+        return self._build_api_endpoint(self.api_base, self.DEFAULT_SEED_TTS_TRANSCRIPTIONS_PATH)
 
     def _responses_endpoint(self) -> str:
-        return self._build_api_endpoint(self.api_base, DEFAULT_SEED_TTS_RESPONSES_PATH)
+        return self._build_api_endpoint(self.api_base, self.DEFAULT_SEED_TTS_RESPONSES_PATH)
 
     @staticmethod
     def _audio_url(audio: str) -> str:
@@ -333,7 +333,7 @@ class AudioWER(Metric):
 
     def _resolve_protocol(self, api_protocol: Optional[str]) -> str:
         protocol = (api_protocol or os.getenv('SEED_TTS_EVAL_ASR_API_PROTOCOL') or 'transcriptions').lower()
-        if protocol not in SUPPORTED_AUDIO_PROTOCOLS:
+        if protocol not in self.SUPPORTED_AUDIO_PROTOCOLS:
             raise ValueError(f'Unsupported audio_wer api_protocol: {protocol}')
         return protocol
 

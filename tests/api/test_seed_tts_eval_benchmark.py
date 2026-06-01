@@ -15,7 +15,7 @@ from evalscope.metrics.metric import AudioWER
 def make_adapter(metric_list: Optional[list[Any]] = None) -> SeedTTSEvalAdapter:
     meta = BenchmarkMeta(
         name='seed_tts_eval',
-        dataset_id='TwinkStart/Seed-TTS-Eval',
+        dataset_id='evalscope/Seed-TTS-Eval',
         subset_list=['en'],
         default_subset='en',
         eval_split='train',

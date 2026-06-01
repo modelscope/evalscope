@@ -30,7 +30,7 @@ Seed-TTS-Eval is an objective benchmark for zero-shot text-to-speech and voice c
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `seed_tts_eval` |
-| **Dataset ID** | [TwinkStart/Seed-TTS-Eval](https://modelscope.cn/datasets/TwinkStart/Seed-TTS-Eval/summary) |
+| **Dataset ID** | [evalscope/Seed-TTS-Eval](https://modelscope.cn/datasets/evalscope/Seed-TTS-Eval/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2406.02430) |
 | **Tags** | `Audio`, `TextToSpeech` |
 | **Metrics** | `audio_wer` |
@@ -108,12 +108,6 @@ Target text: {text}
 Return only the generated audio.
 ```
 
-## Extra Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `dataset_hub` | `str` | `huggingface` | Dataset hub used to load Seed-TTS-Eval. Choices: ['huggingface', 'modelscope', 'local'] |
-
 ## Usage
 
 ### Using CLI
@@ -141,7 +135,6 @@ task_cfg = TaskConfig(
     dataset_args={
         'seed_tts_eval': {
             # subset_list: ['en', 'zh']  # optional, evaluate specific subsets
-            # extra_params: {}  # uses default extra parameters
         }
     },
     limit=10,  # Remove this line for formal evaluation

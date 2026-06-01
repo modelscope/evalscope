@@ -12,7 +12,7 @@ from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
 from evalscope.api.metric.scorer import Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import get_metric, register_benchmark
-from evalscope.constants import HubType, Tags
+from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64, safe_filename
 from evalscope.utils.logger import get_logger
 from evalscope.utils.url_utils import data_uri_to_base64, is_data_uri, is_http_url
@@ -31,7 +31,7 @@ PROMPT_TEMPLATE = (
     BenchmarkMeta(
         name='seed_tts_eval',
         pretty_name='Seed-TTS-Eval',
-        dataset_id='TwinkStart/Seed-TTS-Eval',
+        dataset_id='evalscope/Seed-TTS-Eval',
         tags=[Tags.AUDIO, Tags.TEXT_TO_SPEECH],
         description="""
 ## Overview
@@ -64,26 +64,10 @@ Seed-TTS-Eval is an objective benchmark for zero-shot text-to-speech and voice c
         few_shot_num=0,
         metric_list=['audio_wer'],
         prompt_template=PROMPT_TEMPLATE,
-        extra_params={
-            'dataset_hub': {
-                'type': 'str',
-                'description': 'Dataset hub used to load Seed-TTS-Eval.',
-                'value': HubType.HUGGINGFACE,
-                'choices': [HubType.HUGGINGFACE, HubType.MODELSCOPE, HubType.LOCAL],
-            },
-        },
     )
 )
 class SeedTTSEvalAdapter(DefaultDataAdapter):
     """Adapter for Seed-TTS-Eval zero-shot text-to-speech evaluation."""
-
-    @property
-    def source_dataset_hub(self) -> str:
-        return self.extra_params.get('dataset_hub') or HubType.HUGGINGFACE
-
-    def load_dataset(self) -> DatasetDict:
-        with self._temporary_attribute('dataset_hub', self.source_dataset_hub):
-            return super().load_dataset()
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         prompt_text = str(record['prompt_text'])
