@@ -28,7 +28,7 @@ arguments, handle abnormal requests, and complete realistic agent tasks.
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `acebench` |
-| **Dataset ID** | [oliveirabruno01/acebench](https://modelscope.cn/datasets/oliveirabruno01/acebench/summary) |
+| **Dataset ID** | [evalscope/acebench](https://modelscope.cn/datasets/evalscope/acebench/summary) |
 | **Paper** | N/A |
 | **Tags** | `Agent`, `FunctionCalling`, `MultiTurn` |
 | **Metrics** | `acc`, `process_acc`, `end_state_acc` |
@@ -414,12 +414,6 @@ arguments, handle abnormal requests, and complete realistic agent tasks.
 
 *No prompt template defined.*
 
-## Extra Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `dataset_hub` | `str` | `huggingface` | Dataset hub used to load ACEBench. Defaults to Hugging Face. Choices: ['huggingface', 'modelscope', 'local'] |
-
 ## Usage
 
 ### Using CLI
@@ -447,7 +441,6 @@ task_cfg = TaskConfig(
     dataset_args={
         'acebench': {
             # subset_list: ['normal', 'special', 'agent']  # optional, evaluate specific subsets
-            # extra_params: {}  # uses default extra parameters
         }
     },
     limit=10,  # Remove this line for formal evaluation

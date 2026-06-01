@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import json
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
@@ -8,7 +8,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, dict_to_chat_message
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import HubType, Tags
+from evalscope.constants import Tags
 from .utils import (
     build_tool_infos,
     decode_maybe_json,
@@ -50,19 +50,11 @@ arguments, handle abnormal requests, and complete realistic agent tasks.
 - Agent samples report `process_acc` against ACEBench milestones. If a model returns a final-state JSON object,
   `end_state_acc` is also reported and used as `acc`; otherwise `acc` follows `process_acc`.
 """,
-        dataset_id='oliveirabruno01/acebench',
+        dataset_id='evalscope/acebench',
         subset_list=ACEBENCH_SUBSETS,
         default_subset='en',
         metric_list=['acc', 'process_acc', 'end_state_acc'],
         eval_split='normal',
-        extra_params={
-            'dataset_hub': {
-                'type': 'str',
-                'description': 'Dataset hub used to load ACEBench. Defaults to Hugging Face.',
-                'value': HubType.HUGGINGFACE,
-                'choices': [HubType.HUGGINGFACE, HubType.MODELSCOPE, HubType.LOCAL],
-            }
-        },
     )
 )
 class AceBenchAdapter(DefaultDataAdapter):
@@ -72,11 +64,6 @@ class AceBenchAdapter(DefaultDataAdapter):
         super().__init__(**kwargs)
         self.split_as_subset = True
         self.add_aggregation_name = False
-
-    def load_from_remote(self) -> Tuple[Any, Any]:
-        source_hub = self.extra_params.get('dataset_hub') or HubType.HUGGINGFACE
-        with self._temporary_attribute('dataset_hub', source_hub):
-            return super().load_from_remote()
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert an ACEBench record to an EvalScope Sample."""
