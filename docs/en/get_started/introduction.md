@@ -56,5 +56,5 @@ The architecture includes the following modules:
 - **Visualization Tools**: Provides intuitive displays of evaluation results.
 - **Model Performance Evaluation**: Offers a performance testing tool for model inference services and detailed statistics, see [Model Performance Evaluation Documentation](../user_guides/stress_test/index.md).
 - **OpenCompass Integration**: Supports OpenCompass as the evaluation backend, providing advanced encapsulation and task simplification, allowing for easier task submission for evaluation.
-- **VLMEvalKit Integration**: Supports VLMEvalKit as the evaluation backend, facilitating the initiation of multi-modal evaluation tasks, supporting various multi-modal models and datasets.
+- **Multimodal Evaluation**: The Native backend supports 40+ multimodal benchmarks out of the box (OCRBench, MMMU, MMBench, MathVista, ChartQA, DocVQA, etc.), covering vision, video and audio tasks; the VLMEvalKit backend remains available as a compatibility option.
 - **Full-Link Support**: Through seamless integration with the [ms-swift](https://github.com/modelscope/ms-swift) training framework, provides a one-stop development process for model training, model deployment, model evaluation, and report viewing, enhancing user development efficiency.
