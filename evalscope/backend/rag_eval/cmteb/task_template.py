@@ -1,31 +1,63 @@
-import mteb
 import os
 from tabulate import tabulate
 
-from evalscope.backend.rag_eval import EmbeddingModel, cmteb
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
 
-def show_results(output_folder, model, results):
+def _build_task_type_by_name(tasks):
+    task_type_by_name = {}
+    for task in tasks:
+        metadata = getattr(task, 'metadata', None)
+        task_name = getattr(metadata, 'name', None)
+        task_type = getattr(metadata, 'type', None)
+        if task_name and task_type:
+            task_type_by_name[task_name] = task_type
+    return task_type_by_name
+
+
+def _resolve_task_type(task_result, task_type_by_name=None):
+    if not task_result:
+        return 'Unknown'
+
+    task_type_by_name = task_type_by_name or {}
+    task_name = getattr(task_result, 'task_name', None)
+    if task_name and task_name in task_type_by_name:
+        return task_type_by_name[task_name]
+
+    try:
+        return task_result.task_type
+    except (AttributeError, KeyError):
+        return 'Unknown'
+
+
+def _build_result_table(model, results, task_type_by_name=None):
     model_name = model.mteb_model_meta.model_name_as_path()
     revision = model.mteb_model_meta.revision
 
     data = []
     for model_res in results:
         main_res = model_res.only_main_score()
+        task_type = _resolve_task_type(main_res, task_type_by_name)
         for split, score in main_res.scores.items():
             for sub_score in score:
                 data.append({
                     'Model': model_name.replace('eval__', ''),
                     'Revision': revision,
-                    'Task Type': main_res.task_type,
+                    'Task Type': task_type,
                     'Task': main_res.task_name,
                     'Split': split,
                     'Subset': sub_score['hf_subset'],
                     'Main Score': sub_score['main_score'],
                 })
+    return data
+
+
+def show_results(output_folder, model, results, task_type_by_name=None):
+    model_name = model.mteb_model_meta.model_name_as_path()
+    revision = model.mteb_model_meta.revision
+    data = _build_result_table(model, results, task_type_by_name)
 
     save_path = os.path.join(
         output_folder,
@@ -40,6 +72,10 @@ def one_stage_eval(
     model_args,
     eval_args,
 ) -> None:
+    import mteb
+
+    from evalscope.backend.rag_eval import EmbeddingModel, cmteb
+
     # load model
     model = EmbeddingModel.load(**model_args)
     custom_dataset_path = eval_args.pop('dataset_path', None)
@@ -52,7 +88,7 @@ def one_stage_eval(
     results = evaluation.run(model, **eval_args)
 
     # save and log results
-    show_results(eval_args['output_folder'], model, results)
+    show_results(eval_args['output_folder'], model, results, _build_task_type_by_name(tasks))
 
 
 def two_stage_eval(
@@ -61,6 +97,11 @@ def two_stage_eval(
     eval_args,
 ) -> None:
     """a two-stage run with the second stage reading results saved from the first stage."""
+
+    import mteb
+
+    from evalscope.backend.rag_eval import EmbeddingModel, cmteb
+
     # load model
     dual_encoder = EmbeddingModel.load(**model1_args)
     cross_encoder = EmbeddingModel.load(**model2_args)
@@ -96,4 +137,4 @@ def two_stage_eval(
         )
 
         # save and log results
-        show_results(second_stage_path, cross_encoder, results)
+        show_results(second_stage_path, cross_encoder, results, _build_task_type_by_name([task]))
