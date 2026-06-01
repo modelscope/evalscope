@@ -401,6 +401,14 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('tool_bench', dataset_args)
 
+    def test_acebench(self):
+        """Test ACEBench function calling dataset."""
+        dataset_args = {
+            'subset_list': ['normal'],
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('acebench', dataset_args=dataset_args, model='qwen-plus', limit=5)
+
     def test_bfcl_v3(self):
         """Test BFCL dataset."""
         dataset_args = {

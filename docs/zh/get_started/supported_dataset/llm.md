@@ -5,6 +5,7 @@
 | 数据集名称 | 标准名称 | 任务类别 |
 |------------|----------|----------|
 | `aa_lcr` | [AA-LCR](../../benchmarks/aa_lcr.md) | `Knowledge`, `LongContext`, `Reasoning` |
+| `acebench` | [ACEBench](../../benchmarks/acebench.md) | `Agent`, `FunctionCalling`, `MultiTurn` |
 | `aime24` | [AIME-2024](../../benchmarks/aime24.md) | `Math`, `Reasoning` |
 | `aime25` | [AIME-2025](../../benchmarks/aime25.md) | `Math`, `Reasoning` |
 | `aime26` | [AIME-2026](../../benchmarks/aime26.md) | `Math`, `Reasoning` |
@@ -120,6 +121,7 @@
 :maxdepth: 1
 
 ../../benchmarks/aa_lcr.md
+../../benchmarks/acebench.md
 ../../benchmarks/aime24.md
 ../../benchmarks/aime25.md
 ../../benchmarks/aime26.md
