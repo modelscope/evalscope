@@ -34,7 +34,7 @@ TASK_TYPE_MAP = {
     'vqa': 'VQA',
     'parsing': 'parsing',
     'json1': 'json1',
-    'json2': 'json2',
+    'json2': 'json2'
 }
 
 
@@ -100,12 +100,17 @@ class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
             split=self.eval_split,
             sample_fields=self.record_to_sample,
             subset='test',
-            limit=self.limit,
+            limit=None,
             repeats=self.repeats,
             shuffle=self.shuffle,
         ).load()
 
-        return DatasetDict({self.default_subset: dataset}), None
+        return DatasetDict.from_dataset(
+            dataset=dataset,
+            subset_list=self.subset_list,
+            limit=self.limit,
+            repeats=self.repeats,
+        ), None
 
     def _resolve_dataset_file(self, dataset_path: str) -> str:
         if os.path.isfile(dataset_path):
