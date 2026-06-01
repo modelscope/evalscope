@@ -2,6 +2,10 @@
 
 # VLMEvalKit
 
+```{note}
+多模态评测推荐优先使用 Native 后端，已原生支持 OCRBench、MMMU、MMBench、MathVista、ChartQA、DocVQA 等主流评测集，详见 [VLM 评测集](../../get_started/supported_dataset/vlm.md)。VLMEvalKit 后端主要服务于已有 VLMEvalKit 工作流的用户。两个后端因 prompt 模板、答案抽取规则、judge 逻辑不同，结果可能存在差异，对比实验时请保持后端一致。
+```
+
 为便于使用VLMEvalKit 评测后端，我们基于VLMEvalKit源码做了定制，命名为`ms-vlmeval`，该版本在原版基础上对评测任务的配置和执行进行了封装，并支持pypi安装方式，使得用户可以通过EvalScope发起轻量化的VLMEvalKit评测任务。同时，我们支持基于OpenAI API格式的接口评测任务，您可以使用[ms-swift](https://github.com/modelscope/swift)、[vLLM](https://github.com/vllm-project/vllm)、[LMDeploy](https://github.com/InternLM/lmdeploy)、[Ollama](https://ollama.ai/)等模型服务，部署多模态模型服务。
 
 ## 1. 环境准备

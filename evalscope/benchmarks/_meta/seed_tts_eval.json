@@ -1,0 +1,155 @@
+{
+  "meta": {
+    "pretty_name": "Seed-TTS-Eval",
+    "dataset_id": "evalscope/Seed-TTS-Eval",
+    "paper_url": "https://arxiv.org/abs/2406.02430",
+    "tags": [
+      "Audio",
+      "TextToSpeech"
+    ],
+    "metrics": [
+      "audio_wer"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "en",
+      "zh"
+    ],
+    "description": "\n## Overview\n\nSeed-TTS-Eval is an objective benchmark for zero-shot text-to-speech and voice conversion evaluation. It uses out-of-domain English and Mandarin samples from Common Voice and DiDiSpeech-2, and the official evaluation focuses on intelligibility and speaker consistency.\n\n## Task Description\n\n- **Task Type**: Zero-shot text-to-speech generation\n- **Input**: Reference speaker audio, prompt transcript, and target text\n- **Output**: Synthesized speech audio for the target text using the reference speaker\n- **Languages**: English and Mandarin\n\n## Evaluation Notes\n\n- Default subsets: **en** and **zh**\n- The evaluated TTS model must return generated audio as `ContentAudio`, or return an audio path, URL, or data URI as the completion text\n- EvalScope provides `eval_type=\"text2speech\"` for HTTP TTS services.\n  - Volcengine provider: configure `model=\"seed-tts-2.0\"`, `api_url=\"https://openspeech.bytedance.com/api/v3/tts/unidirectional\"`, and `model_args={\"speaker\": \"...\"}`\n  - OpenAI provider: configure `model=\"tts-1\"` (or `tts-1-hd`), `api_url=\"https://api.openai.com/v1\"`, and `model_args={\"provider\": \"openai\", \"voice\": \"nova\"}`\n- Default metric: **audio_wer**, which transcribes generated audio through an OpenAI-compatible `/audio/transcriptions` endpoint and computes WER/CER-style error rate with language-specific normalization\n- Configure the ASR endpoint via `metric_list`, or set `SEED_TTS_EVAL_ASR_API_BASE`, `SEED_TTS_EVAL_ASR_API_KEY`, `SEED_TTS_EVAL_ASR_MODEL`, and `SEED_TTS_EVAL_ASR_API_PROTOCOL`\n- For Volcengine Ark audio-understanding models, set `api_protocol=\"responses\"` and use a model that supports audio input, such as `doubao-seed-2-0-lite-260428`\n- Speaker similarity is part of the official benchmark, but it requires a separate speaker verification backend and is not enabled by default\n",
+    "prompt_template": "Use the reference audio and prompt transcript to synthesize the target text in the same speaker voice.\nPrompt transcript: {prompt_text}\nTarget text: {text}\nReturn only the generated audio.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 3108,
+    "subset_stats": [
+      {
+        "name": "en",
+        "sample_count": 1088,
+        "prompt_length_mean": 304.3,
+        "prompt_length_min": 224,
+        "prompt_length_max": 376,
+        "prompt_length_std": 23.32,
+        "target_length_mean": 63.52,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 1088,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "wav"
+            ]
+          }
+        }
+      },
+      {
+        "name": "zh",
+        "sample_count": 2020,
+        "prompt_length_mean": 210.46,
+        "prompt_length_min": 193,
+        "prompt_length_max": 231,
+        "prompt_length_std": 5.61,
+        "target_length_mean": 23.17,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 2020,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "wav"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 243.31,
+      "min": 193,
+      "max": 376,
+      "std": 47.06
+    },
+    "target_length_mean": 37.29,
+    "computed_at": "2026-05-27T17:45:30.517511",
+    "multimodal": {
+      "has_images": false,
+      "has_audio": true,
+      "has_video": false,
+      "audio": {
+        "count_total": 3108,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "duration": null,
+        "sample_rates": [],
+        "formats": [
+          "wav"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "ffd452c5",
+          "content": [
+            {
+              "audio": "[BASE64_AUDIO: wav, ~183.0KB]",
+              "format": "wav"
+            },
+            {
+              "text": "Use the reference audio and prompt transcript to synthesize the target text in the same speaker voice.\nPrompt transcript: We asked over twenty different people, and they all said it was his.\nTarget text: Get the trust fund to the bank early.\nReturn only the generated audio."
+            }
+          ]
+        }
+      ],
+      "target": "Get the trust fund to the bank early.",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "en",
+      "metadata": {
+        "filename": "common_voice_en_10119832-common_voice_en_10119840",
+        "prompt_text": "We asked over twenty different people, and they all said it was his.",
+        "text": "Get the trust fund to the bank early.",
+        "prompt_audio_path": "prompt-wavs/common_voice_en_10119832.wav",
+        "reference_audio_path": "wavs/common_voice_en_10119832-common_voice_en_10119840.wav",
+        "language": "en",
+        "wer_language": "en"
+      }
+    },
+    "subset": "en",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# Seed-TTS-Eval\n\n\n## Overview\n\nSeed-TTS-Eval is an objective benchmark for zero-shot text-to-speech and voice conversion evaluation. It uses out-of-domain English and Mandarin samples from Common Voice and DiDiSpeech-2, and the official evaluation focuses on intelligibility and speaker consistency.\n\n## Task Description\n\n- **Task Type**: Zero-shot text-to-speech generation\n- **Input**: Reference speaker audio, prompt transcript, and target text\n- **Output**: Synthesized speech audio for the target text using the reference speaker\n- **Languages**: English and Mandarin\n\n## Evaluation Notes\n\n- Default subsets: **en** and **zh**\n- The evaluated TTS model must return generated audio as `ContentAudio`, or return an audio path, URL, or data URI as the completion text\n- EvalScope provides `eval_type=\"text2speech\"` for HTTP TTS services.\n  - Volcengine provider: configure `model=\"seed-tts-2.0\"`, `api_url=\"https://openspeech.bytedance.com/api/v3/tts/unidirectional\"`, and `model_args={\"speaker\": \"...\"}`\n  - OpenAI provider: configure `model=\"tts-1\"` (or `tts-1-hd`), `api_url=\"https://api.openai.com/v1\"`, and `model_args={\"provider\": \"openai\", \"voice\": \"nova\"}`\n- Default metric: **audio_wer**, which transcribes generated audio through an OpenAI-compatible `/audio/transcriptions` endpoint and computes WER/CER-style error rate with language-specific normalization\n- Configure the ASR endpoint via `metric_list`, or set `SEED_TTS_EVAL_ASR_API_BASE`, `SEED_TTS_EVAL_ASR_API_KEY`, `SEED_TTS_EVAL_ASR_MODEL`, and `SEED_TTS_EVAL_ASR_API_PROTOCOL`\n- For Volcengine Ark audio-understanding models, set `api_protocol=\"responses\"` and use a model that supports audio input, such as `doubao-seed-2-0-lite-260428`\n- Speaker similarity is part of the official benchmark, but it requires a separate speaker verification backend and is not enabled by default\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `seed_tts_eval` |\n| **Dataset ID** | [evalscope/Seed-TTS-Eval](https://modelscope.cn/datasets/evalscope/Seed-TTS-Eval/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2406.02430) |\n| **Tags** | `Audio`, `TextToSpeech` |\n| **Metrics** | `audio_wer` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,108 |\n| Prompt Length (Mean) | 243.31 chars |\n| Prompt Length (Min/Max) | 193 / 376 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `en` | 1,088 | 304.3 | 224 | 376 |\n| `zh` | 2,020 | 210.46 | 193 | 231 |\n\n**Audio Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Audio Files | 3,108 |\n| Audio per Sample | min: 1, max: 1, mean: 1 |\n| Formats | wav |\n\n\n## Sample Example\n\n**Subset**: `en`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"ffd452c5\",\n      \"content\": [\n        {\n          \"audio\": \"[BASE64_AUDIO: wav, ~183.0KB]\",\n          \"format\": \"wav\"\n        },\n        {\n          \"text\": \"Use the reference audio and prompt transcript to synthesize the target text in the same speaker voice.\\nPrompt transcript: We asked over twenty different people, and they all said it was his.\\nTarget text: Get the trust fund to the bank early.\\nReturn only the generated audio.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"Get the trust fund to the bank early.\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"en\",\n  \"metadata\": {\n    \"filename\": \"common_voice_en_10119832-common_voice_en_10119840\",\n    \"prompt_text\": \"We asked over twenty different people, and they all said it was his.\",\n    \"text\": \"Get the trust fund to the bank early.\",\n    \"prompt_audio_path\": \"prompt-wavs/common_voice_en_10119832.wav\",\n    \"reference_audio_path\": \"wavs/common_voice_en_10119832-common_voice_en_10119840.wav\",\n    \"language\": \"en\",\n    \"wer_language\": \"en\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nUse the reference audio and prompt transcript to synthesize the target text in the same speaker voice.\nPrompt transcript: {prompt_text}\nTarget text: {text}\nReturn only the generated audio.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets seed_tts_eval \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['seed_tts_eval'],\n    dataset_args={\n        'seed_tts_eval': {\n            # subset_list: ['en', 'zh']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Seed-TTS-Eval\n\n\n## 概述\n\nSeed-TTS-Eval 是一个用于零样本文本到语音（TTS）和语音转换评估的客观基准测试。它使用来自 Common Voice 和 DiDiSpeech-2 的域外英文和中文样本，官方评估重点关注语音可懂度和说话人一致性。\n\n## 任务描述\n\n- **任务类型**：零样本文本到语音生成\n- **输入**：参考说话人音频、提示文本转录和目标文本\n- **输出**：使用参考说话人声音合成的目标文本语音音频\n- **语言**：英文和中文\n\n## 评估说明\n\n- 默认子集：**en** 和 **zh**\n- 被评估的 TTS 模型必须返回 `ContentAudio` 类型的生成音频，或在 completion 文本中返回音频路径、URL 或 data URI\n- EvalScope 为 HTTP TTS 服务提供 `eval_type=\"text2speech\"` 配置：\n  - Volcengine 提供商：配置 `model=\"seed-tts-2.0\"`、`api_url=\"https://openspeech.bytedance.com/api/v3/tts/unidirectional\"` 和 `model_args={\"speaker\": \"...\"}`\n  - OpenAI 提供商：配置 `model=\"tts-1\"`（或 `tts-1-hd`）、`api_url=\"https://api.openai.com/v1\"` 和 `model_args={\"provider\": \"openai\", \"voice\": \"nova\"}`\n- 默认指标：**audio_wer**，该指标通过兼容 OpenAI 的 `/audio/transcriptions` 端点对生成的音频进行转录，并结合语言特定的归一化计算 WER/CER 风格的错误率\n- 可通过 `metric_list` 配置 ASR 端点，或设置环境变量 `SEED_TTS_EVAL_ASR_API_BASE`、`SEED_TTS_EVAL_ASR_API_KEY`、`SEED_TTS_EVAL_ASR_MODEL` 和 `SEED_TTS_EVAL_ASR_API_PROTOCOL`\n- 对于 Volcengine Ark 的 audio-understanding 模型，请设置 `api_protocol=\"responses\"` 并使用支持音频输入的模型，例如 `doubao-seed-2-0-lite-260428`\n- 说话人相似度是官方基准测试的一部分，但需要单独的说话人验证后端，默认未启用\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `seed_tts_eval` |\n| **数据集ID** | [evalscope/Seed-TTS-Eval](https://modelscope.cn/datasets/evalscope/Seed-TTS-Eval/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2406.02430) |\n| **标签** | `Audio`, `TextToSpeech` |\n| **指标** | `audio_wer` |\n| **默认样本数** | 0-shot |\n| **评估划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,108 |\n| 提示词长度（平均） | 243.31 字符 |\n| 提示词长度（最小/最大） | 193 / 376 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `en` | 1,088 | 304.3 | 224 | 376 |\n| `zh` | 2,020 | 210.46 | 193 | 231 |\n\n**音频统计数据：**\n\n| 指标 | 值 |\n|--------|-------|\n| 音频文件总数 | 3,108 |\n| 每样本音频数量 | 最小: 1, 最大: 1, 平均: 1 |\n| 格式 | wav |\n\n## 样例示例\n\n**子集**: `en`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"ffd452c5\",\n      \"content\": [\n        {\n          \"audio\": \"[BASE64_AUDIO: wav, ~183.0KB]\",\n          \"format\": \"wav\"\n        },\n        {\n          \"text\": \"Use the reference audio and prompt transcript to synthesize the target text in the same speaker voice.\\nPrompt transcript: We asked over twenty different people, and they all said it was his.\\nTarget text: Get the trust fund to the bank early.\\nReturn only the generated audio.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"Get the trust fund to the bank early.\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"en\",\n  \"metadata\": {\n    \"filename\": \"common_voice_en_10119832-common_voice_en_10119840\",\n    \"prompt_text\": \"We asked over twenty different people, and they all said it was his.\",\n    \"text\": \"Get the trust fund to the bank early.\",\n    \"prompt_audio_path\": \"prompt-wavs/common_voice_en_10119832.wav\",\n    \"reference_audio_path\": \"wavs/common_voice_en_10119832-common_voice_en_10119840.wav\",\n    \"language\": \"en\",\n    \"wer_language\": \"en\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nUse the reference audio and prompt transcript to synthesize the target text in the same speaker voice.\nPrompt transcript: {prompt_text}\nTarget text: {text}\nReturn only the generated audio.\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets seed_tts_eval \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['seed_tts_eval'],\n    dataset_args={\n        'seed_tts_eval': {\n            # subset_list: ['en', 'zh']  # 可选，评估指定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "3356a88058ba17f96087d8a902ef1ed4",
+    "needs_translation": false
+  },
+  "updated_at": "2026-06-01T14:19:12.711468",
+  "translation_updated_at": "2026-06-01T14:19:29"
+}

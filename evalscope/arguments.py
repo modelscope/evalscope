@@ -70,6 +70,7 @@ def add_argument(parser: argparse.ArgumentParser):
                             EvalType.LITELLM,
                             EvalType.MOCK_LLM,
                             EvalType.TEXT2IMAGE,
+                            EvalType.TEXT2SPEECH,
                             EvalType.IMAGE_EDITING,
                             EvalType.CUSTOM,
                         ],
