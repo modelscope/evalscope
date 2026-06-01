@@ -92,3 +92,10 @@ def image_editing() -> type[ModelAPI]:
     from .image_edit_model import ImageEditAPI
 
     return ImageEditAPI
+
+
+@register_model_api(name='text2speech')
+def text2speech() -> type[ModelAPI]:
+    from .text2speech_model import Text2SpeechAPI
+
+    return Text2SpeechAPI
