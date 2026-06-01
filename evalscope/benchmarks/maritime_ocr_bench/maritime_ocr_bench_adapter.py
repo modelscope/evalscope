@@ -7,7 +7,7 @@ from PIL import Image
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
-from evalscope.api.dataset import Sample
+from evalscope.api.dataset import DatasetDict, LocalDataLoader, Sample
 from evalscope.api.evaluator.state import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
@@ -29,19 +29,12 @@ SAFE_RAW_IMAGE_BYTES = 1_000_000
 SUBSET_LIST = ['IE', 'VQA', 'parsing', 'json1', 'json2']
 
 TASK_TYPE_MAP = {
-    'vqa': 'VQA',
-    'vqa_exam': 'VQA',
+    # Official 1888-sample test split task types.
     'ie': 'IE',
+    'vqa': 'VQA',
     'parsing': 'parsing',
-    'translate': 'parsing',
     'json1': 'json1',
     'json2': 'json2',
-    'spotting_v1': 'json1',
-    'spotting_json1': 'json1',
-    'v1': 'json1',
-    'spotting_v2': 'json2',
-    'spotting_json2': 'json2',
-    'v2': 'json2',
 }
 
 
@@ -71,7 +64,7 @@ Each task type uses a specialized scoring method:
 - IE: Text coverage + JSON strictness (0.5 * coverage + 0.5 * json_strict)
 - json1/json2: DIoU layout score + text score (0.7 * diou + 0.3 * text)
 """,
-        dataset_id='/home/zhy/projects/MaritimeOCRBench/maritime_ocr_bench.jsonl',
+        dataset_id='HiDolphin/MaritimeOCRBench',
         subset_list=SUBSET_LIST,
         metric_list=['score'],
         eval_split='test',
@@ -84,13 +77,80 @@ class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
         super().__init__(**kwargs)
         self.reformat_subset = True
         self.add_aggregation_name = False
+        self.data_root: Optional[str] = None
 
     def load(self):
-        """Override to use LocalDataLoader for local .jsonl files."""
-        if os.path.exists(self.dataset_id):
-            return self.load_from_disk(use_local_loader=True)
+        """Load benchmark records from a local JSONL file or downloaded snapshot."""
+        dataset_name_or_path = self.dataset_id
+
+        if os.path.exists(dataset_name_or_path):
+            dataset_path = dataset_name_or_path
+            logger.info(f'Loading Maritime-OCR-Bench from local path: {dataset_path}')
         else:
-            return self.load_from_remote()
+            from modelscope import dataset_snapshot_download
+
+            logger.info(f'Downloading Maritime-OCR-Bench dataset from ModelScope: {dataset_name_or_path}')
+            dataset_path = dataset_snapshot_download(dataset_name_or_path)
+
+        dataset_file = self._resolve_dataset_file(dataset_path)
+        self.data_root = os.path.dirname(dataset_file)
+
+        dataset = LocalDataLoader(
+            data_id_or_path=dataset_file,
+            split=self.eval_split,
+            sample_fields=self.record_to_sample,
+            subset='test',
+            limit=self.limit,
+            repeats=self.repeats,
+            shuffle=self.shuffle,
+        ).load()
+
+        return DatasetDict({self.default_subset: dataset}), None
+
+    def _resolve_dataset_file(self, dataset_path: str) -> str:
+        if os.path.isfile(dataset_path):
+            return dataset_path
+
+        preferred_files = [
+            'maritime_ocr_bench.jsonl',
+            'eval_balanced_all_type_0508_copied.jsonl',
+        ]
+        for file_name in preferred_files:
+            candidate = os.path.join(dataset_path, file_name)
+            if os.path.exists(candidate):
+                return candidate
+
+        jsonl_files: List[str] = []
+        for root, _, files in os.walk(dataset_path):
+            for file_name in files:
+                if file_name.endswith('.jsonl'):
+                    jsonl_files.append(os.path.join(root, file_name))
+
+        if not jsonl_files:
+            raise FileNotFoundError(f'No JSONL dataset file found under: {dataset_path}')
+
+        return sorted(jsonl_files)[0]
+
+    def _resolve_image_path(self, image_ref: str) -> str:
+        normalized_ref = os.path.normpath(image_ref)
+        if os.path.isabs(normalized_ref) and os.path.exists(normalized_ref):
+            return normalized_ref
+
+        candidate_paths: List[str] = []
+        if self.data_root:
+            candidate_paths.append(os.path.join(self.data_root, normalized_ref))
+
+            path_parts = normalized_ref.split(os.sep, 1)
+            if len(path_parts) == 2:
+                candidate_paths.append(os.path.join(self.data_root, path_parts[1]))
+
+            candidate_paths.append(os.path.join(self.data_root, 'images', os.path.basename(normalized_ref)))
+
+        for candidate in candidate_paths:
+            if os.path.exists(candidate):
+                return candidate
+
+        return candidate_paths[0] if candidate_paths else normalized_ref
 
     def _read_raw_image_data_url(self, image_path: str) -> tuple[str, str]:
         mime, _ = mimetypes.guess_type(image_path)
@@ -170,8 +230,7 @@ class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
 
         # Load image and encode as base64
         if images:
-            data_root = os.path.dirname(self.dataset_id)
-            image_path = os.path.join(data_root, images[0])
+            image_path = self._resolve_image_path(images[0])
             if os.path.exists(image_path):
                 try:
                     if self._should_normalize_image(image_path):
