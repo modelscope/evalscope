@@ -1,7 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from pydantic import Field, field_validator
-from typing import Any, Dict, List, Literal, Optional
+from typing import List, Literal, Optional
 
+from evalscope.backend.rag_eval.clip_benchmark.arguments import ClipBenchmarkEvalConfig
 from evalscope.utils.argument_utils import BaseArgument
 
 
@@ -107,7 +108,7 @@ class ClipBenchmarkToolConfig(BaseArgument):
     """Complete configuration for tool='clip_benchmark' in eval_config."""
 
     tool: Literal['clip_benchmark'] = 'clip_benchmark'
-    eval: Dict[str, Any] = Field(default_factory=dict)
+    eval: ClipBenchmarkEvalConfig = Field(default_factory=ClipBenchmarkEvalConfig)
 
     @field_validator('tool', mode='before')
     @classmethod

@@ -81,15 +81,11 @@ class RAGEvalBackendManager(BackendManager):
         """Run CLIP Benchmark evaluation.
 
         Args:
-            config: ClipBenchmarkToolConfig instance or dict.
+            config: ClipBenchmarkToolConfig instance.
         """
-        from evalscope.backend.rag_eval.clip_benchmark import Arguments, evaluate
+        from evalscope.backend.rag_eval.clip_benchmark import evaluate
 
-        if isinstance(config, dict):
-            eval_args = config.get('eval', config)
-        else:
-            eval_args = config.eval
-        evaluate(Arguments(**eval_args))
+        evaluate(config.eval)
 
     def run(self, *args, **kwargs) -> None:
         """Run the RAG evaluation pipeline based on tool type."""

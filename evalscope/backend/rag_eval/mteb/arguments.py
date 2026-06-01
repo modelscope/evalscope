@@ -1,5 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from typing import Any, Dict, List, Literal, Optional
 
 from evalscope.utils.argument_utils import BaseArgument
@@ -8,7 +8,7 @@ from evalscope.utils.argument_utils import BaseArgument
 class MTEBModelConfig(BaseArgument):
     """MTEB model configuration."""
 
-    model_name_or_path: str
+    model_name_or_path: str = ''
     is_cross_encoder: bool = False
     pooling_mode: Optional[str] = None
     max_seq_length: int = 512
@@ -22,6 +22,13 @@ class MTEBModelConfig(BaseArgument):
     api_base: Optional[str] = None
     api_key: Optional[str] = None
     dimensions: Optional[int] = None
+
+    @model_validator(mode='before')
+    @classmethod
+    def resolve_model_path(cls, data):
+        if isinstance(data, dict) and not data.get('model_name_or_path') and data.get('model_name'):
+            data['model_name_or_path'] = data['model_name']
+        return data
 
 
 class MTEBEvalConfig(BaseArgument):

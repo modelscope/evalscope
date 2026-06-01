@@ -79,14 +79,17 @@ def _build_ragas_embeddings(embedding_config) -> Any:
                 )
             )
     else:
-        # HuggingFace / local model
+        # Local model — resolve via ModelScope first
+        from evalscope.backend.rag_eval.models.utils import resolve_model_path
+        local_path = resolve_model_path(embedding_config.model_name_or_path)
         try:
             from ragas.embeddings import embedding_factory
-            return embedding_factory('huggingface', model=embedding_config.model_name_or_path)
+            return embedding_factory('huggingface', model=local_path)
         except (ImportError, Exception) as e:
             logger.warning(f'Failed to use embedding_factory for huggingface: {e}')
-            from ragas.embeddings.base import HuggingfaceEmbeddings
-            return HuggingfaceEmbeddings(model_name=embedding_config.model_name_or_path)
+            from langchain_huggingface import HuggingFaceEmbeddings
+            from ragas.embeddings.base import LangchainEmbeddingsWrapper
+            return LangchainEmbeddingsWrapper(HuggingFaceEmbeddings(model_name=local_path))
 
 
 def load_documents(file_paths: List[str]):

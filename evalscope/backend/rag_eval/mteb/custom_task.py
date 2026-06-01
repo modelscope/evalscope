@@ -111,7 +111,7 @@ def _build_metadata(name: str, task_type: str, eval_splits: List[str]) -> TaskMe
             'revision': 'custom'
         },
         type=task_type,
-        category='s2s' if task_type != 'Retrieval' else 's2p',
+        category='t2t',
         modalities=['text'],
         eval_splits=eval_splits,
         eval_langs=['eng-Latn'],
@@ -124,7 +124,6 @@ def _build_metadata(name: str, task_type: str, eval_splits: List[str]) -> TaskMe
         dialect=None,
         sample_creation=None,
         bibtex_citation='',
-        descriptive_stats={},
     )
 
 

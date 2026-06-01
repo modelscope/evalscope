@@ -1,8 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
+import pytest
 from dotenv import dotenv_values
 
 from tests.utils import test_level_list
+
+pytestmark = pytest.mark.timeout(600)
 
 env = dotenv_values('.env')
 import unittest

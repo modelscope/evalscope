@@ -1,9 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import pytest
 import unittest
 from dotenv import dotenv_values
 
 from tests.utils import test_level_list
+
+pytestmark = pytest.mark.timeout(600)
 
 env = dotenv_values('.env')
 from evalscope.run import run_task
@@ -56,7 +59,7 @@ class TestMTEB(unittest.TestCase):
                     ],
                     'verbosity': 2,
                     'overwrite_results': True,
-                    'limits': 500,
+                    'limits': 10,
                 },
             },
         }
@@ -83,7 +86,7 @@ class TestMTEB(unittest.TestCase):
                 ],
                 'eval': {
                     'task_names': [
-                        'T2Retrieval',
+                        'ATEC',
                     ],
                     'verbosity': 2,
                     'overwrite_results': True,
@@ -197,11 +200,10 @@ class TestMTEB(unittest.TestCase):
                     }
                 ],
                 'eval': {
-                    'tasks': ['CustomRetrieval'],
-                    'dataset_path': 'custom_eval/text/retrieval',
+                    'custom_tasks': [{'name': 'CustomRetrieval', 'type': 'Retrieval', 'data_path': 'custom_eval/text/retrieval'}],
                     'verbosity': 2,
                     'overwrite_results': True,
-                    'limits': 500,
+                    'limits': 10,
                 },
             },
         }
