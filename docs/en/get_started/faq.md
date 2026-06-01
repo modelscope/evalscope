@@ -152,7 +152,7 @@ Reference documentation: [Judge Model Parameters](https://evalscope.readthedocs.
 
 **Q: How to evaluate multimodal models (like Qwen-VL, Gemma3)?**
 
-**A:** We recommend deploying multimodal models as API services using frameworks like vLLM, then evaluating through API. Direct local loading of multimodal models for pure text evaluation may not be fully supported.
+**A:** The recommended approach is the Native backend with API-based evaluation: deploy the multimodal model as an OpenAI-compatible service using vLLM, ms-swift, LMDeploy, etc., then run `evalscope eval` against multimodal benchmarks (e.g. `ocr_bench`, `mmmu`, `math_vista` — see the full list in [VLM Benchmarks](../get_started/supported_dataset/vlm.md)). The Native backend does not support loading multimodal model checkpoints locally for evaluation. If you need the VLMEvalKit backend, see [VLMEvalKit Backend](../user_guides/backend/vlmevalkit_backend.md).
 
 **Q: Error when evaluating `embeddings` models via API service: `dimensions is currently not supported`?**
 
