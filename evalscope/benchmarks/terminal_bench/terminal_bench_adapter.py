@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -57,6 +58,20 @@ COMMON_EXTRA_PARAMS = {
 }
 
 
+def _validate_environment_requirements(environment_type: str):
+    environment_type = (environment_type or '').strip().lower()
+    if environment_type != 'docker':
+        return
+
+    if shutil.which('docker') is None:
+        raise RuntimeError(
+            'Terminal-Bench with environment_type=\'docker\' requires the Docker CLI to be installed in the '
+            'environment running EvalScope. Mounting /var/run/docker.sock only exposes the Docker daemon socket; '
+            'it does not provide the docker command. Install the Docker CLI in the container or switch '
+            'environment_type to \'daytona\', \'e2b\', or \'modal\'.'
+        )
+
+
 class _TerminalBenchBase(AgentAdapter):
     """Shared logic for Terminal-Bench adapters."""
 
@@ -73,6 +88,8 @@ class _TerminalBenchBase(AgentAdapter):
         self.environment_kwargs = self.extra_params.get('environment_kwargs', {})
 
     def load(self):
+        _validate_environment_requirements(self.environment_type)
+
         from harbor.models.job.config import DatasetConfig
 
         config = DatasetConfig(
