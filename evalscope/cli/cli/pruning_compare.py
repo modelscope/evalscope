@@ -6,27 +6,21 @@ benchmark run and a pruned subset run, validating that the pruned set
 preserves the signal quality.
 
 Usage:
-    python -m evalscope_ext.tools.compare_runs \
-        --full ./results_full/ --pruned ./results_pruned/
-
-Or for direct comparison from review files:
-    python -m evalscope_ext.tools.compare_runs \
+    python -m evalscope.cli.pruning_compare \
         --review-dir "./Evals/Part 1/reviews" \
         --benchmark live_code_bench_v5 \
         --score-key pass \
-        --prune-ratio 0.3
+        --prune-ratio 0.6
 """
 
 import argparse
 import json
-import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
-from evalscope_ext.pruning import (
+from evalscope.pruning import (
     VarianceStratifiedPruner,
     compute_item_stats,
-    load_score_matrix_from_reviews,
 )
 
 
@@ -36,7 +30,6 @@ def compute_model_scores(
     score_key: str,
     indices: Optional[set] = None,
 ) -> Dict[str, float]:
-    """Compute mean score per model, optionally restricted to given indices."""
     model_scores: Dict[str, List[float]] = {}
     review_path = Path(review_dir)
 
@@ -59,20 +52,16 @@ def compute_model_scores(
 
 
 def rank_models(scores: Dict[str, float]) -> Dict[str, int]:
-    """Rank models by score (1 = highest)."""
     sorted_models = sorted(scores.keys(), key=lambda m: scores[m], reverse=True)
     return {m: rank + 1 for rank, m in enumerate(sorted_models)}
 
 
 def kendall_tau(ranks_a: Dict[str, int], ranks_b: Dict[str, int]) -> float:
-    """Compute Kendall's tau rank correlation."""
     models = sorted(ranks_a.keys())
     n = len(models)
     if n < 2:
         return 1.0
-
-    concordant = 0
-    discordant = 0
+    concordant = discordant = 0
     for i in range(n):
         for j in range(i + 1, n):
             mi, mj = models[i], models[j]
@@ -82,7 +71,6 @@ def kendall_tau(ranks_a: Dict[str, int], ranks_b: Dict[str, int]) -> float:
                 concordant += 1
             elif diff_a * diff_b < 0:
                 discordant += 1
-
     total_pairs = n * (n - 1) / 2
     return (concordant - discordant) / total_pairs if total_pairs > 0 else 1.0
 
@@ -97,85 +85,62 @@ def main():
                         help='Benchmark prefix (e.g., live_code_bench_v5).')
     parser.add_argument('--score-key', type=str, default='pass',
                         help='Score key in review data (default: pass).')
-    parser.add_argument('--prune-ratio', type=float, default=0.3,
-                        help='Fraction of samples to keep (default: 0.3).')
+    parser.add_argument('--prune-ratio', type=float, default=0.6,
+                        help='Fraction of samples to keep (default: 0.6).')
     parser.add_argument('--target-size', type=int, default=None,
                         help='Exact number of samples to keep.')
-
     args = parser.parse_args()
 
-    print(f'Benchmark: {args.benchmark}')
-    print(f'Score key: {args.score_key}')
+    print(f'Benchmark:   {args.benchmark}')
+    print(f'Score key:   {args.score_key}')
     print(f'Prune ratio: {args.prune_ratio}')
-    print(f'Review dir: {args.review_dir}')
     print()
 
-    # Compute full scores
-    full_scores = compute_model_scores(
-        args.review_dir, args.benchmark, args.score_key
-    )
+    full_scores = compute_model_scores(args.review_dir, args.benchmark, args.score_key)
     print('=== Full Benchmark Scores ===')
     for model, score in sorted(full_scores.items()):
         print(f'  {model}: {score:.4f}')
-
     full_ranks = rank_models(full_scores)
     print(f'  Ranking: {" > ".join(sorted(full_ranks, key=lambda m: full_ranks[m]))}')
     print()
 
-    # Compute item stats and run pruning
     item_stats = compute_item_stats(args.review_dir, args.benchmark, args.score_key)
     pruner = VarianceStratifiedPruner()
-    selected = pruner.select(
-        item_stats,
-        target_size=args.target_size,
-        prune_ratio=args.prune_ratio,
-    )
+    selected = pruner.select(item_stats, target_size=args.target_size, prune_ratio=args.prune_ratio)
     selected_set = set(selected)
 
-    print(f'=== Pruning Results ===')
-    print(f'  Total samples: {len(item_stats)}')
-    print(f'  Selected: {len(selected)} ({len(selected)/len(item_stats)*100:.1f}%)')
-
-    # Difficulty distribution of selected
+    print('=== Pruning Results ===')
+    print(f'  Total: {len(item_stats)}  Selected: {len(selected)} ({len(selected)/len(item_stats)*100:.1f}%)')
     easy = sum(1 for i in selected if item_stats[i].difficulty >= 0.8)
     medium = sum(1 for i in selected if 0.2 < item_stats[i].difficulty < 0.8)
     hard = sum(1 for i in selected if item_stats[i].difficulty <= 0.2)
-    print(f'  Selected distribution: easy={easy}, medium={medium}, hard={hard}')
-
+    print(f'  Distribution: easy={easy}, medium={medium}, hard={hard}')
     avg_var = sum(item_stats[i].variance for i in selected) / len(selected)
     all_avg_var = sum(s.variance for s in item_stats.values()) / len(item_stats)
-    print(f'  Avg variance (selected): {avg_var:.4f} vs (all): {all_avg_var:.4f}')
+    print(f'  Avg variance: selected={avg_var:.4f} vs all={all_avg_var:.4f}')
     print()
 
-    # Compute pruned scores
-    pruned_scores = compute_model_scores(
-        args.review_dir, args.benchmark, args.score_key, selected_set
-    )
+    pruned_scores = compute_model_scores(args.review_dir, args.benchmark, args.score_key, selected_set)
     print('=== Pruned Subset Scores ===')
     for model, score in sorted(pruned_scores.items()):
-        full = full_scores[model]
-        delta = score - full
+        delta = score - full_scores[model]
         print(f'  {model}: {score:.4f} (delta={delta:+.4f})')
-
     pruned_ranks = rank_models(pruned_scores)
     print(f'  Ranking: {" > ".join(sorted(pruned_ranks, key=lambda m: pruned_ranks[m]))}')
     print()
 
-    # Compare
     tau = kendall_tau(full_ranks, pruned_ranks)
     rank_preserved = full_ranks == pruned_ranks
     max_delta = max(abs(pruned_scores[m] - full_scores[m]) for m in full_scores)
 
     print('=== Comparison ===')
-    print(f'  Rank preserved: {"YES" if rank_preserved else "NO"}')
-    print(f'  Kendall tau: {tau:.4f}')
-    print(f'  Max score deviation: {max_delta:.4f}')
-    print(f'  Compression: {len(item_stats)} -> {len(selected)} '
-          f'({(1 - len(selected)/len(item_stats))*100:.0f}% reduction)')
+    print(f'  Rank preserved:    {"YES" if rank_preserved else "NO"}')
+    print(f'  Kendall tau:       {tau:.4f}')
+    print(f'  Max score delta:   {max_delta:.4f}')
+    print(f'  Compression:       {len(item_stats)} -> {len(selected)} ({(1 - len(selected)/len(item_stats))*100:.0f}% reduction)')
 
     if rank_preserved:
-        print('\n  RESULT: Pruned set preserves model ranking with '
-              f'{(1-len(selected)/len(item_stats))*100:.0f}% fewer samples.')
+        print(f'\n  RESULT: Pruned set preserves model ranking with {(1-len(selected)/len(item_stats))*100:.0f}% fewer samples.')
     else:
         print('\n  WARNING: Rank order changed. Consider increasing prune_ratio.')
 
