@@ -5,6 +5,13 @@ from typing import Any, Dict, List, Literal, Optional
 from evalscope.utils.argument_utils import BaseArgument
 
 
+class CustomTaskConfig(BaseArgument):
+    """Configuration for a custom MTEB task."""
+    name: str = 'CustomRetrieval'
+    data_path: str
+    eval_splits: List[str] = Field(default_factory=lambda: ['test'])
+
+
 class MTEBModelConfig(BaseArgument):
     """MTEB model configuration."""
 
@@ -37,7 +44,15 @@ class MTEBEvalConfig(BaseArgument):
     task_names: Optional[List[str]] = None
     task_types: Optional[List[str]] = None
     languages: Optional[List[str]] = None
-    custom_tasks: Optional[List[Dict[str, Any]]] = None
+    custom_tasks: Optional[List[CustomTaskConfig]] = None
+
+    @field_validator('custom_tasks', mode='before')
+    @classmethod
+    def parse_custom_tasks(cls, v):
+        if isinstance(v, list):
+            return [CustomTaskConfig(**item) if isinstance(item, dict) else item for item in v]
+        return v
+
     output_folder: str = 'outputs'
     overwrite_results: bool = True
     limits: Optional[int] = None

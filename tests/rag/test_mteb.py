@@ -200,7 +200,7 @@ class TestMTEB(unittest.TestCase):
                     }
                 ],
                 'eval': {
-                    'custom_tasks': [{'name': 'CustomRetrieval', 'type': 'Retrieval', 'data_path': 'custom_eval/text/retrieval'}],
+                    'custom_tasks': [{'name': 'CustomRetrieval', 'data_path': 'custom_eval/text/retrieval'}],
                     'verbosity': 2,
                     'overwrite_results': True,
                     'limits': 10,

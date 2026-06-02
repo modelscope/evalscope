@@ -11,7 +11,7 @@ from tabulate import tabulate
 from typing import List
 
 from evalscope.backend.rag_eval.models import load_model
-from evalscope.backend.rag_eval.mteb.arguments import MTEBEvalConfig, MTEBModelConfig, MTEBToolConfig
+from evalscope.backend.rag_eval.mteb.arguments import CustomTaskConfig, MTEBEvalConfig, MTEBModelConfig, MTEBToolConfig
 from evalscope.backend.rag_eval.mteb.data_loader import patch_tasks_for_modelscope
 from evalscope.utils.logger import get_logger
 
@@ -120,6 +120,45 @@ def one_stage_eval(model_args: MTEBModelConfig, eval_args: MTEBEvalConfig):
     return results
 
 
+def _build_retrieval_dataset_from_attrs(task) -> dict:
+    """Build MTEB-compatible dataset dict from task's corpus/queries/relevant_docs.
+
+    ModelScope-patched load_data sets corpus/queries/relevant_docs as DatasetDict
+    attributes but does not populate task.dataset.  The convert_to_reranking
+    method expects task.dataset[subset][split] to be a dict-like structure
+    (RetrievalSplitData) with corpus, queries, relevant_docs, top_ranked keys.
+    """
+    from datasets import Dataset as HFDataset
+
+    splits_data = {}
+    for split in task.corpus:
+        # relevant_docs stays as Mapping[str, Mapping[str, int]] (qid -> {doc_id -> score})
+        qrels = task.relevant_docs.get(split, {})
+
+        # Build queries dataset
+        queries_data = task.queries.get(split, {})
+        queries_ds = HFDataset.from_dict({
+            'id': list(queries_data.keys()),
+            'text': list(queries_data.values()),
+        })
+
+        # Build corpus dataset
+        corpus_data = task.corpus.get(split, {})
+        corpus_ds = HFDataset.from_dict({
+            'id': list(corpus_data.keys()),
+            'text': [v.get('text', '') for v in corpus_data.values()],
+        })
+
+        splits_data[split] = {
+            'corpus': corpus_ds,
+            'queries': queries_ds,
+            'relevant_docs': dict(qrels),
+            'top_ranked': None,
+        }
+
+    return {'default': splits_data}
+
+
 def two_stage_eval(
     encoder_args: MTEBModelConfig,
     reranker_args: MTEBModelConfig,
@@ -161,10 +200,26 @@ def two_stage_eval(
     logger.info('=== Stage 2: CrossEncoder reranking ===')
     for task in tasks:
         if getattr(task.metadata, 'type', None) == 'Retrieval':
+            # Ensure data is loaded for convert_to_reranking (MTEB may unload after stage 1)
+            if not getattr(task, 'data_loaded', False) or getattr(task, 'dataset', None) is None:
+                task.load_data()
+            # ModelScope-patched load_data sets corpus/queries/relevant_docs but not dataset;
+            # convert_to_reranking needs task.dataset, so build it from the attributes.
+            if getattr(task, 'dataset', None) is None and hasattr(task, 'corpus'):
+                task.dataset = _build_retrieval_dataset_from_attrs(task)
             task.convert_to_reranking(
                 top_ranked_path=str(stage1_predictions),
                 top_k=eval_args.top_k,
             )
+            # Remove v1 attributes so that convert_v1_dataset_format_to_v2()
+            # (called during evaluation) returns early and preserves our
+            # dataset with top_ranked intact.
+            for attr in ('queries', 'corpus', 'relevant_docs', 'top_ranked'):
+                if hasattr(task, attr):
+                    try:
+                        delattr(task, attr)
+                    except AttributeError:
+                        pass
 
     eval_kwargs_s2 = _build_evaluate_kwargs(
         eval_args,

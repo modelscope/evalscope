@@ -2,7 +2,102 @@
 
 # CLIP Benchmark
 
-This framework supports the [CLIP Benchmark](https://github.com/LAION-AI/CLIP_benchmark), which aims to provide a unified framework and benchmark for evaluating and analyzing CLIP (Contrastive Language-Image Pretraining) and its variants. Currently, the framework supports 43 evaluation datasets, including zero-shot retrieval tasks with the evaluation metric of recall@k, and zero-shot classification tasks with the evaluation metric of acc@k.
+This framework supports the [CLIP Benchmark](https://github.com/LAION-AI/CLIP_benchmark), which aims to provide a unified framework and benchmark for evaluating and analyzing CLIP (Contrastive Language-Image Pretraining) and its variants. Currently, the framework supports 43 evaluation datasets, including zero-shot retrieval tasks (metric: recall@k) and zero-shot classification tasks (metric: acc@k).
+
+## Environment Preparation
+
+Install the required packages:
+
+```bash
+pip install evalscope[rag] -U
+```
+
+## Quick Start
+
+The following example shows how to evaluate a CLIP model with minimal configuration:
+
+```python
+from evalscope.run import run_task
+
+task_cfg = {
+    "work_dir": "outputs",
+    "eval_backend": "RAGEval",
+    "eval_config": {
+        "tool": "clip_benchmark",
+        "eval": {
+            "models": [
+                {
+                    "model_name": "AI-ModelScope/chinese-clip-vit-large-patch14-336px",
+                }
+            ],
+            "dataset_name": ["muge"],
+            "split": "test",
+        },
+    },
+}
+
+run_task(task_cfg=task_cfg)
+```
+
+Output evaluation results:
+
+```{code-block} json
+:caption: outputs/chinese-clip-vit-large-patch14-336px/muge_zeroshot_retrieval.json
+
+{"dataset": "muge", "model": "AI-ModelScope/chinese-clip-vit-large-patch14-336px", "task": "zeroshot_retrieval", "metrics": {"image_retrieval_recall@5": 0.8935546875, "text_retrieval_recall@5": 0.876953125}}
+```
+
+Key parameters:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `models` | `List[dict]` | Model configuration list. `model_name` is the model name or path, supports automatic download from ModelScope |
+| `dataset_name` | `List[str]` | Dataset name list, see [Supported Datasets](#supported-datasets) |
+| `split` | `str` | Dataset split, default `"test"` |
+
+## Advanced: Multi-Model / Multi-Dataset Batch Evaluation
+
+When evaluating multiple models or datasets simultaneously, extend the configuration:
+
+```python
+from evalscope.run import run_task
+
+task_cfg = {
+    "work_dir": "outputs",
+    "eval_backend": "RAGEval",
+    "eval_config": {
+        "tool": "clip_benchmark",
+        "eval": {
+            "models": [
+                {
+                    "model_name": "AI-ModelScope/chinese-clip-vit-large-patch14-336px",
+                }
+            ],
+            "dataset_name": ["muge", "flickr8k"],
+            "split": "test",
+            "batch_size": 128,
+            "num_workers": 1,
+            "verbose": True,
+            "skip_existing": False,
+            "cache_dir": "cache",
+            "limit": 1000,
+        },
+    },
+}
+
+run_task(task_cfg=task_cfg)
+```
+
+Additional parameters:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `batch_size` | `int` | `128` | Data loading batch size |
+| `num_workers` | `int` | `1` | Number of data loading workers |
+| `verbose` | `bool` | `True` | Enable verbose logging |
+| `skip_existing` | `bool` | `False` | Skip processing if output already exists |
+| `cache_dir` | `str` | `"cache"` | Dataset cache directory |
+| `limit` | `Optional[int]` | `None` | Limit the number of samples to process |
 
 ## Supported Datasets
 
@@ -52,77 +147,47 @@ This framework supports the [CLIP Benchmark](https://github.com/LAION-AI/CLIP_be
 | [vtab_smallnorb_label_elevation](https://modelscope.cn/datasets/clip-benchmark/vtab_smallnorb_label_elevation/) | zeroshot_classification|                            |
 | [vtab_svhn](https://modelscope.cn/datasets/clip-benchmark/vtab_svhn/)                                         | zeroshot_classification|                            |
 
-## Environment Preparation
+## Full Parameter Reference
 
-Install the required packages
-```bash
-pip install evalscope[rag] -U
-```
-
-## Configure Evaluation Parameters
-
-```python
-task_cfg = {
-    "work_dir": "outputs",
-    "eval_backend": "RAGEval",
-    "eval_config": {
-        "tool": "clip_benchmark",
-        "eval": {
-            "models": [
-                {
-                    "model_name": "AI-ModelScope/chinese-clip-vit-large-patch14-336px",
-                }
-            ],
-            "dataset_name": ["muge", "flickr8k"],
-            "split": "test",
-            "batch_size": 128,
-            "num_workers": 1,
-            "verbose": True,
-            "skip_existing": False,
-            "cache_dir": "cache",
-            "limit": 1000,
-        },
-    },
-}
-```
-
-### Parameter Description
 - `eval_backend`: Default value is `RAGEval`, indicating the use of the RAGEval evaluation backend.
 - `eval_config`: A dictionary containing the following fields:
-    - `tool`: The evaluation tool, using `clip_benchmark`.
-    - `eval`: A dictionary containing the following fields:
-        - `models`: A list of model configurations, each with the following fields:
-            - `model_name`: `str` The model name or path, e.g., `AI-ModelScope/chinese-clip-vit-large-patch14-336px`. Supports automatic downloading from the ModelScope repository.
-        - `dataset_name`: `List[str]` A list of dataset names, e.g., `["muge", "flickr8k", "mnist"]`. See [Task List](#supported-datasets).
-        - `split`: `str` The split of the dataset to use, default is `test`.
-        - `batch_size`: `int` Batch size for data loading, default is `128`.
-        - `num_workers`: `int` Number of worker threads for data loading, default is `1`.
-        - `verbose`: `bool` Whether to enable detailed logging, default is `True`.
-        - `skip_existing`: `bool` Whether to skip processing if output already exists, default is `False`.
-        - `cache_dir`: `str` Dataset cache directory, default is `cache`.
-        - `limit`: `Optional[int]` Limit the number of samples to process, default is `None`, e.g., `1000`.
+    - `tool`: Evaluation tool, using `clip_benchmark`.
+    - `eval`: Evaluation configuration, containing the following fields:
 
-## Run Evaluation Task
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `models` | `List[dict]` | `[]` | Model configuration list. `model_name` is the model name or path, supports automatic download from ModelScope |
+| `dataset_name` | `List[str]` | `[]` | Dataset name list, see [Supported Datasets](#supported-datasets) |
+| `split` | `str` | `"test"` | Dataset split |
+| `task` | `Optional[str]` | `None` | Task type, auto-inferred by default |
+| `batch_size` | `int` | `128` | Data loading batch size |
+| `num_workers` | `int` | `1` | Number of data loading workers |
+| `verbose` | `bool` | `True` | Enable verbose logging |
+| `output_dir` | `str` | `"outputs"` | Output directory for evaluation results |
+| `cache_dir` | `str` | `"cache"` | Dataset cache directory |
+| `skip_existing` | `bool` | `False` | Skip processing if output already exists |
+| `data_dir` | `Optional[str]` | `None` | Custom data directory |
+| `limit` | `Optional[int]` | `None` | Limit the number of samples to process |
 
-```python
-from evalscope.run import run_task
-from evalscope.utils.logger import get_logger
+## FAQ
 
-logger = get_logger()
+### Dataset Download Failure
 
-# Run task
-run_task(task_cfg=task_cfg) 
-```
+If ModelScope dataset download fails, try configuring a mirror or manually downloading the dataset, then specify the local path via the `data_dir` parameter.
 
-### Output Evaluation Results
+### Slow Evaluation
 
-```{code-block} json
-:caption: outputs/chinese-clip-vit-large-patch14-336px/muge_zeroshot_retrieval.json
+- Increase `batch_size` (default 128) to improve throughput, mind the GPU memory limit
+- Increase `num_workers` (default 1) to speed up data loading
+- Use `skip_existing: true` to skip already completed evaluations
 
-{"dataset": "muge", "model": "AI-ModelScope/chinese-clip-vit-large-patch14-336px", "task": "zeroshot_retrieval", "metrics": {"image_retrieval_recall@5": 0.8935546875, "text_retrieval_recall@5": 0.876953125}}
-```
+### Metric Definitions
+
+- **zeroshot_classification**: reports `acc1` (Top-1 accuracy) and `acc5` (Top-5 accuracy)
+- **zeroshot_retrieval**: reports `text_retrieval_recall@k` and `image_retrieval_recall@k`
 
 ## Custom Evaluation Dataset
+
 ```{seealso}
 [Custom Image-Text Dataset](../../../advanced_guides/custom_dataset/clip.md)
 ```
