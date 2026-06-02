@@ -1,11 +1,11 @@
-"""
-IE_eval_v2 计算逻辑说明
+"""IE_eval_v2 scoring logic.
 
-目标：
-1. solution 中的文本尽量在 completion 中出现（completion 多写不扣分）。
-2. completion 必须是严格 JSON 结构。
+Goals:
+1. Maximize coverage of the solution text within the completion without
+    penalizing extra text in the completion.
+2. Require the completion to be valid strict JSON.
 
-总分：
+Overall score:
 ie_score = 0.5 * text_coverage_score + 0.5 * json_strict_score
 """
 
@@ -31,10 +31,10 @@ def _strip_markdown_json_fence(text: str) -> str:
 
 def _strict_json_parse(text: str) -> Tuple[Optional[object], Optional[str]]:
     """
-    严格 JSON 校验：
-    - 仅允许完整 JSON 文本（可有首尾空白）
-    - 若整体被 markdown code fence 包裹，则先去除 code fence 再校验
-    - 不接受额外说明文字
+    Strict JSON validation.
+    - Only accept a complete JSON payload, allowing surrounding whitespace.
+    - Strip an outer Markdown code fence before validation when present.
+    - Reject additional explanatory text outside the JSON payload.
     """
     raw = (text or '').strip()
     if not raw:
@@ -50,9 +50,9 @@ def _strict_json_parse(text: str) -> Tuple[Optional[object], Optional[str]]:
 
 def _text_coverage_score(solution: str, completion: str) -> float:
     """
-    基于 solution 侧召回的覆盖分：
-    score = 匹配字符数 / solution字符数
-    这样 completion 额外文本不会被扣分。
+    Coverage score measured from the solution side.
+    score = matched_characters / solution_characters
+    Extra text in the completion does not reduce the score.
     """
     gt = _normalize_text(solution)
     pred = _normalize_text(completion)
@@ -69,12 +69,12 @@ def _text_coverage_score(solution: str, completion: str) -> float:
 
 def evaluate_ie_sample(completion: str, solution: str, prompt: Optional[str] = None) -> Dict[str, object]:
     """
-    IE v2 评测：
-    - text_coverage_score: solution 文本在 completion 中的覆盖率
-    - json_strict_score: completion 是否严格 JSON（是=1，否=0）
-    - ie_score: 0.5 * text_coverage_score + 0.5 * json_strict_score
+    IE v2 evaluation.
+    - text_coverage_score: coverage of the solution text in the completion.
+    - json_strict_score: whether the completion is strict JSON (1 or 0).
+    - ie_score: 0.5 * text_coverage_score + 0.5 * json_strict_score.
 
-    参数 prompt 保留是为了兼容现有调用签名。
+    The prompt parameter is retained for compatibility with the existing call signature.
     """
     _ = prompt
 

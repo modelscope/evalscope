@@ -260,3 +260,41 @@ class TestRun(unittest.TestCase):
         )
 
         run_task(task_cfg=task_cfg)
+
+    def test_vlm_ci_lite(self):
+        from evalscope.config import TaskConfig
+
+        task_cfg = TaskConfig(
+            model='qwen-vl-plus',
+            api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            eval_type=EvalType.MOCK_LLM,
+            datasets=[
+                'maritime_ocr_bench',
+            ],
+            dataset_args={
+                'maritime_ocr_bench': {
+                    'local_path': 'custom_eval/multimodal/maritime_ocr_bench',
+                    'subset_list': ['VQA'],
+                },
+            },
+            eval_batch_size=1,
+            limit=1,
+            stream=True,
+            generation_config={
+                'temperature': 0,
+                'n': 1,
+                'max_tokens': 512,
+                'image_height': 512,
+                'image_width': 512,
+                'image_num': 1,
+            },
+            judge_strategy=JudgeStrategy.AUTO,
+            judge_model_args={
+                'model_id': 'qwen2.5-72b-instruct',
+                'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'api_key': env.get('DASHSCOPE_API_KEY'),
+            }
+        )
+
+        run_task(task_cfg=task_cfg)

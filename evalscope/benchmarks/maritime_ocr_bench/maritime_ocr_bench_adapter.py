@@ -14,7 +14,7 @@ from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
-from .scoring.IE_eval_v2 import evaluate_ie_sample
+from .scoring.IE_eval import evaluate_ie_sample
 from .scoring.spotting_json_quantization_eval import evaluate_spotting_sample
 from .scoring.spotting_quantization_eval import evaluate_text_sample
 
@@ -116,10 +116,7 @@ class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
         if os.path.isfile(dataset_path):
             return dataset_path
 
-        preferred_files = [
-            'maritime_ocr_bench.jsonl',
-            'eval_balanced_all_type_0508_copied.jsonl',
-        ]
+        preferred_files = ['maritime_ocr_bench.jsonl']
         for file_name in preferred_files:
             candidate = os.path.join(dataset_path, file_name)
             if os.path.exists(candidate):

@@ -45,7 +45,7 @@ def normalize_pair_text(s: str, do_normalize: bool = True) -> str:
 
 def parse_all_pairs(s: str, normalize: bool = True) -> List[Tuple[str, Quad]]:
     """
-    解析字符串中所有 (text, quad)，保留全部，不去重。
+    Parse all (text, quad) pairs from the string without deduplication.
     """
     out: List[Tuple[str, Quad]] = []
     if not s:
@@ -65,7 +65,7 @@ def parse_all_pairs(s: str, normalize: bool = True) -> List[Tuple[str, Quad]]:
 
 def reorder_quad_points(quad: Quad) -> Quad:
     """
-    将四点按中心点极角排序，尽量避免点顺序错乱导致 Polygon 自交。
+    Sort the four points by polar angle around the center to reduce self-intersections.
     """
     cx = sum(x for x, y in quad) / 4.0
     cy = sum(y for x, y in quad) / 4.0
@@ -82,7 +82,7 @@ def reorder_quad_points(quad: Quad) -> Quad:
 
 def make_valid_polygon(quad: Quad) -> Polygon:
     """
-    四点框转 polygon，并尽量修复非法几何。
+    Convert a quadrilateral into a polygon and repair invalid geometry when possible.
     """
     quad = reorder_quad_points(quad)
     poly = Polygon(quad)
@@ -99,10 +99,10 @@ def polygon_diou_score(
     eps: float = 1e-9,
 ) -> float:
     """
-    与奖励函数一致的 DIoU score:
+    DIoU score aligned with the reward function:
         diou = iou - center_dist_sq / diag_length_sq
         score = (diou + 1) / 2
-        最终裁剪到 [min_reward, max_reward]
+        final score is clipped to [min_reward, max_reward]
     """
     if poly1.is_empty or poly2.is_empty:
         return min_reward
@@ -149,7 +149,7 @@ def best_match_average(
     eps: float = 1e-9,
 ) -> float:
     """
-    对 source 中每个 polygon，在 target 中找最佳匹配分数，再取平均。
+    For each source polygon, find the best target match and average the scores.
     """
     if not source_polys or not target_polys:
         return min_reward
@@ -183,7 +183,7 @@ def evaluate_layout_sample(
     eps: float = 1e-9,
 ) -> Dict[str, float]:
     """
-    单条样本布局评测，逻辑与 TextQuadPolygonDIoUReward 对齐。
+    Evaluate layout for a single sample, aligned with TextQuadPolygonDIoUReward.
     """
     gt_to_pred_weight = 1.0 - pred_to_gt_weight
     blank_reward = max_reward if blank_reward is None else blank_reward
@@ -200,12 +200,12 @@ def evaluate_layout_sample(
     pred_polys = [p for p in pred_polys if not p.is_empty and p.area > eps]
     gt_polys = [p for p in gt_polys if not p.is_empty and p.area > eps]
 
-    # Blank-page: GT为空
+    # Blank page: ground truth is empty.
     if not gt_polys:
         final_score = blank_reward if not pred_polys else min_reward
         return {'diou_score': float(final_score)}
 
-    # 正常页：有GT但没预测
+    # Normal page: ground truth exists but there is no prediction.
     if not pred_polys:
         return {'diou_score': float(min_reward)}
 
@@ -514,7 +514,7 @@ def evaluate_dataset(
     to_percent: bool = True,
 ) -> pd.DataFrame:
     """
-    对整个 jsonl 数据集做联合评测：
+    Run joint evaluation over an entire JSONL dataset:
     - diou_score
     - text_score
     - overall_score = 0.7 * diou_score + 0.3 * text_score
@@ -581,12 +581,16 @@ def evaluate_dataset(
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--input_file', required=True, help='输入 jsonl 文件路径')
-    parser.add_argument('--save_dir', required=True, help='结果保存目录')
-    parser.add_argument('--save_name', required=True, help='结果 csv 文件名')
-    parser.add_argument('--pred_to_gt_weight', type=float, default=0.5, help='pred->gt 方向权重')
-    parser.add_argument('--blank_reward', type=float, default=0.3, help='空白页奖励')
-    parser.add_argument('--no_percent', action='store_true', help='不转成百分比，直接输出 0~1 分数')
+    parser.add_argument('-i', '--input_file', required=True, help='Path to the input JSONL file')
+    parser.add_argument('--save_dir', required=True, help='Directory where results will be saved')
+    parser.add_argument('--save_name', required=True, help='Output CSV file name')
+    parser.add_argument(
+        '--pred_to_gt_weight', type=float, default=0.5, help='Weight for the prediction-to-ground-truth direction'
+    )
+    parser.add_argument('--blank_reward', type=float, default=0.3, help='Reward assigned to blank pages')
+    parser.add_argument(
+        '--no_percent', action='store_true', help='Keep scores in the 0-1 range instead of converting to percentages'
+    )
     args = parser.parse_args()
 
     os.makedirs(args.save_dir, exist_ok=True)
@@ -610,25 +614,8 @@ def main():
     print(df)
 
     df.to_csv(save_path, index=False, encoding='utf-8-sig')
-    print(f"\n结果已保存到: {save_path}")
+    print(f"\nResults saved to: {save_path}")
 
 
 if __name__ == '__main__':
     main()
-"""
-python spotting_quantization_eval.py \
-    -i ./result_root/model_0313_2/spotting_pred.jsonl \
-    --save_dir ./result_root/model_0313_2 \
-    --save_name result.csv
-
-python spotting_quantization_eval.py \
-    -i ./result_root/xingchen2/model_0313/spotting_pred.jsonl \
-    --save_dir ./result_root/xingchen2/model_0313 \
-    --save_name result.csv
-
-python spotting_quantization_eval.py \
-    -i ./result_root/xingchen100/model_0313/spotting_pred.jsonl \
-    --save_dir ./result_root/xingchen100/model_0313 \
-    --save_name result.csv
-
-"""

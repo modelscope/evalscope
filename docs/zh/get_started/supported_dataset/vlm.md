@@ -21,6 +21,7 @@
 | `hallusion_bench` | [HallusionBench](../../benchmarks/hallusion_bench.md) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `infovqa` | [InfoVQA](../../benchmarks/infovqa.md) | `Knowledge`, `MultiModal`, `QA` |
 | `librispeech` | [LibriSpeech](../../benchmarks/librispeech.md) | `Audio`, `SpeechRecognition` |
+| `maritime_ocr_bench` | [Maritime-OCR-Bench](../../benchmarks/maritime_ocr_bench.md) | `MultiModal`, `QA` |
 | `math_verse` | [MathVerse](../../benchmarks/math_verse.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vision` | [MathVision](../../benchmarks/math_vision.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vista` | [MathVista](../../benchmarks/math_vista.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
@@ -69,6 +70,7 @@
 ../../benchmarks/hallusion_bench.md
 ../../benchmarks/infovqa.md
 ../../benchmarks/librispeech.md
+../../benchmarks/maritime_ocr_bench.md
 ../../benchmarks/math_verse.md
 ../../benchmarks/math_vision.md
 ../../benchmarks/math_vista.md

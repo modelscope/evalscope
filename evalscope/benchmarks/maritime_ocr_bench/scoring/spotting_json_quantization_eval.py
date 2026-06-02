@@ -1,9 +1,9 @@
-import argparse
 import json
-import os
-import pandas as pd
 import re
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 from .spotting_quantization_eval import evaluate_layout_sample as legacy_evaluate_layout_sample
 from .spotting_quantization_eval import evaluate_text_sample as legacy_evaluate_text_sample
@@ -397,7 +397,9 @@ def evaluate_dataset(
     pred_to_gt_weight: float = 0.5,
     eps: float = 1e-9,
     to_percent: bool = True,
-) -> pd.DataFrame:
+) -> 'pd.DataFrame':
+    import pandas as pd
+
     sample_results: List[Dict[str, Any]] = []
 
     with open(input_file, 'r', encoding='utf-8') as handle:
@@ -438,13 +440,21 @@ def evaluate_dataset(
 
 
 def main() -> None:
+    import argparse
+    import os
+    import pandas as pd
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--input_file', required=True, help='输入 jsonl 文件路径')
-    parser.add_argument('--save_dir', required=True, help='结果保存目录')
-    parser.add_argument('--save_name', required=True, help='结果 csv 文件名')
-    parser.add_argument('--pred_to_gt_weight', type=float, default=0.5, help='pred->gt 方向权重')
-    parser.add_argument('--blank_reward', type=float, default=0.3, help='空白页奖励')
-    parser.add_argument('--no_percent', action='store_true', help='不转成百分比，直接输出 0~1 分数')
+    parser.add_argument('-i', '--input_file', required=True, help='Path to the input JSONL file')
+    parser.add_argument('--save_dir', required=True, help='Directory where results will be saved')
+    parser.add_argument('--save_name', required=True, help='Output CSV file name')
+    parser.add_argument(
+        '--pred_to_gt_weight', type=float, default=0.5, help='Weight for the prediction-to-ground-truth direction'
+    )
+    parser.add_argument('--blank_reward', type=float, default=0.3, help='Reward assigned to blank pages')
+    parser.add_argument(
+        '--no_percent', action='store_true', help='Keep scores in the 0-1 range instead of converting to percentages'
+    )
     args = parser.parse_args()
 
     os.makedirs(args.save_dir, exist_ok=True)
@@ -468,7 +478,7 @@ def main() -> None:
     print(df)
 
     df.to_csv(save_path, index=False, encoding='utf-8-sig')
-    print(f"\n结果已保存到: {save_path}")
+    print(f"\nResults saved to: {save_path}")
 
 
 if __name__ == '__main__':
