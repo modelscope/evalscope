@@ -18,7 +18,7 @@ EvalScope 支持两个版本：
 
 ```{important}
 - **Python 版本**：必须使用 **Python >= 3.12**。
-- **Docker 环境**：默认使用 Docker 运行评测，请确保本地已安装并启动 Docker Engine 和 Docker Compose。
+- **Docker 环境**：默认使用 Docker 运行评测，请确保运行 EvalScope 的环境中已安装并启动 Docker Engine、Docker Compose 以及 `docker` 命令行工具。
 - **网络连接**：
   - 数据集从 Harbor Hub 下载，请确保网络通畅。
   - 容器构建和运行时可能需要联网下载依赖，需保证环境网络稳定。
@@ -126,5 +126,6 @@ run_task(task_cfg)
 ## 故障排除
 
 1. **Docker 连接失败**：请检查 Docker Desktop 或 Docker Engine 是否正在运行，且当前用户有权限访问 Docker socket。
-2. **数据集下载失败**：数据集通过 Harbor Hub 下载，请检查网络连接或配置代理。
-3. **Python 版本错误**：如果遇到语法错误或包兼容性问题，请确认使用的是 Python 3.12+。
+2. **Docker CLI 未找到**：如果 EvalScope 在容器内运行，仅挂载 `/var/run/docker.sock` 是不够的，容器内还需要安装 `docker` 命令行工具。
+3. **数据集下载失败**：数据集通过 Harbor Hub 下载，请检查网络连接或配置代理。
+4. **Python 版本错误**：如果遇到语法错误或包兼容性问题，请确认使用的是 Python 3.12+。
