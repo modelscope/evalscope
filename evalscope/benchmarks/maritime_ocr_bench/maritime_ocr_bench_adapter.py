@@ -135,6 +135,10 @@ class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
 
     def _resolve_image_path(self, image_ref: str) -> str:
         normalized_ref = os.path.normpath(image_ref)
+
+        if any(part == os.pardir for part in normalized_ref.split(os.sep)):
+            raise ValueError(f'Parent directory references are not allowed in image paths: {image_ref}')
+
         if os.path.isabs(normalized_ref) and os.path.exists(normalized_ref):
             return normalized_ref
 
