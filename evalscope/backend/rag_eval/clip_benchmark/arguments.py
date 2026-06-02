@@ -1,4 +1,5 @@
-from typing import Any, Dict, List, Optional
+from pydantic import Field, field_validator
+from typing import Any, Dict, List, Literal, Optional
 
 from evalscope.utils.argument_utils import BaseArgument
 
@@ -32,5 +33,13 @@ class ClipBenchmarkEvalConfig(BaseArgument):
     limit: Optional[int] = None
 
 
-# Backward-compatible alias
-Arguments = ClipBenchmarkEvalConfig
+class ClipBenchmarkToolConfig(BaseArgument):
+    """Complete configuration for tool='clip_benchmark' in eval_config."""
+
+    tool: Literal['clip_benchmark'] = 'clip_benchmark'
+    eval: ClipBenchmarkEvalConfig = Field(default_factory=ClipBenchmarkEvalConfig)
+
+    @field_validator('tool', mode='before')
+    @classmethod
+    def normalize_tool(cls, v):
+        return v.lower() if isinstance(v, str) else v

@@ -39,8 +39,15 @@ class RAGEvalBackendManager(BackendManager):
             config: MTEBToolConfig instance or dict with MTEB configuration.
         """
         import mteb
-        mteb_version = tuple(int(x) for x in mteb.__version__.split('.')[:2])
-        if mteb_version < (2, 7):
+        from packaging.version import InvalidVersion, Version, parse
+        try:
+            mteb_version = parse(mteb.__version__)
+        except InvalidVersion:
+            raise ImportError(
+                f'MTEB >= 2.7.0 is required (got {mteb.__version__}). '
+                'Please upgrade: pip install "mteb>=2.7.0,<3.0.0"'
+            )
+        if mteb_version < Version('2.7.0'):
             raise ImportError(
                 f'MTEB >= 2.7.0 is required (got {mteb.__version__}). '
                 'Please upgrade: pip install "mteb>=2.7.0,<3.0.0"'
@@ -59,8 +66,15 @@ class RAGEvalBackendManager(BackendManager):
             config: RAGASToolConfig instance or dict with RAGAS configuration.
         """
         import ragas
-        ragas_version = tuple(int(x) for x in ragas.__version__.split('.')[:2])
-        if ragas_version < (0, 4):
+        from packaging.version import InvalidVersion, Version, parse
+        try:
+            ragas_version = parse(ragas.__version__)
+        except InvalidVersion:
+            raise ImportError(
+                f'RAGAS >= 0.4.0 is required (got {ragas.__version__}). '
+                'Please upgrade: pip install "ragas>=0.4.0,<0.5.0"'
+            )
+        if ragas_version < Version('0.4.0'):
             raise ImportError(
                 f'RAGAS >= 0.4.0 is required (got {ragas.__version__}). '
                 'Please upgrade: pip install "ragas>=0.4.0,<0.5.0"'
@@ -89,8 +103,9 @@ class RAGEvalBackendManager(BackendManager):
 
     def run(self, *args, **kwargs) -> None:
         """Run the RAG evaluation pipeline based on tool type."""
+        from evalscope.backend.rag_eval.clip_benchmark.arguments import ClipBenchmarkToolConfig
         from evalscope.backend.rag_eval.mteb.arguments import MTEBToolConfig
-        from evalscope.backend.rag_eval.ragas.arguments import ClipBenchmarkToolConfig, RAGASToolConfig
+        from evalscope.backend.rag_eval.ragas.arguments import RAGASToolConfig
 
         config = self.config_d
 

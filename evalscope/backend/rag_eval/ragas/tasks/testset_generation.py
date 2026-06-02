@@ -30,8 +30,8 @@ def _build_ragas_llm(llm_config) -> Any:
 
         client = OpenAI(**client_kwargs)
         return llm_factory(llm_config.model_name, client=client)
-    except (ImportError, Exception) as e:
-        logger.warning(f'Failed to use llm_factory: {e}, falling back to LangchainLLMWrapper')
+    except (ImportError, AttributeError, TypeError):
+        logger.warning('Failed to use llm_factory, falling back to LangchainLLMWrapper', exc_info=True)
         from langchain_openai import ChatOpenAI
         from ragas.llms.base import LangchainLLMWrapper
 
@@ -66,8 +66,8 @@ def _build_ragas_embeddings(embedding_config) -> Any:
 
             client = OpenAI(**client_kwargs)
             return embedding_factory('openai', model=embedding_config.model_name_or_path, client=client)
-        except (ImportError, Exception) as e:
-            logger.warning(f'Failed to use embedding_factory for openai: {e}')
+        except (ImportError, AttributeError, TypeError):
+            logger.warning('Failed to use embedding_factory for openai', exc_info=True)
             from langchain_openai import OpenAIEmbeddings
             from ragas.embeddings.base import LangchainEmbeddingsWrapper
 
@@ -85,8 +85,8 @@ def _build_ragas_embeddings(embedding_config) -> Any:
         try:
             from ragas.embeddings import embedding_factory
             return embedding_factory('huggingface', model=local_path)
-        except (ImportError, Exception) as e:
-            logger.warning(f'Failed to use embedding_factory for huggingface: {e}')
+        except (ImportError, AttributeError, TypeError):
+            logger.warning('Failed to use embedding_factory for huggingface', exc_info=True)
             from langchain_huggingface import HuggingFaceEmbeddings
             from ragas.embeddings.base import LangchainEmbeddingsWrapper
             return LangchainEmbeddingsWrapper(HuggingFaceEmbeddings(model_name=local_path))

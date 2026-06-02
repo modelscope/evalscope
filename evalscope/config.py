@@ -352,7 +352,7 @@ class TaskConfig(BaseArgument):
             from evalscope.backend.rag_eval.ragas.arguments import RAGASToolConfig
             self.eval_config = RAGASToolConfig(**self.eval_config)
         elif tool == 'clip_benchmark':
-            from evalscope.backend.rag_eval.ragas.arguments import ClipBenchmarkToolConfig
+            from evalscope.backend.rag_eval.clip_benchmark.arguments import ClipBenchmarkToolConfig
             self.eval_config = ClipBenchmarkToolConfig(**self.eval_config)
 
     def _init_model_and_id(self):

@@ -89,12 +89,12 @@ class TestRAGAS(unittest.TestCase):
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_rag_eval_api(self):
-        from evalscope.backend.rag_eval.ragas.arguments import EvaluationArguments
+        from evalscope.backend.rag_eval.ragas.arguments import RAGASEvalConfig
         task_cfg = TaskConfig(
             eval_backend='RAGEval',
             eval_config=dict(
                 tool='RAGAS',
-                eval=EvaluationArguments(
+                eval=RAGASEvalConfig(
                     testset_file='outputs/testset_chinese_with_answer_small.json',
                     critic_llm={
                         'model_name': 'qwen-plus',  # 自定义聊天模型名称

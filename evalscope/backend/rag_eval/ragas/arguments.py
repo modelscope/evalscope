@@ -2,7 +2,6 @@
 from pydantic import Field, field_validator
 from typing import List, Literal, Optional
 
-from evalscope.backend.rag_eval.clip_benchmark.arguments import ClipBenchmarkEvalConfig
 from evalscope.utils.argument_utils import BaseArgument
 
 
@@ -102,20 +101,3 @@ class RAGASToolConfig(BaseArgument):
         if isinstance(v, dict):
             return RAGASEvalConfig(**v)
         return v
-
-
-class ClipBenchmarkToolConfig(BaseArgument):
-    """Complete configuration for tool='clip_benchmark' in eval_config."""
-
-    tool: Literal['clip_benchmark'] = 'clip_benchmark'
-    eval: ClipBenchmarkEvalConfig = Field(default_factory=ClipBenchmarkEvalConfig)
-
-    @field_validator('tool', mode='before')
-    @classmethod
-    def normalize_tool(cls, v):
-        return v.lower() if isinstance(v, str) else v
-
-
-# Backward-compatible aliases for old config names
-EvaluationArguments = RAGASEvalConfig
-TestsetGenerationArguments = RAGASTestsetConfig
