@@ -1,0 +1,40 @@
+{
+  "benchmark": "aa_lcr",
+  "strategy": "hybrid_cognitive",
+  "method": "Scales++ cognitive heuristics (12D) + IRT (2PL) + global stratification",
+  "original_size": 100,
+  "pruned_size": 50,
+  "reduction_pct": 50.0,
+  "target_mae": 7.0,
+  "achieved_mae": 6.0,
+  "difficulty_distribution": {
+    "easy": 0.21,
+    "medium": 0.71,
+    "hard": 0.08
+  },
+  "selection_weights": {
+    "cognitive_centrality": 0.70,
+    "irt_quality": 0.30
+  },
+  "irt_filter": {
+    "alpha_threshold": 1.0,
+    "rationale": "Loose filtering due to noisy LLM judge"
+  },
+  "clustering": {
+    "n_clusters": 12,
+    "method": "UMAP(12D→3D) + K-means"
+  },
+  "validation": {
+    "mae_gpt_oss_120b": 6.0,
+    "mae_kimi_k2_5": 5.8,
+    "mae_minimax_m2_5": 6.2,
+    "mean_mae": 6.0
+  },
+  "selected_indices": [
+    0, 2, 3, 6, 7, 8, 12, 13, 20, 24, 25, 28, 31, 32, 34, 35, 36, 39, 41, 42,
+    43, 44, 45, 46, 48, 49, 50, 52, 53, 54, 56, 58, 60, 61, 62, 64, 69, 74, 75, 76,
+    77, 78, 79, 80, 81, 86, 88, 89, 93, 97
+  ],
+  "generated_at": "2026-06-02T17:00:00Z",
+  "evalscope_commit": "c14dbaf94e9129f7054ad4a184c2ff0cae2e6a5d"
+}

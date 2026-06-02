@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "pretty_name": "LiveCodeBench (Pruned)",
+    "dataset_id": "evalscope/livecodebench_code_generation_lite_parquet",
+    "paper_url": null,
+    "tags": [
+      "Coding"
+    ],
+    "metrics": [
+      "pass"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "release_v5"
+    ],
+    "description": "LiveCodeBench Pruned - 100 samples (68% reduction) via hybrid cognitive pruning. MAE: 5.42% (<5% target). Strategy: 60% IRT quality + 40% cognitive diversity.",
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 100,
+    "pruning_metadata": {
+      "original_size": 315,
+      "reduction_pct": 68.25,
+      "strategy": "hybrid_cognitive",
+      "achieved_mae": 5.42,
+      "target_mae": 5.0
+    }
+  }
+}

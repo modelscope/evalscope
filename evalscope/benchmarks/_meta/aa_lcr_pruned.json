@@ -1,0 +1,33 @@
+{
+  "meta": {
+    "pretty_name": "AA-LCR (Pruned)",
+    "dataset_id": "evalscope/AA-LCR",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "Reasoning",
+      "LongContext"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "AA-LCR Pruned - 50 samples (50% reduction) via hybrid cognitive pruning. MAE: 6.0% (<7% target). Strategy: 70% cognitive centrality + 30% IRT quality.",
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 50,
+    "pruning_metadata": {
+      "original_size": 100,
+      "reduction_pct": 50.0,
+      "strategy": "hybrid_cognitive",
+      "achieved_mae": 6.0,
+      "target_mae": 7.0
+    }
+  }
+}
