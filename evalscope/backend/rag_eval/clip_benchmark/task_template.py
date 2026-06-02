@@ -3,7 +3,7 @@ import os
 import torch
 from itertools import product
 
-from evalscope.backend.rag_eval.clip_benchmark.arguments import Arguments
+from evalscope.backend.rag_eval.clip_benchmark.arguments import ClipBenchmarkEvalConfig
 from evalscope.backend.rag_eval.clip_benchmark.dataset_builder import (
     build_dataset,
     get_dataloader,
@@ -16,7 +16,7 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-def evaluate(args: Arguments):
+def evaluate(args: ClipBenchmarkEvalConfig):
     models = args.models
     dataset_names = args.dataset_name
     data_dir = args.data_dir

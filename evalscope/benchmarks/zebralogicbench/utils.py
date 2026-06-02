@@ -20,14 +20,6 @@ MEDIUM_SIZES: List[str] = ['3*4', '3*5', '3*6', '4*3', '4*4', '5*2', '6*2']
 LARGE_SIZES: List[str] = ['4*5', '5*3', '4*6', '5*4', '6*3']
 XL_SIZES: List[str] = ['5*5', '6*4', '5*6', '6*5', '6*6']
 
-# Backward-compatible aliases (if imported elsewhere)
-easy_sizes = EASY_SIZES
-hard_sizes = HARD_SIZES
-small_sizes = SMALL_SIZES
-medium_sizes = MEDIUM_SIZES
-large_sizes = LARGE_SIZES
-xl_sizes = XL_SIZES
-
 
 def process_results(prediction: str, reference: str) -> Dict[str, int]:
     """

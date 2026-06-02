@@ -5,13 +5,15 @@ pytest.importorskip('langchain_openai')
 pytest.importorskip('mteb')
 pytest.importorskip('sentence_transformers')
 
-from evalscope.backend.rag_eval.utils.embedding import APIRerankerModel, EmbeddingModel
+from evalscope.backend.rag_eval.models import load_model
+from evalscope.backend.rag_eval.models.reranker import APIReranker
 
 
 class MockResponse:
 
     def __init__(self, data):
         self.data = data
+        self.status_code = 200
 
     def raise_for_status(self):
         pass
@@ -38,13 +40,13 @@ def test_api_reranker_predict(monkeypatch):
             ]
         })
 
-    monkeypatch.setattr('evalscope.backend.rag_eval.utils.embedding.requests.Session.post', mock_post)
+    monkeypatch.setattr('evalscope.backend.rag_eval.models.reranker.requests.Session.post', mock_post)
 
-    model = APIRerankerModel(
+    model = APIReranker(
         model_name='Qwen3-Reranker-8B',
         api_base='https://aiping.cn/api/v1',
         api_key='test-key',
-        encode_kwargs={'batch_size': 10},
+        batch_size=10,
     )
     scores = model.predict([['query', 'document 0', None], ['query', 'document 1', None]])
 
@@ -72,12 +74,12 @@ def test_api_reranker_keeps_explicit_endpoint(monkeypatch):
     def mock_post(self, url, headers, json, timeout):
         return MockResponse({'results': [{'index': 0, 'score': 0.8}]})
 
-    monkeypatch.setattr('evalscope.backend.rag_eval.utils.embedding.requests.Session.post', mock_post)
+    monkeypatch.setattr('evalscope.backend.rag_eval.models.reranker.requests.Session.post', mock_post)
 
-    model = APIRerankerModel(
+    model = APIReranker(
         model_name='reranker',
         api_base='https://example.com/v1/reranks',
-        encode_kwargs={'batch_size': 1},
+        batch_size=1,
     )
 
     assert model.rerank_url == 'https://example.com/v1/reranks'
@@ -92,12 +94,12 @@ def test_api_reranker_applies_instruction(monkeypatch):
         calls.append(json)
         return MockResponse({'results': [{'index': 0, 'score': 0.8}]})
 
-    monkeypatch.setattr('evalscope.backend.rag_eval.utils.embedding.requests.Session.post', mock_post)
+    monkeypatch.setattr('evalscope.backend.rag_eval.models.reranker.requests.Session.post', mock_post)
 
-    model = APIRerankerModel(
+    model = APIReranker(
         model_name='reranker',
         api_base='https://example.com/v1',
-        encode_kwargs={'batch_size': 1},
+        batch_size=1,
     )
 
     scores = model.predict([['query', 'document', 'instruction']])
@@ -112,12 +114,12 @@ def test_api_reranker_defaults_none_index(monkeypatch):
     def mock_post(self, url, headers, json, timeout):
         return MockResponse({'results': [{'index': None, 'score': 0.8}]})
 
-    monkeypatch.setattr('evalscope.backend.rag_eval.utils.embedding.requests.Session.post', mock_post)
+    monkeypatch.setattr('evalscope.backend.rag_eval.models.reranker.requests.Session.post', mock_post)
 
-    model = APIRerankerModel(
+    model = APIReranker(
         model_name='reranker',
         api_base='https://example.com/v1',
-        encode_kwargs={'batch_size': 1},
+        batch_size=1,
     )
 
     assert torch.equal(model.predict([['query', 'document']]), torch.tensor([0.8]))
@@ -126,21 +128,22 @@ def test_api_reranker_defaults_none_index(monkeypatch):
 def test_api_reranker_uses_openai_api_key_env(monkeypatch):
     monkeypatch.setenv('OPENAI_API_KEY', 'env-key')
 
-    model = APIRerankerModel(
+    model = APIReranker(
         model_name='reranker',
         api_base='https://example.com/v1',
-        encode_kwargs={'batch_size': 1},
+        batch_size=1,
     )
 
     assert model.headers['Authorization'] == 'Bearer env-key'
 
 
 def test_load_api_cross_encoder():
-    model = EmbeddingModel.load(
-        model_name='Qwen3-Reranker-8B',
-        api_base='https://aiping.cn/api/v1',
-        api_key='test-key',
-        is_cross_encoder=True,
-    )
+    model = load_model({
+        'model_name_or_path': 'Qwen3-Reranker-8B',
+        'model_name': 'Qwen3-Reranker-8B',
+        'api_base': 'https://aiping.cn/api/v1',
+        'api_key': 'test-key',
+        'is_cross_encoder': True,
+    })
 
-    assert isinstance(model, APIRerankerModel)
+    assert isinstance(model, APIReranker)
