@@ -354,7 +354,7 @@ Welcome to join our community to communicate with other developers and get help.
 
 [Discord Group](https://discord.gg/xc66bMxc4h)              |  WeChat Group | DingTalk Group
 :-------------------------:|:-------------------------:|:-------------------------:
-<img src="docs/asset/discord_qr.png" width="160" height="160">  |  <img src="docs/asset/wechat.png" width="160" height="160"> | <img src="docs/asset/dingding.png" width="160" height="160">
+<img src="docs/asset/discord_qr.png" width="160" height="160">  |  <img src="https://raw.githubusercontent.com/modelscope/ms-swift/main/asset/wechat.png" width="160" height="160"> | <img src="docs/asset/dingding.png" width="160" height="160">
 
 ## 👷‍♂️ Contributing
 
