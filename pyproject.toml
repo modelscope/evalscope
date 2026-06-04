@@ -52,7 +52,7 @@ perf             = {file = ["requirements/perf.txt"]}
 app              = {file = ["requirements/app.txt"]}
 aigc             = {file = ["requirements/aigc.txt"]}
 sandbox          = {file = ["requirements/sandbox.txt"]}
-service          = {file = ["requirements/service.txt"]}
+service          = {file = ["requirements/service.txt", "requirements/perf.txt"]}
 mcp              = {file = ["requirements/mcp.txt"]}
 dev              = {file = ["requirements/dev.txt"]}
 docs             = {file = ["requirements/docs.txt"]}
