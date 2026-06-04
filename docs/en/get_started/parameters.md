@@ -40,23 +40,29 @@ The `--generation-config` parameter supports the following options (comma-separa
 
 | Parameter | Type | Description | Supported Backends |
 |-----------|------|-------------|--------------------|
-| `timeout` | `int` | Request timeout (seconds) | All |
+| `timeout` | `int`/`float` | Request timeout (seconds) | All |
 | `retries` | `int` | Number of retries, default is 5. | OpenAI-compatible |
 | `retry_interval` | `int` | Retry interval (seconds), default is 10. | OpenAI-compatible |
 | `stream` | `bool` | Whether to return responses in streaming mode | All |
 | `max_tokens` | `int` | Maximum number of tokens generated | All |
 | `top_p` | `float` | Nucleus sampling; only considers tokens accounting for top_p probability mass | All |
 | `temperature` | `float` | Sampling temperature, range 0~2; higher means more randomness | All |
+| `stop_seqs` | `list[str]` | Sequences that trigger stop generation; the returned text does not include the stop sequence | All |
 | `frequency_penalty` | `float` | Range -2.0~2.0; positive values penalize repeated tokens | OpenAI-compatible |
 | `presence_penalty` | `float` | Range -2.0~2.0; positive values penalize already appeared tokens | OpenAI-compatible |
-| `logit_bias` | `dict` | Mapping of token IDs to bias values (-100~100)<br>Example: `"42=10,43=-10"` | OpenAI, Grok, vLLM |
-| `seed` | `int` | Random seed | OpenAI, Google, Mistral, Groq, HuggingFace, vLLM |
+| `repetition_penalty` | `float` | Exponential penalty applied to existing tokens. 1.0 means no penalty | OpenAI-compatible, HuggingFace, vLLM |
+| `logit_bias` | `dict` | Mapping of token IDs to bias values (-100~100)<br>Example: `"42=10,43=-10"` | OpenAI-compatible |
+| `seed` | `int` | Random seed | OpenAI-compatible |
 | `do_sample` | `bool` | Whether to use sampling strategy (otherwise greedy decoding) | Transformers |
 | `top_k` | `int` | Sample next token from the top_k most likely candidates | Anthropic, Google, HuggingFace, vLLM, SGLang |
-| `logprobs` | `bool` | Whether to return log probabilities for output tokens | OpenAI, Grok, TogetherAI, HuggingFace, llama-cpp-python, vLLM, SGLang |
-| `top_logprobs` | `int` | Return the top N tokens and their probabilities (range 0~20) | OpenAI, Grok, HuggingFace, vLLM, SGLang |
+| `logprobs` | `bool` | Whether to return log probabilities for output tokens | OpenAI-compatible, HuggingFace, llama-cpp-python |
+| `top_logprobs` | `int` | Return the top N tokens and their probabilities (range 0~20) | OpenAI-compatible, HuggingFace |
 | `parallel_tool_calls` | `bool` | Whether to support parallel tool calls | OpenAI, Groq |
-| `max_tool_output` | `int` | Maximum bytes for tool output | All (default 16*1024) |
+| `response_schema` | `dict` | Request structured output (JSON Schema); the output still needs to be validated | OpenAI, Google, Mistral |
+| `reasoning_effort` | `str` | Reasoning effort level. One of `low` / `medium` (default) / `high` | OpenAI o1 series |
+| `reasoning_tokens` | `int` | Maximum tokens budget for reasoning (thinking budget) | Anthropic Claude |
+| `reasoning_summary` | `str` | Reasoning summary verbosity. One of `concise` / `detailed` / `auto` | OpenAI reasoning series |
+| `reasoning_history` | `str` | How to encode prior-turn assistant `reasoning_content` in multi-turn requests. One of `reasoning_field` (default; pass as independent top-level field, works for DeepSeek V4 thinking, Qwen3 thinking), `think_tag` (embed as `<think>...</think>` in content string, legacy Together/Groq compatible), `none` (strip entirely; **required for DeepSeek R1 legacy** which forbids `reasoning_content` in requests) | OpenAI-compatible |
 | `extra_body` | `dict` | Extra request body for OpenAI-compatible services | OpenAI-compatible services |
 | `extra_query` | `dict` | Extra query parameters for OpenAI-compatible services | OpenAI-compatible services |
 | `extra_headers` | `dict` | Extra headers for OpenAI-compatible services | OpenAI-compatible services |
