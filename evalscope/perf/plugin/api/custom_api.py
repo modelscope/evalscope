@@ -190,6 +190,7 @@ if __name__ == '__main__':
     from dotenv import dotenv_values
     env = dotenv_values('.env')
 
+    from evalscope.perf.arguments import Arguments
     from evalscope.perf.main import run_perf_benchmark
 
     args = Arguments(

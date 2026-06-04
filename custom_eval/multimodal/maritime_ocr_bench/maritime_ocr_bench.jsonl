@@ -1,1 +1,0 @@
-{"messages": [{"role": "user", "content": "<image>What animal is this?"}, {"role": "assistant", "content": "Dog"}], "images": ["images/dog.jpg"], "task_type": "VQA"}

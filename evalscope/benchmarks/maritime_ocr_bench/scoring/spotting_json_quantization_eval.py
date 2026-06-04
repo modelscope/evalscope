@@ -67,7 +67,7 @@ def _format_coord(value: float) -> str:
     rounded = round(float(value))
     if abs(float(value) - rounded) <= 1e-9:
         return str(int(rounded))
-    return (f"{float(value):.6f}").rstrip('0').rstrip('.')
+    return (f'{float(value):.6f}').rstrip('0').rstrip('.')
 
 
 def _bbox_sort_key(item: SpottingItem) -> Tuple[float, float, float, float, str]:
@@ -85,9 +85,9 @@ def _serialize_items_to_legacy(items: List[SpottingItem]) -> str:
     parts: List[str] = []
     for item in _sort_items(items):
         quad = item['quad']
-        coords = ','.join(f"({_format_coord(x)},{_format_coord(y)})" for x, y in quad)
+        coords = ','.join(f'({_format_coord(x)},{_format_coord(y)})' for x, y in quad)
         parts.append(f"<|object_ref_start|>{item['text']}<|object_ref_end|>"
-                     f"<|quad_start|>{coords}<|quad_end|>")
+                     f'<|quad_start|>{coords}<|quad_end|>')
     return ''.join(parts)
 
 
@@ -277,7 +277,7 @@ def normalize_spotting_payload(text: Any, expected_format: ExpectedSpottingForma
                 'canonical_text': '',
                 'detected_format': expected_format,
                 'parse_ok': False,
-                'parse_error': json_error or f"expected {expected_format} spotting json payload",
+                'parse_error': json_error or f'expected {expected_format} spotting json payload',
                 'items': [],
                 'raw_text': cleaned,
             }
@@ -287,12 +287,16 @@ def normalize_spotting_payload(text: Any, expected_format: ExpectedSpottingForma
         else:
             items, parse_ok, parse_error = _parse_v2_items(payload)
 
+        # Only fabricate a parse_error message when parsing actually failed.
+        # An empty `items` list with `parse_ok=True` is a valid (empty) result.
+        if not parse_ok and not parse_error:
+            parse_error = f'expected {expected_format} spotting json payload'
+
         return {
             'canonical_text': _serialize_items_to_legacy(items),
             'detected_format': expected_format,
             'parse_ok': parse_ok and bool(items),
-            'parse_error': parse_error
-            if parse_ok and items else parse_error or f"expected {expected_format} spotting json payload",
+            'parse_error': parse_error,
             'items': items,
             'raw_text': cleaned,
         }
@@ -478,7 +482,7 @@ def main() -> None:
     print(df)
 
     df.to_csv(save_path, index=False, encoding='utf-8-sig')
-    print(f"\nResults saved to: {save_path}")
+    print(f'\nResults saved to: {save_path}')
 
 
 if __name__ == '__main__':

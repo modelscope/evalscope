@@ -13,10 +13,8 @@ from evalscope.api.messages import ChatMessageUser, Content, ContentImage, Conte
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
-from .scoring.IE_eval import evaluate_ie_sample
-from .scoring.spotting_json_quantization_eval import evaluate_spotting_sample
-from .scoring.spotting_quantization_eval import evaluate_text_sample
 
 logger = get_logger()
 
@@ -81,6 +79,12 @@ class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
 
     def load(self):
         """Load benchmark records from a local JSONL file or downloaded snapshot."""
+        check_import(
+            module_name='shapely',
+            extra='maritime_ocr_bench',
+            raise_error=True,
+            feature_name='Maritime-OCR-Bench benchmark',
+        )
         dataset_name_or_path = self.dataset_id
 
         if os.path.exists(dataset_name_or_path):
@@ -283,6 +287,12 @@ class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
         prompt = task_state.metadata.get('prompt', '')
         completion = filtered_prediction
         solution = reference
+
+        # Lazy import scoring modules so optional dependencies (e.g. shapely)
+        # are only resolved when this benchmark is actually executed.
+        from .scoring.IE_eval import evaluate_ie_sample
+        from .scoring.spotting_json_quantization_eval import evaluate_spotting_sample
+        from .scoring.spotting_quantization_eval import evaluate_text_sample
 
         if task_type == 'json1':
             metrics = evaluate_spotting_sample(

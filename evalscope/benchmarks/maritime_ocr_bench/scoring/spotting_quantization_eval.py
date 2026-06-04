@@ -614,7 +614,7 @@ def main():
     print(df)
 
     df.to_csv(save_path, index=False, encoding='utf-8-sig')
-    print(f"\nResults saved to: {save_path}")
+    print(f'\nResults saved to: {save_path}')
 
 
 if __name__ == '__main__':

@@ -192,6 +192,12 @@ class TestVLMBenchmark(TestBenchmark):
         }
         self._run_dataset_test('ocr_bench', dataset_args=dataset_args, limit=10)
 
+    def test_maritime_ocr_bench(self):
+        dataset_args = {
+            'subset_list': ['VQA'],
+        }
+        self._run_dataset_test('maritime_ocr_bench', dataset_args=dataset_args, limit=5)
+
     def test_ocr_bench_load(self):
         self._run_dataset_load_test('ocr_bench')
 
