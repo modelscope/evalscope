@@ -31,7 +31,7 @@ from openai.types.chat.chat_completion_message_tool_call import Function
 from openai.types.completion_usage import CompletionUsage
 from openai.types.shared_params.function_definition import FunctionDefinition
 from pydantic import JsonValue
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 
 from evalscope.api.messages import (
     ChatMessage,
@@ -57,6 +57,7 @@ from evalscope.api.model import (
     as_stop_reason,
 )
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, parse_tool_call
+from evalscope.utils import get_logger
 from evalscope.utils.url_utils import (
     data_uri_to_base64,
     file_as_data_uri,
@@ -65,6 +66,10 @@ from evalscope.utils.url_utils import (
     is_http_url,
     video_as_data_uri,
 )
+
+logger = get_logger()
+
+ReasoningFormat = Literal['think_tag', 'reasoning_field', 'none']
 
 BASE_64_DATA_REMOVED = '<base64-data-removed>'
 
@@ -128,8 +133,19 @@ def openai_chat_completion_part(content: Content) -> Union[ChatCompletionContent
 
 
 def openai_chat_message(
-    message: ChatMessage, system_role: Literal['user', 'system', 'developer'] = 'system'
+    message: ChatMessage,
+    system_role: Literal['user', 'system', 'developer'] = 'system',
+    reasoning_format: ReasoningFormat = 'think_tag',
 ) -> ChatCompletionMessageParam:
+    """Serialize a :class:`ChatMessage` into an OpenAI chat-completions message param.
+
+    ``reasoning_format`` controls how prior-turn ``ContentReasoning`` parts on
+    assistant messages are encoded for the wire — see
+    :func:`openai_assistant_content` for the per-mode behavior. When
+    ``'reasoning_field'`` is selected, the last ``ContentReasoning`` is also
+    promoted to a top-level ``reasoning_content`` key on the assistant dict
+    (required by DeepSeek V4 thinking and recommended for Qwen3 thinking).
+    """
     if message.role == 'system':
         if system_role == 'user':
             return ChatCompletionUserMessageParam(role='user', content=message.text)
@@ -146,14 +162,7 @@ def openai_chat_message(
             ),
         )
     elif message.role == 'assistant':
-        if message.tool_calls:
-            return ChatCompletionAssistantMessageParam(
-                role=message.role,
-                content=openai_assistant_content(message),
-                tool_calls=[openai_chat_tool_call_param(call) for call in message.tool_calls],
-            )
-        else:
-            return ChatCompletionAssistantMessageParam(role=message.role, content=openai_assistant_content(message))
+        return _openai_assistant_message_param(message, reasoning_format)
     elif message.role == 'tool':
         return ChatCompletionToolMessageParam(
             role=message.role,
@@ -164,11 +173,60 @@ def openai_chat_message(
         raise ValueError(f'Unexpected message role {message.role}')
 
 
+def _openai_assistant_message_param(
+    message: ChatMessageAssistant,
+    reasoning_format: ReasoningFormat,
+) -> ChatCompletionAssistantMessageParam:
+    """Build the assistant-role message dict, optionally with a top-level
+    ``reasoning_content`` field when ``reasoning_format='reasoning_field'``.
+
+    The OpenAI Python SDK's ``ChatCompletionAssistantMessageParam`` is a
+    ``TypedDict(total=False)``; extra keys are not stripped at runtime and the
+    SDK forwards them verbatim to the server. We build a plain dict so the
+    extra ``reasoning_content`` key survives, then cast it back to the
+    TypedDict for the caller's signature.
+    """
+    payload: Dict[str, Any] = {'role': message.role, 'content': openai_assistant_content(message, reasoning_format)}
+    if message.tool_calls:
+        payload['tool_calls'] = [openai_chat_tool_call_param(call) for call in message.tool_calls]
+    if reasoning_format == 'reasoning_field':
+        reasoning_text = _extract_last_reasoning(message)
+        if reasoning_text is not None:
+            if not reasoning_text.strip():
+                logger.debug(
+                    'reasoning_field mode: extracted reasoning is blank; '
+                    'injecting single-space placeholder to satisfy strict server validation '
+                    '(e.g. DeepSeek V4 thinking mode rejects empty reasoning_content).'
+                )
+                reasoning_text = ' '
+            payload['reasoning_content'] = reasoning_text
+    return cast(ChatCompletionAssistantMessageParam, payload)
+
+
+def _extract_last_reasoning(message: ChatMessageAssistant) -> Optional[str]:
+    """Return the last ``ContentReasoning.reasoning`` from a multi-part assistant
+    message, or ``None`` if the message has no reasoning parts (e.g. content is
+    a plain string, or all parts are text/other).
+
+    Multiple ``ContentReasoning`` parts are deduplicated to the last one to
+    match litellm's behavior in
+    ``litellm/llms/deepseek/chat/transformation.py``.
+    """
+    if isinstance(message.content, str):
+        return None
+    last_reasoning: Optional[str] = None
+    for c in message.content:
+        if c.type == 'reasoning':
+            last_reasoning = c.reasoning
+    return last_reasoning
+
+
 def openai_chat_messages(
     messages: List[ChatMessage],
     system_role: Literal['user', 'system', 'developer'] = 'system',
+    reasoning_format: ReasoningFormat = 'think_tag',
 ) -> List[ChatCompletionMessageParam]:
-    return [openai_chat_message(message, system_role) for message in messages]
+    return [openai_chat_message(message, system_role, reasoning_format) for message in messages]
 
 
 def openai_completion_params(model: str, config: GenerateConfig, tools: bool) -> Dict[str, Any]:
@@ -230,24 +288,44 @@ def openai_completion_params(model: str, config: GenerateConfig, tools: bool) ->
     return params
 
 
-def openai_assistant_content(message: ChatMessageAssistant, include_reasoning=True) -> str:
-    # In agent bridge scenarios, we could encounter concepts such as reasoning and
-    # .internal use in the ChatMessageAssistant that are not supported by the OpenAI
-    # choices API. This code smuggles that data into the plain text so that it
-    # survives multi-turn round trips.
+def openai_assistant_content(
+    message: ChatMessageAssistant,
+    reasoning_format: ReasoningFormat = 'think_tag',
+) -> str:
+    """Render the assistant message's ``content`` field for an OpenAI-compatible payload.
 
+    In agent bridge scenarios, ``ChatMessageAssistant`` can carry concepts
+    (``ContentReasoning``, ``.internal``) that are not part of the OpenAI
+    choices API. ``reasoning_format`` controls how ``ContentReasoning`` parts
+    are handled:
+
+    - ``'think_tag'`` (default): smuggle reasoning into the plain text as
+      ``<think>...</think>`` so it survives multi-turn round-trips on
+      providers that accept inline <think> blocks (e.g. OpenAI, Together, Groq).
+    - ``'reasoning_field'``: drop reasoning from the content string; the
+      caller is expected to write it as a top-level ``reasoning_content``
+      field on the assistant message dict.
+    - ``'none'``: drop reasoning entirely; the wire payload carries no trace
+      of the prior-turn CoT. Required for DeepSeek R1 (legacy), which
+      forbids ``reasoning_content`` in request messages.
+
+    ``.internal`` smuggling via ``<internal>...</internal>`` is preserved
+    across all modes (agent-bridge invariant).
+    """
     if isinstance(message.content, str):
         content = message.content
     else:
         content = ''
         for c in message.content:
-            if c.type == 'reasoning' and include_reasoning:
-                attribs = ''
-                if c.signature is not None:
-                    attribs = f'{attribs} signature="{c.signature}"'
-                if c.redacted:
-                    attribs = f'{attribs} redacted="true"'
-                content = f'{content}\n<think{attribs}>\n{c.reasoning}\n</think>\n'
+            if c.type == 'reasoning':
+                if reasoning_format == 'think_tag':
+                    attribs = ''
+                    if c.signature is not None:
+                        attribs = f'{attribs} signature="{c.signature}"'
+                    if c.redacted:
+                        attribs = f'{attribs} redacted="true"'
+                    content = f'{content}\n<think{attribs}>\n{c.reasoning}\n</think>\n'
+                # 'reasoning_field' and 'none' both drop reasoning from content
             elif c.type == 'text':
                 content = f'{content}\n{c.text}'
 
@@ -262,10 +340,16 @@ def openai_assistant_content(message: ChatMessageAssistant, include_reasoning=Tr
 
 def openai_chat_choices(choices: List[ChatCompletionChoice], include_reasoning: bool = True) -> List[Choice]:
     oai_choices: List[Choice] = []
+    # Translate the legacy ``include_reasoning`` toggle into the new
+    # ``reasoning_format`` axis. ``False`` historically meant "strip reasoning
+    # from the assistant content before handing it back to tau/terminal_bench",
+    # which is exactly the ``'none'`` mode; ``True`` preserves the prior
+    # ``<think>``-tag inlining.
+    reasoning_format: ReasoningFormat = 'think_tag' if include_reasoning else 'none'
 
     for index, choice in enumerate(choices):
         # Handle content
-        content = openai_assistant_content(choice.message, include_reasoning=include_reasoning)
+        content = openai_assistant_content(choice.message, reasoning_format=reasoning_format)
 
         # Handle tool calls
         if choice.message.tool_calls:
