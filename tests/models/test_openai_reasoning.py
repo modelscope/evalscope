@@ -10,11 +10,7 @@ parts, blank reasoning).
 import pytest
 from pydantic import ValidationError
 
-from evalscope.api.messages import (
-    ChatMessageAssistant,
-    ContentReasoning,
-    ContentText,
-)
+from evalscope.api.messages import ChatMessageAssistant, ContentReasoning, ContentText
 from evalscope.api.model import GenerateConfig
 from evalscope.api.tool import ToolCall, ToolFunction
 from evalscope.models.utils.openai import openai_chat_message
