@@ -1,51 +1,48 @@
 # Maritime-OCR-Bench
 
 
-## Overview
+## 概述
 
-Maritime-OCR-Bench is a comprehensive evaluation benchmark for assessing multimodal large model capabilities
-on OCR-related tasks. The current released set contains 1,888 manually curated samples across five task types.
+Maritime-OCR-Bench 是一个全面的评估基准，用于衡量多模态大模型在 OCR 相关任务上的能力。当前发布的数据集包含 1,888 个经过人工精心整理的样本，涵盖五种任务类型。
 
-## Task Types
+## 任务类型
 
-- **VQA**: Visual question answering on document/scene images
-- **IE**: Information extraction requiring strict JSON output
-- **parsing**: Text recognition and parsing from images
-- **json1**: Text spotting with JSON v1 structured output
-- **json2**: Text spotting with JSON v2 structured output
+- **VQA**：针对文档/场景图像的视觉问答
+- **IE**：要求严格 JSON 格式输出的信息抽取
+- **parsing**：从图像中进行文本识别与解析
+- **json1**：采用 JSON v1 结构化格式的文本检测
+- **json2**：采用 JSON v2 结构化格式的文本检测
 
-## Evaluation Metrics
+## 评估指标
 
-Each task type uses a specialized scoring method:
-- VQA/parsing: Multi-dimensional text similarity (edit distance, char F1, LCS F1, table-aware similarity)
-- IE: Text coverage + JSON strictness (0.5 * coverage + 0.5 * json_strict)
-- json1/json2: DIoU layout score + text score (0.7 * diou + 0.3 * text)
+每种任务类型采用专门的评分方法：
+- VQA/parsing：多维文本相似度（编辑距离、字符级 F1、最长公共子序列 F1、表格感知相似度）
+- IE：文本覆盖率 + JSON 严格性（0.5 * coverage + 0.5 * json_strict）
+- json1/json2：DIoU 布局得分 + 文本得分（0.7 * diou + 0.3 * text）
 
+## 属性
 
-## Properties
-
-| Property | Value |
+| 属性 | 值 |
 |----------|-------|
-| **Benchmark Name** | `maritime_ocr_bench` |
-| **Dataset ID** | [HiDolphin/MaritimeOCRBench](https://modelscope.cn/datasets/HiDolphin/MaritimeOCRBench/summary) |
-| **Paper** | N/A |
-| **Tags** | `MultiModal`, `QA` |
-| **Metrics** | `score` |
-| **Default Shots** | 0-shot |
-| **Evaluation Split** | `test` |
+| **基准测试名称** | `maritime_ocr_bench` |
+| **数据集ID** | [HiDolphin/MaritimeOCRBench](https://modelscope.cn/datasets/HiDolphin/MaritimeOCRBench/summary) |
+| **论文** | N/A |
+| **标签** | `MultiModal`, `QA` |
+| **指标** | `score` |
+| **默认示例数** | 0-shot |
+| **评估划分** | `test` |
 
+## 数据统计
 
-## Data Statistics
-
-| Metric | Value |
+| 指标 | 值 |
 |--------|-------|
-| Total Samples | 1,888 |
-| Prompt Length (Mean) | 102.91 chars |
-| Prompt Length (Min/Max) | 23 / 288 chars |
+| 总样本数 | 1,888 |
+| 提示词长度（平均） | 102.91 字符 |
+| 提示词长度（最小/最大） | 23 / 288 字符 |
 
-**Per-Subset Statistics:**
+**各子集统计数据：**
 
-| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
+| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
 | `IE` | 471 | 23 | 23 | 23 |
 | `VQA` | 471 | 39.65 | 28 | 141 |
@@ -53,25 +50,24 @@ Each task type uses a specialized scoring method:
 | `json1` | 237 | 256.1 | 248 | 288 |
 | `json2` | 237 | 279.9 | 248 | 288 |
 
-**Image Statistics:**
+**图像统计数据：**
 
-| Metric | Value |
+| 指标 | 值 |
 |--------|-------|
-| Total Images | 1,888 |
-| Images per Sample | min: 1, max: 1, mean: 1 |
-| Resolution Range | 108x50 - 4030x4075 |
-| Formats | jpeg, png |
+| 图像总数 | 1,888 |
+| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |
+| 分辨率范围 | 108x50 - 4030x4075 |
+| 格式 | jpeg, png |
 
+## 样例示例
 
-## Sample Example
-
-**Subset**: `IE`
+**子集**: `IE`
 
 ```json
 {
   "input": [
     {
-      "id": "c0e481c1",
+      "id": "1d6ce119",
       "content": [
         {
           "text": "请提取所有关键信息，并以 JSON 格式返回。"
@@ -96,16 +92,16 @@ Each task type uses a specialized scoring method:
 }
 ```
 
-## Prompt Template
+## 提示模板
 
-**Prompt Template:**
+**提示模板：**
 ```text
 {question}
 ```
 
-## Usage
+## 使用方法
 
-### Using CLI
+### 使用 CLI
 
 ```bash
 evalscope eval \
@@ -113,10 +109,10 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets maritime_ocr_bench \
-    --limit 10  # Remove this line for formal evaluation
+    --limit 10  # 正式评估时请删除此行
 ```
 
-### Using Python
+### 使用 Python
 
 ```python
 from evalscope import run_task
@@ -129,13 +125,11 @@ task_cfg = TaskConfig(
     datasets=['maritime_ocr_bench'],
     dataset_args={
         'maritime_ocr_bench': {
-            # subset_list: ['IE', 'VQA', 'parsing']  # optional, evaluate specific subsets
+            # subset_list: ['IE', 'VQA', 'parsing']  # 可选，用于评估特定子集
         }
     },
-    limit=10,  # Remove this line for formal evaluation
+    limit=10,  # 正式评估时请删除此行
 )
 
 run_task(task_cfg=task_cfg)
 ```
-
-

@@ -71,7 +71,7 @@ Each task type uses a specialized scoring method:
 {
   "input": [
     {
-      "id": "c0e481c1",
+      "id": "1d6ce119",
       "content": [
         {
           "text": "请提取所有关键信息，并以 JSON 格式返回。"
