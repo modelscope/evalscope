@@ -57,10 +57,14 @@ Common per-dataset options:
 |-------|-------------|
 | `llm_ckpt` (checkpoint) | Local model weights (auto-detected when --model is a path) |
 | `openai_api` | OpenAI-compatible API endpoint (auto-detected when --api-url is set) |
+| `openai_responses_api` | OpenAI Responses API (stateful conversations) |
 | `anthropic_api` | Anthropic Claude API |
-| `litellm` | LiteLLM multi-provider routing (100+ LLM providers, use `provider/model` naming) |
+| `litellm` | LiteLLM multi-provider routing (100+ providers, use `provider/model` naming) |
 | `mock_llm` | Pipeline testing without a real model |
 | `text2image` | Image generation models |
+| `text2speech` | Text-to-speech evaluation |
+| `image_editing` | Image editing evaluation |
+| `custom` | Custom evaluation type |
 
 ### Eval Backends
 
@@ -152,82 +156,3 @@ evalscope eval \
 | `--sandbox-type` | str | `docker` | Sandbox type: `docker` or `volcengine` |
 | `--sandbox-manager-config` | JSON str | `{}` | Sandbox configuration |
 
-## Scenario Templates
-
-### Local Model Quick Evaluation
-
-```bash
-evalscope eval \
-  --model Qwen/Qwen2.5-0.5B-Instruct \
-  --datasets gsm8k arc \
-  --limit 10 \
-  --seed 42
-```
-
-### API Model Evaluation
-
-```bash
-evalscope eval \
-  --model qwen-plus \
-  --datasets mmlu gsm8k ifeval \
-  --api-url http://localhost:8000/v1/chat/completions \
-  --api-key sk-xxx \
-  --limit 50
-```
-
-### Multimodal Model Evaluation
-
-```bash
-# Using VLMEvalKit backend
-evalscope eval \
-  --model qwen-vl-plus \
-  --eval-backend VLMEvalKit \
-  --eval-config vlm_config.yaml \
-  --datasets mmmu mm_bench
-
-# Using native backend with VL benchmarks
-evalscope eval \
-  --model qwen-vl-plus \
-  --datasets mmmu math_vista \
-  --api-url http://localhost:8000/v1/chat/completions \
-  --api-key sk-xxx
-```
-
-### Full Evaluation with Custom Dataset Args
-
-```bash
-evalscope eval \
-  --model Qwen/Qwen2.5-7B-Instruct \
-  --datasets gsm8k arc ceval mmlu \
-  --dataset-args '{
-    "gsm8k": {"few_shot_num": 4, "few_shot_random": false},
-    "arc": {"subset_list": ["ARC-Challenge"]},
-    "ceval": {"few_shot_num": 5}
-  }' \
-  --generation-config '{"temperature": 0.0, "max_tokens": 2048}' \
-  --work-dir ./my_eval_outputs \
-  --seed 42
-```
-
-### Evaluation with LLM Judge
-
-```bash
-evalscope eval \
-  --model qwen-plus \
-  --datasets arena_hard \
-  --api-url http://localhost:8000/v1/chat/completions \
-  --api-key sk-xxx \
-  --judge-strategy llm \
-  --judge-model-args '{"model": "gpt-4o", "api_url": "https://api.openai.com/v1/chat/completions", "api_key": "sk-xxx"}' \
-  --judge-worker-num 4
-```
-
-### Resume from Cache
-
-```bash
-evalscope eval \
-  --model qwen-plus \
-  --datasets mmlu gsm8k \
-  --api-url http://localhost:8000/v1/chat/completions \
-  --use-cache ./outputs/20250101_120000
-```
