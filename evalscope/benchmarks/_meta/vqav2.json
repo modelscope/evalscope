@@ -1,0 +1,69 @@
+{
+  "meta": {
+    "pretty_name": "VQAv2",
+    "dataset_id": "lmms-lab/VQAv2",
+    "paper_url": "https://arxiv.org/abs/1612.00837",
+    "tags": [
+      "MultiModal",
+      "QA"
+    ],
+    "metrics": [
+      "vqa_score",
+      "exact_match"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nVQAv2 is the balanced Visual Question Answering benchmark built on COCO images. It evaluates whether\nmultimodal models can answer open-ended natural-language questions grounded in image content.\n\n## Task Description\n\n- **Task Type**: Open-ended visual question answering\n- **Input**: Image + natural-language question\n- **Output**: Short answer phrase\n- **Domains**: General image understanding, object recognition, counting, attributes, relations\n\n## Evaluation Notes\n\n- Default data source: `lmms-lab/VQAv2` on ModelScope, `validation` split\n- Hugging Face remains available by setting `extra_params.dataset_hub=\"huggingface\"`\n- Primary metric: **VQAv2 soft accuracy** over human annotator answers\n- Also reports normalized exact match against the available answer set\n- The adapter accepts common answer formats: list of strings, list of answer dicts, or `multiple_choice_answer`\n",
+    "prompt_template": "Answer the question according to the image using a short phrase.\n{question}\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes).",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "dataset_hub": {
+        "type": "str",
+        "description": "Dataset hub used to load VQAv2 annotations and images.",
+        "value": "modelscope",
+        "choices": [
+          "huggingface",
+          "modelscope",
+          "local"
+        ]
+      },
+      "eval_split": {
+        "type": "str",
+        "description": "Source split to load; defaults to validation.",
+        "value": ""
+      },
+      "dataset_revision": {
+        "type": "str",
+        "description": "Optional dataset revision; leave empty to use the hub default.",
+        "value": ""
+      },
+      "image_dir": {
+        "type": "str",
+        "description": "Optional local directory containing VQAv2 images for local JSONL/CSV data.",
+        "value": ""
+      },
+      "image_extension": {
+        "type": "str",
+        "description": "Optional extension override for local images, for example \"jpg\".",
+        "value": ""
+      }
+    },
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {},
+  "sample_example": {},
+  "readme": {
+    "en": "# VQAv2\n\n\n## Overview\n\nVQAv2 is the balanced Visual Question Answering benchmark built on COCO images. It evaluates whether\nmultimodal models can answer open-ended natural-language questions grounded in image content.\n\n## Task Description\n\n- **Task Type**: Open-ended visual question answering\n- **Input**: Image + natural-language question\n- **Output**: Short answer phrase\n- **Domains**: General image understanding, object recognition, counting, attributes, relations\n\n## Evaluation Notes\n\n- Default data source: `lmms-lab/VQAv2` on ModelScope, `validation` split\n- Hugging Face remains available by setting `extra_params.dataset_hub=\"huggingface\"`\n- Primary metric: **VQAv2 soft accuracy** over human annotator answers\n- Also reports normalized exact match against the available answer set\n- The adapter accepts common answer formats: list of strings, list of answer dicts, or `multiple_choice_answer`\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `vqav2` |\n| **Dataset ID** | [lmms-lab/VQAv2](https://modelscope.cn/datasets/lmms-lab/VQAv2/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/1612.00837) |\n| **Tags** | `MultiModal`, `QA` |\n| **Metrics** | `vqa_score`, `exact_match` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the question according to the image using a short phrase.\n{question}\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes).\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `dataset_hub` | `str` | `modelscope` | Dataset hub used to load VQAv2 annotations and images. Choices: ['huggingface', 'modelscope', 'local'] |\n| `eval_split` | `str` | `` | Source split to load; defaults to validation. |\n| `dataset_revision` | `str` | `` | Optional dataset revision; leave empty to use the hub default. |\n| `image_dir` | `str` | `` | Optional local directory containing VQAv2 images for local JSONL/CSV data. |\n| `image_extension` | `str` | `` | Optional extension override for local images, for example \"jpg\". |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets vqav2 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['vqav2'],\n    dataset_args={\n        'vqav2': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "",
+    "content_hash": "76ab18fe95ab1ae01fa7dc900a9b36bc",
+    "needs_translation": true
+  },
+  "updated_at": "2026-06-07T17:33:20.978731"
+}
