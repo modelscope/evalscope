@@ -10,6 +10,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import convert_normal_types
 from evalscope.utils.logger import get_logger
+from evalscope.benchmarks.pruning.dataset_pruner import prune_dataset_dict
 
 logger = get_logger()
 
@@ -99,6 +100,21 @@ LiveCodeBench is a contamination-free benchmark for evaluating code generation m
                 'type': 'bool',
                 'description': 'Enable verbose debug logging and bypass certain safety checks.',
                 'value': False
+            },
+            'pruning_strategy': {
+                'type': 'str | null',
+                'description': 'Optional pruning strategy. Supported: coverage, stable_head, none.',
+                'value': None
+            },
+            'prune_ratio': {
+                'type': 'float',
+                'description': 'Fraction of samples to keep when pruning is enabled.',
+                'value': 1.0
+            },
+            'prune_seed': {
+                'type': 'int',
+                'description': 'Deterministic seed for pruning.',
+                'value': 42
             }
         },
         sandbox_config={
@@ -121,9 +137,50 @@ class LiveCodeBenchAdapter(DefaultDataAdapter):
         self.debug = self.extra_params.get('debug', False)
         self.start_date = self.extra_params.get('start_date')
         self.end_date = self.extra_params.get('end_date')
+        self.pruning_strategy = self.extra_params.get('pruning_strategy')
+        self.prune_ratio = float(self.extra_params.get('prune_ratio', 1.0))
+        self.prune_seed = int(self.extra_params.get('prune_seed', 42))
 
         self.save_metadata = False  # Don't save metadata, since they are large
 
+    def load_dataset(self):
+        dataset = super().load_dataset()
+
+        if self.pruning_strategy:
+            dataset = prune_dataset_dict(
+                dataset,
+                strategy=self.pruning_strategy,
+                prune_ratio=self.prune_ratio,
+                seed=self.prune_seed,
+                bucket_fn=self._pruning_bucket,
+            )
+            self.test_dataset = dataset
+
+        return dataset
+
+    def _pruning_bucket(self, sample: Sample) -> str:
+        metadata = sample.metadata or {}
+        contest_date = str(metadata.get('contest_date', 'unknown'))
+
+        if contest_date >= '2024-01-01':
+            recency_bucket = 'recent'
+        elif contest_date >= '2023-01-01':
+            recency_bucket = 'mid'
+        else:
+            recency_bucket = 'older'
+
+        prompt_len = len(str(sample.input))
+        if prompt_len < 2000:
+            length_bucket = 'short'
+        elif prompt_len < 5000:
+            length_bucket = 'medium'
+        else:
+            length_bucket = 'long'
+
+        has_fn = 'fn_name' if '"fn_name":' in str(metadata.get('evaluation_sample', '')) else 'stdio'
+
+        return f'{recency_bucket}|{length_bucket}|{has_fn}'
+    
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert a data record to a Sample object."""
         from .load_utils import transform
