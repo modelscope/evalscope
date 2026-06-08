@@ -155,4 +155,3 @@ evalscope eval \
 | `--use-sandbox` | flag | false | Run evaluation in sandboxed environment |
 | `--sandbox-type` | str | `docker` | Sandbox type: `docker` or `volcengine` |
 | `--sandbox-manager-config` | JSON str | `{}` | Sandbox configuration |
-
