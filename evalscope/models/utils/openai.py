@@ -127,7 +127,10 @@ def openai_chat_completion_part(content: Content) -> Union[ChatCompletionContent
         video_url = content.video
         if not is_http_url(video_url) and not is_data_uri(video_url):
             video_url = video_as_data_uri(video_url, content.format)
-        return {'type': 'video_url', 'video_url': {'url': video_url}}
+        part: Dict[str, Any] = {'type': 'video_url', 'video_url': {'url': video_url}}
+        if content.fps is not None:
+            part['fps'] = content.fps
+        return part
     else:
         raise RuntimeError(f'Content type {content.type} is not currently supported by OpenAI chat models.')
 

@@ -8,6 +8,7 @@ from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.config import TaskConfig
 from evalscope.constants import HubType
+from evalscope.models.utils.openai import openai_chat_completion_part
 
 
 def _adapter(name: str, dataset_args: Optional[Dict] = None) -> DataAdapter:
@@ -54,6 +55,24 @@ def test_msr_vtt_groups_rows_and_prefers_resolved_url() -> None:
     sample = adapter.record_to_sample(records[0])
     assert isinstance(sample.input[0].content[1], ContentVideo)
     assert sample.input[0].content[1].video == 'https://example.com/video7020.mp4'
+
+
+def test_video_content_preserves_fps_for_openai_payload() -> None:
+    adapter = _adapter('msvd')
+    sample = adapter.record_to_sample({
+        'video_id': 'video-1',
+        'video': 'https://example.com/video-1.mp4',
+        'caption': ['a person talks'],
+        'fps': 2,
+    })
+
+    video = sample.input[0].content[1]
+    assert isinstance(video, ContentVideo)
+    assert video.fps == 2
+
+    payload = openai_chat_completion_part(video)
+    assert payload['video_url']['url'] == 'https://example.com/video-1.mp4'
+    assert payload['fps'] == 2
 
 
 def test_caption_dataset_source_defaults_and_overrides() -> None:
