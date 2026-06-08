@@ -64,6 +64,9 @@ def ensure_text_list(value: Any) -> List[str]:
         return []
     if isinstance(value, str):
         return [value]
+    if isinstance(value, bytes):
+        text = value.decode('utf-8', errors='ignore').strip()
+        return [text] if text else []
     if isinstance(value, dict):
         for key in ('caption', 'answer', 'text', 'value'):
             if key in value:
@@ -105,12 +108,8 @@ def vqa_soft_accuracy(prediction: str, answers: List[str]) -> float:
     if not normalized_prediction or not normalized_answers:
         return 0.0
 
-    score = 0.0
-    for index, answer in enumerate(normalized_answers):
-        other_answers = normalized_answers[:index] + normalized_answers[index + 1:]
-        matching_count = sum(other == normalized_prediction for other in other_answers)
-        score += min(1.0, matching_count / 3.0)
-    return score / len(normalized_answers)
+    matching_count = sum(answer == normalized_prediction for answer in normalized_answers)
+    return min(1.0, matching_count / 3.0)
 
 
 def exact_match(prediction: str, references: List[str]) -> float:
@@ -238,9 +237,9 @@ class CaptionDatasetAdapter(VisionLanguageAdapter):
 
     @property
     def source_dataset_id(self) -> str:
-        if self.dataset_id not in self.source_dataset_ids.values():
-            return self.dataset_id
-        return self.source_dataset_ids.get(self.source_dataset_hub, self.dataset_id)
+        if self.dataset_id == self.name or self.dataset_id in self.source_dataset_ids.values():
+            return self.source_dataset_ids.get(self.source_dataset_hub, self.dataset_id)
+        return self.dataset_id
 
     @property
     def source_dataset_hub(self) -> str:
@@ -346,7 +345,7 @@ class CaptionDatasetAdapter(VisionLanguageAdapter):
     def _source_subset_name(self, subset: str) -> Optional[str]:
         return self.source_subset_names.get(self.source_dataset_hub, {}).get(subset, subset)
 
-    def _load_local_records(self, subset: str) -> List[Dict[str, Any]]:
+    def _load_local_records(self, subset: Optional[str]) -> List[Dict[str, Any]]:
         path = self.source_dataset_id
         supported_loaders = {
             '.jsonl': jsonl_to_list,
@@ -360,7 +359,11 @@ class CaptionDatasetAdapter(VisionLanguageAdapter):
             return supported_loaders[ext](path)
 
         for ext, loader in supported_loaders.items():
-            for candidate in (f'{subset}_{self.eval_split}{ext}', f'{subset}{ext}'):
+            if subset:
+                candidates = [f'{subset}_{self.source_eval_split}{ext}', f'{subset}{ext}']
+            else:
+                candidates = [f'{self.source_eval_split}{ext}', f'data{ext}']
+            for candidate in candidates:
                 file_path = os.path.join(path, candidate)
                 if os.path.exists(file_path):
                     return loader(file_path)

@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from evalscope.api.benchmark import DataAdapter
@@ -6,6 +7,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ContentImage, ContentVideo
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
+from evalscope.benchmarks.caption.base import ensure_text_list, vqa_soft_accuracy
 from evalscope.config import TaskConfig
 from evalscope.constants import HubType
 from evalscope.models.utils.openai import openai_chat_completion_part
@@ -82,6 +84,9 @@ def test_caption_dataset_source_defaults_and_overrides() -> None:
     assert msr_vtt.source_eval_split == 'validation'
     assert msr_vtt._source_subset_name('default') is None
 
+    msr_vtt_named = _adapter('msr_vtt', {'dataset_id': 'msr_vtt'})
+    assert msr_vtt_named.source_dataset_id == 'AI-ModelScope/msr-vtt'
+
     msr_vtt_hf = _adapter('msr_vtt', {'extra_params': {'dataset_hub': HubType.HUGGINGFACE}})
     assert msr_vtt_hf.source_dataset_hub == HubType.HUGGINGFACE
     assert msr_vtt_hf.source_dataset_id == 'VLM2Vec/MSR-VTT'
@@ -96,6 +101,34 @@ def test_caption_dataset_source_defaults_and_overrides() -> None:
 
     msvd = _adapter('msvd')
     assert msvd.source_dataset_hub == HubType.HUGGINGFACE
+
+
+def test_ensure_text_list_handles_bytes_as_text() -> None:
+    assert ensure_text_list(b'hello') == ['hello']
+    assert ensure_text_list([b'hello', 'world']) == ['hello', 'world']
+
+
+def test_local_directory_loader_uses_split_only_file_when_subset_is_empty(tmp_path: Path) -> None:
+    data_path = tmp_path / 'test.jsonl'
+    data_path.write_text(
+        json.dumps({
+            'video_id': 'video-1',
+            'video': 'video-1.mp4',
+            'caption': 'a person talks',
+        }) + '\n',
+        encoding='utf-8',
+    )
+    adapter = _adapter('msvd', {
+        'local_path': str(tmp_path),
+        'extra_params': {
+            'dataset_hub': HubType.LOCAL,
+        },
+    })
+
+    records = adapter._load_local_records(None)
+
+    assert len(records) == 1
+    assert records[0]['caption'] == 'a person talks'
 
 
 def test_caption_batch_scoring_updates_sample_scores(monkeypatch) -> None:
@@ -155,6 +188,7 @@ def test_vqav2_soft_accuracy_and_answer_extraction() -> None:
 
     assert isinstance(sample.input[0].content[1], ContentImage)
     assert score.extracted_prediction == 'cat'
-    assert score.value['vqa_score'] == 0.6
+    assert abs(score.value['vqa_score'] - 2 / 3) < 1e-6
     assert score.value['exact_match'] == 1.0
     assert score.main_score_name == 'vqa_score'
+    assert vqa_soft_accuracy('cat', ['cat', 'cat', 'cat', 'dog']) == 1.0
