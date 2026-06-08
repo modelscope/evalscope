@@ -1,61 +1,60 @@
 # MSR-VTT
 
 
-## Overview
+## 概览
 
-MSR-VTT is a large-scale open-domain video captioning benchmark for evaluating video-to-text generation.
-The native adapter groups records by `video_id`, so multiple annotation rows for one video become one sample
-with multiple reference captions.
+MSR-VTT 是一个大规模开放域视频描述基准，用于评测视频到文本生成能力。
+原生适配器会按 `video_id` 对记录分组，因此同一视频的多条标注记录会合并为一个样本，并保留多条参考描述。
 
-## Task Description
+## 任务描述
 
-- **Task Type**: Video captioning
-- **Input**: Video clip or URL
-- **Output**: One concise natural-language caption
-- **Domains**: Open-domain video understanding and description
+- **任务类型**：视频描述
+- **输入**：视频片段或 URL
+- **输出**：一句简洁的自然语言描述
+- **领域**：开放域视频理解与描述
 
-## Evaluation Notes
+## 评测说明
 
-- Default data source: `AI-ModelScope/msr-vtt` on ModelScope, `validation` split
-- Hugging Face `VLM2Vec/MSR-VTT` remains available by setting `extra_params.dataset_hub="huggingface"`
-- Primary metric: **CIDEr**
-- Additional metrics: BLEU-1/2/3/4, METEOR, ROUGE-L
-- Set `extra_params.video_dir` to prefer local media files over URL metadata
+- 默认数据源：ModelScope 上的 `AI-ModelScope/msr-vtt`，`validation` 划分
+- 也可以通过设置 `extra_params.dataset_hub="huggingface"` 使用 Hugging Face 上的 `VLM2Vec/MSR-VTT`
+- 主要指标：**CIDEr**
+- 其他指标：BLEU-1/2/3/4、METEOR、ROUGE-L
+- 设置 `extra_params.video_dir` 后，会优先使用本地媒体文件，而不是 URL 元数据
 
 
-## Properties
+## 属性
 
-| Property | Value |
+| 属性 | 值 |
 |----------|-------|
-| **Benchmark Name** | `msr_vtt` |
-| **Dataset ID** | [AI-ModelScope/msr-vtt](https://modelscope.cn/datasets/AI-ModelScope/msr-vtt/summary) |
-| **Paper** | [Paper](https://www.microsoft.com/en-us/research/publication/msr-vtt-a-large-video-description-dataset-for-bridging-video-and-language/) |
-| **Tags** | `ImageCaptioning`, `MultiModal` |
-| **Metrics** | `Bleu_1`, `Bleu_2`, `Bleu_3`, `Bleu_4`, `METEOR`, `ROUGE_L`, `CIDEr` |
-| **Default Shots** | 0-shot |
-| **Evaluation Split** | `validation` |
+| **基准名称** | `msr_vtt` |
+| **数据集 ID** | [AI-ModelScope/msr-vtt](https://modelscope.cn/datasets/AI-ModelScope/msr-vtt/summary) |
+| **论文** | [论文](https://www.microsoft.com/en-us/research/publication/msr-vtt-a-large-video-description-dataset-for-bridging-video-and-language/) |
+| **标签** | `ImageCaptioning`, `MultiModal` |
+| **指标** | `Bleu_1`, `Bleu_2`, `Bleu_3`, `Bleu_4`, `METEOR`, `ROUGE_L`, `CIDEr` |
+| **默认样本数** | 0-shot |
+| **评测划分** | `validation` |
 
 
-## Data Statistics
+## 数据统计
 
-| Metric | Value |
+| 指标 | 值 |
 |--------|-------|
-| Total Samples | 497 |
-| Prompt Length (Mean) | 43 chars |
-| Prompt Length (Min/Max) | 43 / 43 chars |
+| 样本总数 | 497 |
+| Prompt 平均长度 | 43 个字符 |
+| Prompt 最小/最大长度 | 43 / 43 个字符 |
 
-**Video Statistics:**
+**视频统计：**
 
-| Metric | Value |
+| 指标 | 值 |
 |--------|-------|
-| Total Videos | 497 |
-| Videos per Sample | min: 1, max: 1, mean: 1 |
-| Formats | mp4 |
+| 视频总数 | 497 |
+| 每个样本的视频数量 | min: 1, max: 1, mean: 1 |
+| 格式 | mp4 |
 
 
-## Sample Example
+## 样例
 
-**Subset**: `default`
+**子集**：`default`
 
 ```json
 {
@@ -100,26 +99,26 @@ with multiple reference captions.
 }
 ```
 
-## Prompt Template
+## Prompt 模板
 
-**Prompt Template:**
+**Prompt 模板：**
 ```text
 Describe the video in one concise sentence.
 ```
 
-## Extra Parameters
+## 额外参数
 
-| Parameter | Type | Default | Description |
+| 参数 | 类型 | 默认值 | 说明 |
 |-----------|------|---------|-------------|
-| `dataset_hub` | `str` | `modelscope` | Dataset hub used to load MSR-VTT annotations. Choices: ['huggingface', 'modelscope', 'local'] |
-| `eval_split` | `str` | `` | Source split to load; defaults to validation for ModelScope and test for Hugging Face. |
-| `dataset_revision` | `str` | `` | Optional dataset revision; leave empty to use the hub default. |
-| `video_dir` | `str` | `` | Optional local directory containing MSR-VTT video files. |
-| `video_extension` | `str` | `` | Optional extension override for local videos, for example "mp4". |
+| `dataset_hub` | `str` | `modelscope` | 用于加载 MSR-VTT 标注的数据集平台。可选值：['huggingface', 'modelscope', 'local'] |
+| `eval_split` | `str` | `` | 要加载的源数据划分；ModelScope 默认使用 validation，Hugging Face 默认使用 test。 |
+| `dataset_revision` | `str` | `` | 可选的数据集版本；留空时使用平台默认版本。 |
+| `video_dir` | `str` | `` | 可选的本地目录，包含 MSR-VTT 视频文件。 |
+| `video_extension` | `str` | `` | 可选的本地视频扩展名覆盖值，例如 "mp4"。 |
 
-## Usage
+## 使用方法
 
-### Using CLI
+### 使用 CLI
 
 ```bash
 evalscope eval \
@@ -127,10 +126,10 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets msr_vtt \
-    --limit 10  # Remove this line for formal evaluation
+    --limit 10  # 正式评测时移除此行
 ```
 
-### Using Python
+### 使用 Python
 
 ```python
 from evalscope import run_task
@@ -143,13 +142,11 @@ task_cfg = TaskConfig(
     datasets=['msr_vtt'],
     dataset_args={
         'msr_vtt': {
-            # extra_params: {}  # uses default extra parameters
+            # extra_params: {}  # 使用默认额外参数
         }
     },
-    limit=10,  # Remove this line for formal evaluation
+    limit=10,  # 正式评测时移除此行
 )
 
 run_task(task_cfg=task_cfg)
 ```
-
-

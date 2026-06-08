@@ -1,61 +1,61 @@
 # MSVD
 
 
-## Overview
+## 概览
 
-MSVD is a classic video captioning benchmark with short web videos annotated by many human captions.
-The native adapter treats each video as one evaluation sample and uses all available captions as references.
+MSVD 是一个经典的视频描述基准，包含带有大量人工描述标注的短网络视频。
+原生适配器会将每个视频视为一个评测样本，并使用所有可用描述作为参考答案。
 
-## Task Description
+## 任务描述
 
-- **Task Type**: Video captioning
-- **Input**: Video clip
-- **Output**: One concise natural-language caption
-- **Domains**: Open-domain video understanding and description
+- **任务类型**：视频描述
+- **输入**：视频片段
+- **输出**：一句简洁的自然语言描述
+- **领域**：开放域视频理解与描述
 
-## Evaluation Notes
+## 评测说明
 
-- Default data source: `VLM2Vec/MSVD` on Hugging Face, `test` split
-- A ModelScope MSVD mirror was not available when this adapter was added; set `dataset_id` or `local_path`
-  together with `extra_params.dataset_hub` if a mirror becomes available
-- Primary metric: **CIDEr**
-- Additional metrics: BLEU-1/2/3/4, METEOR, ROUGE-L
-- Set `extra_params.video_dir` when the dataset only provides video file names and local media files are required
+- 默认数据源：Hugging Face 上的 `VLM2Vec/MSVD`，`test` 划分
+- 添加该适配器时，ModelScope 上还没有可用的 MSVD 镜像；如果后续有镜像可用，可以设置 `dataset_id` 或 `local_path`，
+  并配合 `extra_params.dataset_hub` 使用
+- 主要指标：**CIDEr**
+- 其他指标：BLEU-1/2/3/4、METEOR、ROUGE-L
+- 当数据集只提供视频文件名且需要本地媒体文件时，设置 `extra_params.video_dir`
 
 
-## Properties
+## 属性
 
-| Property | Value |
+| 属性 | 值 |
 |----------|-------|
-| **Benchmark Name** | `msvd` |
-| **Dataset ID** | [VLM2Vec/MSVD](https://modelscope.cn/datasets/VLM2Vec/MSVD/summary) |
-| **Paper** | [Paper](https://aclanthology.org/P11-1020/) |
-| **Tags** | `ImageCaptioning`, `MultiModal` |
-| **Metrics** | `Bleu_1`, `Bleu_2`, `Bleu_3`, `Bleu_4`, `METEOR`, `ROUGE_L`, `CIDEr` |
-| **Default Shots** | 0-shot |
-| **Evaluation Split** | `test` |
+| **基准名称** | `msvd` |
+| **数据集 ID** | [VLM2Vec/MSVD](https://modelscope.cn/datasets/VLM2Vec/MSVD/summary) |
+| **论文** | [论文](https://aclanthology.org/P11-1020/) |
+| **标签** | `ImageCaptioning`, `MultiModal` |
+| **指标** | `Bleu_1`, `Bleu_2`, `Bleu_3`, `Bleu_4`, `METEOR`, `ROUGE_L`, `CIDEr` |
+| **默认样本数** | 0-shot |
+| **评测划分** | `test` |
 
 
-## Data Statistics
+## 数据统计
 
-| Metric | Value |
+| 指标 | 值 |
 |--------|-------|
-| Total Samples | 670 |
-| Prompt Length (Mean) | 43 chars |
-| Prompt Length (Min/Max) | 43 / 43 chars |
+| 样本总数 | 670 |
+| Prompt 平均长度 | 43 个字符 |
+| Prompt 最小/最大长度 | 43 / 43 个字符 |
 
-**Video Statistics:**
+**视频统计：**
 
-| Metric | Value |
+| 指标 | 值 |
 |--------|-------|
-| Total Videos | 670 |
-| Videos per Sample | min: 1, max: 1, mean: 1 |
-| Formats | mp4 |
+| 视频总数 | 670 |
+| 每个样本的视频数量 | min: 1, max: 1, mean: 1 |
+| 格式 | mp4 |
 
 
-## Sample Example
+## 样例
 
-**Subset**: `default`
+**子集**：`default`
 
 ```json
 {
@@ -108,26 +108,26 @@ The native adapter treats each video as one evaluation sample and uses all avail
 }
 ```
 
-## Prompt Template
+## Prompt 模板
 
-**Prompt Template:**
+**Prompt 模板：**
 ```text
 Describe the video in one concise sentence.
 ```
 
-## Extra Parameters
+## 额外参数
 
-| Parameter | Type | Default | Description |
+| 参数 | 类型 | 默认值 | 说明 |
 |-----------|------|---------|-------------|
-| `dataset_hub` | `str` | `huggingface` | Dataset hub used to load MSVD annotations. Choices: ['huggingface', 'modelscope', 'local'] |
-| `eval_split` | `str` | `` | Source split to load; defaults to test. |
-| `dataset_revision` | `str` | `` | Optional dataset revision; leave empty to use the hub default. |
-| `video_dir` | `str` | `` | Optional local directory containing MSVD video files. |
-| `video_extension` | `str` | `` | Optional extension override for local videos, for example "mp4". |
+| `dataset_hub` | `str` | `huggingface` | 用于加载 MSVD 标注的数据集平台。可选值：['huggingface', 'modelscope', 'local'] |
+| `eval_split` | `str` | `` | 要加载的源数据划分；默认使用 test。 |
+| `dataset_revision` | `str` | `` | 可选的数据集版本；留空时使用平台默认版本。 |
+| `video_dir` | `str` | `` | 可选的本地目录，包含 MSVD 视频文件。 |
+| `video_extension` | `str` | `` | 可选的本地视频扩展名覆盖值，例如 "mp4"。 |
 
-## Usage
+## 使用方法
 
-### Using CLI
+### 使用 CLI
 
 ```bash
 evalscope eval \
@@ -135,10 +135,10 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets msvd \
-    --limit 10  # Remove this line for formal evaluation
+    --limit 10  # 正式评测时移除此行
 ```
 
-### Using Python
+### 使用 Python
 
 ```python
 from evalscope import run_task
@@ -151,13 +151,11 @@ task_cfg = TaskConfig(
     datasets=['msvd'],
     dataset_args={
         'msvd': {
-            # extra_params: {}  # uses default extra parameters
+            # extra_params: {}  # 使用默认额外参数
         }
     },
-    limit=10,  # Remove this line for formal evaluation
+    limit=10,  # 正式评测时移除此行
 )
 
 run_task(task_cfg=task_cfg)
 ```
-
-
