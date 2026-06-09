@@ -54,6 +54,7 @@ def load_model(config):
                 prompts=getattr(config, 'prompts', None),
                 revision=getattr(config, 'revision', 'master'),
                 batch_size=kwargs.get('encode_kwargs', {}).get('batch_size', 10),
+                max_seq_length=getattr(config, 'max_seq_length', 512),
             )
         return APIEncoder(
             model_name=config.model_name,
