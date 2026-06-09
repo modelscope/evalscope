@@ -61,7 +61,7 @@ multimodal models can answer open-ended natural-language questions grounded in i
 {
   "input": [
     {
-      "id": "b9e4bbe3",
+      "id": "83296184",
       "content": [
         {
           "text": "Answer the question according to the image using a short phrase.\nWhere is he looking?\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes)."
