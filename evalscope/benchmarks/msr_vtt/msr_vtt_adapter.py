@@ -225,20 +225,19 @@ class MSRVTTAdapter(VisionLanguageAdapter):
         return list(grouped.values())
 
     def _resolve_video(self, record: Dict[str, Any]) -> Optional[str]:
-        url = record.get('url') or record.get('video')
-        if url and is_http_url(str(url)):
-            return str(url)
         video_name = record.get('video') or record.get('video_path')
-        if not video_name:
-            return str(url) if url else None
         video_dir = self.extra_params.get('video_dir') or ''
-        if video_dir:
+        if video_dir and video_name:
+            name = str(video_name)
             extension = self.extra_params.get('video_extension') or ''
             if extension:
                 extension = extension if extension.startswith('.') else f'.{extension}'
-                video_name = f'{os.path.splitext(str(video_name))[0]}{extension}'
-            return os.path.join(os.path.abspath(video_dir), str(video_name))
-        return str(video_name)
+                name = f'{os.path.splitext(name)[0]}{extension}'
+            return os.path.join(os.path.abspath(video_dir), name)
+        url = record.get('url')
+        if url and is_http_url(str(url)):
+            return str(url)
+        return str(video_name) if video_name else None
 
     def _apply_limit(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         if self.limit is None:

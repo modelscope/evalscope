@@ -99,7 +99,7 @@ multimodal models can answer open-ended natural-language questions grounded in i
 ## Evaluation Notes
 
 - Default data source: `lmms-lab/VQAv2` on ModelScope, `validation` split
-- Hugging Face remains available by setting `extra_params.dataset_hub="huggingface"`
+- Hugging Face is available by setting `--dataset-hub huggingface` via CLI or `TaskConfig(dataset_hub="huggingface")`
 - Primary metric: **VQAv2 soft accuracy** over human annotator answers
 - Also reports normalized exact match against the available answer set
 - The adapter accepts common answer formats: list of strings, list of answer dicts, or `multiple_choice_answer`
