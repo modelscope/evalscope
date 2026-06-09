@@ -60,7 +60,7 @@ The native adapter treats each video as one evaluation sample and uses all avail
 {
   "input": [
     {
-      "id": "67e2d85f",
+      "id": "a4b83275",
       "content": [
         {
           "text": "Describe the video in one concise sentence."
@@ -72,12 +72,22 @@ The native adapter treats each video as one evaluation sample and uses all avail
       ]
     }
   ],
-  "target": "[\"['two young men are playing table tennis', 'men are playing table tennis', 'two men are playing table tennis', 'two men are playing table tennis', 'two men are playing a tabletennis', 'a couple of people are playing a game of ping pong', 'p ... [TRUNCATED 487 chars] ... table tennis', '18 kids and counting show the newest baby josie', 'two people are playing ping pong', 'there is some kids and playing to each other', 'the men played pingpong together', 'the boys are playing ping pong', '2 boys is playing']\"]",
+  "target": "[\"two young men are playing table tennis\", \"men are playing table tennis\", \"two men are playing table tennis\", \"two men are playing a tabletennis\", \"a couple of people are playing a game of ping pong\", \"peoples are playing table tennis\", \"two ... [TRUNCATED 306 chars] ... e boys are playing\", \"people are playing ping pong\", \"18 kids and counting show the newest baby josie\", \"there is some kids and playing to each other\", \"the men played pingpong together\", \"the boys are playing ping pong\", \"2 boys is playing\"]",
   "id": 0,
   "group_id": 0,
   "metadata": {
     "references": [
-      "['two young men are playing table tennis', 'men are playing table tennis', 'two men are playing table tennis', 'two men are playing table tennis', 'two men are playing a tabletennis', 'a couple of people are playing a game of ping pong', 'peo ... [TRUNCATED 483 chars] ... g table tennis', '18 kids and counting show the newest baby josie', 'two people are playing ping pong', 'there is some kids and playing to each other', 'the men played pingpong together', 'the boys are playing ping pong', '2 boys is playing']"
+      "two young men are playing table tennis",
+      "men are playing table tennis",
+      "two men are playing table tennis",
+      "two men are playing a tabletennis",
+      "a couple of people are playing a game of ping pong",
+      "peoples are playing table tennis",
+      "two men are playing pingpong",
+      "two guys play table tennis",
+      "two people are playing ping pong",
+      "two boys are playing ping pong",
+      "... [TRUNCATED 12 more items] ..."
     ],
     "subset": "default",
     "dataset_id": "evalscope/MSVD",
