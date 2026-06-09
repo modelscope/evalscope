@@ -350,6 +350,7 @@ For retrieval tasks, a sample of 100,000 candidates (including the ground truth)
 | `api_base` | `str` | - | API base URL; rerankers call the rerank endpoint — if the URL does not end with `/rerank` or `/reranks`, `/rerank` is appended by default (`/reranks` for DashScope domains) |
 | `api_key` | `str` | - | API key |
 | `dimensions` | `Optional[int]` | `None` | Model output dimensions |
+| `max_seq_length` | `int` | `512` | Maximum sequence length; texts exceeding this limit are automatically truncated before sending to the API |
 | `encode_kwargs` | `dict` | `{"batch_size": 10}` | Encoding arguments |
 
 ### Evaluation Configuration (eval)
