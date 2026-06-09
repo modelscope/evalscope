@@ -1,6 +1,7 @@
 import contextlib
 import io
 import shutil
+import string
 from collections import Counter
 from typing import Dict, List
 
@@ -74,8 +75,6 @@ def compute_caption_scores(predictions: List[str], references: List[List[str]]) 
 
 
 def _caption_tokens(text: str) -> List[str]:
-    import string
-
     punctuation = string.punctuation.replace(':', '')
     text = text.lower()
     text = ''.join(' ' if char in punctuation else char for char in text)

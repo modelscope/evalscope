@@ -15,7 +15,7 @@ VQAv2 是一个基于 COCO 图像构建的平衡版视觉问答（Visual Questio
 ## 评估说明
 
 - 默认数据源：ModelScope 上的 `lmms-lab/VQAv2`，使用 `validation` 划分
-- 通过设置 `extra_params.dataset_hub="huggingface"` 仍可使用 Hugging Face 数据源
+- 通过 CLI 设置 `--dataset-hub huggingface` 或 `TaskConfig(dataset_hub="huggingface")` 可使用 Hugging Face 数据源
 - 主要指标：**VQAv2 软准确率（soft accuracy）**，基于人类标注者的答案计算
 - 同时报告针对可用答案集的归一化精确匹配（normalized exact match）
 - 适配器支持常见答案格式：字符串列表、答案字典列表，或 `multiple_choice_answer`
