@@ -350,6 +350,7 @@ run_task(task_cfg=task_cfg)
 | `api_base` | `str` | - | API 服务地址；reranker 会调用 rerank 端点，地址未以 `/rerank` 或 `/reranks` 结尾时默认追加 `/rerank`（DashScope 域名自动追加 `/reranks`） |
 | `api_key` | `str` | - | API 密钥 |
 | `dimensions` | `Optional[int]` | `None` | 模型输出维度 |
+| `max_seq_length` | `int` | `512` | 最大序列长度；超过此长度的文本将被自动截断后再发送到 API |
 | `encode_kwargs` | `dict` | `{"batch_size": 10}` | 编码参数 |
 
 ### 评测配置参数（eval）

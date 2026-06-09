@@ -149,6 +149,7 @@ class APIReranker(BaseReranker):
         revision: Optional[str] = 'master',
         batch_size: int = 10,
         timeout: int = 60,
+        max_seq_length: int = 512,
         **kwargs: Any,
     ) -> None:
         """Initialize APIReranker.
@@ -162,6 +163,7 @@ class APIReranker(BaseReranker):
             revision: Model revision (metadata only for API models).
             batch_size: Number of documents per API request.
             timeout: Request timeout in seconds.
+            max_seq_length: Maximum sequence length; texts exceeding this (in estimated tokens) are truncated.
             **kwargs: Extra keyword arguments (ignored).
         """
         if not api_base:
@@ -175,6 +177,8 @@ class APIReranker(BaseReranker):
         self.framework = ['API']
         self.batch_size = batch_size
         self.timeout = timeout
+        self.max_seq_length = max_seq_length
+        self._max_chars = max_seq_length * 3
 
         # Build the rerank URL (default /rerank, DashScope uses /reranks)
         self.rerank_url = api_base.rstrip('/')
@@ -193,6 +197,13 @@ class APIReranker(BaseReranker):
             self.headers['Authorization'] = f'Bearer {resolved_api_key}'
 
         self.session = requests.Session()
+
+    def _truncate_text(self, text: str) -> str:
+        """Truncate text that exceeds max_seq_length (estimated by character count)."""
+        if self.max_seq_length > 0 and len(text) > self._max_chars:
+            self._truncated_count += 1
+            return text[:self._max_chars]
+        return text
 
     def predict(self, inputs1, inputs2=None, **kwargs: Any) -> Array:
         """Predict relevance scores via the rerank API.
@@ -236,6 +247,7 @@ class APIReranker(BaseReranker):
         scores: List[float] = [0.0] * len(sentences)
         grouped_sentences: Dict[str, List] = {}
         prompt = self.prompt
+        self._truncated_count = 0
 
         # Group by query
         for idx, sentence in enumerate(sentences):
@@ -247,7 +259,15 @@ class APIReranker(BaseReranker):
                     query = f'{query} {instruction}'.strip()
             else:
                 raise ValueError('API reranker expects query-document pairs (2 or 3 elements).')
-            grouped_sentences.setdefault(prompt + query, []).append((idx, document))
+            query = self._truncate_text(prompt + query)
+            document = self._truncate_text(document)
+            grouped_sentences.setdefault(query, []).append((idx, document))
+
+        if self._truncated_count:
+            logger.warning(
+                f'Truncated {self._truncated_count} texts to {self._max_chars} chars '
+                f'(max_seq_length={self.max_seq_length}).'
+            )
 
         # Process each query group in batches
         max_retries = 3

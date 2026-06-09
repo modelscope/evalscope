@@ -147,3 +147,65 @@ def test_load_api_cross_encoder():
     })
 
     assert isinstance(model, APIReranker)
+
+
+def test_load_api_cross_encoder_passes_max_seq_length():
+    model = load_model({
+        'model_name': 'reranker',
+        'api_base': 'https://example.com/v1',
+        'api_key': 'test',
+        'is_cross_encoder': True,
+        'max_seq_length': 1024,
+    })
+
+    assert isinstance(model, APIReranker)
+    assert model.max_seq_length == 1024
+    assert model._max_chars == 1024 * 3
+
+
+def test_api_reranker_truncates_long_texts(monkeypatch):
+    monkeypatch.delenv('OPENAI_API_KEY', raising=False)
+    calls = []
+
+    def mock_post(self, url, headers, json, timeout):
+        calls.append(json)
+        return MockResponse({'results': [{'index': 0, 'relevance_score': 0.5}]})
+
+    monkeypatch.setattr('evalscope.backend.rag_eval.models.reranker.requests.Session.post', mock_post)
+
+    model = APIReranker(
+        model_name='reranker',
+        api_base='https://example.com/v1',
+        batch_size=10,
+        max_seq_length=10,
+    )
+
+    long_query = 'q' * 100
+    long_doc = 'd' * 100
+    model.predict([[long_query, long_doc]])
+
+    assert len(calls[0]['query']) == 10 * 3
+    assert len(calls[0]['documents'][0]) == 10 * 3
+
+
+def test_api_reranker_no_truncation_short_texts(monkeypatch):
+    monkeypatch.delenv('OPENAI_API_KEY', raising=False)
+    calls = []
+
+    def mock_post(self, url, headers, json, timeout):
+        calls.append(json)
+        return MockResponse({'results': [{'index': 0, 'score': 0.9}]})
+
+    monkeypatch.setattr('evalscope.backend.rag_eval.models.reranker.requests.Session.post', mock_post)
+
+    model = APIReranker(
+        model_name='reranker',
+        api_base='https://example.com/v1',
+        batch_size=10,
+        max_seq_length=512,
+    )
+
+    model.predict([['short query', 'short doc']])
+
+    assert calls[0]['query'] == 'short query'
+    assert calls[0]['documents'] == ['short doc']

@@ -186,7 +186,7 @@ class APIEncoder(BaseEncoder):
             api_base: Base URL for the OpenAI-compatible API.
             api_key: API key for authentication.
             dimensions: Embedding dimensions (if supported by API).
-            max_seq_length: Maximum sequence length (informational).
+            max_seq_length: Maximum sequence length; texts exceeding this (in estimated tokens) are truncated.
             prompt: A single prompt to prepend to queries.
             prompts: Dict mapping task names to prompts.
             revision: Model revision (metadata only for API models).
@@ -204,6 +204,9 @@ class APIEncoder(BaseEncoder):
         self.batch_size = batch_size
         self.max_seq_length = max_seq_length
 
+        # Conservative estimate: 1 token ≈ 3 characters (reasonable for mixed CJK/Latin text).
+        self._max_chars = self.max_seq_length * 3
+
         self._client = OpenAIEmbeddings(
             model=model_name,
             base_url=api_base,
@@ -212,6 +215,24 @@ class APIEncoder(BaseEncoder):
             check_embedding_ctx_length=check_embedding_ctx_length,
         )
         self._supported_encode_params = get_supported_params(self._client.embed_documents)
+
+    def _truncate_texts(self, texts: List[str]) -> List[str]:
+        """Truncate texts that exceed max_seq_length (estimated by character count)."""
+        if self.max_seq_length <= 0:
+            return texts
+        truncated = []
+        truncated_count = 0
+        for text in texts:
+            if len(text) > self._max_chars:
+                truncated_count += 1
+                text = text[:self._max_chars]
+            truncated.append(text)
+        if truncated_count:
+            logger.warning(
+                f'Truncated {truncated_count}/{len(texts)} texts to {self._max_chars} chars '
+                f'(max_seq_length={self.max_seq_length}).'
+            )
+        return truncated
 
     def encode(self, inputs, **kwargs: Any) -> Array:
         """Encode texts into embeddings using API.
@@ -259,6 +280,7 @@ class APIEncoder(BaseEncoder):
             batch_texts = texts[i:i + self.batch_size]
             if prompt is not None:
                 batch_texts = [prompt + text for text in batch_texts]
+            batch_texts = self._truncate_texts(batch_texts)
             response = self._client.embed_documents(batch_texts, chunk_size=self.batch_size, **encode_kwargs)
             embeddings.extend(response)
         return torch.tensor(embeddings)
