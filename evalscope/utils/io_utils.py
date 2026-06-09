@@ -10,6 +10,8 @@ import re
 import string
 import unicodedata
 import yaml
+import time
+import random
 from datetime import datetime
 from io import BytesIO
 from PIL import Image
@@ -208,6 +210,7 @@ def dump_jsonl_data(
 
     Raises:
         ValueError: When *jsonl_file* is empty or ``None``.
+        PermissionError: When file is locked.
     """
     if not jsonl_file:
         raise ValueError('output file must be provided.')
@@ -222,7 +225,17 @@ def dump_jsonl_data(
 
     mode = 'w' if dump_mode == DumpMode.OVERWRITE else 'a'
     with jsonl.open(jsonl_file, mode=mode) as writer:
-        writer.write_all(data_list)
+        max_retries = 50
+        for attempt in range(max_retries):
+            try:
+                with jsonl.open(jsonl_file, mode=mode) as writer:
+                    writer.write_all(data_list)
+                break
+            except PermissionError as e:
+                if attempt == max_retries - 1:
+                    logger.error(f'Failed to write to "{jsonl_file}" after "{max_retries}" attempts due to file locking: {e}')
+                    raise
+                time.sleep(0.1 + random.uniform(0.01, 0.1) * attempt)
 
 
 # ---------------------------------------------------------------------------
