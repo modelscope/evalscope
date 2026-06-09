@@ -69,6 +69,7 @@ openai_mrcr      = {file = ["evalscope/benchmarks/openai_mrcr/requirements.txt"]
 general_arena    = {file = ["evalscope/benchmarks/general_arena/requirements.txt"]}
 arena_hard       = {file = ["evalscope/benchmarks/arena_hard/requirements.txt"]}
 air_bench        = {file = ["evalscope/benchmarks/air_bench/requirements.txt"]}
+caption          = {file = ["evalscope/benchmarks/caption/requirements.txt"]}
 refcoco          = {file = ["evalscope/benchmarks/refcoco/requirements.txt"]}
 swe_bench        = {file = ["evalscope/benchmarks/swe_bench/requirements.txt"]}
 wmt              = {file = ["evalscope/benchmarks/wmt/requirements.txt"]}

@@ -1,0 +1,170 @@
+{
+  "meta": {
+    "pretty_name": "MSR-VTT",
+    "dataset_id": "AI-ModelScope/msr-vtt",
+    "paper_url": "https://www.microsoft.com/en-us/research/publication/msr-vtt-a-large-video-description-dataset-for-bridging-video-and-language/",
+    "tags": [
+      "MultiModal",
+      "ImageCaptioning"
+    ],
+    "metrics": [
+      "Bleu_1",
+      "Bleu_2",
+      "Bleu_3",
+      "Bleu_4",
+      "METEOR",
+      "ROUGE_L",
+      "CIDEr"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nMSR-VTT is a large-scale open-domain video captioning benchmark for evaluating video-to-text generation.\nThe native adapter groups records by `video_id`, so multiple annotation rows for one video become one sample\nwith multiple reference captions.\n\n## Task Description\n\n- **Task Type**: Video captioning\n- **Input**: Video clip or URL\n- **Output**: One concise natural-language caption\n- **Domains**: Open-domain video understanding and description\n\n## Evaluation Notes\n\n- Default data source: `AI-ModelScope/msr-vtt` on ModelScope, `validation` split\n- Hugging Face `VLM2Vec/MSR-VTT` remains available by setting `extra_params.dataset_hub=\"huggingface\"`\n- Primary metric: **CIDEr**\n- Additional metrics: BLEU-1/2/3/4, METEOR, ROUGE-L\n- Set `extra_params.video_dir` to prefer local media files over URL metadata\n",
+    "prompt_template": "Describe the video in one concise sentence.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "dataset_hub": {
+        "type": "str",
+        "description": "Dataset hub used to load MSR-VTT annotations.",
+        "value": "modelscope",
+        "choices": [
+          "huggingface",
+          "modelscope",
+          "local"
+        ]
+      },
+      "eval_split": {
+        "type": "str",
+        "description": "Source split to load; defaults to validation for ModelScope and test for Hugging Face.",
+        "value": ""
+      },
+      "dataset_revision": {
+        "type": "str",
+        "description": "Optional dataset revision; leave empty to use the hub default.",
+        "value": ""
+      },
+      "video_dir": {
+        "type": "str",
+        "description": "Optional local directory containing MSR-VTT video files.",
+        "value": ""
+      },
+      "video_extension": {
+        "type": "str",
+        "description": "Optional extension override for local videos, for example \"mp4\".",
+        "value": ""
+      }
+    },
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 497,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 497,
+        "prompt_length_mean": 43,
+        "prompt_length_min": 43,
+        "prompt_length_max": 43,
+        "prompt_length_std": null,
+        "target_length_mean": 51.41,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": false,
+          "has_video": true,
+          "video": {
+            "count_total": 497,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "resolutions": [],
+            "formats": [
+              "mp4"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 43,
+      "min": 43,
+      "max": 43,
+      "std": null
+    },
+    "target_length_mean": 51.41,
+    "computed_at": "2026-06-09T14:22:00.862722",
+    "multimodal": {
+      "has_images": false,
+      "has_audio": false,
+      "has_video": true,
+      "video": {
+        "count_total": 497,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "duration": null,
+        "resolutions": [],
+        "formats": [
+          "mp4"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "36044e4b",
+          "content": [
+            {
+              "text": "Describe the video in one concise sentence."
+            },
+            {
+              "video": "https://www.youtube.com/watch?v=A9pM9iOuAzM",
+              "format": "mp4",
+              "start": 116.03,
+              "end": 126.21
+            }
+          ]
+        }
+      ],
+      "target": "[\"a family is having coversation\"]",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "references": [
+          "a family is having coversation"
+        ],
+        "subset": "default",
+        "dataset_id": "AI-ModelScope/msr-vtt",
+        "dataset_hub": "modelscope",
+        "video": "https://www.youtube.com/watch?v=A9pM9iOuAzM",
+        "start": 116.03,
+        "end": 126.21,
+        "fps": null,
+        "video_id": "video6513",
+        "category": 14
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MSR-VTT\n\n\n## Overview\n\nMSR-VTT is a large-scale open-domain video captioning benchmark for evaluating video-to-text generation.\nThe native adapter groups records by `video_id`, so multiple annotation rows for one video become one sample\nwith multiple reference captions.\n\n## Task Description\n\n- **Task Type**: Video captioning\n- **Input**: Video clip or URL\n- **Output**: One concise natural-language caption\n- **Domains**: Open-domain video understanding and description\n\n## Evaluation Notes\n\n- Default data source: `AI-ModelScope/msr-vtt` on ModelScope, `validation` split\n- Hugging Face `VLM2Vec/MSR-VTT` remains available by setting `extra_params.dataset_hub=\"huggingface\"`\n- Primary metric: **CIDEr**\n- Additional metrics: BLEU-1/2/3/4, METEOR, ROUGE-L\n- Set `extra_params.video_dir` to prefer local media files over URL metadata\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `msr_vtt` |\n| **Dataset ID** | [AI-ModelScope/msr-vtt](https://modelscope.cn/datasets/AI-ModelScope/msr-vtt/summary) |\n| **Paper** | [Paper](https://www.microsoft.com/en-us/research/publication/msr-vtt-a-large-video-description-dataset-for-bridging-video-and-language/) |\n| **Tags** | `ImageCaptioning`, `MultiModal` |\n| **Metrics** | `Bleu_1`, `Bleu_2`, `Bleu_3`, `Bleu_4`, `METEOR`, `ROUGE_L`, `CIDEr` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 497 |\n| Prompt Length (Mean) | 43 chars |\n| Prompt Length (Min/Max) | 43 / 43 chars |\n\n**Video Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Videos | 497 |\n| Videos per Sample | min: 1, max: 1, mean: 1 |\n| Formats | mp4 |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"36044e4b\",\n      \"content\": [\n        {\n          \"text\": \"Describe the video in one concise sentence.\"\n        },\n        {\n          \"video\": \"https://www.youtube.com/watch?v=A9pM9iOuAzM\",\n          \"format\": \"mp4\",\n          \"start\": 116.03,\n          \"end\": 126.21\n        }\n      ]\n    }\n  ],\n  \"target\": \"[\\\"a family is having coversation\\\"]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"references\": [\n      \"a family is having coversation\"\n    ],\n    \"subset\": \"default\",\n    \"dataset_id\": \"AI-ModelScope/msr-vtt\",\n    \"dataset_hub\": \"modelscope\",\n    \"video\": \"https://www.youtube.com/watch?v=A9pM9iOuAzM\",\n    \"start\": 116.03,\n    \"end\": 126.21,\n    \"fps\": null,\n    \"video_id\": \"video6513\",\n    \"category\": 14\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nDescribe the video in one concise sentence.\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `dataset_hub` | `str` | `modelscope` | Dataset hub used to load MSR-VTT annotations. Choices: ['huggingface', 'modelscope', 'local'] |\n| `eval_split` | `str` | `` | Source split to load; defaults to validation for ModelScope and test for Hugging Face. |\n| `dataset_revision` | `str` | `` | Optional dataset revision; leave empty to use the hub default. |\n| `video_dir` | `str` | `` | Optional local directory containing MSR-VTT video files. |\n| `video_extension` | `str` | `` | Optional extension override for local videos, for example \"mp4\". |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets msr_vtt \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['msr_vtt'],\n    dataset_args={\n        'msr_vtt': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MSR-VTT\n\n\n## 概述\n\nMSR-VTT 是一个大规模开放域视频描述（video captioning）基准测试，用于评估视频到文本的生成能力。  \n原生适配器按 `video_id` 对记录进行分组，因此同一视频的多条标注行会被合并为一个样本，并包含多个参考描述。\n\n## 任务描述\n\n- **任务类型**：视频描述（Video captioning）\n- **输入**：视频片段或 URL\n- **输出**：一条简洁的自然语言描述\n- **领域**：开放域视频理解与描述\n\n## 评估说明\n\n- 默认数据源：ModelScope 上的 `AI-ModelScope/msr-vtt`，使用 `validation` 划分\n- 通过设置 `extra_params.dataset_hub=\"huggingface\"`，仍可使用 Hugging Face 上的 `VLM2Vec/MSR-VTT`\n- 主要指标：**CIDEr**\n- 其他指标：BLEU-1/2/3/4、METEOR、ROUGE-L\n- 设置 `extra_params.video_dir` 可优先使用本地媒体文件而非 URL 元数据\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `msr_vtt` |\n| **数据集ID** | [AI-ModelScope/msr-vtt](https://modelscope.cn/datasets/AI-ModelScope/msr-vtt/summary) |\n| **论文** | [Paper](https://www.microsoft.com/en-us/research/publication/msr-vtt-a-large-video-description-dataset-for-bridging-video-and-language/) |\n| **标签** | `ImageCaptioning`, `MultiModal` |\n| **指标** | `Bleu_1`, `Bleu_2`, `Bleu_3`, `Bleu_4`, `METEOR`, `ROUGE_L`, `CIDEr` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `validation` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 497 |\n| 提示词长度（平均） | 43 字符 |\n| 提示词长度（最小/最大） | 43 / 43 字符 |\n\n**视频统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 视频总数 | 497 |\n| 每样本视频数 | 最小: 1, 最大: 1, 平均: 1 |\n| 格式 | mp4 |\n\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"36044e4b\",\n      \"content\": [\n        {\n          \"text\": \"Describe the video in one concise sentence.\"\n        },\n        {\n          \"video\": \"https://www.youtube.com/watch?v=A9pM9iOuAzM\",\n          \"format\": \"mp4\",\n          \"start\": 116.03,\n          \"end\": 126.21\n        }\n      ]\n    }\n  ],\n  \"target\": \"[\\\"a family is having coversation\\\"]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"references\": [\n      \"a family is having coversation\"\n    ],\n    \"subset\": \"default\",\n    \"dataset_id\": \"AI-ModelScope/msr-vtt\",\n    \"dataset_hub\": \"modelscope\",\n    \"video\": \"https://www.youtube.com/watch?v=A9pM9iOuAzM\",\n    \"start\": 116.03,\n    \"end\": 126.21,\n    \"fps\": null,\n    \"video_id\": \"video6513\",\n    \"category\": 14\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nDescribe the video in one concise sentence.\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `dataset_hub` | `str` | `modelscope` | 用于加载 MSR-VTT 标注的数据集平台。选项：['huggingface', 'modelscope', 'local'] |\n| `eval_split` | `str` | `` | 要加载的数据划分；ModelScope 默认为 validation，Hugging Face 默认为 test。 |\n| `dataset_revision` | `str` | `` | 可选的数据集版本；留空则使用平台默认版本。 |\n| `video_dir` | `str` | `` | 包含 MSR-VTT 视频文件的本地目录（可选）。 |\n| `video_extension` | `str` | `` | 本地视频文件的扩展名覆盖项（可选），例如 \"mp4\"。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets msr_vtt \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['msr_vtt'],\n    dataset_args={\n        'msr_vtt': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "b106d344a56143e3aff4b70587470309",
+    "needs_translation": false
+  },
+  "updated_at": "2026-06-09T14:22:02.215803",
+  "translation_updated_at": "2026-06-09T14:27:18"
+}

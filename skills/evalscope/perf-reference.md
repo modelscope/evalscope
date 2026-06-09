@@ -169,4 +169,3 @@ Operators: `<=`, `>=`, `<`, `>`, `==`.
 | `--db-commit-interval` | int | 1000 | Rows buffered before SQLite commit |
 | `--queue-size-multiplier` | int | 5 | Request queue maxsize = parallel * multiplier |
 | `--in-flight-task-multiplier` | int | 2 | Max scheduled tasks = parallel * multiplier |
-

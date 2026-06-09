@@ -1,0 +1,166 @@
+{
+  "meta": {
+    "pretty_name": "VQAv2",
+    "dataset_id": "lmms-lab/VQAv2",
+    "paper_url": "https://arxiv.org/abs/1612.00837",
+    "tags": [
+      "MultiModal",
+      "QA"
+    ],
+    "metrics": [
+      "vqa_score",
+      "exact_match"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nVQAv2 is the balanced Visual Question Answering benchmark built on COCO images. It evaluates whether\nmultimodal models can answer open-ended natural-language questions grounded in image content.\n\n## Task Description\n\n- **Task Type**: Open-ended visual question answering\n- **Input**: Image + natural-language question\n- **Output**: Short answer phrase\n- **Domains**: General image understanding, object recognition, counting, attributes, relations\n\n## Evaluation Notes\n\n- Default data source: `lmms-lab/VQAv2` on ModelScope, `validation` split\n- Primary metric: **VQAv2 soft accuracy** over human annotator answers\n- Also reports normalized exact match against the available answer set\n- The adapter accepts common answer formats: list of strings, list of answer dicts, or `multiple_choice_answer`\n",
+    "prompt_template": "Answer the question according to the image using a short phrase.\n{question}\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes).",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 214354,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 214354,
+        "prompt_length_mean": 185.83,
+        "prompt_length_min": 165,
+        "prompt_length_max": 255,
+        "prompt_length_std": 10.1,
+        "target_length_mean": 87.14,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 214354,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "120x120",
+              "144x144",
+              "144x190",
+              "156x640",
+              "176x144",
+              "180x225",
+              "200x145",
+              "202x360",
+              "203x179",
+              "207x640"
+            ],
+            "resolution_range": {
+              "min": "120x120",
+              "max": "640x640"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 185.83,
+      "min": 165,
+      "max": 255,
+      "std": 10.1
+    },
+    "target_length_mean": 87.14,
+    "computed_at": "2026-06-09T16:30:55.121332",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 214354,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "120x120",
+          "144x144",
+          "144x190",
+          "156x640",
+          "176x144",
+          "180x225",
+          "200x145",
+          "202x360",
+          "203x179",
+          "207x640"
+        ],
+        "resolution_range": {
+          "min": "120x120",
+          "max": "640x640"
+        },
+        "formats": [
+          "jpeg",
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "7410f0b5",
+          "content": [
+            {
+              "text": "Answer the question according to the image using a short phrase.\nWhere is he looking?\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes)."
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~102.7KB]"
+            }
+          ]
+        }
+      ],
+      "target": "[\"down\", \"down\", \"at table\", \"skateboard\", \"down\", \"table\", \"down\", \"down\", \"down\", \"down\"]",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "question": "Where is he looking?",
+        "answers": [
+          "down",
+          "down",
+          "at table",
+          "skateboard",
+          "down",
+          "table",
+          "down",
+          "down",
+          "down",
+          "down"
+        ],
+        "multiple_choice_answer": "down",
+        "question_id": 262148000,
+        "question_type": "none of the above",
+        "answer_type": "other"
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# VQAv2\n\n\n## Overview\n\nVQAv2 is the balanced Visual Question Answering benchmark built on COCO images. It evaluates whether\nmultimodal models can answer open-ended natural-language questions grounded in image content.\n\n## Task Description\n\n- **Task Type**: Open-ended visual question answering\n- **Input**: Image + natural-language question\n- **Output**: Short answer phrase\n- **Domains**: General image understanding, object recognition, counting, attributes, relations\n\n## Evaluation Notes\n\n- Default data source: `lmms-lab/VQAv2` on ModelScope, `validation` split\n- Primary metric: **VQAv2 soft accuracy** over human annotator answers\n- Also reports normalized exact match against the available answer set\n- The adapter accepts common answer formats: list of strings, list of answer dicts, or `multiple_choice_answer`\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `vqav2` |\n| **Dataset ID** | [lmms-lab/VQAv2](https://modelscope.cn/datasets/lmms-lab/VQAv2/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/1612.00837) |\n| **Tags** | `MultiModal`, `QA` |\n| **Metrics** | `vqa_score`, `exact_match` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 214,354 |\n| Prompt Length (Mean) | 185.83 chars |\n| Prompt Length (Min/Max) | 165 / 255 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 214,354 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 120x120 - 640x640 |\n| Formats | jpeg, png |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"7410f0b5\",\n      \"content\": [\n        {\n          \"text\": \"Answer the question according to the image using a short phrase.\\nWhere is he looking?\\nThe last line of your response should be of the form \\\"ANSWER: [ANSWER]\\\" (without quotes).\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~102.7KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"[\\\"down\\\", \\\"down\\\", \\\"at table\\\", \\\"skateboard\\\", \\\"down\\\", \\\"table\\\", \\\"down\\\", \\\"down\\\", \\\"down\\\", \\\"down\\\"]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question\": \"Where is he looking?\",\n    \"answers\": [\n      \"down\",\n      \"down\",\n      \"at table\",\n      \"skateboard\",\n      \"down\",\n      \"table\",\n      \"down\",\n      \"down\",\n      \"down\",\n      \"down\"\n    ],\n    \"multiple_choice_answer\": \"down\",\n    \"question_id\": 262148000,\n    \"question_type\": \"none of the above\",\n    \"answer_type\": \"other\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the question according to the image using a short phrase.\n{question}\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes).\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets vqav2 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['vqav2'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# VQAv2\n\n\n## 概述\n\nVQAv2 是一个基于 COCO 图像构建的平衡版视觉问答（Visual Question Answering）基准测试，用于评估多模态模型是否能够根据图像内容回答开放式自然语言问题。\n\n## 任务描述\n\n- **任务类型**：开放式视觉问答\n- **输入**：图像 + 自然语言问题\n- **输出**：简短答案短语\n- **领域**：通用图像理解、物体识别、计数、属性、关系等\n\n## 评估说明\n\n- 默认数据源：ModelScope 上的 `lmms-lab/VQAv2`，使用 `validation` 划分\n- 主要指标：**VQAv2 软准确率（soft accuracy）**，基于人工标注的答案计算\n- 同时报告对可用答案集合的归一化精确匹配（normalized exact match）\n- 适配器支持常见答案格式：字符串列表、答案字典列表，或 `multiple_choice_answer`\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `vqav2` |\n| **数据集ID** | [lmms-lab/VQAv2](https://modelscope.cn/datasets/lmms-lab/VQAv2/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/1612.00837) |\n| **标签** | `MultiModal`, `QA` |\n| **指标** | `vqa_score`, `exact_match` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `validation` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 214,354 |\n| 提示词长度（平均） | 185.83 字符 |\n| 提示词长度（最小/最大） | 165 / 255 字符 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 214,354 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 120x120 - 640x640 |\n| 格式 | jpeg, png |\n\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"7410f0b5\",\n      \"content\": [\n        {\n          \"text\": \"Answer the question according to the image using a short phrase.\\nWhere is he looking?\\nThe last line of your response should be of the form \\\"ANSWER: [ANSWER]\\\" (without quotes).\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~102.7KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"[\\\"down\\\", \\\"down\\\", \\\"at table\\\", \\\"skateboard\\\", \\\"down\\\", \\\"table\\\", \\\"down\\\", \\\"down\\\", \\\"down\\\", \\\"down\\\"]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question\": \"Where is he looking?\",\n    \"answers\": [\n      \"down\",\n      \"down\",\n      \"at table\",\n      \"skateboard\",\n      \"down\",\n      \"table\",\n      \"down\",\n      \"down\",\n      \"down\",\n      \"down\"\n    ],\n    \"multiple_choice_answer\": \"down\",\n    \"question_id\": 262148000,\n    \"question_type\": \"none of the above\",\n    \"answer_type\": \"other\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the question according to the image using a short phrase.\n{question}\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes).\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets vqav2 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['vqav2'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "8ead10bba40ae0c976b63abbb4250fa3",
+    "needs_translation": false
+  },
+  "updated_at": "2026-06-09T16:32:40.951004",
+  "translation_updated_at": "2026-06-09T16:32:53"
+}
