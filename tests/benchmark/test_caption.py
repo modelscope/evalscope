@@ -31,6 +31,16 @@ def test_msvd_record_to_sample() -> None:
     assert sample.input[0].content[1].video == 'video-1.mp4'
 
 
+def test_msvd_handles_list_caption_field() -> None:
+    adapter = _adapter('msvd')
+    records = adapter._group_records([
+        {'video_id': 'video-1', 'video': 'video-1.mp4', 'caption': ['a man is cooking', 'a person cooks food']},
+    ])
+
+    assert len(records) == 1
+    assert records[0]['references'] == ['a man is cooking', 'a person cooks food']
+
+
 def test_msr_vtt_groups_by_video_id_and_prefers_url() -> None:
     adapter = _adapter('msr_vtt')
     records = adapter._group_records([

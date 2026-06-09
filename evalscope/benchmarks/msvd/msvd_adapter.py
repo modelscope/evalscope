@@ -194,12 +194,11 @@ class MSVDAdapter(VisionLanguageAdapter):
         grouped: OrderedDict[str, Dict[str, Any]] = OrderedDict()
         for record in records:
             video_id = str(record.get('video_id') or record.get('id') or len(grouped))
-            caption = str(record.get('caption') or '').strip()
+            captions = _extract_captions(record)
             if video_id not in grouped:
                 grouped[video_id] = copy.deepcopy(record)
                 grouped[video_id]['references'] = []
-            if caption:
-                grouped[video_id]['references'].append(caption)
+            grouped[video_id]['references'].extend(captions)
 
         for record in grouped.values():
             record['references'] = _unique_texts(record['references'])
@@ -236,6 +235,19 @@ def _optional_float(value: Any, field_name: str) -> Optional[float]:
         return float(value)
     except (TypeError, ValueError) as exc:
         raise ValueError(f'Invalid {field_name} value: {value!r}') from exc
+
+
+def _extract_captions(record: Dict[str, Any]) -> List[str]:
+    for field in ('references', 'caption', 'captions'):
+        value = record.get(field)
+        if value is None:
+            continue
+        if isinstance(value, str):
+            text = value.strip()
+            return [text] if text else []
+        if isinstance(value, list):
+            return [str(v).strip() for v in value if str(v).strip()]
+    return []
 
 
 def _unique_texts(values: List[str]) -> List[str]:
