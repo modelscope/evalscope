@@ -22,7 +22,7 @@ class DatasetHub:
     force_redownload: bool = False
     cache_dir: Optional[str] = None
 
-    def load(self, split: str, subset: Optional[str] = 'default', **kwargs):
+    def load(self, split: str, subset: str = 'default', **kwargs):
         return load_dataset_from_hub(
             data_id_or_path=self.data_id_or_path,
             split=split,
@@ -48,7 +48,7 @@ class DatasetHub:
 def load_dataset_from_hub(
     data_id_or_path: str,
     split: str,
-    subset: Optional[str] = 'default',
+    subset: str = 'default',
     data_source: Optional[str] = HubType.MODELSCOPE,
     version: Optional[str] = None,
     trust_remote: bool = True,
@@ -66,19 +66,15 @@ def load_dataset_from_hub(
     ms_download_mode = None if not force_redownload else MSDownloadMode.FORCE_REDOWNLOAD
 
     if data_source == HubType.MODELSCOPE:
-        load_kwargs = dict(
+        dataset = MsDataset.load(
             dataset_name=data_id_or_path,
             split=split,
+            subset_name=subset,
+            version=version,
             trust_remote_code=trust_remote,
+            download_mode=ms_download_mode,
             **kwargs,
         )
-        if subset is not None:
-            load_kwargs['subset_name'] = subset
-        if version:
-            load_kwargs['version'] = version
-        if ms_download_mode:
-            load_kwargs['download_mode'] = ms_download_mode
-        dataset = MsDataset.load(**load_kwargs)
         if not isinstance(dataset, datasets.Dataset):
             dataset = dataset.to_hf_dataset()
         return dataset

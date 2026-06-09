@@ -128,6 +128,7 @@ def openai_chat_completion_part(content: Content) -> Union[ChatCompletionContent
         if not is_http_url(video_url) and not is_data_uri(video_url):
             video_url = video_as_data_uri(video_url, content.format)
         part: Dict[str, Any] = {'type': 'video_url', 'video_url': {'url': video_url}}
+        # DashScope extension: fps hint for video frame sampling
         if content.fps is not None:
             part['fps'] = content.fps
         return part

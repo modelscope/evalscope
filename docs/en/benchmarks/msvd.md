@@ -15,9 +15,8 @@ The native adapter treats each video as one evaluation sample and uses all avail
 
 ## Evaluation Notes
 
-- Default data source: `VLM2Vec/MSVD` on Hugging Face, `test` split
-- A ModelScope MSVD mirror was not available when this adapter was added; set `dataset_id` or `local_path`
-  together with `extra_params.dataset_hub` if a mirror becomes available
+- Default data source: `evalscope/MSVD` on ModelScope, `test` split
+- Hugging Face `VLM2Vec/MSVD` remains available by setting `extra_params.dataset_hub="huggingface"`
 - Primary metric: **CIDEr**
 - Additional metrics: BLEU-1/2/3/4, METEOR, ROUGE-L
 - Set `extra_params.video_dir` when the dataset only provides video file names and local media files are required
@@ -28,7 +27,7 @@ The native adapter treats each video as one evaluation sample and uses all avail
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `msvd` |
-| **Dataset ID** | [VLM2Vec/MSVD](https://modelscope.cn/datasets/VLM2Vec/MSVD/summary) |
+| **Dataset ID** | [evalscope/MSVD](https://modelscope.cn/datasets/evalscope/MSVD/summary) |
 | **Paper** | [Paper](https://aclanthology.org/P11-1020/) |
 | **Tags** | `ImageCaptioning`, `MultiModal` |
 | **Metrics** | `Bleu_1`, `Bleu_2`, `Bleu_3`, `Bleu_4`, `METEOR`, `ROUGE_L`, `CIDEr` |
@@ -119,7 +118,7 @@ Describe the video in one concise sentence.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `dataset_hub` | `str` | `huggingface` | Dataset hub used to load MSVD annotations. Choices: ['huggingface', 'modelscope', 'local'] |
+| `dataset_hub` | `str` | `modelscope` | Dataset hub used to load MSVD annotations. Choices: ['huggingface', 'modelscope', 'local'] |
 | `eval_split` | `str` | `` | Source split to load; defaults to test. |
 | `dataset_revision` | `str` | `` | Optional dataset revision; leave empty to use the hub default. |
 | `video_dir` | `str` | `` | Optional local directory containing MSVD video files. |

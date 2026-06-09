@@ -1,7 +1,7 @@
 {
   "meta": {
     "pretty_name": "MSVD",
-    "dataset_id": "VLM2Vec/MSVD",
+    "dataset_id": "evalscope/MSVD",
     "paper_url": "https://aclanthology.org/P11-1020/",
     "tags": [
       "MultiModal",
@@ -22,7 +22,7 @@
     "subset_list": [
       "default"
     ],
-    "description": "\n## Overview\n\nMSVD is a classic video captioning benchmark with short web videos annotated by many human captions.\nThe native adapter treats each video as one evaluation sample and uses all available captions as references.\n\n## Task Description\n\n- **Task Type**: Video captioning\n- **Input**: Video clip\n- **Output**: One concise natural-language caption\n- **Domains**: Open-domain video understanding and description\n\n## Evaluation Notes\n\n- Default data source: `VLM2Vec/MSVD` on Hugging Face, `test` split\n- A ModelScope MSVD mirror was not available when this adapter was added; set `dataset_id` or `local_path`\n  together with `extra_params.dataset_hub` if a mirror becomes available\n- Primary metric: **CIDEr**\n- Additional metrics: BLEU-1/2/3/4, METEOR, ROUGE-L\n- Set `extra_params.video_dir` when the dataset only provides video file names and local media files are required\n",
+    "description": "\n## Overview\n\nMSVD is a classic video captioning benchmark with short web videos annotated by many human captions.\nThe native adapter treats each video as one evaluation sample and uses all available captions as references.\n\n## Task Description\n\n- **Task Type**: Video captioning\n- **Input**: Video clip\n- **Output**: One concise natural-language caption\n- **Domains**: Open-domain video understanding and description\n\n## Evaluation Notes\n\n- Default data source: `evalscope/MSVD` on ModelScope, `test` split\n- Hugging Face `VLM2Vec/MSVD` remains available by setting `extra_params.dataset_hub=\"huggingface\"`\n- Primary metric: **CIDEr**\n- Additional metrics: BLEU-1/2/3/4, METEOR, ROUGE-L\n- Set `extra_params.video_dir` when the dataset only provides video file names and local media files are required\n",
     "prompt_template": "Describe the video in one concise sentence.",
     "system_prompt": "",
     "few_shot_prompt_template": "",
@@ -31,7 +31,7 @@
       "dataset_hub": {
         "type": "str",
         "description": "Dataset hub used to load MSVD annotations.",
-        "value": "huggingface",
+        "value": "modelscope",
         "choices": [
           "huggingface",
           "modelscope",
@@ -154,7 +154,7 @@
           "... [TRUNCATED 12 more items] ..."
         ],
         "subset": "default",
-        "dataset_id": "VLM2Vec/MSVD",
+        "dataset_id": "evalscope/MSVD",
         "dataset_hub": "huggingface",
         "video": "fr9H1WLcF1A_256_261.avi",
         "start": null,

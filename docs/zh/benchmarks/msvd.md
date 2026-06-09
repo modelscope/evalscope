@@ -15,9 +15,8 @@ MSVD 是一个经典的视频描述基准，包含带有大量人工描述标注
 
 ## 评测说明
 
-- 默认数据源：Hugging Face 上的 `VLM2Vec/MSVD`，`test` 划分
-- 添加该适配器时，ModelScope 上还没有可用的 MSVD 镜像；如果后续有镜像可用，可以设置 `dataset_id` 或 `local_path`，
-  并配合 `extra_params.dataset_hub` 使用
+- 默认数据源：ModelScope 上的 `evalscope/MSVD`，`test` 划分
+- 也可以通过设置 `extra_params.dataset_hub="huggingface"` 使用 Hugging Face 上的 `VLM2Vec/MSVD`
 - 主要指标：**CIDEr**
 - 其他指标：BLEU-1/2/3/4、METEOR、ROUGE-L
 - 当数据集只提供视频文件名且需要本地媒体文件时，设置 `extra_params.video_dir`
@@ -28,7 +27,7 @@ MSVD 是一个经典的视频描述基准，包含带有大量人工描述标注
 | 属性 | 值 |
 |----------|-------|
 | **基准名称** | `msvd` |
-| **数据集 ID** | [VLM2Vec/MSVD](https://modelscope.cn/datasets/VLM2Vec/MSVD/summary) |
+| **数据集 ID** | [evalscope/MSVD](https://modelscope.cn/datasets/evalscope/MSVD/summary) |
 | **论文** | [论文](https://aclanthology.org/P11-1020/) |
 | **标签** | `ImageCaptioning`, `MultiModal` |
 | **指标** | `Bleu_1`, `Bleu_2`, `Bleu_3`, `Bleu_4`, `METEOR`, `ROUGE_L`, `CIDEr` |
@@ -119,7 +118,7 @@ Describe the video in one concise sentence.
 
 | 参数 | 类型 | 默认值 | 说明 |
 |-----------|------|---------|-------------|
-| `dataset_hub` | `str` | `huggingface` | 用于加载 MSVD 标注的数据集平台。可选值：['huggingface', 'modelscope', 'local'] |
+| `dataset_hub` | `str` | `modelscope` | 用于加载 MSVD 标注的数据集平台。可选值：['huggingface', 'modelscope', 'local'] |
 | `eval_split` | `str` | `` | 要加载的源数据划分；默认使用 test。 |
 | `dataset_revision` | `str` | `` | 可选的数据集版本；留空时使用平台默认版本。 |
 | `video_dir` | `str` | `` | 可选的本地目录，包含 MSVD 视频文件。 |
