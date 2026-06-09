@@ -1,66 +1,108 @@
 # VQAv2
 
 
-## 概览
+## 概述
 
-VQAv2 是构建在 COCO 图像上的平衡版视觉问答基准。它评测多模态模型能否基于图像内容，
-回答开放式自然语言问题。
+VQAv2 是一个基于 COCO 图像构建的平衡版视觉问答（Visual Question Answering）基准测试，用于评估多模态模型是否能够根据图像内容回答开放式自然语言问题。
 
 ## 任务描述
 
 - **任务类型**：开放式视觉问答
 - **输入**：图像 + 自然语言问题
 - **输出**：简短答案短语
-- **领域**：通用图像理解、物体识别、计数、属性、关系
+- **领域**：通用图像理解、物体识别、计数、属性、关系等
 
-## 评测说明
+## 评估说明
 
-- 默认数据源：ModelScope 上的 `lmms-lab/VQAv2`，`validation` 划分
-- 也可以通过设置 `extra_params.dataset_hub="huggingface"` 使用 Hugging Face
-- 主要指标：基于人工标注答案的 **VQAv2 软准确率**
-- 也会报告与可用答案集合之间的归一化精确匹配
+- 默认数据源：ModelScope 上的 `lmms-lab/VQAv2`，使用 `validation` 划分
+- 通过设置 `extra_params.dataset_hub="huggingface"` 仍可使用 Hugging Face 数据源
+- 主要指标：**VQAv2 软准确率（soft accuracy）**，基于人类标注者的答案计算
+- 同时报告针对可用答案集的归一化精确匹配（normalized exact match）
 - 适配器支持常见答案格式：字符串列表、答案字典列表，或 `multiple_choice_answer`
-
 
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
-| **基准名称** | `vqav2` |
-| **数据集 ID** | [lmms-lab/VQAv2](https://modelscope.cn/datasets/lmms-lab/VQAv2/summary) |
-| **论文** | [论文](https://arxiv.org/abs/1612.00837) |
+| **基准测试名称** | `vqav2` |
+| **数据集ID** | [lmms-lab/VQAv2](https://modelscope.cn/datasets/lmms-lab/VQAv2/summary) |
+| **论文** | [Paper](https://arxiv.org/abs/1612.00837) |
 | **标签** | `MultiModal`, `QA` |
 | **指标** | `vqa_score`, `exact_match` |
-| **默认样本数** | 0-shot |
-| **评测划分** | `validation` |
+| **默认示例数量** | 0-shot |
+| **评估划分** | `validation` |
 
 
 ## 数据统计
 
-*暂无统计信息。*
+| 指标 | 值 |
+|--------|-------|
+| 总样本数 | 214,354 |
+| 提示词长度（平均） | 185.83 字符 |
+| 提示词长度（最小/最大） | 165 / 255 字符 |
 
-## 样例
+**图像统计信息：**
 
-*暂无样例。*
+| 指标 | 值 |
+|--------|-------|
+| 总图像数 | 214,354 |
+| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |
+| 分辨率范围 | 120x120 - 640x640 |
+| 格式 | jpeg, png |
 
-## Prompt 模板
 
-**Prompt 模板：**
+## 样例示例
+
+**子集**: `default`
+
+```json
+{
+  "input": [
+    {
+      "id": "b9e4bbe3",
+      "content": [
+        {
+          "text": "Answer the question according to the image using a short phrase.\nWhere is he looking?\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes)."
+        },
+        {
+          "image": "[BASE64_IMAGE: jpeg, ~102.7KB]"
+        }
+      ]
+    }
+  ],
+  "target": "[\"down\", \"down\", \"at table\", \"skateboard\", \"down\", \"table\", \"down\", \"down\", \"down\", \"down\"]",
+  "id": 0,
+  "group_id": 0,
+  "metadata": {
+    "question": "Where is he looking?",
+    "answers": [
+      "down",
+      "down",
+      "at table",
+      "skateboard",
+      "down",
+      "table",
+      "down",
+      "down",
+      "down",
+      "down"
+    ],
+    "multiple_choice_answer": "down",
+    "question_id": 262148000,
+    "question_type": "none of the above",
+    "answer_type": "other"
+  }
+}
+```
+
+## 提示模板
+
+**提示模板：**
 ```text
 Answer the question according to the image using a short phrase.
 {question}
 The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes).
 ```
-
-## 额外参数
-
-| 参数 | 类型 | 默认值 | 说明 |
-|-----------|------|---------|-------------|
-| `dataset_hub` | `str` | `modelscope` | 用于加载 VQAv2 标注和图像的数据集平台。可选值：['huggingface', 'modelscope', 'local'] |
-| `eval_split` | `str` | `` | 要加载的源数据划分；默认使用 validation。 |
-| `dataset_revision` | `str` | `` | 可选的数据集版本；留空时使用平台默认版本。 |
-| `image_dir` | `str` | `` | 可选的本地目录，包含本地 JSONL/CSV 数据使用的 VQAv2 图像。 |
-| `image_extension` | `str` | `` | 可选的本地图像扩展名覆盖值，例如 "jpg"。 |
 
 ## 使用方法
 
@@ -72,7 +114,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets vqav2 \
-    --limit 10  # 正式评测时移除此行
+    --limit 10  # 正式评估时请删除此行
 ```
 
 ### 使用 Python
@@ -86,12 +128,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['vqav2'],
-    dataset_args={
-        'vqav2': {
-            # extra_params: {}  # 使用默认额外参数
-        }
-    },
-    limit=10,  # 正式评测时移除此行
+    limit=10,  # 正式评估时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

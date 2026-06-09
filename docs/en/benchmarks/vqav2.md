@@ -37,11 +37,65 @@ multimodal models can answer open-ended natural-language questions grounded in i
 
 ## Data Statistics
 
-*Statistics not available.*
+| Metric | Value |
+|--------|-------|
+| Total Samples | 214,354 |
+| Prompt Length (Mean) | 185.83 chars |
+| Prompt Length (Min/Max) | 165 / 255 chars |
+
+**Image Statistics:**
+
+| Metric | Value |
+|--------|-------|
+| Total Images | 214,354 |
+| Images per Sample | min: 1, max: 1, mean: 1 |
+| Resolution Range | 120x120 - 640x640 |
+| Formats | jpeg, png |
+
 
 ## Sample Example
 
-*Sample example not available.*
+**Subset**: `default`
+
+```json
+{
+  "input": [
+    {
+      "id": "b9e4bbe3",
+      "content": [
+        {
+          "text": "Answer the question according to the image using a short phrase.\nWhere is he looking?\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes)."
+        },
+        {
+          "image": "[BASE64_IMAGE: jpeg, ~102.7KB]"
+        }
+      ]
+    }
+  ],
+  "target": "[\"down\", \"down\", \"at table\", \"skateboard\", \"down\", \"table\", \"down\", \"down\", \"down\", \"down\"]",
+  "id": 0,
+  "group_id": 0,
+  "metadata": {
+    "question": "Where is he looking?",
+    "answers": [
+      "down",
+      "down",
+      "at table",
+      "skateboard",
+      "down",
+      "table",
+      "down",
+      "down",
+      "down",
+      "down"
+    ],
+    "multiple_choice_answer": "down",
+    "question_id": 262148000,
+    "question_type": "none of the above",
+    "answer_type": "other"
+  }
+}
+```
 
 ## Prompt Template
 
@@ -51,16 +105,6 @@ Answer the question according to the image using a short phrase.
 {question}
 The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes).
 ```
-
-## Extra Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `dataset_hub` | `str` | `modelscope` | Dataset hub used to load VQAv2 annotations and images. Choices: ['huggingface', 'modelscope', 'local'] |
-| `eval_split` | `str` | `` | Source split to load; defaults to validation. |
-| `dataset_revision` | `str` | `` | Optional dataset revision; leave empty to use the hub default. |
-| `image_dir` | `str` | `` | Optional local directory containing VQAv2 images for local JSONL/CSV data. |
-| `image_extension` | `str` | `` | Optional extension override for local images, for example "jpg". |
 
 ## Usage
 
@@ -86,11 +130,6 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['vqav2'],
-    dataset_args={
-        'vqav2': {
-            # extra_params: {}  # uses default extra parameters
-        }
-    },
     limit=10,  # Remove this line for formal evaluation
 )
 

@@ -1,58 +1,57 @@
 # MSVD
 
 
-## 概览
+## 概述
 
-MSVD 是一个经典的视频描述基准，包含带有大量人工描述标注的短网络视频。
-原生适配器会将每个视频视为一个评测样本，并使用所有可用描述作为参考答案。
+MSVD 是一个经典的视频描述（video captioning）基准测试，包含大量带有多个人工标注字幕的短视频。
+原生适配器将每个视频视为一个评估样本，并使用所有可用字幕作为参考。
 
 ## 任务描述
 
-- **任务类型**：视频描述
+- **任务类型**：视频描述（Video captioning）
 - **输入**：视频片段
-- **输出**：一句简洁的自然语言描述
+- **输出**：一条简洁的自然语言描述
 - **领域**：开放域视频理解与描述
 
-## 评测说明
+## 评估说明
 
-- 默认数据源：ModelScope 上的 `evalscope/MSVD`，`test` 划分
-- 也可以通过设置 `extra_params.dataset_hub="huggingface"` 使用 Hugging Face 上的 `VLM2Vec/MSVD`
+- 默认数据源：ModelScope 上的 `evalscope/MSVD`，使用 `test` 划分
+- 通过设置 `extra_params.dataset_hub="huggingface"` 仍可使用 Hugging Face 的 `VLM2Vec/MSVD`
 - 主要指标：**CIDEr**
 - 其他指标：BLEU-1/2/3/4、METEOR、ROUGE-L
-- 当数据集只提供视频文件名且需要本地媒体文件时，设置 `extra_params.video_dir`
-
+- 当数据集仅提供视频文件名且需要本地媒体文件时，请设置 `extra_params.video_dir`
 
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
-| **基准名称** | `msvd` |
-| **数据集 ID** | [evalscope/MSVD](https://modelscope.cn/datasets/evalscope/MSVD/summary) |
-| **论文** | [论文](https://aclanthology.org/P11-1020/) |
+| **基准测试名称** | `msvd` |
+| **数据集ID** | [evalscope/MSVD](https://modelscope.cn/datasets/evalscope/MSVD/summary) |
+| **论文** | [Paper](https://aclanthology.org/P11-1020/) |
 | **标签** | `ImageCaptioning`, `MultiModal` |
 | **指标** | `Bleu_1`, `Bleu_2`, `Bleu_3`, `Bleu_4`, `METEOR`, `ROUGE_L`, `CIDEr` |
-| **默认样本数** | 0-shot |
-| **评测划分** | `test` |
+| **默认示例数** | 0-shot |
+| **评估划分** | `test` |
 
 
 ## 数据统计
 
 | 指标 | 值 |
 |--------|-------|
-| 样本总数 | 670 |
-| Prompt 平均长度 | 43 个字符 |
-| Prompt 最小/最大长度 | 43 / 43 个字符 |
+| 总样本数 | 670 |
+| 提示词长度（平均） | 43 字符 |
+| 提示词长度（最小/最大） | 43 / 43 字符 |
 
-**视频统计：**
+**视频统计信息：**
 
 | 指标 | 值 |
 |--------|-------|
 | 视频总数 | 670 |
-| 每个样本的视频数量 | min: 1, max: 1, mean: 1 |
+| 每样本视频数 | 最小: 1, 最大: 1, 平均: 1 |
 | 格式 | mp4 |
 
 
-## 样例
+## 样例示例
 
 **子集**：`default`
 
@@ -60,7 +59,7 @@ MSVD 是一个经典的视频描述基准，包含带有大量人工描述标注
 {
   "input": [
     {
-      "id": "b91ac25b",
+      "id": "67e2d85f",
       "content": [
         {
           "text": "Describe the video in one concise sentence."
@@ -72,57 +71,39 @@ MSVD 是一个经典的视频描述基准，包含带有大量人工描述标注
       ]
     }
   ],
-  "target": "[\"two young men are playing table tennis\", \"men are playing table tennis\", \"two men are playing table tennis\", \"two men are playing a tabletennis\", \"a couple of people are playing a game of ping pong\", \"peoples are playing table tennis\", \"two ... [TRUNCATED 306 chars] ... e boys are playing\", \"people are playing ping pong\", \"18 kids and counting show the newest baby josie\", \"there is some kids and playing to each other\", \"the men played pingpong together\", \"the boys are playing ping pong\", \"2 boys is playing\"]",
+  "target": "[\"['two young men are playing table tennis', 'men are playing table tennis', 'two men are playing table tennis', 'two men are playing table tennis', 'two men are playing a tabletennis', 'a couple of people are playing a game of ping pong', 'p ... [TRUNCATED 487 chars] ... table tennis', '18 kids and counting show the newest baby josie', 'two people are playing ping pong', 'there is some kids and playing to each other', 'the men played pingpong together', 'the boys are playing ping pong', '2 boys is playing']\"]",
   "id": 0,
   "group_id": 0,
   "metadata": {
     "references": [
-      "two young men are playing table tennis",
-      "men are playing table tennis",
-      "two men are playing table tennis",
-      "two men are playing a tabletennis",
-      "a couple of people are playing a game of ping pong",
-      "peoples are playing table tennis",
-      "two men are playing pingpong",
-      "two guys play table tennis",
-      "two people are playing ping pong",
-      "two boys are playing ping pong",
-      "... [TRUNCATED 12 more items] ..."
+      "['two young men are playing table tennis', 'men are playing table tennis', 'two men are playing table tennis', 'two men are playing table tennis', 'two men are playing a tabletennis', 'a couple of people are playing a game of ping pong', 'peo ... [TRUNCATED 483 chars] ... g table tennis', '18 kids and counting show the newest baby josie', 'two people are playing ping pong', 'there is some kids and playing to each other', 'the men played pingpong together', 'the boys are playing ping pong', '2 boys is playing']"
     ],
     "subset": "default",
-    "dataset_id": "VLM2Vec/MSVD",
-    "dataset_hub": "huggingface",
+    "dataset_id": "evalscope/MSVD",
+    "dataset_hub": "modelscope",
     "video": "fr9H1WLcF1A_256_261.avi",
-    "start": null,
-    "end": null,
-    "fps": null,
-    "media_resolved": false,
-    "id": null,
     "video_id": "fr9H1WLcF1A_256_261",
-    "image_id": null,
-    "question_id": null,
-    "source": "MSVD",
-    "category": null
+    "source": "MSVD"
   }
 }
 ```
 
-## Prompt 模板
+## 提示模板
 
-**Prompt 模板：**
+**提示模板：**
 ```text
 Describe the video in one concise sentence.
 ```
 
 ## 额外参数
 
-| 参数 | 类型 | 默认值 | 说明 |
+| 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `dataset_hub` | `str` | `modelscope` | 用于加载 MSVD 标注的数据集平台。可选值：['huggingface', 'modelscope', 'local'] |
-| `eval_split` | `str` | `` | 要加载的源数据划分；默认使用 test。 |
-| `dataset_revision` | `str` | `` | 可选的数据集版本；留空时使用平台默认版本。 |
-| `video_dir` | `str` | `` | 可选的本地目录，包含 MSVD 视频文件。 |
-| `video_extension` | `str` | `` | 可选的本地视频扩展名覆盖值，例如 "mp4"。 |
+| `dataset_hub` | `str` | `modelscope` | 用于加载 MSVD 标注的数据集平台。选项：['huggingface', 'modelscope', 'local'] |
+| `eval_split` | `str` | `` | 要加载的数据划分；默认为 test。 |
+| `dataset_revision` | `str` | `` | 可选的数据集版本；留空则使用平台默认版本。 |
+| `video_dir` | `str` | `` | 包含 MSVD 视频文件的本地目录（可选）。 |
+| `video_extension` | `str` | `` | 本地视频文件的扩展名覆盖（可选），例如 "mp4"。 |
 
 ## 使用方法
 
@@ -134,7 +115,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets msvd \
-    --limit 10  # 正式评测时移除此行
+    --limit 10  # 正式评估时请删除此行
 ```
 
 ### 使用 Python
@@ -153,7 +134,7 @@ task_cfg = TaskConfig(
             # extra_params: {}  # 使用默认额外参数
         }
     },
-    limit=10,  # 正式评测时移除此行
+    limit=10,  # 正式评估时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

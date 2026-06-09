@@ -61,7 +61,7 @@ with multiple reference captions.
 {
   "input": [
     {
-      "id": "40a7606c",
+      "id": "36044e4b",
       "content": [
         {
           "text": "Describe the video in one concise sentence."
@@ -89,12 +89,7 @@ with multiple reference captions.
     "start": 116.03,
     "end": 126.21,
     "fps": null,
-    "media_resolved": true,
-    "id": 6513,
     "video_id": "video6513",
-    "image_id": null,
-    "question_id": null,
-    "source": null,
     "category": 14
   }
 }
