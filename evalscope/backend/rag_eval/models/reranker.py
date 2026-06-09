@@ -201,10 +201,7 @@ class APIReranker(BaseReranker):
     def _truncate_text(self, text: str) -> str:
         """Truncate text that exceeds max_seq_length (estimated by character count)."""
         if self.max_seq_length > 0 and len(text) > self._max_chars:
-            logger.warning(
-                f'Text length ({len(text)} chars) exceeds estimated max ({self._max_chars} chars '
-                f'for max_seq_length={self.max_seq_length}), truncating.'
-            )
+            self._truncated_count += 1
             return text[:self._max_chars]
         return text
 
@@ -250,6 +247,7 @@ class APIReranker(BaseReranker):
         scores: List[float] = [0.0] * len(sentences)
         grouped_sentences: Dict[str, List] = {}
         prompt = self.prompt
+        self._truncated_count = 0
 
         # Group by query
         for idx, sentence in enumerate(sentences):
@@ -264,6 +262,12 @@ class APIReranker(BaseReranker):
             query = self._truncate_text(prompt + query)
             document = self._truncate_text(document)
             grouped_sentences.setdefault(query, []).append((idx, document))
+
+        if self._truncated_count:
+            logger.warning(
+                f'Truncated {self._truncated_count} texts to {self._max_chars} chars '
+                f'(max_seq_length={self.max_seq_length}).'
+            )
 
         # Process each query group in batches
         max_retries = 3

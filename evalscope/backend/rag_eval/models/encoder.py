@@ -221,14 +221,17 @@ class APIEncoder(BaseEncoder):
         if self.max_seq_length <= 0:
             return texts
         truncated = []
+        truncated_count = 0
         for text in texts:
             if len(text) > self._max_chars:
-                logger.warning(
-                    f'Text length ({len(text)} chars) exceeds estimated max ({self._max_chars} chars '
-                    f'for max_seq_length={self.max_seq_length}), truncating.'
-                )
+                truncated_count += 1
                 text = text[:self._max_chars]
             truncated.append(text)
+        if truncated_count:
+            logger.warning(
+                f'Truncated {truncated_count}/{len(texts)} texts to {self._max_chars} chars '
+                f'(max_seq_length={self.max_seq_length}).'
+            )
         return truncated
 
     def encode(self, inputs, **kwargs: Any) -> Array:
