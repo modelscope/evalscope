@@ -170,7 +170,7 @@ class SweBenchBackticksStrategy(AgentStrategy):
                 continue
             if stripped.startswith('Tool call error'):
                 continue
-            return content.strip()
+            return content
         return ''
 
 

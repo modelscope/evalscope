@@ -44,7 +44,7 @@ async def run_bash(call: ToolCall, env: Optional[AgentEnvironment]) -> str:
 def _format_exec_result(result: ExecResult) -> str:
     parts = []
     if result.stdout:
-        parts.append(result.stdout.rstrip())
+        parts.append(result.stdout)
     if result.stderr:
         parts.append(f'[stderr]\n{result.stderr.rstrip()}')
     if result.timed_out:
