@@ -530,4 +530,9 @@ class DefaultEvaluator(Evaluator):
         return report
 
     def finalize(self, *args, **kwargs):
-        self.benchmark.finalize(*args, **kwargs)
+        try:
+            self.benchmark.finalize(*args, **kwargs)
+        finally:
+            # Close persistent jsonl writers so file handles are released
+            # (matters on Windows where open handles hold the file lock).
+            self.cache_manager.close()

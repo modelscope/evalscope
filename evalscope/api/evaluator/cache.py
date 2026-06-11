@@ -1,4 +1,5 @@
 import copy
+import jsonlines as jsonl
 import os
 from pydantic import BaseModel, Field, model_validator
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -8,8 +9,7 @@ from evalscope.api.dataset import Dataset
 from evalscope.api.messages import ChatMessage, messages_pretty_str, messages_to_markdown
 from evalscope.api.metric import SampleScore
 from evalscope.api.model import ModelOutput
-from evalscope.constants import DumpMode
-from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
+from evalscope.utils.io_utils import OutputsStructure, jsonl_to_list
 from evalscope.utils.logger import get_logger
 from .state import TaskState
 
@@ -37,6 +37,52 @@ class CacheManager:
         self.outputs = outputs
         self.model_name = model_name
         self.benchmark_name = benchmark_name
+        self._writers: Dict[str, jsonl.Writer] = {}
+
+    def _get_writer(self, cache_file: str) -> jsonl.Writer:
+        """Return a persistent jsonl.Writer for *cache_file*, opening on first use.
+
+        Keeping a single writer open per file avoids the rapid open/close
+        cycle that triggers ``PermissionError`` on Windows due to file-lock
+        release latency.
+        """
+        cache_file = os.path.expanduser(cache_file)
+        if cache_file not in self._writers:
+            parent = os.path.dirname(cache_file)
+            if parent:
+                os.makedirs(parent, exist_ok=True)
+            self._writers[cache_file] = jsonl.open(cache_file, mode='a')
+        return self._writers[cache_file]
+
+    @staticmethod
+    def _flush_writer(writer: jsonl.Writer) -> None:
+        """Force *writer*'s buffered record to the underlying file, then
+        fsync.  ``jsonlines.Writer`` has no public ``flush`` API, so we fall
+        back to its private ``_flush`` followed by ``_fp.flush``/``fsync``
+        on the wrapped file object.
+        """
+        try:
+            writer._flush()  # type: ignore[attr-defined] - jsonlines private API
+        except Exception:  # noqa: BLE01 - older jsonlines without _flush
+            pass
+        fp = getattr(writer, '_fp', None)
+        if fp is None:
+            return
+        try:
+            fp.flush()
+            os.fsync(fp.fileno())
+        except (OSError, ValueError):
+            # fsync can fail on special files / closed handles; ignore
+            pass
+
+    def close(self) -> None:
+        """Flush and close all open jsonl writers. Idempotent."""
+        for writer in self._writers.values():
+            try:
+                writer.close()
+            except Exception:  # noqa: BLE01 - defensive, never propagate from cleanup
+                logger.debug('Failed to close a jsonl writer cleanly.', exc_info=True)
+        self._writers.clear()
 
     def filter_prediction_cache(self, subset: str, dataset: Dataset) -> Tuple[List[TaskState], Dataset]:
         """
@@ -115,8 +161,11 @@ class CacheManager:
         model_result = ModelResult.from_task_state(task_state, save_metadata)
         # Serialize to dictionary
         model_result_dict = model_result.model_dump()
-        # Append to JSONL cache file
-        dump_jsonl_data(data_list=model_result_dict, jsonl_file=cache_file, dump_mode=DumpMode.APPEND)
+        # Append to JSONL cache file via persistent writer (flush after every write
+        # so crashes don't lose data).
+        writer = self._get_writer(cache_file)
+        writer.write(model_result_dict)
+        self._flush_writer(writer)
         return model_result
 
     def filter_review_cache(self, subset: str,
@@ -201,8 +250,11 @@ class CacheManager:
         review_result = ReviewResult.from_score_state(sample_score, task_state, save_metadata)
         # Serialize to dictionary
         review_result_dict = review_result.model_dump()
-        # Append to JSONL cache file
-        dump_jsonl_data(data_list=review_result_dict, jsonl_file=cache_file, dump_mode=DumpMode.APPEND)
+        # Append to JSONL cache file via persistent writer (flush after every write
+        # so crashes don't lose data).
+        writer = self._get_writer(cache_file)
+        writer.write(review_result_dict)
+        self._flush_writer(writer)
         return review_result
 
     def get_report_path(self) -> str:
