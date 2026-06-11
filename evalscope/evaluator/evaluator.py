@@ -156,46 +156,47 @@ class DefaultEvaluator(Evaluator):
         Returns:
             Report: The complete evaluation report.
         """
-        logger.info(f'Start loading benchmark dataset: {self.benchmark_name}')
-        dataset_dict = {k: v for k, v in self.benchmark.load_dataset().items() if len(v) > 0}
+        try:
+            logger.info(f'Start loading benchmark dataset: {self.benchmark_name}')
+            dataset_dict = {k: v for k, v in self.benchmark.load_dataset().items() if len(v) > 0}
 
-        if not dataset_dict:
-            logger.warning(f'No samples found in any subset of {self.benchmark_name}. Skipping.')
-            self.finalize()
-            return {}
+            if not dataset_dict:
+                logger.warning(f'No samples found in any subset of {self.benchmark_name}. Skipping.')
+                return {}
 
-        subset_list = list(dataset_dict.keys())
-        logger.info(f'Start evaluating {len(dataset_dict)} subsets of {self.benchmark_name}: {subset_list}')
+            subset_list = list(dataset_dict.keys())
+            logger.info(f'Start evaluating {len(dataset_dict)} subsets of {self.benchmark_name}: {subset_list}')
 
-        # Phase 1 – build unified work pool from all subsets
-        context = self._collect_work_items(dataset_dict)
-        logger.info(
-            f'Unified pool: {len(context.work_items)} items to process, '
-            f'{context.total_cached} already fully cached '
-            f'({context.grand_total} total across all subsets).'
-        )
-
-        # Phase 2 – execute unified thread pool (single progress bar)
-        results_by_subset = self._run_pool(context)
-        logger.info(f'Unified pool finished for {self.benchmark_name}.')
-
-        # Phase 3 – aggregate scores per subset (batch review happens here too)
-        agg_score_dict = self._aggregate_scores(dataset_dict, context, results_by_subset)
-
-        # Phase 4 – generate report
-        if not agg_score_dict:
-            logger.warning(
-                f'No valid scores generated for {self.benchmark_name} '
-                '(all samples filtered or empty subsets). Skipping report generation.'
+            # Phase 1 – build unified work pool from all subsets
+            context = self._collect_work_items(dataset_dict)
+            logger.info(
+                f'Unified pool: {len(context.work_items)} items to process, '
+                f'{context.total_cached} already fully cached '
+                f'({context.grand_total} total across all subsets).'
             )
-            report = {}
-        else:
-            logger.info('Generating report...')
-            report = self.get_report(agg_score_dict)
 
-        self.finalize()
-        logger.info(f'Benchmark {self.benchmark_name} evaluation finished.')
-        return report
+            # Phase 2 – execute unified thread pool (single progress bar)
+            results_by_subset = self._run_pool(context)
+            logger.info(f'Unified pool finished for {self.benchmark_name}.')
+
+            # Phase 3 – aggregate scores per subset (batch review happens here too)
+            agg_score_dict = self._aggregate_scores(dataset_dict, context, results_by_subset)
+
+            # Phase 4 – generate report
+            if not agg_score_dict:
+                logger.warning(
+                    f'No valid scores generated for {self.benchmark_name} '
+                    '(all samples filtered or empty subsets). Skipping report generation.'
+                )
+                report = {}
+            else:
+                logger.info('Generating report...')
+                report = self.get_report(agg_score_dict)
+
+            logger.info(f'Benchmark {self.benchmark_name} evaluation finished.')
+            return report
+        finally:
+            self.finalize()
 
     # ------------------------------------------------------------------ #
     # Phase helpers                                                        #
@@ -530,9 +531,5 @@ class DefaultEvaluator(Evaluator):
         return report
 
     def finalize(self, *args, **kwargs):
-        try:
-            self.benchmark.finalize(*args, **kwargs)
-        finally:
-            # Close persistent jsonl writers so file handles are released
-            # (matters on Windows where open handles hold the file lock).
-            self.cache_manager.close()
+        self.benchmark.finalize(*args, **kwargs)
+        self.cache_manager.close()

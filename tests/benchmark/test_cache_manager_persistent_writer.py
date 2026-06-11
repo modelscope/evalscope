@@ -1,23 +1,25 @@
-"""High-frequency concurrent-write tests for the persistent jsonl writer in CacheManager.
+"""High-frequency concurrent-write tests for :class:`JsonlWriter`.
 
-These tests simulate the real evaluator loop: a :class:`ThreadPoolExecutor` runs
-many worker tasks concurrently, and the **main thread** immediately persists
-each result as its future completes. On Windows, the old
-``dump_jsonl_data`` (open-write-close per record) path triggered ``PermissionError``
-due to NTFS file-lock release latency under rapid open/close cycles. The new
-persistent-writer path keeps a single handle open and flushes after every write,
-which should be immune to that failure mode.
+These tests verify that the persistent-writer path used by
+:class:`CacheManager` survives the scenario that produced ``PermissionError``
+on Windows under the old open-write-close-per-record approach:
+
+- :class:`ThreadPoolExecutor` runs many worker tasks concurrently.
+- The **main thread** persists each result as its future completes.
+- Rapid open/close cycles on the same file trigger NTFS file-lock
+  release latency.
+
+The persistent-writer approach keeps a single handle open and flushes
+after every write, which is immune to that failure mode.
 """
 import json
 import os
-import pytest
-import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from unittest.mock import patch
 
 from evalscope.api.evaluator.cache import CacheManager
-from evalscope.utils.io_utils import OutputsStructure
+from evalscope.utils.io_utils import JsonlWriter, OutputsStructure
 
 
 def _make_outputs(tmp_dir: str) -> OutputsStructure:
@@ -32,8 +34,57 @@ def _make_cm(tmp_dir: str) -> CacheManager:
     )
 
 
-class TestPersistentWriterBasics:
-    """Low-level behavior of _get_writer / close / flush."""
+class TestJsonlWriterBasics:
+    """Low-level behavior of :class:`JsonlWriter`."""
+
+    def test_write_creates_file(self, tmp_path):
+        path = os.path.join(str(tmp_path), 'out.jsonl')
+        writer = JsonlWriter(path)
+        writer.write({'a': 1})
+        writer.close()
+
+        with open(path, 'r', encoding='utf-8') as f:
+            lines = [json.loads(line) for line in f if line.strip()]
+        assert lines == [{'a': 1}]
+
+    def test_write_creates_parent_dirs(self, tmp_path):
+        path = os.path.join(str(tmp_path), 'a', 'b', 'c', 'out.jsonl')
+        writer = JsonlWriter(path)
+        writer.write({'k': 'v'})
+        assert os.path.isdir(os.path.dirname(path))
+        writer.close()
+
+    def test_close_is_idempotent(self, tmp_path):
+        path = os.path.join(str(tmp_path), 'out.jsonl')
+        writer = JsonlWriter(path)
+        writer.write({'a': 1})
+        writer.close()
+        writer.close()  # must not raise
+
+    def test_flush_writes_to_disk_immediately(self, tmp_path):
+        """After ``write()``, the record must be readable while the writer is still open."""
+        path = os.path.join(str(tmp_path), 'out.jsonl')
+        writer = JsonlWriter(path)
+        writer.write({'k': 'v'})
+
+        with open(path, 'r', encoding='utf-8') as f:
+            lines = [json.loads(line) for line in f if line.strip()]
+        assert lines == [{'k': 'v'}]
+        writer.close()
+
+    def test_unicode_content(self, tmp_path):
+        path = os.path.join(str(tmp_path), 'out.jsonl')
+        writer = JsonlWriter(path)
+        writer.write({'text': '你好世界'})
+        writer.close()
+
+        with open(path, 'r', encoding='utf-8') as f:
+            lines = [json.loads(line) for line in f if line.strip()]
+        assert lines == [{'text': '你好世界'}]
+
+
+class TestCacheManagerWriterReuse:
+    """Verify CacheManager opens each file exactly once and reuses the handle."""
 
     def test_get_writer_reuses_same_handle(self, tmp_path):
         cm = _make_cm(str(tmp_path))
@@ -45,41 +96,29 @@ class TestPersistentWriterBasics:
         assert len(cm._writers) == 1
         cm.close()
 
-    def test_get_writer_creates_parent_dirs(self, tmp_path):
-        cm = _make_cm(str(tmp_path))
-        deep = os.path.join(str(tmp_path), 'a', 'b', 'c', 'out.jsonl')
-        cm._get_writer(deep)
-        assert os.path.isdir(os.path.dirname(deep))
-        cm.close()
-
-    def test_close_is_idempotent(self, tmp_path):
+    def test_one_writer_per_file(self, tmp_path):
+        """100 writes to the same file must open the file exactly once."""
         cm = _make_cm(str(tmp_path))
         cache_file = os.path.join(str(tmp_path), 'predictions', 'mock-model', 'x.jsonl')
-        cm._get_writer(cache_file).write({'a': 1})
-        cm.close()
-        cm.close()  # must not raise
-        assert cm._writers == {}
 
-    def test_flush_writes_to_disk_immediately(self, tmp_path):
-        cm = _make_cm(str(tmp_path))
-        cache_file = os.path.join(str(tmp_path), 'predictions', 'mock-model', 'x.jsonl')
-        writer = cm._get_writer(cache_file)
-        writer.write({'k': 'v'})
-        CacheManager._flush_writer(writer)
+        open_count = {'n': 0}
+        real_open = open
 
-        # File must be readable while writer is still open.
-        with open(cache_file, 'r', encoding='utf-8') as f:
-            lines = [json.loads(line) for line in f if line.strip()]
-        assert lines == [{'k': 'v'}]
-        cm.close()
+        def counting_open(*args, **kwargs):
+            open_count['n'] += 1
+            return real_open(*args, **kwargs)
+
+        with patch('evalscope.utils.io_utils.open', side_effect=counting_open):
+            for i in range(100):
+                cm._get_writer(cache_file).write({'i': i})
+            cm.close()
+
+        assert open_count['n'] == 1, f'expected exactly 1 open, got {open_count["n"]}'
 
 
 class TestHighFrequencyConcurrentWrites:
     """Simulate the evaluator loop: N worker threads finish at near-simultaneous
     times; the main thread persists each result as its future completes.
-
-    This is the scenario that produced the ``PermissionError`` on Windows under
-    the old open-write-close-per-record path.
     """
 
     NUM_SUBSETS = 3
@@ -91,7 +130,6 @@ class TestHighFrequencyConcurrentWrites:
         work = [(subset, i) for subset in range(self.NUM_SUBSETS) for i in range(self.RECORDS_PER_SUBSET)]
 
         def worker(subset_idx, record_idx):
-            # Spread completions over a tight window to maximize contention.
             time.sleep((record_idx % self.WORKER_THREADS) * 0.001)
             return subset_idx, record_idx, {'s': subset_idx, 'i': record_idx, 't': time.time()}
 
@@ -105,9 +143,7 @@ class TestHighFrequencyConcurrentWrites:
                     cm.model_name,
                     f'subset_{subset_idx}.jsonl',
                 )
-                writer = cm._get_writer(cache_file)
-                writer.write(payload)
-                CacheManager._flush_writer(writer)
+                cm._get_writer(cache_file).write(payload)
 
     def test_all_records_persisted(self, tmp_path):
         cm = _make_cm(str(tmp_path))
@@ -127,48 +163,17 @@ class TestHighFrequencyConcurrentWrites:
     def test_one_writer_per_file_regardless_of_write_count(self, tmp_path):
         cm = _make_cm(str(tmp_path))
         self._run_pool(cm)
-        # Exactly one writer per subset file, not per record.
         assert len(cm._writers) == self.NUM_SUBSETS
         cm.close()
 
     def test_no_permission_error_under_burst(self, tmp_path):
-        """Force a worst-case burst: all futures complete at once, main thread
-        persists them back-to-back without any delay. A PermissionError here
-        would indicate the writer is still doing open/close cycles somewhere.
-        """
+        """Rapid burst of 500 writes to a single file must not raise."""
         cm = _make_cm(str(tmp_path))
         cache_file = os.path.join(str(tmp_path), 'predictions', 'mock-model', 'burst.jsonl')
 
-        # Rapid burst of 500 writes to a single file.
         for i in range(500):
-            writer = cm._get_writer(cache_file)
-            writer.write({'i': i})
-            CacheManager._flush_writer(writer)
+            cm._get_writer(cache_file).write({'i': i})
         cm.close()
 
         with open(cache_file, 'r', encoding='utf-8') as f:
             assert sum(1 for _ in f) == 500
-
-    def test_old_path_would_open_many_times(self, tmp_path):
-        """Document the gap between the old approach (open/close per record) and
-        the new one. The old path called jsonlines.open once per record; the new
-        path calls it exactly once per distinct file.
-        """
-        cm = _make_cm(str(tmp_path))
-
-        open_count = {'n': 0}
-        real_open = __import__('jsonlines').open
-
-        def counting_open(*args, **kwargs):
-            open_count['n'] += 1
-            return real_open(*args, **kwargs)
-
-        with patch('evalscope.api.evaluator.cache.jsonl.open', side_effect=counting_open):
-            for i in range(100):
-                cache_file = os.path.join(str(tmp_path), 'predictions', 'mock-model', 'x.jsonl')
-                writer = cm._get_writer(cache_file)
-                writer.write({'i': i})
-                CacheManager._flush_writer(writer)
-            cm.close()
-
-        assert open_count['n'] == 1, (f'persistent writer must open the file exactly once, got {open_count["n"]}')
