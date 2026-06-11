@@ -13,7 +13,7 @@ import yaml
 from datetime import datetime
 from io import BytesIO
 from PIL import Image
-from typing import Any, Dict, IO, List, Optional, Tuple, Union
+from typing import IO, Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.constants import BEIJING_TZ, USE_OSS, DumpMode
 from evalscope.utils.logger import get_logger
