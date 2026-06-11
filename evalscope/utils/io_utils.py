@@ -13,7 +13,7 @@ import yaml
 from datetime import datetime
 from io import BytesIO
 from PIL import Image
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import IO, Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.constants import BEIJING_TZ, USE_OSS, DumpMode
 from evalscope.utils.logger import get_logger
@@ -188,6 +188,53 @@ def jsonl_to_reader(jsonl_file: str) -> jsonl.Reader:
         jsonlines.Reader: An open reader for the file.
     """
     return jsonl.open(jsonl_file, mode='r')
+
+
+class JsonlWriter:
+    """Persistent writer that appends JSON records to a file.
+
+    Keeps the underlying file handle open between writes so that rapid
+    successive appends do not trigger the NTFS file-lock release latency
+    that causes ``PermissionError`` on Windows.
+
+    Each :meth:`write` serializes the record with :func:`json.dumps`,
+    appends a newline, and flushes the Python buffer so data reaches the
+    OS page cache immediately — readable by other processes and
+    recoverable after a Python-level crash.
+
+    Example::
+
+        writer = JsonlWriter('/tmp/out.jsonl')
+        writer.write({'key': 'value'})
+        writer.close()
+    """
+
+    def __init__(self, path: str) -> None:
+        self._path = path
+        self._file: Optional[IO[str]] = None
+
+    def _ensure_open(self) -> IO[str]:
+        if self._file is None:
+            parent = os.path.dirname(self._path)
+            if parent:
+                os.makedirs(parent, exist_ok=True)
+            self._file = open(self._path, mode='a', encoding='utf-8')
+        return self._file
+
+    def write(self, record: Any) -> None:
+        """Append a single JSON-serializable record and flush."""
+        f = self._ensure_open()
+        f.write(json.dumps(record, ensure_ascii=False) + '\n')
+        f.flush()
+
+    def close(self) -> None:
+        """Close the underlying file handle. Idempotent."""
+        if self._file is not None:
+            try:
+                self._file.close()
+            except Exception:  # noqa: BLE01 - never propagate from cleanup
+                pass
+            self._file = None
 
 
 def dump_jsonl_data(
