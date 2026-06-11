@@ -11,7 +11,7 @@ Please refer to the [documentation](../../get_started/supported_dataset/aigc.md)
 The EvalScope framework supports a variety of evaluation metrics, allowing users to select suitable metrics based on their requirements. Below is the list of supported evaluation metrics:
 
 
-| Evaluation Metric | Project Link       | Scoring Range (Higher is Better) | Remarks                  |
+| Evaluation Metric | Project Link       | Scoring Range | Remarks                  |
 |-------------------|--------------------|----------------------------------|--------------------------|
 | `VQAScore`        | [Github](https://github.com/linzhiqiu/t2v_metrics) | [0, 1] (Typically)      | Evaluates text-image consistency using Q&A |
 | `CLIPScore`       | [Github](https://github.com/linzhiqiu/t2v_metrics) | [0, 0.3] (Typically) | Uses CLIP to assess image-text matching |
@@ -21,6 +21,9 @@ The EvalScope framework supports a variety of evaluation metrics, allowing users
 | `ImageReward`     | [Github](https://github.com/THUDM/ImageReward) | [-3, 1] (Typically)      | A reward model trained through human feedback, reflecting human preference for images |
 | `MPS`             | [Github](https://github.com/Kwai-Kolors/MPS) | [0, 15] (Typically)      | Kuaishou: A multi-dimensional preference scoring method that comprehensively considers multiple attributes (e.g., realism, semantic alignment) of generated images to assess their quality |
 | `FGA_BLIP2Score`  | [Github](https://github.com/DYEvaLab/EvalMuse) | Overall [0, 5] (Typically, each dimension is [0, 1]) | ByteDance: Used for evaluating the quality and semantic alignment of finely generated images |
+| `ssim`            | Built-in | [-1, 1] (Higher is better) | Full-reference structural similarity. Requires a reference image |
+| `psnr`            | Built-in | [0, +∞) (Higher is better) | Full-reference peak signal-to-noise ratio. Requires a reference image |
+| `lpips`           | [Github](https://github.com/richzhang/PerceptualSimilarity) | [0, +∞) (Lower is better) | Learned perceptual similarity. Requires a reference image and `evalscope[aigc]` |
 
 
 ## Install Dependencies
@@ -143,6 +146,12 @@ Provide a JSONL file in the following format:
 - `id`: Unique identifier for the evaluation data.
 - `prompt`: Prompt text for generating the image.
 - `image_path`: Path to the generated image.
+
+Full-reference image metrics such as `ssim`, `psnr`, and `lpips` compare `image_path` with a reference image.
+Set one of `reference_image_path`, `target_image_path`, `ref_image_path`, `gt_image_path`, or their non-`_path`
+image variants in each JSONL record.
+Images are converted to RGB and normalized to [0, 1], so the default `data_range=1.0` should be kept unless you
+intentionally override the normalized range.
 
 #### Configure Evaluation Task
 
