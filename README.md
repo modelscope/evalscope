@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/modelscope-evalscope-badge.png)](https://mseep.ai/app/modelscope-evalscope)
+
 <p align="center">
     <br>
     <img src="docs/en/_static/images/evalscope_logo.png"/>
