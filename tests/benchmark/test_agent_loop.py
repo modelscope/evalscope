@@ -89,6 +89,13 @@ requires_swe_bench_pro_repo = unittest.skipUnless(
     f'(see swe_bench_pro_repo_path docs).',
 )
 
+_MS_AGENT_IMAGE = 'evalscope/ms-agent:dev'
+requires_ms_agent_e2e = unittest.skipUnless(
+    bool(_API_KEY) and _docker_image_present(_MS_AGENT_IMAGE),
+    f'Requires DASHSCOPE_API_KEY in .env and docker image {_MS_AGENT_IMAGE!r} '
+    f'(build via: docker build -t {_MS_AGENT_IMAGE} -f docker/Dockerfile.ms-agent docker/).',
+)
+
 
 def _base_cfg(**overrides) -> dict:
     """Common TaskConfig kwargs shared by all tests."""
@@ -666,3 +673,136 @@ class TestSWEBenchProExternalCodex(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+# 11. GSM8K + external agent (ms-agent) inside the pre-baked docker image
+# ---------------------------------------------------------------------------
+
+
+@requires_ms_agent_e2e
+class TestGSM8KExternalMSAgent(unittest.TestCase):
+    """End-to-end: gsm8k → external ms-agent CLI inside the pre-baked
+    ``evalscope/ms-agent:dev`` container → bridge → DashScope qwen-plus.
+
+    Validates the full external-agent loop for a generic single-turn
+    benchmark (no per-instance sandbox image needed; the runner image is
+    the playground). Skipped unless the image is built AND DASHSCOPE_API_KEY
+    is in ``.env``.
+    """
+
+    def test_gsm8k_through_external_ms_agent(self):
+        cfg = TaskConfig(
+            **_base_cfg(
+                datasets=['gsm8k'],
+                dataset_args={'gsm8k': {'few_shot_num': 0}},
+                agent_config={
+                    'mode': 'external',
+                    'framework': 'ms-agent',
+                    'environment': 'enclave',
+                    'environment_extra': {
+                        'sandbox_config': {
+                            'image': _MS_AGENT_IMAGE,
+                            'working_dir': '/workspace',
+                        },
+                        'timeout': 180.0,
+                    },
+                    'kwargs': {
+                        'auto_install': False,
+                        'max_chat_round': 3,
+                    },
+                    'timeout': 120.0,
+                },
+                eval_batch_size=5,
+                limit=5,
+                generation_config={
+                    'max_tokens': 2048,
+                    'temperature': 0.0,
+                },
+            )
+        )
+        result = run_task(cfg)
+        self.assertIn('gsm8k', result)
+
+        # Trace must reflect the external-agent path (framework='ms-agent',
+        # environment='enclave') — proves the external dispatch fired and the
+        # docker env flowed through.
+        reviews = _read_review_results('gsm8k', work_dir=cfg.work_dir)
+        self.assertGreater(len(reviews), 0)
+        for r in reviews:
+            trace_dict = r.get('agent_trace')
+            self.assertIsNotNone(trace_dict, 'external-agent path must populate agent_trace')
+            trace = AgentTrace.model_validate(trace_dict)
+            self.assertEqual(trace.framework, 'ms-agent')
+            self.assertEqual(trace.environment, 'enclave')
+            types = [e.type for e in trace.events]
+            self.assertIn(EventType.RUN_START, types)
+            self.assertIn(EventType.MODEL_GENERATE, types)
+            self.assertIn(EventType.RUN_END, types)
+
+
+# ---------------------------------------------------------------------------
+# 12. GAIA + external agent (ms-agent) inside the pre-baked docker image
+# ---------------------------------------------------------------------------
+
+
+@requires_ms_agent_e2e
+class TestGAIAExternalMSAgent(unittest.TestCase):
+    """End-to-end: gaia → external ms-agent CLI inside the pre-baked
+    ``evalscope/ms-agent:dev`` container → bridge → DashScope qwen-plus.
+
+    Validates the full external-agent loop for an agent benchmark (GAIA
+    adapter builds its own per-sample environment via build_environment).
+    Skipped unless the image is built AND DASHSCOPE_API_KEY is in ``.env``.
+    """
+
+    def test_gaia_through_external_ms_agent(self):
+        cfg = TaskConfig(
+            **_base_cfg(
+                datasets=['gaia'],
+                dataset_args={
+                    'gaia': {
+                        'subset_list': ['2023_level1'],
+                        'extra_params': {
+                            'max_steps': 10,
+                            'command_timeout': 120.0,
+                            'docker_image': _MS_AGENT_IMAGE,
+                            'network_enabled': True,
+                        },
+                    },
+                },
+                agent_config={
+                    'mode': 'external',
+                    'framework': 'ms-agent',
+                    'kwargs': {
+                        'auto_install': False,
+                        'max_chat_round': 10,
+                    },
+                    'timeout': 600.0,
+                },
+                eval_batch_size=5,
+                limit=5,
+                generation_config={
+                    'max_tokens': 2048,
+                    'temperature': 0.0,
+                },
+            )
+        )
+        result = run_task(cfg)
+        self.assertIn('gaia', result)
+
+        # Trace must reflect the external-agent path (framework='ms-agent',
+        # environment='enclave') — proves the external dispatch fired and the
+        # GAIA adapter's build_environment flowed through.
+        reviews = _read_review_results('gaia', work_dir=cfg.work_dir)
+        self.assertGreater(len(reviews), 0)
+        for r in reviews:
+            trace_dict = r.get('agent_trace')
+            self.assertIsNotNone(trace_dict, 'external-agent path must populate agent_trace')
+            trace = AgentTrace.model_validate(trace_dict)
+            self.assertEqual(trace.framework, 'ms-agent')
+            self.assertEqual(trace.environment, 'enclave')
+            types = [e.type for e in trace.events]
+            self.assertIn(EventType.RUN_START, types)
+            self.assertIn(EventType.MODEL_GENERATE, types)
+            self.assertIn(EventType.RUN_END, types)

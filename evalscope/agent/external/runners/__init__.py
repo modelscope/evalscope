@@ -10,6 +10,7 @@ from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask
 from .claude_code import ClaudeCodeRunner  # noqa: F401  (side-effect: registers 'claude-code')
 from .codex import CodexRunner  # noqa: F401  (side-effect: registers 'codex')
 from .mock import MockAgentRunner  # noqa: F401  (side-effect: registers 'mock')
+from .ms_agent import MSAgentRunner  # noqa: F401  (side-effect: registers 'ms-agent')
 
 __all__ = [
     'AgentRunResult',
@@ -18,6 +19,7 @@ __all__ = [
     'ClaudeCodeRunner',
     'CodexRunner',
     'ExternalAgentTask',
+    'MSAgentRunner',
     'MockAgentRunner',
     'RunnerTimeoutError',
     'get_runner',

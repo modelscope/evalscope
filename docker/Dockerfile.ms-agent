@@ -1,0 +1,31 @@
+FROM python:3.11-slim
+
+RUN pip install --no-cache-dir \
+        --timeout 300 \
+        --retries 3 \
+        -i https://pypi.tuna.tsinghua.edu.cn/simple/ \
+        --trusted-host pypi.tuna.tsinghua.edu.cn \
+        aiohttp python-dotenv edge-tts faiss-cpu ipykernel json5 loguru \
+        jupyter-client markdown matplotlib mcp modelscope moviepy numpy \
+        omegaconf openai pandas pillow pyyaml requests scipy seaborn \
+        typing_extensions
+
+# Stub modules imported at module level by ms-agent==1.6.0 but unused in
+# GAIA eval path. These stubs break if ms-agent calls beyond class
+# instantiation — re-validate when upgrading ms-agent.
+# (sirchmunk pulls in sentence-transformers→torch→CUDA; llama-index-core is heavy)
+RUN SITE=$(python3 -c 'import site; print(site.getsitepackages()[0])') && \
+    mkdir -p "$SITE/sirchmunk" && \
+    printf 'class AgenticSearch:\n    pass\n' > "$SITE/sirchmunk/__init__.py" && \
+    mkdir -p "$SITE/llama_index/core" "$SITE/llama_index/embeddings/huggingface" && \
+    touch "$SITE/llama_index/__init__.py" "$SITE/llama_index/embeddings/__init__.py" && \
+    printf 'class Settings:\n    pass\nclass StorageContext:\n    pass\n' > "$SITE/llama_index/core/__init__.py" && \
+    printf 'class HuggingFaceEmbedding:\n    pass\n' > "$SITE/llama_index/embeddings/huggingface/__init__.py"
+
+RUN pip install --no-cache-dir \
+        --timeout 300 \
+        --retries 3 \
+        -i https://pypi.tuna.tsinghua.edu.cn/simple/ \
+        --trusted-host pypi.tuna.tsinghua.edu.cn \
+        --no-deps ms-agent==1.6.0 && \
+    python -c "import ms_agent; print('ms_agent imported OK'); from ms_agent import LLMAgent; print('LLMAgent OK')"

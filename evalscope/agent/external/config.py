@@ -30,6 +30,9 @@ class ExternalAgentFramework:
     CODEX = 'codex'
     """OpenAI's official ``codex exec`` CLI (uses the Responses API)."""
 
+    MS_AGENT = 'ms-agent'
+    """ModelScope's ``ms-agent`` LLMAgent framework."""
+
 
 class BridgeConfig(BaseModel):
     """Knobs for the reverse-proxy bridge that sits between an external
