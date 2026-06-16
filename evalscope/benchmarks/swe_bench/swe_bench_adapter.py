@@ -90,7 +90,7 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
         self.pull_remote_images_if_available: bool = self.extra_params.get('pull_remote_images_if_available', True)
         self.inference_dataset_id: str = self.extra_params.get('inference_dataset_id', 'princeton-nlp/SWE-bench_oracle')
         self.force_arch: str = self.extra_params.get('force_arch', '')
-        self.dockerhub_username: str = self.extra_params.get('dockerhub_username', 'swebench')
+        self.dockerhub_username: str = self.extra_params.get('dockerhub_username') or 'swebench'
 
         # Skip docker image build/pull during documentation generation (BUILD_DOC=1)
         # to avoid slow/unnecessary image pulls when running `make docs-pipeline`.

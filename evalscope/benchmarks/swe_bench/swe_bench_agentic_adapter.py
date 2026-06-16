@@ -233,7 +233,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
         self.build_docker_images: bool = self.extra_params.get('build_docker_images', True)
         self.pull_remote_images_if_available: bool = self.extra_params.get('pull_remote_images_if_available', True)
         self.force_arch: str = self.extra_params.get('force_arch', '')
-        self.dockerhub_username: str = self.extra_params.get('dockerhub_username', 'swebench')
+        self.dockerhub_username: str = self.extra_params.get('dockerhub_username') or 'swebench'
 
         # Skip docker image build/pull during documentation generation (BUILD_DOC=1)
         # to avoid slow/unnecessary image pulls when running `make docs-pipeline`.

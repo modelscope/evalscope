@@ -21,7 +21,8 @@ def get_remote_docker_image_from_id(instance_id: str, dockerhub_username: str = 
         arch = 'arm64' if instance_id not in USE_X86 else 'x86_64'
     else:
         arch = 'x86_64'
-    return f'{dockerhub_username}/sweb.eval.{arch}.{updated_instance_id}:latest'
+    username = dockerhub_username or DEFAULT_DOCKERHUB_USERNAME
+    return f'{username}/sweb.eval.{arch}.{updated_instance_id}:latest'
 
 
 GIT_APPLY_CMDS = [
@@ -37,7 +38,7 @@ def eval_instance(
     timeout: int = 1800,
     log_dir: str = 'outputs',
     dockerhub_username: str = DEFAULT_DOCKERHUB_USERNAME,
-):
+) -> dict:
     from docker.client import DockerClient
     from swebench.harness.constants import (
         APPLY_PATCH_FAIL,
@@ -62,7 +63,7 @@ def eval_instance(
     eval_completed = False
     report = {}
     try:
-        test_spec: TestSpec = make_test_spec(instance, namespace=dockerhub_username)
+        test_spec: TestSpec = make_test_spec(instance, namespace=dockerhub_username or DEFAULT_DOCKERHUB_USERNAME)
         instance_id = test_spec.instance_id
         pred = {
             KEY_PREDICTION: pred,

@@ -52,7 +52,7 @@ def build_images(
     id_to_docker_image: Dict[str, str] = {}
 
     # Note that remote images are named eg "sphinx-doc_1776_sphinx-11502"
-    namespace = dockerhub_username if use_remote_images else None
+    namespace = (dockerhub_username or 'swebench') if use_remote_images else None
 
     for swebench_instance in samples_hf:
         test_spec = make_test_spec(swebench_instance, namespace=namespace)
