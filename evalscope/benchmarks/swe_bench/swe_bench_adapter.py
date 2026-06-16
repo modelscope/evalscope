@@ -158,7 +158,11 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
             from functools import partial
 
             from .utils import get_remote_docker_image_from_id
-            docker_image_from_id = partial(get_remote_docker_image_from_id, dockerhub_username=self.dockerhub_username)
+            docker_image_from_id = partial(
+                get_remote_docker_image_from_id,
+                dockerhub_username=self.dockerhub_username,
+                force_arch=self.force_arch,
+            )
 
         # update metadata with docker image
         for sample in samples:
@@ -189,6 +193,7 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
             timeout=1800,
             log_dir=self._task_config.work_dir,
             dockerhub_username=self.dockerhub_username,
+            force_arch=self.force_arch,
         )
 
         score.value = {'acc': float(result.get('resolved', 0.0))}

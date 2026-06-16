@@ -288,7 +288,11 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
                 return id_to_docker_image_map.get(instance_id, '')
         else:
             from functools import partial
-            docker_image_from_id = partial(get_remote_docker_image_from_id, dockerhub_username=self.dockerhub_username)
+            docker_image_from_id = partial(
+                get_remote_docker_image_from_id,
+                dockerhub_username=self.dockerhub_username,
+                force_arch=self.force_arch,
+            )
 
         for sample in samples:
             sample.metadata['docker_image'] = docker_image_from_id(sample.metadata['instance_id'])
@@ -424,6 +428,8 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
             pred=filtered_prediction,
             timeout=1800,
             log_dir=self._task_config.work_dir,
+            dockerhub_username=self.dockerhub_username,
+            force_arch=self.force_arch,
         )
 
         score.value = {'acc': float(result.get('resolved', 0.0))}
