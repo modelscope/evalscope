@@ -1,0 +1,20 @@
+[
+    {
+        "user_input": "What is the capital of France?",
+        "retrieved_contexts": ["Paris is the capital and most populous city of France."],
+        "response": "The capital of France is Paris.",
+        "reference": "Paris is the capital of France."
+    },
+    {
+        "user_input": "Who invented the telephone?",
+        "retrieved_contexts": ["Alexander Graham Bell is credited with inventing the first practical telephone in 1876."],
+        "response": "Alexander Graham Bell invented the telephone in 1876.",
+        "reference": "Alexander Graham Bell invented the telephone."
+    },
+    {
+        "user_input": "What is photosynthesis?",
+        "retrieved_contexts": ["Photosynthesis is the process by which green plants convert sunlight into chemical energy, producing oxygen and glucose from carbon dioxide and water."],
+        "response": "Photosynthesis is how plants convert sunlight into energy, producing oxygen and glucose.",
+        "reference": "Photosynthesis is the process plants use to convert light energy into chemical energy."
+    }
+]

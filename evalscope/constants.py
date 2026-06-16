@@ -75,6 +75,7 @@ class EvalType:
     CHECKPOINT = 'llm_ckpt'  # native model checkpoint
     SERVICE = 'openai_api'  # model service (deprecated)
     TEXT2IMAGE = 'text2image'  # image generation service
+    TEXT2SPEECH = 'text2speech'  # text-to-speech service
     IMAGE_EDITING = 'image_editing'  # image editing service
     OPENAI_API = 'openai_api'
     OPENAI_RESPONSES_API = 'openai_responses_api'
@@ -139,6 +140,7 @@ class Tags:
     RETRIEVAL = 'Retrieval'
     FUNCTION_CALLING = 'FunctionCalling'
     TEXT_TO_IMAGE = 'TextToImage'
+    TEXT_TO_SPEECH = 'TextToSpeech'
     IMAGE_EDITING = 'ImageEditing'
     MULTI_MODAL = 'MultiModal'
     MULTI_LINGUAL = 'MultiLingual'

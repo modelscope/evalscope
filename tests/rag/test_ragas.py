@@ -1,8 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
+import pytest
 from dotenv import dotenv_values
 
 from tests.utils import test_level_list
+
+pytestmark = pytest.mark.timeout(600)
 
 env = dotenv_values('.env')
 import unittest
@@ -65,7 +68,7 @@ class TestRAGAS(unittest.TestCase):
                 'eval': {
                     'testset_file': 'outputs/testset_chinese_with_answer.json',
                     'critic_llm': {
-                        'model_name_or_path': 'Qwen/Qwen2.5-7B-Instruct',
+                        'model_name': 'Qwen/Qwen2.5-7B-Instruct',
                     },
                     'embeddings': {
                         'model_name_or_path': 'AI-ModelScope/m3e-base',
@@ -86,12 +89,12 @@ class TestRAGAS(unittest.TestCase):
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_rag_eval_api(self):
-        from evalscope.backend.rag_eval.ragas.arguments import EvaluationArguments
+        from evalscope.backend.rag_eval.ragas.arguments import RAGASEvalConfig
         task_cfg = TaskConfig(
             eval_backend='RAGEval',
             eval_config=dict(
                 tool='RAGAS',
-                eval=EvaluationArguments(
+                eval=RAGASEvalConfig(
                     testset_file='outputs/testset_chinese_with_answer_small.json',
                     critic_llm={
                         'model_name': 'qwen-plus',  # 自定义聊天模型名称
@@ -99,13 +102,10 @@ class TestRAGAS(unittest.TestCase):
                         'api_key': env.get('DASHSCOPE_API_KEY', 'EMPTY'),  # 自定义API密钥
                     },
                     embeddings={
-                        'model_name': 'text-embedding-v1',
+                        'model_name_or_path': 'text-embedding-v1',
+                        'provider': 'openai',
                         'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                         'api_key': env.get('DASHSCOPE_API_KEY', 'EMPTY'),
-                        'dimensions': 1024,
-                        'encode_kwargs': {
-                            'batch_size': 10,
-                        },
                     },
                     metrics=[
                         'Faithfulness',

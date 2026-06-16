@@ -1,6 +1,10 @@
 (vlmeval)=
 # VLMEvalKit
 
+```{note}
+For multimodal evaluation, the Native backend is recommended. It already supports 40+ mainstream VLM benchmarks (OCRBench, MMMU, MMBench, MathVista, ChartQA, DocVQA, ...) — see [VLM Benchmarks](../../get_started/supported_dataset/vlm.md). The VLMEvalKit backend is intended for users with existing VLMEvalKit workflows. The two backends differ in prompt templates, answer extraction rules and judge logic, so results may diverge — keep the backend consistent within a comparison study.
+```
+
 To facilitate the use of the VLMEvalKit evaluation backend, we have customized the VLMEvalKit source code, naming it `ms-vlmeval`. This version encapsulates the configuration and execution of evaluation tasks and supports installation via PyPI, allowing users to initiate lightweight VLMEvalKit evaluation tasks through EvalScope. Additionally, we support interface evaluation tasks based on the OpenAI API format, and you can deploy multi-modal model services using [ms-swift](https://github.com/modelscope/swift) , [vLLM](https://github.com/vllm-project/vllm) , [LMDeploy](https://github.com/InternLM/lmdeploy) , [Ollama](https://ollama.ai/), etc.
 
 ## 1. Environment Setup

@@ -14,6 +14,7 @@ logger = get_logger()
 @register_benchmark(
     BenchmarkMeta(
         name='general_t2i',
+        pretty_name='General-T2I',
         dataset_id='general_t2i',
         description="""
 ## Overview
@@ -64,6 +65,3 @@ class GeneralT2IAdapter(Text2ImageAdapter):
             self.subset_list = [file_without_ext]
 
         return super().load_from_disk(use_local_loader=True)
-
-    def record_to_sample(self, record):
-        return Sample(input=[ChatMessageUser(content=record['prompt'])], metadata={'image_path': record['image_path']})

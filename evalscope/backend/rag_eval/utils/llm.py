@@ -1,23 +1,33 @@
+import logging
 import os
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM as BaseLLM
 from langchain_openai import ChatOpenAI
-from typing import Any, Dict, Iterator, List, Mapping, Optional
+from typing import Any, Dict, List, Optional
 
 from evalscope.api.model import GenerateConfig, Model, get_model
 from evalscope.constants import DEFAULT_MODEL_REVISION, EvalType
 
+logger = logging.getLogger(__name__)
+
 
 class LLM:
+    """Factory for creating LLM instances (LangChain-compatible)."""
 
     @staticmethod
     def load(**kw):
+        """Load an LLM instance based on config.
+
+        If api_base is provided, creates a ChatOpenAI (remote API).
+        Otherwise, creates a LocalLLM (local checkpoint).
+        """
         api_base = kw.get('api_base', None)
         if api_base:
             return ChatOpenAI(
                 model=kw.get('model_name', ''),
                 base_url=api_base,
                 api_key=kw.get('api_key', 'EMPTY'),
+                temperature=kw.get('temperature', 0.0),
             )
         else:
             return LocalLLM(**kw)
@@ -52,7 +62,6 @@ class LocalLLM(BaseLLM):
         **kwargs: Any,
     ) -> str:
         """Run the LLM on the given input."""
-
         response = self.model.generate(input=prompt)
         return response.completion
 
@@ -60,15 +69,11 @@ class LocalLLM(BaseLLM):
     def _identifying_params(self) -> Dict[str, Any]:
         """Return a dictionary of identifying parameters."""
         return {
-            # The model name allows users to specify custom token counting
-            # rules in LLM monitoring applications (e.g., in LangSmith users
-            # can provide per token pricing for their model and monitor
-            # costs for the given LLM.)
             'model_name': self.model_name,
             'revision': self.model_revision,
         }
 
     @property
     def _llm_type(self) -> str:
-        """Get the type of language model used by this chat model. Used for logging purposes only."""
+        """Get the type of language model used by this chat model."""
         return self.model_name

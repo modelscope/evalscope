@@ -1,147 +1,179 @@
+import logging
 import os
 import pandas as pd
-from ragas.embeddings import LangchainEmbeddingsWrapper
-from ragas.llms import LangchainLLMWrapper
 from tqdm import tqdm
+from typing import Any, Dict, List, Optional
 
-from evalscope.backend.rag_eval import LLM, ChatOpenAI, EmbeddingModel
-from evalscope.backend.rag_eval.ragas.arguments import TestsetGenerationArguments
-from evalscope.utils.logger import get_logger
-from .build_distribution import default_query_distribution
-from .build_transform import default_transforms
+from evalscope.backend.rag_eval.ragas.arguments import RAGASTestsetConfig
 
-logger = get_logger()
+logger = logging.getLogger(__name__)
 
 
-def get_knowledge_graph(documents, transforms, local_file, run_config):
-    from ragas.testset.graph import KnowledgeGraph, Node, NodeType
-    from ragas.testset.transforms import apply_transforms
+def _build_ragas_llm(llm_config) -> Any:
+    """Build a ragas-native LLM for testset generation.
 
-    if os.path.exists(local_file):
-        logger.info(f'Loading knowledge graph from {local_file}')
-        return KnowledgeGraph.load(local_file)
-    # convert the documents to Ragas nodes
-    nodes = []
-    for doc in documents:
-        node = Node(
-            type=NodeType.DOCUMENT,
-            properties={
-                'page_content': doc.page_content,
-                'document_metadata': doc.metadata,
-            },
+    Args:
+        llm_config: RAGASLLMConfig instance.
+
+    Returns:
+        A BaseRagasLLM instance compatible with ragas 0.4.x TestsetGenerator.
+    """
+    try:
+        from openai import OpenAI
+        from ragas.llms import llm_factory
+
+        client_kwargs: Dict[str, Any] = {}
+        if llm_config.api_base:
+            client_kwargs['base_url'] = llm_config.api_base
+        if llm_config.api_key:
+            client_kwargs['api_key'] = llm_config.api_key
+
+        client = OpenAI(**client_kwargs)
+        return llm_factory(llm_config.model_name, client=client)
+    except (ImportError, AttributeError, TypeError):
+        logger.warning('Failed to use llm_factory, falling back to LangchainLLMWrapper', exc_info=True)
+        from langchain_openai import ChatOpenAI
+        from ragas.llms.base import LangchainLLMWrapper
+
+        langchain_llm = ChatOpenAI(
+            model=llm_config.model_name,
+            base_url=llm_config.api_base,
+            api_key=llm_config.api_key or 'EMPTY',
+            temperature=llm_config.temperature,
         )
-        nodes.append(node)
-
-    kg = KnowledgeGraph(nodes=nodes)
-
-    # apply transforms and update the knowledge graph
-    apply_transforms(kg, transforms, run_config=run_config)
-
-    # save the knowledge graph
-    output_path = os.path.dirname(local_file)
-    os.makedirs(output_path, exist_ok=True)
-    kg.save(local_file)
-    logger.info(f'Knowledge graph saved to {local_file}')
-    return kg
+        return LangchainLLMWrapper(langchain_llm)
 
 
-def get_persona(llm, kg, language):
-    from ragas.testset.persona import PersonaGenerationPrompt, generate_personas_from_kg
+def _build_ragas_embeddings(embedding_config) -> Any:
+    """Build a ragas-native embeddings model for testset generation.
 
-    from evalscope.backend.rag_eval.ragas.prompts.persona_prompt import PersonaGenerationPromptZH
+    Args:
+        embedding_config: RAGASEmbeddingConfig instance.
 
-    if language == 'chinese':
-        persona_prompt = PersonaGenerationPromptZH()
+    Returns:
+        A BaseRagasEmbeddings instance compatible with ragas 0.4.x TestsetGenerator.
+    """
+    if embedding_config.provider == 'openai':
+        try:
+            from openai import OpenAI
+            from ragas.embeddings import embedding_factory
+
+            client_kwargs: Dict[str, Any] = {}
+            if embedding_config.api_base:
+                client_kwargs['base_url'] = embedding_config.api_base
+            if embedding_config.api_key:
+                client_kwargs['api_key'] = embedding_config.api_key
+
+            client = OpenAI(**client_kwargs)
+            return embedding_factory('openai', model=embedding_config.model_name_or_path, client=client)
+        except (ImportError, AttributeError, TypeError):
+            logger.warning('Failed to use embedding_factory for openai', exc_info=True)
+            from langchain_openai import OpenAIEmbeddings
+            from ragas.embeddings.base import LangchainEmbeddingsWrapper
+
+            return LangchainEmbeddingsWrapper(
+                OpenAIEmbeddings(
+                    model=embedding_config.model_name_or_path,
+                    base_url=embedding_config.api_base,
+                    api_key=embedding_config.api_key or 'EMPTY',
+                )
+            )
     else:
-        persona_prompt = PersonaGenerationPrompt()
-    # NOTE: can't translate this yet
-    # asyncio.run(
-    #     translate_prompts(
-    #         prompts=[persona_prompt],
-    #         target_lang=language,
-    #         llm=llm,
-    #         adapt_instruction=True,
-    #     ))
-
-    return generate_personas_from_kg(llm=llm, kg=kg, num_personas=3, persona_generation_prompt=persona_prompt)
-
-
-def load_data(file_path):
-    import nltk
-    from langchain_unstructured import UnstructuredLoader
-
-    if nltk.data.find('taggers/averaged_perceptron_tagger_eng') is False:
-        # need to download nltk data for the first time
-        nltk.download('averaged_perceptron_tagger_eng')
-
-    loader = UnstructuredLoader(file_path)
-    data = loader.load()
-    return data
+        # Local model — resolve via ModelScope first
+        from evalscope.backend.rag_eval.models.utils import resolve_model_path
+        local_path = resolve_model_path(embedding_config.model_name_or_path)
+        try:
+            from ragas.embeddings import embedding_factory
+            return embedding_factory('huggingface', model=local_path)
+        except (ImportError, AttributeError, TypeError):
+            logger.warning('Failed to use embedding_factory for huggingface', exc_info=True)
+            from langchain_huggingface import HuggingFaceEmbeddings
+            from ragas.embeddings.base import LangchainEmbeddingsWrapper
+            return LangchainEmbeddingsWrapper(HuggingFaceEmbeddings(model_name=local_path))
 
 
-def generate_testset(args: TestsetGenerationArguments) -> None:
+def load_documents(file_paths: List[str]):
+    """Load documents from file paths using LangChain document loaders.
 
-    from ragas import RunConfig
+    Args:
+        file_paths: List of file paths to load.
+
+    Returns:
+        List of LangChain Document objects.
+    """
+    from langchain_community.document_loaders import UnstructuredFileLoader
+
+    all_docs = []
+    for file_path in file_paths:
+        loader = UnstructuredFileLoader(file_path)
+        docs = loader.load()
+        all_docs.extend(docs)
+    return all_docs
+
+
+def generate_testset(args: RAGASTestsetConfig) -> None:
+    """Generate a test set using ragas 0.4.x TestsetGenerator API.
+
+    This function loads documents, builds a knowledge graph, and generates
+    evaluation samples using the ragas TestsetGenerator.
+
+    Args:
+        args: RAGASTestsetConfig instance with generation parameters.
+    """
+    from ragas.run_config import RunConfig
     from ragas.testset import TestsetGenerator
 
-    # load data
-    documents = load_data(args.docs)
+    # Load documents
+    documents = load_documents(args.docs)
+    logger.info(f'Loaded {len(documents)} documents')
 
-    # generator with models
-    generator_llm = LLM.load(**args.generator_llm)
-    embeddings = EmbeddingModel.load(**args.embeddings)
+    # Build LLM and embeddings
+    llm = _build_ragas_llm(args.generator_llm)
+    embeddings = _build_ragas_embeddings(args.embeddings)
 
-    wrapped_llm = LangchainLLMWrapper(generator_llm)
-    wrapped_embeddings = LangchainEmbeddingsWrapper(embeddings)
+    # Create generator
+    generator = TestsetGenerator(llm=llm, embedding_model=embeddings)
 
-    # get transforms
-    transforms = default_transforms(
-        documents,
-        wrapped_llm,
-        wrapped_embeddings,
-        args.language,
-    )
-
+    # Configure run
     run_config = RunConfig(timeout=600, max_retries=10, max_wait=120, max_workers=1, log_tenacity=True)
-    # get knowledge graph
-    knowledge_graph = get_knowledge_graph(documents, transforms, args.knowledge_graph, run_config)
-    # get persona
-    persona_list = get_persona(llm=wrapped_llm, kg=knowledge_graph, language=args.language)
 
-    # Change resulting question type distribution
-    distributions = default_query_distribution(wrapped_llm, knowledge_graph, args.language)
-
-    # generate testset
-    generator = TestsetGenerator(
-        llm=wrapped_llm, embedding_model=wrapped_embeddings, knowledge_graph=knowledge_graph, persona_list=persona_list
-    )
-
-    testset = generator.generate(
+    # Generate testset using generate_with_langchain_docs (handles transforms + KG internally)
+    testset = generator.generate_with_langchain_docs(
+        documents=documents,
         testset_size=args.test_size,
-        query_distribution=distributions,
         run_config=run_config,
         with_debugging_logs=True,
         raise_exceptions=True,
     )
 
-    # save file
+    # Save testset
     testset_df = testset.to_pandas()
-    output_path = os.path.dirname(args.output_file)
-    os.makedirs(output_path, exist_ok=True)
+    output_dir = os.path.dirname(args.output_file)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
     testset_df.to_json(args.output_file, indent=4, index=False, orient='records', force_ascii=False)
+    logger.info(f'Testset saved to {args.output_file}')
 
-    # get answer
-    testset_with_answer = get_answer(testset_df, generator_llm, args.language)
-    testset_with_answer.to_json(
-        args.output_file.replace('.json', '_with_answer.json'),
-        indent=4,
-        index=False,
-        orient='records',
-        force_ascii=False,
-    )
+    # Generate answers for the testset
+    testset_with_answer = _generate_answers(testset_df, args.generator_llm, args.language)
+    answer_file = args.output_file.replace('.json', '_with_answer.json')
+    testset_with_answer.to_json(answer_file, indent=4, index=False, orient='records', force_ascii=False)
+    logger.info(f'Testset with answers saved to {answer_file}')
 
 
-def get_answer(testset_df, generator_llm, language: None):
+def _generate_answers(testset_df: pd.DataFrame, llm_config, language: str) -> pd.DataFrame:
+    """Generate answers for the testset using the LLM.
+
+    Args:
+        testset_df: DataFrame with test samples.
+        llm_config: RAGASLLMConfig for the generator LLM.
+        language: Target language for answers.
+
+    Returns:
+        DataFrame with answers added.
+    """
+    from langchain_openai import ChatOpenAI
+
     template = """You are an assistant for question-answering tasks.
 Use the following pieces of retrieved context to answer the question.
 If you don't know the answer, just say that you don't know. Answer in {language}.
@@ -149,25 +181,42 @@ Question: {question}
 Context: {contexts}
 Answer:
 """
+    # Build a simple LangChain LLM for answer generation
+    llm = ChatOpenAI(
+        model=llm_config.model_name,
+        base_url=llm_config.api_base,
+        api_key=llm_config.api_key or 'EMPTY',
+        temperature=llm_config.temperature,
+    )
 
     items = []
+    max_retries = 3
     for i in tqdm(range(len(testset_df)), desc='Generating Answers'):
         row = testset_df.iloc[i]
-        question = row['user_input']
-        contexts = '\n'.join(row['reference_contexts'])
+        question = row.get('user_input', '')
+        contexts_raw = row.get('reference_contexts', [])
+        contexts = '\n'.join(contexts_raw) if isinstance(contexts_raw, list) else str(contexts_raw)
 
-        # Combine question and contexts as input for the LLM
         input_text = template.format(language=language, question=question, contexts=contexts)
+        answer = ''
+        for attempt in range(max_retries):
+            try:
+                response = llm.invoke(input_text)
+                answer = response.content if hasattr(response, 'content') else str(response)
+                break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    logger.warning(f'Failed to generate answer for row {i} (attempt {attempt + 1}): {e}')
+                    import time
+                    time.sleep(2**attempt)
+                else:
+                    logger.warning(f'Failed to generate answer for row {i} after {max_retries} attempts: {e}')
 
-        # Generate the answer using the generator LLM
-        answer = generator_llm.invoke(input_text)
-        if isinstance(generator_llm, ChatOpenAI):
-            answer = answer.content
         items.append({
             'user_input': question,
-            'retrieved_contexts': row['reference_contexts'],
+            'retrieved_contexts': contexts_raw,
             'response': answer,
-            'reference': row['reference'],
+            'reference': row.get('reference', ''),
         })
 
     return pd.DataFrame.from_dict(items)

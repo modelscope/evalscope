@@ -1,5 +1,3 @@
-from typing import cast
-
 from evalscope.api.evaluator import TaskState
 
 
@@ -43,9 +41,7 @@ def get_generated_code(state: TaskState) -> list[str]:
         If the number of assistant messages does not match the number of subproblems in the task metadata.
 
     """
-    assistant_messages = [
-        extract_code(cast(str, message.content)) for message in state.messages if message.role == 'assistant'
-    ]
+    assistant_messages = [extract_code(message.text) for message in state.messages if message.role == 'assistant']
     assert len(assistant_messages) == len(state.metadata['sub_steps'])
     return assistant_messages
 

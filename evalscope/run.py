@@ -65,10 +65,12 @@ def setup_work_directory(task_cfg: TaskConfig):
         task_cfg.eval_config['work_dir'] = task_cfg.work_dir
     elif task_cfg.eval_backend == EvalBackend.RAG_EVAL:
         from evalscope.backend.rag_eval import Tools
-        if task_cfg.eval_config['tool'].lower() == Tools.MTEB:
-            task_cfg.eval_config['eval']['output_folder'] = task_cfg.work_dir
-        elif task_cfg.eval_config['tool'].lower() == Tools.CLIP_BENCHMARK:
-            task_cfg.eval_config['eval']['output_dir'] = task_cfg.work_dir
+        eval_cfg = task_cfg.eval_config
+        tool = getattr(eval_cfg, 'tool', '').lower()
+        if tool == Tools.MTEB:
+            eval_cfg.eval.output_folder = task_cfg.work_dir
+        elif tool == Tools.CLIP_BENCHMARK:
+            eval_cfg.eval.output_dir = task_cfg.work_dir
     return outputs
 
 

@@ -1,9 +1,8 @@
-import os
-from typing import Optional, Union
+# Copyright (c) Alibaba, Inc. and its affiliates.
+from typing import Union
 
 from evalscope.backend.base import BackendManager
 from evalscope.utils.import_utils import is_module_installed
-from evalscope.utils.io_utils import get_valid_list
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -18,76 +17,109 @@ class Tools:
 class RAGEvalBackendManager(BackendManager):
 
     def __init__(self, config: Union[str, dict], **kwargs):
-        """BackendManager for VLM Evaluation Kit
+        """BackendManager for RAG Evaluation.
 
         Args:
-            config (Union[str, dict]): the configuration yaml-file or the configuration dictionary
+            config: Configuration as yaml file path, dict, or Pydantic model.
         """
         super().__init__(config, **kwargs)
 
     @staticmethod
-    def _check_env(module_name: str):
+    def _check_env(module_name: str) -> None:
         if is_module_installed(module_name):
             logger.info(f'Check `{module_name}` Installed')
         else:
-            logger.error(f'Please install `{module_name}` first')
+            raise RuntimeError(f'`{module_name}` is not installed. Please install it with: pip install {module_name}')
 
     @staticmethod
-    def run_mteb(model_args, eval_args):
-        from evalscope.backend.rag_eval.cmteb import EvalArguments, ModelArguments, one_stage_eval, two_stage_eval
+    def run_mteb(config) -> None:
+        """Run MTEB evaluation.
 
-        if len(model_args) > 2:
-            raise ValueError('Not support multiple models yet')
+        Args:
+            config: MTEBToolConfig instance or dict with MTEB configuration.
+        """
+        import mteb
+        from packaging.version import InvalidVersion, Version, parse
+        try:
+            mteb_version = parse(mteb.__version__)
+        except InvalidVersion:
+            raise ImportError(
+                f'MTEB >= 2.7.0 is required (got {mteb.__version__}). '
+                'Please upgrade: pip install "mteb>=2.7.0,<3.0.0"'
+            )
+        if mteb_version < Version('2.7.0'):
+            raise ImportError(
+                f'MTEB >= 2.7.0 is required (got {mteb.__version__}). '
+                'Please upgrade: pip install "mteb>=2.7.0,<3.0.0"'
+            )
+        from evalscope.backend.rag_eval.mteb import MTEBToolConfig, run_mteb_eval
 
-        # Convert arguments to dictionary
-        model_args_list = [ModelArguments(**args).to_dict() for args in model_args]
-        eval_args = EvalArguments(**eval_args).to_dict()
-
-        if len(model_args_list) == 1:
-            one_stage_eval(model_args_list[0], eval_args)
-        else:  # len(model_args_list) == 2
-            two_stage_eval(model_args_list[0], model_args_list[1], eval_args)
+        if isinstance(config, dict):
+            config = MTEBToolConfig(**config)
+        run_mteb_eval(config)
 
     @staticmethod
-    def run_ragas(testset_args, eval_args):
-        from evalscope.backend.rag_eval.ragas import EvaluationArguments, TestsetGenerationArguments, rag_eval
+    def run_ragas(config) -> None:
+        """Run RAGAS evaluation and/or testset generation.
+
+        Args:
+            config: RAGASToolConfig instance or dict with RAGAS configuration.
+        """
+        import ragas
+        from packaging.version import InvalidVersion, Version, parse
+        try:
+            ragas_version = parse(ragas.__version__)
+        except InvalidVersion:
+            raise ImportError(
+                f'RAGAS >= 0.4.0 is required (got {ragas.__version__}). '
+                'Please upgrade: pip install "ragas>=0.4.0,<0.5.0"'
+            )
+        if ragas_version < Version('0.4.0'):
+            raise ImportError(
+                f'RAGAS >= 0.4.0 is required (got {ragas.__version__}). '
+                'Please upgrade: pip install "ragas>=0.4.0,<0.5.0"'
+            )
+        from evalscope.backend.rag_eval.ragas import RAGASToolConfig, rag_eval
         from evalscope.backend.rag_eval.ragas.tasks import generate_testset
 
-        if testset_args is not None:
-            if isinstance(testset_args, dict):
-                generate_testset(TestsetGenerationArguments(**testset_args))
-            elif isinstance(testset_args, TestsetGenerationArguments):
-                generate_testset(testset_args)
-            else:
-                raise ValueError('Please provide the testset generation arguments.')
-        if eval_args is not None:
-            if isinstance(eval_args, dict):
-                rag_eval(EvaluationArguments(**eval_args))
-            elif isinstance(eval_args, EvaluationArguments):
-                rag_eval(eval_args)
-            else:
-                raise ValueError('Please provide the evaluation arguments.')
+        if isinstance(config, dict):
+            config = RAGASToolConfig(**config)
+
+        if config.testset_generation is not None:
+            generate_testset(config.testset_generation)
+        if config.eval is not None:
+            rag_eval(config.eval)
 
     @staticmethod
-    def run_clip_benchmark(args):
-        from evalscope.backend.rag_eval.clip_benchmark import Arguments, evaluate
+    def run_clip_benchmark(config) -> None:
+        """Run CLIP Benchmark evaluation.
 
-        evaluate(Arguments(**args))
+        Args:
+            config: ClipBenchmarkToolConfig instance.
+        """
+        from evalscope.backend.rag_eval.clip_benchmark import evaluate
 
-    def run(self, *args, **kwargs):
-        tool = self.config_d.pop('tool')
-        if tool.lower() == Tools.MTEB:
+        evaluate(config.eval)
+
+    def run(self, *args, **kwargs) -> None:
+        """Run the RAG evaluation pipeline based on tool type."""
+        from evalscope.backend.rag_eval.clip_benchmark.arguments import ClipBenchmarkToolConfig
+        from evalscope.backend.rag_eval.mteb.arguments import MTEBToolConfig
+        from evalscope.backend.rag_eval.ragas.arguments import RAGASToolConfig
+
+        config = self.config_d
+
+        if isinstance(config, MTEBToolConfig):
             self._check_env('mteb')
-            model_args = self.config_d['model']
-            eval_args = self.config_d['eval']
-            self.run_mteb(model_args, eval_args)
-        elif tool.lower() == Tools.RAGAS:
+            self.run_mteb(config)
+        elif isinstance(config, RAGASToolConfig):
             self._check_env('ragas')
-            testset_args = self.config_d.get('testset_generation', None)
-            eval_args = self.config_d.get('eval', None)
-            self.run_ragas(testset_args, eval_args)
-        elif tool.lower() == Tools.CLIP_BENCHMARK:
+            self.run_ragas(config)
+        elif isinstance(config, ClipBenchmarkToolConfig):
             self._check_env('webdataset')
-            self.run_clip_benchmark(self.config_d['eval'])
+            self.run_clip_benchmark(config)
         else:
-            raise ValueError(f'Unknown tool: {tool}')
+            raise ValueError(
+                f'Unsupported config type: {type(config)}. '
+                f'Expected MTEBToolConfig, RAGASToolConfig, or ClipBenchmarkToolConfig.'
+            )

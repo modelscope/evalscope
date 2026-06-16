@@ -1,7 +1,7 @@
 # flake8: noqa: E501
 from copy import deepcopy
-from pydantic import BaseModel, Field, model_validator
-from typing import Any, Dict, List, Literal, Optional, Union
+from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Literal, Optional
 
 from evalscope.utils.json_schema import JSONSchema
 
@@ -37,7 +37,13 @@ class GenerateConfig(BaseModel):
     """Retry interval between retries (in seconds). Only supported by OpenAI compatible models."""
 
     batch_size: Optional[int] = Field(default=None)
-    """Maximum number of concurrent connections to Model API (default is model specific) or batch size for generation."""
+    """Maximum number of concurrent connections to the Model API, or batch size for generation.
+
+    Internal field — synced from :class:`TaskConfig.eval_batch_size` during task
+    initialization. Setting it directly in ``generation_config`` has no effect
+    because :meth:`TaskConfig._post_init_generation_config` overwrites it with
+    ``eval_batch_size``. Use ``--eval-batch-size`` instead.
+    """
 
     stream: Optional[bool] = Field(default=None)
     """Whether to stream the response (default is model specific)."""
@@ -53,9 +59,6 @@ class GenerateConfig(BaseModel):
 
     stop_seqs: Optional[List[str]] = Field(default=None)
     """Sequences where the API will stop generating further tokens. The returned text will not contain the stop sequence."""
-
-    best_of: Optional[int] = Field(default=None)
-    """Generates best_of completions server-side and returns the 'best' (the one with the highest log probability per token). vLLM only."""
 
     frequency_penalty: Optional[float] = Field(default=None)
     """Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. OpenAI, Google, Grok, Groq, vLLM, and SGLang only."""
@@ -90,15 +93,6 @@ class GenerateConfig(BaseModel):
     parallel_tool_calls: Optional[bool] = Field(default=None)
     """Whether to enable parallel function calling during tool use (defaults to True). OpenAI and Groq only."""
 
-    internal_tools: Optional[bool] = Field(default=None)
-    """Whether to automatically map tools to model internal implementations (e.g. 'computer' for anthropic)."""
-
-    max_tool_output: Optional[int] = Field(default=None)
-    """Maximum tool output (in bytes). Defaults to 16 * 1024."""
-
-    cache_prompt: Union[Literal['auto'], bool, None] = Field(default=None)
-    """Whether to cache the prompt prefix. Defaults to "auto", which will enable caching for requests with tools. Anthropic only."""
-
     reasoning_effort: Optional[Literal['low', 'medium', 'high']] = Field(default=None)
     """Constrains effort on reasoning for reasoning models (defaults to `medium`). Open AI o1 models only."""
 
@@ -108,8 +102,23 @@ class GenerateConfig(BaseModel):
     reasoning_summary: Optional[Literal['concise', 'detailed', 'auto']] = Field(default=None)
     """Provide summary of reasoning steps (defaults to no summary). Use 'auto' to access the most detailed summarizer available for the current model. OpenAI reasoning models only."""
 
-    reasoning_history: Optional[Literal['none', 'all', 'last', 'auto']] = Field(default=None)
-    """Include reasoning in chat message history sent to generate."""
+    reasoning_history: Optional[Literal['none', 'think_tag', 'reasoning_field']] = Field(default=None)
+    """How to encode prior-turn ``reasoning_content`` in multi-turn requests sent to OpenAI-compatible servers.
+
+    When ``None`` (default), treated as ``'reasoning_field'`` at consumption time.
+
+    - ``'none'``: strip reasoning entirely from multi-turn history. Required for
+      DeepSeek R1 (legacy ``deepseek-reasoner``), which forbids ``reasoning_content``
+      in request messages. Safest cross-provider choice when reasoning continuity
+      is not needed.
+    - ``'think_tag'``: embed reasoning as ``<think>...</think>`` in the content
+      string. Pre-fix behavior; use for providers that consume ``<think>`` tags
+      inline (e.g., legacy Together/Groq deployments).
+    - ``'reasoning_field'``: pass ``reasoning_content`` as a top-level field on
+      each assistant message, with content kept clean (no ``<think>`` tag).
+      Required for DeepSeek V4 thinking mode; recommended for Qwen3 thinking and
+      any provider following the modern OpenAI-compatible reasoning protocol.
+    """
 
     response_schema: Optional[ResponseSchema] = Field(default=None)
     """Request a response format as JSONSchema (output should still be validated). OpenAI, Google, and Mistral only."""
@@ -134,19 +143,6 @@ class GenerateConfig(BaseModel):
 
     guidance_scale: Optional[float] = Field(default=None)
     """Guidance scale for image generation model only"""
-
-    # migrate reasoning_history as a bool
-    @model_validator(mode='before')
-    @classmethod
-    def migrate_reasoning(cls, data: Any) -> Any:
-        if isinstance(data, dict):
-            reasoning_history = data.get('reasoning_history', None)
-            if reasoning_history is True:
-                data['reasoning_history'] = 'all'
-            elif reasoning_history is False:
-                data['reasoning_history'] = 'none'
-
-        return data
 
     def merge(self, other: 'GenerateConfig') -> 'GenerateConfig':
         """Merge another model configuration into this one.

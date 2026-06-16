@@ -66,15 +66,18 @@ def load_dataset_from_hub(
     ms_download_mode = None if not force_redownload else MSDownloadMode.FORCE_REDOWNLOAD
 
     if data_source == HubType.MODELSCOPE:
-        dataset = MsDataset.load(
+        load_kwargs = dict(
             dataset_name=data_id_or_path,
             split=split,
             subset_name=subset,
-            version=version,
             trust_remote_code=trust_remote,
-            download_mode=ms_download_mode,
             **kwargs,
         )
+        if version:
+            load_kwargs['version'] = version
+        if ms_download_mode:
+            load_kwargs['download_mode'] = ms_download_mode
+        dataset = MsDataset.load(**load_kwargs)
         if not isinstance(dataset, datasets.Dataset):
             dataset = dataset.to_hf_dataset()
         return dataset

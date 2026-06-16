@@ -8,8 +8,7 @@ from evalscope.api.dataset import Dataset
 from evalscope.api.messages import ChatMessage, messages_pretty_str, messages_to_markdown
 from evalscope.api.metric import SampleScore
 from evalscope.api.model import ModelOutput
-from evalscope.constants import DumpMode
-from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
+from evalscope.utils.io_utils import JsonlWriter, OutputsStructure, convert_normal_types, jsonl_to_list
 from evalscope.utils.logger import get_logger
 from .state import TaskState
 
@@ -37,6 +36,32 @@ class CacheManager:
         self.outputs = outputs
         self.model_name = model_name
         self.benchmark_name = benchmark_name
+        self._writers: Dict[str, JsonlWriter] = {}
+
+    def _get_writer(self, cache_file: str) -> JsonlWriter:
+        """Return a persistent writer for *cache_file*, opening on first use.
+
+        Keeping a single writer open per file avoids the rapid open/close
+        cycle that triggers ``PermissionError`` on Windows due to file-lock
+        release latency.
+        """
+        cache_file = os.path.expanduser(cache_file)
+        if cache_file not in self._writers:
+            self._writers[cache_file] = JsonlWriter(cache_file)
+        return self._writers[cache_file]
+
+    def close(self) -> None:
+        """Close all open writers. Idempotent — safe to call multiple times."""
+        for writer in self._writers.values():
+            writer.close()
+        self._writers.clear()
+
+    def __del__(self) -> None:
+        """Best-effort cleanup if :meth:`close` was not called explicitly."""
+        try:
+            self.close()
+        except Exception:  # noqa: BLE01 - never propagate from __del__
+            pass
 
     def filter_prediction_cache(self, subset: str, dataset: Dataset) -> Tuple[List[TaskState], Dataset]:
         """
@@ -113,10 +138,9 @@ class CacheManager:
         cache_file = self.get_prediction_cache_path(subset)
         # Convert task state to serializable model result
         model_result = ModelResult.from_task_state(task_state, save_metadata)
-        # Serialize to dictionary
-        model_result_dict = model_result.model_dump()
-        # Append to JSONL cache file
-        dump_jsonl_data(data_list=model_result_dict, jsonl_file=cache_file, dump_mode=DumpMode.APPEND)
+        # Serialize to dictionary, convert non-JSON types (numpy, datetime), append.
+        model_result_dict = convert_normal_types(model_result.model_dump())
+        self._get_writer(cache_file).write(model_result_dict)
         return model_result
 
     def filter_review_cache(self, subset: str,
@@ -199,10 +223,9 @@ class CacheManager:
         cache_file = self.get_review_cache_path(subset)
         # Convert score and state to serializable review result
         review_result = ReviewResult.from_score_state(sample_score, task_state, save_metadata)
-        # Serialize to dictionary
-        review_result_dict = review_result.model_dump()
-        # Append to JSONL cache file
-        dump_jsonl_data(data_list=review_result_dict, jsonl_file=cache_file, dump_mode=DumpMode.APPEND)
+        # Serialize to dictionary, convert non-JSON types (numpy, datetime), append.
+        review_result_dict = convert_normal_types(review_result.model_dump())
+        self._get_writer(cache_file).write(review_result_dict)
         return review_result
 
     def get_report_path(self) -> str:

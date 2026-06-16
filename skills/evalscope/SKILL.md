@@ -1,423 +1,186 @@
 ---
 name: evalscope
 description: >-
-  Translates natural language requests into evalscope CLI commands.
-  Core capabilities: (1) Model accuracy evaluation (eval) — runs 156+
-  benchmarks (Math, Coding, Chinese, Multimodal, Agent, etc.) against
-  local checkpoints or OpenAI-compatible / Anthropic API endpoints;
-  (2) Performance stress testing (perf) — measures TTFT, TPOT,
-  throughput, and latency under configurable concurrency gradients or
-  SLA auto-tuning; (3) Benchmark discovery — lists and filters
-  benchmarks by capability tag, retrieves full metadata and sample
-  examples; (4) Result visualization — launches a Web dashboard to
-  compare and explore evaluation outputs. Trigger this skill whenever
-  the user mentions: evaluate / benchmark / score a model, throughput /
-  latency / QPS / stress test, find benchmarks by tag or capability, or
-  view / compare evaluation results.
+  LLM evaluation & inference performance testing via the evalscope CLI.
+  Translates natural language requests into evalscope commands for:
+  (1) Model accuracy evaluation — runs 160+ benchmarks against local
+  checkpoints or API endpoints (OpenAI-compatible, Anthropic, LiteLLM);
+  (2) Performance stress testing — TTFT, TPOT, throughput, latency under
+  configurable concurrency; (3) RAG evaluation — RAGAS quality metrics,
+  MTEB embedding benchmarks, CLIP retrieval; (4) Benchmark discovery —
+  list/filter/inspect benchmarks by tag. Trigger on: evaluate / benchmark /
+  score a model, throughput / latency / QPS / stress test, find benchmarks,
+  view results, 评测模型, 压测, 跑 benchmark, 性能测试, 查看评测结果,
+  有哪些评测集, RAG 评测, embedding 评测. Do NOT trigger for: model
+  training / finetuning / deployment / serving requests.
 ---
 
 # EvalScope
 
-EvalScope is an LLM evaluation framework supporting 156+ benchmarks, performance stress testing, and result visualization. This skill converts natural language evaluation requests into `evalscope` CLI commands.
+Read only the relevant reference file for the matched workflow — don't preload all of them.
 
-No source code access is required. All operations are performed through the `evalscope` CLI.
+| Workflow | When | Reference |
+|----------|------|-----------|
+| Eval (accuracy) | evaluate / benchmark / score | [eval-reference.md](eval-reference.md) |
+| Perf (stress test) | throughput / latency / QPS / perf | [perf-reference.md](perf-reference.md) |
+| RAG Evaluation | RAG / embedding / retrieval quality | [rag-reference.md](rag-reference.md) |
+| Visualization | view results / compare / dashboard | (below) |
+| Benchmark Discovery | list / find / what benchmarks | (below) |
+| Troubleshooting | errors / failures / debug | [troubleshooting.md](troubleshooting.md) |
 
 ## Prerequisites
 
-Before running any evalscope command, check that it is installed:
-
 ```bash
-evalscope --version
-```
-
-If not installed, install it:
-
-```bash
-# Basic installation
-pip install evalscope
-
-# Install all major backends (opencompass, vlmeval, rag, perf, app, aigc, service)
-# Note: does NOT include sandbox (requires Docker) or dev/docs extras
-pip install 'evalscope[all]'
-
-# Selective extras
-pip install 'evalscope[perf]'        # Performance benchmarking only
-pip install 'evalscope[service]'         # Web dashboard & REST API service
-pip install 'evalscope[rag]'         # RAG evaluation backend
-pip install 'evalscope[sandbox]'     # Sandbox code execution (requires Docker)
+evalscope --version            # verify installation
+pip install evalscope           # basic
+pip install 'evalscope[all]'   # all backends (perf, rag, service, aigc)
+pip install 'evalscope[perf]'  # perf only
+pip install 'evalscope[rag]'   # RAG only (RAGAS, MTEB, CLIP)
+pip install 'evalscope[service]' # Web dashboard
 ```
 
 ## Decision Tree
 
-Follow this tree to determine the correct workflow:
+- User wants **accuracy evaluation** (evaluate / benchmark / score / 评测)
+  - Local checkpoint path or HuggingFace/ModelScope ID → `--model PATH` (auto `llm_ckpt`)
+  - API endpoint → `--model NAME --api-url URL` (auto `openai_api`)
+  - Anthropic → `--eval-type anthropic_api`
+  - LiteLLM multi-provider → `--eval-type litellm --model provider/name`
+  - OpenAI Responses API → `--eval-type openai_responses_api`
+  - Pipeline test → `--model mock --eval-type mock_llm`
+  - Image generation → `--eval-type text2image`
+  - TTS → `--eval-type text2speech`
+  - Image editing → `--eval-type image_editing`
+- User wants **performance test** (throughput / latency / QPS / 压测)
+  - → `evalscope perf` workflow
+  - API types: `openai` (default), `local`, `local_vllm`, `dashscope`, `embedding`, `rerank`, `custom`
+- User wants **RAG evaluation** (RAG / embedding quality / retrieval)
+  - → `evalscope eval --eval-backend RAGEval` with tool config
+- User wants **visualization** (view / compare / dashboard)
+  - → `evalscope service`
+- User wants **benchmark info** (list / find / what benchmarks / 有哪些评测集)
+  - → `evalscope benchmark-info`
 
-```
-User Request
-|
-+-- "evaluate / benchmark / test accuracy / score" --> Eval Workflow
-+-- "throughput / latency / QPS / stress test / perf" --> Perf Workflow
-+-- "view results / visualize / compare" --> Visualization Workflow
-+-- "what benchmarks / list benchmarks / tell me about X" --> Benchmark Discovery Workflow
-+-- "filter by tag / math benchmarks / coding benchmarks" --> Benchmark Discovery (--tag)
-|
-+-- Model source (for eval):
-|   +-- Local model path or HuggingFace/ModelScope ID --> checkpoint mode
-|   +-- API endpoint (URL + key) --> openai_api mode
-|   +-- Just testing the pipeline --> mock_llm mode
-|
-+-- What to evaluate:
-|   +-- User named specific datasets --> use directly with --datasets
-|   +-- User described a capability (e.g. "math", "coding") --> use Quick Lookup Table below
-|   +-- User wants to browse --> run: evalscope benchmark-info --list
-|
-+-- Additional configuration:
-    +-- Limit samples --> --limit N
-    +-- Output directory --> --work-dir PATH
-    +-- Need full parameter list --> evalscope eval --help / evalscope perf --help
-    +-- Complex configuration --> see eval-reference.md or perf-reference.md
-```
+## Workflow 1: Eval (Accuracy)
 
-## Workflow 1: Model Evaluation (eval)
-
-Use `evalscope eval` to evaluate model capabilities on benchmarks.
-
-### Step 1: Confirm Model Source
-
-Ask the user how the model is served:
-
-**Local checkpoint** (downloaded or local path):
+Core command pattern:
 ```bash
+# Local checkpoint
 evalscope eval --model Qwen/Qwen2.5-0.5B-Instruct --datasets gsm8k --limit 10
+
+# API endpoint (auto-detects openai_api when --api-url is set)
+evalscope eval --model qwen-plus --datasets gsm8k arc \
+  --api-url http://localhost:8000/v1/chat/completions --api-key sk-xxx --limit 10
+
+# Anthropic
+evalscope eval --model claude-3-5-sonnet --eval-type anthropic_api --datasets mmlu --api-key sk-ant-xxx
 ```
 
-**API service** (OpenAI-compatible endpoint):
+Key parameters: `--datasets`, `--limit`, `--generation-config`, `--dataset-args`, `--eval-backend`, `--judge-strategy`. For full parameter list → [eval-reference.md](eval-reference.md).
+
+Output: `outputs/<timestamp>/reports/*.json` (scores), `report.html` (summary).
+
+## Workflow 2: Perf (Stress Test)
+
+Core command pattern:
 ```bash
-evalscope eval \
-  --model qwen-plus \
-  --datasets gsm8k arc \
+# Basic throughput test
+evalscope perf --model qwen-plus \
+  --url http://localhost:8000/v1/chat/completions --api openai \
+  --dataset openqa --parallel 5 --number 200 --stream
+
+# Concurrency gradient (--parallel and --number must pair)
+evalscope perf --model qwen-plus --url http://localhost:8000/v1/chat/completions \
+  --api openai --parallel 1 5 10 20 --number 50 250 500 1000 --stream
+
+# Embedding model
+evalscope perf --model text-embedding-v3 --url http://localhost:8000/v1/embeddings \
+  --api embedding --parallel 10 --number 500
+
+# Rerank model
+evalscope perf --model bge-reranker --url http://localhost:8000/v1/rerank \
+  --api rerank --parallel 5 --number 200
+```
+
+Key parameters: `--parallel`, `--number`, `--dataset`, `--max-tokens`, `--sla-auto-tune`. For full parameter list → [perf-reference.md](perf-reference.md).
+
+Output: console table (TTFT/TPOT/throughput p50-p99) + HTML report.
+
+## Workflow 3: RAG Evaluation
+
+Uses `--eval-backend RAGEval` with a Python dict/YAML config. Three tools: RAGAS, MTEB, clip_benchmark.
+
+```python
+from evalscope import run_task
+run_task({
+    'eval_backend': 'RAGEval',
+    'eval_config': {
+        'tool': 'MTEB',  # or 'RAGAS' or 'clip_benchmark'
+        ...
+    }
+})
+```
+
+For config schemas and examples → [rag-reference.md](rag-reference.md).
+
+## Workflow 4: Visualization
+
+```bash
+evalscope service --host 0.0.0.0 --port 9000 --outputs ./outputs
+```
+
+Options: `--host` (default 0.0.0.0), `--port` (default 9000), `--outputs PATH` (scan dir), `--debug`.
+
+Requires: `pip install 'evalscope[service]'`.
+
+## Workflow 5: Benchmark Discovery
+
+```bash
+evalscope benchmark-info --list                    # all benchmarks
+evalscope benchmark-info --list --tag Math Coding  # filter by tags (OR, case-insensitive)
+evalscope benchmark-info gsm8k                     # text summary
+evalscope benchmark-info gsm8k --format json       # structured JSON
+evalscope benchmark-info gsm8k --format markdown   # full docs
+```
+
+## Workflow 6: Sandbox Evaluation
+
+For code-execution benchmarks (HumanEval, MBPP, etc.) with Docker isolation:
+
+```bash
+evalscope eval --model qwen-plus --datasets humaneval \
   --api-url http://localhost:8000/v1/chat/completions \
-  --api-key sk-xxx \
-  --limit 10
-```
-When `--api-url` is provided, eval-type is automatically set to `openai_api`.
-
-**Anthropic API**:
-```bash
-evalscope eval \
-  --model claude-3-5-sonnet \
-  --eval-type anthropic_api \
-  --datasets mmlu \
-  --api-key sk-ant-xxx
+  --sandbox '{"enabled": true, "type": "docker"}'
 ```
 
-**Mock mode** (test pipeline without real model):
-```bash
-evalscope eval --model mock --eval-type mock_llm --datasets gsm8k --limit 5
-```
+Requires Docker daemon running. See `evalscope eval --help` for `--sandbox` schema.
 
-### Step 2: Select Benchmarks
+## Quick Lookup Table
 
-If the user specified dataset names, use them directly with `--datasets`.
-If the user described a capability, use the Quick Lookup Table in the Benchmark Discovery section.
-For detailed benchmark info:
-```bash
-evalscope benchmark-info <name> --format markdown
-```
-
-### Step 3: Configure Parameters
-
-Defaults work for most cases. Suggest `--limit 10` for first-run validation.
-
-Key optional parameters:
-- `--generation-config '{"temperature": 0.7, "max_tokens": 2048}'` - generation settings
-- `--dataset-args '{"gsm8k": {"few_shot_num": 4}}'` - per-dataset config
-- `--eval-backend Native|OpenCompass|VLMEvalKit|RAGEval` - evaluation backend
-- `--eval-batch-size N` - batch size (default 1)
-- `--work-dir PATH` - output directory (default `./outputs`)
-- `--seed 42` - random seed
-
-For the full parameter reference, see [eval-reference.md](eval-reference.md).
-
-### Step 4: Build and Execute
-
-1. Show the full command to the user for confirmation
-2. Execute the command
-   - For quick tests (`--limit` <= 20): run in foreground
-   - For full evaluations: run in background (may take hours)
-3. Output goes to `./outputs/<timestamp>/`
-
-### Step 5: Interpret Results
-
-After evaluation completes:
-1. Check reports: `ls outputs/<timestamp>/reports/`
-2. Read JSON reports: each file contains `score`, `metrics`, `dataset_name`, `model_name`
-3. Summarize: extract the `score` and `metrics[].score` fields to present results
-4. For HTML reports: check `outputs/<timestamp>/reports/report.html`
-
-Output directory structure:
-```
-outputs/<timestamp>/
-  configs/task_config.yaml    # Full run configuration
-  logs/eval_log.log           # Evaluation log
-  predictions/<model>/*.jsonl # Model predictions
-  reviews/<model>/*.jsonl     # Review/judge results
-  reports/<model>/*.json      # Score reports
-  reports/report.html         # Summary HTML report
-```
-
-## Workflow 2: Performance Benchmark (perf)
-
-Use `evalscope perf` to stress-test model API endpoints.
-
-### Step 1: Confirm Endpoint
-
-Required: `--model` (model name) and `--url` (API endpoint).
-
-```bash
-evalscope perf \
-  --model qwen-plus \
-  --url http://localhost:8000/v1/chat/completions \
-  --api openai
-```
-
-### Step 2: Choose Test Scenario
-
-**Simple throughput test**:
-```bash
-evalscope perf \
-  --model qwen-plus \
-  --url http://localhost:8000/v1/chat/completions \
-  --api openai \
-  --dataset openqa \
-  --parallel 1 \
-  --number 100 \
-  --stream
-```
-
-**Concurrency gradient test** (multiple parallel values):
-```bash
-evalscope perf \
-  --model qwen-plus \
-  --url http://localhost:8000/v1/chat/completions \
-  --api openai \
-  --dataset openqa \
-  --parallel 1 5 10 20 \
-  --number 100 500 1000 2000 \
-  --stream
-```
-Note: `--parallel` and `--number` must have the same number of values (paired).
-
-**Precise input/output length test**:
-```bash
-evalscope perf \
-  --model qwen-plus \
-  --url http://localhost:8000/v1/chat/completions \
-  --api openai \
-  --dataset random \
-  --min-prompt-length 1000 \
-  --max-prompt-length 1000 \
-  --max-tokens 512 \
-  --min-tokens 512 \
-  --parallel 5 \
-  --number 100
-```
-
-**SLA auto-tuning** (find max concurrency within SLA constraints):
-```bash
-evalscope perf \
-  --model qwen-plus \
-  --url http://localhost:8000/v1/chat/completions \
-  --api openai \
-  --dataset openqa \
-  --sla-auto-tune \
-  --sla-variable parallel \
-  --sla-params '[{"name": "latency", "operator": "<=", "value": 5.0}]'
-```
-
-**Local model test** (auto-starts local inference server):
-```bash
-evalscope perf \
-  --model Qwen/Qwen2.5-0.5B-Instruct \
-  --api local \
-  --dataset openqa \
-  --parallel 1 \
-  --number 10
-```
-
-### Step 3: Key Parameters
-
-- `--api`: API protocol - `openai` (default), `local`, `local_vllm`, `dashscope`, `custom`
-- `--stream` / `--no-stream`: Enable/disable streaming (default: stream)
-- `--max-tokens N`: Max output tokens (default: 2048)
-- `--temperature F`: Sampling temperature (default: 0.0)
-- `--dataset`: Data source - `openqa`, `random`, `speed_benchmark`, `random_vl`, `line_by_line`, etc.
-- `--tokenizer-path PATH`: For accurate token counting
-
-For the full parameter reference, see [perf-reference.md](perf-reference.md).
-
-### Step 4: Execute and Read Results
-
-Execute the command. Key output metrics:
-
-| Metric | Description |
-|--------|-------------|
-| TTFT | Time to First Token (seconds) |
-| TPOT | Time Per Output Token (seconds) |
-| Latency | Average request latency (seconds) |
-| Request Throughput | Requests per second |
-| Output Token Throughput | Output tokens per second |
-| Total Token Throughput | Total tokens per second |
-
-Results include percentile statistics: p50, p75, p90, p95, p99.
-
-An HTML report is auto-generated in `outputs/`. Read the console output for the report path.
-
-## Workflow 3: Visualization
-
-### Launch Web Dashboard
-
-```bash
-evalscope service --host 0.0.0.0 --port 9000
-```
-
-Options:
-- `--host ADDR` - bind address (default: `0.0.0.0`)
-- `--port N` - port number (default: `9000`)
-- `--debug` - enable debug mode
-
-Requires: `pip install 'evalscope[service]'`
-
-### View HTML Reports Directly
-
-Perf and eval both generate HTML reports in the output directory:
-- Eval: `outputs/<timestamp>/reports/report.html`
-- Perf: check console output for the exact report path
-
-## Workflow 4: Benchmark Discovery (benchmark-info)
-
-### List All Benchmarks
-
-```bash
-evalscope benchmark-info --list
-```
-
-Output: a table of all benchmarks with columns: Name, Pretty Name, Category, Tags, Metrics count, Subsets count.
-
-### Filter Benchmarks by Tag
-
-When the user asks about a specific capability area (e.g. "what math benchmarks are there?"), use `--tag` to filter:
-
-```bash
-# Single tag
-evalscope benchmark-info --list --tag Math
-
-# Multiple tags (OR logic, case-insensitive)
-evalscope benchmark-info --list --tag Coding Agent
-
-# Other useful tag filters
-evalscope benchmark-info --list --tag Chinese
-evalscope benchmark-info --list --tag MultiModal
-evalscope benchmark-info --list --tag LongContext
-evalscope benchmark-info --list --tag Medical
-```
-
-Available tags correspond to the Tags column in the Quick Lookup Table below.
-
-### Get Benchmark Details (Text, Default)
-
-```bash
-evalscope benchmark-info gsm8k
-```
-
-Prints a detailed text summary including: name, dataset ID, category, tags, output types, few-shot count, aggregation method, train/eval splits, subsets, paper URL, metrics, description, prompt template, system prompt, configurable parameters (with types, defaults, choices), and data statistics (total samples, prompt length mean/min/max).
-
-### Get Benchmark Details (JSON)
-
-```bash
-evalscope benchmark-info gsm8k --format json
-```
-
-Returns the complete benchmark metadata as structured JSON. Key fields:
-
-| Field | Description |
-|-------|-------------|
-| `meta.pretty_name` | Display name |
-| `meta.dataset_id` | Dataset source ID (ModelScope/HuggingFace) |
-| `meta.tags` | Capability tags (Math, Reasoning, Coding, etc.) |
-| `meta.metrics` | Evaluation metrics with config (e.g. acc, f1) |
-| `meta.few_shot_num` | Default few-shot count |
-| `meta.eval_split` | Dataset split used for evaluation |
-| `meta.subset_list` | Available subsets |
-| `meta.category` | Category: `llm`, `vlm`, `agent`, `aigc` |
-| `meta.description` | Benchmark description (markdown) |
-| `meta.prompt_template` | Prompt template used for evaluation |
-| `meta.system_prompt` | System prompt (if any) |
-| `meta.extra_params` | Configurable parameters with types and defaults |
-| `meta.paper_url` | Link to the benchmark paper |
-| `statistics.total_samples` | Total number of evaluation samples |
-| `statistics.subset_stats` | Per-subset sample counts and prompt length stats |
-| `statistics.prompt_length` | Prompt length statistics (mean, min, max, std) |
-| `sample_example` | A sample data example from the benchmark |
-| `readme.en` | Full English markdown documentation |
-| `readme.zh` | Full Chinese markdown documentation |
-
-### Get Benchmark Details (Markdown)
-
-```bash
-evalscope benchmark-info gsm8k --format markdown
-```
-
-Returns a full markdown document with: overview, task description, key features, evaluation notes, properties table (metrics, default shots, splits), data statistics, and a sample example.
-
-If `--format markdown` encounters an error, fall back to `--format json` and read the `readme.en` (English) or `readme.zh` (Chinese) field from the JSON output.
-
-### Query Multiple Benchmarks
-
-```bash
-evalscope benchmark-info gsm8k mmlu ceval --format json
-```
-
-### Quick Lookup Table
-
-Use this table for fast benchmark recommendations without running CLI commands:
+For up-to-date results: `evalscope benchmark-info --list --tag <TAG>`
 
 | User Need | Tags | Typical Benchmarks |
 |-----------|------|--------------------|
 | Math / reasoning | Math, Reasoning | gsm8k, math_500, aime24, competition_math |
-| Coding / programming | Coding | humaneval, mbpp, live_code_bench |
+| Coding | Coding | humaneval, mbpp, live_code_bench |
 | General knowledge | Knowledge, MCQ | mmlu, ceval, cmmlu, mmlu_pro |
-| Chinese language | Chinese | ceval, cmmlu, chinese_simpleqa |
-| Multimodal / vision | MultiModal | mmmu, mm_bench, math_vista, mm_star |
+| Chinese | Chinese | ceval, cmmlu, chinese_simpleqa |
+| Multimodal / vision | MultiModal | mmmu, mm_bench, math_vista |
 | Instruction following | InstructionFollowing | ifeval, multi_if |
-| Function calling / tools | FunctionCalling | bfcl_v3, bfcl_v4, tool_bench |
-| Long context | LongContext | needle_haystack, longbench_v2, cl_bench |
-| Arena / model ranking | Arena | arena_hard, alpaca_eval |
-| Commonsense | Commonsense | hellaswag, winogrande |
-| Hallucination | Hallucination | truthfulqa |
-| Medical | Medical | medqa, medmcqa |
+| Function calling | FunctionCalling | bfcl_v3, bfcl_v4 |
+| Long context | LongContext | needle_haystack, longbench_v2 |
 | Agent | Agent | tau_bench |
-| Audio / speech | Audio, SpeechRecognition | asr benchmarks |
 
-### Common Evaluation Suites
-
-Pre-built combinations for common evaluation needs:
-
+Common suites:
 - **General LLM**: `mmlu gsm8k bbh humaneval ifeval`
-- **Chinese capability**: `ceval cmmlu chinese_simpleqa`
-- **Math reasoning**: `gsm8k math_500 aime24 competition_math`
-- **Multimodal (VLM)**: `mmmu mm_bench math_vista mm_star`
-- **Code generation**: `humaneval mbpp live_code_bench`
+- **Chinese**: `ceval cmmlu chinese_simpleqa`
+- **Multimodal**: `mmmu mm_bench math_vista mm_star`
 
 ## General Notes
 
-- Always run `evalscope --version` before first use to verify installation
-- Default output directory: `./outputs/<timestamp>/`
-- For first-run validation, always suggest `--limit 5` or `--limit 10`
-- For API-based eval, confirm the service endpoint is reachable before starting
-- For local checkpoint eval, verify GPU availability and sufficient memory
-- Long-running evaluations: run in background, monitor with `tail -f outputs/<timestamp>/logs/eval_log.log`
-- On failure: read the log file for error details
-- To discover all available parameters: `evalscope eval --help` or `evalscope perf --help`
-- The `--no-timestamp` flag prevents creating timestamped subdirectories (useful for CI)
-- Use `--use-cache PATH` to reuse cached results from a previous run
-- Use `--debug` for verbose output during troubleshooting
+- Always `--limit 5` for first-run validation
+- Default output: `./outputs/<timestamp>/`
+- Long runs: background + `tail -f outputs/<timestamp>/logs/eval_log.log`
+- Resume interrupted runs: `--use-cache outputs/<previous_timestamp>`
+- Full parameter help: `evalscope eval --help` / `evalscope perf --help`
+- On errors → [troubleshooting.md](troubleshooting.md)

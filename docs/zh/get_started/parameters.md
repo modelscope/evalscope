@@ -40,23 +40,29 @@
 
 | 参数 | 类型 | 说明 | 支持的后端 |
 |------|------|------|------------|
-| `timeout` | `int` | 请求超时时间（秒） | 所有 |
+| `timeout` | `int`/`float` | 请求超时时间（秒） | 所有 |
 | `retries` | `int` | 重试次数，默认为5 | OpenAI兼容 |
 | `retry_interval` | `int` | 重试间隔时间（秒），默认10 | OpenAI兼容 |
 | `stream` | `bool` | 是否流式返回响应 | 所有 |
 | `max_tokens` | `int` | 最大生成token数量 | 所有 |
 | `top_p` | `float` | Nucleus采样，考虑概率质量为top_p的token | 所有 |
 | `temperature` | `float` | 采样温度，范围0~2，越高越随机 | 所有 |
+| `stop_seqs` | `list[str]` | 触发停止生成的序列列表，返回文本不包含该序列 | 所有 |
 | `frequency_penalty` | `float` | 范围-2.0~2.0，正值惩罚重复token | OpenAI兼容 |
 | `presence_penalty` | `float` | 范围-2.0~2.0，正值惩罚已出现token | OpenAI兼容 |
+| `repetition_penalty` | `float` | 对已生成token施加指数惩罚，1.0 表示不惩罚 | OpenAI兼容、HuggingFace、vLLM |
 | `logit_bias` | `dict` | token id到偏置值的映射（-100~100）<br>示例：`"42=10,43=-10"` | OpenAI兼容 |
 | `seed` | `int` | 随机种子 | OpenAI兼容 |
 | `do_sample` | `bool` | 是否采用采样策略（否则贪婪解码） | Transformers |
-| `top_k` | `int` | 从top_k最可能的词中采样 | Anthropic, Google, HuggingFace, vLLM, SGLang |
-| `logprobs` | `bool` | 是否返回输出token的对数概率 | OpenAI, Grok, TogetherAI, HuggingFace, llama-cpp-python, vLLM, SGLang |
-| `top_logprobs` | `int` | 返回概率最高的前N个token（范围0~20） | OpenAI, Grok, HuggingFace, vLLM, SGLang |
-| `parallel_tool_calls` | `bool` | 工具调用是否支持并行 | OpenAI, Groq |
-| `max_tool_output` | `int` | 工具输出的最大字节数 | 所有（默认16*1024） |
+| `top_k` | `int` | 从top_k最可能的词中采样 | Anthropic、Google、HuggingFace、vLLM、SGLang |
+| `logprobs` | `bool` | 是否返回输出token的对数概率 | OpenAI兼容、HuggingFace、llama-cpp-python |
+| `top_logprobs` | `int` | 返回概率最高的前N个token（范围0~20） | OpenAI兼容、HuggingFace |
+| `parallel_tool_calls` | `bool` | 工具调用是否支持并行 | OpenAI、Groq |
+| `response_schema` | `dict` | 请求结构化输出（JSON Schema），仍需对输出做校验 | OpenAI、Google、Mistral |
+| `reasoning_effort` | `str` | reasoning 努力程度，可选 `low` / `medium`（默认）/ `high` | OpenAI o1 系列 |
+| `reasoning_tokens` | `int` | reasoning 最大 token 预算（thinking budget） | Anthropic Claude |
+| `reasoning_summary` | `str` | reasoning 摘要级别，可选 `concise` / `detailed` / `auto` | OpenAI reasoning 系列 |
+| `reasoning_history` | `str` | 多轮对话中如何编码上一轮 assistant 的 `reasoning_content`。可选值：`reasoning_field`（默认，作为独立顶层字段透传，适配 DeepSeek V4 thinking、Qwen3 thinking 等）、`think_tag`（编码为 `<think>...</think>` 塞进 content 字符串，兼容旧版 Together / Groq 等部署）、`none`（完全剥离，DeepSeek R1 等禁止回传 `reasoning_content` 的 legacy 模型必须显式设此值） | OpenAI兼容 |
 | `extra_body` | `dict` | 向OpenAI兼容服务发送的额外请求体 | OpenAI兼容服务 |
 | `extra_query` | `dict` | 向OpenAI兼容服务发送的额外查询参数 | OpenAI兼容服务 |
 | `extra_headers` | `dict` | 向OpenAI兼容服务发送的额外请求头 | OpenAI兼容服务 |
@@ -144,7 +150,7 @@
 
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
-| `--eval-type` | `str` | 评测类型<br>• `llm_ckpt`: 本地模型推理（transformers）<br>• `openai_api`: OpenAI兼容Chat Completions API服务<br>• `openai_responses_api`: OpenAI官方Responses API服务<br>• `anthropic_api`: Anthropic Claude API服务<br>• `litellm`: LiteLLM多厂商路由（支持100+ LLM服务商）<br>• `text2image`: 文本转图像模型（diffusers）<br>• `image_editing`: 图像编辑模型<br>• `mock_llm`: 模拟推理（功能验证）<br>• `custom`: 自定义评测类型 | `None`（自动判断） |
+| `--eval-type` | `str` | 评测类型<br>• `llm_ckpt`: 本地模型推理（transformers）<br>• `openai_api`: OpenAI兼容Chat Completions API服务<br>• `openai_responses_api`: OpenAI官方Responses API服务<br>• `anthropic_api`: Anthropic Claude API服务<br>• `litellm`: LiteLLM多厂商路由（支持100+ LLM服务商）<br>• `text2image`: 文本转图像模型（diffusers）<br>• `text2speech`: 文本转语音模型服务<br>• `image_editing`: 图像编辑模型<br>• `mock_llm`: 模拟推理（功能验证）<br>• `custom`: 自定义评测类型 | `None`（自动判断） |
 | `--eval-batch-size` | `int` | 评测批量大小，作用于以下阶段：<br>• 推理阶段：并发请求数（service模式）或批量大小（checkpoint模式）<br>• LLM-judge 评审阶段：并发线程数<br>• batch_calculate_metrics 阶段：每批次处理的样本数 | `1`（service模式为`8`） |
 | `--eval-backend` | `str` | 评测后端<br>• `Native`: 默认后端<br>• `OpenCompass`: 大语言模型评测<br>• `VLMEvalKit`: 多模态模型评测<br>• `RAGEval`: RAG/Embedding/Reranker/CLIP评测<br>• `ThirdParty`: 特殊任务评测 | `Native` |
 | `--eval-config` | `str` | 非Native后端的配置文件路径 | - |

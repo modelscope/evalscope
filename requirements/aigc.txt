@@ -1,5 +1,6 @@
 diffusers
 iopath
+lpips
 omegaconf
 open_clip_torch
 opencv-python

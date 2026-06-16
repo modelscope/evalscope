@@ -74,6 +74,7 @@ For details, please refer to [📖 Visualizing Evaluation Results](https://evals
 
 ## 🎉 What's New
 
+- 🔥 **[2026.06.02]** Refactored **RAG evaluation** module: upgraded to MTEB 2.x and RAGAS 0.4.x, with unified Pydantic-based configs. See the [RAGEval guide](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/index.html).
 - 🔥 **[2026.05.27]** Added **Trie agentic trace replay** for perf benchmarking: three new dataset plugins (`trie_agentic_coding` / `trie_code_qa` / `trie_office_work`) replay real multi-turn agent traces with per-turn token caps and tool-call latency simulation. Also introduced a `--duration` wall-clock budget for all benchmark modes and a `Turn` dataclass for per-turn overrides.
 - 🔥 **[2026.05.27]** Added **Vendor Verifier benchmarks** (`k2_verifier`, `kimi_verifier`, `minimax_verifier`) for validating whether third-party API deployments faithfully reproduce official model behavior, with a shared `VendorVerifierAdapter` base class.
 - 🔥 **[2026.05.26]** Added the [GAIA](https://evalscope.readthedocs.io/en/latest/third_party/gaia.html) agent benchmark (multi-turn ReAct + `bash` in a Docker sandbox, official rule-based scorer) and generic [MCP server](https://evalscope.readthedocs.io/en/latest/user_guides/agent/native.html#mcp-server-tools) support — any `NativeAgentConfig`-driven benchmark can now plug in stdio / HTTP / SSE MCP servers (`fetch`, web search, GitHub, ...) without per-benchmark wiring.
@@ -353,7 +354,7 @@ Welcome to join our community to communicate with other developers and get help.
 
 [Discord Group](https://discord.gg/xc66bMxc4h)              |  WeChat Group | DingTalk Group
 :-------------------------:|:-------------------------:|:-------------------------:
-<img src="docs/asset/discord_qr.png" width="160" height="160">  |  <img src="docs/asset/wechat.png" width="160" height="160"> | <img src="docs/asset/dingding.png" width="160" height="160">
+<img src="docs/asset/discord_qr.png" width="160" height="160">  |  <img src="https://raw.githubusercontent.com/modelscope/ms-swift/main/asset/wechat.png" width="160" height="160"> | <img src="docs/asset/dingding.png" width="160" height="160">
 
 ## 👷‍♂️ Contributing
 
