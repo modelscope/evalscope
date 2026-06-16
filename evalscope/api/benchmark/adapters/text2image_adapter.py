@@ -1,5 +1,6 @@
 import base64
 import os
+from typing import Any, Dict
 
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
@@ -15,6 +16,19 @@ from .default_data_adapter import DefaultDataAdapter
 
 logger = get_logger()
 
+IMAGE_PAIR_REFERENCE_KEYS = (
+    'reference_image_path',
+    'target_image_path',
+    'ref_image_path',
+    'gt_image_path',
+    'ground_truth_image_path',
+    'reference_image',
+    'target_image',
+    'ref_image',
+    'gt_image',
+    'ground_truth_image',
+)
+
 
 class Text2ImageAdapter(DefaultDataAdapter):
     """Text to Image Adapter for benchmarks."""
@@ -27,18 +41,20 @@ class Text2ImageAdapter(DefaultDataAdapter):
     def load_from_disk(self, **kwargs):
         return super().load_from_disk(use_local_loader=True)
 
-    def record_to_sample(self, record) -> Sample:
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert a record dictionary to a Sample object."""
+        metadata = dict(record)
+        metadata.update({
+            'prompt': record['prompt'],
+            'category': record.get('category', ''),
+            'tags': record.get('tags', []),
+            FileConstants.ID: record.get(FileConstants.ID, ''),
+            FileConstants.IMAGE_PATH: record.get(FileConstants.IMAGE_PATH, ''),
+        })
         return Sample(
             input=[ChatMessageUser(content=record['prompt'])],
-            metadata={
-                'prompt': record['prompt'],
-                'category': record.get('category', ''),
-                'tags': record.get('tags', []),
-                FileConstants.ID: record[FileConstants.ID],
-                FileConstants.IMAGE_PATH: record.get(FileConstants.IMAGE_PATH,
-                                                     ''),  # Optional field for existing image path
-            }
+            target=self._record_reference_image(record),
+            metadata=metadata
         )
 
     def _on_inference(self, model: Model, sample: Sample) -> ModelOutput:
@@ -89,7 +105,7 @@ class Text2ImageAdapter(DefaultDataAdapter):
                 completed=True,
             )
         else:
-            image_id = f'{sample.metadata.get(FileConstants.ID, sample.id)}_{sample.group_id}'
+            image_id = f'{sample.metadata.get(FileConstants.ID) or sample.id}_{sample.group_id}'
             output_path = os.path.join(output_dir, 'images', f'{image_id}.png')
             if not os.path.exists(os.path.dirname(output_path)):
                 os.makedirs(os.path.dirname(output_path))
@@ -117,9 +133,12 @@ class Text2ImageAdapter(DefaultDataAdapter):
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
         # Get prediction and prompt from task state
-        image_path = task_state.metadata.get(FileConstants.IMAGE_PATH, original_prediction)
-        prompt = task_state.input[0].content
-        meta = task_state.metadata
+        meta = task_state.metadata or {}
+        image_path = meta.get(FileConstants.IMAGE_PATH, original_prediction)
+        if isinstance(task_state.input, list) and task_state.input:
+            prompt = task_state.input[0].content
+        else:
+            prompt = task_state.input
 
         # Initialize the score object with prediction details
         score = Score(
@@ -129,6 +148,7 @@ class Text2ImageAdapter(DefaultDataAdapter):
 
         # Calculate scores for each configured metric
         for metric in self.metric_list:
+            metric_name = ''
             try:
                 if isinstance(metric, str):
                     metric_name = metric
@@ -139,7 +159,11 @@ class Text2ImageAdapter(DefaultDataAdapter):
                 metric_args = self.get_metric_args(metric_name)
                 metric_cls = get_metric(metric_name)
                 metric_func = metric_cls(**metric_args)
-                metric_score = metric_func(image_path, prompt)[0]
+                if self._is_image_pair_metric(metric_func):
+                    reference_image = self._resolve_reference_image(reference, meta, metric_name)
+                    metric_score = metric_func(image_path, reference_image)
+                else:
+                    metric_score = metric_func(image_path, prompt)[0]
 
                 # fine-granular metrics
                 category = meta.get('category')
@@ -147,12 +171,50 @@ class Text2ImageAdapter(DefaultDataAdapter):
                     metric_name = f'{metric_name}_{category}'
                 if isinstance(metric_score, dict):
                     for k, v in metric_score.items():
-                        score.value[f'{metric_name}_{k}'] = v.cpu().item()
+                        score.value[f'{metric_name}_{k}'] = self._score_to_float(v)
                 else:
-                    score.value[metric_name] = metric_score.cpu().item()
+                    score.value[metric_name] = self._score_to_float(metric_score)
             except Exception as e:
                 logger.error(f'Error calculating metric {metric}: {e}')
                 score.value[metric_name] = 0
                 score.metadata[metric_name] = f'error: {str(e)}'
 
         return score
+
+    @staticmethod
+    def _record_reference_image(record: Dict[str, Any]) -> str:
+        for key in IMAGE_PAIR_REFERENCE_KEYS:
+            value = record.get(key)
+            if isinstance(value, str) and value:
+                return value
+        target = record.get('target', '')
+        return target if isinstance(target, str) else ''
+
+    @staticmethod
+    def _is_image_pair_metric(metric_func: Any) -> bool:
+        return bool(getattr(metric_func, 'image_pair_metric', False))
+
+    @staticmethod
+    def _resolve_reference_image(reference: Any, metadata: Dict[str, Any], metric_name: str) -> Any:
+        for key in IMAGE_PAIR_REFERENCE_KEYS:
+            value = metadata.get(key)
+            if not Text2ImageAdapter._is_empty_image_value(value):
+                return value
+        if not Text2ImageAdapter._is_empty_image_value(reference):
+            return reference
+        raise ValueError(
+            f'Metric {metric_name} requires a reference image. Provide one of: '
+            f'{", ".join(IMAGE_PAIR_REFERENCE_KEYS)}.'
+        )
+
+    @staticmethod
+    def _is_empty_image_value(value: Any) -> bool:
+        return value is None or (isinstance(value, str) and value.strip() == '')
+
+    @staticmethod
+    def _score_to_float(value: Any) -> float:
+        if hasattr(value, 'cpu') and hasattr(value, 'item'):
+            return float(value.cpu().item())
+        if hasattr(value, 'item'):
+            return float(value.item())
+        return float(value)
