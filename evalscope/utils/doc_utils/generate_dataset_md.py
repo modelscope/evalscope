@@ -231,6 +231,9 @@ def get_adapter_sample_example(adapter, max_length: int = 500) -> Dict[str, Any]
     """Get sample example from a DataAdapter."""
     from evalscope.utils.doc_utils.benchmark_stats import get_sample_example
 
+    if getattr(adapter, '_suppress_doc_sample_example', False):
+        return {}
+
     try:
         example = get_sample_example(adapter, max_length=max_length)
         if example:
