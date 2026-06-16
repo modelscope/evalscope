@@ -12,7 +12,7 @@ The EvalScope framework supports a variety of evaluation metrics, allowing users
 
 
 | Evaluation Metric | Project Link       | Scoring Range | Remarks                  |
-|-------------------|--------------------|----------------------------------|--------------------------|
+|-------------------|--------------------|---------------|--------------------------|
 | `VQAScore`        | [Github](https://github.com/linzhiqiu/t2v_metrics) | [0, 1] (Typically)      | Evaluates text-image consistency using Q&A |
 | `CLIPScore`       | [Github](https://github.com/linzhiqiu/t2v_metrics) | [0, 0.3] (Typically) | Uses CLIP to assess image-text matching |
 | `BLIPv2Score`     | [Github](https://github.com/linzhiqiu/t2v_metrics) | [0, 1] (Typically)      | Evaluates image-text matching using BLIP's ITM |
@@ -22,7 +22,7 @@ The EvalScope framework supports a variety of evaluation metrics, allowing users
 | `MPS`             | [Github](https://github.com/Kwai-Kolors/MPS) | [0, 15] (Typically)      | Kuaishou: A multi-dimensional preference scoring method that comprehensively considers multiple attributes (e.g., realism, semantic alignment) of generated images to assess their quality |
 | `FGA_BLIP2Score`  | [Github](https://github.com/DYEvaLab/EvalMuse) | Overall [0, 5] (Typically, each dimension is [0, 1]) | ByteDance: Used for evaluating the quality and semantic alignment of finely generated images |
 | `ssim`            | Built-in | [-1, 1] (Higher is better) | Full-reference structural similarity. Requires a reference image |
-| `psnr`            | Built-in | [0, +∞) (Higher is better) | Full-reference peak signal-to-noise ratio. Requires a reference image |
+| `psnr`            | Built-in | [0, 100] (Higher is better) | Full-reference peak signal-to-noise ratio. Identical images are capped at 100. Requires a reference image |
 | `lpips`           | [Github](https://github.com/richzhang/PerceptualSimilarity) | [0, +∞) (Lower is better) | Learned perceptual similarity. Requires a reference image and `evalscope[aigc]` |
 
 
@@ -147,9 +147,15 @@ Provide a JSONL file in the following format:
 - `prompt`: Prompt text for generating the image.
 - `image_path`: Path to the generated image.
 
-Full-reference image metrics such as `ssim`, `psnr`, and `lpips` compare `image_path` with a reference image.
-Set one of `reference_image_path`, `target_image_path`, `ref_image_path`, `gt_image_path`, or their non-`_path`
-image variants in each JSONL record.
+Full-reference image metrics (`ssim`, `psnr`, `lpips`) compare `image_path` against a reference image.
+To use them, add a reference image field to each JSONL record:
+
+```json
+{"id": 1, "prompt": "A red rose", "image_path": "/path/to/pred.jpg", "reference_image_path": "/path/to/ref.jpg"}
+```
+
+Supported reference field names: `reference_image_path`, `target_image_path`, `ref_image_path`, `gt_image_path`,
+`ground_truth_image_path`, or the corresponding non-`_path` variants (e.g., `reference_image`) for in-memory objects.
 Images are converted to RGB and normalized to [0, 1], so the default `data_range=1.0` should be kept unless you
 intentionally override the normalized range.
 
@@ -188,6 +194,10 @@ task_cfg = TaskConfig(
                 'VQAScore',
                 'FGA_BLIP2Score',
                 'MPS',
+                # Full-reference metrics (require reference_image_path in JSONL):
+                # 'ssim',
+                # 'psnr',
+                # 'lpips',  # requires evalscope[aigc]
                 ],
             'dataset_id': 'custom_eval/multimodal/t2i/example.jsonl',
         }
