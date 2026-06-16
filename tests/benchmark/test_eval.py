@@ -809,6 +809,28 @@ class TestNativeBenchmark(TestBenchmark):
         self._run_dataset_load_test('longbench_v2', dataset_args, debug=False)
         # self._run_dataset_test('longbench_v2', dataset_args, limit=1, ignore_errors=True)
 
+    def test_longmemeval(self):
+        """Test LongMemEval dataset."""
+        dataset_args = {
+            'subset_list': ['oracle'],
+            'extra_params': {
+                'eval_mode': 'oracle_context',
+            },
+        }
+        self._run_dataset_test(
+            'longmemeval',
+            dataset_args,
+            use_mock=True,
+            limit=1,
+            eval_batch_size=1,
+            judge_strategy=JudgeStrategy.RULE,
+            generation_config={
+                'max_tokens': 128,
+                'temperature': 0.0,
+            },
+        )
+
+
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
     # Run all tests: python -m unittest test_eval.TestBenchmark

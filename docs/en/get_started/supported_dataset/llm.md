@@ -65,6 +65,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `live_code_bench` | [Live-Code-Bench](../../benchmarks/live_code_bench.md) | `Coding` |
 | `logi_qa` | [LogiQA](../../benchmarks/logi_qa.md) | `MCQ`, `Reasoning` |
 | `longbench_v2` | [LongBench-v2](../../benchmarks/longbench_v2.md) | `LongContext`, `MCQ`, `ReadingComprehension` |
+| `longmemeval` | [LongMemEval](../../benchmarks/longmemeval.md) | `LongContext`, `MultiTurn`, `QA`, `Retrieval` |
 | `maritime_bench` | [MaritimeBench](../../benchmarks/maritime_bench.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `math_500` | [MATH-500](../../benchmarks/math_500.md) | `Math`, `Reasoning` |
 | `math_qa` | [MathQA](../../benchmarks/math_qa.md) | `MCQ`, `Math`, `Reasoning` |
@@ -181,6 +182,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/live_code_bench.md
 ../../benchmarks/logi_qa.md
 ../../benchmarks/longbench_v2.md
+../../benchmarks/longmemeval.md
 ../../benchmarks/maritime_bench.md
 ../../benchmarks/math_500.md
 ../../benchmarks/math_qa.md
