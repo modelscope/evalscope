@@ -196,6 +196,11 @@ _AGENTIC_EXTRA_PARAMS: Dict[str, Any] = {
         'value': '',
         'choices': ['', 'arm64', 'x86_64'],
     },
+    'dockerhub_username': {
+        'type': 'str',
+        'description': 'DockerHub user/org namespace for remote SWE-bench images.',
+        'value': 'swebench',
+    },
 }
 
 # ---------------------------------------------------------------------------
@@ -228,6 +233,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
         self.build_docker_images: bool = self.extra_params.get('build_docker_images', True)
         self.pull_remote_images_if_available: bool = self.extra_params.get('pull_remote_images_if_available', True)
         self.force_arch: str = self.extra_params.get('force_arch', '')
+        self.dockerhub_username: str = self.extra_params.get('dockerhub_username', 'swebench')
 
         # Skip docker image build/pull during documentation generation (BUILD_DOC=1)
         # to avoid slow/unnecessary image pulls when running `make docs-pipeline`.
@@ -275,12 +281,14 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
                 max_workers=4,
                 use_remote_images=self.pull_remote_images_if_available,
                 force_arch=self.force_arch,
+                dockerhub_username=self.dockerhub_username,
             )
 
             def docker_image_from_id(instance_id: str) -> str:
                 return id_to_docker_image_map.get(instance_id, '')
         else:
-            docker_image_from_id = get_remote_docker_image_from_id
+            from functools import partial
+            docker_image_from_id = partial(get_remote_docker_image_from_id, dockerhub_username=self.dockerhub_username)
 
         for sample in samples:
             sample.metadata['docker_image'] = docker_image_from_id(sample.metadata['instance_id'])

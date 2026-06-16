@@ -64,6 +64,7 @@ SWE-bench Lite is a focused subset of SWE-bench containing 300 Issue-Pull Reques
 | `pull_remote_images_if_available` | `bool` | `True` | Attempt to pull existing remote Docker images before building. |
 | `inference_dataset_id` | `str` | `princeton-nlp/SWE-bench_oracle` | Oracle dataset ID used to fetch inference context. |
 | `force_arch` | `str` | `` | Optionally force the docker images to be pulled/built for a specific architecture. Choices: ['', 'arm64', 'x86_64'] |
+| `dockerhub_username` | `str` | `swebench` | DockerHub user/org namespace for remote SWE-bench images. |
 
 ## Usage
 

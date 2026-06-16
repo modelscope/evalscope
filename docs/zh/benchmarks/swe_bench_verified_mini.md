@@ -8,8 +8,8 @@ SWE-bench Verified Mini 是 SWE-bench Verified 的一个紧凑子集，包含 50
 ## 任务描述
 
 - **任务类型**：自动化软件工程 / 缺陷修复
-- **输入**：带有仓库上下文的 GitHub Issue 描述
-- **输出**：解决该 Issue 的代码补丁（diff 格式）
+- **输入**：带有仓库上下文的 GitHub issue 描述
+- **输出**：解决该 issue 的代码补丁（diff 格式）
 - **规模**：50 个样本（完整 Verified 集合为 500 个）
 
 ## 主要特性
@@ -22,7 +22,7 @@ SWE-bench Verified Mini 是 SWE-bench Verified 的一个紧凑子集，包含 50
 
 ## 评估说明
 
-- 评估前需先安装 `pip install swebench==4.1.0`
+- 评估前需执行 `pip install swebench==4.1.0`
 - Docker 镜像会自动构建或拉取
 - 详细设置请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
 - 适用于快速原型设计和模型初步评估
@@ -64,6 +64,7 @@ SWE-bench Verified Mini 是 SWE-bench Verified 的一个紧凑子集，包含 50
 | `pull_remote_images_if_available` | `bool` | `True` | 在构建前尝试拉取已存在的远程 Docker 镜像。 |
 | `inference_dataset_id` | `str` | `princeton-nlp/SWE-bench_oracle` | 用于获取推理上下文的 Oracle 数据集 ID。 |
 | `force_arch` | `str` | `` | 可选地强制为特定架构拉取/构建 Docker 镜像。选项：['', 'arm64', 'x86_64'] |
+| `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像所用的 DockerHub 用户/组织命名空间。 |
 
 ## 使用方法
 

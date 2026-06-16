@@ -65,6 +65,7 @@ SWE-bench Verified is a human-validated subset of 500 samples from SWE-bench, de
 | `build_docker_images` | `bool` | `True` | Build Docker images locally for each sample. |
 | `pull_remote_images_if_available` | `bool` | `True` | Attempt to pull existing remote Docker images before building. |
 | `force_arch` | `str` | `` | Optionally force the docker images to be pulled/built for a specific architecture. Choices: ['', 'arm64', 'x86_64'] |
+| `dockerhub_username` | `str` | `swebench` | DockerHub user/org namespace for remote SWE-bench images. |
 
 ## Usage
 

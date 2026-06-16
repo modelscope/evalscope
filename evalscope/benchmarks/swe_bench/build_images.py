@@ -17,6 +17,7 @@ def build_images(
     force_rebuild: bool = False,
     use_remote_images: bool = True,
     force_arch: Literal['', 'arm64', 'x86_64'] = '',
+    dockerhub_username: str = 'swebench',
 ) -> Dict[str, str]:
     """This function uses the swe_bench library to build the docker images for the SWE-bench dataset.
 
@@ -28,6 +29,7 @@ def build_images(
         force_rebuild (bool, optional): Whether to force a rebuild of the images. Defaults to False.
         use_remote_images (bool, optional): Whether to try pulling images from Docker Hub before building locally. Defaults to True. See https://hub.docker.com/u/swebench
         force_arch (str, optional): Optionally force the docker images to be pulled/built for a specific architecture. Defaults to "".
+        dockerhub_username (str, optional): DockerHub user/org namespace for remote images. Defaults to "swebench".
     """  # noqa: E501
     from docker.client import DockerClient  # type: ignore
     from swebench.harness.constants import LATEST, SWEbenchInstance  # type: ignore
@@ -50,7 +52,7 @@ def build_images(
     id_to_docker_image: Dict[str, str] = {}
 
     # Note that remote images are named eg "sphinx-doc_1776_sphinx-11502"
-    namespace = 'swebench' if use_remote_images else None
+    namespace = dockerhub_username if use_remote_images else None
 
     for swebench_instance in samples_hf:
         test_spec = make_test_spec(swebench_instance, namespace=namespace)

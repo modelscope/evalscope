@@ -6,8 +6,10 @@ from evalscope.utils import get_logger
 
 logger = get_logger()
 
+DEFAULT_DOCKERHUB_USERNAME = 'swebench'
 
-def get_remote_docker_image_from_id(instance_id: str) -> str:
+
+def get_remote_docker_image_from_id(instance_id: str, dockerhub_username: str = DEFAULT_DOCKERHUB_USERNAME) -> str:
     """Image name format as found on DockerHub since swebench v3.0"""
     # NOTE: The swebench library contains this logic within `make_test_spec`,
     # but this module would require significant refactoring to use it.
@@ -19,7 +21,7 @@ def get_remote_docker_image_from_id(instance_id: str) -> str:
         arch = 'arm64' if instance_id not in USE_X86 else 'x86_64'
     else:
         arch = 'x86_64'
-    return f'swebench/sweb.eval.{arch}.{updated_instance_id}:latest'
+    return f'{dockerhub_username}/sweb.eval.{arch}.{updated_instance_id}:latest'
 
 
 GIT_APPLY_CMDS = [
@@ -29,7 +31,13 @@ GIT_APPLY_CMDS = [
 ]
 
 
-def eval_instance(instance: dict, pred: str, timeout: int = 1800, log_dir: str = 'outputs'):
+def eval_instance(
+    instance: dict,
+    pred: str,
+    timeout: int = 1800,
+    log_dir: str = 'outputs',
+    dockerhub_username: str = DEFAULT_DOCKERHUB_USERNAME,
+):
     from docker.client import DockerClient
     from swebench.harness.constants import (
         APPLY_PATCH_FAIL,
@@ -54,7 +62,7 @@ def eval_instance(instance: dict, pred: str, timeout: int = 1800, log_dir: str =
     eval_completed = False
     report = {}
     try:
-        test_spec: TestSpec = make_test_spec(instance, namespace='swebench')
+        test_spec: TestSpec = make_test_spec(instance, namespace=dockerhub_username)
         instance_id = test_spec.instance_id
         pred = {
             KEY_PREDICTION: pred,

@@ -70,6 +70,11 @@ SWE-bench Verified is a human-validated subset of 500 samples from SWE-bench, de
                 'description': 'Optionally force the docker images to be pulled/built for a specific architecture.',
                 'value': '',
                 'choices': ['', 'arm64', 'x86_64']
+            },
+            'dockerhub_username': {
+                'type': 'str',
+                'description': 'DockerHub user/org namespace for remote SWE-bench images.',
+                'value': 'swebench'
             }
         }
     )
@@ -85,6 +90,7 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
         self.pull_remote_images_if_available: bool = self.extra_params.get('pull_remote_images_if_available', True)
         self.inference_dataset_id: str = self.extra_params.get('inference_dataset_id', 'princeton-nlp/SWE-bench_oracle')
         self.force_arch: str = self.extra_params.get('force_arch', '')
+        self.dockerhub_username: str = self.extra_params.get('dockerhub_username', 'swebench')
 
         # Skip docker image build/pull during documentation generation (BUILD_DOC=1)
         # to avoid slow/unnecessary image pulls when running `make docs-pipeline`.
@@ -140,6 +146,7 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
                 max_workers=4,
                 use_remote_images=self.pull_remote_images_if_available,
                 force_arch=self.force_arch,
+                dockerhub_username=self.dockerhub_username,
             )
 
             # Replace docker_image_from_id function with authoritative source
@@ -148,9 +155,10 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
 
             docker_image_from_id = get_docker_image
         else:
-            from .utils import get_remote_docker_image_from_id
+            from functools import partial
 
-            docker_image_from_id = get_remote_docker_image_from_id
+            from .utils import get_remote_docker_image_from_id
+            docker_image_from_id = partial(get_remote_docker_image_from_id, dockerhub_username=self.dockerhub_username)
 
         # update metadata with docker image
         for sample in samples:
@@ -180,6 +188,7 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
             pred=filtered_prediction,
             timeout=1800,
             log_dir=self._task_config.work_dir,
+            dockerhub_username=self.dockerhub_username,
         )
 
         score.value = {'acc': float(result.get('resolved', 0.0))}
@@ -244,6 +253,11 @@ SWE-bench Verified Mini is a compact subset of SWE-bench Verified, containing 50
                 'description': 'Optionally force the docker images to be pulled/built for a specific architecture.',
                 'value': '',
                 'choices': ['', 'arm64', 'x86_64']
+            },
+            'dockerhub_username': {
+                'type': 'str',
+                'description': 'DockerHub user/org namespace for remote SWE-bench images.',
+                'value': 'swebench'
             }
         }
     )
@@ -309,6 +323,11 @@ SWE-bench Lite is a focused subset of SWE-bench containing 300 Issue-Pull Reques
                 'description': 'Optionally force the docker images to be pulled/built for a specific architecture.',
                 'value': '',
                 'choices': ['', 'arm64', 'x86_64']
+            },
+            'dockerhub_username': {
+                'type': 'str',
+                'description': 'DockerHub user/org namespace for remote SWE-bench images.',
+                'value': 'swebench'
             }
         }
     )
