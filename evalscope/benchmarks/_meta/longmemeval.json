@@ -1,0 +1,153 @@
+{
+  "meta": {
+    "pretty_name": "LongMemEval",
+    "dataset_id": "evalscope/longmemeval-cleaned",
+    "paper_url": null,
+    "tags": [
+      "QA",
+      "LongContext",
+      "MultiTurn",
+      "Retrieval"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "s"
+    ],
+    "description": "\n## Overview\n\nLongMemEval evaluates long-term interactive memory in chat assistants. Each question is answered from a timestamped multi-session user-assistant history.\n\n## Task Description\n\n- **Task Type**: Long-context / retrieval-log question answering\n- **Input**: Multiple dated chat sessions + current question date + question\n- **Output**: Free-form answer grounded in the history\n- **Subsets**: `s` (~115K-token histories), `m` (~500 sessions, large), and `oracle` (evidence sessions only)\n\n## Key Features\n\n- Covers single-session, multi-session, temporal reasoning, knowledge update, preference, and abstention questions\n- Supports full-history long-context prompts and official retrieval-log prompts\n- Uses LongMemEval's LLM judge prompts for semantic answer correctness\n- Downloads only the selected JSON file from ModelScope\n\n## Evaluation Notes\n\n- Default subset is `s` with `eval_mode=long_context` for standard long-context evaluation\n- Use `subset_list=['oracle']` and `extra_params.eval_mode='oracle_context'` for evidence-only upper-bound evaluation\n- The `m` subset is large and must be requested explicitly\n- `retrieval_log` mode consumes official LongMemEval retrieval logs; it does not run embedding retrieval itself\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "eval_mode": {
+        "type": "str",
+        "description": "Evaluation mode: oracle_context, long_context, or retrieval_log.",
+        "value": "long_context",
+        "choices": [
+          "oracle_context",
+          "long_context",
+          "retrieval_log"
+        ]
+      },
+      "retrieval_log_path": {
+        "type": "str | null",
+        "description": "Official LongMemEval retrieval log path for eval_mode=retrieval_log.",
+        "value": null
+      },
+      "retriever_type": {
+        "type": "str",
+        "description": "Retrieval prompt shape for retrieval_log mode.",
+        "value": "flat-session",
+        "choices": [
+          "flat-session",
+          "flat-turn"
+        ]
+      },
+      "history_format": {
+        "type": "str",
+        "description": "History rendering format.",
+        "value": "json",
+        "choices": [
+          "json",
+          "nl"
+        ]
+      },
+      "user_only": {
+        "type": "bool",
+        "description": "Whether to keep only user turns in history.",
+        "value": false
+      },
+      "reading_method": {
+        "type": "str",
+        "description": "Prompt reading method. `con` asks the model to extract and reason before answering.",
+        "value": "con",
+        "choices": [
+          "direct",
+          "con"
+        ]
+      },
+      "topk_context": {
+        "type": "int",
+        "description": "Maximum number of history sessions or retrieved chunks included in the prompt.",
+        "value": 1000
+      }
+    },
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 500,
+    "subset_stats": [
+      {
+        "name": "s",
+        "sample_count": 500,
+        "prompt_length_mean": 515877.18,
+        "prompt_length_min": 480743,
+        "prompt_length_max": 540467,
+        "prompt_length_std": 9341.77,
+        "target_length_mean": 51.89
+      }
+    ],
+    "prompt_length": {
+      "mean": 515877.18,
+      "min": 480743,
+      "max": 540467,
+      "std": 9341.77
+    },
+    "target_length_mean": 51.89,
+    "computed_at": "2026-06-16T17:43:19.601937"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "99d5aff3",
+          "content": "I will give you several history chats between you and a user. Please answer the question based on the relevant chat history. Answer the question step by step: first extract all the relevant information, and then reason over the information to ... [TRUNCATED 513848 chars] ... you'll be able to optimize your pantry storage space, reduce clutter, and make meal prep and cooking more efficient. Happy organizing!\"}]\n\n\nCurrent Date: 2023/05/30 (Tue) 23:40\nQuestion: What degree did I graduate with?\nAnswer (step by step):"
+        }
+      ],
+      "target": "Business Administration",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "question_id": "e47becba",
+        "question_type": "single-session-user",
+        "question": "What degree did I graduate with?",
+        "answer": "Business Administration",
+        "question_date": "2023/05/30 (Tue) 23:40",
+        "answer_session_ids": [
+          "answer_280352e9"
+        ],
+        "is_abstention": false,
+        "eval_mode": "long_context",
+        "retrieved_ids": [
+          "sharegpt_yywfIrx_0",
+          "85a1be56_1",
+          "sharegpt_Jcy1CVN_0",
+          "sharegpt_Cr2tc1f_0",
+          "sharegpt_DGTCD7D_0",
+          "f6859b48_2",
+          "52c34859_1",
+          "ultrachat_231069",
+          "sharegpt_qRdLQvN_7",
+          "ultrachat_359984",
+          "... [TRUNCATED 43 more items] ..."
+        ]
+      }
+    },
+    "subset": "s",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# LongMemEval\n\n\n## Overview\n\nLongMemEval evaluates long-term interactive memory in chat assistants. Each question is answered from a timestamped multi-session user-assistant history.\n\n## Task Description\n\n- **Task Type**: Long-context / retrieval-log question answering\n- **Input**: Multiple dated chat sessions + current question date + question\n- **Output**: Free-form answer grounded in the history\n- **Subsets**: `s` (~115K-token histories), `m` (~500 sessions, large), and `oracle` (evidence sessions only)\n\n## Key Features\n\n- Covers single-session, multi-session, temporal reasoning, knowledge update, preference, and abstention questions\n- Supports full-history long-context prompts and official retrieval-log prompts\n- Uses LongMemEval's LLM judge prompts for semantic answer correctness\n- Downloads only the selected JSON file from ModelScope\n\n## Evaluation Notes\n\n- Default subset is `s` with `eval_mode=long_context` for standard long-context evaluation\n- Use `subset_list=['oracle']` and `extra_params.eval_mode='oracle_context'` for evidence-only upper-bound evaluation\n- The `m` subset is large and must be requested explicitly\n- `retrieval_log` mode consumes official LongMemEval retrieval logs; it does not run embedding retrieval itself\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `longmemeval` |\n| **Dataset ID** | [evalscope/longmemeval-cleaned](https://modelscope.cn/datasets/evalscope/longmemeval-cleaned/summary) |\n| **Paper** | N/A |\n| **Tags** | `LongContext`, `MultiTurn`, `QA`, `Retrieval` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 500 |\n| Prompt Length (Mean) | 515877.18 chars |\n| Prompt Length (Min/Max) | 480743 / 540467 chars |\n\n## Sample Example\n\n**Subset**: `s`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"99d5aff3\",\n      \"content\": \"I will give you several history chats between you and a user. Please answer the question based on the relevant chat history. Answer the question step by step: first extract all the relevant information, and then reason over the information to ... [TRUNCATED 513848 chars] ... you'll be able to optimize your pantry storage space, reduce clutter, and make meal prep and cooking more efficient. Happy organizing!\\\"}]\\n\\n\\nCurrent Date: 2023/05/30 (Tue) 23:40\\nQuestion: What degree did I graduate with?\\nAnswer (step by step):\"\n    }\n  ],\n  \"target\": \"Business Administration\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question_id\": \"e47becba\",\n    \"question_type\": \"single-session-user\",\n    \"question\": \"What degree did I graduate with?\",\n    \"answer\": \"Business Administration\",\n    \"question_date\": \"2023/05/30 (Tue) 23:40\",\n    \"answer_session_ids\": [\n      \"answer_280352e9\"\n    ],\n    \"is_abstention\": false,\n    \"eval_mode\": \"long_context\",\n    \"retrieved_ids\": [\n      \"sharegpt_yywfIrx_0\",\n      \"85a1be56_1\",\n      \"sharegpt_Jcy1CVN_0\",\n      \"sharegpt_Cr2tc1f_0\",\n      \"sharegpt_DGTCD7D_0\",\n      \"f6859b48_2\",\n      \"52c34859_1\",\n      \"ultrachat_231069\",\n      \"sharegpt_qRdLQvN_7\",\n      \"ultrachat_359984\",\n      \"... [TRUNCATED 43 more items] ...\"\n    ]\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `eval_mode` | `str` | `long_context` | Evaluation mode: oracle_context, long_context, or retrieval_log. Choices: ['oracle_context', 'long_context', 'retrieval_log'] |\n| `retrieval_log_path` | `str | null` | `None` | Official LongMemEval retrieval log path for eval_mode=retrieval_log. |\n| `retriever_type` | `str` | `flat-session` | Retrieval prompt shape for retrieval_log mode. Choices: ['flat-session', 'flat-turn'] |\n| `history_format` | `str` | `json` | History rendering format. Choices: ['json', 'nl'] |\n| `user_only` | `bool` | `False` | Whether to keep only user turns in history. |\n| `reading_method` | `str` | `con` | Prompt reading method. `con` asks the model to extract and reason before answering. Choices: ['direct', 'con'] |\n| `topk_context` | `int` | `1000` | Maximum number of history sessions or retrieved chunks included in the prompt. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets longmemeval \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['longmemeval'],\n    dataset_args={\n        'longmemeval': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# LongMemEval\n\n\n## 概述\n\nLongMemEval 用于评估聊天助手的长期交互记忆能力。每个问题均基于带有时间戳的多轮会话用户-助手历史记录进行回答。\n\n## 任务描述\n\n- **任务类型**：长上下文 / 检索日志问答\n- **输入**：多个带日期的聊天会话 + 当前问题日期 + 问题\n- **输出**：基于历史记录的自由形式答案\n- **子集**：`s`（约115K token的历史记录）、`m`（约500个会话，规模较大）和 `oracle`（仅包含证据会话）\n\n## 主要特性\n\n- 涵盖单会话、多会话、时序推理、知识更新、偏好及弃权类问题\n- 支持完整历史记录的长上下文提示和官方检索日志提示\n- 使用 LongMemEval 的 LLM 评判提示来评估语义答案正确性\n- 仅从 ModelScope 下载所选的 JSON 文件\n\n## 评估说明\n\n- 默认子集为 `s`，并使用 `eval_mode=long_context` 进行标准长上下文评估\n- 使用 `subset_list=['oracle']` 和 `extra_params.eval_mode='oracle_context'` 进行仅含证据的上限评估\n- `m` 子集规模较大，必须显式请求\n- `retrieval_log` 模式使用官方 LongMemEval 检索日志；其本身不执行嵌入检索\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `longmemeval` |\n| **数据集ID** | [evalscope/longmemeval-cleaned](https://modelscope.cn/datasets/evalscope/longmemeval-cleaned/summary) |\n| **论文** | N/A |\n| **标签** | `LongContext`, `MultiTurn`, `QA`, `Retrieval` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 500 |\n| 提示词长度（平均） | 515877.18 字符 |\n| 提示词长度（最小/最大） | 480743 / 540467 字符 |\n\n## 样例示例\n\n**子集**: `s`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"99d5aff3\",\n      \"content\": \"I will give you several history chats between you and a user. Please answer the question based on the relevant chat history. Answer the question step by step: first extract all the relevant information, and then reason over the information to ... [TRUNCATED 513848 chars] ... you'll be able to optimize your pantry storage space, reduce clutter, and make meal prep and cooking more efficient. Happy organizing!\\\"}]\\n\\n\\nCurrent Date: 2023/05/30 (Tue) 23:40\\nQuestion: What degree did I graduate with?\\nAnswer (step by step):\"\n    }\n  ],\n  \"target\": \"Business Administration\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question_id\": \"e47becba\",\n    \"question_type\": \"single-session-user\",\n    \"question\": \"What degree did I graduate with?\",\n    \"answer\": \"Business Administration\",\n    \"question_date\": \"2023/05/30 (Tue) 23:40\",\n    \"answer_session_ids\": [\n      \"answer_280352e9\"\n    ],\n    \"is_abstention\": false,\n    \"eval_mode\": \"long_context\",\n    \"retrieved_ids\": [\n      \"sharegpt_yywfIrx_0\",\n      \"85a1be56_1\",\n      \"sharegpt_Jcy1CVN_0\",\n      \"sharegpt_Cr2tc1f_0\",\n      \"sharegpt_DGTCD7D_0\",\n      \"f6859b48_2\",\n      \"52c34859_1\",\n      \"ultrachat_231069\",\n      \"sharegpt_qRdLQvN_7\",\n      \"ultrachat_359984\",\n      \"... [TRUNCATED 43 more items] ...\"\n    ]\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `eval_mode` | `str` | `long_context` | 评估模式：oracle_context、long_context 或 retrieval_log。可选项：['oracle_context', 'long_context', 'retrieval_log'] |\n| `retrieval_log_path` | `str | null` | `None` | eval_mode=retrieval_log 时使用的官方 LongMemEval 检索日志路径。 |\n| `retriever_type` | `str` | `flat-session` | retrieval_log 模式下的检索提示格式。可选项：['flat-session', 'flat-turn'] |\n| `history_format` | `str` | `json` | 历史记录渲染格式。可选项：['json', 'nl'] |\n| `user_only` | `bool` | `False` | 是否仅保留历史记录中的用户发言。 |\n| `reading_method` | `str` | `con` | 提示阅读方法。`con` 要求模型先提取信息并推理后再作答。可选项：['direct', 'con'] |\n| `topk_context` | `int` | `1000` | 提示中包含的最大历史会话数或检索片段数。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets longmemeval \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['longmemeval'],\n    dataset_args={\n        'longmemeval': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "f259d391942377dbf580e4c14af0f7a1",
+    "needs_translation": false
+  },
+  "updated_at": "2026-06-16T17:43:24.671815",
+  "translation_updated_at": "2026-06-16T17:43:28"
+}
