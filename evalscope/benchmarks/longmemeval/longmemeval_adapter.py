@@ -186,14 +186,21 @@ class LongMemEvalAdapter(DefaultDataAdapter):
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f'LongMemEval retrieval log not found: {path}')
-        if path.suffix == '.jsonl' or path.suffix == '':
-            records = [json.loads(line) for line in path.read_text(encoding='utf-8').splitlines() if line.strip()]
-            if records:
-                return records
-        data = json.loads(path.read_text(encoding='utf-8'))
-        if not isinstance(data, list):
-            raise ValueError(f'LongMemEval data must be a list of records: {path}')
-        return data
+        content = path.read_text(encoding='utf-8')
+        try:
+            data = json.loads(content)
+            if isinstance(data, list):
+                return data
+        except json.JSONDecodeError:
+            pass
+
+        try:
+            records = [json.loads(line) for line in content.splitlines() if line.strip()]
+        except json.JSONDecodeError as e:
+            raise ValueError(f'Failed to parse LongMemEval data as JSON or JSONL: {path}') from e
+        if records:
+            return records
+        raise ValueError(f'LongMemEval data must be a list of records: {path}')
 
     def _apply_limit_and_repeats(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         if self.shuffle:
@@ -246,6 +253,8 @@ class LongMemEvalAdapter(DefaultDataAdapter):
         reference: str,
         task_state: TaskState,
     ) -> Score:
+        if not self.llm_judge:
+            raise ValueError('LongMemEval requires an initialized LLM judge.')
         score = Score(extracted_prediction=filtered_prediction, prediction=original_prediction)
         judge_prompt = get_anscheck_prompt(
             task=task_state.metadata['question_type'],
@@ -255,7 +264,7 @@ class LongMemEvalAdapter(DefaultDataAdapter):
             abstention=task_state.metadata.get('is_abstention', False),
         )
         judge_response = self.llm_judge.judge(prompt=judge_prompt)
-        is_correct = 'yes' in judge_response.lower()
+        is_correct = self._parse_judge_answer(judge_response)
         score.value = {'acc': 1.0 if is_correct else 0.0}
         score.explanation = f'LLM judge: {judge_response}'
         score.metadata = {
@@ -268,6 +277,14 @@ class LongMemEvalAdapter(DefaultDataAdapter):
         score.main_score_name = 'acc'
         return score
 
+    @staticmethod
+    def _parse_judge_answer(judge_response: str) -> bool:
+        tokens = judge_response.strip().lower().split(maxsplit=1)
+        if not tokens:
+            return False
+        first_token = tokens[0]
+        return first_token.strip('.,;:!?()[]{}"\'') == 'yes'
+
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         valid_scores = [s for s in sample_scores if s.score and 'acc' in s.score.value]
         if not valid_scores:
@@ -279,7 +296,7 @@ class LongMemEvalAdapter(DefaultDataAdapter):
 
         task_means = []
         for question_type in QUESTION_TYPES:
-            type_scores = [s for s in valid_scores if s.sample_metadata.get('question_type') == question_type]
+            type_scores = [s for s in valid_scores if (s.sample_metadata or {}).get('question_type') == question_type]
             if not type_scores:
                 continue
             agg = self._make_agg_score(metric_name='acc', aggregation_name=question_type, scores=type_scores)
@@ -296,7 +313,7 @@ class LongMemEvalAdapter(DefaultDataAdapter):
                 )
             )
 
-        abstention_scores = [s for s in valid_scores if s.sample_metadata.get('is_abstention')]
+        abstention_scores = [s for s in valid_scores if (s.sample_metadata or {}).get('is_abstention')]
         if abstention_scores:
             agg_scores.append(
                 self._make_agg_score(metric_name='acc', aggregation_name='abstention', scores=abstention_scores)

@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # flake8: noqa: E501
-import copy
 import json
 from typing import Any, Dict, List, Tuple
 
@@ -154,11 +153,14 @@ def _select_chunks(
             )
         else:
             session_id = '_'.join(corpus_id.split('_')[:-1])
-            turn_id = int(corpus_id.split('_')[-1]) - 1
+            try:
+                turn_id = int(corpus_id.split('_')[-1]) - 1
+            except ValueError:
+                continue
             if session_id not in corpusid2entry:
                 continue
             session = corpusid2entry[session_id]
-            if turn_id >= len(session):
+            if turn_id < 0 or turn_id >= len(session):
                 continue
             round_data = [session[turn_id]]
             next_turn_id = turn_id + 1
@@ -188,18 +190,15 @@ def _filter_user_only(session: Any, user_only: bool) -> Any:
     cleaned = _remove_has_answer(session)
     if not user_only or not isinstance(cleaned, list):
         return cleaned
-    return [turn for turn in cleaned if turn.get('role') == 'user']
+    return [turn for turn in cleaned if isinstance(turn, dict) and turn.get('role') == 'user']
 
 
 def _remove_has_answer(value: Any) -> Any:
-    cleaned = copy.deepcopy(value)
-    if isinstance(cleaned, list):
-        for item in cleaned:
-            if isinstance(item, dict):
-                item.pop('has_answer', None)
-    elif isinstance(cleaned, dict):
-        cleaned.pop('has_answer', None)
-    return cleaned
+    if isinstance(value, list):
+        return [_remove_has_answer(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _remove_has_answer(item) for key, item in value.items() if key != 'has_answer'}
+    return value
 
 
 def _format_history(chunks: List[Tuple[str, str, Any]], history_format: str) -> str:
@@ -217,7 +216,13 @@ def _format_history(chunks: List[Tuple[str, str, Any]], history_format: str) -> 
 
 def _format_nl(chunk: Any) -> str:
     if isinstance(chunk, list):
-        return ''.join([f"\n\n{turn['role']}: {turn['content'].strip()}" for turn in chunk])
+        return ''.join(
+            [
+                f"\n\n{turn.get('role', '')}: {str(turn.get('content', '')).strip()}"
+                for turn in chunk
+                if isinstance(turn, dict)
+            ]
+        )
     if isinstance(chunk, dict):
-        return f"{chunk['role']}: {chunk['content'].strip()}"
+        return f"{chunk.get('role', '')}: {str(chunk.get('content', '')).strip()}"
     return str(chunk)
