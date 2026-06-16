@@ -264,7 +264,7 @@ class LongMemEvalAdapter(DefaultDataAdapter):
             abstention=task_state.metadata.get('is_abstention', False),
         )
         judge_response = self.llm_judge.judge(prompt=judge_prompt)
-        is_correct = self._parse_judge_answer(judge_response)
+        is_correct = 'yes' in judge_response.lower()
         score.value = {'acc': 1.0 if is_correct else 0.0}
         score.explanation = f'LLM judge: {judge_response}'
         score.metadata = {
@@ -276,14 +276,6 @@ class LongMemEvalAdapter(DefaultDataAdapter):
         }
         score.main_score_name = 'acc'
         return score
-
-    @staticmethod
-    def _parse_judge_answer(judge_response: str) -> bool:
-        tokens = judge_response.strip().lower().split(maxsplit=1)
-        if not tokens:
-            return False
-        first_token = tokens[0]
-        return first_token.strip('.,;:!?()[]{}"\'') == 'yes'
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         valid_scores = [s for s in sample_scores if s.score and 'acc' in s.score.value]

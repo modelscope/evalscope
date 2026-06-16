@@ -216,13 +216,10 @@ def _format_history(chunks: List[Tuple[str, str, Any]], history_format: str) -> 
 
 def _format_nl(chunk: Any) -> str:
     if isinstance(chunk, list):
-        return ''.join(
-            [
-                f"\n\n{turn.get('role', '')}: {str(turn.get('content', '')).strip()}"
-                for turn in chunk
-                if isinstance(turn, dict)
-            ]
-        )
+        return ''.join([
+            f"\n\n{turn.get('role', '')}: {str(turn.get('content', '')).strip()}" for turn in chunk
+            if isinstance(turn, dict)
+        ])
     if isinstance(chunk, dict):
         return f"{chunk.get('role', '')}: {str(chunk.get('content', '')).strip()}"
     return str(chunk)
