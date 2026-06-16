@@ -153,7 +153,7 @@ Percentile results:
 |--------|-------------|---------|
 | Test Duration (s) | Total time from the start to the end of the test process | Last request end time - First request start time |
 | Concurrency | Number of clients sending requests simultaneously | Preset value |
-| Request Rate (req/s) | Target request sending rate, -1 means unlimited | Preset value |
+| Request Rate (req/s) | Target request scheduling rate; -1 means no rate pacing, while the default closed-loop mode is still bounded by the `--parallel` concurrency cap | Preset value |
 | Total / Success / Failed | Total number of requests sent during the test and their success/failure counts | Successful requests + Failed requests |
 | Req Throughput (req/s) | Average number of successful requests processed per second | Successful requests / Test Duration |
 | Avg Latency (s) | Average time from sending a request to receiving a complete response | Total latency / Successful requests |
