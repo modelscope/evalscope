@@ -1,0 +1,98 @@
+{
+  "meta": {
+    "pretty_name": "LoCoMo",
+    "dataset_id": "evalscope/locomo",
+    "paper_url": null,
+    "tags": [
+      "QA",
+      "LongContext",
+      "MultiTurn"
+    ],
+    "metrics": [
+      "f1"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "qa"
+    ],
+    "description": "\n## Overview\n\nLoCoMo evaluates very long-term conversational memory in two-person multi-session dialogues. This adapter supports the\nofficial question-answering task from `locomo10.json`.\n\n## Task Description\n\n- **Task Type**: Long-context question answering\n- **Input**: Multi-session conversation history with session dates and a question\n- **Output**: Short free-form answer\n- **Subsets**: `qa`\n\n## Key Features\n\n- Uses the official LoCoMo QA data file hosted on ModelScope\n- Supports full-history long-context prompts and evidence-only oracle prompts\n- Includes image captions from the released data when present, but does not download image files\n- Uses LoCoMo's rule-based F1 / adversarial refusal scoring instead of an LLM judge\n\n## Evaluation Notes\n\n- Default subset is `qa` with `eval_mode=long_context`\n- Use `extra_params.eval_mode='oracle_context'` for evidence-only upper-bound evaluation\n- Event summarization, multimodal dialog generation, and RAG retrieval are not included in this QA adapter\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "eval_mode": {
+        "type": "str",
+        "description": "Evaluation mode: long_context or oracle_context.",
+        "value": "long_context",
+        "choices": [
+          "long_context",
+          "oracle_context"
+        ]
+      }
+    },
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 1986,
+    "subset_stats": [
+      {
+        "name": "qa",
+        "sample_count": 1986,
+        "prompt_length_mean": 94097.72,
+        "prompt_length_min": 55178,
+        "prompt_length_max": 111026,
+        "prompt_length_std": 14752.53,
+        "target_length_mean": 28.32
+      }
+    ],
+    "prompt_length": {
+      "mean": 94097.72,
+      "min": 55178,
+      "max": 111026,
+      "std": 14752.53
+    },
+    "target_length_mean": 28.32,
+    "computed_at": "2026-06-17T16:13:38.793650"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "b585f7b0",
+          "content": "Below is a conversation between two people: Caroline and Melanie. The conversation takes place over multiple days and the date of each conversation is wriiten at the beginning of the conversation.\n\nDATE: 1:56 pm on 8 May, 2023\nCONVERSATION:\nC ... [TRUNCATED 74397 chars] ... m of a short phrase for the following question. Answer with exact words from the context whenever possible.\n\nQuestion: When did Caroline go to the LGBTQ support group? Use DATE of CONVERSATION to answer with an approximate date. Short answer:"
+        }
+      ],
+      "target": "7 May 2023",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "sample_id": "conv-26",
+        "qa_index": 0,
+        "category": 2,
+        "category_name": "temporal",
+        "raw_question": "When did Caroline go to the LGBTQ support group?",
+        "answer": "7 May 2023",
+        "adversarial_answer": null,
+        "eval_mode": "long_context",
+        "question": "When did Caroline go to the LGBTQ support group? Use DATE of CONVERSATION to answer with an approximate date.",
+        "evidence": [
+          "D1:3"
+        ]
+      }
+    },
+    "subset": "qa",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# LoCoMo\n\n\n## Overview\n\nLoCoMo evaluates very long-term conversational memory in two-person multi-session dialogues. This adapter supports the\nofficial question-answering task from `locomo10.json`.\n\n## Task Description\n\n- **Task Type**: Long-context question answering\n- **Input**: Multi-session conversation history with session dates and a question\n- **Output**: Short free-form answer\n- **Subsets**: `qa`\n\n## Key Features\n\n- Uses the official LoCoMo QA data file hosted on ModelScope\n- Supports full-history long-context prompts and evidence-only oracle prompts\n- Includes image captions from the released data when present, but does not download image files\n- Uses LoCoMo's rule-based F1 / adversarial refusal scoring instead of an LLM judge\n\n## Evaluation Notes\n\n- Default subset is `qa` with `eval_mode=long_context`\n- Use `extra_params.eval_mode='oracle_context'` for evidence-only upper-bound evaluation\n- Event summarization, multimodal dialog generation, and RAG retrieval are not included in this QA adapter\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `locomo` |\n| **Dataset ID** | [evalscope/locomo](https://modelscope.cn/datasets/evalscope/locomo/summary) |\n| **Paper** | N/A |\n| **Tags** | `LongContext`, `MultiTurn`, `QA` |\n| **Metrics** | `f1` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,986 |\n| Prompt Length (Mean) | 94097.72 chars |\n| Prompt Length (Min/Max) | 55178 / 111026 chars |\n\n## Sample Example\n\n**Subset**: `qa`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"b585f7b0\",\n      \"content\": \"Below is a conversation between two people: Caroline and Melanie. The conversation takes place over multiple days and the date of each conversation is wriiten at the beginning of the conversation.\\n\\nDATE: 1:56 pm on 8 May, 2023\\nCONVERSATION:\\nC ... [TRUNCATED 74397 chars] ... m of a short phrase for the following question. Answer with exact words from the context whenever possible.\\n\\nQuestion: When did Caroline go to the LGBTQ support group? Use DATE of CONVERSATION to answer with an approximate date. Short answer:\"\n    }\n  ],\n  \"target\": \"7 May 2023\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"sample_id\": \"conv-26\",\n    \"qa_index\": 0,\n    \"category\": 2,\n    \"category_name\": \"temporal\",\n    \"raw_question\": \"When did Caroline go to the LGBTQ support group?\",\n    \"answer\": \"7 May 2023\",\n    \"adversarial_answer\": null,\n    \"eval_mode\": \"long_context\",\n    \"question\": \"When did Caroline go to the LGBTQ support group? Use DATE of CONVERSATION to answer with an approximate date.\",\n    \"evidence\": [\n      \"D1:3\"\n    ]\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `eval_mode` | `str` | `long_context` | Evaluation mode: long_context or oracle_context. Choices: ['long_context', 'oracle_context'] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets locomo \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['locomo'],\n    dataset_args={\n        'locomo': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# LoCoMo\n\n\n## 概述\n\nLoCoMo 用于评估两人在多轮会话对话中的超长期对话记忆能力。该适配器支持来自 `locomo10.json` 的官方问答任务。\n\n## 任务描述\n\n- **任务类型**：长上下文问答\n- **输入**：包含会话日期的多轮对话历史和一个问题\n- **输出**：简短的自由格式答案\n- **子集**：`qa`\n\n## 主要特性\n\n- 使用托管在 ModelScope 上的官方 LoCoMo QA 数据文件\n- 支持完整历史的长上下文提示和仅含证据的 oracle 提示\n- 在数据中存在时包含图像说明，但不会下载图像文件\n- 使用 LoCoMo 基于规则的 F1 / 对抗性拒绝评分机制，而非基于大语言模型（LLM）的评判器\n\n## 评估说明\n\n- 默认子集为 `qa`，且 `eval_mode=long_context`\n- 使用 `extra_params.eval_mode='oracle_context'` 进行仅含证据的上限评估\n- 此 QA 适配器不包含事件摘要、多模态对话生成和 RAG 检索任务\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `locomo` |\n| **数据集ID** | [evalscope/locomo](https://modelscope.cn/datasets/evalscope/locomo/summary) |\n| **论文** | N/A |\n| **标签** | `LongContext`, `MultiTurn`, `QA` |\n| **指标** | `f1` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,986 |\n| 提示词长度（平均） | 94097.72 字符 |\n| 提示词长度（最小/最大） | 55178 / 111026 字符 |\n\n## 样例示例\n\n**子集**: `qa`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"b585f7b0\",\n      \"content\": \"Below is a conversation between two people: Caroline and Melanie. The conversation takes place over multiple days and the date of each conversation is wriiten at the beginning of the conversation.\\n\\nDATE: 1:56 pm on 8 May, 2023\\nCONVERSATION:\\nC ... [TRUNCATED 74397 chars] ... m of a short phrase for the following question. Answer with exact words from the context whenever possible.\\n\\nQuestion: When did Caroline go to the LGBTQ support group? Use DATE of CONVERSATION to answer with an approximate date. Short answer:\"\n    }\n  ],\n  \"target\": \"7 May 2023\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"sample_id\": \"conv-26\",\n    \"qa_index\": 0,\n    \"category\": 2,\n    \"category_name\": \"temporal\",\n    \"raw_question\": \"When did Caroline go to the LGBTQ support group?\",\n    \"answer\": \"7 May 2023\",\n    \"adversarial_answer\": null,\n    \"eval_mode\": \"long_context\",\n    \"question\": \"When did Caroline go to the LGBTQ support group? Use DATE of CONVERSATION to answer with an approximate date.\",\n    \"evidence\": [\n      \"D1:3\"\n    ]\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `eval_mode` | `str` | `long_context` | 评估模式：long_context 或 oracle_context。可选值：['long_context', 'oracle_context'] |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets locomo \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['locomo'],\n    dataset_args={\n        'locomo': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "1641590bc672a607ea9905cfae78f57c",
+    "needs_translation": false
+  },
+  "updated_at": "2026-06-17T16:13:40.132287",
+  "translation_updated_at": "2026-06-17T16:13:44"
+}
