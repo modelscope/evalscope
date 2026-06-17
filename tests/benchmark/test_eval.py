@@ -830,6 +830,24 @@ class TestNativeBenchmark(TestBenchmark):
             },
         )
 
+    def test_locomo(self):
+        """Test LoCoMo dataset."""
+        dataset_args = {
+            'subset_list': ['qa'],
+        }
+        self._run_dataset_test(
+            'locomo',
+            dataset_args,
+            use_mock=True,
+            limit=1,
+            eval_batch_size=1,
+            judge_strategy=JudgeStrategy.RULE,
+            generation_config={
+                'max_tokens': 128,
+                'temperature': 0.0,
+            },
+        )
+
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
