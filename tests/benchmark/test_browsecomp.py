@@ -1,5 +1,6 @@
 import base64
 import csv
+import pytest
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -7,7 +8,12 @@ from evalscope.api.benchmark import DataAdapter
 from evalscope.api.evaluator import TaskState
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
-from evalscope.benchmarks.browsecomp.browsecomp_adapter import decrypt, derive_key, parse_judge_response
+from evalscope.benchmarks.browsecomp.browsecomp_adapter import (
+    decrypt,
+    derive_key,
+    normalize_answer,
+    parse_judge_response,
+)
 from evalscope.config import TaskConfig
 from evalscope.constants import JudgeStrategy
 
@@ -48,6 +54,21 @@ def test_record_to_sample_decrypts_official_fields() -> None:
     assert sample.metadata['problem_topic'] == 'Art'
 
 
+def test_record_to_sample_handles_none_fields() -> None:
+    adapter = _adapter()
+    sample = adapter.record_to_sample({
+        'problem': None,
+        'answer': None,
+        'problem_topic': None,
+        'canary': None,
+    })
+
+    assert sample.input == ''
+    assert sample.target == ''
+    assert sample.metadata['problem_topic'] == ''
+    assert sample.metadata['canary'] == ''
+
+
 def test_load_from_local_csv(tmp_path: Path) -> None:
     canary = 'browsecomp:test-canary'
     data_path = tmp_path / 'browse_comp_test_set.csv'
@@ -68,6 +89,13 @@ def test_load_from_local_csv(tmp_path: Path) -> None:
     assert len(dataset['default']) == 1
     assert sample.input[0].text.startswith('Question one?')
     assert sample.target == 'Answer one'
+
+
+def test_missing_local_path_raises_file_not_found(tmp_path: Path) -> None:
+    adapter = _adapter({'local_path': str(tmp_path / 'missing.csv')})
+
+    with pytest.raises(FileNotFoundError, match='Local file or directory not found'):
+        adapter.load_dataset()
 
 
 def test_extract_answer_and_rule_score() -> None:
@@ -96,8 +124,16 @@ def test_extract_answer_and_rule_score() -> None:
     assert result.score.main_score_name == 'is_correct'
 
 
+def test_normalize_answer_handles_empty_or_non_string_values() -> None:
+    assert normalize_answer(None) == ''
+    assert normalize_answer(123) == ''
+    assert normalize_answer(' Plastic-Man! ') == 'plastic man'
+
+
 def test_parse_judge_response() -> None:
     assert parse_judge_response('reasoning: ok\ncorrect: yes\nconfidence: 100')
     assert parse_judge_response('reasoning: ok\ncorrect: "yes"\nconfidence: 100')
     assert not parse_judge_response('reasoning: mismatch\ncorrect: no\nconfidence: 100')
     assert not parse_judge_response('no final grade')
+    assert not parse_judge_response(None)
+    assert not parse_judge_response({'correct': 'yes'})

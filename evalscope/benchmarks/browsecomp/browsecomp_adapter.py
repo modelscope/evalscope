@@ -69,13 +69,17 @@ def decrypt(ciphertext_b64: str, password: str) -> str:
     return decrypted.decode()
 
 
-def normalize_answer(answer: str) -> str:
+def normalize_answer(answer: Any) -> str:
     """Normalize short factual answers for rule-based exact matching."""
+    if not answer or not isinstance(answer, str):
+        return ''
     return ' '.join(re.sub(r'[^\w\s]', ' ', answer.lower()).split())
 
 
-def parse_judge_response(response: str) -> bool:
+def parse_judge_response(response: Any) -> bool:
     """Return True only when the judge explicitly reports correctness."""
+    if not response or not isinstance(response, str):
+        return False
     match = re.search(r'correct:\s*["\']?(yes|no)["\']?', response, re.IGNORECASE)
     return bool(match and match.group(1).lower() == 'yes')
 
@@ -147,6 +151,9 @@ class BrowseCompAdapter(DefaultDataAdapter):
             logger.info(f'Loading BrowseComp dataset from local file: {data_id_or_path}')
             return csv_to_list(data_id_or_path)
 
+        if not data_id_or_path.startswith(('http://', 'https://')):
+            raise FileNotFoundError(f'Local file or directory not found: {data_id_or_path}')
+
         logger.info(f'Loading BrowseComp dataset from URL: {data_id_or_path}')
         response = requests.get(data_id_or_path, timeout=60)
         response.raise_for_status()
@@ -167,15 +174,15 @@ class BrowseCompAdapter(DefaultDataAdapter):
         raise FileNotFoundError(f'No BrowseComp CSV file found in {data_dir}.')
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        canary = record.get('canary', '')
-        question = decrypt(record.get('problem', ''), canary)
-        answer = decrypt(record.get('answer', ''), canary)
+        canary = record.get('canary') or ''
+        question = decrypt(record.get('problem') or '', canary)
+        answer = decrypt(record.get('answer') or '', canary)
 
         return Sample(
             input=question,
             target=answer,
             metadata={
-                'problem_topic': record.get('problem_topic', ''),
+                'problem_topic': record.get('problem_topic') or '',
                 'canary': canary,
                 'question': question,
             },
