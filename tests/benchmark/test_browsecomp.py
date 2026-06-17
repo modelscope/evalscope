@@ -1,10 +1,7 @@
 import base64
-import csv
-import pytest
-from pathlib import Path
 from typing import Dict, Optional
 
-from evalscope.api.benchmark import DataAdapter
+from evalscope.api.benchmark import AgentAdapter, DataAdapter
 from evalscope.api.evaluator import TaskState
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
@@ -18,10 +15,11 @@ from evalscope.config import TaskConfig
 from evalscope.constants import JudgeStrategy
 
 
-def _adapter(dataset_args: Optional[Dict] = None) -> DataAdapter:
+def _adapter(dataset_args: Optional[Dict] = None, limit: Optional[int] = None) -> DataAdapter:
     config = TaskConfig(
         datasets=['browsecomp'],
         dataset_args={'browsecomp': dataset_args or {}},
+        limit=limit,
         judge_strategy=JudgeStrategy.RULE,
     )
     return get_benchmark('browsecomp', config=config)
@@ -41,6 +39,7 @@ def test_decrypt_round_trip() -> None:
 
 def test_record_to_sample_decrypts_official_fields() -> None:
     adapter = _adapter()
+    assert isinstance(adapter, AgentAdapter)
     canary = 'browsecomp:test-canary'
     sample = adapter.record_to_sample({
         'problem': _encrypt('Who occasionally breaks the fourth wall?', canary),
@@ -69,33 +68,15 @@ def test_record_to_sample_handles_none_fields() -> None:
     assert sample.metadata['canary'] == ''
 
 
-def test_load_from_local_csv(tmp_path: Path) -> None:
-    canary = 'browsecomp:test-canary'
-    data_path = tmp_path / 'browse_comp_test_set.csv'
-    with data_path.open('w', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=['problem', 'answer', 'problem_topic', 'canary'])
-        writer.writeheader()
-        writer.writerow({
-            'problem': _encrypt('Question one?', canary),
-            'answer': _encrypt('Answer one', canary),
-            'problem_topic': 'Science',
-            'canary': canary,
-        })
-
-    adapter = _adapter({'local_path': str(data_path)})
+def test_load_from_modelscope_dataset_with_limit() -> None:
+    adapter = _adapter(limit=1)
     dataset = adapter.load_dataset()
-    sample = dataset['default'][0]
+    sample = next(iter(dataset.values()))[0]
 
-    assert len(dataset['default']) == 1
-    assert sample.input[0].text.startswith('Question one?')
-    assert sample.target == 'Answer one'
-
-
-def test_missing_local_path_raises_file_not_found(tmp_path: Path) -> None:
-    adapter = _adapter({'local_path': str(tmp_path / 'missing.csv')})
-
-    with pytest.raises(FileNotFoundError, match='Local file or directory not found'):
-        adapter.load_dataset()
+    assert sum(len(subset) for subset in dataset.values()) == 1
+    assert sample.input[0].text
+    assert sample.target
+    assert sample.metadata['problem_topic']
 
 
 def test_extract_answer_and_rule_score() -> None:

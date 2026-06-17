@@ -3,7 +3,7 @@
 
 ## Overview
 
-BrowseComp is an OpenAI benchmark for evaluating browsing and search agents. It contains 1,266 hard-to-find, fact-seeking questions with short, verifiable answers.
+BrowseComp is an OpenAI benchmark for evaluating browsing and search agents. It contains 1,266 hard-to-find, fact-seeking questions with short, verifiable answers. EvalScope loads the mirrored dataset from ModelScope (`evalscope/browse_comp`).
 
 ## Task Description
 
@@ -17,12 +17,13 @@ BrowseComp is an OpenAI benchmark for evaluating browsing and search agents. It 
 - Tests persistence, creative search, and multi-hop evidence gathering
 - Uses short answers to keep grading tractable
 - Official data is distributed as encrypted CSV rows and decrypted at evaluation time
-- Compatible with EvalScope agent configuration via the default agent loop path
+- Classified as an Agent benchmark and compatible with EvalScope agent loop modes
+- Supports single-turn model evaluation by default and native/external agent execution when `TaskConfig.agent_config` is provided
 
 ## Evaluation Notes
 
-- Default evaluation uses the official public BrowseComp CSV.
-- Use `dataset_args={'browsecomp': {'local_path': '/path/to/browse_comp_test_set.csv'}}` to evaluate from a local copy.
+- Default evaluation loads `evalscope/browse_comp` from ModelScope through the standard EvalScope dataset loader.
+- Use `TaskConfig.agent_config` to evaluate BrowseComp with EvalScope agent loop capabilities such as native tool-use or external agent runners.
 - The primary metric is `is_correct`; `is_incorrect` is also reported.
 - LLM judge is enabled by default. `JudgeStrategy.RULE` falls back to normalized exact match.
 
@@ -32,7 +33,7 @@ BrowseComp is an OpenAI benchmark for evaluating browsing and search agents. It 
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `browsecomp` |
-| **Dataset ID** | [browse_comp_test_set.csv](https://openaipublic.blob.core.windows.net/simple-evals/browse_comp_test_set.csv) |
+| **Dataset ID** | [evalscope/browse_comp](https://modelscope.cn/datasets/evalscope/browse_comp/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2504.12516) |
 | **Tags** | `Agent`, `Knowledge`, `QA` |
 | **Metrics** | `is_correct`, `is_incorrect` |

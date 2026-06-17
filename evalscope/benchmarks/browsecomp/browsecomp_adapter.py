@@ -1,25 +1,16 @@
 import base64
-import csv
 import hashlib
-import io
-import os
 import re
-import requests
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
-from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
-from evalscope.api.dataset import DatasetDict, Sample
-from evalscope.api.dataset.loader import DictDataLoader
+from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
+from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.io_utils import csv_to_list
-from evalscope.utils.logger import get_logger
 
-logger = get_logger()
-
-BROWSECOMP_DATA_URL = 'https://openaipublic.blob.core.windows.net/simple-evals/browse_comp_test_set.csv'
+BROWSECOMP_DATASET_ID = 'evalscope/browse_comp'
 
 QUERY_TEMPLATE = """
 {question}
@@ -92,7 +83,7 @@ def parse_judge_response(response: Any) -> bool:
         description="""
 ## Overview
 
-BrowseComp is an OpenAI benchmark for evaluating browsing and search agents. It contains 1,266 hard-to-find, fact-seeking questions with short, verifiable answers.
+BrowseComp is an OpenAI benchmark for evaluating browsing and search agents. It contains 1,266 hard-to-find, fact-seeking questions with short, verifiable answers. EvalScope loads the mirrored dataset from ModelScope (`evalscope/browse_comp`).
 
 ## Task Description
 
@@ -106,16 +97,17 @@ BrowseComp is an OpenAI benchmark for evaluating browsing and search agents. It 
 - Tests persistence, creative search, and multi-hop evidence gathering
 - Uses short answers to keep grading tractable
 - Official data is distributed as encrypted CSV rows and decrypted at evaluation time
-- Compatible with EvalScope agent configuration via the default agent loop path
+- Classified as an Agent benchmark and compatible with EvalScope agent loop modes
+- Supports single-turn model evaluation by default and native/external agent execution when `TaskConfig.agent_config` is provided
 
 ## Evaluation Notes
 
-- Default evaluation uses the official public BrowseComp CSV.
-- Use `dataset_args={'browsecomp': {'local_path': '/path/to/browse_comp_test_set.csv'}}` to evaluate from a local copy.
+- Default evaluation loads `evalscope/browse_comp` from ModelScope through the standard EvalScope dataset loader.
+- Use `TaskConfig.agent_config` to evaluate BrowseComp with EvalScope agent loop capabilities such as native tool-use or external agent runners.
 - The primary metric is `is_correct`; `is_incorrect` is also reported.
 - LLM judge is enabled by default. `JudgeStrategy.RULE` falls back to normalized exact match.
 """,  # noqa: E501
-        dataset_id=BROWSECOMP_DATA_URL,
+        dataset_id=BROWSECOMP_DATASET_ID,
         metric_list=['is_correct', 'is_incorrect'],
         few_shot_num=0,
         train_split=None,
@@ -124,54 +116,13 @@ BrowseComp is an OpenAI benchmark for evaluating browsing and search agents. It 
         paper_url='https://arxiv.org/abs/2504.12516',
     )
 )
-class BrowseCompAdapter(DefaultDataAdapter):
+class BrowseCompAdapter(AgentAdapter):
     """Adapter for the BrowseComp browsing-agent benchmark."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._use_llm_judge = True
         self._suppress_doc_sample_example = True
-
-    def load(self) -> tuple[DatasetDict, None]:
-        rows = self._load_rows(self.dataset_id)
-        dataset = DictDataLoader(
-            dict_list=rows,
-            sample_fields=self.record_to_sample,
-            limit=self.limit,
-            repeats=self.repeats,
-            shuffle=self.shuffle,
-        ).load()
-        return DatasetDict({'default': dataset}), None
-
-    def _load_rows(self, data_id_or_path: str) -> List[Dict[str, Any]]:
-        if os.path.isdir(data_id_or_path):
-            data_id_or_path = self._find_csv_file(data_id_or_path)
-
-        if os.path.isfile(data_id_or_path):
-            logger.info(f'Loading BrowseComp dataset from local file: {data_id_or_path}')
-            return csv_to_list(data_id_or_path)
-
-        if not data_id_or_path.startswith(('http://', 'https://')):
-            raise FileNotFoundError(f'Local file or directory not found: {data_id_or_path}')
-
-        logger.info(f'Loading BrowseComp dataset from URL: {data_id_or_path}')
-        response = requests.get(data_id_or_path, timeout=60)
-        response.raise_for_status()
-        return list(csv.DictReader(io.StringIO(response.text)))
-
-    @staticmethod
-    def _find_csv_file(data_dir: str) -> str:
-        candidates = [
-            'browse_comp_test_set.csv',
-            'default_test.csv',
-            'default.csv',
-            'test.csv',
-        ]
-        for candidate in candidates:
-            path = os.path.join(data_dir, candidate)
-            if os.path.isfile(path):
-                return path
-        raise FileNotFoundError(f'No BrowseComp CSV file found in {data_dir}.')
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         canary = record.get('canary') or ''

@@ -22,7 +22,6 @@
 | `bc5cdr` | [BC5CDR](../../benchmarks/bc5cdr.md) | `Knowledge`, `NER` |
 | `biomix_qa` | [BioMixQA](../../benchmarks/biomix_qa.md) | `Knowledge`, `MCQ`, `Medical` |
 | `broad_twitter_corpus` | [BroadTwitterCorpus](../../benchmarks/broad_twitter_corpus.md) | `Knowledge`, `NER` |
-| `browsecomp` | [BrowseComp](../../benchmarks/browsecomp.md) | `Agent`, `Knowledge`, `QA` |
 | `ceval` | [C-Eval](../../benchmarks/ceval.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `chinese_simpleqa` | [Chinese-SimpleQA](../../benchmarks/chinese_simpleqa.md) | `Chinese`, `Knowledge`, `QA` |
 | `cl_bench` | [CL-bench](../../benchmarks/cl_bench.md) | `InstructionFollowing`, `Reasoning` |
@@ -139,7 +138,6 @@
 ../../benchmarks/bc5cdr.md
 ../../benchmarks/biomix_qa.md
 ../../benchmarks/broad_twitter_corpus.md
-../../benchmarks/browsecomp.md
 ../../benchmarks/ceval.md
 ../../benchmarks/chinese_simpleqa.md
 ../../benchmarks/cl_bench.md
