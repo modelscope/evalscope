@@ -1,5 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import json
+import tempfile
 from dotenv import dotenv_values, load_dotenv
+from pathlib import Path
 
 load_dotenv('.env')
 
@@ -46,6 +49,27 @@ class TestAgentBenchmark(TestBenchmark):
             },
             'debug': True,
         }
+
+    def test_browsecomp(self):
+        """Test BrowseComp benchmark end-to-end."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_overrides = {
+                'collect_perf': False,
+                'debug': False,
+                'eval_batch_size': 1,
+                'limit': 1,
+                'no_timestamp': True,
+                'work_dir': tmp_dir,
+            }
+            if not env.get('DASHSCOPE_API_KEY'):
+                config_overrides['judge_strategy'] = JudgeStrategy.RULE
+
+            self._run_dataset_test('browsecomp', **config_overrides)
+
+            review_files = list(Path(tmp_dir).glob('reviews/*/browsecomp_default.jsonl'))
+            self.assertEqual(len(review_files), 1)
+            review = json.loads(review_files[0].read_text(encoding='utf-8').strip())
+            self.assertNotIn('canary', review['sample_score']['sample_metadata'])
 
     def test_swe_bench_verified_agentic(self):
         """Test SWE-bench-verified agentic dataset using docker environment."""
