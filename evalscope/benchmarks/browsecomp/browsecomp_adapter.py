@@ -36,7 +36,7 @@ extracted_final_answer: The final exact answer extracted from the [response]. Pu
 
 reasoning: Explain why the extracted_final_answer is correct or incorrect based on [correct_answer], focusing only on if there are meaningful differences between [correct_answer] and the extracted_final_answer. Do not comment on any background to the problem, do not attempt to solve the problem, do not argue for any answer different than [correct_answer], focus only on whether the answers match.
 
-correct: Answer 'yes' if extracted_final_answer matches the [correct_answer] given above, or is within a small margin of error for numerical problems. Answer 'no' otherwise, i.e. if there if there is any inconsistency, ambiguity, non-equivalency, or if the extracted answer is incorrect.
+correct: Answer 'yes' if extracted_final_answer matches the [correct_answer] given above, or is within a small margin of error for numerical problems. Answer 'no' otherwise, i.e. if there is any inconsistency, ambiguity, non-equivalency, or if the extracted answer is incorrect.
 
 confidence: The extracted confidence score between 0% and 100% from [response]. Put 100 if there is no confidence score available.
 """.strip()  # noqa: E501
@@ -134,7 +134,6 @@ class BrowseCompAdapter(AgentAdapter):
             target=answer,
             metadata={
                 'problem_topic': record.get('problem_topic') or '',
-                'canary': canary,
                 'question': question,
             },
         )
