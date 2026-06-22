@@ -1,0 +1,106 @@
+{
+  "meta": {
+    "pretty_name": "BigCodeBench-Hard",
+    "dataset_id": "evalscope/bigcodebench-hard",
+    "paper_url": null,
+    "tags": [
+      "Coding"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "v0.1.4",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nBigCodeBench-Hard is a curated subset of BigCodeBench containing 148 tasks that are more aligned with real-world programming tasks. These tasks require more complex reasoning and multi-step problem solving.\n\n## Task Description\n\n- **Task Type**: Code Generation (Python)\n- **Input**: Programming task description (docstring or natural language instruction)\n- **Output**: Complete Python function implementation\n- **Difficulty**: Higher than BigCodeBench-Full, closer to real-world complexity\n\n## Key Features\n\n- 148 challenging tasks selected from BigCodeBench\n- Requires complex reasoning and multi-tool usage\n- Two evaluation modes: Complete (docstring) and Instruct (natural language)\n- Uses unittest.TestCase for thorough correctness verification\n- Supports pass@k metric calculation\n\n## Evaluation Notes\n\n- **Sandbox Required**: Requires sandbox environment with 70+ Python libraries pre-installed\n- Two modes available via `split` parameter: `complete` (docstring completion) or `instruct` (NL instruction)\n- Default timeout is 240 seconds per problem\n- `calibrate` option prepends code_prompt to align function signatures\n- See [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for setup\n",
+    "prompt_template": "{prompt}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean_and_pass_at_k",
+    "extra_params": {
+      "split": {
+        "type": "str",
+        "description": "Evaluation mode: \"complete\" (docstring completion) or \"instruct\" (NL instruction).",
+        "value": "instruct",
+        "choices": [
+          "complete",
+          "instruct"
+        ]
+      },
+      "version": {
+        "type": "str",
+        "description": "Dataset version. Use \"default\" for the latest available version.",
+        "value": "default"
+      },
+      "calibrate": {
+        "type": "bool",
+        "description": "Whether to prepend code_prompt to the solution for function signature alignment.",
+        "value": true
+      }
+    },
+    "sandbox_config": {
+      "image": "bigcodebench/bigcodebench-evaluate:latest",
+      "tools_config": {
+        "shell_executor": {},
+        "python_executor": {}
+      },
+      "memory_limit": "4g"
+    },
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 148,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 148,
+        "prompt_length_mean": 777.94,
+        "prompt_length_min": 274,
+        "prompt_length_max": 1816,
+        "prompt_length_std": 308.48,
+        "target_length_mean": 705.7
+      }
+    ],
+    "prompt_length": {
+      "mean": 777.94,
+      "min": 274,
+      "max": 1816,
+      "std": 308.48
+    },
+    "target_length_mean": 705.7,
+    "computed_at": "2026-06-22T17:16:20.196844"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "207adc46",
+          "content": "Download all files from a specific directory on an FTP server using wget in a subprocess. Args: ftp_server (str): The FTP server address. Default is 'ftp.dlptest.com'. ftp_user (str): The FTP server username. Default is 'dlpuser'. ftp_passwor ... [TRUNCATED 798 chars] ...  FTP server.\nYou should write self-contained code starting with:\n```\nimport subprocess\nimport ftplib\nimport os\ndef task_func(ftp_server='ftp.dlptest.com', ftp_user='dlpuser', ftp_password='rNrKYTX9g7z3RgJRmxWuGHbeu', ftp_dir='/ftp/test'):\n```"
+        }
+      ],
+      "target": "    # Attempt to connect to the FTP server\n    try:\n        ftp_obj = ftplib.FTP(ftp_server)\n    except Exception as e:\n        raise Exception(f'Failed to connect to FTP server {ftp_server}: {str(e)}')\n\n    # Attempt to login to the FTP serv ... [TRUNCATED 625 chars] ...        command = f'wget ftp://{ftp_user}:{ftp_password}@{ftp_server}{ftp_dir}/{filename} -P {download_dir}'\n        subprocess.call(command, shell=True)\n        downloaded_files.append(filename)\n\n    ftp_obj.quit()\n    return downloaded_files",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "task_id": "BigCodeBench/13",
+        "entry_point": "task_func",
+        "complete_prompt": "import subprocess\nimport ftplib\nimport os\n\ndef task_func(ftp_server='ftp.dlptest.com', ftp_user='dlpuser', ftp_password='rNrKYTX9g7z3RgJRmxWuGHbeu', ftp_dir='/ftp/test'):\n    \"\"\"\n    Download all files from a specific directory on an FTP serv ... [TRUNCATED 909 chars] ... ctory. Outputs the message \"Failed to change to directory {ftp_dir} on server {ftp_server}: {str(e)}\"\n    \n    Requirements:\n    - subprocess\n    - ftplib\n    - os\n\n    Example:\n    >>> task_func()\n    ['file1.txt', 'file2.jpg', ...]\n    \"\"\"\n",
+        "code_prompt": "import subprocess\nimport ftplib\nimport os\ndef task_func(ftp_server='ftp.dlptest.com', ftp_user='dlpuser', ftp_password='rNrKYTX9g7z3RgJRmxWuGHbeu', ftp_dir='/ftp/test'):\n",
+        "test": "import unittest\nfrom unittest.mock import patch\nimport os\nclass TestCases(unittest.TestCase):\n    def setUp(self):\n        \"\"\"Setup a clean test environment before each test.\"\"\"\n        if not os.path.exists(\"downloaded_files\"):\n            o ... [TRUNCATED 2565 chars] ... with self.assertRaises(Exception) as context:\n            task_func(ftp_dir=\"/invalid_directory\")\n        self.assertEqual(str(context.exception), f'Failed to change to directory /invalid_directory on server ftp.dlptest.com: {error_message}')"
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# BigCodeBench-Hard\n\n\n## Overview\n\nBigCodeBench-Hard is a curated subset of BigCodeBench containing 148 tasks that are more aligned with real-world programming tasks. These tasks require more complex reasoning and multi-step problem solving.\n\n## Task Description\n\n- **Task Type**: Code Generation (Python)\n- **Input**: Programming task description (docstring or natural language instruction)\n- **Output**: Complete Python function implementation\n- **Difficulty**: Higher than BigCodeBench-Full, closer to real-world complexity\n\n## Key Features\n\n- 148 challenging tasks selected from BigCodeBench\n- Requires complex reasoning and multi-tool usage\n- Two evaluation modes: Complete (docstring) and Instruct (natural language)\n- Uses unittest.TestCase for thorough correctness verification\n- Supports pass@k metric calculation\n\n## Evaluation Notes\n\n- **Sandbox Required**: Requires sandbox environment with 70+ Python libraries pre-installed\n- Two modes available via `split` parameter: `complete` (docstring completion) or `instruct` (NL instruction)\n- Default timeout is 240 seconds per problem\n- `calibrate` option prepends code_prompt to align function signatures\n- See [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for setup\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `bigcodebench_hard` |\n| **Dataset ID** | [evalscope/bigcodebench-hard](https://modelscope.cn/datasets/evalscope/bigcodebench-hard/summary) |\n| **Paper** | N/A |\n| **Tags** | `Coding` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `v0.1.4` |\n| **Aggregation** | `mean_and_pass_at_k` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 148 |\n| Prompt Length (Mean) | 777.94 chars |\n| Prompt Length (Min/Max) | 274 / 1816 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"207adc46\",\n      \"content\": \"Download all files from a specific directory on an FTP server using wget in a subprocess. Args: ftp_server (str): The FTP server address. Default is 'ftp.dlptest.com'. ftp_user (str): The FTP server username. Default is 'dlpuser'. ftp_passwor ... [TRUNCATED 798 chars] ...  FTP server.\\nYou should write self-contained code starting with:\\n```\\nimport subprocess\\nimport ftplib\\nimport os\\ndef task_func(ftp_server='ftp.dlptest.com', ftp_user='dlpuser', ftp_password='rNrKYTX9g7z3RgJRmxWuGHbeu', ftp_dir='/ftp/test'):\\n```\"\n    }\n  ],\n  \"target\": \"    # Attempt to connect to the FTP server\\n    try:\\n        ftp_obj = ftplib.FTP(ftp_server)\\n    except Exception as e:\\n        raise Exception(f'Failed to connect to FTP server {ftp_server}: {str(e)}')\\n\\n    # Attempt to login to the FTP serv ... [TRUNCATED 625 chars] ...        command = f'wget ftp://{ftp_user}:{ftp_password}@{ftp_server}{ftp_dir}/{filename} -P {download_dir}'\\n        subprocess.call(command, shell=True)\\n        downloaded_files.append(filename)\\n\\n    ftp_obj.quit()\\n    return downloaded_files\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"task_id\": \"BigCodeBench/13\",\n    \"entry_point\": \"task_func\",\n    \"complete_prompt\": \"import subprocess\\nimport ftplib\\nimport os\\n\\ndef task_func(ftp_server='ftp.dlptest.com', ftp_user='dlpuser', ftp_password='rNrKYTX9g7z3RgJRmxWuGHbeu', ftp_dir='/ftp/test'):\\n    \\\"\\\"\\\"\\n    Download all files from a specific directory on an FTP serv ... [TRUNCATED 909 chars] ... ctory. Outputs the message \\\"Failed to change to directory {ftp_dir} on server {ftp_server}: {str(e)}\\\"\\n    \\n    Requirements:\\n    - subprocess\\n    - ftplib\\n    - os\\n\\n    Example:\\n    >>> task_func()\\n    ['file1.txt', 'file2.jpg', ...]\\n    \\\"\\\"\\\"\\n\",\n    \"code_prompt\": \"import subprocess\\nimport ftplib\\nimport os\\ndef task_func(ftp_server='ftp.dlptest.com', ftp_user='dlpuser', ftp_password='rNrKYTX9g7z3RgJRmxWuGHbeu', ftp_dir='/ftp/test'):\\n\",\n    \"test\": \"import unittest\\nfrom unittest.mock import patch\\nimport os\\nclass TestCases(unittest.TestCase):\\n    def setUp(self):\\n        \\\"\\\"\\\"Setup a clean test environment before each test.\\\"\\\"\\\"\\n        if not os.path.exists(\\\"downloaded_files\\\"):\\n            o ... [TRUNCATED 2565 chars] ... with self.assertRaises(Exception) as context:\\n            task_func(ftp_dir=\\\"/invalid_directory\\\")\\n        self.assertEqual(str(context.exception), f'Failed to change to directory /invalid_directory on server ftp.dlptest.com: {error_message}')\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{prompt}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `split` | `str` | `instruct` | Evaluation mode: \"complete\" (docstring completion) or \"instruct\" (NL instruction). Choices: ['complete', 'instruct'] |\n| `version` | `str` | `default` | Dataset version. Use \"default\" for the latest available version. |\n| `calibrate` | `bool` | `True` | Whether to prepend code_prompt to the solution for function signature alignment. |\n\n## Sandbox Configuration\n\nThis benchmark requires a sandbox environment for code execution.\n\n```json\n{\n  \"image\": \"bigcodebench/bigcodebench-evaluate:latest\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {}\n  },\n  \"memory_limit\": \"4g\"\n}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bigcodebench_hard \\\n    --sandbox '{\"enabled\": true}' \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bigcodebench_hard'],\n    sandbox={'enabled': True},\n    dataset_args={\n        'bigcodebench_hard': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# BigCodeBench-Hard\n\n\n## 概述\n\nBigCodeBench-Hard 是 BigCodeBench 的一个精选子集，包含 148 个更贴近真实编程场景的任务。这些任务需要更复杂的推理能力和多步骤的问题解决能力。\n\n## 任务描述\n\n- **任务类型**：代码生成（Python）\n- **输入**：编程任务描述（文档字符串或自然语言指令）\n- **输出**：完整的 Python 函数实现\n- **难度**：高于 BigCodeBench-Full，更接近真实世界的复杂度\n\n## 主要特性\n\n- 从 BigCodeBench 中精选出的 148 个具有挑战性的任务\n- 要求复杂的推理能力和多工具协同使用\n- 提供两种评估模式：Complete（基于文档字符串）和 Instruct（基于自然语言指令）\n- 使用 `unittest.TestCase` 进行全面的正确性验证\n- 支持 pass@k 指标计算\n\n## 评估说明\n\n- **需要沙箱环境**：要求预装 70 多个 Python 库的沙箱环境\n- 通过 `split` 参数选择两种模式：`complete`（文档字符串补全）或 `instruct`（自然语言指令）\n- 每个问题默认超时时间为 240 秒\n- 启用 `calibrate` 选项会将 `code_prompt` 添加到生成代码前，以对齐函数签名\n- 沙箱环境设置请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `bigcodebench_hard` |\n| **数据集ID** | [evalscope/bigcodebench-hard](https://modelscope.cn/datasets/evalscope/bigcodebench-hard/summary) |\n| **论文** | N/A |\n| **标签** | `Coding` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分版本** | `v0.1.4` |\n| **聚合方式** | `mean_and_pass_at_k` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 148 |\n| 提示词长度（平均） | 777.94 字符 |\n| 提示词长度（最小/最大） | 274 / 1816 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"207adc46\",\n      \"content\": \"Download all files from a specific directory on an FTP server using wget in a subprocess. Args: ftp_server (str): The FTP server address. Default is 'ftp.dlptest.com'. ftp_user (str): The FTP server username. Default is 'dlpuser'. ftp_passwor ... [TRUNCATED 798 chars] ...  FTP server.\\nYou should write self-contained code starting with:\\n```\\nimport subprocess\\nimport ftplib\\nimport os\\ndef task_func(ftp_server='ftp.dlptest.com', ftp_user='dlpuser', ftp_password='rNrKYTX9g7z3RgJRmxWuGHbeu', ftp_dir='/ftp/test'):\\n```\"\n    }\n  ],\n  \"target\": \"    # Attempt to connect to the FTP server\\n    try:\\n        ftp_obj = ftplib.FTP(ftp_server)\\n    except Exception as e:\\n        raise Exception(f'Failed to connect to FTP server {ftp_server}: {str(e)}')\\n\\n    # Attempt to login to the FTP serv ... [TRUNCATED 625 chars] ...        command = f'wget ftp://{ftp_user}:{ftp_password}@{ftp_server}{ftp_dir}/{filename} -P {download_dir}'\\n        subprocess.call(command, shell=True)\\n        downloaded_files.append(filename)\\n\\n    ftp_obj.quit()\\n    return downloaded_files\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"task_id\": \"BigCodeBench/13\",\n    \"entry_point\": \"task_func\",\n    \"complete_prompt\": \"import subprocess\\nimport ftplib\\nimport os\\n\\ndef task_func(ftp_server='ftp.dlptest.com', ftp_user='dlpuser', ftp_password='rNrKYTX9g7z3RgJRmxWuGHbeu', ftp_dir='/ftp/test'):\\n    \\\"\\\"\\\"\\n    Download all files from a specific directory on an FTP serv ... [TRUNCATED 909 chars] ... ctory. Outputs the message \\\"Failed to change to directory {ftp_dir} on server {ftp_server}: {str(e)}\\\"\\n    \\n    Requirements:\\n    - subprocess\\n    - ftplib\\n    - os\\n\\n    Example:\\n    >>> task_func()\\n    ['file1.txt', 'file2.jpg', ...]\\n    \\\"\\\"\\\"\\n\",\n    \"code_prompt\": \"import subprocess\\nimport ftplib\\nimport os\\ndef task_func(ftp_server='ftp.dlptest.com', ftp_user='dlpuser', ftp_password='rNrKYTX9g7z3RgJRmxWuGHbeu', ftp_dir='/ftp/test'):\\n\",\n    \"test\": \"import unittest\\nfrom unittest.mock import patch\\nimport os\\nclass TestCases(unittest.TestCase):\\n    def setUp(self):\\n        \\\"\\\"\\\"Setup a clean test environment before each test.\\\"\\\"\\\"\\n        if not os.path.exists(\\\"downloaded_files\\\"):\\n            o ... [TRUNCATED 2565 chars] ... with self.assertRaises(Exception) as context:\\n            task_func(ftp_dir=\\\"/invalid_directory\\\")\\n        self.assertEqual(str(context.exception), f'Failed to change to directory /invalid_directory on server ftp.dlptest.com: {error_message}')\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板**：\n```text\n{prompt}\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `split` | `str` | `instruct` | 评估模式：\"complete\"（文档字符串补全）或 \"instruct\"（自然语言指令）。可选值：['complete', 'instruct'] |\n| `version` | `str` | `default` | 数据集版本。使用 \"default\" 表示最新可用版本。 |\n| `calibrate` | `bool` | `True` | 是否在生成代码前添加 `code_prompt` 以对齐函数签名。 |\n\n## 沙箱配置\n\n此基准测试需要沙箱环境来执行代码。\n\n```json\n{\n  \"image\": \"bigcodebench/bigcodebench-evaluate:latest\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {}\n  },\n  \"memory_limit\": \"4g\"\n}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bigcodebench_hard \\\n    --sandbox '{\"enabled\": true}' \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bigcodebench_hard'],\n    sandbox={'enabled': True},\n    dataset_args={\n        'bigcodebench_hard': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "0414373dbf4c8fc19458129725e06ad8",
+    "needs_translation": false
+  },
+  "updated_at": "2026-06-22T17:16:20.214818",
+  "translation_updated_at": "2026-06-22T17:16:34"
+}

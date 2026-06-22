@@ -20,6 +20,8 @@
 | `bc2gm` | [BC2GM](../../benchmarks/bc2gm.md) | `Knowledge`, `NER` |
 | `bc4chemd` | [BC4CHEMD](../../benchmarks/bc4chemd.md) | `Knowledge`, `NER` |
 | `bc5cdr` | [BC5CDR](../../benchmarks/bc5cdr.md) | `Knowledge`, `NER` |
+| `bigcodebench` | [BigCodeBench](../../benchmarks/bigcodebench.md) | `Coding` |
+| `bigcodebench_hard` | [BigCodeBench-Hard](../../benchmarks/bigcodebench_hard.md) | `Coding` |
 | `biomix_qa` | [BioMixQA](../../benchmarks/biomix_qa.md) | `Knowledge`, `MCQ`, `Medical` |
 | `broad_twitter_corpus` | [BroadTwitterCorpus](../../benchmarks/broad_twitter_corpus.md) | `Knowledge`, `NER` |
 | `ceval` | [C-Eval](../../benchmarks/ceval.md) | `Chinese`, `Knowledge`, `MCQ` |
@@ -138,6 +140,8 @@
 ../../benchmarks/bc2gm.md
 ../../benchmarks/bc4chemd.md
 ../../benchmarks/bc5cdr.md
+../../benchmarks/bigcodebench.md
+../../benchmarks/bigcodebench_hard.md
 ../../benchmarks/biomix_qa.md
 ../../benchmarks/broad_twitter_corpus.md
 ../../benchmarks/ceval.md
