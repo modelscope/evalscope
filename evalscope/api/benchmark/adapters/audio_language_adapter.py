@@ -27,6 +27,9 @@ class AudioLanguageAdapter(DefaultDataAdapter):
             WAV-encoded bytes.
         """
         import io
+
+        from evalscope.utils.import_utils import check_import
+        check_import('soundfile', raise_error=True, feature_name='AudioLanguageAdapter')
         import soundfile as sf
 
         data, sr = sf.read(io.BytesIO(raw_bytes))
