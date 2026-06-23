@@ -1,0 +1,180 @@
+{
+  "meta": {
+    "pretty_name": "CommonVoice15",
+    "dataset_id": "lmms-lab/common_voice_15",
+    "paper_url": null,
+    "tags": [
+      "Audio",
+      "MultiLingual",
+      "SpeechRecognition"
+    ],
+    "metrics": [
+      "wer"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "en",
+      "zh-CN",
+      "fr"
+    ],
+    "description": "\n## Overview\n\nCommon Voice 15 is a massively multilingual speech corpus collected by Mozilla, covering 114 languages with thousands of hours of validated speech data from volunteers worldwide.\n\n## Task Description\n\n- **Task Type**: Automatic Speech Recognition (ASR)\n- **Input**: Audio recordings with speech in various languages\n- **Output**: Transcribed text in the corresponding language\n- **Languages**: 114 languages including English, Mandarin Chinese, French, and many more\n\n## Key Features\n\n- Crowd-sourced speech recordings with community validation\n- Diverse speaker demographics (age, gender, accent)\n- Multiple languages with varying amounts of data\n- CC-0 licensed for open research and commercial use\n- High-quality transcriptions validated by multiple listeners\n\n## Evaluation Notes\n\n- Default configuration uses **test** split\n- Primary metric: **Word Error Rate (WER)**\n- Default subsets: `en` (English), `zh-CN` (Mandarin Chinese), `fr` (French)\n- Language-specific text normalization applied during evaluation\n- Prompt: \"Please recognize the speech and only output the recognized content\"\n",
+    "prompt_template": "Please recognize the speech and only output the recognized content:",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 43143,
+    "subset_stats": [
+      {
+        "name": "en",
+        "sample_count": 16386,
+        "prompt_length_mean": 67,
+        "prompt_length_min": 67,
+        "prompt_length_max": 67,
+        "prompt_length_std": null,
+        "target_length_mean": 54.32,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 16386,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "mp3"
+            ]
+          }
+        }
+      },
+      {
+        "name": "zh-CN",
+        "sample_count": 10625,
+        "prompt_length_mean": 67,
+        "prompt_length_min": 67,
+        "prompt_length_max": 67,
+        "prompt_length_std": null,
+        "target_length_mean": 16.33,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 10625,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "mp3"
+            ]
+          }
+        }
+      },
+      {
+        "name": "fr",
+        "sample_count": 16132,
+        "prompt_length_mean": 67,
+        "prompt_length_min": 67,
+        "prompt_length_max": 67,
+        "prompt_length_std": null,
+        "target_length_mean": 61.11,
+        "multimodal": {
+          "has_images": false,
+          "has_audio": true,
+          "has_video": false,
+          "audio": {
+            "count_total": 16132,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "duration": null,
+            "sample_rates": [],
+            "formats": [
+              "mp3"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 67,
+      "min": 67,
+      "max": 67,
+      "std": null
+    },
+    "target_length_mean": 47.5,
+    "computed_at": "2026-06-23T15:37:19.461954+08:00",
+    "multimodal": {
+      "has_images": false,
+      "has_audio": true,
+      "has_video": false,
+      "audio": {
+        "count_total": 43143,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "duration": null,
+        "sample_rates": [],
+        "formats": [
+          "mp3"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "88959854",
+          "content": [
+            {
+              "text": "Please recognize the speech and only output the recognized content:"
+            },
+            {
+              "audio": "[BASE64_AUDIO: mp3, ~37.0KB]",
+              "format": "mp3"
+            }
+          ]
+        }
+      ],
+      "target": "Joe Keaton disapproved of films, and Buster also had reservations about the medium.",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "en",
+      "metadata": {
+        "locale": "en",
+        "path": "/home/tiger/.cache/huggingface/datasets/downloads/extracted/f54628fae82dd952031cdea3ec9c3d600c11d606e00cb8b3fd1b6ad500d7eb23/en_test_0/common_voice_en_27710027.mp3",
+        "lang_id": "en"
+      }
+    },
+    "subset": "en",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# CommonVoice15\n\n\n## Overview\n\nCommon Voice 15 is a massively multilingual speech corpus collected by Mozilla, covering 114 languages with thousands of hours of validated speech data from volunteers worldwide.\n\n## Task Description\n\n- **Task Type**: Automatic Speech Recognition (ASR)\n- **Input**: Audio recordings with speech in various languages\n- **Output**: Transcribed text in the corresponding language\n- **Languages**: 114 languages including English, Mandarin Chinese, French, and many more\n\n## Key Features\n\n- Crowd-sourced speech recordings with community validation\n- Diverse speaker demographics (age, gender, accent)\n- Multiple languages with varying amounts of data\n- CC-0 licensed for open research and commercial use\n- High-quality transcriptions validated by multiple listeners\n\n## Evaluation Notes\n\n- Default configuration uses **test** split\n- Primary metric: **Word Error Rate (WER)**\n- Default subsets: `en` (English), `zh-CN` (Mandarin Chinese), `fr` (French)\n- Language-specific text normalization applied during evaluation\n- Prompt: \"Please recognize the speech and only output the recognized content\"\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `common_voice_15` |\n| **Dataset ID** | [lmms-lab/common_voice_15](https://modelscope.cn/datasets/lmms-lab/common_voice_15/summary) |\n| **Paper** | N/A |\n| **Tags** | `Audio`, `MultiLingual`, `SpeechRecognition` |\n| **Metrics** | `wer` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 43,143 |\n| Prompt Length (Mean) | 67 chars |\n| Prompt Length (Min/Max) | 67 / 67 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `en` | 16,386 | 67 | 67 | 67 |\n| `zh-CN` | 10,625 | 67 | 67 | 67 |\n| `fr` | 16,132 | 67 | 67 | 67 |\n\n**Audio Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Audio Files | 43,143 |\n| Audio per Sample | min: 1, max: 1, mean: 1 |\n| Formats | mp3 |\n\n\n## Sample Example\n\n**Subset**: `en`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"88959854\",\n      \"content\": [\n        {\n          \"text\": \"Please recognize the speech and only output the recognized content:\"\n        },\n        {\n          \"audio\": \"[BASE64_AUDIO: mp3, ~37.0KB]\",\n          \"format\": \"mp3\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"Joe Keaton disapproved of films, and Buster also had reservations about the medium.\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"en\",\n  \"metadata\": {\n    \"locale\": \"en\",\n    \"path\": \"/home/tiger/.cache/huggingface/datasets/downloads/extracted/f54628fae82dd952031cdea3ec9c3d600c11d606e00cb8b3fd1b6ad500d7eb23/en_test_0/common_voice_en_27710027.mp3\",\n    \"lang_id\": \"en\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nPlease recognize the speech and only output the recognized content:\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets common_voice_15 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['common_voice_15'],\n    dataset_args={\n        'common_voice_15': {\n            # subset_list: ['en', 'zh-CN', 'fr']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# CommonVoice15\n\n\n## 概述\n\nCommon Voice 15 是由 Mozilla 收集的大规模多语言语音语料库，涵盖 114 种语言，包含来自全球志愿者贡献的数千小时经过验证的语音数据。\n\n## 任务描述\n\n- **任务类型**：自动语音识别（ASR）\n- **输入**：包含多种语言语音的音频录音\n- **输出**：对应语言的转录文本\n- **语言**：114 种语言，包括英语、中文普通话、法语等\n\n## 主要特点\n\n- 由社区贡献并经社区验证的语音录音\n- 多样化的说话人人口统计特征（年龄、性别、口音）\n- 多种语言，每种语言的数据量各不相同\n- 采用 CC-0 许可证，允许开放研究和商业用途\n- 高质量的转录文本，经多位听众验证\n\n## 评估说明\n\n- 默认配置使用 **test** 数据划分\n- 主要评估指标：**词错误率（WER）**\n- 默认子集：`en`（英语）、`zh-CN`（中文普通话）、`fr`（法语）\n- 评估过程中应用语言特定的文本归一化\n- 提示词：\"Please recognize the speech and only output the recognized content\"\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `common_voice_15` |\n| **数据集ID** | [lmms-lab/common_voice_15](https://modelscope.cn/datasets/lmms-lab/common_voice_15/summary) |\n| **论文** | N/A |\n| **标签** | `Audio`, `MultiLingual`, `SpeechRecognition` |\n| **指标** | `wer` |\n| **默认样本数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 43,143 |\n| 提示词长度（平均） | 67 字符 |\n| 提示词长度（最小/最大） | 67 / 67 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `en` | 16,386 | 67 | 67 | 67 |\n| `zh-CN` | 10,625 | 67 | 67 | 67 |\n| `fr` | 16,132 | 67 | 67 | 67 |\n\n**音频统计数据：**\n\n| 指标 | 值 |\n|--------|-------|\n| 音频文件总数 | 43,143 |\n| 每样本音频数量 | 最小: 1, 最大: 1, 平均: 1 |\n| 格式 | mp3 |\n\n\n## 样例示例\n\n**子集**: `en`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"88959854\",\n      \"content\": [\n        {\n          \"text\": \"Please recognize the speech and only output the recognized content:\"\n        },\n        {\n          \"audio\": \"[BASE64_AUDIO: mp3, ~37.0KB]\",\n          \"format\": \"mp3\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"Joe Keaton disapproved of films, and Buster also had reservations about the medium.\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"en\",\n  \"metadata\": {\n    \"locale\": \"en\",\n    \"path\": \"/home/tiger/.cache/huggingface/datasets/downloads/extracted/f54628fae82dd952031cdea3ec9c3d600c11d606e00cb8b3fd1b6ad500d7eb23/en_test_0/common_voice_en_27710027.mp3\",\n    \"lang_id\": \"en\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nPlease recognize the speech and only output the recognized content:\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets common_voice_15 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['common_voice_15'],\n    dataset_args={\n        'common_voice_15': {\n            # subset_list: ['en', 'zh-CN', 'fr']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "d3a822cdad66c13b74748c26ac387ac3",
+    "needs_translation": false
+  },
+  "updated_at": "2026-06-23T15:37:29.293476+08:00",
+  "translation_updated_at": "2026-06-23T15:50:44+08:00"
+}

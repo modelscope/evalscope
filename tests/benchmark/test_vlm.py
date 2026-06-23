@@ -441,3 +441,21 @@ class TestVLMBenchmark(TestBenchmark):
             'subset_list': ['level_1']
         }
         self._run_dataset_test('videomme_v2', dataset_args=dataset_args, limit=10)
+
+    def test_common_voice_15(self):
+        dataset_args = {
+            'subset_list': ['en'],
+        }
+        self._run_dataset_test('common_voice_15', dataset_args=dataset_args, limit=5, model='qwen3-omni-flash')
+
+    def test_wenet_speech(self):
+        dataset_args = {
+            'subset_list': ['dev'],
+        }
+        self._run_dataset_test('wenet_speech', dataset_args=dataset_args, limit=5, model='qwen3-omni-flash')
+
+    def test_mmau(self):
+        dataset_args = {
+            'subset_list': ['test_mini'],
+        }
+        self._run_dataset_test('mmau', dataset_args=dataset_args, limit=5, model='qwen3-omni-flash')

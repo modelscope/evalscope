@@ -413,6 +413,48 @@ class CER(Metric):
         ]
 
 
+@register_metric(name='mer')
+class MER(Metric):
+    """Mixed Error Rate for Chinese-English mixed text.
+
+    Tokenizes Chinese characters individually and English words as whole tokens,
+    then computes edit distance / max(len_ref, len_hyp).
+    """
+
+    def apply(self, predictions: List[str], references: List[str]) -> List[float]:
+        import editdistance
+
+        scores = []
+        for pred, ref in zip(predictions, references):
+            ref_tokens = self._tokenize(ref)
+            hyp_tokens = self._tokenize(pred)
+            distance = editdistance.eval(ref_tokens, hyp_tokens)
+            max_len = max(len(ref_tokens), len(hyp_tokens))
+            scores.append(distance / max_len if max_len > 0 else 0.0)
+        return scores
+
+    @staticmethod
+    def _tokenize(text: str) -> List[str]:
+        """Tokenize: Chinese characters as single tokens, English words as whole tokens."""
+        import re
+
+        tokens: List[str] = []
+        i = 0
+        while i < len(text):
+            char = text[i]
+            if '\u4e00' <= char <= '\u9fff':
+                tokens.append(char)
+                i += 1
+            else:
+                match = re.match(r"[a-zA-Z']+\w*", text[i:])
+                if match:
+                    tokens.append(match.group(0))
+                    i += match.end()
+                else:
+                    i += 1
+        return tokens
+
+
 @register_metric(name='sem_score')
 class SemScore(SingletonMetric):
 

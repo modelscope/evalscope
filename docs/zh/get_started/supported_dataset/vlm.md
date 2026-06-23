@@ -13,6 +13,7 @@
 | `chartqa` | [ChartQA](../../benchmarks/chartqa.md) | `Knowledge`, `MultiModal`, `QA` |
 | `cmmmu` | [CMMMU](../../benchmarks/cmmmu.md) | `Chinese`, `Knowledge`, `MultiModal`, `QA` |
 | `cmmu` | [CMMU](../../benchmarks/cmmu.md) | `Knowledge`, `MCQ`, `MultiModal`, `QA` |
+| `common_voice_15` | [CommonVoice15](../../benchmarks/common_voice_15.md) | `Audio`, `MultiLingual`, `SpeechRecognition` |
 | `docvqa` | [DocVQA](../../benchmarks/docvqa.md) | `Knowledge`, `MultiModal`, `QA` |
 | `fleurs` | [FLEURS](../../benchmarks/fleurs.md) | `Audio`, `MultiLingual`, `SpeechRecognition` |
 | `general_vmcq` | [General-VMCQ](../../benchmarks/general_vmcq.md) | `Custom`, `MCQ`, `MultiModal` |
@@ -29,6 +30,7 @@
 | `micro_vqa` | [MicroVQA](../../benchmarks/micro_vqa.md) | `Knowledge`, `MCQ`, `Medical`, `MultiModal` |
 | `mm_bench` | [MMBench](../../benchmarks/mm_bench.md) | `Knowledge`, `MultiModal`, `QA` |
 | `mm_star` | [MMStar](../../benchmarks/mm_star.md) | `Knowledge`, `MCQ`, `MultiModal` |
+| `mmau` | [MMAU](../../benchmarks/mmau.md) | `Audio`, `MCQ` |
 | `mmmu` | [MMMU](../../benchmarks/mmmu.md) | `Knowledge`, `MultiModal`, `QA` |
 | `mmmu_pro` | [MMMU-PRO](../../benchmarks/mmmu_pro.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `msr_vtt` | [MSR-VTT](../../benchmarks/msr_vtt.md) | `ImageCaptioning`, `MultiModal` |
@@ -50,6 +52,7 @@
 | `visulogic` | [VisuLogic](../../benchmarks/visulogic.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `vqav2` | [VQAv2](../../benchmarks/vqav2.md) | `MultiModal`, `QA` |
 | `vstar_bench` | [V*Bench](../../benchmarks/vstar_bench.md) | `Grounding`, `MCQ`, `MultiModal` |
+| `wenet_speech` | [WenetSpeech](../../benchmarks/wenet_speech.md) | `Audio`, `SpeechRecognition` |
 | `zerobench` | [ZeroBench](../../benchmarks/zerobench.md) | `Knowledge`, `MultiModal`, `QA` |
 
 :::{toctree}
@@ -65,6 +68,7 @@
 ../../benchmarks/chartqa.md
 ../../benchmarks/cmmmu.md
 ../../benchmarks/cmmu.md
+../../benchmarks/common_voice_15.md
 ../../benchmarks/docvqa.md
 ../../benchmarks/fleurs.md
 ../../benchmarks/general_vmcq.md
@@ -81,6 +85,7 @@
 ../../benchmarks/micro_vqa.md
 ../../benchmarks/mm_bench.md
 ../../benchmarks/mm_star.md
+../../benchmarks/mmau.md
 ../../benchmarks/mmmu.md
 ../../benchmarks/mmmu_pro.md
 ../../benchmarks/msr_vtt.md
@@ -102,5 +107,6 @@
 ../../benchmarks/visulogic.md
 ../../benchmarks/vqav2.md
 ../../benchmarks/vstar_bench.md
+../../benchmarks/wenet_speech.md
 ../../benchmarks/zerobench.md
 :::

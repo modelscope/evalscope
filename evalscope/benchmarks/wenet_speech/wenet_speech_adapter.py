@@ -1,0 +1,98 @@
+# Copyright (c) Alibaba, Inc. and its affiliates.
+
+from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
+from evalscope.api.metric.scorer import Score
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
+from evalscope.utils.io_utils import bytes_to_base64
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
+
+
+@register_benchmark(
+    BenchmarkMeta(
+        name='wenet_speech',
+        pretty_name='WenetSpeech',
+        dataset_id='lmms-lab/WenetSpeech',
+        tags=[Tags.AUDIO, Tags.SPEECH_RECOGNITION],
+        description="""
+## Overview
+
+WenetSpeech is a large-scale Mandarin Chinese speech corpus with over 10,000 hours of multi-domain transcribed audio data, designed for speech recognition research.
+
+## Task Description
+
+- **Task Type**: Automatic Speech Recognition (ASR)
+- **Input**: Audio recordings with Mandarin Chinese speech
+- **Output**: Transcribed text in Chinese
+- **Domain**: Multi-domain (internet, meeting)
+
+## Key Features
+
+- Large-scale Mandarin Chinese speech corpus (10,000+ hours)
+- Multi-domain coverage: internet content, meetings
+- High-quality transcriptions
+- Suitable for evaluating Chinese ASR systems
+- Supports mixed Chinese-English text evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **test_net** split
+- Subsets by domain: **dev** (development), **test_meeting** (meeting domain), **test_net** (internet domain)
+- Primary metric: **MER** (Mixed Error Rate)
+- MER tokenizes Chinese characters individually and English words as whole tokens
+- Prompt: "Please listen to the audio and transcribe what you hear"
+""",
+        subset_list=['dev', 'test_meeting', 'test_net'],
+        eval_split='test_net',
+        metric_list=['mer'],
+        prompt_template='Please listen to the audio and transcribe what you hear. '
+        'Please only provide the transcription without any additional commentary. '
+        'Do not include any punctuation.',
+    )
+)
+class WenetSpeechAdapter(VisionLanguageAdapter):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.split_as_subset = True
+
+    def record_to_sample(self, record) -> Sample:
+        content_list = [ContentText(text=self.prompt_template)]
+        audio_bytes = self._to_wav(record['audio']['bytes'])
+        audio_base64 = bytes_to_base64(audio_bytes, format='wav', add_header=True, content_type='audio')
+        content_list.append(ContentAudio(audio=audio_base64, format='wav'))
+
+        return Sample(
+            input=[ChatMessageUser(content=content_list)], target=record['text'], metadata={
+                'text': record['text'],
+            }
+        )
+
+    def match_score(self, original_prediction, filtered_prediction, reference, task_state):
+        from evalscope.metrics.metric import MER
+
+        mer = MER()
+        mer_score = mer.apply([filtered_prediction], [reference])[0]
+
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
+        score.value = {'mer': mer_score}
+        return score
+
+    @staticmethod
+    def _to_wav(raw_bytes: bytes) -> bytes:
+        """Convert audio bytes (OPUS/OGG/etc.) to WAV format using soundfile."""
+        import io
+        import soundfile as sf
+
+        data, sr = sf.read(io.BytesIO(raw_bytes))
+        wav_buf = io.BytesIO()
+        sf.write(wav_buf, data, sr, format='WAV')
+        return wav_buf.getvalue()
