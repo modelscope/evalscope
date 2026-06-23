@@ -4,7 +4,7 @@ import json
 from collections import defaultdict
 from typing import Any, Dict, List
 
-from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
+from evalscope.api.benchmark import AudioLanguageAdapter, BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentAudio, ContentText
@@ -64,7 +64,7 @@ MMAU (Massive Multitask Audio Understanding) is a comprehensive benchmark for ev
         prompt_template=MMAU_PROMPT,
     )
 )
-class MMAUAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
+class MMAUAdapter(AudioLanguageAdapter, MultiChoiceAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

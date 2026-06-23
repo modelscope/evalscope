@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List
 
-from evalscope.api.benchmark import BenchmarkMeta, VendorVerifierAdapter
+from evalscope.api.benchmark import BenchmarkMeta, FunctionCallAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import dict_to_chat_message
@@ -103,7 +103,7 @@ def _decode_maybe_json(value: Any) -> Any:
         eval_split='test',
     )
 )
-class MiniMaxVerifierAdapter(VendorVerifierAdapter):
+class MiniMaxVerifierAdapter(FunctionCallAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

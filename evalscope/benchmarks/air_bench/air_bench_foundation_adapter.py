@@ -9,7 +9,7 @@ import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
+from evalscope.api.benchmark import AudioLanguageAdapter, BenchmarkMeta
 from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
@@ -101,7 +101,7 @@ D. {choice_d}
         },
     )
 )
-class AIRBenchFoundationAdapter(VisionLanguageAdapter):
+class AIRBenchFoundationAdapter(AudioLanguageAdapter):
     """Adapter for AIR-Bench Foundation single-choice MCQ tasks."""
 
     def __init__(self, **kwargs):

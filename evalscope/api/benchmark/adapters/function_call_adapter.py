@@ -1,17 +1,17 @@
-"""VendorVerifierAdapter: shared base for vendor verifier benchmarks.
+"""FunctionCallAdapter: shared base for function-calling benchmarks.
 
-Vendor verifier benchmarks (k2_verifier, minimax_verifier, kimi_verifier) test
-whether a third-party API deployment faithfully reproduces an official model's
-behavior. They share:
+Function-calling benchmarks (k2_verifier, minimax_verifier, kimi_verifier,
+general_fc) test whether a model correctly invokes tools / function calls.
+They share:
 
 - a thin OpenAI-compatible inference loop (``_on_inference``),
 - JSON-schema validation of tool calls (``validate_tool_call``),
 - an always-on detector for "reasoning-only" deployment regressions
   (``detect_error_only_reasoning``).
 
-The base intentionally provides no metric aggregation logic; each vendor
+The base intentionally provides no metric aggregation logic; each concrete
 adapter computes its own ``aggregate_scores`` because the metric names and
-formulas are vendor-specific.
+formulas are benchmark-specific.
 """
 from __future__ import annotations
 
@@ -27,8 +27,8 @@ from .agent_adapter import AgentAdapter
 logger = get_logger()
 
 
-class VendorVerifierAdapter(AgentAdapter):
-    """Shared base for vendor verifier benchmarks.
+class FunctionCallAdapter(AgentAdapter):
+    """Shared base for function-calling benchmarks.
 
     Subclasses must still declare their own ``BenchmarkMeta`` via
     ``@register_benchmark`` and override ``record_to_sample`` /

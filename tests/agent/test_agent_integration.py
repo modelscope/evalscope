@@ -15,7 +15,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import evalscope  # noqa: F401 - trigger strategy registration
 from evalscope.api.agent import AgentTrace, EventType, NativeAgentConfig
-from evalscope.api.benchmark.adapters.agent_loop_adapter import AgentLoopAdapter
+from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.benchmark.adapters.default_data_adapter import DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState

@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
+from evalscope.api.benchmark import AudioLanguageAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
@@ -60,7 +60,7 @@ Common Voice 15 is a massively multilingual speech corpus collected by Mozilla, 
         prompt_template='Please recognize the speech and only output the recognized content:',
     )
 )
-class CommonVoice15Adapter(VisionLanguageAdapter):
+class CommonVoice15Adapter(AudioLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

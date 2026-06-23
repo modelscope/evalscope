@@ -143,14 +143,20 @@ def get_category_from_adapter_class(adapter_cls) -> str:
     Returns:
         Category string: 'aigc', 'vlm', 'agent', 'llm', or 'unknown'
     """
-    from evalscope.api.benchmark import AgentAdapter, ImageEditAdapter, Text2ImageAdapter, VisionLanguageAdapter
+    from evalscope.api.benchmark import (
+        AgentAdapter,
+        AudioLanguageAdapter,
+        ImageEditAdapter,
+        Text2ImageAdapter,
+        VisionLanguageAdapter,
+    )
 
     if adapter_cls is None:
         return 'unknown'
     try:
         if issubclass(adapter_cls, (Text2ImageAdapter, ImageEditAdapter)):
             return 'aigc'
-        elif issubclass(adapter_cls, VisionLanguageAdapter):
+        elif issubclass(adapter_cls, (VisionLanguageAdapter, AudioLanguageAdapter)):
             return 'vlm'
         elif issubclass(adapter_cls, AgentAdapter):
             return 'agent'

@@ -2,7 +2,7 @@
 import json
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from evalscope.api.benchmark import BenchmarkMeta, VendorVerifierAdapter
+from evalscope.api.benchmark import BenchmarkMeta, FunctionCallAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import dict_to_chat_message
@@ -56,7 +56,7 @@ General-FunctionCalling is a customizable benchmark for evaluating function call
         eval_split='test',
     )
 )
-class GeneralFCAdapter(VendorVerifierAdapter):
+class GeneralFCAdapter(FunctionCallAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

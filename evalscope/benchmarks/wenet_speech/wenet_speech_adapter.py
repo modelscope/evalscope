@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
+from evalscope.api.benchmark import AudioLanguageAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
 from evalscope.api.registry import register_benchmark
@@ -53,7 +53,7 @@ WenetSpeech is a large-scale Mandarin Chinese speech corpus with over 10,000 hou
         'Do not include any punctuation.',
     )
 )
-class WenetSpeechAdapter(VisionLanguageAdapter):
+class WenetSpeechAdapter(AudioLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -70,14 +70,3 @@ class WenetSpeechAdapter(VisionLanguageAdapter):
                 'text': record['text'],
             }
         )
-
-    @staticmethod
-    def _to_wav(raw_bytes: bytes) -> bytes:
-        """Convert audio bytes (OPUS/OGG/etc.) to WAV format using soundfile."""
-        import io
-        import soundfile as sf
-
-        data, sr = sf.read(io.BytesIO(raw_bytes))
-        wav_buf = io.BytesIO()
-        sf.write(wav_buf, data, sr, format='WAV')
-        return wav_buf.getvalue()

@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
 
-from evalscope.api.benchmark import BenchmarkMeta, VendorVerifierAdapter
+from evalscope.api.benchmark import BenchmarkMeta, FunctionCallAdapter
 from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser
@@ -83,7 +83,7 @@ Kimi-Vendor-Verifier is a pre-flight compliance check for Kimi K2 / K2-Thinking 
         eval_split='test',
     )
 )
-class KimiVerifierAdapter(VendorVerifierAdapter):
+class KimiVerifierAdapter(FunctionCallAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
