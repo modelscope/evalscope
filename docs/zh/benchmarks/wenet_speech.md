@@ -12,11 +12,11 @@ WenetSpeech 是一个大规模中文语音语料库，包含超过 10,000 小时
 - **输出**：中文转录文本
 - **领域**：多领域（互联网、会议）
 
-## 主要特性
+## 主要特点
 
 - 大规模中文语音语料库（10,000+ 小时）
 - 覆盖多领域：互联网内容、会议
-- 高质量转录
+- 高质量转录文本
 - 适用于评估中文 ASR 系统
 - 支持中英混合文本评估
 
@@ -43,11 +43,56 @@ WenetSpeech 是一个大规模中文语音语料库，包含超过 10,000 小时
 
 ## 数据统计
 
-*统计数据不可用。*
+| 指标 | 值 |
+|--------|-------|
+| 总样本数 | 22,195 |
+| 提示词长度（平均） | 161 字符 |
+| 提示词长度（最小/最大） | 161 / 161 字符 |
+
+**各子集统计信息：**
+
+| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
+|--------|---------|-------------|------------|------------|
+| `dev` | 13,825 | 161 | 161 | 161 |
+| `test_meeting` | 8,370 | 161 | 161 | 161 |
+
+**音频统计信息：**
+
+| 指标 | 值 |
+|--------|-------|
+| 音频文件总数 | 22,195 |
+| 每样本音频数量 | 最小: 1, 最大: 1, 平均: 1 |
+| 格式 | wav |
+
 
 ## 样例示例
 
-*样例示例不可用。*
+**子集**: `dev`
+
+```json
+{
+  "input": [
+    {
+      "id": "c30c80b4",
+      "content": [
+        {
+          "text": "Please listen to the audio and transcribe what you hear. Please only provide the transcription without any additional commentary. Do not include any punctuation."
+        },
+        {
+          "audio": "[BASE64_AUDIO: wav, ~175.3KB]",
+          "format": "wav"
+        }
+      ]
+    }
+  ],
+  "target": "对我做了介绍啊那么我想说的是呢大家如果对我的研究感兴趣呢嗯",
+  "id": 0,
+  "group_id": 0,
+  "metadata": {
+    "text": "对我做了介绍啊那么我想说的是呢大家如果对我的研究感兴趣呢嗯"
+  }
+}
+```
 
 ## 提示模板
 
@@ -80,6 +125,11 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['wenet_speech'],
+    dataset_args={
+        'wenet_speech': {
+            # subset_list: ['dev', 'test_meeting']  # 可选，用于评估特定子集
+        }
+    },
     limit=10,  # 正式评估时请删除此行
 )
 
