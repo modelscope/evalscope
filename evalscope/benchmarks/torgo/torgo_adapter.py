@@ -115,7 +115,7 @@ class TorgoAdapter(AudioLanguageAdapter):
 
         language = 'en'
 
-        normalized_prediction = normalize_text(original_prediction, language)
+        normalized_prediction = normalize_text(filtered_prediction, language)
         normalized_reference = normalize_text(reference, language)
         score = Score(
             extracted_prediction=normalized_prediction,

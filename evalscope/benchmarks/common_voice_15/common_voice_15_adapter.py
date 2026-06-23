@@ -89,7 +89,7 @@ class CommonVoice15Adapter(AudioLanguageAdapter):
         locale = task_state.metadata.get('locale', 'en')
         language = LOCALE_TO_LANG.get(locale, locale)
 
-        normalized_prediction = normalize_text(original_prediction, language)
+        normalized_prediction = normalize_text(filtered_prediction, language)
         normalized_reference = normalize_text(reference, language)
         score = Score(
             extracted_prediction=normalized_prediction,

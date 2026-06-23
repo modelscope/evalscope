@@ -189,7 +189,7 @@ class FLEURSAdapter(AudioLanguageAdapter):
 
         language = task_state.metadata['lang_id']
 
-        normalized_prediction = normalize_text(original_prediction, language)
+        normalized_prediction = normalize_text(filtered_prediction, language)
         normalized_reference = normalize_text(reference, language)
         score = Score(
             extracted_prediction=normalized_prediction,
