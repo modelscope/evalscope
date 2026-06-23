@@ -19,7 +19,7 @@ EvalScope's SWE-bench integration provides two evaluation modes:
 | Tool use | None | `bash` tool, supports `toolcall` / `backticks` protocols |
 | Submission mechanism | Model's diff output is the submission | Model prints sentinel `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`, system collects `git diff` |
 | Docker stage | Evaluation stage only (running tests) | Both inference and evaluation stages |
-| Datasets | `swe_bench_verified` / `swe_bench_verified_mini` / `swe_bench_lite` | `swe_bench_verified_agentic` / `swe_bench_verified_mini_agentic` / `swe_bench_lite_agentic` |
+| Datasets | `swe_bench_verified` / `swe_bench_verified_mini` / `swe_bench_lite` | `swe_bench_verified_agentic` / `swe_bench_verified_mini_agentic` / `swe_bench_lite_agentic` / `swe_bench_multilingual_agentic` |
 | Cost | Lower, single-turn inference | Higher, multi-turn inference + long-running containers |
 
 **When to choose which**
@@ -36,6 +36,7 @@ These datasets evaluate models through Issue–PR pairing and unit-test verifica
 - **SWE-bench Verified (`swe_bench_verified`)**: 500 manually verified samples from the SWE-bench test set, with strictly controlled quality.
 - **SWE-bench Verified Mini (`swe_bench_verified_mini`)**: A 50-sample lightweight subset, ~5GB storage (vs ~130GB for the full set), preserving the difficulty distribution of the original.
 - **SWE-bench Lite (`swe_bench_lite`)**: 300 Issue–PR pairs from 11 popular Python projects.
+- **SWE-bench Multilingual**: 300 curated Issue–PR tasks from 42 repositories across 9 programming languages. EvalScope supports this dataset in agentic mode only.
 
 ### Oracle-only: inference datasets (`inference_dataset_id`)
 
@@ -53,6 +54,9 @@ Append the `_agentic` suffix to a core dataset name to trigger the agentic multi
 - **`swe_bench_verified_agentic`** — SWE-bench Verified (500 samples)
 - **`swe_bench_verified_mini_agentic`** — SWE-bench Verified Mini (50 samples, ~5GB)
 - **`swe_bench_lite_agentic`** — SWE-bench Lite (300 samples)
+- **`swe_bench_multilingual_agentic`** — SWE-bench Multilingual (300 samples across 9 programming languages)
+
+`swe_bench_multilingual_agentic` uses the official SWE-bench Multilingual x86_64 instance images. EvalScope automatically runs these containers with the matching `linux/amd64` Docker platform; if another `force_arch` value is provided for this dataset, it is overridden to `x86_64` with a warning.
 
 ## Install Dependencies
 
@@ -146,7 +150,7 @@ task_cfg = TaskConfig(
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
     api_key=os.getenv('DASHSCOPE_API_KEY'),
     eval_type='openai_api',
-    datasets=['swe_bench_verified_mini_agentic'],  # Can also be 'swe_bench_verified_agentic' or 'swe_bench_lite_agentic'
+    datasets=['swe_bench_verified_mini_agentic'],  # Can also be 'swe_bench_verified_agentic', 'swe_bench_lite_agentic', or 'swe_bench_multilingual_agentic'
     dataset_args={
         'swe_bench_verified_mini_agentic': {
             'extra_params': {
@@ -155,7 +159,7 @@ task_cfg = TaskConfig(
                 'command_timeout': 60.0,                 # Per-bash-command timeout (seconds)
                 'build_docker_images': True,             # Prepare images required for evaluation; recommended for first run
                 'pull_remote_images_if_available': True, # Prefer pulling pre-built remote images
-                # 'force_arch': 'arm64',                 # Apple Silicon users may explicitly set 'arm64'; default '' = auto-detect
+                # 'force_arch': 'arm64',                 # Optional for non-Multilingual SWE-bench datasets; Multilingual is fixed to x86_64
             }
         }
     },
@@ -179,7 +183,7 @@ run_task(task_cfg=task_cfg)
 | `command_timeout` | float | `60.0` | Per-bash-command timeout in seconds |
 | `build_docker_images` | bool | `True` | Whether to prepare Docker images (build or pull) |
 | `pull_remote_images_if_available` | bool | `True` | Prefer pulling pre-built remote images when available |
-| `force_arch` | str | `''` | Force the image architecture: `''` / `arm64` / `x86_64`. Empty means auto-detect. |
+| `force_arch` | str | `''` | Force the image architecture: `''` / `arm64` / `x86_64`. Empty means auto-detect. For `swe_bench_multilingual_agentic`, EvalScope always uses `x86_64`. |
 
 ```{note}
 Agentic mode requires Docker to be running during **both** the inference and evaluation stages. Each sample spawns its own container from a pre-built SWE-bench image, so `eval_batch_size` effectively controls the number of concurrently running containers — tune it according to your machine resources.

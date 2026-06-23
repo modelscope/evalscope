@@ -113,6 +113,30 @@ class TestAgentBenchmark(TestBenchmark):
         }
         self._run_dataset_test('swe_bench_lite_agentic', dataset_args, limit=1)
 
+    def test_swe_bench_multilingual_agentic(self):
+        """Test SWE-bench-multilingual agentic dataset using docker environment."""
+        dataset_args = {
+            'extra_params': {
+                'action_protocol': 'toolcall',
+                'max_steps': 250,
+                'command_timeout': 60.0,
+                'build_docker_images': False,
+                'pull_remote_images_if_available': True,
+            }
+        }
+        self._run_dataset_test(
+            'swe_bench_multilingual_agentic',
+            dataset_args,
+            limit=1,
+            generation_config={
+                'temperature': 0.0,
+                'parallel_tool_calls': False,
+                'retries': 3,
+                'extra_body': {'enable_thinking': True},
+                'stream': True
+            },
+        )
+
     def test_swe_bench_pro(self):
         """Test SWE-bench_Pro agentic dataset using docker environment."""
         dataset_args = {

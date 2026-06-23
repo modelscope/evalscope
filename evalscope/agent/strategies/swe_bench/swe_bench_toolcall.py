@@ -24,7 +24,7 @@ from evalscope.api.messages import ChatMessage, ChatMessageTool
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_strategy
 from evalscope.api.tool import ToolCall, ToolCallError, ToolInfo
-from ._observation import SUBMIT_SENTINEL, check_sentinel, format_exec_observation
+from ._observation import SUBMIT_SENTINEL, check_sentinel, format_exec_observation, is_terminal_sandbox_error
 
 
 @register_strategy('swe_bench_toolcall')
@@ -109,6 +109,9 @@ class SweBenchToolcallStrategy(AgentStrategy):
     ) -> ChatMessage:
         if error is not None:
             content = format_exec_observation('', error_message=error.message)
+            if is_terminal_sandbox_error('', error.message):
+                parsed.final_answer = ''
+                ctx.metadata['submission_source'] = 'sandbox_error'
             return ChatMessageTool(
                 content=content,
                 tool_call_id=call.id,
@@ -133,6 +136,9 @@ class SweBenchToolcallStrategy(AgentStrategy):
             )
 
         content = format_exec_observation(observation)
+        if is_terminal_sandbox_error(observation):
+            parsed.final_answer = ''
+            ctx.metadata['submission_source'] = 'sandbox_error'
         return ChatMessageTool(
             content=content,
             tool_call_id=call.id,
