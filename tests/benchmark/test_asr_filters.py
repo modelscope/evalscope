@@ -72,3 +72,14 @@ def test_torgo_match_score_uses_filtered_prediction() -> None:
     assert score.prediction == original_prediction
     assert score.extracted_prediction == 'hello world'
     assert score.value == {'cer': 0.0, 'wer': 0.0}
+
+
+def test_asr_match_score_handles_none_filtered_prediction() -> None:
+    adapter = make_adapter(LibriSpeechAdapter, 'librispeech', ['wer'])
+    sample = Sample(input='audio', target='hello world')
+    task_state = TaskState(model='mock', sample=sample, completed=True)
+
+    score = adapter.match_score('language English<asr_text>hello world', None, sample.target, task_state)
+
+    assert score.extracted_prediction == ''
+    assert score.value == {'wer': 1.0}
