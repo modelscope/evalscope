@@ -22,8 +22,8 @@ WenetSpeech is a large-scale Mandarin Chinese speech corpus with over 10,000 hou
 
 ## Evaluation Notes
 
-- Default configuration uses **test_net** split
-- Subsets by domain: **dev** (development), **test_meeting** (meeting domain), **test_net** (internet domain)
+- Default configuration uses **test_meeting** split
+- Subsets by domain: **dev** (development), **test_meeting** (meeting domain)
 - Primary metric: **MER** (Mixed Error Rate)
 - MER tokenizes Chinese characters individually and English words as whole tokens
 - Prompt: "Please listen to the audio and transcribe what you hear"
@@ -39,7 +39,7 @@ WenetSpeech is a large-scale Mandarin Chinese speech corpus with over 10,000 hou
 | **Tags** | `Audio`, `SpeechRecognition` |
 | **Metrics** | `mer` |
 | **Default Shots** | 0-shot |
-| **Evaluation Split** | `test_net` |
+| **Evaluation Split** | `test_meeting` |
 
 
 ## Data Statistics
