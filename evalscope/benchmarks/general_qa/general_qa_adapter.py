@@ -104,7 +104,7 @@ class GeneralQAAdapter(DefaultDataAdapter):
         for metric in self.metric_list:
             try:
                 if metric == 'Rouge':
-                    from evalscope.metrics.rouge_metric import compute_rouge_score_one_sample_zh
+                    from evalscope.metrics.utils.rouge import compute_rouge_score_one_sample_zh
 
                     score.value.update(compute_rouge_score_one_sample_zh([filtered_prediction], [reference]))
                 elif metric == 'BLEU':

@@ -16,7 +16,7 @@ import torch.nn.functional as F
 from modelscope import snapshot_download
 from transformers import BertTokenizer
 
-from evalscope.metrics.t2v_metrics.models.utils import is_local_files_only
+from evalscope.metrics.vision.t2v_metrics.models.utils import is_local_files_only
 from ...common import dist_utils
 from ...common.dist_utils import download_cached_file
 from ...common.logger import MetricLogger

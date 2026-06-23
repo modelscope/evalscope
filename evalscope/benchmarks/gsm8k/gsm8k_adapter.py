@@ -97,6 +97,6 @@ class GSM8KAdapter(DefaultDataAdapter):
             return ''
 
     def extract_answer(self, prediction: str, task_state: TaskState):
-        from evalscope.metrics.math_parser import extract_answer
+        from evalscope.metrics.math.parser import extract_answer
 
         return extract_answer(prediction)

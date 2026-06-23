@@ -291,7 +291,7 @@ class WMT24PPAdapter(DefaultDataAdapter):
         # ---- BERTScore ----
         if self.has_metric('bert_score'):
             try:
-                from evalscope.metrics.metric import BertScore
+                from evalscope.metrics.nlp.metrics import BertScore
 
                 score_args = self.get_metric_args('bert_score')
                 bert_scorer = BertScore(**score_args)
@@ -304,7 +304,7 @@ class WMT24PPAdapter(DefaultDataAdapter):
         # ---- COMET ----
         if self.has_metric('comet'):
             try:
-                from evalscope.metrics.metric import COMETScore
+                from evalscope.metrics.nlp.metrics import COMETScore
 
                 score_args = self.get_metric_args('comet')
                 comet_scorer = COMETScore(**score_args)

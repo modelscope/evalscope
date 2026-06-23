@@ -71,7 +71,7 @@ class LibriSpeechAdapter(VisionLanguageAdapter):
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):
-        from evalscope.metrics.text_normalizer.wer import normalize_text, wer
+        from evalscope.metrics.utils.text_normalizer.wer import normalize_text, wer
 
         language = 'en'
 

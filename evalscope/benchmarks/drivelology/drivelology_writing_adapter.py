@@ -127,7 +127,7 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
         """
         Batch calculate the match scores using BERTScore.
         """
-        from evalscope.metrics.metric import BertScore
+        from evalscope.metrics.nlp.metrics import BertScore
 
         score_args = self.get_metric_args('bert_score')
         bert_scorer = BertScore(**score_args)

@@ -1,10 +1,11 @@
 import os
-import re
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.constants import EvalType, JudgeScoreType
 from evalscope.utils.logger import get_logger
+from .base import BaseJudge
+from .score_extractors import NumericScoreExtractor, PatternScoreExtractor, ScoreExtractor
 
 logger = get_logger()
 
@@ -43,7 +44,7 @@ DEFAULT_JUDGE_MODEL = 'Qwen/Qwen3-235B-A22B'
 DEFAULT_API_URL = 'https://api-inference.modelscope.cn/v1/'
 
 
-class LLMJudge:
+class LLMJudge(BaseJudge):
     """
     A metric that uses LLM to judge the quality of model predictions by comparing them with reference answers.
     """
@@ -68,7 +69,7 @@ class LLMJudge:
 
         Args:
             api_key (str, optional): API key for OpenAI or compatible service
-            api_base (str, optional): API base URL
+            api_url (str, optional): API base URL
             model_id (str, optional): Model ID for LLM
             eval_type (str, optional): Evaluation LLM type for the judge
             model_args (dict, optional): Additional model arguments for the judge
@@ -89,24 +90,29 @@ class LLMJudge:
         self.generation_config = generation_config or {'temperature': 0.0, 'max_tokens': 4096}
         self.model_args = model_args or {}
 
-        # Default score mapping for A/B pattern
+        # Build score extractor based on score_type (Strategy pattern)
         self.score_type = score_type
         if self.score_type == JudgeScoreType.NUMERIC:
-            self.score_pattern = score_pattern or r'\[\[(\d+(?:\.\d+)?)\]\]'
+            pattern = score_pattern or r'\[\[(\d+(?:\.\d+)?)\]\]'
             self.prompt_template = prompt_template or os.environ.get(
                 'JUDGE_PROMPT_TEMPLATE', DEFAULT_NUMERIC_SCORE_TEMPLATE
             )
+            self._score_extractor: ScoreExtractor = NumericScoreExtractor(pattern=pattern)
         elif self.score_type == JudgeScoreType.PATTERN:
             # Anchor to only accept a standalone A or B (avoid false positives)
-            self.score_pattern = score_pattern or r'^\s*([AB])\s*$'
+            pattern = score_pattern or r'^\s*([AB])\s*$'
             self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE', DEFAULT_PROMPT_TEMPLATE)
+            self._score_extractor = PatternScoreExtractor(pattern=pattern, score_mapping=score_mapping)
         else:
             raise ValueError(f"Invalid score_type: {self.score_type}. Must be 'pattern' or 'numeric'.")
+
+        # Keep score_pattern and score_mapping as public attrs for backward compatibility
+        self.score_pattern = pattern
         self.score_mapping = score_mapping or {'A': 1.0, 'B': 0.0}
 
         self._init_server_adapter()
 
-    def _init_server_adapter(self):
+    def _init_server_adapter(self) -> None:
         from evalscope.api.model import GenerateConfig, get_model
 
         self.model = get_model(
@@ -155,7 +161,7 @@ class LLMJudge:
             logger.error(error_message)
             return f'[ERROR] {error_message}'
 
-    def build_prompt(self, pred: str, gold: str, question: Optional[str] = None):
+    def build_prompt(self, pred: str, gold: str, question: Optional[str] = None) -> str:
         if question is None:
             question = 'Not provided'
 
@@ -171,7 +177,7 @@ class LLMJudge:
 
     def get_score(self, response: str) -> float:
         """
-        Extract score from LLM response using the configured pattern and mapping.
+        Extract score from LLM response using the configured extractor strategy.
 
         Args:
             response (str): The response from the LLM
@@ -181,50 +187,4 @@ class LLMJudge:
         """
         if response is None:
             return 0.0
-
-        # choose extraction method based on score_type
-        if self.score_type == JudgeScoreType.NUMERIC:
-            return self._extract_numeric_score(response)
-        elif self.score_type == JudgeScoreType.PATTERN:
-            return self._extract_pattern_score(response)
-
-    def _extract_numeric_score(self, response: str) -> float:
-        """extract numeric score from the response using the score_pattern"""
-        # Find all numeric tokens like [[0.5]] and take the last one (most decisive)
-        matches = list(re.finditer(self.score_pattern, response))
-        if not matches:
-            logger.warning(f"No match found for pattern '{self.score_pattern}' in response: {response}")
-            return 0.0
-
-        # iterate from last to first to pick the final rating
-        for match in reversed(matches):
-            # prefer captured groups
-            for group in match.groups():
-                if group is None:
-                    continue
-                try:
-                    val = float(group)
-                    # clamp to [0, 1] per instruction
-                    return max(0.0, min(1.0, val))
-                except (ValueError, TypeError):
-                    continue
-            # fallback: try entire match if groups fail
-            try:
-                val = float(match.group(0))
-                return max(0.0, min(1.0, val))
-            except (ValueError, TypeError):
-                continue
-
-        logger.warning(f'Failed to convert extracted values to float in response: {response}')
-        return 0.0
-
-    def _extract_pattern_score(self, response: str) -> float:
-        """use the score_pattern to extract categorical scores"""
-        # strict standalone A/B matching using MULTILINE to handle simple outputs
-        match = re.search(self.score_pattern, response, re.MULTILINE)
-        if match:
-            answer = match.group(1) if match.lastindex else match.group(0).strip()
-            return self.score_mapping.get(answer, 0.0)
-        else:
-            logger.warning(f"No match found for pattern '{self.score_pattern}' in response: {response}")
-            return 0.0
+        return self._score_extractor.extract(response)

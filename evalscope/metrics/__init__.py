@@ -4,52 +4,50 @@ from typing import TYPE_CHECKING
 from evalscope.utils.import_utils import _LazyModule
 
 if TYPE_CHECKING:
-    from .llm_judge import DEFAULT_NUMERIC_SCORE_TEMPLATE, DEFAULT_PROMPT_TEMPLATE, LLMJudge
-    from .math_parser import extract_answer, math_equal, strip_answer_string
-    from .metric import ExactMatch, Mean
-    from .metrics import (
-        bleu_ngram_one_sample,
-        exact_match,
-        macro_mean,
-        mean,
-        micro_mean,
-        simple_f1_score,
-        weighted_mean,
-    )
-    from .rouge_metric import compute_rouge_score, compute_rouge_score_one_sample, compute_rouge_score_one_sample_zh
-    from .text_normalizer import BasicTextNormalizer, ChineseTextNormalizer, EnglishTextNormalizer
+    from .aggregators.aggregators import ClippedMean, Mean, MeanPassAtK, MeanPassHatK, MeanVoteAtK
+    from .judge.llm_judge import DEFAULT_NUMERIC_SCORE_TEMPLATE, DEFAULT_PROMPT_TEMPLATE, LLMJudge
+    from .math.parser import extract_answer, math_equal, strip_answer_string
+    from .nlp.metrics import ExactMatch
+    from .utils.functions import bleu_ngram_one_sample, exact_match, macro_mean, mean, micro_mean, simple_f1_score
+    from .utils.rouge import compute_rouge_score, compute_rouge_score_one_sample, compute_rouge_score_one_sample_zh
+    from .utils.text_normalizer import BasicTextNormalizer, ChineseTextNormalizer, EnglishTextNormalizer
 
 else:
     _import_structure = {
-        'metrics': [
+        'utils.functions': [
             'bleu_ngram_one_sample',
             'exact_match',
             'macro_mean',
             'mean',
             'micro_mean',
             'simple_f1_score',
-            'weighted_mean',
         ],
-        'metric': [
+        'aggregators.aggregators': [
             'Mean',
+            'ClippedMean',
+            'MeanPassAtK',
+            'MeanVoteAtK',
+            'MeanPassHatK',
+        ],
+        'nlp.metrics': [
             'ExactMatch',
         ],
-        'rouge_metric': [
+        'utils.rouge': [
             'compute_rouge_score_one_sample_zh',
             'compute_rouge_score',
             'compute_rouge_score_one_sample',
         ],
-        'llm_judge': [
+        'judge.llm_judge': [
             'LLMJudge',
             'DEFAULT_PROMPT_TEMPLATE',
             'DEFAULT_NUMERIC_SCORE_TEMPLATE',
         ],
-        'math_parser': [
+        'math.parser': [
             'extract_answer',
             'math_equal',
             'strip_answer_string',
         ],
-        'text_normalizer': [
+        'utils.text_normalizer': [
             'BasicTextNormalizer',
             'EnglishTextNormalizer',
             'ChineseTextNormalizer',

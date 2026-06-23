@@ -83,7 +83,7 @@ class CompetitionMathAdapter(DefaultDataAdapter):
         self.reformat_subset = True
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        from evalscope.metrics.math_parser import extract_answer
+        from evalscope.metrics.math.parser import extract_answer
 
         return Sample(
             input=record['problem'],
@@ -99,6 +99,6 @@ class CompetitionMathAdapter(DefaultDataAdapter):
         return f'Problem:\n{sample.input}\nSolution:\n{sample.target}'
 
     def extract_answer(self, prediction: str, task_state):
-        from evalscope.metrics.math_parser import extract_answer
+        from evalscope.metrics.math.parser import extract_answer
 
         return extract_answer(prediction)

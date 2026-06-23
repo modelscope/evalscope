@@ -136,6 +136,6 @@ class MathVistaAdapter(VisionLanguageAdapter):
         return content_list, answers_list
 
     def extract_answer(self, prediction: str, task_state):
-        from evalscope.metrics.math_parser import extract_answer
+        from evalscope.metrics.math.parser import extract_answer
 
         return extract_answer(prediction)

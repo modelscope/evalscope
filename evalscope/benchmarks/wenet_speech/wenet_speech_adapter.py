@@ -2,9 +2,7 @@
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
-from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
@@ -72,19 +70,6 @@ class WenetSpeechAdapter(VisionLanguageAdapter):
                 'text': record['text'],
             }
         )
-
-    def match_score(self, original_prediction, filtered_prediction, reference, task_state):
-        from evalscope.metrics.metric import MER
-
-        mer = MER()
-        mer_score = mer.apply([filtered_prediction], [reference])[0]
-
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
-        )
-        score.value = {'mer': mer_score}
-        return score
 
     @staticmethod
     def _to_wav(raw_bytes: bytes) -> bytes:

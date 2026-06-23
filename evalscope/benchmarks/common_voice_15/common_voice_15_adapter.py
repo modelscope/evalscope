@@ -84,7 +84,7 @@ class CommonVoice15Adapter(VisionLanguageAdapter):
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):
-        from evalscope.metrics.text_normalizer.wer import normalize_text, wer
+        from evalscope.metrics.utils.text_normalizer.wer import normalize_text, wer
 
         locale = task_state.metadata.get('locale', 'en')
         language = LOCALE_TO_LANG.get(locale, locale)
