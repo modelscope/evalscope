@@ -21,8 +21,10 @@ from evalscope.api.sandbox import (
     build_sandbox_config,
     merge_sandbox_config_dicts,
     resolve_engine,
+    shutdown_sandbox_service,
 )
 from evalscope.config import SandboxTaskConfig, TaskConfig
+from evalscope.run import shutdown_sandbox_service_if_enabled
 
 # ===========================================================================
 # Engine resolution
@@ -143,6 +145,43 @@ class TestSandboxServiceCache:
             assert service._managers == {}
 
         asyncio.run(_run())
+
+    def test_shutdown_sandbox_service_noop_when_uncreated(self):
+        from evalscope.api.sandbox import service as service_module
+
+        old_service = service_module._SERVICE
+        try:
+            service_module._SERVICE = None
+            shutdown_sandbox_service()
+        finally:
+            service_module._SERVICE = old_service
+
+    def test_shutdown_sandbox_service_uses_existing_singleton(self):
+        from evalscope.api.sandbox import service as service_module
+
+        fake = MagicMock()
+        old_service = service_module._SERVICE
+        try:
+            service_module._SERVICE = fake
+            shutdown_sandbox_service()
+            fake.shutdown_all.assert_called_once()
+        finally:
+            service_module._SERVICE = old_service
+
+
+class TestSandboxServiceRunTeardown:
+
+    def test_shutdown_skipped_when_sandbox_disabled(self):
+        cfg = TaskConfig()
+        with patch('evalscope.api.sandbox.shutdown_sandbox_service') as shutdown:
+            shutdown_sandbox_service_if_enabled(cfg)
+        shutdown.assert_not_called()
+
+    def test_shutdown_called_when_sandbox_enabled(self):
+        cfg = TaskConfig(sandbox={'enabled': True, 'engine': 'docker'})
+        with patch('evalscope.api.sandbox.shutdown_sandbox_service') as shutdown:
+            shutdown_sandbox_service_if_enabled(cfg)
+        shutdown.assert_called_once_with()
 
 
 # ===========================================================================

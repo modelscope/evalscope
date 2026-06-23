@@ -271,6 +271,19 @@ def get_sandbox_service() -> SandboxService:
     return _SERVICE
 
 
+def shutdown_sandbox_service() -> None:
+    """Shut down the existing sandbox service without creating one.
+
+    This is safe to call from normal evaluation teardown.  If no sandbox was
+    ever used, the singleton is still ``None`` and the function is a no-op.
+    The atexit hook remains a last-resort fallback for callers that do not
+    perform explicit teardown.
+    """
+    if _SERVICE is None:
+        return
+    _SERVICE.shutdown_all()
+
+
 # ---------------------------------------------------------------------------
 # Convenience helpers used by SandboxMixin / EnclaveAgentEnvironment
 # ---------------------------------------------------------------------------
@@ -302,4 +315,5 @@ __all__ = [
     'SandboxService',
     'build_and_acquire_pool_sync',
     'get_sandbox_service',
+    'shutdown_sandbox_service',
 ]

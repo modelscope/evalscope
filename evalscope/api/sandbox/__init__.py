@@ -20,7 +20,14 @@ from .config_builder import (
     should_build_docker_image,
 )
 from .engine import SandboxEngine, get_enclave_types, resolve_engine
-from .service import PoolHandle, SandboxHandle, SandboxService, build_and_acquire_pool_sync, get_sandbox_service
+from .service import (
+    PoolHandle,
+    SandboxHandle,
+    SandboxService,
+    build_and_acquire_pool_sync,
+    get_sandbox_service,
+    shutdown_sandbox_service,
+)
 
 __all__ = [
     'PoolHandle',
@@ -35,5 +42,6 @@ __all__ = [
     'get_sandbox_service',
     'merge_sandbox_config_dicts',
     'resolve_engine',
+    'shutdown_sandbox_service',
     'should_build_docker_image',
 ]
