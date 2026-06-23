@@ -10,6 +10,8 @@ from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask
 from .claude_code import ClaudeCodeRunner  # noqa: F401  (side-effect: registers 'claude-code')
 from .codex import CodexRunner  # noqa: F401  (side-effect: registers 'codex')
 from .mock import MockAgentRunner  # noqa: F401  (side-effect: registers 'mock')
+from .opencode import OpenCodeRunner  # noqa: F401  (side-effect: registers 'opencode')
+from .openhands import OpenHandsRunner  # noqa: F401  (side-effect: registers 'openhands')
 
 __all__ = [
     'AgentRunResult',
@@ -19,6 +21,8 @@ __all__ = [
     'CodexRunner',
     'ExternalAgentTask',
     'MockAgentRunner',
+    'OpenCodeRunner',
+    'OpenHandsRunner',
     'RunnerTimeoutError',
     'get_runner',
 ]

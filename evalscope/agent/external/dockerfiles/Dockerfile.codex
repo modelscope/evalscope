@@ -1,0 +1,34 @@
+# Pre-built image for OpenAI Codex agent evaluation.
+#
+# Build:
+#   docker build -f evalscope/agent/external/dockerfiles/Dockerfile.codex \
+#                -t evalscope-codex:latest .
+#
+# Usage:
+#   When running EvalScope with framework='codex' and pointing the
+#   environment at this image, ``setup()`` detects the pre-installed
+#   ``codex`` binary and skips the npm install step entirely.
+#
+# If you do NOT use this image, the runner's ``auto_install=True``
+# (default) will install Node.js + @openai/codex at runtime —
+# functional but adds ~30-60s on first invocation.
+
+FROM node:20-slim
+
+# Use Chinese mirrors for faster builds in mainland China.
+# apt: Aliyun Debian mirror; npm: npmmirror.
+RUN sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list 2>/dev/null || true
+RUN npm config set registry https://registry.npmmirror.com
+
+# System utilities required by codex at runtime.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git curl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install @openai/codex globally.
+RUN npm install -g --no-fund --no-audit @openai/codex && \
+    codex --version
+
+# Default working directory for the agent.
+WORKDIR /workspace

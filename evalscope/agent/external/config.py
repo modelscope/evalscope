@@ -30,6 +30,12 @@ class ExternalAgentFramework:
     CODEX = 'codex'
     """OpenAI's official ``codex exec`` CLI (uses the Responses API)."""
 
+    OPENHANDS = 'openhands'
+    """OpenHands agent (uses LiteLLM -> OpenAI Chat Completions)."""
+
+    OPENCODE = 'opencode'
+    """OpenCode agent (uses OpenAI Chat Completions via openai provider)."""
+
 
 class BridgeConfig(BaseModel):
     """Knobs for the reverse-proxy bridge that sits between an external

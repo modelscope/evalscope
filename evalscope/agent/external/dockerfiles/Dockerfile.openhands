@@ -1,0 +1,49 @@
+# Pre-built image for OpenHands agent evaluation.
+#
+# Build:
+#   docker build -f evalscope/agent/external/dockerfiles/Dockerfile.openhands \
+#                -t evalscope-openhands:latest .
+#
+# Usage:
+#   When running EvalScope with framework='openhands' and pointing the
+#   environment at this image, ``setup()`` detects the pre-installed
+#   venv and skips the slow ``pip install`` step entirely.
+#
+# If you do NOT use this image, the runner's ``auto_install=True``
+# (default) will install openhands-ai at runtime — functional but slow
+# on first invocation (~2-5 min for a cold pip install).
+
+FROM python:3.11-slim
+
+# Use Chinese mirrors for faster builds in mainland China.
+# apt: Aliyun Debian mirror; pip: Aliyun PyPI mirror.
+RUN sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list 2>/dev/null || true
+
+# System utilities required by OpenHands at runtime (git for repo ops,
+# curl/ca-certificates for network probes).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git curl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install openhands-ai into a dedicated venv so it does not pollute
+# the system Python and matches the runner's probe path.
+# NOTE: openhands-ai depends on e2b (cloud sandbox SDK) which may have
+# unresolvable version conflicts on some platforms.  Since EvalScope's
+# runner uses RUNTIME=local, e2b is never imported at runtime.  We
+# install a stub e2b package that satisfies the version constraint so
+# pip can resolve the remaining dependency tree normally.
+RUN python -m venv /opt/openhands-venv && \
+    /opt/openhands-venv/bin/pip install --no-cache-dir --upgrade pip \
+        -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com && \
+    mkdir -p /tmp/stub-e2b && \
+    printf 'from setuptools import setup\nsetup(name="e2b", version="0.17.2", py_modules=["e2b_stub"])\n' > /tmp/stub-e2b/setup.py && \
+    printf '# Stub — EvalScope uses RUNTIME=local, e2b is not needed.\n' > /tmp/stub-e2b/e2b_stub.py && \
+    /opt/openhands-venv/bin/pip install --no-cache-dir /tmp/stub-e2b && \
+    /opt/openhands-venv/bin/pip install --no-cache-dir openhands-ai \
+        -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com && \
+    /opt/openhands-venv/bin/python -c "import openhands; print(f'openhands {openhands.__version__}')" && \
+    rm -rf /tmp/stub-e2b
+
+# Default working directory for the agent.
+WORKDIR /workspace
