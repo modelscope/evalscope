@@ -37,12 +37,27 @@ def run_single_task(task_cfg: TaskConfig) -> dict:
         result = run_non_native_backend(task_cfg, outputs)
     else:
         logger.info('Running with native backend')
-        result = evaluate_model(task_cfg, outputs)
+        try:
+            result = evaluate_model(task_cfg, outputs)
 
-        logger.info(f'Finished evaluation for {task_cfg.model_id} on {task_cfg.datasets}')
-        logger.info(f'Output directory: {outputs.outputs_dir}')
+            logger.info(f'Finished evaluation for {task_cfg.model_id} on {task_cfg.datasets}')
+            logger.info(f'Output directory: {outputs.outputs_dir}')
+        finally:
+            shutdown_sandbox_service_if_enabled(task_cfg)
 
     return result
+
+
+def shutdown_sandbox_service_if_enabled(task_cfg: TaskConfig) -> None:
+    """Tear down sandbox managers before Python starts interpreter shutdown."""
+    if not task_cfg.sandbox or not task_cfg.sandbox.enabled:
+        return
+
+    try:
+        from evalscope.api.sandbox import shutdown_sandbox_service
+        shutdown_sandbox_service()
+    except Exception as exc:
+        logger.warning(f'Failed to shut down sandbox service: {exc}')
 
 
 def setup_work_directory(task_cfg: TaskConfig):
