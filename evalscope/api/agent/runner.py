@@ -14,23 +14,19 @@ their adapter-specific hooks (e.g.
 from contextlib import AsyncExitStack
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from evalscope.api.agent import (
-    AgentContext,
-    AgentEnvironment,
-    AgentLoop,
-    AgentLoopResult,
-    AgentStrategy,
-    AgentTrace,
-    ToolExecutor,
-    ToolHandler,
-)
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import Model
 from evalscope.utils.function_utils import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
+from .environment import AgentEnvironment
+from .loop import AgentLoop
+from .strategy import AgentStrategy
+from .tool_executor import ToolExecutor, ToolHandler
+from .trace import AgentTrace
+from .types import AgentContext, AgentLoopResult
 
 if TYPE_CHECKING:
-    from evalscope.api.agent.mcp import MCPServerConfig
+    from .mcp import MCPServerConfig
 
 logger = get_logger()
 
@@ -82,7 +78,7 @@ def run_agent_loop(
             merged_tools: List[Any] = list(all_tools)
 
             if mcp_configs:
-                from evalscope.api.agent.mcp import resolve_mcp_tools
+                from .mcp import resolve_mcp_tools
 
                 mcp_handler_map, mcp_tool_infos = await resolve_mcp_tools(mcp_configs, mcp_stack)
                 for tool_name, handler in mcp_handler_map.items():

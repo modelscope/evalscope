@@ -21,13 +21,12 @@ ignored here; agentic benchmarks define their own native harness.
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from evalscope.api.agent import AgentEnvironment, AgentLoopResult, AgentStrategy, ToolHandler
+from evalscope.api.agent import AgentEnvironment, AgentLoopResult, AgentStrategy, ToolHandler, run_agent_loop
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.model import Model
 from evalscope.api.registry import get_strategy
-from ._agent_loop_runner import run_agent_loop
 from .agent_adapter import AgentAdapter
 
 if TYPE_CHECKING:

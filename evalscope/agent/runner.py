@@ -13,8 +13,7 @@ per-benchmark overrides.
 
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 
-from evalscope.api.agent import AgentEnvironment, AgentLoopResult
-from evalscope.api.benchmark.adapters._agent_loop_runner import run_agent_loop
+from evalscope.api.agent import AgentEnvironment, AgentLoopResult, run_agent_loop
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.model import Model
