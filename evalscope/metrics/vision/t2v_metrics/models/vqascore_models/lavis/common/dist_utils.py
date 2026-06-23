@@ -120,7 +120,7 @@ def download_cached_file(url, check_hash=True, progress=False):
         # download file from modelscope
         from modelscope import snapshot_download
 
-        from evalscope.metrics.t2v_metrics.models.utils import is_local_files_only
+        from evalscope.metrics.vision.t2v_metrics.models.utils import is_local_files_only
 
         local_path = snapshot_download(
             model_id=model_id,

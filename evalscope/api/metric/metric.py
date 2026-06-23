@@ -60,7 +60,7 @@ class T2IMetric(SingletonMetric):
             from evalscope.utils.model_utils import get_device
             device = get_device()
         if cache_dir is None:
-            from evalscope.metrics.t2v_metrics.constants import CACHE_DIR
+            from evalscope.metrics.vision.t2v_metrics.constants import CACHE_DIR
             cache_dir = CACHE_DIR
         return device, cache_dir
 

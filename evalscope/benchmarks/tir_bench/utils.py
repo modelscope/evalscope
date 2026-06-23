@@ -124,7 +124,7 @@ def extract_answer_with_classify(prediction: str, reference: str) -> str:
 
 def get_most_similar(prediction: str, choices: List[str]) -> str:
     """Return the choice most similar to prediction using Levenshtein distance."""
-    from evalscope.metrics.metrics import levenshtein_distance
+    from evalscope.metrics.utils.functions import levenshtein_distance
     distances = [levenshtein_distance(prediction, choice) for choice in choices]
     return choices[distances.index(min(distances))]
 
@@ -187,7 +187,7 @@ def judge_int(extracted_answer: str, answer: str) -> float:
     if correctness == 0.0:
         # Fallback: use math_equal for symbolic/numeric equivalence
         try:
-            from evalscope.metrics.math_parser import math_equal
+            from evalscope.metrics.math.parser import math_equal
             if math_equal(extracted_answer, str(answer)):
                 correctness = 1.0
         except Exception:
@@ -209,7 +209,7 @@ def judge_float(extracted_answer: str, answer: str) -> float:
 
     if correctness == 0.0:
         try:
-            from evalscope.metrics.math_parser import math_equal
+            from evalscope.metrics.math.parser import math_equal
             if math_equal(extracted_answer, str(answer)):
                 correctness = 1.0
         except Exception:

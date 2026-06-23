@@ -2,7 +2,7 @@
 
 from collections import OrderedDict
 
-from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
+from evalscope.api.benchmark import AudioLanguageAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentAudio, ContentText
@@ -160,7 +160,7 @@ FLEURS (Few-shot Learning Evaluation of Universal Representations of Speech) is 
         prompt_template='Please recognize the speech and only output the recognized content:',
     )
 )
-class FLEURSAdapter(VisionLanguageAdapter):
+class FLEURSAdapter(AudioLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -185,7 +185,7 @@ class FLEURSAdapter(VisionLanguageAdapter):
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):
-        from evalscope.metrics.text_normalizer.wer import normalize_text, wer
+        from evalscope.metrics.utils.text_normalizer.wer import normalize_text, wer
 
         language = task_state.metadata['lang_id']
 

@@ -131,7 +131,9 @@ class OpenAICompatibleAPI(ModelAPI):
         )
 
         request = dict(
-            messages=openai_chat_messages(input, reasoning_format=(config.reasoning_history or 'reasoning_field')),
+            messages=openai_chat_messages(
+                input, reasoning_format=(config.reasoning_history or 'reasoning_field'), base_url=self.base_url
+            ),
             tools=openai_chat_tools(tools) if len(tools) > 0 else NOT_GIVEN,
             tool_choice=openai_chat_tool_choice(tool_choice) if len(tools) > 0 else NOT_GIVEN,
             **completion_params,
@@ -203,7 +205,9 @@ class OpenAICompatibleAPI(ModelAPI):
         )
 
         request = dict(
-            messages=openai_chat_messages(input, reasoning_format=(config.reasoning_history or 'reasoning_field')),
+            messages=openai_chat_messages(
+                input, reasoning_format=(config.reasoning_history or 'reasoning_field'), base_url=self.base_url
+            ),
             tools=openai_chat_tools(tools) if len(tools) > 0 else NOT_GIVEN,
             tool_choice=openai_chat_tool_choice(tool_choice) if len(tools) > 0 else NOT_GIVEN,
             **completion_params,

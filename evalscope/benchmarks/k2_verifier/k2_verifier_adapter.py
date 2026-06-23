@@ -2,7 +2,7 @@
 import json
 from typing import Any, Dict, List
 
-from evalscope.api.benchmark import BenchmarkMeta, VendorVerifierAdapter
+from evalscope.api.benchmark import BenchmarkMeta, FunctionCallAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import dict_to_chat_message
@@ -59,7 +59,7 @@ K2-Vendor-Verifier checks whether a third-party deployment of Kimi-K2 faithfully
         eval_split='test',
     )
 )
-class K2VerifierAdapter(VendorVerifierAdapter):
+class K2VerifierAdapter(FunctionCallAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

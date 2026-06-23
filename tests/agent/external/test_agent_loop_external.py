@@ -14,7 +14,7 @@ from typing import Any
 from evalscope.agent.environments.local import LocalAgentEnvironment
 from evalscope.agent.external import ExternalAgentConfig
 from evalscope.api.agent import AgentEnvironment, EventType
-from evalscope.api.benchmark.adapters.agent_loop_adapter import AgentLoopAdapter
+from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.model import GenerateConfig, Model, ModelOutput

@@ -9,7 +9,7 @@ from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
 from evalscope.api.model import ChatCompletionChoice, ModelOutput
 from evalscope.benchmarks.seed_tts_eval.seed_tts_eval_adapter import PROMPT_TEMPLATE, SeedTTSEvalAdapter
 from evalscope.config import TaskConfig
-from evalscope.metrics.metric import AudioWER
+from evalscope.metrics.audio.metrics import AudioWER
 
 
 def make_adapter(metric_list: Optional[list[Any]] = None) -> SeedTTSEvalAdapter:

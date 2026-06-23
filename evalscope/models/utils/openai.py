@@ -100,7 +100,15 @@ def openai_chat_tool_call_param(tool_call: ToolCall) -> ChatCompletionMessageToo
     )
 
 
-def openai_chat_completion_part(content: Content) -> Union[ChatCompletionContentPartParam, Dict[str, Any]]:
+def _is_dashscope_endpoint(base_url: Optional[str]) -> bool:
+    """Check if the base_url points to a DashScope endpoint."""
+    return base_url is not None and 'dashscope' in base_url
+
+
+def openai_chat_completion_part(
+    content: Content,
+    base_url: Optional[str] = None,
+) -> Union[ChatCompletionContentPartParam, Dict[str, Any]]:
     if content.type == 'text':
         return ChatCompletionContentPartTextParam(type='text', text=content.text)
     elif content.type == 'image':
@@ -117,11 +125,13 @@ def openai_chat_completion_part(content: Content) -> Union[ChatCompletionContent
             image_url=dict(url=image_url, detail=detail),
         )
     elif content.type == 'audio':
-
-        # remove prefix
-        audio_uri = data_uri_to_base64(file_as_data_uri(content.audio))
+        # Standard OpenAI / vllm: raw base64 (no data URI prefix)
+        # DashScope: requires data URI prefix (data:<mime>;base64,...)
+        audio_data = file_as_data_uri(content.audio)
+        if not _is_dashscope_endpoint(base_url):
+            audio_data = data_uri_to_base64(audio_data)
         return ChatCompletionContentPartInputAudioParam(
-            type='input_audio', input_audio=dict(data=audio_uri, format=content.format)
+            type='input_audio', input_audio=dict(data=audio_data, format=content.format)
         )
     elif content.type == 'video':
         video_url = content.video
@@ -140,6 +150,7 @@ def openai_chat_message(
     message: ChatMessage,
     system_role: Literal['user', 'system', 'developer'] = 'system',
     reasoning_format: ReasoningFormat = 'think_tag',
+    base_url: Optional[str] = None,
 ) -> ChatCompletionMessageParam:
     """Serialize a :class:`ChatMessage` into an OpenAI chat-completions message param.
 
@@ -162,7 +173,7 @@ def openai_chat_message(
             role=message.role,
             content=(
                 message.content if isinstance(message.content, str) else
-                [openai_chat_completion_part(content) for content in message.content]
+                [openai_chat_completion_part(content, base_url=base_url) for content in message.content]
             ),
         )
     elif message.role == 'assistant':
@@ -229,8 +240,9 @@ def openai_chat_messages(
     messages: List[ChatMessage],
     system_role: Literal['user', 'system', 'developer'] = 'system',
     reasoning_format: ReasoningFormat = 'think_tag',
+    base_url: Optional[str] = None,
 ) -> List[ChatCompletionMessageParam]:
-    return [openai_chat_message(message, system_role, reasoning_format) for message in messages]
+    return [openai_chat_message(message, system_role, reasoning_format, base_url=base_url) for message in messages]
 
 
 def openai_completion_params(model: str, config: GenerateConfig, tools: bool) -> Dict[str, Any]:

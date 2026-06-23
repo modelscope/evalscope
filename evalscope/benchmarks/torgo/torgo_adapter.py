@@ -1,6 +1,6 @@
 from typing import List
 
-from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
+from evalscope.api.benchmark import AudioLanguageAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
@@ -56,7 +56,7 @@ TORGO is a specialized database of dysarthric speech designed for evaluating ASR
         prompt_template='Please recognize the speech and only output the recognized content:',
     )
 )
-class TorgoAdapter(VisionLanguageAdapter):
+class TorgoAdapter(AudioLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -81,7 +81,7 @@ class TorgoAdapter(VisionLanguageAdapter):
                     from jiwer import wer as jiwer_wer
                     self.jiwer_wer = jiwer_wer
 
-                from evalscope.metrics.text_normalizer.wer import normalize_text
+                from evalscope.metrics.utils.text_normalizer.wer import normalize_text
                 self.normalize_text = normalize_text
             except Exception as e:
                 logger.warning(f'[TorgoAdapter] Failed to import jiwer components: {e}')
@@ -89,7 +89,7 @@ class TorgoAdapter(VisionLanguageAdapter):
         if self.has_metric('sem_score'):
             check_import('jellyfish', extra='torgo', raise_error=True, feature_name='SemScore Metric')
             try:
-                from evalscope.metrics.metric import SemScore
+                from evalscope.metrics.nlp.metrics import SemScore
                 self.sem_scorer = SemScore()
             except Exception as e:
                 logger.warning(f'[TorgoAdapter] Failed to initialize SemScore: {e}')
@@ -111,7 +111,7 @@ class TorgoAdapter(VisionLanguageAdapter):
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):
-        from evalscope.metrics.text_normalizer.wer import normalize_text
+        from evalscope.metrics.utils.text_normalizer.wer import normalize_text
 
         language = 'en'
 

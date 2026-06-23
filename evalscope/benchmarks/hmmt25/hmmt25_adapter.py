@@ -91,7 +91,7 @@ class HMMT25Adapter(DefaultDataAdapter):
 
         # 1) Prefer EvalScope's built-in math extraction logic (recommended for math tasks).
         try:
-            from evalscope.metrics.math_parser import extract_answer as _extract_answer  # type: ignore
+            from evalscope.metrics.math.parser import extract_answer as _extract_answer  # type: ignore
 
             ans = _extract_answer(pred)
             if isinstance(ans, str) and ans.strip():

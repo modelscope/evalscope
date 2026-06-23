@@ -16,7 +16,7 @@ import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
+from evalscope.api.benchmark import AudioLanguageAdapter, BenchmarkMeta
 from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
@@ -127,7 +127,7 @@ The official leaderboard uses `gpt-4-0125-preview` as the judge model. If that e
         },
     )
 )
-class AIRBenchChatAdapter(VisionLanguageAdapter):
+class AIRBenchChatAdapter(AudioLanguageAdapter):
     """Adapter for AIR-Bench Chat open-ended audio QA tasks."""
 
     # Per-sample folder layout for audio files. Distinct from Foundation since

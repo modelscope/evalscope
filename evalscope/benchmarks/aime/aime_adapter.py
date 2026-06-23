@@ -141,7 +141,7 @@ class AIME24Adapter(DefaultDataAdapter):
         )
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        from evalscope.metrics.math_parser import extract_answer
+        from evalscope.metrics.math.parser import extract_answer
         from .math_normalize import normalize_answer
 
         extracted_pred = extract_answer(prediction)

@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "pretty_name": "MMAU",
+    "dataset_id": "lmms-lab/mmau",
+    "paper_url": null,
+    "tags": [
+      "Audio",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test_mini",
+    "train_split": "",
+    "subset_list": [
+      "test_mini",
+      "test"
+    ],
+    "description": "\n## Overview\n\nMMAU (Massive Multitask Audio Understanding) is a comprehensive benchmark for evaluating audio understanding capabilities of multimodal large language models across diverse audio tasks.\n\n## Task Description\n\n- **Task Type**: Audio Understanding (Multiple Choice)\n- **Input**: Audio recordings with multiple-choice questions\n- **Output**: Correct answer choice (A/B/C/D)\n- **Categories**: Speech, Sound, Music\n\n## Key Features\n\n- Large-scale audio understanding benchmark\n- Covers multiple audio domains (speech, environmental sounds, music)\n- Multiple-choice format with 4 options\n- Includes both mini and full test sets\n- Per-category accuracy reporting\n\n## Evaluation Notes\n\n- Default configuration uses **test_mini** split\n- Primary metric: **Accuracy** (exact match on predicted letter)\n- Reports overall accuracy and per-task-category accuracy\n- Prompt includes chain-of-thought instruction\n",
+    "prompt_template": "Answer the following multiple choice question based on the audio content. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 0,
+    "subset_stats": [],
+    "prompt_length": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-06-23T15:36:31.306143+08:00"
+  },
+  "sample_example": {},
+  "readme": {
+    "en": "# MMAU\n\n\n## Overview\n\nMMAU (Massive Multitask Audio Understanding) is a comprehensive benchmark for evaluating audio understanding capabilities of multimodal large language models across diverse audio tasks.\n\n## Task Description\n\n- **Task Type**: Audio Understanding (Multiple Choice)\n- **Input**: Audio recordings with multiple-choice questions\n- **Output**: Correct answer choice (A/B/C/D)\n- **Categories**: Speech, Sound, Music\n\n## Key Features\n\n- Large-scale audio understanding benchmark\n- Covers multiple audio domains (speech, environmental sounds, music)\n- Multiple-choice format with 4 options\n- Includes both mini and full test sets\n- Per-category accuracy reporting\n\n## Evaluation Notes\n\n- Default configuration uses **test_mini** split\n- Primary metric: **Accuracy** (exact match on predicted letter)\n- Reports overall accuracy and per-task-category accuracy\n- Prompt includes chain-of-thought instruction\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `mmau` |\n| **Dataset ID** | [lmms-lab/mmau](https://modelscope.cn/datasets/lmms-lab/mmau/summary) |\n| **Paper** | N/A |\n| **Tags** | `Audio`, `MCQ` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test_mini` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question based on the audio content. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mmau \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mmau'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MMAU\n\n\n## 概述\n\nMMAU（Massive Multitask Audio Understanding，大规模多任务音频理解）是一个综合性基准测试，用于评估多模态大语言模型在多种音频任务上的音频理解能力。\n\n## 任务描述\n\n- **任务类型**：音频理解（多项选择题）\n- **输入**：包含多项选择题的音频录音\n- **输出**：正确答案选项（A/B/C/D）\n- **类别**：语音、声音、音乐\n\n## 主要特性\n\n- 大规模音频理解基准测试\n- 覆盖多个音频领域（语音、环境声音、音乐）\n- 四选项多项选择题格式\n- 包含 mini 和完整测试集\n- 提供按类别的准确率报告\n\n## 评估说明\n\n- 默认配置使用 **test_mini** 划分\n- 主要指标：**准确率**（预测字母的精确匹配）\n- 报告整体准确率和各任务类别的准确率\n- 提示词中包含思维链（chain-of-thought）指令\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `mmau` |\n| **数据集ID** | [lmms-lab/mmau](https://modelscope.cn/datasets/lmms-lab/mmau/summary) |\n| **论文** | N/A |\n| **标签** | `Audio`, `MCQ` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test_mini` |\n\n\n## 数据统计\n\n*统计数据不可用。*\n\n## 样例示例\n\n*样例示例不可用。*\n\n## 提示模板\n\n**提示模板：**\n```text\n根据音频内容回答以下多项选择题。你的回复最后一行应采用如下格式：'ANSWER: [LETTER]'（不含引号），其中 [LETTER] 是 {letters} 中的一个。回答前请逐步思考。\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mmau \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mmau'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "27e3b11e918daedd58a483144894e598",
+    "needs_translation": false
+  },
+  "updated_at": "2026-06-23T15:36:34.409694+08:00",
+  "translation_updated_at": "2026-06-23T15:50:44+08:00"
+}
