@@ -13,6 +13,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 | `kimi_verifier` | [Kimi-Vendor-Verifier (Param Compliance)](../../benchmarks/kimi_verifier.md) | `Agent`, `FunctionCalling` |
 | `minimax_verifier` | [MiniMax-Vendor-Verifier](../../benchmarks/minimax_verifier.md) | `Agent`, `FunctionCalling` |
 | `swe_bench_lite_agentic` | [SWE-bench_Lite_Agentic](../../benchmarks/swe_bench_lite_agentic.md) | `Coding` |
+| `swe_bench_multilingual_agentic` | [SWE-bench_Multilingual_Agentic](../../benchmarks/swe_bench_multilingual_agentic.md) | `Coding` |
 | `swe_bench_pro` | [SWE-bench_Pro](../../benchmarks/swe_bench_pro.md) | `Coding` |
 | `swe_bench_verified_agentic` | [SWE-bench_Verified_Agentic](../../benchmarks/swe_bench_verified_agentic.md) | `Coding` |
 | `swe_bench_verified_mini_agentic` | [SWE-bench_Verified_Mini_Agentic](../../benchmarks/swe_bench_verified_mini_agentic.md) | `Coding` |
@@ -35,6 +36,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 ../../benchmarks/kimi_verifier.md
 ../../benchmarks/minimax_verifier.md
 ../../benchmarks/swe_bench_lite_agentic.md
+../../benchmarks/swe_bench_multilingual_agentic.md
 ../../benchmarks/swe_bench_pro.md
 ../../benchmarks/swe_bench_verified_agentic.md
 ../../benchmarks/swe_bench_verified_mini_agentic.md

@@ -19,7 +19,7 @@ EvalScope 集成 SWE-bench 后提供两种评测模式：
 | 工具调用 | 无 | `bash` 工具，支持 `toolcall` / `backticks` 两种协议 |
 | 提交机制 | 模型输出 diff 即视为提交 | 模型打印哨兵 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 后由系统抓取 `git diff` |
 | Docker 使用阶段 | 仅评测阶段运行测试 | 推理 + 评测阶段都需要 |
-| 评测数据集 | `swe_bench_verified` / `swe_bench_verified_mini` / `swe_bench_lite` | `swe_bench_verified_agentic` / `swe_bench_verified_mini_agentic` / `swe_bench_lite_agentic` |
+| 评测数据集 | `swe_bench_verified` / `swe_bench_verified_mini` / `swe_bench_lite` | `swe_bench_verified_agentic` / `swe_bench_verified_mini_agentic` / `swe_bench_lite_agentic` / `swe_bench_multilingual_agentic` |
 | 评测代价 | 相对低，单轮推理 | 较高，多轮推理 + 长时间容器交互 |
 
 **适用场景**
@@ -36,6 +36,7 @@ EvalScope 集成 SWE-bench 后提供两种评测模式：
 - **SWE-bench Verified（`swe_bench_verified`）**：从 SWE-bench 测试集中精选的 500 个人工验证样本，质量经过严格把关
 - **SWE-bench Verified Mini（`swe_bench_verified_mini`）**：50 样本的轻量子集，存储需求约 5GB（vs 原版 130GB），保持与原集相同的难度分布
 - **SWE-bench Lite（`swe_bench_lite`）**：来自 11 个流行 Python 项目的 300 个 Issue–PR 配对
+- **SWE-bench Multilingual**：来自 42 个仓库、覆盖 9 种编程语言的 300 个精选 Issue–PR 任务。EvalScope 仅支持该数据集的 agentic 模式。
 
 ### Oracle 模式专属：推理数据集（`inference_dataset_id`）
 
@@ -53,6 +54,7 @@ EvalScope 集成 SWE-bench 后提供两种评测模式：
 - **`swe_bench_verified_agentic`** — SWE-bench Verified（500 样本）
 - **`swe_bench_verified_mini_agentic`** — SWE-bench Verified Mini（50 样本，约 5GB）
 - **`swe_bench_lite_agentic`** — SWE-bench Lite（300 样本）
+- **`swe_bench_multilingual_agentic`** — SWE-bench Multilingual（覆盖 9 种编程语言的 300 个样本）
 
 ## 安装依赖
 
@@ -146,7 +148,7 @@ task_cfg = TaskConfig(
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
     api_key=os.getenv('DASHSCOPE_API_KEY'),
     eval_type='openai_api',
-    datasets=['swe_bench_verified_mini_agentic'],  # 也可选 'swe_bench_verified_agentic' 或 'swe_bench_lite_agentic'
+    datasets=['swe_bench_verified_mini_agentic'],  # 也可选 'swe_bench_verified_agentic'、'swe_bench_lite_agentic' 或 'swe_bench_multilingual_agentic'
     dataset_args={
         'swe_bench_verified_mini_agentic': {
             'extra_params': {

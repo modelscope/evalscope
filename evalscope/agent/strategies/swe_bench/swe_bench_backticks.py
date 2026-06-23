@@ -25,7 +25,7 @@ from evalscope.api.messages import ChatMessage, ChatMessageUser
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_strategy
 from evalscope.api.tool import ToolCall, ToolCallError, ToolFunction, ToolInfo
-from ._observation import SUBMIT_SENTINEL, check_sentinel, format_exec_observation
+from ._observation import SUBMIT_SENTINEL, check_sentinel, format_exec_observation, is_terminal_sandbox_error
 
 # Regex for ``` ```mswea_bash_command ... ``` ``` fenced blocks (mirrors
 # the original mini-swe-agent textbased action_regex).
@@ -123,6 +123,9 @@ class SweBenchBackticksStrategy(AgentStrategy):
     ) -> ChatMessage:
         if error is not None:
             content = format_exec_observation('', error_message=error.message)
+            if is_terminal_sandbox_error('', error.message):
+                parsed.final_answer = ''
+                ctx.metadata['submission_source'] = 'sandbox_error'
             return ChatMessageUser(content=content)
 
         # Detect the completion sentinel BEFORE rendering any envelope —
@@ -138,6 +141,9 @@ class SweBenchBackticksStrategy(AgentStrategy):
             return ChatMessageUser(content=submission)
 
         content = format_exec_observation(observation)
+        if is_terminal_sandbox_error(observation):
+            parsed.final_answer = ''
+            ctx.metadata['submission_source'] = 'sandbox_error'
         # Textbased models expect observations as user messages — they do
         # not interpret the OpenAI ``tool`` role.
         return ChatMessageUser(content=content)

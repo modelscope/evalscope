@@ -5,12 +5,13 @@ SWE-bench Docker container as the execution sandbox.  Mirrors the original
 ``mini-swe-agent`` ``swebench.yaml`` (toolcall mainline) and
 ``swebench_backticks.yaml`` (textbased fallback) configurations.
 
-Three benchmarks are registered alongside the original oracle adapters
+Benchmarks are registered alongside the original oracle adapters
 (without disrupting them):
 
 - ``swe_bench_verified_agentic``
 - ``swe_bench_verified_mini_agentic``
 - ``swe_bench_lite_agentic``
+- ``swe_bench_multilingual_agentic``
 
 The original ``swe_bench_verified`` / ``swe_bench_verified_mini`` /
 ``swe_bench_lite`` benchmarks remain single-turn oracle-text evaluations
@@ -19,6 +20,7 @@ and are not affected.
 
 from __future__ import annotations
 
+import ast
 import json
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
@@ -31,6 +33,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
+from evalscope.api.sandbox import merge_sandbox_config_dicts
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import, is_build_doc
 from evalscope.utils.logger import get_logger
@@ -215,6 +218,26 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
     is identical otherwise.
     """
 
+    @staticmethod
+    def _parse_test_list(value: Any) -> List[str]:
+        """Return SWE-bench test lists from either JSON strings or native lists."""
+        if value is None or value == '':
+            return []
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            try:
+                parsed = json.loads(value)
+            except json.JSONDecodeError:
+                try:
+                    parsed = ast.literal_eval(value)
+                except (ValueError, SyntaxError) as e:
+                    raise TypeError(f'Unsupported SWE-bench test list value: {value!r}') from e
+            if isinstance(parsed, list):
+                return parsed
+            raise TypeError(f'Unsupported SWE-bench test list value: {value!r}')
+        raise TypeError(f'Unsupported SWE-bench test list type: {type(value).__name__}')
+
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
@@ -256,12 +279,12 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
                 'instance_id': record['instance_id'],
                 'base_commit': record['base_commit'],
                 'patch': record['patch'],
-                'PASS_TO_PASS': json.loads(record['PASS_TO_PASS']),
-                'FAIL_TO_PASS': json.loads(record['FAIL_TO_PASS']),
+                'PASS_TO_PASS': self._parse_test_list(record['PASS_TO_PASS']),
+                'FAIL_TO_PASS': self._parse_test_list(record['FAIL_TO_PASS']),
                 'test_patch': record['test_patch'],
                 'version': record['version'],
                 'repo': record['repo'],
-                'environment_setup_commit': record['environment_setup_commit'],
+                'environment_setup_commit': record.get('environment_setup_commit'),
                 'hints_text': record['hints_text'],
                 'created_at': record['created_at'],
             },
@@ -318,6 +341,23 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
         # Only ``bash`` — sentinel protocol replaces the ``submit`` tool.
         return {'bash': run_bash}
 
+    def _user_sandbox_config(self) -> Dict[str, Any]:
+        """Read ``TaskConfig.sandbox.default_config`` as optional sandbox defaults."""
+        if self._task_config is None:
+            return {}
+        sandbox = getattr(self._task_config, 'sandbox', None)
+        if sandbox is None:
+            return {}
+        return dict(getattr(sandbox, 'default_config', None) or {})
+
+    def _forced_docker_platform(self) -> Optional[str]:
+        """Return the Docker platform matching the forced SWE-bench image arch."""
+        if self.force_arch == 'x86_64':
+            return 'linux/amd64'
+        if self.force_arch == 'arm64':
+            return 'linux/arm64'
+        return None
+
     def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
         from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 
@@ -330,6 +370,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
 
         sandbox_config = {
             'image': image,
+            'command': 'tail -f /dev/null',
             'working_dir': self.working_dir,
             'environment': {
                 'PAGER': 'cat',
@@ -339,6 +380,10 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
                 'TQDM_DISABLE': '1',
             },
         }
+        forced_platform = self._forced_docker_platform()
+        if forced_platform is not None:
+            sandbox_config['platform'] = forced_platform
+        sandbox_config = merge_sandbox_config_dicts(self._user_sandbox_config(), sandbox_config)
         return EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config=sandbox_config,
@@ -543,6 +588,35 @@ SWE-bench Lite Agentic is the agentic-mode evaluation of SWE-bench Lite, a focus
 - Popular benchmark variant for initial agentic model comparison
 """ + _AGENTIC_MODE_SECTION
 
+_SWE_BENCH_MULTILINGUAL_AGENTIC_DESCRIPTION = """
+## Overview
+
+SWE-bench Multilingual Agentic is the agentic-mode evaluation of SWE-bench Multilingual, a 300-task SWE-bench-style benchmark spanning 42 repositories and 9 programming languages. The model autonomously explores, edits, and submits a patch through a multi-turn agent loop inside a per-instance Docker container.
+
+## Task Description
+
+- **Task Type**: Automated Software Engineering / Bug Fixing (Agentic, Multilingual)
+- **Input**: GitHub issue description (no oracle file context)
+- **Output**: Code patch (diff format) collected from `git diff` after autonomous editing
+- **Languages**: C, C++, Go, Java, JavaScript/TypeScript, PHP, Ruby, and Rust
+
+## Key Features
+
+- 300 curated Issue-Pull Request tasks
+- 42 real-world repositories across 9 programming languages
+- Multi-turn agent loop with per-instance SWE-bench Docker sandbox
+- SWE-bench-compatible patch evaluation using fail-to-pass and pass-to-pass tests
+
+## Evaluation Notes
+
+- Requires `pip install swebench==4.1.0` before evaluation
+- Uses the official SWE-bench Multilingual x86_64 instance images and sets Docker platform to `linux/amd64` automatically
+- Docker images are built/pulled automatically for each instance
+- Timeout of 1800 seconds (30 min) per instance for final patch validation
+- See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup instructions
+- Supports both local image building and remote image pulling
+""" + _AGENTIC_MODE_SECTION
+
 
 @register_benchmark(
     BenchmarkMeta(
@@ -593,3 +667,32 @@ class SWEBenchVerifiedMiniAgenticAdapter(_SWEBenchAgenticAdapterBase):
 )
 class SWEBenchLiteAgenticAdapter(_SWEBenchAgenticAdapterBase):
     ...
+
+
+@register_benchmark(
+    BenchmarkMeta(
+        name='swe_bench_multilingual_agentic',
+        pretty_name='SWE-bench_Multilingual_Agentic',
+        tags=[Tags.CODING],
+        description=_SWE_BENCH_MULTILINGUAL_AGENTIC_DESCRIPTION,
+        dataset_id='SWE-bench/SWE-bench_Multilingual',
+        metric_list=['acc'],
+        eval_split='test',
+        prompt_template='{question}',
+        extra_params=_AGENTIC_EXTRA_PARAMS,
+    )
+)
+class SWEBenchMultilingualAgenticAdapter(_SWEBenchAgenticAdapterBase):
+    """Agentic adapter for SWE-bench Multilingual."""
+
+    fixed_arch = 'x86_64'
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        requested_arch = self.extra_params.get('force_arch', '')
+        if requested_arch and requested_arch != self.fixed_arch:
+            logger.warning(
+                f'SWE-bench Multilingual only provides {self.fixed_arch} images; '
+                f'overriding force_arch={requested_arch!r} to {self.fixed_arch!r}.'
+            )
+        self.force_arch = self.fixed_arch
