@@ -14,16 +14,12 @@ their adapter-specific hooks (e.g.
 from contextlib import AsyncExitStack
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from evalscope.api.agent import (
-    AgentContext,
-    AgentEnvironment,
-    AgentLoop,
-    AgentLoopResult,
-    AgentStrategy,
-    AgentTrace,
-    ToolExecutor,
-    ToolHandler,
-)
+from evalscope.api.agent.environment import AgentEnvironment
+from evalscope.api.agent.loop import AgentLoop
+from evalscope.api.agent.strategy import AgentStrategy
+from evalscope.api.agent.tool_executor import ToolExecutor, ToolHandler
+from evalscope.api.agent.trace import AgentTrace
+from evalscope.api.agent.types import AgentContext, AgentLoopResult
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import Model
 from evalscope.utils.function_utils import AsyncioLoopRunner
