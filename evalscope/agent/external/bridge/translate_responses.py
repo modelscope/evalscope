@@ -142,6 +142,12 @@ def responses_request_to_messages(body: Dict[str, Any]) -> List[ChatMessage]:
             continue
         itype = item.get('type')
 
+        # OpenCode (and possibly other Responses-API consumers) send bare
+        # ``{"role": "...", "content": "..."}`` items without a ``type``
+        # field.  Infer ``message`` when the item carries a ``role``.
+        if itype is None and 'role' in item:
+            itype = 'message'
+
         if itype == 'message':
             role = item.get('role')
             text = _flatten_responses_content(item.get('content'))
