@@ -1,9 +1,10 @@
 """Runner for the OpenCode agent framework.
 
 Points OpenCode at the bridge via ``OPENAI_BASE_URL`` / ``OPENAI_API_KEY``
-env vars.  OpenCode's ``openai`` provider speaks the standard OpenAI Chat
-Completions API — the bridge's ``/openai/v1/chat/completions`` route handles
-it transparently.
+env vars.  OpenCode's ``openai`` provider speaks the **OpenAI Responses
+API** (``/openai/v1/responses``), not Chat Completions.  The bridge's
+Responses route translates the request to ``ChatMessage[]`` and calls
+``Model.generate_async`` transparently.
 
 The runner supports two installation modes:
 1. **Pre-built image** (recommended): user builds the image from

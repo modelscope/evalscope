@@ -34,7 +34,7 @@ class ExternalAgentFramework:
     """OpenHands agent (uses LiteLLM -> OpenAI Chat Completions)."""
 
     OPENCODE = 'opencode'
-    """OpenCode agent (uses OpenAI Chat Completions via openai provider)."""
+    """OpenCode agent (uses OpenAI Responses API via openai provider)."""
 
 
 class BridgeConfig(BaseModel):
