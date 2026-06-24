@@ -22,6 +22,7 @@ from evalscope.utils.function_utils import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
 from ..runners.base import BridgeEndpoint
 from .sse_anthropic import stream_anthropic_response
+from .sse_gemini import stream_gemini_response
 from .sse_openai import stream_openai_response
 from .sse_responses import stream_responses_payload
 from .trace_recorder import BridgeTraceRecorder
@@ -29,6 +30,15 @@ from .translate_anthropic import (
     anthropic_request_to_messages,
     anthropic_tools_to_tool_infos,
     model_output_to_anthropic_response,
+)
+from .translate_gemini import (
+    build_gemini_generate_config,
+    extract_model_from_path,
+    gemini_request_to_messages,
+    gemini_tool_choice,
+    gemini_tools_to_tool_infos,
+    is_streaming_path,
+    model_output_to_gemini_response,
 )
 from .translate_openai import (
     model_output_to_openai_response,
@@ -182,6 +192,9 @@ class ModelProxyServer:
             app.router.add_post('/anthropic/v1/messages', self._handle_anthropic_messages)
             app.router.add_post('/openai/v1/chat/completions', self._handle_openai_chat_completions)
             app.router.add_post('/openai/v1/responses', self._handle_openai_responses)
+            # Gemini API routes — wildcard paths for /gemini/v1beta/models/{model}:generateContent
+            app.router.add_post('/gemini/v1beta/models/{model_action:.*}', self._handle_gemini_generate)
+            app.router.add_post('/gemini/models/{model_action:.*}', self._handle_gemini_generate)
 
             async def _healthz(_request: web.Request) -> web.Response:
                 return web.json_response({'ok': True})
@@ -229,7 +242,8 @@ class ModelProxyServer:
             AsyncioLoopRunner.register_close_callback(self.shutdown)
             logger.info(
                 f'ModelProxyServer started on http://{self._host}:{self._actual_port} '
-                f'(routes: /anthropic/v1/messages, /openai/v1/chat/completions, /openai/v1/responses)'
+                f'(routes: /anthropic/v1/messages, /openai/v1/chat/completions, '
+                f'/openai/v1/responses, /gemini/v1beta/models/*)'
             )
 
     @staticmethod
@@ -550,6 +564,118 @@ class ModelProxyServer:
         await response.write_eof()
         return response
 
+    # ---- Gemini routes ----------------------------------------------------
+
+    async def _handle_gemini_generate(self, request: web.Request) -> web.StreamResponse:
+        """Handle Gemini generateContent / streamGenerateContent requests.
+
+        Routes:
+            POST /gemini/v1beta/models/{model}:generateContent
+            POST /gemini/v1beta/models/{model}:streamGenerateContent
+            POST /gemini/models/{model}:generateContent
+            POST /gemini/models/{model}:streamGenerateContent
+        """
+        logger.debug(
+            f'bridge: POST {request.path} from {request.remote} '
+            f'auth={request.headers.get("Authorization") or request.headers.get("x-api-key") or request.headers.get("x-goog-api-key")!r}'
+        )
+        session = await self._auth_check_openai(request)
+        if isinstance(session, web.Response):
+            return session
+
+        body = await request.json()
+        path = request.path
+        model_name = extract_model_from_path(path)
+        # Inject model name into body for downstream use
+        body['model'] = model_name
+
+        chat_messages = gemini_request_to_messages(body)
+        tool_infos = gemini_tools_to_tool_infos(body.get('tools') or [])
+        tool_choice = gemini_tool_choice(body.get('toolConfig') or body.get('tool_config'))
+        gen_config = build_gemini_generate_config(body)
+
+        streaming = is_streaming_path(path)
+        if streaming:
+            return await self._respond_streaming_gemini(
+                request, session, body, chat_messages, tool_infos, tool_choice, gen_config
+            )
+        return await self._respond_json_gemini(session, body, chat_messages, tool_infos, tool_choice, gen_config)
+
+    async def _respond_json_gemini(
+        self,
+        session: TrialSession,
+        body: Dict[str, Any],
+        chat_messages: list,
+        tool_infos: list,
+        tool_choice,
+        gen_config: 'GenerateConfig',
+    ) -> web.StreamResponse:
+        started = time.monotonic()
+        try:
+            output = await session.model.generate_async(
+                input=chat_messages,
+                tools=tool_infos or None,
+                tool_choice=tool_choice,
+                config=gen_config,
+            )
+        except Exception as exc:
+            _log_upstream_failure(session, exc, mode='json')
+            return web.json_response(
+                {'error': {
+                    'code': 502,
+                    'message': repr(exc),
+                    'status': 'UNAVAILABLE',
+                }},
+                status=502,
+            )
+
+        latency_ms = (time.monotonic() - started) * 1000
+        session.recorder.record_gemini_turn(body, output, latency_ms=latency_ms)
+        _log_turn(session, output, latency_ms, mode='json')
+        return web.json_response(model_output_to_gemini_response(output, request_model=body.get('model')))
+
+    async def _respond_streaming_gemini(
+        self,
+        request: web.Request,
+        session: TrialSession,
+        body: Dict[str, Any],
+        chat_messages: list,
+        tool_infos: list,
+        tool_choice,
+        gen_config: 'GenerateConfig',
+    ) -> web.StreamResponse:
+        """Emit Gemini SSE stream from a non-streaming model completion."""
+        response = await self._prepare_sse_response(request)
+
+        started = time.monotonic()
+        generate_task = asyncio.create_task(
+            session.model.generate_async(
+                input=chat_messages,
+                tools=tool_infos or None,
+                tool_choice=tool_choice,
+                config=gen_config,
+            )
+        )
+        try:
+            async for chunk in stream_gemini_response(generate_task, request_model=body.get('model')):
+                await response.write(chunk)
+            output = await generate_task
+            latency_ms = (time.monotonic() - started) * 1000
+            session.recorder.record_gemini_turn(body, output, latency_ms=latency_ms)
+            _log_turn(session, output, latency_ms, mode='stream')
+        except Exception as exc:
+            _log_upstream_failure(session, exc, mode='stream')
+            error_data = json.dumps({'error': {'code': 502, 'message': repr(exc), 'status': 'UNAVAILABLE'}})
+            try:
+                await response.write(f'data: {error_data}\n\n'.encode('utf-8'))
+            except ConnectionResetError:
+                pass
+        finally:
+            if not generate_task.done():
+                generate_task.cancel()
+        await response.write_eof()
+        return response
+
     async def _respond_json(
         self,
         session: TrialSession,
@@ -752,11 +878,18 @@ def _log_turn(session: 'TrialSession', output, latency_ms: float, *, mode: str) 
 def _extract_bearer_token(request: web.Request) -> Optional[str]:
     # claude-code sends ANTHROPIC_AUTH_TOKEN as ``Authorization: Bearer <token>``
     # plus an ``x-api-key`` mirror for compatibility.  Accept either.
+    # Gemini SDK sends the API key via ``x-goog-api-key`` header.
     auth = request.headers.get('Authorization') or request.headers.get('authorization')
     if auth and auth.lower().startswith('bearer '):
         return auth.split(None, 1)[1].strip()
     xkey = request.headers.get('x-api-key') or request.headers.get('X-Api-Key')
-    return xkey.strip() if xkey else None
+    if xkey:
+        return xkey.strip()
+    # Gemini JS SDK uses x-goog-api-key for API-key auth.
+    goog_key = request.headers.get('x-goog-api-key')
+    if goog_key:
+        return goog_key.strip()
+    return None
 
 
 def _build_generate_config(body: Dict[str, Any]) -> GenerateConfig:

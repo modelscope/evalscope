@@ -30,11 +30,11 @@ class ExternalAgentFramework:
     CODEX = 'codex'
     """OpenAI's official ``codex exec`` CLI (uses the Responses API)."""
 
-    OPENHANDS = 'openhands'
-    """OpenHands agent (uses LiteLLM -> OpenAI Chat Completions)."""
-
     OPENCODE = 'opencode'
     """OpenCode agent (uses OpenAI Responses API via openai provider)."""
+
+    GEMINI_CLI = 'gemini-cli'
+    """Google's ``gemini`` CLI (uses the native Gemini generateContent API)."""
 
 
 class BridgeConfig(BaseModel):

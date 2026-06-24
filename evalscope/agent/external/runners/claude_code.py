@@ -33,9 +33,10 @@ class ClaudeCodeRunner(AgentRunner):
     * ``model_name``     — overrides the model claude-code dials (forwarded
       to the bridge inside the request body).  Defaults to whatever the
       evalscope-side Model uses.
-    * ``allowed_tools``  — passed to ``--allowedTools``.  ``''`` disables
-      all tools (useful for math / single-shot evals); ``None`` leaves
-      claude-code's defaults intact.
+    * ``allowed_tools``  — passed to ``--allowedTools``.  ``None`` (default)
+      leaves claude-code's defaults intact.  Accepts a comma-separated
+      string of tool names to restrict the set, or ``''`` to disable all
+      tools (rarely needed — most benchmarks work fine with tools enabled).
     * ``disallowed_tools`` — passed to ``--disallowedTools``.
     * ``skip_permissions`` — when True (default), passes
       ``--dangerously-skip-permissions`` so the CLI does not prompt.
@@ -252,6 +253,9 @@ class ClaudeCodeRunner(AgentRunner):
             if self._disallowed_tools is not None:
                 cmd.extend(['--disallowedTools', self._disallowed_tools])
             cmd.extend(self._extra_args)
+            # ``--`` terminates flag parsing so variadic flags like
+            # ``--allowedTools`` cannot accidentally consume the prompt.
+            cmd.append('--')
             cmd.append(task.instruction)
 
             sample_id = (task.metadata or {}).get('sample_id')

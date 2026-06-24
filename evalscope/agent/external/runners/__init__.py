@@ -9,9 +9,9 @@ from evalscope.api.registry import get_runner
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
 from .claude_code import ClaudeCodeRunner  # noqa: F401  (side-effect: registers 'claude-code')
 from .codex import CodexRunner  # noqa: F401  (side-effect: registers 'codex')
+from .gemini_cli import GeminiCliRunner  # noqa: F401  (side-effect: registers 'gemini-cli')
 from .mock import MockAgentRunner  # noqa: F401  (side-effect: registers 'mock')
 from .opencode import OpenCodeRunner  # noqa: F401  (side-effect: registers 'opencode')
-from .openhands import OpenHandsRunner  # noqa: F401  (side-effect: registers 'openhands')
 
 __all__ = [
     'AgentRunResult',
@@ -20,9 +20,9 @@ __all__ = [
     'ClaudeCodeRunner',
     'CodexRunner',
     'ExternalAgentTask',
+    'GeminiCliRunner',
     'MockAgentRunner',
     'OpenCodeRunner',
-    'OpenHandsRunner',
     'RunnerTimeoutError',
     'get_runner',
 ]
