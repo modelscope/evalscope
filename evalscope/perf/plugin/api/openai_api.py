@@ -165,9 +165,19 @@ class OpenaiPlugin(DefaultApiPlugin):
             # when stream, the last response is the full usage
             # when non-stream, the last response is the first response
             last_response_js = responses[-1]
-            if 'usage' in last_response_js and last_response_js['usage']:
-                input_tokens = last_response_js['usage']['prompt_tokens']
-                output_tokens = last_response_js['usage']['completion_tokens']
+            usage = last_response_js.get('usage') if isinstance(last_response_js, dict) else None
+            if isinstance(usage, dict) and ('prompt_tokens' in usage or 'completion_tokens' in usage):
+                # Use .get() with safe defaults so a missing or null
+                # `completion_tokens` does not erase a valid `prompt_tokens`,
+                # and vice versa. Some OpenAI-compatible endpoints (e.g.
+                # Vertex AI's Gemini 2.5 reasoning mode) omit
+                # `completion_tokens` from the usage block when `max_tokens`
+                # is reached with only reasoning tokens emitted and no
+                # surface text. Bracket access used to raise KeyError, which
+                # the broad except caught and turned into (0, 0), silently
+                # discarding the valid `prompt_tokens`.
+                input_tokens = usage.get('prompt_tokens') or 0
+                output_tokens = usage.get('completion_tokens') or 0
                 return input_tokens, output_tokens
         except Exception as e:
             logger.error(f'Failed to parse usage from response: {e}. Response: {responses}')
