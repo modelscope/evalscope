@@ -200,17 +200,11 @@ def _evaluate_stdio_in_sandbox(
         for i, (test_input, expected_output) in enumerate(zip(inputs, outputs)):
             test_input_literal = repr(test_input)
             test_code = f"""
+import io
 import sys
-from io import BytesIO, StringIO
-
-class EvalScopeStringIO(StringIO):
-
-    def __init__(self, value):
-        super().__init__(value)
-        self.buffer = BytesIO(value.encode())
 
 # Redirect stdin
-sys.stdin = EvalScopeStringIO({test_input_literal})
+sys.stdin = io.TextIOWrapper(io.BytesIO({test_input_literal}.encode('utf-8')), encoding='utf-8')
 
 # User's code
 {code}
