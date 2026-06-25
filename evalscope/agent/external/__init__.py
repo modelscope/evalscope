@@ -1,6 +1,6 @@
 """External agent integration (HTTP bridge + runner).
 
-Drives third-party agent CLIs (claude-code, codex, openhands, ...) inside a
+Drives third-party agent CLIs (claude-code, codex, opencode, ...) inside a
 sandbox while routing their LLM calls through an in-process reverse proxy
 that forwards to EvalScope's model layer.  The bridge captures the full
 LLM request/response stream into the shared :class:`AgentTrace` format

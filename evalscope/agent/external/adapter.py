@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Optional
 
 from evalscope.api.agent import AgentEnvironment, AgentTrace
 from evalscope.api.evaluator import InferenceResult
-from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
+from evalscope.api.messages import ChatMessageAssistant, ChatMessageSystem, ChatMessageUser
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.model.model_output import ChatCompletionChoice
 from evalscope.api.registry import get_environment
@@ -181,6 +181,18 @@ async def _run_async(
         # source on the trace.
         trace.environment = getattr(env, 'name', None) or config.environment
         messages = session.recorder.messages()
+
+        # For external agents without a post_run_hook, prefer the last
+        # assistant message captured by the bridge (clean model text) over
+        # the raw runner stdout which may contain protocol-level noise
+        # (e.g. opencode's JSON stream events).  The bridge intercepts
+        # every LLM response through the proxy, so ``messages`` always
+        # holds the authoritative transcript.
+        if post_run_hook is None and messages:
+            for msg in reversed(messages):
+                if isinstance(msg, ChatMessageAssistant) and msg.text:
+                    final_text = msg.text
+                    break
 
     output = _to_model_output(final_text, model_name=getattr(model, 'name', '') or '')
     return InferenceResult(output=output, messages=messages, trace=trace)

@@ -1,6 +1,6 @@
 # 外部 Agent Bridge 模式
 
-让 EvalScope 直接评测 Claude Code、Codex 等成品 Agent CLI。你在 `TaskConfig` 里指定一个评测模型，EvalScope 会在 CLI 与后端模型之间做**协议翻译**(claude-code 发 Anthropic Messages、codex v0.133+ 发 OpenAI Responses，后端模型只需支持 OpenAI Chat Completions 即可)，同时把交互过程录制成 `AgentTrace` 用于 [可视化回放](index.md#trace-可视化)。CLI 本身不需要任何改造。
+让 EvalScope 直接评测 Claude Code、Codex、OpenCode、Gemini CLI、Hermes 等成品 Agent CLI。你在 `TaskConfig` 里指定一个评测模型，EvalScope 会在 CLI 与后端模型之间做**协议翻译**(claude-code 发 Anthropic Messages、codex/opencode 发 OpenAI Responses、gemini-cli 发 Gemini generateContent、hermes 发 OpenAI Chat Completions，后端模型只需支持 OpenAI Chat Completions 即可)，同时把交互过程录制成 `AgentTrace` 用于 [可视化回放](index.md#trace-可视化)。CLI 本身不需要任何改造。
 
 > 想给 GSM8K / AIME 等常规 benchmark 套上模型自带的多轮工具调用循环，请参见 [内置 AgentLoop 模式](native.md)。
 
@@ -44,11 +44,14 @@ EvalScope 会在本地子进程里准备 Claude Code(必要时自动 `npm instal
 
 ## 支持的 Agent CLI
 
-| 名称 | 对应 CLI | 备注 |
-|------|---------|------|
-| `claude-code` | Anthropic [Claude Code](https://github.com/anthropics/claude-code)(`claude --print`) | 默认推荐 |
-| `codex` | OpenAI [Codex](https://github.com/openai/codex)(`codex exec`) | 需要 codex ≥ v0.133 |
-| `mock` | 内置 Python 脚本 | 冒烟测试用，无外部依赖 |
+| 名称 | 对应 CLI | 协议 | 备注 |
+|------|---------|------|------|
+| `claude-code` | Anthropic [Claude Code](https://github.com/anthropics/claude-code)(`claude --print`) | Anthropic Messages | 默认推荐 |
+| `codex` | OpenAI [Codex](https://github.com/openai/codex)(`codex exec`) | OpenAI Responses | 需要 codex ≥ v0.133 |
+| `opencode` | [OpenCode](https://github.com/opencode-ai/opencode)(`opencode run`) | OpenAI Responses | 自动注册模型配置 |
+| `gemini-cli` | Google [Gemini CLI](https://github.com/google-gemini/gemini-cli)(`gemini`) | Gemini generateContent | 无头非交互模式 |
+| `hermes` | Nous Research [Hermes Agent](https://github.com/NousResearch/hermes-agent)(`hermes chat`) | OpenAI Chat Completions | 通过 custom provider 接入 |
+| `mock` | 内置 Python 脚本 | Anthropic Messages | 冒烟测试用，无外部依赖 |
 
 想接入 aider、continue 等其他 CLI?见 [进阶:自定义 Runner](#custom-runner)。
 
@@ -58,7 +61,7 @@ EvalScope 会在本地子进程里准备 Claude Code(必要时自动 `npm instal
 
 | 字段 | 说明 | 推荐值 |
 |------|------|--------|
-| `framework` | 选哪个 CLI | `claude-code` / `codex` |
+| `framework` | 选哪个 CLI | `claude-code` / `codex` / `opencode` / `gemini-cli` / `hermes` |
 | `environment` | 跑在哪里 | `local`(开发)/ `docker`(生产) |
 | `timeout` | 单样本壁钟超时(秒) | 数学题 120，代码修复 1800+ |
 | `environment_extra` | 沙箱构造参数(`image`、`timeout` 等)，与内置模式一致 | 见 [沙箱环境](../sandbox.md) |
@@ -99,10 +102,92 @@ run_task(task_config)
 
 - **`local` 环境**:无额外依赖，主包安装即可。
 - **`docker` 环境**:本机已装好并启动 Docker，详见 [沙箱环境](../sandbox.md)。
-- **claude-code / codex CLI**:首次运行会在沙箱内自动安装 Node.js + 对应 npm 包，**仅支持 Debian/Ubuntu 系镜像**。
+- **claude-code / codex / opencode CLI**:首次运行会在沙箱内自动安装 Node.js + 对应 npm 包，**仅支持 Debian/Ubuntu 系镜像**。
+- **gemini-cli**:需要 Node.js 环境，可使用预构建镜像 `evalscope-gemini-cli:latest`。
+- **hermes**:需要 Python 3.11 + uv 环境，可使用预构建镜像 `evalscope-hermes:latest`。
 
 ```{tip}
 冷启动需要下载 Node 和 npm 包，可能耗时数分钟。生产环境建议把 CLI 预装进镜像并设置 `kwargs={'auto_install': False}`，或为 Docker 挂载持久化 npm 缓存 volume。
+```
+
+## 预构建 Docker 镜像
+
+EvalScope 为每种 Agent CLI 提供了预构建 Dockerfile，位于 `evalscope/agent/external/dockerfiles/`。使用预构建镜像可跳过首次运行时的安装步骤，大幅缩短冷启动时间。
+
+### 构建镜像
+
+在项目根目录执行(需要 Docker 已安装):
+
+```bash
+# Claude Code
+docker build -f evalscope/agent/external/dockerfiles/Dockerfile.claude-code \
+             -t evalscope-claude-code:latest .
+
+# Codex
+docker build -f evalscope/agent/external/dockerfiles/Dockerfile.codex \
+             -t evalscope-codex:latest .
+
+# OpenCode
+docker build -f evalscope/agent/external/dockerfiles/Dockerfile.opencode \
+             -t evalscope-opencode:latest .
+
+# Gemini CLI
+docker build -f evalscope/agent/external/dockerfiles/Dockerfile.gemini-cli \
+             -t evalscope-gemini-cli:latest .
+
+# Hermes Agent (需要先 clone 源码到本地)
+git clone https://github.com/NousResearch/hermes-agent.git \
+    evalscope/agent/external/dockerfiles/hermes-agent-src
+docker build -f evalscope/agent/external/dockerfiles/Dockerfile.hermes \
+             -t evalscope-hermes:latest .
+```
+
+### 使用镜像
+
+在 `ExternalAgentConfig` 中指定 `environment='docker'`，并通过 `environment_extra` 传入镜像名:
+
+```python
+from evalscope import TaskConfig, run_task
+from evalscope.agent.external import ExternalAgentConfig
+
+task_config = TaskConfig(
+    model='qwen-plus',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key='<your-key>',
+    eval_type='openai_api',
+    datasets=['gsm8k'],
+    limit=5,
+    agent_config=ExternalAgentConfig(
+        framework='claude-code',
+        environment='docker',
+        environment_extra={
+            'sandbox_config': {
+                'image': 'evalscope-claude-code:latest',
+                'network_enabled': True,
+            },
+        },
+        kwargs={
+            'auto_install': False,  # 镜像已预装，跳过安装
+        },
+    ),
+)
+run_task(task_config)
+```
+
+其他 CLI 只需替换 `framework` 和 `image`:
+
+| framework | 推荐镜像 |
+|-----------|----------|
+| `claude-code` | `evalscope-claude-code:latest` |
+| `codex` | `evalscope-codex:latest` |
+| `opencode` | `evalscope-opencode:latest` |
+| `gemini-cli` | `evalscope-gemini-cli:latest` |
+| `hermes` | `evalscope-hermes:latest` |
+
+```{note}
+- Dockerfile 内已配置国内镜像源(阿里云 apt/pip/npm)，国内网络环境下可直接构建。
+- 如需自定义基础镜像或安装额外依赖，可在对应 Dockerfile 上进行修改。
+- `network_enabled: True` 允许容器访问网络(部分 CLI 运行时需要)。
 ```
 
 ## 常见问题
@@ -111,6 +196,9 @@ run_task(task_config)
 
 - **claude-code**:本机如果登录过 Claude OAuth，CLI 会优先读钥匙串，绕过 EvalScope 设的 `ANTHROPIC_BASE_URL`。默认行为下 EvalScope 会用一个临时 `HOME` 规避;如果你显式覆盖了 `home_override`，请确保该目录里没有登录态。
 - **codex**:确认版本 ≥ v0.133，旧版本只支持 Chat Completions，与 EvalScope Bridge 不兼容。
+- **opencode**:runner 会自动写 `~/.config/opencode/opencode.json` 注册模型;如果 Trace 为空，检查 `home_override` 是否指向了一个已有配置覆盖了 bridge 端点。
+- **gemini-cli**:需要 `--non-interactive` 模式;如果容器内 `gemini` 命令找不到，确认已使用预构建镜像或设置 `auto_install=True`。
+- **hermes**:runner 通过 `config.yaml` 注入 `provider: custom` + bridge URL;若 Trace 为空，检查 Hermes 版本是否 ≥ v0.17。
 - **Docker 场景**:macOS / Windows 的 Docker Desktop 原生提供 `host.docker.internal`;Linux 由 EvalScope 自动注入，通常无需手动配置。
 
 **自动安装失败 / npm 包拉不下来**
@@ -130,6 +218,6 @@ run_task(task_config)
 要接入其他第三方 Agent CLI，需要实现 `AgentRunner` 协议并通过 `@register_runner` 注册。请参考已有实现:
 
 - 协议定义:[runners/base.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/base.py)
-- 官方实现:[claude_code.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/claude_code.py)、[codex.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/codex.py)
+- 官方实现:[claude_code.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/claude_code.py)、[codex.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/codex.py)、[opencode.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/opencode.py)、[gemini_cli.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/gemini_cli.py)、[hermes.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/hermes.py)
 
 注册后即可在 `ExternalAgentConfig(framework='<your-name>')` 中使用。

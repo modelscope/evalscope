@@ -1,6 +1,6 @@
 # External Agent Bridge Mode
 
-Evaluate off-the-shelf agent CLIs such as Claude Code or Codex directly through EvalScope. You point `TaskConfig` at an evaluation model, and EvalScope sits between the CLI and the backend model as a **protocol translator** (claude-code speaks Anthropic Messages, codex v0.133+ speaks OpenAI Responses, while the backend only needs to support OpenAI Chat Completions). The whole interaction is recorded as an `AgentTrace` for [replay in the UI](index.md#trace-visualization). The CLI itself is untouched.
+Evaluate off-the-shelf agent CLIs such as Claude Code, Codex, OpenCode, Gemini CLI, or Hermes directly through EvalScope. You point `TaskConfig` at an evaluation model, and EvalScope sits between the CLI and the backend model as a **protocol translator** (claude-code speaks Anthropic Messages, codex/opencode speak OpenAI Responses, gemini-cli speaks Gemini generateContent, hermes speaks OpenAI Chat Completions, while the backend only needs to support OpenAI Chat Completions). The whole interaction is recorded as an `AgentTrace` for [replay in the UI](index.md#trace-visualization). The CLI itself is untouched.
 
 > To wrap GSM8K / AIME and other regular benchmarks in the model's own multi-turn tool-use loop, see [Native AgentLoop Mode](native.md).
 
@@ -44,11 +44,14 @@ EvalScope prepares Claude Code in a local subprocess (auto `npm install` if need
 
 ## Supported agent CLIs
 
-| Name | CLI | Notes |
-|------|-----|-------|
-| `claude-code` | Anthropic [Claude Code](https://github.com/anthropics/claude-code) (`claude --print`) | Recommended default |
-| `codex` | OpenAI [Codex](https://github.com/openai/codex) (`codex exec`) | Requires codex ≥ v0.133 |
-| `mock` | bundled Python script | Smoke-test runner; no external dependency |
+| Name | CLI | Protocol | Notes |
+|------|-----|----------|-------|
+| `claude-code` | Anthropic [Claude Code](https://github.com/anthropics/claude-code) (`claude --print`) | Anthropic Messages | Recommended default |
+| `codex` | OpenAI [Codex](https://github.com/openai/codex) (`codex exec`) | OpenAI Responses | Requires codex ≥ v0.133 |
+| `opencode` | [OpenCode](https://github.com/opencode-ai/opencode) (`opencode run`) | OpenAI Responses | Auto-registers model config |
+| `gemini-cli` | Google [Gemini CLI](https://github.com/google-gemini/gemini-cli) (`gemini`) | Gemini generateContent | Headless non-interactive mode |
+| `hermes` | Nous Research [Hermes Agent](https://github.com/NousResearch/hermes-agent) (`hermes chat`) | OpenAI Chat Completions | Via custom provider config |
+| `mock` | bundled Python script | Anthropic Messages | Smoke-test runner; no external dependency |
 
 Want to plug in aider, continue, or another CLI? See [Advanced: custom runners](#custom-runner).
 
@@ -58,7 +61,7 @@ Most-used `ExternalAgentConfig` fields:
 
 | Field | Description | Recommended |
 |-------|-------------|-------------|
-| `framework` | Which CLI to drive | `claude-code` / `codex` |
+| `framework` | Which CLI to drive | `claude-code` / `codex` / `opencode` / `gemini-cli` / `hermes` |
 | `environment` | Where to run | `local` (dev) / `docker` (production) |
 | `timeout` | Per-sample wall-clock budget in seconds | 120 for math, 1800+ for code fixes |
 | `environment_extra` | Sandbox constructor kwargs (`image`, `timeout`, …); same as native mode | See [Sandbox Environment](../sandbox.md) |
@@ -99,10 +102,92 @@ run_task(task_config)
 
 - **`local` environment**: no extra dependencies — the main package is enough.
 - **`docker` environment**: Docker installed and running locally; see [Sandbox Environment](../sandbox.md).
-- **claude-code / codex CLIs**: on first run EvalScope auto-installs Node.js + the matching npm package inside the sandbox. **Only Debian/Ubuntu-based images are supported.**
+- **claude-code / codex / opencode CLIs**: on first run EvalScope auto-installs Node.js + the matching npm package inside the sandbox. **Only Debian/Ubuntu-based images are supported.**
+- **gemini-cli**: requires Node.js; use the pre-built image `evalscope-gemini-cli:latest`.
+- **hermes**: requires Python 3.11 + uv; use the pre-built image `evalscope-hermes:latest`.
 
 ```{tip}
 Cold starts download Node and the npm package and can take several minutes. For production, bake the CLI into the image and set `kwargs={'auto_install': False}`, or mount a persistent npm cache volume for Docker.
+```
+
+## Pre-built Docker images
+
+EvalScope ships a Dockerfile for each agent CLI under `evalscope/agent/external/dockerfiles/`. Pre-built images skip the runtime installation step and significantly reduce cold-start time.
+
+### Building images
+
+Run from the project root (Docker must be installed):
+
+```bash
+# Claude Code
+docker build -f evalscope/agent/external/dockerfiles/Dockerfile.claude-code \
+             -t evalscope-claude-code:latest .
+
+# Codex
+docker build -f evalscope/agent/external/dockerfiles/Dockerfile.codex \
+             -t evalscope-codex:latest .
+
+# OpenCode
+docker build -f evalscope/agent/external/dockerfiles/Dockerfile.opencode \
+             -t evalscope-opencode:latest .
+
+# Gemini CLI
+docker build -f evalscope/agent/external/dockerfiles/Dockerfile.gemini-cli \
+             -t evalscope-gemini-cli:latest .
+
+# Hermes Agent (clone the source first)
+git clone https://github.com/NousResearch/hermes-agent.git \
+    evalscope/agent/external/dockerfiles/hermes-agent-src
+docker build -f evalscope/agent/external/dockerfiles/Dockerfile.hermes \
+             -t evalscope-hermes:latest .
+```
+
+### Using images
+
+Set `environment='docker'` in `ExternalAgentConfig` and pass the image name via `environment_extra`:
+
+```python
+from evalscope import TaskConfig, run_task
+from evalscope.agent.external import ExternalAgentConfig
+
+task_config = TaskConfig(
+    model='qwen-plus',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key='<your-key>',
+    eval_type='openai_api',
+    datasets=['gsm8k'],
+    limit=5,
+    agent_config=ExternalAgentConfig(
+        framework='claude-code',
+        environment='docker',
+        environment_extra={
+            'sandbox_config': {
+                'image': 'evalscope-claude-code:latest',
+                'network_enabled': True,
+            },
+        },
+        kwargs={
+            'auto_install': False,  # CLI is pre-installed, skip setup
+        },
+    ),
+)
+run_task(task_config)
+```
+
+For other CLIs, just swap `framework` and `image`:
+
+| framework | Recommended image |
+|-----------|-------------------|
+| `claude-code` | `evalscope-claude-code:latest` |
+| `codex` | `evalscope-codex:latest` |
+| `opencode` | `evalscope-opencode:latest` |
+| `gemini-cli` | `evalscope-gemini-cli:latest` |
+| `hermes` | `evalscope-hermes:latest` |
+
+```{note}
+- The Dockerfiles include Chinese mirror sources (Aliyun apt/pip/npm) for faster builds in mainland China.
+- Customize the base image or add extra dependencies by editing the corresponding Dockerfile.
+- `network_enabled: True` allows the container to access the network (some CLIs require it at runtime).
 ```
 
 ## FAQ
@@ -111,6 +196,9 @@ Cold starts download Node and the npm package and can take several minutes. For 
 
 - **claude-code**: if your machine is logged into Claude OAuth, the CLI reads the keychain and bypasses the `ANTHROPIC_BASE_URL` EvalScope sets. The default behavior uses a fresh `HOME` to avoid this; if you set `home_override` yourself, make sure the target directory has no stored credentials.
 - **codex**: confirm version ≥ v0.133 — older codex only speaks Chat Completions and is incompatible with the bridge.
+- **opencode**: the runner auto-writes `~/.config/opencode/opencode.json` to register the model; if the trace is empty, check whether `home_override` points to a directory with an existing config that overrides the bridge endpoint.
+- **gemini-cli**: requires `--non-interactive` mode; if the `gemini` command is not found in the container, confirm you are using the pre-built image or have `auto_install=True`.
+- **hermes**: the runner injects `provider: custom` + bridge URL via `config.yaml`; if the trace is empty, verify Hermes version ≥ v0.17.
 - **Docker scenarios**: Docker Desktop on macOS / Windows provides `host.docker.internal` natively; on Linux EvalScope injects it automatically. Usually no manual setup needed.
 
 **Auto-install fails / npm package can't be pulled**
@@ -130,6 +218,6 @@ Cold starts download Node and the npm package and can take several minutes. For 
 To plug in a third-party agent CLI, implement the `AgentRunner` protocol and register it with `@register_runner`. Reference the existing implementations:
 
 - Protocol: [runners/base.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/base.py)
-- Official runners: [claude_code.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/claude_code.py), [codex.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/codex.py)
+- Official runners: [claude_code.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/claude_code.py), [codex.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/codex.py), [opencode.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/opencode.py), [gemini_cli.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/gemini_cli.py), [hermes.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/hermes.py)
 
 Once registered it becomes available as `ExternalAgentConfig(framework='<your-name>')`.
