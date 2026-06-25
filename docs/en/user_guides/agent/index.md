@@ -7,7 +7,7 @@ EvalScope's **Agent Evaluation** lets either the model itself or an off-the-shel
 | Mode | When to use | Docs |
 |------|-------------|------|
 | **Native AgentLoop** | Wrap a regular benchmark (GSM8K, AIME, SWE-bench, …) in a tool-use loop to evaluate the **model's own** tool-use ability | [Native AgentLoop Mode](native.md) |
-| **External Agent Bridge** | Evaluate **Claude Code / Codex** and similar off-the-shelf agent CLIs; EvalScope forwards the CLI's LLM traffic to your evaluation model | [External Agent Bridge Mode](bridge.md) |
+| **External Agent Bridge** | Evaluate **Claude Code / Codex / OpenCode / Gemini CLI / Hermes** and similar off-the-shelf agent CLIs; EvalScope forwards the CLI's LLM traffic to your evaluation model | [External Agent Bridge Mode](bridge.md) |
 
 Both modes are configured through `TaskConfig.agent_config`. A single evaluation picks exactly one mode.
 
