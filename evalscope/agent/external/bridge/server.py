@@ -928,6 +928,11 @@ def _build_openai_generate_config(body: Dict[str, Any]) -> GenerateConfig:
         kwargs['max_tokens'] = body['max_tokens']
     if 'max_completion_tokens' in body and 'max_tokens' not in body:
         kwargs['max_tokens'] = body['max_completion_tokens']
+    # Cap max_tokens to prevent upstream rejection (e.g. DashScope caps at 32768).
+    # Agent CLIs like Hermes may request large values derived from context_length.
+    if 'max_tokens' in kwargs and kwargs['max_tokens'] is not None:
+        _MAX_TOKENS_CAP = 16384
+        kwargs['max_tokens'] = min(kwargs['max_tokens'], _MAX_TOKENS_CAP)
     if 'temperature' in body:
         kwargs['temperature'] = body['temperature']
     if 'top_p' in body:

@@ -1,0 +1,66 @@
+# Dockerfile for Hermes Agent (Nous Research) — EvalScope external runner
+#
+# Build:
+#   docker build -f evalscope/agent/external/dockerfiles/Dockerfile.hermes \
+#       -t evalscope-hermes:latest .
+#
+# Hermes is a Python-based agent using uv for venv + deps.
+# This Dockerfile uses the "manual clone fallback" from the official README
+# to avoid the install.sh DNS dependency.
+#
+# The bridge uses OPENAI_BASE_URL / OPENAI_API_KEY env vars to route
+# requests through the model proxy (injected at runtime by the runner).
+FROM python:3.11-slim
+
+# -- Chinese mirrors for faster builds on domestic networks --
+# apt: Aliyun Debian mirror
+RUN sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list 2>/dev/null || true
+# pip: Aliyun PyPI
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
+    pip config set global.trusted-host mirrors.aliyun.com
+# uv: Aliyun PyPI (Hermes uses uv for dependency management)
+ENV UV_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+ENV UV_EXTRA_INDEX_URL=https://pypi.org/simple/
+
+# -- System dependencies --
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends \
+        curl ca-certificates git bash ripgrep xz-utils && \
+    rm -rf /var/lib/apt/lists/*
+
+# -- Fix DNS resolution (Docker Desktop on macOS sometimes fails) --
+# Note: This may not persist across RUN layers; it's a best-effort fix.
+RUN echo "nameserver 114.114.114.114" > /etc/resolv.conf && \
+    echo "nameserver 8.8.8.8" >> /etc/resolv.conf
+
+# -- Install uv via pip (uses Aliyun mirror, no DNS issue) --
+RUN pip install --no-cache-dir uv
+
+# -- Copy pre-cloned Hermes Agent source --
+# To refresh: git clone --depth 1 https://github.com/NousResearch/hermes-agent.git hermes-agent-src
+ENV HERMES_HOME=/root/.hermes
+COPY evalscope/agent/external/dockerfiles/hermes-agent-src "$HERMES_HOME/hermes-agent"
+
+# -- Create venv and install dependencies --
+RUN cd "$HERMES_HOME/hermes-agent" && \
+    uv venv .venv --python 3.11 && \
+    . .venv/bin/activate && \
+    uv pip install -e ".[all]"
+
+# -- Create hermes wrapper script at /usr/local/bin --
+# The `hermes` console_script is installed inside the venv by `uv pip install -e .`
+RUN ln -sf "$HERMES_HOME/hermes-agent/.venv/bin/hermes" /usr/local/bin/hermes
+
+# -- Verify installation --
+RUN /usr/local/bin/hermes --version
+
+# -- Working directory --
+WORKDIR /workspace
+
+# -- Default env vars (overridden at runtime by the runner) --
+ENV HERMES_YOLO_MODE=1
+ENV DO_NOT_TRACK=1
+ENV PATH="/usr/local/bin:${PATH}"
+
+CMD ["bash"]

@@ -36,6 +36,9 @@ class ExternalAgentFramework:
     GEMINI_CLI = 'gemini-cli'
     """Google's ``gemini`` CLI (uses the native Gemini generateContent API)."""
 
+    HERMES = 'hermes'
+    """Nous Research's ``hermes`` agent (uses OpenAI Chat Completions API)."""
+
 
 class BridgeConfig(BaseModel):
     """Knobs for the reverse-proxy bridge that sits between an external
