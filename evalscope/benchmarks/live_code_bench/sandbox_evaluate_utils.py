@@ -198,12 +198,19 @@ def _evaluate_stdio_in_sandbox(
         failed_cases = []
 
         for i, (test_input, expected_output) in enumerate(zip(inputs, outputs)):
+            test_input_literal = repr(test_input)
             test_code = f"""
 import sys
-from io import StringIO
+from io import BytesIO, StringIO
+
+class EvalScopeStringIO(StringIO):
+
+    def __init__(self, value):
+        super().__init__(value)
+        self.buffer = BytesIO(value.encode())
 
 # Redirect stdin
-sys.stdin = StringIO('''{test_input}''')
+sys.stdin = EvalScopeStringIO({test_input_literal})
 
 # User's code
 {code}
