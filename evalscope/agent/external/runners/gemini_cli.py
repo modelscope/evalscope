@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
+from ._node_install import ensure_node_via_apt
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
 
 logger = get_logger()
@@ -38,7 +39,7 @@ class GeminiCliRunner(AgentRunner):
       Gemini CLI uses this as the model name in its API calls.
     * ``extra_args``        — verbatim args appended before the prompt.
     * ``auto_install``      — when True (default), installs Node.js +
-      ``@anthropic-ai/gemini-cli`` if ``gemini --version`` fails.
+      ``@google/gemini-cli`` if ``gemini --version`` fails.
     * ``install_timeout_s`` — per-step wall-clock budget (default 300s).
     * ``home_override``     — optional ``HOME`` path. Defaults to a
       fresh per-run tempdir for isolation.
@@ -102,8 +103,12 @@ class GeminiCliRunner(AgentRunner):
 
     async def _install_gemini_cli(self, env: AgentEnvironment) -> None:
         """Install Node.js (when missing) and the gemini-cli package."""
-        if not await self._node_present(env):
-            await self._install_node_via_apt(env)
+        await ensure_node_via_apt(
+            env,
+            node_setup_url=self._node_setup_url,
+            timeout_s=self._install_timeout_s,
+            runner_name='GeminiCliRunner',
+        )
         npm = await env.exec(
             ['bash', '-c', f'set -e; npm install -g --no-fund --no-audit {self._npm_package} >/dev/null'],
             timeout=self._install_timeout_s,
@@ -112,44 +117,6 @@ class GeminiCliRunner(AgentRunner):
             raise RuntimeError(
                 f'GeminiCliRunner.setup: `npm install -g {self._npm_package}` failed '
                 f'(rc={npm.returncode}). stderr={npm.stderr.strip()[-1000:]!r}'
-            )
-
-    async def _node_present(self, env: AgentEnvironment) -> bool:
-        probe = await env.exec(['bash', '-c', 'command -v node && command -v npm'])
-        return probe.returncode == 0
-
-    async def _install_node_via_apt(self, env: AgentEnvironment) -> None:
-        """Install Node.js via nodesource (Debian/Ubuntu only)."""
-        logger.info(
-            f'GeminiCliRunner.setup: installing Node.js via {self._node_setup_url} '
-            f'(one-shot per sample; use pre-built image for faster iteration).'
-        )
-        prep = await env.exec(
-            [
-                'bash', '-c', 'set -e; export DEBIAN_FRONTEND=noninteractive; '
-                'apt-get update -qq && '
-                'apt-get install -y --no-install-recommends curl ca-certificates gnupg'
-            ],
-            timeout=self._install_timeout_s,
-        )
-        if prep.returncode != 0:
-            raise RuntimeError(
-                f'GeminiCliRunner.setup: apt prerequisite install failed (rc={prep.returncode}). '
-                f'This runner expects a Debian/Ubuntu-based image with network access. '
-                f'stderr={prep.stderr.strip()[-1000:]!r}'
-            )
-        node = await env.exec(
-            [
-                'bash', '-c', 'set -e; export DEBIAN_FRONTEND=noninteractive; '
-                f'curl -fsSL {self._node_setup_url} | bash - && '
-                'apt-get install -y --no-install-recommends nodejs'
-            ],
-            timeout=self._install_timeout_s,
-        )
-        if node.returncode != 0:
-            raise RuntimeError(
-                f'GeminiCliRunner.setup: Node.js install failed (rc={node.returncode}). '
-                f'stderr={node.stderr.strip()[-1000:]!r}'
             )
 
     # ------------------------------------------------------------------

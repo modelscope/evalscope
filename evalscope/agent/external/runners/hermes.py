@@ -1,9 +1,11 @@
 """Runner for Nous Research's ``hermes`` agent CLI.
 
-Points ``hermes chat -q`` at the bridge via ``OPENAI_BASE_URL`` /
-``OPENAI_API_KEY`` env vars with ``--provider openai``.  Hermes uses the
-standard OpenAI Chat Completions protocol, so the bridge's existing
-``/v1/chat/completions`` route handles it without extra translation.
+Points ``hermes chat -q`` at the bridge via a ``config.yaml`` file that
+sets ``provider: custom`` and ``base_url: {bridge}/openai/v1``, plus
+``OPENAI_BASE_URL`` / ``OPENAI_API_KEY`` env vars as a belt-and-suspenders
+fallback.  Hermes uses the standard OpenAI Chat Completions protocol, so
+the bridge's existing ``/openai/v1/chat/completions`` route handles it
+without extra translation.
 
 The Hermes Agent is a Python-based tool installed via `uv` from the
 official install script.  It supports non-interactive single-query mode
@@ -43,7 +45,6 @@ class HermesRunner(AgentRunner):
     * ``install_timeout_s`` — per-step wall-clock budget (default 300s).
     * ``home_override``     — optional ``HERMES_HOME`` path. Defaults to
       a fresh per-run tempdir for isolation.
-    * ``provider``          — LLM provider name (default: ``openai``).
     * ``toolsets``          — comma-separated toolsets to enable
       (default: ``terminal`` for code generation tasks).
     * ``install_url``       — install script URL.
@@ -64,7 +65,6 @@ class HermesRunner(AgentRunner):
         auto_install: bool = True,
         install_timeout_s: float = _INSTALL_TIMEOUT_S,
         home_override: Optional[str] = None,
-        provider: str = 'openai',
         toolsets: str = 'terminal',
         install_url: str = 'https://hermes-agent.nousresearch.com/install.sh',
         **_: Any,
@@ -74,7 +74,6 @@ class HermesRunner(AgentRunner):
         self._auto_install = auto_install
         self._install_timeout_s = install_timeout_s
         self._home_override = home_override
-        self._provider = provider
         self._toolsets = toolsets
         self._install_url = install_url
 
@@ -225,7 +224,6 @@ class HermesRunner(AgentRunner):
         logger.info(
             f'hermes launching: sample={sample_id} env={env_name} '
             f'model={self._model_name or "<default>"} '
-            f'provider={self._provider} '
             f'timeout={task.timeout}s instruction_chars={len(task.instruction)}'
         )
         result = await env.exec(cmd, timeout=task.timeout, env=env_vars)

@@ -29,6 +29,7 @@ from typing import Any, Dict, List, Optional
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
+from ._node_install import ensure_node_via_apt
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
 
 logger = get_logger()
@@ -120,13 +121,13 @@ class OpenCodeRunner(AgentRunner):
         return False
 
     async def _install_opencode(self, env: AgentEnvironment) -> None:
-        """Install Node.js (when missing) and opencode-ai.
-
-        Mirrors the codex runner's Node install path — separate copy on
-        purpose (kept per-runner until a third runner needs it).
-        """
-        if not await self._node_present(env):
-            await self._install_node_via_apt(env)
+        """Install Node.js (when missing) and opencode-ai."""
+        await ensure_node_via_apt(
+            env,
+            node_setup_url=self._node_setup_url,
+            timeout_s=self._install_timeout_s,
+            runner_name='OpenCodeRunner',
+        )
         npm = await env.exec(
             ['bash', '-c', f'set -e; npm install -g --no-fund --no-audit {shlex.quote(self._npm_package)} >/dev/null'],
             timeout=self._install_timeout_s,
@@ -135,45 +136,6 @@ class OpenCodeRunner(AgentRunner):
             raise RuntimeError(
                 f'OpenCodeRunner.setup: `npm install -g {self._npm_package}` failed '
                 f'(rc={npm.returncode}). stderr={npm.stderr.strip()[-1000:]!r}'
-            )
-
-    async def _node_present(self, env: AgentEnvironment) -> bool:
-        probe = await env.exec(['bash', '-c', 'command -v node && command -v npm'])
-        return probe.returncode == 0
-
-    async def _install_node_via_apt(self, env: AgentEnvironment) -> None:
-        """Install Node.js via nodesource (Debian/Ubuntu only)."""
-        logger.info(
-            f'OpenCodeRunner.setup: installing Node.js via {self._node_setup_url} '
-            f'(one-shot per sample; use pre-built image for faster iteration).'
-        )
-        prep = await env.exec(
-            [
-                'bash', '-c', 'set -e; export DEBIAN_FRONTEND=noninteractive; '
-                'apt-get update -qq && '
-                'apt-get install -y --no-install-recommends curl ca-certificates gnupg'
-            ],
-            timeout=self._install_timeout_s,
-        )
-        if prep.returncode != 0:
-            raise RuntimeError(
-                f'OpenCodeRunner.setup: apt prerequisite install failed (rc={prep.returncode}). '
-                f'This runner expects a Debian/Ubuntu-based image with network access, or a '
-                f'base image where Node.js is already installed (e.g. node:22-slim). '
-                f'stderr={prep.stderr.strip()[-1000:]!r}'
-            )
-        node = await env.exec(
-            [
-                'bash', '-c', 'set -e; export DEBIAN_FRONTEND=noninteractive; '
-                f'curl -fsSL {self._node_setup_url} | bash - && '
-                'apt-get install -y --no-install-recommends nodejs'
-            ],
-            timeout=self._install_timeout_s,
-        )
-        if node.returncode != 0:
-            raise RuntimeError(
-                f'OpenCodeRunner.setup: Node.js install failed (rc={node.returncode}). '
-                f'stderr={node.stderr.strip()[-1000:]!r}'
             )
 
     # ------------------------------------------------------------------

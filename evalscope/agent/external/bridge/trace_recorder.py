@@ -143,7 +143,7 @@ class BridgeTraceRecorder:
         extract_tool_results,
         messages_key: str = 'messages',
     ) -> None:
-        """Shared per-turn recorder for all three wire protocols.
+        """Shared per-turn recorder for all four wire protocols.
 
         Order: surface any tool results from the previous turn as
         ``TOOL_RESULT`` events on the *next* step, then ``MODEL_GENERATE``

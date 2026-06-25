@@ -61,6 +61,11 @@ logger = get_logger()
 
 _TRIAL_TOKEN_PREFIX = 'trial-'
 
+#: Safe upper bound for ``max_tokens`` forwarded to upstream APIs.
+#: Some backends (e.g. DashScope) reject values above their own limit; agent
+#: CLIs like Hermes may request very large values derived from context_length.
+_MAX_OPENAI_MAX_TOKENS_CAP = 16384
+
 #: Env names whose runtime is a Docker container — for these we rewrite
 #: the bridge's loopback host to ``host.docker.internal`` so the agent
 #: inside the container can reach the bridge on the host. Shared with
@@ -931,8 +936,7 @@ def _build_openai_generate_config(body: Dict[str, Any]) -> GenerateConfig:
     # Cap max_tokens to prevent upstream rejection (e.g. DashScope caps at 32768).
     # Agent CLIs like Hermes may request large values derived from context_length.
     if 'max_tokens' in kwargs and kwargs['max_tokens'] is not None:
-        _MAX_TOKENS_CAP = 16384
-        kwargs['max_tokens'] = min(kwargs['max_tokens'], _MAX_TOKENS_CAP)
+        kwargs['max_tokens'] = min(kwargs['max_tokens'], _MAX_OPENAI_MAX_TOKENS_CAP)
     if 'temperature' in body:
         kwargs['temperature'] = body['temperature']
     if 'top_p' in body:

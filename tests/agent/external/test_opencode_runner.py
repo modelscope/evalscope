@@ -1,4 +1,4 @@
-"""End-to-end: opencode run → bridge (OpenAI Chat Completions) → DashScope qwen-plus.
+"""End-to-end: opencode run → bridge (OpenAI Responses API) → DashScope qwen-plus.
 
 Skipped by default — opt-in with ``EVALSCOPE_REAL_QWEN=1`` plus a valid
 ``DASHSCOPE_API_KEY`` so CI never depends on the network.
@@ -13,10 +13,11 @@ Covers two tiers:
   ``EnclaveAgentEnvironment`` path — container → bridge →
   DashScope → trajectory capture.
 
-The bridge's ``/openai/v1/chat/completions`` route converts the
-``OpenAICompatibleAPI`` response back to the agent, so this test
-proves the complete cross-protocol chain:
-``opencode (OpenAI Chat) → bridge → DashScope (OpenAI compat) → qwen-plus``.
+OpenCode speaks the OpenAI **Responses API** (``/openai/v1/responses``),
+not Chat Completions.  The bridge's Responses route translates the request
+to ``ChatMessage[]`` for the upstream model, so this test proves the
+complete cross-protocol chain:
+``opencode (Responses API) → bridge → DashScope (OpenAI compat) → qwen-plus``.
 """
 
 import os

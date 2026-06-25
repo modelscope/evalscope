@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
+from ._node_install import ensure_node_via_apt
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
 
 logger = get_logger()
@@ -129,21 +130,13 @@ class ClaudeCodeRunner(AgentRunner):
         return False
 
     async def _install_claude_code(self, env: AgentEnvironment) -> None:
-        """Install Node.js (when missing) and the claude-code npm package.
-
-        Skips the Node install when ``node`` / ``npm`` are already on
-        PATH — lets users opt into Node-preinstalled base images (e.g.
-        ``node:20-slim``) to avoid the apt + nodesource detour and the
-        in-container DNS dependency it implies.
-
-        Each command runs as a single ``bash -c`` so apt's locking and
-        ``set -e`` semantics are honoured. The combined script is also
-        idempotent on retry: ``apt-get install`` short-circuits when the
-        package is present, and ``npm install -g`` no-ops when the
-        package version already matches.
-        """
-        if not await self._node_present(env):
-            await self._install_node_via_apt(env)
+        """Install Node.js (when missing) and the claude-code npm package."""
+        await ensure_node_via_apt(
+            env,
+            node_setup_url=self._node_setup_url,
+            timeout_s=self._install_timeout_s,
+            runner_name='ClaudeCodeRunner',
+        )
         # Discard npm's stdout (multi-MB on cold installs); keep stderr for diagnostics.
         npm = await env.exec(
             ['bash', '-c', f'set -e; npm install -g --no-fund --no-audit {self._npm_package} >/dev/null'],
@@ -153,55 +146,6 @@ class ClaudeCodeRunner(AgentRunner):
             raise RuntimeError(
                 f'ClaudeCodeRunner.setup: `npm install -g {self._npm_package}` failed '
                 f'(rc={npm.returncode}). stderr={npm.stderr.strip()[-1000:]!r}'
-            )
-
-    async def _node_present(self, env: AgentEnvironment) -> bool:
-        probe = await env.exec(['bash', '-c', 'command -v node && command -v npm'])
-        return probe.returncode == 0
-
-    async def _install_node_via_apt(self, env: AgentEnvironment) -> None:
-        """Install Node.js via nodesource (Debian / Ubuntu only path).
-
-        Two-step: first the prerequisite apt packages, then the
-        nodesource setup script + ``apt-get install nodejs``. Surfaces
-        explicit errors when the image is not apt-based or has no
-        network to reach the Ubuntu / Debian / nodesource mirrors.
-        """
-        logger.info(
-            f'ClaudeCodeRunner.setup: installing Node.js via {self._node_setup_url} '
-            f'(this is a one-shot per sample today; planned npm cache volume '
-            f'will amortise the cost across samples).'
-        )
-        # Step 1: prerequisites for the nodesource installer (curl + gnupg).
-        prep = await env.exec(
-            [
-                'bash', '-c', 'set -e; export DEBIAN_FRONTEND=noninteractive; '
-                'apt-get update -qq && '
-                'apt-get install -y --no-install-recommends curl ca-certificates gnupg'
-            ],
-            timeout=self._install_timeout_s,
-        )
-        if prep.returncode != 0:
-            raise RuntimeError(
-                f'ClaudeCodeRunner.setup: apt prerequisite install failed (rc={prep.returncode}). '
-                f'This runner currently expects a Debian/Ubuntu-based image with network access, '
-                f'or a base image where Node.js is already installed (e.g. node:20-slim). '
-                f'stderr={prep.stderr.strip()[-1000:]!r}'
-            )
-        # Step 2: pull nodesource setup script + apt-install nodejs.
-        node = await env.exec(
-            [
-                'bash', '-c', 'set -e; export DEBIAN_FRONTEND=noninteractive; '
-                f'curl -fsSL {self._node_setup_url} | bash - && '
-                'apt-get install -y --no-install-recommends nodejs'
-            ],
-            timeout=self._install_timeout_s,
-        )
-        if node.returncode != 0:
-            raise RuntimeError(
-                f'ClaudeCodeRunner.setup: Node.js install failed (rc={node.returncode}). '
-                f'Network access from inside the sandbox is required for runtime install. '
-                f'stderr={node.stderr.strip()[-1000:]!r}'
             )
 
     async def run(
