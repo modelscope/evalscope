@@ -15,7 +15,7 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from functools import partial
-from io import StringIO
+from io import BytesIO, StringIO
 
 # from pyext import RuntimeModule
 from types import ModuleType
@@ -50,6 +50,13 @@ class CODE_TYPE(Enum):
 # stuff for setting up signal timer
 class TimeoutException(Exception):
     pass
+
+
+class EvalScopeStringIO(StringIO):
+
+    def __init__(self, value: str):
+        super().__init__(value)
+        self.buffer = BytesIO(value.encode())
 
 
 def timeout_handler(debug, signum, frame):
@@ -130,7 +137,7 @@ def call_method(method, inputs):
 
     # @patch('builtins.input', side_effect=inputs.split("\n"))
     @patch('builtins.open', mock_open(read_data=inputs))
-    @patch('sys.stdin', StringIO(inputs))
+    @patch('sys.stdin', EvalScopeStringIO(inputs))
     @patch('sys.stdin.readline', lambda *args: next(inputs_line_iterator))
     @patch('sys.stdin.readlines', lambda *args: inputs.split('\n'))
     @patch('sys.stdin.read', lambda *args: inputs)
