@@ -7,7 +7,7 @@
 # Usage:
 #   When running EvalScope with framework='opencode' and pointing the
 #   environment at this image, ``setup()`` detects the pre-installed
-#   ``opencode`` binary and skips the nvm/npm install step entirely.
+#   ``opencode`` binary and skips the Node.js/npm install step entirely.
 #
 # If you do NOT use this image, the runner's ``auto_install=True``
 # (default) will install Node.js + opencode-ai at runtime — functional

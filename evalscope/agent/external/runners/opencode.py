@@ -22,6 +22,7 @@ recognises arbitrary model names beyond its built-in list.
 
 import json
 import shlex
+import shutil
 import tempfile
 from typing import Any, Dict, List, Optional
 
@@ -127,7 +128,7 @@ class OpenCodeRunner(AgentRunner):
         if not await self._node_present(env):
             await self._install_node_via_apt(env)
         npm = await env.exec(
-            ['bash', '-c', f'set -e; npm install -g --no-fund --no-audit {self._npm_package} >/dev/null'],
+            ['bash', '-c', f'set -e; npm install -g --no-fund --no-audit {shlex.quote(self._npm_package)} >/dev/null'],
             timeout=self._install_timeout_s,
         )
         if npm.returncode != 0:
@@ -196,88 +197,97 @@ class OpenCodeRunner(AgentRunner):
             'OPENCODE_FAKE_VCS': 'git',
         }
         home_dir = self._resolve_home()
+        owns_home_dir = home_dir is not None and self._home_override is None
         if home_dir is not None:
             env_vars['HOME'] = home_dir
 
-        # Write opencode.json config to register the model + baseURL.
-        config = {
-            'provider': {
-                'openai': {
-                    'models': {
-                        model_id: {}
-                    },
-                    'options': {
-                        'baseURL': f'{bridge.base_url}/openai/v1'
-                    },
+        try:
+            # Write opencode.json config to register the model + baseURL.
+            config = {
+                'provider': {
+                    'openai': {
+                        'models': {
+                            model_id: {}
+                        },
+                        'options': {
+                            'baseURL': f'{bridge.base_url}/openai/v1'
+                        },
+                    }
                 }
             }
-        }
-        config_json = json.dumps(config, indent=2)
-        escaped_config = shlex.quote(config_json)
-        config_cmd = ('mkdir -p ~/.config/opencode && '
-                      f'echo {escaped_config} > ~/.config/opencode/opencode.json')
-
-        # Write config first.
-        cfg_result = await env.exec(
-            ['bash', '-c', config_cmd],
-            env=env_vars,
-        )
-        if cfg_result.returncode != 0:
-            logger.warning(
-                f'opencode: config write failed (rc={cfg_result.returncode}); '
-                f'proceeding anyway — opencode may not recognise the model'
+            config_json = json.dumps(config, indent=2)
+            escaped_config = shlex.quote(config_json)
+            config_cmd = (
+                'mkdir -p ~/.config/opencode && '
+                f'echo {escaped_config} > ~/.config/opencode/opencode.json'
             )
 
-        # Build the command.
-        cmd: List[str] = ['bash', '-c']
-        opencode_cmd_parts = [
-            'opencode',
-            f'--model={model_name}',
-            'run',
-            '--format=json',
-            '--thinking',
-            '--dangerously-skip-permissions',
-            # Provide an explicit title so opencode skips the LLM title-
-            # generation call it normally makes as the very first request.
-            # Without this, step-0 burns ~600 tokens on a "You are a title
-            # generator" round-trip and pollutes the bridge transcript with
-            # the title system prompt instead of the actual task context.
-            '--title=sample-{}'.format((task.metadata or {}).get('sample_id', 'eval')),
-        ]
-        opencode_cmd_parts.extend(self._extra_args)
-        opencode_cmd_parts.append('--')
-        opencode_cmd_parts.append(shlex.quote(task.instruction))
-        cmd.append(' '.join(opencode_cmd_parts) + ' 2>&1')
+            # Write config first.
+            cfg_result = await env.exec(
+                ['bash', '-c', config_cmd],
+                env=env_vars,
+            )
+            if cfg_result.returncode != 0:
+                logger.warning(
+                    f'opencode: config write failed (rc={cfg_result.returncode}); '
+                    f'proceeding anyway — opencode may not recognise the model'
+                )
 
-        sample_id = (task.metadata or {}).get('sample_id')
-        env_name = getattr(env, 'name', type(env).__name__)
-        logger.info(
-            f'opencode launching: sample={sample_id} env={env_name} '
-            f'model={model_name} '
-            f'timeout={task.timeout}s instruction_chars={len(task.instruction)}'
-        )
-        result = await env.exec(cmd, timeout=task.timeout, env=env_vars)
-        logger.info(
-            f'opencode exited: sample={sample_id} rc={result.returncode} '
-            f'wall={result.duration:.1f}s '
-            f'stdout={len(result.stdout or "")}B stderr={len(result.stderr or "")}B '
-            f'timed_out={result.timed_out}'
-        )
-        if result.timed_out:
-            raise RunnerTimeoutError(f'opencode timed out after {task.timeout}s '
-                                     f'(returncode={result.returncode})')
-        if result.returncode != 0:
-            tail_stderr = (result.stderr or '').strip()[-2000:]
-            tail_stdout = (result.stdout or '').strip()[-2000:]
-            raise RuntimeError(f'opencode exited with code {result.returncode}: '
-                               f'{tail_stderr or tail_stdout}')
-        return AgentRunResult(
-            output=result.stdout.strip(),
-            metrics={
-                'wall_time': result.duration,
-                'returncode': result.returncode,
-            },
-        )
+            # Build the command as a plain argv list.  The environment
+            # handles shell wrapping (enclave) or direct exec (local);
+            # keeping stderr separate improves diagnostics.
+            cmd: List[str] = [
+                'opencode',
+                f'--model={model_name}',
+                'run',
+                '--format=json',
+                '--thinking',
+                '--dangerously-skip-permissions',
+                # Provide an explicit title so opencode skips the LLM title-
+                # generation call it normally makes as the very first request.
+                # Without this, step-0 burns ~600 tokens on a "You are a title
+                # generator" round-trip and pollutes the bridge transcript with
+                # the title system prompt instead of the actual task context.
+                '--title=sample-{}'.format((task.metadata or {}).get('sample_id', 'eval')),
+            ]
+            cmd.extend(self._extra_args)
+            cmd.append('--')
+            cmd.append(task.instruction)
+
+            sample_id = (task.metadata or {}).get('sample_id')
+            env_name = getattr(env, 'name', type(env).__name__)
+            logger.info(
+                f'opencode launching: sample={sample_id} env={env_name} '
+                f'model={model_name} '
+                f'timeout={task.timeout}s instruction_chars={len(task.instruction)}'
+            )
+            result = await env.exec(cmd, timeout=task.timeout, env=env_vars)
+            logger.info(
+                f'opencode exited: sample={sample_id} rc={result.returncode} '
+                f'wall={result.duration:.1f}s '
+                f'stdout={len(result.stdout or "")}B stderr={len(result.stderr or "")}B '
+                f'timed_out={result.timed_out}'
+            )
+            if result.timed_out:
+                raise RunnerTimeoutError(
+                    f'opencode timed out after {task.timeout}s '
+                    f'(returncode={result.returncode})'
+                )
+            if result.returncode != 0:
+                tail_stderr = (result.stderr or '').strip()[-2000:]
+                tail_stdout = (result.stdout or '').strip()[-2000:]
+                raise RuntimeError(f'opencode exited with code {result.returncode}: '
+                                   f'{tail_stderr or tail_stdout}')
+            return AgentRunResult(
+                output=result.stdout.strip(),
+                metrics={
+                    'wall_time': result.duration,
+                    'returncode': result.returncode,
+                },
+            )
+        finally:
+            if owns_home_dir and home_dir:
+                shutil.rmtree(home_dir, ignore_errors=True)
 
     def _resolve_home(self) -> Optional[str]:
         """Pick the HOME value for the subprocess.
