@@ -15,7 +15,7 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from functools import partial
-from io import StringIO
+from io import BytesIO, StringIO, TextIOWrapper
 
 # from pyext import RuntimeModule
 from types import ModuleType
@@ -130,7 +130,7 @@ def call_method(method, inputs):
 
     # @patch('builtins.input', side_effect=inputs.split("\n"))
     @patch('builtins.open', mock_open(read_data=inputs))
-    @patch('sys.stdin', StringIO(inputs))
+    @patch('sys.stdin', TextIOWrapper(BytesIO(inputs.encode('utf-8')), encoding='utf-8'))
     @patch('sys.stdin.readline', lambda *args: next(inputs_line_iterator))
     @patch('sys.stdin.readlines', lambda *args: inputs.split('\n'))
     @patch('sys.stdin.read', lambda *args: inputs)

@@ -102,15 +102,16 @@ Once we have the model's reasoning results, we can begin evaluating its thinking
     - **`keywords`**: Decompose using marker words (e.g., `alternatively`, `but wait`, `let me reconsider`).
     - **`llm`**: Remove the `\n` markers from the response, use an LLM to rewrite the response, and insert `\n\n` markers for decomposition.
 
-Using `Qwen2.5-72B-Instruct` as the judging model, simply run the following command to start the evaluation and obtain results:
+Using `qwen-max` as the judging model, simply run the following command to start the evaluation and obtain results:
 
 ```python
+import os
 from evalscope.third_party.thinkbench import run_task
 
 judge_config = dict(  # Evaluation service configuration
-    api_key='EMPTY',
-    base_url='http://0.0.0.0:8801/v1',
-    model_name='Qwen2.5-72B-Instruct',
+    api_key=os.getenv('DASHSCOPE_API_KEY'),
+    base_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    model_name='qwen-max',
 )
 
 model_config = dict(

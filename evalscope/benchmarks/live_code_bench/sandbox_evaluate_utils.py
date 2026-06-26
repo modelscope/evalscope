@@ -198,12 +198,13 @@ def _evaluate_stdio_in_sandbox(
         failed_cases = []
 
         for i, (test_input, expected_output) in enumerate(zip(inputs, outputs)):
+            test_input_literal = repr(test_input)
             test_code = f"""
+import io
 import sys
-from io import StringIO
 
 # Redirect stdin
-sys.stdin = StringIO('''{test_input}''')
+sys.stdin = io.TextIOWrapper(io.BytesIO({test_input_literal}.encode('utf-8')), encoding='utf-8')
 
 # User's code
 {code}
