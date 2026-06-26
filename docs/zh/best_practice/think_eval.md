@@ -103,15 +103,16 @@ run_task(task_config)
     - **`keywords`**：使用标志词（如`alternatively`、`but wait`、`let me reconsider`）进行分解。
     - **`llm`**：去除回复中的`\n`标志，使用LLM重写回复并插入`\n\n`标志进行分解。
 
-下面以`Qwen2.5-72B-Instruct`作为检测模型进行评估，只需运行以下命令，即可启动评估并获取结果：
+下面以`qwen-max`作为检测模型进行评估，只需运行以下命令，即可启动评估并获取结果：
 
 ```python
+import os
 from evalscope.third_party.thinkbench import run_task
 
 judge_config = dict(  # 评测服务配置
-    api_key='EMPTY',
-    base_url='http://0.0.0.0:8801/v1',
-    model_name='Qwen2.5-72B-Instruct',
+    api_key=os.getenv('DASHSCOPE_API_KEY'),
+    base_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    model_name='qwen-max',
 )
 
 model_config = dict(
