@@ -43,6 +43,10 @@ class RandomVLDatasetPlugin(RandomDatasetPlugin):
             message = self.create_message(text=prompt, image_urls=images_b64)
             yield [message]
 
+    def supports_parallel_message_generation(self) -> bool:
+        """Random VL includes image generation and currently uses the serial path."""
+        return False
+
     def _generate_random_image_b64(self) -> str:
         """Generate a random image and return as base64 string."""
         # Create a random colored image

@@ -187,6 +187,14 @@ class Arguments(BaseArgument):
     in_flight_task_multiplier: int = 2
     """Max scheduled tasks = parallel * this multiplier."""
 
+    request_generation_workers: int = 0
+    """Number of worker processes for CPU-bound request generation.
+
+    Set to 0 for auto-detection based on the current CPU affinity, 1 to force
+    serial generation, or >1 to explicitly choose the worker count. Only
+    dataset plugins that advertise parallel generation use this setting.
+    """
+
     # Logging and debugging
     log_every_n_query: int = 100
     """Log every N queries."""
@@ -430,6 +438,13 @@ class Arguments(BaseArgument):
     def _validate_in_flight_task_multiplier(cls, v):
         return max(v, 1) if v <= 0 else v
 
+    @field_validator('request_generation_workers', mode='after')
+    @classmethod
+    def _validate_request_generation_workers(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError('--request-generation-workers must be >= 0')
+        return v
+
     # --- Model validator (cross-field logic) ---
 
     @model_validator(mode='after')
@@ -611,6 +626,15 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--db-commit-interval', type=int, default=1000, help='Rows buffered before SQLite commit')
     parser.add_argument('--queue-size-multiplier', type=int, default=5, help='Queue maxsize = parallel * multiplier')
     parser.add_argument('--in-flight-task-multiplier', type=int, default=2, help='Max scheduled tasks = parallel * multiplier')  # noqa: E501
+    parser.add_argument(
+        '--request-generation-workers',
+        type=int,
+        default=0,
+        help=(
+            'Worker processes for CPU-bound request generation. '
+            '0=auto from CPU affinity, 1=serial, >1=explicit worker count.'
+        ),
+    )
 
     # Logging and debugging
     parser.add_argument('--log-every-n-query', type=int, default=100, help='Logging every n query')

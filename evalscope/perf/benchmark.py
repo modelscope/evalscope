@@ -1,6 +1,7 @@
 import asyncio
 import numpy as np
-from typing import TYPE_CHECKING, AsyncGenerator, Optional, Tuple
+import os
+from typing import TYPE_CHECKING, AsyncGenerator, List, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.http_client import AioHttpClient
@@ -19,6 +20,37 @@ if TYPE_CHECKING:
     from evalscope.perf.utils.workload_timeline import WorkloadThroughput
 
 logger = get_logger()
+
+_MAX_AUTO_REQUEST_GENERATION_WORKERS = 32
+_MIN_AUTO_REQUESTS_PER_WORKER = 64
+
+
+def _available_cpu_count() -> int:
+    """Return the CPU count available to this process."""
+    if hasattr(os, 'sched_getaffinity'):
+        try:
+            return max(1, len(os.sched_getaffinity(0)))
+        except Exception:
+            pass
+    return max(1, os.cpu_count() or 1)
+
+
+def _resolve_request_generation_workers(
+    args: Arguments,
+    total_count: int,
+    supports_parallel_generation: bool,
+) -> int:
+    """Resolve the process count for CPU-bound request generation."""
+    if total_count <= 1 or not supports_parallel_generation:
+        return 1
+
+    configured_workers = args.request_generation_workers
+    if configured_workers == 1:
+        return 1
+    if configured_workers > 1:
+        return min(configured_workers, total_count)
+    amortized_workers = max(1, total_count // _MIN_AUTO_REQUESTS_PER_WORKER)
+    return min(_available_cpu_count(), total_count, _MAX_AUTO_REQUEST_GENERATION_WORKERS, amortized_workers)
 
 
 @exception_handler
@@ -49,20 +81,33 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
     async def _generate_from_dataset():
         """Generate requests by cycling through a dataset."""
         message_generator = DatasetRegistry.get_class(args.dataset)(args)
-        dataset_messages = []
+        supports_parallel_generation = message_generator.supports_parallel_message_generation()
+        request_generation_workers = _resolve_request_generation_workers(
+            args=args,
+            total_count=total_count,
+            supports_parallel_generation=supports_parallel_generation,
+        )
+        dataset_messages: List = []
 
-        # Load dataset messages into memory (limited by total_count).
-        with tqdm(
-            message_generator.build_messages(),
-            desc='Generating[requests]',
-            total=total_count,
-            initial=1,
-            logger=logger
-        ) as pbar:
-            for messages in pbar:
-                dataset_messages.append(messages)
-                if len(dataset_messages) >= total_count:
-                    break
+        if request_generation_workers > 1:
+            logger.info(f'Using {request_generation_workers} workers for CPU-bound request generation.')
+            dataset_messages = message_generator.build_messages_parallel(
+                total_count=total_count,
+                workers=request_generation_workers,
+            )
+        else:
+            # Load dataset messages into memory (limited by total_count).
+            with tqdm(
+                message_generator.build_messages(),
+                desc='Generating[requests]',
+                total=total_count,
+                initial=1,
+                logger=logger
+            ) as pbar:
+                for messages in pbar:
+                    dataset_messages.append(messages)
+                    if len(dataset_messages) >= total_count:
+                        break
 
         if not dataset_messages:
             raise ValueError('Dataset is empty!')
