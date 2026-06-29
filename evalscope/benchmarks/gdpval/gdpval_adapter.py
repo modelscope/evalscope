@@ -341,6 +341,20 @@ class GDPvalAdapter(AgentLoopAdapter):
         )
         return score
 
+    def llm_match_score(
+        self,
+        original_prediction: str,
+        filtered_prediction: str,
+        reference: str,
+        task_state: TaskState,
+    ) -> Score:
+        return self.match_score(
+            original_prediction=original_prediction,
+            filtered_prediction=filtered_prediction,
+            reference=reference,
+            task_state=task_state,
+        )
+
     def _on_generate_report_end(self, report: Any, output_dir: str, **kwargs: Any) -> None:
         if is_build_doc():
             return

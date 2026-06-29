@@ -249,6 +249,30 @@ def test_match_score_runs_non_official_llm_rubric_judge() -> None:
     assert 'deliverable_files/report.txt' in fake_judge.prompt
 
 
+def test_calculate_metrics_uses_gdpval_llm_rubric_judge() -> None:
+    adapter = make_adapter(scoring_mode='llm_rubric_judge')
+    fake_judge = FakeLLMJudge()
+    adapter.llm_judge = fake_judge
+    sample = Sample(
+        input='Task prompt',
+        target='',
+        metadata={
+            'rubric_pretty': 'Rubric text',
+            'deliverable_files': [{
+                'path': 'deliverable_files/report.txt'
+            }],
+        },
+    )
+    state = TaskState(model='mock', sample=sample, completed=True)
+    state.output.completion = 'Done.'
+
+    sample_score = adapter.calculate_metrics(state)
+
+    assert sample_score.score.value['llm_rubric_score'] == 0.75
+    assert 'acc' not in sample_score.score.value
+    assert sample_score.score.main_score_name == 'llm_rubric_score'
+
+
 def test_ensure_docker_image_builds_missing_default_image(monkeypatch: Any) -> None:
     adapter = make_adapter()
     calls: List[Dict[str, Any]] = []
