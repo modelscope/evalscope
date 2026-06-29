@@ -133,9 +133,12 @@ class MultiTurnStrategy(BenchmarkStrategy):
                 # Append this turn's delta to the growing context.
                 context.extend([m.copy() for m in turn.messages])
 
-                # Rate limiting (mirrors standard benchmark behaviour).
-                # When --rate is set, apply a Poisson inter-request sleep so
+                # Rate limiting: apply a Poisson inter-request sleep so
                 # multi-turn runs honour the configured arrival rate.
+                # Relative-time pacing is appropriate here because the dominant
+                # delay between turns is the API response latency (seconds),
+                # not event-loop jitter (microseconds).  The sleep is simply
+                # an additional throttle after each response is received.
                 if self.args.rate != -1:
                     interval = np.random.exponential(1.0 / self.args.rate)
                     await asyncio.sleep(interval)
