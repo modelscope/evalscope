@@ -16,7 +16,7 @@ from evalscope.benchmarks.gdpval.gdpval_adapter import (
     _relative_deliverable_path,
 )
 from evalscope.config import TaskConfig
-from evalscope.constants import HubType
+from evalscope.constants import HubType, JudgeStrategy
 
 
 def make_adapter(**extra_params: Any) -> GDPvalAdapter:
@@ -29,7 +29,6 @@ def make_adapter(**extra_params: Any) -> GDPvalAdapter:
         'auto_build_docker_image': True,
         'network_enabled': True,
         'download_reference_files': False,
-        'scoring_mode': 'export_only',
     }
     base_extra_params.update(extra_params)
     meta = BenchmarkMeta(
@@ -39,7 +38,7 @@ def make_adapter(**extra_params: Any) -> GDPvalAdapter:
         default_subset='default',
         eval_split='train',
         prompt_template='{question}',
-        metric_list=['submission_ready', 'llm_rubric_score'],
+        metric_list=['submission_ready'],
         extra_params=base_extra_params,
     )
     cfg = TaskConfig(
@@ -221,43 +220,13 @@ def test_match_score_marks_submission_ready_with_deliverable() -> None:
     assert score.metadata['deliverable_count'] == 1
 
 
-def test_match_score_runs_non_official_llm_rubric_judge() -> None:
-    adapter = make_adapter(scoring_mode='llm_rubric_judge')
-    fake_judge = FakeLLMJudge()
-    adapter.llm_judge = fake_judge
+def test_calculate_metrics_does_not_run_local_llm_judge_for_gdpval() -> None:
+    adapter = make_adapter()
+    adapter._task_config.judge_strategy = JudgeStrategy.LLM
     sample = Sample(
         input='Task prompt',
         target='',
         metadata={
-            'rubric_pretty': 'Rubric text',
-            'rubric_json': '[{"criterion": "include a report", "score": 1}]',
-            'deliverable_files': [{
-                'path': 'deliverable_files/report.txt'
-            }],
-        },
-    )
-    state = TaskState(model='mock', sample=sample, completed=True)
-
-    score = adapter.match_score('Done.', 'Done.', '', state)
-
-    assert score.main_score_name == 'llm_rubric_score'
-    assert score.value['submission_ready'] == 1.0
-    assert score.value['llm_rubric_score'] == 0.75
-    assert score.metadata['llm_rubric_score']['non_official_score'] is True
-    assert score.metadata['llm_rubric_score']['official_gdpval_score_computed_locally'] is False
-    assert 'Rubric text' in fake_judge.prompt
-    assert 'deliverable_files/report.txt' in fake_judge.prompt
-
-
-def test_calculate_metrics_uses_gdpval_llm_rubric_judge() -> None:
-    adapter = make_adapter(scoring_mode='llm_rubric_judge')
-    fake_judge = FakeLLMJudge()
-    adapter.llm_judge = fake_judge
-    sample = Sample(
-        input='Task prompt',
-        target='',
-        metadata={
-            'rubric_pretty': 'Rubric text',
             'deliverable_files': [{
                 'path': 'deliverable_files/report.txt'
             }],
@@ -268,9 +237,10 @@ def test_calculate_metrics_uses_gdpval_llm_rubric_judge() -> None:
 
     sample_score = adapter.calculate_metrics(state)
 
-    assert sample_score.score.value['llm_rubric_score'] == 0.75
+    assert sample_score.score.value['submission_ready'] == 1.0
     assert 'acc' not in sample_score.score.value
-    assert sample_score.score.main_score_name == 'llm_rubric_score'
+    assert sample_score.score.main_score_name == 'submission_ready'
+    assert 'OpenAI' in sample_score.score.metadata['judge_strategy_note']
 
 
 def test_ensure_docker_image_builds_missing_default_image(monkeypatch: Any) -> None:
@@ -394,14 +364,3 @@ class FakeEnvironment:
 
     async def close(self) -> None:
         self.closed = True
-
-
-class FakeLLMJudge:
-    model_id = 'fake-judge'
-
-    def __init__(self) -> None:
-        self.prompt = ''
-
-    def judge(self, prompt: str) -> str:
-        self.prompt = prompt
-        return json.dumps({'score': 0.75, 'explanation': 'Looks mostly correct.'})

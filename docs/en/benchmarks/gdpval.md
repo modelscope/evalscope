@@ -29,18 +29,16 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
   `extra_params.docker_image`.
 - `submission_ready` is a local readiness metric: it is 1 when the model produced final text or at least one
   deliverable file. It is not an official GDPval quality score.
-- `llm_rubric_score` is an EvalScope-implemented, non-official LLM judge score over the task rubric, final text,
-  and deliverable file manifest. It is not the OpenAI/GDPval official score.
+- EvalScope does not run a local GDPval judge. Use the exported submission package with OpenAI's official GDPval judge
+  to obtain quality scores.
 - Full document/spreadsheet/slide quality depends on the GDPval runtime image. Thin Python images are useful only for
   plumbing smoke tests.
 
 ## Scoring and Submission
 
-- `scoring_mode=export_only` writes a local submission folder under the EvalScope reports directory.
-- `scoring_mode=llm_rubric_judge` additionally runs EvalScope's own non-official LLM rubric judge. This is useful for
-  smoke and regression checks, but it is not the official GDPval score.
-- EvalScope does not compute the official GDPval score locally. The Inspect Evals implementation also exports a
-  submission dataset for external grading rather than shipping a local official judge.
+- EvalScope writes a local submission folder under the reports directory.
+- The submission contains `deliverable_text` and `deliverable_files` fields in the GDPval dataset format.
+- Official GDPval grading is external. Run OpenAI's official GDPval judge on the exported submission package.
 
 
 ## Properties
@@ -51,7 +49,7 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
 | **Dataset ID** | [openai-mirror/gdpval](https://modelscope.cn/datasets/openai-mirror/gdpval/summary) |
 | **Paper** | N/A |
 | **Tags** | `Agent`, `Knowledge`, `MultiTurn` |
-| **Metrics** | `submission_ready`, `llm_rubric_score` |
+| **Metrics** | `submission_ready` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 
@@ -72,7 +70,7 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
 {
   "input": [
     {
-      "id": "84e882ee",
+      "id": "78885039",
       "content": "You are an auditor and as part of an audit engagement, you are tasked with reviewing and testing the accuracy of reported Anti-Financial Crime Risk Metrics.\n\nThe attached spreadsheet titled ‘Population’ contains Anti-Financial Crime Risk Metr ... [TRUNCATED 2069 chars] ...  folder named `deliverable_files` in the sandbox working directory.\nWe will grade your final message as part of the deliverable, but requested documents, spreadsheets, slides, media,\nor archives should be actual files in `deliverable_files`.\n"
     }
   ],
@@ -167,7 +165,6 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
 | `auto_build_docker_image` | `bool` | `True` | Automatically build the default GDPval Docker image if it is missing locally. |
 | `network_enabled` | `bool` | `True` | Allow the sandbox to access the network. |
 | `download_reference_files` | `bool` | `True` | Download each selected sample reference file from the dataset hub before inference. |
-| `scoring_mode` | `str` | `export_only` | Scoring mode: export a local submission package or run EvalScope's own non-official LLM rubric judge. Choices: ['export_only', 'llm_rubric_judge'] |
 
 ## Usage
 

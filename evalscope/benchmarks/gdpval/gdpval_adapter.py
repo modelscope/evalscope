@@ -77,14 +77,6 @@ _GDPVAL_EXTRA_PARAMS: Dict[str, Any] = {
         'description': 'Download each selected sample reference file from the dataset hub before inference.',
         'value': True,
     },
-    'scoring_mode': {
-        'type': 'str',
-        'description': (
-            'Scoring mode: export a local submission package or run EvalScope\'s own non-official LLM rubric judge.'
-        ),
-        'value': 'export_only',
-        'choices': ['export_only', 'llm_rubric_judge'],
-    },
 }
 
 _GDPVAL_DESCRIPTION = """
@@ -116,18 +108,16 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
   `extra_params.docker_image`.
 - `submission_ready` is a local readiness metric: it is 1 when the model produced final text or at least one
   deliverable file. It is not an official GDPval quality score.
-- `llm_rubric_score` is an EvalScope-implemented, non-official LLM judge score over the task rubric, final text,
-  and deliverable file manifest. It is not the OpenAI/GDPval official score.
+- EvalScope does not run a local GDPval judge. Use the exported submission package with OpenAI's official GDPval judge
+  to obtain quality scores.
 - Full document/spreadsheet/slide quality depends on the GDPval runtime image. Thin Python images are useful only for
   plumbing smoke tests.
 
 ## Scoring and Submission
 
-- `scoring_mode=export_only` writes a local submission folder under the EvalScope reports directory.
-- `scoring_mode=llm_rubric_judge` additionally runs EvalScope's own non-official LLM rubric judge. This is useful for
-  smoke and regression checks, but it is not the official GDPval score.
-- EvalScope does not compute the official GDPval score locally. The Inspect Evals implementation also exports a
-  submission dataset for external grading rather than shipping a local official judge.
+- EvalScope writes a local submission folder under the reports directory.
+- The submission contains `deliverable_text` and `deliverable_files` fields in the GDPval dataset format.
+- Official GDPval grading is external. Run OpenAI's official GDPval judge on the exported submission package.
 """
 
 _PROMPT_SUFFIX = f"""
@@ -152,7 +142,7 @@ or archives should be actual files in `{_SANDBOX_DELIVERABLE_DIR}`.
         default_subset='default',
         eval_split='train',
         prompt_template='{question}',
-        metric_list=['submission_ready', 'llm_rubric_score'],
+        metric_list=['submission_ready'],
         extra_params=_GDPVAL_EXTRA_PARAMS,
     )
 )
@@ -175,9 +165,6 @@ class GDPvalAdapter(AgentLoopAdapter):
         self.auto_build_docker_image = bool(self.extra_params.get('auto_build_docker_image', True))
         self.network_enabled = bool(self.extra_params.get('network_enabled', True))
         self.download_reference_files = bool(self.extra_params.get('download_reference_files', True))
-        self.scoring_mode = self.extra_params.get('scoring_mode', 'export_only')
-        self.use_llm_rubric_judge = self.scoring_mode == 'llm_rubric_judge'
-        self._use_llm_judge = self.use_llm_rubric_judge
         self._current_output_dir: Optional[str] = None
         self._docker_image_checked = False
         self._submission_records: List[Dict[str, Any]] = []
@@ -316,28 +303,19 @@ class GDPvalAdapter(AgentLoopAdapter):
         ready = bool(filtered_prediction.strip() or deliverables)
         value = {'submission_ready': 1.0 if ready else 0.0}
         metadata: Dict[str, Any] = {
-            'scoring_mode': self.scoring_mode,
             'deliverable_count': len(deliverables),
             'artifact_dir': task_state.metadata.get('artifact_dir'),
             'official_gdpval_score': None,
-            'official_gdpval_score_note': 'GDPval official grading is external; this local metric is readiness only.',
+            'official_gdpval_score_note': (
+                'GDPval official grading is external. Use OpenAI\'s official GDPval judge on the exported submission.'
+            ),
         }
-        main_score_name = 'submission_ready'
-        if self.use_llm_rubric_judge:
-            llm_score, llm_metadata = self._score_with_llm_rubric_judge(
-                task_state=task_state,
-                filtered_prediction=filtered_prediction,
-                deliverables=deliverables,
-            )
-            value['llm_rubric_score'] = llm_score
-            metadata['llm_rubric_score'] = llm_metadata
-            main_score_name = 'llm_rubric_score'
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
             value=value,
             metadata=metadata,
-            main_score_name=main_score_name,
+            main_score_name='submission_ready',
         )
         return score
 
@@ -348,12 +326,17 @@ class GDPvalAdapter(AgentLoopAdapter):
         reference: str,
         task_state: TaskState,
     ) -> Score:
-        return self.match_score(
+        score = self.match_score(
             original_prediction=original_prediction,
             filtered_prediction=filtered_prediction,
             reference=reference,
             task_state=task_state,
         )
+        score.metadata['judge_strategy_note'] = (
+            'GDPval does not use EvalScope local LLM judging. Use OpenAI\'s official GDPval judge on the exported '
+            'submission package.'
+        )
+        return score
 
     def _on_generate_report_end(self, report: Any, output_dir: str, **kwargs: Any) -> None:
         if is_build_doc():
@@ -450,15 +433,13 @@ class GDPvalAdapter(AgentLoopAdapter):
             'benchmark': self.name,
             'dataset_id': self.dataset_id,
             'dataset_hub': self.source_dataset_hub,
-            'scoring_mode': self.scoring_mode,
             'submission_dir': str(submission_dir),
-            'local_metric': 'llm_rubric_score' if self.use_llm_rubric_judge else 'submission_ready',
+            'local_metric': 'submission_ready',
             'official_gdpval_score_computed_locally': False,
-            'llm_rubric_score_note': (
-                'EvalScope LLM rubric judge is non-official and does not compute the OpenAI/GDPval official score.'
-                if self.use_llm_rubric_judge else None
+            'next_step': (
+                'Local submission package exported. Run OpenAI\'s official GDPval judge externally to compute '
+                'quality scores.'
             ),
-            'next_step': 'Local submission package exported. External GDPval grading is not run locally.',
         }
         with open(submission_dir / 'submission_info.json', 'w', encoding='utf-8') as f:
             json.dump(info, f, ensure_ascii=False, indent=2)
@@ -518,38 +499,6 @@ class GDPvalAdapter(AgentLoopAdapter):
             except Exception as exc:
                 logger.warning(f'Failed to copy GDPval deliverable {local_path} to {target_path}: {exc}')
         return copied_paths
-
-    def _score_with_llm_rubric_judge(
-        self,
-        task_state: TaskState,
-        filtered_prediction: str,
-        deliverables: List[Dict[str, Any]],
-    ) -> tuple[float, Dict[str, Any]]:
-        judge = self.llm_judge
-        if judge is None:
-            raise ValueError(
-                'GDPval scoring_mode=llm_rubric_judge requires an LLM judge. '
-                'Set judge_strategy to llm/auto and provide judge_model_args.'
-            )
-
-        prompt = _build_llm_rubric_prompt(
-            task_prompt=task_state.input_text,
-            metadata=task_state.metadata,
-            prediction=filtered_prediction,
-            deliverables=deliverables,
-        )
-        judge_response = judge.judge(prompt=prompt)
-        parsed = _parse_llm_rubric_response(judge_response)
-        return parsed['score'], {
-            'source': 'evalscope_llm_rubric_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': getattr(judge, 'model_id', 'unknown'),
-            'non_official_score': True,
-            'official_gdpval_score_computed_locally': False,
-            'note': 'EvalScope non-official LLM rubric judge. This is not the OpenAI/GDPval official score.',
-            'explanation': parsed['explanation'],
-            'judge_response': judge_response,
-        }
 
 
 class _GDPvalArtifactEnvironment(AgentEnvironment):
@@ -666,50 +615,3 @@ def _is_safe_relative_path(path: str) -> bool:
 def _safe_path_name(value: str) -> str:
     safe_value = ''.join(ch if ch.isalnum() or ch in '-_.' else '_' for ch in value)
     return safe_value or 'unknown'
-
-
-def _build_llm_rubric_prompt(
-    task_prompt: str,
-    metadata: Dict[str, Any],
-    prediction: str,
-    deliverables: List[Dict[str, Any]],
-) -> str:
-    deliverable_manifest = [{
-        'path': deliverable.get('path'),
-    } for deliverable in deliverables]
-    payload = {
-        'task_prompt': task_prompt,
-        'rubric_pretty': metadata.get('rubric_pretty'),
-        'rubric_json': metadata.get('rubric_json'),
-        'model_final_response': prediction,
-        'deliverable_files': deliverable_manifest,
-    }
-    return (
-        'You are grading a GDPval task for EvalScope using a non-official LLM rubric judge.\n'
-        'The official OpenAI/GDPval score is external and must not be claimed here.\n'
-        'Use the rubric, final response, and deliverable file manifest below. '
-        'Return only JSON with keys "score" and "explanation". '
-        '"score" must be a number from 0 to 1.\n\n'
-        f'{json.dumps(payload, ensure_ascii=False, indent=2)}'
-    )
-
-
-def _parse_llm_rubric_response(response: str) -> Dict[str, Any]:
-    try:
-        parsed = json.loads(response)
-    except json.JSONDecodeError:
-        return {'score': 0.0, 'explanation': 'Failed to parse LLM rubric judge response as JSON.'}
-    if not isinstance(parsed, dict):
-        return {'score': 0.0, 'explanation': 'LLM rubric judge response was not a JSON object.'}
-    return {
-        'score': _clamp_score(parsed.get('score')),
-        'explanation': str(parsed.get('explanation') or ''),
-    }
-
-
-def _clamp_score(value: Any) -> float:
-    try:
-        score = float(value)
-    except (TypeError, ValueError):
-        return 0.0
-    return max(0.0, min(1.0, score))
