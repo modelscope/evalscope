@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from xml.etree import ElementTree
 
-
 _XML_NS = {'main': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
 _RELS_NS = {'rel': 'http://schemas.openxmlformats.org/package/2006/relationships'}
 _OFFICE_RELS_NS = {'rel': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'}
@@ -265,9 +264,12 @@ class GDPvalLocalScorer:
             return None
         text = self._sheet_text(self._calc_sheet())
         required_bits = ['1.645', '0.5', '0.10']
-        has_formula_bits = all(bit in text for bit in required_bits) or all(bit.rstrip('0') in text for bit in required_bits)
+        has_formula_bits = all(bit in text
+                               for bit in required_bits) or all(bit.rstrip('0') in text for bit in required_bits)
         has_fpc = 'finite' in text or 'fpc' in text or 'population correction' in text
-        has_integer = any(_is_integer_like(value) for row in (self._calc_sheet().rows if self._calc_sheet() else []) for value in row)
+        has_integer = any(
+            _is_integer_like(value) for row in (self._calc_sheet().rows if self._calc_sheet() else []) for value in row
+        )
         found = has_formula_bits and has_fpc and has_integer
         return found, 'Sampling formula includes z, p, e, FPC, and an integer sample size.' if found else (
             'Sampling formula is missing z/p/e, finite population correction, or integer sample size.'
@@ -372,7 +374,10 @@ class GDPvalLocalScorer:
         sample_idx = _sample_index(sample_sheet) if sample_sheet else None
         if sample_sheet is None or sample_idx is None:
             return False, 'Sample indicator column is unavailable.'
-        invalid = sum(1 for row in sample_sheet.data_rows if not _is_sampled(row, sample_idx) and _get(row, sample_idx) not in ('', None, 0, '0'))
+        invalid = sum(
+            1 for row in sample_sheet.data_rows
+            if not _is_sampled(row, sample_idx) and _get(row, sample_idx) not in ('', None, 0, '0')
+        )
         return invalid == 0, f'Found {invalid} non-sampled indicator values that are not blank or 0.'
 
     def _check_sample_count(self, criterion: str) -> Optional[Tuple[bool, str]]:
@@ -415,7 +420,7 @@ class GDPvalLocalScorer:
     def _check_metric_present(self, criterion: str) -> Optional[Tuple[bool, str]]:
         if 'where the metric is' not in criterion:
             return None
-        match = re.search(r"metric is ([a-z0-9 \-/]+)", criterion)
+        match = re.search(r'metric is ([a-z0-9 \-/]+)', criterion)
         if not match:
             return None
         metric = match.group(1).strip()
@@ -574,7 +579,7 @@ def _cell_value(cell: ElementTree.Element, shared_strings: List[str]) -> Any:
         texts = [node.text or '' for node in cell.findall('.//main:t', _XML_NS)]
         return ''.join(texts)
     value_node = cell.find('main:v', _XML_NS)
-    raw_value = value_node.text if value_node is not None else ''
+    raw_value = (value_node.text or '') if value_node is not None else ''
     if cell_type == 's':
         try:
             return shared_strings[int(raw_value)]
@@ -700,6 +705,8 @@ def _check_variance_values(sheet: XlsxSheet, variance_idx: int) -> Tuple[int, in
 
 def _check_zero_zero_variance(sheet: XlsxSheet, variance_idx: int) -> Tuple[int, int]:
     q2_idx, q3_idx = _q2_q3_indices(sheet)
+    if q2_idx is None or q3_idx is None:
+        return 0, 0
     checked = 0
     mismatches = 0
     for row in sheet.data_rows:
@@ -715,6 +722,8 @@ def _check_zero_zero_variance(sheet: XlsxSheet, variance_idx: int) -> Tuple[int,
 
 def _check_zero_nonzero_variance(sheet: XlsxSheet, variance_idx: int) -> Tuple[int, int]:
     q2_idx, q3_idx = _q2_q3_indices(sheet)
+    if q2_idx is None or q3_idx is None:
+        return 0, 0
     checked = 0
     mismatches = 0
     for row in sheet.data_rows:

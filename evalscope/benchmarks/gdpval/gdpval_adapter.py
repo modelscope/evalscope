@@ -25,7 +25,6 @@ from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType, Tags
 from evalscope.utils.import_utils import is_build_doc
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
-
 from .gdpval_scorer import GDPvalLocalScorer
 
 logger = get_logger()
@@ -375,7 +374,8 @@ class GDPvalAdapter(AgentLoopAdapter):
                 except Exception as exc:
                     logger.warning(f'Failed to download GDPval reference file {file_path!r}: {exc}')
                     continue
-                host_files.append(local_path)
+                if local_path:
+                    host_files.append(local_path)
             sample.metadata['host_reference_files'] = host_files
 
     def _build_reference_volumes(self, sample: Sample) -> Dict[str, Dict[str, str]]:
@@ -427,8 +427,9 @@ class GDPvalAdapter(AgentLoopAdapter):
 
         try:
             import pandas as pd
+            import pyarrow  # noqa: F401
         except ImportError as exc:
-            raise RuntimeError('GDPval submission export requires pandas.') from exc
+            raise RuntimeError('GDPval submission export requires pandas and pyarrow.') from exc
 
         table = pd.DataFrame(records)
         if 'deliverable_text' not in table:
@@ -447,13 +448,12 @@ class GDPvalAdapter(AgentLoopAdapter):
             'official_gdpval_score_computed_locally': False,
             'local_rubric_score_note': (
                 'EvalScope local deterministic rubric score is non-official and only covers locally checkable '
-                'rubric items.'
-                if self.use_local_rubric_scorer else None
+                'rubric items.' if self.use_local_rubric_scorer else None
             ),
             'next_step': (
                 'Upload this folder as a Hugging Face dataset and submit it to the external OpenAI GDPval grader.'
-                if self.scoring_mode == 'openai_auto_grader_submission'
-                else 'Local submission package exported. External GDPval grading is not run locally.'
+                if self.scoring_mode == 'openai_auto_grader_submission' else
+                'Local submission package exported. External GDPval grading is not run locally.'
             ),
         }
         with open(submission_dir / 'submission_info.json', 'w', encoding='utf-8') as f:
@@ -471,7 +471,8 @@ class GDPvalAdapter(AgentLoopAdapter):
                 review_items.extend(jsonl_to_list(str(review_file)))
         return review_items
 
-    def _submission_results(self, review_items: List[Dict[str, Any]], submission_dir: Path) -> Dict[str, Dict[str, Any]]:
+    def _submission_results(self, review_items: List[Dict[str, Any]],
+                            submission_dir: Path) -> Dict[str, Dict[str, Any]]:
         results: Dict[str, Dict[str, Any]] = {}
         for item in review_items:
             sample_score = item.get('sample_score') or {}
@@ -507,8 +508,11 @@ class GDPvalAdapter(AgentLoopAdapter):
             target_relative = f'{_SANDBOX_DELIVERABLE_DIR}/{task_dir}/{relative_path}'
             target_path = submission_dir / target_relative
             target_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(local_path, target_path)
-            copied_paths.append(target_relative)
+            try:
+                shutil.copy2(local_path, target_path)
+                copied_paths.append(target_relative)
+            except Exception as exc:
+                logger.warning(f'Failed to copy GDPval deliverable {local_path} to {target_path}: {exc}')
         return copied_paths
 
 
@@ -548,6 +552,11 @@ class _GDPvalArtifactEnvironment(AgentEnvironment):
             ['find', _SANDBOX_DELIVERABLE_DIR, '-type', 'f', '-print0'],
             timeout=120,
         )
+        if listing.returncode != 0:
+            logger.warning(f'Failed to list GDPval deliverables in sandbox: {listing.stderr}')
+            self._metadata['deliverable_files'] = []
+            self._metadata['artifact_dir'] = str(self._artifact_dir)
+            return
         file_paths = [path for path in listing.stdout.split('\0') if path.strip()]
         deliverables = []
         for file_path in file_paths:
@@ -558,13 +567,16 @@ class _GDPvalArtifactEnvironment(AgentEnvironment):
             if encoded.returncode != 0 or not encoded.stdout:
                 logger.warning(f'Failed to extract GDPval deliverable {file_path!r}: {encoded.stderr}')
                 continue
-            host_path = self._artifact_dir / _SANDBOX_DELIVERABLE_DIR / relative_path
-            host_path.parent.mkdir(parents=True, exist_ok=True)
-            host_path.write_bytes(base64.b64decode(encoded.stdout))
-            deliverables.append({
-                'path': f'{_SANDBOX_DELIVERABLE_DIR}/{relative_path}',
-                'local_path': str(host_path),
-            })
+            try:
+                host_path = self._artifact_dir / _SANDBOX_DELIVERABLE_DIR / relative_path
+                host_path.parent.mkdir(parents=True, exist_ok=True)
+                host_path.write_bytes(base64.b64decode(encoded.stdout))
+                deliverables.append({
+                    'path': f'{_SANDBOX_DELIVERABLE_DIR}/{relative_path}',
+                    'local_path': str(host_path),
+                })
+            except Exception as exc:
+                logger.warning(f'Failed to write extracted GDPval deliverable {file_path!r} to host: {exc}')
 
         self._metadata['deliverable_files'] = deliverables
         self._metadata['artifact_dir'] = str(self._artifact_dir)

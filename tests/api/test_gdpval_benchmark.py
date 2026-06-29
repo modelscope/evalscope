@@ -16,7 +16,7 @@ from evalscope.benchmarks.gdpval.gdpval_adapter import (
     _GDPvalArtifactEnvironment,
     _relative_deliverable_path,
 )
-from evalscope.benchmarks.gdpval.gdpval_scorer import GDPvalLocalScorer, parse_rubric_items
+from evalscope.benchmarks.gdpval.gdpval_scorer import GDPvalLocalScorer, parse_rubric_items, read_xlsx_workbook
 from evalscope.config import TaskConfig
 from evalscope.constants import HubType
 
@@ -100,6 +100,23 @@ def test_build_reference_volumes_uses_downloaded_file_parents(tmp_path: Path) ->
     assert volumes[str(host_dir)] == {'bind': '/reference_files/abc123', 'mode': 'ro'}
 
 
+def test_resolve_reference_files_skips_empty_download(monkeypatch: Any) -> None:
+    adapter = make_adapter()
+    sample = Sample(input='prompt', metadata={'reference_files': ['missing.xlsx']})
+
+    class FakeDataset:
+
+        @staticmethod
+        def download_file(file_path: str) -> Optional[str]:
+            return None
+
+    monkeypatch.setattr(GDPvalAdapter, 'source_dataset', property(lambda self: FakeDataset()))
+
+    adapter._resolve_sample_reference_files([sample])
+
+    assert sample.metadata['host_reference_files'] == []
+
+
 def test_relative_deliverable_path_rejects_unsafe_paths() -> None:
     assert _relative_deliverable_path('deliverable_files/report.pdf') == 'report.pdf'
     assert _relative_deliverable_path('deliverable_files/nested/report.pdf') == 'nested/report.pdf'
@@ -129,6 +146,34 @@ def test_artifact_environment_extracts_deliverables(tmp_path: Path) -> None:
             'local_path': str(tmp_path / 'deliverable_files/nested/table.csv'),
         },
     ]
+
+
+def test_artifact_environment_handles_listing_failure(tmp_path: Path) -> None:
+    metadata: Dict[str, Any] = {}
+
+    class ListingFailureEnvironment(FakeEnvironment):
+
+        async def exec(
+            self,
+            cmd: List[str],
+            *,
+            cwd: Optional[str] = None,
+            input: Optional[str] = None,
+            timeout: Optional[float] = None,
+            env: Optional[Dict[str, str]] = None,
+        ) -> ExecResult:
+            if cmd[:3] == ['test', '-d', 'deliverable_files']:
+                return ExecResult(returncode=0, stdout='', stderr='')
+            if cmd[:4] == ['find', 'deliverable_files', '-type', 'f']:
+                return ExecResult(returncode=1, stdout='', stderr='find failed')
+            return await super().exec(cmd, cwd=cwd, input=input, timeout=timeout, env=env)
+
+    env = _GDPvalArtifactEnvironment(env=ListingFailureEnvironment({}), artifact_dir=tmp_path, metadata=metadata)
+
+    asyncio.run(env.close())
+
+    assert metadata['deliverable_files'] == []
+    assert metadata['artifact_dir'] == str(tmp_path)
 
 
 def test_match_score_marks_submission_ready_with_deliverable() -> None:
@@ -161,6 +206,29 @@ def test_parse_rubric_items_accepts_gdpval_json_string() -> None:
     assert len(items) == 1
     assert items[0].score == 2
     assert items[0].rubric_item_id == 'item-1'
+
+
+def test_read_xlsx_workbook_handles_empty_value_node(tmp_path: Path) -> None:
+    path = tmp_path / 'empty-value.xlsx'
+    with zipfile.ZipFile(path, 'w') as archive:
+        archive.writestr('[Content_Types].xml', _content_types(1))
+        archive.writestr('_rels/.rels', _root_rels())
+        archive.writestr('xl/workbook.xml', _workbook_xml(['Sheet1']))
+        archive.writestr('xl/_rels/workbook.xml.rels', _workbook_rels(1))
+        archive.writestr(
+            'xl/worksheets/sheet1.xml',
+            (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                '<sheetData><row r="1"><c r="A1"><v/></c></row></sheetData></worksheet>'
+            ),
+        )
+
+    workbook = read_xlsx_workbook(path)
+
+    assert workbook is not None
+    assert workbook.first_sheet is not None
+    assert workbook.first_sheet.rows == [['']]
 
 
 def test_local_rubric_scorer_scores_checkable_spreadsheet_items(tmp_path: Path) -> None:
