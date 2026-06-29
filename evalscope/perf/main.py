@@ -52,15 +52,18 @@ def run_one_benchmark(args: Arguments, output_path: str = None):
         except ValueError as e:
             logger.warning(f'Cannot add signal handlers (running in non-main thread): {e}')
 
-    with args.output_context(output_path):
-        if args.multi_turn:
-            metrics_result, percentile_result, trace_summary, workload_throughput = loop.run_until_complete(
-                run_multi_turn_benchmark(args)
-            )
-        else:
-            metrics_result, percentile_result, trace_summary, workload_throughput = loop.run_until_complete(
-                run_benchmark(args)
-            )
+    try:
+        with args.output_context(output_path):
+            if args.multi_turn:
+                metrics_result, percentile_result, trace_summary, workload_throughput = loop.run_until_complete(
+                    run_multi_turn_benchmark(args)
+                )
+            else:
+                metrics_result, percentile_result, trace_summary, workload_throughput = loop.run_until_complete(
+                    run_benchmark(args)
+                )
+    finally:
+        loop.close()
 
     # Return unified format; key reflects the sweep dimension.  trace_summary
     # is None for single-turn runs; workload_throughput is None for runs with
