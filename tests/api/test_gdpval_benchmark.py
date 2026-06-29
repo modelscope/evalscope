@@ -2,10 +2,8 @@ import asyncio
 import base64
 import json
 import pytest
-import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from xml.sax.saxutils import escape
 
 from evalscope.api.agent.types import ExecResult
 from evalscope.api.benchmark import BenchmarkMeta
@@ -16,13 +14,6 @@ from evalscope.benchmarks.gdpval.gdpval_adapter import (
     GDPvalAdapter,
     _GDPvalArtifactEnvironment,
     _relative_deliverable_path,
-)
-from evalscope.benchmarks.gdpval.gdpval_scorer import (
-    GDPvalLocalScorer,
-    XlsxSheet,
-    _required_sample_size,
-    parse_rubric_items,
-    read_xlsx_workbook,
 )
 from evalscope.config import TaskConfig
 from evalscope.constants import HubType
@@ -48,7 +39,7 @@ def make_adapter(**extra_params: Any) -> GDPvalAdapter:
         default_subset='default',
         eval_split='train',
         prompt_template='{question}',
-        metric_list=['submission_ready'],
+        metric_list=['submission_ready', 'llm_rubric_score'],
         extra_params=base_extra_params,
     )
     cfg = TaskConfig(
@@ -183,6 +174,36 @@ def test_artifact_environment_handles_listing_failure(tmp_path: Path) -> None:
     assert metadata['artifact_dir'] == str(tmp_path)
 
 
+def test_artifact_environment_skips_failed_base64_extract(tmp_path: Path) -> None:
+    metadata: Dict[str, Any] = {}
+
+    class Base64FailureEnvironment(FakeEnvironment):
+
+        async def exec(
+            self,
+            cmd: List[str],
+            *,
+            cwd: Optional[str] = None,
+            input: Optional[str] = None,
+            timeout: Optional[float] = None,
+            env: Optional[Dict[str, str]] = None,
+        ) -> ExecResult:
+            if cmd[:3] == ['base64', '-w', '0']:
+                return ExecResult(returncode=1, stdout='', stderr='base64 failed')
+            return await super().exec(cmd, cwd=cwd, input=input, timeout=timeout, env=env)
+
+    env = _GDPvalArtifactEnvironment(
+        env=Base64FailureEnvironment({'deliverable_files/report.txt': b'hello'}),
+        artifact_dir=tmp_path,
+        metadata=metadata,
+    )
+
+    asyncio.run(env.close())
+
+    assert metadata['deliverable_files'] == []
+    assert metadata['artifact_dir'] == str(tmp_path)
+
+
 def test_match_score_marks_submission_ready_with_deliverable() -> None:
     adapter = make_adapter()
     sample = Sample(
@@ -200,158 +221,18 @@ def test_match_score_marks_submission_ready_with_deliverable() -> None:
     assert score.metadata['deliverable_count'] == 1
 
 
-def test_parse_rubric_items_accepts_gdpval_json_string() -> None:
-    items = parse_rubric_items(
-        json.dumps([{
-            'score': 2,
-            'criterion': 'The workbook contains a worksheet named exactly Sample Size Calculation.',
-            'rubric_item_id': 'item-1',
-            'tags': ['true'],
-        }])
-    )
-
-    assert len(items) == 1
-    assert items[0].score == 2
-    assert items[0].rubric_item_id == 'item-1'
-
-
-def test_read_xlsx_workbook_handles_empty_value_node(tmp_path: Path) -> None:
-    path = tmp_path / 'empty-value.xlsx'
-    with zipfile.ZipFile(path, 'w') as archive:
-        archive.writestr('[Content_Types].xml', _content_types(1))
-        archive.writestr('_rels/.rels', _root_rels())
-        archive.writestr('xl/workbook.xml', _workbook_xml(['Sheet1']))
-        archive.writestr('xl/_rels/workbook.xml.rels', _workbook_rels(1))
-        archive.writestr(
-            'xl/worksheets/sheet1.xml',
-            (
-                '<?xml version="1.0" encoding="UTF-8"?>'
-                '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-                '<sheetData><row r="1"><c r="A1"><v/></c></row></sheetData></worksheet>'
-            ),
-        )
-
-    workbook = read_xlsx_workbook(path)
-
-    assert workbook is not None
-    assert workbook.first_sheet is not None
-    assert workbook.first_sheet.rows == [['']]
-
-
-def test_required_sample_size_ignores_unrelated_integers() -> None:
-    sheet = XlsxSheet(
-        name='Sample Size Calculation',
-        rows=[
-            ['Calculation', 'Value'],
-            ['Population Size (N)', 1000],
-            ['Year', 2024],
-            ['Final Sample Size', 2],
-        ],
-    )
-
-    assert _required_sample_size(sheet) == 2
-
-
-def test_local_rubric_scorer_scores_checkable_spreadsheet_items(tmp_path: Path) -> None:
-    reference_path = tmp_path / 'Population.xlsx'
-    sample_path = tmp_path / 'Sample.xlsx'
-    population_headers = [
-        'No', 'Division', 'Sub-Division', 'Country', 'Legal Entity', 'KRIs', 'Q3 2024 KRI', 'Q2 2024 KRI'
-    ]
-    _write_xlsx(
-        reference_path,
-        {
-            'Population': [
-                population_headers,
-                [1, 'Corporate Bank', 'Corporate Loans', 'Italy', 'Willett Bank Rome', 'Total clients', 120, 100],
-                [2, 'Retail Bank', 'EMEA', 'UAE', 'Willett Bank UAE', 'HR Clients', 0, 0],
-                [3, 'Corporate Bank', 'Corporate Loans', 'Pakistan', 'Willett Bank Pakistan', 'MR Clients', 12, 10],
-            ]
-        },
-    )
-    _write_xlsx(
-        sample_path,
-        {
-            'Sample': [
-                population_headers + ['Variance (%)', 'Sample'],
-                [1, 'Corporate Bank', 'Corporate Loans', 'Italy', 'Willett Bank Rome', 'Total clients', 120, 100, 20, 1],
-                [2, 'Retail Bank', 'EMEA', 'UAE', 'Willett Bank UAE', 'HR Clients', 0, 0, 0, 1],
-            ],
-            'Sample Size Calculation': [
-                ['Calculation', 'Value'],
-                ['Confidence Level', '90%'],
-                ['Tolerable Error Rate', '10%'],
-                ['Population Size (N)', 3],
-                ['Formula', 'z = 1.645, p = 0.5, e = 0.10, finite population correction'],
-                ['Final Sample Size', 2],
-            ],
-        },
-    )
-    rubric_json = json.dumps([
-        {
-            'score': 2,
-            'criterion': "The submitted deliverable is an Excel workbook file whose basename is 'Sample'.",
-            'rubric_item_id': 'sample-file',
-        },
-        {
-            'score': 2,
-            'criterion': "The workbook contains a worksheet named exactly 'Sample Size Calculation'.",
-            'rubric_item_id': 'calc-sheet',
-        },
-        {
-            'score': 2,
-            'criterion': "The 'Sample Size Calculation' worksheet shows the population size N used.",
-            'rubric_item_id': 'population-size',
-        },
-        {
-            'score': 1,
-            'criterion': "If 'Pakistan' occurs in the Country column in the Population reference, at least one such row is flagged as sampled.",
-            'rubric_item_id': 'pakistan',
-        },
-    ])
-    metadata = {
-        'rubric_json': rubric_json,
-        'host_reference_files': [str(reference_path)],
-        'deliverable_files': [{
-            'path': 'deliverable_files/Sample.xlsx',
-            'local_path': str(sample_path),
-        }],
-    }
-
-    score = GDPvalLocalScorer(metadata, 'Done.').score()
-    results = {result.rubric_item_id: result for result in score.item_results}
-
-    assert score.total_items == 4
-    assert score.evaluated_items == 4
-    assert results['sample-file'].criteria_met is True
-    assert results['calc-sheet'].criteria_met is True
-    assert results['population-size'].criteria_met is True
-    assert results['pakistan'].criteria_met is False
-    assert score.score == 6 / 7
-
-
-def test_match_score_runs_local_rubric_scorer(tmp_path: Path) -> None:
-    reference_path = tmp_path / 'Population.xlsx'
-    sample_path = tmp_path / 'Sample.xlsx'
-    _write_xlsx(reference_path, {'Population': [['No', 'Country'], [1, 'Pakistan']]})
-    _write_xlsx(sample_path, {'Sample': [['No', 'Country', 'Sample'], [1, 'Pakistan', 1]]})
-    adapter = make_adapter(scoring_mode='local_rubric_judge')
+def test_match_score_runs_non_official_llm_rubric_judge() -> None:
+    adapter = make_adapter(scoring_mode='llm_rubric_judge')
+    fake_judge = FakeLLMJudge()
+    adapter.llm_judge = fake_judge
     sample = Sample(
-        input='prompt',
+        input='Task prompt',
         target='',
         metadata={
-            'rubric_json': json.dumps([{
-                'score': 1,
-                'criterion': (
-                    "If 'Pakistan' occurs in the Country column in the Population reference, at least one such row "
-                    'is flagged as sampled.'
-                ),
-                'rubric_item_id': 'pakistan',
-            }]),
-            'host_reference_files': [str(reference_path)],
+            'rubric_pretty': 'Rubric text',
+            'rubric_json': '[{"criterion": "include a report", "score": 1}]',
             'deliverable_files': [{
-                'path': 'deliverable_files/Sample.xlsx',
-                'local_path': str(sample_path),
+                'path': 'deliverable_files/report.txt'
             }],
         },
     )
@@ -359,10 +240,13 @@ def test_match_score_runs_local_rubric_scorer(tmp_path: Path) -> None:
 
     score = adapter.match_score('Done.', 'Done.', '', state)
 
-    assert score.main_score_name == 'local_rubric_score'
+    assert score.main_score_name == 'llm_rubric_score'
     assert score.value['submission_ready'] == 1.0
-    assert score.value['local_rubric_score'] == 1.0
-    assert score.metadata['local_rubric_score_note'].startswith('EvalScope local deterministic rubric score')
+    assert score.value['llm_rubric_score'] == 0.75
+    assert score.metadata['llm_rubric_score']['non_official_score'] is True
+    assert score.metadata['llm_rubric_score']['official_gdpval_score_computed_locally'] is False
+    assert 'Rubric text' in fake_judge.prompt
+    assert 'deliverable_files/report.txt' in fake_judge.prompt
 
 
 def test_ensure_docker_image_builds_missing_default_image(monkeypatch: Any) -> None:
@@ -398,7 +282,7 @@ def test_ensure_docker_image_skips_custom_image(monkeypatch: Any) -> None:
 
 
 def test_export_submission_writes_parquet_and_copies_deliverables(tmp_path: Path) -> None:
-    adapter = make_adapter(scoring_mode='openai_auto_grader_submission')
+    adapter = make_adapter()
     adapter._submission_records = [{
         'task_id': 'task-1',
         'prompt': 'Create a report.',
@@ -457,7 +341,7 @@ def test_adapter_requires_parquet_dependencies(monkeypatch: Any) -> None:
     monkeypatch.setattr('evalscope.benchmarks.gdpval.gdpval_adapter.check_import', fake_check_import)
 
     with pytest.raises(ImportError, match='pyarrow.*GDPval submission export'):
-        make_adapter(scoring_mode='openai_auto_grader_submission')
+        make_adapter()
 
 
 class FakeEnvironment:
@@ -488,93 +372,12 @@ class FakeEnvironment:
         self.closed = True
 
 
-def _write_xlsx(path: Path, sheets: Dict[str, List[List[Any]]]) -> None:
-    sheet_names = list(sheets.keys())
-    with zipfile.ZipFile(path, 'w') as archive:
-        archive.writestr('[Content_Types].xml', _content_types(len(sheet_names)))
-        archive.writestr('_rels/.rels', _root_rels())
-        archive.writestr('xl/workbook.xml', _workbook_xml(sheet_names))
-        archive.writestr('xl/_rels/workbook.xml.rels', _workbook_rels(len(sheet_names)))
-        for idx, (_, rows) in enumerate(sheets.items(), start=1):
-            archive.writestr(f'xl/worksheets/sheet{idx}.xml', _sheet_xml(rows))
+class FakeLLMJudge:
+    model_id = 'fake-judge'
 
+    def __init__(self) -> None:
+        self.prompt = ''
 
-def _content_types(sheet_count: int) -> str:
-    sheet_overrides = ''.join(
-        f'<Override PartName="/xl/worksheets/sheet{idx}.xml" '
-        'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
-        for idx in range(1, sheet_count + 1)
-    )
-    return (
-        '<?xml version="1.0" encoding="UTF-8"?>'
-        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
-        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
-        '<Default Extension="xml" ContentType="application/xml"/>'
-        '<Override PartName="/xl/workbook.xml" '
-        'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
-        f'{sheet_overrides}</Types>'
-    )
-
-
-def _root_rels() -> str:
-    return (
-        '<?xml version="1.0" encoding="UTF-8"?>'
-        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-        '<Relationship Id="rId1" '
-        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" '
-        'Target="xl/workbook.xml"/>'
-        '</Relationships>'
-    )
-
-
-def _workbook_xml(sheet_names: List[str]) -> str:
-    sheets_xml = ''.join(
-        f'<sheet name="{escape(name)}" sheetId="{idx}" r:id="rId{idx}"/>'
-        for idx, name in enumerate(sheet_names, start=1)
-    )
-    return (
-        '<?xml version="1.0" encoding="UTF-8"?>'
-        '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
-        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-        f'<sheets>{sheets_xml}</sheets></workbook>'
-    )
-
-
-def _workbook_rels(sheet_count: int) -> str:
-    rels = ''.join(
-        f'<Relationship Id="rId{idx}" '
-        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" '
-        f'Target="worksheets/sheet{idx}.xml"/>'
-        for idx in range(1, sheet_count + 1)
-    )
-    return (
-        '<?xml version="1.0" encoding="UTF-8"?>'
-        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-        f'{rels}</Relationships>'
-    )
-
-
-def _sheet_xml(rows: List[List[Any]]) -> str:
-    rows_xml = []
-    for row_idx, row in enumerate(rows, start=1):
-        cells = []
-        for col_idx, value in enumerate(row, start=1):
-            ref = f'{_column_name(col_idx)}{row_idx}'
-            if isinstance(value, (int, float)):
-                cells.append(f'<c r="{ref}"><v>{value}</v></c>')
-            else:
-                cells.append(f'<c r="{ref}" t="inlineStr"><is><t>{escape(str(value))}</t></is></c>')
-        rows_xml.append(f'<row r="{row_idx}">{"".join(cells)}</row>')
-    return (
-        '<?xml version="1.0" encoding="UTF-8"?>'
-        '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-        f'<sheetData>{"".join(rows_xml)}</sheetData></worksheet>'
-    )
-
-
-def _column_name(index: int) -> str:
-    name = ''
-    while index:
-        index, remainder = divmod(index - 1, 26)
-        name = chr(ord('A') + remainder) + name
-    return name
+    def judge(self, prompt: str) -> str:
+        self.prompt = prompt
+        return json.dumps({'score': 0.75, 'explanation': 'Looks mostly correct.'})
