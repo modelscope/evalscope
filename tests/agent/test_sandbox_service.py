@@ -13,13 +13,17 @@ import pytest
 from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from evalscope.api.benchmark import BenchmarkMeta
+from evalscope.api.mixin.sandbox_mixin import EnclaveSandboxBackend
 from evalscope.api.sandbox import (
     PoolHandle,
     SandboxEngine,
     SandboxHandle,
     SandboxService,
     build_sandbox_config,
+    ensure_docker_image_built,
     merge_sandbox_config_dicts,
+    normalize_docker_build_context,
     resolve_engine,
     shutdown_sandbox_service,
 )
@@ -89,6 +93,57 @@ class TestBuildSandboxConfig:
         )
         assert isinstance(cfg, DockerSandboxConfig)
         assert cfg.image == 'python:3.11-slim'
+
+    def test_custom_image_build_uses_adapter_context(self, tmp_path):
+        dockerfile = tmp_path / 'Dockerfile.custom'
+        dockerfile.write_text('FROM python:3.11-slim\n', encoding='utf-8')
+        meta = BenchmarkMeta(
+            name='custom_sandbox',
+            dataset_id='dummy',
+            sandbox_config={'image': 'custom-sandbox:latest'},
+        )
+        cfg = TaskConfig(sandbox={'enabled': True, 'engine': 'docker'})
+        backend = EnclaveSandboxBackend(
+            benchmark_meta=meta,
+            task_config=cfg,
+            use_custom_image=True,
+            build_context_provider=lambda: (str(tmp_path), str(dockerfile)),
+        )
+
+        with patch('evalscope.api.mixin.sandbox_mixin.ensure_docker_image_built') as ensure_image, \
+                patch('evalscope.api.mixin.sandbox_mixin.build_and_acquire_pool_sync', return_value=MagicMock()):
+            backend.start()
+
+        ensure_image.assert_called_once_with(
+            'custom-sandbox:latest',
+            path=str(tmp_path.resolve()),
+            dockerfile='Dockerfile.custom',
+            label='Sandbox image',
+        )
+
+    def test_ensure_docker_image_built_normalizes_context(self, tmp_path):
+        dockerfile = tmp_path / 'Dockerfile.custom'
+        dockerfile.write_text('FROM python:3.11-slim\n', encoding='utf-8')
+
+        build_ctx, dockerfile_name = normalize_docker_build_context(str(tmp_path), str(dockerfile))
+        assert build_ctx == str(tmp_path.resolve())
+        assert dockerfile_name == 'Dockerfile.custom'
+
+        with patch('evalscope.api.sandbox.config_builder.should_build_docker_image', return_value=True), \
+                patch('evalscope.api.sandbox.config_builder.build_docker_image') as build_image:
+            built = ensure_docker_image_built(
+                'custom-sandbox:latest',
+                path=str(tmp_path),
+                dockerfile=str(dockerfile),
+                label='Sandbox image',
+            )
+
+        assert built is True
+        build_image.assert_called_once_with(
+            'custom-sandbox:latest',
+            path=str(tmp_path.resolve()),
+            dockerfile='Dockerfile.custom',
+        )
 
 
 # ===========================================================================

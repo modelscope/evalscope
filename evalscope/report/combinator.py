@@ -1,10 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import glob
+import json
 import os
 import pandas as pd
 from tabulate import tabulate
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.api.messages.perf_metrics import PerfSummary
 from evalscope.constants import DataCollection
@@ -15,6 +16,19 @@ logger = get_logger()
 """
 Combine and generate table for reports of LLMs.
 """
+
+
+def _is_report_json(data: Any) -> bool:
+    if not isinstance(data, dict):
+        return False
+
+    has_report_fields = all(key in data for key in ('name', 'dataset_name', 'model_name'))
+    if not has_report_fields:
+        return False
+
+    metrics = data.get('metrics')
+    perf_metrics = data.get('perf_metrics')
+    return (isinstance(metrics, list) and len(metrics) > 0) or isinstance(perf_metrics, dict)
 
 
 def get_report_list(reports_path_list: List[str]) -> List[Report]:
@@ -30,7 +44,11 @@ def get_report_list(reports_path_list: List[str]) -> List[Report]:
             if basename == DataCollection.REPORT_NAME:
                 continue
             try:
-                report = Report.from_json(file_path)
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                if not _is_report_json(data):
+                    continue
+                report = Report.from_dict(data)
                 report_list.append(report)
             except Exception as e:
                 logger.error(f'Error loading report from {file_path}: {e}')

@@ -1,3 +1,3 @@
-from .gdpval_adapter import GDPvalOpenAIGoldAdapter
+from .gdpval_adapter import GDPvalAdapter
 
-__all__ = ['GDPvalOpenAIGoldAdapter']
+__all__ = ['GDPvalAdapter']

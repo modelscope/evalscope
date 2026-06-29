@@ -10,18 +10,17 @@ moved to :mod:`evalscope.api.sandbox`.  The mixin now only:
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 from evalscope.api.sandbox import (
     PoolHandle,
     SandboxEngine,
     build_and_acquire_pool_sync,
-    build_docker_image,
     default_docker_build_context,
-    get_sandbox_service,
+    ensure_docker_image_built,
     merge_sandbox_config_dicts,
+    normalize_docker_build_context,
     resolve_engine,
-    should_build_docker_image,
 )
 from evalscope.utils.function_utils import AsyncioLoopRunner, thread_safe
 from evalscope.utils.logger import get_logger
@@ -66,11 +65,18 @@ class SandboxBackend(ABC):
 class EnclaveSandboxBackend(SandboxBackend):
     """ms_enclave-backed sandbox backend delegating to :class:`SandboxService`."""
 
-    def __init__(self, benchmark_meta: 'BenchmarkMeta', task_config: 'TaskConfig'):
+    def __init__(
+        self,
+        benchmark_meta: 'BenchmarkMeta',
+        task_config: 'TaskConfig',
+        use_custom_image: bool = False,
+        build_context_provider: Optional[Callable[[], Tuple[str, str]]] = None,
+    ):
         super().__init__(benchmark_meta, task_config)
         self._pool_handle: Optional[PoolHandle] = None
         self._pool_size: int = self._resolve_pool_size()
-        self._use_custom_image: bool = False
+        self._use_custom_image = use_custom_image
+        self._build_context_provider = build_context_provider
 
     def _resolve_pool_size(self) -> int:
         if not self._task_config:
@@ -91,11 +97,9 @@ class EnclaveSandboxBackend(SandboxBackend):
 
         if engine is SandboxEngine.DOCKER:
             image = sandbox_cfg_dict.get('image')
-            if self._use_custom_image and image and should_build_docker_image(image):
-                logger.info(f'Building sandbox image: {image}')
-                build_ctx, dockerfile = default_docker_build_context()
-                build_docker_image(image, path=build_ctx, dockerfile=dockerfile)
-                logger.info(f'Sandbox image built: {image}')
+            if self._use_custom_image and image:
+                build_ctx, dockerfile = self._get_build_context()
+                ensure_docker_image_built(image, path=build_ctx, dockerfile=dockerfile, label='Sandbox image')
 
         self._pool_handle = build_and_acquire_pool_sync(
             engine=engine,
@@ -156,6 +160,13 @@ class EnclaveSandboxBackend(SandboxBackend):
         # Manager lifecycle is owned by SandboxService; we only drop our pool reference.
         self._pool_handle = None
 
+    def _get_build_context(self) -> Tuple[str, str]:
+        if self._build_context_provider is None:
+            build_ctx, dockerfile = default_docker_build_context()
+        else:
+            build_ctx, dockerfile = self._build_context_provider()
+        return normalize_docker_build_context(build_ctx, dockerfile)
+
     # ------------------------------------------------------------------
     # Config resolution helpers
     # ------------------------------------------------------------------
@@ -209,8 +220,17 @@ class SandboxMixin:
     def _get_backend(self) -> SandboxBackend:
         if self._backend:
             return self._backend
-        self._backend = EnclaveSandboxBackend(self._benchmark_meta, self._task_config)
+        self._backend = EnclaveSandboxBackend(
+            self._benchmark_meta,
+            self._task_config,
+            use_custom_image=bool(getattr(self, '_use_custom_image', False)),
+            build_context_provider=self.get_build_context,
+        )
         return self._backend
+
+    def get_build_context(self) -> Tuple[str, str]:
+        """Return Docker build context for benchmarks using a custom sandbox image."""
+        return default_docker_build_context()
 
     @thread_safe
     def ensure_sandbox_ready(self) -> bool:
@@ -246,7 +266,3 @@ class SandboxMixin:
         """
         if self._backend:
             self._backend.stop()
-
-
-# Public helpers for backends that still want to peek at the shared service.
-_service_ref = get_sandbox_service  # re-export for convenience

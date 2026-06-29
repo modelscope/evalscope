@@ -8,6 +8,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 | `bfcl_v4` | [BFCL-v4](../../benchmarks/bfcl_v4.md) | `Agent`, `FunctionCalling` |
 | `browsecomp` | [BrowseComp](../../benchmarks/browsecomp.md) | `Agent`, `Knowledge`, `QA` |
 | `gaia` | [GAIA](../../benchmarks/gaia.md) | `Agent`, `MultiTurn`, `Reasoning` |
+| `gdpval` | [GDPval](../../benchmarks/gdpval.md) | `Agent`, `Knowledge`, `MultiTurn` |
 | `general_fc` | [General-FunctionCalling](../../benchmarks/general_fc.md) | `Agent`, `Custom`, `FunctionCalling` |
 | `k2_verifier` | [K2-Vendor-Verifier](../../benchmarks/k2_verifier.md) | `Agent`, `FunctionCalling` |
 | `kimi_verifier` | [Kimi-Vendor-Verifier (Param Compliance)](../../benchmarks/kimi_verifier.md) | `Agent`, `FunctionCalling` |
@@ -31,6 +32,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 ../../benchmarks/bfcl_v4.md
 ../../benchmarks/browsecomp.md
 ../../benchmarks/gaia.md
+../../benchmarks/gdpval.md
 ../../benchmarks/general_fc.md
 ../../benchmarks/k2_verifier.md
 ../../benchmarks/kimi_verifier.md

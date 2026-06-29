@@ -500,8 +500,8 @@ class DefaultEvaluator(Evaluator):
             report_table = gen_table(report_list=[report], add_overall_metric=self.benchmark.add_overall_metric)
             logger.info(f'\n{self.benchmark_name} report table:'
                         f'\n{report_table} \n')
-        except Exception:
-            logger.error('Failed to generate report table.')
+        except Exception as e:
+            logger.error(f'Failed to generate report table: {e}')
 
         # Generate detailed analysis if requested in configuration
         if self.task_config.analysis_report:

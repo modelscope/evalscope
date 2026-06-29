@@ -16,7 +16,9 @@ from .config_builder import (
     build_docker_image,
     build_sandbox_config,
     default_docker_build_context,
+    ensure_docker_image_built,
     merge_sandbox_config_dicts,
+    normalize_docker_build_context,
     should_build_docker_image,
 )
 from .engine import SandboxEngine, get_enclave_types, resolve_engine
@@ -38,9 +40,11 @@ __all__ = [
     'build_docker_image',
     'build_sandbox_config',
     'default_docker_build_context',
+    'ensure_docker_image_built',
     'get_enclave_types',
     'get_sandbox_service',
     'merge_sandbox_config_dicts',
+    'normalize_docker_build_context',
     'resolve_engine',
     'shutdown_sandbox_service',
     'should_build_docker_image',
