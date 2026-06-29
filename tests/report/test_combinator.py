@@ -16,7 +16,7 @@ def test_get_report_list_skips_non_report_json(tmp_path):
         model_name='qwen-plus',
         metrics=[
             Metric(
-                name='mean_llm_rubric_score',
+                name='mean_submission_ready',
                 categories=[
                     Category(
                         name=('default', ),
