@@ -447,28 +447,7 @@ def test_export_submission_writes_parquet_and_copies_deliverables(tmp_path: Path
     assert table.loc[0, 'deliverable_files'] == ['deliverable_files/task-1/report.txt']
 
 
-def test_export_submission_requires_parquet_dependencies(monkeypatch: Any, tmp_path: Path) -> None:
-    adapter = make_adapter(scoring_mode='openai_auto_grader_submission')
-    report_dir = tmp_path / 'reports' / 'qwen-plus'
-    review_dir = tmp_path / 'reviews' / 'qwen-plus'
-    review_dir.mkdir(parents=True)
-    review_item = {
-        'index': 0,
-        'sample_score': {
-            'sample_id': 0,
-            'sample_metadata': {
-                'task_id': 'task-1',
-                'deliverable_files': [],
-            },
-            'score': {
-                'prediction': 'Done.',
-                'extracted_prediction': 'Done.',
-            },
-        },
-    }
-    with open(review_dir / 'gdpval_default.jsonl', 'w', encoding='utf-8') as f:
-        f.write(json.dumps(review_item) + '\n')
-
+def test_adapter_requires_parquet_dependencies(monkeypatch: Any) -> None:
     def fake_check_import(**kwargs: Any) -> bool:
         assert kwargs['module_name'] == ['pandas', 'pyarrow']
         assert kwargs['raise_error'] is True
@@ -478,9 +457,7 @@ def test_export_submission_requires_parquet_dependencies(monkeypatch: Any, tmp_p
     monkeypatch.setattr('evalscope.benchmarks.gdpval.gdpval_adapter.check_import', fake_check_import)
 
     with pytest.raises(ImportError, match='pyarrow.*GDPval submission export'):
-        adapter._export_submission(report_dir)
-
-    assert not (report_dir / 'gdpval_submission').exists()
+        make_adapter(scoring_mode='openai_auto_grader_submission')
 
 
 class FakeEnvironment:

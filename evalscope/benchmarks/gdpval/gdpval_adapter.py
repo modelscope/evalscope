@@ -169,6 +169,12 @@ class GDPvalAdapter(AgentLoopAdapter):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
+        check_import(
+            module_name=['pandas', 'pyarrow'],
+            package=['pandas', 'pyarrow'],
+            raise_error=True,
+            feature_name='GDPval submission export',
+        )
         self.command_timeout = float(self.extra_params.get('command_timeout', 180.0))
         self.docker_image = self.extra_params.get('docker_image') or _DEFAULT_DOCKER_IMAGE
         self.auto_build_docker_image = bool(self.extra_params.get('auto_build_docker_image', True))
@@ -198,9 +204,6 @@ class GDPvalAdapter(AgentLoopAdapter):
         )
 
     def load_dataset(self) -> DatasetDict:
-        if not is_build_doc():
-            self._ensure_submission_dependencies()
-
         dataset_dict: Dict[str, MemoryDataset] = {}
         for subset in self.subset_list:
             with self._temporary_attribute('current_subset_name', subset):
@@ -415,7 +418,7 @@ class GDPvalAdapter(AgentLoopAdapter):
             logger.warning('No GDPval review cache found; skipping submission export.')
             return
 
-        pd = self._ensure_submission_dependencies()
+        import pandas as pd
 
         submission_dir = report_dir / _SUBMISSION_DIR_NAME
         if submission_dir.exists():
@@ -458,17 +461,6 @@ class GDPvalAdapter(AgentLoopAdapter):
         with open(submission_dir / 'submission_info.json', 'w', encoding='utf-8') as f:
             json.dump(info, f, ensure_ascii=False, indent=2)
         logger.info(f'GDPval submission package exported to: {submission_dir}')
-
-    @staticmethod
-    def _ensure_submission_dependencies() -> Any:
-        check_import(
-            module_name=['pandas', 'pyarrow'],
-            package=['pandas', 'pyarrow'],
-            raise_error=True,
-            feature_name='GDPval submission export',
-        )
-        import pandas as pd
-        return pd
 
     def _load_review_items(self, report_dir: Path) -> List[Dict[str, Any]]:
         outputs_dir = report_dir.parent.parent
