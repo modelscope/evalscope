@@ -1,7 +1,7 @@
 import asyncio
 import base64
-import builtins
 import json
+import pytest
 import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -447,7 +447,7 @@ def test_export_submission_writes_parquet_and_copies_deliverables(tmp_path: Path
     assert table.loc[0, 'deliverable_files'] == ['deliverable_files/task-1/report.txt']
 
 
-def test_export_submission_skips_when_parquet_dependencies_missing(monkeypatch: Any, tmp_path: Path) -> None:
+def test_export_submission_requires_parquet_dependencies(monkeypatch: Any, tmp_path: Path) -> None:
     adapter = make_adapter(scoring_mode='openai_auto_grader_submission')
     report_dir = tmp_path / 'reports' / 'qwen-plus'
     review_dir = tmp_path / 'reviews' / 'qwen-plus'
@@ -469,16 +469,16 @@ def test_export_submission_skips_when_parquet_dependencies_missing(monkeypatch: 
     with open(review_dir / 'gdpval_default.jsonl', 'w', encoding='utf-8') as f:
         f.write(json.dumps(review_item) + '\n')
 
-    real_import = builtins.__import__
+    def fake_check_import(**kwargs: Any) -> bool:
+        assert kwargs['module_name'] == ['pandas', 'pyarrow']
+        assert kwargs['raise_error'] is True
+        assert kwargs['feature_name'] == 'GDPval submission export'
+        raise ImportError('`pyarrow` not found. Please run `pip install pyarrow` to use GDPval submission export.')
 
-    def fake_import(name: str, *args: Any, **kwargs: Any) -> Any:
-        if name == 'pyarrow':
-            raise ImportError('missing pyarrow')
-        return real_import(name, *args, **kwargs)
+    monkeypatch.setattr('evalscope.benchmarks.gdpval.gdpval_adapter.check_import', fake_check_import)
 
-    monkeypatch.setattr(builtins, '__import__', fake_import)
-
-    adapter._export_submission(report_dir)
+    with pytest.raises(ImportError, match='pyarrow.*GDPval submission export'):
+        adapter._export_submission(report_dir)
 
     assert not (report_dir / 'gdpval_submission').exists()
 
