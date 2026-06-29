@@ -3,9 +3,9 @@ import multiprocessing
 import numpy as np
 import os
 import re
-import sys
-import threading
 from concurrent.futures import ProcessPoolExecutor
+from dataclasses import dataclass
+from multiprocessing.context import BaseContext
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
@@ -17,19 +17,25 @@ from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 
 logger = get_logger()
 
-_RANDOM_GENERATION_STATE: Dict[str, Any] = {}
-_MIN_AUTO_PARALLEL_PROMPT_LENGTH = 2048
+_RANDOM_GENERATION_WORKER_STATE: Optional['_RandomGenerationWorkerState'] = None
+_MIN_AUTO_PARALLEL_PROMPT_LENGTH = 8192
+_MIN_AUTO_PARALLEL_TOKEN_WORK = 4 * 1024 * 1024
 
 
-def _get_random_generation_context() -> Optional[Any]:
-    """Return a fork context only when it is safe for random request generation."""
-    if os.name != 'posix' or not sys.platform.startswith('linux') or threading.active_count() != 1:
-        return None
+@dataclass
+class _RandomGenerationWorkerState:
+    """Process-local state initialized once per random generation worker."""
 
-    available_methods = multiprocessing.get_all_start_methods()
-    if 'fork' in available_methods:
-        return multiprocessing.get_context('fork')
-    return None
+    tokenizer: Optional[Any]
+    tokenize_prompt: bool
+    apply_chat_template: bool
+    prefix_ids: List[int]
+    allowed_tokens: np.ndarray
+
+
+def _get_random_generation_context() -> BaseContext:
+    """Return the spawn context used for random request generation workers."""
+    return multiprocessing.get_context('spawn')
 
 
 def _init_random_generation_worker(
@@ -37,36 +43,36 @@ def _init_random_generation_worker(
     tokenize_prompt: bool,
     apply_chat_template: bool,
     prefix_ids: List[int],
-    allowed_tokens: List[int],
+    allowed_tokens: np.ndarray,
 ) -> None:
     """Initialize per-process state for random request generation."""
+    global _RANDOM_GENERATION_WORKER_STATE
     os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-    existing_allowed_tokens = _RANDOM_GENERATION_STATE.get('allowed_tokens')
-    existing_prefix_ids = _RANDOM_GENERATION_STATE.get('prefix_ids')
     tokenizer = None if tokenize_prompt else load_tokenizer(tokenizer_path)
-    _RANDOM_GENERATION_STATE.clear()
-    _RANDOM_GENERATION_STATE.update({
-        'tokenizer': tokenizer,
-        'tokenize_prompt': tokenize_prompt,
-        'apply_chat_template': apply_chat_template,
-        'prefix_ids': existing_prefix_ids if existing_prefix_ids is not None else prefix_ids,
-        'allowed_tokens': (
-            existing_allowed_tokens if existing_allowed_tokens is not None else np.asarray(allowed_tokens)
-        ),
-    })
+    _RANDOM_GENERATION_WORKER_STATE = _RandomGenerationWorkerState(
+        tokenizer=tokenizer,
+        tokenize_prompt=tokenize_prompt,
+        apply_chat_template=apply_chat_template,
+        prefix_ids=prefix_ids,
+        allowed_tokens=np.asarray(allowed_tokens),
+    )
 
 
 def _build_random_message_worker(
     task: Tuple[int, int, int, Optional[int]],
 ) -> Tuple[int, Union[List[Dict], List[int], str], int]:
     """Build one random message from an index-level generation task."""
+    if _RANDOM_GENERATION_WORKER_STATE is None:
+        raise RuntimeError('Random request generation worker state is not initialized.')
+
     index, input_len, offset, seed = task
-    allowed_tokens = _RANDOM_GENERATION_STATE['allowed_tokens']
-    prefix_ids = _RANDOM_GENERATION_STATE['prefix_ids']
+    state = _RANDOM_GENERATION_WORKER_STATE
+    allowed_tokens = state.allowed_tokens
+    prefix_ids = state.prefix_ids
     inner_seq = allowed_tokens[(offset + index + np.arange(input_len)) % len(allowed_tokens)].tolist()
     token_sequence = prefix_ids + inner_seq
 
-    if _RANDOM_GENERATION_STATE['tokenize_prompt']:
+    if state.tokenize_prompt:
         return index, token_sequence, 0
 
     if seed is None:
@@ -74,7 +80,7 @@ def _build_random_message_worker(
     np.random.seed(seed)
     target_token_len = len(prefix_ids) + int(input_len)
     prompt, adjusted_token_sequence, token_mismatch = gen_prompt_decode_to_target_len(
-        tokenizer=_RANDOM_GENERATION_STATE['tokenizer'],
+        tokenizer=state.tokenizer,
         token_sequence=token_sequence,
         target_token_len=target_token_len,
         add_special_tokens=False,
@@ -83,7 +89,7 @@ def _build_random_message_worker(
     if len(adjusted_token_sequence) != target_token_len:
         token_mismatch = len(adjusted_token_sequence) - target_token_len
 
-    if _RANDOM_GENERATION_STATE['apply_chat_template']:
+    if state.apply_chat_template:
         return index, [{'role': 'user', 'content': prompt}], token_mismatch
     return index, prompt, token_mismatch
 
@@ -124,8 +130,11 @@ class RandomDatasetPlugin(DatasetPluginBase):
     def build_messages(self) -> Iterator[Union[List[Dict], List[int], str]]:
         """Yield prompts as text messages or, when --tokenize-prompt is set, as raw
         token-ID lists that bypass the decode/re-encode round-trip entirely."""
-        plan = self._create_generation_plan(self.number, include_seeds=not self.query_parameters.tokenize_prompt)
+        yield from self._build_messages_for_count(self.number)
 
+    def _build_messages_for_count(self, total_count: int) -> Iterator[Union[List[Dict], List[int], str]]:
+        """Yield random prompts for a fixed item count."""
+        plan = self._create_generation_plan(total_count, include_seeds=not self.query_parameters.tokenize_prompt)
         token_mismatch_total = 0
         for index, input_len, offset, seed in self._iter_generation_plan(plan):
             message, token_mismatch = self._build_random_message(input_len, offset, index, seed)
@@ -136,81 +145,55 @@ class RandomDatasetPlugin(DatasetPluginBase):
 
     def supports_parallel_message_generation(self) -> bool:
         """Random prompts are independent by index and can be generated in worker processes."""
-        if _get_random_generation_context() is None:
-            if self.query_parameters.request_generation_workers > 1:
-                logger.warning(
-                    'Parallel random request generation requires a fork-safe Linux single-thread context; '
-                    'falling back to serial request generation.'
-                )
-            return False
-        if self.query_parameters.request_generation_workers > 1:
+        if self.query_parameters.num_workers > 1:
             return True
         if self.query_parameters.tokenize_prompt:
             return False
         prompt_length_estimate = (
             self.query_parameters.min_prompt_length + self.query_parameters.max_prompt_length
         ) // 2
-        return prompt_length_estimate >= _MIN_AUTO_PARALLEL_PROMPT_LENGTH
+        token_work_estimate = prompt_length_estimate * self.number
+        return (
+            prompt_length_estimate >= _MIN_AUTO_PARALLEL_PROMPT_LENGTH
+            and token_work_estimate >= _MIN_AUTO_PARALLEL_TOKEN_WORK
+        )
 
     def build_messages_parallel(self, total_count: int, workers: int) -> List[Union[List[Dict], List[int], str]]:
         """Build random request messages across multiple worker processes."""
         if total_count <= 0:
             return []
 
-        self.number = total_count
         workers = max(1, min(workers, total_count))
         if workers == 1:
-            return list(self.build_messages())
+            return list(self._build_messages_for_count(total_count))
 
         process_context = _get_random_generation_context()
-        if process_context is None:
-            logger.warning(
-                'Parallel random request generation requires a fork-safe Linux single-thread context; '
-                'falling back to serial request generation.'
-            )
-            return list(self.build_messages())
-
         plan = self._create_generation_plan(total_count, include_seeds=not self.query_parameters.tokenize_prompt)
         messages: List[Union[List[Dict], List[int], str, None]] = [None] * total_count
         token_mismatch_total = 0
         chunk_size = max(1, min(64, math.ceil(total_count / (workers * 8))))
 
-        _RANDOM_GENERATION_STATE.clear()
-        _RANDOM_GENERATION_STATE.update({
-            'tokenizer': None,
-            'tokenize_prompt': self.query_parameters.tokenize_prompt,
-            'apply_chat_template': self.query_parameters.apply_chat_template,
-            'prefix_ids': self.prefix_ids,
-            'allowed_tokens': self.allowed_tokens,
-        })
-        use_copy_on_write_state = (process_context is not None and process_context.get_start_method() == 'fork')
-        prefix_ids = [] if use_copy_on_write_state else self.prefix_ids
-        allowed_tokens = [] if use_copy_on_write_state else self.allowed_tokens.tolist()
-
-        try:
-            with tqdm(total=total_count, desc='Generating[requests]', logger=logger) as pbar:
-                with ProcessPoolExecutor(
-                    max_workers=workers,
-                    mp_context=process_context,
-                    initializer=_init_random_generation_worker,
-                    initargs=(
-                        self.query_parameters.tokenizer_path,
-                        self.query_parameters.tokenize_prompt,
-                        self.query_parameters.apply_chat_template,
-                        prefix_ids,
-                        allowed_tokens,
-                    ),
-                ) as executor:
-                    for index, message, token_mismatch in executor.map(
-                        _build_random_message_worker,
-                        self._iter_generation_plan(plan),
-                        chunksize=chunk_size,
-                    ):
-                        messages[index] = message
-                        token_mismatch_total += token_mismatch
-                        pbar.update(1)
-        finally:
-            _RANDOM_GENERATION_STATE.clear()
+        with tqdm(total=total_count, desc='Generating[requests]', logger=logger) as pbar:
+            with ProcessPoolExecutor(
+                max_workers=workers,
+                mp_context=process_context,
+                initializer=_init_random_generation_worker,
+                initargs=(
+                    self.query_parameters.tokenizer_path,
+                    self.query_parameters.tokenize_prompt,
+                    self.query_parameters.apply_chat_template,
+                    self.prefix_ids,
+                    self.allowed_tokens,
+                ),
+            ) as executor:
+                for index, message, token_mismatch in executor.map(
+                    _build_random_message_worker,
+                    self._iter_generation_plan(plan),
+                    chunksize=chunk_size,
+                ):
+                    messages[index] = message
+                    token_mismatch_total += token_mismatch
+                    pbar.update(1)
 
         missing = [index for index, message in enumerate(messages) if message is None]
         if missing:

@@ -187,8 +187,8 @@ class Arguments(BaseArgument):
     in_flight_task_multiplier: int = 2
     """Max scheduled tasks = parallel * this multiplier."""
 
-    request_generation_workers: int = 0
-    """Number of worker processes for CPU-bound request generation.
+    num_workers: int = 0
+    """Number of worker processes for CPU-bound dataset/request generation.
 
     Set to 0 for auto-detection based on the current CPU affinity, 1 to force
     serial generation, or >1 to explicitly choose the worker count. Only
@@ -438,11 +438,11 @@ class Arguments(BaseArgument):
     def _validate_in_flight_task_multiplier(cls, v):
         return max(v, 1) if v <= 0 else v
 
-    @field_validator('request_generation_workers', mode='after')
+    @field_validator('num_workers', mode='after')
     @classmethod
-    def _validate_request_generation_workers(cls, v: int) -> int:
+    def _validate_num_workers(cls, v: int) -> int:
         if v < 0:
-            raise ValueError('--request-generation-workers must be >= 0')
+            raise ValueError('--num-workers must be >= 0')
         return v
 
     # --- Model validator (cross-field logic) ---
@@ -466,6 +466,13 @@ class Arguments(BaseArgument):
 
         # Validate sweep params (number/parallel/rate consistency)
         self._validate_sweep_params()
+
+        if (
+            self.num_workers == 0 and self.multi_turn_args is not None
+            and 'num_workers' in self.multi_turn_args.model_fields_set
+        ):
+            logger.warning('`multi_turn_args.num_workers` is deprecated. Please use top-level `--num-workers` instead.')
+            self.num_workers = self.multi_turn_args.num_workers
 
         return self
 
@@ -627,11 +634,11 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--queue-size-multiplier', type=int, default=5, help='Queue maxsize = parallel * multiplier')
     parser.add_argument('--in-flight-task-multiplier', type=int, default=2, help='Max scheduled tasks = parallel * multiplier')  # noqa: E501
     parser.add_argument(
-        '--request-generation-workers',
+        '--num-workers',
         type=int,
         default=0,
         help=(
-            'Worker processes for CPU-bound request generation. '
+            'Worker processes for CPU-bound dataset/request generation. '
             '0=auto from CPU affinity, 1=serial, >1=explicit worker count.'
         ),
     )
@@ -753,7 +760,8 @@ def add_argument(parser: argparse.ArgumentParser):
             'Example: \'{"first_turn_length": 65000, "subsequent_turn_length": 500, '
             '"chars_per_token": 3.0}\'. '
             'Note: min_turns and max_turns are top-level --min-turns / --max-turns arguments '
-            '(per-conversation turn count is sampled from [min_turns, max_turns]).'
+            '(per-conversation turn count is sampled from [min_turns, max_turns]); '
+            'use top-level --num-workers for live construction parallelism.'
         ),
     )
     # yapf: enable

@@ -17,7 +17,7 @@ This plugin supports two data-source modes:
    then shuffled.  For each candidate ``num_turns`` is sampled uniformly from
    ``[min_turns, max_turns]`` (``--min-turns`` / ``--max-turns``).  All work
    items are dispatched to a ``multiprocessing.Pool``
-   (size ``multi_turn_args.num_workers``); results are collected until
+   (size controlled by top-level ``--num-workers``); results are collected until
    ``number`` valid conversations have been built.
 """
 
@@ -31,6 +31,7 @@ from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import Conversation, DatasetPluginBase, Message, Messages, Turn
 from evalscope.perf.plugin.datasets.utils import tokenize_chat_messages
 from evalscope.perf.plugin.registry import register_dataset
+from evalscope.perf.utils.worker_util import resolve_dataset_generation_workers
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -260,7 +261,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
     * ``first_turn_length``      – target tokens for turn 1
     * ``subsequent_turn_length`` – token growth per subsequent turn
     * ``chars_per_token``        – pre-filter estimate
-    * ``num_workers``            – multiprocessing pool size
+    * Top-level ``--num-workers`` – multiprocessing pool size
     """
 
     def __init__(self, query_parameters: Arguments):
@@ -335,7 +336,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
         max_turns = self.query_parameters.max_turns if self.query_parameters.max_turns is not None else min_turns
         if max_turns < min_turns:
             raise ValueError(f'--max-turns ({max_turns}) must be >= --min-turns ({min_turns})')
-        num_workers = mt_args.num_workers if mt_args else 1
+        target_count = max(1, self.query_parameters.total_count)
 
         # For pre-filtering, use the upper-bound of first_turn_length as the minimum
         # char threshold (conservative: trajectories need at least that many tokens).
@@ -352,13 +353,11 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
 
         logger.info(
             f'Live construction: offset={offset}, min_turns={min_turns}, max_turns={max_turns}, '
-            f'num_workers={num_workers}, min_chars={min_chars}'
+            f'target_count={target_count}, min_chars={min_chars}'
         )
 
         from modelscope import MsDataset
         dataset = MsDataset.load(_DEFAULT_DATASET_NAME, split=_DEFAULT_SPLIT)
-
-        target_count = max(1, self.query_parameters.number)
 
         candidates = []
         skipped_short = 0
@@ -405,6 +404,11 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
                 num_turns,
             ))
 
+        num_workers = resolve_dataset_generation_workers(
+            args=self.query_parameters,
+            total_count=len(work_items),
+            supports_parallel_generation=True,
+        )
         logger.info(
             f'Building up to {target_count} conversations from {len(work_items)} candidates '
             f'using {num_workers} worker(s)...'
