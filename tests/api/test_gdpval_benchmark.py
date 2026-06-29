@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import builtins
 import json
 import zipfile
 from pathlib import Path
@@ -16,7 +17,13 @@ from evalscope.benchmarks.gdpval.gdpval_adapter import (
     _GDPvalArtifactEnvironment,
     _relative_deliverable_path,
 )
-from evalscope.benchmarks.gdpval.gdpval_scorer import GDPvalLocalScorer, parse_rubric_items, read_xlsx_workbook
+from evalscope.benchmarks.gdpval.gdpval_scorer import (
+    GDPvalLocalScorer,
+    XlsxSheet,
+    _required_sample_size,
+    parse_rubric_items,
+    read_xlsx_workbook,
+)
 from evalscope.config import TaskConfig
 from evalscope.constants import HubType
 
@@ -231,6 +238,20 @@ def test_read_xlsx_workbook_handles_empty_value_node(tmp_path: Path) -> None:
     assert workbook.first_sheet.rows == [['']]
 
 
+def test_required_sample_size_ignores_unrelated_integers() -> None:
+    sheet = XlsxSheet(
+        name='Sample Size Calculation',
+        rows=[
+            ['Calculation', 'Value'],
+            ['Population Size (N)', 1000],
+            ['Year', 2024],
+            ['Final Sample Size', 2],
+        ],
+    )
+
+    assert _required_sample_size(sheet) == 2
+
+
 def test_local_rubric_scorer_scores_checkable_spreadsheet_items(tmp_path: Path) -> None:
     reference_path = tmp_path / 'Population.xlsx'
     sample_path = tmp_path / 'Sample.xlsx'
@@ -424,6 +445,42 @@ def test_export_submission_writes_parquet_and_copies_deliverables(tmp_path: Path
     table = pd.read_parquet(submission_dir / 'data/train-00000-of-00001.parquet')
     assert table.loc[0, 'deliverable_text'] == 'Done.'
     assert table.loc[0, 'deliverable_files'] == ['deliverable_files/task-1/report.txt']
+
+
+def test_export_submission_skips_when_parquet_dependencies_missing(monkeypatch: Any, tmp_path: Path) -> None:
+    adapter = make_adapter(scoring_mode='openai_auto_grader_submission')
+    report_dir = tmp_path / 'reports' / 'qwen-plus'
+    review_dir = tmp_path / 'reviews' / 'qwen-plus'
+    review_dir.mkdir(parents=True)
+    review_item = {
+        'index': 0,
+        'sample_score': {
+            'sample_id': 0,
+            'sample_metadata': {
+                'task_id': 'task-1',
+                'deliverable_files': [],
+            },
+            'score': {
+                'prediction': 'Done.',
+                'extracted_prediction': 'Done.',
+            },
+        },
+    }
+    with open(review_dir / 'gdpval_default.jsonl', 'w', encoding='utf-8') as f:
+        f.write(json.dumps(review_item) + '\n')
+
+    real_import = builtins.__import__
+
+    def fake_import(name: str, *args: Any, **kwargs: Any) -> Any:
+        if name == 'pyarrow':
+            raise ImportError('missing pyarrow')
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, '__import__', fake_import)
+
+    adapter._export_submission(report_dir)
+
+    assert not (report_dir / 'gdpval_submission').exists()
 
 
 class FakeEnvironment:

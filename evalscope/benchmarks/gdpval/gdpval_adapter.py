@@ -412,6 +412,13 @@ class GDPvalAdapter(AgentLoopAdapter):
             logger.warning('No GDPval review cache found; skipping submission export.')
             return
 
+        try:
+            import pandas as pd
+            import pyarrow  # noqa: F401
+        except ImportError as exc:
+            logger.warning(f'GDPval submission export requires pandas and pyarrow; skipping submission export: {exc}')
+            return
+
         submission_dir = report_dir / _SUBMISSION_DIR_NAME
         if submission_dir.exists():
             shutil.rmtree(submission_dir)
@@ -424,12 +431,6 @@ class GDPvalAdapter(AgentLoopAdapter):
             result = results.get(task_id, {})
             record['deliverable_text'] = result.get('deliverable_text', '')
             record['deliverable_files'] = result.get('deliverable_files', [])
-
-        try:
-            import pandas as pd
-            import pyarrow  # noqa: F401
-        except ImportError as exc:
-            raise RuntimeError('GDPval submission export requires pandas and pyarrow.') from exc
 
         table = pd.DataFrame(records)
         if 'deliverable_text' not in table:

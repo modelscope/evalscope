@@ -757,12 +757,46 @@ def _is_sampled(row: List[Any], sample_idx: int) -> bool:
 def _required_sample_size(sheet: Optional[XlsxSheet]) -> Optional[int]:
     if sheet is None:
         return None
-    integers = []
-    for row in sheet.rows:
-        for value in row:
-            if _is_integer_like(value):
-                integers.append(int(float(value)))
-    return max(integers) if integers else None
+
+    preferred = []
+    candidates = []
+    sample_size_columns = [idx for idx, header in enumerate(sheet.headers) if _is_sample_size_label(header)]
+    for row in sheet.data_rows:
+        for idx in sample_size_columns:
+            value = _positive_integer(_get(row, idx))
+            if value is not None:
+                candidates.append(value)
+        for idx, cell in enumerate(row):
+            if not _is_sample_size_label(cell):
+                continue
+            row_values = row[idx + 1:] or row
+            row_candidates = [value for value in (_positive_integer(item) for item in row_values) if value is not None]
+            if _is_preferred_sample_size_label(cell):
+                preferred.extend(row_candidates)
+            else:
+                candidates.extend(row_candidates)
+    if preferred:
+        return preferred[-1]
+    return candidates[-1] if candidates else None
+
+
+def _is_sample_size_label(value: Any) -> bool:
+    text = _normalize_text(value)
+    if not text or 'population size' in text:
+        return False
+    return 'sample size' in text or 'sample count' in text or 'samples required' in text
+
+
+def _is_preferred_sample_size_label(value: Any) -> bool:
+    text = _normalize_text(value)
+    return any(token in text for token in ('final', 'required', 'minimum', 'rounded'))
+
+
+def _positive_integer(value: Any) -> Optional[int]:
+    if not _is_integer_like(value):
+        return None
+    parsed = int(float(value))
+    return parsed if parsed > 0 else None
 
 
 def _count_sampled_variance_hits(sheet: XlsxSheet, variance_idx: int, sample_idx: int, threshold: float) -> int:
