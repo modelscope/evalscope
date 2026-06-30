@@ -35,10 +35,8 @@ class MCPAtlasClient:
         response = requests.get(f'{self.base_url}/enabled-servers', timeout=self.list_tools_timeout)
         response.raise_for_status()
         data = response.json()
-        if isinstance(data, dict) and 'servers' in data:
-            return [str(name) for name, status in data['servers'] if status == 'OK']
         if isinstance(data, dict):
-            return [str(name) for name in data.get('enabled_servers', [])]
+            return parse_enabled_servers_response(data)
         raise ValueError(f'Unexpected /enabled-servers response: {type(data).__name__}')
 
     def list_tools(self) -> List[Dict[str, Any]]:
@@ -87,9 +85,36 @@ def load_local_records(path: str) -> List[Dict[str, Any]]:
                 if line.strip():
                     records.append(json.loads(line))
         return records
-    csv.field_size_limit(sys.maxsize)
+    set_csv_field_size_limit()
     with local_path.open(newline='', encoding='utf-8') as f:
         return list(csv.DictReader(f))
+
+
+def parse_enabled_servers_response(data: Dict[str, Any]) -> List[str]:
+    if 'servers' in data:
+        servers = data['servers']
+        if isinstance(servers, dict):
+            return [str(name) for name, status in servers.items() if status == 'OK']
+        if isinstance(servers, list):
+            return [
+                str(server[0])
+                for server in servers
+                if isinstance(server, (list, tuple)) and len(server) >= 2 and server[1] == 'OK'
+            ]
+    enabled_servers = data.get('enabled_servers', [])
+    if isinstance(enabled_servers, list):
+        return [str(name) for name in enabled_servers]
+    return []
+
+
+def set_csv_field_size_limit() -> None:
+    limit = sys.maxsize
+    while True:
+        try:
+            csv.field_size_limit(limit)
+            return
+        except OverflowError:
+            limit = limit // 10
 
 
 def parse_enabled_tools(value: Any) -> List[str]:

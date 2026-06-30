@@ -2,6 +2,7 @@ import asyncio
 import csv
 import json
 import pytest
+import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -18,6 +19,7 @@ from evalscope.benchmarks.mcp_atlas.utils import (
     extract_claims,
     extract_required_servers,
     is_transport_error,
+    load_local_records,
     mcp_tool_to_tool_info,
     parse_claim_judge_response,
     parse_enabled_tools,
@@ -267,6 +269,57 @@ def test_client_uses_mcp_atlas_http_endpoints(monkeypatch: Any) -> None:
             'title': 'MCP'
         },
     }
+
+
+def test_client_accepts_servers_dict_response(monkeypatch: Any) -> None:
+
+    class Response:
+
+        def raise_for_status(self) -> None:
+            pass
+
+        def json(self) -> Dict[str, Any]:
+            return {
+                'servers': {
+                    'wikipedia': 'OK',
+                    'github': 'ERROR_NOT_ONLINE',
+                }
+            }
+
+    def fake_get(url: str, timeout: float) -> Response:
+        return Response()
+
+    monkeypatch.setattr('requests.get', fake_get)
+    client = MCPAtlasClient('http://localhost:1984', request_timeout=7.0, list_tools_timeout=11.0)
+
+    assert client.enabled_servers() == ['wikipedia']
+
+
+def test_load_local_records_retries_csv_field_size_limit(monkeypatch: Any, tmp_path: Path) -> None:
+    dataset_path = tmp_path / 'mcp_atlas.csv'
+    write_rows(
+        dataset_path, [{
+            'TASK': 'task-1',
+            'PROMPT': 'prompt',
+            'ENABLED_TOOLS': '[]',
+            'TRAJECTORY': '[]',
+            'GTFA_CLAIMS': '[]',
+        }]
+    )
+    limits = []
+
+    def fake_field_size_limit(limit: int) -> int:
+        limits.append(limit)
+        if len(limits) == 1:
+            raise OverflowError
+        return limit
+
+    monkeypatch.setattr('evalscope.benchmarks.mcp_atlas.utils.csv.field_size_limit', fake_field_size_limit)
+
+    records = load_local_records(str(dataset_path))
+
+    assert records[0]['TASK'] == 'task-1'
+    assert limits == [sys.maxsize, sys.maxsize // 10]
 
 
 def test_client_marks_transport_500_as_unavailable(monkeypatch: Any) -> None:
