@@ -70,7 +70,7 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
 {
   "input": [
     {
-      "id": "78885039",
+      "id": "3315415d",
       "content": "You are an auditor and as part of an audit engagement, you are tasked with reviewing and testing the accuracy of reported Anti-Financial Crime Risk Metrics.\n\nThe attached spreadsheet titled ‘Population’ contains Anti-Financial Crime Risk Metr ... [TRUNCATED 2069 chars] ...  folder named `deliverable_files` in the sandbox working directory.\nWe will grade your final message as part of the deliverable, but requested documents, spreadsheets, slides, media,\nor archives should be actual files in `deliverable_files`.\n"
     }
   ],
@@ -123,6 +123,7 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
     "task_id": "83d10b06-26d1-4636-a32c-23f92c57f30b",
     "sector": "Professional, Scientific, and Technical Services",
     "occupation": "Accountants and Auditors",
+    "prompt": "You are an auditor and as part of an audit engagement, you are tasked with reviewing and testing the accuracy of reported Anti-Financial Crime Risk Metrics.\n\nThe attached spreadsheet titled ‘Population’ contains Anti-Financial Crime Risk Metr ... [TRUNCATED 1526 chars] ... across all Divisions and sub-Divisions.\n\n4. Create a new spreadsheet titled ‘Sample’:\n- Tab 1: Selected sample, copied from the original ‘Population’ sheet, with selected rows marked in column K.\n- Tab 2: Workings for sample size calculation.",
     "reference_files": [
       "reference_files/cc781e4dc0985c8eb327a53ec03b5900/Population v2.xlsx"
     ],
