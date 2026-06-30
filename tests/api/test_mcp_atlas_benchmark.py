@@ -2,7 +2,6 @@ import asyncio
 import csv
 import json
 import pytest
-import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -19,7 +18,6 @@ from evalscope.benchmarks.mcp_atlas.utils import (
     extract_claims,
     extract_required_servers,
     is_transport_error,
-    load_local_records,
     mcp_tool_to_tool_info,
     parse_claim_judge_response,
     parse_enabled_tools,
@@ -295,33 +293,6 @@ def test_client_accepts_servers_dict_response(monkeypatch: Any) -> None:
     assert client.enabled_servers() == ['wikipedia']
 
 
-def test_load_local_records_retries_csv_field_size_limit(monkeypatch: Any, tmp_path: Path) -> None:
-    dataset_path = tmp_path / 'mcp_atlas.csv'
-    write_rows(
-        dataset_path, [{
-            'TASK': 'task-1',
-            'PROMPT': 'prompt',
-            'ENABLED_TOOLS': '[]',
-            'TRAJECTORY': '[]',
-            'GTFA_CLAIMS': '[]',
-        }]
-    )
-    limits = []
-
-    def fake_field_size_limit(limit: int) -> int:
-        limits.append(limit)
-        if len(limits) == 1:
-            raise OverflowError
-        return limit
-
-    monkeypatch.setattr('evalscope.benchmarks.mcp_atlas.utils.csv.field_size_limit', fake_field_size_limit)
-
-    records = load_local_records(str(dataset_path))
-
-    assert records[0]['TASK'] == 'task-1'
-    assert limits == [sys.maxsize, sys.maxsize // 10]
-
-
 def test_client_marks_transport_500_as_unavailable(monkeypatch: Any) -> None:
 
     class Response:
@@ -376,7 +347,7 @@ def test_load_dataset_filters_missing_servers_and_attaches_tools(tmp_path: Path)
             },
         ]
     )
-    adapter = make_adapter(local_path=str(dataset_path))
+    adapter = make_adapter(local_path=str(tmp_path))
     adapter._client = FakeClient()
 
     dataset = adapter.load_dataset()['default']
@@ -385,32 +356,6 @@ def test_load_dataset_filters_missing_servers_and_attaches_tools(tmp_path: Path)
     assert dataset[0].metadata['task_id'] == 'keep'
     assert dataset[0].tools[0].name == 'wikipedia_get_article'
     assert adapter._excluded_tasks == [{'task_id': 'drop', 'missing_servers': ['github']}]
-
-
-def test_load_dataset_applies_limit_after_server_filter(tmp_path: Path) -> None:
-    dataset_path = tmp_path / 'mcp_atlas.csv'
-    write_rows(
-        dataset_path, [{
-            'TASK': f'keep-{idx}',
-            'PROMPT': 'Use Wikipedia.',
-            'ENABLED_TOOLS': json.dumps(['wikipedia_get_article']),
-            'TRAJECTORY': json.dumps([{
-                'tool_calls': [{
-                    'function': {
-                        'name': 'wikipedia_get_article'
-                    }
-                }]
-            }]),
-            'GTFA_CLAIMS': json.dumps(['Uses the Wikipedia result.']),
-        } for idx in range(3)]
-    )
-    adapter = make_adapter(limit=1, local_path=str(dataset_path))
-    adapter._client = FakeClient()
-
-    dataset = adapter.load_dataset()['default']
-
-    assert len(dataset) == 1
-    assert dataset[0].metadata['task_id'] == 'keep-0'
 
 
 def test_build_tools_enforces_tool_call_limit() -> None:

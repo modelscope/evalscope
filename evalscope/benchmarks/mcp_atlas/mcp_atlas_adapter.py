@@ -2,20 +2,17 @@ from __future__ import annotations
 
 import asyncio
 import json
-from collections import Counter
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
-from evalscope.api.dataset import DatasetDict, DatasetHub, MemoryDataset, Sample
+from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolCall, ToolInfo
-from evalscope.constants import HubType, Tags
-from evalscope.utils.logger import get_logger
+from evalscope.constants import Tags
 from .metadata import DATASET_ID, DEFAULT_MCP_SERVER_URL, DEFAULT_SYSTEM_PROMPT, DESCRIPTION, EXTRA_PARAMS
 from .utils import (
     MCPAtlasClient,
@@ -24,15 +21,12 @@ from .utils import (
     extract_claims,
     extract_required_servers,
     field,
-    load_local_records,
     mcp_tool_to_tool_info,
     parse_claim_judge_response,
     parse_enabled_tools,
     server_unavailable_message,
     tool_name_to_server,
 )
-
-logger = get_logger()
 
 
 @register_benchmark(
@@ -83,23 +77,6 @@ class MCPAtlasAdapter(AgentLoopAdapter):
                 list_tools_timeout=self.list_tools_timeout,
             )
         return self._client
-
-    @property
-    def source_dataset_hub(self) -> str:
-        return self.dataset_hub or HubType.MODELSCOPE
-
-    def load_dataset(self) -> DatasetDict:
-        self._preflight()
-        records = self._load_records()
-        samples = [self.record_to_sample(record) for record in records]
-        samples = self._filter_samples(samples)
-        samples = self._apply_limit(samples)
-        dataset = MemoryDataset(samples=samples, name=self.name, location=self.dataset_id)
-        dataset.reindex(group_size=self.repeats)
-        self.test_dataset = DatasetDict({self.default_subset: dataset})
-        self.fewshot_dataset = None
-        self._post_process_samples()
-        return self.test_dataset
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         task_id = str(field(record, 'TASK', 'task', 'task_id') or '')
@@ -232,46 +209,21 @@ class MCPAtlasAdapter(AgentLoopAdapter):
             self._preflight()
         return self._tool_infos_by_name or {}
 
-    def _load_records(self) -> List[Dict[str, Any]]:
-        if self.source_dataset_hub == HubType.LOCAL or Path(self.dataset_id).exists():
-            return load_local_records(self.dataset_id)
-        dataset = DatasetHub(
-            data_id_or_path=self.dataset_id,
-            data_source=self.source_dataset_hub,
-            force_redownload=self.force_redownload,
-        ).load(split=self.eval_split or 'train', subset='default')
-        return [dict(row) for row in dataset]
-
-    def _filter_samples(self, samples: List[Sample]) -> List[Sample]:
+    def sample_filter(self, sample: Sample) -> bool:
         if not self.filter_enabled_servers:
-            return samples
+            return True
+        if self._enabled_servers is None:
+            self._preflight()
         enabled = set(self._enabled_servers or [])
-        filtered = []
-        self._excluded_tasks = []
-        for sample in samples:
-            required_servers = sample.metadata.get('required_servers') or []
-            missing = [server for server in required_servers if server not in enabled]
-            if missing:
-                self._excluded_tasks.append({
-                    'task_id': sample.metadata.get('task_id'),
-                    'missing_servers': missing,
-                })
-                continue
-            filtered.append(sample)
-        if self._excluded_tasks:
-            missing_counts = Counter(server for item in self._excluded_tasks for server in item['missing_servers'])
-            logger.info(
-                f'MCP-Atlas skipped {len(self._excluded_tasks)} tasks requiring unavailable MCP servers: '
-                f'{dict(missing_counts)}'
-            )
-        return filtered
-
-    def _apply_limit(self, samples: List[Sample]) -> List[Sample]:
-        if self.limit is None:
-            return samples
-        if isinstance(self.limit, float):
-            return samples[:int(len(samples) * self.limit)]
-        return samples[:self.limit]
+        required_servers = sample.metadata.get('required_servers') or []
+        missing = [server for server in required_servers if server not in enabled]
+        if not missing:
+            return True
+        self._excluded_tasks.append({
+            'task_id': sample.metadata.get('task_id'),
+            'missing_servers': missing,
+        })
+        return False
 
     def _make_tool_handler(self, tool_name: str, sample_key: int):
 

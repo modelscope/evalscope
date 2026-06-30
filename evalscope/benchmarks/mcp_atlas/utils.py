@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 import ast
-import csv
 import json
 import re
 import requests
-import sys
-from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 from evalscope.api.tool import ToolInfo, ToolParams
@@ -71,25 +68,6 @@ class MCPAtlasClient:
         return format_tool_response(response.json())
 
 
-def load_local_records(path: str) -> List[Dict[str, Any]]:
-    local_path = Path(path)
-    if local_path.is_dir():
-        csv_files = sorted(local_path.glob('*.csv'))
-        if not csv_files:
-            raise FileNotFoundError(f'No CSV file found in MCP-Atlas local path: {path}')
-        local_path = csv_files[0]
-    if local_path.suffix == '.jsonl':
-        records = []
-        with local_path.open(encoding='utf-8') as f:
-            for line in f:
-                if line.strip():
-                    records.append(json.loads(line))
-        return records
-    set_csv_field_size_limit()
-    with local_path.open(newline='', encoding='utf-8') as f:
-        return list(csv.DictReader(f))
-
-
 def parse_enabled_servers_response(data: Dict[str, Any]) -> List[str]:
     if 'servers' in data:
         servers = data['servers']
@@ -105,16 +83,6 @@ def parse_enabled_servers_response(data: Dict[str, Any]) -> List[str]:
     if isinstance(enabled_servers, list):
         return [str(name) for name in enabled_servers]
     return []
-
-
-def set_csv_field_size_limit() -> None:
-    limit = sys.maxsize
-    while True:
-        try:
-            csv.field_size_limit(limit)
-            return
-        except OverflowError:
-            limit = limit // 10
 
 
 def parse_enabled_tools(value: Any) -> List[str]:
