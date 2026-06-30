@@ -10,6 +10,21 @@ from evalscope.perf.plugin.datasets.random_dataset import RandomDatasetPlugin, _
 from evalscope.perf.plugin.registry import DatasetRegistry
 from evalscope.perf.utils.worker_util import resolve_dataset_generation_workers
 
+# ---------------------------------------------------------------------------
+# Test helpers
+# ---------------------------------------------------------------------------
+
+def _make_random_plugin(args: Arguments) -> RandomDatasetPlugin:
+    """Create a lightweight RandomDatasetPlugin without running ``__init__``."""
+    plugin = object.__new__(RandomDatasetPlugin)
+    plugin.query_parameters = args
+    plugin.number = args.total_count
+    plugin.tokenizer = None
+    plugin.allowed_tokens = np.arange(100)
+    plugin.prefix_ids = []
+    plugin.prefix_length = 0
+    return plugin
+
 
 class _ParallelDatasetPlugin(DatasetPluginBase):
     last_workers: int = 0
@@ -122,65 +137,26 @@ def test_random_dataset_parallel_uses_spawn_context() -> None:
 
 
 def test_random_dataset_auto_parallel_requires_large_long_prompt_work() -> None:
-    short_args = _make_args(
-        dataset='random',
-        number=512,
-        num_workers=0,
-        min_prompt_length=64,
-        max_prompt_length=64,
-        tokenize_prompt=False,
-    )
-    short_plugin = object.__new__(RandomDatasetPlugin)
-    short_plugin.query_parameters = short_args
-    short_plugin.number = short_args.total_count
-
-    mid_args = _make_args(
-        dataset='random',
-        number=512,
-        num_workers=0,
-        min_prompt_length=2048,
-        max_prompt_length=2048,
-        tokenize_prompt=False,
-    )
-    mid_plugin = object.__new__(RandomDatasetPlugin)
-    mid_plugin.query_parameters = mid_args
-    mid_plugin.number = mid_args.total_count
-
-    small_long_args = _make_args(
-        dataset='random',
-        number=128,
-        num_workers=0,
-        min_prompt_length=8192,
-        max_prompt_length=8192,
-        tokenize_prompt=False,
-    )
-    small_long_plugin = object.__new__(RandomDatasetPlugin)
-    small_long_plugin.query_parameters = small_long_args
-    small_long_plugin.number = small_long_args.total_count
-
-    large_long_args = _make_args(
-        dataset='random',
-        number=512,
-        num_workers=0,
-        min_prompt_length=8192,
-        max_prompt_length=8192,
-        tokenize_prompt=False,
-    )
-    large_long_plugin = object.__new__(RandomDatasetPlugin)
-    large_long_plugin.query_parameters = large_long_args
-    large_long_plugin.number = large_long_args.total_count
-
-    explicit_args = _make_args(
-        dataset='random',
-        number=512,
-        num_workers=2,
-        min_prompt_length=64,
-        max_prompt_length=64,
-        tokenize_prompt=False,
-    )
-    explicit_plugin = object.__new__(RandomDatasetPlugin)
-    explicit_plugin.query_parameters = explicit_args
-    explicit_plugin.number = explicit_args.total_count
+    short_plugin = _make_random_plugin(_make_args(
+        dataset='random', number=512, num_workers=0,
+        min_prompt_length=64, max_prompt_length=64, tokenize_prompt=False,
+    ))
+    mid_plugin = _make_random_plugin(_make_args(
+        dataset='random', number=512, num_workers=0,
+        min_prompt_length=2048, max_prompt_length=2048, tokenize_prompt=False,
+    ))
+    small_long_plugin = _make_random_plugin(_make_args(
+        dataset='random', number=128, num_workers=0,
+        min_prompt_length=8192, max_prompt_length=8192, tokenize_prompt=False,
+    ))
+    large_long_plugin = _make_random_plugin(_make_args(
+        dataset='random', number=512, num_workers=0,
+        min_prompt_length=8192, max_prompt_length=8192, tokenize_prompt=False,
+    ))
+    explicit_plugin = _make_random_plugin(_make_args(
+        dataset='random', number=512, num_workers=2,
+        min_prompt_length=64, max_prompt_length=64, tokenize_prompt=False,
+    ))
 
     assert not short_plugin.supports_parallel_message_generation()
     assert not mid_plugin.supports_parallel_message_generation()
@@ -190,15 +166,16 @@ def test_random_dataset_auto_parallel_requires_large_long_prompt_work() -> None:
 
 
 def test_random_dataset_serial_generation_uses_item_local_seeds(monkeypatch: MonkeyPatch) -> None:
-    def fake_generate_token_sequence(
-        self: RandomDatasetPlugin,
-        input_len: int,
-        offset: int,
-        index: int,
-    ) -> Tuple[str, int, int]:
-        return f'{input_len}-{offset}-{index}-{np.random.randint(0, 100000)}', input_len, 0
+    def fake_gen_prompt(tokenizer, token_sequence, target_token_len, add_special_tokens, allowed_tokens):
+        """Return a prompt that embeds the current numpy random state so we can
+        verify that seeds are applied before each item."""
+        prompt = f'{target_token_len}-{np.random.randint(0, 100000)}'
+        return prompt, token_sequence, 0
 
-    monkeypatch.setattr(RandomDatasetPlugin, 'generate_token_sequence', fake_generate_token_sequence)
+    monkeypatch.setattr(
+        'evalscope.perf.plugin.datasets.random_dataset.gen_prompt_decode_to_target_len',
+        fake_gen_prompt,
+    )
 
     args = _make_args(
         dataset='random',
@@ -211,21 +188,11 @@ def test_random_dataset_serial_generation_uses_item_local_seeds(monkeypatch: Mon
     )
 
     np.random.seed(123)
-    serial_plugin = object.__new__(RandomDatasetPlugin)
-    serial_plugin.query_parameters = args
-    serial_plugin.number = args.total_count
-    serial_plugin.allowed_tokens = np.arange(100)
-    serial_plugin.prefix_ids = []
-    serial_plugin.prefix_length = 0
+    serial_plugin = _make_random_plugin(args)
     serial = list(serial_plugin.build_messages())
 
     np.random.seed(123)
-    expected_plugin = object.__new__(RandomDatasetPlugin)
-    expected_plugin.query_parameters = args
-    expected_plugin.number = args.total_count
-    expected_plugin.allowed_tokens = np.arange(100)
-    expected_plugin.prefix_ids = []
-    expected_plugin.prefix_length = 0
+    expected_plugin = _make_random_plugin(args)
     plan = expected_plugin._create_generation_plan(args.total_count, include_seeds=True)
     expected = [
         expected_plugin._build_random_message(input_len, offset, index, seed)[0]

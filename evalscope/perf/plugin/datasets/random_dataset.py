@@ -70,36 +70,80 @@ def _assemble_token_sequence(
     return prefix_ids + inner_seq
 
 
+def _build_one_random_message(
+    tokenizer: Optional[Any],
+    allowed_tokens: np.ndarray,
+    prefix_ids: List[int],
+    tokenize_prompt: bool,
+    apply_chat_template: bool,
+    input_len: int,
+    offset: int,
+    index: int,
+    seed: Optional[int] = None,
+) -> Tuple[Union[List[Dict], List[int], str], int]:
+    """Build one random message (shared by serial and worker paths).
+
+    This is a pure function that does not depend on instance or global state
+    so that both the in-process serial path and spawned worker processes can
+    call it without code duplication.
+    """
+    token_sequence = _assemble_token_sequence(allowed_tokens, prefix_ids, offset, index, input_len)
+
+    if tokenize_prompt:
+        return token_sequence, 0
+
+    target_token_len = len(prefix_ids) + int(input_len)
+
+    if seed is not None:
+        random_state = np.random.get_state()
+        np.random.seed(seed)
+        try:
+            prompt, _, token_mismatch = gen_prompt_decode_to_target_len(
+                tokenizer=tokenizer,
+                token_sequence=token_sequence,
+                target_token_len=target_token_len,
+                add_special_tokens=False,
+                allowed_tokens=allowed_tokens,
+            )
+        finally:
+            np.random.set_state(random_state)
+    else:
+        prompt, _, token_mismatch = gen_prompt_decode_to_target_len(
+            tokenizer=tokenizer,
+            token_sequence=token_sequence,
+            target_token_len=target_token_len,
+            add_special_tokens=False,
+            allowed_tokens=allowed_tokens,
+        )
+
+    if apply_chat_template:
+        return [{'role': 'user', 'content': prompt}], token_mismatch
+    return prompt, token_mismatch
+
+
 def _build_random_message_worker(
     task: Tuple[int, int, int, Optional[int]],
 ) -> Tuple[int, Union[List[Dict], List[int], str], int]:
-    """Build one random message from an index-level generation task."""
+    """Worker entry point: unpack task tuple and delegate to shared builder."""
     if _RANDOM_GENERATION_WORKER_STATE is None:
         raise RuntimeError('Random request generation worker state is not initialized.')
 
     index, input_len, offset, seed = task
     state = _RANDOM_GENERATION_WORKER_STATE
-    allowed_tokens = state.allowed_tokens
-    prefix_ids = state.prefix_ids
-    token_sequence = _assemble_token_sequence(allowed_tokens, prefix_ids, offset, index, input_len)
-
-    if state.tokenize_prompt:
-        return index, token_sequence, 0
-
-    if seed is None:
+    if seed is None and not state.tokenize_prompt:
         raise ValueError('Parallel random request generation requires a per-item seed.')
-    np.random.seed(seed)
-    target_token_len = len(prefix_ids) + int(input_len)
-    prompt, _, token_mismatch = gen_prompt_decode_to_target_len(
+    message, token_mismatch = _build_one_random_message(
         tokenizer=state.tokenizer,
-        token_sequence=token_sequence,
-        target_token_len=target_token_len,
-        add_special_tokens=False,
-        allowed_tokens=allowed_tokens,
+        allowed_tokens=state.allowed_tokens,
+        prefix_ids=state.prefix_ids,
+        tokenize_prompt=state.tokenize_prompt,
+        apply_chat_template=state.apply_chat_template,
+        input_len=input_len,
+        offset=offset,
+        index=index,
+        seed=seed,
     )
-    if state.apply_chat_template:
-        return index, [{'role': 'user', 'content': prompt}], token_mismatch
-    return index, prompt, token_mismatch
+    return index, message, token_mismatch
 
 
 @register_dataset('random')
@@ -152,7 +196,15 @@ class RandomDatasetPlugin(DatasetPluginBase):
         self._log_token_mismatch(token_mismatch_total)
 
     def supports_parallel_message_generation(self, total_count: Optional[int] = None) -> bool:
-        """Random prompts are independent by index and can be generated in worker processes."""
+        """Random prompts are independent by index and can be generated in worker processes.
+
+        Args:
+            total_count: Override for the item count used in auto-parallel heuristics.
+                When ``None``, falls back to ``self.number`` (the value set at
+                ``__init__`` time).  The caller in ``benchmark.py`` always passes
+                the resolved ``total_count`` explicitly; the default exists for
+                convenient use in tests and standalone scripts.
+        """
         if self.query_parameters.num_workers > 1:
             return True
         if self.query_parameters.tokenize_prompt:
@@ -172,6 +224,8 @@ class RandomDatasetPlugin(DatasetPluginBase):
         if total_count <= 0:
             return []
 
+        # Defensive guard: benchmark.py already ensures workers > 1 before
+        # calling this method, but direct callers may pass any value.
         workers = max(1, min(workers, total_count))
         if workers == 1:
             return list(self._build_messages_for_count(total_count))
@@ -264,33 +318,22 @@ class RandomDatasetPlugin(DatasetPluginBase):
         index: int,
         seed: Optional[int] = None,
     ) -> Tuple[Union[List[Dict], List[int], str], int]:
-        """Build one random message in the current process."""
-        if self.query_parameters.tokenize_prompt:
-            token_ids = self.generate_token_ids_only(input_len=input_len, offset=offset, index=index)
-            return token_ids, 0
+        """Build one random message in the current process.
 
-        if seed is None:
-            prompt, _, token_mismatch = self.generate_token_sequence(
-                input_len=input_len,
-                offset=offset,
-                index=index,
-            )
-        else:
-            random_state = np.random.get_state()
-            np.random.seed(seed)
-            try:
-                prompt, _, token_mismatch = self.generate_token_sequence(
-                    input_len=input_len,
-                    offset=offset,
-                    index=index,
-                )
-            finally:
-                np.random.set_state(random_state)
-
-        if self.query_parameters.apply_chat_template:
-            message = self.create_message(prompt)
-            return [message], token_mismatch
-        return prompt, token_mismatch
+        Delegates to the shared pure function ``_build_one_random_message`` so
+        that serial and parallel paths share identical generation logic.
+        """
+        return _build_one_random_message(
+            tokenizer=self.tokenizer,
+            allowed_tokens=self.allowed_tokens,
+            prefix_ids=self.prefix_ids,
+            tokenize_prompt=self.query_parameters.tokenize_prompt,
+            apply_chat_template=self.query_parameters.apply_chat_template,
+            input_len=input_len,
+            offset=offset,
+            index=index,
+            seed=seed,
+        )
 
     def _log_token_mismatch(self, token_mismatch_total: int) -> None:
         """Log aggregate token mismatch from decode/re-encode prompt generation."""

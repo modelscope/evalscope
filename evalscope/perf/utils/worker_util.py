@@ -1,5 +1,8 @@
 import os
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from evalscope.perf.arguments import Arguments
 
 _MAX_AUTO_DATASET_WORKERS = 32
 _MIN_AUTO_ITEMS_PER_WORKER = 128
@@ -16,7 +19,7 @@ def available_cpu_count() -> int:
 
 
 def resolve_dataset_generation_workers(
-    args: Any,
+    args: 'Arguments',
     total_count: int,
     supports_parallel_generation: bool,
 ) -> int:
