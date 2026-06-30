@@ -67,7 +67,7 @@ class DatasetPluginBase:
         """
         raise NotImplementedError
 
-    def supports_parallel_message_generation(self) -> bool:
+    def supports_parallel_message_generation(self, total_count: Optional[int] = None) -> bool:
         """Return whether this dataset can build messages by independent index chunks."""
         return False
 

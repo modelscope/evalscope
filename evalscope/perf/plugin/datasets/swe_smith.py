@@ -406,7 +406,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
 
         num_workers = resolve_dataset_generation_workers(
             args=self.query_parameters,
-            total_count=len(work_items),
+            total_count=min(len(work_items), target_count),
             supports_parallel_generation=True,
         )
         logger.info(

@@ -1,7 +1,7 @@
 import asyncio
 import numpy as np
 from pytest import MonkeyPatch
-from typing import Dict, Iterator, List, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.benchmark import get_requests
@@ -17,7 +17,7 @@ class _ParallelDatasetPlugin(DatasetPluginBase):
     def build_messages(self) -> Iterator[str]:
         raise AssertionError('serial generation should not be used')
 
-    def supports_parallel_message_generation(self) -> bool:
+    def supports_parallel_message_generation(self, total_count: Optional[int] = None) -> bool:
         return True
 
     def build_messages_parallel(self, total_count: int, workers: int) -> List[str]:
@@ -99,9 +99,22 @@ def test_dataset_generation_workers_can_disable_parallel_path() -> None:
 
 
 def test_multi_turn_num_workers_is_promoted_to_top_level() -> None:
-    args = _make_args(num_workers=0, multi_turn_args={'num_workers': 3})
+    args = Arguments(
+        model='test-model',
+        url='http://127.0.0.1:8000/v1/chat/completions',
+        dataset='unit_parallel_dataset',
+        number=3,
+        parallel=1,
+        multi_turn_args={'num_workers': 3},
+    )
 
     assert args.num_workers == 3
+
+
+def test_top_level_num_workers_takes_precedence_over_multi_turn_value() -> None:
+    args = _make_args(num_workers=0, multi_turn_args={'num_workers': 3})
+
+    assert args.num_workers == 0
 
 
 def test_random_dataset_parallel_uses_spawn_context() -> None:

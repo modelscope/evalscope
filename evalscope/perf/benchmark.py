@@ -50,7 +50,7 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
     async def _generate_from_dataset():
         """Generate requests by cycling through a dataset."""
         message_generator = DatasetRegistry.get_class(args.dataset)(args)
-        supports_parallel_generation = message_generator.supports_parallel_message_generation()
+        supports_parallel_generation = message_generator.supports_parallel_message_generation(total_count)
         dataset_generation_workers = resolve_dataset_generation_workers(
             args=args,
             total_count=total_count,
@@ -70,7 +70,7 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
                 message_generator.build_messages(),
                 desc='Generating[requests]',
                 total=total_count,
-                initial=1,
+                initial=0,
                 logger=logger
             ) as pbar:
                 for messages in pbar:

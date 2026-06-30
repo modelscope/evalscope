@@ -21,10 +21,7 @@ from typing import Any, Dict, List
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.benchmark import get_requests
-from evalscope.perf.plugin.datasets.random_dataset import (
-    _MIN_AUTO_PARALLEL_PROMPT_LENGTH,
-    _MIN_AUTO_PARALLEL_TOKEN_WORK,
-)
+from evalscope.perf.plugin.datasets.random_dataset import RandomDatasetPlugin
 from evalscope.perf.utils.worker_util import resolve_dataset_generation_workers
 
 _BENCHMARK_URL = 'http://127.0.0.1:8000/v1/chat/completions'
@@ -123,16 +120,10 @@ def _make_arguments(
 
 
 def _random_dataset_supports_parallel(args: Arguments) -> bool:
-    if args.num_workers > 1:
-        return True
-    if args.tokenize_prompt:
-        return False
-    prompt_length_estimate = (args.min_prompt_length + args.max_prompt_length) // 2
-    token_work_estimate = prompt_length_estimate * args.total_count
-    return (
-        prompt_length_estimate >= _MIN_AUTO_PARALLEL_PROMPT_LENGTH
-        and token_work_estimate >= _MIN_AUTO_PARALLEL_TOKEN_WORK
-    )
+    plugin = object.__new__(RandomDatasetPlugin)
+    plugin.query_parameters = args
+    plugin.number = args.total_count
+    return plugin.supports_parallel_message_generation(args.total_count)
 
 
 async def _consume_requests(args: Arguments) -> int:

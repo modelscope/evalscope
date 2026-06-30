@@ -468,7 +468,7 @@ class Arguments(BaseArgument):
         self._validate_sweep_params()
 
         if (
-            self.num_workers == 0 and self.multi_turn_args is not None
+            'num_workers' not in self.model_fields_set and self.multi_turn_args is not None
             and 'num_workers' in self.multi_turn_args.model_fields_set
         ):
             logger.warning('`multi_turn_args.num_workers` is deprecated. Please use top-level `--num-workers` instead.')
@@ -636,7 +636,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument(
         '--num-workers',
         type=int,
-        default=0,
+        default=None,
         help=(
             'Worker processes for CPU-bound dataset/request generation. '
             '0=auto from CPU affinity, 1=serial, >1=explicit worker count.'

@@ -58,6 +58,18 @@ def _init_random_generation_worker(
     )
 
 
+def _assemble_token_sequence(
+    allowed_tokens: np.ndarray,
+    prefix_ids: List[int],
+    offset: int,
+    index: int,
+    input_len: int,
+) -> List[int]:
+    """Build the raw token-ID list for one random prompt."""
+    inner_seq = allowed_tokens[(offset + index + np.arange(input_len)) % len(allowed_tokens)].tolist()
+    return prefix_ids + inner_seq
+
+
 def _build_random_message_worker(
     task: Tuple[int, int, int, Optional[int]],
 ) -> Tuple[int, Union[List[Dict], List[int], str], int]:
@@ -69,8 +81,7 @@ def _build_random_message_worker(
     state = _RANDOM_GENERATION_WORKER_STATE
     allowed_tokens = state.allowed_tokens
     prefix_ids = state.prefix_ids
-    inner_seq = allowed_tokens[(offset + index + np.arange(input_len)) % len(allowed_tokens)].tolist()
-    token_sequence = prefix_ids + inner_seq
+    token_sequence = _assemble_token_sequence(allowed_tokens, prefix_ids, offset, index, input_len)
 
     if state.tokenize_prompt:
         return index, token_sequence, 0
@@ -79,16 +90,13 @@ def _build_random_message_worker(
         raise ValueError('Parallel random request generation requires a per-item seed.')
     np.random.seed(seed)
     target_token_len = len(prefix_ids) + int(input_len)
-    prompt, adjusted_token_sequence, token_mismatch = gen_prompt_decode_to_target_len(
+    prompt, _, token_mismatch = gen_prompt_decode_to_target_len(
         tokenizer=state.tokenizer,
         token_sequence=token_sequence,
         target_token_len=target_token_len,
         add_special_tokens=False,
         allowed_tokens=allowed_tokens,
     )
-    if len(adjusted_token_sequence) != target_token_len:
-        token_mismatch = len(adjusted_token_sequence) - target_token_len
-
     if state.apply_chat_template:
         return index, [{'role': 'user', 'content': prompt}], token_mismatch
     return index, prompt, token_mismatch
@@ -107,7 +115,7 @@ class RandomDatasetPlugin(DatasetPluginBase):
         self.prefix_length = self.query_parameters.prefix_length
         # Include warmup_count so the generator produces enough unique items
         # to cover both warmup and benchmark requests without cycling reuse.
-        self.number = self.query_parameters.total_count or 1
+        self.number = self.query_parameters.total_count
 
         # Filter out special tokens and byte-fallback tokens from vocabulary.
         # Byte-fallback tokens (e.g. <0xE4>) are NOT in all_special_ids but decode to
@@ -143,16 +151,17 @@ class RandomDatasetPlugin(DatasetPluginBase):
 
         self._log_token_mismatch(token_mismatch_total)
 
-    def supports_parallel_message_generation(self) -> bool:
+    def supports_parallel_message_generation(self, total_count: Optional[int] = None) -> bool:
         """Random prompts are independent by index and can be generated in worker processes."""
         if self.query_parameters.num_workers > 1:
             return True
         if self.query_parameters.tokenize_prompt:
             return False
+        count = self.number if total_count is None else total_count
         prompt_length_estimate = (
             self.query_parameters.min_prompt_length + self.query_parameters.max_prompt_length
         ) // 2
-        token_work_estimate = prompt_length_estimate * self.number
+        token_work_estimate = prompt_length_estimate * count
         return (
             prompt_length_estimate >= _MIN_AUTO_PARALLEL_PROMPT_LENGTH
             and token_work_estimate >= _MIN_AUTO_PARALLEL_TOKEN_WORK
@@ -200,7 +209,7 @@ class RandomDatasetPlugin(DatasetPluginBase):
             raise RuntimeError(f'Parallel random request generation missed {len(missing)} items.')
 
         self._log_token_mismatch(token_mismatch_total)
-        return [message for message in messages if message is not None]
+        return messages
 
     def _resolve_prompt_length_bounds(self) -> Tuple[int, int]:
         """Resolve the random prompt length sampling interval."""
@@ -306,8 +315,7 @@ class RandomDatasetPlugin(DatasetPluginBase):
         The result is intended to be sent directly as `prompt=[int, ...]` to the
         /v1/completions endpoint via the --tokenize-prompt path.
         """
-        inner_seq = self.allowed_tokens[(offset + index + np.arange(input_len)) % len(self.allowed_tokens)].tolist()
-        return self.prefix_ids + inner_seq
+        return _assemble_token_sequence(self.allowed_tokens, self.prefix_ids, offset, index, input_len)
 
     def generate_token_sequence(
         self,
@@ -321,10 +329,7 @@ class RandomDatasetPlugin(DatasetPluginBase):
         Uses a deterministic sequence based on offset and index to ensure reproducibility,
         then decodes and re-encodes to handle tokenizer inconsistencies.
         """
-        # Build the inner sequence by sampling sequentially from allowed tokens
-        inner_seq = self.allowed_tokens[(offset + index + np.arange(input_len)) % len(self.allowed_tokens)].tolist()
-        token_sequence = self.prefix_ids + inner_seq
-
+        token_sequence = _assemble_token_sequence(self.allowed_tokens, self.prefix_ids, offset, index, input_len)
         # Decode, then re-encode with retry logic to match target length
         total_input_len = self.prefix_length + int(input_len)
         prompt, adjusted_token_sequence, token_mismatch = gen_prompt_decode_to_target_len(
