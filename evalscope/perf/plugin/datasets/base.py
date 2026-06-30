@@ -67,6 +67,19 @@ class DatasetPluginBase:
         """
         raise NotImplementedError
 
+    def supports_parallel_message_generation(self, total_count: Optional[int] = None) -> bool:
+        """Return whether this dataset can build messages by independent index chunks."""
+        return False
+
+    def build_messages_parallel(self, total_count: int, workers: int) -> List[Any]:
+        """Build messages using multiple worker processes.
+
+        Dataset plugins should override this only when each output item can be
+        generated independently and then reassembled by index without changing
+        benchmark semantics.
+        """
+        raise NotImplementedError
+
     def dataset_line_by_line(self, dataset: str) -> Iterator[str]:
         """Get content line by line of dataset.
 

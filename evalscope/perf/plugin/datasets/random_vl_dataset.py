@@ -1,6 +1,6 @@
 import random
 from PIL import Image, ImageDraw
-from typing import Dict, Iterator, List
+from typing import Dict, Iterator, List, Optional
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.random_dataset import RandomDatasetPlugin
@@ -42,6 +42,10 @@ class RandomVLDatasetPlugin(RandomDatasetPlugin):
 
             message = self.create_message(text=prompt, image_urls=images_b64)
             yield [message]
+
+    def supports_parallel_message_generation(self, total_count: Optional[int] = None) -> bool:
+        """Random VL includes image generation and currently uses the serial path."""
+        return False
 
     def _generate_random_image_b64(self) -> str:
         """Generate a random image and return as base64 string."""

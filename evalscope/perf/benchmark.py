@@ -1,6 +1,6 @@
 import asyncio
 import numpy as np
-from typing import TYPE_CHECKING, AsyncGenerator, Optional, Tuple
+from typing import TYPE_CHECKING, AsyncGenerator, List, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.http_client import AioHttpClient
@@ -9,6 +9,7 @@ from evalscope.perf.core.strategies import ClosedLoopStrategy, OpenLoopStrategy
 from evalscope.perf.plugin import ApiRegistry, DatasetRegistry
 from evalscope.perf.utils.db_util import load_prompt, summary_result
 from evalscope.perf.utils.handler import exception_handler
+from evalscope.perf.utils.worker_util import resolve_dataset_generation_workers
 from evalscope.utils.logger import get_logger
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 
@@ -49,20 +50,33 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
     async def _generate_from_dataset():
         """Generate requests by cycling through a dataset."""
         message_generator = DatasetRegistry.get_class(args.dataset)(args)
-        dataset_messages = []
+        supports_parallel_generation = message_generator.supports_parallel_message_generation(total_count)
+        dataset_generation_workers = resolve_dataset_generation_workers(
+            args=args,
+            total_count=total_count,
+            supports_parallel_generation=supports_parallel_generation,
+        )
+        dataset_messages: List = []
 
-        # Load dataset messages into memory (limited by total_count).
-        with tqdm(
-            message_generator.build_messages(),
-            desc='Generating[requests]',
-            total=total_count,
-            initial=1,
-            logger=logger
-        ) as pbar:
-            for messages in pbar:
-                dataset_messages.append(messages)
-                if len(dataset_messages) >= total_count:
-                    break
+        if dataset_generation_workers > 1:
+            logger.info(f'Using {dataset_generation_workers} workers for CPU-bound request generation.')
+            dataset_messages = message_generator.build_messages_parallel(
+                total_count=total_count,
+                workers=dataset_generation_workers,
+            )
+        else:
+            # Load dataset messages into memory (limited by total_count).
+            with tqdm(
+                message_generator.build_messages(),
+                desc='Generating[requests]',
+                total=total_count,
+                initial=0,
+                logger=logger
+            ) as pbar:
+                for messages in pbar:
+                    dataset_messages.append(messages)
+                    if len(dataset_messages) >= total_count:
+                        break
 
         if not dataset_messages:
             raise ValueError('Dataset is empty!')

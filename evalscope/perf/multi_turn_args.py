@@ -49,7 +49,7 @@ class MultiTurnArgs(BaseModel):
     """Estimated characters per token used for pre-filtering when no tokenizer is available."""
 
     num_workers: int = 4
-    """Number of parallel worker processes for live conversation building (>1 uses multiprocessing.Pool)."""
+    """Deprecated. Use top-level ``--num-workers`` for live dataset construction workers."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -63,6 +63,13 @@ class MultiTurnArgs(BaseModel):
                 raise ValueError(f'IntOrRange list min must be <= max, got {v}')
             if v[0] < 0:
                 raise ValueError(f'IntOrRange list values must be >= 0, got {v}')
+        return v
+
+    @field_validator('num_workers', mode='after')
+    @classmethod
+    def _validate_num_workers(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError('multi_turn_args.num_workers must be >= 0')
         return v
 
     def sample_params(self) -> dict:

@@ -187,6 +187,14 @@ class Arguments(BaseArgument):
     in_flight_task_multiplier: int = 2
     """Max scheduled tasks = parallel * this multiplier."""
 
+    num_workers: int = 0
+    """Number of worker processes for CPU-bound dataset/request generation.
+
+    Set to 0 for auto-detection based on the current CPU affinity, 1 to force
+    serial generation, or >1 to explicitly choose the worker count. Only
+    dataset plugins that advertise parallel generation use this setting.
+    """
+
     # Logging and debugging
     log_every_n_query: int = 100
     """Log every N queries."""
@@ -430,6 +438,13 @@ class Arguments(BaseArgument):
     def _validate_in_flight_task_multiplier(cls, v):
         return max(v, 1) if v <= 0 else v
 
+    @field_validator('num_workers', mode='after')
+    @classmethod
+    def _validate_num_workers(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError('--num-workers must be >= 0')
+        return v
+
     # --- Model validator (cross-field logic) ---
 
     @model_validator(mode='after')
@@ -451,6 +466,13 @@ class Arguments(BaseArgument):
 
         # Validate sweep params (number/parallel/rate consistency)
         self._validate_sweep_params()
+
+        if (
+            'num_workers' not in self.model_fields_set and self.multi_turn_args is not None
+            and 'num_workers' in self.multi_turn_args.model_fields_set
+        ):
+            logger.warning('`multi_turn_args.num_workers` is deprecated. Please use top-level `--num-workers` instead.')
+            self.num_workers = self.multi_turn_args.num_workers
 
         return self
 
@@ -611,6 +633,15 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--db-commit-interval', type=int, default=1000, help='Rows buffered before SQLite commit')
     parser.add_argument('--queue-size-multiplier', type=int, default=5, help='Queue maxsize = parallel * multiplier')
     parser.add_argument('--in-flight-task-multiplier', type=int, default=2, help='Max scheduled tasks = parallel * multiplier')  # noqa: E501
+    parser.add_argument(
+        '--num-workers',
+        type=int,
+        default=None,
+        help=(
+            'Worker processes for CPU-bound dataset/request generation. '
+            '0=auto from CPU affinity, 1=serial, >1=explicit worker count.'
+        ),
+    )
 
     # Logging and debugging
     parser.add_argument('--log-every-n-query', type=int, default=100, help='Logging every n query')
@@ -729,7 +760,8 @@ def add_argument(parser: argparse.ArgumentParser):
             'Example: \'{"first_turn_length": 65000, "subsequent_turn_length": 500, '
             '"chars_per_token": 3.0}\'. '
             'Note: min_turns and max_turns are top-level --min-turns / --max-turns arguments '
-            '(per-conversation turn count is sampled from [min_turns, max_turns]).'
+            '(per-conversation turn count is sampled from [min_turns, max_turns]); '
+            'use top-level --num-workers for live construction parallelism.'
         ),
     )
     # yapf: enable
