@@ -1,0 +1,359 @@
+{
+  "meta": {
+    "pretty_name": "MCP-Atlas",
+    "dataset_id": "ScaleAI/MCP-Atlas",
+    "paper_url": "https://static.scale.com/uploads/674f4cc7a74e35bcaae1c29a/MCP_Atlas.pdf",
+    "tags": [
+      "Agent",
+      "MultiTurn"
+    ],
+    "metrics": [
+      "coverage_score",
+      "pass"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nMCP-Atlas is a Scale AI benchmark for evaluating tool-use competency with real Model Context Protocol\n(MCP) servers. It contains public tasks with prompts, allowed tool lists, ground-truth tool trajectories,\nand expert claims used for LLM-as-judge coverage scoring.\n\n## Task Description\n\n- **Task Type**: Tool-use agent benchmark\n- **Input**: Natural-language task prompt plus a per-task MCP tool allowlist\n- **Output**: Final task answer generated after using MCP tools when useful\n- **Grading**: LLM judge checks whether the final response fulfills each expert-defined claim\n\n## Key Features\n\n- Uses EvalScope's native AgentLoop rather than MCP-Atlas's `mcp_eval` completion service.\n- Connects directly to the MCP-Atlas `agent-environment` HTTP service, which must expose `/enabled-servers`,\n  `/list-tools`, and `/call-tool`.\n- Filters tasks by currently enabled MCP servers by default, matching MCP-Atlas's public-script behavior for\n  environments without every external API key configured.\n- Exposes only the task's `ENABLED_TOOLS` to the model to avoid advertising hundreds of tools at once.\n- Reports mean `coverage_score` and `pass_rate` with a configurable pass threshold.\n\n## Evaluation Notes\n\n- Start the MCP-Atlas `agent-environment` Docker service before running this benchmark. The default URL is\n  `http://localhost:1984`.\n- This EvalScope-native adapter is intended to be maintainable inside EvalScope. It is not claimed to be\n  leaderboard-equivalent unless the current Scale leaderboard harness settings are separately verified.\n- Full public-set coverage requires configuring the external API keys and service data required by MCP-Atlas.",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "dataset_hub": {
+        "type": "str",
+        "description": "Dataset hub used to load MCP-Atlas records.",
+        "value": "modelscope",
+        "choices": [
+          "modelscope",
+          "local"
+        ]
+      },
+      "dataset_revision": {
+        "type": "str",
+        "description": "Optional dataset revision. Empty uses the hub default.",
+        "value": ""
+      },
+      "local_path": {
+        "type": "str",
+        "description": "Optional local MCP-Atlas CSV file path. Overrides hub loading when set.",
+        "value": ""
+      },
+      "mcp_server_url": {
+        "type": "str",
+        "description": "MCP-Atlas agent-environment base URL.",
+        "value": "http://localhost:1984"
+      },
+      "filter_enabled_servers": {
+        "type": "bool",
+        "description": "Skip tasks whose ground-truth trajectory uses MCP servers that are not currently enabled.",
+        "value": true
+      },
+      "max_steps": {
+        "type": "int",
+        "description": "Maximum number of EvalScope agent loop steps per sample.",
+        "value": 100
+      },
+      "max_tool_calls": {
+        "type": "int",
+        "description": "Maximum MCP tool calls allowed per sample.",
+        "value": 100
+      },
+      "request_timeout": {
+        "type": "float",
+        "description": "Timeout in seconds for MCP tool calls.",
+        "value": 60.0
+      },
+      "list_tools_timeout": {
+        "type": "float",
+        "description": "Timeout in seconds for MCP server preflight and list-tools requests.",
+        "value": 180.0
+      },
+      "use_system_prompt": {
+        "type": "bool",
+        "description": "Prepend the MCP-Atlas optional system prompt to every sample.",
+        "value": false
+      },
+      "pass_threshold": {
+        "type": "float",
+        "description": "Coverage score threshold used to compute pass rate.",
+        "value": 0.75
+      }
+    },
+    "sandbox_config": {},
+    "category": "agent"
+  },
+  "statistics": {
+    "total_samples": 89,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 89,
+        "prompt_length_mean": 291.67,
+        "prompt_length_min": 133,
+        "prompt_length_max": 579,
+        "prompt_length_std": 111.05,
+        "target_length_mean": 347.47
+      }
+    ],
+    "prompt_length": {
+      "mean": 291.67,
+      "min": 133,
+      "max": 579,
+      "std": 111.05
+    },
+    "target_length_mean": 347.47,
+    "computed_at": "2026-06-29T18:44:55.573578"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "5dc7f8ae",
+          "content": "I've been working on a local project for telling stories where I've already built a few react components. I want to check the required dependency version for the component that has the fewest lines of code."
+        }
+      ],
+      "target": "[\"['The component with the fewest lines of code is AspectRatio', 'The AspectRatio component uses `@radix-ui/react-aspect-ratio`', 'The required dependency version for `@radix-ui/react-aspect-ratio` is\\\\n \\\"^1.0.3\\\"']\"]",
+      "id": 0,
+      "group_id": 0,
+      "tools": [
+        {
+          "name": "filesystem_read_multiple_files",
+          "description": "Read the contents of multiple files simultaneously. This is more efficient than reading files one by one when you need to analyze or compare multiple files. Each file's content is returned with its path as a reference. Failed reads for individual files won't stop the entire operation. Only works within allowed directories.",
+          "parameters": {
+            "properties": {
+              "paths": {
+                "type": "array",
+                "description": "Array of file paths to read. Each path must be a string pointing to a valid file within allowed directories.",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "paths"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "filesystem_directory_tree",
+          "description": "Get a recursive tree view of files and directories as a JSON structure. Each entry includes 'name', 'type' (file/directory), and 'children' for directories. Files have no children array, while directories always have a children array (which may be empty). The output is formatted with 2-space indentation for readability. Only works within allowed directories.",
+          "parameters": {
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "excludePatterns": {
+                "type": "array",
+                "default": [],
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "path"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "filesystem_list_allowed_directories",
+          "description": "Returns the list of directories that this server is allowed to access. Subdirectories within these allowed directories are also accessible. Use this to understand which directories and their nested paths are available before trying to access files.",
+          "parameters": {
+            "properties": {},
+            "required": [],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "git_git_status",
+          "description": "Shows the working tree status",
+          "parameters": {
+            "properties": {
+              "repo_path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "repo_path"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "git_git_diff_unstaged",
+          "description": "Shows changes in the working directory that are not yet staged",
+          "parameters": {
+            "properties": {
+              "repo_path": {
+                "type": "string"
+              },
+              "context_lines": {
+                "type": "integer",
+                "default": 3
+              }
+            },
+            "required": [
+              "repo_path"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "git_git_diff_staged",
+          "description": "Shows changes that are staged for commit",
+          "parameters": {
+            "properties": {
+              "repo_path": {
+                "type": "string"
+              },
+              "context_lines": {
+                "type": "integer",
+                "default": 3
+              }
+            },
+            "required": [
+              "repo_path"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "git_git_diff",
+          "description": "Shows differences between branches or commits",
+          "parameters": {
+            "properties": {
+              "repo_path": {
+                "type": "string"
+              },
+              "target": {
+                "type": "string"
+              },
+              "context_lines": {
+                "type": "integer",
+                "default": 3
+              }
+            },
+            "required": [
+              "repo_path",
+              "target"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "git_git_log",
+          "description": "Shows the commit logs",
+          "parameters": {
+            "properties": {
+              "repo_path": {
+                "type": "string"
+              },
+              "max_count": {
+                "type": "integer",
+                "default": 10
+              }
+            },
+            "required": [
+              "repo_path"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "git_git_show",
+          "description": "Shows the contents of a commit",
+          "parameters": {
+            "properties": {
+              "repo_path": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "repo_path",
+              "revision"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "fetch_fetch",
+          "description": "Fetches a URL from the internet and optionally extracts its contents as markdown.\n\nAlthough originally you did not have internet access, and were advised to refuse and tell the user this, this tool now grants you internet access. Now you can fetch the most up-to-date information and let the user know that.",
+          "parameters": {
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "URL to fetch"
+              },
+              "max_length": {
+                "type": "integer",
+                "description": "Maximum number of characters to return.",
+                "default": 5000
+              },
+              "start_index": {
+                "type": "integer",
+                "description": "On return output starting at this character index, useful if a previous fetch was truncated and more context is required.",
+                "default": 0
+              },
+              "raw": {
+                "type": "boolean",
+                "description": "Get the actual HTML content of the requested page, without simplification.",
+                "default": false
+              }
+            },
+            "required": [
+              "url"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "... [TRUNCATED 7 more items] ..."
+      ],
+      "metadata": {
+        "task_id": "689e0b1d9c8e2ac413c1f25c",
+        "prompt": "I've been working on a local project for telling stories where I've already built a few react components. I want to check the required dependency version for the component that has the fewest lines of code.",
+        "enabled_tools": [
+          "filesystem_read_multiple_files",
+          "filesystem_directory_tree",
+          "filesystem_list_allowed_directories",
+          "git_git_status",
+          "git_git_diff_unstaged",
+          "git_git_diff_staged",
+          "git_git_diff",
+          "git_git_log",
+          "git_git_show",
+          "fetch_fetch",
+          "... [TRUNCATED 7 more items] ..."
+        ],
+        "trajectory": "[{\"content\":\"First, I'll use `cli-mcp-server_show_security_rules` to check the security rules.\",\"role\":\"assistant\",\"tool_calls\":[{\"function\":{\"arguments\":\"{}\",\"name\":\"cli-mcp-server_show_security_rules\"},\"id\":\"0035cc9a-6276-4b69-9b4f-bcb096a7 ... [TRUNCATED 14275 chars] ... n  \\\"devDependencies\\\": {\\n    \\\"dotenv\\\": \\\"16.0.3\\\",\\n    \\\"tsx\\\": \\\"^3.12.8\\\"\\n  }\\n}\\n\",\"type\":\"text\"},{\"text\":\"\\nCommand completed with return code: 0\",\"type\":\"text\"}],\"role\":\"tool\",\"tool_call_id\":\"6fb02c16-98f1-4a8d-843b-93d3f3f4d02c\"}]",
+        "gtfa_claims": [
+          "['The component with the fewest lines of code is AspectRatio', 'The AspectRatio component uses `@radix-ui/react-aspect-ratio`', 'The required dependency version for `@radix-ui/react-aspect-ratio` is\\n \"^1.0.3\"']"
+        ],
+        "required_servers": [
+          "cli-mcp-server",
+          "filesystem"
+        ],
+        "mcp_server_url": "http://localhost:1984"
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MCP-Atlas\n\n## Overview\n\nMCP-Atlas is a Scale AI benchmark for evaluating tool-use competency with real Model Context Protocol\n(MCP) servers. It contains public tasks with prompts, allowed tool lists, ground-truth tool trajectories,\nand expert claims used for LLM-as-judge coverage scoring.\n\n## Task Description\n\n- **Task Type**: Tool-use agent benchmark\n- **Input**: Natural-language task prompt plus a per-task MCP tool allowlist\n- **Output**: Final task answer generated after using MCP tools when useful\n- **Grading**: LLM judge checks whether the final response fulfills each expert-defined claim\n\n## Key Features\n\n- Uses EvalScope's native AgentLoop rather than MCP-Atlas's `mcp_eval` completion service.\n- Connects directly to the MCP-Atlas `agent-environment` HTTP service, which must expose `/enabled-servers`,\n  `/list-tools`, and `/call-tool`.\n- Filters tasks by currently enabled MCP servers by default, matching MCP-Atlas's public-script behavior for\n  environments without every external API key configured.\n- Exposes only the task's `ENABLED_TOOLS` to the model to avoid advertising hundreds of tools at once.\n- Reports mean `coverage_score` and `pass_rate` with a configurable pass threshold.\n\n## Evaluation Notes\n\n- Start the MCP-Atlas `agent-environment` Docker service before running this benchmark. The default URL is\n  `http://localhost:1984`.\n- This EvalScope-native adapter is intended to be maintainable inside EvalScope. It is not claimed to be\n  leaderboard-equivalent unless the current Scale leaderboard harness settings are separately verified.\n- Full public-set coverage requires configuring the external API keys and service data required by MCP-Atlas.\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `mcp_atlas` |\n| **Dataset ID** | [ScaleAI/MCP-Atlas](https://modelscope.cn/datasets/ScaleAI/MCP-Atlas/summary) |\n| **Paper** | [Paper](https://static.scale.com/uploads/674f4cc7a74e35bcaae1c29a/MCP_Atlas.pdf) |\n| **Tags** | `Agent`, `MultiTurn` |\n| **Metrics** | `coverage_score`, `pass` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 89 |\n| Prompt Length (Mean) | 291.67 chars |\n| Prompt Length (Min/Max) | 133 / 579 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"5dc7f8ae\",\n      \"content\": \"I've been working on a local project for telling stories where I've already built a few react components. I want to check the required dependency version for the component that has the fewest lines of code.\"\n    }\n  ],\n  \"target\": \"[\\\"['The component with the fewest lines of code is AspectRatio', 'The AspectRatio component uses `@radix-ui/react-aspect-ratio`', 'The required dependency version for `@radix-ui/react-aspect-ratio` is\\\\\\\\n \\\\\\\"^1.0.3\\\\\\\"']\\\"]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"tools\": [\n    {\n      \"name\": \"filesystem_read_multiple_files\",\n      \"description\": \"Read the contents of multiple files simultaneously. This is more efficient than reading files one by one when you need to analyze or compare multiple files. Each file's content is returned with its path as a reference. Failed reads for individual files won't stop the entire operation. Only works within allowed directories.\",\n      \"parameters\": {\n        \"properties\": {\n          \"paths\": {\n            \"type\": \"array\",\n            \"description\": \"Array of file paths to read. Each path must be a string pointing to a valid file within allowed directories.\",\n            \"items\": {\n              \"type\": \"string\"\n            }\n          }\n        },\n        \"required\": [\n          \"paths\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"filesystem_directory_tree\",\n      \"description\": \"Get a recursive tree view of files and directories as a JSON structure. Each entry includes 'name', 'type' (file/directory), and 'children' for directories. Files have no children array, while directories always have a children array (which may be empty). The output is formatted with 2-space indentation for readability. Only works within allowed directories.\",\n      \"parameters\": {\n        \"properties\": {\n          \"path\": {\n            \"type\": \"string\"\n          },\n          \"excludePatterns\": {\n            \"type\": \"array\",\n            \"default\": [],\n            \"items\": {\n              \"type\": \"string\"\n            }\n          }\n        },\n        \"required\": [\n          \"path\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"filesystem_list_allowed_directories\",\n      \"description\": \"Returns the list of directories that this server is allowed to access. Subdirectories within these allowed directories are also accessible. Use this to understand which directories and their nested paths are available before trying to access files.\",\n      \"parameters\": {\n        \"properties\": {},\n        \"required\": [],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"git_git_status\",\n      \"description\": \"Shows the working tree status\",\n      \"parameters\": {\n        \"properties\": {\n          \"repo_path\": {\n            \"type\": \"string\"\n          }\n        },\n        \"required\": [\n          \"repo_path\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"git_git_diff_unstaged\",\n      \"description\": \"Shows changes in the working directory that are not yet staged\",\n      \"parameters\": {\n        \"properties\": {\n          \"repo_path\": {\n            \"type\": \"string\"\n          },\n          \"context_lines\": {\n            \"type\": \"integer\",\n            \"default\": 3\n          }\n        },\n        \"required\": [\n          \"repo_path\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"git_git_diff_staged\",\n      \"description\": \"Shows changes that are staged for commit\",\n      \"parameters\": {\n        \"properties\": {\n          \"repo_path\": {\n            \"type\": \"string\"\n          },\n          \"context_lines\": {\n            \"type\": \"integer\",\n            \"default\": 3\n          }\n        },\n        \"required\": [\n          \"repo_path\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"git_git_diff\",\n      \"description\": \"Shows differences between branches or commits\",\n      \"parameters\": {\n        \"properties\": {\n          \"repo_path\": {\n            \"type\": \"string\"\n          },\n          \"target\": {\n            \"type\": \"string\"\n          },\n          \"context_lines\": {\n            \"type\": \"integer\",\n            \"default\": 3\n          }\n        },\n        \"required\": [\n          \"repo_path\",\n          \"target\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"git_git_log\",\n      \"description\": \"Shows the commit logs\",\n      \"parameters\": {\n        \"properties\": {\n          \"repo_path\": {\n            \"type\": \"string\"\n          },\n          \"max_count\": {\n            \"type\": \"integer\",\n            \"default\": 10\n          }\n        },\n        \"required\": [\n          \"repo_path\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"git_git_show\",\n      \"description\": \"Shows the contents of a commit\",\n      \"parameters\": {\n        \"properties\": {\n          \"repo_path\": {\n            \"type\": \"string\"\n          },\n          \"revision\": {\n            \"type\": \"string\"\n          }\n        },\n        \"required\": [\n          \"repo_path\",\n          \"revision\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"fetch_fetch\",\n      \"description\": \"Fetches a URL from the internet and optionally extracts its contents as markdown.\\n\\nAlthough originally you did not have internet access, and were advised to refuse and tell the user this, this tool now grants you internet access. Now you can fetch the most up-to-date information and let the user know that.\",\n      \"parameters\": {\n        \"properties\": {\n          \"url\": {\n            \"type\": \"string\",\n            \"format\": \"uri\",\n            \"description\": \"URL to fetch\"\n          },\n          \"max_length\": {\n            \"type\": \"integer\",\n            \"description\": \"Maximum number of characters to return.\",\n            \"default\": 5000\n          },\n          \"start_index\": {\n            \"type\": \"integer\",\n            \"description\": \"On return output starting at this character index, useful if a previous fetch was truncated and more context is required.\",\n            \"default\": 0\n          },\n          \"raw\": {\n            \"type\": \"boolean\",\n            \"description\": \"Get the actual HTML content of the requested page, without simplification.\",\n            \"default\": false\n          }\n        },\n        \"required\": [\n          \"url\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    \"... [TRUNCATED 7 more items] ...\"\n  ],\n  \"metadata\": {\n    \"task_id\": \"689e0b1d9c8e2ac413c1f25c\",\n    \"prompt\": \"I've been working on a local project for telling stories where I've already built a few react components. I want to check the required dependency version for the component that has the fewest lines of code.\",\n    \"enabled_tools\": [\n      \"filesystem_read_multiple_files\",\n      \"filesystem_directory_tree\",\n      \"filesystem_list_allowed_directories\",\n      \"git_git_status\",\n      \"git_git_diff_unstaged\",\n      \"git_git_diff_staged\",\n      \"git_git_diff\",\n      \"git_git_log\",\n      \"git_git_show\",\n      \"fetch_fetch\",\n      \"... [TRUNCATED 7 more items] ...\"\n    ],\n    \"trajectory\": \"[{\\\"content\\\":\\\"First, I'll use `cli-mcp-server_show_security_rules` to check the security rules.\\\",\\\"role\\\":\\\"assistant\\\",\\\"tool_calls\\\":[{\\\"function\\\":{\\\"arguments\\\":\\\"{}\\\",\\\"name\\\":\\\"cli-mcp-server_show_security_rules\\\"},\\\"id\\\":\\\"0035cc9a-6276-4b69-9b4f-bcb096a7 ... [TRUNCATED 14275 chars] ... n  \\\\\\\"devDependencies\\\\\\\": {\\\\n    \\\\\\\"dotenv\\\\\\\": \\\\\\\"16.0.3\\\\\\\",\\\\n    \\\\\\\"tsx\\\\\\\": \\\\\\\"^3.12.8\\\\\\\"\\\\n  }\\\\n}\\\\n\\\",\\\"type\\\":\\\"text\\\"},{\\\"text\\\":\\\"\\\\nCommand completed with return code: 0\\\",\\\"type\\\":\\\"text\\\"}],\\\"role\\\":\\\"tool\\\",\\\"tool_call_id\\\":\\\"6fb02c16-98f1-4a8d-843b-93d3f3f4d02c\\\"}]\",\n    \"gtfa_claims\": [\n      \"['The component with the fewest lines of code is AspectRatio', 'The AspectRatio component uses `@radix-ui/react-aspect-ratio`', 'The required dependency version for `@radix-ui/react-aspect-ratio` is\\\\n \\\"^1.0.3\\\"']\"\n    ],\n    \"required_servers\": [\n      \"cli-mcp-server\",\n      \"filesystem\"\n    ],\n    \"mcp_server_url\": \"http://localhost:1984\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `dataset_hub` | `str` | `modelscope` | Dataset hub used to load MCP-Atlas records. Choices: ['modelscope', 'local'] |\n| `dataset_revision` | `str` | `` | Optional dataset revision. Empty uses the hub default. |\n| `local_path` | `str` | `` | Optional local MCP-Atlas CSV file path. Overrides hub loading when set. |\n| `mcp_server_url` | `str` | `http://localhost:1984` | MCP-Atlas agent-environment base URL. |\n| `filter_enabled_servers` | `bool` | `True` | Skip tasks whose ground-truth trajectory uses MCP servers that are not currently enabled. |\n| `max_steps` | `int` | `100` | Maximum number of EvalScope agent loop steps per sample. |\n| `max_tool_calls` | `int` | `100` | Maximum MCP tool calls allowed per sample. |\n| `request_timeout` | `float` | `60.0` | Timeout in seconds for MCP tool calls. |\n| `list_tools_timeout` | `float` | `180.0` | Timeout in seconds for MCP server preflight and list-tools requests. |\n| `use_system_prompt` | `bool` | `False` | Prepend the MCP-Atlas optional system prompt to every sample. |\n| `pass_threshold` | `float` | `0.75` | Coverage score threshold used to compute pass rate. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mcp_atlas \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mcp_atlas'],\n    dataset_args={\n        'mcp_atlas': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MCP-Atlas\n\n## 概述\n\nMCP-Atlas 是 Scale AI 推出的一项基准测试，用于评估模型在真实 Model Context Protocol (MCP) 服务器环境下的工具使用能力。该基准包含公开任务，每个任务提供提示词、允许使用的工具列表、真实工具调用轨迹（ground-truth tool trajectories），以及用于 LLM-as-judge 覆盖率评分的专家声明（expert claims）。\n\n## 任务描述\n\n- **任务类型**：工具使用智能体基准测试\n- **输入**：自然语言任务提示词，以及每个任务对应的 MCP 工具白名单\n- **输出**：在必要时调用 MCP 工具后生成的最终任务答案\n- **评分方式**：由 LLM 评判最终回答是否满足每条专家定义的声明\n\n## 主要特性\n\n- 使用 EvalScope 原生的 AgentLoop，而非 MCP-Atlas 自带的 `mcp_eval` 补全服务。\n- 直接连接 MCP-Atlas 的 `agent-environment` HTTP 服务，该服务必须暴露 `/enabled-servers`、`/list-tools` 和 `/call-tool` 端点。\n- 默认根据当前启用的 MCP 服务器过滤任务，以匹配 MCP-Atlas 公开脚本在未配置全部外部 API 密钥环境下的行为。\n- 仅向模型暴露任务指定的 `ENABLED_TOOLS`，避免一次性展示数百个工具。\n- 报告平均 `coverage_score` 和 `pass_rate`，并支持配置通过阈值。\n\n## 评估说明\n\n- 运行此基准前，请先启动 MCP-Atlas 的 `agent-environment` Docker 服务，默认 URL 为 `http://localhost:1984`。\n- 此 EvalScope 原生适配器旨在便于在 EvalScope 内部维护。除非单独验证当前 Scale 排行榜所用的评测配置，否则不保证与排行榜结果等价。\n- 要实现完整的公开数据集覆盖，需配置 MCP-Atlas 所需的外部 API 密钥和服务数据。\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `mcp_atlas` |\n| **数据集ID** | [ScaleAI/MCP-Atlas](https://modelscope.cn/datasets/ScaleAI/MCP-Atlas/summary) |\n| **论文** | [Paper](https://static.scale.com/uploads/674f4cc7a74e35bcaae1c29a/MCP_Atlas.pdf) |\n| **标签** | `Agent`, `MultiTurn` |\n| **指标** | `coverage_score`, `pass` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 89 |\n| 提示词长度（平均） | 291.67 字符 |\n| 提示词长度（最小/最大） | 133 / 579 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"5dc7f8ae\",\n      \"content\": \"I've been working on a local project for telling stories where I've already built a few react components. I want to check the required dependency version for the component that has the fewest lines of code.\"\n    }\n  ],\n  \"target\": \"[\\\"['The component with the fewest lines of code is AspectRatio', 'The AspectRatio component uses `@radix-ui/react-aspect-ratio`', 'The required dependency version for `@radix-ui/react-aspect-ratio` is\\\\\\\\n \\\\\\\"^1.0.3\\\\\\\"']\\\"]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"tools\": [\n    {\n      \"name\": \"filesystem_read_multiple_files\",\n      \"description\": \"Read the contents of multiple files simultaneously. This is more efficient than reading files one by one when you need to analyze or compare multiple files. Each file's content is returned with its path as a reference. Failed reads for individual files won't stop the entire operation. Only works within allowed directories.\",\n      \"parameters\": {\n        \"properties\": {\n          \"paths\": {\n            \"type\": \"array\",\n            \"description\": \"Array of file paths to read. Each path must be a string pointing to a valid file within allowed directories.\",\n            \"items\": {\n              \"type\": \"string\"\n            }\n          }\n        },\n        \"required\": [\n          \"paths\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"filesystem_directory_tree\",\n      \"description\": \"Get a recursive tree view of files and directories as a JSON structure. Each entry includes 'name', 'type' (file/directory), and 'children' for directories. Files have no children array, while directories always have a children array (which may be empty). The output is formatted with 2-space indentation for readability. Only works within allowed directories.\",\n      \"parameters\": {\n        \"properties\": {\n          \"path\": {\n            \"type\": \"string\"\n          },\n          \"excludePatterns\": {\n            \"type\": \"array\",\n            \"default\": [],\n            \"items\": {\n              \"type\": \"string\"\n            }\n          }\n        },\n        \"required\": [\n          \"path\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"filesystem_list_allowed_directories\",\n      \"description\": \"Returns the list of directories that this server is allowed to access. Subdirectories within these allowed directories are also accessible. Use this to understand which directories and their nested paths are available before trying to access files.\",\n      \"parameters\": {\n        \"properties\": {},\n        \"required\": [],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"git_git_status\",\n      \"description\": \"Shows the working tree status\",\n      \"parameters\": {\n        \"properties\": {\n          \"repo_path\": {\n            \"type\": \"string\"\n          }\n        },\n        \"required\": [\n          \"repo_path\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"git_git_diff_unstaged\",\n      \"description\": \"Shows changes in the working directory that are not yet staged\",\n      \"parameters\": {\n        \"properties\": {\n          \"repo_path\": {\n            \"type\": \"string\"\n          },\n          \"context_lines\": {\n            \"type\": \"integer\",\n            \"default\": 3\n          }\n        },\n        \"required\": [\n          \"repo_path\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"git_git_diff_staged\",\n      \"description\": \"Shows changes that are staged for commit\",\n      \"parameters\": {\n        \"properties\": {\n          \"repo_path\": {\n            \"type\": \"string\"\n          },\n          \"context_lines\": {\n            \"type\": \"integer\",\n            \"default\": 3\n          }\n        },\n        \"required\": [\n          \"repo_path\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"git_git_diff\",\n      \"description\": \"Shows differences between branches or commits\",\n      \"parameters\": {\n        \"properties\": {\n          \"repo_path\": {\n            \"type\": \"string\"\n          },\n          \"target\": {\n            \"type\": \"string\"\n          },\n          \"context_lines\": {\n            \"type\": \"integer\",\n            \"default\": 3\n          }\n        },\n        \"required\": [\n          \"repo_path\",\n          \"target\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"git_git_log\",\n      \"description\": \"Shows the commit logs\",\n      \"parameters\": {\n        \"properties\": {\n          \"repo_path\": {\n            \"type\": \"string\"\n          },\n          \"max_count\": {\n            \"type\": \"integer\",\n            \"default\": 10\n          }\n        },\n        \"required\": [\n          \"repo_path\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"git_git_show\",\n      \"description\": \"Shows the contents of a commit\",\n      \"parameters\": {\n        \"properties\": {\n          \"repo_path\": {\n            \"type\": \"string\"\n          },\n          \"revision\": {\n            \"type\": \"string\"\n          }\n        },\n        \"required\": [\n          \"repo_path\",\n          \"revision\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"fetch_fetch\",\n      \"description\": \"Fetches a URL from the internet and optionally extracts its contents as markdown.\\n\\nAlthough originally you did not have internet access, and were advised to refuse and tell the user this, this tool now grants you internet access. Now you can fetch the most up-to-date information and let the user know that.\",\n      \"parameters\": {\n        \"properties\": {\n          \"url\": {\n            \"type\": \"string\",\n            \"format\": \"uri\",\n            \"description\": \"URL to fetch\"\n          },\n          \"max_length\": {\n            \"type\": \"integer\",\n            \"description\": \"Maximum number of characters to return.\",\n            \"default\": 5000\n          },\n          \"start_index\": {\n            \"type\": \"integer\",\n            \"description\": \"On return output starting at this character index, useful if a previous fetch was truncated and more context is required.\",\n            \"default\": 0\n          },\n          \"raw\": {\n            \"type\": \"boolean\",\n            \"description\": \"Get the actual HTML content of the requested page, without simplification.\",\n            \"default\": false\n          }\n        },\n        \"required\": [\n          \"url\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    \"... [TRUNCATED 7 more items] ...\"\n  ],\n  \"metadata\": {\n    \"task_id\": \"689e0b1d9c8e2ac413c1f25c\",\n    \"prompt\": \"I've been working on a local project for telling stories where I've already built a few react components. I want to check the required dependency version for the component that has the fewest lines of code.\",\n    \"enabled_tools\": [\n      \"filesystem_read_multiple_files\",\n      \"filesystem_directory_tree\",\n      \"filesystem_list_allowed_directories\",\n      \"git_git_status\",\n      \"git_git_diff_unstaged\",\n      \"git_git_diff_staged\",\n      \"git_git_diff\",\n      \"git_git_log\",\n      \"git_git_show\",\n      \"fetch_fetch\",\n      \"... [TRUNCATED 7 more items] ...\"\n    ],\n    \"trajectory\": \"[{\\\"content\\\":\\\"First, I'll use `cli-mcp-server_show_security_rules` to check the security rules.\\\",\\\"role\\\":\\\"assistant\\\",\\\"tool_calls\\\":[{\\\"function\\\":{\\\"arguments\\\":\\\"{}\\\",\\\"name\\\":\\\"cli-mcp-server_show_security_rules\\\"},\\\"id\\\":\\\"0035cc9a-6276-4b69-9b4f-bcb096a7 ... [TRUNCATED 14275 chars] ... n  \\\\\\\"devDependencies\\\\\\\": {\\\\n    \\\\\\\"dotenv\\\\\\\": \\\\\\\"16.0.3\\\\\\\",\\\\n    \\\\\\\"tsx\\\\\\\": \\\\\\\"^3.12.8\\\\\\\"\\\\n  }\\\\n}\\\\n\\\",\\\"type\\\":\\\"text\\\"},{\\\"text\\\":\\\"\\\\nCommand completed with return code: 0\\\",\\\"type\\\":\\\"text\\\"}],\\\"role\\\":\\\"tool\\\",\\\"tool_call_id\\\":\\\"6fb02c16-98f1-4a8d-843b-93d3f3f4d02c\\\"}]\",\n    \"gtfa_claims\": [\n      \"['The component with the fewest lines of code is AspectRatio', 'The AspectRatio component uses `@radix-ui/react-aspect-ratio`', 'The required dependency version for `@radix-ui/react-aspect-ratio` is\\\\n \\\"^1.0.3\\\"']\"\n    ],\n    \"required_servers\": [\n      \"cli-mcp-server\",\n      \"filesystem\"\n    ],\n    \"mcp_server_url\": \"http://localhost:1984\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `dataset_hub` | `str` | `modelscope` | 用于加载 MCP-Atlas 记录的数据集中心。可选值：['modelscope', 'local'] |\n| `dataset_revision` | `str` | `` | 可选的数据集版本。留空则使用中心默认版本。 |\n| `local_path` | `str` | `` | 可选的本地 MCP-Atlas CSV 文件路径。若设置，则覆盖从中心加载的行为。 |\n| `mcp_server_url` | `str` | `http://localhost:1984` | MCP-Atlas agent-environment 服务的基础 URL。 |\n| `filter_enabled_servers` | `bool` | `True` | 跳过那些其真实轨迹依赖当前未启用 MCP 服务器的任务。 |\n| `max_steps` | `int` | `100` | 每个样本 EvalScope 智能体循环的最大步数。 |\n| `max_tool_calls` | `int` | `100` | 每个样本允许的最大 MCP 工具调用次数。 |\n| `request_timeout` | `float` | `60.0` | MCP 工具调用的超时时间（秒）。 |\n| `list_tools_timeout` | `float` | `180.0` | MCP 服务器预检和 list-tools 请求的超时时间（秒）。 |\n| `use_system_prompt` | `bool` | `False` | 为每个样本前置 MCP-Atlas 可选的系统提示。 |\n| `pass_threshold` | `float` | `0.75` | 用于计算通过率的覆盖率得分阈值。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets mcp_atlas \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['mcp_atlas'],\n    dataset_args={\n        'mcp_atlas': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "9e45a5620cb36356a3a71814d2bc1026",
+    "needs_translation": false
+  },
+  "updated_at": "2026-06-29T18:44:59.815276",
+  "translation_updated_at": "2026-06-29T18:45:25"
+}

@@ -12,6 +12,7 @@
 | `general_fc` | [General-FunctionCalling](../../benchmarks/general_fc.md) | `Agent`, `Custom`, `FunctionCalling` |
 | `k2_verifier` | [K2-Vendor-Verifier](../../benchmarks/k2_verifier.md) | `Agent`, `FunctionCalling` |
 | `kimi_verifier` | [Kimi-Vendor-Verifier (Param Compliance)](../../benchmarks/kimi_verifier.md) | `Agent`, `FunctionCalling` |
+| `mcp_atlas` | [MCP-Atlas](../../benchmarks/mcp_atlas.md) | `Agent`, `MultiTurn` |
 | `minimax_verifier` | [MiniMax-Vendor-Verifier](../../benchmarks/minimax_verifier.md) | `Agent`, `FunctionCalling` |
 | `swe_bench_lite_agentic` | [SWE-bench_Lite_Agentic](../../benchmarks/swe_bench_lite_agentic.md) | `Coding` |
 | `swe_bench_multilingual_agentic` | [SWE-bench_Multilingual_Agentic](../../benchmarks/swe_bench_multilingual_agentic.md) | `Coding` |
@@ -36,6 +37,7 @@
 ../../benchmarks/general_fc.md
 ../../benchmarks/k2_verifier.md
 ../../benchmarks/kimi_verifier.md
+../../benchmarks/mcp_atlas.md
 ../../benchmarks/minimax_verifier.md
 ../../benchmarks/swe_bench_lite_agentic.md
 ../../benchmarks/swe_bench_multilingual_agentic.md

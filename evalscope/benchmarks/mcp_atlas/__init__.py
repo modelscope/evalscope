@@ -1,0 +1,1 @@
+"""MCP-Atlas benchmark adapter."""
