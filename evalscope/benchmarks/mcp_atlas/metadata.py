@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from evalscope.constants import HubType
-
 DATASET_ID = 'ScaleAI/MCP-Atlas'
 DEFAULT_MCP_SERVER_URL = 'http://localhost:1984'
 DEFAULT_SYSTEM_PROMPT = (
@@ -13,22 +11,6 @@ DEFAULT_SYSTEM_PROMPT = (
 )
 
 EXTRA_PARAMS: Dict[str, Any] = {
-    'dataset_hub': {
-        'type': 'str',
-        'description': 'Dataset hub used to load MCP-Atlas records.',
-        'value': HubType.MODELSCOPE,
-        'choices': [HubType.MODELSCOPE, HubType.LOCAL],
-    },
-    'dataset_revision': {
-        'type': 'str',
-        'description': 'Optional dataset revision. Empty uses the hub default.',
-        'value': '',
-    },
-    'local_path': {
-        'type': 'str',
-        'description': 'Optional local MCP-Atlas CSV file path. Overrides hub loading when set.',
-        'value': '',
-    },
     'mcp_server_url': {
         'type': 'str',
         'description': 'MCP-Atlas agent-environment base URL.',

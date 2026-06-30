@@ -21,6 +21,7 @@ and expert claims used for LLM-as-judge coverage scoring.
 - Filters tasks by currently enabled MCP servers by default, matching MCP-Atlas's public-script behavior for
   environments without every external API key configured.
 - Exposes only the task's `ENABLED_TOOLS` to the model to avoid advertising hundreds of tools at once.
+- Short-circuits repeated calls to MCP servers that hit transport-level failures inside the same sample.
 - Reports mean `coverage_score` and `pass_rate` with a configurable pass threshold.
 
 ## Evaluation Notes
@@ -306,9 +307,6 @@ and expert claims used for LLM-as-judge coverage scoring.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `dataset_hub` | `str` | `modelscope` | Dataset hub used to load MCP-Atlas records. Choices: ['modelscope', 'local'] |
-| `dataset_revision` | `str` | `` | Optional dataset revision. Empty uses the hub default. |
-| `local_path` | `str` | `` | Optional local MCP-Atlas CSV file path. Overrides hub loading when set. |
 | `mcp_server_url` | `str` | `http://localhost:1984` | MCP-Atlas agent-environment base URL. |
 | `filter_enabled_servers` | `bool` | `True` | Skip tasks whose ground-truth trajectory uses MCP servers that are not currently enabled. |
 | `max_steps` | `int` | `100` | Maximum number of EvalScope agent loop steps per sample. |

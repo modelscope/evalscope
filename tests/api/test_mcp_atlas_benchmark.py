@@ -79,11 +79,8 @@ class FakeJudge:
         return self.responses.pop(0)
 
 
-def make_adapter(limit: Any = None, **extra_params: Any) -> MCPAtlasAdapter:
+def make_adapter(limit: Any = None, local_path: str = '', **extra_params: Any) -> MCPAtlasAdapter:
     base_extra_params = {
-        'dataset_hub': HubType.MODELSCOPE,
-        'dataset_revision': '',
-        'local_path': '',
         'mcp_server_url': 'http://localhost:1984',
         'filter_enabled_servers': True,
         'max_steps': 100,
@@ -104,11 +101,14 @@ def make_adapter(limit: Any = None, **extra_params: Any) -> MCPAtlasAdapter:
         metric_list=['coverage_score', 'pass'],
         extra_params=base_extra_params,
     )
+    dataset_args = {'extra_params': extra_params}
+    if local_path:
+        dataset_args['local_path'] = local_path
+        meta._update({'local_path': local_path})
     cfg = TaskConfig(
         datasets=['mcp_atlas'],
-        dataset_args={'mcp_atlas': {
-            'extra_params': extra_params
-        }},
+        dataset_args={'mcp_atlas': dataset_args},
+        dataset_hub=HubType.MODELSCOPE,
         limit=limit,
     )
     return MCPAtlasAdapter(benchmark_meta=meta, task_config=cfg)

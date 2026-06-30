@@ -299,9 +299,6 @@ MCP-Atlas 是 Scale AI 推出的一项基准测试，用于评估模型在真实
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `dataset_hub` | `str` | `modelscope` | 用于加载 MCP-Atlas 记录的数据集中心。可选值：['modelscope', 'local'] |
-| `dataset_revision` | `str` | `` | 可选的数据集版本。留空则使用中心默认版本。 |
-| `local_path` | `str` | `` | 可选的本地 MCP-Atlas CSV 文件路径。若设置，则覆盖从中心加载的行为。 |
 | `mcp_server_url` | `str` | `http://localhost:1984` | MCP-Atlas agent-environment 服务的基础 URL。 |
 | `filter_enabled_servers` | `bool` | `True` | 跳过那些其真实轨迹依赖当前未启用 MCP 服务器的任务。 |
 | `max_steps` | `int` | `100` | 每个样本 EvalScope 智能体循环的最大步数。 |

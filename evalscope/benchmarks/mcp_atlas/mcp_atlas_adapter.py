@@ -86,15 +86,7 @@ class MCPAtlasAdapter(AgentLoopAdapter):
 
     @property
     def source_dataset_hub(self) -> str:
-        return self.extra_params.get('dataset_hub') or HubType.MODELSCOPE
-
-    @property
-    def source_dataset_revision(self) -> Optional[str]:
-        return self.extra_params.get('dataset_revision') or None
-
-    @property
-    def local_path(self) -> str:
-        return str(self.extra_params.get('local_path') or '')
+        return self.dataset_hub or HubType.MODELSCOPE
 
     def load_dataset(self) -> DatasetDict:
         self._preflight()
@@ -241,15 +233,11 @@ class MCPAtlasAdapter(AgentLoopAdapter):
         return self._tool_infos_by_name or {}
 
     def _load_records(self) -> List[Dict[str, Any]]:
-        local_path = self.local_path
-        if local_path:
-            return load_local_records(local_path)
         if self.source_dataset_hub == HubType.LOCAL or Path(self.dataset_id).exists():
             return load_local_records(self.dataset_id)
         dataset = DatasetHub(
             data_id_or_path=self.dataset_id,
             data_source=self.source_dataset_hub,
-            revision=self.source_dataset_revision,
             force_redownload=self.force_redownload,
         ).load(split=self.eval_split or 'train', subset='default')
         return [dict(row) for row in dataset]
