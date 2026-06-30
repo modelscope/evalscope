@@ -288,13 +288,16 @@ def _add_cache_control_to_last_block(
 
 def _last_cacheable_content_block(message: MessageParam) -> Optional[Dict[str, Any]]:
     content = message['content']
+
     if isinstance(content, str):
         content = [TextBlockParam(type='text', text=content)]
         message['content'] = content
 
     for block in reversed(content):
         if isinstance(block, dict):
-            return cast(Dict[str, Any], block)
+            block_type = block.get('type')
+            if block_type in ('text', 'image'):
+                return cast(Dict[str, Any], block)
     return None
 
 
@@ -307,7 +310,6 @@ def _collapse_consecutive_messages(messages: List[MessageParam], role: Literal['
     result: List[MessageParam] = []
     for message in messages:
         if message['role'] == role and result and result[-1]['role'] == role:
-            # Combine with previous message
             result[-1] = _combine_messages(result[-1], message)
         else:
             result.append(message)

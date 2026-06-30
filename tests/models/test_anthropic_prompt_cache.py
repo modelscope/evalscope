@@ -3,9 +3,9 @@ import pytest
 from pydantic import ValidationError
 from types import SimpleNamespace
 
-from evalscope.api.messages import ChatMessageAssistant, ChatMessageSystem, ChatMessageUser
+from evalscope.api.messages import ChatMessageAssistant, ChatMessageSystem, ChatMessageTool, ChatMessageUser
 from evalscope.api.model import GenerateConfig
-from evalscope.api.tool import ToolInfo
+from evalscope.api.tool import ToolCall, ToolFunction, ToolInfo
 
 
 def test_anthropic_cache_control_accepts_typed_values():
@@ -303,3 +303,91 @@ def test_async_collect_stream_response_preserves_cache_usage(monkeypatch):
     assert message.usage.output_tokens == 2
     assert message.usage.cache_creation_input_tokens == 3
     assert message.usage.cache_read_input_tokens == 4
+
+
+def test_cache_control_skips_tool_result_blocks():
+    anthropic = _anthropic_utils()
+
+    messages = [
+        ChatMessageUser(content='What is the weather?'),
+        ChatMessageAssistant(
+            content='',
+            tool_calls=[ToolCall(id='call_123', function=ToolFunction(name='get_weather', arguments={'city': 'SF'}))],
+        ),
+        ChatMessageTool(tool_call_id='call_123', content='Sunny, 72F'),
+    ]
+
+    system, message_params = anthropic.anthropic_chat_messages(
+        messages, cache_control={'type': 'ephemeral'}, cache_strategy='recent_messages'
+    )
+
+    assert system is None
+    assert len(_cache_control_blocks(message_params)) == 1
+    assert message_params[0]['content'][-1]['cache_control'] == {'type': 'ephemeral'}
+
+    tool_result_msgs = [
+        m
+        for m in message_params
+        if any(b.get('type') == 'tool_result' for b in m.get('content', []) if isinstance(b, dict))
+    ]
+    assert len(tool_result_msgs) == 1
+
+    tool_result_block = [
+        b for b in tool_result_msgs[0]['content'] if isinstance(b, dict) and b.get('type') == 'tool_result'
+    ][0]
+    assert 'cache_control' not in tool_result_block
+
+
+def test_consecutive_tool_results_collapse_into_immediate_user_message():
+    anthropic = _anthropic_utils()
+
+    messages = [
+        ChatMessageAssistant(
+            content='',
+            tool_calls=[
+                ToolCall(id='call_1', function=ToolFunction(name='get_weather', arguments={'city': 'SF'})),
+                ToolCall(id='call_2', function=ToolFunction(name='get_time', arguments={'city': 'SF'})),
+            ],
+        ),
+        ChatMessageTool(tool_call_id='call_1', content='Sunny, 72F'),
+        ChatMessageTool(tool_call_id='call_2', content='10:00 AM'),
+    ]
+
+    system, message_params = anthropic.anthropic_chat_messages(messages)
+
+    assert system is None
+    assert len(message_params) == 2
+    assert message_params[0]['role'] == 'assistant'
+    assert message_params[1]['role'] == 'user'
+
+    tool_use_ids = [
+        block['id']
+        for block in message_params[0]['content']
+        if isinstance(block, dict) and block.get('type') == 'tool_use'
+    ]
+    tool_result_ids = [
+        block['tool_use_id']
+        for block in message_params[1]['content']
+        if isinstance(block, dict) and block.get('type') == 'tool_result'
+    ]
+    assert tool_use_ids == ['call_1', 'call_2']
+    assert tool_result_ids == ['call_1', 'call_2']
+
+
+def test_last_cacheable_block_skips_tool_blocks():
+    anthropic = _anthropic_utils()
+    from anthropic.types import MessageParam, TextBlockParam, ToolResultBlockParam
+
+    message = MessageParam(
+        role='user',
+        content=[
+            TextBlockParam(type='text', text='Result:'),
+            ToolResultBlockParam(type='tool_result', tool_use_id='call_123', content='data'),
+        ],
+    )
+
+    block = anthropic._last_cacheable_content_block(message)
+
+    assert block is not None
+    assert block['type'] == 'text'
+    assert block['text'] == 'Result:'
