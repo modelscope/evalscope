@@ -170,6 +170,7 @@ def test_extract_required_servers_uses_trajectory_tool_calls() -> None:
 
 def test_record_to_sample_sets_metadata_and_claims() -> None:
     adapter = make_adapter()
+    adapter._client = FakeClient()
     sample = adapter.record_to_sample({
         'TASK': 'task-1',
         'PROMPT': 'Find the answer.',
@@ -184,6 +185,7 @@ def test_record_to_sample_sets_metadata_and_claims() -> None:
     assert extract_claims(sample.target) == ['The answer cites the page.']
     assert sample.metadata['task_id'] == 'task-1'
     assert sample.metadata['enabled_tools'] == ['wikipedia_get_article']
+    assert sample.tools[0].name == 'wikipedia_get_article'
 
 
 def test_extract_claims_accepts_python_list_literal() -> None:

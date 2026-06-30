@@ -90,9 +90,11 @@ class MCPAtlasAdapter(AgentLoopAdapter):
         if self.use_system_prompt:
             input_text = f'{DEFAULT_SYSTEM_PROMPT}\n\n{prompt}'
 
+        tool_infos = self._ensure_tool_infos()
         return Sample(
             input=input_text,
             target=json.dumps(claims, ensure_ascii=False),
+            tools=[tool_infos[name] for name in enabled_tools if name in tool_infos],
             metadata={
                 'task_id': task_id,
                 'prompt': prompt,
@@ -103,15 +105,6 @@ class MCPAtlasAdapter(AgentLoopAdapter):
                 'mcp_server_url': self.mcp_server_url,
             },
         )
-
-    def _post_process_samples(self) -> None:
-        tool_infos = self._ensure_tool_infos()
-        for subset_samples in self.test_dataset.values():
-            for sample in subset_samples:
-                sample.tools = [
-                    tool_infos[name] for name in sample.metadata.get('enabled_tools', []) if name in tool_infos
-                ]
-        super()._post_process_samples()
 
     def build_tools(self, sample: Sample) -> Dict[str, Any]:
         sample_key = int(sample.id or 0)
