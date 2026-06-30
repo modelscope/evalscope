@@ -1,8 +1,7 @@
 import asyncio
-from types import SimpleNamespace
-
 import pytest
 from pydantic import ValidationError
+from types import SimpleNamespace
 
 from evalscope.api.messages import ChatMessageAssistant, ChatMessageSystem, ChatMessageUser
 from evalscope.api.model import GenerateConfig

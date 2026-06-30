@@ -582,9 +582,7 @@ def collect_stream_response(
                 role = event.message.role
             if event.message.usage:
                 usage_input_tokens = event.message.usage.input_tokens
-                usage_cache_creation_input_tokens = getattr(
-                    event.message.usage, 'cache_creation_input_tokens', None
-                )
+                usage_cache_creation_input_tokens = getattr(event.message.usage, 'cache_creation_input_tokens', None)
                 usage_cache_read_input_tokens = getattr(event.message.usage, 'cache_read_input_tokens', None)
 
         elif isinstance(event, ContentBlockStartEvent):
@@ -753,9 +751,7 @@ async def async_collect_stream_response(
                 role = event.message.role
             if event.message.usage:
                 usage_input_tokens = event.message.usage.input_tokens
-                usage_cache_creation_input_tokens = getattr(
-                    event.message.usage, 'cache_creation_input_tokens', None
-                )
+                usage_cache_creation_input_tokens = getattr(event.message.usage, 'cache_creation_input_tokens', None)
                 usage_cache_read_input_tokens = getattr(event.message.usage, 'cache_read_input_tokens', None)
 
         elif isinstance(event, ContentBlockStartEvent):
