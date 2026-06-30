@@ -41,6 +41,9 @@ from evalscope.utils.url_utils import data_uri_mime_type, data_uri_to_base64, fi
 
 BASE_64_DATA_REMOVED = '<base64-data-removed>'
 NO_CONTENT = '[No content]'
+MAX_ANTHROPIC_CACHE_CONTROL_BLOCKS = 4
+AnthropicCacheStrategy = Literal['evaluation', 'recent_messages']
+AnthropicSystemParam = Union[str, List[TextBlockParam]]
 
 
 class AnthropicResponseError(Exception):
@@ -63,9 +66,16 @@ def anthropic_tool_param(tool: ToolInfo) -> ToolParam:
     )
 
 
-def anthropic_chat_tools(tools: List[ToolInfo]) -> List[ToolParam]:
+def anthropic_chat_tools(
+    tools: List[ToolInfo],
+    cache_control: Optional[Dict[str, Any]] = None,
+    cache_strategy: AnthropicCacheStrategy = 'evaluation',
+) -> List[ToolParam]:
     """Convert list of ToolInfo to list of Anthropic ToolParam."""
-    return [anthropic_tool_param(tool) for tool in tools]
+    tool_params = [anthropic_tool_param(tool) for tool in tools]
+    if cache_control and cache_strategy == 'evaluation' and tool_params:
+        _add_cache_control(cast(Dict[str, Any], tool_params[-1]), cache_control)
+    return tool_params
 
 
 def anthropic_chat_tool_choice(tool_choice: ToolChoice) -> ToolChoiceParam:
@@ -94,6 +104,12 @@ def anthropic_image_block_param(image: str) -> ImageBlockParam:
         type='image',
         source=dict(type='base64', media_type=cast(Any, media_type), data=image_data),
     )
+
+
+def _add_cache_control(block: Dict[str, Any], cache_control: Optional[Dict[str, Any]]) -> None:
+    """Attach Anthropic cache_control to a content block when requested."""
+    if cache_control:
+        block['cache_control'] = cache_control
 
 
 def anthropic_content_block_param(content: Content) -> List[ContentBlockParam]:
@@ -188,7 +204,11 @@ def anthropic_message_param(message: ChatMessage) -> MessageParam:
         return MessageParam(role='user', content=content)
 
 
-def anthropic_chat_messages(messages: List[ChatMessage], ) -> Tuple[Optional[str], List[MessageParam]]:
+def anthropic_chat_messages(
+    messages: List[ChatMessage],
+    cache_control: Optional[Dict[str, Any]] = None,
+    cache_strategy: AnthropicCacheStrategy = 'evaluation',
+) -> Tuple[Optional[AnthropicSystemParam], List[MessageParam]]:
     """Convert list of ChatMessages to Anthropic format.
 
     Returns:
@@ -210,7 +230,72 @@ def anthropic_chat_messages(messages: List[ChatMessage], ) -> Tuple[Optional[str
     # Collapse consecutive user messages (required by Anthropic)
     message_params = _collapse_consecutive_messages(message_params, 'user')
 
+    if cache_control:
+        if cache_strategy == 'evaluation':
+            system_param = _system_message_with_cache_control(system_message, cache_control)
+            _add_cache_control_to_evaluation_prefix(message_params, cache_control)
+            return system_param, message_params
+        elif cache_strategy == 'recent_messages':
+            _add_cache_control_to_recent_block(message_params, cache_control)
+        else:
+            raise ValueError(f'Unknown Anthropic cache strategy: {cache_strategy}')
+
     return system_message, message_params
+
+
+def _system_message_with_cache_control(
+    system_message: Optional[str],
+    cache_control: Dict[str, Any],
+) -> Optional[List[TextBlockParam]]:
+    if not system_message:
+        return None
+
+    system_blocks = [TextBlockParam(type='text', text=system_message)]
+    _add_cache_control(cast(Dict[str, Any], system_blocks[-1]), cache_control)
+    return system_blocks
+
+
+def _add_cache_control_to_evaluation_prefix(
+    messages: List[MessageParam],
+    cache_control: Dict[str, Any],
+) -> None:
+    """Attach cache_control to the stable message prefix before the final sample message."""
+    if len(messages) <= 1:
+        return
+
+    _add_cache_control_to_last_block(messages[:-1], cache_control)
+
+
+def _add_cache_control_to_recent_block(
+    messages: List[MessageParam],
+    cache_control: Dict[str, Any],
+) -> None:
+    """Attach cache_control to the most recent cacheable message content block."""
+    _add_cache_control_to_last_block(messages, cache_control)
+
+
+def _add_cache_control_to_last_block(
+    messages: List[MessageParam],
+    cache_control: Dict[str, Any],
+) -> bool:
+    for message in reversed(messages):
+        block = _last_cacheable_content_block(message)
+        if block is not None:
+            _add_cache_control(block, cache_control)
+            return True
+    return False
+
+
+def _last_cacheable_content_block(message: MessageParam) -> Optional[Dict[str, Any]]:
+    content = message['content']
+    if isinstance(content, str):
+        content = [TextBlockParam(type='text', text=content)]
+        message['content'] = content
+
+    for block in reversed(content):
+        if isinstance(block, dict):
+            return cast(Dict[str, Any], block)
+    return None
 
 
 def _collapse_consecutive_messages(messages: List[MessageParam], role: Literal['user',
@@ -476,6 +561,8 @@ def collect_stream_response(
     stop_reason: Optional[str] = None
     usage_input_tokens: int = 0
     usage_output_tokens: int = 0
+    usage_cache_creation_input_tokens: Optional[int] = None
+    usage_cache_read_input_tokens: Optional[int] = None
 
     current_block_index: int = -1
     current_text: str = ''
@@ -495,6 +582,10 @@ def collect_stream_response(
                 role = event.message.role
             if event.message.usage:
                 usage_input_tokens = event.message.usage.input_tokens
+                usage_cache_creation_input_tokens = getattr(
+                    event.message.usage, 'cache_creation_input_tokens', None
+                )
+                usage_cache_read_input_tokens = getattr(event.message.usage, 'cache_read_input_tokens', None)
 
         elif isinstance(event, ContentBlockStartEvent):
             # Save previous block if exists
@@ -533,6 +624,16 @@ def collect_stream_response(
             stop_reason = event.delta.stop_reason
             if event.usage:
                 usage_output_tokens = event.usage.output_tokens
+                usage_cache_creation_input_tokens = _usage_token_value(
+                    usage_cache_creation_input_tokens,
+                    event.usage,
+                    'cache_creation_input_tokens',
+                )
+                usage_cache_read_input_tokens = _usage_token_value(
+                    usage_cache_read_input_tokens,
+                    event.usage,
+                    'cache_read_input_tokens',
+                )
 
     # Append the last block
     if current_block_index >= 0:
@@ -546,8 +647,37 @@ def collect_stream_response(
         content=content_blocks,
         stop_reason=stop_reason,  # type: ignore
         stop_sequence=None,
-        usage=Usage(input_tokens=usage_input_tokens, output_tokens=usage_output_tokens),
+        usage=Usage(
+            **_anthropic_usage_params(
+                input_tokens=usage_input_tokens,
+                output_tokens=usage_output_tokens,
+                cache_creation_input_tokens=usage_cache_creation_input_tokens,
+                cache_read_input_tokens=usage_cache_read_input_tokens,
+            )
+        ),
     ), ttft
+
+
+def _usage_token_value(current_value: Optional[int], usage: Any, field: str) -> Optional[int]:
+    value = getattr(usage, field, None)
+    return value if value is not None else current_value
+
+
+def _anthropic_usage_params(
+    input_tokens: int,
+    output_tokens: int,
+    cache_creation_input_tokens: Optional[int],
+    cache_read_input_tokens: Optional[int],
+) -> Dict[str, Any]:
+    usage_params: Dict[str, Any] = {
+        'input_tokens': input_tokens,
+        'output_tokens': output_tokens,
+    }
+    if cache_creation_input_tokens is not None:
+        usage_params['cache_creation_input_tokens'] = cache_creation_input_tokens
+    if cache_read_input_tokens is not None:
+        usage_params['cache_read_input_tokens'] = cache_read_input_tokens
+    return usage_params
 
 
 def _append_content_block(
@@ -603,6 +733,8 @@ async def async_collect_stream_response(
     stop_reason: Optional[str] = None
     usage_input_tokens: int = 0
     usage_output_tokens: int = 0
+    usage_cache_creation_input_tokens: Optional[int] = None
+    usage_cache_read_input_tokens: Optional[int] = None
 
     current_block_index: int = -1
     current_text: str = ''
@@ -621,6 +753,10 @@ async def async_collect_stream_response(
                 role = event.message.role
             if event.message.usage:
                 usage_input_tokens = event.message.usage.input_tokens
+                usage_cache_creation_input_tokens = getattr(
+                    event.message.usage, 'cache_creation_input_tokens', None
+                )
+                usage_cache_read_input_tokens = getattr(event.message.usage, 'cache_read_input_tokens', None)
 
         elif isinstance(event, ContentBlockStartEvent):
             if current_block_index >= 0:
@@ -657,6 +793,16 @@ async def async_collect_stream_response(
             stop_reason = event.delta.stop_reason
             if event.usage:
                 usage_output_tokens = event.usage.output_tokens
+                usage_cache_creation_input_tokens = _usage_token_value(
+                    usage_cache_creation_input_tokens,
+                    event.usage,
+                    'cache_creation_input_tokens',
+                )
+                usage_cache_read_input_tokens = _usage_token_value(
+                    usage_cache_read_input_tokens,
+                    event.usage,
+                    'cache_read_input_tokens',
+                )
 
     # Append the last block
     if current_block_index >= 0:
@@ -670,5 +816,12 @@ async def async_collect_stream_response(
         content=content_blocks,
         stop_reason=stop_reason,  # type: ignore
         stop_sequence=None,
-        usage=Usage(input_tokens=usage_input_tokens, output_tokens=usage_output_tokens),
+        usage=Usage(
+            **_anthropic_usage_params(
+                input_tokens=usage_input_tokens,
+                output_tokens=usage_output_tokens,
+                cache_creation_input_tokens=usage_cache_creation_input_tokens,
+                cache_read_input_tokens=usage_cache_read_input_tokens,
+            )
+        ),
     ), ttft
