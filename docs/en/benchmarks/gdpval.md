@@ -157,8 +157,6 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `dataset_hub` | `str` | `modelscope` | Dataset hub used to load GDPval records and reference files. Choices: ['modelscope', 'huggingface', 'local'] |
-| `dataset_revision` | `str` | `` | Optional dataset revision. Empty uses the hub default. |
 | `max_steps` | `int` | `250` | Maximum number of agent steps per sample. |
 | `command_timeout` | `float` | `180.0` | Default per-command timeout in seconds. |
 | `docker_image` | `str` | `evalscope/gdpval:latest` | Docker image used as the per-sample sandbox. |

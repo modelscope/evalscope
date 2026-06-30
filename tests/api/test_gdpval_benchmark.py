@@ -19,10 +19,8 @@ from evalscope.config import TaskConfig
 from evalscope.constants import HubType, JudgeStrategy
 
 
-def make_adapter(**extra_params: Any) -> GDPvalAdapter:
+def make_adapter(local_path: str = '', **extra_params: Any) -> GDPvalAdapter:
     base_extra_params = {
-        'dataset_hub': HubType.MODELSCOPE,
-        'dataset_revision': '',
         'max_steps': 250,
         'command_timeout': 180.0,
         'docker_image': 'evalscope/gdpval:latest',
@@ -47,11 +45,20 @@ def make_adapter(**extra_params: Any) -> GDPvalAdapter:
             'extra_params': extra_params
         }},
     )
+    if local_path:
+        cfg.dataset_args['gdpval']['local_path'] = local_path
+        meta._update({'local_path': local_path})
     return GDPvalAdapter(benchmark_meta=meta, task_config=cfg)
 
 
 def test_gdpval_registered_under_short_name() -> None:
-    cfg = TaskConfig(datasets=['gdpval'], dataset_args={'gdpval': {'extra_params': {'download_reference_files': False}}})
+    cfg = TaskConfig(
+        datasets=['gdpval'], dataset_args={'gdpval': {
+            'extra_params': {
+                'download_reference_files': False
+            }
+        }}
+    )
 
     adapter = get_benchmark('gdpval', cfg)
 
@@ -82,6 +89,26 @@ def test_record_to_sample_uses_modelscope_metadata_and_prompt() -> None:
     assert sample.metadata['dataset_hub'] == HubType.MODELSCOPE
     assert sample.metadata['reference_paths'] == ['reference_files/input.xlsx']
     assert sample.metadata['sandbox_reference_paths'] == ['/reference_files/abc123/input.xlsx']
+    assert [tool.name for tool in sample.tools] == ['bash', 'python_exec']
+
+
+def test_load_dataset_uses_native_loader_and_caches_submission_records(tmp_path: Path) -> None:
+    dataset_path = tmp_path / 'gdpval.csv'
+    dataset_path.write_text(
+        '\n'.join([
+            'task_id,sector,occupation,prompt,reference_files,reference_file_urls,reference_file_hf_uris,rubric_pretty,rubric_json',
+            'task-1,Finance,Analyst,Create the workbook.,reference_files/abc123/input.xlsx,https://example.test/input.xlsx,hf://datasets/openai/gdpval/reference_files/abc123/input.xlsx,Rubric,[]',
+        ]),
+        encoding='utf-8',
+    )
+    adapter = make_adapter(local_path=str(tmp_path))
+
+    dataset = adapter.load_dataset()['default']
+
+    assert len(dataset) == 1
+    assert dataset[0].metadata['task_id'] == 'task-1'
+    assert [tool.name for tool in dataset[0].tools] == ['bash', 'python_exec']
+    assert adapter._submission_records[0]['task_id'] == 'task-1'
 
 
 def test_build_reference_volumes_uses_downloaded_file_parents(tmp_path: Path) -> None:
@@ -326,6 +353,7 @@ def test_export_submission_writes_parquet_and_copies_deliverables(tmp_path: Path
 
 
 def test_adapter_requires_parquet_dependencies(monkeypatch: Any) -> None:
+
     def fake_check_import(**kwargs: Any) -> bool:
         assert kwargs['module_name'] == ['pandas', 'pyarrow']
         assert kwargs['raise_error'] is True
