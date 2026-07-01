@@ -31,7 +31,7 @@ The number of turns per conversation is sampled from `[--min-turns, --max-turns]
 | `first_turn_length` | `int` | Target prompt token count for turn 1; trajectory messages are sliced until this length is reached | `65000` |
 | `subsequent_turn_length` | `int` | Target token increment per subsequent turn; controls the delta size added each round | `500` |
 | `chars_per_token` | `float` | Characters-per-token estimate used for pre-filtering trajectories when no tokenizer is available | `3.0` |
-| `num_workers` | `int` | Number of parallel workers for live conversation building (>1 uses multiprocessing.Pool) | `4` |
+| `num_workers` | `int` | **Deprecated**. Use top-level `--num-workers` instead. Previously controlled parallel workers for live conversation building. | `4` |
 
 ### Semantics of Existing Parameters in Multi-turn Mode
 

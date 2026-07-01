@@ -173,6 +173,7 @@ Must be used with `--multi-turn`. See the [Multi-turn Benchmark Guide](./multi_t
 | `--multi-turn` | `bool` | Enable multi-turn conversation benchmark mode; `--number` is the total number of turns to send and `--parallel` is the number of concurrent turn-level requests | `False` |
 | `--min-turns` | `int` | Minimum number of user turns per conversation; used by `random_multi_turn` and `swe_smith` | `1` |
 | `--max-turns` | `int` | Maximum number of user turns per conversation; required for `random_multi_turn`; optional for ShareGPT / `custom_multi_turn` (truncates long conversations); for `swe_smith` it's the upper bound for per-conversation turn sampling, falling back to `--min-turns` when unset | `None` |
+| `--num-workers` | `int` | Worker processes for CPU-bound dataset/request generation.<br>`0` = auto-detect from CPU affinity; `1` = serial (no multiprocessing); `>1` = explicit worker count.<br>Used by `random` (long-prompt parallel generation) and `swe_smith` (live construction). Supersedes the deprecated `multi_turn_args.num_workers`. | `0` |
 
 ```{seealso}
 For details on using the multi-turn benchmark feature, see the [Multi-turn Benchmark Guide](./multi_turn.md).

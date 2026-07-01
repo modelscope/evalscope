@@ -174,6 +174,7 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `--multi-turn` | `bool` | 启用多轮对话压测模式；`--number` 表示总发送 turn 数，`--parallel` 表示并发 turn 数 | `False` |
 | `--min-turns` | `int` | 每个对话最少用户轮数；`random_multi_turn` 与 `swe_smith` 使用 | `1` |
 | `--max-turns` | `int` | 每个对话最多用户轮数；`random_multi_turn` 必需；ShareGPT/`custom_multi_turn` 可选（截断过长对话）；`swe_smith` 用作每个对话轮数采样上界，未设置时回退到 `--min-turns` | `None` |
+| `--num-workers` | `int` | CPU 密集型数据集/请求生成的 worker 进程数。<br>`0` = 根据 CPU 亲和性自动检测；`1` = 串行（无多进程）；`>1` = 显式指定 worker 数。<br>用于 `random`（长 prompt 并行生成）和 `swe_smith`（live 构建）。取代已废弃的 `multi_turn_args.num_workers`。 | `0` |
 
 ```{seealso}
 多轮对话压测使用详见[多轮对话压测指南](./multi_turn.md)。
