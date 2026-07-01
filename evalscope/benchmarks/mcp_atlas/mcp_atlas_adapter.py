@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.agent import AgentEnvironment
@@ -139,7 +138,7 @@ class MCPAtlasAdapter(AgentLoopAdapter):
         task_state: TaskState,
     ) -> Score:
         claims = extract_claims(reference)
-        claim_results = self._judge_claims(claims, filtered_prediction)
+        claim_results = [self._judge_claim(claim, filtered_prediction) for claim in claims]
         total = len(claim_results)
         coverage_score = sum(result['score'] for result in claim_results) / total if total else 0.0
         passed = coverage_score >= self.pass_threshold
@@ -246,13 +245,6 @@ class MCPAtlasAdapter(AgentLoopAdapter):
                 return server_unavailable_message(exc.server_name, exc.message)
 
         return _handler
-
-    def _judge_claims(self, claims: List[str], response: str) -> List[Dict[str, Any]]:
-        if not claims:
-            return []
-        max_workers = min(8, len(claims))
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            return list(executor.map(lambda claim: self._judge_claim(claim, response), claims))
 
     def _judge_claim(self, claim: str, response: str) -> Dict[str, Any]:
         prompt = claim_judge_prompt(claim, response)

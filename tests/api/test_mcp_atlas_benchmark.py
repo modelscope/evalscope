@@ -2,8 +2,6 @@ import asyncio
 import csv
 import json
 import pytest
-import threading
-import time
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -516,39 +514,6 @@ def test_llm_match_score_computes_claim_coverage() -> None:
     assert score.value['pass'] == 0.0
     assert score.metadata['fully_covered_claims'] == 1
     assert score.metadata['partially_covered_claims'] == 1
-
-
-def test_judge_claims_run_concurrently() -> None:
-
-    class OverlapJudge:
-        model_id = 'judge-model'
-
-        def __init__(self) -> None:
-            self.active = 0
-            self.max_active = 0
-            self.lock = threading.Lock()
-
-        def judge(self, prompt: str) -> str:
-            with self.lock:
-                self.active += 1
-                self.max_active = max(self.max_active, self.active)
-            time.sleep(0.05)
-            with self.lock:
-                self.active -= 1
-            return json.dumps({
-                'coverage_outcome': 'fulfilled',
-                'justification': prompt,
-                'confidence_level': 1.0,
-            })
-
-    adapter = make_adapter()
-    judge = OverlapJudge()
-    adapter.llm_judge = judge
-
-    results = adapter._judge_claims(['claim one', 'claim two', 'claim three'], 'answer')
-
-    assert judge.max_active > 1
-    assert [result['claim'] for result in results] == ['claim one', 'claim two', 'claim three']
 
 
 def test_parse_claim_judge_response_accepts_string_confidence() -> None:
