@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.agent import AgentEnvironment
@@ -13,6 +14,7 @@ from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolCall, ToolInfo
 from evalscope.constants import Tags
+from evalscope.utils.logger import get_logger
 from .metadata import DATASET_ID, DEFAULT_MCP_SERVER_URL, DEFAULT_SYSTEM_PROMPT, DESCRIPTION, EXTRA_PARAMS
 from .utils import (
     MCPAtlasClient,
@@ -27,6 +29,8 @@ from .utils import (
     server_unavailable_message,
     tool_name_to_server,
 )
+
+logger = get_logger()
 
 
 @register_benchmark(
@@ -135,7 +139,7 @@ class MCPAtlasAdapter(AgentLoopAdapter):
         task_state: TaskState,
     ) -> Score:
         claims = extract_claims(reference)
-        claim_results = [self._judge_claim(claim, filtered_prediction) for claim in claims]
+        claim_results = self._judge_claims(claims, filtered_prediction)
         total = len(claim_results)
         coverage_score = sum(result['score'] for result in claim_results) / total if total else 0.0
         passed = coverage_score >= self.pass_threshold
@@ -216,6 +220,11 @@ class MCPAtlasAdapter(AgentLoopAdapter):
             'task_id': sample.metadata.get('task_id'),
             'missing_servers': missing,
         })
+        logger.warning(
+            'Skipping MCP-Atlas task %s because required servers are not enabled: %s',
+            sample.metadata.get('task_id'),
+            missing,
+        )
         return False
 
     def _make_tool_handler(self, tool_name: str, sample_key: int):
@@ -237,6 +246,13 @@ class MCPAtlasAdapter(AgentLoopAdapter):
                 return server_unavailable_message(exc.server_name, exc.message)
 
         return _handler
+
+    def _judge_claims(self, claims: List[str], response: str) -> List[Dict[str, Any]]:
+        if not claims:
+            return []
+        max_workers = min(8, len(claims))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            return list(executor.map(lambda claim: self._judge_claim(claim, response), claims))
 
     def _judge_claim(self, claim: str, response: str) -> Dict[str, Any]:
         prompt = claim_judge_prompt(claim, response)

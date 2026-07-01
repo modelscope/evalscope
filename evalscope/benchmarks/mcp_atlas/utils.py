@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Tuple
 from evalscope.api.tool import ToolInfo, ToolParams
 from evalscope.utils.json_schema import JSONSchema
 
+MAX_TOOL_ERROR_CHARS = 1000
+
 
 class MCPAtlasServerUnavailable(Exception):
     """Transport-level failure from a backing MCP server."""
@@ -63,9 +65,12 @@ class MCPAtlasClient:
             raise MCPAtlasServerUnavailable(tool_name, str(exc)) from exc
         if response.status_code != 200:
             if is_transport_error(response.text):
-                raise MCPAtlasServerUnavailable(tool_name, response.text)
-            return response.text
-        return format_tool_response(response.json())
+                raise MCPAtlasServerUnavailable(tool_name, truncate_text(response.text))
+            return f'Error calling tool {tool_name} (HTTP {response.status_code}): {truncate_text(response.text)}'
+        try:
+            return format_tool_response(response.json())
+        except ValueError as exc:
+            return f'Error decoding tool response JSON from {tool_name}: {exc}. Raw response: {truncate_text(response.text)}'
 
 
 def parse_enabled_servers_response(data: Dict[str, Any]) -> List[str]:
@@ -180,9 +185,9 @@ def parse_claim_judge_response(response: Any) -> Tuple[str, str, float]:
     text = strip_json_fence(response)
     try:
         parsed = json.loads(text)
-        outcome = str(parsed.get('coverage_outcome') or 'not_fulfilled')
-        justification = str(parsed.get('justification') or '')
-        confidence = parse_confidence(parsed.get('confidence_level', 0.0))
+        outcome = str(parsed.get('coverage_outcome') or parsed.get('outcome') or 'not_fulfilled')
+        justification = str(parsed.get('justification') or parsed.get('reason') or '')
+        confidence = parse_confidence(parsed.get('confidence_level', parsed.get('confidence', 0.0)))
         return outcome, justification, confidence
     except Exception:
         lowered = text.lower()
@@ -235,6 +240,12 @@ def is_transport_error(text: str) -> bool:
         'failed to establish a new connection',
     ]
     return any(marker in lowered for marker in markers)
+
+
+def truncate_text(text: str, limit: int = MAX_TOOL_ERROR_CHARS) -> str:
+    if len(text) <= limit:
+        return text
+    return f'{text[:limit]}...'
 
 
 def server_unavailable_message(server_name: str, message: str) -> str:

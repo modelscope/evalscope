@@ -2,6 +2,8 @@ import asyncio
 import csv
 import json
 import pytest
+import threading
+import time
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -65,16 +67,20 @@ class FakeClient:
         return 'tool result'
 
 
-class FakeJudge:
+class PromptJudge:
     model_id = 'judge-model'
 
-    def __init__(self, responses: List[str]) -> None:
-        self.responses = responses
-        self.prompts: List[str] = []
-
     def judge(self, prompt: str) -> str:
-        self.prompts.append(prompt)
-        return self.responses.pop(0)
+        outcome = 'not_fulfilled'
+        if 'claim one' in prompt:
+            outcome = 'fulfilled'
+        elif 'claim two' in prompt:
+            outcome = 'partially_fulfilled'
+        return json.dumps({
+            'coverage_outcome': outcome,
+            'justification': outcome,
+            'confidence_level': 0.9,
+        })
 
 
 def make_adapter(limit: Any = None, local_path: str = '', **extra_params: Any) -> MCPAtlasAdapter:
@@ -317,6 +323,48 @@ def test_client_marks_transport_500_as_unavailable(monkeypatch: Any) -> None:
     assert is_transport_error(str(exc_info.value))
 
 
+def test_client_returns_bounded_http_error(monkeypatch: Any) -> None:
+
+    class Response:
+        status_code = 500
+        text = 'x' * 1200
+
+        def json(self) -> Any:
+            return {}
+
+    def fake_post(url: str, **kwargs: Any) -> Response:
+        return Response()
+
+    monkeypatch.setattr('requests.post', fake_post)
+    client = MCPAtlasClient('http://localhost:1984', request_timeout=7.0, list_tools_timeout=11.0)
+
+    result = client.call_tool('wikipedia_get_article', {'title': 'MCP'})
+
+    assert result.startswith('Error calling tool wikipedia_get_article (HTTP 500): ')
+    assert result.endswith('...')
+    assert len(result) < 1100
+
+
+def test_client_handles_malformed_json_response(monkeypatch: Any) -> None:
+
+    class Response:
+        status_code = 200
+        text = '{not json'
+
+        def json(self) -> Any:
+            raise ValueError('bad json')
+
+    def fake_post(url: str, **kwargs: Any) -> Response:
+        return Response()
+
+    monkeypatch.setattr('requests.post', fake_post)
+    client = MCPAtlasClient('http://localhost:1984', request_timeout=7.0, list_tools_timeout=11.0)
+
+    result = client.call_tool('wikipedia_get_article', {'title': 'MCP'})
+
+    assert result == 'Error decoding tool response JSON from wikipedia_get_article: bad json. Raw response: {not json'
+
+
 def test_load_dataset_filters_missing_servers_and_attaches_tools(tmp_path: Path) -> None:
     dataset_path = tmp_path / 'mcp_atlas.csv'
     write_rows(
@@ -358,6 +406,31 @@ def test_load_dataset_filters_missing_servers_and_attaches_tools(tmp_path: Path)
     assert dataset[0].metadata['task_id'] == 'keep'
     assert dataset[0].tools[0].name == 'wikipedia_get_article'
     assert adapter._excluded_tasks == [{'task_id': 'drop', 'missing_servers': ['github']}]
+
+
+def test_sample_filter_logs_missing_servers(monkeypatch: Any) -> None:
+    logs: List[Dict[str, Any]] = []
+
+    def fake_warning(message: str, task_id: str, missing: List[str]) -> None:
+        logs.append({
+            'message': message,
+            'task_id': task_id,
+            'missing': missing,
+        })
+
+    monkeypatch.setattr('evalscope.benchmarks.mcp_atlas.mcp_atlas_adapter.logger.warning', fake_warning)
+    adapter = make_adapter()
+    adapter._enabled_servers = ['wikipedia']
+    sample = Sample(input='prompt', metadata={'task_id': 'drop', 'required_servers': ['github']})
+
+    assert adapter.sample_filter(sample) is False
+
+    assert adapter._excluded_tasks == [{'task_id': 'drop', 'missing_servers': ['github']}]
+    assert logs == [{
+        'message': 'Skipping MCP-Atlas task %s because required servers are not enabled: %s',
+        'task_id': 'drop',
+        'missing': ['github'],
+    }]
 
 
 def test_build_tools_enforces_tool_call_limit() -> None:
@@ -424,23 +497,7 @@ def test_build_tools_short_circuits_failed_server() -> None:
 
 def test_llm_match_score_computes_claim_coverage() -> None:
     adapter = make_adapter(pass_threshold=0.75)
-    adapter.llm_judge = FakeJudge([
-        json.dumps({
-            'coverage_outcome': 'fulfilled',
-            'justification': 'covered',
-            'confidence_level': 0.9,
-        }),
-        json.dumps({
-            'coverage_outcome': 'partially_fulfilled',
-            'justification': 'partly covered',
-            'confidence_level': 0.6,
-        }),
-        json.dumps({
-            'coverage_outcome': 'not_fulfilled',
-            'justification': 'missing',
-            'confidence_level': 0.8,
-        }),
-    ])
+    adapter.llm_judge = PromptJudge()
     sample = Sample(
         input='question',
         target=json.dumps(['claim one', 'claim two', 'claim three']),
@@ -461,6 +518,39 @@ def test_llm_match_score_computes_claim_coverage() -> None:
     assert score.metadata['partially_covered_claims'] == 1
 
 
+def test_judge_claims_run_concurrently() -> None:
+
+    class OverlapJudge:
+        model_id = 'judge-model'
+
+        def __init__(self) -> None:
+            self.active = 0
+            self.max_active = 0
+            self.lock = threading.Lock()
+
+        def judge(self, prompt: str) -> str:
+            with self.lock:
+                self.active += 1
+                self.max_active = max(self.max_active, self.active)
+            time.sleep(0.05)
+            with self.lock:
+                self.active -= 1
+            return json.dumps({
+                'coverage_outcome': 'fulfilled',
+                'justification': prompt,
+                'confidence_level': 1.0,
+            })
+
+    adapter = make_adapter()
+    judge = OverlapJudge()
+    adapter.llm_judge = judge
+
+    results = adapter._judge_claims(['claim one', 'claim two', 'claim three'], 'answer')
+
+    assert judge.max_active > 1
+    assert [result['claim'] for result in results] == ['claim one', 'claim two', 'claim three']
+
+
 def test_parse_claim_judge_response_accepts_string_confidence() -> None:
     outcome, justification, confidence = parse_claim_judge_response(
         json.dumps({
@@ -473,6 +563,20 @@ def test_parse_claim_judge_response_accepts_string_confidence() -> None:
     assert outcome == 'fulfilled'
     assert justification == 'covered'
     assert confidence == 1.0
+
+
+def test_parse_claim_judge_response_accepts_fallback_keys() -> None:
+    outcome, justification, confidence = parse_claim_judge_response(
+        json.dumps({
+            'outcome': 'partially_fulfilled',
+            'reason': 'partly covered',
+            'confidence': 'medium',
+        })
+    )
+
+    assert outcome == 'partially_fulfilled'
+    assert justification == 'partly covered'
+    assert confidence == 0.5
 
 
 def test_aggregate_scores_returns_mean_coverage_and_pass_rate() -> None:
