@@ -2,7 +2,6 @@
 
 import os
 import random
-import re
 from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
@@ -95,11 +94,7 @@ class GPQAAdapter(MultiChoiceAdapter):
         def preprocess(text):
             if text is None:
                 return ' '
-            text = text.strip()
-            text = text.replace(' [title]', '. ')
-            text = re.sub('\\[.*?\\]', '', text)
-            text = text.replace('  ', ' ')
-            return text
+            return text.strip()
 
         choices = [
             preprocess(input_d['Incorrect Answer 1']),
