@@ -4,7 +4,6 @@ import base64
 import copy
 import json
 import os
-import random
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -15,7 +14,7 @@ from evalscope.api.agent import AgentEnvironment
 from evalscope.api.agent.types import ExecResult
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
-from evalscope.api.dataset import DatasetDict, DatasetHub, MemoryDataset, Sample
+from evalscope.api.dataset import DatasetHub, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.model import Model
@@ -36,17 +35,6 @@ _HOST_ARTIFACT_ROOT = 'artifacts/gdpval'
 _SUBMISSION_DIR_NAME = 'gdpval_submission'
 
 _GDPVAL_EXTRA_PARAMS: Dict[str, Any] = {
-    'dataset_hub': {
-        'type': 'str',
-        'description': 'Dataset hub used to load GDPval records and reference files.',
-        'value': HubType.MODELSCOPE,
-        'choices': [HubType.MODELSCOPE, HubType.HUGGINGFACE, HubType.LOCAL],
-    },
-    'dataset_revision': {
-        'type': 'str',
-        'description': 'Optional dataset revision. Empty uses the hub default.',
-        'value': '',
-    },
     'max_steps': {
         'type': 'int',
         'description': 'Maximum number of agent steps per sample.',
@@ -171,44 +159,15 @@ class GDPvalAdapter(AgentLoopAdapter):
 
     @property
     def source_dataset_hub(self) -> str:
-        return self.extra_params.get('dataset_hub') or self.dataset_hub or HubType.MODELSCOPE
-
-    @property
-    def source_dataset_revision(self) -> Optional[str]:
-        return self.extra_params.get('dataset_revision') or None
+        return self.dataset_hub or HubType.MODELSCOPE
 
     @property
     def source_dataset(self) -> DatasetHub:
         return DatasetHub(
             data_id_or_path=self.dataset_id,
             data_source=self.source_dataset_hub,
-            revision=self.source_dataset_revision,
             force_redownload=self.force_redownload,
         )
-
-    def load_dataset(self) -> DatasetDict:
-        dataset_dict: Dict[str, MemoryDataset] = {}
-        for subset in self.subset_list:
-            with self._temporary_attribute('current_subset_name', subset):
-                records = self._load_records()
-                if subset == self.default_subset:
-                    self._submission_records = copy.deepcopy(records)
-                if self.shuffle:
-                    random.Random(self.seed).shuffle(records)
-                records = self._apply_limit(records)
-                samples = [self.record_to_sample(record) for record in records]
-                if self.download_reference_files and not is_build_doc():
-                    self._resolve_sample_reference_files(samples)
-                if self.repeats > 1:
-                    samples = [copy.deepcopy(sample) for sample in samples for _ in range(self.repeats)]
-                dataset = MemoryDataset(samples=samples, name=self.name, location=self.dataset_id)
-                dataset.reindex(group_size=self.repeats)
-                dataset_dict[subset] = dataset
-
-        self.test_dataset = DatasetDict(dataset_dict)
-        self.fewshot_dataset = None
-        self._post_process_samples()
-        return self.test_dataset
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         reference_files = _as_list(record.get('reference_files'))
@@ -221,10 +180,12 @@ class GDPvalAdapter(AgentLoopAdapter):
         return Sample(
             input=prompt,
             target='',
+            tools=[BASH_TOOL_INFO, PYTHON_EXEC_TOOL_INFO],
             metadata={
                 'task_id': record.get('task_id'),
                 'sector': record.get('sector'),
                 'occupation': record.get('occupation'),
+                'prompt': record.get('prompt'),
                 'reference_files': reference_files,
                 'reference_file_urls': reference_file_urls,
                 'reference_file_hf_uris': reference_file_hf_uris,
@@ -238,14 +199,10 @@ class GDPvalAdapter(AgentLoopAdapter):
         )
 
     def _post_process_samples(self) -> None:
-        for subset_samples in self.test_dataset.values():
-            for sample in subset_samples:
-                tools = list(sample.tools or [])
-                if not any(tool.name == 'bash' for tool in tools):
-                    tools.append(BASH_TOOL_INFO)
-                if not any(tool.name == 'python_exec' for tool in tools):
-                    tools.append(PYTHON_EXEC_TOOL_INFO)
-                sample.tools = tools
+        if self.download_reference_files and not is_build_doc():
+            for subset_samples in self.test_dataset.values():
+                self._resolve_sample_reference_files(list(subset_samples))
+        self._submission_records = self._submission_records_from_samples()
         super()._post_process_samples()
 
     def run_inference(self, model: Model, sample: Sample, output_dir: str, **kwargs: Any) -> TaskState:
@@ -343,23 +300,6 @@ class GDPvalAdapter(AgentLoopAdapter):
             return
         self._export_submission(Path(output_dir))
 
-    def _load_records(self) -> List[Dict[str, Any]]:
-        logger.info(
-            f'Loading GDPval from {self.source_dataset_hub}: '
-            f'{self.dataset_id}, subset=default, split={self.eval_split}.'
-        )
-        dataset = self.source_dataset.load(split=self.eval_split, subset='default')
-        return list(dataset)
-
-    def _apply_limit(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        if not self.limit:
-            return records
-        if isinstance(self.limit, float):
-            limit = int(len(records) * self.limit)
-        else:
-            limit = int(self.limit)
-        return records[:max(limit, 0)]
-
     def _resolve_sample_reference_files(self, samples: List[Sample]) -> None:
         for sample in samples:
             host_files = []
@@ -415,7 +355,7 @@ class GDPvalAdapter(AgentLoopAdapter):
         (submission_dir / 'data').mkdir(parents=True, exist_ok=True)
 
         results = self._submission_results(review_items, submission_dir)
-        records = copy.deepcopy(self._submission_records) or self._load_records()
+        records = copy.deepcopy(self._submission_records) or self._submission_records_from_review_items(review_items)
         for record in records:
             task_id = str(record.get('task_id') or '')
             result = results.get(task_id, {})
@@ -444,6 +384,47 @@ class GDPvalAdapter(AgentLoopAdapter):
         with open(submission_dir / 'submission_info.json', 'w', encoding='utf-8') as f:
             json.dump(info, f, ensure_ascii=False, indent=2)
         logger.info(f'GDPval submission package exported to: {submission_dir}')
+
+    def _submission_records_from_samples(self) -> List[Dict[str, Any]]:
+        if self.test_dataset is None:
+            return []
+        records = []
+        seen = set()
+        for sample in self.test_dataset.get(self.default_subset, []):
+            record = self._submission_record_from_metadata(sample.metadata)
+            task_id = str(record.get('task_id') or '')
+            if task_id in seen:
+                continue
+            seen.add(task_id)
+            records.append(record)
+        return records
+
+    def _submission_records_from_review_items(self, review_items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        records = []
+        seen = set()
+        for item in review_items:
+            sample_score = item.get('sample_score') or {}
+            metadata = sample_score.get('sample_metadata') or {}
+            record = self._submission_record_from_metadata(metadata)
+            task_id = str(record.get('task_id') or '')
+            if task_id in seen:
+                continue
+            seen.add(task_id)
+            records.append(record)
+        return records
+
+    def _submission_record_from_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            'task_id': metadata.get('task_id'),
+            'sector': metadata.get('sector'),
+            'occupation': metadata.get('occupation'),
+            'prompt': metadata.get('prompt'),
+            'reference_files': metadata.get('reference_files') or [],
+            'reference_file_urls': metadata.get('reference_file_urls') or [],
+            'reference_file_hf_uris': metadata.get('reference_file_hf_uris') or [],
+            'rubric_pretty': metadata.get('rubric_pretty'),
+            'rubric_json': metadata.get('rubric_json'),
+        }
 
     def _load_review_items(self, report_dir: Path) -> List[Dict[str, Any]]:
         outputs_dir = report_dir.parent.parent
