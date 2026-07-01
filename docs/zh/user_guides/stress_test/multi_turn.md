@@ -31,7 +31,7 @@
 | `first_turn_length` | `int` 或 `[int, int]` | 第 1 轮目标 prompt token 数；从原始轨迹中截取恰好达到该长度的消息片段<br>• 单个整数：固定值，如 `65000`<br>• 两个整数的列表：`[最小值, 最大值]`，每条对话独立均匀随机采样，如 `[32000, 65000]` | `65000` |
 | `subsequent_turn_length` | `int` 或 `[int, int]` | 后续每轮在上一轮基础上新增的目标 token 数；决定每轮 delta 的大小<br>• 单个整数：固定值<br>• 两个整数的列表：`[最小值, 最大值]`，每条对话独立均匀随机采样 | `500` |
 | `chars_per_token` | `float` | 无 tokenizer 时的字符/token 估算比，用于预过滤原始轨迹 | `3.0` |
-| `num_workers` | `int` | live 构建模式下并行 worker 数量（>1 使用 multiprocessing.Pool） | `4` |
+| `num_workers` | `int` | **已废弃**，请使用顶层 `--num-workers` 参数。原用于控制 live 构建模式下的并行 worker 数量。 | `4` |
 
 ### 已有参数在多轮模式下的语义
 
