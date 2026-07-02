@@ -1042,4 +1042,3 @@ async def async_collect_stream_response(
         object='chat.completion',
         usage=usage if usage is not None else getattr(collected_chunks[-1], 'usage', None)
     ), ttft
-
