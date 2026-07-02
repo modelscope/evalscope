@@ -4,9 +4,14 @@ import subprocess
 from pathlib import Path
 
 from evalscope.agent.skills import discover_skills, format_skills_prompt, install_skills_command
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.agent.types import NativeAgentConfig
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import InferenceResult
+from evalscope.api.messages import ChatMessageAssistant
+from evalscope.api.model import ModelOutput
+from evalscope.api.model.model_output import ChatCompletionChoice
 from evalscope.api.sandbox.docker_image import DockerImageSpec, hash_build_context
 from evalscope.benchmarks.bigcodebench.bigcodebench_adapter import BigCodeBenchAdapter
 from evalscope.benchmarks.skillsbench.skillsbench_adapter import (
@@ -211,6 +216,63 @@ def test_save_verifier_artifacts_writes_paths(tmp_path: Path) -> None:
     assert (artifact_dir / 'ctrf.json').read_text(encoding='utf-8') == '{"ok": true}'
     assert sample.metadata['artifact_dir'] == str(artifact_dir)
     assert sample.metadata['verifier_stdout_path'] == str(artifact_dir / 'test-stdout.txt')
+
+
+def test_on_inference_accepts_native_agent_config(monkeypatch) -> None:
+    adapter = SkillsBenchAdapter(
+        benchmark_meta=BenchmarkMeta(
+            name='skillsbench',
+            dataset_id='skillsbench',
+            subset_list=['default'],
+            metric_list=['score'],
+            prompt_template='{question}',
+        ),
+        task_config=TaskConfig(
+            datasets=['skillsbench'],
+            agent_config=NativeAgentConfig(tools=['bash']),
+        ),
+    )
+    env = _FakeSkillsBenchEnv()
+    sample = Sample(id=0, input='do task', target='', metadata={'task_id': 'task/one'})
+
+    def fake_run_native_agent(**kwargs):  # type: ignore[no-untyped-def]
+        assert kwargs['environment_override'] is env
+        output = ModelOutput(
+            model='fake',
+            choices=[ChatCompletionChoice.from_content('done')],
+            metadata={'source': 'test'},
+        )
+        return InferenceResult(
+            output=output,
+            messages=[ChatMessageAssistant(content='done')],
+        )
+
+    async def fake_run_verifier(run_env, run_sample):  # type: ignore[no-untyped-def]
+        assert run_env is env
+        run_sample.metadata['reward'] = 1.0
+
+    monkeypatch.setattr(adapter, '_build_environment', lambda _: env)
+    monkeypatch.setattr('evalscope.agent.runner.run_native_agent', fake_run_native_agent)
+    monkeypatch.setattr(adapter, '_run_verifier', fake_run_verifier)
+
+    result = adapter._on_inference(model=None, sample=sample)
+
+    assert result.output.message.text == 'done'
+    assert sample.metadata['reward'] == 1.0
+    assert env.closed
+
+
+class _FakeSkillsBenchEnv(AgentEnvironment):
+    name = 'fake'
+
+    def __init__(self) -> None:
+        self.closed = False
+
+    async def exec(self, cmd, *, cwd=None, input=None, timeout=None, env=None):  # type: ignore[no-untyped-def]
+        raise AssertionError('exec should not be called in this test')
+
+    async def close(self) -> None:
+        self.closed = True
 
 
 def _make_task_env(tmp_path: Path) -> Path:

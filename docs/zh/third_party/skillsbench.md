@@ -7,6 +7,7 @@ SkillsBench 评测 agent 是否能利用任务内置的 Agent Skills。每个任
 - 本地已安装并启动 Docker。
 - 已 clone SkillsBench 仓库，并传入 `tasks/` 目录路径。
 - 运行真实 agent 时需要配置 `agent_config`，例如 Codex external runner。
+- 外部 runner 会在任务容器内执行。Codex/OpenCode/Gemini CLI runner 会先探测 CLI，`auto_install=True` 时可在 runner setup 阶段安装。
 - verifier 脚本可能通过 apt/pip/uv 安装依赖，因此需要可用网络。
 
 ## Skill Mode
@@ -59,7 +60,7 @@ run_task(TaskConfig(
         'environment': 'docker',
         'timeout': 900,
         'kwargs': {
-            'auto_install': False,
+            'auto_install': True,
         },
     },
     dataset_args={
@@ -91,6 +92,8 @@ dataset_args={
 ## 镜像缓存
 
 EvalScope 会为每个 task 和 skill mode 生成临时 build context，并基于 context hash 构建本地 Docker image。`no-skill` 和 `with-skill` 使用不同 cache key。首次运行会 build，后续相同上下文会复用本地镜像。设置 `force_rebuild=true` 可强制重建。
+
+任务镜像仍然是任务依赖和 verifier 输入的唯一来源。如果该镜像已经预装 external CLI，可以把 runner 的 `auto_install` 设为 `False`；否则保持 `auto_install=True`，由 runner 在任务容器 setup 阶段安装 CLI。
 
 ## 当前限制
 

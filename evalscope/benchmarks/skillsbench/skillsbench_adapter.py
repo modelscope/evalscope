@@ -241,24 +241,43 @@ class SkillsBenchAdapter(AgentAdapter):
 
         from evalscope.agent.external.adapter import run_external_agent
         from evalscope.agent.external.config import ExternalAgentConfig
+        from evalscope.agent.runner import run_native_agent
+        from evalscope.api.agent.types import NativeAgentConfig
 
-        if not isinstance(self._task_config.agent_config, ExternalAgentConfig):
-            raise RuntimeError('SkillsBench v1 supports external agent_config or dataset_args.runner="oracle".')
+        agent_config = self._task_config.agent_config
+        if isinstance(agent_config, ExternalAgentConfig):
+            env = self._build_environment(sample)
+            wrapper = _NoCloseEnvironment(env)
+            try:
+                result = run_external_agent(
+                    config=agent_config,
+                    model=model,
+                    sample=sample,
+                    environment_override=wrapper,
+                    instruction_override=_sample_instruction(sample),
+                )
+                AsyncioLoopRunner.run(self._run_verifier(env, sample))
+                return result
+            finally:
+                AsyncioLoopRunner.run(env.close())
 
-        env = self._build_environment(sample)
-        wrapper = _NoCloseEnvironment(env)
-        try:
-            result = run_external_agent(
-                config=self._task_config.agent_config,
-                model=model,
-                sample=sample,
-                environment_override=wrapper,
-                instruction_override=_sample_instruction(sample),
-            )
-            AsyncioLoopRunner.run(self._run_verifier(env, sample))
-            return result
-        finally:
-            AsyncioLoopRunner.run(env.close())
+        if isinstance(agent_config, NativeAgentConfig):
+            env = self._build_environment(sample)
+            try:
+                result = run_native_agent(
+                    task_config=self._task_config,
+                    model=model,
+                    sample=sample,
+                    build_sandbox_config=lambda _: None,
+                    extract_final_answer=lambda loop_result, strategy: strategy.extract_final_answer(loop_result),
+                    environment_override=env,
+                )
+                AsyncioLoopRunner.run(self._run_verifier(env, sample))
+                return result
+            finally:
+                AsyncioLoopRunner.run(env.close())
+
+        raise RuntimeError('SkillsBench supports native/external agent_config or dataset_args.runner="oracle".')
 
     def run_inference(self, model: Model, sample: Sample, output_dir: str, **kwargs: Any) -> TaskState:
         self._current_output_dir = output_dir

@@ -7,6 +7,7 @@ SkillsBench evaluates whether agents can use task-bundled Agent Skills. Each tas
 - Docker is installed and running.
 - The SkillsBench repository is cloned locally, and you pass the `tasks/` directory path.
 - Real agent runs require `agent_config`, for example the Codex external runner.
+- External runners execute inside the task container. Codex/OpenCode/Gemini CLI runners probe for the CLI first and can install it during runner setup when `auto_install=True`.
 - Verifier scripts may install dependencies through apt/pip/uv, so network access is usually required.
 
 ## Skill Mode
@@ -59,7 +60,7 @@ run_task(TaskConfig(
         'environment': 'docker',
         'timeout': 900,
         'kwargs': {
-            'auto_install': False,
+            'auto_install': True,
         },
     },
     dataset_args={
@@ -91,6 +92,8 @@ dataset_args={
 ## Image Cache
 
 EvalScope creates a temporary build context for each task and skill mode, then tags the local Docker image from the context hash. `no-skill` and `with-skill` use different cache keys. The first run builds the image; later runs with the same context reuse it. Set `force_rebuild=true` to rebuild.
+
+The task image remains the source of truth for task dependencies and verifier inputs. If that image already contains the external CLI, set the runner's `auto_install` to `False`; otherwise leave `auto_install=True` so the runner installs the CLI inside the task container during setup.
 
 ## Current Limits
 
