@@ -684,7 +684,7 @@ def add_argument(parser: argparse.ArgumentParser):
 
     # Dataset settings
     parser.add_argument('--dataset', type=str, default='openqa', help='Specify the dataset')
-    parser.add_argument('--dataset-path', type=str, required=False, help='Path to the dataset file')
+    parser.add_argument('--dataset-path', type=str, required=False, help='Path to the dataset file or directory')
     parser.add_argument(
         '--data-source',
         type=str,

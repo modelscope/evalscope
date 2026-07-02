@@ -192,8 +192,9 @@ class DatasetPluginBase:
         dataset_path = self.query_parameters.dataset_path
         data_source = self.query_parameters.data_source or HubType.MODELSCOPE
 
-        # If dataset_path is a local directory, treat as local dataset
-        if dataset_path and os.path.isdir(dataset_path):
+        if dataset_path:
+            if not os.path.exists(dataset_path):
+                raise FileNotFoundError(f"The specified dataset_path '{dataset_path}' does not exist.")
             data_id_or_path = dataset_path
             data_source = HubType.LOCAL
         else:
@@ -230,7 +231,7 @@ class DatasetPluginBase:
         # dataset_path is a directory -> look for file inside
         if dataset_path and os.path.isdir(dataset_path):
             candidate = os.path.join(dataset_path, file_name)
-            if os.path.exists(candidate):
+            if os.path.isfile(candidate):
                 return candidate
             # Fallback: treat directory as a hub-local dataset root
             return download_dataset_file(
@@ -238,6 +239,10 @@ class DatasetPluginBase:
                 file_path=file_name,
                 data_source=HubType.LOCAL,
             )
+
+        # dataset_path is set but does not exist -> error
+        if dataset_path:
+            raise FileNotFoundError(f"The specified dataset_path '{dataset_path}' does not exist.")
 
         # Remote download
         return download_dataset_file(
