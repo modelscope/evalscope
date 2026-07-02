@@ -912,7 +912,7 @@ def collect_stream_response(
         created=collected_chunks[0].created,
         model=collected_chunks[0].model,
         object='chat.completion',
-        usage=usage if usage is not None else collected_chunks[-1].usage
+        usage=usage if usage is not None else getattr(collected_chunks[-1], 'usage', None)
     ), ttft
 
 
@@ -1040,6 +1040,6 @@ async def async_collect_stream_response(
         created=collected_chunks[0].created,
         model=collected_chunks[0].model,
         object='chat.completion',
-        usage=usage if usage is not None else collected_chunks[-1].usage
+        usage=usage if usage is not None else getattr(collected_chunks[-1], 'usage', None)
     ), ttft
 
