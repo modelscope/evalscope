@@ -19,7 +19,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import ensure_docker_image_built
+from evalscope.api.sandbox import DockerImageBuilder, DockerImageSpec
 from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType, Tags
 from evalscope.utils.import_utils import check_import, is_build_doc
 from evalscope.utils.io_utils import jsonl_to_list
@@ -91,8 +91,8 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
 
 ## Evaluation Notes
 
-- The default Docker image is `evalscope/gdpval:latest` and is built automatically from the bundled Dockerfile when
-  missing. Set `extra_params.auto_build_docker_image=false` to require a pre-built image, or override
+- The default Docker image is built automatically from the bundled Dockerfile into a content-hashed local tag. Set
+  `extra_params.auto_build_docker_image=false` to require a pre-built `evalscope/gdpval:latest`, or override
   `extra_params.docker_image`.
 - `submission_ready` is a local readiness metric: it is 1 when the model produced final text or at least one
   deliverable file. It is not an official GDPval quality score.
@@ -333,7 +333,16 @@ class GDPvalAdapter(AgentLoopAdapter):
             return
 
         build_ctx, dockerfile = self.get_build_context()
-        ensure_docker_image_built(self.docker_image, path=build_ctx, dockerfile=dockerfile, label='GDPval docker image')
+        result = DockerImageBuilder().build_or_reuse(
+            DockerImageSpec(
+                name_prefix='evalscope/gdpval',
+                context_dir=build_ctx,
+                dockerfile=dockerfile,
+                cache_key_parts=[self.name, 'gdpval'],
+            )
+        )
+        self.docker_image = result.image_tag
+        logger.info(f'GDPval docker image prepared: {result.image_tag} (reused={result.reused})')
 
     def _artifact_dir(self, sample: Sample) -> Path:
         task_id = str(sample.metadata.get('task_id') or sample.id or 'unknown')

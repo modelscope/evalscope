@@ -10,6 +10,7 @@ from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.registry import get_benchmark
+from evalscope.api.sandbox import DockerImageResult
 from evalscope.benchmarks.gdpval.gdpval_adapter import (
     GDPvalAdapter,
     _GDPvalArtifactEnvironment,
@@ -272,30 +273,31 @@ def test_calculate_metrics_does_not_run_local_llm_judge_for_gdpval() -> None:
 
 def test_ensure_docker_image_builds_missing_default_image(monkeypatch: Any) -> None:
     adapter = make_adapter()
-    calls: List[Dict[str, Any]] = []
+    calls: List[Any] = []
 
-    def mock_ensure(image: str, path: str, dockerfile: str, label: str) -> bool:
-        calls.append({'image': image, 'path': path, 'dockerfile': dockerfile, 'label': label})
-        return True
+    def mock_build_or_reuse(self: Any, spec: Any) -> DockerImageResult:
+        calls.append(spec)
+        return DockerImageResult(image_tag='evalscope/gdpval:hash', reused=False, context_hash='hash')
 
-    monkeypatch.setattr('evalscope.benchmarks.gdpval.gdpval_adapter.ensure_docker_image_built', mock_ensure)
+    monkeypatch.setattr('evalscope.benchmarks.gdpval.gdpval_adapter.DockerImageBuilder.build_or_reuse',
+                        mock_build_or_reuse)
 
     adapter._ensure_docker_image()
     adapter._ensure_docker_image()
 
-    assert calls == [{
-        'image': 'evalscope/gdpval:latest',
-        'path': str(Path('evalscope/benchmarks/gdpval').resolve()),
-        'dockerfile': str(Path('evalscope/benchmarks/gdpval/Dockerfile').resolve()),
-        'label': 'GDPval docker image',
-    }]
+    assert len(calls) == 1
+    assert calls[0].name_prefix == 'evalscope/gdpval'
+    assert calls[0].context_dir == str(Path('evalscope/benchmarks/gdpval').resolve())
+    assert calls[0].dockerfile == str(Path('evalscope/benchmarks/gdpval/Dockerfile').resolve())
+    assert calls[0].cache_key_parts == ['gdpval', 'gdpval']
+    assert adapter.docker_image == 'evalscope/gdpval:hash'
 
 
 def test_ensure_docker_image_skips_custom_image(monkeypatch: Any) -> None:
     adapter = make_adapter(docker_image='custom/gdpval:latest')
 
     monkeypatch.setattr(
-        'evalscope.benchmarks.gdpval.gdpval_adapter.ensure_docker_image_built',
+        'evalscope.benchmarks.gdpval.gdpval_adapter.DockerImageBuilder.build_or_reuse',
         lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError(f'unexpected image build: {args} {kwargs}')),
     )
 

@@ -27,6 +27,7 @@ from typing import Any, Dict, List, Optional
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
+from ._install import install_task_skills
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
 
 logger = get_logger()
@@ -175,6 +176,13 @@ class HermesRunner(AgentRunner):
         }
         if home_dir is not None:
             env_vars['HERMES_HOME'] = home_dir
+        await install_task_skills(
+            env,
+            task,
+            home_dir=None,
+            native_install_paths=[],
+            runner_name='HermesRunner',
+        )
 
         # Write a config.yaml that points Hermes at the bridge endpoint.
         # When base_url is set, Hermes ignores the provider and calls the

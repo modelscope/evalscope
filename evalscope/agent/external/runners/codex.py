@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
-from ._node_install import ensure_node_via_apt
+from ._install import ensure_node_via_apt, install_task_skills
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
 
 logger = get_logger()
@@ -170,6 +170,13 @@ class CodexRunner(AgentRunner):
         home_dir = self._resolve_home()
         if home_dir is not None:
             env_vars['HOME'] = home_dir
+        await install_task_skills(
+            env,
+            task,
+            home_dir=home_dir,
+            native_install_paths=['$HOME/.agents/skills'],
+            runner_name='CodexRunner',
+        )
 
         # Build -c overrides. Order: builtin (provider config) → user extras.
         # codex parses these as TOML literals, so string values need shell-

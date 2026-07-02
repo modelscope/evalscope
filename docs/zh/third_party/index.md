@@ -8,6 +8,7 @@
 :maxdepth: 1
 
 terminal_bench.md
+skillsbench.md
 gaia.md
 swe_bench.md
 swe_bench_pro.md

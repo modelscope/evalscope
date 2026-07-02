@@ -43,6 +43,12 @@ class BaseAgentConfig(BaseModel):
     """Free-form variant-specific options.  Native: forwarded to the
     strategy constructor.  External: forwarded to the runner constructor."""
 
+    skills_dir: Optional[str] = Field(default=None)
+    """Optional Agent Skills directory. Only agent runners consume this field."""
+
+    skill_prompt_nudge: bool = Field(default=True)
+    """Whether to add a neutral prompt nudge when skills are available."""
+
 
 class NativeAgentConfig(BaseAgentConfig):
     """AgentLoop-driven agent configuration.
