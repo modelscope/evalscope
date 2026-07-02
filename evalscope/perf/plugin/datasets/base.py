@@ -1,8 +1,11 @@
 import json
+import os
 from abc import abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
+from evalscope.api.dataset.hub import download_dataset_file, load_dataset_from_hub
+from evalscope.constants import HubType
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.utils import load_tokenizer, tokenize_chat_messages
 
@@ -171,3 +174,79 @@ class DatasetPluginBase:
             prompt_length = len(self.tokenizer.encode(prompt))
         is_valid = self.query_parameters.min_prompt_length <= prompt_length <= self.query_parameters.max_prompt_length
         return is_valid, prompt_length
+
+    def load_hub_dataset(self, dataset_id: str, split: str = 'train', subset: str = 'default') -> Any:
+        """Load a dataset from the configured data source.
+
+        If dataset_path is a local directory, loads from there directly.
+        Otherwise loads from ModelScope/HuggingFace based on data_source.
+
+        Args:
+            dataset_id (str): Remote dataset identifier (e.g. 'AI-ModelScope/LongAlpaca-12k').
+            split (str): Dataset split to load (default: 'train').
+            subset (str): Dataset subset/config name (default: 'default').
+
+        Returns:
+            A datasets.Dataset object.
+        """
+        dataset_path = self.query_parameters.dataset_path
+        data_source = self.query_parameters.data_source or HubType.MODELSCOPE
+
+        if dataset_path:
+            if not os.path.exists(dataset_path):
+                raise FileNotFoundError(f"The specified dataset_path '{dataset_path}' does not exist.")
+            data_id_or_path = dataset_path
+            data_source = HubType.LOCAL
+        else:
+            data_id_or_path = dataset_id
+
+        return load_dataset_from_hub(
+            data_id_or_path=data_id_or_path,
+            split=split,
+            subset=subset,
+            data_source=data_source,
+        )
+
+    def download_hub_file(self, dataset_id: str, file_name: str) -> str:
+        """Download/resolve a single file from the configured data source.
+
+        If dataset_path is an existing file, returns it directly.
+        If dataset_path is a directory, looks for file_name inside it.
+        Otherwise downloads from ModelScope/HuggingFace.
+
+        Args:
+            dataset_id (str): Remote dataset identifier (e.g. 'AI-ModelScope/HC3-Chinese').
+            file_name (str): The file name to download or resolve.
+
+        Returns:
+            str: The resolved local file path.
+        """
+        dataset_path = self.query_parameters.dataset_path
+        data_source = self.query_parameters.data_source or HubType.MODELSCOPE
+
+        # dataset_path points to an existing file -> use directly
+        if dataset_path and os.path.isfile(dataset_path):
+            return dataset_path
+
+        # dataset_path is a directory -> look for file inside
+        if dataset_path and os.path.isdir(dataset_path):
+            candidate = os.path.join(dataset_path, file_name)
+            if os.path.isfile(candidate):
+                return candidate
+            # Fallback: treat directory as a hub-local dataset root
+            return download_dataset_file(
+                data_id_or_path=dataset_path,
+                file_path=file_name,
+                data_source=HubType.LOCAL,
+            )
+
+        # dataset_path is set but does not exist -> error
+        if dataset_path:
+            raise FileNotFoundError(f"The specified dataset_path '{dataset_path}' does not exist.")
+
+        # Remote download
+        return download_dataset_file(
+            data_id_or_path=dataset_id,
+            file_path=file_name,
+            data_source=data_source,
+        )

@@ -207,6 +207,21 @@ Reference documentation: [Judge Model Parameters](https://evalscope.readthedocs.
 
 **A:** Specify `--dataset-path` and set `--dataset line_by_line`. The program will read file content line by line as prompts.
 
+**Q: How to use pre-downloaded datasets in offline environments?**
+
+**A:** Use `--dataset-path` to point to the local dataset path. Two approaches are supported:
+
+- **Point to a directory** (for Arrow/Parquet format datasets like `flickr8k`, `kontext_bench`, `longalpaca`):
+  ```bash
+  evalscope perf --dataset kontext_bench --dataset-path /path/to/local/kontext-bench ...
+  ```
+- **Point to a file** (for JSONL format datasets like `openqa`, `share_gpt_zh`):
+  ```bash
+  evalscope perf --dataset openqa --dataset-path /path/to/open_qa.jsonl ...
+  ```
+
+You can also use `--data-source` to specify the data source (defaults to `modelscope`, can be switched to `huggingface`).
+
 **Q: How to stress test multimodal models?**
 
 **A:** Currently supports the `flickr8k` dataset for multimodal stress testing. Set `--dataset flickr8k`.

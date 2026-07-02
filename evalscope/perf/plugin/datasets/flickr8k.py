@@ -16,8 +16,7 @@ class FlickrDatasetPlugin(DatasetPluginBase):
         super().__init__(query_parameters)
 
     def build_messages(self) -> Iterator[List[Dict]]:
-        from modelscope.msdatasets import MsDataset
-        dataset = MsDataset.load('clip-benchmark/wds_flickr8k', split='test')
+        dataset = self.load_hub_dataset(dataset_id='clip-benchmark/wds_flickr8k', split='test')
 
         for item in dataset:
             pil_image = item['jpg']

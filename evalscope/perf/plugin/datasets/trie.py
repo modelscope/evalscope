@@ -75,11 +75,9 @@ class TrieReplayBase(RandomDatasetPlugin):
             )
 
     def _resolve_dataset_path(self) -> str:
-        if self.query_parameters.dataset_path:
+        if self.query_parameters.dataset_path and os.path.isfile(self.query_parameters.dataset_path):
             return self.query_parameters.dataset_path
-        from modelscope import dataset_snapshot_download
-        local_path = dataset_snapshot_download(_HUB_REPO, allow_patterns=[self.FILE_NAME])
-        path = os.path.join(local_path, self.FILE_NAME)
+        path = self.download_hub_file(dataset_id=_HUB_REPO, file_name=self.FILE_NAME)
         self.query_parameters.dataset_path = path
         return path
 

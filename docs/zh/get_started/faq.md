@@ -209,6 +209,21 @@ judge_model_args={
 
 **A:** 指定 `--dataset-path` 并设置 `--dataset line_by_line`，程序会逐行读取文件内容作为 Prompt。
 
+**Q: 离线环境下如何使用已下载的数据集？**
+
+**A:** 通过 `--dataset-path` 指向本地数据集路径即可。支持两种方式：
+
+- **指向目录**（适用于Arrow/Parquet格式数据集，如 `flickr8k`、`kontext_bench`、`longalpaca`）：
+  ```bash
+  evalscope perf --dataset kontext_bench --dataset-path /path/to/local/kontext-bench ...
+  ```
+- **指向文件**（适用于JSONL格式数据集，如 `openqa`、`share_gpt_zh`）：
+  ```bash
+  evalscope perf --dataset openqa --dataset-path /path/to/open_qa.jsonl ...
+  ```
+
+还可以通过 `--data-source` 指定数据源（默认为 `modelscope`，可切换为 `huggingface`）。
+
 **Q: 如何压测多模态模型？**
 
 **A:** 目前支持 `flickr8k` 数据集进行多模态压测。设置 `--dataset flickr8k` 即可。
