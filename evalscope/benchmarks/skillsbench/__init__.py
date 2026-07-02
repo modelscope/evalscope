@@ -1,0 +1,1 @@
+"""SkillsBench benchmark adapter."""

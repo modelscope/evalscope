@@ -16,6 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.mixin.sandbox_mixin import EnclaveSandboxBackend
 from evalscope.api.sandbox import (
+    DockerImageResult,
     PoolHandle,
     SandboxEngine,
     SandboxHandle,
@@ -110,16 +111,23 @@ class TestBuildSandboxConfig:
             build_context_provider=lambda: (str(tmp_path), str(dockerfile)),
         )
 
-        with patch('evalscope.api.mixin.sandbox_mixin.ensure_docker_image_built') as ensure_image, \
-                patch('evalscope.api.mixin.sandbox_mixin.build_and_acquire_pool_sync', return_value=MagicMock()):
+        with patch('evalscope.api.mixin.sandbox_mixin.DockerImageBuilder.build_or_reuse') as build_image, \
+                patch('evalscope.api.mixin.sandbox_mixin.build_and_acquire_pool_sync',
+                      return_value=MagicMock()) as acquire_pool:
+            build_image.return_value = DockerImageResult(
+                image_tag='custom-sandbox:hash',
+                reused=False,
+                context_hash='hash',
+            )
             backend.start()
 
-        ensure_image.assert_called_once_with(
-            'custom-sandbox:latest',
-            path=str(tmp_path.resolve()),
-            dockerfile='Dockerfile.custom',
-            label='Sandbox image',
-        )
+        spec = build_image.call_args.args[0]
+        assert spec.name_prefix == 'custom-sandbox'
+        assert spec.context_dir == str(tmp_path.resolve())
+        assert spec.dockerfile == 'Dockerfile.custom'
+        assert spec.cache_key_parts == ['sandbox', 'custom-sandbox:latest']
+        sandbox_config = acquire_pool.call_args.kwargs['sandbox_config_dict']
+        assert sandbox_config['image'] == 'custom-sandbox:hash'
 
     def test_ensure_docker_image_built_normalizes_context(self, tmp_path):
         dockerfile = tmp_path / 'Dockerfile.custom'

@@ -13,11 +13,12 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 from evalscope.api.sandbox import (
+    DockerImageBuilder,
+    DockerImageSpec,
     PoolHandle,
     SandboxEngine,
     build_and_acquire_pool_sync,
     default_docker_build_context,
-    ensure_docker_image_built,
     merge_sandbox_config_dicts,
     normalize_docker_build_context,
     resolve_engine,
@@ -99,7 +100,17 @@ class EnclaveSandboxBackend(SandboxBackend):
             image = sandbox_cfg_dict.get('image')
             if self._use_custom_image and image:
                 build_ctx, dockerfile = self._get_build_context()
-                ensure_docker_image_built(image, path=build_ctx, dockerfile=dockerfile, label='Sandbox image')
+                result = DockerImageBuilder().build_or_reuse(
+                    DockerImageSpec(
+                        name_prefix=_docker_image_prefix(str(image)),
+                        context_dir=build_ctx,
+                        dockerfile=dockerfile,
+                        cache_key_parts=['sandbox', str(image)],
+                    )
+                )
+                sandbox_cfg_dict = dict(sandbox_cfg_dict)
+                sandbox_cfg_dict['image'] = result.image_tag
+                logger.info(f'Sandbox image prepared: {result.image_tag} (reused={result.reused})')
 
         self._pool_handle = build_and_acquire_pool_sync(
             engine=engine,
@@ -266,3 +277,11 @@ class SandboxMixin:
         """
         if self._backend:
             self._backend.stop()
+
+
+def _docker_image_prefix(image: str) -> str:
+    last_slash = image.rfind('/')
+    last_colon = image.rfind(':')
+    if last_colon > last_slash:
+        return image[:last_colon]
+    return image

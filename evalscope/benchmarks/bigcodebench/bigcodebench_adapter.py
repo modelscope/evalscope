@@ -8,6 +8,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
+from evalscope.api.sandbox import DockerImageBuilder, DockerImageSpec
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
@@ -87,6 +88,21 @@ _EXTRA_PARAMS = {
         'type': 'bool',
         'description': 'Whether to prepend code_prompt to the solution for function signature alignment.',
         'value': True
+    },
+    'docker_build_context': {
+        'type': 'str',
+        'description': 'Optional local Docker build context. When set, overrides the default sandbox image.',
+        'value': ''
+    },
+    'dockerfile': {
+        'type': 'str',
+        'description': 'Dockerfile path inside docker_build_context.',
+        'value': 'Dockerfile'
+    },
+    'force_rebuild': {
+        'type': 'bool',
+        'description': 'Force rebuilding the optional local Docker image.',
+        'value': False
     }
 }
 
@@ -127,10 +143,28 @@ class BigCodeBenchAdapter(DefaultDataAdapter):
         super().__init__(**kwargs)
         self._split = self.extra_params.get('split', 'instruct')
         self._calibrate = self.extra_params.get('calibrate', True)
+        self._maybe_prepare_local_image()
         # Dataset uses version-based splits (e.g. v0.1.4), override eval_split if version is specified
         version = self.extra_params.get('version', 'default')
         if version != 'default':
             self.eval_split = version
+
+    def _maybe_prepare_local_image(self) -> None:
+        build_context = self.extra_params.get('docker_build_context') or ''
+        if not build_context:
+            return
+        result = DockerImageBuilder().build_or_reuse(
+            DockerImageSpec(
+                name_prefix=f'evalscope-{self.name}',
+                context_dir=build_context,
+                dockerfile=self.extra_params.get('dockerfile') or 'Dockerfile',
+                cache_key_parts=[self.name, 'bigcodebench'],
+                force_rebuild=bool(self.extra_params.get('force_rebuild', False)),
+            )
+        )
+        self._benchmark_meta.sandbox_config = dict(self._benchmark_meta.sandbox_config or {})
+        self._benchmark_meta.sandbox_config['image'] = result.image_tag
+        logger.info(f'{self.pretty_name} using local Docker image: {result.image_tag} (reused={result.reused})')
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert a data record to a Sample object."""

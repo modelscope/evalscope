@@ -13,6 +13,7 @@ per-benchmark overrides.
 
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 
+from evalscope.agent.skills import ResolvedSkills, discover_skills, format_skills_prompt, skills_from_sample_metadata
 from evalscope.api.agent import AgentEnvironment, AgentLoopResult, run_agent_loop
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessageUser
@@ -79,6 +80,11 @@ def run_native_agent(
         initial_messages = list(sample.input)
     else:
         initial_messages = [ChatMessageUser(content=sample.input)]
+    skills = _resolve_skills(cfg, sample)
+    if cfg.skill_prompt_nudge and skills.enabled:
+        nudge = format_skills_prompt(skills.skills)
+        if nudge:
+            initial_messages.insert(0, ChatMessageUser(content=nudge))
 
     # Merge sample-level tools with agent-config tools.
     sample_tools = list(sample.tools or [])
@@ -102,6 +108,25 @@ def run_native_agent(
     output = result.final_output
     output.completion = final_text  # normalise content via existing setter
     return InferenceResult(output=output, messages=result.messages, trace=result.trace)
+
+
+def _resolve_skills(cfg: Any, sample: 'Sample') -> ResolvedSkills:
+    sample_skills = skills_from_sample_metadata(sample.metadata)
+    if sample_skills.enabled:
+        return sample_skills
+    if not cfg.skills_dir:
+        return ResolvedSkills()
+    skills, errors = discover_skills(cfg.skills_dir, path_prefix='skills')
+    return ResolvedSkills(
+        enabled=bool(skills),
+        source='config',
+        host_dir=cfg.skills_dir,
+        sandbox_dir=cfg.skills_dir,
+        prompt_base_dir='skills',
+        install_paths=[],
+        skills=skills,
+        metadata_errors=errors,
+    )
 
 
 def _resolve_env_kwargs(
