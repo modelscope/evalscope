@@ -17,12 +17,10 @@ class OpenqaDatasetPlugin(DatasetPluginBase):
         super().__init__(query_parameters)
 
     def build_messages(self) -> Iterator[List[Dict]]:
-        if not self.query_parameters.dataset_path:
-            from modelscope import dataset_snapshot_download
-
-            file_name = 'open_qa.jsonl'
-            local_path = dataset_snapshot_download('AI-ModelScope/HC3-Chinese', allow_patterns=[file_name])
-            self.query_parameters.dataset_path = os.path.join(local_path, file_name)
+        if not self.query_parameters.dataset_path or os.path.isdir(self.query_parameters.dataset_path):
+            self.query_parameters.dataset_path = self.download_hub_file(
+                dataset_id='AI-ModelScope/HC3-Chinese', file_name='open_qa.jsonl'
+            )
 
         for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
             item = json.loads(item)

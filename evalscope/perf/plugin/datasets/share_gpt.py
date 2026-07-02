@@ -61,11 +61,10 @@ class ShareGPTDatasetPluginBase(DatasetPluginBase):
         return messages
 
     def build_messages(self) -> Iterator[List[Dict]]:
-        if not self.query_parameters.dataset_path:
-            from modelscope import dataset_snapshot_download
-
-            local_path = dataset_snapshot_download('swift/sharegpt', allow_patterns=[self.FILE_NAME])
-            self.query_parameters.dataset_path = os.path.join(local_path, self.FILE_NAME)
+        if not self.query_parameters.dataset_path or os.path.isdir(self.query_parameters.dataset_path):
+            self.query_parameters.dataset_path = self.download_hub_file(
+                dataset_id='swift/sharegpt', file_name=self.FILE_NAME
+            )
 
         for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
             item = json.loads(item)

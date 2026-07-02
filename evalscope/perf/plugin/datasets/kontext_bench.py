@@ -16,8 +16,7 @@ class KontextDatasetPlugin(DatasetPluginBase):
         super().__init__(query_parameters)
 
     def build_messages(self) -> Iterator[List[Dict]]:
-        from modelscope.msdatasets import MsDataset
-        dataset = MsDataset.load('black-forest-labs/kontext-bench', subset_name='default', split='test')
+        dataset = self.load_hub_dataset(dataset_id='black-forest-labs/kontext-bench', split='test')
 
         for item in dataset:
             pil_image = item['image']

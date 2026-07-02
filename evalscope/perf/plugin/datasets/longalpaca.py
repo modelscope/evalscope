@@ -1,3 +1,4 @@
+import os
 from typing import Any, Dict, Iterator, List
 
 from evalscope.perf.arguments import Arguments
@@ -15,11 +16,10 @@ class LongAlpacaDatasetPlugin(DatasetPluginBase):
         super().__init__(query_parameters)
 
     def build_messages(self) -> Iterator[List[Dict]]:
-        if not self.query_parameters.dataset_path:
-            from modelscope import MsDataset
-            ds = MsDataset.load('AI-ModelScope/LongAlpaca-12k', subset_name='default', split='train')
-        else:
+        if self.query_parameters.dataset_path and os.path.isfile(self.query_parameters.dataset_path):
             ds = self.dataset_json_list(self.query_parameters.dataset_path)
+        else:
+            ds = self.load_hub_dataset(dataset_id='AI-ModelScope/LongAlpaca-12k', split='train')
         for item in ds:
             prompt = item['instruction'].strip()
             is_valid, _ = self.check_prompt_length(prompt)

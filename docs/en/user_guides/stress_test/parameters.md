@@ -85,9 +85,10 @@ For details on using the SLA auto-tuning feature, see the [Auto-tuning Guide](./
 ## Dataset Configuration
 
 | Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
+|-----------|------|-------------|--------|
 | `--dataset` | `str` | Dataset mode, see table below for details | - |
-| `--dataset-path` | `str` | Dataset file path<br>Used in conjunction with dataset | - |
+| `--dataset-path` | `str` | Dataset file or directory path<br>Points to a file: read directly; points to a directory: looks for the corresponding data file inside (for offline use with pre-downloaded dataset cache) | - |
+| `--data-source` | `str` | Data source for dataset loading: `modelscope`, `huggingface`, or `local`<br>Defaults to `modelscope` when not specified; automatically treated as `local` when `--dataset-path` is a local directory | `modelscope` |
 
 ### Dataset Mode Description
 
@@ -105,8 +106,8 @@ For details on using the SLA auto-tuning feature, see the [Auto-tuning Guide](./
 
 | Mode | Description | Supports dataset-path |
 |------|-------------|----------------------|
-| `flickr8k` | Automatically downloads [Flick8k](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview) from ModelScope<br>Builds image-text inputs; large dataset suitable for evaluating multimodal models | ✗ |
-| `kontext_bench` | Automatically downloads [Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview) from ModelScope<br>Builds image-text inputs; approximately 1,000 samples, suitable for quick evaluation of multimodal models | ✗ |
+| `flickr8k` | Automatically downloads [Flick8k](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview) from ModelScope<br>Builds image-text inputs; large dataset suitable for evaluating multimodal models<br>Supports `--dataset-path` pointing to a local dataset directory (offline) | ✓ (directory) |
+| `kontext_bench` | Automatically downloads [Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview) from ModelScope<br>Builds image-text inputs; approximately 1,000 samples, suitable for quick evaluation of multimodal models<br>Supports `--dataset-path` pointing to a local dataset directory (offline) | ✓ (directory) |
 | `random_vl` | Randomly generates both image and text inputs<br>Based on `random`, with additional image-related parameters<br>[Usage example](./examples.md#using-the-random-multimodal-dataset) | ✗ |
 
 **Embedding**

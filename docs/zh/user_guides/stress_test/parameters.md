@@ -88,7 +88,8 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
 | `--dataset` | `str` | 数据集模式，详见下表 | - |
-| `--dataset-path` | `str` | 数据集文件路径<br>与数据集结合使用 | - |
+| `--dataset-path` | `str` | 数据集文件或目录路径<br>指向文件时直接读取；指向目录时在目录内查找对应数据文件（适用于离线环境使用已下载的数据集缓存） | - |
+| `--data-source` | `str` | 数据集加载源，可选值：`modelscope`、`huggingface`、`local`<br>未指定时默认使用 `modelscope`；当 `--dataset-path` 为本地目录时自动视为 `local` | `modelscope` |
 
 ### dataset 模式说明
 
@@ -106,8 +107,8 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 
 | 模式 | 说明 | 支持dataset-path |
 |------|------|------------------|
-| `flickr8k` | 从ModelScope自动下载[Flick8k](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview)<br>构建图文输入，数据集较大，适合评测多模态模型 | ✗ |
-| `kontext_bench` | 从ModelScope自动下载[Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview)<br>构建图文输入，约1000条数据，适合快速评测多模态模型 | ✗ |
+| `flickr8k` | 从ModelScope自动下载[Flick8k](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview)<br>构建图文输入，数据集较大，适合评测多模态模型<br>支持`--dataset-path`指向本地数据集目录（离线环境） | ✓（目录） |
+| `kontext_bench` | 从ModelScope自动下载[Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview)<br>构建图文输入，约1000条数据，适合快速评测多模态模型<br>支持`--dataset-path`指向本地数据集目录（离线环境） | ✓（目录） |
 | `random_vl` | 随机生成图像和文本输入<br>在`random`基础上增加图像相关参数<br>[使用示例](./examples.md#使用random图文数据集) | ✗ |
 
 **Embedding 类**

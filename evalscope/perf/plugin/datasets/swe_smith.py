@@ -356,8 +356,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
             f'target_count={target_count}, min_chars={min_chars}'
         )
 
-        from modelscope import MsDataset
-        dataset = MsDataset.load(_DEFAULT_DATASET_NAME, split=_DEFAULT_SPLIT)
+        dataset = self.load_hub_dataset(dataset_id=_DEFAULT_DATASET_NAME, split=_DEFAULT_SPLIT)
 
         candidates = []
         skipped_short = 0
