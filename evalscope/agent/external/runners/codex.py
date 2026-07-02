@@ -19,11 +19,10 @@ The prompt is passed as the trailing positional argument (codex ``exec
 import tempfile
 from typing import Any, Dict, List, Optional
 
-from evalscope.agent.skills import install_skills_command, skills_from_sample_metadata
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
-from ._node_install import ensure_node_via_apt
+from ._install import ensure_node_via_apt, install_task_skills
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
 
 logger = get_logger()
@@ -171,7 +170,13 @@ class CodexRunner(AgentRunner):
         home_dir = self._resolve_home()
         if home_dir is not None:
             env_vars['HOME'] = home_dir
-        await self._install_skills(env, task, home_dir)
+        await install_task_skills(
+            env,
+            task,
+            home_dir=home_dir,
+            native_install_paths=['$HOME/.agents/skills'],
+            runner_name='CodexRunner',
+        )
 
         # Build -c overrides. Order: builtin (provider config) → user extras.
         # codex parses these as TOML literals, so string values need shell-
@@ -251,22 +256,3 @@ class CodexRunner(AgentRunner):
         if self._home_override is not None:
             return self._home_override
         return tempfile.mkdtemp(prefix='evalscope-codex-')
-
-    async def _install_skills(
-        self,
-        env: AgentEnvironment,
-        task: ExternalAgentTask,
-        home_dir: Optional[str],
-    ) -> None:
-        skills = skills_from_sample_metadata(task.metadata)
-        if not skills.enabled or not skills.sandbox_dir:
-            return
-        install_paths = list(skills.install_paths or [])
-        if home_dir:
-            install_paths = [path.replace('$HOME', home_dir) for path in install_paths]
-        command = install_skills_command(skills.sandbox_dir, install_paths)
-        if not command:
-            return
-        result = await env.exec(['bash', '-lc', command], timeout=60)
-        if result.returncode != 0:
-            raise RuntimeError(f'CodexRunner failed to install skills: {result.stderr.strip()[-1000:]}')

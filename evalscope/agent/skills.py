@@ -5,9 +5,8 @@ from __future__ import annotations
 import re
 import shlex
 from pathlib import Path
-from typing import Any, Dict, List
-
 from pydantic import BaseModel, Field
+from typing import Any, Dict, List
 
 
 class SkillMetadata(BaseModel):

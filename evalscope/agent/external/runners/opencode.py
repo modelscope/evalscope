@@ -29,7 +29,7 @@ from typing import Any, Dict, List, Optional
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
-from ._node_install import ensure_node_via_apt
+from ._install import ensure_node_via_apt, install_task_skills
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
 
 logger = get_logger()
@@ -164,6 +164,13 @@ class OpenCodeRunner(AgentRunner):
             env_vars['HOME'] = home_dir
 
         try:
+            await install_task_skills(
+                env,
+                task,
+                home_dir=home_dir,
+                native_install_paths=['$HOME/.config/opencode/skills', '$HOME/.opencode/skill'],
+                runner_name='OpenCodeRunner',
+            )
             # Write opencode.json config to register the model + baseURL.
             config = {
                 'provider': {

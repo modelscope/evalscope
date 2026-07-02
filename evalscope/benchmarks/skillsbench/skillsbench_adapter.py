@@ -235,7 +235,9 @@ class SkillsBenchAdapter(AgentAdapter):
         if self.runner == 'oracle':
             return AsyncioLoopRunner.run(self._run_oracle(model, sample))
         if self._task_config is None or self._task_config.agent_config is None:
-            raise RuntimeError('SkillsBench requires agent_config, or set dataset_args.runner="oracle" for oracle smoke.')
+            raise RuntimeError(
+                'SkillsBench requires agent_config, or set dataset_args.runner="oracle" for oracle smoke.'
+            )
 
         from evalscope.agent.external.adapter import run_external_agent
         from evalscope.agent.external.config import ExternalAgentConfig
@@ -284,7 +286,8 @@ class SkillsBenchAdapter(AgentAdapter):
             )
             return InferenceResult(
                 output=output,
-                messages=[ChatMessageUser(content=_sample_instruction(sample)), ChatMessageAssistant(content=text)],
+                messages=[ChatMessageUser(content=_sample_instruction(sample)),
+                          ChatMessageAssistant(content=text)],
             )
         finally:
             await env.close()
@@ -389,9 +392,7 @@ class SkillsBenchAdapter(AgentAdapter):
         if not self._current_output_dir:
             return
         artifact_dir = (
-            Path(self._current_output_dir)
-            / 'artifacts'
-            / 'skillsbench'
+            Path(self._current_output_dir) / 'artifacts' / 'skillsbench'
             / _safe_path_part(str(sample.metadata.get('task_id') or sample.id))
             / _safe_path_part(str(sample.metadata.get('skill_mode') or self.skill_mode))
         )
@@ -552,7 +553,9 @@ def _stage_environment_context(*, task_dir: Path, skill_mode: str) -> str:
         _rewrite_dockerfile_without_skill_copies(dockerfile)
         _assert_no_skill_path_residue(dockerfile, include_neutral=False)
         content = dockerfile.read_text(encoding='utf-8')
-        dockerfile.write_text(f'{content.rstrip()}\n\n# SkillsBench skill injection.\nCOPY skills /skills\n', encoding='utf-8')
+        dockerfile.write_text(
+            f'{content.rstrip()}\n\n# SkillsBench skill injection.\nCOPY skills /skills\n', encoding='utf-8'
+        )
     return tmp
 
 

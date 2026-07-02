@@ -6,19 +6,18 @@ from pathlib import Path
 from evalscope.agent.skills import discover_skills, format_skills_prompt, install_skills_command
 from evalscope.api.agent.types import NativeAgentConfig
 from evalscope.api.benchmark import BenchmarkMeta
-from evalscope.api.sandbox.docker_image import DockerImageSpec
-from evalscope.api.sandbox.docker_image import hash_build_context
+from evalscope.api.dataset import Sample
+from evalscope.api.sandbox.docker_image import DockerImageSpec, hash_build_context
 from evalscope.benchmarks.bigcodebench.bigcodebench_adapter import BigCodeBenchAdapter
 from evalscope.benchmarks.skillsbench.skillsbench_adapter import (
-    SkillsBenchAdapter,
     _SKILL_MODE_NO_SKILL,
     _SKILL_MODE_WITH_SKILL,
+    SkillsBenchAdapter,
     _read_task_md,
     _stage_environment_context,
     _wrap_input_command,
     _wrap_timeout_command,
 )
-from evalscope.api.dataset import Sample
 from evalscope.config import TaskConfig
 
 

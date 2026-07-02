@@ -1,18 +1,13 @@
-"""Shared Node.js probe and nodesource apt installer for Node-based runners.
+"""Installation helpers shared by external runners."""
 
-Four runners (``claude-code``, ``codex``, ``opencode``, ``gemini-cli``) all
-need the same two-step sequence when Node.js is absent: install apt
-prerequisites (curl, ca-certificates, gnupg) via apt-get, then pull the
-nodesource setup script and install ``nodejs``.  This module extracts that
-common path so the logic lives in one place.
-"""
+from typing import TYPE_CHECKING, List, Optional
 
-from typing import TYPE_CHECKING
-
+from evalscope.agent.skills import install_skills_command, skills_from_sample_metadata
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from evalscope.api.agent import AgentEnvironment
+    from .base import ExternalAgentTask
 
 logger = get_logger()
 
@@ -30,18 +25,7 @@ async def ensure_node_via_apt(
     timeout_s: float,
     runner_name: str,
 ) -> None:
-    """Ensure Node.js and npm are available, installing via nodesource if needed.
-
-    No-ops when ``node`` and ``npm`` are already on PATH.  Raises
-    ``RuntimeError`` when any install step fails (apt prereqs or nodesource).
-
-    Args:
-        env: The agent execution environment.
-        node_setup_url: URL of the nodesource distribution setup script
-            (e.g. ``https://deb.nodesource.com/setup_22.x``).
-        timeout_s: Wall-clock budget (seconds) for each sub-command.
-        runner_name: Runner class name used in log and error messages.
-    """
+    """Ensure Node.js and npm are available, installing via nodesource if needed."""
     if await node_present(env):
         return
     logger.info(
@@ -82,4 +66,45 @@ async def ensure_node_via_apt(
         )
 
 
-__all__ = ['ensure_node_via_apt', 'node_present']
+async def install_task_skills(
+    env: 'AgentEnvironment',
+    task: 'ExternalAgentTask',
+    *,
+    home_dir: Optional[str],
+    native_install_paths: Optional[List[str]] = None,
+    runner_name: str,
+) -> None:
+    """Copy task skills into paths visible to the wrapped agent CLI."""
+    skills = skills_from_sample_metadata(task.metadata)
+    if not skills.enabled or not skills.sandbox_dir:
+        return
+
+    install_paths = _resolve_install_paths(
+        list(skills.install_paths or []) + list(native_install_paths or []),
+        home_dir=home_dir,
+    )
+    command = install_skills_command(skills.sandbox_dir, install_paths)
+    if not command:
+        return
+
+    result = await env.exec(['bash', '-lc', command], timeout=60)
+    if result.returncode != 0:
+        detail = ((result.stderr or result.stdout or '').strip() or f'rc={result.returncode}')[-1000:]
+        raise RuntimeError(f'{runner_name} failed to install skills: {detail}')
+
+
+def _resolve_install_paths(install_paths: List[str], *, home_dir: Optional[str]) -> List[str]:
+    resolved: List[str] = []
+    seen = set()
+    for path in install_paths:
+        if not path:
+            continue
+        resolved_path = path.replace('$HOME', home_dir) if home_dir else path
+        if resolved_path in seen:
+            continue
+        seen.add(resolved_path)
+        resolved.append(resolved_path)
+    return resolved
+
+
+__all__ = ['ensure_node_via_apt', 'install_task_skills', 'node_present']

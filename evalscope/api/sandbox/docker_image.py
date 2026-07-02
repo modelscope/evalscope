@@ -10,9 +10,8 @@ from __future__ import annotations
 import hashlib
 import os
 from pathlib import Path
-from typing import Any, Dict, List
-
 from pydantic import BaseModel, Field
+from typing import Any, Dict, List
 
 from evalscope.utils.logger import get_logger
 from .config_builder import build_docker_image, normalize_docker_build_context, should_build_docker_image
