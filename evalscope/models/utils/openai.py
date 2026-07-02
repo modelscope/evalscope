@@ -814,7 +814,12 @@ def collect_stream_response(
     t_start = request_start if request_start is not None else time.monotonic()
     ttft: Optional[float] = None
 
+    usage = None
     for chunk in response_stream:
+        if getattr(chunk, 'usage', None) is not None:
+            usage = chunk.usage
+        if not getattr(chunk, 'choices', None):
+            continue
         collected_chunks.append(chunk)
         for choice in chunk.choices:
             # Detect first meaningful content chunk for TTFT
@@ -897,6 +902,9 @@ def collect_stream_response(
         )
         choices.append(choice)
 
+    if not collected_chunks:
+        raise RuntimeError('No valid chat completion chunks received from stream')
+
     # build the final completion object
     return ChatCompletion(
         id=collected_chunks[0].id,
@@ -904,7 +912,7 @@ def collect_stream_response(
         created=collected_chunks[0].created,
         model=collected_chunks[0].model,
         object='chat.completion',
-        usage=collected_chunks[-1].usage  # use the usage from the last chunk
+        usage=usage if usage is not None else collected_chunks[-1].usage
     ), ttft
 
 
@@ -934,7 +942,12 @@ async def async_collect_stream_response(
     t_start = request_start if request_start is not None else time.monotonic()
     ttft: Optional[float] = None
 
+    usage = None
     async for chunk in response_stream:
+        if getattr(chunk, 'usage', None) is not None:
+            usage = chunk.usage
+        if not getattr(chunk, 'choices', None):
+            continue
         collected_chunks.append(chunk)
         for choice in chunk.choices:
             # Detect first meaningful content chunk for TTFT
@@ -1017,6 +1030,9 @@ async def async_collect_stream_response(
         )
         choices.append(choice)
 
+    if not collected_chunks:
+        raise RuntimeError('No valid chat completion chunks received from stream')
+
     # build the final completion object
     return ChatCompletion(
         id=collected_chunks[0].id,
@@ -1024,5 +1040,6 @@ async def async_collect_stream_response(
         created=collected_chunks[0].created,
         model=collected_chunks[0].model,
         object='chat.completion',
-        usage=collected_chunks[-1].usage  # use the usage from the last chunk
+        usage=usage if usage is not None else collected_chunks[-1].usage
     ), ttft
+
