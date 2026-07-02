@@ -3,13 +3,13 @@
 
 ## 概述
 
-SWE-bench Multilingual Agentic 是 SWE-bench Multilingual 的代理模式（agentic-mode）评估版本。该基准测试包含 300 个 SWE-bench 风格的任务，覆盖 42 个代码仓库和 9 种编程语言。模型在每个实例专属的 Docker 容器中，通过多轮代理循环自主探索、编辑代码并提交补丁。
+SWE-bench Multilingual Agentic 是 SWE-bench Multilingual 的代理模式（agentic-mode）评估版本。该基准测试包含 300 个 SWE-bench 风格的任务，涵盖 42 个代码仓库和 9 种编程语言。模型在每个实例专属的 Docker 容器中，通过多轮代理循环自主探索、编辑代码并提交补丁。
 
 ## 任务描述
 
 - **任务类型**：自动化软件工程 / 缺陷修复（代理式、多语言）
-- **输入**：GitHub issue 描述（不含 oracle 文件上下文）
-- **输出**：自主编辑后通过 `git diff` 收集的代码补丁（diff 格式）
+- **输入**：GitHub issue 描述（不提供 oracle 文件上下文）
+- **输出**：模型自主编辑后通过 `git diff` 生成的代码补丁（diff 格式）
 - **支持语言**：C、C++、Go、Java、JavaScript/TypeScript、PHP、Ruby 和 Rust
 
 ## 主要特性
@@ -24,16 +24,16 @@ SWE-bench Multilingual Agentic 是 SWE-bench Multilingual 的代理模式（agen
 - 评估前需安装 `pip install swebench==4.1.0`
 - 自动使用官方 SWE-bench Multilingual x86_64 实例镜像，并自动设置 Docker 平台为 `linux/amd64`
 - 每个实例的 Docker 镜像会自动构建或拉取
-- 每个实例最终补丁验证的超时时间为 1800 秒（30 分钟）
+- 每个实例最终补丁验证超时时间为 1800 秒（30 分钟）
 - 详细设置说明请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
 - 支持本地构建镜像和远程拉取镜像两种方式
 
 ## 代理模式
 
-本基准测试在每个实例的 SWE-bench Docker 容器内驱动一个多轮代理循环（与 mini-swe-agent 的 `swebench.yaml` 配置一致）。模型通过发出 `bash` 命令探索 `/testbed` 目录、编辑源文件，并在完成任务时打印哨兵字符串 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 后附上补丁内容以提交最终 `git diff` 补丁。
+该基准测试在每个实例专属的 SWE-bench Docker 容器内驱动一个多轮代理循环（与 mini-swe-agent 的 `swebench.yaml` 配置一致）。模型通过执行 `bash` 命令探索 `/testbed` 目录、编辑源文件，并在完成任务后打印哨兵字符串 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 及其后的补丁内容来提交 `git diff` 补丁。
 
-`extra_params.action_protocol` 可选择以下两种协议：
-- `toolcall`（默认）：使用 OpenAI 函数调用协议，仅提供一个 `bash` 工具。推荐用于支持工具调用的模型。
+`extra_params.action_protocol` 参数用于选择以下两种协议之一：
+- `toolcall`（默认）：采用 OpenAI 函数调用协议，仅提供一个 `bash` 工具。推荐用于支持函数调用的模型。
 - `backticks`：基于文本的备用方案，每轮期望一个 ` ```mswea_bash_command ``` ` 代码块。适用于不支持函数调用的模型。
 
 ## 属性
@@ -127,11 +127,12 @@ SWE-bench Multilingual Agentic 是 SWE-bench Multilingual 的代理模式（agen
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `action_protocol` | `str` | `toolcall` | 代理动作协议："toolcall"（主流 OpenAI 函数调用方式，与 mini-swe-agent swebench.yaml 一致）或 "backticks"（针对不支持函数调用模型的基于文本的 mswea_bash_command 回退方案）。可选值：['toolcall', 'backticks'] |
+| `action_protocol` | `str` | `toolcall` | 代理动作协议："toolcall"（主流 OpenAI 函数调用方式，与 mini-swe-agent swebench.yaml 一致）或 "backticks"（针对不支持函数调用的模型的文本式 mswea_bash_command 回退方案）。可选值：['toolcall', 'backticks'] |
 | `max_steps` | `int` | `250` | 每个样本的最大代理步数。 |
 | `command_timeout` | `float` | `60.0` | 每个 bash 命令的默认超时时间（秒）。 |
 | `build_docker_images` | `bool` | `True` | 为每个样本在本地构建 Docker 镜像。 |
 | `pull_remote_images_if_available` | `bool` | `True` | 在构建前尝试拉取已存在的远程 Docker 镜像。 |
+| `force_arch` | `str` | `` | 可选地强制指定镜像构建/拉取的架构。可选值：['', 'arm64', 'x86_64'] |
 | `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像在 DockerHub 上的用户/组织命名空间。 |
 
 ## 使用方法

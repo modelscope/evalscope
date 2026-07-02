@@ -1,0 +1,445 @@
+{
+  "meta": {
+    "pretty_name": "ERQA",
+    "dataset_id": "evalscope/ERQA",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "MCQ",
+      "Reasoning"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "Trajectory Reasoning",
+      "Action Reasoning",
+      "Pointing",
+      "State Estimation",
+      "Spatial Reasoning",
+      "Multi-view Reasoning",
+      "Task Reasoning",
+      "Other"
+    ],
+    "description": "\n## Overview\n\nERQA (Embodied Reasoning QA) is a benchmark for evaluating spatial reasoning and embodied understanding capabilities of multimodal large language models. It tests models' ability to reason about trajectories, actions, spatial relationships, and task planning in egocentric robotic scenarios.\n\n## Task Description\n\n- **Task Type**: Embodied Spatial Reasoning (Multiple Choice)\n- **Input**: Egocentric image(s) + multiple-choice question (A/B/C/D)\n- **Output**: Single answer letter (A/B/C/D)\n- **Domain**: Robotics, spatial reasoning, embodied AI\n\n## Key Features\n\n- 400 questions across 8 reasoning categories\n- Multi-image support (some questions require reasoning across multiple views)\n- Categories: Trajectory Reasoning, Action Reasoning, Pointing, State Estimation, Spatial Reasoning, Multi-view Reasoning, Task Reasoning, Other\n- Egocentric perspective from robotic manipulation scenarios\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on **test** split\n- Primary metric: **Accuracy** on multiple-choice questions\n- Answers are single letters (A/B/C/D)\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 400,
+    "subset_stats": [
+      {
+        "name": "Trajectory Reasoning",
+        "sample_count": 66,
+        "prompt_length_mean": 307.3,
+        "prompt_length_min": 161,
+        "prompt_length_max": 834,
+        "prompt_length_std": 110.71,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 70,
+            "count_per_sample": {
+              "min": 1,
+              "max": 3,
+              "mean": 1.06
+            },
+            "resolutions": [
+              "1000x557",
+              "1000x563",
+              "1000x586",
+              "1223x1000",
+              "1233x1000",
+              "1326x1000",
+              "1333x1000",
+              "1354x1000",
+              "1770x1000",
+              "1772x1000"
+            ],
+            "resolution_range": {
+              "min": "200x150",
+              "max": "1777x1000"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Action Reasoning",
+        "sample_count": 72,
+        "prompt_length_mean": 271.97,
+        "prompt_length_min": 175,
+        "prompt_length_max": 503,
+        "prompt_length_std": 63.64,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 81,
+            "count_per_sample": {
+              "min": 1,
+              "max": 4,
+              "mean": 1.12
+            },
+            "resolutions": [
+              "1066x600",
+              "1326x1000",
+              "1333x1000",
+              "1777x1000",
+              "1920x1080",
+              "223x300",
+              "224x224",
+              "224x300",
+              "225x300",
+              "225x400"
+            ],
+            "resolution_range": {
+              "min": "224x224",
+              "max": "1920x1080"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Pointing",
+        "sample_count": 34,
+        "prompt_length_mean": 300.82,
+        "prompt_length_min": 178,
+        "prompt_length_max": 676,
+        "prompt_length_std": 126.69,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 40,
+            "count_per_sample": {
+              "min": 1,
+              "max": 4,
+              "mean": 1.18
+            },
+            "resolutions": [
+              "1034x626",
+              "1333x1000",
+              "1469x1102",
+              "1777x1000",
+              "225x300",
+              "400x400",
+              "454x256",
+              "512x512",
+              "533x400",
+              "600x600"
+            ],
+            "resolution_range": {
+              "min": "225x300",
+              "max": "1777x1000"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "State Estimation",
+        "sample_count": 55,
+        "prompt_length_mean": 314.84,
+        "prompt_length_min": 147,
+        "prompt_length_max": 735,
+        "prompt_length_std": 132.54,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 63,
+            "count_per_sample": {
+              "min": 1,
+              "max": 2,
+              "mean": 1.15
+            },
+            "resolutions": [
+              "1000x556",
+              "1000x560",
+              "1000x562",
+              "1000x563",
+              "1000x752",
+              "1109x1000",
+              "1282x1000",
+              "1293x1000",
+              "1296x1000",
+              "1328x1000"
+            ],
+            "resolution_range": {
+              "min": "200x150",
+              "max": "3072x4080"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Spatial Reasoning",
+        "sample_count": 84,
+        "prompt_length_mean": 286.21,
+        "prompt_length_min": 152,
+        "prompt_length_max": 819,
+        "prompt_length_std": 102.57,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 128,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 1.52
+            },
+            "resolutions": [
+              "1000x560",
+              "1000x633",
+              "1000x752",
+              "1280x1707",
+              "1309x1000",
+              "1320x882",
+              "1333x1000",
+              "1361x1000",
+              "1438x1916",
+              "1469x1102"
+            ],
+            "resolution_range": {
+              "min": "320x180",
+              "max": "3840x2160"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Multi-view Reasoning",
+        "sample_count": 37,
+        "prompt_length_mean": 277.78,
+        "prompt_length_min": 196,
+        "prompt_length_max": 475,
+        "prompt_length_std": 83.95,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 89,
+            "count_per_sample": {
+              "min": 2,
+              "max": 6,
+              "mean": 2.41
+            },
+            "resolutions": [
+              "1066x600",
+              "320x180",
+              "512x512",
+              "640x480",
+              "796x600",
+              "797x600",
+              "800x600"
+            ],
+            "resolution_range": {
+              "min": "320x180",
+              "max": "1066x600"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Task Reasoning",
+        "sample_count": 38,
+        "prompt_length_mean": 280.18,
+        "prompt_length_min": 152,
+        "prompt_length_max": 737,
+        "prompt_length_std": 117.24,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 101,
+            "count_per_sample": {
+              "min": 1,
+              "max": 5,
+              "mean": 2.66
+            },
+            "resolutions": [
+              "1000x562",
+              "1000x752",
+              "1066x600",
+              "1328x1000",
+              "1333x1000",
+              "1500x1000",
+              "200x150",
+              "213x171",
+              "224x224",
+              "265x300"
+            ],
+            "resolution_range": {
+              "min": "200x150",
+              "max": "1500x1000"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Other",
+        "sample_count": 14,
+        "prompt_length_mean": 231.79,
+        "prompt_length_min": 188,
+        "prompt_length_max": 409,
+        "prompt_length_std": 57.2,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 58,
+            "count_per_sample": {
+              "min": 1,
+              "max": 16,
+              "mean": 4.14
+            },
+            "resolutions": [
+              "1000x752",
+              "1066x600",
+              "1333x1000",
+              "300x300",
+              "512x512",
+              "752x1000",
+              "796x600",
+              "797x600"
+            ],
+            "resolution_range": {
+              "min": "300x300",
+              "max": "1333x1000"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 289.05,
+      "min": 147,
+      "max": 834,
+      "std": 104.76
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-07-02T19:24:50.121458",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 630,
+        "count_per_sample": {
+          "min": 1,
+          "max": 16,
+          "mean": 1.57
+        },
+        "resolutions": [
+          "1000x556",
+          "1000x557",
+          "1000x560",
+          "1000x562",
+          "1000x563",
+          "1000x586",
+          "1000x633",
+          "1000x752",
+          "1034x626",
+          "1066x600"
+        ],
+        "resolution_range": {
+          "min": "200x150",
+          "max": "3072x4080"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "eec4c5cf",
+          "content": [
+            {
+              "text": "If the yellow robot gripper follows the yellow trajectory, what will happen? Choices: A. Robot puts the soda on the wooden steps. B. Robot moves the soda in front of the wooden steps. C. Robot moves the soda to the very top of the wooden steps. D. Robot picks up the soda can and moves it up. Please answer directly with only the letter of the correct option and nothing else."
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~16.0KB]"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "Trajectory Reasoning",
+      "metadata": {
+        "question_id": "ERQA_1",
+        "question_type": "Trajectory Reasoning"
+      }
+    },
+    "subset": "Trajectory Reasoning",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# ERQA\n\n\n## Overview\n\nERQA (Embodied Reasoning QA) is a benchmark for evaluating spatial reasoning and embodied understanding capabilities of multimodal large language models. It tests models' ability to reason about trajectories, actions, spatial relationships, and task planning in egocentric robotic scenarios.\n\n## Task Description\n\n- **Task Type**: Embodied Spatial Reasoning (Multiple Choice)\n- **Input**: Egocentric image(s) + multiple-choice question (A/B/C/D)\n- **Output**: Single answer letter (A/B/C/D)\n- **Domain**: Robotics, spatial reasoning, embodied AI\n\n## Key Features\n\n- 400 questions across 8 reasoning categories\n- Multi-image support (some questions require reasoning across multiple views)\n- Categories: Trajectory Reasoning, Action Reasoning, Pointing, State Estimation, Spatial Reasoning, Multi-view Reasoning, Task Reasoning, Other\n- Egocentric perspective from robotic manipulation scenarios\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on **test** split\n- Primary metric: **Accuracy** on multiple-choice questions\n- Answers are single letters (A/B/C/D)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `erqa` |\n| **Dataset ID** | [evalscope/ERQA](https://modelscope.cn/datasets/evalscope/ERQA/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `MultiModal`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 400 |\n| Prompt Length (Mean) | 289.05 chars |\n| Prompt Length (Min/Max) | 147 / 834 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Trajectory Reasoning` | 66 | 307.3 | 161 | 834 |\n| `Action Reasoning` | 72 | 271.97 | 175 | 503 |\n| `Pointing` | 34 | 300.82 | 178 | 676 |\n| `State Estimation` | 55 | 314.84 | 147 | 735 |\n| `Spatial Reasoning` | 84 | 286.21 | 152 | 819 |\n| `Multi-view Reasoning` | 37 | 277.78 | 196 | 475 |\n| `Task Reasoning` | 38 | 280.18 | 152 | 737 |\n| `Other` | 14 | 231.79 | 188 | 409 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 630 |\n| Images per Sample | min: 1, max: 16, mean: 1.57 |\n| Resolution Range | 200x150 - 3072x4080 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `Trajectory Reasoning`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"eec4c5cf\",\n      \"content\": [\n        {\n          \"text\": \"If the yellow robot gripper follows the yellow trajectory, what will happen? Choices: A. Robot puts the soda on the wooden steps. B. Robot moves the soda in front of the wooden steps. C. Robot moves the soda to the very top of the wooden steps. D. Robot picks up the soda can and moves it up. Please answer directly with only the letter of the correct option and nothing else.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~16.0KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"A\",\n    \"B\",\n    \"C\",\n    \"D\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Trajectory Reasoning\",\n  \"metadata\": {\n    \"question_id\": \"ERQA_1\",\n    \"question_type\": \"Trajectory Reasoning\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets erqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['erqa'],\n    dataset_args={\n        'erqa': {\n            # subset_list: ['Trajectory Reasoning', 'Action Reasoning', 'Pointing']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# ERQA\n\n\n## 概述\n\nERQA（Embodied Reasoning QA）是一个用于评估多模态大语言模型空间推理与具身理解能力的基准测试。该基准测试考察模型在以自我为中心（egocentric）的机器人场景中，对轨迹、动作、空间关系以及任务规划进行推理的能力。\n\n## 任务描述\n\n- **任务类型**：具身空间推理（多项选择题）\n- **输入**：以自我为中心的图像（单张或多张）+ 多项选择题（A/B/C/D）\n- **输出**：单个答案字母（A/B/C/D）\n- **领域**：机器人学、空间推理、具身人工智能\n\n## 主要特点\n\n- 包含8个推理类别的400道题目\n- 支持多图像输入（部分题目需跨多个视角进行推理）\n- 类别包括：轨迹推理（Trajectory Reasoning）、动作推理（Action Reasoning）、指向（Pointing）、状态估计（State Estimation）、空间推理（Spatial Reasoning）、多视角推理（Multi-view Reasoning）、任务推理（Task Reasoning）及其他（Other）\n- 图像视角来自机器人操作场景的自我中心视角\n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估方式\n- 在 **test** 划分上进行评估\n- 主要指标：多项选择题的 **准确率（Accuracy）**\n- 答案为单个字母（A/B/C/D）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `erqa` |\n| **数据集ID** | [evalscope/ERQA](https://modelscope.cn/datasets/evalscope/ERQA/summary) |\n| **论文** | N/A |\n| **标签** | `MCQ`, `MultiModal`, `Reasoning` |\n| **指标** | `acc` |\n| **默认Shots数** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 400 |\n| 提示词长度（平均） | 289.05 字符 |\n| 提示词长度（最小/最大） | 147 / 834 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Trajectory Reasoning` | 66 | 307.3 | 161 | 834 |\n| `Action Reasoning` | 72 | 271.97 | 175 | 503 |\n| `Pointing` | 34 | 300.82 | 178 | 676 |\n| `State Estimation` | 55 | 314.84 | 147 | 735 |\n| `Spatial Reasoning` | 84 | 286.21 | 152 | 819 |\n| `Multi-view Reasoning` | 37 | 277.78 | 196 | 475 |\n| `Task Reasoning` | 38 | 280.18 | 152 | 737 |\n| `Other` | 14 | 231.79 | 188 | 409 |\n\n**图像统计数据：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 630 |\n| 每样本图像数 | 最小: 1, 最大: 16, 平均: 1.57 |\n| 分辨率范围 | 200x150 - 3072x4080 |\n| 格式 | jpeg |\n\n## 样例示例\n\n**子集**: `Trajectory Reasoning`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"eec4c5cf\",\n      \"content\": [\n        {\n          \"text\": \"If the yellow robot gripper follows the yellow trajectory, what will happen? Choices: A. Robot puts the soda on the wooden steps. B. Robot moves the soda in front of the wooden steps. C. Robot moves the soda to the very top of the wooden steps. D. Robot picks up the soda can and moves it up. Please answer directly with only the letter of the correct option and nothing else.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~16.0KB]\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"A\",\n    \"B\",\n    \"C\",\n    \"D\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Trajectory Reasoning\",\n  \"metadata\": {\n    \"question_id\": \"ERQA_1\",\n    \"question_type\": \"Trajectory Reasoning\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets erqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['erqa'],\n    dataset_args={\n        'erqa': {\n            # subset_list: ['Trajectory Reasoning', 'Action Reasoning', 'Pointing']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "595e6ec90ef1d3e3b8b51ece704c8316",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-02T19:24:50.476503",
+  "translation_updated_at": "2026-07-02T19:26:43"
+}

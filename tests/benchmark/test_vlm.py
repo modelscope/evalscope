@@ -459,3 +459,9 @@ class TestVLMBenchmark(TestBenchmark):
             'subset_list': ['test_mini'],
         }
         self._run_dataset_test('mmau', dataset_args=dataset_args, limit=5, model='qwen3-omni-flash')
+
+    def test_erqa(self):
+        self._run_dataset_test('erqa', limit=5)
+
+    def test_world_vqa(self):
+        self._run_dataset_test('world_vqa', limit=5)

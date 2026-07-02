@@ -1,0 +1,459 @@
+{
+  "meta": {
+    "pretty_name": "WorldVQA",
+    "dataset_id": "evalscope/WorldVQA",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "Knowledge",
+      "QA"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "Nature & Environment",
+      "Locations & Architecture",
+      "Culture, Arts & Crafts",
+      "Objects & Products",
+      "Vehicles, Craft & Transportation",
+      "Entertainment, Media & Gaming",
+      "Brands, Logos & Graphic Design",
+      "Sports, Gear & Venues"
+    ],
+    "description": "\n## Overview\n\nWorldVQA is a benchmark designed to evaluate the atomic visual world knowledge of Multimodal Large Language Models (MLLMs). It measures models' ability to ground and name visual entities across a stratified taxonomy, spanning from common head-class objects to long-tail rarities.\n\n## Task Description\n\n- **Task Type**: Visual Entity Recognition / Knowledge QA\n- **Input**: Image + question asking to identify a visual entity\n- **Output**: Free-form text answer (specific entity name)\n- **Domain**: Nature, architecture, culture, products, transportation, entertainment, brands, sports\n\n## Key Features\n\n- 3000 VQA pairs across 8 semantic categories\n- Bilingual: English (non-zh) and Chinese (zh)\n- Three difficulty levels: easy, medium, hard\n- Tests atomic visual knowledge decoupled from reasoning\n- Requires precise entity identification (e.g., specific breed, not generic \"dog\")\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on **train** split (the benchmark data split)\n- Primary metric: **Accuracy** via LLM-as-judge\n- Supports LLM judge for semantic equivalence checking\n- Results reported per category and overall\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 3000,
+    "subset_stats": [
+      {
+        "name": "Nature & Environment",
+        "sample_count": 326,
+        "prompt_length_mean": 33.9,
+        "prompt_length_min": 7,
+        "prompt_length_max": 83,
+        "prompt_length_std": 18.87,
+        "target_length_mean": 12.19,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 326,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1500",
+              "1007x362",
+              "1009x501",
+              "1012x377",
+              "1012x396",
+              "1015x517",
+              "1024x762",
+              "1028x445",
+              "1029x607",
+              "1036x491"
+            ],
+            "resolution_range": {
+              "min": "154x123",
+              "max": "3840x2363"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Locations & Architecture",
+        "sample_count": 512,
+        "prompt_length_mean": 42.03,
+        "prompt_length_min": 9,
+        "prompt_length_max": 122,
+        "prompt_length_std": 22.06,
+        "target_length_mean": 14.77,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 512,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1333",
+              "1000x294",
+              "1000x500",
+              "1001x549",
+              "1003x376",
+              "1004x285",
+              "1004x619",
+              "1005x237",
+              "1005x472",
+              "1006x475"
+            ],
+            "resolution_range": {
+              "min": "33x65",
+              "max": "2880x3840"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Culture, Arts & Crafts",
+        "sample_count": 506,
+        "prompt_length_mean": 33.71,
+        "prompt_length_min": 7,
+        "prompt_length_max": 112,
+        "prompt_length_std": 20.47,
+        "target_length_mean": 14.84,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 506,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x667",
+              "1001x548",
+              "1006x448",
+              "1006x994",
+              "1007x596",
+              "1009x596",
+              "1012x602",
+              "1014x464",
+              "1015x525",
+              "1016x612"
+            ],
+            "resolution_range": {
+              "min": "84x152",
+              "max": "3840x2523"
+            },
+            "formats": [
+              "jpeg",
+              "png",
+              "webp"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Objects & Products",
+        "sample_count": 437,
+        "prompt_length_mean": 55.97,
+        "prompt_length_min": 9,
+        "prompt_length_max": 182,
+        "prompt_length_std": 32.6,
+        "target_length_mean": 16.28,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 437,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x445",
+              "1001x587",
+              "1004x505",
+              "1006x527",
+              "1006x554",
+              "1006x559",
+              "1010x561",
+              "1015x887",
+              "1024x800",
+              "1025x944"
+            ],
+            "resolution_range": {
+              "min": "306x122",
+              "max": "3840x3840"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Vehicles, Craft & Transportation",
+        "sample_count": 306,
+        "prompt_length_mean": 30.67,
+        "prompt_length_min": 8,
+        "prompt_length_max": 114,
+        "prompt_length_std": 15.17,
+        "target_length_mean": 15.28,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 306,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x411",
+              "1000x530",
+              "1001x454",
+              "1001x657",
+              "1002x364",
+              "1002x467",
+              "1004x553",
+              "1005x548",
+              "1006x451",
+              "1006x508"
+            ],
+            "resolution_range": {
+              "min": "290x157",
+              "max": "3840x2676"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Entertainment, Media & Gaming",
+        "sample_count": 511,
+        "prompt_length_mean": 30.5,
+        "prompt_length_min": 5,
+        "prompt_length_max": 83,
+        "prompt_length_std": 22.08,
+        "target_length_mean": 10.61,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 511,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x507",
+              "1000x532",
+              "1000x603",
+              "1002x556",
+              "1003x546",
+              "1003x560",
+              "1004x490",
+              "1005x552",
+              "1006x544",
+              "1006x555"
+            ],
+            "resolution_range": {
+              "min": "311x162",
+              "max": "3840x2560"
+            },
+            "formats": [
+              "gif",
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Brands, Logos & Graphic Design",
+        "sample_count": 260,
+        "prompt_length_mean": 39.1,
+        "prompt_length_min": 6,
+        "prompt_length_max": 83,
+        "prompt_length_std": 22.75,
+        "target_length_mean": 13.08,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 260,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1001x491",
+              "1009x260",
+              "1011x356",
+              "1012x900",
+              "1019x244",
+              "1021x1021",
+              "1024x1024",
+              "1024x576",
+              "1034x869",
+              "1054x895"
+            ],
+            "resolution_range": {
+              "min": "76x71",
+              "max": "3840x2880"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Sports, Gear & Venues",
+        "sample_count": 142,
+        "prompt_length_mean": 41.99,
+        "prompt_length_min": 9,
+        "prompt_length_max": 100,
+        "prompt_length_std": 23.16,
+        "target_length_mean": 14.91,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 142,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1001x550",
+              "1003x397",
+              "1004x932",
+              "1007x471",
+              "1010x657",
+              "1011x486",
+              "1015x396",
+              "1024x680",
+              "1024x683",
+              "1024x702"
+            ],
+            "resolution_range": {
+              "min": "295x221",
+              "max": "2880x3840"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 38.4,
+      "min": 5,
+      "max": 182,
+      "std": 24.36
+    },
+    "target_length_mean": 13.92,
+    "computed_at": "2026-07-02T19:25:09.223554",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 3000,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1000x1333",
+          "1000x1500",
+          "1000x294",
+          "1000x411",
+          "1000x445",
+          "1000x500",
+          "1000x507",
+          "1000x530",
+          "1000x532",
+          "1000x603"
+        ],
+        "resolution_range": {
+          "min": "33x65",
+          "max": "3840x3840"
+        },
+        "formats": [
+          "gif",
+          "jpeg",
+          "png",
+          "webp"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "0c08c4e2",
+          "content": [
+            {
+              "text": "What breed of dog is in the picture?"
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~392.9KB]"
+            }
+          ]
+        }
+      ],
+      "target": "Greek Hound",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "Nature & Environment",
+      "metadata": {
+        "index": 0,
+        "category": "Nature & Environment",
+        "language": "non-zh",
+        "difficulty": "medium"
+      }
+    },
+    "subset": "Nature & Environment",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# WorldVQA\n\n\n## Overview\n\nWorldVQA is a benchmark designed to evaluate the atomic visual world knowledge of Multimodal Large Language Models (MLLMs). It measures models' ability to ground and name visual entities across a stratified taxonomy, spanning from common head-class objects to long-tail rarities.\n\n## Task Description\n\n- **Task Type**: Visual Entity Recognition / Knowledge QA\n- **Input**: Image + question asking to identify a visual entity\n- **Output**: Free-form text answer (specific entity name)\n- **Domain**: Nature, architecture, culture, products, transportation, entertainment, brands, sports\n\n## Key Features\n\n- 3000 VQA pairs across 8 semantic categories\n- Bilingual: English (non-zh) and Chinese (zh)\n- Three difficulty levels: easy, medium, hard\n- Tests atomic visual knowledge decoupled from reasoning\n- Requires precise entity identification (e.g., specific breed, not generic \"dog\")\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Evaluates on **train** split (the benchmark data split)\n- Primary metric: **Accuracy** via LLM-as-judge\n- Supports LLM judge for semantic equivalence checking\n- Results reported per category and overall\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `world_vqa` |\n| **Dataset ID** | [evalscope/WorldVQA](https://modelscope.cn/datasets/evalscope/WorldVQA/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MultiModal`, `QA` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,000 |\n| Prompt Length (Mean) | 38.4 chars |\n| Prompt Length (Min/Max) | 5 / 182 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Nature & Environment` | 326 | 33.9 | 7 | 83 |\n| `Locations & Architecture` | 512 | 42.03 | 9 | 122 |\n| `Culture, Arts & Crafts` | 506 | 33.71 | 7 | 112 |\n| `Objects & Products` | 437 | 55.97 | 9 | 182 |\n| `Vehicles, Craft & Transportation` | 306 | 30.67 | 8 | 114 |\n| `Entertainment, Media & Gaming` | 511 | 30.5 | 5 | 83 |\n| `Brands, Logos & Graphic Design` | 260 | 39.1 | 6 | 83 |\n| `Sports, Gear & Venues` | 142 | 41.99 | 9 | 100 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 3,000 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 33x65 - 3840x3840 |\n| Formats | gif, jpeg, png, webp |\n\n\n## Sample Example\n\n**Subset**: `Nature & Environment`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0c08c4e2\",\n      \"content\": [\n        {\n          \"text\": \"What breed of dog is in the picture?\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~392.9KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"Greek Hound\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Nature & Environment\",\n  \"metadata\": {\n    \"index\": 0,\n    \"category\": \"Nature & Environment\",\n    \"language\": \"non-zh\",\n    \"difficulty\": \"medium\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets world_vqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['world_vqa'],\n    dataset_args={\n        'world_vqa': {\n            # subset_list: ['Nature & Environment', 'Locations & Architecture', 'Culture, Arts & Crafts']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# WorldVQA\n\n\n## 概述\n\nWorldVQA 是一个用于评估多模态大语言模型（MLLMs）原子级视觉世界知识的基准测试。它衡量模型在分层分类体系中对视觉实体进行定位和命名的能力，涵盖从常见的头部类别物体到长尾稀有类别的广泛范围。\n\n## 任务描述\n\n- **任务类型**：视觉实体识别 / 知识问答（QA）\n- **输入**：图像 + 要求识别视觉实体的问题\n- **输出**：自由文本答案（具体实体名称）\n- **领域**：自然、建筑、文化、产品、交通、娱乐、品牌、体育\n\n## 主要特点\n\n- 包含 3000 个 VQA 对，覆盖 8 个语义类别\n- 双语支持：英语（non-zh）和中文（zh）\n- 三个难度等级：简单、中等、困难\n- 测试与推理解耦的原子级视觉知识\n- 要求精确识别实体（例如，具体品种，而非泛称“狗”）\n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估\n- 在 **train** 划分上进行评估（即基准测试数据划分）\n- 主要指标：通过 LLM-as-judge 计算的 **准确率（Accuracy）**\n- 支持使用 LLM 判定语义等价性\n- 结果按类别及整体分别报告\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `world_vqa` |\n| **数据集ID** | [evalscope/WorldVQA](https://modelscope.cn/datasets/evalscope/WorldVQA/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MultiModal`, `QA` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,000 |\n| 提示词长度（平均） | 38.4 字符 |\n| 提示词长度（最小/最大） | 5 / 182 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Nature & Environment` | 326 | 33.9 | 7 | 83 |\n| `Locations & Architecture` | 512 | 42.03 | 9 | 122 |\n| `Culture, Arts & Crafts` | 506 | 33.71 | 7 | 112 |\n| `Objects & Products` | 437 | 55.97 | 9 | 182 |\n| `Vehicles, Craft & Transportation` | 306 | 30.67 | 8 | 114 |\n| `Entertainment, Media & Gaming` | 511 | 30.5 | 5 | 83 |\n| `Brands, Logos & Graphic Design` | 260 | 39.1 | 6 | 83 |\n| `Sports, Gear & Venues` | 142 | 41.99 | 9 | 100 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 3,000 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 33x65 - 3840x3840 |\n| 格式 | gif, jpeg, png, webp |\n\n\n## 样例示例\n\n**子集**: `Nature & Environment`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0c08c4e2\",\n      \"content\": [\n        {\n          \"text\": \"What breed of dog is in the picture?\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~392.9KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"Greek Hound\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Nature & Environment\",\n  \"metadata\": {\n    \"index\": 0,\n    \"category\": \"Nature & Environment\",\n    \"language\": \"non-zh\",\n    \"difficulty\": \"medium\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets world_vqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['world_vqa'],\n    dataset_args={\n        'world_vqa': {\n            # subset_list: ['Nature & Environment', 'Locations & Architecture', 'Culture, Arts & Crafts']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "9fc32ce61d6ee6d9c98a6b7fae25a4b3",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-02T19:25:12.649613",
+  "translation_updated_at": "2026-07-02T19:26:43"
+}
