@@ -15,6 +15,7 @@
 | `cmmu` | [CMMU](../../benchmarks/cmmu.md) | `Knowledge`, `MCQ`, `MultiModal`, `QA` |
 | `common_voice_15` | [CommonVoice15](../../benchmarks/common_voice_15.md) | `Audio`, `MultiLingual`, `SpeechRecognition` |
 | `docvqa` | [DocVQA](../../benchmarks/docvqa.md) | `Knowledge`, `MultiModal`, `QA` |
+| `erqa` | [ERQA](../../benchmarks/erqa.md) | `MCQ`, `MultiModal`, `Reasoning` |
 | `fleurs` | [FLEURS](../../benchmarks/fleurs.md) | `Audio`, `MultiLingual`, `SpeechRecognition` |
 | `general_vmcq` | [General-VMCQ](../../benchmarks/general_vmcq.md) | `Custom`, `MCQ`, `MultiModal` |
 | `general_vqa` | [General-VQA](../../benchmarks/general_vqa.md) | `Custom`, `MultiModal`, `QA` |
@@ -53,6 +54,7 @@
 | `vqav2` | [VQAv2](../../benchmarks/vqav2.md) | `MultiModal`, `QA` |
 | `vstar_bench` | [V*Bench](../../benchmarks/vstar_bench.md) | `Grounding`, `MCQ`, `MultiModal` |
 | `wenet_speech` | [WenetSpeech](../../benchmarks/wenet_speech.md) | `Audio`, `SpeechRecognition` |
+| `world_vqa` | [WorldVQA](../../benchmarks/world_vqa.md) | `Knowledge`, `MultiModal`, `QA` |
 | `zerobench` | [ZeroBench](../../benchmarks/zerobench.md) | `Knowledge`, `MultiModal`, `QA` |
 
 :::{toctree}
@@ -70,6 +72,7 @@
 ../../benchmarks/cmmu.md
 ../../benchmarks/common_voice_15.md
 ../../benchmarks/docvqa.md
+../../benchmarks/erqa.md
 ../../benchmarks/fleurs.md
 ../../benchmarks/general_vmcq.md
 ../../benchmarks/general_vqa.md
@@ -108,5 +111,6 @@
 ../../benchmarks/vqav2.md
 ../../benchmarks/vstar_bench.md
 ../../benchmarks/wenet_speech.md
+../../benchmarks/world_vqa.md
 ../../benchmarks/zerobench.md
 :::

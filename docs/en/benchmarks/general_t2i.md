@@ -1,4 +1,4 @@
-# general_t2i
+# General-T2I
 
 
 ## Overview
