@@ -1,0 +1,78 @@
+{
+  "meta": {
+    "pretty_name": "OfficeQA",
+    "dataset_id": "evalscope/officeqa",
+    "paper_url": null,
+    "tags": [
+      "QA",
+      "Knowledge"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nOfficeQA is a grounded reasoning benchmark by Databricks, built for evaluating model/agent performance on end-to-end grounded reasoning tasks over U.S. Treasury Bulletin documents (1939-2025).\n\n## Task Description\n\n- **Task Type**: Document-based Question Answering\n- **Input**: A question requiring information from U.S. Treasury Bulletins\n- **Output**: A precise answer (numeric values, text, or structured data)\n- **Difficulty**: All questions in the Pro subset are rated \"hard\"\n\n## Key Features\n\n- 133 questions in the Pro subset (default) sourced from real U.S. Treasury bulletins\n- Answers include formatted numbers (e.g., \"2,602\"), lists, text, and dates\n- Tests precise factual extraction from official documentation\n- Scoring uses fuzzy numeric matching with configurable tolerance\n\n## Evaluation Notes\n\n- Uses **rule-based scoring** adapted from official reward.py\n- Numerical answers matched with configurable relative error tolerance (default 1%)\n- Text answers use case-insensitive substring matching\n- Supports multi-number list answers and unit-aware comparison\n",
+    "prompt_template": "{question}\nPlease provide a precise and concise answer.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 133,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 133,
+        "prompt_length_mean": 443.06,
+        "prompt_length_min": 165,
+        "prompt_length_max": 1186,
+        "prompt_length_std": 189.83,
+        "target_length_mean": 7.84
+      }
+    ],
+    "prompt_length": {
+      "mean": 443.06,
+      "min": 165,
+      "max": 1186,
+      "std": 189.83
+    },
+    "target_length_mean": 7.84,
+    "computed_at": "2026-07-03T17:22:52.758222"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "a6357de6",
+          "content": "What were the total expenditures (in millions of nominal dollars) for U.S national defense in the calendar year of 1940?\nPlease provide a precise and concise answer."
+        }
+      ],
+      "target": "2,602",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "uid": "UID0001",
+        "source_files": "treasury_bulletin_1941_01.txt",
+        "difficulty": "hard"
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# OfficeQA\n\n\n## Overview\n\nOfficeQA is a grounded reasoning benchmark by Databricks, built for evaluating model/agent performance on end-to-end grounded reasoning tasks over U.S. Treasury Bulletin documents (1939-2025).\n\n## Task Description\n\n- **Task Type**: Document-based Question Answering\n- **Input**: A question requiring information from U.S. Treasury Bulletins\n- **Output**: A precise answer (numeric values, text, or structured data)\n- **Difficulty**: All questions in the Pro subset are rated \"hard\"\n\n## Key Features\n\n- 133 questions in the Pro subset (default) sourced from real U.S. Treasury bulletins\n- Answers include formatted numbers (e.g., \"2,602\"), lists, text, and dates\n- Tests precise factual extraction from official documentation\n- Scoring uses fuzzy numeric matching with configurable tolerance\n\n## Evaluation Notes\n\n- Uses **rule-based scoring** adapted from official reward.py\n- Numerical answers matched with configurable relative error tolerance (default 1%)\n- Text answers use case-insensitive substring matching\n- Supports multi-number list answers and unit-aware comparison\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `officeqa` |\n| **Dataset ID** | [evalscope/officeqa](https://modelscope.cn/datasets/evalscope/officeqa/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `QA` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 133 |\n| Prompt Length (Mean) | 443.06 chars |\n| Prompt Length (Min/Max) | 165 / 1186 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a6357de6\",\n      \"content\": \"What were the total expenditures (in millions of nominal dollars) for U.S national defense in the calendar year of 1940?\\nPlease provide a precise and concise answer.\"\n    }\n  ],\n  \"target\": \"2,602\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"uid\": \"UID0001\",\n    \"source_files\": \"treasury_bulletin_1941_01.txt\",\n    \"difficulty\": \"hard\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease provide a precise and concise answer.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets officeqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['officeqa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# OfficeQA\n\n\n## 概述\n\nOfficeQA 是一个具有挑战性的问答基准测试，旨在评估大语言模型（LLMs）基于官方文件（例如美国财政部公告）回答问题的能力。该基准测试考察模型从结构化的金融和政府数据中精确提取信息并进行推理的能力。\n\n## 任务描述\n\n- **任务类型**：基于文档的问答（Document-based Question Answering）\n- **输入**：关于官方/政府文件的问题\n- **输出**：精确答案（数值、文本或结构化数据）\n- **难度**：所有问题均被评定为“困难”\n\n## 主要特点\n\n- 包含 133 个源自真实美国财政部公告和政府文件的问题\n- 答案包括带格式的数字（例如 \"2,602\"）、列表和文本\n- 考察从官方文档中精确提取事实信息的能力\n- 所有问题均需对结构化数据进行仔细解读\n\n## 评估说明\n\n- 由于答案格式多样，采用 **LLM judge** 进行评分\n- 答案可能是数字、格式化数值或列表\n- 采用零样本（zero-shot）评估（无少样本示例）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `officeqa` |\n| **数据集ID** | [evalscope/officeqa](https://modelscope.cn/datasets/evalscope/officeqa/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `QA` |\n| **指标** | `acc` |\n| **默认样本数** | 0-shot |\n| **评估分割** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 133 |\n| 提示词长度（平均） | 443.06 字符 |\n| 提示词长度（最小/最大） | 165 / 1186 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a6357de6\",\n      \"content\": \"What were the total expenditures (in millions of nominal dollars) for U.S national defense in the calendar year of 1940?\\nPlease provide a precise and concise answer.\"\n    }\n  ],\n  \"target\": \"2,602\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"uid\": \"UID0001\",\n    \"source_files\": \"treasury_bulletin_1941_01.txt\",\n    \"difficulty\": \"hard\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板:**\n```text\n{question}\nPlease provide a precise and concise answer.\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets officeqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['officeqa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "d5c3fa21862bb8904cee17eed4c855f5",
+    "needs_translation": true
+  },
+  "updated_at": "2026-07-03T17:30:06.513680",
+  "translation_updated_at": "2026-07-03T17:24:55"
+}

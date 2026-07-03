@@ -880,6 +880,45 @@ class TestNativeBenchmark(TestBenchmark):
         )
 
 
+    # OfficeQA
+    def test_officeqa(self):
+        """Test OfficeQA benchmark."""
+        self._run_dataset_test('officeqa', limit=5)
+
+    def test_officeqa_mock(self):
+        """Test OfficeQA benchmark with mock."""
+        self._run_dataset_test('officeqa', limit=3, use_mock=True)
+
+    # ARC-AGI-2
+    def test_arc_agi_2(self):
+        """Test ARC-AGI-2 benchmark."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('arc_agi_2', dataset_args=dataset_args, limit=5)
+
+    def test_arc_agi_2_mock(self):
+        """Test ARC-AGI-2 benchmark with mock."""
+        self._run_dataset_test('arc_agi_2', limit=3, use_mock=True)
+
+    # AGIEval
+    def test_agieval(self):
+        """Test AGIEval benchmark."""
+        dataset_args = {
+            'subset_list': ['aqua-rat', 'logiqa-zh', 'math'],
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('agieval', dataset_args=dataset_args, limit=5)
+
+    def test_agieval_mock(self):
+        """Test AGIEval benchmark with mock."""
+        dataset_args = {
+            'subset_list': ['aqua-rat', 'logiqa-zh', 'math'],
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('agieval', dataset_args=dataset_args, limit=3, use_mock=True)
+
+
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
     # Run all tests: python -m unittest test_eval.TestBenchmark

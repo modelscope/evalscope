@@ -1,0 +1,285 @@
+{
+  "meta": {
+    "pretty_name": "AGIEval",
+    "dataset_id": "opencompass/agieval",
+    "paper_url": null,
+    "tags": [
+      "Reasoning",
+      "Knowledge",
+      "Math"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "dev",
+    "subset_list": [
+      "aqua-rat",
+      "logiqa-en",
+      "lsat-ar",
+      "lsat-lr",
+      "lsat-rc",
+      "sat-math",
+      "sat-en",
+      "sat-en-without-passage",
+      "gaokao-english",
+      "logiqa-zh",
+      "gaokao-chinese",
+      "gaokao-geography",
+      "gaokao-history",
+      "gaokao-biology",
+      "gaokao-chemistry",
+      "gaokao-physics",
+      "gaokao-mathqa",
+      "jec-qa-kd",
+      "jec-qa-ca",
+      "math",
+      "gaokao-mathcloze"
+    ],
+    "description": "\n## Overview\n\nAGIEval is a human-centric benchmark designed to evaluate foundation models in the context of human cognition and problem-solving. It uses official, standard, and authoritative admission and qualification exams intended for general human test-takers, such as college entrance exams (GaoKao), law school admission tests (LSAT), math competitions, and lawyer qualification exams.\n\n## Task Description\n\n- **Task Type**: Mixed (Multiple-Choice QA + Open-ended Math)\n- **Input**: Questions from standardized exams with optional passages and answer choices\n- **Output**: Answer letter(s) for MCQ, or numerical/mathematical answer for open-ended\n- **Languages**: English and Chinese\n\n## Key Features\n\n- 21 subsets covering diverse exam types across two languages\n- English MCQ: LSAT (AR/LR/RC), SAT (Math/English), AQuA-RAT, LogiQA, GaoKao-English\n- Chinese MCQ: GaoKao (Chinese/Geography/History/Biology/Chemistry/Physics/MathQA), LogiQA-zh, JEC-QA\n- Open-ended math: MATH (English), GaoKao-MathCloze (Chinese)\n- Multi-select subsets: JEC-QA-KD, JEC-QA-CA, GaoKao-Physics\n- Includes passage-based reading comprehension questions\n\n## Evaluation Notes\n\n- MCQ subsets use exact letter match (single or multi-select)\n- Math/cloze subsets use mathematical equivalence checking\n- Supports few-shot evaluation using dev split examples\n- Prompt format follows official AGIEval conventions\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 8269,
+    "subset_stats": [
+      {
+        "name": "aqua-rat",
+        "sample_count": 254,
+        "prompt_length_mean": 290.09,
+        "prompt_length_min": 103,
+        "prompt_length_max": 587,
+        "prompt_length_std": 84.38,
+        "target_length_mean": 1
+      },
+      {
+        "name": "logiqa-en",
+        "sample_count": 651,
+        "prompt_length_mean": 911.89,
+        "prompt_length_min": 248,
+        "prompt_length_max": 1769,
+        "prompt_length_std": 250.8,
+        "target_length_mean": 1
+      },
+      {
+        "name": "lsat-ar",
+        "sample_count": 230,
+        "prompt_length_mean": 946.36,
+        "prompt_length_min": 635,
+        "prompt_length_max": 1853,
+        "prompt_length_std": 183.41,
+        "target_length_mean": 1
+      },
+      {
+        "name": "lsat-lr",
+        "sample_count": 510,
+        "prompt_length_mean": 1156.66,
+        "prompt_length_min": 563,
+        "prompt_length_max": 2348,
+        "prompt_length_std": 261.19,
+        "target_length_mean": 1
+      },
+      {
+        "name": "lsat-rc",
+        "sample_count": 269,
+        "prompt_length_mean": 3652.86,
+        "prompt_length_min": 2959,
+        "prompt_length_max": 4825,
+        "prompt_length_std": 320.49,
+        "target_length_mean": 1
+      },
+      {
+        "name": "sat-math",
+        "sample_count": 220,
+        "prompt_length_mean": 392.45,
+        "prompt_length_min": 120,
+        "prompt_length_max": 1201,
+        "prompt_length_std": 232.93,
+        "target_length_mean": 1
+      },
+      {
+        "name": "sat-en",
+        "sample_count": 206,
+        "prompt_length_mean": 4618.28,
+        "prompt_length_min": 3569,
+        "prompt_length_max": 5316,
+        "prompt_length_std": 383.18,
+        "target_length_mean": 1
+      },
+      {
+        "name": "sat-en-without-passage",
+        "sample_count": 206,
+        "prompt_length_mean": 435.91,
+        "prompt_length_min": 169,
+        "prompt_length_max": 937,
+        "prompt_length_std": 145.26,
+        "target_length_mean": 1
+      },
+      {
+        "name": "gaokao-english",
+        "sample_count": 306,
+        "prompt_length_mean": 2025.44,
+        "prompt_length_min": 517,
+        "prompt_length_max": 4216,
+        "prompt_length_std": 565.35,
+        "target_length_mean": 1
+      },
+      {
+        "name": "logiqa-zh",
+        "sample_count": 651,
+        "prompt_length_mean": 267.62,
+        "prompt_length_min": 98,
+        "prompt_length_max": 526,
+        "prompt_length_std": 59.84,
+        "target_length_mean": 1
+      },
+      {
+        "name": "gaokao-chinese",
+        "sample_count": 246,
+        "prompt_length_mean": 988.09,
+        "prompt_length_min": 152,
+        "prompt_length_max": 2186,
+        "prompt_length_std": 492.07,
+        "target_length_mean": 1
+      },
+      {
+        "name": "gaokao-geography",
+        "sample_count": 199,
+        "prompt_length_mean": 204.82,
+        "prompt_length_min": 64,
+        "prompt_length_max": 881,
+        "prompt_length_std": 159.78,
+        "target_length_mean": 1
+      },
+      {
+        "name": "gaokao-history",
+        "sample_count": 235,
+        "prompt_length_mean": 141.48,
+        "prompt_length_min": 67,
+        "prompt_length_max": 314,
+        "prompt_length_std": 43.08,
+        "target_length_mean": 1
+      },
+      {
+        "name": "gaokao-biology",
+        "sample_count": 210,
+        "prompt_length_mean": 203.98,
+        "prompt_length_min": 75,
+        "prompt_length_max": 685,
+        "prompt_length_std": 93.18,
+        "target_length_mean": 1
+      },
+      {
+        "name": "gaokao-chemistry",
+        "sample_count": 207,
+        "prompt_length_mean": 348.37,
+        "prompt_length_min": 58,
+        "prompt_length_max": 1454,
+        "prompt_length_std": 246.96,
+        "target_length_mean": 1
+      },
+      {
+        "name": "gaokao-physics",
+        "sample_count": 200,
+        "prompt_length_mean": 251.9,
+        "prompt_length_min": 58,
+        "prompt_length_max": 581,
+        "prompt_length_std": 124.76,
+        "target_length_mean": 2.7
+      },
+      {
+        "name": "gaokao-mathqa",
+        "sample_count": 351,
+        "prompt_length_mean": 201.59,
+        "prompt_length_min": 93,
+        "prompt_length_max": 615,
+        "prompt_length_std": 83.9,
+        "target_length_mean": 1.04
+      },
+      {
+        "name": "jec-qa-kd",
+        "sample_count": 1000,
+        "prompt_length_mean": 170.43,
+        "prompt_length_min": 54,
+        "prompt_length_max": 454,
+        "prompt_length_std": 63.63,
+        "target_length_mean": 9.81
+      },
+      {
+        "name": "jec-qa-ca",
+        "sample_count": 1000,
+        "prompt_length_mean": 240.71,
+        "prompt_length_min": 79,
+        "prompt_length_max": 883,
+        "prompt_length_std": 88.98,
+        "target_length_mean": 8.98
+      },
+      {
+        "name": "math",
+        "sample_count": 1000,
+        "prompt_length_mean": 211.95,
+        "prompt_length_min": 40,
+        "prompt_length_max": 2186,
+        "prompt_length_std": 183.64,
+        "target_length_mean": 6.58
+      },
+      {
+        "name": "gaokao-mathcloze",
+        "sample_count": 118,
+        "prompt_length_mean": 123.42,
+        "prompt_length_min": 48,
+        "prompt_length_max": 501,
+        "prompt_length_std": 66.87,
+        "target_length_mean": 12.39
+      }
+    ],
+    "prompt_length": {
+      "mean": 673.58,
+      "min": 40,
+      "max": 5316,
+      "std": 977.17
+    },
+    "target_length_mean": 3.91,
+    "computed_at": "2026-07-03T17:24:48.680869"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "e28353e5",
+          "content": "Q: A car is being driven, in a straight line and at a uniform speed, towards the base of a vertical tower. The top of the tower is observed from the car and, in the process, it takes 10 minutes for the angle of elevation to change from 45° to 60°. After how much more time will this car reach the base of the tower? Answer Choices: (A)5(√3 + 1) (B)6(√3 + √2) (C)7(√3 – 1) (D)8(√3 – 2) (E)None of these\nA: Among A through E, the answer is"
+        }
+      ],
+      "choices": [
+        "(A)5(√3 + 1)",
+        "(B)6(√3 + √2)",
+        "(C)7(√3 – 1)",
+        "(D)8(√3 – 2)",
+        "(E)None of these"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "subset": "aqua-rat",
+        "has_passage": false
+      }
+    },
+    "subset": "aqua-rat",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# AGIEval\n\n\n## Overview\n\nAGIEval is a human-centric benchmark designed to evaluate foundation models in the context of human cognition and problem-solving. It uses official, standard, and authoritative admission and qualification exams intended for general human test-takers, such as college entrance exams (GaoKao), law school admission tests (LSAT), math competitions, and lawyer qualification exams.\n\n## Task Description\n\n- **Task Type**: Mixed (Multiple-Choice QA + Open-ended Math)\n- **Input**: Questions from standardized exams with optional passages and answer choices\n- **Output**: Answer letter(s) for MCQ, or numerical/mathematical answer for open-ended\n- **Languages**: English and Chinese\n\n## Key Features\n\n- 21 subsets covering diverse exam types across two languages\n- English MCQ: LSAT (AR/LR/RC), SAT (Math/English), AQuA-RAT, LogiQA, GaoKao-English\n- Chinese MCQ: GaoKao (Chinese/Geography/History/Biology/Chemistry/Physics/MathQA), LogiQA-zh, JEC-QA\n- Open-ended math: MATH (English), GaoKao-MathCloze (Chinese)\n- Multi-select subsets: JEC-QA-KD, JEC-QA-CA, GaoKao-Physics\n- Includes passage-based reading comprehension questions\n\n## Evaluation Notes\n\n- MCQ subsets use exact letter match (single or multi-select)\n- Math/cloze subsets use mathematical equivalence checking\n- Supports few-shot evaluation using dev split examples\n- Prompt format follows official AGIEval conventions\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `agieval` |\n| **Dataset ID** | [opencompass/agieval](https://modelscope.cn/datasets/opencompass/agieval/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `Math`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `dev` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 8,269 |\n| Prompt Length (Mean) | 673.58 chars |\n| Prompt Length (Min/Max) | 40 / 5316 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `aqua-rat` | 254 | 290.09 | 103 | 587 |\n| `logiqa-en` | 651 | 911.89 | 248 | 1769 |\n| `lsat-ar` | 230 | 946.36 | 635 | 1853 |\n| `lsat-lr` | 510 | 1156.66 | 563 | 2348 |\n| `lsat-rc` | 269 | 3652.86 | 2959 | 4825 |\n| `sat-math` | 220 | 392.45 | 120 | 1201 |\n| `sat-en` | 206 | 4618.28 | 3569 | 5316 |\n| `sat-en-without-passage` | 206 | 435.91 | 169 | 937 |\n| `gaokao-english` | 306 | 2025.44 | 517 | 4216 |\n| `logiqa-zh` | 651 | 267.62 | 98 | 526 |\n| `gaokao-chinese` | 246 | 988.09 | 152 | 2186 |\n| `gaokao-geography` | 199 | 204.82 | 64 | 881 |\n| `gaokao-history` | 235 | 141.48 | 67 | 314 |\n| `gaokao-biology` | 210 | 203.98 | 75 | 685 |\n| `gaokao-chemistry` | 207 | 348.37 | 58 | 1454 |\n| `gaokao-physics` | 200 | 251.9 | 58 | 581 |\n| `gaokao-mathqa` | 351 | 201.59 | 93 | 615 |\n| `jec-qa-kd` | 1,000 | 170.43 | 54 | 454 |\n| `jec-qa-ca` | 1,000 | 240.71 | 79 | 883 |\n| `math` | 1,000 | 211.95 | 40 | 2186 |\n| `gaokao-mathcloze` | 118 | 123.42 | 48 | 501 |\n\n## Sample Example\n\n**Subset**: `aqua-rat`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"e28353e5\",\n      \"content\": \"Q: A car is being driven, in a straight line and at a uniform speed, towards the base of a vertical tower. The top of the tower is observed from the car and, in the process, it takes 10 minutes for the angle of elevation to change from 45° to 60°. After how much more time will this car reach the base of the tower? Answer Choices: (A)5(√3 + 1) (B)6(√3 + √2) (C)7(√3 – 1) (D)8(√3 – 2) (E)None of these\\nA: Among A through E, the answer is\"\n    }\n  ],\n  \"choices\": [\n    \"(A)5(√3 + 1)\",\n    \"(B)6(√3 + √2)\",\n    \"(C)7(√3 – 1)\",\n    \"(D)8(√3 – 2)\",\n    \"(E)None of these\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"subset\": \"aqua-rat\",\n    \"has_passage\": false\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets agieval \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['agieval'],\n    dataset_args={\n        'agieval': {\n            # subset_list: ['aqua-rat', 'logiqa-en', 'lsat-ar']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# AGIEval\n\n\n## 概述\n\nAGIEval 是一个以人类为中心的基准测试，旨在评估基础模型在人类认知与问题解决场景下的能力。该基准采用面向普通人类考生的官方、标准且权威的入学与资格考试题目，例如高考（GaoKao）、法学院入学考试（LSAT）、数学竞赛以及律师资格考试等。\n\n## 任务描述\n\n- **任务类型**：混合型（多项选择问答 + 开放式数学题）\n- **输入**：标准化考试中的题目，可包含文章段落和选项\n- **输出**：多项选择题的答案字母，或开放式题目的数值/数学答案\n- **语言**：英语和中文\n\n## 主要特点\n\n- 包含21个子集，涵盖两种语言下的多种考试类型\n- 英语多项选择题：LSAT（AR/LR/RC）、SAT（数学/英语）、AQuA-RAT、LogiQA、GaoKao-English\n- 中文多项选择题：GaoKao（语文/地理/历史/生物/化学/物理/MathQA）、LogiQA-zh、JEC-QA\n- 开放式数学题：MATH（英语）、GaoKao-MathCloze（中文）\n- 多选子集：JEC-QA-KD、JEC-QA-CA、GaoKao-Physics\n- 包含基于文章的阅读理解题目\n\n## 评估说明\n\n- 多项选择题子集采用精确字母匹配（单选或多选）\n- 数学/填空类子集采用数学等价性检查\n- 支持使用开发集（dev split）样例进行少样本（few-shot）评估\n- 提示格式遵循官方 AGIEval 规范\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `agieval` |\n| **数据集ID** | [opencompass/agieval](https://modelscope.cn/datasets/opencompass/agieval/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `Math`, `Reasoning` |\n| **指标** | `acc` |\n| **默认样本数** | 0-shot |\n| **评估划分** | `test` |\n| **训练划分** | `dev` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 8,269 |\n| 提示词长度（平均） | 673.58 字符 |\n| 提示词长度（最小/最大） | 40 / 5316 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `aqua-rat` | 254 | 290.09 | 103 | 587 |\n| `logiqa-en` | 651 | 911.89 | 248 | 1769 |\n| `lsat-ar` | 230 | 946.36 | 635 | 1853 |\n| `lsat-lr` | 510 | 1156.66 | 563 | 2348 |\n| `lsat-rc` | 269 | 3652.86 | 2959 | 4825 |\n| `sat-math` | 220 | 392.45 | 120 | 1201 |\n| `sat-en` | 206 | 4618.28 | 3569 | 5316 |\n| `sat-en-without-passage` | 206 | 435.91 | 169 | 937 |\n| `gaokao-english` | 306 | 2025.44 | 517 | 4216 |\n| `logiqa-zh` | 651 | 267.62 | 98 | 526 |\n| `gaokao-chinese` | 246 | 988.09 | 152 | 2186 |\n| `gaokao-geography` | 199 | 204.82 | 64 | 881 |\n| `gaokao-history` | 235 | 141.48 | 67 | 314 |\n| `gaokao-biology` | 210 | 203.98 | 75 | 685 |\n| `gaokao-chemistry` | 207 | 348.37 | 58 | 1454 |\n| `gaokao-physics` | 200 | 251.9 | 58 | 581 |\n| `gaokao-mathqa` | 351 | 201.59 | 93 | 615 |\n| `jec-qa-kd` | 1,000 | 170.43 | 54 | 454 |\n| `jec-qa-ca` | 1,000 | 240.71 | 79 | 883 |\n| `math` | 1,000 | 211.95 | 40 | 2186 |\n| `gaokao-mathcloze` | 118 | 123.42 | 48 | 501 |\n\n## 样例示例\n\n**子集**: `aqua-rat`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"e28353e5\",\n      \"content\": \"Q: A car is being driven, in a straight line and at a uniform speed, towards the base of a vertical tower. The top of the tower is observed from the car and, in the process, it takes 10 minutes for the angle of elevation to change from 45° to 60°. After how much more time will this car reach the base of the tower? Answer Choices: (A)5(√3 + 1) (B)6(√3 + √2) (C)7(√3 – 1) (D)8(√3 – 2) (E)None of these\\nA: Among A through E, the answer is\"\n    }\n  ],\n  \"choices\": [\n    \"(A)5(√3 + 1)\",\n    \"(B)6(√3 + √2)\",\n    \"(C)7(√3 – 1)\",\n    \"(D)8(√3 – 2)\",\n    \"(E)None of these\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"subset\": \"aqua-rat\",\n    \"has_passage\": false\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets agieval \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['agieval'],\n    dataset_args={\n        'agieval': {\n            # subset_list: ['aqua-rat', 'logiqa-en', 'lsat-ar']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "ced20302fa84be1568b101449b0cee34",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-03T17:24:49.222852",
+  "translation_updated_at": "2026-07-03T17:24:55"
+}

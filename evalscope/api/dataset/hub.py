@@ -69,7 +69,7 @@ def load_dataset_from_hub(
         load_kwargs = dict(
             dataset_name=data_id_or_path,
             split=split,
-            subset_name=subset,
+            subset_name=subset if subset != 'default' else None,
             trust_remote_code=trust_remote,
             **kwargs,
         )
