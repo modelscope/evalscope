@@ -74,6 +74,9 @@ For details, please refer to [📖 Visualizing Evaluation Results](https://evals
 
 ## 🎉 What's New
 
+- 🔥 **[2026.07.03]** Added **CharXiv** & **BabyVision** (chart understanding, visual cognition) and **ERQA** & **WorldVQA** (entity-recognition QA with LLM-judge + CoT) multimodal benchmarks.
+- 🔥 **[2026.06.23]** Major agent & code evaluation expansion: added **BigCodeBench**, **SWE-bench Multilingual**, **BrowseComp**, **MCP-Atlas**, **GDPval** benchmarks; added **OpenCode** / **OpenHands** runners; refactored adapter architecture with `AudioLanguageAdapter`, unified `FunctionCallAdapter`, and public `run_agent_loop` API.
+- 🔥 **[2026.06.16]** Added full-reference **image quality metrics** (SSIM, PSNR, etc.), long-context benchmarks (**LoCoMo QA**, **LongMemEval**), **Caption** & **Maritime-OCR-Bench** benchmarks; perf module now supports unified `--data-source` and parallelized request generation.
 - 🔥 **[2026.06.02]** Refactored **RAG evaluation** module: upgraded to MTEB 2.x and RAGAS 0.4.x, with unified Pydantic-based configs. See the [RAGEval guide](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/index.html).
 - 🔥 **[2026.05.27]** Added **Trie agentic trace replay** for perf benchmarking: three new dataset plugins (`trie_agentic_coding` / `trie_code_qa` / `trie_office_work`) replay real multi-turn agent traces with per-turn token caps and tool-call latency simulation. Also introduced a `--duration` wall-clock budget for all benchmark modes and a `Turn` dataclass for per-turn overrides.
 - 🔥 **[2026.05.27]** Added **Vendor Verifier benchmarks** (`k2_verifier`, `kimi_verifier`, `minimax_verifier`) for validating whether third-party API deployments faithfully reproduce official model behavior, with a shared `FunctionCallAdapter` base class.
@@ -85,12 +88,12 @@ For details, please refer to [📖 Visualizing Evaluation Results](https://evals
 - 🔥 **[2026.05.07]** Replaced the Gradio-based WebUI with a new React + Vite web interface for better performance and user experience.
 - 🔥 **[2026.04.23]** Added support for recording performance (perf) metrics during evaluation tasks, enabling simultaneous tracking of model accuracy and inference efficiency metrics such as TTFT, TPOT, and throughput in a single evaluation run.
 - 🔥 **[2026.04.17]** Added support for multi-turn conversation performance stress testing, enabling load testing of dialogue-based model services with multi-turn context. Refer to the [usage documentation](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/examples.html).
-- 🔥 **[2026.04.10]** Added support for [TIR-Bench](https://arxiv.org/abs/2511.01833) (Thinking-with-Images Reasoning Benchmark), a multimodal benchmark evaluating agentic visual reasoning capabilities of vision-language models.
-- 🔥 **[2026.03.24]** Added support for Agent Skill. Any agent model that supports Skill/Tool calling can use natural language to drive EvalScope for model evaluation, performance benchmarking, and result visualization.
-- 🔥 **[2026.03.09]** Added support for evaluation progress tracking and HTML format visualization report generation.
 
 <details><summary>More historical updates</summary>
 
+- 🔥 **[2026.04.10]** Added support for [TIR-Bench](https://arxiv.org/abs/2511.01833) (Thinking-with-Images Reasoning Benchmark), a multimodal benchmark evaluating agentic visual reasoning capabilities of vision-language models.
+- 🔥 **[2026.03.24]** Added support for Agent Skill. Any agent model that supports Skill/Tool calling can use natural language to drive EvalScope for model evaluation, performance benchmarking, and result visualization.
+- 🔥 **[2026.03.09]** Added support for evaluation progress tracking and HTML format visualization report generation.
 - 🔥 **[2026.03.02]** Added support for Anthropic Claude API evaluation. Use `--eval-type anthropic_api` to evaluate models via Anthropic API service.
 - 🔥 **[2026.02.03]** Comprehensive update to dataset documentation, adding data statistics, data samples, usage instructions and more.
 - 🔥 **[2026.01.13]** Added support for Embedding and Rerank model service stress testing.
