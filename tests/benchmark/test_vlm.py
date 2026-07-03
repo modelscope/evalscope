@@ -465,3 +465,11 @@ class TestVLMBenchmark(TestBenchmark):
 
     def test_world_vqa(self):
         self._run_dataset_test('world_vqa', limit=5)
+
+    def test_charxiv(self):
+        """Test CharXiv chart understanding benchmark."""
+        self._run_dataset_test('charxiv', limit=5)
+
+    def test_baby_vision(self):
+        """Test BabyVision visual perception benchmark."""
+        self._run_dataset_test('baby_vision', limit=5)
