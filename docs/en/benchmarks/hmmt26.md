@@ -1,6 +1,5 @@
 # HMMT26
 
-
 ## Overview
 
 HMMT February 2026 is a challenging evaluation benchmark derived from the Harvard-MIT Mathematics Tournament (HMMT) February 2026 competition, one of the most prestigious and difficult high school math contests globally.

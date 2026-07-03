@@ -23,7 +23,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
         name='hmmt26',
         pretty_name='HMMT26',
         dataset_id='evalscope/hmmt_feb_2026',
-        description="""
+        description="""\
 ## Overview
 
 HMMT February 2026 is a challenging evaluation benchmark derived from the Harvard-MIT Mathematics Tournament (HMMT) February 2026 competition, one of the most prestigious and difficult high school math contests globally.
