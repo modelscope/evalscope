@@ -27,7 +27,7 @@ class TestNativeBenchmark(TestBenchmark):
             'eval_batch_size': 5,
             'limit': 5,
             'generation_config': {
-                # 'max_tokens': 4096,
+                'max_tokens': 8096,
                 'temperature': 0.7,
                 'parallel_tool_calls': True,
                 'retries':3,
@@ -786,6 +786,21 @@ class TestNativeBenchmark(TestBenchmark):
             'few_shot_num': 0,
         }
         self._run_dataset_test('hmmt25', dataset_args, limit=10)
+
+    def test_hmmt26(self):
+        """Test HMMT26 dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('hmmt26', dataset_args, limit=5)
+
+    def test_imo_answerbench(self):
+        """Test IMO-AnswerBench dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+            'subset_list': ['Algebra'],
+        }
+        self._run_dataset_test('imo_answerbench', dataset_args, limit=5)
 
     def test_cl_bench(self):
         """Test CL-bench dataset."""

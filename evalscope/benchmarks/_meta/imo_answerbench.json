@@ -1,0 +1,113 @@
+{
+  "meta": {
+    "pretty_name": "IMO-AnswerBench",
+    "dataset_id": "evalscope/imo-answerbench",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "Algebra",
+      "Combinatorics",
+      "Geometry",
+      "Number theory"
+    ],
+    "description": "## Overview\n\nIMO-AnswerBench is a benchmark of 400 challenging problems sourced from the International Mathematical Olympiad (IMO) Shortlists. It covers four major mathematical domains and is designed to evaluate advanced mathematical reasoning capabilities of language models at the olympiad level.\n\n## Task Description\n\n- **Task Type**: Olympiad Mathematics Problem Solving\n- **Input**: IMO Shortlist mathematical problem\n- **Output**: Step-by-step solution with final answer\n- **Difficulty**: International olympiad level\n\n## Key Features\n\n- 400 problems from IMO Shortlists (2005-2024)\n- Four domains: Algebra, Combinatorics, Geometry, Number Theory\n- Subcategories include: Operation, Inequality, Sequence, Polynomial, Functional Equation, etc.\n- Answers range from simple integers to complex LaTeX expressions (intervals, sets, fractions)\n- Represents the highest difficulty level in mathematical problem-solving benchmarks\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Uses numeric equivalence checking with LLM-as-judge for complex answers\n- Results can be broken down by Category (Algebra, Combinatorics, Geometry, Number Theory)\n- Many answers involve symbolic expressions requiring mathematical equivalence checking",
+    "prompt_template": "Problem:\n{question}\n\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 400,
+    "subset_stats": [
+      {
+        "name": "Algebra",
+        "sample_count": 100,
+        "prompt_length_mean": 345.06,
+        "prompt_length_min": 183,
+        "prompt_length_max": 984,
+        "prompt_length_std": 125.67,
+        "target_length_mean": 16.36
+      },
+      {
+        "name": "Combinatorics",
+        "sample_count": 100,
+        "prompt_length_mean": 641.53,
+        "prompt_length_min": 257,
+        "prompt_length_max": 1343,
+        "prompt_length_std": 232.69,
+        "target_length_mean": 6.71
+      },
+      {
+        "name": "Geometry",
+        "sample_count": 100,
+        "prompt_length_mean": 375.44,
+        "prompt_length_min": 196,
+        "prompt_length_max": 703,
+        "prompt_length_std": 117.51,
+        "target_length_mean": 6.86
+      },
+      {
+        "name": "Number theory",
+        "sample_count": 100,
+        "prompt_length_mean": 330.07,
+        "prompt_length_min": 145,
+        "prompt_length_max": 769,
+        "prompt_length_std": 118.0,
+        "target_length_mean": 10.85
+      }
+    ],
+    "prompt_length": {
+      "mean": 423.02,
+      "min": 145,
+      "max": 1343,
+      "std": 201.14
+    },
+    "target_length_mean": 10.2,
+    "computed_at": "2026-07-03T15:50:53.418536"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "afe74111",
+          "content": "Problem:\nFor a given positive integer $N$, Henry writes the quotient of $ab$ divided by $N+1$ on the board for each integer pair $(a,b)$ where $1\\le a,b\\le N$. Find all $N$ such that the sum of the $N^2$ numbers Henry wrote on the board is $\\frac{N^3-N^2+2}{4}$.\n\nPlease reason step by step, and put your final answer within \\boxed{}.\n"
+        }
+      ],
+      "target": "3",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "Algebra",
+      "metadata": {
+        "problem_id": "imo-bench-algebra-001",
+        "subcategory": "Operation",
+        "source": "IMO Shortlist 2021"
+      }
+    },
+    "subset": "Algebra",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# IMO-AnswerBench\n\n## Overview\n\nIMO-AnswerBench is a benchmark of 400 challenging problems sourced from the International Mathematical Olympiad (IMO) Shortlists. It covers four major mathematical domains and is designed to evaluate advanced mathematical reasoning capabilities of language models at the olympiad level.\n\n## Task Description\n\n- **Task Type**: Olympiad Mathematics Problem Solving\n- **Input**: IMO Shortlist mathematical problem\n- **Output**: Step-by-step solution with final answer\n- **Difficulty**: International olympiad level\n\n## Key Features\n\n- 400 problems from IMO Shortlists (2005-2024)\n- Four domains: Algebra, Combinatorics, Geometry, Number Theory\n- Subcategories include: Operation, Inequality, Sequence, Polynomial, Functional Equation, etc.\n- Answers range from simple integers to complex LaTeX expressions (intervals, sets, fractions)\n- Represents the highest difficulty level in mathematical problem-solving benchmarks\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Uses numeric equivalence checking with LLM-as-judge for complex answers\n- Results can be broken down by Category (Algebra, Combinatorics, Geometry, Number Theory)\n- Many answers involve symbolic expressions requiring mathematical equivalence checking\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `imo_answerbench` |\n| **Dataset ID** | [evalscope/imo-answerbench](https://modelscope.cn/datasets/evalscope/imo-answerbench/summary) |\n| **Paper** | N/A |\n| **Tags** | `Math`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 400 |\n| Prompt Length (Mean) | 423.02 chars |\n| Prompt Length (Min/Max) | 145 / 1343 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Algebra` | 100 | 345.06 | 183 | 984 |\n| `Combinatorics` | 100 | 641.53 | 257 | 1343 |\n| `Geometry` | 100 | 375.44 | 196 | 703 |\n| `Number theory` | 100 | 330.07 | 145 | 769 |\n\n## Sample Example\n\n**Subset**: `Algebra`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"afe74111\",\n      \"content\": \"Problem:\\nFor a given positive integer $N$, Henry writes the quotient of $ab$ divided by $N+1$ on the board for each integer pair $(a,b)$ where $1\\\\le a,b\\\\le N$. Find all $N$ such that the sum of the $N^2$ numbers Henry wrote on the board is $\\\\frac{N^3-N^2+2}{4}$.\\n\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\\n\"\n    }\n  ],\n  \"target\": \"3\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Algebra\",\n  \"metadata\": {\n    \"problem_id\": \"imo-bench-algebra-001\",\n    \"subcategory\": \"Operation\",\n    \"source\": \"IMO Shortlist 2021\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nProblem:\n{question}\n\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets imo_answerbench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['imo_answerbench'],\n    dataset_args={\n        'imo_answerbench': {\n            # subset_list: ['Algebra', 'Combinatorics', 'Geometry']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# IMO-AnswerBench\n\n## 概述\n\nIMO-AnswerBench 是一个包含 400 道高难度问题的基准测试集，题目均选自国际数学奥林匹克（IMO）备选题（Shortlists）。该基准涵盖四大数学领域，旨在评估语言模型在奥林匹克级别上的高级数学推理能力。\n\n## 任务描述\n\n- **任务类型**：奥林匹克数学问题求解  \n- **输入**：IMO 备选题中的数学问题  \n- **输出**：包含逐步推导过程及最终答案的完整解答  \n- **难度**：国际奥林匹克级别  \n\n## 主要特点\n\n- 包含 400 道来自 IMO 备选题（2005–2024 年）的问题  \n- 覆盖四大领域：代数（Algebra）、组合数学（Combinatorics）、几何（Geometry）、数论（Number Theory）  \n- 子类别包括：运算（Operation）、不等式（Inequality）、数列（Sequence）、多项式（Polynomial）、函数方程（Functional Equation）等  \n- 答案形式多样，从简单整数到复杂的 LaTeX 表达式（如区间、集合、分数等）  \n- 代表当前数学问题求解基准中最高难度水平  \n\n## 评测说明\n\n- 默认配置采用 **0-shot** 评测方式  \n- 答案需用 `\\boxed{}` 包裹，以便正确提取  \n- 对复杂答案采用基于 LLM-as-judge 的数值等价性检查  \n- 结果可按类别（代数、组合、几何、数论）细分统计  \n- 许多答案涉及符号表达式，需进行数学等价性判断  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `imo_answerbench` |\n| **数据集ID** | [evalscope/imo-answerbench](https://modelscope.cn/datasets/evalscope/imo-answerbench/summary) |\n| **论文** | N/A |\n| **标签** | `Math`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评测划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 400 |\n| 提示词长度（平均） | 423.02 字符 |\n| 提示词长度（最小/最大） | 145 / 1343 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Algebra` | 100 | 345.06 | 183 | 984 |\n| `Combinatorics` | 100 | 641.53 | 257 | 1343 |\n| `Geometry` | 100 | 375.44 | 196 | 703 |\n| `Number theory` | 100 | 330.07 | 145 | 769 |\n\n## 样例示例\n\n**子集**: `Algebra`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"afe74111\",\n      \"content\": \"Problem:\\nFor a given positive integer $N$, Henry writes the quotient of $ab$ divided by $N+1$ on the board for each integer pair $(a,b)$ where $1\\\\le a,b\\\\le N$. Find all $N$ such that the sum of the $N^2$ numbers Henry wrote on the board is $\\\\frac{N^3-N^2+2}{4}$.\\n\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\\n\"\n    }\n  ],\n  \"target\": \"3\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Algebra\",\n  \"metadata\": {\n    \"problem_id\": \"imo-bench-algebra-001\",\n    \"subcategory\": \"Operation\",\n    \"source\": \"IMO Shortlist 2021\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nProblem:\n{question}\n\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets imo_answerbench \\\n    --limit 10  # 正式评测时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['imo_answerbench'],\n    dataset_args={\n        'imo_answerbench': {\n            # subset_list: ['Algebra', 'Combinatorics', 'Geometry']  # 可选，用于评测特定子集\n        }\n    },\n    limit=10,  # 正式评测时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "1b384d5ed2916da4b88c7f0609072809",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-03T15:50:53.448046",
+  "translation_updated_at": "2026-07-03T15:51:01"
+}

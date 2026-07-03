@@ -57,10 +57,12 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `hellaswag` | [HellaSwag](../../benchmarks/hellaswag.md) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](../../benchmarks/hle.md) | `Knowledge`, `QA` |
 | `hmmt25` | [HMMT25](../../benchmarks/hmmt25.md) | `Math`, `Reasoning` |
+| `hmmt26` | [HMMT26](../../benchmarks/hmmt26.md) | `Math`, `Reasoning` |
 | `humaneval` | [HumanEval](../../benchmarks/humaneval.md) | `Coding` |
 | `humaneval_plus` | [HumanEvalPlus](../../benchmarks/humaneval_plus.md) | `Coding` |
 | `ifbench` | [IFBench](../../benchmarks/ifbench.md) | `InstructionFollowing` |
 | `ifeval` | [IFEval](../../benchmarks/ifeval.md) | `InstructionFollowing` |
+| `imo_answerbench` | [IMO-AnswerBench](../../benchmarks/imo_answerbench.md) | `Math`, `Reasoning` |
 | `iquiz` | [IQuiz](../../benchmarks/iquiz.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `jnlpba` | [JNLPBA](../../benchmarks/jnlpba.md) | `Knowledge`, `NER` |
 | `jnlpba_rare` | [JNLPBA-Rare](../../benchmarks/jnlpba_rare.md) | `Knowledge`, `NER` |
@@ -177,10 +179,12 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/hellaswag.md
 ../../benchmarks/hle.md
 ../../benchmarks/hmmt25.md
+../../benchmarks/hmmt26.md
 ../../benchmarks/humaneval.md
 ../../benchmarks/humaneval_plus.md
 ../../benchmarks/ifbench.md
 ../../benchmarks/ifeval.md
+../../benchmarks/imo_answerbench.md
 ../../benchmarks/iquiz.md
 ../../benchmarks/jnlpba.md
 ../../benchmarks/jnlpba_rare.md
