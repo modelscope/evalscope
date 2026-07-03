@@ -67,7 +67,7 @@ CMATH is a Chinese elementary school mathematics benchmark containing 1,698 prob
 {
   "input": [
     {
-      "id": "cc99ea45",
+      "id": "6e98e414",
       "content": "妈咪买了3盒茶叶，一盒茶叶有6小包，一共买了多少小包茶叶？\n请一步一步推理，最后将答案放在\\boxed{}中。\n"
     }
   ],

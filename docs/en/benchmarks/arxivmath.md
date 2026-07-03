@@ -64,7 +64,7 @@ ArXiv-Math is a benchmark of 103 research-level mathematics problems extracted f
 {
   "input": [
     {
-      "id": "9c29fa3c",
+      "id": "c7cbf85d",
       "content": "Problem:\nLet $k$ be a field, let $V$ be a $k$-vector space of dimension $d$, and let $G\\subseteq GL(V)$ be a finite group. Set $r:=\\dim_k (V^*)^G$ and assume $r\\ge 1$. Let $R:=k[V]^G$ be the invariant ring, and write its Hilbert quasi-polynom ... [TRUNCATED 71 chars] ... {d-2}+\\cdots+a_1(n)n+a_0(n),\n\\]\nwhere each $a_i(n)$ is a periodic function of $n$. Compute the sum of the indices $i\\in\\{0,1,\\dots,d-1\\}$ for which $a_i(n)$ is constant.\n\nPlease reason step by step, and put your final answer within \\boxed{}.\n"
     }
   ],
