@@ -5,7 +5,7 @@ Based on the official CharXiv evaluation:
 https://github.com/princeton-nlp/CharXiv
 """
 
-from typing import Dict
+from typing import Dict, Optional
 
 # Descriptive question response templates (indexed 1-19)
 # The {} placeholder is filled with a prefix like "For the current plot, " or "For {subplot_loc}, "
@@ -141,7 +141,7 @@ REASONING_RESP_INST: Dict[int, str] = {
 }
 
 
-def get_descriptive_question_text(q_id: int, subplot_loc: str = None) -> str:
+def get_descriptive_question_text(q_id: int, subplot_loc: Optional[str] = None) -> str:
     """Generate the full descriptive question text from a template ID.
 
     Follows the official CharXiv prompt construction:
@@ -538,7 +538,7 @@ def build_reasoning_judge_prompt(reasoning_a_type: int, question: str, ground_tr
         'You need to extract the final answer from the model response, compare it with the ground truth answer, '
         'and then assign a binary score. Avoid providing explanations in your response. '
         'If there is no provided model response, please leave the extracted answer empty and give a score of 0.\n\n'
-        'Your response must follow json format with keys [extract_answer, score] '
+        'Your response must follow json format with keys ["extract_answer", "score"] '
         'where the value of the score is an integer in [0, 1]. You must follow the scoring rules:\n'
     )
 

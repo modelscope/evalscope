@@ -230,10 +230,10 @@ class CharXivAdapter(VisionLanguageAdapter):
             if json_match:
                 data = json.loads(json_match.group())
                 # Single sample: look for 'score' or 'score_T1'
-                if 'score' in data:
-                    return float(data['score']) if data['score'] in (0, 1) else 0.0
-                if 'score_T1' in data:
-                    return float(data['score_T1']) if data['score_T1'] in (0, 1) else 0.0
+                for key in ('score', 'score_T1'):
+                    if key in data:
+                        val = int(data[key])
+                        return float(val) if val in (0, 1) else 0.0
         except (json.JSONDecodeError, ValueError, TypeError):
             pass
 

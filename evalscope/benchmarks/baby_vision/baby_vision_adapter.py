@@ -1,5 +1,5 @@
 # flake8: noqa: E501
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
@@ -78,12 +78,12 @@ class BabyVisionAdapter(VisionLanguageAdapter):
         self.reformat_subset = True
         self.save_metadata = True
 
-    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+    def record_to_sample(self, record: Dict[str, Any]) -> Union[Sample, List[Sample]]:
         """Convert a BabyVision record to a Sample."""
         image = record.get('image')
         if image is None:
-            logger.warning('Record missing image field.')
-            return Sample(input='', target='')
+            logger.warning('Record missing image field, skipping.')
+            return []
 
         image_b64 = self._image_bytes_to_base64(image['bytes'], default_format='jpeg')
 
@@ -108,7 +108,11 @@ class BabyVisionAdapter(VisionLanguageAdapter):
         if ans_type == 'choice':
             # choiceAns is 0-indexed: 0->A, 1->B, 2->C, ...
             choice_ans = record.get('choiceAns')
-            target = chr(65 + int(choice_ans)) if choice_ans is not None else ''
+            try:
+                idx = int(choice_ans)
+                target = chr(65 + idx) if 0 <= idx <= 25 else ''
+            except (TypeError, ValueError):
+                target = ''
         else:
             target = record.get('blankAns', '') or ''
 
