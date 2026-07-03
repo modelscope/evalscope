@@ -14,6 +14,7 @@
 | `anat_em` | [AnatEM](../../benchmarks/anat_em.md) | `Knowledge`, `NER` |
 | `arc` | [ARC](../../benchmarks/arc.md) | `MCQ`, `Reasoning` |
 | `arena_hard` | [ArenaHard](../../benchmarks/arena_hard.md) | `Arena`, `InstructionFollowing` |
+| `arxivmath` | [ArXiv-Math](../../benchmarks/arxivmath.md) | `Math`, `Reasoning` |
 | `arxivrollbench` | [ArxivRollBench](../../benchmarks/arxivrollbench.md) | `Knowledge`, `MCQ`, `Reasoning` |
 | `arxivrollbench_full` | [ArxivRollBench-Full](../../benchmarks/arxivrollbench_full.md) | `Knowledge`, `MCQ`, `Reasoning` |
 | `bbh` | [BBH](../../benchmarks/bbh.md) | `Reasoning` |
@@ -27,6 +28,7 @@
 | `ceval` | [C-Eval](../../benchmarks/ceval.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `chinese_simpleqa` | [Chinese-SimpleQA](../../benchmarks/chinese_simpleqa.md) | `Chinese`, `Knowledge`, `QA` |
 | `cl_bench` | [CL-bench](../../benchmarks/cl_bench.md) | `InstructionFollowing`, `Reasoning` |
+| `cmath` | [CMATH](../../benchmarks/cmath.md) | `Chinese`, `Math`, `Reasoning` |
 | `cmmlu` | [C-MMLU](../../benchmarks/cmmlu.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `coin_flip` | [CoinFlip](../../benchmarks/coin_flip.md) | `Reasoning`, `Yes/No` |
 | `commonsense_qa` | [CommonsenseQA](../../benchmarks/commonsense_qa.md) | `Commonsense`, `MCQ`, `Reasoning` |
@@ -57,10 +59,12 @@
 | `hellaswag` | [HellaSwag](../../benchmarks/hellaswag.md) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](../../benchmarks/hle.md) | `Knowledge`, `QA` |
 | `hmmt25` | [HMMT25](../../benchmarks/hmmt25.md) | `Math`, `Reasoning` |
+| `hmmt26` | [HMMT26](../../benchmarks/hmmt26.md) | `Math`, `Reasoning` |
 | `humaneval` | [HumanEval](../../benchmarks/humaneval.md) | `Coding` |
 | `humaneval_plus` | [HumanEvalPlus](../../benchmarks/humaneval_plus.md) | `Coding` |
 | `ifbench` | [IFBench](../../benchmarks/ifbench.md) | `InstructionFollowing` |
 | `ifeval` | [IFEval](../../benchmarks/ifeval.md) | `InstructionFollowing` |
+| `imo_answerbench` | [IMO-AnswerBench](../../benchmarks/imo_answerbench.md) | `Math`, `Reasoning` |
 | `iquiz` | [IQuiz](../../benchmarks/iquiz.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `jnlpba` | [JNLPBA](../../benchmarks/jnlpba.md) | `Knowledge`, `NER` |
 | `jnlpba_rare` | [JNLPBA-Rare](../../benchmarks/jnlpba_rare.md) | `Knowledge`, `NER` |
@@ -134,6 +138,7 @@
 ../../benchmarks/anat_em.md
 ../../benchmarks/arc.md
 ../../benchmarks/arena_hard.md
+../../benchmarks/arxivmath.md
 ../../benchmarks/arxivrollbench.md
 ../../benchmarks/arxivrollbench_full.md
 ../../benchmarks/bbh.md
@@ -147,6 +152,7 @@
 ../../benchmarks/ceval.md
 ../../benchmarks/chinese_simpleqa.md
 ../../benchmarks/cl_bench.md
+../../benchmarks/cmath.md
 ../../benchmarks/cmmlu.md
 ../../benchmarks/coin_flip.md
 ../../benchmarks/commonsense_qa.md
@@ -177,10 +183,12 @@
 ../../benchmarks/hellaswag.md
 ../../benchmarks/hle.md
 ../../benchmarks/hmmt25.md
+../../benchmarks/hmmt26.md
 ../../benchmarks/humaneval.md
 ../../benchmarks/humaneval_plus.md
 ../../benchmarks/ifbench.md
 ../../benchmarks/ifeval.md
+../../benchmarks/imo_answerbench.md
 ../../benchmarks/iquiz.md
 ../../benchmarks/jnlpba.md
 ../../benchmarks/jnlpba_rare.md

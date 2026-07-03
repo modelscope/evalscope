@@ -1,0 +1,112 @@
+# HMMT26
+
+## 概述
+
+HMMT February 2026 是一个具有挑战性的评测基准，源自 2026 年 2 月举办的哈佛-麻省理工数学竞赛（Harvard-MIT Mathematics Tournament, HMMT），该赛事是全球最具声望且难度最高的高中数学竞赛之一。
+
+## 任务描述
+
+- **任务类型**：竞赛数学问题求解  
+- **输入**：HMMT 级别的数学问题  
+- **输出**：包含逐步推理的答案  
+- **难度**：高级高中竞赛水平  
+
+## 主要特点
+
+- 包含 33 道来自 HMMT February 2026 竞赛的题目  
+- 覆盖四大核心领域：代数（Algebra）、组合数学（Combinatorics）、几何（Geometry）、数论（Number Theory）  
+- 题目难度极高，属于竞赛级别  
+- 考察高级数学推理能力  
+- 代表顶尖高中数学竞赛难度  
+
+## 评测说明
+
+- 默认配置采用 **0-shot** 评测方式  
+- 答案需使用 `\boxed{}` 格式包裹，以便正确提取  
+- 使用数值精度指标，并结合符号等价性检查  
+- 题目涵盖多个数学领域  
+
+## 属性
+
+| 属性 | 值 |
+|----------|-------|
+| **基准测试名称** | `hmmt26` |
+| **数据集ID** | [evalscope/hmmt_feb_2026](https://modelscope.cn/datasets/evalscope/hmmt_feb_2026/summary) |
+| **论文** | N/A |
+| **标签** | `Math`, `Reasoning` |
+| **指标** | `acc` |
+| **默认示例数量** | 0-shot |
+| **评测划分** | `train` |
+
+## 数据统计
+
+| 指标 | 值 |
+|--------|-------|
+| 总样本数 | 33 |
+| 提示词长度（平均） | 385.3 字符 |
+| 提示词长度（最小/最大） | 202 / 605 字符 |
+
+## 样例示例
+
+**子集**: `default`
+
+```json
+{
+  "input": [
+    {
+      "id": "02be53e7",
+      "content": "Problem:\nA line intersects the graph of \\( y = x^2 + \\frac{2}{x} \\) at three distinct points. Given that the \\( x \\)-coordinates of two of the points are 6 and 7, respectively, compute the \\( x \\)-coordinate of the third point.\n\nPlease reason step by step, and put your final answer within \\boxed{}.\n"
+    }
+  ],
+  "target": "-\\frac{1}{21}",
+  "id": 0,
+  "group_id": 0,
+  "metadata": {
+    "problem_idx": 1,
+    "problem_type": [
+      "Algebra"
+    ]
+  }
+}
+```
+
+## 提示模板
+
+**提示模板：**
+```text
+Problem:
+{question}
+
+Please reason step by step, and put your final answer within \boxed{{}}.
+
+```
+
+## 使用方法
+
+### 使用 CLI
+
+```bash
+evalscope eval \
+    --model YOUR_MODEL \
+    --api-url OPENAI_API_COMPAT_URL \
+    --api-key EMPTY_TOKEN \
+    --datasets hmmt26 \
+    --limit 10  # 正式评测时请删除此行
+```
+
+### 使用 Python
+
+```python
+from evalscope import run_task
+from evalscope.config import TaskConfig
+
+task_cfg = TaskConfig(
+    model='YOUR_MODEL',
+    api_url='OPENAI_API_COMPAT_URL',
+    api_key='EMPTY_TOKEN',
+    datasets=['hmmt26'],
+    limit=10,  # 正式评测时请删除此行
+)
+
+run_task(task_cfg=task_cfg)
+```

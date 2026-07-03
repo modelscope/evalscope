@@ -1,0 +1,133 @@
+{
+  "meta": {
+    "pretty_name": "CMATH",
+    "dataset_id": "evalscope/cmath",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning",
+      "Chinese"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "Grade 1",
+      "Grade 2",
+      "Grade 3",
+      "Grade 4",
+      "Grade 5",
+      "Grade 6"
+    ],
+    "description": "## Overview\n\nCMATH is a Chinese elementary school mathematics benchmark containing 1,698 problems across grades 1-6. It evaluates the mathematical reasoning capabilities of language models on Chinese-language math word problems at increasing difficulty levels.\n\n## Task Description\n\n- **Task Type**: Chinese Mathematical Word Problem Solving\n- **Input**: Chinese math word problem (elementary school level)\n- **Output**: Step-by-step reasoning with numerical answer\n- **Difficulty**: Grade 1 (easiest) to Grade 6 (hardest)\n\n## Key Features\n\n- 1,098 test problems + 600 validation problems\n- Six grade levels (1-6) for fine-grained difficulty analysis\n- Problems are in Chinese, testing language-specific reasoning\n- Simple numerical answers (integers or decimals)\n- Metadata includes reasoning steps count and digit complexity\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Numeric accuracy metric for answer comparison\n- Results can be broken down by grade level\n- Chinese prompt template used by default",
+    "prompt_template": "{question}\n请一步一步推理，最后将答案放在\\boxed{{}}中。\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 1098,
+    "subset_stats": [
+      {
+        "name": "Grade 1",
+        "sample_count": 164,
+        "prompt_length_mean": 60.65,
+        "prompt_length_min": 45,
+        "prompt_length_max": 99,
+        "prompt_length_std": 8.87,
+        "target_length_mean": 1.76
+      },
+      {
+        "name": "Grade 2",
+        "sample_count": 253,
+        "prompt_length_mean": 63.3,
+        "prompt_length_min": 38,
+        "prompt_length_max": 168,
+        "prompt_length_std": 12.7,
+        "target_length_mean": 1.58
+      },
+      {
+        "name": "Grade 3",
+        "sample_count": 237,
+        "prompt_length_mean": 69.49,
+        "prompt_length_min": 49,
+        "prompt_length_max": 148,
+        "prompt_length_std": 14.23,
+        "target_length_mean": 2.65
+      },
+      {
+        "name": "Grade 4",
+        "sample_count": 120,
+        "prompt_length_mean": 75.33,
+        "prompt_length_min": 51,
+        "prompt_length_max": 114,
+        "prompt_length_std": 13.37,
+        "target_length_mean": 3.13
+      },
+      {
+        "name": "Grade 5",
+        "sample_count": 126,
+        "prompt_length_mean": 76.79,
+        "prompt_length_min": 49,
+        "prompt_length_max": 124,
+        "prompt_length_std": 16.43,
+        "target_length_mean": 2.6
+      },
+      {
+        "name": "Grade 6",
+        "sample_count": 198,
+        "prompt_length_mean": 80.16,
+        "prompt_length_min": 42,
+        "prompt_length_max": 191,
+        "prompt_length_std": 19.14,
+        "target_length_mean": 2.9
+      }
+    ],
+    "prompt_length": {
+      "mean": 70.14,
+      "min": 38,
+      "max": 191,
+      "std": 16.08
+    },
+    "target_length_mean": 2.36,
+    "computed_at": "2026-07-03T16:31:10.344125"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "6e98e414",
+          "content": "妈咪买了3盒茶叶，一盒茶叶有6小包，一共买了多少小包茶叶？\n请一步一步推理，最后将答案放在\\boxed{}中。\n"
+        }
+      ],
+      "target": "18",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "Grade 1",
+      "metadata": {
+        "reasoning_step": 1,
+        "num_digits": 2
+      }
+    },
+    "subset": "Grade 1",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# CMATH\n\n## Overview\n\nCMATH is a Chinese elementary school mathematics benchmark containing 1,698 problems across grades 1-6. It evaluates the mathematical reasoning capabilities of language models on Chinese-language math word problems at increasing difficulty levels.\n\n## Task Description\n\n- **Task Type**: Chinese Mathematical Word Problem Solving\n- **Input**: Chinese math word problem (elementary school level)\n- **Output**: Step-by-step reasoning with numerical answer\n- **Difficulty**: Grade 1 (easiest) to Grade 6 (hardest)\n\n## Key Features\n\n- 1,098 test problems + 600 validation problems\n- Six grade levels (1-6) for fine-grained difficulty analysis\n- Problems are in Chinese, testing language-specific reasoning\n- Simple numerical answers (integers or decimals)\n- Metadata includes reasoning steps count and digit complexity\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Numeric accuracy metric for answer comparison\n- Results can be broken down by grade level\n- Chinese prompt template used by default\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `cmath` |\n| **Dataset ID** | [evalscope/cmath](https://modelscope.cn/datasets/evalscope/cmath/summary) |\n| **Paper** | N/A |\n| **Tags** | `Chinese`, `Math`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,098 |\n| Prompt Length (Mean) | 70.14 chars |\n| Prompt Length (Min/Max) | 38 / 191 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Grade 1` | 164 | 60.65 | 45 | 99 |\n| `Grade 2` | 253 | 63.3 | 38 | 168 |\n| `Grade 3` | 237 | 69.49 | 49 | 148 |\n| `Grade 4` | 120 | 75.33 | 51 | 114 |\n| `Grade 5` | 126 | 76.79 | 49 | 124 |\n| `Grade 6` | 198 | 80.16 | 42 | 191 |\n\n## Sample Example\n\n**Subset**: `Grade 1`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"6e98e414\",\n      \"content\": \"妈咪买了3盒茶叶，一盒茶叶有6小包，一共买了多少小包茶叶？\\n请一步一步推理，最后将答案放在\\\\boxed{}中。\\n\"\n    }\n  ],\n  \"target\": \"18\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Grade 1\",\n  \"metadata\": {\n    \"reasoning_step\": 1,\n    \"num_digits\": 2\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n请一步一步推理，最后将答案放在\\boxed{{}}中。\n\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets cmath \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['cmath'],\n    dataset_args={\n        'cmath': {\n            # subset_list: ['Grade 1', 'Grade 2', 'Grade 3']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# CMATH\n\n## 概述\n\nCMATH 是一个面向中国小学数学的基准测试，包含 1,698 道覆盖 1 至 6 年级的数学题目，用于评估语言模型在中文数学应用题上的数学推理能力，题目难度随年级递增。\n\n## 任务描述\n\n- **任务类型**：中文数学应用题求解  \n- **输入**：中文数学应用题（小学水平）  \n- **输出**：分步推理过程及数值答案  \n- **难度**：1 年级（最简单）至 6 年级（最难）\n\n## 主要特点\n\n- 包含 1,098 道测试题 + 600 道验证题  \n- 六个年级（1–6）便于细粒度难度分析  \n- 题目为中文，测试语言特定的推理能力  \n- 答案形式为简单数值（整数或小数）  \n- 元数据包含推理步骤数和数字复杂度信息\n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估方式  \n- 答案需用 `\\boxed{}` 格式包裹以便正确提取  \n- 使用数值精度指标进行答案比对  \n- 结果可按年级细分统计  \n- 默认使用中文提示模板\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `cmath` |\n| **数据集 ID** | [evalscope/cmath](https://modelscope.cn/datasets/evalscope/cmath/summary) |\n| **论文** | N/A |\n| **标签** | `Chinese`, `Math`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,098 |\n| 提示词长度（平均） | 70.14 字符 |\n| 提示词长度（最小/最大） | 38 / 191 字符 |\n\n**各子集统计：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Grade 1` | 164 | 60.65 | 45 | 99 |\n| `Grade 2` | 253 | 63.3 | 38 | 168 |\n| `Grade 3` | 237 | 69.49 | 49 | 148 |\n| `Grade 4` | 120 | 75.33 | 51 | 114 |\n| `Grade 5` | 126 | 76.79 | 49 | 124 |\n| `Grade 6` | 198 | 80.16 | 42 | 191 |\n\n## 样例示例\n\n**子集**: `Grade 1`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"6e98e414\",\n      \"content\": \"妈咪买了3盒茶叶，一盒茶叶有6小包，一共买了多少小包茶叶？\\n请一步一步推理，最后将答案放在\\\\boxed{}中。\\n\"\n    }\n  ],\n  \"target\": \"18\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Grade 1\",\n  \"metadata\": {\n    \"reasoning_step\": 1,\n    \"num_digits\": 2\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n请一步一步推理，最后将答案放在\\boxed{{}}中。\n\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets cmath \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['cmath'],\n    dataset_args={\n        'cmath': {\n            # subset_list: ['Grade 1', 'Grade 2', 'Grade 3']  # 可选，用于评估指定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "a2a3afd4b6e2fff2e3a4b2990aa08206",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-03T16:31:10.424720",
+  "translation_updated_at": "2026-07-03T16:31:16"
+}
