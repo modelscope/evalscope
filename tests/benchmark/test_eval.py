@@ -802,6 +802,22 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('imo_answerbench', dataset_args, limit=5)
 
+    def test_arxivmath(self):
+        """Test ArXiv-Math dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+            'subset_list': ['arxiv/december'],
+        }
+        self._run_dataset_test('arxivmath', dataset_args, limit=5)
+
+    def test_cmath(self):
+        """Test CMATH dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+            'subset_list': ['Grade 1'],
+        }
+        self._run_dataset_test('cmath', dataset_args, limit=5)
+
     def test_cl_bench(self):
         """Test CL-bench dataset."""
         dataset_args = {
