@@ -6,6 +6,7 @@ import sys
 import types
 from pathlib import Path
 from typing import Any, Dict, Optional
+from urllib.request import pathname2url
 
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.dataset import Sample
@@ -195,6 +196,17 @@ def test_pier_exception_result_raises() -> None:
         })
 
 
+def test_missing_pier_reward_without_exception_raises() -> None:
+    with pytest.raises(RuntimeError, match='did not return a reward or exception info'):
+        DeepSWEAdapter._raise_for_pier_failures({
+            'trial_results': [{
+                'verifier_result': {
+                    'rewards': {}
+                }
+            }]
+        })
+
+
 def test_pier_exception_with_verifier_reward_is_scored(tmp_path: Path) -> None:
     adapter = make_adapter(tmp_path)
     result = {
@@ -217,6 +229,20 @@ def test_pier_exception_with_verifier_reward_is_scored(tmp_path: Path) -> None:
     assert metadata['reward'] == 0
     assert metadata['partial'] == 0.25
     assert metadata['agent_execution_failed'] is True
+
+
+def test_artifact_path_decodes_file_uri(tmp_path: Path) -> None:
+    adapter = make_adapter(tmp_path)
+    trial_dir = tmp_path / 'trial dir'
+    result = {'trial_results': [{'trial_uri': f'file://{pathname2url(str(trial_dir))}'}]}
+
+    assert adapter._artifact_path(result, 'verifier/reward.json') == trial_dir / 'verifier' / 'reward.json'
+
+
+def test_parse_timestamp_handles_z_suffix() -> None:
+    assert DeepSWEAdapter._parse_timestamp('2026-01-01T00:00:00Z') == DeepSWEAdapter._parse_timestamp(
+        '2026-01-01T00:00:00+00:00'
+    )
 
 
 def install_fake_pier(monkeypatch: Any, captured: Dict[str, Any], result: Dict[str, Any]) -> None:

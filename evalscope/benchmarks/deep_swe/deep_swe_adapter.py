@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
+from urllib.request import url2pathname
 
 from evalscope.api.agent import AgentTrace, AgentTraceEvent, EventType
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
@@ -135,26 +136,27 @@ class DeepSWEAdapter(AgentAdapter):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.deep_swe_dataset_hub = str(self.extra_params.get('dataset_hub') or 'modelscope').lower()
-        self.deep_swe_dataset_id = str(self.extra_params.get('dataset_id') or '')
-        self.dataset_revision = str(self.extra_params.get('dataset_revision') or '')
-        self.agent_name = str(self.extra_params.get('agent_name') or 'mini-swe-agent')
-        self.pier_model = str(self.extra_params.get('pier_model') or '')
-        self.environment_type = str(self.extra_params.get('environment_type') or 'docker')
-        self.task_ids = self._as_list(self.extra_params.get('task_ids') or [])
-        self.languages = self._as_list(self.extra_params.get('languages') or [])
-        self.categories = self._as_list(self.extra_params.get('categories') or [])
-        self.sample_seed = self.extra_params.get('sample_seed')
-        self.timeout_multiplier = float(self.extra_params.get('timeout_multiplier') or 1.0)
-        self.agent_timeout_multiplier = float(self.extra_params.get('agent_timeout_multiplier') or 1.0)
-        self.verifier_timeout_multiplier = float(self.extra_params.get('verifier_timeout_multiplier') or 1.0)
+        extra_params = self.extra_params or {}
+        self.deep_swe_dataset_hub = str(extra_params.get('dataset_hub') or 'modelscope').lower()
+        self.deep_swe_dataset_id = str(extra_params.get('dataset_id') or '')
+        self.dataset_revision = str(extra_params.get('dataset_revision') or '')
+        self.agent_name = str(extra_params.get('agent_name') or 'mini-swe-agent')
+        self.pier_model = str(extra_params.get('pier_model') or '')
+        self.environment_type = str(extra_params.get('environment_type') or 'docker')
+        self.task_ids = self._as_list(extra_params.get('task_ids') or [])
+        self.languages = self._as_list(extra_params.get('languages') or [])
+        self.categories = self._as_list(extra_params.get('categories') or [])
+        self.sample_seed = extra_params.get('sample_seed')
+        self.timeout_multiplier = float(extra_params.get('timeout_multiplier') or 1.0)
+        self.agent_timeout_multiplier = float(extra_params.get('agent_timeout_multiplier') or 1.0)
+        self.verifier_timeout_multiplier = float(extra_params.get('verifier_timeout_multiplier') or 1.0)
         self.environment_build_timeout_multiplier = float(
-            self.extra_params.get('environment_build_timeout_multiplier') or 1.0
+            extra_params.get('environment_build_timeout_multiplier') or 1.0
         )
-        self.agent_kwargs = dict(self.extra_params.get('agent_kwargs') or {})
-        self.agent_env = dict(self.extra_params.get('agent_env') or {})
-        self.environment_kwargs = dict(self.extra_params.get('environment_kwargs') or {})
-        self.verifier_env = dict(self.extra_params.get('verifier_env') or {})
+        self.agent_kwargs = dict(extra_params.get('agent_kwargs') or {})
+        self.agent_env = dict(extra_params.get('agent_env') or {})
+        self.environment_kwargs = dict(extra_params.get('environment_kwargs') or {})
+        self.verifier_env = dict(extra_params.get('verifier_env') or {})
 
         if self.deep_swe_dataset_hub not in {'modelscope', 'huggingface'}:
             raise ValueError('dataset_hub must be either \'modelscope\' or \'huggingface\'.')
@@ -228,10 +230,10 @@ class DeepSWEAdapter(AgentAdapter):
     def _load_task_records(self, snapshot_path: Path) -> List[Dict[str, Any]]:
         tasks_dir = snapshot_path / 'tasks'
         manifest_path = tasks_dir / 'manifest.json'
-        if not manifest_path.exists():
+        if not manifest_path.is_file():
             raise FileNotFoundError(f'DeepSWE snapshot must contain {manifest_path}')
 
-        manifest = json.loads(manifest_path.read_text())
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
         manifest_tasks = manifest.get('tasks')
         if not isinstance(manifest_tasks, list):
             raise ValueError(f'DeepSWE manifest must contain a tasks list: {manifest_path}')
@@ -246,7 +248,7 @@ class DeepSWEAdapter(AgentAdapter):
 
             task_path = tasks_dir / str(task_id)
             task_toml = task_path / 'task.toml'
-            if not task_toml.exists():
+            if not task_toml.is_file():
                 raise FileNotFoundError(f'DeepSWE task missing task.toml: {task_toml}')
 
             record = dict(item)
@@ -261,8 +263,8 @@ class DeepSWEAdapter(AgentAdapter):
     @staticmethod
     def _load_instruction(task_path: Path, record: Dict[str, Any]) -> str:
         instruction_path = task_path / 'instruction.md'
-        if instruction_path.exists():
-            return instruction_path.read_text()
+        if instruction_path.is_file():
+            return instruction_path.read_text(encoding='utf-8')
         return str(record.get('instruction') or record.get('display_description') or record.get('description') or '')
 
     def _filter_task_records(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -358,6 +360,7 @@ class DeepSWEAdapter(AgentAdapter):
             exc_type = exception_info.get('exception_type') or exception_info.get('type') or 'UnknownPierError'
             exc_msg = exception_info.get('message') or exception_info.get('exception_message') or str(exception_info)
             raise RuntimeError(f'Pier DeepSWE trial failed with {exc_type}: {exc_msg}')
+        raise RuntimeError('Pier DeepSWE trial did not return a reward or exception info.')
 
     def match_score(self, original_prediction: str, filtered_prediction: str, reference: str, task_state: Any) -> Score:
         result = task_state.metadata.get('result', {})
@@ -426,32 +429,32 @@ class DeepSWEAdapter(AgentAdapter):
         trial_uri = self._first_trial_result(result_dict).get('trial_uri') or result_dict.get('trial_uri') or ''
         if not trial_uri.startswith('file://'):
             return None
-        return Path(trial_uri[7:]) / relative_path
+        return Path(url2pathname(trial_uri[7:])) / relative_path
 
     @staticmethod
     def _load_json_if_exists(path: Optional[Path]) -> Dict[str, Any]:
-        if path is None or not path.exists():
+        if path is None or not path.is_file():
             return {}
         try:
-            return json.loads(path.read_text())
+            return json.loads(path.read_text(encoding='utf-8'))
         except Exception:
             return {}
 
     @staticmethod
     def _load_text_if_exists(path: Optional[Path]) -> Optional[str]:
-        if path is None or not path.exists():
+        if path is None or not path.is_file():
             return None
         try:
-            return path.read_text().strip()
+            return path.read_text(encoding='utf-8').strip()
         except Exception:
             return None
 
     def _load_pier_trace(self, result_dict: Dict[str, Any]) -> Tuple[Optional[AgentTrace], Optional[List[ChatMessage]]]:
         trajectory_path = self._artifact_path(result_dict, 'agent/trajectory.json')
-        if trajectory_path is None or not trajectory_path.exists():
+        if trajectory_path is None or not trajectory_path.is_file():
             return None, None
         try:
-            raw = json.loads(trajectory_path.read_text())
+            raw = json.loads(trajectory_path.read_text(encoding='utf-8'))
         except Exception:
             return None, None
 
@@ -512,7 +515,10 @@ class DeepSWEAdapter(AgentAdapter):
         if not value:
             return 0
         try:
-            return datetime.fromisoformat(str(value)).timestamp()
+            timestamp = str(value)
+            if timestamp.endswith('Z'):
+                timestamp = f'{timestamp[:-1]}+00:00'
+            return datetime.fromisoformat(timestamp).timestamp()
         except (TypeError, ValueError):
             return 0
 
