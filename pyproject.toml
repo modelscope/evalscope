@@ -75,6 +75,7 @@ swe_bench        = {file = ["evalscope/benchmarks/swe_bench/requirements.txt"]}
 wmt              = {file = ["evalscope/benchmarks/wmt/requirements.txt"]}
 torgo            = {file = ["evalscope/benchmarks/torgo/requirements.txt"]}
 terminal_bench   = {file = ["evalscope/benchmarks/terminal_bench/requirements.txt"]}
+deep_swe         = {file = ["evalscope/benchmarks/deep_swe/requirements.txt"]}
 bfcl             = {file = ["evalscope/benchmarks/bfcl/requirements.txt"]}
 all = {file = [
   "requirements/opencompass.txt",
