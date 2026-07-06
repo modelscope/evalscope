@@ -14,6 +14,7 @@
 | `kimi_verifier` | [Kimi-Vendor-Verifier (Param Compliance)](../../benchmarks/kimi_verifier.md) | `Agent`, `FunctionCalling` |
 | `mcp_atlas` | [MCP-Atlas](../../benchmarks/mcp_atlas.md) | `Agent`, `MultiTurn` |
 | `minimax_verifier` | [MiniMax-Vendor-Verifier](../../benchmarks/minimax_verifier.md) | `Agent`, `FunctionCalling` |
+| `officeqa` | [OfficeQA](../../benchmarks/officeqa.md) | `Agent`, `Knowledge`, `QA` |
 | `swe_bench_lite_agentic` | [SWE-bench_Lite_Agentic](../../benchmarks/swe_bench_lite_agentic.md) | `Coding` |
 | `swe_bench_multilingual_agentic` | [SWE-bench_Multilingual_Agentic](../../benchmarks/swe_bench_multilingual_agentic.md) | `Coding` |
 | `swe_bench_pro` | [SWE-bench_Pro](../../benchmarks/swe_bench_pro.md) | `Coding` |
@@ -39,6 +40,7 @@
 ../../benchmarks/kimi_verifier.md
 ../../benchmarks/mcp_atlas.md
 ../../benchmarks/minimax_verifier.md
+../../benchmarks/officeqa.md
 ../../benchmarks/swe_bench_lite_agentic.md
 ../../benchmarks/swe_bench_multilingual_agentic.md
 ../../benchmarks/swe_bench_pro.md
