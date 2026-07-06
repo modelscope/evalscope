@@ -19,6 +19,7 @@ shared ``atexit`` hook.
 
 from __future__ import annotations
 
+import re
 import shlex
 import time
 from typing import Any, Dict, List, Optional, Sequence, Union
@@ -43,6 +44,7 @@ _DEFAULT_DOCKER_IMAGE = 'python:3.11-slim'
 _DEFAULT_WORKDIR = '/workspace'
 _DEFAULT_TOOLS: List[str] = ['shell_executor', 'python_executor']
 _DEFAULT_INTERPRETER: List[str] = ['bash', '-c']
+_ENV_KEY_PATTERN = r'[A-Za-z_][A-Za-z0-9_]*'
 
 
 @register_environment(['enclave', 'docker', 'volcengine'])
@@ -91,6 +93,11 @@ class EnclaveAgentEnvironment(AgentEnvironment):
 
         self._engine: SandboxEngine = resolve_engine(engine)
         self._timeout = float(timeout)
+        if isinstance(interpreter, str):
+            raise TypeError(
+                'EnclaveAgentEnvironment.interpreter must be a non-empty sequence of non-empty strings, '
+                'not a single string.'
+            )
         self._interpreter: List[str] = list(_DEFAULT_INTERPRETER if interpreter is None else interpreter)
         invalid_interpreter = not self._interpreter or any(
             not isinstance(part, str) or not part for part in self._interpreter
@@ -168,12 +175,22 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         that shape to avoid running the agent command in a nested non-login
         shell when the environment interpreter is ``bash -lc``.
         """
-        if not isinstance(cmd, list) or len(cmd) != 3:
+        if not isinstance(cmd, (list, tuple)) or len(cmd) != 3:
             return None
         executable, flag, command = cmd
         if executable not in {'bash', '/bin/bash'} or flag != '-c' or not isinstance(command, str):
             return None
         return command
+
+    @staticmethod
+    def _render_env_exports(env: Dict[str, str]) -> str:
+        exports = []
+        for raw_key, raw_value in env.items():
+            key = str(raw_key)
+            if not re.fullmatch(_ENV_KEY_PATTERN, key):
+                raise ValueError(f'Invalid environment variable name: {key!r}')
+            exports.append(f'export {key}={shlex.quote(str(raw_value))};')
+        return ' '.join(exports)
 
     async def exec(
         self,
@@ -198,7 +215,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         if env:
             # Export inside the wrapper shell so compound commands and any
             # child process inherit the requested environment.
-            prefix = ' '.join(f'export {k}={shlex.quote(v)};' for k, v in env.items())
+            prefix = self._render_env_exports(env)
             command = f'{prefix} {command}' if prefix else command
 
         # ms_enclave's shell_executor splits a bare string with no shell

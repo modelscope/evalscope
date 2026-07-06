@@ -256,6 +256,14 @@ class TestEnclaveEnvironmentInterpreter:
         assert handle.payload['command'][:2] == ['bash', '-lc']
         assert handle.payload['command'][-1] == 'which python'
 
+    def test_tuple_bash_c_wrapper_is_unwrapped(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        env, handle = self._env_with_fake_handle(monkeypatch, interpreter=['bash', '-lc'])
+        result = self._run(env.exec(('bash', '-c', 'echo tuple')))
+
+        assert result.returncode == 0
+        assert handle.payload is not None
+        assert handle.payload['command'] == ['bash', '-lc', 'echo tuple']
+
     def test_unwrapped_bash_command_exports_env_for_whole_script(self, monkeypatch: pytest.MonkeyPatch) -> None:
         env, handle = self._env_with_fake_handle(monkeypatch)
         result = self._run(env.exec(['/bin/bash', '-c', 'echo "$FOO" && env | grep "^FOO="'], env={'FOO': 'bar'}))
@@ -263,6 +271,21 @@ class TestEnclaveEnvironmentInterpreter:
         assert result.returncode == 0
         assert handle.payload is not None
         assert handle.payload['command'][-1] == 'export FOO=bar; echo "$FOO" && env | grep "^FOO="'
+
+    def test_env_export_rejects_invalid_variable_name(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        env, handle = self._env_with_fake_handle(monkeypatch)
+
+        with pytest.raises(ValueError, match='Invalid environment variable name'):
+            self._run(env.exec(['echo', 'x'], env={'BAD;KEY': 'value'}))
+        assert handle.payload is None
+
+    def test_env_export_casts_values_to_strings(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        env, handle = self._env_with_fake_handle(monkeypatch)
+        result = self._run(env.exec(['echo', 'x'], env={'COUNT': 3}))
+
+        assert result.returncode == 0
+        assert handle.payload is not None
+        assert handle.payload['command'][-1] == 'export COUNT=3; echo x'
 
     def test_empty_interpreter_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
@@ -273,6 +296,17 @@ class TestEnclaveEnvironmentInterpreter:
                 engine='docker',
                 sandbox_config={'image': 'python:3.11-slim'},
                 interpreter=[],
+            )
+
+    def test_string_interpreter_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+
+        _allow_enclave_construction(monkeypatch)
+        with pytest.raises(TypeError, match='interpreter'):
+            EnclaveAgentEnvironment(
+                engine='docker',
+                sandbox_config={'image': 'python:3.11-slim'},
+                interpreter='bash -lc',
             )
 
     def test_swe_bench_agentic_adapter_uses_login_interpreter(self, monkeypatch: pytest.MonkeyPatch) -> None:
