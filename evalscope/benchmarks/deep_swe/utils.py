@@ -273,7 +273,10 @@ def append_tool_calls(
         call_id = tool_call.get('id') or uuid.uuid4().hex[:8]
         messages[-1].tool_calls = [
             *(messages[-1].tool_calls or []),
-            ToolCall(id=call_id, function=ToolFunction(name=function.get('name', ''), arguments=function.get('arguments') or {}))
+            ToolCall(
+                id=call_id,
+                function=ToolFunction(name=function.get('name', ''), arguments=function.get('arguments') or {})
+            )
         ]
         trace.add(
             AgentTraceEvent(
