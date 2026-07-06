@@ -69,6 +69,9 @@ The relevant document(s): {source_files}
 Search the corpus to find the answer. Provide ONLY the final answer wrapped in <FINAL_ANSWER>...</FINAL_ANSWER> tags.
 """
 
+# Container-internal path when using Docker sandbox
+_CONTAINER_CORPUS_DIR = '/corpus'
+
 
 @register_benchmark(
     BenchmarkMeta(
@@ -143,6 +146,19 @@ class OfficeQAAdapter(AgentLoopAdapter):
         return {'bash': run_bash}
 
     def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
+        if self._task_config.sandbox and self._task_config.sandbox.enabled:
+            from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+            sandbox_config = {
+                'working_dir': _CONTAINER_CORPUS_DIR,
+                'volumes': {
+                    self._corpus_dir: {
+                        'bind': _CONTAINER_CORPUS_DIR,
+                        'mode': 'ro'
+                    }
+                },
+            }
+            return EnclaveAgentEnvironment(engine='docker', sandbox_config=sandbox_config)
+
         from evalscope.agent.environments.local import LocalAgentEnvironment
         return LocalAgentEnvironment(working_dir=self._corpus_dir)
 
@@ -157,10 +173,10 @@ class OfficeQAAdapter(AgentLoopAdapter):
     def build_strategy(self, sample: Any) -> Any:
         from evalscope.api.registry import get_strategy
         strategy_cls = get_strategy(self.strategy_name)
-        # Inject corpus path into system prompt
-        strategy = strategy_cls()
-        strategy._system_prompt = SYSTEM_PROMPT.format(corpus_dir=self._corpus_dir)
-        return strategy
+        corpus_dir = _CONTAINER_CORPUS_DIR if (
+            self._task_config.sandbox and self._task_config.sandbox.enabled
+        ) else self._corpus_dir
+        return strategy_cls(system_prompt=SYSTEM_PROMPT.format(corpus_dir=corpus_dir))
 
     # ------------------------------------------------------------------
     # Scoring
