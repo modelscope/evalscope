@@ -50,7 +50,7 @@ integrates it through Pier and runs each benchmark sample as one Pier Python API
 {
   "input": [
     {
-      "id": "d5e215b6",
+      "id": "80791670",
       "content": "Add a new `errorStack` constructor option to SuperJSON. Omitting it leaves existing Error behavior unchanged.\n\nThe option shape is `{ mode?, normalizeNewlines?, trimLeadingWhitespace?, maxStackLines?, stripInternalFrames?, redactPaths?, inclu ... [TRUNCATED 3577 chars] ... ): Processor | undefined`. `normalizeErrorStackOptions` returns `undefined` for any non-object input (`null`, `undefined`, strings).\n\nBefore writing, read through the existing error serialization logic and the `allowedErrorProps` mechanism.\n\n"
     }
   ],
@@ -85,8 +85,6 @@ integrates it through Pier and runs each benchmark sample as one Pier Python API
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `dataset_id` | `str` | `` | ModelScope dataset repository id. Defaults to evalscope/deep-swe. |
-| `dataset_revision` | `str` | `` | Optional ModelScope dataset revision. |
 | `task_ids` | `list` | `[]` | Optional list of DeepSWE task ids to evaluate. |
 | `languages` | `list` | `[]` | Optional task language filter from manifest metadata. |
 | `categories` | `list` | `[]` | Optional task category filter from manifest metadata. |

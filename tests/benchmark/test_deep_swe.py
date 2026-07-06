@@ -1,4 +1,3 @@
-import copy
 import json
 import os
 import pytest
@@ -8,14 +7,10 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.request import pathname2url
 
-from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.benchmarks.deep_swe.deep_swe_adapter import (
-    COMMON_EXTRA_PARAMS,
-    DEFAULT_MODELSCOPE_DATASET_ID,
-    DeepSWEAdapter,
-)
+from evalscope.api.registry import get_benchmark
+from evalscope.benchmarks.deep_swe.deep_swe_adapter import DEFAULT_MODELSCOPE_DATASET_ID, DeepSWEAdapter
 from evalscope.config import TaskConfig
 
 
@@ -24,27 +19,18 @@ class MockModel:
     name = 'mock-model'
 
 
-def make_adapter(tmp_path: Path, **extra_params: Any) -> DeepSWEAdapter:
-    base_extra_params = copy.deepcopy(COMMON_EXTRA_PARAMS)
-    for key, value in extra_params.items():
-        base_extra_params[key]['value'] = value
-    meta = BenchmarkMeta(
-        name='deep_swe',
-        pretty_name='DeepSWE',
-        dataset_id=DEFAULT_MODELSCOPE_DATASET_ID,
-        eval_split='test',
-        prompt_template='{question}',
-        metric_list=['acc'],
-        extra_params=base_extra_params,
-    )
+def make_adapter(tmp_path: Path, dataset_args: Optional[Dict[str, Any]] = None, **extra_params: Any) -> DeepSWEAdapter:
+    dataset_args = dataset_args or {}
     cfg = TaskConfig(
         datasets=['deep_swe'],
         dataset_args={'deep_swe': {
-            'extra_params': extra_params
+            **dataset_args,
+            'extra_params': extra_params,
         }},
         work_dir=str(tmp_path / 'outputs'),
     )
-    adapter = DeepSWEAdapter(benchmark_meta=meta, task_config=cfg)
+    adapter = get_benchmark('deep_swe', cfg)
+    assert isinstance(adapter, DeepSWEAdapter)
     return adapter
 
 
@@ -66,9 +52,10 @@ def write_snapshot(tmp_path: Path, tasks: Optional[list] = None) -> Path:
     return snapshot
 
 
-def test_resolve_default_dataset_ids(tmp_path: Path) -> None:
-    assert make_adapter(tmp_path)._resolve_dataset_id() == DEFAULT_MODELSCOPE_DATASET_ID
-    assert make_adapter(tmp_path, dataset_id='custom/deep-swe')._resolve_dataset_id() == 'custom/deep-swe'
+def test_dataset_args_override_dataset_id_and_local_path(tmp_path: Path) -> None:
+    assert make_adapter(tmp_path).dataset_id == DEFAULT_MODELSCOPE_DATASET_ID
+    assert make_adapter(tmp_path, dataset_args={'dataset_id': 'custom/deep-swe'}).dataset_id == 'custom/deep-swe'
+    assert make_adapter(tmp_path, dataset_args={'local_path': str(tmp_path / 'local')}).dataset_id == str(tmp_path / 'local')
 
 
 def test_load_filters_tasks_and_applies_limit_and_seed(monkeypatch: Any, tmp_path: Path) -> None:

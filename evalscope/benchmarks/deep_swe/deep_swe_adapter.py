@@ -16,7 +16,7 @@ from evalscope.api.metric import Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolCall, ToolFunction
-from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, Tags
+from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType, Tags
 from evalscope.utils.function_utils import AsyncioLoopRunner
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
@@ -26,16 +26,6 @@ logger = get_logger()
 DEFAULT_MODELSCOPE_DATASET_ID = 'evalscope/deep-swe'
 
 COMMON_EXTRA_PARAMS = {
-    'dataset_id': {
-        'type': 'str',
-        'description': 'ModelScope dataset repository id. Defaults to evalscope/deep-swe.',
-        'value': '',
-    },
-    'dataset_revision': {
-        'type': 'str',
-        'description': 'Optional ModelScope dataset revision.',
-        'value': '',
-    },
     'task_ids': {
         'type': 'list',
         'description': 'Optional list of DeepSWE task ids to evaluate.',
@@ -75,8 +65,6 @@ class DeepSWEAdapter(AgentAdapter):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         extra_params = self.extra_params or {}
-        self.deep_swe_dataset_id = str(extra_params.get('dataset_id') or '')
-        self.dataset_revision = str(extra_params.get('dataset_revision') or '')
         self.task_ids = self._as_list(extra_params.get('task_ids') or [])
         self.languages = self._as_list(extra_params.get('languages') or [])
         self.categories = self._as_list(extra_params.get('categories') or [])
@@ -111,14 +99,25 @@ class DeepSWEAdapter(AgentAdapter):
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         return Sample(input=record.get('instruction', ''), target='', metadata=record)
 
-    def _resolve_dataset_id(self) -> str:
-        if self.deep_swe_dataset_id:
-            return self.deep_swe_dataset_id
-        return DEFAULT_MODELSCOPE_DATASET_ID
-
     def _download_snapshot(self) -> Path:
-        dataset_id = self._resolve_dataset_id()
+        dataset_id = self.dataset_id
         cache_dir = Path(DEFAULT_EVALSCOPE_CACHE_DIR) / self.name / 'snapshots'
+        if self.dataset_hub == HubType.LOCAL or Path(dataset_id).exists():
+            logger.info(f'Loading DeepSWE dataset from local path: {dataset_id}')
+            return Path(dataset_id)
+
+        if self.dataset_hub == HubType.HUGGINGFACE:
+            from huggingface_hub import snapshot_download
+
+            logger.info(f'Downloading DeepSWE dataset from HuggingFace: {dataset_id}')
+            return Path(
+                snapshot_download(
+                    repo_id=dataset_id,
+                    repo_type='dataset',
+                    cache_dir=str(cache_dir),
+                    force_download=self.force_redownload,
+                )
+            )
 
         from modelscope import dataset_snapshot_download
 
@@ -126,8 +125,6 @@ class DeepSWEAdapter(AgentAdapter):
             'dataset_id': dataset_id,
             'cache_dir': str(cache_dir),
         }
-        if self.dataset_revision:
-            kwargs['revision'] = self.dataset_revision
         logger.info(f'Downloading DeepSWE dataset from ModelScope: {dataset_id}')
         return Path(dataset_snapshot_download(**kwargs))
 
