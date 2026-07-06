@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "pretty_name": "DeepSWE",
+    "dataset_id": "evalscope/deep-swe",
+    "paper_url": null,
+    "tags": [
+      "Coding",
+      "Agent",
+      "MultiTurn"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nDeepSWE is a coding-agent benchmark for evaluating repository-level software engineering tasks. EvalScope\nintegrates it through Pier and runs each benchmark sample as one Pier Python API job.\n\n## Task Description\n\n- **Task Type**: Agentic software engineering\n- **Input**: DeepSWE task directory containing task metadata and verifier assets\n- **Output**: A repository patch produced by a Pier built-in agent\n- **Scoring**: Binary verifier reward exposed as `acc`\n\n## Evaluation Notes\n\n- Requires **Python>=3.12**, Docker, and `pip install evalscope[deep_swe]`\n- Dataset defaults to ModelScope `evalscope/deep-swe`\n- DeepSWE runs through Pier's Docker environment in EvalScope\n- Use `pier_agent_kwargs={'model_class': 'litellm'}` for OpenAI-compatible providers that do not support Responses API\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "task_ids": {
+        "type": "list",
+        "description": "Optional list of DeepSWE task ids to evaluate.",
+        "value": []
+      },
+      "languages": {
+        "type": "list",
+        "description": "Optional task language filter from manifest metadata.",
+        "value": []
+      },
+      "categories": {
+        "type": "list",
+        "description": "Optional task category filter from manifest metadata.",
+        "value": []
+      },
+      "sample_seed": {
+        "type": "int",
+        "description": "Optional deterministic shuffle seed applied before limit.",
+        "value": ""
+      },
+      "pier_agent_kwargs": {
+        "type": "dict",
+        "description": "Extra kwargs passed to Pier AgentConfig.kwargs.",
+        "value": {}
+      }
+    },
+    "sandbox_config": {},
+    "category": "agent"
+  },
+  "statistics": {
+    "total_samples": 113,
+    "subset_stats": [
+      {
+        "name": "test",
+        "sample_count": 113,
+        "prompt_length_mean": 2158.07,
+        "prompt_length_min": 471,
+        "prompt_length_max": 5385,
+        "prompt_length_std": 1003.9,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 2158.07,
+      "min": 471,
+      "max": 5385,
+      "std": 1003.9
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-07-06T17:32:56.616065"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "f61040e0",
+          "content": "Add a new `errorStack` constructor option to SuperJSON. Omitting it leaves existing Error behavior unchanged.\n\nThe option shape is `{ mode?, normalizeNewlines?, trimLeadingWhitespace?, maxStackLines?, stripInternalFrames?, redactPaths?, inclu ... [TRUNCATED 3577 chars] ... ): Processor | undefined`. `normalizeErrorStackOptions` returns `undefined` for any non-object input (`null`, `undefined`, strings).\n\nBefore writing, read through the existing error serialization logic and the `allowedErrorProps` mechanism.\n\n"
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "ext_id": "kh701jywhzgddknqwzsq6npjv98226tq",
+        "task_id": "superjson-error-stack-serialization",
+        "display_title": "Add error stack serialization to SuperJSON",
+        "display_description": "Add configurable serialization and restoration of error stacks, stack frames, causes, and sanitization in SuperJSON.",
+        "repo": "flightcontrolhq/superjson",
+        "repository_url": "https://github.com/flightcontrolhq/superjson.git",
+        "original_title": "Error Stack Serialization Support",
+        "category": "feature_request",
+        "language": "typescript",
+        "task_path": "~/.cache/evalscope/deep_swe/snapshots/evalscope/deep-swe/tasks/superjson-error-stack-serialization",
+        "task_toml_path": "~/.cache/evalscope/deep_swe/snapshots/evalscope/deep-swe/tasks/superjson-error-stack-serialization/task.toml",
+        "instruction": "Add a new `errorStack` constructor option to SuperJSON. Omitting it leaves existing Error behavior unchanged.\n\nThe option shape is `{ mode?, normalizeNewlines?, trimLeadingWhitespace?, maxStackLines?, stripInternalFrames?, redactPaths?, inclu ... [TRUNCATED 3577 chars] ... ): Processor | undefined`. `normalizeErrorStackOptions` returns `undefined` for any non-object input (`null`, `undefined`, strings).\n\nBefore writing, read through the existing error serialization logic and the `allowedErrorProps` mechanism.\n\n"
+      }
+    },
+    "subset": "test",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# DeepSWE\n\n\n## Overview\n\nDeepSWE is a coding-agent benchmark for evaluating repository-level software engineering tasks. EvalScope\nintegrates it through Pier and runs each benchmark sample as one Pier Python API job.\n\n## Task Description\n\n- **Task Type**: Agentic software engineering\n- **Input**: DeepSWE task directory containing task metadata and verifier assets\n- **Output**: A repository patch produced by a Pier built-in agent\n- **Scoring**: Binary verifier reward exposed as `acc`\n\n## Evaluation Notes\n\n- Requires **Python>=3.12**, Docker, and `pip install evalscope[deep_swe]`\n- Dataset defaults to ModelScope `evalscope/deep-swe`\n- DeepSWE runs through Pier's Docker environment in EvalScope\n- Use `pier_agent_kwargs={'model_class': 'litellm'}` for OpenAI-compatible providers that do not support Responses API\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `deep_swe` |\n| **Dataset ID** | [evalscope/deep-swe](https://modelscope.cn/datasets/evalscope/deep-swe/summary) |\n| **Paper** | N/A |\n| **Tags** | `Agent`, `Coding`, `MultiTurn` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 113 |\n| Prompt Length (Mean) | 2158.07 chars |\n| Prompt Length (Min/Max) | 471 / 5385 chars |\n\n## Sample Example\n\n**Subset**: `test`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f61040e0\",\n      \"content\": \"Add a new `errorStack` constructor option to SuperJSON. Omitting it leaves existing Error behavior unchanged.\\n\\nThe option shape is `{ mode?, normalizeNewlines?, trimLeadingWhitespace?, maxStackLines?, stripInternalFrames?, redactPaths?, inclu ... [TRUNCATED 3577 chars] ... ): Processor | undefined`. `normalizeErrorStackOptions` returns `undefined` for any non-object input (`null`, `undefined`, strings).\\n\\nBefore writing, read through the existing error serialization logic and the `allowedErrorProps` mechanism.\\n\\n\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"ext_id\": \"kh701jywhzgddknqwzsq6npjv98226tq\",\n    \"task_id\": \"superjson-error-stack-serialization\",\n    \"display_title\": \"Add error stack serialization to SuperJSON\",\n    \"display_description\": \"Add configurable serialization and restoration of error stacks, stack frames, causes, and sanitization in SuperJSON.\",\n    \"repo\": \"flightcontrolhq/superjson\",\n    \"repository_url\": \"https://github.com/flightcontrolhq/superjson.git\",\n    \"original_title\": \"Error Stack Serialization Support\",\n    \"category\": \"feature_request\",\n    \"language\": \"typescript\",\n    \"task_path\": \"~/.cache/evalscope/deep_swe/snapshots/evalscope/deep-swe/tasks/superjson-error-stack-serialization\",\n    \"task_toml_path\": \"~/.cache/evalscope/deep_swe/snapshots/evalscope/deep-swe/tasks/superjson-error-stack-serialization/task.toml\",\n    \"instruction\": \"Add a new `errorStack` constructor option to SuperJSON. Omitting it leaves existing Error behavior unchanged.\\n\\nThe option shape is `{ mode?, normalizeNewlines?, trimLeadingWhitespace?, maxStackLines?, stripInternalFrames?, redactPaths?, inclu ... [TRUNCATED 3577 chars] ... ): Processor | undefined`. `normalizeErrorStackOptions` returns `undefined` for any non-object input (`null`, `undefined`, strings).\\n\\nBefore writing, read through the existing error serialization logic and the `allowedErrorProps` mechanism.\\n\\n\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `task_ids` | `list` | `[]` | Optional list of DeepSWE task ids to evaluate. |\n| `languages` | `list` | `[]` | Optional task language filter from manifest metadata. |\n| `categories` | `list` | `[]` | Optional task category filter from manifest metadata. |\n| `sample_seed` | `int` | `` | Optional deterministic shuffle seed applied before limit. |\n| `pier_agent_kwargs` | `dict` | `{}` | Extra kwargs passed to Pier AgentConfig.kwargs. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets deep_swe \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['deep_swe'],\n    dataset_args={\n        'deep_swe': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# DeepSWE\n\n\n## 概述\n\nDeepSWE 是一个用于评估仓库级软件工程任务的编码智能体基准测试。EvalScope 通过 Pier 集成该基准，并将每个基准样本作为一项 Pier Python API 任务运行。\n\n## 任务描述\n\n- **任务类型**：智能体软件工程\n- **输入**：包含任务元数据和验证器资源的 DeepSWE 任务目录\n- **输出**：由 Pier 内置智能体生成的代码仓库补丁\n- **评分方式**：二值验证器奖励，以 `acc` 形式暴露\n\n## 评估说明\n\n- 要求 **Python>=3.12**、Docker，以及执行 `pip install evalscope[deep_swe]`\n- 数据集默认使用 ModelScope 上的 `evalscope/deep-swe`\n- DeepSWE 在 EvalScope 中通过 Pier 的 Docker 环境运行\n- 对于不支持 Responses API 的 OpenAI 兼容提供商，请使用 `pier_agent_kwargs={'model_class': 'litellm'}`\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `deep_swe` |\n| **数据集ID** | [evalscope/deep-swe](https://modelscope.cn/datasets/evalscope/deep-swe/summary) |\n| **论文** | 无 |\n| **标签** | `Agent`, `Coding`, `MultiTurn` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 113 |\n| 提示词长度（平均） | 2158.07 字符 |\n| 提示词长度（最小/最大） | 471 / 5385 字符 |\n\n## 样例示例\n\n**子集**: `test`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f61040e0\",\n      \"content\": \"Add a new `errorStack` constructor option to SuperJSON. Omitting it leaves existing Error behavior unchanged.\\n\\nThe option shape is `{ mode?, normalizeNewlines?, trimLeadingWhitespace?, maxStackLines?, stripInternalFrames?, redactPaths?, inclu ... [TRUNCATED 3577 chars] ... ): Processor | undefined`. `normalizeErrorStackOptions` returns `undefined` for any non-object input (`null`, `undefined`, strings).\\n\\nBefore writing, read through the existing error serialization logic and the `allowedErrorProps` mechanism.\\n\\n\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"ext_id\": \"kh701jywhzgddknqwzsq6npjv98226tq\",\n    \"task_id\": \"superjson-error-stack-serialization\",\n    \"display_title\": \"Add error stack serialization to SuperJSON\",\n    \"display_description\": \"Add configurable serialization and restoration of error stacks, stack frames, causes, and sanitization in SuperJSON.\",\n    \"repo\": \"flightcontrolhq/superjson\",\n    \"repository_url\": \"https://github.com/flightcontrolhq/superjson.git\",\n    \"original_title\": \"Error Stack Serialization Support\",\n    \"category\": \"feature_request\",\n    \"language\": \"typescript\",\n    \"task_path\": \"~/.cache/evalscope/deep_swe/snapshots/evalscope/deep-swe/tasks/superjson-error-stack-serialization\",\n    \"task_toml_path\": \"~/.cache/evalscope/deep_swe/snapshots/evalscope/deep-swe/tasks/superjson-error-stack-serialization/task.toml\",\n    \"instruction\": \"Add a new `errorStack` constructor option to SuperJSON. Omitting it leaves existing Error behavior unchanged.\\n\\nThe option shape is `{ mode?, normalizeNewlines?, trimLeadingWhitespace?, maxStackLines?, stripInternalFrames?, redactPaths?, inclu ... [TRUNCATED 3577 chars] ... ): Processor | undefined`. `normalizeErrorStackOptions` returns `undefined` for any non-object input (`null`, `undefined`, strings).\\n\\nBefore writing, read through the existing error serialization logic and the `allowedErrorProps` mechanism.\\n\\n\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板:**\n```text\n{question}\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `task_ids` | `list` | `[]` | 可选的 DeepSWE 任务 ID 列表，用于指定评估范围。 |\n| `languages` | `list` | `[]` | 可选的任务语言过滤器，基于清单元数据。 |\n| `categories` | `list` | `[]` | 可选的任务类别过滤器，基于清单元数据。 |\n| `sample_seed` | `int` | `` | 可选的确定性打乱种子，在限制样本数量前应用。 |\n| `pier_agent_kwargs` | `dict` | `{}` | 传递给 Pier AgentConfig.kwargs 的额外关键字参数。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets deep_swe \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['deep_swe'],\n    dataset_args={\n        'deep_swe': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "54626e00b5f66f41f2353bba4826cd3c",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-06T17:32:58.309507",
+  "translation_updated_at": "2026-07-06T17:33:00"
+}

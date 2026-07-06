@@ -7,6 +7,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 | `bfcl_v3` | [BFCL-v3](../../benchmarks/bfcl_v3.md) | `Agent`, `FunctionCalling` |
 | `bfcl_v4` | [BFCL-v4](../../benchmarks/bfcl_v4.md) | `Agent`, `FunctionCalling` |
 | `browsecomp` | [BrowseComp](../../benchmarks/browsecomp.md) | `Agent`, `Knowledge`, `QA` |
+| `deep_swe` | [DeepSWE](../../benchmarks/deep_swe.md) | `Agent`, `Coding`, `MultiTurn` |
 | `gaia` | [GAIA](../../benchmarks/gaia.md) | `Agent`, `MultiTurn`, `Reasoning` |
 | `gdpval` | [GDPval](../../benchmarks/gdpval.md) | `Agent`, `Knowledge`, `MultiTurn` |
 | `general_fc` | [General-FunctionCalling](../../benchmarks/general_fc.md) | `Agent`, `Custom`, `FunctionCalling` |
@@ -33,6 +34,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 ../../benchmarks/bfcl_v3.md
 ../../benchmarks/bfcl_v4.md
 ../../benchmarks/browsecomp.md
+../../benchmarks/deep_swe.md
 ../../benchmarks/gaia.md
 ../../benchmarks/gdpval.md
 ../../benchmarks/general_fc.md
