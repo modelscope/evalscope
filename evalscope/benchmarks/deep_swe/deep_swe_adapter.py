@@ -24,40 +24,17 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 DEFAULT_MODELSCOPE_DATASET_ID = 'evalscope/deep-swe'
-DEFAULT_HUGGINGFACE_DATASET_ID = 'datacurve/deep-swe'
 
 COMMON_EXTRA_PARAMS = {
-    'dataset_hub': {
-        'type': 'str',
-        'description': 'Dataset hub to download DeepSWE from.',
-        'value': 'modelscope',
-        'choices': ['modelscope', 'huggingface'],
-    },
     'dataset_id': {
         'type': 'str',
-        'description': 'Dataset repository id. Defaults to evalscope/deep-swe on ModelScope or datacurve/deep-swe on HuggingFace.',  # noqa: E501
+        'description': 'ModelScope dataset repository id. Defaults to evalscope/deep-swe.',
         'value': '',
     },
     'dataset_revision': {
         'type': 'str',
-        'description': 'Optional dataset revision passed through to the selected hub.',
+        'description': 'Optional ModelScope dataset revision.',
         'value': '',
-    },
-    'agent_name': {
-        'type': 'str',
-        'description': 'Pier built-in agent name.',
-        'value': 'mini-swe-agent',
-    },
-    'pier_model': {
-        'type': 'str',
-        'description': 'Model name passed to Pier. Defaults to EvalScope model.name when empty.',
-        'value': '',
-    },
-    'environment_type': {
-        'type': 'str',
-        'description': 'Pier environment type. DeepSWE currently supports docker only.',
-        'value': 'docker',
-        'choices': ['docker'],
     },
     'task_ids': {
         'type': 'list',
@@ -79,54 +56,15 @@ COMMON_EXTRA_PARAMS = {
         'description': 'Optional deterministic shuffle seed applied before limit.',
         'value': '',
     },
-    'timeout_multiplier': {
-        'type': 'float',
-        'description': 'Pier trial timeout multiplier.',
-        'value': 1.0,
-    },
-    'agent_timeout_multiplier': {
-        'type': 'float',
-        'description': 'Pier agent timeout multiplier.',
-        'value': 1.0,
-    },
-    'verifier_timeout_multiplier': {
-        'type': 'float',
-        'description': 'Pier verifier timeout multiplier.',
-        'value': 1.0,
-    },
-    'environment_build_timeout_multiplier': {
-        'type': 'float',
-        'description': 'Pier environment build timeout multiplier.',
-        'value': 1.0,
-    },
     'agent_kwargs': {
         'type': 'dict',
         'description': 'Extra kwargs passed to Pier AgentConfig.',
         'value': {},
     },
-    'agent_env': {
-        'type': 'dict',
-        'description': 'Environment variables passed to Pier AgentConfig.',
-        'value': {},
-    },
-    'environment_kwargs': {
-        'type': 'dict',
-        'description': 'Extra kwargs passed to Pier EnvironmentConfig.',
-        'value': {},
-    },
-    'verifier_env': {
-        'type': 'dict',
-        'description': 'Environment variables passed to Pier VerifierConfig.',
-        'value': {},
-    },
 }
 
 
-def _validate_environment_requirements(environment_type: str) -> None:
-    environment_type = (environment_type or '').strip().lower()
-    if environment_type != 'docker':
-        raise ValueError('DeepSWE only supports environment_type=\'docker\' in EvalScope.')
-
+def _validate_environment_requirements() -> None:
     if shutil.which('docker') is None:
         raise RuntimeError('DeepSWE with environment_type=\'docker\' requires the Docker CLI to be installed.')
 
@@ -137,31 +75,13 @@ class DeepSWEAdapter(AgentAdapter):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         extra_params = self.extra_params or {}
-        self.deep_swe_dataset_hub = str(extra_params.get('dataset_hub') or 'modelscope').lower()
         self.deep_swe_dataset_id = str(extra_params.get('dataset_id') or '')
         self.dataset_revision = str(extra_params.get('dataset_revision') or '')
-        self.agent_name = str(extra_params.get('agent_name') or 'mini-swe-agent')
-        self.pier_model = str(extra_params.get('pier_model') or '')
-        self.environment_type = str(extra_params.get('environment_type') or 'docker')
         self.task_ids = self._as_list(extra_params.get('task_ids') or [])
         self.languages = self._as_list(extra_params.get('languages') or [])
         self.categories = self._as_list(extra_params.get('categories') or [])
         self.sample_seed = extra_params.get('sample_seed')
-        self.timeout_multiplier = float(extra_params.get('timeout_multiplier') or 1.0)
-        self.agent_timeout_multiplier = float(extra_params.get('agent_timeout_multiplier') or 1.0)
-        self.verifier_timeout_multiplier = float(extra_params.get('verifier_timeout_multiplier') or 1.0)
-        self.environment_build_timeout_multiplier = float(
-            extra_params.get('environment_build_timeout_multiplier') or 1.0
-        )
         self.agent_kwargs = dict(extra_params.get('agent_kwargs') or {})
-        self.agent_env = dict(extra_params.get('agent_env') or {})
-        self.environment_kwargs = dict(extra_params.get('environment_kwargs') or {})
-        self.verifier_env = dict(extra_params.get('verifier_env') or {})
-
-        if self.deep_swe_dataset_hub not in {'modelscope', 'huggingface'}:
-            raise ValueError('dataset_hub must be either \'modelscope\' or \'huggingface\'.')
-        if self.environment_type != 'docker':
-            raise ValueError('DeepSWE only supports environment_type=\'docker\'.')
 
     @staticmethod
     def _as_list(value: Union[str, List[Any], Tuple[Any, ...]]) -> List[str]:
@@ -170,7 +90,7 @@ class DeepSWEAdapter(AgentAdapter):
         return [str(item) for item in value]
 
     def load(self) -> Tuple[DatasetDict, None]:
-        _validate_environment_requirements(self.environment_type)
+        _validate_environment_requirements()
 
         snapshot_path = self._download_snapshot()
         task_records = self._load_task_records(snapshot_path)
@@ -194,38 +114,22 @@ class DeepSWEAdapter(AgentAdapter):
     def _resolve_dataset_id(self) -> str:
         if self.deep_swe_dataset_id:
             return self.deep_swe_dataset_id
-        if self.deep_swe_dataset_hub == 'huggingface':
-            return DEFAULT_HUGGINGFACE_DATASET_ID
         return DEFAULT_MODELSCOPE_DATASET_ID
 
     def _download_snapshot(self) -> Path:
         dataset_id = self._resolve_dataset_id()
         cache_dir = Path(DEFAULT_EVALSCOPE_CACHE_DIR) / self.name / 'snapshots'
 
-        if self.deep_swe_dataset_hub == 'modelscope':
-            from modelscope import dataset_snapshot_download
-
-            kwargs = {
-                'dataset_id': dataset_id,
-                'cache_dir': str(cache_dir),
-            }
-            if self.dataset_revision:
-                kwargs['revision'] = self.dataset_revision
-            logger.info(f'Downloading DeepSWE dataset from ModelScope: {dataset_id}')
-            return Path(dataset_snapshot_download(**kwargs))
-
-        from huggingface_hub import snapshot_download
+        from modelscope import dataset_snapshot_download
 
         kwargs = {
-            'repo_id': dataset_id,
-            'repo_type': 'dataset',
+            'dataset_id': dataset_id,
             'cache_dir': str(cache_dir),
-            'force_download': self.force_redownload,
         }
         if self.dataset_revision:
             kwargs['revision'] = self.dataset_revision
-        logger.info(f'Downloading DeepSWE dataset from HuggingFace: {dataset_id}')
-        return Path(snapshot_download(**kwargs))
+        logger.info(f'Downloading DeepSWE dataset from ModelScope: {dataset_id}')
+        return Path(dataset_snapshot_download(**kwargs))
 
     def _load_task_records(self, snapshot_path: Path) -> List[Dict[str, Any]]:
         tasks_dir = snapshot_path / 'tasks'
@@ -307,9 +211,6 @@ class DeepSWEAdapter(AgentAdapter):
         from pier.models.trial.config import AgentConfig, EnvironmentConfig, TaskConfig, VerifierConfig
 
         task_id = str(sample.metadata['task_id'])
-        environment_kwargs = dict(self.environment_kwargs)
-        environment_kwargs.setdefault('type', self.environment_type)
-        model_name = self.pier_model or model.name
 
         config = JobConfig(
             job_name=f'{task_id[:48].rstrip("_-")}__{uuid.uuid4().hex[:8]}',
@@ -317,20 +218,18 @@ class DeepSWEAdapter(AgentAdapter):
             n_attempts=1,
             n_concurrent_trials=1,
             quiet=True,
-            timeout_multiplier=self.timeout_multiplier,
-            agent_timeout_multiplier=self.agent_timeout_multiplier,
-            verifier_timeout_multiplier=self.verifier_timeout_multiplier,
-            environment_build_timeout_multiplier=self.environment_build_timeout_multiplier,
-            agents=[
-                AgentConfig(
-                    name=self.agent_name,
-                    model_name=model_name,
-                    kwargs=self.agent_kwargs,
-                    env=self.agent_env,
-                )
-            ],
-            environment=EnvironmentConfig(**environment_kwargs),
-            verifier=VerifierConfig(env=self.verifier_env),
+            timeout_multiplier=1.0,
+            agent_timeout_multiplier=1.0,
+            verifier_timeout_multiplier=1.0,
+            environment_build_timeout_multiplier=1.0,
+            agents=[AgentConfig(
+                name='mini-swe-agent',
+                model_name=model.name,
+                kwargs=self.agent_kwargs,
+                env={},
+            )],
+            environment=EnvironmentConfig(type='docker'),
+            verifier=VerifierConfig(env={}),
             tasks=[TaskConfig(path=Path(sample.metadata['task_path']))],
         )
 
@@ -460,8 +359,8 @@ class DeepSWEAdapter(AgentAdapter):
 
         agent_info = raw.get('agent', {})
         trace = AgentTrace(
-            framework=agent_info.get('name', self.agent_name),
-            environment=self.environment_type,
+            framework=agent_info.get('name', 'mini-swe-agent'),
+            environment='docker',
         )
         messages: List[ChatMessage] = []
         for index, step in enumerate(raw.get('steps', [])):
@@ -574,8 +473,8 @@ integrates it through Pier and runs each benchmark sample as one Pier Python API
 ## Evaluation Notes
 
 - Requires **Python>=3.12**, Docker, and `pip install evalscope[deep_swe]`
-- Dataset defaults to ModelScope `evalscope/deep-swe`; HuggingFace `datacurve/deep-swe` is optional
-- Only Pier `environment_type='docker'` is supported in EvalScope
+- Dataset defaults to ModelScope `evalscope/deep-swe`
+- DeepSWE runs through Pier's Docker environment in EvalScope
 - Use `agent_kwargs={'model_class': 'litellm'}` for OpenAI-compatible providers that do not support Responses API
 """,
         dataset_id=DEFAULT_MODELSCOPE_DATASET_ID,

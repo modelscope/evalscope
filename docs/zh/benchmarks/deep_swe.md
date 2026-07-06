@@ -16,8 +16,8 @@ integrates it through Pier and runs each benchmark sample as one Pier Python API
 ## Evaluation Notes
 
 - Requires **Python>=3.12**, Docker, and `pip install evalscope[deep_swe]`
-- Dataset defaults to ModelScope `evalscope/deep-swe`; HuggingFace `datacurve/deep-swe` is optional
-- Only Pier `environment_type='docker'` is supported in EvalScope
+- Dataset defaults to ModelScope `evalscope/deep-swe`
+- DeepSWE runs through Pier's Docker environment in EvalScope
 - Use `agent_kwargs={'model_class': 'litellm'}` for OpenAI-compatible providers that do not support Responses API
 
 
@@ -50,7 +50,7 @@ integrates it through Pier and runs each benchmark sample as one Pier Python API
 {
   "input": [
     {
-      "id": "b06f2859",
+      "id": "d5e215b6",
       "content": "Add a new `errorStack` constructor option to SuperJSON. Omitting it leaves existing Error behavior unchanged.\n\nThe option shape is `{ mode?, normalizeNewlines?, trimLeadingWhitespace?, maxStackLines?, stripInternalFrames?, redactPaths?, inclu ... [TRUNCATED 3577 chars] ... ): Processor | undefined`. `normalizeErrorStackOptions` returns `undefined` for any non-object input (`null`, `undefined`, strings).\n\nBefore writing, read through the existing error serialization logic and the `allowedErrorProps` mechanism.\n\n"
     }
   ],
@@ -85,24 +85,13 @@ integrates it through Pier and runs each benchmark sample as one Pier Python API
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `dataset_hub` | `str` | `modelscope` | Dataset hub to download DeepSWE from. Choices: ['modelscope', 'huggingface'] |
-| `dataset_id` | `str` | `` | Dataset repository id. Defaults to evalscope/deep-swe on ModelScope or datacurve/deep-swe on HuggingFace. |
-| `dataset_revision` | `str` | `` | Optional dataset revision passed through to the selected hub. |
-| `agent_name` | `str` | `mini-swe-agent` | Pier built-in agent name. |
-| `pier_model` | `str` | `` | Model name passed to Pier. Defaults to EvalScope model.name when empty. |
-| `environment_type` | `str` | `docker` | Pier environment type. DeepSWE currently supports docker only. Choices: ['docker'] |
+| `dataset_id` | `str` | `` | ModelScope dataset repository id. Defaults to evalscope/deep-swe. |
+| `dataset_revision` | `str` | `` | Optional ModelScope dataset revision. |
 | `task_ids` | `list` | `[]` | Optional list of DeepSWE task ids to evaluate. |
 | `languages` | `list` | `[]` | Optional task language filter from manifest metadata. |
 | `categories` | `list` | `[]` | Optional task category filter from manifest metadata. |
 | `sample_seed` | `int` | `` | Optional deterministic shuffle seed applied before limit. |
-| `timeout_multiplier` | `float` | `1.0` | Pier trial timeout multiplier. |
-| `agent_timeout_multiplier` | `float` | `1.0` | Pier agent timeout multiplier. |
-| `verifier_timeout_multiplier` | `float` | `1.0` | Pier verifier timeout multiplier. |
-| `environment_build_timeout_multiplier` | `float` | `1.0` | Pier environment build timeout multiplier. |
 | `agent_kwargs` | `dict` | `{}` | Extra kwargs passed to Pier AgentConfig. |
-| `agent_env` | `dict` | `{}` | Environment variables passed to Pier AgentConfig. |
-| `environment_kwargs` | `dict` | `{}` | Extra kwargs passed to Pier EnvironmentConfig. |
-| `verifier_env` | `dict` | `{}` | Environment variables passed to Pier VerifierConfig. |
 
 ## Usage
 

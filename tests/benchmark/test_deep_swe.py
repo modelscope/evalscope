@@ -13,7 +13,6 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.benchmarks.deep_swe.deep_swe_adapter import (
     COMMON_EXTRA_PARAMS,
-    DEFAULT_HUGGINGFACE_DATASET_ID,
     DEFAULT_MODELSCOPE_DATASET_ID,
     DeepSWEAdapter,
 )
@@ -69,7 +68,6 @@ def write_snapshot(tmp_path: Path, tasks: Optional[list] = None) -> Path:
 
 def test_resolve_default_dataset_ids(tmp_path: Path) -> None:
     assert make_adapter(tmp_path)._resolve_dataset_id() == DEFAULT_MODELSCOPE_DATASET_ID
-    assert make_adapter(tmp_path, dataset_hub='huggingface')._resolve_dataset_id() == DEFAULT_HUGGINGFACE_DATASET_ID
     assert make_adapter(tmp_path, dataset_id='custom/deep-swe')._resolve_dataset_id() == 'custom/deep-swe'
 
 
@@ -78,7 +76,7 @@ def test_load_filters_tasks_and_applies_limit_and_seed(monkeypatch: Any, tmp_pat
     adapter = make_adapter(tmp_path, languages=['python'], categories=['bugfix'], sample_seed=3)
     adapter._task_config.limit = 1
 
-    monkeypatch.setattr('evalscope.benchmarks.deep_swe.deep_swe_adapter._validate_environment_requirements', lambda _: None)
+    monkeypatch.setattr('evalscope.benchmarks.deep_swe.deep_swe_adapter._validate_environment_requirements', lambda: None)
     monkeypatch.setattr(adapter, '_download_snapshot', lambda: snapshot)
 
     dataset, _ = adapter.load()
@@ -92,7 +90,7 @@ def test_load_dataset_post_processes_sample_prompt(monkeypatch: Any, tmp_path: P
     snapshot = write_snapshot(tmp_path)
     adapter = make_adapter(tmp_path, task_ids=['task-a'])
 
-    monkeypatch.setattr('evalscope.benchmarks.deep_swe.deep_swe_adapter._validate_environment_requirements', lambda _: None)
+    monkeypatch.setattr('evalscope.benchmarks.deep_swe.deep_swe_adapter._validate_environment_requirements', lambda: None)
     monkeypatch.setattr(adapter, '_download_snapshot', lambda: snapshot)
 
     dataset = adapter.load_dataset()
@@ -106,7 +104,7 @@ def test_load_validates_snapshot_layout(monkeypatch: Any, tmp_path: Path) -> Non
     snapshot = tmp_path / 'missing-manifest'
     snapshot.mkdir()
 
-    monkeypatch.setattr('evalscope.benchmarks.deep_swe.deep_swe_adapter._validate_environment_requirements', lambda _: None)
+    monkeypatch.setattr('evalscope.benchmarks.deep_swe.deep_swe_adapter._validate_environment_requirements', lambda: None)
     monkeypatch.setattr(adapter, '_download_snapshot', lambda: snapshot)
 
     with pytest.raises(FileNotFoundError, match='manifest.json'):
@@ -118,7 +116,7 @@ def test_load_validates_task_toml(monkeypatch: Any, tmp_path: Path) -> None:
     (snapshot / 'tasks' / 'task-a' / 'task.toml').unlink()
     adapter = make_adapter(tmp_path)
 
-    monkeypatch.setattr('evalscope.benchmarks.deep_swe.deep_swe_adapter._validate_environment_requirements', lambda _: None)
+    monkeypatch.setattr('evalscope.benchmarks.deep_swe.deep_swe_adapter._validate_environment_requirements', lambda: None)
     monkeypatch.setattr(adapter, '_download_snapshot', lambda: snapshot)
 
     with pytest.raises(FileNotFoundError, match='task.toml'):
@@ -315,7 +313,7 @@ def test_run_pier_job_uses_adhoc_task_source(monkeypatch: Any, tmp_path: Path) -
     install_fake_pier(monkeypatch, captured, result)
     task_path = tmp_path / 'tasks' / 'task-a'
     task_path.mkdir(parents=True)
-    adapter = make_adapter(tmp_path, agent_kwargs={'model_class': 'litellm'}, environment_kwargs={'delete': True})
+    adapter = make_adapter(tmp_path, agent_kwargs={'model_class': 'litellm'})
     sample = Sample(input='', metadata={'task_id': 'task-a', 'task_path': str(task_path)})
 
     result_dict = adapter._run_pier_job(MockModel(), sample)
@@ -325,7 +323,6 @@ def test_run_pier_job_uses_adhoc_task_source(monkeypatch: Any, tmp_path: Path) -
     assert getattr(captured['config'].tasks[0], 'source', None) is None
     assert captured['config'].agents[0].kwargs == {'model_class': 'litellm'}
     assert captured['config'].environment.type == 'docker'
-    assert captured['config'].environment.delete is True
 
 
 @pytest.mark.skipif(
