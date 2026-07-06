@@ -13,7 +13,9 @@ Test plan:
 
 import os
 import pytest
+import sys
 import tempfile
+import types
 from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
 
@@ -69,6 +71,50 @@ def _check_docker() -> bool:
 
 DOCKER_AVAILABLE = _check_docker()
 docker_mark = pytest.mark.skipif(not DOCKER_AVAILABLE, reason='Docker daemon not available')
+
+
+class _FakeExecutionStatus:
+    SUCCESS = 'success'
+    TIMEOUT = 'timeout'
+
+
+class _FakeSandboxHandle:
+    sandbox_id = 'fake-sandbox'
+
+    def __init__(self) -> None:
+        self.tool_name: Optional[str] = None
+        self.payload: Optional[Dict[str, Any]] = None
+        self.closed = False
+
+    async def execute_tool(self, tool_name: str, payload: Dict[str, Any]) -> Any:
+        self.tool_name = tool_name
+        self.payload = payload
+        return types.SimpleNamespace(
+            output='ok',
+            error='',
+            status=_FakeExecutionStatus.SUCCESS,
+            execution_time=0.1,
+        )
+
+    async def close(self) -> None:
+        self.closed = True
+
+
+def _install_fake_ms_enclave(monkeypatch: pytest.MonkeyPatch) -> None:
+    ms_enclave_mod = types.ModuleType('ms_enclave')
+    sandbox_mod = types.ModuleType('ms_enclave.sandbox')
+    model_mod = types.ModuleType('ms_enclave.sandbox.model')
+    model_mod.ExecutionStatus = _FakeExecutionStatus
+    sandbox_mod.model = model_mod
+    ms_enclave_mod.sandbox = sandbox_mod
+    monkeypatch.setitem(sys.modules, 'ms_enclave', ms_enclave_mod)
+    monkeypatch.setitem(sys.modules, 'ms_enclave.sandbox', sandbox_mod)
+    monkeypatch.setitem(sys.modules, 'ms_enclave.sandbox.model', model_mod)
+
+
+def _allow_enclave_construction(monkeypatch: pytest.MonkeyPatch) -> None:
+    from evalscope.agent.environments import enclave as enclave_mod
+    monkeypatch.setattr(enclave_mod, 'check_import', lambda *args, **kwargs: None)
 
 
 # ===========================================================================
@@ -146,6 +192,119 @@ class TestEnvironmentRegistry:
         info = AGENT_TOOL_INFO_REGISTRY['python_exec']
         assert 'code' in info.parameters.properties
         assert 'code' in info.parameters.required
+
+
+# ===========================================================================
+# TestEnclaveEnvironmentInterpreter
+# ===========================================================================
+
+class TestEnclaveEnvironmentInterpreter:
+
+    def _run(self, coro: Any) -> Any:
+        return AsyncioLoopRunner.run(coro)
+
+    def _env_with_fake_handle(
+        self, monkeypatch: pytest.MonkeyPatch, *, interpreter: Optional[List[str]] = None
+    ) -> tuple[Any, _FakeSandboxHandle]:
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+
+        _allow_enclave_construction(monkeypatch)
+        _install_fake_ms_enclave(monkeypatch)
+        handle = _FakeSandboxHandle()
+        kwargs = {}
+        if interpreter is not None:
+            kwargs['interpreter'] = interpreter
+        env = EnclaveAgentEnvironment(
+            engine='docker',
+            sandbox_config={'image': 'python:3.11-slim'},
+            **kwargs,
+        )
+
+        async def _ensure_sandbox() -> _FakeSandboxHandle:
+            return handle
+
+        monkeypatch.setattr(env, '_ensure_sandbox', _ensure_sandbox)
+        return env, handle
+
+    def test_exec_uses_backward_compatible_default_interpreter(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        env, handle = self._env_with_fake_handle(monkeypatch)
+        result = self._run(env.exec(['echo', 'hello world'], cwd='/tmp', env={'FOO': 'bar'}))
+
+        assert result.returncode == 0
+        assert handle.tool_name == 'shell_executor'
+        assert handle.payload is not None
+        assert handle.payload['command'][:2] == ['bash', '-c']
+        assert handle.payload['command'][-1] == "export FOO=bar; cd /tmp && echo 'hello world'"
+
+    def test_exec_uses_configured_login_interpreter(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        env, handle = self._env_with_fake_handle(monkeypatch, interpreter=['bash', '-lc'])
+        result = self._run(env.exec(['python', '-V']))
+
+        assert result.returncode == 0
+        assert handle.payload is not None
+        assert handle.payload['command'][:2] == ['bash', '-lc']
+
+    def test_bash_tool_preserves_configured_login_interpreter(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalscope.agent.tools.bash import run_bash
+
+        env, handle = self._env_with_fake_handle(monkeypatch, interpreter=['bash', '-lc'])
+        call = _tool_call('bash', {'command': 'which python'})
+        obs = self._run(run_bash(call, env))
+
+        assert obs == 'ok'
+        assert handle.payload is not None
+        assert handle.payload['command'][:2] == ['bash', '-lc']
+        assert handle.payload['command'][-1] == 'which python'
+
+    def test_unwrapped_bash_command_exports_env_for_whole_script(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        env, handle = self._env_with_fake_handle(monkeypatch)
+        result = self._run(env.exec(['/bin/bash', '-c', 'echo "$FOO" && env | grep "^FOO="'], env={'FOO': 'bar'}))
+
+        assert result.returncode == 0
+        assert handle.payload is not None
+        assert handle.payload['command'][-1] == 'export FOO=bar; echo "$FOO" && env | grep "^FOO="'
+
+    def test_empty_interpreter_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+
+        _allow_enclave_construction(monkeypatch)
+        with pytest.raises(ValueError, match='interpreter'):
+            EnclaveAgentEnvironment(
+                engine='docker',
+                sandbox_config={'image': 'python:3.11-slim'},
+                interpreter=[],
+            )
+
+    def test_swe_bench_agentic_adapter_uses_login_interpreter(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalscope.benchmarks.swe_bench.swe_bench_agentic_adapter import _SWEBenchAgenticAdapterBase
+
+        _allow_enclave_construction(monkeypatch)
+        adapter = object.__new__(_SWEBenchAgenticAdapterBase)
+        adapter.working_dir = '/testbed'
+        adapter.command_timeout = 60.0
+        adapter.force_arch = ''
+        adapter._task_config = None
+        sample = types.SimpleNamespace(metadata={'docker_image': 'swebench/example:latest', 'instance_id': 'example'})
+
+        env = adapter.build_environment(sample)
+
+        assert env._interpreter == ['bash', '-lc']
+
+    def test_swe_bench_pro_adapter_uses_login_interpreter(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalscope.benchmarks.swe_bench_pro.swe_bench_pro_agentic_adapter import SWEBenchProAgenticAdapter
+
+        _allow_enclave_construction(monkeypatch)
+        adapter = object.__new__(SWEBenchProAgenticAdapter)
+        adapter.working_dir = '/app'
+        adapter.command_timeout = 60.0
+        adapter._task_config = None
+        sample = types.SimpleNamespace(
+            metadata={'docker_image': 'jefzda/sweap-images:example', 'instance_id': 'example'}
+        )
+
+        env = adapter.build_environment(sample)
+
+        assert env._interpreter == ['bash', '-lc']
 
 
 # ===========================================================================

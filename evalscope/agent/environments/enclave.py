@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import shlex
 import time
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.agent.types import ExecResult
@@ -42,6 +42,7 @@ logger = get_logger()
 _DEFAULT_DOCKER_IMAGE = 'python:3.11-slim'
 _DEFAULT_WORKDIR = '/workspace'
 _DEFAULT_TOOLS: List[str] = ['shell_executor', 'python_executor']
+_DEFAULT_INTERPRETER: List[str] = ['bash', '-c']
 
 
 @register_environment(['enclave', 'docker', 'volcengine'])
@@ -64,6 +65,11 @@ class EnclaveAgentEnvironment(AgentEnvironment):
     timeout:
         Default command timeout (seconds) used when :meth:`exec` is called
         without an explicit timeout.
+    interpreter:
+        Command interpreter argv prefix. The rendered command string is
+        appended as the final argument. Defaults to ``['bash', '-c']`` for
+        backward compatibility; benchmark adapters may use ``['bash', '-lc']``
+        when login-shell initialization is required.
     """
 
     name: str = 'enclave'
@@ -75,6 +81,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         sandbox_config: Optional[Dict[str, Any]] = None,
         manager_config: Optional[Dict[str, Any]] = None,
         timeout: float = 60.0,
+        interpreter: Optional[Sequence[str]] = None,
         **_: Any,
     ) -> None:
         # ms_enclave is mandatory for this environment. Fail fast at construction
@@ -84,6 +91,12 @@ class EnclaveAgentEnvironment(AgentEnvironment):
 
         self._engine: SandboxEngine = resolve_engine(engine)
         self._timeout = float(timeout)
+        self._interpreter: List[str] = list(_DEFAULT_INTERPRETER if interpreter is None else interpreter)
+        invalid_interpreter = not self._interpreter or any(
+            not isinstance(part, str) or not part for part in self._interpreter
+        )
+        if invalid_interpreter:
+            raise ValueError('EnclaveAgentEnvironment.interpreter must be a non-empty sequence of non-empty strings.')
         self._manager_config: Dict[str, Any] = dict(manager_config or {})
         self._sandbox_config_dict: Dict[str, Any] = self._apply_engine_defaults(dict(sandbox_config or {}))
         self._handle: Optional[SandboxHandle] = None
@@ -146,6 +159,22 @@ class EnclaveAgentEnvironment(AgentEnvironment):
     # AgentEnvironment interface
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _unwrap_bash_c(cmd: Any) -> Optional[str]:
+        """Return the payload for common bash-tool wrappers.
+
+        The generic ``bash`` tool already passes ``/bin/bash -c <command>``.
+        Enclave itself also provides a configurable shell wrapper, so unwrap
+        that shape to avoid running the agent command in a nested non-login
+        shell when the environment interpreter is ``bash -lc``.
+        """
+        if not isinstance(cmd, list) or len(cmd) != 3:
+            return None
+        executable, flag, command = cmd
+        if executable not in {'bash', '/bin/bash'} or flag != '-c' or not isinstance(command, str):
+            return None
+        return command
+
     async def exec(
         self,
         cmd: List[str],
@@ -157,23 +186,25 @@ class EnclaveAgentEnvironment(AgentEnvironment):
     ) -> ExecResult:
         handle = await self._ensure_sandbox()
 
-        if isinstance(cmd, list):
+        unwrapped_command = self._unwrap_bash_c(cmd)
+        if unwrapped_command is not None:
+            command = unwrapped_command
+        elif isinstance(cmd, list):
             command = ' '.join(shlex.quote(c) for c in cmd)
         else:
             command = str(cmd)
-        if env:
-            # Prepend ``KEY=VAL`` pairs so the agent CLI inherits them.
-            # Using ``env -- ... <cmd>`` would be cleaner but is not always
-            # available inside minimal images; inline assignment works in any
-            # POSIX shell.
-            prefix = ' '.join(f'{k}={shlex.quote(v)}' for k, v in env.items())
-            command = f'{prefix} {command}' if prefix else command
         if cwd:
             command = f'cd {shlex.quote(cwd)} && {command}'
+        if env:
+            # Export inside the wrapper shell so compound commands and any
+            # child process inherit the requested environment.
+            prefix = ' '.join(f'export {k}={shlex.quote(v)};' for k, v in env.items())
+            command = f'{prefix} {command}' if prefix else command
 
         # ms_enclave's shell_executor splits a bare string with no shell
-        # wrapping; wrap as ``bash -c`` so cd/&&/env-prefix/quoting survive.
-        shell_argv = ['bash', '-c', command]
+        # wrapping; use an explicit interpreter so cd/&&/env-prefix/quoting
+        # survive, while allowing benchmarks to request login-shell setup.
+        shell_argv = [*self._interpreter, command]
 
         timeout_s = float(timeout or self._timeout)
 
