@@ -45,7 +45,7 @@ logger = get_logger()
 
 # SWE-bench images activate their per-instance testbed from shell startup files;
 # mini-swe-agent's DockerEnvironment therefore runs commands through bash -lc.
-_SWE_BENCH_INTERPRETER: List[str] = ['bash', '-lc']
+_SWE_BENCH_INTERPRETER: tuple[str, ...] = ('bash', '-lc')
 
 # ---------------------------------------------------------------------------
 # instance_template — mirrors mini-swe-agent swebench.yaml

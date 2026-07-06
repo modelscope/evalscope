@@ -182,6 +182,10 @@ class EnclaveAgentEnvironment(AgentEnvironment):
             return None
         return command
 
+    def _interpreter_is_bash(self) -> bool:
+        executable = self._interpreter[0]
+        return executable == 'bash' or executable.endswith('/bash')
+
     @staticmethod
     def _render_env_exports(env: Dict[str, str]) -> str:
         exports = []
@@ -203,7 +207,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
     ) -> ExecResult:
         handle = await self._ensure_sandbox()
 
-        unwrapped_command = self._unwrap_bash_c(cmd)
+        unwrapped_command = self._unwrap_bash_c(cmd) if self._interpreter_is_bash() else None
         if unwrapped_command is not None:
             command = unwrapped_command
         elif isinstance(cmd, list):

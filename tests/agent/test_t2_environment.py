@@ -264,6 +264,14 @@ class TestEnclaveEnvironmentInterpreter:
         assert handle.payload is not None
         assert handle.payload['command'] == ['bash', '-lc', 'echo tuple']
 
+    def test_bash_c_wrapper_is_not_unwrapped_for_non_bash_interpreter(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        env, handle = self._env_with_fake_handle(monkeypatch, interpreter=['sh', '-c'])
+        result = self._run(env.exec(['/bin/bash', '-c', 'echo bash contract']))
+
+        assert result.returncode == 0
+        assert handle.payload is not None
+        assert handle.payload['command'] == ['sh', '-c', "/bin/bash -c 'echo bash contract'"]
+
     def test_unwrapped_bash_command_exports_env_for_whole_script(self, monkeypatch: pytest.MonkeyPatch) -> None:
         env, handle = self._env_with_fake_handle(monkeypatch)
         result = self._run(env.exec(['/bin/bash', '-c', 'echo "$FOO" && env | grep "^FOO="'], env={'FOO': 'bar'}))

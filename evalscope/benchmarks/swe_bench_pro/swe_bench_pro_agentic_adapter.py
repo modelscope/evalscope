@@ -37,7 +37,7 @@ logger = get_logger()
 
 # Keep command execution aligned with mini-swe-agent and images that initialize
 # their runtime environment from shell startup files.
-_SWE_BENCH_PRO_INTERPRETER: List[str] = ['bash', '-lc']
+_SWE_BENCH_PRO_INTERPRETER: tuple[str, ...] = ('bash', '-lc')
 
 INSTANCE_TEMPLATE = """\
 <pr_description>
