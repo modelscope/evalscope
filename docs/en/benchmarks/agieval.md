@@ -23,10 +23,10 @@ AGIEval is a human-centric benchmark designed to evaluate foundation models in t
 
 ## Evaluation Notes
 
-- MCQ subsets use exact letter match (single or multi-select)
+- MCQ subsets use evalscope's standard MultiChoice template and extraction
+- Multi-select subsets use Chinese multi-answer template
 - Math/cloze subsets use mathematical equivalence checking
-- Supports few-shot evaluation using dev split examples
-- Prompt format follows official AGIEval conventions
+- CoT (Chain-of-Thought) prompting enabled by default
 
 
 ## Properties
@@ -36,7 +36,7 @@ AGIEval is a human-centric benchmark designed to evaluate foundation models in t
 | **Benchmark Name** | `agieval` |
 | **Dataset ID** | [opencompass/agieval](https://modelscope.cn/datasets/opencompass/agieval/summary) |
 | **Paper** | N/A |
-| **Tags** | `Knowledge`, `Math`, `Reasoning` |
+| **Tags** | `Knowledge`, `MCQ`, `Math`, `Reasoning` |
 | **Metrics** | `acc` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
@@ -110,7 +110,11 @@ AGIEval is a human-centric benchmark designed to evaluate foundation models in t
 
 **Prompt Template:**
 ```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
+
 {question}
+
+{choices}
 ```
 
 ## Usage

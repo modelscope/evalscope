@@ -3,29 +3,30 @@
 
 ## 概述
 
-ARC-AGI-2（Abstraction and Reasoning Corpus for Artificial General Intelligence 2）是一个用于衡量 AI 系统能否仅凭少量示例就快速掌握新技能的基准测试。它通过网格变换任务来评估抽象推理和模式识别能力。
+ARC-AGI-2（面向人工通用智能的抽象与推理语料库 2）是一个旨在衡量 AI 系统能否仅凭少量示例就高效地即时掌握新技能的基准测试。它通过网格变换任务来评估模型的抽象推理和模式识别能力。
 
 ## 任务描述
 
-- **任务类型**：抽象推理 / 模式识别  
-- **输入**：一系列输入-输出网格对（示例），后跟一个测试输入网格  
-- **输出**：根据推断出的变换规则生成的预测输出网格  
-- **网格格式**：整数（0-9）组成的二维数组，尺寸可变（最大 30x30）
+- **任务类型**：抽象推理 / 模式识别
+- **输入**：一系列输入-输出网格对（示例），后跟一个测试输入网格
+- **输出**：根据推断出的变换规则生成的预测输出网格
+- **网格格式**：二维整数数组（0-9），尺寸可变（最大 30x30）
 
 ## 主要特点
 
-- 包含 1,000 个公开训练任务和 120 个公开评估任务  
-- 每个任务提供 2-10 个示例输入/输出对  
-- 模型必须从示例中推断出变换规则  
-- 测试的是抽象推理能力，而非依赖已学习的知识  
-- 要求输出像素级精确（必须与目标网格完全一致）
+- 包含 1,000 个公开训练任务和 120 个公开评估任务
+- 每个任务提供 2-10 个示例输入/输出对
+- 模型必须从示例中推断出变换规则
+- 测试抽象推理能力，不依赖于已学习的知识
+- 要求输出像素级精确（必须完全匹配目标网格）
 
 ## 评估说明
 
-- 评分基于 **完全匹配**（形状和所有数值必须完全相同）  
-- 模型必须以 JSON 二维数组格式输出网格  
-- 零样本评估（每个任务内提供示例）  
-- 设计为人类可解但对 AI 具有挑战性  
+- 评分基于**精确网格匹配**（形状和所有数值必须完全一致）
+- 模型必须以 JSON 二维数组格式输出网格
+- 零样本评估（每个任务内提供示例）
+- 设计为人类可解但对 AI 具有挑战性
+
 
 ## 属性
 
@@ -38,6 +39,7 @@ ARC-AGI-2（Abstraction and Reasoning Corpus for Artificial General Intelligence
 | **指标** | `acc` |
 | **默认样本数** | 0-shot |
 | **评估划分** | `test` |
+| **聚合方式** | `mean_and_pass_hat_k` |
 
 
 ## 数据统计
@@ -72,12 +74,12 @@ ARC-AGI-2（Abstraction and Reasoning Corpus for Artificial General Intelligence
 
 ## 提示模板
 
-**系统提示：**
+**系统提示**：
 ```text
 You are an expert at abstract reasoning and pattern recognition. Given input-output grid pairs as examples, you must figure out the transformation rule and apply it to a new test input to produce the correct output grid.
 ```
 
-**提示模板：**
+**提示模板**：
 ```text
 {question}
 ```

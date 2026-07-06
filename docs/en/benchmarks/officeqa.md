@@ -7,24 +7,25 @@ OfficeQA is a grounded reasoning benchmark by Databricks, built for evaluating m
 
 ## Task Description
 
-- **Task Type**: Document-based Question Answering
-- **Input**: A question requiring information from U.S. Treasury Bulletins
+- **Task Type**: Agent-based Document QA (grep/search over corpus)
+- **Input**: A question + access to parsed Treasury Bulletin text files via bash tools
 - **Output**: A precise answer (numeric values, text, or structured data)
-- **Difficulty**: All questions in the Pro subset are rated "hard"
+- **Evaluation Mode**: Agent with bash tool (grep, cat, etc.) over the corpus
 
 ## Key Features
 
-- 133 questions in the Pro subset (default) sourced from real U.S. Treasury bulletins
-- Answers include formatted numbers (e.g., "2,602"), lists, text, and dates
-- Tests precise factual extraction from official documentation
-- Scoring uses fuzzy numeric matching with configurable tolerance
+- Two subsets: `officeqa_pro` (133 questions, hard, default) and `officeqa_full` (246 questions, easy+hard)
+- Corpus: ~900 parsed Treasury Bulletin text files (~460MB total)
+- Agent uses bash tools (grep, cat, head, etc.) to search the corpus
+- Scoring uses fuzzy numeric matching with configurable tolerance (1% default)
 
 ## Evaluation Notes
 
+- The agent is given access to parsed .txt files in a corpus directory
+- Each question's `source_files` field indicates which document(s) contain the answer
 - Uses **rule-based scoring** adapted from official reward.py
-- Numerical answers matched with configurable relative error tolerance (default 1%)
+- Numerical answers matched with 1% relative error tolerance
 - Text answers use case-insensitive substring matching
-- Supports multi-number list answers and unit-aware comparison
 
 
 ## Properties
@@ -34,7 +35,7 @@ OfficeQA is a grounded reasoning benchmark by Databricks, built for evaluating m
 | **Benchmark Name** | `officeqa` |
 | **Dataset ID** | [evalscope/officeqa](https://modelscope.cn/datasets/evalscope/officeqa/summary) |
 | **Paper** | N/A |
-| **Tags** | `Knowledge`, `QA` |
+| **Tags** | `Agent`, `Knowledge`, `QA` |
 | **Metrics** | `acc` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
@@ -76,7 +77,6 @@ OfficeQA is a grounded reasoning benchmark by Databricks, built for evaluating m
 **Prompt Template:**
 ```text
 {question}
-Please provide a precise and concise answer.
 ```
 
 ## Usage

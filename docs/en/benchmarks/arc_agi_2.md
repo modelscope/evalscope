@@ -39,6 +39,7 @@ ARC-AGI-2 (Abstraction and Reasoning Corpus for Artificial General Intelligence 
 | **Metrics** | `acc` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
+| **Aggregation** | `mean_and_pass_hat_k` |
 
 
 ## Data Statistics

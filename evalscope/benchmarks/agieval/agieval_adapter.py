@@ -2,29 +2,21 @@
 
 from typing import Any, Dict
 
-from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import TaskState
+from evalscope.api.evaluator import Choices, TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
-from .utils import (
-    ALL_SUBSETS,
-    build_prompt,
-    extract_math_answer,
-    extract_multiple_answers,
-    extract_single_answer_en,
-    extract_single_answer_zh,
-    is_chinese_qa,
-    is_cloze,
-    is_english_qa,
-    is_multi_choice,
-    is_qa,
-    score_math,
-    score_multiple_choice,
-    score_single_choice,
+from evalscope.utils.multi_choices import (
+    MultipleChoiceTemplate,
+    parse_answers,
+    parse_answers_zh,
+    prompt,
+    valid_template,
 )
+from .utils import ALL_SUBSETS, is_chinese_qa, is_cloze, is_multi_choice, is_qa
 
 logger = get_logger()
 
@@ -51,11 +43,13 @@ AGIEval is a human-centric benchmark designed to evaluate foundation models in t
 
 ## Evaluation Notes
 
-- MCQ subsets use exact letter match (single or multi-select)
+- MCQ subsets use evalscope's standard MultiChoice template and extraction
+- Multi-select subsets use Chinese multi-answer template
 - Math/cloze subsets use mathematical equivalence checking
-- Supports few-shot evaluation using dev split examples
-- Prompt format follows official AGIEval conventions
+- CoT (Chain-of-Thought) prompting enabled by default
 """
+
+MATH_PROMPT_TEMPLATE = '{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.'.lstrip()
 
 
 @register_benchmark(
@@ -63,59 +57,104 @@ AGIEval is a human-centric benchmark designed to evaluate foundation models in t
         name='agieval',
         pretty_name='AGIEval',
         dataset_id='opencompass/agieval',
-        tags=[Tags.REASONING, Tags.KNOWLEDGE, Tags.MATH],
+        tags=[Tags.REASONING, Tags.KNOWLEDGE, Tags.MATH, Tags.MULTIPLE_CHOICE],
         description=DESCRIPTION,
         subset_list=ALL_SUBSETS,
         metric_list=['acc'],
         few_shot_num=0,
         train_split='dev',
         eval_split='test',
-        prompt_template='{question}',
+        prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER_COT,
     )
 )
-class AGIEvalAdapter(DefaultDataAdapter):
+class AGIEvalAdapter(MultiChoiceAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         subset = self.current_subset_name
-        input_text = build_prompt(record, subset)
-        label = record.get('label', '')
-        target = label if isinstance(label, str) else ''.join(sorted(label))
+        raw_label = record.get('label', '')
+        passage = record.get('passage') or ''
+        question = record['question']
 
-        return Sample(
-            input=input_text,
-            target=target,
-            choices=record.get('options') if is_qa(subset) else None,
-            metadata={'subset': subset},
-        )
+        # Parse label: may be a string like "['A', 'B']" for multi-select
+        label = self._parse_label(raw_label)
 
-    def sample_to_fewshot(self, sample: Sample) -> str:
-        return f'{sample.input}\n{sample.target}'
+        # Prepend passage to question if present
+        full_question = f'{passage}\n\n{question}' if passage else question
 
-    def format_fewshot_template(self, fewshot: str, sample: Sample) -> str:
-        if fewshot:
-            return f'{fewshot}\n\n{sample.input}'
-        return sample.input
+        if is_qa(subset):
+            options = record.get('options') or []
+            target = ''.join(sorted(label)) if isinstance(label, list) else label
+            return Sample(
+                input=full_question,
+                choices=options,
+                target=target,
+                subset_key=subset,
+                metadata={'subset': subset},
+            )
+        else:
+            # Cloze/Math: no choices
+            target = label if isinstance(label, str) else str(label)
+            return Sample(
+                input=full_question,
+                target=target,
+                subset_key=subset,
+                metadata={'subset': subset},
+            )
+
+    @staticmethod
+    def _parse_label(label) -> Any:
+        """Parse label that may be a JSON-encoded list string like \"['A', 'B']\"."""
+        if isinstance(label, list):
+            return label
+        if isinstance(label, str) and label.startswith('['):
+            import ast
+            try:
+                parsed = ast.literal_eval(label)
+                if isinstance(parsed, list):
+                    return parsed
+            except (ValueError, SyntaxError):
+                pass
+        return label
 
     def format_prompt_template(self, sample: Sample) -> str:
-        return sample.input
+        """Dispatch prompt formatting based on subset type."""
+        subset = sample.metadata.get('subset', '') if sample.metadata else ''
+
+        if is_cloze(subset):
+            return MATH_PROMPT_TEMPLATE.format(question=sample.input)
+
+        # MCQ: select template based on language and multi-select
+        if is_multi_choice(subset):
+            template = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE_COT
+        elif is_chinese_qa(subset):
+            template = MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT
+        else:
+            template = MultipleChoiceTemplate.SINGLE_ANSWER_COT
+
+        return prompt(
+            question=sample.input,
+            choices=Choices(sample.choices),
+            template=template,
+        )
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        """Extract answer based on subset type."""
+        """Dispatch extraction based on subset type."""
         subset = task_state.metadata.get('subset', '') if task_state.metadata else ''
 
-        if is_multi_choice(subset):
-            return extract_multiple_answers(prediction)
-        elif is_english_qa(subset):
-            return extract_single_answer_en(prediction)
-        elif is_chinese_qa(subset):
-            return extract_single_answer_zh(prediction)
-        elif is_cloze(subset):
-            return extract_math_answer(prediction)
+        if is_cloze(subset):
+            from evalscope.metrics.math.parser import extract_answer
+            return extract_answer(prediction)
+
+        # MCQ: use evalscope's built-in parsers
+        multiple = is_multi_choice(subset)
+        if is_chinese_qa(subset):
+            answers = parse_answers_zh(task_state, multiple_correct=multiple)
         else:
-            return extract_single_answer_en(prediction)
+            answers = parse_answers(task_state, multiple_correct=multiple)
+        return ''.join(sorted(list(answers)))
 
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
@@ -124,12 +163,12 @@ class AGIEvalAdapter(DefaultDataAdapter):
         score = Score(extracted_prediction=filtered_prediction, prediction=original_prediction)
         subset = task_state.metadata.get('subset', '') if task_state.metadata else ''
 
-        if is_multi_choice(subset):
-            correct = score_multiple_choice(filtered_prediction, reference)
-        elif is_cloze(subset):
-            correct = score_math(filtered_prediction, reference)
+        if is_cloze(subset):
+            from evalscope.metrics.math.parser import math_equal
+            correct = 1.0 if math_equal(filtered_prediction, reference) else 0.0
         else:
-            correct = score_single_choice(filtered_prediction, reference)
+            # MCQ: exact match on extracted letters
+            correct = 1.0 if filtered_prediction.upper() == reference.upper() else 0.0
 
         score.value = {'acc': correct}
         score.main_score_name = 'acc'

@@ -60,6 +60,7 @@ PROMPT_TEMPLATE = '{question}'
         description=DESCRIPTION,
         subset_list=['default'],
         metric_list=['acc'],
+        aggregation='mean_and_pass_hat_k',
         few_shot_num=0,
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,
