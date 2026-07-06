@@ -70,6 +70,7 @@
 | `iquiz` | [IQuiz](../../benchmarks/iquiz.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `jnlpba` | [JNLPBA](../../benchmarks/jnlpba.md) | `Knowledge`, `NER` |
 | `jnlpba_rare` | [JNLPBA-Rare](../../benchmarks/jnlpba_rare.md) | `Knowledge`, `NER` |
+| `kina` | [KINA](../../benchmarks/kina.md) | `Knowledge`, `MCQ` |
 | `live_code_bench` | [Live-Code-Bench](../../benchmarks/live_code_bench.md) | `Coding` |
 | `locomo` | [LoCoMo](../../benchmarks/locomo.md) | `LongContext`, `MultiTurn`, `QA` |
 | `logi_qa` | [LogiQA](../../benchmarks/logi_qa.md) | `MCQ`, `Reasoning` |
@@ -196,6 +197,7 @@
 ../../benchmarks/iquiz.md
 ../../benchmarks/jnlpba.md
 ../../benchmarks/jnlpba_rare.md
+../../benchmarks/kina.md
 ../../benchmarks/live_code_bench.md
 ../../benchmarks/locomo.md
 ../../benchmarks/logi_qa.md
