@@ -97,12 +97,14 @@ def score_answer(ground_truth: str, predicted: str, tolerance: float = DEFAULT_T
     Score predicted answer against ground truth using official OfficeQA scoring.
 
     Adapted from https://github.com/databricks/officeqa/blob/main/reward.py
+
+    Note: Callers should pass already-extracted predictions (via extract_final_answer)
+    since the framework's extract_answer hook handles tag extraction before scoring.
     """
     if not ground_truth or not predicted:
         return 0.0
 
-    predicted = extract_final_answer(predicted)
-    if not predicted or 'unable to determine' in predicted.lower():
+    if 'unable to determine' in predicted.lower():
         return 0.0
 
     gt_numbers = extract_numbers(ground_truth)
@@ -151,6 +153,6 @@ def score_answer(ground_truth: str, predicted: str, tolerance: float = DEFAULT_T
     gt_clean = re.sub(r'\s+', ' ', re.sub(r'\([^)]*\)', '', ground_truth.strip().lower())).strip()
     pred_clean = re.sub(r'\s+', ' ', re.sub(r'\([^)]*\)', '', predicted.strip().lower())).strip()
 
-    if gt_clean in pred_clean or gt_clean == pred_clean:
+    if gt_clean in pred_clean:
         return 1.0
     return 0.0

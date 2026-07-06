@@ -69,9 +69,6 @@ MATH_PROMPT_TEMPLATE = '{question}\nPlease reason step by step, and put your fin
 )
 class AGIEvalAdapter(MultiChoiceAdapter):
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         subset = self.current_subset_name
         raw_label = record.get('label', '')

@@ -17,7 +17,6 @@ def build_task_prompt(record: Dict[str, Any]) -> str:
 
     parts = []
     parts.append(
-        'You are given a series of input-output grid pairs as examples. '
         'Each grid is a 2D array of integers (0-9). '
         'Study the pattern in the examples, then predict the output for the test input.'
     )
