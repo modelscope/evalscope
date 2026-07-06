@@ -1,0 +1,200 @@
+{
+  "meta": {
+    "pretty_name": "MeasureBench",
+    "dataset_id": "evalscope/MeasureBench",
+    "paper_url": "https://arxiv.org/abs/2510.26865",
+    "tags": [
+      "MultiModal",
+      "Reasoning",
+      "QA"
+    ],
+    "metrics": [
+      "acc",
+      "number_acc",
+      "unit_acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "real_world",
+    "train_split": "",
+    "subset_list": [
+      "real_world",
+      "synthetic_test"
+    ],
+    "description": "\n## Overview\n\nMeasureBench is a comprehensive benchmark for evaluating the ability of vision-language models (VLMs) to read values from measuring instruments. It covers both **real-world photographs** and **synthetically generated images** of 26 instrument types across 4 design categories.\n\n## Task Description\n\n- **Task Type**: Free-form Visual Question Answering (instrument reading)\n- **Input**: An image of a measuring instrument + a reading question\n- **Output**: The instrument's current reading (numeric value or time, with unit)\n- **Domains**: Ammeters, clocks, thermometers, scales, speedometers, and 21 more instrument types\n\n## Key Features\n\n- 2,442 total samples across two splits: real_world (1,272) and synthetic_test (1,170)\n- 26 instrument types, 4 design categories (dial, digital, analog, linear)\n- Accepts a tolerance interval around the correct value rather than requiring an exact match\n- For clocks: handles both 12-hour and 24-hour ambiguity via multiple valid intervals\n- Unit recognition is evaluated separately from numeric accuracy\n\n## Evaluation Notes\n\n- Default splits: **real_world** and **synthetic_test** (treated as separate subsets)\n- Primary metric: **Accuracy** (acc) — ``all_correct``: number *and* unit both correct\n- Secondary metrics: **number_acc** (numeric only), **unit_acc** (unit only)\n- Two evaluators: ``interval_matching`` (single valid range) and ``multi_interval_matching`` (e.g. clock AM/PM)\n- Model output is expected in the format ``Answer: <value> <unit>`` on the last line\n- Subsets within each split are organized by ``image_type``\n- [Paper](https://arxiv.org/abs/2510.26865) | [GitHub](https://github.com/flageval-baai/MeasureBench)\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 2442,
+    "subset_stats": [
+      {
+        "name": "real_world",
+        "sample_count": 1272,
+        "prompt_length_mean": 153.83,
+        "prompt_length_min": 131,
+        "prompt_length_max": 215,
+        "prompt_length_std": 11.84,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1272,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x592",
+              "1000x845",
+              "1010x923",
+              "1012x841",
+              "1016x1024",
+              "1017x631",
+              "1018x1024",
+              "1022x1024",
+              "1024x1024",
+              "1024x312"
+            ],
+            "resolution_range": {
+              "min": "108x79",
+              "max": "3025x1599"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "synthetic_test",
+        "sample_count": 1170,
+        "prompt_length_mean": 147.71,
+        "prompt_length_min": 126,
+        "prompt_length_max": 192,
+        "prompt_length_std": 9.67,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1170,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x512",
+              "1080x472",
+              "1080x868",
+              "1100x420",
+              "1280x720",
+              "150x425",
+              "151x441",
+              "152x596",
+              "154x586",
+              "156x487"
+            ],
+            "resolution_range": {
+              "min": "419x150",
+              "max": "989x989"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 150.9,
+      "min": 126,
+      "max": 215,
+      "std": 11.27
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-07-06T17:24:01.390403",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 2442,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1000x592",
+          "1000x845",
+          "1010x923",
+          "1012x841",
+          "1016x1024",
+          "1017x631",
+          "1018x1024",
+          "1022x1024",
+          "1024x1024",
+          "1024x312"
+        ],
+        "resolution_range": {
+          "min": "108x79",
+          "max": "3025x1599"
+        },
+        "formats": [
+          "jpeg",
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "1341f508",
+          "content": [
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~75.8KB]"
+            },
+            {
+              "text": "What is the reading of the instrument?\nProvide your final answer on the last line in the format: Answer: <value> <unit>. For example: Answer: 42.5 A"
+            }
+          ]
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "ammeter",
+      "metadata": {
+        "question_id": "ammeter_0",
+        "image_type": "ammeter",
+        "design": "dial",
+        "evaluator": "interval_matching",
+        "evaluator_kwargs": "{\"interval\": [9.5, 9.7], \"units\": [\"A\", \"Ampere\"]}"
+      }
+    },
+    "subset": "real_world",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MeasureBench\n\n\n## Overview\n\nMeasureBench is a comprehensive benchmark for evaluating the ability of vision-language models (VLMs) to read values from measuring instruments. It covers both **real-world photographs** and **synthetically generated images** of 26 instrument types across 4 design categories.\n\n## Task Description\n\n- **Task Type**: Free-form Visual Question Answering (instrument reading)\n- **Input**: An image of a measuring instrument + a reading question\n- **Output**: The instrument's current reading (numeric value or time, with unit)\n- **Domains**: Ammeters, clocks, thermometers, scales, speedometers, and 21 more instrument types\n\n## Key Features\n\n- 2,442 total samples across two splits: real_world (1,272) and synthetic_test (1,170)\n- 26 instrument types, 4 design categories (dial, digital, analog, linear)\n- Accepts a tolerance interval around the correct value rather than requiring an exact match\n- For clocks: handles both 12-hour and 24-hour ambiguity via multiple valid intervals\n- Unit recognition is evaluated separately from numeric accuracy\n\n## Evaluation Notes\n\n- Default splits: **real_world** and **synthetic_test** (treated as separate subsets)\n- Primary metric: **Accuracy** (acc) — ``all_correct``: number *and* unit both correct\n- Secondary metrics: **number_acc** (numeric only), **unit_acc** (unit only)\n- Two evaluators: ``interval_matching`` (single valid range) and ``multi_interval_matching`` (e.g. clock AM/PM)\n- Model output is expected in the format ``Answer: <value> <unit>`` on the last line\n- Subsets within each split are organized by ``image_type``\n- [Paper](https://arxiv.org/abs/2510.26865) | [GitHub](https://github.com/flageval-baai/MeasureBench)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `measure_bench` |\n| **Dataset ID** | [evalscope/MeasureBench](https://modelscope.cn/datasets/evalscope/MeasureBench/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2510.26865) |\n| **Tags** | `MultiModal`, `QA`, `Reasoning` |\n| **Metrics** | `acc`, `number_acc`, `unit_acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `real_world` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 2,442 |\n| Prompt Length (Mean) | 150.9 chars |\n| Prompt Length (Min/Max) | 126 / 215 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `real_world` | 1,272 | 153.83 | 131 | 215 |\n| `synthetic_test` | 1,170 | 147.71 | 126 | 192 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 2,442 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 108x79 - 3025x1599 |\n| Formats | jpeg, png |\n\n\n## Sample Example\n\n**Subset**: `real_world`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"1341f508\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~75.8KB]\"\n        },\n        {\n          \"text\": \"What is the reading of the instrument?\\nProvide your final answer on the last line in the format: Answer: <value> <unit>. For example: Answer: 42.5 A\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"ammeter\",\n  \"metadata\": {\n    \"question_id\": \"ammeter_0\",\n    \"image_type\": \"ammeter\",\n    \"design\": \"dial\",\n    \"evaluator\": \"interval_matching\",\n    \"evaluator_kwargs\": \"{\\\"interval\\\": [9.5, 9.7], \\\"units\\\": [\\\"A\\\", \\\"Ampere\\\"]}\"\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets measure_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['measure_bench'],\n    dataset_args={\n        'measure_bench': {\n            # subset_list: ['real_world', 'synthetic_test']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MeasureBench\n\n\n## 概述\n\nMeasureBench 是一个全面的基准测试，用于评估视觉语言模型（VLMs）从测量仪器中读取数值的能力。它涵盖了 **真实世界照片** 和 **合成生成图像** 两类数据，包含 4 种设计类别下的 26 种仪器类型。\n\n## 任务描述\n\n- **任务类型**：开放式视觉问答（仪器读数）\n- **输入**：一张测量仪器的图像 + 一个读数问题\n- **输出**：仪器当前的读数（数值或时间，附带单位）\n- **领域**：电流表、时钟、温度计、秤、速度表等共 26 种仪器类型\n\n## 核心特性\n\n- 总计 2,442 个样本，分为两个子集：real_world（1,272）和 synthetic_test（1,170）\n- 包含 26 种仪器类型，4 种设计类别（表盘式、数字式、模拟式、线性式）\n- 接受围绕正确值的一个容差区间，而非要求完全精确匹配\n- 对于时钟：通过多个有效区间处理 12 小时制与 24 小时制的歧义\n- 单位识别与数值准确性分别进行评估\n\n## 评估说明\n\n- 默认子集：**real_world** 和 **synthetic_test**（视为独立子集）\n- 主要指标：**Accuracy**（acc）—— ``all_correct``：数值 *和* 单位均正确\n- 次要指标：**number_acc**（仅数值）、**unit_acc**（仅单位）\n- 两种评估器：``interval_matching``（单一有效范围）和 ``multi_interval_matching``（例如时钟的上午/下午）\n- 模型输出需在最后一行以格式 ``Answer: <value> <unit>`` 提供\n- 每个子集内的样本按 ``image_type`` 组织\n- [论文](https://arxiv.org/abs/2510.26865) | [GitHub](https://github.com/flageval-baai/MeasureBench)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `measure_bench` |\n| **数据集ID** | [evalscope/MeasureBench](https://modelscope.cn/datasets/evalscope/MeasureBench/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2510.26865) |\n| **标签** | `MultiModal`, `QA`, `Reasoning` |\n| **指标** | `acc`, `number_acc`, `unit_acc` |\n| **默认示例数量** | 0-shot |\n| **评估子集** | `real_world` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 2,442 |\n| 提示词长度（平均） | 150.9 字符 |\n| 提示词长度（最小/最大） | 126 / 215 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `real_world` | 1,272 | 153.83 | 131 | 215 |\n| `synthetic_test` | 1,170 | 147.71 | 126 | 192 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 2,442 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 108x79 - 3025x1599 |\n| 格式 | jpeg, png |\n\n\n## 样例示例\n\n**子集**: `real_world`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"1341f508\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~75.8KB]\"\n        },\n        {\n          \"text\": \"What is the reading of the instrument?\\nProvide your final answer on the last line in the format: Answer: <value> <unit>. For example: Answer: 42.5 A\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"ammeter\",\n  \"metadata\": {\n    \"question_id\": \"ammeter_0\",\n    \"image_type\": \"ammeter\",\n    \"design\": \"dial\",\n    \"evaluator\": \"interval_matching\",\n    \"evaluator_kwargs\": \"{\\\"interval\\\": [9.5, 9.7], \\\"units\\\": [\\\"A\\\", \\\"Ampere\\\"]}\"\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets measure_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['measure_bench'],\n    dataset_args={\n        'measure_bench': {\n            # subset_list: ['real_world', 'synthetic_test']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "2993e1836b2b22b6eb644adcbef31561",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-06T17:24:02.060304",
+  "translation_updated_at": "2026-07-06T17:24:13"
+}

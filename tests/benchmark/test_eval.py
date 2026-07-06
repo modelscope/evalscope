@@ -912,6 +912,14 @@ class TestNativeBenchmark(TestBenchmark):
         """Test AGIEval benchmark with mock."""
         self._run_dataset_test('agieval', dataset_args=self._AGIEVAL_ARGS, limit=3, use_mock=True)
 
+    def test_kina(self):
+        """Test KINA knowledge benchmark."""
+        self._run_dataset_test('kina', limit=5)
+
+    def test_kina_mock(self):
+        """Test KINA knowledge benchmark with mock."""
+        self._run_dataset_test('kina', limit=5, use_mock=True)
+
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k

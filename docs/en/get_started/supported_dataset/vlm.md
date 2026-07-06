@@ -17,6 +17,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `cmmu` | [CMMU](../../benchmarks/cmmu.md) | `Knowledge`, `MCQ`, `MultiModal`, `QA` |
 | `common_voice_15` | [CommonVoice15](../../benchmarks/common_voice_15.md) | `Audio`, `MultiLingual`, `SpeechRecognition` |
 | `docvqa` | [DocVQA](../../benchmarks/docvqa.md) | `Knowledge`, `MultiModal`, `QA` |
+| `emb_spatial_bench` | [EmbSpatial-Bench](../../benchmarks/emb_spatial_bench.md) | `MCQ`, `MultiModal`, `Reasoning` |
 | `erqa` | [ERQA](../../benchmarks/erqa.md) | `MCQ`, `MultiModal`, `Reasoning` |
 | `fleurs` | [FLEURS](../../benchmarks/fleurs.md) | `Audio`, `MultiLingual`, `SpeechRecognition` |
 | `general_vmcq` | [General-VMCQ](../../benchmarks/general_vmcq.md) | `Custom`, `MCQ`, `MultiModal` |
@@ -29,6 +30,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `math_verse` | [MathVerse](../../benchmarks/math_verse.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vision` | [MathVision](../../benchmarks/math_vision.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vista` | [MathVista](../../benchmarks/math_vista.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
+| `measure_bench` | [MeasureBench](../../benchmarks/measure_bench.md) | `MultiModal`, `QA`, `Reasoning` |
 | `mia_bench` | [MIA-Bench](../../benchmarks/mia_bench.md) | `InstructionFollowing`, `MultiModal`, `QA` |
 | `micro_vqa` | [MicroVQA](../../benchmarks/micro_vqa.md) | `Knowledge`, `MCQ`, `Medical`, `MultiModal` |
 | `mm_bench` | [MMBench](../../benchmarks/mm_bench.md) | `Knowledge`, `MultiModal`, `QA` |
@@ -76,6 +78,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/cmmu.md
 ../../benchmarks/common_voice_15.md
 ../../benchmarks/docvqa.md
+../../benchmarks/emb_spatial_bench.md
 ../../benchmarks/erqa.md
 ../../benchmarks/fleurs.md
 ../../benchmarks/general_vmcq.md
@@ -88,6 +91,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/math_verse.md
 ../../benchmarks/math_vision.md
 ../../benchmarks/math_vista.md
+../../benchmarks/measure_bench.md
 ../../benchmarks/mia_bench.md
 ../../benchmarks/micro_vqa.md
 ../../benchmarks/mm_bench.md
