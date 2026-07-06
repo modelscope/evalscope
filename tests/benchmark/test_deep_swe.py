@@ -11,6 +11,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.deep_swe.deep_swe_adapter import DEFAULT_MODELSCOPE_DATASET_ID, DeepSWEAdapter
+from evalscope.benchmarks.deep_swe.utils import artifact_path, build_score_metadata, parse_timestamp
 from evalscope.config import TaskConfig
 
 
@@ -58,18 +59,18 @@ def test_dataset_args_override_dataset_id_and_local_path(tmp_path: Path) -> None
     assert make_adapter(tmp_path, dataset_args={'local_path': str(tmp_path / 'local')}).dataset_id == str(tmp_path / 'local')
 
 
-def test_download_snapshot_uses_common_dataset_helper(monkeypatch: Any, tmp_path: Path) -> None:
+def test_download_snapshot_uses_deep_swe_helper(monkeypatch: Any, tmp_path: Path) -> None:
     captured: Dict[str, Any] = {}
     snapshot = tmp_path / 'snapshot'
 
-    def fake_download_dataset_snapshot(**kwargs: Any) -> str:
+    def fake_download_snapshot(**kwargs: Any) -> Path:
         captured.update(kwargs)
-        return str(snapshot)
+        return snapshot
 
     adapter = make_adapter(tmp_path, dataset_args={'dataset_id': 'custom/deep-swe'})
     monkeypatch.setattr(
-        'evalscope.benchmarks.deep_swe.deep_swe_adapter.download_dataset_snapshot',
-        fake_download_dataset_snapshot,
+        'evalscope.benchmarks.deep_swe.deep_swe_adapter.download_snapshot',
+        fake_download_snapshot,
     )
 
     assert adapter._download_snapshot() == snapshot
@@ -136,9 +137,7 @@ def test_build_score_metadata_collects_reward_and_artifacts(tmp_path: Path) -> N
         encoding='utf-8',
     )
     (trial_dir / 'verifier' / 'reward.txt').write_text('1\n', encoding='utf-8')
-    adapter = make_adapter(tmp_path)
-
-    metadata = adapter._build_score_metadata({
+    metadata = build_score_metadata({
         'job_result_path': str(tmp_path / 'job'),
         'trial_results': [{
             'trial_uri': f'file://{trial_dir}',
@@ -209,7 +208,6 @@ def test_missing_pier_reward_without_exception_raises() -> None:
 
 
 def test_pier_exception_with_verifier_reward_is_scored(tmp_path: Path) -> None:
-    adapter = make_adapter(tmp_path)
     result = {
         'trial_results': [{
             'exception_info': {
@@ -225,7 +223,7 @@ def test_pier_exception_with_verifier_reward_is_scored(tmp_path: Path) -> None:
     }
 
     DeepSWEAdapter._raise_for_pier_failures(result)
-    metadata = adapter._build_score_metadata(result)
+    metadata = build_score_metadata(result)
 
     assert metadata['reward'] == 0
     assert metadata['partial'] == 0.25
@@ -233,17 +231,14 @@ def test_pier_exception_with_verifier_reward_is_scored(tmp_path: Path) -> None:
 
 
 def test_artifact_path_decodes_file_uri(tmp_path: Path) -> None:
-    adapter = make_adapter(tmp_path)
     trial_dir = tmp_path / 'trial dir'
     result = {'trial_results': [{'trial_uri': f'file://{pathname2url(str(trial_dir))}'}]}
 
-    assert adapter._artifact_path(result, 'verifier/reward.json') == trial_dir / 'verifier' / 'reward.json'
+    assert artifact_path(result, 'verifier/reward.json') == trial_dir / 'verifier' / 'reward.json'
 
 
 def test_parse_timestamp_handles_z_suffix() -> None:
-    assert DeepSWEAdapter._parse_timestamp('2026-01-01T00:00:00Z') == DeepSWEAdapter._parse_timestamp(
-        '2026-01-01T00:00:00+00:00'
-    )
+    assert parse_timestamp('2026-01-01T00:00:00Z') == parse_timestamp('2026-01-01T00:00:00+00:00')
 
 
 def install_fake_pier(monkeypatch: Any, captured: Dict[str, Any], result: Dict[str, Any]) -> None:
