@@ -63,7 +63,6 @@ def test_load_filters_tasks_and_applies_limit_and_seed(monkeypatch: Any, tmp_pat
     adapter = make_adapter(tmp_path, languages=['python'], categories=['bugfix'], sample_seed=3)
     adapter._task_config.limit = 1
 
-    monkeypatch.setattr('evalscope.benchmarks.deep_swe.deep_swe_adapter._validate_environment_requirements', lambda: None)
     monkeypatch.setattr(adapter, '_download_snapshot', lambda: snapshot)
 
     dataset, _ = adapter.load()
@@ -77,7 +76,6 @@ def test_load_dataset_post_processes_sample_prompt(monkeypatch: Any, tmp_path: P
     snapshot = write_snapshot(tmp_path)
     adapter = make_adapter(tmp_path, task_ids=['task-a'])
 
-    monkeypatch.setattr('evalscope.benchmarks.deep_swe.deep_swe_adapter._validate_environment_requirements', lambda: None)
     monkeypatch.setattr(adapter, '_download_snapshot', lambda: snapshot)
 
     dataset = adapter.load_dataset()
@@ -91,7 +89,6 @@ def test_load_validates_snapshot_layout(monkeypatch: Any, tmp_path: Path) -> Non
     snapshot = tmp_path / 'missing-manifest'
     snapshot.mkdir()
 
-    monkeypatch.setattr('evalscope.benchmarks.deep_swe.deep_swe_adapter._validate_environment_requirements', lambda: None)
     monkeypatch.setattr(adapter, '_download_snapshot', lambda: snapshot)
 
     with pytest.raises(FileNotFoundError, match='manifest.json'):
@@ -103,7 +100,6 @@ def test_load_validates_task_toml(monkeypatch: Any, tmp_path: Path) -> None:
     (snapshot / 'tasks' / 'task-a' / 'task.toml').unlink()
     adapter = make_adapter(tmp_path)
 
-    monkeypatch.setattr('evalscope.benchmarks.deep_swe.deep_swe_adapter._validate_environment_requirements', lambda: None)
     monkeypatch.setattr(adapter, '_download_snapshot', lambda: snapshot)
 
     with pytest.raises(FileNotFoundError, match='task.toml'):

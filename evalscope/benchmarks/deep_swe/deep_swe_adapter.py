@@ -1,6 +1,5 @@
 import json
 import random
-import shutil
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -54,11 +53,6 @@ COMMON_EXTRA_PARAMS = {
 }
 
 
-def _validate_environment_requirements() -> None:
-    if shutil.which('docker') is None:
-        raise RuntimeError('DeepSWE with environment_type=\'docker\' requires the Docker CLI to be installed.')
-
-
 class DeepSWEAdapter(AgentAdapter):
     """EvalScope adapter for DeepSWE through Pier Python API jobs."""
 
@@ -78,8 +72,6 @@ class DeepSWEAdapter(AgentAdapter):
         return [str(item) for item in value]
 
     def load(self) -> Tuple[DatasetDict, None]:
-        _validate_environment_requirements()
-
         snapshot_path = self._download_snapshot()
         task_records = self._load_task_records(snapshot_path)
         task_records = self._filter_task_records(task_records)

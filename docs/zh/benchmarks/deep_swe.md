@@ -1,50 +1,48 @@
 # DeepSWE
 
 
-## Overview
+## 概述
 
-DeepSWE is a coding-agent benchmark for evaluating repository-level software engineering tasks. EvalScope
-integrates it through Pier and runs each benchmark sample as one Pier Python API job.
+DeepSWE 是一个用于评估仓库级软件工程任务的编码智能体基准测试。EvalScope 通过 Pier 集成该基准，并将每个基准样本作为单个 Pier Python API 任务运行。
 
-## Task Description
+## 任务描述
 
-- **Task Type**: Agentic software engineering
-- **Input**: DeepSWE task directory containing task metadata and verifier assets
-- **Output**: A repository patch produced by a Pier built-in agent
-- **Scoring**: Binary verifier reward exposed as `acc`
+- **任务类型**：智能体软件工程
+- **输入**：包含任务元数据和验证器资源的 DeepSWE 任务目录
+- **输出**：由 Pier 内置智能体生成的代码仓库补丁
+- **评分方式**：二值验证器奖励，以 `acc` 形式暴露
 
-## Evaluation Notes
+## 评估说明
 
-- Requires **Python>=3.12**, Docker, and `pip install evalscope[deep_swe]`
-- Dataset defaults to ModelScope `evalscope/deep-swe`
-- DeepSWE runs through Pier's Docker environment in EvalScope
-- Use `agent_kwargs={'model_class': 'litellm'}` for OpenAI-compatible providers that do not support Responses API
+- 需要 **Python>=3.12**、Docker，以及安装 `pip install evalscope[deep_swe]`
+- 数据集默认使用 ModelScope 上的 `evalscope/deep-swe`
+- DeepSWE 在 EvalScope 中通过 Pier 的 Docker 环境运行
+- 对于不支持 Responses API 的 OpenAI 兼容提供商，请使用 `agent_kwargs={'model_class': 'litellm'}`
 
+## 属性
 
-## Properties
-
-| Property | Value |
+| 属性 | 值 |
 |----------|-------|
-| **Benchmark Name** | `deep_swe` |
-| **Dataset ID** | [evalscope/deep-swe](https://modelscope.cn/datasets/evalscope/deep-swe/summary) |
-| **Paper** | N/A |
-| **Tags** | `Agent`, `Coding`, `MultiTurn` |
-| **Metrics** | `acc` |
-| **Default Shots** | 0-shot |
-| **Evaluation Split** | `test` |
+| **基准测试名称** | `deep_swe` |
+| **数据集ID** | [evalscope/deep-swe](https://modelscope.cn/datasets/evalscope/deep-swe/summary) |
+| **论文** | N/A |
+| **标签** | `Agent`, `Coding`, `MultiTurn` |
+| **指标** | `acc` |
+| **默认示例数量** | 0-shot |
+| **评估划分** | `test` |
 
 
-## Data Statistics
+## 数据统计
 
-| Metric | Value |
+| 指标 | 值 |
 |--------|-------|
-| Total Samples | 113 |
-| Prompt Length (Mean) | 2158.07 chars |
-| Prompt Length (Min/Max) | 471 / 5385 chars |
+| 总样本数 | 113 |
+| 提示词长度（平均） | 2158.07 字符 |
+| 提示词长度（最小/最大） | 471 / 5385 字符 |
 
-## Sample Example
+## 样例示例
 
-**Subset**: `test`
+**子集**: `test`
 
 ```json
 {
@@ -74,26 +72,26 @@ integrates it through Pier and runs each benchmark sample as one Pier Python API
 }
 ```
 
-## Prompt Template
+## 提示模板
 
-**Prompt Template:**
+**提示模板:**
 ```text
 {question}
 ```
 
-## Extra Parameters
+## 额外参数
 
-| Parameter | Type | Default | Description |
+| 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `task_ids` | `list` | `[]` | Optional list of DeepSWE task ids to evaluate. |
-| `languages` | `list` | `[]` | Optional task language filter from manifest metadata. |
-| `categories` | `list` | `[]` | Optional task category filter from manifest metadata. |
-| `sample_seed` | `int` | `` | Optional deterministic shuffle seed applied before limit. |
-| `agent_kwargs` | `dict` | `{}` | Extra kwargs passed to Pier AgentConfig. |
+| `task_ids` | `list` | `[]` | 可选的 DeepSWE 任务 ID 列表，用于指定评估哪些任务。 |
+| `languages` | `list` | `[]` | 可选的任务语言过滤器，基于清单元数据。 |
+| `categories` | `list` | `[]` | 可选的任务类别过滤器，基于清单元数据。 |
+| `sample_seed` | `int` | `` | 可选的确定性打乱种子，在限制样本数量前应用。 |
+| `agent_kwargs` | `dict` | `{}` | 传递给 Pier AgentConfig 的额外关键字参数。 |
 
-## Usage
+## 使用方法
 
-### Using CLI
+### 使用 CLI
 
 ```bash
 evalscope eval \
@@ -101,10 +99,10 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets deep_swe \
-    --limit 10  # Remove this line for formal evaluation
+    --limit 10  # 正式评估时请删除此行
 ```
 
-### Using Python
+### 使用 Python
 
 ```python
 from evalscope import run_task
@@ -117,13 +115,11 @@ task_cfg = TaskConfig(
     datasets=['deep_swe'],
     dataset_args={
         'deep_swe': {
-            # extra_params: {}  # uses default extra parameters
+            # extra_params: {}  # 使用默认额外参数
         }
     },
-    limit=10,  # Remove this line for formal evaluation
+    limit=10,  # 正式评估时请删除此行
 )
 
 run_task(task_cfg=task_cfg)
 ```
-
-
