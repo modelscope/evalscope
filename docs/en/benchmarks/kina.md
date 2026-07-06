@@ -25,7 +25,7 @@ KINA (Knowledge Index of Noah's Ark) is a high-density multidisciplinary knowled
 - Default evaluation uses the **test** split (899 samples)
 - Primary metric: **Accuracy** (acc) — Pass@1 for single-inference mode
 - 0-shot Chain-of-Thought (CoT) evaluation, answer extracted from ``ANSWER: [LETTER]`` marker
-- Subsets are organized by the `discipline` field (major discipline category)
+- Discipline metadata is stored per-sample and available in review output; no per-discipline subset grouping
 - [GitHub](https://github.com/weihao1115/KINA-Benchmark)
 
 
