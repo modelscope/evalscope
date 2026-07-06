@@ -31,9 +31,9 @@ def extract_numbers(text: str) -> List[float]:
         r"""
         (?P<fraction>[+\-\u2212]?\d+\s*[/]\s*[+\-\u2212]?\d+)
         |
-        (?P<decimal>[+\-\\u2212]?(?:\d*\.\d+|\d+\.\d*))
+        (?P<decimal>[+\-\u2212]?(?:\d*\.\d+|\d+\.\d*))
         |
-        (?P<integer>[+\-\\u2212]?\d+)
+        (?P<integer>[+\-\u2212]?\d+)
     """,
         re.VERBOSE,
     )

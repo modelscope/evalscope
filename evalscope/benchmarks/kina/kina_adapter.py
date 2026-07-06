@@ -38,7 +38,7 @@ design principle.
 - Default evaluation uses the **test** split (899 samples)
 - Primary metric: **Accuracy** (acc) — Pass@1 for single-inference mode
 - 0-shot Chain-of-Thought (CoT) evaluation, answer extracted from ``ANSWER: [LETTER]`` marker
-- Subsets are organized by the `discipline` field (major discipline category)
+- Discipline metadata is stored per-sample and available in review output; no per-discipline subset grouping
 - [GitHub](https://github.com/weihao1115/KINA-Benchmark)
 """
 
@@ -61,7 +61,7 @@ class KINAAdapter(MultiChoiceAdapter):
 
     Each question may have up to 10 options (A–J).  Uses the standard
     MultiChoiceAdapter with CoT prompting and letter-based answer extraction.
-    Subsets are derived from the leading discipline category (first path component).
+    Discipline metadata is stored per-sample for reference but does not drive subset grouping.
     """
 
     def __init__(self, **kwargs: Any) -> None:
@@ -80,7 +80,7 @@ class KINAAdapter(MultiChoiceAdapter):
         # Extract ordered choice texts in key order (A, B, C, ...)
         choices = [opt['answer'].strip() for opt in sorted(options, key=lambda x: x['key'])]
 
-        # Derive a human-readable subset label from the discipline hierarchy
+        # Discipline stored in metadata for reference
         discipline: str = record.get('discipline', '')
 
         return Sample(

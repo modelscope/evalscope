@@ -42,7 +42,8 @@ to read values from measuring instruments. It covers both **real-world photograp
 - Secondary metrics: **number_acc** (numeric only), **unit_acc** (unit only)
 - Two evaluators: ``interval_matching`` (single valid range) and ``multi_interval_matching`` (e.g. clock AM/PM)
 - Model output is expected in the format ``Answer: <value> <unit>`` on the last line
-- Subsets within each split are organized by ``image_type``
+- ``image_type`` is recorded in each sample's metadata; per-type results are visible in the
+  ``subset_key`` column of review files but are not separately selectable via ``subset_list``
 - [Paper](https://arxiv.org/abs/2510.26865) | [GitHub](https://github.com/flageval-baai/MeasureBench)
 """
 
@@ -176,7 +177,7 @@ class MeasureBenchAdapter(VisionLanguageAdapter):
             evaluator_kwargs: Dict[str, Any] = json.loads(evaluator_kwargs_raw)
         except (json.JSONDecodeError, TypeError):
             logger.warning(f'Failed to parse evaluator_kwargs: {evaluator_kwargs_raw!r}')
-            score.value = {'acc': 0.0, 'number_acc': 0.0}
+            score.value = {'acc': 0.0, 'number_acc': 0.0, 'unit_acc': 0.0}
             score.main_score_name = 'acc'
             return score
 
