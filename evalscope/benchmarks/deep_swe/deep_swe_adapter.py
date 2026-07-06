@@ -1,5 +1,4 @@
 import json
-import random
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -8,14 +7,14 @@ from urllib.request import url2pathname
 
 from evalscope.api.agent import AgentTrace, AgentTraceEvent, EventType
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
-from evalscope.api.dataset import DatasetDict, DictDataLoader, Sample
+from evalscope.api.dataset import DatasetDict, DictDataLoader, Sample, download_dataset_snapshot
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessageTool, ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolCall, ToolFunction
-from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType, Tags
+from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, Tags
 from evalscope.utils.function_utils import AsyncioLoopRunner
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
@@ -45,9 +44,9 @@ COMMON_EXTRA_PARAMS = {
         'description': 'Optional deterministic shuffle seed applied before limit.',
         'value': '',
     },
-    'agent_kwargs': {
+    'pier_agent_kwargs': {
         'type': 'dict',
-        'description': 'Extra kwargs passed to Pier AgentConfig.',
+        'description': 'Extra kwargs passed to Pier AgentConfig.kwargs.',
         'value': {},
     },
 }
@@ -63,7 +62,7 @@ class DeepSWEAdapter(AgentAdapter):
         self.languages = self._as_list(extra_params.get('languages') or [])
         self.categories = self._as_list(extra_params.get('categories') or [])
         self.sample_seed = extra_params.get('sample_seed')
-        self.agent_kwargs = dict(extra_params.get('agent_kwargs') or {})
+        self.pier_agent_kwargs = dict(extra_params.get('pier_agent_kwargs') or {})
 
     @staticmethod
     def _as_list(value: Union[str, List[Any], Tuple[Any, ...]]) -> List[str]:
@@ -73,52 +72,31 @@ class DeepSWEAdapter(AgentAdapter):
 
     def load(self) -> Tuple[DatasetDict, None]:
         snapshot_path = self._download_snapshot()
-        task_records = self._load_task_records(snapshot_path)
-        task_records = self._filter_task_records(task_records)
-        task_records = self._apply_seed(task_records)
-
-        datasets = {
-            self.eval_split: DictDataLoader(
-                dict_list=task_records,
-                limit=self.limit,
-                repeats=self.repeats,
-                sample_fields=self.record_to_sample,
-                shuffle=False,
-            ).load()
-        }
-        return DatasetDict(datasets), None
+        task_records = self._filter_task_records(self._load_task_records(snapshot_path))
+        dataset = DictDataLoader(
+            dict_list=task_records,
+            limit=self.limit,
+            repeats=self.repeats,
+            sample_fields=self.record_to_sample,
+            shuffle=self.shuffle or self.sample_seed not in (None, ''),
+            seed=self._sample_seed(),
+        ).load()
+        return DatasetDict({self.eval_split: dataset}), None
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         return Sample(input=record.get('instruction', ''), target='', metadata=record)
 
     def _download_snapshot(self) -> Path:
-        dataset_id = self.dataset_id
         cache_dir = Path(DEFAULT_EVALSCOPE_CACHE_DIR) / self.name / 'snapshots'
-        if self.dataset_hub == HubType.LOCAL or Path(dataset_id).exists():
-            logger.info(f'Loading DeepSWE dataset from local path: {dataset_id}')
-            return Path(dataset_id)
-
-        if self.dataset_hub == HubType.HUGGINGFACE:
-            from huggingface_hub import snapshot_download
-
-            logger.info(f'Downloading DeepSWE dataset from HuggingFace: {dataset_id}')
-            return Path(
-                snapshot_download(
-                    repo_id=dataset_id,
-                    repo_type='dataset',
-                    cache_dir=str(cache_dir),
-                    force_download=self.force_redownload,
-                )
+        logger.info(f'Loading DeepSWE snapshot from {self.dataset_hub}: {self.dataset_id}')
+        return Path(
+            download_dataset_snapshot(
+                data_id_or_path=self.dataset_id,
+                data_source=self.dataset_hub,
+                force_redownload=self.force_redownload,
+                cache_dir=str(cache_dir),
             )
-
-        from modelscope import dataset_snapshot_download
-
-        kwargs = {
-            'dataset_id': dataset_id,
-            'cache_dir': str(cache_dir),
-        }
-        logger.info(f'Downloading DeepSWE dataset from ModelScope: {dataset_id}')
-        return Path(dataset_snapshot_download(**kwargs))
+        )
 
     def _load_task_records(self, snapshot_path: Path) -> List[Dict[str, Any]]:
         tasks_dir = snapshot_path / 'tasks'
@@ -176,12 +154,10 @@ class DeepSWEAdapter(AgentAdapter):
             filtered.append(record)
         return filtered
 
-    def _apply_seed(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _sample_seed(self) -> Optional[int]:
         if self.sample_seed in (None, ''):
-            return records
-        shuffled = list(records)
-        random.Random(int(self.sample_seed)).shuffle(shuffled)
-        return shuffled
+            return self.seed
+        return int(self.sample_seed)
 
     def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
         result_dict = self._run_pier_job(model, sample)
@@ -214,7 +190,7 @@ class DeepSWEAdapter(AgentAdapter):
             agents=[AgentConfig(
                 name='mini-swe-agent',
                 model_name=model.name,
-                kwargs=self.agent_kwargs,
+                kwargs=self.pier_agent_kwargs,
                 env={},
             )],
             environment=EnvironmentConfig(type='docker'),
@@ -464,7 +440,7 @@ integrates it through Pier and runs each benchmark sample as one Pier Python API
 - Requires **Python>=3.12**, Docker, and `pip install evalscope[deep_swe]`
 - Dataset defaults to ModelScope `evalscope/deep-swe`
 - DeepSWE runs through Pier's Docker environment in EvalScope
-- Use `agent_kwargs={'model_class': 'litellm'}` for OpenAI-compatible providers that do not support Responses API
+- Use `pier_agent_kwargs={'model_class': 'litellm'}` for OpenAI-compatible providers that do not support Responses API
 """,
         dataset_id=DEFAULT_MODELSCOPE_DATASET_ID,
         eval_split='test',

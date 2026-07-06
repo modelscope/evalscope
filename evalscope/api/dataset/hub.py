@@ -3,7 +3,7 @@
 import inspect
 import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Union
 
 from evalscope.constants import HubType
 from evalscope.utils.logger import get_logger
@@ -42,6 +42,16 @@ class DatasetHub:
             revision=self.revision,
             force_redownload=self.force_redownload,
             cache_dir=self.cache_dir,
+        )
+
+    def download_snapshot(self, allow_patterns: Optional[Union[str, list[str]]] = None) -> str:
+        return download_dataset_snapshot(
+            data_id_or_path=self.data_id_or_path,
+            data_source=self.data_source,
+            revision=self.revision,
+            force_redownload=self.force_redownload,
+            cache_dir=self.cache_dir,
+            allow_patterns=allow_patterns,
         )
 
 
@@ -147,5 +157,46 @@ def download_dataset_file(
         if not os.path.exists(resolved_path):
             raise FileNotFoundError(f'Dataset file {file_path} was not found in {root_dir}.')
         return resolved_path
+
+    raise ValueError(f'Unsupported dataset hub: {data_source}')
+
+
+def download_dataset_snapshot(
+    data_id_or_path: str,
+    data_source: Optional[str] = HubType.MODELSCOPE,
+    revision: Optional[str] = None,
+    force_redownload: bool = False,
+    cache_dir: Optional[str] = None,
+    allow_patterns: Optional[Union[str, list[str]]] = None,
+) -> str:
+    """Download or resolve a dataset repository snapshot root."""
+    data_source = data_source or HubType.MODELSCOPE
+
+    if data_source == HubType.LOCAL or os.path.exists(data_id_or_path):
+        return os.path.abspath(data_id_or_path)
+
+    if data_source == HubType.HUGGINGFACE:
+        from huggingface_hub import snapshot_download
+
+        return snapshot_download(
+            repo_id=data_id_or_path,
+            repo_type='dataset',
+            revision=revision,
+            cache_dir=cache_dir,
+            force_download=force_redownload,
+            allow_patterns=allow_patterns,
+        )
+
+    if data_source == HubType.MODELSCOPE:
+        from modelscope import dataset_snapshot_download
+
+        download_kwargs = {}
+        if revision:
+            download_kwargs['revision'] = revision
+        if cache_dir:
+            download_kwargs['cache_dir'] = cache_dir
+        if allow_patterns:
+            download_kwargs['allow_file_pattern'] = allow_patterns
+        return dataset_snapshot_download(data_id_or_path, **download_kwargs)
 
     raise ValueError(f'Unsupported dataset hub: {data_source}')

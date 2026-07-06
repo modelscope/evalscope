@@ -58,6 +58,26 @@ def test_dataset_args_override_dataset_id_and_local_path(tmp_path: Path) -> None
     assert make_adapter(tmp_path, dataset_args={'local_path': str(tmp_path / 'local')}).dataset_id == str(tmp_path / 'local')
 
 
+def test_download_snapshot_uses_common_dataset_helper(monkeypatch: Any, tmp_path: Path) -> None:
+    captured: Dict[str, Any] = {}
+    snapshot = tmp_path / 'snapshot'
+
+    def fake_download_dataset_snapshot(**kwargs: Any) -> str:
+        captured.update(kwargs)
+        return str(snapshot)
+
+    adapter = make_adapter(tmp_path, dataset_args={'dataset_id': 'custom/deep-swe'})
+    monkeypatch.setattr(
+        'evalscope.benchmarks.deep_swe.deep_swe_adapter.download_dataset_snapshot',
+        fake_download_dataset_snapshot,
+    )
+
+    assert adapter._download_snapshot() == snapshot
+    assert captured['data_id_or_path'] == 'custom/deep-swe'
+    assert captured['data_source'] == adapter.dataset_hub
+    assert Path(captured['cache_dir']).name == 'snapshots'
+
+
 def test_load_filters_tasks_and_applies_limit_and_seed(monkeypatch: Any, tmp_path: Path) -> None:
     snapshot = write_snapshot(tmp_path)
     adapter = make_adapter(tmp_path, languages=['python'], categories=['bugfix'], sample_seed=3)
@@ -296,7 +316,7 @@ def test_run_pier_job_uses_adhoc_task_source(monkeypatch: Any, tmp_path: Path) -
     install_fake_pier(monkeypatch, captured, result)
     task_path = tmp_path / 'tasks' / 'task-a'
     task_path.mkdir(parents=True)
-    adapter = make_adapter(tmp_path, agent_kwargs={'model_class': 'litellm'})
+    adapter = make_adapter(tmp_path, pier_agent_kwargs={'model_class': 'litellm'})
     sample = Sample(input='', metadata={'task_id': 'task-a', 'task_path': str(task_path)})
 
     result_dict = adapter._run_pier_job(MockModel(), sample)
@@ -315,13 +335,13 @@ def test_run_pier_job_uses_adhoc_task_source(monkeypatch: Any, tmp_path: Path) -
 def test_deep_swe_real_e2e(tmp_path: Path) -> None:
     from evalscope import run_task
 
-    agent_kwargs = {
+    pier_agent_kwargs = {
         'cost_limit': float(os.getenv('EVALSCOPE_DEEP_SWE_COST_LIMIT', '0.05')),
         'model_class': os.getenv('EVALSCOPE_DEEP_SWE_MODEL_CLASS', 'litellm'),
     }
     step_limit = os.getenv('EVALSCOPE_DEEP_SWE_AGENT_STEP_LIMIT')
     if step_limit:
-        agent_kwargs['config_yaml'] = f'agent:\n  step_limit: {int(step_limit)}\n'
+        pier_agent_kwargs['config_yaml'] = f'agent:\n  step_limit: {int(step_limit)}\n'
 
     result = run_task(
         TaskConfig(
@@ -336,7 +356,7 @@ def test_deep_swe_real_e2e(tmp_path: Path) -> None:
                 'deep_swe': {
                     'extra_params': {
                         'task_ids': ['abs-module-cache-flags'],
-                        'agent_kwargs': agent_kwargs,
+                        'pier_agent_kwargs': pier_agent_kwargs,
                     }
                 }
             },

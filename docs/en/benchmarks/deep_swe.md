@@ -18,7 +18,7 @@ integrates it through Pier and runs each benchmark sample as one Pier Python API
 - Requires **Python>=3.12**, Docker, and `pip install evalscope[deep_swe]`
 - Dataset defaults to ModelScope `evalscope/deep-swe`
 - DeepSWE runs through Pier's Docker environment in EvalScope
-- Use `agent_kwargs={'model_class': 'litellm'}` for OpenAI-compatible providers that do not support Responses API
+- Use `pier_agent_kwargs={'model_class': 'litellm'}` for OpenAI-compatible providers that do not support Responses API
 
 
 ## Properties
@@ -50,7 +50,7 @@ integrates it through Pier and runs each benchmark sample as one Pier Python API
 {
   "input": [
     {
-      "id": "80791670",
+      "id": "f61040e0",
       "content": "Add a new `errorStack` constructor option to SuperJSON. Omitting it leaves existing Error behavior unchanged.\n\nThe option shape is `{ mode?, normalizeNewlines?, trimLeadingWhitespace?, maxStackLines?, stripInternalFrames?, redactPaths?, inclu ... [TRUNCATED 3577 chars] ... ): Processor | undefined`. `normalizeErrorStackOptions` returns `undefined` for any non-object input (`null`, `undefined`, strings).\n\nBefore writing, read through the existing error serialization logic and the `allowedErrorProps` mechanism.\n\n"
     }
   ],
@@ -89,7 +89,7 @@ integrates it through Pier and runs each benchmark sample as one Pier Python API
 | `languages` | `list` | `[]` | Optional task language filter from manifest metadata. |
 | `categories` | `list` | `[]` | Optional task category filter from manifest metadata. |
 | `sample_seed` | `int` | `` | Optional deterministic shuffle seed applied before limit. |
-| `agent_kwargs` | `dict` | `{}` | Extra kwargs passed to Pier AgentConfig. |
+| `pier_agent_kwargs` | `dict` | `{}` | Extra kwargs passed to Pier AgentConfig.kwargs. |
 
 ## Usage
 
