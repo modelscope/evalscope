@@ -920,6 +920,11 @@ class TestNativeBenchmark(TestBenchmark):
         """Test KINA knowledge benchmark with mock."""
         self._run_dataset_test('kina', limit=5, use_mock=True)
 
+    def test_perspective_gap_mock(self):
+        """Test PerspectiveGap benchmarks with mock."""
+        self._run_dataset_test('perspective_gap_role_assignment', limit=5, use_mock=True)
+        self._run_dataset_test('perspective_gap_prompt_writing', limit=5, use_mock=True)
+
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k

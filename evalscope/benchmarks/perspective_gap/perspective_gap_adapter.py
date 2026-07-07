@@ -13,15 +13,20 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-DATASET_ID = 'sun1245/PerspectiveGap'
+DATASET_ID = 'evalscope/PerspectiveGap'
+PERSPECTIVE_GAP_COMMIT = '9c6921b3337ff3e6a6a453f68d117a8c1663135e'
+PERSPECTIVE_GAP_REQUIREMENT = (
+    'perspective-gap @ '
+    f'git+https://github.com/WhymustIhaveaname/PerspectiveGap.git@{PERSPECTIVE_GAP_COMMIT}'
+)
 INSTALL_HINT = (
     'PerspectiveGap scoring is required for this benchmark. Install it with '
-    "`pip install 'perspective-gap @ git+https://github.com/WhymustIhaveaname/PerspectiveGap.git'` "
-    "or `uv pip install 'perspective-gap @ git+https://github.com/WhymustIhaveaname/PerspectiveGap.git'`."
+    f"`pip install '{PERSPECTIVE_GAP_REQUIREMENT}'` or `uv pip install '{PERSPECTIVE_GAP_REQUIREMENT}'`."
 )
 ROLE_ASSIGNMENT = 'role_assignment'
 PROMPT_WRITING = 'prompt_writing'
 STRICT_PASS = 'strict_pass'
+SUBMETRICS = ['net_match_score', 'required_coverage', 'boundary_precision', 'distractor_leakage']
 
 DESCRIPTION = """
 ## Overview
@@ -35,7 +40,7 @@ PerspectiveGap evaluates whether a model can compose orchestration prompts for m
 
 ## Data
 
-The benchmark uses the Hugging Face dataset `sun1245/PerspectiveGap`, which contains the released `test` split. Use `dataset_hub='huggingface'`, or pass `dataset_args.<task>.local_path` to a local JSONL mirror with the same fields.
+The benchmark uses the ModelScope dataset `evalscope/PerspectiveGap`, which contains the released `test` split. You can also pass `dataset_args.<task>.local_path` to a local JSONL mirror with the same fields.
 
 ## Scoring
 
@@ -54,19 +59,27 @@ def _json_target(reference_need_sets: Dict[str, Any]) -> str:
     return json.dumps(reference_need_sets, ensure_ascii=False)
 
 
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value) if value is not None else default
+    except (TypeError, ValueError):
+        return default
+
+
 def _score_from_result(result: Dict[str, Any], prediction: str, filtered_prediction: str) -> Score:
     metrics = result.get('metrics') or {}
     counts = result.get('counts') or {}
     strict_pass_value = metrics.get(STRICT_PASS)
     if strict_pass_value is None:
         strict_pass_value = result.get('pass')
-    try:
-        strict_pass = float(strict_pass_value) if strict_pass_value is not None else 0.0
-    except (TypeError, ValueError):
-        strict_pass = 0.0
+
+    value = {STRICT_PASS: _safe_float(strict_pass_value)}
+    for metric_name in SUBMETRICS:
+        if metric_name in metrics:
+            value[metric_name] = _safe_float(metrics.get(metric_name))
 
     score = Score(
-        value={STRICT_PASS: strict_pass},
+        value=value,
         prediction=prediction,
         extracted_prediction=filtered_prediction,
         explanation=result.get('error'),
@@ -149,7 +162,7 @@ class PerspectiveGapBaseAdapter(DefaultDataAdapter):
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2606.08878',
         subset_list=['default'],
-        metric_list=[STRICT_PASS],
+        metric_list=[STRICT_PASS, *SUBMETRICS],
         few_shot_num=0,
         train_split=None,
         eval_split='test',
@@ -178,7 +191,7 @@ class PerspectiveGapRoleAssignmentAdapter(PerspectiveGapBaseAdapter):
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2606.08878',
         subset_list=['default'],
-        metric_list=[STRICT_PASS],
+        metric_list=[STRICT_PASS, *SUBMETRICS],
         few_shot_num=0,
         train_split=None,
         eval_split='test',
