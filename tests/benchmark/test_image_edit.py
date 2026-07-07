@@ -35,7 +35,7 @@ class TestImageEditBenchmark(TestBenchmark):
             'judge_strategy': JudgeStrategy.AUTO,
             'eval_batch_size': 5,
             'judge_model_args': {
-                'model_id': 'qwen2.5-vl-72b-instruct',
+                'model_id': 'qwen-plus',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {

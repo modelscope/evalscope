@@ -166,7 +166,7 @@ class TestRun(unittest.TestCase):
             },
             judge_strategy=JudgeStrategy.AUTO,
             judge_model_args={
-                'model_id': 'qwen2.5-72b-instruct',
+                'model_id': 'qwen-plus',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
             }
@@ -207,7 +207,7 @@ class TestRun(unittest.TestCase):
             },
             judge_strategy=JudgeStrategy.AUTO,
             judge_model_args={
-                'model_id': 'qwen2.5-72b-instruct',
+                'model_id': 'qwen-plus',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
             }
@@ -253,7 +253,7 @@ class TestRun(unittest.TestCase):
             },
             judge_strategy=JudgeStrategy.AUTO,
             judge_model_args={
-                'model_id': 'qwen2.5-72b-instruct',
+                'model_id': 'qwen-plus',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
             }
