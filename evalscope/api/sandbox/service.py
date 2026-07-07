@@ -2,7 +2,7 @@
 
 Unifies the two historical code paths:
 
-* ``SandboxMixin.EnclaveSandboxBackend`` – one manager per benchmark, pooled.
+* ``CodeExecutionSandboxMixin.EnclaveCodeExecutionBackend`` – one manager per benchmark, pooled.
 * ``EnclaveAgentEnvironment`` – one manager per process, per-sample containers.
 
 Both are now thin wrappers around :class:`SandboxService`.  The service
@@ -204,7 +204,7 @@ class SandboxService:
         return SandboxManagerFactory.create_manager(**manager_config)
 
     # ------------------------------------------------------------------
-    # Public APIs: pooled (SandboxMixin) and per-sample (Agent env)
+    # Public APIs: pooled (CodeExecutionSandboxMixin) and per-sample (Agent env)
     # ------------------------------------------------------------------
 
     async def acquire_pool(
@@ -292,7 +292,7 @@ def shutdown_sandbox_service() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Convenience helpers used by SandboxMixin / EnclaveAgentEnvironment
+# Convenience helpers used by CodeExecutionSandboxMixin / EnclaveAgentEnvironment
 # ---------------------------------------------------------------------------
 
 
@@ -302,7 +302,7 @@ def build_and_acquire_pool_sync(
     sandbox_config_dict: Optional[Dict[str, Any]],
     manager_config: Optional[Dict[str, Any]] = None,
 ) -> PoolHandle:
-    """Synchronous helper for :class:`SandboxMixin`.
+    """Synchronous helper for :class:`CodeExecutionSandboxMixin`.
 
     Combines :func:`build_sandbox_config` and :meth:`SandboxService.acquire_pool`
     and drives them through the shared :class:`AsyncioLoopRunner`.

@@ -138,7 +138,7 @@ def _resolve_env_kwargs(
 
     Precedence (lowest -> highest):
       1. ``task_config.sandbox`` — engine / default_config / manager_config
-         carried alongside the pooled SandboxMixin so sandbox settings are
+         carried alongside the pooled CodeExecutionSandboxMixin so sandbox settings are
          defined **once** at the task level.
       2. ``build_sandbox_config(sample)`` — per-sample override hook.
       3. ``agent_config.environment_extra`` — raw kwargs forwarded verbatim

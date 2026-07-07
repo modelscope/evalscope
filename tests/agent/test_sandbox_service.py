@@ -14,9 +14,10 @@ from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from evalscope.api.benchmark import BenchmarkMeta
-from evalscope.api.mixin.sandbox_mixin import EnclaveSandboxBackend
+from evalscope.api.mixin.code_execution_sandbox_mixin import EnclaveCodeExecutionBackend
 from evalscope.api.sandbox import (
     DockerImageResult,
+    DockerImageSpec,
     PoolHandle,
     SandboxEngine,
     SandboxHandle,
@@ -104,15 +105,19 @@ class TestBuildSandboxConfig:
             sandbox_config={'image': 'custom-sandbox:latest'},
         )
         cfg = TaskConfig(sandbox={'enabled': True, 'engine': 'docker'})
-        backend = EnclaveSandboxBackend(
+        backend = EnclaveCodeExecutionBackend(
             benchmark_meta=meta,
             task_config=cfg,
-            use_custom_image=True,
-            build_context_provider=lambda: (str(tmp_path), str(dockerfile)),
+            image_spec_provider=lambda: DockerImageSpec(
+                name_prefix='custom-sandbox',
+                context_dir=str(tmp_path),
+                dockerfile=str(dockerfile),
+                cache_key_parts=['sandbox', 'custom-sandbox:latest'],
+            ),
         )
 
-        with patch('evalscope.api.mixin.sandbox_mixin.prepare_docker_image') as build_image, \
-                patch('evalscope.api.mixin.sandbox_mixin.build_and_acquire_pool_sync',
+        with patch('evalscope.api.mixin.code_execution_sandbox_mixin.prepare_docker_image') as build_image, \
+                patch('evalscope.api.mixin.code_execution_sandbox_mixin.build_and_acquire_pool_sync',
                       return_value=MagicMock()) as acquire_pool:
             build_image.return_value = DockerImageResult(
                 image_tag='custom-sandbox:hash',
@@ -123,8 +128,8 @@ class TestBuildSandboxConfig:
 
         spec = build_image.call_args.args[0]
         assert spec.name_prefix == 'custom-sandbox'
-        assert spec.context_dir == str(tmp_path.resolve())
-        assert spec.dockerfile == 'Dockerfile.custom'
+        assert spec.context_dir == str(tmp_path)
+        assert spec.dockerfile == str(dockerfile)
         assert spec.cache_key_parts == ['sandbox', 'custom-sandbox:latest']
         sandbox_config = acquire_pool.call_args.kwargs['sandbox_config_dict']
         assert sandbox_config['image'] == 'custom-sandbox:hash'

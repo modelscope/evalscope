@@ -181,16 +181,7 @@ def test_agent_config_accepts_skills_fields() -> None:
     assert cfg.skill_prompt_nudge is False
 
 
-def test_bigcodebench_optional_builder_overrides_sandbox_image(monkeypatch, tmp_path: Path) -> None:
-    from evalscope.api.sandbox.docker_image import DockerImageResult
-
-    def fake_prepare_docker_image(spec):  # type: ignore[no-untyped-def]
-        assert spec.context_dir == str(tmp_path)
-        assert spec.cache_key_parts == ['bigcodebench', 'bigcodebench']
-        return DockerImageResult(image_tag='evalscope-bigcodebench:test', reused=True, context_hash='abc')
-
-    monkeypatch.setattr('evalscope.benchmarks.bigcodebench.bigcodebench_adapter.prepare_docker_image',
-                        fake_prepare_docker_image)
+def test_bigcodebench_optional_builder_returns_sandbox_image_spec(tmp_path: Path) -> None:
     meta = BenchmarkMeta(
         name='bigcodebench',
         dataset_id='evalscope/bigcodebench',
@@ -210,8 +201,39 @@ def test_bigcodebench_optional_builder_overrides_sandbox_image(monkeypatch, tmp_
     cfg = TaskConfig(datasets=['bigcodebench'])
 
     adapter = BigCodeBenchAdapter(benchmark_meta=meta, task_config=cfg)
+    spec = adapter.get_sandbox_image_spec()
 
-    assert adapter._benchmark_meta.sandbox_config['image'] == 'evalscope-bigcodebench:test'
+    assert spec is not None
+    assert spec.name_prefix == 'evalscope-bigcodebench'
+    assert spec.context_dir == str(tmp_path)
+    assert spec.dockerfile == 'Dockerfile'
+    assert spec.cache_key_parts == ['bigcodebench', 'bigcodebench']
+    assert spec.force_rebuild is False
+
+
+def test_bigcodebench_default_uses_prebuilt_sandbox_image() -> None:
+    meta = BenchmarkMeta(
+        name='bigcodebench',
+        dataset_id='evalscope/bigcodebench',
+        subset_list=['default'],
+        metric_list=['acc'],
+        prompt_template='{prompt}',
+        sandbox_config={'image': 'bigcodebench/bigcodebench-evaluate:latest'},
+        extra_params={
+            'split': 'instruct',
+            'version': 'default',
+            'calibrate': True,
+            'docker_build_context': '',
+            'dockerfile': 'Dockerfile',
+            'force_rebuild': False,
+        },
+    )
+    cfg = TaskConfig(datasets=['bigcodebench'])
+
+    adapter = BigCodeBenchAdapter(benchmark_meta=meta, task_config=cfg)
+
+    assert adapter.get_sandbox_image_spec() is None
+    assert adapter._benchmark_meta.sandbox_config['image'] == 'bigcodebench/bigcodebench-evaluate:latest'
 
 
 def test_save_verifier_artifacts_writes_paths(tmp_path: Path) -> None:

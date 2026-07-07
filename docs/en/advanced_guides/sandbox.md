@@ -4,8 +4,9 @@ EvalScope uses [ms_enclave](https://github.com/modelscope/ms-enclave) to run
 model-generated code inside isolated sandboxes.  Two execution paths share
 the same service layer:
 
-* **Pooled** — a warm pool of long-lived sandboxes used by code benchmarks
-  (e.g. HumanEval, MBPP) through the `SandboxMixin`.
+* **Code execution pool** — a warm pool of long-lived sandboxes used by code
+  benchmarks (e.g. HumanEval, MBPP) through the
+  `CodeExecutionSandboxMixin`.
 * **Per-sample** — one sandbox per sample created by agent environments
   (e.g. `EnclaveAgentEnvironment`) for SWE-bench-style benchmarks.
 
@@ -89,12 +90,13 @@ has the final word if the user wants to override per-run.
 
 ## Pool vs per-sample
 
-| Aspect           | Pool (SandboxMixin)                | Per-sample (Agent env)        |
+| Aspect           | Code execution pool                | Per-sample agent environment  |
 |------------------|------------------------------------|-------------------------------|
+| Owner            | `CodeExecutionSandboxMixin`        | `EnclaveAgentEnvironment`     |
 | Lifetime         | Reused across samples              | Fresh container per sample    |
 | Warmup           | `manager.initialize_pool`          | None                          |
 | Execution API    | `PoolHandle.execute_tool`          | `SandboxHandle.execute_tool`  |
-| Typical use      | Code benchmarks                    | SWE-bench, Agent tool use     |
+| Typical use      | Code benchmark scoring             | SWE-bench, agent tool use     |
 
 Managers are shared across both paths when `(engine, manager_config)`
 match, so you only pay for one connection even if a benchmark uses both.

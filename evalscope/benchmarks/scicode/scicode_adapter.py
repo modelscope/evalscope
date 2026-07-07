@@ -9,7 +9,9 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
+from evalscope.api.sandbox import DockerImageSpec
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 from evalscope.utils.url_utils import download_url
@@ -79,7 +81,7 @@ SciCode is a challenging benchmark designed to evaluate language model capabilit
         }
     )
 )
-class SciCodeAdapter(MultiTurnAdapter):
+class SciCodeAdapter(CodeExecutionSandboxMixin, MultiTurnAdapter):
     """
     SciCode adapter using the new data processing framework.
 
@@ -96,7 +98,6 @@ class SciCodeAdapter(MultiTurnAdapter):
         self.system_prompt = INITIAL_PROMPT_PROVIDE_BACKGROUND if self.provide_background else INITIAL_PROMPT
         self.prompt_template = SUBPROBLEM_PROMPT_PROVIDE_BACKGROUND if self.provide_background else SUBPROBLEM_PROMPT
         self.docker_path = Path(__file__).parent / 'docker'
-        self._use_custom_image = True
 
     def load(self):
         """
@@ -197,11 +198,14 @@ class SciCodeAdapter(MultiTurnAdapter):
         ]
         return agg_scores
 
-    def get_build_context(self):
-        """
-        Get the build context for the docker image.
-        """
-        return self.docker_path.as_posix(), (self.docker_path / 'Dockerfile').as_posix()
+    def get_sandbox_image_spec(self) -> DockerImageSpec:
+        """Return the benchmark-level Docker image used by the sandbox pool."""
+        return DockerImageSpec(
+            name_prefix='scicode-benchmark',
+            context_dir=self.docker_path.as_posix(),
+            dockerfile=(self.docker_path / 'Dockerfile').as_posix(),
+            cache_key_parts=['sandbox', 'scicode-benchmark:latest'],
+        )
 
     def _verify_subproblem(self, subproblem: Dict[str, Any], state: TaskState) -> Score:
         """

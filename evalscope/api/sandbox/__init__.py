@@ -1,7 +1,7 @@
 """Unified sandbox service layer for evalscope.
 
 This package consolidates the ms_enclave integration used by both
-:class:`evalscope.api.mixin.sandbox_mixin.SandboxMixin` (pool-based execution
+:class:`evalscope.api.mixin.code_execution_sandbox_mixin.CodeExecutionSandboxMixin` (pool-based execution
 for code benchmarks) and the Agent environment (per-sample containers).
 
 Public surface:

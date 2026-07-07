@@ -13,7 +13,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import DockerImageSpec, prepare_docker_image
+from evalscope.api.sandbox import prepare_docker_image
 from evalscope.constants import HubType, Tags
 from evalscope.utils.import_utils import check_import, is_build_doc
 from evalscope.utils.logger import get_logger
@@ -26,6 +26,7 @@ from .utils import (
     build_reference_volumes,
     export_submission,
     format_reference_hint,
+    gdpval_image_spec,
     remove_reference_hash,
     sandbox_reference_path,
     submission_records_from_samples,
@@ -250,10 +251,6 @@ class GDPvalAdapter(AgentLoopAdapter):
             metadata=sample.metadata,
         )
 
-    def get_build_context(self) -> tuple[str, str]:
-        docker_context = Path(__file__).parent
-        return docker_context.as_posix(), (docker_context / 'Dockerfile').as_posix()
-
     def match_score(
         self,
         original_prediction: str,
@@ -326,15 +323,7 @@ class GDPvalAdapter(AgentLoopAdapter):
         if not self.auto_build_docker_image or self.docker_image != _DEFAULT_DOCKER_IMAGE:
             return
 
-        build_ctx, dockerfile = self.get_build_context()
-        result = prepare_docker_image(
-            DockerImageSpec(
-                name_prefix='evalscope/gdpval',
-                context_dir=build_ctx,
-                dockerfile=dockerfile,
-                cache_key_parts=[self.name, 'gdpval'],
-            )
-        )
+        result = prepare_docker_image(gdpval_image_spec(context_dir=Path(__file__).parent, benchmark_name=self.name))
         self.docker_image = result.image_tag
         logger.info(f'GDPval docker image prepared: {result.image_tag} (reused={result.reused})')
 

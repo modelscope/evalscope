@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.agent.types import ExecResult
 from evalscope.api.dataset import Sample
+from evalscope.api.sandbox import DockerImageSpec
 from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
@@ -21,6 +22,15 @@ SANDBOX_REFERENCE_DIR = '/reference_files'
 SANDBOX_DELIVERABLE_DIR = 'deliverable_files'
 HOST_ARTIFACT_ROOT = 'artifacts/gdpval'
 SUBMISSION_DIR_NAME = 'gdpval_submission'
+
+
+def gdpval_image_spec(*, context_dir: Path, benchmark_name: str) -> DockerImageSpec:
+    return DockerImageSpec(
+        name_prefix='evalscope/gdpval',
+        context_dir=context_dir.as_posix(),
+        dockerfile=(context_dir / 'Dockerfile').as_posix(),
+        cache_key_parts=[benchmark_name, 'gdpval'],
+    )
 
 
 class GDPvalArtifactEnvironment(AgentEnvironment):
