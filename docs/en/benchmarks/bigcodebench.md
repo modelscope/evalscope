@@ -86,6 +86,9 @@ BigCodeBench is an easy-to-use benchmark for solving practical and challenging t
 | `split` | `str` | `instruct` | Evaluation mode: "complete" (docstring completion) or "instruct" (NL instruction). Choices: ['complete', 'instruct'] |
 | `version` | `str` | `default` | Dataset version. Use "default" for the latest available version. |
 | `calibrate` | `bool` | `True` | Whether to prepend code_prompt to the solution for function signature alignment. |
+| `docker_build_context` | `str` | `` | Optional local Docker build context. When set, overrides the default sandbox image. |
+| `dockerfile` | `str` | `Dockerfile` | Dockerfile path inside docker_build_context. |
+| `force_rebuild` | `bool` | `False` | Force rebuilding the optional local Docker image. |
 
 ## Sandbox Configuration
 

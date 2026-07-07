@@ -75,7 +75,7 @@ class SandboxHandle:
         return await self._manager.execute_tool(self._sandbox_id, tool_name, parameters)
 
     async def put_dir(self, source_dir: str | Path, target_dir: str) -> bool:
-        """Copy a host directory into the sandbox when the manager supports it."""
+        """Copy a host directory into the sandbox via ms_enclave SandboxManager."""
         if self._sandbox_id is None:
             raise RuntimeError('SandboxHandle already closed')
         return await self._manager.put_dir(self._sandbox_id, source_dir, target_dir)

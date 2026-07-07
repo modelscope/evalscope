@@ -24,8 +24,8 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
 
 ## Evaluation Notes
 
-- The default Docker image is `evalscope/gdpval:latest` and is built automatically from the bundled Dockerfile when
-  missing. Set `extra_params.auto_build_docker_image=false` to require a pre-built image, or override
+- The default Docker image is built automatically from the bundled Dockerfile into a content-hashed local tag. Set
+  `extra_params.auto_build_docker_image=false` to require a pre-built `evalscope/gdpval:latest`, or override
   `extra_params.docker_image`.
 - `submission_ready` is a local readiness metric: it is 1 when the model produced final text or at least one
   deliverable file. It is not an official GDPval quality score.

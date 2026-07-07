@@ -90,6 +90,9 @@ def run_external_agent(
     samples so the :class:`ModelProxyServer` singleton (which binds to it)
     only spins up once per worker thread instead of once per sample.
     """
+    if environment_override is None and not close_environment:
+        raise ValueError('close_environment=False requires environment_override')
+
     instruction = instruction_override if instruction_override is not None else _instruction_from_sample(sample)
     skills = resolve_agent_skills(
         sample_metadata=sample.metadata,

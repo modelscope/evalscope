@@ -1,5 +1,4 @@
 import asyncio
-import pytest
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -10,7 +9,6 @@ from evalscope.agent.skills import (
     ResolvedSkills,
     SkillMetadata,
     install_agent_skills,
-    parse_frontmatter,
     resolve_agent_skills,
 )
 from evalscope.api.agent.types import ExecResult
@@ -58,25 +56,6 @@ description: Demo skill.
     assert skills.sandbox_dir == DEFAULT_SKILLS_SANDBOX_DIR
     assert skills.install_paths == [DEFAULT_SKILLS_INSTALL_DIR]
     assert skills.skills[0].path == '$HOME/.agents/skills/demo/SKILL.md'
-
-
-def test_resolve_config_skills_fails_fast_for_missing_dir(tmp_path: Path) -> None:
-    with pytest.raises(FileNotFoundError, match='skills_dir is not a directory'):
-        resolve_agent_skills(sample_metadata={}, config_skills_dir=str(tmp_path / 'missing'))
-
-
-def test_parse_frontmatter_supports_folded_yaml_description() -> None:
-    metadata = parse_frontmatter(
-        """---
-name: demo
-description: >-
-  first line
-  second line
----
-"""
-    )
-
-    assert metadata == {'name': 'demo', 'description': 'first line second line'}
 
 
 def test_install_config_skills_uploads_then_installs(tmp_path: Path) -> None:

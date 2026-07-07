@@ -178,7 +178,7 @@ class SkillsBenchAdapter(AgentAdapter):
         if self.task_ids:
             dirs = [self.tasks_dir / task_id for task_id in self.task_ids]
         else:
-            dirs = sorted(path for path in self.tasks_dir.iterdir() if path.is_dir())
+            dirs = sorted(path for path in self.tasks_dir.iterdir() if path.is_dir() and not path.name.startswith('.'))
         missing = [str(path) for path in dirs if not path.is_dir()]
         if missing:
             raise FileNotFoundError(f'SkillsBench task directories not found: {missing}')
@@ -370,6 +370,10 @@ class SkillsBenchAdapter(AgentAdapter):
         reward_text = await read_sandbox_text(env, f'{_LOGS_VERIFIER_DIR}/reward.txt')
         ctrf_text = await read_sandbox_text(env, f'{_LOGS_VERIFIER_DIR}/ctrf.json')
         self._save_verifier_artifacts(sample, stdout=stdout, reward_text=reward_text, ctrf_text=ctrf_text)
+        if verifier.timed_out:
+            sample.metadata['verifier_error'] = 'Verifier timed out'
+            sample.metadata['reward'] = 0.0
+            return
         if not reward_text.strip():
             sample.metadata['verifier_error'] = (
                 f'No reward file found after verifier exited with code {verifier.returncode}'

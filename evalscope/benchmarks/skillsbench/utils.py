@@ -45,6 +45,7 @@ def stage_environment_context(*, task_dir: Path, skill_mode: str) -> str:
     else:
         _rewrite_dockerfile_without_skill_copies(dockerfile)
         _assert_no_skill_path_residue(dockerfile, include_neutral=False)
+        (Path(tmp) / 'skills').mkdir(parents=True, exist_ok=True)
         content = dockerfile.read_text(encoding='utf-8')
         dockerfile.write_text(
             f'{content.rstrip()}\n\n# SkillsBench skill injection.\nCOPY skills /skills\n', encoding='utf-8'
