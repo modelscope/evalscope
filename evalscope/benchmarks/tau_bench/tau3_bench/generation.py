@@ -119,7 +119,7 @@ def patched_generate(
         ) for tool_call in tool_calls
     ]
     tool_calls = tool_calls or None
-    usage = completion.usage.model_dump(exclude_none=True)
+    usage = completion.usage.model_dump(exclude_none=True) if completion.usage is not None else None
 
     raw_data = completion.model_dump()
     perf = completion.message.perf_metrics
