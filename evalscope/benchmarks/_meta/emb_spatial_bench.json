@@ -1,0 +1,312 @@
+{
+  "meta": {
+    "pretty_name": "EmbSpatial-Bench",
+    "dataset_id": "evalscope/EmbSpatial-Bench",
+    "paper_url": "https://aclanthology.org/2024.acl-short.33/",
+    "tags": [
+      "MultiModal",
+      "Reasoning",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "close",
+      "far",
+      "above",
+      "under",
+      "left",
+      "right"
+    ],
+    "description": "\n## Overview\n\nEmbSpatial-Bench is a benchmark for evaluating embodied spatial understanding of large vision-language models (LVLMs). The benchmark is automatically derived from embodied scenes and covers 6 spatial relationships from an egocentric perspective: **close**, **far**, **above**, **under**, **left**, and **right**.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Visual Question Answering (VQA)\n- **Input**: An egocentric RGB image + a spatial reasoning question with 4 candidate answers\n- **Output**: A single letter (A / B / C / D) identifying the correct object or spatial relationship\n- **Domains**: Embodied AI, spatial reasoning (MP3D and AI2Thor environments)\n\n## Key Features\n\n- 3,640 human-verified evaluation questions derived from two embodied environments (MP3D and AI2Thor)\n- 6 spatial relation categories: close, far, above, under, left, right\n- Each question requires selecting the most spatially accurate answer from 4 options\n- Designed to expose the gap between current LVLMs and qualified embodied intelligence\n\n## Evaluation Notes\n\n- Default evaluation uses the **embspatial_bench.json** file (3,640 samples)\n- Primary metric: **Accuracy** (acc)\n- Answer indices are 0-based in the dataset (0 → A, 1 → B, 2 → C, 3 → D)\n- Images are stored as JPEG base64 strings in the JSON file\n- Subsets are organized by the `relation` field (6 spatial categories)\n- [Paper](https://aclanthology.org/2024.acl-short.33/) | [GitHub](https://github.com/mengfeidu/EmbSpatial-Bench)\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 3640,
+    "subset_stats": [
+      {
+        "name": "close",
+        "sample_count": 612,
+        "prompt_length_mean": 293.54,
+        "prompt_length_min": 274,
+        "prompt_length_max": 326,
+        "prompt_length_std": 10.6,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 612,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1296x968",
+              "300x300",
+              "640x480"
+            ],
+            "resolution_range": {
+              "min": "300x300",
+              "max": "1296x968"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "far",
+        "sample_count": 594,
+        "prompt_length_mean": 292.68,
+        "prompt_length_min": 265,
+        "prompt_length_max": 326,
+        "prompt_length_std": 12.55,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 594,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1296x968",
+              "300x300",
+              "640x480"
+            ],
+            "resolution_range": {
+              "min": "300x300",
+              "max": "1296x968"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "above",
+        "sample_count": 596,
+        "prompt_length_mean": 405.61,
+        "prompt_length_min": 360,
+        "prompt_length_max": 486,
+        "prompt_length_std": 23.28,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 596,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1296x968",
+              "300x300",
+              "640x480"
+            ],
+            "resolution_range": {
+              "min": "300x300",
+              "max": "1296x968"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "under",
+        "sample_count": 602,
+        "prompt_length_mean": 404.35,
+        "prompt_length_min": 350,
+        "prompt_length_max": 490,
+        "prompt_length_std": 22.27,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 602,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1296x968",
+              "300x300",
+              "640x480"
+            ],
+            "resolution_range": {
+              "min": "300x300",
+              "max": "1296x968"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "left",
+        "sample_count": 616,
+        "prompt_length_mean": 408.86,
+        "prompt_length_min": 359,
+        "prompt_length_max": 486,
+        "prompt_length_std": 21.53,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 616,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1296x968",
+              "300x300",
+              "640x480"
+            ],
+            "resolution_range": {
+              "min": "300x300",
+              "max": "1296x968"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "right",
+        "sample_count": 620,
+        "prompt_length_mean": 409.47,
+        "prompt_length_min": 352,
+        "prompt_length_max": 481,
+        "prompt_length_std": 21.76,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 620,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1296x968",
+              "300x300",
+              "640x480"
+            ],
+            "resolution_range": {
+              "min": "300x300",
+              "max": "1296x968"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 369.34,
+      "min": 265,
+      "max": 490,
+      "std": 57.07
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-07-06T17:23:58.082817",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 3640,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1296x968",
+          "300x300",
+          "640x480"
+        ],
+        "resolution_range": {
+          "min": "300x300",
+          "max": "1296x968"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "3f406c29",
+          "content": [
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~35.2KB]"
+            },
+            {
+              "text": "Among the listed objects, which one is closest to your current location in the image?\n(A) table\n(B) towel\n(C) door\n(D) basket\nAnswer with only the letter of the correct option. The last line of your response should be of the format: ANSWER: [LETTER] where LETTER is one of A, B, C, D."
+            }
+          ]
+        }
+      ],
+      "target": "D",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "close",
+      "metadata": {
+        "question_id": "mp3d_0",
+        "relation": "close",
+        "data_source": "mp3d"
+      }
+    },
+    "subset": "close",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# EmbSpatial-Bench\n\n\n## Overview\n\nEmbSpatial-Bench is a benchmark for evaluating embodied spatial understanding of large vision-language models (LVLMs). The benchmark is automatically derived from embodied scenes and covers 6 spatial relationships from an egocentric perspective: **close**, **far**, **above**, **under**, **left**, and **right**.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Visual Question Answering (VQA)\n- **Input**: An egocentric RGB image + a spatial reasoning question with 4 candidate answers\n- **Output**: A single letter (A / B / C / D) identifying the correct object or spatial relationship\n- **Domains**: Embodied AI, spatial reasoning (MP3D and AI2Thor environments)\n\n## Key Features\n\n- 3,640 human-verified evaluation questions derived from two embodied environments (MP3D and AI2Thor)\n- 6 spatial relation categories: close, far, above, under, left, right\n- Each question requires selecting the most spatially accurate answer from 4 options\n- Designed to expose the gap between current LVLMs and qualified embodied intelligence\n\n## Evaluation Notes\n\n- Default evaluation uses the **embspatial_bench.json** file (3,640 samples)\n- Primary metric: **Accuracy** (acc)\n- Answer indices are 0-based in the dataset (0 → A, 1 → B, 2 → C, 3 → D)\n- Images are stored as JPEG base64 strings in the JSON file\n- Subsets are organized by the `relation` field (6 spatial categories)\n- [Paper](https://aclanthology.org/2024.acl-short.33/) | [GitHub](https://github.com/mengfeidu/EmbSpatial-Bench)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `emb_spatial_bench` |\n| **Dataset ID** | [evalscope/EmbSpatial-Bench](https://modelscope.cn/datasets/evalscope/EmbSpatial-Bench/summary) |\n| **Paper** | [Paper](https://aclanthology.org/2024.acl-short.33/) |\n| **Tags** | `MCQ`, `MultiModal`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,640 |\n| Prompt Length (Mean) | 369.34 chars |\n| Prompt Length (Min/Max) | 265 / 490 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `close` | 612 | 293.54 | 274 | 326 |\n| `far` | 594 | 292.68 | 265 | 326 |\n| `above` | 596 | 405.61 | 360 | 486 |\n| `under` | 602 | 404.35 | 350 | 490 |\n| `left` | 616 | 408.86 | 359 | 486 |\n| `right` | 620 | 409.47 | 352 | 481 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 3,640 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 300x300 - 1296x968 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `close`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"3f406c29\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~35.2KB]\"\n        },\n        {\n          \"text\": \"Among the listed objects, which one is closest to your current location in the image?\\n(A) table\\n(B) towel\\n(C) door\\n(D) basket\\nAnswer with only the letter of the correct option. The last line of your response should be of the format: ANSWER: [LETTER] where LETTER is one of A, B, C, D.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"D\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"close\",\n  \"metadata\": {\n    \"question_id\": \"mp3d_0\",\n    \"relation\": \"close\",\n    \"data_source\": \"mp3d\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets emb_spatial_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['emb_spatial_bench'],\n    dataset_args={\n        'emb_spatial_bench': {\n            # subset_list: ['close', 'far', 'above']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# EmbSpatial-Bench\n\n\n## 概述\n\nEmbSpatial-Bench 是一个用于评估大视觉语言模型（LVLMs）具身空间理解能力的基准测试。该基准测试从具身场景中自动构建，涵盖从第一人称视角出发的 6 种空间关系：**close**（近）、**far**（远）、**above**（上）、**under**（下）、**left**（左）和 **right**（右）。\n\n## 任务描述\n\n- **任务类型**：多项选择视觉问答（VQA）\n- **输入**：一张第一人称 RGB 图像 + 一个包含 4 个候选答案的空间推理问题\n- **输出**：单个字母（A / B / C / D），标识正确的物体或空间关系\n- **领域**：具身人工智能、空间推理（MP3D 和 AI2Thor 环境）\n\n## 主要特点\n\n- 包含 3,640 个人工验证的评测问题，源自两个具身环境（MP3D 和 AI2Thor）\n- 涵盖 6 类空间关系：close、far、above、under、left、right\n- 每个问题需从 4 个选项中选出空间上最准确的答案\n- 旨在揭示当前 LVLM 与合格具身智能之间的差距\n\n## 评测说明\n\n- 默认评测使用 **embspatial_bench.json** 文件（共 3,640 个样本）\n- 主要指标：**准确率**（acc）\n- 数据集中答案索引为 0 起始（0 → A，1 → B，2 → C，3 → D）\n- 图像以 JPEG base64 字符串形式存储在 JSON 文件中\n- 子集按 `relation` 字段组织（6 种空间关系类别）\n- [论文](https://aclanthology.org/2024.acl-short.33/) | [GitHub](https://github.com/mengfeidu/EmbSpatial-Bench)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `emb_spatial_bench` |\n| **数据集ID** | [evalscope/EmbSpatial-Bench](https://modelscope.cn/datasets/evalscope/EmbSpatial-Bench/summary) |\n| **论文** | [Paper](https://aclanthology.org/2024.acl-short.33/) |\n| **标签** | `MCQ`, `MultiModal`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评测划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,640 |\n| 提示词长度（平均） | 369.34 字符 |\n| 提示词长度（最小/最大） | 265 / 490 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `close` | 612 | 293.54 | 274 | 326 |\n| `far` | 594 | 292.68 | 265 | 326 |\n| `above` | 596 | 405.61 | 360 | 486 |\n| `under` | 602 | 404.35 | 350 | 490 |\n| `left` | 616 | 408.86 | 359 | 486 |\n| `right` | 620 | 409.47 | 352 | 481 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 3,640 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 300x300 - 1296x968 |\n| 格式 | jpeg |\n\n\n## 样例示例\n\n**子集**: `close`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"3f406c29\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~35.2KB]\"\n        },\n        {\n          \"text\": \"Among the listed objects, which one is closest to your current location in the image?\\n(A) table\\n(B) towel\\n(C) door\\n(D) basket\\nAnswer with only the letter of the correct option. The last line of your response should be of the format: ANSWER: [LETTER] where LETTER is one of A, B, C, D.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"D\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"close\",\n  \"metadata\": {\n    \"question_id\": \"mp3d_0\",\n    \"relation\": \"close\",\n    \"data_source\": \"mp3d\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets emb_spatial_bench \\\n    --limit 10  # 正式评测时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['emb_spatial_bench'],\n    dataset_args={\n        'emb_spatial_bench': {\n            # subset_list: ['close', 'far', 'above']  # 可选，用于评测特定子集\n        }\n    },\n    limit=10,  # 正式评测时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "1a472c56595a22ddb88cd289b3a34111",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-06T17:58:15.970262",
+  "translation_updated_at": "2026-07-06T17:58:37"
+}

@@ -1,0 +1,79 @@
+{
+  "meta": {
+    "pretty_name": "OfficeQA",
+    "dataset_id": "evalscope/officeqa",
+    "paper_url": null,
+    "tags": [
+      "Agent",
+      "QA",
+      "Knowledge"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "officeqa_pro"
+    ],
+    "description": "\n## Overview\n\nOfficeQA is a grounded reasoning benchmark by Databricks, built for evaluating model/agent performance on end-to-end grounded reasoning tasks over U.S. Treasury Bulletin documents (1939-2025).\n\n## Task Description\n\n- **Task Type**: Agent-based Document QA (grep/search over corpus)\n- **Input**: A question + access to parsed Treasury Bulletin text files via bash tools\n- **Output**: A precise answer (numeric values, text, or structured data)\n- **Evaluation Mode**: Agent with bash tool (grep, cat, etc.) over the corpus\n\n## Key Features\n\n- Two subsets: `officeqa_pro` (133 questions, hard, default) and `officeqa_full` (246 questions, easy+hard)\n- Corpus: ~900 parsed Treasury Bulletin text files (~460MB total)\n- Agent uses bash tools (grep, cat, head, etc.) to search the corpus\n- Scoring uses fuzzy numeric matching with configurable tolerance (1% default)\n\n## Evaluation Notes\n\n- The agent is given access to parsed .txt files in a corpus directory\n- Each question's `source_files` field indicates which document(s) contain the answer\n- Uses **rule-based scoring** adapted from official reward.py\n- Numerical answers matched with 1% relative error tolerance\n- Text answers use case-insensitive substring matching\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "agent"
+  },
+  "statistics": {
+    "total_samples": 133,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 133,
+        "prompt_length_mean": 443.06,
+        "prompt_length_min": 165,
+        "prompt_length_max": 1186,
+        "prompt_length_std": 189.83,
+        "target_length_mean": 7.84
+      }
+    ],
+    "prompt_length": {
+      "mean": 443.06,
+      "min": 165,
+      "max": 1186,
+      "std": 189.83
+    },
+    "target_length_mean": 7.84,
+    "computed_at": "2026-07-03T17:22:52.758222"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "a6357de6",
+          "content": "What were the total expenditures (in millions of nominal dollars) for U.S national defense in the calendar year of 1940?\nPlease provide a precise and concise answer."
+        }
+      ],
+      "target": "2,602",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "uid": "UID0001",
+        "source_files": "treasury_bulletin_1941_01.txt",
+        "difficulty": "hard"
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# OfficeQA\n\n\n## Overview\n\nOfficeQA is a grounded reasoning benchmark by Databricks, built for evaluating model/agent performance on end-to-end grounded reasoning tasks over U.S. Treasury Bulletin documents (1939-2025).\n\n## Task Description\n\n- **Task Type**: Agent-based Document QA (grep/search over corpus)\n- **Input**: A question + access to parsed Treasury Bulletin text files via bash tools\n- **Output**: A precise answer (numeric values, text, or structured data)\n- **Evaluation Mode**: Agent with bash tool (grep, cat, etc.) over the corpus\n\n## Key Features\n\n- Two subsets: `officeqa_pro` (133 questions, hard, default) and `officeqa_full` (246 questions, easy+hard)\n- Corpus: ~900 parsed Treasury Bulletin text files (~460MB total)\n- Agent uses bash tools (grep, cat, head, etc.) to search the corpus\n- Scoring uses fuzzy numeric matching with configurable tolerance (1% default)\n\n## Evaluation Notes\n\n- The agent is given access to parsed .txt files in a corpus directory\n- Each question's `source_files` field indicates which document(s) contain the answer\n- Uses **rule-based scoring** adapted from official reward.py\n- Numerical answers matched with 1% relative error tolerance\n- Text answers use case-insensitive substring matching\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `officeqa` |\n| **Dataset ID** | [evalscope/officeqa](https://modelscope.cn/datasets/evalscope/officeqa/summary) |\n| **Paper** | N/A |\n| **Tags** | `Agent`, `Knowledge`, `QA` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 133 |\n| Prompt Length (Mean) | 443.06 chars |\n| Prompt Length (Min/Max) | 165 / 1186 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a6357de6\",\n      \"content\": \"What were the total expenditures (in millions of nominal dollars) for U.S national defense in the calendar year of 1940?\\nPlease provide a precise and concise answer.\"\n    }\n  ],\n  \"target\": \"2,602\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"uid\": \"UID0001\",\n    \"source_files\": \"treasury_bulletin_1941_01.txt\",\n    \"difficulty\": \"hard\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets officeqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['officeqa'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# OfficeQA\n\n\n## 概述\n\nOfficeQA 是由 Databricks 构建的一个基于真实文档的推理基准测试，用于评估模型/智能体在 1939–2025 年美国财政部公告（Treasury Bulletin）文档上执行端到端 grounded reasoning 任务的性能。\n\n## 任务描述\n\n- **任务类型**：基于智能体的文档问答（通过 grep/search 在语料库中检索）\n- **输入**：一个问题 + 通过 bash 工具访问已解析的财政部公告文本文件\n- **输出**：精确答案（数值、文本或结构化数据）\n- **评估模式**：智能体使用 bash 工具（如 grep、cat 等）在语料库上进行检索\n\n## 主要特性\n\n- 包含两个子集：`officeqa_pro`（133 个问题，难度高，默认使用）和 `officeqa_full`（246 个问题，包含简单和困难问题）\n- 语料库：约 900 个已解析的财政部公告文本文件（总计约 460MB）\n- 智能体使用 bash 工具（grep、cat、head 等）搜索语料库\n- 评分采用模糊数值匹配，支持可配置容差（默认为 1%）\n\n## 评估说明\n\n- 智能体可访问语料库目录中的已解析 .txt 文件\n- 每个问题的 `source_files` 字段指明了包含答案的文档\n- 使用从官方 reward.py 改编的**基于规则的评分方法**\n- 数值答案匹配时允许 1% 的相对误差容差\n- 文本答案采用不区分大小写的子串匹配\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `officeqa` |\n| **数据集ID** | [evalscope/officeqa](https://modelscope.cn/datasets/evalscope/officeqa/summary) |\n| **论文** | N/A |\n| **标签** | `Agent`, `Knowledge`, `QA` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 133 |\n| 提示词长度（平均） | 443.06 字符 |\n| 提示词长度（最小/最大） | 165 / 1186 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a6357de6\",\n      \"content\": \"What were the total expenditures (in millions of nominal dollars) for U.S national defense in the calendar year of 1940?\\nPlease provide a precise and concise answer.\"\n    }\n  ],\n  \"target\": \"2,602\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"uid\": \"UID0001\",\n    \"source_files\": \"treasury_bulletin_1941_01.txt\",\n    \"difficulty\": \"hard\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets officeqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['officeqa'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "e2e8c8f42fc109f1c1cdc3f3d609ef1a",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-06T14:05:03.942346",
+  "translation_updated_at": "2026-07-06T14:05:25"
+}

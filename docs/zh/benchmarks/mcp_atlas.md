@@ -11,18 +11,19 @@ MCP-Atlas 是 Scale AI 推出的一项基准测试，用于评估模型在真实
 - **输出**：在必要时调用 MCP 工具后生成的最终任务答案
 - **评分方式**：由 LLM 评判最终回答是否满足每条专家定义的声明
 
-## 主要特性
+## 核心特性
 
 - 使用 EvalScope 原生的 AgentLoop，而非 MCP-Atlas 自带的 `mcp_eval` 补全服务。
 - 直接连接 MCP-Atlas 的 `agent-environment` HTTP 服务，该服务必须暴露 `/enabled-servers`、`/list-tools` 和 `/call-tool` 端点。
-- 默认根据当前启用的 MCP 服务器过滤任务，以匹配 MCP-Atlas 公开脚本在未配置全部外部 API 密钥环境下的行为。
+- 默认根据当前启用的 MCP 服务器过滤任务，以匹配 MCP-Atlas 公开脚本的行为（适用于未配置全部外部 API 密钥的环境）。
 - 仅向模型暴露任务指定的 `ENABLED_TOOLS`，避免一次性展示数百个工具。
+- 在同一样本内，若对 MCP 服务器的重复调用因传输层错误失败，则提前终止后续调用。
 - 报告平均 `coverage_score` 和 `pass_rate`，并支持配置通过阈值。
 
 ## 评估说明
 
 - 运行此基准前，请先启动 MCP-Atlas 的 `agent-environment` Docker 服务，默认 URL 为 `http://localhost:1984`。
-- 此 EvalScope 原生适配器旨在便于在 EvalScope 内部维护。除非单独验证当前 Scale 排行榜所用的评测配置，否则不保证与排行榜结果等价。
+- 此 EvalScope 原生适配器旨在便于在 EvalScope 内部维护。除非另行验证当前 Scale 排行榜所用配置，否则不保证与排行榜结果等效。
 - 要实现完整的公开数据集覆盖，需配置 MCP-Atlas 所需的外部 API 密钥和服务数据。
 
 ## 属性
@@ -301,10 +302,10 @@ MCP-Atlas 是 Scale AI 推出的一项基准测试，用于评估模型在真实
 |-----------|------|---------|-------------|
 | `mcp_server_url` | `str` | `http://localhost:1984` | MCP-Atlas agent-environment 服务的基础 URL。 |
 | `filter_enabled_servers` | `bool` | `True` | 跳过那些其真实轨迹依赖当前未启用 MCP 服务器的任务。 |
-| `max_steps` | `int` | `100` | 每个样本 EvalScope 智能体循环的最大步数。 |
+| `max_steps` | `int` | `100` | 每个样本允许的最大 EvalScope 智能体循环步数。 |
 | `max_tool_calls` | `int` | `100` | 每个样本允许的最大 MCP 工具调用次数。 |
 | `request_timeout` | `float` | `60.0` | MCP 工具调用的超时时间（秒）。 |
-| `list_tools_timeout` | `float` | `180.0` | MCP 服务器预检和 list-tools 请求的超时时间（秒）。 |
+| `list_tools_timeout` | `float` | `180.0` | MCP 服务器预检及 list-tools 请求的超时时间（秒）。 |
 | `use_system_prompt` | `bool` | `False` | 为每个样本前置 MCP-Atlas 可选的系统提示。 |
 | `pass_threshold` | `float` | `0.75` | 用于计算通过率的覆盖率得分阈值。 |
 

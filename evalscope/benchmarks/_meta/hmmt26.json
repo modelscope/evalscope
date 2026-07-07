@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "pretty_name": "HMMT26",
+    "dataset_id": "evalscope/hmmt_feb_2026",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nHMMT February 2026 is a challenging evaluation benchmark derived from the Harvard-MIT Mathematics Tournament (HMMT) February 2026 competition, one of the most prestigious and difficult high school math contests globally.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: HMMT-level mathematical problem\n- **Output**: Answer with step-by-step reasoning\n- **Difficulty**: Advanced high school competition level\n\n## Key Features\n\n- 33 problems from HMMT February 2026 competition\n- Four primary domains: Algebra, Combinatorics, Geometry, Number Theory\n- Highly challenging competition-level problems\n- Tests advanced mathematical reasoning\n- Represents elite high school mathematics difficulty\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Numeric accuracy metric with symbolic equivalence checking\n- Problems span multiple mathematical domains\n",
+    "prompt_template": "Problem:\n{question}\n\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 33,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 33,
+        "prompt_length_mean": 385.3,
+        "prompt_length_min": 202,
+        "prompt_length_max": 605,
+        "prompt_length_std": 106.33,
+        "target_length_mean": 8.88
+      }
+    ],
+    "prompt_length": {
+      "mean": 385.3,
+      "min": 202,
+      "max": 605,
+      "std": 106.33
+    },
+    "target_length_mean": 8.88,
+    "computed_at": "2026-07-03T15:50:53.419695"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "02be53e7",
+          "content": "Problem:\nA line intersects the graph of \\( y = x^2 + \\frac{2}{x} \\) at three distinct points. Given that the \\( x \\)-coordinates of two of the points are 6 and 7, respectively, compute the \\( x \\)-coordinate of the third point.\n\nPlease reason step by step, and put your final answer within \\boxed{}.\n"
+        }
+      ],
+      "target": "-\\frac{1}{21}",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "problem_idx": 1,
+        "problem_type": [
+          "Algebra"
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# HMMT26\n\n## Overview\n\nHMMT February 2026 is a challenging evaluation benchmark derived from the Harvard-MIT Mathematics Tournament (HMMT) February 2026 competition, one of the most prestigious and difficult high school math contests globally.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: HMMT-level mathematical problem\n- **Output**: Answer with step-by-step reasoning\n- **Difficulty**: Advanced high school competition level\n\n## Key Features\n\n- 33 problems from HMMT February 2026 competition\n- Four primary domains: Algebra, Combinatorics, Geometry, Number Theory\n- Highly challenging competition-level problems\n- Tests advanced mathematical reasoning\n- Represents elite high school mathematics difficulty\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Numeric accuracy metric with symbolic equivalence checking\n- Problems span multiple mathematical domains\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `hmmt26` |\n| **Dataset ID** | [evalscope/hmmt_feb_2026](https://modelscope.cn/datasets/evalscope/hmmt_feb_2026/summary) |\n| **Paper** | N/A |\n| **Tags** | `Math`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 33 |\n| Prompt Length (Mean) | 385.3 chars |\n| Prompt Length (Min/Max) | 202 / 605 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"02be53e7\",\n      \"content\": \"Problem:\\nA line intersects the graph of \\\\( y = x^2 + \\\\frac{2}{x} \\\\) at three distinct points. Given that the \\\\( x \\\\)-coordinates of two of the points are 6 and 7, respectively, compute the \\\\( x \\\\)-coordinate of the third point.\\n\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\\n\"\n    }\n  ],\n  \"target\": \"-\\\\frac{1}{21}\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"problem_idx\": 1,\n    \"problem_type\": [\n      \"Algebra\"\n    ]\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nProblem:\n{question}\n\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets hmmt26 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['hmmt26'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# HMMT26\n\n## 概述\n\nHMMT February 2026 是一个具有挑战性的评测基准，源自 2026 年 2 月举办的哈佛-麻省理工数学竞赛（Harvard-MIT Mathematics Tournament, HMMT），该赛事是全球最具声望且难度最高的高中数学竞赛之一。\n\n## 任务描述\n\n- **任务类型**：竞赛数学问题求解  \n- **输入**：HMMT 级别的数学问题  \n- **输出**：包含逐步推理的答案  \n- **难度**：高级高中竞赛水平  \n\n## 主要特点\n\n- 包含 33 道来自 HMMT February 2026 竞赛的题目  \n- 覆盖四大核心领域：代数（Algebra）、组合数学（Combinatorics）、几何（Geometry）、数论（Number Theory）  \n- 题目难度极高，属于竞赛级别  \n- 考察高级数学推理能力  \n- 代表顶尖高中数学竞赛难度  \n\n## 评测说明\n\n- 默认配置采用 **0-shot** 评测方式  \n- 答案需使用 `\\boxed{}` 格式包裹，以便正确提取  \n- 使用数值精度指标，并结合符号等价性检查  \n- 题目涵盖多个数学领域  \n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `hmmt26` |\n| **数据集ID** | [evalscope/hmmt_feb_2026](https://modelscope.cn/datasets/evalscope/hmmt_feb_2026/summary) |\n| **论文** | N/A |\n| **标签** | `Math`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评测划分** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 33 |\n| 提示词长度（平均） | 385.3 字符 |\n| 提示词长度（最小/最大） | 202 / 605 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"02be53e7\",\n      \"content\": \"Problem:\\nA line intersects the graph of \\\\( y = x^2 + \\\\frac{2}{x} \\\\) at three distinct points. Given that the \\\\( x \\\\)-coordinates of two of the points are 6 and 7, respectively, compute the \\\\( x \\\\)-coordinate of the third point.\\n\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\\n\"\n    }\n  ],\n  \"target\": \"-\\\\frac{1}{21}\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"problem_idx\": 1,\n    \"problem_type\": [\n      \"Algebra\"\n    ]\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nProblem:\n{question}\n\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets hmmt26 \\\n    --limit 10  # 正式评测时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['hmmt26'],\n    limit=10,  # 正式评测时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "d88b99109876694d330c874f8e24e01b",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-03T16:45:55.609077",
+  "translation_updated_at": "2026-07-03T16:46:16"
+}

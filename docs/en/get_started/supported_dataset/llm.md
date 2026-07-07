@@ -6,6 +6,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 |------------|----------|----------|
 | `aa_lcr` | [AA-LCR](../../benchmarks/aa_lcr.md) | `Knowledge`, `LongContext`, `Reasoning` |
 | `acebench` | [ACEBench](../../benchmarks/acebench.md) | `Agent`, `FunctionCalling`, `MultiTurn` |
+| `agieval` | [AGIEval](../../benchmarks/agieval.md) | `Knowledge`, `MCQ`, `Math`, `Reasoning` |
 | `aime24` | [AIME-2024](../../benchmarks/aime24.md) | `Math`, `Reasoning` |
 | `aime25` | [AIME-2025](../../benchmarks/aime25.md) | `Math`, `Reasoning` |
 | `aime26` | [AIME-2026](../../benchmarks/aime26.md) | `Math`, `Reasoning` |
@@ -13,7 +14,9 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `amc` | [AMC](../../benchmarks/amc.md) | `Math`, `Reasoning` |
 | `anat_em` | [AnatEM](../../benchmarks/anat_em.md) | `Knowledge`, `NER` |
 | `arc` | [ARC](../../benchmarks/arc.md) | `MCQ`, `Reasoning` |
+| `arc_agi_2` | [ARC-AGI-2](../../benchmarks/arc_agi_2.md) | `Reasoning` |
 | `arena_hard` | [ArenaHard](../../benchmarks/arena_hard.md) | `Arena`, `InstructionFollowing` |
+| `arxivmath` | [ArXiv-Math](../../benchmarks/arxivmath.md) | `Math`, `Reasoning` |
 | `arxivrollbench` | [ArxivRollBench](../../benchmarks/arxivrollbench.md) | `Knowledge`, `MCQ`, `Reasoning` |
 | `arxivrollbench_full` | [ArxivRollBench-Full](../../benchmarks/arxivrollbench_full.md) | `Knowledge`, `MCQ`, `Reasoning` |
 | `bbh` | [BBH](../../benchmarks/bbh.md) | `Reasoning` |
@@ -27,6 +30,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `ceval` | [C-Eval](../../benchmarks/ceval.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `chinese_simpleqa` | [Chinese-SimpleQA](../../benchmarks/chinese_simpleqa.md) | `Chinese`, `Knowledge`, `QA` |
 | `cl_bench` | [CL-bench](../../benchmarks/cl_bench.md) | `InstructionFollowing`, `Reasoning` |
+| `cmath` | [CMATH](../../benchmarks/cmath.md) | `Chinese`, `Math`, `Reasoning` |
 | `cmmlu` | [C-MMLU](../../benchmarks/cmmlu.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `coin_flip` | [CoinFlip](../../benchmarks/coin_flip.md) | `Reasoning`, `Yes/No` |
 | `commonsense_qa` | [CommonsenseQA](../../benchmarks/commonsense_qa.md) | `Commonsense`, `MCQ`, `Reasoning` |
@@ -57,13 +61,16 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `hellaswag` | [HellaSwag](../../benchmarks/hellaswag.md) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](../../benchmarks/hle.md) | `Knowledge`, `QA` |
 | `hmmt25` | [HMMT25](../../benchmarks/hmmt25.md) | `Math`, `Reasoning` |
+| `hmmt26` | [HMMT26](../../benchmarks/hmmt26.md) | `Math`, `Reasoning` |
 | `humaneval` | [HumanEval](../../benchmarks/humaneval.md) | `Coding` |
 | `humaneval_plus` | [HumanEvalPlus](../../benchmarks/humaneval_plus.md) | `Coding` |
 | `ifbench` | [IFBench](../../benchmarks/ifbench.md) | `InstructionFollowing` |
 | `ifeval` | [IFEval](../../benchmarks/ifeval.md) | `InstructionFollowing` |
+| `imo_answerbench` | [IMO-AnswerBench](../../benchmarks/imo_answerbench.md) | `Math`, `Reasoning` |
 | `iquiz` | [IQuiz](../../benchmarks/iquiz.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `jnlpba` | [JNLPBA](../../benchmarks/jnlpba.md) | `Knowledge`, `NER` |
 | `jnlpba_rare` | [JNLPBA-Rare](../../benchmarks/jnlpba_rare.md) | `Knowledge`, `NER` |
+| `kina` | [KINA](../../benchmarks/kina.md) | `Knowledge`, `MCQ` |
 | `live_code_bench` | [Live-Code-Bench](../../benchmarks/live_code_bench.md) | `Coding` |
 | `locomo` | [LoCoMo](../../benchmarks/locomo.md) | `LongContext`, `MultiTurn`, `QA` |
 | `logi_qa` | [LogiQA](../../benchmarks/logi_qa.md) | `MCQ`, `Reasoning` |
@@ -126,6 +133,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 
 ../../benchmarks/aa_lcr.md
 ../../benchmarks/acebench.md
+../../benchmarks/agieval.md
 ../../benchmarks/aime24.md
 ../../benchmarks/aime25.md
 ../../benchmarks/aime26.md
@@ -133,7 +141,9 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/amc.md
 ../../benchmarks/anat_em.md
 ../../benchmarks/arc.md
+../../benchmarks/arc_agi_2.md
 ../../benchmarks/arena_hard.md
+../../benchmarks/arxivmath.md
 ../../benchmarks/arxivrollbench.md
 ../../benchmarks/arxivrollbench_full.md
 ../../benchmarks/bbh.md
@@ -147,6 +157,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/ceval.md
 ../../benchmarks/chinese_simpleqa.md
 ../../benchmarks/cl_bench.md
+../../benchmarks/cmath.md
 ../../benchmarks/cmmlu.md
 ../../benchmarks/coin_flip.md
 ../../benchmarks/commonsense_qa.md
@@ -177,13 +188,16 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/hellaswag.md
 ../../benchmarks/hle.md
 ../../benchmarks/hmmt25.md
+../../benchmarks/hmmt26.md
 ../../benchmarks/humaneval.md
 ../../benchmarks/humaneval_plus.md
 ../../benchmarks/ifbench.md
 ../../benchmarks/ifeval.md
+../../benchmarks/imo_answerbench.md
 ../../benchmarks/iquiz.md
 ../../benchmarks/jnlpba.md
 ../../benchmarks/jnlpba_rare.md
+../../benchmarks/kina.md
 ../../benchmarks/live_code_bench.md
 ../../benchmarks/locomo.md
 ../../benchmarks/logi_qa.md

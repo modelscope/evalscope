@@ -8,13 +8,17 @@
 | `ai2d` | [AI2D](../../benchmarks/ai2d.md) | `Knowledge`, `MultiModal`, `QA` |
 | `air_bench_chat` | [AIR-Bench-Chat](../../benchmarks/air_bench_chat.md) | `Audio`, `InstructionFollowing`, `QA` |
 | `air_bench_foundation` | [AIR-Bench-Foundation](../../benchmarks/air_bench_foundation.md) | `Audio`, `Knowledge`, `MCQ` |
+| `baby_vision` | [BabyVision](../../benchmarks/baby_vision.md) | `MultiModal`, `QA`, `Reasoning` |
 | `blink` | [BLINK](../../benchmarks/blink.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `cc_bench` | [CCBench](../../benchmarks/cc_bench.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](../../benchmarks/chartqa.md) | `Knowledge`, `MultiModal`, `QA` |
+| `charxiv` | [CharXiv](../../benchmarks/charxiv.md) | `MultiModal`, `QA`, `Reasoning` |
 | `cmmmu` | [CMMMU](../../benchmarks/cmmmu.md) | `Chinese`, `Knowledge`, `MultiModal`, `QA` |
 | `cmmu` | [CMMU](../../benchmarks/cmmu.md) | `Knowledge`, `MCQ`, `MultiModal`, `QA` |
 | `common_voice_15` | [CommonVoice15](../../benchmarks/common_voice_15.md) | `Audio`, `MultiLingual`, `SpeechRecognition` |
 | `docvqa` | [DocVQA](../../benchmarks/docvqa.md) | `Knowledge`, `MultiModal`, `QA` |
+| `emb_spatial_bench` | [EmbSpatial-Bench](../../benchmarks/emb_spatial_bench.md) | `MCQ`, `MultiModal`, `Reasoning` |
+| `erqa` | [ERQA](../../benchmarks/erqa.md) | `MCQ`, `MultiModal`, `Reasoning` |
 | `fleurs` | [FLEURS](../../benchmarks/fleurs.md) | `Audio`, `MultiLingual`, `SpeechRecognition` |
 | `general_vmcq` | [General-VMCQ](../../benchmarks/general_vmcq.md) | `Custom`, `MCQ`, `MultiModal` |
 | `general_vqa` | [General-VQA](../../benchmarks/general_vqa.md) | `Custom`, `MultiModal`, `QA` |
@@ -26,6 +30,7 @@
 | `math_verse` | [MathVerse](../../benchmarks/math_verse.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vision` | [MathVision](../../benchmarks/math_vision.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vista` | [MathVista](../../benchmarks/math_vista.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
+| `measure_bench` | [MeasureBench](../../benchmarks/measure_bench.md) | `MultiModal`, `QA`, `Reasoning` |
 | `mia_bench` | [MIA-Bench](../../benchmarks/mia_bench.md) | `InstructionFollowing`, `MultiModal`, `QA` |
 | `micro_vqa` | [MicroVQA](../../benchmarks/micro_vqa.md) | `Knowledge`, `MCQ`, `Medical`, `MultiModal` |
 | `mm_bench` | [MMBench](../../benchmarks/mm_bench.md) | `Knowledge`, `MultiModal`, `QA` |
@@ -53,6 +58,7 @@
 | `vqav2` | [VQAv2](../../benchmarks/vqav2.md) | `MultiModal`, `QA` |
 | `vstar_bench` | [V*Bench](../../benchmarks/vstar_bench.md) | `Grounding`, `MCQ`, `MultiModal` |
 | `wenet_speech` | [WenetSpeech](../../benchmarks/wenet_speech.md) | `Audio`, `SpeechRecognition` |
+| `world_vqa` | [WorldVQA](../../benchmarks/world_vqa.md) | `Knowledge`, `MultiModal`, `QA` |
 | `zerobench` | [ZeroBench](../../benchmarks/zerobench.md) | `Knowledge`, `MultiModal`, `QA` |
 
 :::{toctree}
@@ -63,13 +69,17 @@
 ../../benchmarks/ai2d.md
 ../../benchmarks/air_bench_chat.md
 ../../benchmarks/air_bench_foundation.md
+../../benchmarks/baby_vision.md
 ../../benchmarks/blink.md
 ../../benchmarks/cc_bench.md
 ../../benchmarks/chartqa.md
+../../benchmarks/charxiv.md
 ../../benchmarks/cmmmu.md
 ../../benchmarks/cmmu.md
 ../../benchmarks/common_voice_15.md
 ../../benchmarks/docvqa.md
+../../benchmarks/emb_spatial_bench.md
+../../benchmarks/erqa.md
 ../../benchmarks/fleurs.md
 ../../benchmarks/general_vmcq.md
 ../../benchmarks/general_vqa.md
@@ -81,6 +91,7 @@
 ../../benchmarks/math_verse.md
 ../../benchmarks/math_vision.md
 ../../benchmarks/math_vista.md
+../../benchmarks/measure_bench.md
 ../../benchmarks/mia_bench.md
 ../../benchmarks/micro_vqa.md
 ../../benchmarks/mm_bench.md
@@ -108,5 +119,6 @@
 ../../benchmarks/vqav2.md
 ../../benchmarks/vstar_bench.md
 ../../benchmarks/wenet_speech.md
+../../benchmarks/world_vqa.md
 ../../benchmarks/zerobench.md
 :::

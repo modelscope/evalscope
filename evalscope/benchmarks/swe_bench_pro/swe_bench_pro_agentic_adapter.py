@@ -35,6 +35,10 @@ if TYPE_CHECKING:
 
 logger = get_logger()
 
+# Keep command execution aligned with mini-swe-agent and images that initialize
+# their runtime environment from shell startup files.
+_SWE_BENCH_PRO_INTERPRETER: tuple[str, ...] = ('bash', '-lc')
+
 INSTANCE_TEMPLATE = """\
 <pr_description>
 Consider the following PR description:
@@ -346,6 +350,7 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
             engine='docker',
             sandbox_config=sandbox_config,
             timeout=self.command_timeout,
+            interpreter=_SWE_BENCH_PRO_INTERPRETER,
         )
 
     def build_initial_messages(self, sample: Sample) -> List[Any]:

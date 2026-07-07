@@ -43,6 +43,10 @@ if TYPE_CHECKING:
 
 logger = get_logger()
 
+# SWE-bench images activate their per-instance testbed from shell startup files;
+# mini-swe-agent's DockerEnvironment therefore runs commands through bash -lc.
+_SWE_BENCH_INTERPRETER: tuple[str, ...] = ('bash', '-lc')
+
 # ---------------------------------------------------------------------------
 # instance_template — mirrors mini-swe-agent swebench.yaml
 # ---------------------------------------------------------------------------
@@ -388,6 +392,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
             engine='docker',
             sandbox_config=sandbox_config,
             timeout=self.command_timeout,
+            interpreter=_SWE_BENCH_INTERPRETER,
         )
 
     def build_initial_messages(self, sample: Sample) -> List[Any]:

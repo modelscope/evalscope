@@ -1,0 +1,194 @@
+{
+  "meta": {
+    "pretty_name": "CharXiv",
+    "dataset_id": "princeton-nlp/CharXiv",
+    "paper_url": "https://arxiv.org/abs/2406.18521",
+    "tags": [
+      "MultiModal",
+      "Reasoning",
+      "QA"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "descriptive",
+      "reasoning"
+    ],
+    "description": "\n## Overview\n\nCharXiv is a comprehensive chart understanding benchmark from NeurIPS 2024 that evaluates multimodal\nlarge language models on realistic scientific charts from arXiv papers. It tests both low-level\nchart element perception (descriptive) and high-level reasoning about chart data.\n\n## Task Description\n\n- **Task Type**: Chart Understanding (Descriptive + Reasoning)\n- **Input**: Scientific chart image + question\n- **Output**: Free-form text answer\n- **Domains**: cs, physics, math, eess, q-bio, q-fin, stat, econ\n\n## Key Features\n\n- 2,323 real scientific charts from arXiv papers across 8 disciplines\n- Two question types:\n  - **Descriptive** (4 per chart): Basic element identification (titles, axes, legends, trends, etc.)\n  - **Reasoning** (1 per chart): Higher-order reasoning requiring data synthesis\n- 19 descriptive question templates covering information extraction, enumeration, pattern recognition, counting, and compositionality\n- 4 reasoning answer types: text-in-chart, text-in-general, number-in-chart, number-in-general\n- Validation set (1,000 charts) and test set (1,323 charts)\n- Evaluation via LLM judge following the official CharXiv grading protocol\n\n## Evaluation Notes\n\n- Default evaluation uses the **validation** split (1,000 charts, 5,000 questions)\n- Each chart yields 5 samples: 4 descriptive + 1 reasoning\n- Primary metric: **Accuracy** via LLM-as-judge\n- Subsets: `descriptive` and `reasoning` (also by category)\n- Requires `judge_model_args` configuration for LLM judge\n- [Paper](https://arxiv.org/abs/2406.18521) | [GitHub](https://github.com/princeton-nlp/CharXiv)\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 5000,
+    "subset_stats": [
+      {
+        "name": "descriptive",
+        "sample_count": 4000,
+        "prompt_length_mean": 261.51,
+        "prompt_length_min": 156,
+        "prompt_length_max": 432,
+        "prompt_length_std": 60.39,
+        "target_length_mean": 9.04,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 4000,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1001x1024",
+              "1002x1024",
+              "1010x1023",
+              "1011x1024",
+              "1014x1024",
+              "1015x1024",
+              "1016x1023",
+              "1019x1024",
+              "1021x1024",
+              "1023x1015"
+            ],
+            "resolution_range": {
+              "min": "1023x139",
+              "max": "1024x1024"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "reasoning",
+        "sample_count": 1000,
+        "prompt_length_mean": 335.14,
+        "prompt_length_min": 80,
+        "prompt_length_max": 687,
+        "prompt_length_std": 121.63,
+        "target_length_mean": 6.67,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1000,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1001x1024",
+              "1002x1024",
+              "1010x1023",
+              "1011x1024",
+              "1014x1024",
+              "1015x1024",
+              "1016x1023",
+              "1019x1024",
+              "1021x1024",
+              "1023x1015"
+            ],
+            "resolution_range": {
+              "min": "1023x139",
+              "max": "1024x1024"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 276.24,
+      "min": 80,
+      "max": 687,
+      "std": 82.1
+    },
+    "target_length_mean": 8.57,
+    "computed_at": "2026-07-03T11:09:48.413672",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 5000,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1001x1024",
+          "1002x1024",
+          "1010x1023",
+          "1011x1024",
+          "1014x1024",
+          "1015x1024",
+          "1016x1023",
+          "1019x1024",
+          "1021x1024",
+          "1023x1015"
+        ],
+        "resolution_range": {
+          "min": "1023x139",
+          "max": "1024x1024"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "44ff5b8a",
+          "content": [
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~70.0KB]"
+            },
+            {
+              "text": "For the current plot, what is the spatially highest labeled tick on the y-axis?\n* Your final answer should be the tick value on the y-axis that is explicitly written. Ignore units or scales that are written separately from the tick."
+            }
+          ]
+        }
+      ],
+      "target": "60",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "descriptive",
+      "metadata": {
+        "question_type": "descriptive",
+        "question_id": 7,
+        "category": "cs",
+        "original_id": "2004.10956"
+      }
+    },
+    "subset": "descriptive",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# CharXiv\n\n\n## Overview\n\nCharXiv is a comprehensive chart understanding benchmark from NeurIPS 2024 that evaluates multimodal\nlarge language models on realistic scientific charts from arXiv papers. It tests both low-level\nchart element perception (descriptive) and high-level reasoning about chart data.\n\n## Task Description\n\n- **Task Type**: Chart Understanding (Descriptive + Reasoning)\n- **Input**: Scientific chart image + question\n- **Output**: Free-form text answer\n- **Domains**: cs, physics, math, eess, q-bio, q-fin, stat, econ\n\n## Key Features\n\n- 2,323 real scientific charts from arXiv papers across 8 disciplines\n- Two question types:\n  - **Descriptive** (4 per chart): Basic element identification (titles, axes, legends, trends, etc.)\n  - **Reasoning** (1 per chart): Higher-order reasoning requiring data synthesis\n- 19 descriptive question templates covering information extraction, enumeration, pattern recognition, counting, and compositionality\n- 4 reasoning answer types: text-in-chart, text-in-general, number-in-chart, number-in-general\n- Validation set (1,000 charts) and test set (1,323 charts)\n- Evaluation via LLM judge following the official CharXiv grading protocol\n\n## Evaluation Notes\n\n- Default evaluation uses the **validation** split (1,000 charts, 5,000 questions)\n- Each chart yields 5 samples: 4 descriptive + 1 reasoning\n- Primary metric: **Accuracy** via LLM-as-judge\n- Subsets: `descriptive` and `reasoning` (also by category)\n- Requires `judge_model_args` configuration for LLM judge\n- [Paper](https://arxiv.org/abs/2406.18521) | [GitHub](https://github.com/princeton-nlp/CharXiv)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `charxiv` |\n| **Dataset ID** | [princeton-nlp/CharXiv](https://modelscope.cn/datasets/princeton-nlp/CharXiv/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2406.18521) |\n| **Tags** | `MultiModal`, `QA`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 5,000 |\n| Prompt Length (Mean) | 276.24 chars |\n| Prompt Length (Min/Max) | 80 / 687 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `descriptive` | 4,000 | 261.51 | 156 | 432 |\n| `reasoning` | 1,000 | 335.14 | 80 | 687 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 5,000 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 1023x139 - 1024x1024 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `descriptive`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"44ff5b8a\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~70.0KB]\"\n        },\n        {\n          \"text\": \"For the current plot, what is the spatially highest labeled tick on the y-axis?\\n* Your final answer should be the tick value on the y-axis that is explicitly written. Ignore units or scales that are written separately from the tick.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"60\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"descriptive\",\n  \"metadata\": {\n    \"question_type\": \"descriptive\",\n    \"question_id\": 7,\n    \"category\": \"cs\",\n    \"original_id\": \"2004.10956\"\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets charxiv \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['charxiv'],\n    dataset_args={\n        'charxiv': {\n            # subset_list: ['descriptive', 'reasoning']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# CharXiv\n\n\n## 概述\n\nCharXiv 是 NeurIPS 2024 提出的一个全面的图表理解基准测试，用于评估多模态大语言模型在来自 arXiv 论文的真实科学图表上的表现。该基准同时考察模型对图表元素的低层次感知能力（描述性任务）和对图表数据的高层次推理能力。\n\n## 任务描述\n\n- **任务类型**：图表理解（描述性 + 推理性）\n- **输入**：科学图表图像 + 问题\n- **输出**：自由格式文本答案\n- **领域**：cs、physics、math、eess、q-bio、q-fin、stat、econ\n\n## 主要特点\n\n- 包含来自 8 个学科 arXiv 论文的 2,323 张真实科学图表\n- 两种问题类型：\n  - **描述性**（每张图表 4 个）：基础元素识别（标题、坐标轴、图例、趋势等）\n  - **推理型**（每张图表 1 个）：需要综合数据进行高阶推理\n- 19 种描述性问题模板，涵盖信息提取、枚举、模式识别、计数和组合性任务\n- 4 种推理答案类型：图表内文本、通用文本、图表内数值、通用数值\n- 验证集（1,000 张图表）和测试集（1,323 张图表）\n- 依据官方 CharXiv 评分协议，通过 LLM 作为评判者进行评估\n\n## 评估说明\n\n- 默认评估使用 **验证集**（1,000 张图表，5,000 个问题）\n- 每张图表生成 5 个样本：4 个描述性 + 1 个推理型\n- 主要指标：通过 LLM-as-judge 计算的 **准确率（Accuracy）**\n- 子集划分：`descriptive` 和 `reasoning`（也可按类别细分）\n- 需配置 `judge_model_args` 以指定 LLM 评判模型\n- [论文](https://arxiv.org/abs/2406.18521) | [GitHub](https://github.com/princeton-nlp/CharXiv)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `charxiv` |\n| **数据集ID** | [princeton-nlp/CharXiv](https://modelscope.cn/datasets/princeton-nlp/CharXiv/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2406.18521) |\n| **标签** | `MultiModal`, `QA`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数量** | 0-shot |\n| **评估划分** | `validation` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 5,000 |\n| 提示词长度（平均） | 276.24 字符 |\n| 提示词长度（最小/最大） | 80 / 687 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `descriptive` | 4,000 | 261.51 | 156 | 432 |\n| `reasoning` | 1,000 | 335.14 | 80 | 687 |\n\n**图像统计数据：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 5,000 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 1023x139 - 1024x1024 |\n| 格式 | jpeg |\n\n\n## 样例示例\n\n**子集**: `descriptive`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"44ff5b8a\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~70.0KB]\"\n        },\n        {\n          \"text\": \"For the current plot, what is the spatially highest labeled tick on the y-axis?\\n* Your final answer should be the tick value on the y-axis that is explicitly written. Ignore units or scales that are written separately from the tick.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"60\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"descriptive\",\n  \"metadata\": {\n    \"question_type\": \"descriptive\",\n    \"question_id\": 7,\n    \"category\": \"cs\",\n    \"original_id\": \"2004.10956\"\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets charxiv \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['charxiv'],\n    dataset_args={\n        'charxiv': {\n            # subset_list: ['descriptive', 'reasoning']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "d39128077ea45abc813a1f998db241e1",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-03T11:09:49.196684",
+  "translation_updated_at": "2026-07-03T16:19:29"
+}

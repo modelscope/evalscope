@@ -27,7 +27,7 @@ class TestNativeBenchmark(TestBenchmark):
             'eval_batch_size': 5,
             'limit': 5,
             'generation_config': {
-                # 'max_tokens': 4096,
+                'max_tokens': 8096,
                 'temperature': 0.7,
                 'parallel_tool_calls': True,
                 'retries':3,
@@ -787,6 +787,37 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('hmmt25', dataset_args, limit=10)
 
+    def test_hmmt26(self):
+        """Test HMMT26 dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('hmmt26', dataset_args, limit=5)
+
+    def test_imo_answerbench(self):
+        """Test IMO-AnswerBench dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+            'subset_list': ['Algebra'],
+        }
+        self._run_dataset_test('imo_answerbench', dataset_args, limit=5)
+
+    def test_arxivmath(self):
+        """Test ArXiv-Math dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+            'subset_list': ['arxiv/december'],
+        }
+        self._run_dataset_test('arxivmath', dataset_args, limit=5)
+
+    def test_cmath(self):
+        """Test CMATH dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+            'subset_list': ['Grade 1'],
+        }
+        self._run_dataset_test('cmath', dataset_args, limit=5)
+
     def test_cl_bench(self):
         """Test CL-bench dataset."""
         dataset_args = {
@@ -847,6 +878,47 @@ class TestNativeBenchmark(TestBenchmark):
                 'temperature': 0.0,
             },
         )
+
+
+    # OfficeQA
+    def test_officeqa(self):
+        """Test OfficeQA benchmark."""
+        self._run_dataset_test('officeqa', limit=5)
+
+    def test_officeqa_mock(self):
+        """Test OfficeQA benchmark with mock."""
+        self._run_dataset_test('officeqa', limit=3, use_mock=True)
+
+    # ARC-AGI-2
+    def test_arc_agi_2(self):
+        """Test ARC-AGI-2 benchmark."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('arc_agi_2', dataset_args=dataset_args, limit=5)
+
+    def test_arc_agi_2_mock(self):
+        """Test ARC-AGI-2 benchmark with mock."""
+        self._run_dataset_test('arc_agi_2', limit=3, use_mock=True)
+
+    # AGIEval
+    _AGIEVAL_ARGS = {'subset_list': ['aqua-rat', 'logiqa-zh', 'math'], 'few_shot_num': 0}
+
+    def test_agieval(self):
+        """Test AGIEval benchmark."""
+        self._run_dataset_test('agieval', dataset_args=self._AGIEVAL_ARGS, limit=5)
+
+    def test_agieval_mock(self):
+        """Test AGIEval benchmark with mock."""
+        self._run_dataset_test('agieval', dataset_args=self._AGIEVAL_ARGS, limit=3, use_mock=True)
+
+    def test_kina(self):
+        """Test KINA knowledge benchmark."""
+        self._run_dataset_test('kina', limit=5)
+
+    def test_kina_mock(self):
+        """Test KINA knowledge benchmark with mock."""
+        self._run_dataset_test('kina', limit=5, use_mock=True)
 
 
 if __name__ == '__main__':

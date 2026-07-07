@@ -459,3 +459,35 @@ class TestVLMBenchmark(TestBenchmark):
             'subset_list': ['test_mini'],
         }
         self._run_dataset_test('mmau', dataset_args=dataset_args, limit=5, model='qwen3-omni-flash')
+
+    def test_erqa(self):
+        self._run_dataset_test('erqa', limit=5)
+
+    def test_world_vqa(self):
+        self._run_dataset_test('world_vqa', limit=5)
+
+    def test_charxiv(self):
+        """Test CharXiv chart understanding benchmark."""
+        self._run_dataset_test('charxiv', limit=5)
+
+    def test_baby_vision(self):
+        """Test BabyVision visual perception benchmark."""
+        self._run_dataset_test('baby_vision', limit=5)
+
+    def test_emb_spatial_bench(self):
+        """Test EmbSpatial-Bench embodied spatial reasoning benchmark."""
+        self._run_dataset_test('emb_spatial_bench', limit=5)
+
+    def test_emb_spatial_bench_mock(self):
+        """Test EmbSpatial-Bench with mock LLM."""
+        self._run_dataset_test('emb_spatial_bench', limit=5, use_mock=True)
+
+    def test_measure_bench(self):
+        """Test MeasureBench instrument reading benchmark."""
+        dataset_args = {'subset_list': ['real_world']}
+        self._run_dataset_test('measure_bench', dataset_args=dataset_args, limit=5)
+
+    def test_measure_bench_mock(self):
+        """Test MeasureBench with mock LLM."""
+        dataset_args = {'subset_list': ['real_world']}
+        self._run_dataset_test('measure_bench', dataset_args=dataset_args, limit=5, use_mock=True)

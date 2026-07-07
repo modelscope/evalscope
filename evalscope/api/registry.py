@@ -1,4 +1,5 @@
 import copy
+import difflib
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type, TypeVar, Union
 
 if TYPE_CHECKING:
@@ -56,11 +57,21 @@ class Registry(Dict[str, T]):
 
         return decorator
 
+    def _suggest(self, name: str, n: int = 2) -> str:
+        """Return a hint string with the closest registered names by edit distance."""
+        candidates = difflib.get_close_matches(name, self.keys(), n=n, cutoff=0.4)
+        if candidates:
+            return f"Did you mean: {', '.join(repr(c) for c in candidates)}?"
+        # Fallback: show up to 10 entries if nothing is close enough
+        keys = sorted(self.keys())
+        if len(keys) > 10:
+            return f'Available ({len(keys)} total, showing first 10): {keys[:10]}'
+        return f'Available: {keys}'
+
     def lookup(self, name: str) -> T:
-        """Get the value registered under ``name`` or raise with the available list."""
+        """Get the value registered under ``name`` or raise with suggestions."""
         if name not in self:
-            raise ValueError(f"{self.kind} '{name}' is not registered. "
-                             f'Available: {sorted(self.keys())}')
+            raise ValueError(f"{self.kind} '{name}' is not registered. {self._suggest(name)}")
         return self[name]
 
     def list_keys(self) -> List[str]:
@@ -101,7 +112,7 @@ def get_benchmark(name: str, config: Optional['TaskConfig'] = None) -> 'DataAdap
     # copy to avoid modifying the original metadata
     metadata = copy.deepcopy(BENCHMARK_REGISTRY.get(name))
     if not metadata:
-        raise ValueError(f'Benchmark {name} not found, available benchmarks: {BENCHMARK_REGISTRY.list_keys()}')
+        raise ValueError(f"Benchmark '{name}' not found. {BENCHMARK_REGISTRY._suggest(name)}")
 
     # Update metadata with dataset-specific configuration
     if config is not None:

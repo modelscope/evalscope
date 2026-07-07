@@ -7,6 +7,7 @@
 | `bfcl_v3` | [BFCL-v3](../../benchmarks/bfcl_v3.md) | `Agent`, `FunctionCalling` |
 | `bfcl_v4` | [BFCL-v4](../../benchmarks/bfcl_v4.md) | `Agent`, `FunctionCalling` |
 | `browsecomp` | [BrowseComp](../../benchmarks/browsecomp.md) | `Agent`, `Knowledge`, `QA` |
+| `deep_swe` | [DeepSWE](../../benchmarks/deep_swe.md) | `Agent`, `Coding`, `MultiTurn` |
 | `gaia` | [GAIA](../../benchmarks/gaia.md) | `Agent`, `MultiTurn`, `Reasoning` |
 | `gdpval` | [GDPval](../../benchmarks/gdpval.md) | `Agent`, `Knowledge`, `MultiTurn` |
 | `general_fc` | [General-FunctionCalling](../../benchmarks/general_fc.md) | `Agent`, `Custom`, `FunctionCalling` |
@@ -14,6 +15,7 @@
 | `kimi_verifier` | [Kimi-Vendor-Verifier (Param Compliance)](../../benchmarks/kimi_verifier.md) | `Agent`, `FunctionCalling` |
 | `mcp_atlas` | [MCP-Atlas](../../benchmarks/mcp_atlas.md) | `Agent`, `MultiTurn` |
 | `minimax_verifier` | [MiniMax-Vendor-Verifier](../../benchmarks/minimax_verifier.md) | `Agent`, `FunctionCalling` |
+| `officeqa` | [OfficeQA](../../benchmarks/officeqa.md) | `Agent`, `Knowledge`, `QA` |
 | `swe_bench_lite_agentic` | [SWE-bench_Lite_Agentic](../../benchmarks/swe_bench_lite_agentic.md) | `Coding` |
 | `swe_bench_multilingual_agentic` | [SWE-bench_Multilingual_Agentic](../../benchmarks/swe_bench_multilingual_agentic.md) | `Coding` |
 | `swe_bench_pro` | [SWE-bench_Pro](../../benchmarks/swe_bench_pro.md) | `Coding` |
@@ -32,6 +34,7 @@
 ../../benchmarks/bfcl_v3.md
 ../../benchmarks/bfcl_v4.md
 ../../benchmarks/browsecomp.md
+../../benchmarks/deep_swe.md
 ../../benchmarks/gaia.md
 ../../benchmarks/gdpval.md
 ../../benchmarks/general_fc.md
@@ -39,6 +42,7 @@
 ../../benchmarks/kimi_verifier.md
 ../../benchmarks/mcp_atlas.md
 ../../benchmarks/minimax_verifier.md
+../../benchmarks/officeqa.md
 ../../benchmarks/swe_bench_lite_agentic.md
 ../../benchmarks/swe_bench_multilingual_agentic.md
 ../../benchmarks/swe_bench_pro.md
