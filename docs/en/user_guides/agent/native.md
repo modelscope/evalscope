@@ -56,6 +56,7 @@ Most-used `NativeAgentConfig` fields:
 | `environment` | Where tools run | `local` (dev) / `docker` (production) |
 | `environment_extra` | Sandbox constructor kwargs | For `docker`: `{'image': '...', 'timeout': 60}`; see [Sandbox Environment](../sandbox.md) |
 | `max_steps` | Max iterations per sample | Math/QA `5-10`, code fixes `100+` |
+| `skills_dir` | Optional host Agent Skills directory | EvalScope makes the skills available before the agent loop starts |
 | `kwargs` | Strategy kwargs | Most commonly `{'system_prompt': '...'}` to steer the model |
 
 Available `strategy` values:
@@ -79,6 +80,12 @@ Available tools (`tools`):
 - `local` has no filesystem isolation; use `docker` in production.
 - `agent_config` also accepts a plain dict; `TaskConfig` converts it to `NativeAgentConfig` automatically.
 ```
+
+## Agent Skills
+
+Set `NativeAgentConfig.skills_dir` to a host directory whose immediate children are skill folders containing
+`SKILL.md`. EvalScope makes those skills available before the agent loop starts, and adds a short prompt hint when
+`skill_prompt_nudge=True`.
 
 ## MCP server tools
 

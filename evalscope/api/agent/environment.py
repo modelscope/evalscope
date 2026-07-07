@@ -7,6 +7,7 @@ live in ``evalscope/agent/environments/``.
 """
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from .types import ExecResult
@@ -45,6 +46,16 @@ class AgentEnvironment(ABC):
     async def close(self) -> None:
         """Release any external resources (containers, temp dirs, ...)."""
         ...
+
+    async def put_dir(self, source_dir: str | Path, target_dir: str) -> None:
+        """Copy a host directory into the environment.
+
+        Environments that do not expose a writable filesystem bridge should
+        raise ``NotImplementedError``. The default keeps older custom
+        environments source-compatible while allowing runners to probe for the
+        capability when they need host-side assets such as Agent Skills.
+        """
+        raise NotImplementedError(f'{type(self).__name__} does not support put_dir')
 
     async def __aenter__(self) -> 'AgentEnvironment':
         return self

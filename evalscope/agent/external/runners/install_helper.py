@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING, List, Optional
 
-from evalscope.agent.skills import install_skills_command, skills_from_sample_metadata
+from evalscope.agent.skills import install_agent_skills, skills_from_sample_metadata
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
@@ -83,14 +83,7 @@ async def install_task_skills(
         list(skills.install_paths or []) + list(native_install_paths or []),
         home_dir=home_dir,
     )
-    command = install_skills_command(skills.sandbox_dir, install_paths)
-    if not command:
-        return
-
-    result = await env.exec(['bash', '-lc', command], timeout=60)
-    if result.returncode != 0:
-        detail = ((result.stderr or result.stdout or '').strip() or f'rc={result.returncode}')[-1000:]
-        raise RuntimeError(f'{runner_name} failed to install skills: {detail}')
+    await install_agent_skills(env, skills, install_paths=install_paths, runner_name=runner_name)
 
 
 def _resolve_install_paths(install_paths: List[str], *, home_dir: Optional[str]) -> List[str]:

@@ -22,6 +22,7 @@ from __future__ import annotations
 import re
 import shlex
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 from evalscope.api.agent import AgentEnvironment
@@ -45,6 +46,62 @@ _DEFAULT_WORKDIR = '/workspace'
 _DEFAULT_TOOLS: List[str] = ['shell_executor', 'python_executor']
 _DEFAULT_INTERPRETER: List[str] = ['bash', '-c']
 _ENV_KEY_PATTERN = r'[A-Za-z_][A-Za-z0-9_]*'
+
+
+def _unwrap_bash_c(cmd: Any) -> Optional[str]:
+    """Return the payload for common bash-tool wrappers."""
+    if not isinstance(cmd, (list, tuple)) or len(cmd) != 3:
+        return None
+    executable, flag, command = cmd
+    if executable not in {'bash', '/bin/bash'} or flag != '-c' or not isinstance(command, str):
+        return None
+    return command
+
+
+def _interpreter_is_bash(interpreter: Sequence[str]) -> bool:
+    executable = interpreter[0]
+    return executable == 'bash' or executable.endswith('/bash')
+
+
+def _render_env_exports(env: Dict[str, str]) -> str:
+    exports = []
+    for raw_key, raw_value in env.items():
+        key = str(raw_key)
+        if not re.fullmatch(_ENV_KEY_PATTERN, key):
+            raise ValueError(f'Invalid environment variable name: {key!r}')
+        exports.append(f'export {key}={shlex.quote(str(raw_value))};')
+    return ' '.join(exports)
+
+
+def _render_command(
+    cmd: List[str],
+    *,
+    interpreter: Sequence[str],
+    cwd: Optional[str],
+    env: Optional[Dict[str, str]],
+) -> str:
+    unwrapped_command = _unwrap_bash_c(cmd) if _interpreter_is_bash(interpreter) else None
+    if unwrapped_command is not None:
+        command = unwrapped_command
+    elif isinstance(cmd, list):
+        command = ' '.join(shlex.quote(c) for c in cmd)
+    else:
+        command = str(cmd)
+    if cwd:
+        command = f'cd {shlex.quote(cwd)} && {command}'
+    if env:
+        prefix = _render_env_exports(env)
+        command = f'{prefix} {command}' if prefix else command
+    return command
+
+
+def _returncode_from_status(status: Any, stderr: str, timed_out: bool, success_status: Any) -> int:
+    if status == success_status:
+        return 0
+    if timed_out:
+        return -1
+    match = re.search(r'exit code (\d+)', stderr)
+    return int(match.group(1)) if match else 1
 
 
 @register_environment(['enclave', 'docker', 'volcengine'])
@@ -166,36 +223,6 @@ class EnclaveAgentEnvironment(AgentEnvironment):
     # AgentEnvironment interface
     # ------------------------------------------------------------------
 
-    @staticmethod
-    def _unwrap_bash_c(cmd: Any) -> Optional[str]:
-        """Return the payload for common bash-tool wrappers.
-
-        The generic ``bash`` tool already passes ``/bin/bash -c <command>``.
-        Enclave itself also provides a configurable shell wrapper, so unwrap
-        that shape to avoid running the agent command in a nested non-login
-        shell when the environment interpreter is ``bash -lc``.
-        """
-        if not isinstance(cmd, (list, tuple)) or len(cmd) != 3:
-            return None
-        executable, flag, command = cmd
-        if executable not in {'bash', '/bin/bash'} or flag != '-c' or not isinstance(command, str):
-            return None
-        return command
-
-    def _interpreter_is_bash(self) -> bool:
-        executable = self._interpreter[0]
-        return executable == 'bash' or executable.endswith('/bash')
-
-    @staticmethod
-    def _render_env_exports(env: Dict[str, str]) -> str:
-        exports = []
-        for raw_key, raw_value in env.items():
-            key = str(raw_key)
-            if not re.fullmatch(_ENV_KEY_PATTERN, key):
-                raise ValueError(f'Invalid environment variable name: {key!r}')
-            exports.append(f'export {key}={shlex.quote(str(raw_value))};')
-        return ' '.join(exports)
-
     async def exec(
         self,
         cmd: List[str],
@@ -206,21 +233,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         env: Optional[Dict[str, str]] = None,
     ) -> ExecResult:
         handle = await self._ensure_sandbox()
-
-        unwrapped_command = self._unwrap_bash_c(cmd) if self._interpreter_is_bash() else None
-        if unwrapped_command is not None:
-            command = unwrapped_command
-        elif isinstance(cmd, list):
-            command = ' '.join(shlex.quote(c) for c in cmd)
-        else:
-            command = str(cmd)
-        if cwd:
-            command = f'cd {shlex.quote(cwd)} && {command}'
-        if env:
-            # Export inside the wrapper shell so compound commands and any
-            # child process inherit the requested environment.
-            prefix = self._render_env_exports(env)
-            command = f'{prefix} {command}' if prefix else command
+        command = _render_command(cmd, interpreter=self._interpreter, cwd=cwd, env=env)
 
         # ms_enclave's shell_executor splits a bare string with no shell
         # wrapping; use an explicit interpreter so cd/&&/env-prefix/quoting
@@ -247,15 +260,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         stdout = str(result.output or '')
         stderr = str(result.error or '')
         timed_out = result.status == ExecutionStatus.TIMEOUT
-
-        if result.status == ExecutionStatus.SUCCESS:
-            returncode = 0
-        elif timed_out:
-            returncode = -1
-        else:
-            import re as _re
-            _m = _re.search(r'exit code (\d+)', stderr)
-            returncode = int(_m.group(1)) if _m else 1
+        returncode = _returncode_from_status(result.status, stderr, timed_out, ExecutionStatus.SUCCESS)
 
         # Prefer upstream-reported time when it's a positive number;
         # otherwise fall back to our locally measured wall-clock.
@@ -269,6 +274,13 @@ class EnclaveAgentEnvironment(AgentEnvironment):
             timed_out=timed_out,
             duration=duration,
         )
+
+    async def put_dir(self, source_dir: str | Path, target_dir: str) -> None:
+        """Copy a host directory into the sandbox."""
+        handle = await self._ensure_sandbox()
+        ok = await handle.put_dir(source_dir, target_dir)
+        if not ok:
+            raise RuntimeError(f'EnclaveAgentEnvironment.put_dir failed to copy {source_dir} into {target_dir}')
 
     async def close(self) -> None:
         """Release the per-sample sandbox (idempotent)."""

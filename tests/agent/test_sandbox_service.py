@@ -111,7 +111,7 @@ class TestBuildSandboxConfig:
             build_context_provider=lambda: (str(tmp_path), str(dockerfile)),
         )
 
-        with patch('evalscope.api.mixin.sandbox_mixin.DockerImageBuilder.build_or_reuse') as build_image, \
+        with patch('evalscope.api.mixin.sandbox_mixin.prepare_docker_image') as build_image, \
                 patch('evalscope.api.mixin.sandbox_mixin.build_and_acquire_pool_sync',
                       return_value=MagicMock()) as acquire_pool:
             build_image.return_value = DockerImageResult(
@@ -288,6 +288,17 @@ class TestHandles:
 
         with pytest.raises(RuntimeError, match='already closed'):
             asyncio.run(_run())
+
+    def test_sandbox_handle_put_dir_delegates_to_manager(self):
+        manager = MagicMock()
+        manager.put_dir = AsyncMock(return_value=True)
+        handle = SandboxHandle(manager, 'sb-1')
+
+        async def _run():
+            return await handle.put_dir('/host/skills', '/skills')
+
+        assert asyncio.run(_run()) is True
+        manager.put_dir.assert_awaited_once_with('sb-1', '/host/skills', '/skills')
 
 
 # ===========================================================================

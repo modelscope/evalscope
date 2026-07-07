@@ -21,7 +21,13 @@ from .config_builder import (
     normalize_docker_build_context,
     should_build_docker_image,
 )
-from .docker_image import DockerImageBuilder, DockerImageResult, DockerImageSpec, hash_build_context
+from .docker_image import (
+    DockerImageBuilder,
+    DockerImageResult,
+    DockerImageSpec,
+    hash_build_context,
+    prepare_docker_image,
+)
 from .engine import SandboxEngine, get_enclave_types, resolve_engine
 from .service import (
     PoolHandle,
@@ -50,6 +56,7 @@ __all__ = [
     'hash_build_context',
     'merge_sandbox_config_dicts',
     'normalize_docker_build_context',
+    'prepare_docker_image',
     'resolve_engine',
     'shutdown_sandbox_service',
     'should_build_docker_image',

@@ -63,6 +63,11 @@ class DockerImageBuilder:
         return DockerImageResult(image_tag=image_tag, reused=not should_build, context_hash=context_hash)
 
 
+def prepare_docker_image(spec: DockerImageSpec, *, builder: DockerImageBuilder | None = None) -> DockerImageResult:
+    """Prepare a Docker image from ``spec`` using the shared local builder."""
+    return (builder or DockerImageBuilder()).build_or_reuse(spec)
+
+
 def hash_build_context(context_dir: str, *, cache_key_parts: List[str] | None = None) -> str:
     """Return a stable hash for regular files under ``context_dir``."""
     root = Path(context_dir)
@@ -135,4 +140,5 @@ __all__ = [
     'DockerImageResult',
     'DockerImageSpec',
     'hash_build_context',
+    'prepare_docker_image',
 ]

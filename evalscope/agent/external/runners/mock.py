@@ -13,8 +13,8 @@ import sys
 from typing import Any, Dict
 
 from evalscope.api.registry import register_runner
-from ._install import install_task_skills
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
+from .install_helper import install_task_skills
 
 # The body of the mock-agent CLI.  Lives as a string so it runs in any
 # Python interpreter available inside the sandbox (no module import).

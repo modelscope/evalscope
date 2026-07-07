@@ -13,7 +13,6 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 from evalscope.api.sandbox import (
-    DockerImageBuilder,
     DockerImageSpec,
     PoolHandle,
     SandboxEngine,
@@ -21,6 +20,7 @@ from evalscope.api.sandbox import (
     default_docker_build_context,
     merge_sandbox_config_dicts,
     normalize_docker_build_context,
+    prepare_docker_image,
     resolve_engine,
 )
 from evalscope.utils.function_utils import AsyncioLoopRunner, thread_safe
@@ -100,7 +100,7 @@ class EnclaveSandboxBackend(SandboxBackend):
             image = sandbox_cfg_dict.get('image')
             if self._use_custom_image and image:
                 build_ctx, dockerfile = self._get_build_context()
-                result = DockerImageBuilder().build_or_reuse(
+                result = prepare_docker_image(
                     DockerImageSpec(
                         name_prefix=_docker_image_prefix(str(image)),
                         context_dir=build_ctx,

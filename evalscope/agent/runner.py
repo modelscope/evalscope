@@ -14,11 +14,10 @@ per-benchmark overrides.
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 
 from evalscope.agent.skills import (
-    ResolvedSkills,
-    discover_skills,
+    DEFAULT_SKILLS_INSTALL_DIR,
     format_skills_prompt,
-    install_skills_command,
-    skills_from_sample_metadata,
+    install_agent_skills,
+    resolve_agent_skills,
 )
 from evalscope.api.agent import AgentEnvironment, AgentLoopResult, run_agent_loop
 from evalscope.api.evaluator import InferenceResult
@@ -71,32 +70,38 @@ def run_native_agent(
     # Resolve ToolInfo schemas from the registry so the model can see them.
     registered_tool_infos = resolve_tool_infos(cfg.tools)
 
-    # Determine environment class (if any) – instantiated below so its
-    # constructor sees the fully merged kwargs.
-    env_cls: Optional[type] = None
-    if cfg.environment is not None:
-        env_cls = get_environment(cfg.environment)
-
-    env_kwargs = _resolve_env_kwargs(
-        task_config=task_config,
-        sample=sample,
-        build_sandbox_config=build_sandbox_config,
-    )
     environment: Optional[AgentEnvironment] = environment_override
-    if environment is None and env_cls is not None:
+    if environment is None and cfg.environment is not None:
+        env_cls = get_environment(cfg.environment)
+        env_kwargs = _resolve_env_kwargs(
+            task_config=task_config,
+            sample=sample,
+            build_sandbox_config=build_sandbox_config,
+        )
         environment = env_cls(**env_kwargs)
+    owns_environment = environment_override is None
 
     if isinstance(sample.input, list):
         initial_messages = list(sample.input)
     else:
         initial_messages = [ChatMessageUser(content=sample.input)]
-    skills = _resolve_skills(cfg, sample)
+    skills = resolve_agent_skills(
+        sample_metadata=sample.metadata,
+        config_skills_dir=cfg.skills_dir,
+        prompt_base_dir=DEFAULT_SKILLS_INSTALL_DIR,
+        install_paths=[DEFAULT_SKILLS_INSTALL_DIR],
+    )
     if cfg.skill_prompt_nudge and skills.enabled:
         nudge = format_skills_prompt(skills.skills)
         if nudge:
             initial_messages.insert(0, ChatMessageUser(content=nudge))
     if environment is not None:
-        AsyncioLoopRunner.run(_install_skills(environment, skills))
+        try:
+            AsyncioLoopRunner.run(install_agent_skills(environment, skills, runner_name='NativeAgentRunner'))
+        except Exception:
+            if owns_environment:
+                AsyncioLoopRunner.run(environment.close())
+            raise
 
     # Merge sample-level tools with agent-config tools.
     sample_tools = list(sample.tools or [])
@@ -114,43 +119,13 @@ def run_native_agent(
         trace_strategy_name=cfg.strategy,
         trace_env_name=cfg.environment,
         mcp_configs=list(cfg.mcp_servers) or None,
+        close_environment=owns_environment,
     )
 
     final_text = extract_final_answer(result, strategy)
     output = result.final_output
     output.completion = final_text  # normalise content via existing setter
     return InferenceResult(output=output, messages=result.messages, trace=result.trace)
-
-
-def _resolve_skills(cfg: Any, sample: 'Sample') -> ResolvedSkills:
-    sample_skills = skills_from_sample_metadata(sample.metadata)
-    if sample_skills.enabled:
-        return sample_skills
-    if not cfg.skills_dir:
-        return ResolvedSkills()
-    skills, errors = discover_skills(cfg.skills_dir, path_prefix='skills')
-    return ResolvedSkills(
-        enabled=bool(skills),
-        source='config',
-        host_dir=cfg.skills_dir,
-        sandbox_dir=cfg.skills_dir,
-        prompt_base_dir='skills',
-        install_paths=[],
-        skills=skills,
-        metadata_errors=errors,
-    )
-
-
-async def _install_skills(environment: AgentEnvironment, skills: ResolvedSkills) -> None:
-    if not skills.enabled or not skills.sandbox_dir:
-        return
-    command = install_skills_command(skills.sandbox_dir, list(skills.install_paths or []))
-    if not command:
-        return
-    result = await environment.exec(['bash', '-lc', command], timeout=60)
-    if result.returncode != 0:
-        detail = ((result.stderr or result.stdout or '').strip() or f'rc={result.returncode}')[-1000:]
-        raise RuntimeError(f'NativeAgentRunner failed to install skills: {detail}')
 
 
 def _resolve_env_kwargs(

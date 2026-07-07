@@ -17,6 +17,7 @@ import asyncio
 import atexit
 import json
 import threading
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from evalscope.utils.function_utils import AsyncioLoopRunner
@@ -72,6 +73,12 @@ class SandboxHandle:
         if self._sandbox_id is None:
             raise RuntimeError('SandboxHandle already closed')
         return await self._manager.execute_tool(self._sandbox_id, tool_name, parameters)
+
+    async def put_dir(self, source_dir: str | Path, target_dir: str) -> bool:
+        """Copy a host directory into the sandbox when the manager supports it."""
+        if self._sandbox_id is None:
+            raise RuntimeError('SandboxHandle already closed')
+        return await self._manager.put_dir(self._sandbox_id, source_dir, target_dir)
 
     async def close(self) -> None:
         if self._sandbox_id is None:

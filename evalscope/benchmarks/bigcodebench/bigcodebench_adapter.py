@@ -8,7 +8,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import DockerImageBuilder, DockerImageSpec
+from evalscope.api.sandbox import DockerImageSpec, prepare_docker_image
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
@@ -153,7 +153,7 @@ class BigCodeBenchAdapter(DefaultDataAdapter):
         build_context = self.extra_params.get('docker_build_context') or ''
         if not build_context:
             return
-        result = DockerImageBuilder().build_or_reuse(
+        result = prepare_docker_image(
             DockerImageSpec(
                 name_prefix=f'evalscope-{self.name}',
                 context_dir=build_context,

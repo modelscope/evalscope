@@ -2,8 +2,8 @@ import asyncio
 import pytest
 from typing import Dict, List, Optional
 
-from evalscope.agent.external.runners._install import install_task_skills
 from evalscope.agent.external.runners.base import ExternalAgentTask
+from evalscope.agent.external.runners.install_helper import install_task_skills
 from evalscope.agent.skills import ResolvedSkills, SkillMetadata
 from evalscope.api.agent.types import ExecResult
 

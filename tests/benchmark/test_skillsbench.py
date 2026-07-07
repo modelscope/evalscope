@@ -3,6 +3,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+from evalscope.agent.external.config import ExternalAgentConfig
 from evalscope.agent.skills import discover_skills, format_skills_prompt, install_skills_command
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.agent.types import NativeAgentConfig
@@ -14,14 +15,15 @@ from evalscope.api.model import ModelOutput
 from evalscope.api.model.model_output import ChatCompletionChoice
 from evalscope.api.sandbox.docker_image import DockerImageSpec, hash_build_context
 from evalscope.benchmarks.bigcodebench.bigcodebench_adapter import BigCodeBenchAdapter
-from evalscope.benchmarks.skillsbench.skillsbench_adapter import (
-    _SKILL_MODE_NO_SKILL,
-    _SKILL_MODE_WITH_SKILL,
-    SkillsBenchAdapter,
-    _read_task_md,
-    _stage_environment_context,
-    _wrap_input_command,
-    _wrap_timeout_command,
+from evalscope.benchmarks.skillsbench.skillsbench_adapter import SkillsBenchAdapter
+from evalscope.benchmarks.skillsbench.utils import (
+    SKILL_MODE_NO_SKILL,
+    SKILL_MODE_WITH_SKILL,
+    dockerfile_workdir,
+    network_enabled,
+    read_task_md,
+    skillsbench_sandbox_config,
+    stage_environment_context,
 )
 from evalscope.config import TaskConfig
 
@@ -40,7 +42,7 @@ Do the task.
         encoding='utf-8',
     )
 
-    frontmatter, body = _read_task_md(task_md)
+    frontmatter, body = read_task_md(task_md)
 
     assert frontmatter['agent']['timeout_sec'] == 900.0
     assert body == 'Do the task.'
@@ -83,7 +85,7 @@ def test_install_skills_command_preserves_home_and_fails_on_copy_error(tmp_path:
 def test_stage_no_skill_removes_skills_and_copy_lines(tmp_path: Path) -> None:
     task = _make_task_env(tmp_path)
 
-    context = Path(_stage_environment_context(task_dir=task, skill_mode=_SKILL_MODE_NO_SKILL))
+    context = Path(stage_environment_context(task_dir=task, skill_mode=SKILL_MODE_NO_SKILL))
 
     try:
         assert not (context / 'skills').exists()
@@ -98,7 +100,7 @@ def test_stage_no_skill_removes_skills_and_copy_lines(tmp_path: Path) -> None:
 def test_stage_with_skill_injects_neutral_skills_path(tmp_path: Path) -> None:
     task = _make_task_env(tmp_path)
 
-    context = Path(_stage_environment_context(task_dir=task, skill_mode=_SKILL_MODE_WITH_SKILL))
+    context = Path(stage_environment_context(task_dir=task, skill_mode=SKILL_MODE_WITH_SKILL))
 
     try:
         dockerfile = (context / 'Dockerfile').read_text(encoding='utf-8')
@@ -133,20 +135,43 @@ def test_docker_builder_hash_includes_build_args(monkeypatch, tmp_path: Path) ->
     assert first.image_tag != second.image_tag
 
 
-def test_wrap_timeout_command_quotes_arguments() -> None:
-    cmd = _wrap_timeout_command(['bash', '-lc', "echo 'hello world'"], 2.5)
-
-    assert cmd[0:2] == ['bash', '-lc']
-    assert 'timeout --kill-after=5s 2s' in cmd[2]
-    assert "'echo '\"'\"'hello world'\"'\"''" in cmd[2]
+def test_network_enabled_honors_no_network_mode() -> None:
+    assert network_enabled({'environment': {'network_mode': 'public'}}) is True
+    assert network_enabled({'environment': {'network_mode': 'no-network'}}) is False
 
 
-def test_wrap_input_command_pipes_stdin() -> None:
-    cmd = _wrap_input_command(['python', '-c', 'import sys; print(sys.stdin.read())'], "hello 'world'")
+def test_dockerfile_workdir_uses_final_stage_workdir(tmp_path: Path) -> None:
+    dockerfile = tmp_path / 'Dockerfile'
+    dockerfile.write_text(
+        """FROM python:3.11-slim
+WORKDIR /root
+RUN echo ready
+WORKDIR output
+FROM ubuntu:24.04
+WORKDIR "/app path" # final
+""",
+        encoding='utf-8',
+    )
 
-    assert cmd[0:2] == ['bash', '-lc']
-    assert "printf %s 'hello '\"'\"'world'\"'\"''" in cmd[2]
-    assert "'import sys; print(sys.stdin.read())'" in cmd[2]
+    assert dockerfile_workdir(dockerfile) == '/app path'
+
+
+def test_skillsbench_sandbox_config_uses_task_image_workdir_and_network() -> None:
+    config = skillsbench_sandbox_config(
+        {
+            'image_tag': 'evalscope-skillsbench-demo:abc',
+            'working_dir': '/app',
+            'frontmatter': {'environment': {'network_mode': 'no-network'}},
+        }
+    )
+
+    assert config == {
+        'image': 'evalscope-skillsbench-demo:abc',
+        'command': 'sleep infinity',
+        'working_dir': '/app',
+        'tools_config': ['shell_executor'],
+        'network_enabled': False,
+    }
 
 
 def test_agent_config_accepts_skills_fields() -> None:
@@ -159,13 +184,13 @@ def test_agent_config_accepts_skills_fields() -> None:
 def test_bigcodebench_optional_builder_overrides_sandbox_image(monkeypatch, tmp_path: Path) -> None:
     from evalscope.api.sandbox.docker_image import DockerImageResult
 
-    def fake_build_or_reuse(self, spec):  # type: ignore[no-untyped-def]
+    def fake_prepare_docker_image(spec):  # type: ignore[no-untyped-def]
         assert spec.context_dir == str(tmp_path)
         assert spec.cache_key_parts == ['bigcodebench', 'bigcodebench']
         return DockerImageResult(image_tag='evalscope-bigcodebench:test', reused=True, context_hash='abc')
 
-    monkeypatch.setattr('evalscope.benchmarks.bigcodebench.bigcodebench_adapter.DockerImageBuilder.build_or_reuse',
-                        fake_build_or_reuse)
+    monkeypatch.setattr('evalscope.benchmarks.bigcodebench.bigcodebench_adapter.prepare_docker_image',
+                        fake_prepare_docker_image)
     meta = BenchmarkMeta(
         name='bigcodebench',
         dataset_id='evalscope/bigcodebench',
@@ -253,6 +278,53 @@ def test_on_inference_accepts_native_agent_config(monkeypatch) -> None:
 
     monkeypatch.setattr(adapter, '_build_environment', lambda _: env)
     monkeypatch.setattr('evalscope.agent.runner.run_native_agent', fake_run_native_agent)
+    monkeypatch.setattr(adapter, '_run_verifier', fake_run_verifier)
+
+    result = adapter._on_inference(model=None, sample=sample)
+
+    assert result.output.message.text == 'done'
+    assert sample.metadata['reward'] == 1.0
+    assert env.closed
+
+
+def test_on_inference_keeps_external_environment_open_until_verifier(monkeypatch) -> None:
+    adapter = SkillsBenchAdapter(
+        benchmark_meta=BenchmarkMeta(
+            name='skillsbench',
+            dataset_id='skillsbench',
+            subset_list=['default'],
+            metric_list=['score'],
+            prompt_template='{question}',
+        ),
+        task_config=TaskConfig(
+            datasets=['skillsbench'],
+            agent_config=ExternalAgentConfig(framework='codex', timeout=60),
+        ),
+    )
+    env = _FakeSkillsBenchEnv()
+    sample = Sample(id=0, input='do task', target='', metadata={'task_id': 'task/one'})
+
+    def fake_run_external_agent(**kwargs):  # type: ignore[no-untyped-def]
+        assert kwargs['environment_override'] is env
+        assert kwargs['close_environment'] is False
+        assert env.closed is False
+        output = ModelOutput(
+            model='fake',
+            choices=[ChatCompletionChoice.from_content('done')],
+            metadata={'source': 'test'},
+        )
+        return InferenceResult(
+            output=output,
+            messages=[ChatMessageAssistant(content='done')],
+        )
+
+    async def fake_run_verifier(run_env, run_sample):  # type: ignore[no-untyped-def]
+        assert run_env is env
+        assert env.closed is False
+        run_sample.metadata['reward'] = 1.0
+
+    monkeypatch.setattr(adapter, '_build_environment', lambda _: env)
+    monkeypatch.setattr('evalscope.agent.external.adapter.run_external_agent', fake_run_external_agent)
     monkeypatch.setattr(adapter, '_run_verifier', fake_run_verifier)
 
     result = adapter._on_inference(model=None, sample=sample)

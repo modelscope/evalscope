@@ -6,6 +6,8 @@ No container isolation - suitable only for development and CI tests.
 
 import asyncio
 import os
+import shutil
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.agent import AgentEnvironment
@@ -85,6 +87,15 @@ class LocalAgentEnvironment(AgentEnvironment):
 
     async def close(self) -> None:
         """No external resources to release."""
+
+    async def put_dir(self, source_dir: str | Path, target_dir: str) -> None:
+        """Copy a host directory into a local target directory."""
+        source = Path(source_dir).expanduser()
+        if not source.is_dir():
+            raise FileNotFoundError(f'put_dir source is not a directory: {source}')
+        target = Path(target_dir).expanduser()
+        target.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(source, target, dirs_exist_ok=True)
 
 
 __all__ = ['LocalAgentEnvironment']

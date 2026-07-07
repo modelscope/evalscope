@@ -1,17 +1,11 @@
 from __future__ import annotations
 
-import base64
-import copy
-import json
-import os
-import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
 from evalscope.agent.tools.python_exec import PYTHON_EXEC_TOOL_INFO, run_python_exec
 from evalscope.api.agent import AgentEnvironment
-from evalscope.api.agent.types import ExecResult
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import DatasetHub, Sample
@@ -19,20 +13,28 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import DockerImageBuilder, DockerImageSpec
-from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType, Tags
+from evalscope.api.sandbox import DockerImageSpec, prepare_docker_image
+from evalscope.constants import HubType, Tags
 from evalscope.utils.import_utils import check_import, is_build_doc
-from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
+from .utils import (
+    SANDBOX_DELIVERABLE_DIR,
+    SANDBOX_REFERENCE_DIR,
+    GDPvalArtifactEnvironment,
+    artifact_dir,
+    as_list,
+    build_reference_volumes,
+    export_submission,
+    format_reference_hint,
+    remove_reference_hash,
+    sandbox_reference_path,
+    submission_records_from_samples,
+)
 
 logger = get_logger()
 
 _DATASET_ID = 'openai-mirror/gdpval'
 _DEFAULT_DOCKER_IMAGE = 'evalscope/gdpval:latest'
-_SANDBOX_REFERENCE_DIR = '/reference_files'
-_SANDBOX_DELIVERABLE_DIR = 'deliverable_files'
-_HOST_ARTIFACT_ROOT = 'artifacts/gdpval'
-_SUBMISSION_DIR_NAME = 'gdpval_submission'
 
 _GDPVAL_EXTRA_PARAMS: Dict[str, Any] = {
     'max_steps': {
@@ -110,12 +112,12 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
 
 _PROMPT_SUFFIX = f"""
 
-Reference files, when present, are mounted under `{_SANDBOX_REFERENCE_DIR}`. Use the bash or python_exec tools to inspect
+Reference files, when present, are mounted under `{SANDBOX_REFERENCE_DIR}`. Use the bash or python_exec tools to inspect
 them and create the requested deliverables.
 
-Write all submitted files under a new folder named `{_SANDBOX_DELIVERABLE_DIR}` in the sandbox working directory.
+Write all submitted files under a new folder named `{SANDBOX_DELIVERABLE_DIR}` in the sandbox working directory.
 We will grade your final message as part of the deliverable, but requested documents, spreadsheets, slides, media,
-or archives should be actual files in `{_SANDBOX_DELIVERABLE_DIR}`.
+or archives should be actual files in `{SANDBOX_DELIVERABLE_DIR}`.
 """
 
 
@@ -170,11 +172,11 @@ class GDPvalAdapter(AgentLoopAdapter):
         )
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        reference_files = _as_list(record.get('reference_files'))
-        reference_file_urls = _as_list(record.get('reference_file_urls'))
-        reference_file_hf_uris = _as_list(record.get('reference_file_hf_uris'))
-        sandbox_reference_paths = [_sandbox_reference_path(path) for path in reference_files]
-        reference_hint = _format_reference_hint(sandbox_reference_paths)
+        reference_files = as_list(record.get('reference_files'))
+        reference_file_urls = as_list(record.get('reference_file_urls'))
+        reference_file_hf_uris = as_list(record.get('reference_file_hf_uris'))
+        sandbox_reference_paths = [sandbox_reference_path(path) for path in reference_files]
+        reference_hint = format_reference_hint(sandbox_reference_paths)
         prompt = f"{record['prompt'].strip()}\n{reference_hint}{_PROMPT_SUFFIX}"
 
         return Sample(
@@ -189,7 +191,7 @@ class GDPvalAdapter(AgentLoopAdapter):
                 'reference_files': reference_files,
                 'reference_file_urls': reference_file_urls,
                 'reference_file_hf_uris': reference_file_hf_uris,
-                'reference_paths': [_remove_reference_hash(path) for path in reference_files],
+                'reference_paths': [remove_reference_hash(path) for path in reference_files],
                 'sandbox_reference_paths': sandbox_reference_paths,
                 'rubric_pretty': record.get('rubric_pretty'),
                 'rubric_json': record.get('rubric_json'),
@@ -202,7 +204,7 @@ class GDPvalAdapter(AgentLoopAdapter):
         if self.download_reference_files and not is_build_doc():
             for subset_samples in self.test_dataset.values():
                 self._resolve_sample_reference_files(list(subset_samples))
-        self._submission_records = self._submission_records_from_samples()
+        self._submission_records = submission_records_from_samples(self.test_dataset, self.default_subset)
         super()._post_process_samples()
 
     def run_inference(self, model: Model, sample: Sample, output_dir: str, **kwargs: Any) -> TaskState:
@@ -222,7 +224,7 @@ class GDPvalAdapter(AgentLoopAdapter):
         from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 
         self._ensure_docker_image()
-        volumes = self._build_reference_volumes(sample)
+        volumes = build_reference_volumes(sample)
         sandbox_config: Dict[str, Any] = {
             'image': self.docker_image,
             'working_dir': '/workspace',
@@ -242,8 +244,11 @@ class GDPvalAdapter(AgentLoopAdapter):
             sandbox_config=sandbox_config,
             timeout=self.command_timeout,
         )
-        artifact_dir = self._artifact_dir(sample)
-        return _GDPvalArtifactEnvironment(env=env, artifact_dir=artifact_dir, metadata=sample.metadata)
+        return GDPvalArtifactEnvironment(
+            env=env,
+            artifact_dir=artifact_dir(sample, self._current_output_dir, self.name),
+            metadata=sample.metadata,
+        )
 
     def get_build_context(self) -> tuple[str, str]:
         docker_context = Path(__file__).parent
@@ -313,17 +318,6 @@ class GDPvalAdapter(AgentLoopAdapter):
                     host_files.append(local_path)
             sample.metadata['host_reference_files'] = host_files
 
-    def _build_reference_volumes(self, sample: Sample) -> Dict[str, Dict[str, str]]:
-        volumes: Dict[str, Dict[str, str]] = {}
-        for host_file in sample.metadata.get('host_reference_files') or []:
-            host_path = Path(host_file)
-            if not host_path.is_file():
-                continue
-            hash_dir = host_path.parent.name
-            bind_dir = f'{_SANDBOX_REFERENCE_DIR}/{hash_dir}'
-            volumes[str(host_path.parent)] = {'bind': bind_dir, 'mode': 'ro'}
-        return volumes
-
     def _ensure_docker_image(self) -> None:
         if self._docker_image_checked or is_build_doc():
             return
@@ -333,7 +327,7 @@ class GDPvalAdapter(AgentLoopAdapter):
             return
 
         build_ctx, dockerfile = self.get_build_context()
-        result = DockerImageBuilder().build_or_reuse(
+        result = prepare_docker_image(
             DockerImageSpec(
                 name_prefix='evalscope/gdpval',
                 context_dir=build_ctx,
@@ -344,264 +338,12 @@ class GDPvalAdapter(AgentLoopAdapter):
         self.docker_image = result.image_tag
         logger.info(f'GDPval docker image prepared: {result.image_tag} (reused={result.reused})')
 
-    def _artifact_dir(self, sample: Sample) -> Path:
-        task_id = str(sample.metadata.get('task_id') or sample.id or 'unknown')
-        safe_task_id = ''.join(ch if ch.isalnum() or ch in '-_.' else '_' for ch in task_id)
-        output_dir = self._current_output_dir or os.path.join(DEFAULT_EVALSCOPE_CACHE_DIR, self.name)
-        return Path(output_dir) / _HOST_ARTIFACT_ROOT / safe_task_id
-
     def _export_submission(self, report_dir: Path) -> None:
-        review_items = self._load_review_items(report_dir)
-        if not review_items:
-            logger.warning('No GDPval review cache found; skipping submission export.')
-            return
-
-        import pandas as pd
-
-        submission_dir = report_dir / _SUBMISSION_DIR_NAME
-        if submission_dir.exists():
-            shutil.rmtree(submission_dir)
-        (submission_dir / 'data').mkdir(parents=True, exist_ok=True)
-
-        results = self._submission_results(review_items, submission_dir)
-        records = copy.deepcopy(self._submission_records) or self._submission_records_from_review_items(review_items)
-        for record in records:
-            task_id = str(record.get('task_id') or '')
-            result = results.get(task_id, {})
-            record['deliverable_text'] = result.get('deliverable_text', '')
-            record['deliverable_files'] = result.get('deliverable_files', [])
-
-        table = pd.DataFrame(records)
-        if 'deliverable_text' not in table:
-            table['deliverable_text'] = ''
-        if 'deliverable_files' not in table:
-            table['deliverable_files'] = [[] for _ in range(len(table))]
-        table.to_parquet(submission_dir / 'data' / 'train-00000-of-00001.parquet', index=False, engine='pyarrow')
-
-        info = {
-            'benchmark': self.name,
-            'dataset_id': self.dataset_id,
-            'dataset_hub': self.source_dataset_hub,
-            'submission_dir': str(submission_dir),
-            'local_metric': 'submission_ready',
-            'official_gdpval_score_computed_locally': False,
-            'next_step': (
-                'Local submission package exported. Run OpenAI\'s official GDPval judge externally to compute '
-                'quality scores.'
-            ),
-        }
-        with open(submission_dir / 'submission_info.json', 'w', encoding='utf-8') as f:
-            json.dump(info, f, ensure_ascii=False, indent=2)
-        logger.info(f'GDPval submission package exported to: {submission_dir}')
-
-    def _submission_records_from_samples(self) -> List[Dict[str, Any]]:
-        if self.test_dataset is None:
-            return []
-        records = []
-        seen = set()
-        for sample in self.test_dataset.get(self.default_subset, []):
-            record = self._submission_record_from_metadata(sample.metadata)
-            task_id = str(record.get('task_id') or '')
-            if task_id in seen:
-                continue
-            seen.add(task_id)
-            records.append(record)
-        return records
-
-    def _submission_records_from_review_items(self, review_items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        records = []
-        seen = set()
-        for item in review_items:
-            sample_score = item.get('sample_score') or {}
-            metadata = sample_score.get('sample_metadata') or {}
-            record = self._submission_record_from_metadata(metadata)
-            task_id = str(record.get('task_id') or '')
-            if task_id in seen:
-                continue
-            seen.add(task_id)
-            records.append(record)
-        return records
-
-    def _submission_record_from_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            'task_id': metadata.get('task_id'),
-            'sector': metadata.get('sector'),
-            'occupation': metadata.get('occupation'),
-            'prompt': metadata.get('prompt'),
-            'reference_files': metadata.get('reference_files') or [],
-            'reference_file_urls': metadata.get('reference_file_urls') or [],
-            'reference_file_hf_uris': metadata.get('reference_file_hf_uris') or [],
-            'rubric_pretty': metadata.get('rubric_pretty'),
-            'rubric_json': metadata.get('rubric_json'),
-        }
-
-    def _load_review_items(self, report_dir: Path) -> List[Dict[str, Any]]:
-        outputs_dir = report_dir.parent.parent
-        model_name = report_dir.name
-        review_dir = outputs_dir / 'reviews' / model_name
-        review_items: List[Dict[str, Any]] = []
-        for subset in self.subset_list:
-            review_file = review_dir / f'{self.name}_{subset}.jsonl'
-            if review_file.exists():
-                review_items.extend(jsonl_to_list(str(review_file)))
-        return review_items
-
-    def _submission_results(self, review_items: List[Dict[str, Any]],
-                            submission_dir: Path) -> Dict[str, Dict[str, Any]]:
-        results: Dict[str, Dict[str, Any]] = {}
-        for item in review_items:
-            sample_score = item.get('sample_score') or {}
-            metadata = sample_score.get('sample_metadata') or {}
-            score = sample_score.get('score') or {}
-            task_id = str(metadata.get('task_id') or sample_score.get('sample_id') or item.get('index') or '')
-            if not task_id:
-                continue
-            deliverable_files = self._copy_submission_deliverables(
-                task_id=task_id,
-                deliverables=metadata.get('deliverable_files') or [],
-                submission_dir=submission_dir,
-            )
-            results[task_id] = {
-                'deliverable_text': score.get('prediction') or score.get('extracted_prediction') or '',
-                'deliverable_files': deliverable_files,
-            }
-        return results
-
-    def _copy_submission_deliverables(
-        self,
-        task_id: str,
-        deliverables: List[Dict[str, Any]],
-        submission_dir: Path,
-    ) -> List[str]:
-        copied_paths = []
-        task_dir = _safe_path_name(task_id)
-        for deliverable in deliverables:
-            local_path = Path(str(deliverable.get('local_path') or ''))
-            relative_path = _relative_deliverable_path(str(deliverable.get('path') or '')) or local_path.name
-            if not local_path.is_file() or not _is_safe_relative_path(relative_path):
-                continue
-            target_relative = f'{_SANDBOX_DELIVERABLE_DIR}/{task_dir}/{relative_path}'
-            target_path = submission_dir / target_relative
-            target_path.parent.mkdir(parents=True, exist_ok=True)
-            try:
-                shutil.copy2(local_path, target_path)
-                copied_paths.append(target_relative)
-            except Exception as exc:
-                logger.warning(f'Failed to copy GDPval deliverable {local_path} to {target_path}: {exc}')
-        return copied_paths
-
-
-class _GDPvalArtifactEnvironment(AgentEnvironment):
-    name = 'gdpval_artifact'
-
-    def __init__(self, env: AgentEnvironment, artifact_dir: Path, metadata: Dict[str, Any]) -> None:
-        self._env = env
-        self._artifact_dir = artifact_dir
-        self._metadata = metadata
-
-    async def exec(
-        self,
-        cmd: List[str],
-        *,
-        cwd: Optional[str] = None,
-        input: Optional[str] = None,
-        timeout: Optional[float] = None,
-        env: Optional[Dict[str, str]] = None,
-    ) -> ExecResult:
-        return await self._env.exec(cmd, cwd=cwd, input=input, timeout=timeout, env=env)
-
-    async def close(self) -> None:
-        try:
-            await self._extract_deliverables()
-        finally:
-            await self._env.close()
-
-    async def _extract_deliverables(self) -> None:
-        check = await self._env.exec(['test', '-d', _SANDBOX_DELIVERABLE_DIR], timeout=30)
-        if check.returncode != 0:
-            self._metadata['deliverable_files'] = []
-            self._metadata['artifact_dir'] = str(self._artifact_dir)
-            return
-
-        listing = await self._env.exec(
-            ['find', _SANDBOX_DELIVERABLE_DIR, '-type', 'f', '-print0'],
-            timeout=120,
+        export_submission(
+            report_dir=report_dir,
+            submission_records=self._submission_records,
+            subset_list=self.subset_list,
+            benchmark_name=self.name,
+            dataset_id=self.dataset_id,
+            dataset_hub=self.source_dataset_hub,
         )
-        if listing.returncode != 0:
-            logger.warning(f'Failed to list GDPval deliverables in sandbox: {listing.stderr}')
-            self._metadata['deliverable_files'] = []
-            self._metadata['artifact_dir'] = str(self._artifact_dir)
-            return
-        file_paths = [path for path in listing.stdout.split('\0') if path.strip()]
-        deliverables = []
-        for file_path in file_paths:
-            relative_path = _relative_deliverable_path(file_path)
-            if not relative_path:
-                continue
-            encoded = await self._env.exec(['base64', '-w', '0', file_path], timeout=120)
-            if encoded.returncode != 0 or not encoded.stdout:
-                logger.warning(f'Failed to extract GDPval deliverable {file_path!r}: {encoded.stderr}')
-                continue
-            try:
-                host_path = self._artifact_dir / _SANDBOX_DELIVERABLE_DIR / relative_path
-                host_path.parent.mkdir(parents=True, exist_ok=True)
-                host_path.write_bytes(base64.b64decode(encoded.stdout))
-                deliverables.append({
-                    'path': f'{_SANDBOX_DELIVERABLE_DIR}/{relative_path}',
-                    'local_path': str(host_path),
-                })
-            except Exception as exc:
-                logger.warning(f'Failed to write extracted GDPval deliverable {file_path!r} to host: {exc}')
-
-        self._metadata['deliverable_files'] = deliverables
-        self._metadata['artifact_dir'] = str(self._artifact_dir)
-
-
-def _as_list(value: Any) -> List[str]:
-    if value is None:
-        return []
-    if isinstance(value, list):
-        return [str(item) for item in value if item is not None]
-    return [str(value)]
-
-
-def _remove_reference_hash(file_path: str) -> str:
-    parts = file_path.split('/')
-    if len(parts) == 3 and parts[0] == 'reference_files':
-        return f'{parts[0]}/{parts[2]}'
-    return file_path
-
-
-def _sandbox_reference_path(file_path: str) -> str:
-    parts = file_path.split('/')
-    if len(parts) == 3 and parts[0] == 'reference_files':
-        return f'{_SANDBOX_REFERENCE_DIR}/{parts[1]}/{parts[2]}'
-    return f'{_SANDBOX_REFERENCE_DIR}/{Path(file_path).name}'
-
-
-def _format_reference_hint(reference_paths: List[str]) -> str:
-    if not reference_paths:
-        return ''
-    lines = ['\nReference files for this task:']
-    for path in reference_paths:
-        lines.append(f'- {path}')
-    return '\n'.join(lines)
-
-
-def _relative_deliverable_path(file_path: str) -> str:
-    prefix = f'{_SANDBOX_DELIVERABLE_DIR}/'
-    if not file_path.startswith(prefix):
-        return ''
-    relative_path = file_path[len(prefix):].strip()
-    if not _is_safe_relative_path(relative_path):
-        return ''
-    return relative_path
-
-
-def _is_safe_relative_path(path: str) -> bool:
-    return bool(path and not path.startswith('/') and '..' not in Path(path).parts)
-
-
-def _safe_path_name(value: str) -> str:
-    safe_value = ''.join(ch if ch.isalnum() or ch in '-_.' else '_' for ch in value)
-    return safe_value or 'unknown'
