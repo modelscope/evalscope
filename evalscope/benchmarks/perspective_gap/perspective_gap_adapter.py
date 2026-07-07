@@ -15,7 +15,7 @@ logger = get_logger()
 
 DATASET_ID = 'sun1245/PerspectiveGap'
 INSTALL_HINT = (
-    "PerspectiveGap scoring is required for this benchmark. Install it with "
+    'PerspectiveGap scoring is required for this benchmark. Install it with '
     "`pip install 'perspective-gap @ git+https://github.com/WhymustIhaveaname/PerspectiveGap.git'` "
     "or `uv pip install 'perspective-gap @ git+https://github.com/WhymustIhaveaname/PerspectiveGap.git'`."
 )
@@ -126,7 +126,12 @@ class PerspectiveGapBaseAdapter(DefaultDataAdapter):
                     'boundary_precision': 0.0,
                     'distractor_leakage': 0.0,
                 },
-                'counts': {'tp': 0, 'fp': 0, 'fn': 0, 'distractor_leak': 0},
+                'counts': {
+                    'tp': 0,
+                    'fp': 0,
+                    'fn': 0,
+                    'distractor_leak': 0
+                },
                 'error': str(exc),
             }
         return _score_from_result(result, original_prediction, filtered_prediction)

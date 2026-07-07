@@ -7,7 +7,6 @@ from evalscope.api.model import ModelOutput
 from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
 from evalscope.config import TaskConfig
 
-
 ROLE_TASK = 'perspective_gap_role_assignment'
 PROMPT_TASK = 'perspective_gap_prompt_writing'
 
