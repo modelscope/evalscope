@@ -57,7 +57,13 @@ def _json_target(reference_need_sets: Dict[str, Any]) -> str:
 def _score_from_result(result: Dict[str, Any], prediction: str, filtered_prediction: str) -> Score:
     metrics = result.get('metrics') or {}
     counts = result.get('counts') or {}
-    strict_pass = float(metrics.get(STRICT_PASS, float(bool(result.get('pass')))))
+    strict_pass_value = metrics.get(STRICT_PASS)
+    if strict_pass_value is None:
+        strict_pass_value = result.get('pass')
+    try:
+        strict_pass = float(strict_pass_value) if strict_pass_value is not None else 0.0
+    except (TypeError, ValueError):
+        strict_pass = 0.0
 
     score = Score(
         value={STRICT_PASS: strict_pass},
@@ -150,9 +156,10 @@ class PerspectiveGapRoleAssignmentAdapter(PerspectiveGapBaseAdapter):
     prompt_field = 'role_assignment_prompt'
 
     def _score(self, scoring, filtered_prediction: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        metadata = metadata or {}
         return scoring.score_role_assignment(
             filtered_prediction,
-            metadata['reference_need_sets'],
+            metadata.get('reference_need_sets') or {},
             metadata.get('distractor_id'),
         )
 
@@ -178,9 +185,10 @@ class PerspectiveGapPromptWritingAdapter(PerspectiveGapBaseAdapter):
     prompt_field = 'prompt_writing_prompt'
 
     def _score(self, scoring, filtered_prediction: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        metadata = metadata or {}
         return scoring.score_prompt_writing(
             filtered_prediction,
-            metadata['fragments'],
-            metadata['reference_need_sets'],
+            metadata.get('fragments') or [],
+            metadata.get('reference_need_sets') or {},
             metadata.get('distractor_id'),
         )

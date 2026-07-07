@@ -158,3 +158,37 @@ def test_prompt_writing_scoring_calls_perspective_gap_scoring(monkeypatch):
     )]
     assert score.value['strict_pass'] == 0.0
     assert score.metadata['metrics']['net_match_score'] == 0.5
+
+
+def test_score_from_result_falls_back_to_pass_when_strict_pass_is_none():
+    module = import_adapter_module()
+
+    score = module._score_from_result(
+        {'pass': True, 'metrics': {'strict_pass': None}, 'counts': {}},
+        prediction='raw output',
+        filtered_prediction='filtered output',
+    )
+
+    assert score.value['strict_pass'] == 1.0
+
+
+def test_role_assignment_scoring_uses_empty_reference_fallback_when_metadata_missing(monkeypatch):
+    calls = []
+    install_fake_scoring(monkeypatch, calls)
+    import_adapter_module()
+    adapter = get_benchmark(ROLE_TASK, config=task_config())
+
+    adapter._score(sys.modules['perspective_gap.scoring'], 'filtered role output', metadata=None)
+
+    assert calls == [('role_assignment', 'filtered role output', {}, None)]
+
+
+def test_prompt_writing_scoring_uses_empty_fallbacks_when_metadata_missing(monkeypatch):
+    calls = []
+    install_fake_scoring(monkeypatch, calls)
+    import_adapter_module()
+    adapter = get_benchmark(PROMPT_TASK, config=task_config())
+
+    adapter._score(sys.modules['perspective_gap.scoring'], 'filtered prompt output', metadata=None)
+
+    assert calls == [('prompt_writing', 'filtered prompt output', [], {}, None)]
