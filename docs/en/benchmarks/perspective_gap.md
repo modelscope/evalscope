@@ -2,28 +2,28 @@
 
 ## Overview
 
-PerspectiveGap is a benchmark for multi-agent orchestration prompting.
-It evaluates whether a model can route context to sub-agent prompts without leaking irrelevant or distracting fragments.
+[PerspectiveGap](https://arxiv.org/abs/2606.08878) is a benchmark for multi-agent orchestration prompting and role-specific context routing. It checks whether a model can give each role the fragments it needs while avoiding irrelevant or distracting fragments.
 
-Paper: <https://arxiv.org/abs/2606.08878>
-
-Dataset: <https://huggingface.co/datasets/sun1245/PerspectiveGap>
-
-Official scorer: <https://github.com/WhymustIhaveaname/PerspectiveGap>
+- [Paper](https://arxiv.org/abs/2606.08878)
+- [Dataset](https://huggingface.co/datasets/sun1245/PerspectiveGap)
+- [Reference implementation and scorer](https://github.com/WhymustIhaveaname/PerspectiveGap)
+- [Leaderboard](https://huggingface.co/spaces/sun1245/PerspectiveGap-Leaderboard)
 
 ## Tasks
 
-EvalScope registers two PerspectiveGap tasks:
+EvalScope registers two zero-shot PerspectiveGap tasks:
 
 | EvalScope task | PerspectiveGap task | Expected model output |
 |---|---|---|
-| `perspective_gap_role_assignment` | role-fragment assignment | A JSON object mapping each role to fragment IDs, for example `{"coder": ["f1"], "reviewer": ["f2"]}` |
-| `perspective_gap_prompt_writing` | free-form prompt writing | One markdown section per role, using the role name as an h1 header and pasting the needed fragments verbatim |
+| `perspective_gap_role_assignment` | Role assignment | A JSON object mapping each role to needed fragment IDs, for example `{"coder": ["f1"], "reviewer": ["f2"]}` |
+| `perspective_gap_prompt_writing` | Prompt writing | Markdown with one H1 section per role. Each section should include only that role's needed fragments, copied verbatim. |
 
-Both tasks use the deterministic `strict_pass` metric from `perspective_gap.scoring`.
-The scorer is imported lazily, so benchmark discovery does not require the optional PerspectiveGap dependency.
+Both tasks report the deterministic `strict_pass` metric from `perspective_gap.scoring`.
+The scorer is imported lazily, so listing benchmarks does not require the optional PerspectiveGap package.
 
 ## Install the optional scorer
+
+Install the official scorer before running either task:
 
 ```bash
 pip install 'perspective-gap @ git+https://github.com/WhymustIhaveaname/PerspectiveGap.git'
@@ -35,14 +35,18 @@ or, when using uv:
 uv pip install 'perspective-gap @ git+https://github.com/WhymustIhaveaname/PerspectiveGap.git'
 ```
 
-After this PR is installed with extras, the scorer can also be installed through the `perspective_gap` extra.
+From an EvalScope source checkout that includes this benchmark, you can also install the benchmark extra:
+
+```bash
+pip install '.[perspective_gap]'
+```
 
 ## Prepare data
 
-The released data is hosted on Hugging Face as `sun1245/PerspectiveGap` with a single `test` split.
-Run EvalScope with `dataset_hub='huggingface'`.
+The released data is hosted on Hugging Face as [`sun1245/PerspectiveGap`](https://huggingface.co/datasets/sun1245/PerspectiveGap) with a single `test` split.
+Run EvalScope with `dataset_hub='huggingface'` to load it from the hub.
 
-If you need an offline run, download or mirror the dataset JSONL and pass it as `local_path` through `dataset_args`.
+For offline runs, download or mirror the dataset JSONL and pass it as `local_path` through `dataset_args`.
 The local file must preserve the official fields:
 
 - `evaluation_id`
@@ -117,7 +121,7 @@ cfg = TaskConfig(
 | Property | Value |
 |---|---|
 | Benchmark names | `perspective_gap_role_assignment`, `perspective_gap_prompt_writing` |
-| Dataset ID | `sun1245/PerspectiveGap` |
+| Dataset ID | [`sun1245/PerspectiveGap`](https://huggingface.co/datasets/sun1245/PerspectiveGap) |
 | Dataset hub | Hugging Face |
 | Split | `test` |
 | Metrics | `strict_pass` |
