@@ -23,8 +23,8 @@ from typing import Any, Dict, List, Optional
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
-from ._node_install import ensure_node_via_apt
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
+from .install_helper import ensure_node_via_apt, install_task_skills
 
 logger = get_logger()
 
@@ -146,6 +146,13 @@ class GeminiCliRunner(AgentRunner):
         home_dir = self._resolve_home()
         if home_dir is not None:
             env_vars['HOME'] = home_dir
+        await install_task_skills(
+            env,
+            task,
+            home_dir=home_dir,
+            native_install_paths=['$HOME/.gemini/skills'],
+            runner_name='GeminiCliRunner',
+        )
 
         # Build the command.
         # gemini -p "prompt" executes non-interactively.

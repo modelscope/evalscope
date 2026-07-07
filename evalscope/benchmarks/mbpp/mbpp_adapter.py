@@ -6,6 +6,7 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
+from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -101,7 +102,7 @@ MBPP (Mostly Basic Python Problems) is a benchmark consisting of approximately 1
         },
     )
 )
-class MBPPAdapter(DefaultDataAdapter):
+class MBPPAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
     """
     MBPP adapter using the new data processing framework.
     """

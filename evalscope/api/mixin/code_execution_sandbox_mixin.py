@@ -1,25 +1,26 @@
-"""Sandbox mixin – thin wrapper around :class:`SandboxService`.
+"""Code execution sandbox mixin backed by :class:`SandboxService`.
 
-Historically this module owned all ms_enclave integration.  The manager
-lifecycle, engine dispatch and docker image build logic have since been
-moved to :mod:`evalscope.api.sandbox`.  The mixin now only:
+This mixin is for benchmarks that execute generated code during scoring
+(``match_score`` / verifier logic). It owns a benchmark-level sandbox pool and
+does not model a full per-sample agent environment.
 
-* decides whether a benchmark wants the sandbox (``use_sandbox``);
+The mixin only:
+
+* decides whether a benchmark wants code execution sandboxing (``use_sandbox``);
 * resolves the engine + sandbox config from ``TaskConfig`` + ``BenchmarkMeta``;
 * exposes a simple ``execute_code_in_sandbox`` facade for adapters.
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 
 from evalscope.api.sandbox import (
+    DockerImageSpec,
     PoolHandle,
     SandboxEngine,
     build_and_acquire_pool_sync,
-    default_docker_build_context,
-    ensure_docker_image_built,
     merge_sandbox_config_dicts,
-    normalize_docker_build_context,
+    prepare_docker_image,
     resolve_engine,
 )
 from evalscope.utils.function_utils import AsyncioLoopRunner, thread_safe
@@ -34,11 +35,11 @@ if TYPE_CHECKING:
 logger = get_logger()
 
 
-class SandboxBackend(ABC):
-    """Abstract base class for sandbox backends.
+class CodeExecutionBackend(ABC):
+    """Abstract base class for code execution sandbox backends.
 
     Kept so alternative non-ms_enclave backends can be plugged in later.
-    Today there is a single implementation (:class:`EnclaveSandboxBackend`).
+    Today there is a single implementation (:class:`EnclaveCodeExecutionBackend`).
     """
 
     def __init__(self, benchmark_meta: 'BenchmarkMeta', task_config: 'TaskConfig'):
@@ -62,21 +63,19 @@ class SandboxBackend(ABC):
         """Release any sandbox-local resources (not the service itself)."""
 
 
-class EnclaveSandboxBackend(SandboxBackend):
-    """ms_enclave-backed sandbox backend delegating to :class:`SandboxService`."""
+class EnclaveCodeExecutionBackend(CodeExecutionBackend):
+    """ms_enclave-backed code execution pool delegating to :class:`SandboxService`."""
 
     def __init__(
         self,
         benchmark_meta: 'BenchmarkMeta',
         task_config: 'TaskConfig',
-        use_custom_image: bool = False,
-        build_context_provider: Optional[Callable[[], Tuple[str, str]]] = None,
+        image_spec_provider: Optional[Callable[[], Optional[DockerImageSpec]]] = None,
     ):
         super().__init__(benchmark_meta, task_config)
         self._pool_handle: Optional[PoolHandle] = None
         self._pool_size: int = self._resolve_pool_size()
-        self._use_custom_image = use_custom_image
-        self._build_context_provider = build_context_provider
+        self._image_spec_provider = image_spec_provider
 
     def _resolve_pool_size(self) -> int:
         if not self._task_config:
@@ -96,10 +95,12 @@ class EnclaveSandboxBackend(SandboxBackend):
         manager_config = self._resolve_manager_config()
 
         if engine is SandboxEngine.DOCKER:
-            image = sandbox_cfg_dict.get('image')
-            if self._use_custom_image and image:
-                build_ctx, dockerfile = self._get_build_context()
-                ensure_docker_image_built(image, path=build_ctx, dockerfile=dockerfile, label='Sandbox image')
+            image_spec = self._image_spec_provider() if self._image_spec_provider is not None else None
+            if image_spec is not None:
+                result = prepare_docker_image(image_spec)
+                sandbox_cfg_dict = dict(sandbox_cfg_dict)
+                sandbox_cfg_dict['image'] = result.image_tag
+                logger.info(f'Sandbox image prepared: {result.image_tag} (reused={result.reused})')
 
         self._pool_handle = build_and_acquire_pool_sync(
             engine=engine,
@@ -160,13 +161,6 @@ class EnclaveSandboxBackend(SandboxBackend):
         # Manager lifecycle is owned by SandboxService; we only drop our pool reference.
         self._pool_handle = None
 
-    def _get_build_context(self) -> Tuple[str, str]:
-        if self._build_context_provider is None:
-            build_ctx, dockerfile = default_docker_build_context()
-        else:
-            build_ctx, dockerfile = self._build_context_provider()
-        return normalize_docker_build_context(build_ctx, dockerfile)
-
     # ------------------------------------------------------------------
     # Config resolution helpers
     # ------------------------------------------------------------------
@@ -183,7 +177,7 @@ class EnclaveSandboxBackend(SandboxBackend):
         return merge_sandbox_config_dicts(meta_default, task_default)
 
     # ------------------------------------------------------------------
-    # Legacy accessor used by ``SandboxMixin.sandbox_manager``
+    # Accessor used by ``CodeExecutionSandboxMixin.sandbox_manager``
     # ------------------------------------------------------------------
 
     @property
@@ -191,21 +185,21 @@ class EnclaveSandboxBackend(SandboxBackend):
         return self._pool_handle.manager if self._pool_handle else None
 
 
-class SandboxMixin:
-    """Sandbox mixin for sandboxed code execution."""
+class CodeExecutionSandboxMixin:
+    """Mixin for benchmarks that execute generated code in a sandbox pool."""
 
     def __init__(self, benchmark_meta: 'BenchmarkMeta', task_config: Optional['TaskConfig'] = None):
         self._benchmark_meta = benchmark_meta
         self._task_config = task_config
 
-        self._backend: Optional[SandboxBackend] = None
-        """Sandbox backend instance."""
+        self._backend: Optional[CodeExecutionBackend] = None
+        """Code execution sandbox backend instance."""
 
-        super().__init__()
+        super().__init__(benchmark_meta=benchmark_meta, task_config=task_config)
 
     @property
     def use_sandbox(self) -> bool:
-        """Return whether to use sandbox for the benchmark."""
+        """Return whether to use sandboxed code execution for the benchmark."""
         if not self._task_config or self._task_config.sandbox is None:
             return False
         return bool(self._task_config.sandbox.enabled)
@@ -213,24 +207,23 @@ class SandboxMixin:
     @property
     def sandbox_manager(self) -> Optional['SandboxManager']:
         """Get the underlying SandboxManager instance (or ``None`` if not started)."""
-        if isinstance(self._backend, EnclaveSandboxBackend):
+        if isinstance(self._backend, EnclaveCodeExecutionBackend):
             return self._backend.manager
         return None
 
-    def _get_backend(self) -> SandboxBackend:
+    def _get_backend(self) -> CodeExecutionBackend:
         if self._backend:
             return self._backend
-        self._backend = EnclaveSandboxBackend(
+        self._backend = EnclaveCodeExecutionBackend(
             self._benchmark_meta,
             self._task_config,
-            use_custom_image=bool(getattr(self, '_use_custom_image', False)),
-            build_context_provider=self.get_build_context,
+            image_spec_provider=self.get_sandbox_image_spec,
         )
         return self._backend
 
-    def get_build_context(self) -> Tuple[str, str]:
-        """Return Docker build context for benchmarks using a custom sandbox image."""
-        return default_docker_build_context()
+    def get_sandbox_image_spec(self) -> Optional[DockerImageSpec]:
+        """Return a benchmark-level Docker image spec for the code execution pool, if needed."""
+        return None
 
     @thread_safe
     def ensure_sandbox_ready(self) -> bool:

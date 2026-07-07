@@ -14,6 +14,7 @@ from typing import Any, Dict
 
 from evalscope.api.registry import register_runner
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
+from .install_helper import install_task_skills
 
 # The body of the mock-agent CLI.  Lives as a string so it runs in any
 # Python interpreter available inside the sandbox (no module import).
@@ -97,6 +98,13 @@ class MockAgentRunner(AgentRunner):
             env_vars['ANTHROPIC_MODEL'] = self._model_name
         if task.timeout is not None:
             env_vars['MOCK_TIMEOUT'] = str(task.timeout)
+        await install_task_skills(
+            env,
+            task,
+            home_dir=None,
+            native_install_paths=[],
+            runner_name='MockAgentRunner',
+        )
 
         result = await env.exec(
             [sys.executable, '-c', _MOCK_AGENT_SCRIPT],

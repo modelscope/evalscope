@@ -4,13 +4,13 @@ from typing import TYPE_CHECKING, Dict, List, Tuple
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
-    from evalscope.api.mixin.sandbox_mixin import SandboxMixin
+    from evalscope.api.mixin.code_execution_sandbox_mixin import CodeExecutionSandboxMixin
 
 logger = get_logger()
 
 
 def evaluate_in_sandbox(
-    adapter: 'SandboxMixin',
+    adapter: 'CodeExecutionSandboxMixin',
     code: str,
     evaluation_sample: str,
     timeout: int = 6,
@@ -55,7 +55,8 @@ def evaluate_in_sandbox(
 
 
 def _evaluate_call_based_in_sandbox(
-    adapter: 'SandboxMixin', code: str, inputs: list, outputs: list, fn_name: str, timeout: int, debug: bool
+    adapter: 'CodeExecutionSandboxMixin', code: str, inputs: list, outputs: list, fn_name: str, timeout: int,
+    debug: bool
 ) -> Tuple[bool, Dict]:
     """Evaluate call-based problems in sandbox."""
     try:
@@ -189,7 +190,7 @@ except Exception as e:
 
 
 def _evaluate_stdio_in_sandbox(
-    adapter: 'SandboxMixin', code: str, inputs: list, outputs: list, timeout: int, debug: bool
+    adapter: 'CodeExecutionSandboxMixin', code: str, inputs: list, outputs: list, timeout: int, debug: bool
 ) -> Tuple[bool, Dict]:
     """Evaluate stdio-based problems in sandbox."""
     try:

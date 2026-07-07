@@ -10,10 +10,12 @@ from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.registry import get_benchmark
-from evalscope.benchmarks.gdpval.gdpval_adapter import (
-    GDPvalAdapter,
-    _GDPvalArtifactEnvironment,
-    _relative_deliverable_path,
+from evalscope.api.sandbox import DockerImageResult
+from evalscope.benchmarks.gdpval.gdpval_adapter import GDPvalAdapter
+from evalscope.benchmarks.gdpval.utils import (
+    GDPvalArtifactEnvironment,
+    build_reference_volumes,
+    relative_deliverable_path,
 )
 from evalscope.config import TaskConfig
 from evalscope.constants import HubType, JudgeStrategy
@@ -112,14 +114,13 @@ def test_load_dataset_uses_native_loader_and_caches_submission_records(tmp_path:
 
 
 def test_build_reference_volumes_uses_downloaded_file_parents(tmp_path: Path) -> None:
-    adapter = make_adapter()
     host_dir = tmp_path / 'reference_files' / 'abc123'
     host_dir.mkdir(parents=True)
     host_file = host_dir / 'input.xlsx'
     host_file.write_bytes(b'data')
     sample = Sample(input='prompt', metadata={'host_reference_files': [str(host_file)]})
 
-    volumes = adapter._build_reference_volumes(sample)
+    volumes = build_reference_volumes(sample)
 
     assert volumes[str(host_dir)] == {'bind': '/reference_files/abc123', 'mode': 'ro'}
 
@@ -142,10 +143,10 @@ def test_resolve_reference_files_skips_empty_download(monkeypatch: Any) -> None:
 
 
 def test_relative_deliverable_path_rejects_unsafe_paths() -> None:
-    assert _relative_deliverable_path('deliverable_files/report.pdf') == 'report.pdf'
-    assert _relative_deliverable_path('deliverable_files/nested/report.pdf') == 'nested/report.pdf'
-    assert _relative_deliverable_path('/tmp/report.pdf') == ''
-    assert _relative_deliverable_path('deliverable_files/../report.pdf') == ''
+    assert relative_deliverable_path('deliverable_files/report.pdf') == 'report.pdf'
+    assert relative_deliverable_path('deliverable_files/nested/report.pdf') == 'nested/report.pdf'
+    assert relative_deliverable_path('/tmp/report.pdf') == ''
+    assert relative_deliverable_path('deliverable_files/../report.pdf') == ''
 
 
 def test_artifact_environment_extracts_deliverables(tmp_path: Path) -> None:
@@ -154,7 +155,7 @@ def test_artifact_environment_extracts_deliverables(tmp_path: Path) -> None:
         'deliverable_files/report.txt': b'hello',
         'deliverable_files/nested/table.csv': b'a,b\n1,2\n',
     })
-    env = _GDPvalArtifactEnvironment(env=fake_env, artifact_dir=tmp_path, metadata=metadata)
+    env = GDPvalArtifactEnvironment(env=fake_env, artifact_dir=tmp_path, metadata=metadata)
 
     asyncio.run(env.close())
 
@@ -192,7 +193,7 @@ def test_artifact_environment_handles_listing_failure(tmp_path: Path) -> None:
                 return ExecResult(returncode=1, stdout='', stderr='find failed')
             return await super().exec(cmd, cwd=cwd, input=input, timeout=timeout, env=env)
 
-    env = _GDPvalArtifactEnvironment(env=ListingFailureEnvironment({}), artifact_dir=tmp_path, metadata=metadata)
+    env = GDPvalArtifactEnvironment(env=ListingFailureEnvironment({}), artifact_dir=tmp_path, metadata=metadata)
 
     asyncio.run(env.close())
 
@@ -218,7 +219,7 @@ def test_artifact_environment_skips_failed_base64_extract(tmp_path: Path) -> Non
                 return ExecResult(returncode=1, stdout='', stderr='base64 failed')
             return await super().exec(cmd, cwd=cwd, input=input, timeout=timeout, env=env)
 
-    env = _GDPvalArtifactEnvironment(
+    env = GDPvalArtifactEnvironment(
         env=Base64FailureEnvironment({'deliverable_files/report.txt': b'hello'}),
         artifact_dir=tmp_path,
         metadata=metadata,
@@ -272,30 +273,30 @@ def test_calculate_metrics_does_not_run_local_llm_judge_for_gdpval() -> None:
 
 def test_ensure_docker_image_builds_missing_default_image(monkeypatch: Any) -> None:
     adapter = make_adapter()
-    calls: List[Dict[str, Any]] = []
+    calls: List[Any] = []
 
-    def mock_ensure(image: str, path: str, dockerfile: str, label: str) -> bool:
-        calls.append({'image': image, 'path': path, 'dockerfile': dockerfile, 'label': label})
-        return True
+    def mock_prepare_docker_image(spec: Any) -> DockerImageResult:
+        calls.append(spec)
+        return DockerImageResult(image_tag='evalscope/gdpval:hash', reused=False, context_hash='hash')
 
-    monkeypatch.setattr('evalscope.benchmarks.gdpval.gdpval_adapter.ensure_docker_image_built', mock_ensure)
+    monkeypatch.setattr('evalscope.benchmarks.gdpval.gdpval_adapter.prepare_docker_image', mock_prepare_docker_image)
 
     adapter._ensure_docker_image()
     adapter._ensure_docker_image()
 
-    assert calls == [{
-        'image': 'evalscope/gdpval:latest',
-        'path': str(Path('evalscope/benchmarks/gdpval').resolve()),
-        'dockerfile': str(Path('evalscope/benchmarks/gdpval/Dockerfile').resolve()),
-        'label': 'GDPval docker image',
-    }]
+    assert len(calls) == 1
+    assert calls[0].name_prefix == 'evalscope/gdpval'
+    assert calls[0].context_dir == str(Path('evalscope/benchmarks/gdpval').resolve())
+    assert calls[0].dockerfile == str(Path('evalscope/benchmarks/gdpval/Dockerfile').resolve())
+    assert calls[0].cache_key_parts == ['gdpval', 'gdpval']
+    assert adapter.docker_image == 'evalscope/gdpval:hash'
 
 
 def test_ensure_docker_image_skips_custom_image(monkeypatch: Any) -> None:
     adapter = make_adapter(docker_image='custom/gdpval:latest')
 
     monkeypatch.setattr(
-        'evalscope.benchmarks.gdpval.gdpval_adapter.ensure_docker_image_built',
+        'evalscope.benchmarks.gdpval.gdpval_adapter.prepare_docker_image',
         lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError(f'unexpected image build: {args} {kwargs}')),
     )
 

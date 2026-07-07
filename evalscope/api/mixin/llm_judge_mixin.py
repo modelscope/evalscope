@@ -28,7 +28,7 @@ class LLMJudgeMixin:
         self._llm_judge: Optional[LLMJudge] = None
         """LLM judge instance"""
 
-        super().__init__(benchmark_meta=benchmark_meta, task_config=task_config)
+        super().__init__()
 
     @property
     def llm_judge(self) -> Optional[LLMJudge]:

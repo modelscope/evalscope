@@ -13,11 +13,18 @@ per-benchmark overrides.
 
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 
+from evalscope.agent.skills import (
+    DEFAULT_SKILLS_INSTALL_DIR,
+    format_skills_prompt,
+    install_agent_skills,
+    resolve_agent_skills,
+)
 from evalscope.api.agent import AgentEnvironment, AgentLoopResult, run_agent_loop
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.model import Model
 from evalscope.api.registry import get_environment, get_strategy, resolve_tool_infos, resolve_tools
+from evalscope.utils.function_utils import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
@@ -34,6 +41,7 @@ def run_native_agent(
     sample: 'Sample',
     build_sandbox_config: Callable[['Sample'], Optional[Dict[str, Any]]],
     extract_final_answer: Callable[[AgentLoopResult, Any], str],
+    environment_override: Optional[AgentEnvironment] = None,
 ) -> InferenceResult:
     """Drive a sample through the native AgentLoop and return its result.
 
@@ -62,23 +70,38 @@ def run_native_agent(
     # Resolve ToolInfo schemas from the registry so the model can see them.
     registered_tool_infos = resolve_tool_infos(cfg.tools)
 
-    # Determine environment class (if any) – instantiated below so its
-    # constructor sees the fully merged kwargs.
-    env_cls: Optional[type] = None
-    if cfg.environment is not None:
+    environment: Optional[AgentEnvironment] = environment_override
+    if environment is None and cfg.environment is not None:
         env_cls = get_environment(cfg.environment)
-
-    env_kwargs = _resolve_env_kwargs(
-        task_config=task_config,
-        sample=sample,
-        build_sandbox_config=build_sandbox_config,
-    )
-    environment: Optional[AgentEnvironment] = env_cls(**env_kwargs) if env_cls is not None else None
+        env_kwargs = _resolve_env_kwargs(
+            task_config=task_config,
+            sample=sample,
+            build_sandbox_config=build_sandbox_config,
+        )
+        environment = env_cls(**env_kwargs)
+    owns_environment = environment_override is None
 
     if isinstance(sample.input, list):
         initial_messages = list(sample.input)
     else:
         initial_messages = [ChatMessageUser(content=sample.input)]
+    skills = resolve_agent_skills(
+        sample_metadata=sample.metadata,
+        config_skills_dir=cfg.skills_dir,
+        prompt_base_dir=DEFAULT_SKILLS_INSTALL_DIR,
+        install_paths=[DEFAULT_SKILLS_INSTALL_DIR],
+    )
+    if cfg.skill_prompt_nudge and skills.enabled:
+        nudge = format_skills_prompt(skills.skills)
+        if nudge:
+            initial_messages.insert(0, ChatMessageUser(content=nudge))
+    if environment is not None:
+        try:
+            AsyncioLoopRunner.run(install_agent_skills(environment, skills, runner_name='NativeAgentRunner'))
+        except Exception:
+            if owns_environment:
+                AsyncioLoopRunner.run(environment.close())
+            raise
 
     # Merge sample-level tools with agent-config tools.
     sample_tools = list(sample.tools or [])
@@ -96,6 +119,7 @@ def run_native_agent(
         trace_strategy_name=cfg.strategy,
         trace_env_name=cfg.environment,
         mcp_configs=list(cfg.mcp_servers) or None,
+        close_environment=owns_environment,
     )
 
     final_text = extract_final_answer(result, strategy)
@@ -114,7 +138,7 @@ def _resolve_env_kwargs(
 
     Precedence (lowest -> highest):
       1. ``task_config.sandbox`` — engine / default_config / manager_config
-         carried alongside the pooled SandboxMixin so sandbox settings are
+         carried alongside the pooled CodeExecutionSandboxMixin so sandbox settings are
          defined **once** at the task level.
       2. ``build_sandbox_config(sample)`` — per-sample override hook.
       3. ``agent_config.environment_extra`` — raw kwargs forwarded verbatim

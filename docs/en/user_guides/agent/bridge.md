@@ -65,6 +65,7 @@ Most-used `ExternalAgentConfig` fields:
 | `environment` | Where to run | `local` (dev) / `docker` (production) |
 | `timeout` | Per-sample wall-clock budget in seconds | 120 for math, 1800+ for code fixes |
 | `environment_extra` | Sandbox constructor kwargs (`image`, `timeout`, …); same as native mode | See [Sandbox Environment](../sandbox.md) |
+| `skills_dir` | Optional host Agent Skills directory | EvalScope makes the skills available before launching the runner |
 | `kwargs` | Kwargs forwarded to the CLI, see below | `{}` |
 
 Most-tweaked `kwargs` keys (largely shared between claude-code and codex; full list in [source](https://github.com/modelscope/evalscope/tree/main/evalscope/agent/external/runners)):
@@ -75,6 +76,12 @@ Most-tweaked `kwargs` keys (largely shared between claude-code and codex; full l
 | `auto_install` | both | `True` | Set `False` when the CLI is already baked into the image |
 | `install_timeout_s` | both | 300 (claude-code) / 600 (codex) | Bump on slow networks / cold-start timeouts |
 | `home_override` | both | tempdir | Set to a path when you need to reuse the host's CLI configuration |
+
+## Agent Skills
+
+Set `ExternalAgentConfig.skills_dir` to a host directory whose child folders contain `SKILL.md` files. EvalScope makes
+those skills available to the wrapped runner before it starts, and adds a short prompt hint when
+`skill_prompt_nudge=True`.
 
 ## Example: Claude Code on SWE-bench Pro
 

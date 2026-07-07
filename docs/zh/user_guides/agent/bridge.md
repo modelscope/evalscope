@@ -65,6 +65,7 @@ EvalScope 会在本地子进程里准备 Claude Code(必要时自动 `npm instal
 | `environment` | 跑在哪里 | `local`(开发)/ `docker`(生产) |
 | `timeout` | 单样本壁钟超时(秒) | 数学题 120，代码修复 1800+ |
 | `environment_extra` | 沙箱构造参数(`image`、`timeout` 等)，与内置模式一致 | 见 [沙箱环境](../sandbox.md) |
+| `skills_dir` | 可选的本机 Agent Skills 目录 | EvalScope 会在启动 runner 前让 skills 可用 |
 | `kwargs` | 透传给 CLI 的参数，见下 | `{}` |
 
 最常调整的 `kwargs` 键(claude-code 与 codex 大体通用，完整列表见 [源码](https://github.com/modelscope/evalscope/tree/main/evalscope/agent/external/runners)):
@@ -75,6 +76,11 @@ EvalScope 会在本地子进程里准备 Claude Code(必要时自动 `npm instal
 | `auto_install` | 两者 | `True` | 镜像里已预装 CLI，改 `False` 跳过安装 |
 | `install_timeout_s` | 两者 | 300(claude-code)/ 600(codex) | 网络慢、首次冷启动超时调大 |
 | `home_override` | 两者 | 临时目录 | 需要复用本机 CLI 配置时传一个路径 |
+
+## Agent Skills
+
+如果要让外部 CLI 使用自定义 Agent Skills，可以把 `ExternalAgentConfig.skills_dir` 设成本机目录。该目录的子目录应包含
+`SKILL.md`。EvalScope 会在启动 runner 前让这些 skills 可用，并在 `skill_prompt_nudge=True` 时加入简短提示。
 
 ## 用例:SWE-bench Pro 上跑 Claude Code
 

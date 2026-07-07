@@ -61,7 +61,7 @@ DEFAULT_MODEL_ARGS_CHECKPOINT = {
 
 
 class SandboxTaskConfig(BaseArgument):
-    """Unified sandbox configuration for both pooled (SandboxMixin) and
+    """Unified sandbox configuration for both pooled (CodeExecutionSandboxMixin) and
     per-sample (EnclaveAgentEnvironment) execution paths.
 
     This is the forward-looking replacement for the legacy top-level
@@ -446,7 +446,7 @@ class TaskConfig(BaseArgument):
     def _init_default_sandbox_config(self):
         """Normalise sandbox configuration into ``self.sandbox``.
 
-        After this method every consumer (``SandboxMixin``, data adapters,
+        After this method every consumer (``CodeExecutionSandboxMixin``, data adapters,
         ``EnclaveAgentEnvironment``) reads sandbox settings exclusively from
         ``self.sandbox`` — the legacy ``use_sandbox`` / ``sandbox_type`` /
         ``sandbox_manager_config`` fields are single-source-of-truth inputs

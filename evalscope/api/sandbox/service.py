@@ -2,7 +2,7 @@
 
 Unifies the two historical code paths:
 
-* ``SandboxMixin.EnclaveSandboxBackend`` – one manager per benchmark, pooled.
+* ``CodeExecutionSandboxMixin.EnclaveCodeExecutionBackend`` – one manager per benchmark, pooled.
 * ``EnclaveAgentEnvironment`` – one manager per process, per-sample containers.
 
 Both are now thin wrappers around :class:`SandboxService`.  The service
@@ -17,6 +17,7 @@ import asyncio
 import atexit
 import json
 import threading
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from evalscope.utils.function_utils import AsyncioLoopRunner
@@ -72,6 +73,12 @@ class SandboxHandle:
         if self._sandbox_id is None:
             raise RuntimeError('SandboxHandle already closed')
         return await self._manager.execute_tool(self._sandbox_id, tool_name, parameters)
+
+    async def put_dir(self, source_dir: str | Path, target_dir: str) -> bool:
+        """Copy a host directory into the sandbox via ms_enclave SandboxManager."""
+        if self._sandbox_id is None:
+            raise RuntimeError('SandboxHandle already closed')
+        return await self._manager.put_dir(self._sandbox_id, source_dir, target_dir)
 
     async def close(self) -> None:
         if self._sandbox_id is None:
@@ -197,7 +204,7 @@ class SandboxService:
         return SandboxManagerFactory.create_manager(**manager_config)
 
     # ------------------------------------------------------------------
-    # Public APIs: pooled (SandboxMixin) and per-sample (Agent env)
+    # Public APIs: pooled (CodeExecutionSandboxMixin) and per-sample (Agent env)
     # ------------------------------------------------------------------
 
     async def acquire_pool(
@@ -285,7 +292,7 @@ def shutdown_sandbox_service() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Convenience helpers used by SandboxMixin / EnclaveAgentEnvironment
+# Convenience helpers used by CodeExecutionSandboxMixin / EnclaveAgentEnvironment
 # ---------------------------------------------------------------------------
 
 
@@ -295,7 +302,7 @@ def build_and_acquire_pool_sync(
     sandbox_config_dict: Optional[Dict[str, Any]],
     manager_config: Optional[Dict[str, Any]] = None,
 ) -> PoolHandle:
-    """Synchronous helper for :class:`SandboxMixin`.
+    """Synchronous helper for :class:`CodeExecutionSandboxMixin`.
 
     Combines :func:`build_sandbox_config` and :meth:`SandboxService.acquire_pool`
     and drives them through the shared :class:`AsyncioLoopRunner`.

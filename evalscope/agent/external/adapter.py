@@ -15,6 +15,12 @@ import platform
 import time
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Optional
 
+from evalscope.agent.skills import (
+    DEFAULT_SKILLS_INSTALL_DIR,
+    ResolvedSkills,
+    format_skills_prompt,
+    resolve_agent_skills,
+)
 from evalscope.api.agent import AgentEnvironment, AgentTrace
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessageAssistant, ChatMessageSystem, ChatMessageUser
@@ -47,6 +53,7 @@ def run_external_agent(
     environment_override: Optional[AgentEnvironment] = None,
     instruction_override: Optional[str] = None,
     post_run_hook: Optional[PostRunHook] = None,
+    close_environment: bool = True,
 ) -> InferenceResult:
     """Synchronously drive one sample through an external agent runner.
 
@@ -73,21 +80,40 @@ def run_external_agent(
         value replaces ``run_result.output`` as the InferenceResult text
         — the typical use is ``extract_patch(env, cwd)`` for SWE-bench
         adapters that recover a ``git diff`` from the working tree.
+    close_environment:
+        Whether this function owns and closes the environment. Set to
+        ``False`` when passing a caller-owned ``environment_override`` that
+        must remain open after the external runner finishes.
 
     Uses :class:`AsyncioLoopRunner` to submit the coroutine to the calling
     thread's long-lived background loop.  That loop is reused across
     samples so the :class:`ModelProxyServer` singleton (which binds to it)
     only spins up once per worker thread instead of once per sample.
     """
+    if environment_override is None and not close_environment:
+        raise ValueError('close_environment=False requires environment_override')
+
     instruction = instruction_override if instruction_override is not None else _instruction_from_sample(sample)
+    skills = resolve_agent_skills(
+        sample_metadata=sample.metadata,
+        config_skills_dir=config.skills_dir,
+        prompt_base_dir=DEFAULT_SKILLS_INSTALL_DIR,
+        install_paths=[DEFAULT_SKILLS_INSTALL_DIR],
+    )
+    if config.skill_prompt_nudge and skills.enabled:
+        nudge = format_skills_prompt(skills.skills)
+        if nudge:
+            instruction = f'{nudge}\n\n{instruction}'
     return AsyncioLoopRunner.run(
         _run_async(
             config=config,
             model=model,
             sample=sample,
             instruction=instruction,
+            skills=skills,
             environment_override=environment_override,
             post_run_hook=post_run_hook,
+            close_environment=close_environment,
         )
     )
 
@@ -97,8 +123,10 @@ async def _run_async(
     model: Model,
     sample: 'Sample',
     instruction: str,
+    skills: ResolvedSkills,
     environment_override: Optional[AgentEnvironment],
     post_run_hook: Optional[PostRunHook],
+    close_environment: bool,
 ) -> InferenceResult:
     runner_cls = get_runner(config.framework)
     runner_kwargs = dict(config.kwargs)
@@ -131,9 +159,13 @@ async def _run_async(
         task = ExternalAgentTask(
             instruction=instruction,
             timeout=config.timeout,
-            metadata={'sample_id': getattr(sample, 'id', None)},
+            metadata={
+                'sample_id': getattr(sample, 'id', None),
+                'agent_skills': skills.model_dump(),
+            },
         )
-        async with env:
+
+        async def run_in_environment() -> str:
             session.recorder.record_run_start(
                 framework=config.framework,
                 cmd_summary=runner_cls.__name__,
@@ -169,9 +201,14 @@ async def _run_async(
             # still query the sandbox (e.g. extract a ``git diff``) before
             # the per-sample environment is closed.
             if post_run_hook is not None:
-                final_text = await post_run_hook(env, result, sample)
-            else:
-                final_text = result.output
+                return await post_run_hook(env, result, sample)
+            return result.output
+
+        if close_environment:
+            async with env:
+                final_text = await run_in_environment()
+        else:
+            final_text = await run_in_environment()
 
         trace: AgentTrace = session.recorder.snapshot()
         # Prefer the env's own ``name`` (set on the AgentEnvironment subclass)

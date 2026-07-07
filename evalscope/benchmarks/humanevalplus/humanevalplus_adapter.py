@@ -9,7 +9,9 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
+from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
+from evalscope.api.sandbox import DockerImageSpec
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
@@ -68,7 +70,7 @@ HumanEval Plus is a rigorous extension of OpenAI's HumanEval benchmark, designed
         },
     )
 )
-class HumanevalplusAdapter(DefaultDataAdapter):
+class HumanevalplusAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
     """
     HumanEvalPlus adapter using the new data processing framework.
     """
@@ -76,7 +78,6 @@ class HumanevalplusAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.docker_path = Path(__file__).parent / 'docker'
-        self._use_custom_image = True
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert a data record to a Sample object."""
@@ -98,11 +99,14 @@ class HumanevalplusAdapter(DefaultDataAdapter):
         """Extract code from the prediction."""
         return self._postprocess(prediction)
 
-    def get_build_context(self):
-        """
-        Get the build context for the docker image.
-        """
-        return self.docker_path.as_posix(), (self.docker_path / 'Dockerfile').as_posix()
+    def get_sandbox_image_spec(self) -> DockerImageSpec:
+        """Return the benchmark-level Docker image used by the sandbox pool."""
+        return DockerImageSpec(
+            name_prefix='python3.11-numpy',
+            context_dir=self.docker_path.as_posix(),
+            dockerfile=(self.docker_path / 'Dockerfile').as_posix(),
+            cache_key_parts=['sandbox', 'python3.11-numpy'],
+        )
 
     @classmethod
     def _postprocess(cls, text: str) -> str:

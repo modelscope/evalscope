@@ -44,12 +44,13 @@ def run_agent_loop(
     trace_strategy_name: Optional[str],
     trace_env_name: Optional[str],
     mcp_configs: Optional[List['MCPServerConfig']] = None,
+    close_environment: bool = True,
 ) -> AgentLoopResult:
     """Drive a single :class:`AgentLoop` to completion and return its result.
 
-    The environment (when provided) is closed in a ``finally`` block so
-    callers do not have to handle teardown themselves. ``AsyncioLoopRunner``
-    bridges the async loop into a synchronous call site.
+    The environment (when provided) is closed in a ``finally`` block by
+    default so callers do not have to handle teardown themselves.
+    ``AsyncioLoopRunner`` bridges the async loop into a synchronous call site.
 
     Args:
         model: The :class:`Model` driving generation.
@@ -66,6 +67,9 @@ def run_agent_loop(
             tools are merged into ``handlers`` / ``all_tools`` for the
             duration of the loop. Servers are spawned per sample (see
             :func:`evalscope.api.agent.mcp.resolve_mcp_tools`).
+        close_environment: Whether this helper owns and closes ``environment``.
+            Set to ``False`` when the caller needs to reuse the same
+            environment after the agent loop, for example to run a verifier.
 
     Returns:
         AgentLoopResult: Completed result with ``messages``, ``trace`` and
@@ -110,7 +114,7 @@ def run_agent_loop(
                 )
                 return await loop.run(ctx)
             finally:
-                if environment is not None:
+                if close_environment and environment is not None:
                     await environment.close()
 
     return AsyncioLoopRunner.run(_run())

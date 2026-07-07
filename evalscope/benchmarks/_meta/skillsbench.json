@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "pretty_name": "SkillsBench",
+    "dataset_id": "skillsbench",
+    "paper_url": null,
+    "tags": [
+      "Agent",
+      "MultiTurn"
+    ],
+    "metrics": [
+      "score"
+    ],
+    "few_shot_num": 0,
+    "eval_split": null,
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nSkillsBench evaluates whether coding agents can discover and apply task-bundled Agent Skills. Each task contains an\ninstruction, an optional skill directory, a Docker environment, an oracle solution, and a verifier. EvalScope builds the\ntask Docker image, runs the selected agent or oracle in that image, then executes the task verifier.\n\n## Task Description\n\n- **Task Type**: Agent skill usage / tool-assisted task completion\n- **Input**: The natural-language task prompt from `task.md`\n- **Output**: Files or state changes produced inside the task container, scored by the task verifier\n- **Dataset**: Local SkillsBench task repository supplied through `extra_params.tasks_dir`\n- **Environment**: Per-task Docker image built from `environment/Dockerfile`\n- **Skills**: Optional task-bundled skills from `environment/skills`\n- **Metric**: `score` from `/logs/verifier/reward.txt`; `success` is 1 when `score > 0`\n\n## Key Features\n\n- Builds or reuses a content-hashed Docker image for each selected task.\n- Runs the task in `no-skill` or `with-skill` mode without mixing the two conditions in one EvalScope run.\n- Injects task-bundled skills through EvalScope's agent skill runtime instead of baking runner-specific skill paths into\n  the image.\n- Supports EvalScope native agents and external agent runners through the shared agent environment interface.\n- Saves verifier stdout, reward, and optional CTRF artifacts under the run output directory.\n\n## Evaluation Notes\n\n- Default `skill_mode` is `no-skill`.\n- Run `no-skill` and `with-skill` separately, then compare runs with EvalScope's run comparison tools.\n- `self-gen` and `tasks-extra` are not supported by this adapter version.\n- `runner='oracle'` runs the official `oracle/solve.sh` for smoke testing; agent runs require `agent_config`.\n- The verifier executes `verifier/test.sh` and may install dependencies from the network.\n\n## Scoring and Comparison\n\n- `score` is the verifier reward parsed from `/logs/verifier/reward.txt`.\n- `success` is derived locally as `1.0` when `score > 0`, otherwise `0.0`.\n- EvalScope does not automatically compute the no-skill versus with-skill delta; run both modes and compare their reports.\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "tasks_dir": {
+        "type": "str",
+        "description": "Path to the SkillsBench tasks directory.",
+        "value": ""
+      },
+      "task_ids": {
+        "type": "list",
+        "description": "Optional list of task ids to run.",
+        "value": []
+      },
+      "skill_mode": {
+        "type": "str",
+        "description": "SkillsBench skill mode.",
+        "value": "no-skill",
+        "choices": [
+          "no-skill",
+          "with-skill"
+        ]
+      },
+      "force_rebuild": {
+        "type": "bool",
+        "description": "Force rebuilding task Docker images.",
+        "value": false
+      },
+      "agent_timeout_sec": {
+        "type": "float",
+        "description": "Override task agent timeout.",
+        "value": null
+      },
+      "verifier_timeout_sec": {
+        "type": "float",
+        "description": "Override task verifier timeout.",
+        "value": null
+      },
+      "runner": {
+        "type": "str",
+        "description": "Use \"oracle\" to run oracle/solve.sh instead of an agent.",
+        "value": "agent",
+        "choices": [
+          "agent",
+          "oracle"
+        ]
+      }
+    },
+    "sandbox_config": {},
+    "category": "agent"
+  },
+  "statistics": {
+    "total_samples": 0,
+    "subset_stats": [],
+    "prompt_length": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-07-07T17:13:24.144419"
+  },
+  "sample_example": {},
+  "readme": {
+    "en": "# SkillsBench\n\n\n## Overview\n\nSkillsBench evaluates whether coding agents can discover and apply task-bundled Agent Skills. Each task contains an\ninstruction, an optional skill directory, a Docker environment, an oracle solution, and a verifier. EvalScope builds the\ntask Docker image, runs the selected agent or oracle in that image, then executes the task verifier.\n\n## Task Description\n\n- **Task Type**: Agent skill usage / tool-assisted task completion\n- **Input**: The natural-language task prompt from `task.md`\n- **Output**: Files or state changes produced inside the task container, scored by the task verifier\n- **Dataset**: Local SkillsBench task repository supplied through `extra_params.tasks_dir`\n- **Environment**: Per-task Docker image built from `environment/Dockerfile`\n- **Skills**: Optional task-bundled skills from `environment/skills`\n- **Metric**: `score` from `/logs/verifier/reward.txt`; `success` is 1 when `score > 0`\n\n## Key Features\n\n- Builds or reuses a content-hashed Docker image for each selected task.\n- Runs the task in `no-skill` or `with-skill` mode without mixing the two conditions in one EvalScope run.\n- Injects task-bundled skills through EvalScope's agent skill runtime instead of baking runner-specific skill paths into\n  the image.\n- Supports EvalScope native agents and external agent runners through the shared agent environment interface.\n- Saves verifier stdout, reward, and optional CTRF artifacts under the run output directory.\n\n## Evaluation Notes\n\n- Default `skill_mode` is `no-skill`.\n- Run `no-skill` and `with-skill` separately, then compare runs with EvalScope's run comparison tools.\n- `self-gen` and `tasks-extra` are not supported by this adapter version.\n- `runner='oracle'` runs the official `oracle/solve.sh` for smoke testing; agent runs require `agent_config`.\n- The verifier executes `verifier/test.sh` and may install dependencies from the network.\n\n## Scoring and Comparison\n\n- `score` is the verifier reward parsed from `/logs/verifier/reward.txt`.\n- `success` is derived locally as `1.0` when `score > 0`, otherwise `0.0`.\n- EvalScope does not automatically compute the no-skill versus with-skill delta; run both modes and compare their reports.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `skillsbench` |\n| **Dataset ID** | `skillsbench` |\n| **Paper** | N/A |\n| **Tags** | `Agent`, `MultiTurn` |\n| **Metrics** | `score` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `N/A` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `tasks_dir` | `str` | `` | Path to the SkillsBench tasks directory. |\n| `task_ids` | `list` | `[]` | Optional list of task ids to run. |\n| `skill_mode` | `str` | `no-skill` | SkillsBench skill mode. Choices: ['no-skill', 'with-skill'] |\n| `force_rebuild` | `bool` | `False` | Force rebuilding task Docker images. |\n| `agent_timeout_sec` | `float` | `None` | Override task agent timeout. |\n| `verifier_timeout_sec` | `float` | `None` | Override task verifier timeout. |\n| `runner` | `str` | `agent` | Use \"oracle\" to run oracle/solve.sh instead of an agent. Choices: ['agent', 'oracle'] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets skillsbench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['skillsbench'],\n    dataset_args={\n        'skillsbench': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# SkillsBench\n\n\n## 概述\n\nSkillsBench 用于评估编码智能体是否能够发现并应用任务捆绑的 Agent 技能。每个任务包含一条指令、一个可选的技能目录、一个 Docker 环境、一个参考解决方案（oracle solution）和一个验证器（verifier）。EvalScope 会构建任务的 Docker 镜像，在该镜像中运行所选的智能体或参考方案，然后执行任务验证器。\n\n## 任务描述\n\n- **任务类型**：智能体技能使用 / 工具辅助任务完成\n- **输入**：来自 `task.md` 的自然语言任务提示\n- **输出**：在任务容器内生成的文件或状态变更，由任务验证器评分\n- **数据集**：通过 `extra_params.tasks_dir` 提供的本地 SkillsBench 任务仓库\n- **环境**：基于 `environment/Dockerfile` 构建的每个任务专属 Docker 镜像\n- **技能**：可选的任务捆绑技能，位于 `environment/skills`\n- **指标**：来自 `/logs/verifier/reward.txt` 的 `score`；当 `score > 0` 时，`success` 为 1\n\n## 核心特性\n\n- 为每个选定任务构建或复用基于内容哈希的 Docker 镜像。\n- 在单次 EvalScope 运行中，以 `no-skill` 或 `with-skill` 模式运行任务，不会混合两种模式。\n- 通过 EvalScope 的智能体技能运行时注入任务捆绑技能，而非将运行器特定的技能路径硬编码进镜像。\n- 支持 EvalScope 原生智能体和通过共享智能体环境接口的外部智能体运行器。\n- 将验证器的标准输出、奖励值以及可选的 CTRF 工件保存至运行输出目录。\n\n## 评估说明\n\n- 默认 `skill_mode` 为 `no-skill`。\n- 分别运行 `no-skill` 和 `with-skill` 模式，然后使用 EvalScope 的运行对比工具进行比较。\n- 此适配器版本不支持 `self-gen` 和 `tasks-extra`。\n- `runner='oracle'` 会运行官方的 `oracle/solve.sh` 用于冒烟测试；智能体运行需提供 `agent_config`。\n- 验证器执行 `verifier/test.sh`，可能会从网络安装依赖项。\n\n## 评分与对比\n\n- `score` 是从 `/logs/verifier/reward.txt` 解析出的验证器奖励值。\n- `success` 在本地计算：当 `score > 0` 时为 `1.0`，否则为 `0.0`。\n- EvalScope 不会自动计算 `no-skill` 与 `with-skill` 的差异；需分别运行两种模式并对比其报告。\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `skillsbench` |\n| **数据集ID** | `skillsbench` |\n| **论文** | N/A |\n| **标签** | `Agent`, `MultiTurn` |\n| **指标** | `score` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `N/A` |\n\n\n## 数据统计\n\n*统计数据不可用。*\n\n## 样例示例\n\n*样例示例不可用。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `tasks_dir` | `str` | `` | SkillsBench 任务目录的路径。 |\n| `task_ids` | `list` | `[]` | 可选的任务 ID 列表，用于指定运行哪些任务。 |\n| `skill_mode` | `str` | `no-skill` | SkillsBench 技能模式。选项：['no-skill', 'with-skill'] |\n| `force_rebuild` | `bool` | `False` | 强制重新构建任务 Docker 镜像。 |\n| `agent_timeout_sec` | `float` | `None` | 覆盖任务智能体的超时时间。 |\n| `verifier_timeout_sec` | `float` | `None` | 覆盖任务验证器的超时时间。 |\n| `runner` | `str` | `agent` | 使用 \"oracle\" 来运行 oracle/solve.sh 而非智能体。选项：['agent', 'oracle'] |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets skillsbench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['skillsbench'],\n    dataset_args={\n        'skillsbench': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "db5bef21e178e6e38a305be0faa35dc3",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-07T17:13:24.145456",
+  "translation_updated_at": "2026-07-07T17:15:17"
+}

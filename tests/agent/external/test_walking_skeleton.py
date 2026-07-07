@@ -85,6 +85,15 @@ def test_unknown_framework_raises():
         ExternalAgentConfig(framework='does-not-exist')
 
 
+def test_close_environment_false_requires_override():
+    model = _build_mock_model('unused')
+    sample = Sample(input='do work', target='', id=1)
+    config = ExternalAgentConfig(framework='mock', environment='local')
+
+    with pytest.raises(ValueError, match='close_environment=False requires environment_override'):
+        run_external_agent(config=config, model=model, sample=sample, close_environment=False)
+
+
 def test_bridge_rejects_unknown_trial_token(tmp_path):
     """The bridge must 401 requests bearing an unknown trial token."""
     import urllib.error
