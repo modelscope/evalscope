@@ -3,7 +3,7 @@ import os
 import traceback
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
@@ -31,6 +31,13 @@ from .utils import (
 )
 
 logger = get_logger()
+
+
+def _normalize_openai_base_url(api_url: Optional[str]) -> str:
+    """Return the API root expected by the OpenAI SDK."""
+    if not api_url:
+        return ''
+    return api_url.strip().rstrip('/').removesuffix('/chat/completions')
 
 
 @register_benchmark(
@@ -170,8 +177,12 @@ class BFCLV4Adapter(AgentAdapter):
         from bfcl_eval.model_handler.api_inference.openai_completion import OpenAICompletionsHandler
 
         # Set env variables for OpenAI API
+        base_url = _normalize_openai_base_url(self._task_config.api_url)
         os.environ['OPENAI_API_KEY'] = self._task_config.api_key
-        os.environ['OPENAI_BASE_URL'] = self._task_config.api_url
+        if base_url:
+            os.environ['OPENAI_BASE_URL'] = base_url
+        else:
+            os.environ.pop('OPENAI_BASE_URL', None)
 
         self.handler = OpenAICompletionsHandler(
             model_name=self._task_config.model,
