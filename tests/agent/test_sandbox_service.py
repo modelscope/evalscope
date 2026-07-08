@@ -214,6 +214,43 @@ class TestSandboxServiceCache:
 
         asyncio.run(_run())
 
+    def test_shutdown_all_async_falls_back_to_direct_cleanup(self):
+        service = SandboxService()
+        fake = self._make_mock_manager()
+        fake.stop.side_effect = RuntimeError('Event loop is closed')
+        fake.cleanup_all_sandboxes = AsyncMock()
+
+        async def _run():
+            with patch.object(service, '_construct_manager', return_value=fake):
+                await service.get_or_create_manager(SandboxEngine.DOCKER, {})
+            await service.shutdown_all_async()
+
+        asyncio.run(_run())
+        fake.stop.assert_awaited_once()
+        fake.cleanup_all_sandboxes.assert_awaited_once()
+        assert service._managers == {}
+
+    def test_shutdown_continues_when_fallback_cleanup_fails(self):
+        service = SandboxService()
+        fake_1 = self._make_mock_manager()
+        fake_2 = self._make_mock_manager()
+        fake_1.stop.side_effect = RuntimeError('first stop failed')
+        fake_2.stop.side_effect = RuntimeError('second stop failed')
+        fake_1.cleanup_all_sandboxes = AsyncMock(side_effect=RuntimeError('first cleanup failed'))
+        fake_2.cleanup_all_sandboxes = AsyncMock()
+
+        async def _run():
+            managers = iter([fake_1, fake_2])
+            with patch.object(service, '_construct_manager', side_effect=lambda *a, **kw: next(managers)):
+                await service.get_or_create_manager(SandboxEngine.DOCKER, {'base_url': 'x'})
+                await service.get_or_create_manager(SandboxEngine.DOCKER, {'base_url': 'y'})
+            await service.shutdown_all_async()
+
+        asyncio.run(_run())
+        fake_1.cleanup_all_sandboxes.assert_awaited_once()
+        fake_2.cleanup_all_sandboxes.assert_awaited_once()
+        assert service._managers == {}
+
     def test_shutdown_sandbox_service_noop_when_uncreated(self):
         from evalscope.api.sandbox import service as service_module
 
