@@ -927,6 +927,17 @@ class TestNativeBenchmark(TestBenchmark):
         self._run_dataset_test('perspective_gap_role_assignment', limit=5, use_mock=True)
         self._run_dataset_test('perspective_gap_prompt_writing', limit=5, use_mock=True)
 
+    def test_perspective_gap_real_api_scoring(self):
+        """Test PerspectiveGap benchmarks with real API."""
+        pytest.importorskip('perspective_gap.scoring')
+        generation_config = {'max_tokens': 4096, 'temperature': 0.0, 'retries': 3}
+        self._run_dataset_test(
+            'perspective_gap_role_assignment', limit=5, model='qwen-plus', generation_config=generation_config
+        )
+        self._run_dataset_test(
+            'perspective_gap_prompt_writing', limit=5, model='qwen-plus', generation_config=generation_config
+        )
+
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
