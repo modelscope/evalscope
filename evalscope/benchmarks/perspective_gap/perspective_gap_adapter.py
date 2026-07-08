@@ -30,7 +30,7 @@ PROMPT_WRITING = 'prompt_writing'
 STRICT_PASS = 'strict_pass'
 SUBMETRICS = ['net_match_score', 'required_coverage', 'boundary_precision', 'distractor_leakage']
 
-DESCRIPTION = """
+DESCRIPTION = f"""
 ## Overview
 
 PerspectiveGap evaluates whether a model can compose orchestration prompts for multi-agent systems while routing only the context each sub-agent needs.
@@ -47,6 +47,8 @@ The benchmark uses the ModelScope dataset `evalscope/PerspectiveGap`, which cont
 ## Scoring
 
 Scores are computed by `perspective_gap.scoring` from the official PerspectiveGap repository. The scorer is imported lazily so EvalScope can list benchmarks without installing the optional dependency.
+
+Install the scorer before running evaluation: `{PERSPECTIVE_GAP_PIP_INSTALL}`. If you use uv, run `{PERSPECTIVE_GAP_UV_INSTALL}`.
 """.strip()  # noqa: E501
 
 

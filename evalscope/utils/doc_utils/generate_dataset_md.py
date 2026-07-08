@@ -430,7 +430,7 @@ def _update_single_benchmark(
 # =============================================================================
 
 
-def generate_docs(data: Optional[Dict[str, Any]] = None):
+def generate_docs(data: Optional[Dict[str, Any]] = None) -> None:
     """
     Generate all documentation from persisted benchmark data.
 
@@ -443,6 +443,11 @@ def generate_docs(data: Optional[Dict[str, Any]] = None):
     if not data:
         print('No benchmark data found. Run `evalscope benchmark-info --all --update` first.')
         return
+
+    def write_markdown(path: Any, content: str) -> None:
+        """Write generated markdown with exactly one trailing newline."""
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(content.rstrip() + '\n')
 
     # Create output directories
     BENCHMARK_README_DIR_ZH.mkdir(parents=True, exist_ok=True)
@@ -479,26 +484,22 @@ def generate_docs(data: Optional[Dict[str, Any]] = None):
             en_content = readme.get('en', '')
             if en_content:
                 readme_path = BENCHMARK_README_DIR_EN / f'{name}.md'
-                with open(readme_path, 'w', encoding='utf-8') as f:
-                    f.write(en_content)
+                write_markdown(readme_path, en_content)
 
             # Chinese README (use translated version if available, else English)
             zh_content = readme.get('zh', '') or en_content
             if zh_content:
                 readme_path = BENCHMARK_README_DIR_ZH / f'{name}.md'
-                with open(readme_path, 'w', encoding='utf-8') as f:
-                    f.write(zh_content)
+                write_markdown(readme_path, zh_content)
 
         # Generate index pages
         index_zh = generate_index_table(benchmarks, category_upper, 'zh')
         index_en = generate_index_table(benchmarks, category_upper, 'en')
 
         # Write index pages
-        with open(INDEX_DIR_ZH / f'{category}.md', 'w', encoding='utf-8') as f:
-            f.write(index_zh)
+        write_markdown(INDEX_DIR_ZH / f'{category}.md', index_zh)
 
-        with open(INDEX_DIR_EN / f'{category}.md', 'w', encoding='utf-8') as f:
-            f.write(index_en)
+        write_markdown(INDEX_DIR_EN / f'{category}.md', index_en)
 
         print(f'  {category_upper}: {len(benchmarks)} benchmarks')
 

@@ -17,6 +17,8 @@ The benchmark uses the ModelScope dataset `evalscope/PerspectiveGap`, which cont
 
 Scores are computed by `perspective_gap.scoring` from the official PerspectiveGap repository. The scorer is imported lazily so EvalScope can list benchmarks without installing the optional dependency.
 
+Install the scorer before running evaluation: `pip install 'perspective-gap @ git+https://github.com/WhymustIhaveaname/PerspectiveGap.git@9c6921b3337ff3e6a6a453f68d117a8c1663135e'`. If you use uv, run `uv pip install 'perspective-gap @ git+https://github.com/WhymustIhaveaname/PerspectiveGap.git@9c6921b3337ff3e6a6a453f68d117a8c1663135e'`.
+
 ## Properties
 
 | Property | Value |
@@ -46,7 +48,7 @@ Scores are computed by `perspective_gap.scoring` from the official PerspectiveGa
 {
   "input": [
     {
-      "id": "ab2e63cc",
+      "id": "0ce12f47",
       "content": "I need you to set up a 2-agent pipeline for bug bounty.\nThe two roles are coder and reviewer: coder is responsible for finding bugs, reviewer is responsible for judging whether what the coder found counts as a bug.\nAfter each bug the coder fi ... [TRUNCATED 3528 chars] ... t's prompt should contain only the information that agent needs to do its job. For each sub-agent (coder, reviewer), which items should go in its prompt? Respond with a JSON object like {\"coder\": [\"f?\"], \"reviewer\": [\"f?\"]}. No other output.\n"
     }
   ],
