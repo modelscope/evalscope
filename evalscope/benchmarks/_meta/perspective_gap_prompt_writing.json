@@ -1,0 +1,138 @@
+{
+  "meta": {
+    "pretty_name": "PerspectiveGap Prompt Writing",
+    "dataset_id": "evalscope/PerspectiveGap",
+    "paper_url": "https://arxiv.org/abs/2606.08878",
+    "tags": [
+      "Agent",
+      "InstructionFollowing"
+    ],
+    "metrics": [
+      "strict_pass",
+      "net_match_score",
+      "required_coverage",
+      "boundary_precision",
+      "distractor_leakage"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nPerspectiveGap evaluates whether a model can compose orchestration prompts for multi-agent systems while routing only the context each sub-agent needs.\n\n## Tasks\n\n- `perspective_gap_role_assignment`: select the visible fragment IDs for each role and return a JSON object.\n- `perspective_gap_prompt_writing`: write one markdown prompt section per role while including only the needed fragments.\n\n## Data\n\nThe benchmark uses the ModelScope dataset `evalscope/PerspectiveGap`, which contains the released `test` split. You can also pass `dataset_args.<task>.local_path` to a local JSONL mirror with the same fields.\n\n## Scoring\n\nScores are computed by `perspective_gap.scoring` from the official PerspectiveGap repository. The scorer is imported lazily so EvalScope can list benchmarks without installing the optional dependency.\n\nInstall the scorer before running evaluation: `pip install 'perspective-gap @ git+https://github.com/WhymustIhaveaname/PerspectiveGap.git@9c6921b3337ff3e6a6a453f68d117a8c1663135e'`. If you use uv, run `uv pip install 'perspective-gap @ git+https://github.com/WhymustIhaveaname/PerspectiveGap.git@9c6921b3337ff3e6a6a453f68d117a8c1663135e'`.",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 220,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 220,
+        "prompt_length_mean": 11398.63,
+        "prompt_length_min": 3909,
+        "prompt_length_max": 19086,
+        "prompt_length_std": 3729.43,
+        "target_length_mean": 172.75
+      }
+    ],
+    "prompt_length": {
+      "mean": 11398.63,
+      "min": 3909,
+      "max": 19086,
+      "std": 3729.43
+    },
+    "target_length_mean": 172.75,
+    "computed_at": "2026-07-08T10:58:30.164760"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "f0db45f1",
+          "content": "I need you to set up a 2-agent pipeline for bug bounty.\nThe two roles are coder and reviewer: coder is responsible for finding bugs, reviewer is responsible for judging whether what the coder found counts as a bug.\nAfter each bug the coder fi ... [TRUNCATED 3723 chars] ... of fragment content. Brief connective text between fragments (e.g., \"Then: ...\", \"Note: ...\") is fine. Format: one markdown section per role, with the role name as an h1 header (e.g. `# coder`). Output only the headered prompts, no preamble.\n"
+        }
+      ],
+      "target": "{\"coder\": [\"f5\", \"f6\", \"f7\", \"f1\"], \"reviewer\": [\"f5\", \"f3\", \"f4\"]}",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "task": "prompt_writing",
+        "evaluation_id": "pg_000__seed_1",
+        "scenario_id": "pg_000",
+        "shuffle_seed": 1,
+        "roles": [
+          "coder",
+          "reviewer"
+        ],
+        "fragments": [
+          {
+            "id": "f1",
+            "text": "After finding a bug, submit it to a **fresh** reviewer for review. Do not review your own report.\n\n**After the review returns:** execute all action steps in the reviewer's output.",
+            "is_distractor": false
+          },
+          {
+            "id": "f2",
+            "text": "Claude responds well to clear, explicit instructions. Being specific about your desired output can help enhance results. If you want \"above and beyond\" behavior, explicitly request it rather than relying on the model to infer this from vague  ... [TRUNCATED 276 chars] ... w it. If they'd be confused, Claude will be too.\n\n- Be specific about the desired output format and constraints.\n- Provide instructions as sequential steps using numbered lists or bullet points when the order or completeness of steps matters.",
+            "is_distractor": true
+          },
+          {
+            "id": "f3",
+            "text": "Audit the report you are given.",
+            "is_distractor": false
+          },
+          {
+            "id": "f4",
+            "text": "Check the following dimensions one by one:\n\n| Dimension | Requirement |\n|-----------|-------------|\n| Scope | Within consensus-related code directories, or outside but directly affecting consensus logic |\n| Code references | Cited code snippe ... [TRUNCATED 1134 chars] ... ying victim code\n- Code references inconsistent with the latest testnet branch\n- PoC is incomplete and requires the reviewer to manually assemble it\n- Attack effect is equivalent to a Byzantine node simply going offline, with no amplification",
+            "is_distractor": false
+          },
+          {
+            "id": "f5",
+            "text": "You are participating in a blockchain consensus-layer bug bounty contest.\n\nRead the contest rules first: ./contest-rules.md",
+            "is_distractor": false
+          },
+          {
+            "id": "f6",
+            "text": "Find vulnerability in the code and write it up as a report.",
+            "is_distractor": false
+          },
+          {
+            "id": "f7",
+            "text": "This project has been running stably for many years — any obvious fatal bug would have killed it long ago. So:\n\n- Don't report problems that are obvious at a glance (e.g. \"some map is never erased\") — if it were that obvious, the project team would have fixed it themselves\n- Truly valuable vulnerabilities hide in non-obvious interactions, races, and boundary conditions",
+            "is_distractor": false
+          }
+        ],
+        "distractor_id": "f2",
+        "reference_need_sets": {
+          "coder": [
+            "f5",
+            "f6",
+            "f7",
+            "f1"
+          ],
+          "reviewer": [
+            "f5",
+            "f3",
+            "f4"
+          ]
+        }
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# PerspectiveGap Prompt Writing\n\n## Overview\n\nPerspectiveGap evaluates whether a model can compose orchestration prompts for multi-agent systems while routing only the context each sub-agent needs.\n\n## Tasks\n\n- `perspective_gap_role_assignment`: select the visible fragment IDs for each role and return a JSON object.\n- `perspective_gap_prompt_writing`: write one markdown prompt section per role while including only the needed fragments.\n\n## Data\n\nThe benchmark uses the ModelScope dataset `evalscope/PerspectiveGap`, which contains the released `test` split. You can also pass `dataset_args.<task>.local_path` to a local JSONL mirror with the same fields.\n\n## Scoring\n\nScores are computed by `perspective_gap.scoring` from the official PerspectiveGap repository. The scorer is imported lazily so EvalScope can list benchmarks without installing the optional dependency.\n\nInstall the scorer before running evaluation: `pip install 'perspective-gap @ git+https://github.com/WhymustIhaveaname/PerspectiveGap.git@9c6921b3337ff3e6a6a453f68d117a8c1663135e'`. If you use uv, run `uv pip install 'perspective-gap @ git+https://github.com/WhymustIhaveaname/PerspectiveGap.git@9c6921b3337ff3e6a6a453f68d117a8c1663135e'`.\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `perspective_gap_prompt_writing` |\n| **Dataset ID** | [evalscope/PerspectiveGap](https://modelscope.cn/datasets/evalscope/PerspectiveGap/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2606.08878) |\n| **Tags** | `Agent`, `InstructionFollowing` |\n| **Metrics** | `strict_pass`, `net_match_score`, `required_coverage`, `boundary_precision`, `distractor_leakage` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 220 |\n| Prompt Length (Mean) | 11398.63 chars |\n| Prompt Length (Min/Max) | 3909 / 19086 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f0db45f1\",\n      \"content\": \"I need you to set up a 2-agent pipeline for bug bounty.\\nThe two roles are coder and reviewer: coder is responsible for finding bugs, reviewer is responsible for judging whether what the coder found counts as a bug.\\nAfter each bug the coder fi ... [TRUNCATED 3723 chars] ... of fragment content. Brief connective text between fragments (e.g., \\\"Then: ...\\\", \\\"Note: ...\\\") is fine. Format: one markdown section per role, with the role name as an h1 header (e.g. `# coder`). Output only the headered prompts, no preamble.\\n\"\n    }\n  ],\n  \"target\": \"{\\\"coder\\\": [\\\"f5\\\", \\\"f6\\\", \\\"f7\\\", \\\"f1\\\"], \\\"reviewer\\\": [\\\"f5\\\", \\\"f3\\\", \\\"f4\\\"]}\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"task\": \"prompt_writing\",\n    \"evaluation_id\": \"pg_000__seed_1\",\n    \"scenario_id\": \"pg_000\",\n    \"shuffle_seed\": 1,\n    \"roles\": [\n      \"coder\",\n      \"reviewer\"\n    ],\n    \"fragments\": [\n      {\n        \"id\": \"f1\",\n        \"text\": \"After finding a bug, submit it to a **fresh** reviewer for review. Do not review your own report.\\n\\n**After the review returns:** execute all action steps in the reviewer's output.\",\n        \"is_distractor\": false\n      },\n      {\n        \"id\": \"f2\",\n        \"text\": \"Claude responds well to clear, explicit instructions. Being specific about your desired output can help enhance results. If you want \\\"above and beyond\\\" behavior, explicitly request it rather than relying on the model to infer this from vague  ... [TRUNCATED 276 chars] ... w it. If they'd be confused, Claude will be too.\\n\\n- Be specific about the desired output format and constraints.\\n- Provide instructions as sequential steps using numbered lists or bullet points when the order or completeness of steps matters.\",\n        \"is_distractor\": true\n      },\n      {\n        \"id\": \"f3\",\n        \"text\": \"Audit the report you are given.\",\n        \"is_distractor\": false\n      },\n      {\n        \"id\": \"f4\",\n        \"text\": \"Check the following dimensions one by one:\\n\\n| Dimension | Requirement |\\n|-----------|-------------|\\n| Scope | Within consensus-related code directories, or outside but directly affecting consensus logic |\\n| Code references | Cited code snippe ... [TRUNCATED 1134 chars] ... ying victim code\\n- Code references inconsistent with the latest testnet branch\\n- PoC is incomplete and requires the reviewer to manually assemble it\\n- Attack effect is equivalent to a Byzantine node simply going offline, with no amplification\",\n        \"is_distractor\": false\n      },\n      {\n        \"id\": \"f5\",\n        \"text\": \"You are participating in a blockchain consensus-layer bug bounty contest.\\n\\nRead the contest rules first: ./contest-rules.md\",\n        \"is_distractor\": false\n      },\n      {\n        \"id\": \"f6\",\n        \"text\": \"Find vulnerability in the code and write it up as a report.\",\n        \"is_distractor\": false\n      },\n      {\n        \"id\": \"f7\",\n        \"text\": \"This project has been running stably for many years — any obvious fatal bug would have killed it long ago. So:\\n\\n- Don't report problems that are obvious at a glance (e.g. \\\"some map is never erased\\\") — if it were that obvious, the project team would have fixed it themselves\\n- Truly valuable vulnerabilities hide in non-obvious interactions, races, and boundary conditions\",\n        \"is_distractor\": false\n      }\n    ],\n    \"distractor_id\": \"f2\",\n    \"reference_need_sets\": {\n      \"coder\": [\n        \"f5\",\n        \"f6\",\n        \"f7\",\n        \"f1\"\n      ],\n      \"reviewer\": [\n        \"f5\",\n        \"f3\",\n        \"f4\"\n      ]\n    }\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets perspective_gap_prompt_writing \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['perspective_gap_prompt_writing'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# PerspectiveGap Prompt Writing\n\n## 概述\n\nPerspectiveGap 用于评估模型是否能够在为多智能体系统编写编排提示（orchestration prompts）时，仅向每个子智能体提供其所需的上下文。\n\n## 任务\n\n- `perspective_gap_role_assignment`：为每个角色选择可见的片段 ID，并返回一个 JSON 对象。\n- `perspective_gap_prompt_writing`：为每个角色编写一个 Markdown 格式的提示段落，且仅包含该角色所需的片段。\n\n## 数据\n\n该基准测试使用 ModelScope 数据集 [`evalscope/PerspectiveGap`](https://modelscope.cn/datasets/evalscope/PerspectiveGap/summary)，其中包含已发布的 `test` 划分。你也可以通过 `dataset_args.<task>.local_path` 参数传入一个具有相同字段结构的本地 JSONL 文件镜像。\n\n## 评分\n\n评分由官方 PerspectiveGap 仓库中的 `perspective_gap.scoring` 模块计算得出。该评分器采用惰性导入方式，以便 EvalScope 在未安装可选依赖的情况下也能列出基准测试。\n\n在运行评估前，请先安装评分器：\n```bash\npip install 'perspective-gap @ git+https://github.com/WhymustIhaveaname/PerspectiveGap.git@9c6921b3337ff3e6a6a453f68d117a8c1663135e'\n```\n\n如果你使用 uv，则运行：\n```bash\nuv pip install 'perspective-gap @ git+https://github.com/WhymustIhaveaname/PerspectiveGap.git@9c6921b3337ff3e6a6a453f68d117a8c1663135e'\n```\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `perspective_gap_prompt_writing` |\n| **数据集ID** | [evalscope/PerspectiveGap](https://modelscope.cn/datasets/evalscope/PerspectiveGap/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2606.08878) |\n| **标签** | `Agent`, `InstructionFollowing` |\n| **指标** | `strict_pass`, `net_match_score`, `required_coverage`, `boundary_precision`, `distractor_leakage` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 220 |\n| 提示词长度（平均） | 11398.63 字符 |\n| 提示词长度（最小/最大） | 3909 / 19086 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f0db45f1\",\n      \"content\": \"I need you to set up a 2-agent pipeline for bug bounty.\\nThe two roles are coder and reviewer: coder is responsible for finding bugs, reviewer is responsible for judging whether what the coder found counts as a bug.\\nAfter each bug the coder fi ... [TRUNCATED 3723 chars] ... of fragment content. Brief connective text between fragments (e.g., \\\"Then: ...\\\", \\\"Note: ...\\\") is fine. Format: one markdown section per role, with the role name as an h1 header (e.g. `# coder`). Output only the headered prompts, no preamble.\\n\"\n    }\n  ],\n  \"target\": \"{\\\"coder\\\": [\\\"f5\\\", \\\"f6\\\", \\\"f7\\\", \\\"f1\\\"], \\\"reviewer\\\": [\\\"f5\\\", \\\"f3\\\", \\\"f4\\\"]}\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"task\": \"prompt_writing\",\n    \"evaluation_id\": \"pg_000__seed_1\",\n    \"scenario_id\": \"pg_000\",\n    \"shuffle_seed\": 1,\n    \"roles\": [\n      \"coder\",\n      \"reviewer\"\n    ],\n    \"fragments\": [\n      {\n        \"id\": \"f1\",\n        \"text\": \"After finding a bug, submit it to a **fresh** reviewer for review. Do not review your own report.\\n\\n**After the review returns:** execute all action steps in the reviewer's output.\",\n        \"is_distractor\": false\n      },\n      {\n        \"id\": \"f2\",\n        \"text\": \"Claude responds well to clear, explicit instructions. Being specific about your desired output can help enhance results. If you want \\\"above and beyond\\\" behavior, explicitly request it rather than relying on the model to infer this from vague  ... [TRUNCATED 276 chars] ... w it. If they'd be confused, Claude will be too.\\n\\n- Be specific about the desired output format and constraints.\\n- Provide instructions as sequential steps using numbered lists or bullet points when the order or completeness of steps matters.\",\n        \"is_distractor\": true\n      },\n      {\n        \"id\": \"f3\",\n        \"text\": \"Audit the report you are given.\",\n        \"is_distractor\": false\n      },\n      {\n        \"id\": \"f4\",\n        \"text\": \"Check the following dimensions one by one:\\n\\n| Dimension | Requirement |\\n|-----------|-------------|\\n| Scope | Within consensus-related code directories, or outside but directly affecting consensus logic |\\n| Code references | Cited code snippe ... [TRUNCATED 1134 chars] ... ying victim code\\n- Code references inconsistent with the latest testnet branch\\n- PoC is incomplete and requires the reviewer to manually assemble it\\n- Attack effect is equivalent to a Byzantine node simply going offline, with no amplification\",\n        \"is_distractor\": false\n      },\n      {\n        \"id\": \"f5\",\n        \"text\": \"You are participating in a blockchain consensus-layer bug bounty contest.\\n\\nRead the contest rules first: ./contest-rules.md\",\n        \"is_distractor\": false\n      },\n      {\n        \"id\": \"f6\",\n        \"text\": \"Find vulnerability in the code and write it up as a report.\",\n        \"is_distractor\": false\n      },\n      {\n        \"id\": \"f7\",\n        \"text\": \"This project has been running stably for many years — any obvious fatal bug would have killed it long ago. So:\\n\\n- Don't report problems that are obvious at a glance (e.g. \\\"some map is never erased\\\") — if it were that obvious, the project team would have fixed it themselves\\n- Truly valuable vulnerabilities hide in non-obvious interactions, races, and boundary conditions\",\n        \"is_distractor\": false\n      }\n    ],\n    \"distractor_id\": \"f2\",\n    \"reference_need_sets\": {\n      \"coder\": [\n        \"f5\",\n        \"f6\",\n        \"f7\",\n        \"f1\"\n      ],\n      \"reviewer\": [\n        \"f5\",\n        \"f3\",\n        \"f4\"\n      ]\n    }\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets perspective_gap_prompt_writing \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['perspective_gap_prompt_writing'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "96d325627149904ba7edf3f3b9a772c5",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-08T10:58:30.244193",
+  "translation_updated_at": "2026-07-08T10:58:35"
+}

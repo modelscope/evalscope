@@ -101,6 +101,8 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `needle_haystack` | [Needle-in-a-Haystack](../../benchmarks/needle_haystack.md) | `LongContext`, `Retrieval` |
 | `ontonotes5` | [OntoNotes5](../../benchmarks/ontonotes5.md) | `Knowledge`, `NER` |
 | `openai_mrcr` | [OpenAI MRCR](../../benchmarks/openai_mrcr.md) | `LongContext`, `Retrieval` |
+| `perspective_gap_prompt_writing` | [PerspectiveGap Prompt Writing](../../benchmarks/perspective_gap_prompt_writing.md) | `Agent`, `InstructionFollowing` |
+| `perspective_gap_role_assignment` | [PerspectiveGap Role Assignment](../../benchmarks/perspective_gap_role_assignment.md) | `Agent`, `InstructionFollowing` |
 | `piqa` | [PIQA](../../benchmarks/piqa.md) | `Commonsense`, `MCQ`, `Reasoning` |
 | `poly_math` | [PolyMath](../../benchmarks/poly_math.md) | `Math`, `MultiLingual`, `Reasoning` |
 | `process_bench` | [ProcessBench](../../benchmarks/process_bench.md) | `Math`, `Reasoning` |
@@ -228,6 +230,8 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/needle_haystack.md
 ../../benchmarks/ontonotes5.md
 ../../benchmarks/openai_mrcr.md
+../../benchmarks/perspective_gap_prompt_writing.md
+../../benchmarks/perspective_gap_role_assignment.md
 ../../benchmarks/piqa.md
 ../../benchmarks/poly_math.md
 ../../benchmarks/process_bench.md
