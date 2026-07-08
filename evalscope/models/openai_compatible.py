@@ -145,16 +145,21 @@ class OpenAICompatibleAPI(ModelAPI):
             t_start = time.monotonic()
             ttft: Optional[float] = None
 
-            # generate completion and save response for model call
-            completion = retry_call(
-                self.client.chat.completions.create,
+            # A streaming request is not complete when create() returns: the
+            # connection may still fail while its chunks are being consumed.
+            # Retry the whole request so a partial response is discarded and
+            # replaced by one complete response.
+            def _create_and_collect() -> Tuple[ChatCompletion, Optional[float]]:
+                raw_completion = self.client.chat.completions.create(**request)
+                if isinstance(raw_completion, ChatCompletion):
+                    return raw_completion, None
+                return collect_stream_response(raw_completion, request_start=t_start)
+
+            completion, ttft = retry_call(
+                _create_and_collect,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
-                **request
             )
-            # handle streaming response
-            if not isinstance(completion, ChatCompletion):
-                completion, ttft = collect_stream_response(completion, request_start=t_start)
 
             total_time = time.monotonic() - t_start
 
@@ -219,17 +224,20 @@ class OpenAICompatibleAPI(ModelAPI):
             t_start = time.monotonic()
             ttft: Optional[float] = None
 
-            # Async generation with retry
-            completion = await async_retry_call(
-                self.async_client.chat.completions.create,
+            # Keep stream consumption inside the retry boundary. If an async
+            # stream is interrupted, start a fresh request rather than
+            # returning or persisting its partial response.
+            async def _create_and_collect() -> Tuple[ChatCompletion, Optional[float]]:
+                raw_completion = await self.async_client.chat.completions.create(**request)
+                if isinstance(raw_completion, ChatCompletion):
+                    return raw_completion, None
+                return await async_collect_stream_response(raw_completion, request_start=t_start)
+
+            completion, ttft = await async_retry_call(
+                _create_and_collect,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
-                **request,
             )
-
-            # Handle streaming response
-            if not isinstance(completion, ChatCompletion):
-                completion, ttft = await async_collect_stream_response(completion, request_start=t_start)
 
             total_time = time.monotonic() - t_start
 
