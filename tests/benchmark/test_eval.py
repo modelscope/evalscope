@@ -5,6 +5,7 @@ load_dotenv('.env')
 
 env = dotenv_values('.env')
 
+import pytest
 import unittest
 
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
@@ -922,6 +923,7 @@ class TestNativeBenchmark(TestBenchmark):
 
     def test_perspective_gap_mock(self):
         """Test PerspectiveGap benchmarks with mock."""
+        pytest.importorskip('perspective_gap.scoring')
         self._run_dataset_test('perspective_gap_role_assignment', limit=5, use_mock=True)
         self._run_dataset_test('perspective_gap_prompt_writing', limit=5, use_mock=True)
 

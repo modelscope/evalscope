@@ -19,9 +19,11 @@ PERSPECTIVE_GAP_REQUIREMENT = (
     'perspective-gap @ '
     f'git+https://github.com/WhymustIhaveaname/PerspectiveGap.git@{PERSPECTIVE_GAP_COMMIT}'
 )
+PERSPECTIVE_GAP_PIP_INSTALL = f"pip install '{PERSPECTIVE_GAP_REQUIREMENT}'"
+PERSPECTIVE_GAP_UV_INSTALL = f"uv pip install '{PERSPECTIVE_GAP_REQUIREMENT}'"
 INSTALL_HINT = (
     'PerspectiveGap scoring is required for this benchmark. Install it with '
-    f"`pip install '{PERSPECTIVE_GAP_REQUIREMENT}'` or `uv pip install '{PERSPECTIVE_GAP_REQUIREMENT}'`."
+    f'`{PERSPECTIVE_GAP_PIP_INSTALL}` or `{PERSPECTIVE_GAP_UV_INSTALL}`.'
 )
 ROLE_ASSIGNMENT = 'role_assignment'
 PROMPT_WRITING = 'prompt_writing'

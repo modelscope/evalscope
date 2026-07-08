@@ -77,7 +77,6 @@ torgo            = {file = ["evalscope/benchmarks/torgo/requirements.txt"]}
 terminal_bench   = {file = ["evalscope/benchmarks/terminal_bench/requirements.txt"]}
 deep_swe         = {file = ["evalscope/benchmarks/deep_swe/requirements.txt"]}
 bfcl             = {file = ["evalscope/benchmarks/bfcl/requirements.txt"]}
-perspective_gap  = {file = ["evalscope/benchmarks/perspective_gap/requirements.txt"]}
 all = {file = [
   "requirements/opencompass.txt",
   "requirements/vlmeval.txt",
