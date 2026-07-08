@@ -35,12 +35,13 @@ def data_uri_to_base64(data_uri: str) -> str:
     return stripped_uri
 
 
-VideoFormat = Literal['mp4', 'mpeg', 'mov']
-SUPPORTED_VIDEO_FORMATS: tuple[VideoFormat, ...] = ('mp4', 'mpeg', 'mov')
+VideoFormat = Literal['mp4', 'mpeg', 'mov', 'avi']
+SUPPORTED_VIDEO_FORMATS: tuple[VideoFormat, ...] = ('mp4', 'mpeg', 'mov', 'avi')
 VIDEO_FORMAT_TO_MIME_TYPE: dict[VideoFormat, str] = {
     'mp4': 'video/mp4',
     'mpeg': 'video/mpeg',
     'mov': 'video/quicktime',
+    'avi': 'video/x-msvideo',
 }
 
 

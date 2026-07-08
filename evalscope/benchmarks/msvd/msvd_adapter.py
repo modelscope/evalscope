@@ -41,7 +41,7 @@ The native adapter treats each video as one evaluation sample and uses all avail
 ## Evaluation Notes
 
 - Default data source: `evalscope/MSVD` on ModelScope, `test` split
-- Hugging Face `VLM2Vec/MSVD` remains available by setting `extra_params.dataset_hub="huggingface"`
+- Hugging Face `VLM2Vec/MSVD` remains available by setting `dataset_hub="huggingface"` in TaskConfig
 - Primary metric: **CIDEr**
 - Additional metrics: BLEU-1/2/3/4, METEOR, ROUGE-L
 - Set `extra_params.video_dir` when the dataset only provides video file names and local media files are required
@@ -54,22 +54,6 @@ The native adapter treats each video as one evaluation sample and uses all avail
         eval_split='test',
         prompt_template=DEFAULT_PROMPT,
         extra_params={
-            'dataset_hub': {
-                'type': 'str',
-                'description': 'Dataset hub used to load MSVD annotations.',
-                'value': HubType.MODELSCOPE,
-                'choices': [HubType.HUGGINGFACE, HubType.MODELSCOPE, HubType.LOCAL],
-            },
-            'eval_split': {
-                'type': 'str',
-                'description': 'Source split to load; defaults to test.',
-                'value': '',
-            },
-            'dataset_revision': {
-                'type': 'str',
-                'description': 'Optional dataset revision; leave empty to use the hub default.',
-                'value': '',
-            },
             'video_dir': {
                 'type': 'str',
                 'description': 'Optional local directory containing MSVD video files.',
@@ -97,25 +81,16 @@ class MSVDAdapter(VisionLanguageAdapter):
         self.add_aggregation_name = False
 
     @property
-    def source_dataset_hub(self) -> str:
-        return self.extra_params.get('dataset_hub') or HubType.MODELSCOPE
-
-    @property
     def source_dataset_id(self) -> str:
         if self.dataset_id != self.name and self.dataset_id not in self.SOURCE_DATASET_IDS.values():
             return self.dataset_id
-        return self.SOURCE_DATASET_IDS.get(self.source_dataset_hub, self.dataset_id)
-
-    @property
-    def source_eval_split(self) -> str:
-        return self.extra_params.get('eval_split') or self.eval_split
+        return self.SOURCE_DATASET_IDS.get(self.dataset_hub, self.dataset_id)
 
     @property
     def source_dataset(self) -> DatasetHub:
         return DatasetHub(
             data_id_or_path=self.source_dataset_id,
-            data_source=self.source_dataset_hub,
-            revision=self.extra_params.get('dataset_revision') or None,
+            data_source=self.dataset_hub,
             force_redownload=self.force_redownload,
         )
 
@@ -157,7 +132,7 @@ class MSVDAdapter(VisionLanguageAdapter):
                 'references': references,
                 'subset': self.current_subset_name,
                 'dataset_id': self.source_dataset_id,
-                'dataset_hub': self.source_dataset_hub,
+                'dataset_hub': self.dataset_hub,
                 'video': video,
                 'video_id': record.get('video_id'),
                 'source': record.get('source'),
@@ -183,11 +158,9 @@ class MSVDAdapter(VisionLanguageAdapter):
         return sample_scores
 
     def _load_records(self) -> List[Dict[str, Any]]:
-        logger.info(
-            f'Loading MSVD from {self.source_dataset_hub}: '
-            f'{self.source_dataset_id}, split={self.source_eval_split}.'
-        )
-        dataset = self.source_dataset.load(split=self.source_eval_split, subset='default')
+        logger.info(f'Loading MSVD from {self.dataset_hub}: '
+                    f'{self.source_dataset_id}, split={self.eval_split}.')
+        dataset = self.source_dataset.load(split=self.eval_split, subset='default')
         return list(dataset)
 
     def _group_records(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

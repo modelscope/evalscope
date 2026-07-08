@@ -42,7 +42,7 @@ with multiple reference captions.
 ## Evaluation Notes
 
 - Default data source: `AI-ModelScope/msr-vtt` on ModelScope, `validation` split
-- Hugging Face `VLM2Vec/MSR-VTT` remains available by setting `extra_params.dataset_hub="huggingface"`
+- Hugging Face `VLM2Vec/MSR-VTT` remains available by setting `dataset_hub="huggingface"` in TaskConfig
 - Primary metric: **CIDEr**
 - Additional metrics: BLEU-1/2/3/4, METEOR, ROUGE-L
 - Set `extra_params.video_dir` to prefer local media files over URL metadata
@@ -56,22 +56,6 @@ with multiple reference captions.
         eval_split='validation',
         prompt_template=DEFAULT_PROMPT,
         extra_params={
-            'dataset_hub': {
-                'type': 'str',
-                'description': 'Dataset hub used to load MSR-VTT annotations.',
-                'value': HubType.MODELSCOPE,
-                'choices': [HubType.HUGGINGFACE, HubType.MODELSCOPE, HubType.LOCAL],
-            },
-            'eval_split': {
-                'type': 'str',
-                'description': 'Source split to load; defaults to validation for ModelScope and test for Hugging Face.',
-                'value': '',
-            },
-            'dataset_revision': {
-                'type': 'str',
-                'description': 'Optional dataset revision; leave empty to use the hub default.',
-                'value': '',
-            },
             'video_dir': {
                 'type': 'str',
                 'description': 'Optional local directory containing MSR-VTT video files.',
@@ -103,28 +87,24 @@ class MSRVTTAdapter(VisionLanguageAdapter):
         self.add_aggregation_name = False
 
     @property
-    def source_dataset_hub(self) -> str:
-        return self.extra_params.get('dataset_hub') or HubType.MODELSCOPE
-
-    @property
     def source_dataset_id(self) -> str:
         if self.dataset_id != self.name and self.dataset_id not in self.SOURCE_DATASET_IDS.values():
             return self.dataset_id
-        return self.SOURCE_DATASET_IDS.get(self.source_dataset_hub, self.dataset_id)
+        return self.SOURCE_DATASET_IDS.get(self.dataset_hub, self.dataset_id)
 
     @property
     def source_eval_split(self) -> str:
-        return (
-            self.extra_params.get('eval_split')
-            or self.SOURCE_EVAL_SPLITS.get(self.source_dataset_hub, self.eval_split)
-        )
+        is_default_dataset = self.dataset_id in self.SOURCE_DATASET_IDS.values()
+        is_default_modelscope_split = self.eval_split == self.SOURCE_EVAL_SPLITS[HubType.MODELSCOPE]
+        if is_default_dataset and is_default_modelscope_split:
+            return self.SOURCE_EVAL_SPLITS.get(self.dataset_hub, self.eval_split)
+        return self.eval_split
 
     @property
     def source_dataset(self) -> DatasetHub:
         return DatasetHub(
             data_id_or_path=self.source_dataset_id,
-            data_source=self.source_dataset_hub,
-            revision=self.extra_params.get('dataset_revision') or None,
+            data_source=self.dataset_hub,
             force_redownload=self.force_redownload,
         )
 
@@ -171,7 +151,7 @@ class MSRVTTAdapter(VisionLanguageAdapter):
                 'references': references,
                 'subset': self.current_subset_name,
                 'dataset_id': self.source_dataset_id,
-                'dataset_hub': self.source_dataset_hub,
+                'dataset_hub': self.dataset_hub,
                 'video': video,
                 'start': start,
                 'end': end,
@@ -201,10 +181,10 @@ class MSRVTTAdapter(VisionLanguageAdapter):
 
     def _load_records(self) -> List[Dict[str, Any]]:
         subset = 'default'
-        if self.source_dataset_hub == HubType.HUGGINGFACE:
+        if self.dataset_hub == HubType.HUGGINGFACE:
             subset = 'test_1k'
         logger.info(
-            f'Loading MSR-VTT from {self.source_dataset_hub}: '
+            f'Loading MSR-VTT from {self.dataset_hub}: '
             f'{self.source_dataset_id}, subset={subset}, split={self.source_eval_split}.'
         )
         dataset = self.source_dataset.load(split=self.source_eval_split, subset=subset)
