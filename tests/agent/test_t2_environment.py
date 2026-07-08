@@ -331,6 +331,14 @@ class TestEnclaveEnvironmentInterpreter:
         env = adapter.build_environment(sample)
 
         assert env._interpreter == ['bash', '-lc']
+        assert 'environment' not in env._sandbox_config_dict
+        assert env._sandbox_config_dict['env_vars'] == {
+            'PAGER': 'cat',
+            'MANPAGER': 'cat',
+            'LESS': '-R',
+            'PIP_PROGRESS_BAR': 'off',
+            'TQDM_DISABLE': '1',
+        }
 
     def test_swe_bench_pro_adapter_uses_login_interpreter(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from evalscope.benchmarks.swe_bench_pro.swe_bench_pro_agentic_adapter import SWEBenchProAgenticAdapter
