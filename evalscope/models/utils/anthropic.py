@@ -236,7 +236,16 @@ def anthropic_chat_messages(
             _add_cache_control_to_evaluation_prefix(message_params, cache_control)
             return system_param, message_params
         elif cache_strategy == 'recent_messages':
+            # Anchor the stable prefix (tools + system) with a fixed breakpoint so it is
+            # cache-read on every turn, and add a rolling breakpoint on the most recent
+            # message block to incrementally cache the growing conversation history.
+            #
+            # Without the system anchor the only breakpoint moves forward each turn, so the
+            # cached prefix is written at a different length every request and later turns
+            # rarely find a matching entry -- i.e. the cache is created but almost never hit.
+            system_param = _system_message_with_cache_control(system_message, cache_control)
             _add_cache_control_to_recent_block(message_params, cache_control)
+            return system_param, message_params
         else:
             raise ValueError(f'Unknown Anthropic cache strategy: {cache_strategy}')
 

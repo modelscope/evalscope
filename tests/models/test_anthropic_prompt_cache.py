@@ -93,7 +93,7 @@ def test_evaluation_strategy_is_noop_without_stable_message_prefix():
     assert _cache_control_blocks(messages) == []
 
 
-def test_recent_messages_strategy_marks_only_one_tail_block():
+def test_recent_messages_strategy_anchors_system_and_marks_tail_block():
     anthropic = _anthropic_utils()
     cache_control = {'type': 'ephemeral'}
 
@@ -108,7 +108,14 @@ def test_recent_messages_strategy_marks_only_one_tail_block():
         cache_strategy='recent_messages',
     )
 
-    assert system == 'Stable evaluator instructions.'
+    # The stable system prefix is anchored with a fixed breakpoint so it is cache-read
+    # on every turn; without it the only breakpoint moves each turn and rarely gets a hit.
+    assert system == [{
+        'type': 'text',
+        'text': 'Stable evaluator instructions.',
+        'cache_control': cache_control,
+    }]
+    # A rolling breakpoint still marks the most recent message block for the growing history.
     assert len(_cache_control_blocks(messages)) == 1
     assert messages[-1]['content'][-1]['cache_control'] == cache_control
     assert 'cache_control' not in messages[-2]['content'][-1]
