@@ -15,6 +15,7 @@ import os
 import pytest
 import sys
 import tempfile
+import time
 import types
 from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
@@ -235,6 +236,7 @@ class TestEnclaveEnvironmentInterpreter:
         assert handle.payload is not None
         assert handle.payload['command'][:2] == ['bash', '-c']
         assert handle.payload['command'][-1] == "export FOO=bar; cd /tmp && echo 'hello world'"
+        assert handle.payload['timeout'] == 60.0
 
     def test_exec_uses_configured_login_interpreter(self, monkeypatch: pytest.MonkeyPatch) -> None:
         env, handle = self._env_with_fake_handle(monkeypatch, interpreter=['bash', '-lc'])
@@ -243,6 +245,7 @@ class TestEnclaveEnvironmentInterpreter:
         assert result.returncode == 0
         assert handle.payload is not None
         assert handle.payload['command'][:2] == ['bash', '-lc']
+        assert handle.payload['command'][-1] == 'python -V'
 
     def test_bash_tool_preserves_configured_login_interpreter(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from evalscope.agent.tools.bash import run_bash
@@ -294,6 +297,25 @@ class TestEnclaveEnvironmentInterpreter:
         assert result.returncode == 0
         assert handle.payload is not None
         assert handle.payload['command'][-1] == 'export COUNT=3; echo x'
+
+    def test_exec_maps_ms_enclave_timeout_status(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        env, handle = self._env_with_fake_handle(monkeypatch)
+
+        async def _timed_out(tool_name: str, payload: Dict[str, Any]) -> Any:
+            handle.tool_name = tool_name
+            handle.payload = payload
+            return types.SimpleNamespace(
+                output='',
+                error='Command timed out after 0.3 seconds',
+                status=_FakeExecutionStatus.TIMEOUT,
+                execution_time=0.3,
+            )
+
+        monkeypatch.setattr(handle, 'execute_tool', _timed_out)
+        result = self._run(env.exec(['sleep', '10'], timeout=0.3))
+
+        assert result.timed_out
+        assert result.returncode == -1
 
     def test_empty_interpreter_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
@@ -501,6 +523,20 @@ class TestDockerEnvironmentExec:
             assert result.returncode == 0
             assert 'hello docker' in result.stdout
             assert not result.timed_out
+        finally:
+            self._run(env.close())
+
+    def test_exec_timeout_terminates_container_process(self):
+        env = self._env()
+        marker = '/workspace/timeout-marker'
+        try:
+            result = self._run(env.exec(['/bin/bash', '-c', f'sleep 2; touch {marker}'], timeout=0.3))
+            assert result.timed_out
+            assert result.returncode == -1
+
+            time.sleep(2.5)
+            check = self._run(env.exec(['/bin/bash', '-c', f'test -e {marker} && echo PRESENT || echo ABSENT']))
+            assert check.stdout.strip() == 'ABSENT'
         finally:
             self._run(env.close())
 
