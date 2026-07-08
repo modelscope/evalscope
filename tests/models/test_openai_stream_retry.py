@@ -1,13 +1,14 @@
 import asyncio
-from types import SimpleNamespace
-
+import pytest
 from openai.types.chat import ChatCompletionChunk
+from types import SimpleNamespace
+from typing import Optional
 
 from evalscope.api.model import GenerateConfig
 from evalscope.models.openai_compatible import OpenAICompatibleAPI
 
 
-def _chunk(content, *, finish_reason=None):
+def _chunk(content: str, *, finish_reason: Optional[str] = None) -> ChatCompletionChunk:
     return ChatCompletionChunk.model_validate({
         'id': 'completion-id',
         'created': 1,
@@ -21,7 +22,7 @@ def _chunk(content, *, finish_reason=None):
     })
 
 
-def _prepare_api(monkeypatch):
+def _prepare_api(monkeypatch: pytest.MonkeyPatch) -> OpenAICompatibleAPI:
     api = object.__new__(OpenAICompatibleAPI)
     api.base_url = 'https://example.test/v1'
     api.model_name = 'test-model'
