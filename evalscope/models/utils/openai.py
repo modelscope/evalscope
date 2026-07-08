@@ -823,13 +823,13 @@ def collect_stream_response(
         collected_chunks.append(chunk)
         for choice in chunk.choices:
             reasoning_content = getattr(choice.delta, 'reasoning_content', None)
-            if reasoning_content is None:
+            if reasoning_content is None or reasoning_content == '':
                 reasoning_content = getattr(choice.delta, 'reasoning', None)
 
             # Detect first meaningful content chunk for TTFT
-            has_content = ((choice.delta.content is not None and choice.delta.content != '') or (
-                reasoning_content is not None and reasoning_content != ''
-            ) or (hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls))
+            has_content = ((choice.delta.content is not None and choice.delta.content != '')
+                           or (reasoning_content is not None and reasoning_content != '')
+                           or (hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls))
             if ttft is None and has_content:
                 ttft = time.monotonic() - t_start
 
@@ -954,13 +954,13 @@ async def async_collect_stream_response(
         collected_chunks.append(chunk)
         for choice in chunk.choices:
             reasoning_content = getattr(choice.delta, 'reasoning_content', None)
-            if reasoning_content is None:
+            if reasoning_content is None or reasoning_content == '':
                 reasoning_content = getattr(choice.delta, 'reasoning', None)
 
             # Detect first meaningful content chunk for TTFT
-            has_content = ((choice.delta.content is not None and choice.delta.content != '') or (
-                reasoning_content is not None and reasoning_content != ''
-            ) or (hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls))
+            has_content = ((choice.delta.content is not None and choice.delta.content != '')
+                           or (reasoning_content is not None and reasoning_content != '')
+                           or (hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls))
             if ttft is None and has_content:
                 ttft = time.monotonic() - t_start
 
