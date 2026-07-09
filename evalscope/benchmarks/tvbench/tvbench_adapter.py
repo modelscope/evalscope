@@ -3,6 +3,7 @@ import copy
 import json
 import os
 import random
+import shutil
 import zipfile
 from typing import Any, Dict, List, Optional
 
@@ -213,11 +214,11 @@ class TVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
             return output_path
 
         archive_path = self.source_dataset.download_file(self._archive_path(subset, video_name))
-        member_name = self._find_archive_member(archive_path, video_name)
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with zipfile.ZipFile(archive_path) as zip_file:
+            member_name = self._find_archive_member(zip_file, video_name)
             with zip_file.open(member_name) as source, open(output_path, 'wb') as target:
-                target.write(source.read())
+                shutil.copyfileobj(source, target)
         return output_path
 
     def _cache_output_path(self, subset: str, video_name: str) -> str:
@@ -246,11 +247,10 @@ class TVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         return f'video/{subset}.zip'
 
     @staticmethod
-    def _find_archive_member(archive_path: str, video_name: str) -> str:
+    def _find_archive_member(zip_file: zipfile.ZipFile, video_name: str) -> str:
         normalized_video_name = video_name.replace('\\', '/').lstrip('/')
         video_basename = os.path.basename(normalized_video_name)
-        with zipfile.ZipFile(archive_path) as zip_file:
-            member_names = [name for name in zip_file.namelist() if not name.endswith('/')]
+        member_names = [name for name in zip_file.namelist() if not name.endswith('/')]
         exact_matches = [
             name for name in member_names if name.replace('\\', '/').endswith(f'/{normalized_video_name}')
             or name.replace('\\', '/') == normalized_video_name
@@ -263,7 +263,7 @@ class TVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         ]
         if basename_matches:
             return sorted(basename_matches)[0]
-        raise FileNotFoundError(f'Video {video_name} was not found in archive {archive_path}.')
+        raise FileNotFoundError(f'Video {video_name} was not found in archive.')
 
     def _question_with_video_context(
         self,

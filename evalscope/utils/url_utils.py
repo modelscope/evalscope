@@ -63,6 +63,8 @@ def guess_video_format(video: Optional[str], default: VideoFormat = 'mp4') -> Vi
         subtype = mime_type.split('/', 1)[1].lower()
         if subtype == 'quicktime':
             return 'mov'
+        if subtype == 'x-msvideo':
+            return 'avi'
         if subtype in SUPPORTED_VIDEO_FORMATS:
             return cast(VideoFormat, subtype)
 
