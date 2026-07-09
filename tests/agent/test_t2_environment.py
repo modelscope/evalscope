@@ -534,9 +534,11 @@ class TestDockerEnvironmentExec:
             assert result.timed_out
             assert result.returncode == -1
 
-            time.sleep(2.5)
-            check = self._run(env.exec(['/bin/bash', '-c', f'test -e {marker} && echo PRESENT || echo ABSENT']))
-            assert check.stdout.strip() == 'ABSENT'
+            deadline = time.monotonic() + 6.0
+            while time.monotonic() < deadline:
+                check = self._run(env.exec(['/bin/bash', '-c', f'test -e {marker} && echo PRESENT || echo ABSENT']))
+                assert check.stdout.strip() == 'ABSENT'
+                time.sleep(0.25)
         finally:
             self._run(env.close())
 
