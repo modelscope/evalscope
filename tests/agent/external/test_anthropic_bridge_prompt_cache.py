@@ -30,7 +30,7 @@ def test_anthropic_bridge_top_level_cache_control_enables_recent_messages_strate
     assert config.extra_body is None
 
 
-def test_anthropic_bridge_top_level_cache_control_does_not_auto_mark_explicit_blocks():
+def test_anthropic_bridge_top_level_cache_control_is_preserved_with_explicit_blocks():
     config = _build_generate_config({
         'cache_control': _cache_control('1h'),
         'messages': [{
@@ -43,8 +43,9 @@ def test_anthropic_bridge_top_level_cache_control_does_not_auto_mark_explicit_bl
         }],
     })
 
-    assert config.anthropic_cache_control is None
-    assert config.anthropic_cache_strategy == 'evaluation'
+    assert config.anthropic_cache_control is not None
+    assert config.anthropic_cache_control.model_dump(exclude_none=True) == _cache_control('1h')
+    assert config.anthropic_cache_strategy == 'recent_messages'
     assert config.extra_body is None
 
 
@@ -61,7 +62,9 @@ def test_anthropic_bridge_tool_schema_cache_control_property_does_not_disable_to
             'input_schema': {
                 'type': 'object',
                 'properties': {
-                    'cache_control': {'type': 'string'},
+                    'cache_control': {
+                        'type': 'string'
+                    },
                 },
             },
         }],
@@ -94,7 +97,9 @@ def test_anthropic_bridge_preserves_block_level_cache_control():
                     'type': 'tool_use',
                     'id': 'toolu_1',
                     'name': 'search',
-                    'input': {'q': 'x'},
+                    'input': {
+                        'q': 'x'
+                    },
                     'cache_control': _cache_control('1h'),
                 }],
             },
@@ -111,7 +116,11 @@ def test_anthropic_bridge_preserves_block_level_cache_control():
         'tools': [{
             'name': 'search',
             'description': 'Search docs.',
-            'input_schema': {'type': 'object', 'properties': {}, 'required': []},
+            'input_schema': {
+                'type': 'object',
+                'properties': {},
+                'required': []
+            },
             'cache_control': _cache_control('1h'),
         }],
     }

@@ -72,12 +72,35 @@ def test_recent_messages_sets_top_level_cache_control():
     params = anthropic.anthropic_completion_params(
         'claude',
         GenerateConfig(
-            anthropic_cache_control={'type': 'ephemeral', 'ttl': '5m'},
+            anthropic_cache_control={
+                'type': 'ephemeral',
+                'ttl': '5m'
+            },
             anthropic_cache_strategy='recent_messages',
         ),
     )
 
     assert params['cache_control'] == {'type': 'ephemeral', 'ttl': '5m'}
+
+
+def test_anthropic_api_splits_automatic_and_explicit_cache_control():
+    pytest.importorskip('anthropic')
+    from evalscope.models.anthropic_compatible import AnthropicCompatibleAPI
+
+    api = AnthropicCompatibleAPI.__new__(AnthropicCompatibleAPI)
+    recent_config = GenerateConfig(
+        anthropic_cache_control={'type': 'ephemeral'},
+        anthropic_cache_strategy='recent_messages',
+    )
+    evaluation_config = GenerateConfig(
+        anthropic_cache_control={'type': 'ephemeral'},
+        anthropic_cache_strategy='evaluation',
+    )
+
+    assert api.cache_control_params(recent_config) == {'type': 'ephemeral'}
+    assert api.explicit_cache_control_params(recent_config) is None
+    assert api.cache_control_params(evaluation_config) == {'type': 'ephemeral'}
+    assert api.explicit_cache_control_params(evaluation_config) == {'type': 'ephemeral'}
 
 
 def test_evaluation_strategy_marks_system_tools_and_fewshot_but_not_final_question():
@@ -112,7 +135,7 @@ def test_evaluation_strategy_marks_system_tools_and_fewshot_but_not_final_questi
     assert len(_cache_control_blocks(messages)) == 1
 
 
-def test_recent_messages_anchors_system_tools_and_penultimate_message_block():
+def test_recent_messages_uses_top_level_cache_control_without_manual_block_markers():
     anthropic = _anthropic_utils()
     cache_control = {'type': 'ephemeral'}
 
@@ -132,11 +155,9 @@ def test_recent_messages_anchors_system_tools_and_penultimate_message_block():
         cache_strategy='recent_messages',
     )
 
-    assert system == [{'type': 'text', 'text': 'Stable agent instructions.', 'cache_control': cache_control}]
-    assert tools[-1]['cache_control'] == cache_control
-    assert len(_cache_control_blocks(messages)) == 1
-    assert messages[-2]['content'][-1]['cache_control'] == cache_control
-    assert 'cache_control' not in messages[-1]['content'][-1]
+    assert system == 'Stable agent instructions.'
+    assert 'cache_control' not in tools[-1]
+    assert len(_cache_control_blocks(messages)) == 0
 
 
 def test_user_supplied_cache_control_is_preserved_and_not_overwritten():
@@ -147,10 +168,14 @@ def test_user_supplied_cache_control_is_preserved_and_not_overwritten():
     system, messages = anthropic.anthropic_chat_messages(
         [
             ChatMessageSystem(
-                content=[ContentText(text='Stable.', internal={'anthropic': {'cache_control': explicit}})]
+                content=[ContentText(text='Stable.', internal={'anthropic': {
+                    'cache_control': explicit
+                }})]
             ),
             ChatMessageUser(
-                content=[ContentText(text='Question.', internal={'anthropic': {'cache_control': explicit}})]
+                content=[ContentText(text='Question.', internal={'anthropic': {
+                    'cache_control': explicit
+                }})]
             ),
         ],
         cache_control=automatic,
@@ -161,7 +186,7 @@ def test_user_supplied_cache_control_is_preserved_and_not_overwritten():
     assert messages[-1]['content'][-1]['cache_control'] == explicit
 
 
-def test_cache_control_skips_tool_result_blocks_for_automatic_marker():
+def test_evaluation_cache_control_skips_tool_result_blocks():
     anthropic = _anthropic_utils()
 
     messages = [
@@ -171,10 +196,11 @@ def test_cache_control_skips_tool_result_blocks_for_automatic_marker():
             tool_calls=[ToolCall(id='call_123', function=ToolFunction(name='get_weather', arguments={'city': 'SF'}))],
         ),
         ChatMessageTool(tool_call_id='call_123', content='Sunny, 72F'),
+        ChatMessageUser(content='What should I wear?'),
     ]
 
     system, message_params = anthropic.anthropic_chat_messages(
-        messages, cache_control={'type': 'ephemeral'}, cache_strategy='recent_messages'
+        messages, cache_control={'type': 'ephemeral'}, cache_strategy='evaluation'
     )
 
     assert system is None
@@ -182,9 +208,7 @@ def test_cache_control_skips_tool_result_blocks_for_automatic_marker():
     assert message_params[0]['content'][-1]['cache_control'] == {'type': 'ephemeral'}
 
     tool_result_block = [
-        block
-        for message in message_params
-        for block in message.get('content', [])
+        block for message in message_params for block in message.get('content', [])
         if isinstance(block, dict) and block.get('type') == 'tool_result'
     ][0]
     assert 'cache_control' not in tool_result_block
@@ -197,7 +221,9 @@ def test_tool_result_explicit_cache_control_is_preserved():
     message = ChatMessageTool(
         tool_call_id='call_123',
         content='Sunny',
-        internal={'anthropic': {'cache_control': cache_control}},
+        internal={'anthropic': {
+            'cache_control': cache_control
+        }},
     )
 
     message_param = anthropic.anthropic_message_param(message)
@@ -270,23 +296,21 @@ def test_collect_stream_response_preserves_cache_usage(monkeypatch):
     anthropic = _anthropic_utils()
     _patch_stream_event_types(monkeypatch, anthropic)
 
-    message, _ = anthropic.collect_stream_response(
-        [
-            _FakeMessageStartEvent(
-                _FakeMessage(
-                    id='msg_1',
-                    model='claude',
-                    role='assistant',
-                    usage=_FakeUsage(
-                        input_tokens=10,
-                        cache_creation_input_tokens=3,
-                        cache_read_input_tokens=4,
-                    ),
-                )
-            ),
-            _FakeMessageDeltaEvent(_FakeUsage(output_tokens=2)),
-        ]
-    )
+    message, _ = anthropic.collect_stream_response([
+        _FakeMessageStartEvent(
+            _FakeMessage(
+                id='msg_1',
+                model='claude',
+                role='assistant',
+                usage=_FakeUsage(
+                    input_tokens=10,
+                    cache_creation_input_tokens=3,
+                    cache_read_input_tokens=4,
+                ),
+            )
+        ),
+        _FakeMessageDeltaEvent(_FakeUsage(output_tokens=2)),
+    ])
 
     assert message.usage.input_tokens == 10
     assert message.usage.output_tokens == 2

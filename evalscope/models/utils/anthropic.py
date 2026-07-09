@@ -97,8 +97,10 @@ def anthropic_chat_tools(
 ) -> List[ToolParam]:
     """Convert list of ToolInfo to list of Anthropic ToolParam."""
     tool_params = [anthropic_tool_param(tool) for tool in tools]
-    if cache_control and cache_strategy in ('evaluation', 'recent_messages') and tool_params:
+    if cache_control and cache_strategy == 'evaluation' and tool_params:
         _add_cache_control(cast(Dict[str, Any], tool_params[-1]), cache_control)
+    elif cache_strategy not in ('evaluation', 'recent_messages'):
+        raise ValueError(f'Unknown Anthropic cache strategy: {cache_strategy}')
     return tool_params
 
 
@@ -257,8 +259,8 @@ def anthropic_chat_messages(
             system_message = _system_message_with_cache_control(system_message, cache_control)
             _add_cache_control_to_evaluation_prefix(message_params, cache_control)
         elif cache_strategy == 'recent_messages':
-            system_message = _system_message_with_cache_control(system_message, cache_control)
-            _add_cache_control_to_recent_block(message_params, cache_control)
+            # Top-level cache_control handles Anthropic automatic caching for this strategy.
+            pass
         else:
             raise ValueError(f'Unknown Anthropic cache strategy: {cache_strategy}')
 
@@ -324,18 +326,6 @@ def _add_cache_control_to_evaluation_prefix(
     _add_cache_control_to_last_block(messages[:-1], cache_control)
 
 
-def _add_cache_control_to_recent_block(
-    messages: List[MessageParam],
-    cache_control: Dict[str, Any],
-) -> None:
-    """Attach cache_control to the penultimate cacheable content block when possible."""
-    blocks = _cacheable_content_blocks(messages)
-    if not blocks:
-        return
-    block = blocks[-2] if len(blocks) >= 2 else blocks[-1]
-    _add_cache_control(block, cache_control)
-
-
 def _add_cache_control_to_last_block(
     messages: List[MessageParam],
     cache_control: Dict[str, Any],
@@ -346,19 +336,6 @@ def _add_cache_control_to_last_block(
             _add_cache_control(block, cache_control)
             return True
     return False
-
-
-def _cacheable_content_blocks(messages: List[MessageParam]) -> List[Dict[str, Any]]:
-    blocks: List[Dict[str, Any]] = []
-    for message in messages:
-        content = message['content']
-        if isinstance(content, str):
-            content = [TextBlockParam(type='text', text=content)]
-            message['content'] = content
-        for block in content:
-            if isinstance(block, dict) and _is_cacheable_content_block(block):
-                blocks.append(cast(Dict[str, Any], block))
-    return blocks
 
 
 def _add_cache_control_to_last_block_list(
