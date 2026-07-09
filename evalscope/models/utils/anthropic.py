@@ -41,7 +41,6 @@ from evalscope.utils.url_utils import data_uri_mime_type, data_uri_to_base64, fi
 
 BASE_64_DATA_REMOVED = '<base64-data-removed>'
 NO_CONTENT = '[No content]'
-MAX_ANTHROPIC_CACHE_CONTROL_BLOCKS = 4
 AnthropicCacheStrategy = Literal['evaluation', 'recent_messages']
 AnthropicSystemParam = Union[str, List[TextBlockParam]]
 
@@ -57,13 +56,38 @@ class AnthropicResponseError(Exception):
         return f'{self.code}: {self.message}'
 
 
+def _anthropic_internal(value: Any) -> Dict[str, Any]:
+    if isinstance(value, dict):
+        anthropic_value = value.get('anthropic')
+        if isinstance(anthropic_value, dict):
+            return anthropic_value
+    return {}
+
+
+def _cache_control_from_internal(value: Any) -> Optional[Dict[str, Any]]:
+    cache_control = _anthropic_internal(value).get('cache_control')
+    return cache_control if isinstance(cache_control, dict) else None
+
+
+def _add_cache_control(block: Dict[str, Any], cache_control: Optional[Dict[str, Any]]) -> None:
+    """Attach Anthropic cache_control without overwriting caller-provided markers."""
+    if cache_control and 'cache_control' not in block:
+        block['cache_control'] = cache_control
+
+
+def _preserve_cache_control(block: Dict[str, Any], internal: Any) -> None:
+    _add_cache_control(block, _cache_control_from_internal(internal))
+
+
 def anthropic_tool_param(tool: ToolInfo) -> ToolParam:
     """Convert ToolInfo to Anthropic ToolParam."""
-    return ToolParam(
+    tool_param = ToolParam(
         name=tool.name,
         description=tool.description,
         input_schema=tool.parameters.model_dump(exclude_none=True),
     )
+    _preserve_cache_control(cast(Dict[str, Any], tool_param), tool.options)
+    return tool_param
 
 
 def anthropic_chat_tools(
@@ -73,7 +97,7 @@ def anthropic_chat_tools(
 ) -> List[ToolParam]:
     """Convert list of ToolInfo to list of Anthropic ToolParam."""
     tool_params = [anthropic_tool_param(tool) for tool in tools]
-    if cache_control and cache_strategy == 'evaluation' and tool_params:
+    if cache_control and cache_strategy in ('evaluation', 'recent_messages') and tool_params:
         _add_cache_control(cast(Dict[str, Any], tool_params[-1]), cache_control)
     return tool_params
 
@@ -106,18 +130,16 @@ def anthropic_image_block_param(image: str) -> ImageBlockParam:
     )
 
 
-def _add_cache_control(block: Dict[str, Any], cache_control: Optional[Dict[str, Any]]) -> None:
-    """Attach Anthropic cache_control to a content block when requested."""
-    if cache_control:
-        block['cache_control'] = cache_control
-
-
 def anthropic_content_block_param(content: Content) -> List[ContentBlockParam]:
     """Convert Content to list of Anthropic ContentBlockParam."""
     if content.type == 'text':
-        return [TextBlockParam(type='text', text=content.text or NO_CONTENT)]
+        block = TextBlockParam(type='text', text=content.text or NO_CONTENT)
+        _preserve_cache_control(cast(Dict[str, Any], block), content.internal)
+        return [block]
     elif content.type == 'image':
-        return [anthropic_image_block_param(content.image)]
+        block = anthropic_image_block_param(content.image)
+        _preserve_cache_control(cast(Dict[str, Any], block), content.internal)
+        return [block]
     elif content.type == 'reasoning':
         # For reasoning content, we convert to text with think tags
         reasoning_text = f'<think>\n{content.reasoning}\n</think>'
@@ -152,17 +174,14 @@ def anthropic_message_param(message: ChatMessage) -> MessageParam:
             for c in tool_message.content:
                 result_content.extend(anthropic_content_block_param(c))
 
-        return MessageParam(
-            role='user',
-            content=[
-                ToolResultBlockParam(
-                    tool_use_id=str(tool_message.tool_call_id),
-                    type='tool_result',
-                    content=cast(List[TextBlockParam | ImageBlockParam], result_content),
-                    is_error=tool_message.error is not None,
-                )
-            ],
+        tool_result_block = ToolResultBlockParam(
+            tool_use_id=str(tool_message.tool_call_id),
+            type='tool_result',
+            content=cast(List[TextBlockParam | ImageBlockParam], result_content),
+            is_error=tool_message.error is not None,
         )
+        _preserve_cache_control(cast(Dict[str, Any], tool_result_block), tool_message.internal)
+        return MessageParam(role='user', content=[tool_result_block])
 
     elif message.role == 'assistant':
         assistant_message = cast(ChatMessageAssistant, message)
@@ -171,7 +190,9 @@ def anthropic_message_param(message: ChatMessage) -> MessageParam:
         # Add content blocks
         if isinstance(assistant_message.content, str):
             if assistant_message.content:
-                block_params.append(TextBlockParam(type='text', text=assistant_message.content))
+                block = TextBlockParam(type='text', text=assistant_message.content)
+                _preserve_cache_control(cast(Dict[str, Any], block), assistant_message.internal)
+                block_params.append(block)
         else:
             for c in assistant_message.content:
                 block_params.extend(anthropic_content_block_param(c))
@@ -179,21 +200,25 @@ def anthropic_message_param(message: ChatMessage) -> MessageParam:
         # Add tool use blocks
         if assistant_message.tool_calls:
             for tool_call in assistant_message.tool_calls:
-                block_params.append(
-                    ToolUseBlockParam(
-                        type='tool_use',
-                        id=tool_call.id,
-                        name=tool_call.function.name,
-                        input=tool_call.function.arguments,
-                    )
+                tool_use_block = ToolUseBlockParam(
+                    type='tool_use',
+                    id=tool_call.id,
+                    name=tool_call.function.name,
+                    input=tool_call.function.arguments,
                 )
+                _preserve_cache_control(cast(Dict[str, Any], tool_use_block), tool_call.internal)
+                block_params.append(tool_use_block)
 
         return MessageParam(role='assistant', content=block_params or [TextBlockParam(type='text', text=NO_CONTENT)])
 
     else:  # user message
         user_message = cast(ChatMessageUser, message)
         if isinstance(user_message.content, str):
-            content = user_message.content or NO_CONTENT
+            if _cache_control_from_internal(user_message.internal):
+                content = [TextBlockParam(type='text', text=user_message.content or NO_CONTENT)]
+                _preserve_cache_control(cast(Dict[str, Any], content[-1]), user_message.internal)
+            else:
+                content = user_message.content or NO_CONTENT
         else:
             content = []
             for c in user_message.content:
@@ -214,16 +239,13 @@ def anthropic_chat_messages(
     Returns:
         Tuple of (system_message, message_params)
     """
-    system_message: Optional[str] = None
+    system_message: Optional[AnthropicSystemParam] = None
     message_params: List[MessageParam] = []
 
     for message in messages:
         if message.role == 'system':
             # Anthropic requires system message as a separate parameter
-            if system_message is None:
-                system_message = message.text
-            else:
-                system_message = f'{system_message}\n\n{message.text}'
+            system_message = _merge_system_message(system_message, _system_param_from_message(message))
         else:
             message_params.append(anthropic_message_param(message))
 
@@ -232,35 +254,62 @@ def anthropic_chat_messages(
 
     if cache_control:
         if cache_strategy == 'evaluation':
-            system_param = _system_message_with_cache_control(system_message, cache_control)
+            system_message = _system_message_with_cache_control(system_message, cache_control)
             _add_cache_control_to_evaluation_prefix(message_params, cache_control)
-            return system_param, message_params
         elif cache_strategy == 'recent_messages':
-            # Anchor the stable prefix (tools + system) with a fixed breakpoint so it is
-            # cache-read on every turn, and add a rolling breakpoint on the most recent
-            # message block to incrementally cache the growing conversation history.
-            #
-            # Without the system anchor the only breakpoint moves forward each turn, so the
-            # cached prefix is written at a different length every request and later turns
-            # rarely find a matching entry -- i.e. the cache is created but almost never hit.
-            system_param = _system_message_with_cache_control(system_message, cache_control)
+            system_message = _system_message_with_cache_control(system_message, cache_control)
             _add_cache_control_to_recent_block(message_params, cache_control)
-            return system_param, message_params
         else:
             raise ValueError(f'Unknown Anthropic cache strategy: {cache_strategy}')
 
     return system_message, message_params
 
 
+def _system_param_from_message(message: ChatMessage) -> AnthropicSystemParam:
+    if isinstance(message.content, str):
+        block_cache_control = _cache_control_from_internal(message.internal)
+        if not block_cache_control:
+            return message.content
+        block = TextBlockParam(type='text', text=message.content or NO_CONTENT)
+        _add_cache_control(cast(Dict[str, Any], block), block_cache_control)
+        return [block]
+
+    blocks: List[TextBlockParam] = []
+    for content in message.content:
+        if content.type != 'text':
+            continue
+        block = TextBlockParam(type='text', text=content.text or NO_CONTENT)
+        _preserve_cache_control(cast(Dict[str, Any], block), content.internal)
+        blocks.append(block)
+    return blocks if blocks else message.text
+
+
+def _merge_system_message(
+    current: Optional[AnthropicSystemParam],
+    new_value: AnthropicSystemParam,
+) -> AnthropicSystemParam:
+    if current is None:
+        return new_value
+    if isinstance(current, str) and isinstance(new_value, str):
+        return f'{current}\n\n{new_value}'
+    return _system_blocks(current) + [TextBlockParam(type='text', text='\n\n')] + _system_blocks(new_value)
+
+
+def _system_blocks(value: AnthropicSystemParam) -> List[TextBlockParam]:
+    if isinstance(value, str):
+        return [TextBlockParam(type='text', text=value)]
+    return value
+
+
 def _system_message_with_cache_control(
-    system_message: Optional[str],
+    system_message: Optional[AnthropicSystemParam],
     cache_control: Dict[str, Any],
 ) -> Optional[List[TextBlockParam]]:
     if not system_message:
         return None
 
-    system_blocks = [TextBlockParam(type='text', text=system_message)]
-    _add_cache_control(cast(Dict[str, Any], system_blocks[-1]), cache_control)
+    system_blocks = _system_blocks(system_message)
+    _add_cache_control_to_last_block_list(system_blocks, cache_control)
     return system_blocks
 
 
@@ -279,8 +328,12 @@ def _add_cache_control_to_recent_block(
     messages: List[MessageParam],
     cache_control: Dict[str, Any],
 ) -> None:
-    """Attach cache_control to the most recent cacheable message content block."""
-    _add_cache_control_to_last_block(messages, cache_control)
+    """Attach cache_control to the penultimate cacheable content block when possible."""
+    blocks = _cacheable_content_blocks(messages)
+    if not blocks:
+        return
+    block = blocks[-2] if len(blocks) >= 2 else blocks[-1]
+    _add_cache_control(block, cache_control)
 
 
 def _add_cache_control_to_last_block(
@@ -295,19 +348,44 @@ def _add_cache_control_to_last_block(
     return False
 
 
+def _cacheable_content_blocks(messages: List[MessageParam]) -> List[Dict[str, Any]]:
+    blocks: List[Dict[str, Any]] = []
+    for message in messages:
+        content = message['content']
+        if isinstance(content, str):
+            content = [TextBlockParam(type='text', text=content)]
+            message['content'] = content
+        for block in content:
+            if isinstance(block, dict) and _is_cacheable_content_block(block):
+                blocks.append(cast(Dict[str, Any], block))
+    return blocks
+
+
+def _add_cache_control_to_last_block_list(
+    blocks: List[TextBlockParam],
+    cache_control: Dict[str, Any],
+) -> bool:
+    for block in reversed(blocks):
+        if isinstance(block, dict):
+            _add_cache_control(cast(Dict[str, Any], block), cache_control)
+            return True
+    return False
+
+
 def _last_cacheable_content_block(message: MessageParam) -> Optional[Dict[str, Any]]:
     content = message['content']
-
     if isinstance(content, str):
         content = [TextBlockParam(type='text', text=content)]
         message['content'] = content
 
     for block in reversed(content):
-        if isinstance(block, dict):
-            block_type = block.get('type')
-            if block_type in ('text', 'image'):
-                return cast(Dict[str, Any], block)
+        if isinstance(block, dict) and _is_cacheable_content_block(block):
+            return cast(Dict[str, Any], block)
     return None
+
+
+def _is_cacheable_content_block(block: Dict[str, Any]) -> bool:
+    return block.get('type') in ('text', 'image')
 
 
 def _collapse_consecutive_messages(messages: List[MessageParam], role: Literal['user',
@@ -319,6 +397,7 @@ def _collapse_consecutive_messages(messages: List[MessageParam], role: Literal['
     result: List[MessageParam] = []
     for message in messages:
         if message['role'] == role and result and result[-1]['role'] == role:
+            # Combine with previous message
             result[-1] = _combine_messages(result[-1], message)
         else:
             result.append(message)
@@ -377,6 +456,10 @@ def anthropic_completion_params(model: str, config: GenerateConfig) -> Dict[str,
     # Extended thinking / reasoning
     if config.reasoning_tokens is not None:
         params['thinking'] = dict(type='enabled', budget_tokens=config.reasoning_tokens)
+
+    # Anthropic top-level automatic prompt caching.
+    if config.anthropic_cache_control and config.anthropic_cache_strategy == 'recent_messages':
+        params['cache_control'] = config.anthropic_cache_control.model_dump(exclude_none=True)
 
     # Extra body parameters
     if config.extra_body:

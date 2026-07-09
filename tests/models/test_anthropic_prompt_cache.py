@@ -3,9 +3,32 @@ import pytest
 from pydantic import ValidationError
 from types import SimpleNamespace
 
-from evalscope.api.messages import ChatMessageAssistant, ChatMessageSystem, ChatMessageTool, ChatMessageUser
+from evalscope.api.messages import (
+    ChatMessageAssistant,
+    ChatMessageSystem,
+    ChatMessageTool,
+    ChatMessageUser,
+    ContentText,
+)
 from evalscope.api.model import GenerateConfig
 from evalscope.api.tool import ToolCall, ToolFunction, ToolInfo
+
+
+def _anthropic_utils():
+    pytest.importorskip('anthropic')
+    from evalscope.models.utils import anthropic
+
+    return anthropic
+
+
+def _cache_control_blocks(messages):
+    blocks = []
+    for message in messages:
+        content = message['content']
+        if isinstance(content, str):
+            continue
+        blocks.extend(block for block in content if isinstance(block, dict) and 'cache_control' in block)
+    return blocks
 
 
 def test_anthropic_cache_control_accepts_typed_values():
@@ -27,12 +50,7 @@ def test_anthropic_cache_control_accepts_typed_values():
 
 def test_anthropic_cache_control_rejects_unknown_keys():
     with pytest.raises(ValidationError):
-        GenerateConfig(
-            anthropic_cache_control={
-                'type': 'ephemeral',
-                'unknown': True,
-            }
-        )
+        GenerateConfig(anthropic_cache_control={'type': 'ephemeral', 'unknown': True})
 
 
 def test_legacy_anthropic_content_cache_control_is_rejected():
@@ -40,24 +58,29 @@ def test_legacy_anthropic_content_cache_control_is_rejected():
         GenerateConfig(anthropic_content_cache_control={'type': 'ephemeral'})
 
 
-def _anthropic_utils():
-    pytest.importorskip('anthropic')
-    from evalscope.models.utils import anthropic
+def test_completion_params_do_not_enable_cache_by_default():
+    anthropic = _anthropic_utils()
 
-    return anthropic
+    params = anthropic.anthropic_completion_params('claude', GenerateConfig())
 
-
-def _cache_control_blocks(messages):
-    blocks = []
-    for message in messages:
-        content = message['content']
-        if isinstance(content, str):
-            continue
-        blocks.extend(block for block in content if isinstance(block, dict) and 'cache_control' in block)
-    return blocks
+    assert 'cache_control' not in params
 
 
-def test_evaluation_strategy_marks_system_and_fewshot_but_not_final_question():
+def test_recent_messages_sets_top_level_cache_control():
+    anthropic = _anthropic_utils()
+
+    params = anthropic.anthropic_completion_params(
+        'claude',
+        GenerateConfig(
+            anthropic_cache_control={'type': 'ephemeral', 'ttl': '5m'},
+            anthropic_cache_strategy='recent_messages',
+        ),
+    )
+
+    assert params['cache_control'] == {'type': 'ephemeral', 'ttl': '5m'}
+
+
+def test_evaluation_strategy_marks_system_tools_and_fewshot_but_not_final_question():
     anthropic = _anthropic_utils()
     cache_control = {'type': 'ephemeral'}
 
@@ -67,6 +90,14 @@ def test_evaluation_strategy_marks_system_and_fewshot_but_not_final_question():
             ChatMessageUser(content='Example question.'),
             ChatMessageAssistant(content='Example answer.'),
             ChatMessageUser(content='Current sample question.'),
+        ],
+        cache_control=cache_control,
+        cache_strategy='evaluation',
+    )
+    tools = anthropic.anthropic_chat_tools(
+        [
+            ToolInfo(name='search', description='Search docs.'),
+            ToolInfo(name='read', description='Read docs.'),
         ],
         cache_control=cache_control,
         cache_strategy='evaluation',
@@ -74,32 +105,20 @@ def test_evaluation_strategy_marks_system_and_fewshot_but_not_final_question():
 
     assert isinstance(system, list)
     assert system[-1]['cache_control'] == cache_control
+    assert tools[-1]['cache_control'] == cache_control
+    assert 'cache_control' not in tools[0]
     assert messages[-2]['content'][-1]['cache_control'] == cache_control
     assert 'cache_control' not in messages[-1]['content'][-1]
     assert len(_cache_control_blocks(messages)) == 1
 
 
-def test_evaluation_strategy_is_noop_without_stable_message_prefix():
-    anthropic = _anthropic_utils()
-
-    system, messages = anthropic.anthropic_chat_messages(
-        [ChatMessageUser(content='Current sample question.')],
-        cache_control={'type': 'ephemeral'},
-        cache_strategy='evaluation',
-    )
-
-    assert system is None
-    assert messages[0]['content'] == 'Current sample question.'
-    assert _cache_control_blocks(messages) == []
-
-
-def test_recent_messages_strategy_anchors_system_and_marks_tail_block():
+def test_recent_messages_anchors_system_tools_and_penultimate_message_block():
     anthropic = _anthropic_utils()
     cache_control = {'type': 'ephemeral'}
 
     system, messages = anthropic.anthropic_chat_messages(
         [
-            ChatMessageSystem(content='Stable evaluator instructions.'),
+            ChatMessageSystem(content='Stable agent instructions.'),
             ChatMessageUser(content='First turn.'),
             ChatMessageAssistant(content='First answer.'),
             ChatMessageUser(content='Second turn.'),
@@ -107,85 +126,83 @@ def test_recent_messages_strategy_anchors_system_and_marks_tail_block():
         cache_control=cache_control,
         cache_strategy='recent_messages',
     )
+    tools = anthropic.anthropic_chat_tools(
+        [ToolInfo(name='search', description='Search docs.')],
+        cache_control=cache_control,
+        cache_strategy='recent_messages',
+    )
 
-    # The stable system prefix is anchored with a fixed breakpoint so it is cache-read
-    # on every turn; without it the only breakpoint moves each turn and rarely gets a hit.
-    assert system == [{
-        'type': 'text',
-        'text': 'Stable evaluator instructions.',
-        'cache_control': cache_control,
-    }]
-    # A rolling breakpoint still marks the most recent message block for the growing history.
+    assert system == [{'type': 'text', 'text': 'Stable agent instructions.', 'cache_control': cache_control}]
+    assert tools[-1]['cache_control'] == cache_control
     assert len(_cache_control_blocks(messages)) == 1
-    assert messages[-1]['content'][-1]['cache_control'] == cache_control
-    assert 'cache_control' not in messages[-2]['content'][-1]
+    assert messages[-2]['content'][-1]['cache_control'] == cache_control
+    assert 'cache_control' not in messages[-1]['content'][-1]
 
 
-def test_cache_control_none_leaves_message_shape_unchanged():
+def test_user_supplied_cache_control_is_preserved_and_not_overwritten():
     anthropic = _anthropic_utils()
+    explicit = {'type': 'ephemeral', 'ttl': '1h'}
+    automatic = {'type': 'ephemeral', 'ttl': '5m'}
 
     system, messages = anthropic.anthropic_chat_messages(
         [
-            ChatMessageSystem(content='Stable evaluator instructions.'),
-            ChatMessageUser(content='Current sample question.'),
+            ChatMessageSystem(
+                content=[ContentText(text='Stable.', internal={'anthropic': {'cache_control': explicit}})]
+            ),
+            ChatMessageUser(
+                content=[ContentText(text='Question.', internal={'anthropic': {'cache_control': explicit}})]
+            ),
         ],
-        cache_control=None,
+        cache_control=automatic,
+        cache_strategy='recent_messages',
     )
 
-    assert system == 'Stable evaluator instructions.'
-    assert messages == [{
-        'role': 'user',
-        'content': 'Current sample question.',
-    }]
+    assert system[-1]['cache_control'] == explicit
+    assert messages[-1]['content'][-1]['cache_control'] == explicit
 
 
-def test_tool_cache_control_marks_only_last_tool_in_evaluation_strategy():
+def test_cache_control_skips_tool_result_blocks_for_automatic_marker():
     anthropic = _anthropic_utils()
-    cache_control = {'type': 'ephemeral'}
 
-    tools = anthropic.anthropic_chat_tools(
-        [
-            ToolInfo(name='search', description='Search docs.'),
-            ToolInfo(name='read', description='Read docs.'),
-        ],
-        cache_control=cache_control,
-        cache_strategy='evaluation',
+    messages = [
+        ChatMessageUser(content='What is the weather?'),
+        ChatMessageAssistant(
+            content='',
+            tool_calls=[ToolCall(id='call_123', function=ToolFunction(name='get_weather', arguments={'city': 'SF'}))],
+        ),
+        ChatMessageTool(tool_call_id='call_123', content='Sunny, 72F'),
+    ]
+
+    system, message_params = anthropic.anthropic_chat_messages(
+        messages, cache_control={'type': 'ephemeral'}, cache_strategy='recent_messages'
     )
 
-    assert 'cache_control' not in tools[0]
-    assert tools[1]['cache_control'] == cache_control
+    assert system is None
+    assert len(_cache_control_blocks(message_params)) == 1
+    assert message_params[0]['content'][-1]['cache_control'] == {'type': 'ephemeral'}
+
+    tool_result_block = [
+        block
+        for message in message_params
+        for block in message.get('content', [])
+        if isinstance(block, dict) and block.get('type') == 'tool_result'
+    ][0]
+    assert 'cache_control' not in tool_result_block
 
 
-def test_evaluation_strategy_stays_under_anthropic_breakpoint_limit():
+def test_tool_result_explicit_cache_control_is_preserved():
     anthropic = _anthropic_utils()
-    cache_control = {'type': 'ephemeral'}
+    cache_control = {'type': 'ephemeral', 'ttl': '1h'}
 
-    system, messages = anthropic.anthropic_chat_messages(
-        [
-            ChatMessageSystem(content='Stable evaluator instructions.'),
-            ChatMessageUser(content='Example question.'),
-            ChatMessageAssistant(content='Example answer.'),
-            ChatMessageUser(content='Current sample question.'),
-        ],
-        cache_control=cache_control,
-        cache_strategy='evaluation',
-    )
-    tools = anthropic.anthropic_chat_tools(
-        [
-            ToolInfo(name='search', description='Search docs.'),
-            ToolInfo(name='read', description='Read docs.'),
-        ],
-        cache_control=cache_control,
-        cache_strategy='evaluation',
+    message = ChatMessageTool(
+        tool_call_id='call_123',
+        content='Sunny',
+        internal={'anthropic': {'cache_control': cache_control}},
     )
 
-    system_blocks = [block for block in system if 'cache_control' in block]
-    tool_blocks = [tool for tool in tools if 'cache_control' in tool]
-    message_blocks = _cache_control_blocks(messages)
-    breakpoint_count = len(system_blocks) + len(tool_blocks) + len(message_blocks)
+    message_param = anthropic.anthropic_message_param(message)
 
-    assert breakpoint_count == 3
-    assert breakpoint_count <= anthropic.MAX_ANTHROPIC_CACHE_CONTROL_BLOCKS
+    assert message_param['content'][0]['cache_control'] == cache_control
 
 
 class _FakeUsage:
@@ -310,91 +327,3 @@ def test_async_collect_stream_response_preserves_cache_usage(monkeypatch):
     assert message.usage.output_tokens == 2
     assert message.usage.cache_creation_input_tokens == 3
     assert message.usage.cache_read_input_tokens == 4
-
-
-def test_cache_control_skips_tool_result_blocks():
-    anthropic = _anthropic_utils()
-
-    messages = [
-        ChatMessageUser(content='What is the weather?'),
-        ChatMessageAssistant(
-            content='',
-            tool_calls=[ToolCall(id='call_123', function=ToolFunction(name='get_weather', arguments={'city': 'SF'}))],
-        ),
-        ChatMessageTool(tool_call_id='call_123', content='Sunny, 72F'),
-    ]
-
-    system, message_params = anthropic.anthropic_chat_messages(
-        messages, cache_control={'type': 'ephemeral'}, cache_strategy='recent_messages'
-    )
-
-    assert system is None
-    assert len(_cache_control_blocks(message_params)) == 1
-    assert message_params[0]['content'][-1]['cache_control'] == {'type': 'ephemeral'}
-
-    tool_result_msgs = [
-        m
-        for m in message_params
-        if any(b.get('type') == 'tool_result' for b in m.get('content', []) if isinstance(b, dict))
-    ]
-    assert len(tool_result_msgs) == 1
-
-    tool_result_block = [
-        b for b in tool_result_msgs[0]['content'] if isinstance(b, dict) and b.get('type') == 'tool_result'
-    ][0]
-    assert 'cache_control' not in tool_result_block
-
-
-def test_consecutive_tool_results_collapse_into_immediate_user_message():
-    anthropic = _anthropic_utils()
-
-    messages = [
-        ChatMessageAssistant(
-            content='',
-            tool_calls=[
-                ToolCall(id='call_1', function=ToolFunction(name='get_weather', arguments={'city': 'SF'})),
-                ToolCall(id='call_2', function=ToolFunction(name='get_time', arguments={'city': 'SF'})),
-            ],
-        ),
-        ChatMessageTool(tool_call_id='call_1', content='Sunny, 72F'),
-        ChatMessageTool(tool_call_id='call_2', content='10:00 AM'),
-    ]
-
-    system, message_params = anthropic.anthropic_chat_messages(messages)
-
-    assert system is None
-    assert len(message_params) == 2
-    assert message_params[0]['role'] == 'assistant'
-    assert message_params[1]['role'] == 'user'
-
-    tool_use_ids = [
-        block['id']
-        for block in message_params[0]['content']
-        if isinstance(block, dict) and block.get('type') == 'tool_use'
-    ]
-    tool_result_ids = [
-        block['tool_use_id']
-        for block in message_params[1]['content']
-        if isinstance(block, dict) and block.get('type') == 'tool_result'
-    ]
-    assert tool_use_ids == ['call_1', 'call_2']
-    assert tool_result_ids == ['call_1', 'call_2']
-
-
-def test_last_cacheable_block_skips_tool_blocks():
-    anthropic = _anthropic_utils()
-    from anthropic.types import MessageParam, TextBlockParam, ToolResultBlockParam
-
-    message = MessageParam(
-        role='user',
-        content=[
-            TextBlockParam(type='text', text='Result:'),
-            ToolResultBlockParam(type='tool_result', tool_use_id='call_123', content='data'),
-        ],
-    )
-
-    block = anthropic._last_cacheable_content_block(message)
-
-    assert block is not None
-    assert block['type'] == 'text'
-    assert block['text'] == 'Result:'

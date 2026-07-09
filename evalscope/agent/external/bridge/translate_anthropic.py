@@ -1,7 +1,8 @@
 """Anthropic Messages API ⇄ EvalScope native type translation.
 
-P0 scope: text + ``tool_use`` + ``tool_result`` blocks, no streaming, no
-``cache_control``, no extended-thinking blocks.  See
+P0 scope: text + ``tool_use`` + ``tool_result`` blocks, no extended-thinking
+blocks.  Anthropic ``cache_control`` markers are preserved through EvalScope
+provider-specific ``internal`` / ``options`` fields.  See
 ``.qoder/plans/agent_bridge_design.md`` §7.4 for known-lossy cases.
 """
 
@@ -14,6 +15,7 @@ from evalscope.api.messages import (
     ChatMessageSystem,
     ChatMessageTool,
     ChatMessageUser,
+    ContentText,
 )
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolCallError, ToolFunction, ToolInfo, ToolParams
@@ -47,9 +49,10 @@ def anthropic_request_to_messages(body: Dict[str, Any]) -> List[ChatMessage]:
     if isinstance(system, str) and system:
         messages.append(ChatMessageSystem(content=system))
     elif isinstance(system, list):
-        text = ''.join(b.get('text', '') for b in system if isinstance(b, dict) and b.get('type') == 'text')
-        if text:
-            messages.append(ChatMessageSystem(content=text))
+        content = [_content_text_from_block(b) for b in system if isinstance(b, dict) and b.get('type') == 'text']
+        content = [c for c in content if c.text]
+        if content:
+            messages.append(ChatMessageSystem(content=content))
 
     for entry in body.get('messages') or []:
         if not isinstance(entry, dict):
@@ -68,21 +71,21 @@ def _user_blocks_to_messages(content: Any) -> List[ChatMessage]:
         return [ChatMessageUser(content=content)]
     if not isinstance(content, list):
         return []
-    user_text_parts: List[str] = []
+    user_content: List[ContentText] = []
     tool_msgs: List[ChatMessage] = []
     for block in content:
         if not isinstance(block, dict):
             continue
         btype = block.get('type')
         if btype == 'text':
-            user_text_parts.append(block.get('text', ''))
+            user_content.append(_content_text_from_block(block))
         elif btype == 'tool_result':
             tool_msgs.append(_tool_result_to_message(block))
     # Tool results precede any new user text so the model sees the
     # observation first, then the new prompt (matches OpenAI ordering).
     out: List[ChatMessage] = list(tool_msgs)
-    if user_text_parts:
-        out.append(ChatMessageUser(content='\n'.join(p for p in user_text_parts if p)))
+    if user_content:
+        out.append(ChatMessageUser(content=_content_or_text(user_content)))
     return out
 
 
@@ -98,13 +101,14 @@ def _tool_result_to_message(block: Dict[str, Any]) -> ChatMessageTool:
         content=text,
         tool_call_id=block.get('tool_use_id'),
         error=error,
+        internal=_anthropic_internal_from_block(block),
     )
 
 
 def _assistant_blocks_to_message(content: Any) -> ChatMessageAssistant:
     if isinstance(content, str):
         return ChatMessageAssistant(content=content)
-    text_parts: List[str] = []
+    text_content: List[ContentText] = []
     tool_calls: List[ToolCall] = []
     if isinstance(content, list):
         for block in content:
@@ -112,7 +116,7 @@ def _assistant_blocks_to_message(content: Any) -> ChatMessageAssistant:
                 continue
             btype = block.get('type')
             if btype == 'text':
-                text_parts.append(block.get('text', ''))
+                text_content.append(_content_text_from_block(block))
             elif btype == 'tool_use':
                 tool_calls.append(
                     ToolCall(
@@ -121,12 +125,40 @@ def _assistant_blocks_to_message(content: Any) -> ChatMessageAssistant:
                             name=block.get('name', ''),
                             arguments=block.get('input') or {},
                         ),
+                        internal=_anthropic_internal_from_block(block),
                         type='function',
                     )
                 )
     return ChatMessageAssistant(
-        content='\n'.join(p for p in text_parts if p),
+        content=_content_or_text(text_content),
         tool_calls=tool_calls or None,
+    )
+
+
+def _content_text_from_block(block: Dict[str, Any]) -> ContentText:
+    return ContentText(
+        text=block.get('text', ''),
+        internal=_anthropic_internal_from_block(block),
+    )
+
+
+def _content_or_text(content: List[ContentText]) -> Any:
+    if any(_has_anthropic_cache_control(c.internal) for c in content):
+        return content
+    return '\n'.join(c.text for c in content if c.text)
+
+
+def _anthropic_internal_from_block(block: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    cache_control = block.get('cache_control')
+    if isinstance(cache_control, dict):
+        return {'anthropic': {'cache_control': cache_control}}
+    return None
+
+
+def _has_anthropic_cache_control(internal: Any) -> bool:
+    return (
+        isinstance(internal, dict) and isinstance(internal.get('anthropic'), dict)
+        and isinstance(internal['anthropic'].get('cache_control'), dict)
     )
 
 
@@ -142,11 +174,14 @@ def anthropic_tools_to_tool_infos(tools: Sequence[Dict[str, Any]]) -> List[ToolI
             continue
         schema = spec.get('input_schema') or {}
         params = ToolParams() if not isinstance(schema, dict) else _safe_tool_params(schema)
-        out.append(ToolInfo(
-            name=name,
-            description=spec.get('description', '') or '',
-            parameters=params,
-        ))
+        out.append(
+            ToolInfo(
+                name=name,
+                description=spec.get('description', '') or '',
+                parameters=params,
+                options=_anthropic_internal_from_block(spec),
+            )
+        )
     return out
 
 
@@ -185,7 +220,7 @@ def model_output_to_anthropic_response(
         blocks.append({'type': 'text', 'text': ''})
 
     stop_reason = map_stop_reason_to_anthropic(output.choices[0].stop_reason if output.choices else 'stop')
-    usage = output.usage
+    usage = anthropic_usage_payload(output.usage)
     return {
         'id': output.id or f'msg_{uuid.uuid4().hex[:24]}',
         'type': 'message',
@@ -194,10 +229,7 @@ def model_output_to_anthropic_response(
         'model': request_model or output.model or '',
         'stop_reason': stop_reason,
         'stop_sequence': None,
-        'usage': {
-            'input_tokens': usage.input_tokens if usage else 0,
-            'output_tokens': usage.output_tokens if usage else 0,
-        },
+        'usage': usage,
     }
 
 
@@ -218,3 +250,15 @@ def map_stop_reason_to_anthropic(reason: str) -> str:
     table lives in exactly one place.
     """
     return _STOP_REASON_MAP.get(reason, 'end_turn')
+
+
+def anthropic_usage_payload(usage: Any) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        'input_tokens': usage.input_tokens if usage else 0,
+        'output_tokens': usage.output_tokens if usage else 0,
+    }
+    if usage and usage.input_tokens_cache_write is not None:
+        payload['cache_creation_input_tokens'] = usage.input_tokens_cache_write
+    if usage and usage.input_tokens_cache_read is not None:
+        payload['cache_read_input_tokens'] = usage.input_tokens_cache_read
+    return payload

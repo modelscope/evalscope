@@ -914,7 +914,30 @@ def _build_generate_config(body: Dict[str, Any]) -> GenerateConfig:
         kwargs['top_p'] = body['top_p']
     if 'stop_sequences' in body and body['stop_sequences']:
         kwargs['stop_seqs'] = list(body['stop_sequences'])
+    cache_control = body.get('cache_control')
+    if isinstance(cache_control, dict) and not _has_anthropic_block_cache_control(body):
+        kwargs['anthropic_cache_control'] = cache_control
+        kwargs['anthropic_cache_strategy'] = 'recent_messages'
     return GenerateConfig(**kwargs)
+
+
+def _has_anthropic_block_cache_control(body: Dict[str, Any]) -> bool:
+    if _has_cache_control_marker(body.get('system')):
+        return True
+    if any(isinstance(tool, dict) and isinstance(tool.get('cache_control'), dict) for tool in body.get('tools') or []):
+        return True
+    return any(
+        isinstance(message, dict) and _has_cache_control_marker(message.get('content'))
+        for message in body.get('messages') or []
+    )
+
+
+def _has_cache_control_marker(value: Any) -> bool:
+    if isinstance(value, dict):
+        return isinstance(value.get('cache_control'), dict) or _has_cache_control_marker(value.get('content'))
+    if isinstance(value, list):
+        return any(_has_cache_control_marker(item) for item in value)
+    return False
 
 
 def _build_openai_generate_config(body: Dict[str, Any]) -> GenerateConfig:

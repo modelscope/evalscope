@@ -112,16 +112,13 @@ class GenerateConfig(BaseModel):
     """Maximum number of tokens to use for reasoning. Anthropic Claude models only."""
 
     anthropic_cache_control: Optional[AnthropicCacheControl] = Field(default=None)
-    """Anthropic prompt cache control.
-
-    For prompt caching, set this to ``{"type": "ephemeral"}`` to add explicit cache breakpoints.
-    """
+    """Anthropic prompt cache control. Set to ``{"type": "ephemeral"}`` to enable prompt caching."""
 
     anthropic_cache_strategy: Literal['evaluation', 'recent_messages'] = Field(default='evaluation')
     """Anthropic prompt cache breakpoint placement strategy.
 
     ``evaluation`` caches stable evaluation prefixes such as tools, system prompts, and few-shot examples.
-    ``recent_messages`` caches the most recent message content block for multi-turn agent workloads.
+    ``recent_messages`` caches stable agent prefixes and the growing multi-turn conversation history.
     """
 
     reasoning_summary: Optional[Literal['concise', 'detailed', 'auto']] = Field(default=None)
