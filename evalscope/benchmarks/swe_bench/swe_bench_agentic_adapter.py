@@ -376,7 +376,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
             'image': image,
             'command': 'tail -f /dev/null',
             'working_dir': self.working_dir,
-            'environment': {
+            'env_vars': {
                 'PAGER': 'cat',
                 'MANPAGER': 'cat',
                 'LESS': '-R',

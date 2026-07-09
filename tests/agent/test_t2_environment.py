@@ -331,6 +331,14 @@ class TestEnclaveEnvironmentInterpreter:
         env = adapter.build_environment(sample)
 
         assert env._interpreter == ['bash', '-lc']
+        assert 'environment' not in env._sandbox_config_dict
+        assert env._sandbox_config_dict['env_vars'] == {
+            'PAGER': 'cat',
+            'MANPAGER': 'cat',
+            'LESS': '-R',
+            'PIP_PROGRESS_BAR': 'off',
+            'TQDM_DISABLE': '1',
+        }
 
     def test_swe_bench_pro_adapter_uses_login_interpreter(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from evalscope.benchmarks.swe_bench_pro.swe_bench_pro_agentic_adapter import SWEBenchProAgenticAdapter
@@ -347,6 +355,60 @@ class TestEnclaveEnvironmentInterpreter:
         env = adapter.build_environment(sample)
 
         assert env._interpreter == ['bash', '-lc']
+        assert 'environment' not in env._sandbox_config_dict
+        assert env._sandbox_config_dict['env_vars'] == {
+            'PAGER': 'cat',
+            'MANPAGER': 'cat',
+            'LESS': '-R',
+            'PIP_PROGRESS_BAR': 'off',
+            'TQDM_DISABLE': '1',
+        }
+
+    def test_gaia_adapter_uses_env_vars_sandbox_config(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalscope.benchmarks.gaia.gaia_adapter import GaiaAdapter
+
+        _allow_enclave_construction(monkeypatch)
+        adapter = object.__new__(GaiaAdapter)
+        adapter.docker_image = 'python:3.11'
+        adapter.network_enabled = True
+        adapter.command_timeout = 180.0
+        adapter._host_files_dir = None
+        sample = types.SimpleNamespace(metadata={'task_id': 'example'})
+
+        env = adapter.build_environment(sample)
+
+        assert 'environment' not in env._sandbox_config_dict
+        assert env._sandbox_config_dict['env_vars'] == {
+            'PAGER': 'cat',
+            'MANPAGER': 'cat',
+            'PIP_PROGRESS_BAR': 'off',
+            'TQDM_DISABLE': '1',
+        }
+
+    def test_gdpval_adapter_uses_env_vars_sandbox_config(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalscope.api.benchmark import BenchmarkMeta
+        from evalscope.benchmarks.gdpval.gdpval_adapter import GDPvalAdapter
+
+        _allow_enclave_construction(monkeypatch)
+        adapter = object.__new__(GDPvalAdapter)
+        adapter._benchmark_meta = BenchmarkMeta(name='gdpval', dataset_id='dummy')
+        adapter.docker_image = 'evalscope/gdpval:latest'
+        adapter.network_enabled = True
+        adapter.command_timeout = 180.0
+        adapter._current_output_dir = None
+        adapter._ensure_docker_image = lambda: None
+        sample = types.SimpleNamespace(id='example', metadata={'task_id': 'example'})
+
+        env = adapter.build_environment(sample)
+
+        sandbox_env = env._env
+        assert 'environment' not in sandbox_env._sandbox_config_dict
+        assert sandbox_env._sandbox_config_dict['env_vars'] == {
+            'PAGER': 'cat',
+            'MANPAGER': 'cat',
+            'PIP_PROGRESS_BAR': 'off',
+            'TQDM_DISABLE': '1',
+        }
 
 
 # ===========================================================================

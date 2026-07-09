@@ -337,7 +337,7 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
             'working_dir': self.working_dir,
             'pull_progress': True,
             'pull_progress_interval': 5.0,
-            'environment': {
+            'env_vars': {
                 'PAGER': 'cat',
                 'MANPAGER': 'cat',
                 'LESS': '-R',
