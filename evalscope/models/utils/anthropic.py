@@ -272,7 +272,7 @@ def _system_param_from_message(message: ChatMessage) -> AnthropicSystemParam:
         block_cache_control = _cache_control_from_internal(message.internal)
         if not block_cache_control:
             return message.content
-        block = TextBlockParam(type='text', text=message.content or NO_CONTENT)
+        block = cast(TextBlockParam, {'type': 'text', 'text': message.content or NO_CONTENT})
         _add_cache_control(cast(Dict[str, Any], block), block_cache_control)
         return [block]
 
@@ -280,7 +280,7 @@ def _system_param_from_message(message: ChatMessage) -> AnthropicSystemParam:
     for content in message.content:
         if content.type != 'text':
             continue
-        block = TextBlockParam(type='text', text=content.text or NO_CONTENT)
+        block = cast(TextBlockParam, {'type': 'text', 'text': content.text or NO_CONTENT})
         _preserve_cache_control(cast(Dict[str, Any], block), content.internal)
         blocks.append(block)
     return blocks if blocks else message.text
@@ -294,12 +294,15 @@ def _merge_system_message(
         return new_value
     if isinstance(current, str) and isinstance(new_value, str):
         return f'{current}\n\n{new_value}'
-    return _system_blocks(current) + [TextBlockParam(type='text', text='\n\n')] + _system_blocks(new_value)
+    return _system_blocks(current) + [cast(TextBlockParam, {
+        'type': 'text',
+        'text': '\n\n'
+    })] + _system_blocks(new_value)
 
 
 def _system_blocks(value: AnthropicSystemParam) -> List[TextBlockParam]:
     if isinstance(value, str):
-        return [TextBlockParam(type='text', text=value)]
+        return [cast(TextBlockParam, {'type': 'text', 'text': value})]
     return value
 
 
@@ -352,7 +355,7 @@ def _add_cache_control_to_last_block_list(
 def _last_cacheable_content_block(message: MessageParam) -> Optional[Dict[str, Any]]:
     content = message['content']
     if isinstance(content, str):
-        content = [TextBlockParam(type='text', text=content)]
+        content = [cast(TextBlockParam, {'type': 'text', 'text': content})]
         message['content'] = content
 
     for block in reversed(content):
