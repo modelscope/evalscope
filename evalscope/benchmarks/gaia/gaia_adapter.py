@@ -236,7 +236,7 @@ class GaiaAdapter(AgentLoopAdapter):
             'image': self.docker_image,
             'working_dir': '/workspace',
             'network_enabled': self.network_enabled,
-            'environment': {
+            'env_vars': {
                 'PAGER': 'cat',
                 'MANPAGER': 'cat',
                 'PIP_PROGRESS_BAR': 'off',
