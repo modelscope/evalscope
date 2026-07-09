@@ -11,7 +11,7 @@ from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLan
 from evalscope.api.dataset import DatasetDict, DatasetHub, MemoryDataset, Sample
 from evalscope.api.messages import ChatMessageUser, Content, ContentText, ContentVideo
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import HubType, Tags
+from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_character, prompt
 from evalscope.utils.url_utils import guess_video_format
@@ -85,24 +85,6 @@ optimized video archives.
         metric_list=['acc'],
         eval_split='train',
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER_COT,
-        extra_params={
-            'dataset_id': {
-                'type': 'str',
-                'description': 'Dataset repository ID or local dataset root for MVBench annotations and videos.',
-                'value': 'PKU-Alignment/MVBench',
-            },
-            'dataset_hub': {
-                'type': 'str',
-                'description': 'Dataset hub used to load annotations and video archives.',
-                'value': HubType.MODELSCOPE,
-                'choices': [HubType.HUGGINGFACE, HubType.MODELSCOPE, HubType.LOCAL],
-            },
-            'dataset_revision': {
-                'type': 'str',
-                'description': 'Optional dataset revision; leave empty to use the hub default.',
-                'value': '',
-            },
-        },
     )
 )
 class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
@@ -119,23 +101,10 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         return self._video_cache_dir
 
     @property
-    def source_dataset_id(self) -> str:
-        return self.extra_params.get('dataset_id') or self.dataset_id
-
-    @property
-    def source_dataset_hub(self) -> str:
-        return self.extra_params.get('dataset_hub') or HubType.MODELSCOPE
-
-    @property
-    def source_dataset_revision(self) -> Optional[str]:
-        return self.extra_params.get('dataset_revision') or None
-
-    @property
     def source_dataset(self) -> DatasetHub:
         return DatasetHub(
-            data_id_or_path=self.source_dataset_id,
-            data_source=self.source_dataset_hub,
-            revision=self.source_dataset_revision,
+            data_id_or_path=self.dataset_id,
+            data_source=self.dataset_hub,
             force_redownload=self.force_redownload,
         )
 
@@ -152,7 +121,7 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
                 samples = [self.record_to_sample(record) for record in records]
                 if self.repeats > 1:
                     samples = [copy.deepcopy(sample) for sample in samples for _ in range(self.repeats)]
-                dataset = MemoryDataset(samples=samples, name='mvbench', location=self.source_dataset_id)
+                dataset = MemoryDataset(samples=samples, name='mvbench', location=self.dataset_id)
                 dataset.reindex(group_size=self.repeats)
                 dataset_dict[subset] = dataset
 
@@ -162,7 +131,7 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         return self.test_dataset
 
     def _load_subset_records(self, subset: str) -> List[Dict[str, Any]]:
-        logger.info(f'Loading MVBench subset {subset} from {self.source_dataset_hub}: {self.source_dataset_id}.')
+        logger.info(f'Loading MVBench subset {subset} from {self.dataset_hub}: {self.dataset_id}.')
         dataset = self.source_dataset.load(split=self.eval_split, subset=subset)
         records = list(dataset)
         if not records:
@@ -210,8 +179,8 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
                 'start': start,
                 'end': end,
                 'fps': fps,
-                'dataset_id': self.source_dataset_id,
-                'dataset_hub': self.source_dataset_hub,
+                'dataset_id': self.dataset_id,
+                'dataset_hub': self.dataset_hub,
             },
         )
 
