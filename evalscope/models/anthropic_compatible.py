@@ -138,9 +138,14 @@ class AnthropicCompatibleAPI(ModelAPI):
 
         # Build completion parameters
         completion_params = self.completion_params(config)
+        explicit_cache_control = self.explicit_cache_control_params(config)
 
         # Convert messages to Anthropic format
-        system_message, messages = anthropic_chat_messages(input)
+        system_message, messages = anthropic_chat_messages(
+            input,
+            cache_control=explicit_cache_control,
+            cache_strategy=config.anthropic_cache_strategy,
+        )
 
         # Build request
         request = dict(
@@ -154,7 +159,11 @@ class AnthropicCompatibleAPI(ModelAPI):
 
         # Add tools if present
         if len(tools) > 0:
-            request['tools'] = anthropic_chat_tools(tools)
+            request['tools'] = anthropic_chat_tools(
+                tools,
+                cache_control=explicit_cache_control,
+                cache_strategy=config.anthropic_cache_strategy,
+            )
             request['tool_choice'] = anthropic_chat_tool_choice(tool_choice)
 
         # Handle streaming
@@ -218,8 +227,13 @@ class AnthropicCompatibleAPI(ModelAPI):
         tools, tool_choice, config = self.resolve_tools(tools, tool_choice, config)
 
         completion_params = self.completion_params(config)
+        explicit_cache_control = self.explicit_cache_control_params(config)
 
-        system_message, messages = anthropic_chat_messages(input)
+        system_message, messages = anthropic_chat_messages(
+            input,
+            cache_control=explicit_cache_control,
+            cache_strategy=config.anthropic_cache_strategy,
+        )
 
         request = dict(
             messages=messages,
@@ -230,7 +244,11 @@ class AnthropicCompatibleAPI(ModelAPI):
             request['system'] = system_message
 
         if len(tools) > 0:
-            request['tools'] = anthropic_chat_tools(tools)
+            request['tools'] = anthropic_chat_tools(
+                tools,
+                cache_control=explicit_cache_control,
+                cache_strategy=config.anthropic_cache_strategy,
+            )
             request['tool_choice'] = anthropic_chat_tool_choice(tool_choice)
 
         if config.stream:
@@ -285,6 +303,18 @@ class AnthropicCompatibleAPI(ModelAPI):
             model=self.model_name,
             config=config,
         )
+
+    def cache_control_params(self, config: GenerateConfig) -> Optional[Dict[str, Any]]:
+        """Build Anthropic cache_control parameters from config."""
+        if config.anthropic_cache_control is None:
+            return None
+        return config.anthropic_cache_control.model_dump(exclude_none=True)
+
+    def explicit_cache_control_params(self, config: GenerateConfig) -> Optional[Dict[str, Any]]:
+        """Return cache_control only for strategies that require explicit breakpoints."""
+        if config.anthropic_cache_strategy != 'evaluation':
+            return None
+        return self.cache_control_params(config)
 
     def validate_request_params(self, params: Dict[str, Any]):
         """Hook for subclasses to do custom request parameter validation."""

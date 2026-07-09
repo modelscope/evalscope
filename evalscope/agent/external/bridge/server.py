@@ -914,6 +914,10 @@ def _build_generate_config(body: Dict[str, Any]) -> GenerateConfig:
         kwargs['top_p'] = body['top_p']
     if 'stop_sequences' in body and body['stop_sequences']:
         kwargs['stop_seqs'] = list(body['stop_sequences'])
+    cache_control = body.get('cache_control')
+    if isinstance(cache_control, dict):
+        kwargs['anthropic_cache_control'] = cache_control
+        kwargs['anthropic_cache_strategy'] = 'recent_messages'
     return GenerateConfig(**kwargs)
 
 
