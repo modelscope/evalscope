@@ -67,8 +67,8 @@ class ToolathlonServiceClient:
         self.output_dir = Path(config.output_dir)
 
     def run_private(self) -> Dict[str, Any]:
-        check_import('httpx', raise_error=True, feature_name='Toolathlon')
-        check_import('websockets', raise_error=True, feature_name='Toolathlon')
+        check_import('httpx', extra='toolathlon', raise_error=True, feature_name='Toolathlon')
+        check_import('websockets', extra='toolathlon', raise_error=True, feature_name='Toolathlon')
 
         self._prepare_output_dir()
         job = self._submit_job()
@@ -79,7 +79,7 @@ class ToolathlonServiceClient:
 
         ws_process = self._start_ws_client(job_id)
         try:
-            self._poll_until_finished(job_id)
+            self._poll_until_finished(job_id, ws_process)
         finally:
             self._stop_process(ws_process)
 
@@ -144,11 +144,11 @@ class ToolathlonServiceClient:
         return data
 
     def _start_ws_client(self, job_id: str) -> subprocess.Popen:
-        script = Path(__file__).with_name('ws_client.py')
         log_file = self.output_dir / 'ws_client.log'
         command = [
             sys.executable,
-            str(script),
+            '-m',
+            'evalscope.benchmarks.toolathlon.ws_client',
             '--server-url',
             self.config.ws_server_url,
             '--llm-base-url',
@@ -161,14 +161,18 @@ class ToolathlonServiceClient:
         with open(log_file, 'w', encoding='utf-8') as log:
             return subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
 
-    def _poll_until_finished(self, job_id: str) -> None:
+    def _poll_until_finished(self, job_id: str, ws_process: subprocess.Popen) -> None:
         import httpx
 
-        start_time = time.time()
+        start_time = time.monotonic()
         downloaded_tasks = set()
         with httpx.Client(timeout=30.0, trust_env=self.config.trust_env_in_httpx) as client:
             while True:
-                if time.time() - start_time > self.config.timeout_seconds:
+                exit_code = ws_process.poll()
+                if exit_code is not None:
+                    self._cancel_job(job_id, 'WebSocket relay exited')
+                    raise RuntimeError(f'Toolathlon WebSocket relay exited unexpectedly with code {exit_code}.')
+                if time.monotonic() - start_time > self.config.timeout_seconds:
                     self._cancel_job(job_id, 'Timeout')
                     raise TimeoutError(f'Toolathlon job exceeded {self.config.timeout_seconds} seconds.')
 
@@ -225,7 +229,7 @@ class ToolathlonServiceClient:
         finalpool_dir = self.output_dir / 'finalpool'
         finalpool_dir.mkdir(parents=True, exist_ok=True)
         with tarfile.open(fileobj=_BytesIO(archive_bytes), mode='r:gz') as archive:
-            archive.extractall(finalpool_dir)
+            _extract_tar_safely(archive, finalpool_dir)
 
     def _download_static_files(self, client: Any, job_id: str) -> None:
         response = client.get(f'{self.config.server_url}/get_static_files', params={'job_id': job_id}, timeout=60.0)
@@ -235,7 +239,7 @@ class ToolathlonServiceClient:
         for filename, content in response.json().items():
             if content is None:
                 continue
-            target = self.output_dir / filename
+            target = _resolve_output_path(self.output_dir, filename)
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(content, encoding='utf-8')
 
@@ -327,6 +331,26 @@ def _BytesIO(content: bytes) -> Any:
     return BytesIO(content)
 
 
+def _extract_tar_safely(archive: tarfile.TarFile, destination: Path) -> None:
+    destination = destination.resolve()
+    members = archive.getmembers()
+    for member in members:
+        if member.issym() or member.islnk() or not (member.isfile() or member.isdir()):
+            raise RuntimeError(f'Unsafe Toolathlon archive member type: {member.name}')
+        _resolve_output_path(destination, member.name)
+    archive.extractall(destination, members=members)
+
+
+def _resolve_output_path(base_dir: Path, relative_path: str) -> Path:
+    base = base_dir.resolve()
+    target = (base / relative_path).resolve()
+    try:
+        target.relative_to(base)
+    except ValueError as exc:
+        raise RuntimeError(f'Unsafe Toolathlon output path: {relative_path}') from exc
+    return target
+
+
 async def run_ws_proxy(server_url: str, llm_base_url: str, llm_api_key: str, job_id: str) -> None:
     import httpx
     from websockets import connect
@@ -354,7 +378,7 @@ async def run_ws_proxy(server_url: str, llm_base_url: str, llm_api_key: str, job
                 request = await request_queue.get()
                 task = asyncio.create_task(process_request(request))
                 active_tasks.add(task)
-                active_tasks = {item for item in active_tasks if not item.done()}
+                task.add_done_callback(active_tasks.discard)
 
         async def process_request(request: Dict[str, Any]) -> None:
             request_id = request['request_id']
@@ -364,7 +388,7 @@ async def run_ws_proxy(server_url: str, llm_base_url: str, llm_api_key: str, job
                 for key, value in request.items()
                 if key not in {'request_id', 'pushed', '_server_push_time'} and not key.startswith('_')
             }
-            headers = {'Authorization': f'Bearer {llm_api_key}'}
+            headers = {'Authorization': f'Bearer {llm_api_key}'} if llm_api_key else {}
             try:
                 async with httpx.AsyncClient(timeout=600.0) as client:
                     response = await client.post(f'{llm_base_url}{endpoint}', json=payload, headers=headers)
