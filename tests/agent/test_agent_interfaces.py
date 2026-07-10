@@ -147,6 +147,10 @@ class TestAgentTypesBehavior(unittest.TestCase):
         with self.assertRaises(ValueError):
             NativeAgentConfig(command_timeout=0)
 
+    def test_agent_config_rejects_invalid_max_steps(self):
+        with self.assertRaises(ValueError):
+            NativeAgentConfig(max_steps=0)
+
     def test_parsed_action_dataclass_defaults(self):
         pa = ParsedAction()
         self.assertEqual(pa.tool_calls, [])

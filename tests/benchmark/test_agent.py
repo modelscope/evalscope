@@ -1,7 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import json
 import sys
-import tempfile
 from dotenv import dotenv_values, load_dotenv
 from pathlib import Path
 from unittest.mock import patch
@@ -57,24 +56,23 @@ class TestAgentBenchmark(TestBenchmark):
 
     def test_browsecomp(self):
         """Test BrowseComp benchmark end-to-end."""
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            config_overrides = {
-                'collect_perf': False,
-                'debug': False,
-                'eval_batch_size': 1,
-                'limit': 1,
-                'no_timestamp': True,
-                'work_dir': tmp_dir,
-            }
-            if not env.get('DASHSCOPE_API_KEY'):
-                config_overrides['judge_strategy'] = JudgeStrategy.RULE
+        config_overrides = {
+            'collect_perf': False,
+            'debug': False,
+            'eval_batch_size': 1,
+            'limit': 1,
+            'no_timestamp': True,
+            'work_dir': 'outputs/test_agent_browsecomp',
+        }
+        if not env.get('DASHSCOPE_API_KEY'):
+            config_overrides['judge_strategy'] = JudgeStrategy.RULE
 
-            self._run_dataset_test('browsecomp', **config_overrides)
+        self._run_dataset_test('browsecomp', **config_overrides)
 
-            review_files = list(Path(tmp_dir).glob('reviews/*/browsecomp_default.jsonl'))
-            self.assertEqual(len(review_files), 1)
-            review = json.loads(review_files[0].read_text(encoding='utf-8').strip())
-            self.assertNotIn('canary', review['sample_score']['sample_metadata'])
+        review_files = list(Path('outputs/test_agent_browsecomp').glob('reviews/*/browsecomp_default.jsonl'))
+        self.assertEqual(len(review_files), 1)
+        review = json.loads(review_files[0].read_text(encoding='utf-8').strip())
+        self.assertNotIn('canary', review['sample_score']['sample_metadata'])
 
     def test_swe_bench_verified_agentic(self):
         """Test SWE-bench-verified agentic dataset using docker environment."""
@@ -249,27 +247,26 @@ class TestAgentBenchmark(TestBenchmark):
             }
         }
 
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            with patch.object(ToolathlonAdapter, 'client_cls', FakeToolathlonClient):
-                self._run_dataset_test(
-                    'toolathlon',
-                    dataset_args,
-                    use_mock=True,
-                    limit=1,
-                    eval_batch_size=1,
-                    no_timestamp=True,
-                    work_dir=tmp_dir,
-                    api_url='http://localhost:8000/v1',
-                    api_key='local-key',
-                )
+        with patch.object(ToolathlonAdapter, 'client_cls', FakeToolathlonClient):
+            self._run_dataset_test(
+                'toolathlon',
+                dataset_args,
+                use_mock=True,
+                limit=1,
+                eval_batch_size=1,
+                no_timestamp=True,
+                work_dir='outputs/test_agent_toolathlon',
+                api_url='http://localhost:8000/v1',
+                api_key='local-key',
+            )
 
-            self.assertIsNotNone(FakeToolathlonClient.last_config)
-            self.assertEqual(FakeToolathlonClient.last_config.base_url, 'http://localhost:8000/v1')
-            self.assertEqual(FakeToolathlonClient.last_config.api_key, 'local-key')
-            self.assertEqual(FakeToolathlonClient.last_config.task_list, ['find-alita-paper'])
-            self.assertEqual(FakeToolathlonClient.last_config.model_params['temperature'], 0.0)
-            self.assertNotIn('retries', FakeToolathlonClient.last_config.model_params)
-            self.assertNotIn('batch_size', FakeToolathlonClient.last_config.model_params)
+        self.assertIsNotNone(FakeToolathlonClient.last_config)
+        self.assertEqual(FakeToolathlonClient.last_config.base_url, 'http://localhost:8000/v1')
+        self.assertEqual(FakeToolathlonClient.last_config.api_key, 'local-key')
+        self.assertEqual(FakeToolathlonClient.last_config.task_list, ['find-alita-paper'])
+        self.assertEqual(FakeToolathlonClient.last_config.model_params['temperature'], 0.0)
+        self.assertNotIn('retries', FakeToolathlonClient.last_config.model_params)
+        self.assertNotIn('batch_size', FakeToolathlonClient.last_config.model_params)
 
     def test_swe_bench_verified_agentic_backticks(self):
         """Test SWE-bench-verified agentic dataset with backticks protocol."""

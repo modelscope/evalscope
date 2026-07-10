@@ -89,6 +89,13 @@ class NativeAgentConfig(BaseAgentConfig):
     ``mcp_servers`` (the default) do not require ``pip install mcp``.
     """
 
+    @field_validator('max_steps')
+    @classmethod
+    def _validate_max_steps(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError('max_steps must be greater than 0.')
+        return v
+
     @field_validator('command_timeout')
     @classmethod
     def _validate_command_timeout(cls, v: Optional[float]) -> Optional[float]:
