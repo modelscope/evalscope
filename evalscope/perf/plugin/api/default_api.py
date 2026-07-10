@@ -23,6 +23,29 @@ class StreamedResponseHandler:
         # Keep decoder state across chunks to handle split multibyte sequences
         self.decoder = codecs.getincrementaldecoder('utf-8')()
 
+    @staticmethod
+    def _extract_sse_payload(message: str) -> str | None:
+        """Extract and flatten the 'data:' field(s) from an SSE message block.
+
+        SSE message blocks may contain multiple fields (id:, event:, retry:,
+        data:, ...). Only the 'data:' field(s) carry the JSON payload; other
+        fields are metadata and must be skipped, otherwise they would be fed
+        into ``json.loads`` and raise ``JSONDecodeError``. Multiple 'data:'
+        lines are flattened into a single line so downstream consumers that
+        only recognize one leading 'data:' prefix (e.g. this class itself and
+        ``_extract_sse_data`` in ``openai_responses_api.py``) don't silently
+        drop continuation lines.
+        """
+        data_values: list[str] = []
+        for line in message.strip().splitlines():
+            if line.startswith('data:'):
+                data_values.append(line.removeprefix('data:').lstrip(' '))
+
+        if not data_values:
+            return None
+        payload = ''.join(data_values).strip()
+        return f'data: {payload}' if payload else None
+
     def add_chunk(self, chunk_bytes: bytes) -> list[str]:
         """Add a chunk of bytes to the buffer and return any complete
         messages."""
@@ -42,31 +65,26 @@ class StreamedResponseHandler:
         # Split by double newlines (SSE message separator)
         while '\n\n' in self.buffer:
             message, self.buffer = self.buffer.split('\n\n', 1)
-            message = message.strip()
-            if message:
-                # Extract the 'data:' field from multi-line SSE format.
-                # SSE message may contain: id:..., event:..., data:..., etc.
-                data_values: list[str] = []
-                for line in message.splitlines():
-                    if line.startswith('data:'):
-                        data_values.append(line.removeprefix('data:').lstrip(' '))
+            normalized_message = self._extract_sse_payload(message)
+            if normalized_message:
+                messages.append(normalized_message)
 
-                if data_values:
-                    payload = ''.join(data_values).strip()
-                    if payload:
-                        messages.append(f'data: {payload}')
-
-        # if self.buffer is not empty, check if it is a complete message
-        # by removing data: prefix and check if it is a valid JSON
-        if self.buffer.startswith('data:'):
-            message_content = self.buffer.removeprefix('data:').strip()
+        # If self.buffer is not empty, check if it is a complete message by
+        # extracting the 'data:' field(s) and checking if it is valid JSON.
+        # This must reuse the same extraction as above, otherwise a leftover
+        # chunk that starts with metadata fields (id:/event:) instead of
+        # 'data:' would get stuck in the buffer forever when the stream ends
+        # without a trailing "\n\n" separator.
+        normalized_buffer = self._extract_sse_payload(self.buffer)
+        if normalized_buffer:
+            message_content = normalized_buffer.removeprefix('data:').strip()
             if message_content == '[DONE]':
-                messages.append(self.buffer.strip())
+                messages.append(normalized_buffer)
                 self.buffer = ''
             elif message_content:
                 try:
                     json.loads(message_content)
-                    messages.append(self.buffer.strip())
+                    messages.append(normalized_buffer)
                     self.buffer = ''
                 except json.JSONDecodeError:
                     # Incomplete JSON, wait for more chunks.
