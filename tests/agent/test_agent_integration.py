@@ -17,9 +17,9 @@ import evalscope  # noqa: F401 - trigger strategy registration
 from evalscope.api.agent import AgentTrace, EventType, NativeAgentConfig
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.benchmark.adapters.default_data_adapter import DefaultDataAdapter
-from evalscope.api.dataset import Sample
+from evalscope.api.dataset import MemoryDataset, Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.evaluator.cache import ReviewResult
+from evalscope.api.evaluator.cache import ModelResult, ReviewResult
 from evalscope.api.messages import ChatMessageAssistant, ChatMessageUser
 from evalscope.api.metric import SampleScore, Score
 from evalscope.api.model.model_output import ChatCompletionChoice, ModelOutput
@@ -111,6 +111,24 @@ class TestTaskStateAgentTrace(unittest.TestCase):
         state = self._make_state()
         self.assertFalse(hasattr(state, 'trajectory'))
         self.assertFalse(hasattr(state, 'add_trajectory_step'))
+
+    def test_prediction_cache_roundtrip_preserves_agent_trace(self):
+        state = self._make_state()
+        trace = AgentTrace(strategy='function_calling', environment='local', max_steps=3)
+        trace.add_event(step=0, type=EventType.MODEL_GENERATE)
+        state.agent_trace = trace
+
+        cached = ModelResult.from_task_state(state)
+        restored = ModelResult.model_validate_json(cached.model_dump_json()).to_task_state(
+            dataset=MemoryDataset([
+                Sample(id=0, input='unused'),
+                Sample(id=1, input='hi', target='ok'),
+            ])
+        )
+
+        self.assertIsNotNone(restored.agent_trace)
+        self.assertEqual(restored.agent_trace.strategy, 'function_calling')
+        self.assertEqual(restored.agent_trace.events[0].type, EventType.MODEL_GENERATE)
 
 
 class TestReviewResultAgentTrace(unittest.TestCase):
