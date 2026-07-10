@@ -47,8 +47,8 @@ TriviaQA is a large-scale reading comprehension dataset containing over 650K que
 | Metric | Value |
 |--------|-------|
 | Total Samples | 7,993 |
-| Prompt Length (Mean) | 54126.56 chars |
-| Prompt Length (Min/Max) | 339 / 691325 chars |
+| Prompt Length (Mean) | 53522.95 chars |
+| Prompt Length (Min/Max) | 329 / 691315 chars |
 
 ## Sample Example
 
@@ -58,8 +58,8 @@ TriviaQA is a large-scale reading comprehension dataset containing over 650K que
 {
   "input": [
     {
-      "id": "545e4eda",
-      "content": "Read the content and answer the following question.\n\nContent: ['Andrew Lloyd Webber, Baron Lloyd-Webber   (born 22 March 1948) is an English composer and impresario of musical theatre. \\n\\nSeveral of his musicals have run for more than a deca ... [TRUNCATED] ... ening titles.']\n\nQuestion: Which Lloyd Webber musical premiered in the US on 10th December 1993?\n\nKeep your The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n"
+      "id": "3813a170",
+      "content": "Read the content and answer the following question.\n\nContent: ['Andrew Lloyd Webber, Baron Lloyd-Webber   (born 22 March 1948) is an English composer and impresario of musical theatre. \\n\\nSeveral of his musicals have run for more than a deca ... [TRUNCATED 32057 chars] ... show\\'s opening titles.']\n\nQuestion: Which Lloyd Webber musical premiered in the US on 10th December 1993?\n\nThe last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n"
     }
   ],
   "target": [
@@ -78,13 +78,11 @@ TriviaQA is a large-scale reading comprehension dataset containing over 650K que
   "metadata": {
     "question_id": "tc_33",
     "content": [
-      "Andrew Lloyd Webber, Baron Lloyd-Webber   (born 22 March 1948) is an English composer and impresario of musical theatre. \n\nSeveral of his musicals have run for more than a decade both in the West End and on Broadway. He has composed 13 musica ... [TRUNCATED] ... same name, composed the song \"Fields of Sun\". The actual song was never used on the show, nor was it available on the CD soundtrack that was released at the time. He was however still credited for the unused song in the show's opening titles."
+      "Andrew Lloyd Webber, Baron Lloyd-Webber   (born 22 March 1948) is an English composer and impresario of musical theatre. \n\nSeveral of his musicals have run for more than a decade both in the West End and on Broadway. He has composed 13 musica ... [TRUNCATED 31402 chars] ... same name, composed the song \"Fields of Sun\". The actual song was never used on the show, nor was it available on the CD soundtrack that was released at the time. He was however still credited for the unused song in the show's opening titles."
     ]
   }
 }
 ```
-
-*Note: Some content was truncated for display.*
 
 ## Prompt Template
 
@@ -96,7 +94,7 @@ Content: {content}
 
 Question: {question}
 
-Keep your The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem.
+The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem.
 
 ```
 
