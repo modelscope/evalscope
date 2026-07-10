@@ -3,20 +3,20 @@
 
 ## 概述
 
-MSVD 是一个经典的视频描述（video captioning）基准测试，包含大量带有多个人工标注字幕的短视频。
-原生适配器将每个视频视为一个评估样本，并使用所有可用字幕作为参考。
+MSVD 是一个经典的视频描述（video captioning）基准数据集，包含大量带有多个人工标注字幕的短视频。
+原生适配器将每个视频视为一个评估样本，并使用所有可用的字幕作为参考。
 
 ## 任务描述
 
 - **任务类型**：视频描述（Video captioning）
 - **输入**：视频片段
-- **输出**：一条简洁的自然语言字幕
+- **输出**：一条简洁的自然语言描述
 - **领域**：开放域视频理解与描述
 
 ## 评估说明
 
 - 默认数据源：ModelScope 上的 `evalscope/MSVD`，使用 `test` 划分
-- 通过设置 `extra_params.dataset_hub="huggingface"`，仍可使用 Hugging Face 上的 `VLM2Vec/MSVD`
+- 通过在 TaskConfig 中设置 `dataset_hub="huggingface"`，仍可使用 Hugging Face 的 `VLM2Vec/MSVD`
 - 主要指标：**CIDEr**
 - 其他指标：BLEU-1/2/3/4、METEOR、ROUGE-L
 - 当数据集仅提供视频文件名且需要本地媒体文件时，请设置 `extra_params.video_dir`
@@ -109,11 +109,8 @@ Describe the video in one concise sentence.
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `dataset_hub` | `str` | `modelscope` | 用于加载 MSVD 标注的数据集平台。选项：['huggingface', 'modelscope', 'local'] |
-| `eval_split` | `str` | `` | 要加载的数据划分；默认为 test。 |
-| `dataset_revision` | `str` | `` | 可选的数据集版本；留空则使用平台默认版本。 |
-| `video_dir` | `str` | `` | 包含 MSVD 视频文件的本地目录（可选）。 |
-| `video_extension` | `str` | `` | 本地视频文件的扩展名覆盖项（可选），例如 "mp4"。 |
+| `video_dir` | `str` | `` | 可选，包含 MSVD 视频文件的本地目录。 |
+| `video_extension` | `str` | `` | 可选，用于覆盖本地视频的扩展名，例如 "mp4"。 |
 
 ## 使用方法
 

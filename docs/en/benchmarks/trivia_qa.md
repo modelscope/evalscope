@@ -84,6 +84,8 @@ TriviaQA is a large-scale reading comprehension dataset containing over 650K que
 }
 ```
 
+*Note: Some content was truncated for display.*
+
 ## Prompt Template
 
 **Prompt Template:**
