@@ -28,22 +28,19 @@ pip install 'evalscope[app,perf]' -U
 ```shell
 evalscope perf \
     --model qwen-vl-plus-latest \
-    --url https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions \
+    --base-url https://dashscope.aliyuncs.com/compatible-mode/v1 \
     --api-key "API_KEY" \
-    --parallel 1 2 5 \
-    --number 4 8 20 \
-    --api openai \
-    --dataset random_vl \
+    --load '{"mode":"closed_loop","concurrency":1,"request_count":4}' \
+    --load '{"mode":"closed_loop","concurrency":2,"request_count":8}' \
+    --load '{"mode":"closed_loop","concurrency":5,"request_count":20}' \
+    --protocol openai_chat \
+    --workload random_vl \
     --min-tokens 128 \
     --max-tokens 128 \
-    --prefix-length 0 \
     --min-prompt-length 100 \
     --max-prompt-length 100 \
-    --image-width 512 \
-    --image-height 512 \
-    --image-format RGB \
-    --image-num 1 \
-    --tokenizer-path Qwen/Qwen3-VL-235B-A22B-Instruct
+    --workload-options '{"prefix_length":0,"image_width":512,"image_height":512,"image_format":"RGB","image_num":1}' \
+    --tokenizer Qwen/Qwen3-VL-235B-A22B-Instruct
 
 ```
 

@@ -42,15 +42,14 @@ Before officially evaluating the model, you can test the performance of the infe
 
 ```bash
 evalscope perf \
- --parallel 10 \
- --url http://127.0.0.1:8801/v1/chat/completions \
+ --concurrency 10 \
+ --base-url http://127.0.0.1:8801/v1 \
  --model DeepSeek-R1-Distill-Qwen-1.5B \
- --log-every-n-query 5 \
  --connect-timeout 6000 \
  --read-timeout 6000 \
- --api openai \
- --prompt 'Write a science fiction novel, no less than 2000 words, please start your performance' \
- -n 100
+ --protocol openai_chat \
+ --workload prompt --prompt 'Write a science fiction novel, no less than 2000 words, please start your performance' \
+ --requests 100
 ```
 
 For parameter explanations, please refer to the [Performance Evaluation Quick Start](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html).

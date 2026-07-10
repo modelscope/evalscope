@@ -15,7 +15,7 @@ The Flask service encapsulates EvalScope's core evaluation (eval) and stress tes
 ## Features
 
 - **Model Evaluation** (`/api/v1/eval`): Support evaluation of OpenAI API-compatible models, request parameters refer to [documentation](../get_started/parameters.md)
-- **Performance Testing** (`/api/v1/perf`): Support performance benchmarking of OpenAI API-compatible models, request parameters refer to [documentation](./stress_test/parameters.md)
+- **Performance Testing** (`/api/v1/perf/invoke`): Run typed performance suites against supported HTTP protocols; request parameters refer to [documentation](./stress_test/parameters.md)
 
 ## Environment Setup
 
@@ -134,39 +134,38 @@ For detailed parameter descriptions, refer to: [Evaluation Parameter Documentati
 ### 3. Performance Testing
 
 ```bash
-POST /api/v1/perf
+POST /api/v1/perf/invoke
 ```
 
 **Request Body Example:**
 ```json
 {
-  "model": "qwen-plus",
-  "url": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
-  "api": "openai",
-  "api_key": "your-api-key",
-  "number": 100,
-  "parallel": 10,
-  "dataset": "openqa",
-  "max_tokens": 2048,
-  "temperature": 0.0
+  "target": {
+    "model": "qwen-plus",
+    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "protocol": "openai_chat",
+    "api_key": "your-api-key"
+  },
+  "workload": {"name": "openqa"},
+  "generation": {"max_tokens": 2048, "temperature": 0.0},
+  "suite": {
+    "loads": [
+      {"mode": "closed_loop", "concurrency": 10, "request_count": 100}
+    ]
+  }
 }
 ```
 
 **Required Parameters:**
-- `model`: Model name
-- `url`: Complete API endpoint URL
+- `target`: Model, base URL, protocol, authentication, and timeout configuration
+- `suite.loads`: Explicit closed-loop, open-loop, or conversation load specifications
 
 **Optional Parameters:**
-- `api`: API type (openai/dashscope/anthropic/gemini, default: "openai")
-- `api_key`: API key
-- `number`: Total number of requests (default: 1000)
-- `parallel`: Concurrency level (default: 1)
-- `rate`: Requests per second limit (default: -1, unlimited)
-- `dataset`: Dataset name (default: "openqa")
-- `max_tokens`: Maximum generation tokens (default: 2048)
-- `temperature`: Temperature parameter (default: 0.0)
-- `stream`: Whether to use streaming output (default: true)
-- `debug`: Debug mode
+- `workload`: Dataset/workload source and plugin options
+- `generation`: Request generation parameters
+- `runtime`: Seed, bounded queue, progress, and visualizer settings
+- `metrics`: Workload aggregation windows
+- `sla`: Optional typed SLA search configuration
 
 ```{seealso}
 For detailed parameter descriptions, refer to: [Performance Parameter Documentation](./stress_test/parameters.md)
@@ -175,14 +174,18 @@ For detailed parameter descriptions, refer to: [Performance Parameter Documentat
 **Response Example:**
 ```json
 {
-  "status": "success",
-  "message": "Performance test completed",
-  "output_dir": "/path/to/outputs",
-  "results": {
-    "parallel_10_number_100": {
-      "metrics": {"...": "..."},
-      "percentiles": {"...": "..."}
-    }
+  "status": "completed",
+  "task_id": "perf-demo",
+  "result": {
+    "run_id": "perf",
+    "runs": [
+      {
+        "run_spec": {"load_id": "load-000", "...": "..."},
+        "summary": {"...": "..."},
+        "percentiles": {"...": "..."}
+      }
+    ],
+    "artifacts": {"...": "..."}
   }
 }
 ```
@@ -206,14 +209,13 @@ curl -X POST http://localhost:9000/api/v1/eval \
 ### Testing Performance Endpoint with curl
 
 ```bash
-curl -X POST http://localhost:9000/api/v1/perf \
+curl -X POST http://localhost:9000/api/v1/perf/invoke \
   -H "Content-Type: application/json" \
+  -H "EvalScope-Task-Id: perf-demo" \
   -d '{
-    "model": "qwen-plus",
-    "url": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
-    "api": "openai",
-    "number": 50,
-    "parallel": 5
+    "target": {"model": "qwen-plus", "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1", "protocol": "openai_chat"},
+    "workload": {"name": "openqa"},
+    "suite": {"loads": [{"mode": "closed_loop", "concurrency": 5, "request_count": 50}]}
   }'
 ```
 
@@ -241,14 +243,16 @@ print(eval_response.json())
 
 # Performance test request
 perf_response = requests.post(
-    'http://localhost:9000/api/v1/perf',
+    'http://localhost:9000/api/v1/perf/invoke',
+    headers={'EvalScope-Task-Id': 'perf-demo'},
     json={
-        'model': 'qwen-plus',
-        'url': 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-        'api': 'openai',
-        'number': 100,
-        'parallel': 10,
-        'dataset': 'openqa'
+        'target': {
+            'model': 'qwen-plus',
+            'base_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'protocol': 'openai_chat'
+        },
+        'workload': {'name': 'openqa'},
+        'suite': {'loads': [{'mode': 'closed_loop', 'concurrency': 10, 'request_count': 100}]}
     }
 )
 print(perf_response.json())
@@ -287,15 +291,13 @@ curl -X POST http://localhost:9000/api/v1/eval \
 ### Scenario 2: Stress Testing Locally Deployed Model
 
 ```bash
-curl -X POST http://localhost:9000/api/v1/perf \
+curl -X POST http://localhost:9000/api/v1/perf/invoke \
   -H "Content-Type: application/json" \
+  -H "EvalScope-Task-Id: local-perf" \
   -d '{
-    "model": "qwen2.5",
-    "url": "http://localhost:8000/v1/chat/completions",
-    "api": "openai",
-    "number": 1000,
-    "parallel": 20,
-    "max_tokens": 2048
+    "target": {"model": "qwen2.5", "base_url": "http://localhost:8000/v1", "protocol": "openai_chat"},
+    "generation": {"max_tokens": 2048},
+    "suite": {"loads": [{"mode": "closed_loop", "concurrency": 20, "request_count": 1000}]}
   }'
 ```
 

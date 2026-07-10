@@ -64,10 +64,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e '.[dev,perf]'
 
-      - name: Create .env file
-        run: |
-          echo "DASHSCOPE_API_KEY=${{ secrets.DASHSCOPE_API_KEY }}" > .env
-
       - name: Run perf test
         run: |
-          python -m pytest tests/perf/test_perf_basic.py::TestPerfBasic::test_multi_parallel_sweep -v -s -p no:warnings
+          python -m pytest tests/perf -v -s -p no:warnings

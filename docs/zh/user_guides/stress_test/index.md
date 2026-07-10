@@ -6,6 +6,7 @@
 
 quick_start.md
 parameters.md
+architecture.md
 examples.md
 multi_turn.md
 sla_auto_tune.md

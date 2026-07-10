@@ -51,18 +51,22 @@ Run the following command:
 
 ```shell
 evalscope perf \
-    --url "http://127.0.0.1:8801/v1/chat/completions" \
-    --parallel 1 2 4 8 16 32 \
-    --number 5 10 20 40 80 160 \
+    --base-url "http://127.0.0.1:8801/v1" \
+    --load '{"mode":"closed_loop","concurrency":1,"request_count":5}' \
+    --load '{"mode":"closed_loop","concurrency":2,"request_count":10}' \
+    --load '{"mode":"closed_loop","concurrency":4,"request_count":20}' \
+    --load '{"mode":"closed_loop","concurrency":8,"request_count":40}' \
+    --load '{"mode":"closed_loop","concurrency":16,"request_count":80}' \
+    --load '{"mode":"closed_loop","concurrency":32,"request_count":160}' \
     --model Qwen3-Next-80B-A3B-Instruct \
-    --api openai \
-    --dataset random \
+    --protocol openai_chat \
+    --workload random \
     --min-prompt-length 1024 \
     --max-prompt-length 1024 \
     --min-tokens 256 \
     --max-tokens 256 \
-    --tokenizer-path Qwen/Qwen3-Next-80B-A3B-Instruct \
-    --extra-args '{"ignore_eos": true}'
+    --tokenizer Qwen/Qwen3-Next-80B-A3B-Instruct \
+    --generation-extra '{"ignore_eos": true}'
 ```
 
 For detailed parameter explanations, refer to [Performance Evaluation](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html).

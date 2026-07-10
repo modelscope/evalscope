@@ -58,14 +58,12 @@ for chunk in response:
 ```shell
 evalscope perf \
     --model Qwen/Qwen3-32B \
-    --url "https://api-inference.modelscope.cn/v1/chat/completions" \
+    --base-url "https://api-inference.modelscope.cn/v1" \
     --api-key "YOUR_MODELSCOPE_SDK_TOKEN" \
-    --parallel 5 \
-    --number 20 \
-    --api openai \
-    --dataset openqa \
-    --stream \
-    --wandb-api-key "YOUR_WANDB_API_KEY"  # Optional
+    --concurrency 5 \
+    --requests 20 \
+    --protocol openai_chat \
+    --workload openqa
 ```
 
 *   获取YOUR\_MODELSCOPE\_SDK\_TOKEN 可参考：[https://modelscope.cn/my/myaccesstoken](https://modelscope.cn/my/myaccesstoken)
@@ -89,13 +87,12 @@ VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 vllm serve Qwen/Qwen3-32B --gpu-
 
 ```shell
 evalscope perf \
-    --url "http://127.0.0.1:8801/v1/chat/completions" \
-    --parallel 5 \
+    --base-url "http://127.0.0.1:8801/v1" \
+    --concurrency 5 \
     --model Qwen3-32B \
-    --number 20 \
-    --api openai \
-    --dataset openqa \
-    --stream 
+    --requests 20 \
+    --protocol openai_chat \
+    --workload openqa
 ```
 
 参数说明具体可参考[性能评测](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html)

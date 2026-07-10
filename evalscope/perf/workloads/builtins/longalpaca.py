@@ -1,0 +1,28 @@
+import os
+from typing import Any, Dict, Iterator, List
+
+from evalscope.perf.workloads.builtins.base import DatasetConverterBase
+
+
+class LongAlpacaDatasetPlugin(DatasetConverterBase):
+    """Read data from file which is list of requests.
+           Sample: https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/files
+    """
+
+    def __init__(self, query_parameters):
+        super().__init__(query_parameters)
+
+    def build_messages(self) -> Iterator[List[Dict]]:
+        if self.query_parameters.dataset_path and os.path.isfile(self.query_parameters.dataset_path):
+            ds = self.dataset_json_list(self.query_parameters.dataset_path)
+        else:
+            ds = self.load_hub_dataset(dataset_id='AI-ModelScope/LongAlpaca-12k', split='train')
+        for item in ds:
+            prompt = item['instruction'].strip()
+            is_valid, _ = self.check_prompt_length(prompt)
+            if is_valid:
+                if self.query_parameters.apply_chat_template:
+                    message = self.create_message(prompt)
+                    yield [message]
+                else:
+                    yield prompt

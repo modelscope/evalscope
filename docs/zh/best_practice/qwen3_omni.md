@@ -53,22 +53,21 @@ VLLM_USE_MODELSCOPE=true vllm serve Qwen/Qwen3-Omni-30B-A3B-Instruct --port 8801
 ```shell
 evalscope perf \
     --model Qwen3-Omni-30B-A3B-Instruct \
-    --url http://localhost:8801/v1/chat/completions \
+    --base-url http://localhost:8801/v1 \
     --api-key "API_KEY" \
-    --parallel 1 5 10 50 100 \
-    --number 2 10 20 100 200 \
-    --api openai \
-    --dataset random_vl \
+    --load '{"mode":"closed_loop","concurrency":1,"request_count":2}' \
+    --load '{"mode":"closed_loop","concurrency":5,"request_count":10}' \
+    --load '{"mode":"closed_loop","concurrency":10,"request_count":20}' \
+    --load '{"mode":"closed_loop","concurrency":50,"request_count":100}' \
+    --load '{"mode":"closed_loop","concurrency":100,"request_count":200}' \
+    --protocol openai_chat \
+    --workload random_vl \
     --min-tokens 1024 \
     --max-tokens 1024 \
-    --prefix-length 0 \
     --min-prompt-length 1024 \
     --max-prompt-length 1024 \
-    --image-width 512 \
-    --image-height 512 \
-    --image-format RGB \
-    --image-num 1 \
-    --tokenizer-path Qwen/Qwen3-30B-A3B-Instruct-2507
+    --workload-options '{"prefix_length":0,"image_width":512,"image_height":512,"image_format":"RGB","image_num":1}' \
+    --tokenizer Qwen/Qwen3-30B-A3B-Instruct-2507
 ```
 
 输出报告如下：

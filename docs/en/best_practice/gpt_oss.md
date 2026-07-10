@@ -58,20 +58,21 @@ Test environment:
 Run the test script:
 ```bash
 evalscope perf \
-  --parallel 1 10 50 100 \
-  --number 5 20 100 200 \
+  --load '{"mode":"closed_loop","concurrency":1,"request_count":5}' \
+  --load '{"mode":"closed_loop","concurrency":10,"request_count":20}' \
+  --load '{"mode":"closed_loop","concurrency":50,"request_count":100}' \
+  --load '{"mode":"closed_loop","concurrency":100,"request_count":200}' \
   --model gpt-oss-20b \
-  --url http://127.0.0.1:8801/v1/completions \
-  --api openai \
-  --dataset random \
+  --base-url http://127.0.0.1:8801/v1 \
+  --protocol openai_chat \
+  --workload random \
   --max-tokens 1024 \
   --min-tokens 1024 \
-  --prefix-length 0 \
   --min-prompt-length 1024 \
   --max-prompt-length 1024 \
-  --log-every-n-query 20 \
-  --tokenizer-path openai-mirror/gpt-oss-20b \
-  --extra-args '{"ignore_eos": true}'
+  --workload-options '{"prefix_length":0}' \
+  --tokenizer openai-mirror/gpt-oss-20b \
+  --generation-extra '{"ignore_eos": true}'
 ```
 
 Output:

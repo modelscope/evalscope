@@ -1,0 +1,31 @@
+import json
+import os
+from typing import Any, Dict, Iterator, List
+
+from evalscope.perf.workloads.builtins.base import DatasetConverterBase
+
+
+class OpenqaDatasetConverter(DatasetConverterBase):
+    """Read dataset and return prompt.
+    Datasets: https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/resolve/master/open_qa.jsonl
+    """
+
+    def __init__(self, query_parameters):
+        super().__init__(query_parameters)
+
+    def build_messages(self) -> Iterator[List[Dict]]:
+        if not self.query_parameters.dataset_path or os.path.isdir(self.query_parameters.dataset_path):
+            self.query_parameters.dataset_path = self.download_hub_file(
+                dataset_id='AI-ModelScope/HC3-Chinese', file_name='open_qa.jsonl'
+            )
+
+        for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
+            item = json.loads(item)
+            prompt = item['question'].strip()
+            is_valid, _ = self.check_prompt_length(prompt)
+            if is_valid:
+                if self.query_parameters.apply_chat_template:
+                    message = self.create_message(prompt)
+                    yield [message]
+                else:
+                    yield prompt

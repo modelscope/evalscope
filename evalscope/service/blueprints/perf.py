@@ -1,11 +1,9 @@
 import json
 import os
 from flask import Blueprint, jsonify, request, send_file
-from tabulate import tabulate
+from pydantic import ValidationError
 
-from evalscope.perf.arguments import Arguments as PerfArguments
-from evalscope.perf.utils.benchmark_util import Metrics
-from evalscope.perf.utils.rich_display import EmbeddingResultAnalyzer, LLMResultAnalyzer
+from evalscope.perf import OutputConfig, PerfConfig
 from evalscope.utils.logger import get_logger
 from ..utils import (
     OUTPUT_DIR,
@@ -20,31 +18,6 @@ from ..utils import (
 
 logger = get_logger()
 
-
-def _build_perf_table(result, api_type: str = None) -> str:
-    """Build a Markdown pipe-table from perf benchmark results with Chinese headers.
-
-    Returns an empty string when no valid results are found.
-    """
-    try:
-        is_emb = Metrics.is_embedding_or_rerank(api_type)
-        analyzer = EmbeddingResultAnalyzer() if is_emb else LLMResultAnalyzer()
-        analysis = analyzer.analyze(result)
-        if not analysis.rows:
-            return ''
-        if is_emb:
-            headers = ['并发数', '请求速率', '每秒请求数', '平均延迟(s)', 'P99延迟(s)', '平均输入TPS', 'P99输入TPS', '平均输入Token数', '成功率']
-        else:
-            headers = [
-                '并发数', '请求速率', '请求数', '每秒请求数', '平均延迟(s)', 'P99延迟(s)', '平均首字延迟(s)', 'P99首字延迟(s)', '平均每Token延迟(s)',
-                'P99每Token延迟(s)', '生成速度(toks/s)', '成功率'
-            ]
-        return tabulate([list(r.values()) for r in analysis.rows], headers=headers, tablefmt='pipe')
-    except Exception as e:
-        logger.warning(f'Failed to build perf table: {e}')
-        return ''
-
-
 bp_perf = Blueprint('perf', __name__, url_prefix='/api/v1/perf')
 
 
@@ -58,7 +31,7 @@ def run_performance_test():
     if not data:
         return jsonify({'error': 'Request body is required'}), 400
 
-    required_fields = ['model', 'url']
+    required_fields = ['target', 'suite']
     for field in required_fields:
         if field not in data:
             return jsonify({'error': f'{field} is required'}), 400
@@ -71,31 +44,36 @@ def run_performance_test():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
 
-    # Default to openai API
-    if 'api' not in data:
-        data['api'] = 'openai'
+    try:
+        perf_args = PerfConfig.model_validate(data)
+    except ValidationError as e:
+        return jsonify({'error': 'Invalid performance configuration', 'details': e.errors(include_url=False)}), 400
+    perf_args = perf_args.model_copy(
+        update={
+            'output': OutputConfig(
+                root=os.path.join(OUTPUT_DIR, task_id),
+                run_id='perf',
+                overwrite=True,
+                html_report=True,
+                console_report=False,
+            ),
+            'runtime': perf_args.runtime.model_copy(update={'progress': True}),
+            'target': perf_args.target.model_copy(update={'skip_connection_test': True}),
+        }
+    )
 
-    perf_args = PerfArguments.from_dict(data)
-    perf_args.no_timestamp = True
-    perf_args.outputs_dir = os.path.join(OUTPUT_DIR, task_id)
-    perf_args.name = 'perf'
-    perf_args.enable_progress_tracker = True
-    perf_args.no_test_connection = True
-
-    logger.info(f'[{task_id}] Running performance benchmark for model: {perf_args.model}')
-    logger.info(f'[{task_id}] URL: {perf_args.url}')
+    logger.info(f'[{task_id}] Running performance benchmark for model: {perf_args.target.model}')
+    logger.info(f'[{task_id}] URL: {perf_args.target.base_url}')
 
     create_log_file(task_id, os.path.join('perf', 'benchmark.log'))
 
     try:
         result = run_in_subprocess(run_perf_wrapper, perf_args, task_id=task_id)
-        table_str = _build_perf_table(result, api_type=perf_args.api)
         logger.info(f'[{task_id}] Task completed successfully')
         return jsonify({
             'status': 'completed',
             'task_id': task_id,
             'result': serialize_result(result),
-            'table': table_str
         })
     except Exception as e:
         logger.error(f'[{task_id}] Task failed: {e}')

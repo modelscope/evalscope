@@ -42,15 +42,14 @@ LMDEPLOY_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server de
 
 ```bash
 evalscope perf \
- --parallel 10 \
- --url http://127.0.0.1:8801/v1/chat/completions \
+ --concurrency 10 \
+ --base-url http://127.0.0.1:8801/v1 \
  --model DeepSeek-R1-Distill-Qwen-1.5B \
- --log-every-n-query 5 \
  --connect-timeout 6000 \
  --read-timeout 6000 \
- --api openai \
- --prompt '写一个科幻小说，不少于2000字，请开始你的表演' \
- -n 100
+ --protocol openai_chat \
+ --workload prompt --prompt '写一个科幻小说，不少于2000字，请开始你的表演' \
+ --requests 100
 ```
 
 参数说明具体可参考[性能评测快速开始](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html)

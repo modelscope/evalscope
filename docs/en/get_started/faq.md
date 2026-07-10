@@ -197,41 +197,38 @@ Reference documentation: [Judge Model Parameters](https://evalscope.readthedocs.
 
 ### Basic Usage & Configuration
 
-**Q: What should I fill in for the `--url` parameter in `evalscope perf`?**
+**Q: What should I fill in for the `--base-url` parameter in `evalscope perf`?**
 
 **A:**
-- **General scenarios**: For most OpenAI API-compatible services, use the `/v1/chat/completions` endpoint.
-- **`speed_benchmark` dataset**: This specific dataset is used for testing completion performance and should be used with the `/v1/completions` endpoint to avoid overhead from Chat Template processing.
+- **General scenarios**: Use the service root ending in `/v1`; the selected protocol appends its endpoint.
+- **Full endpoint URLs**: They are accepted only when they match `--protocol`; mismatches fail before the run.
 
 **Q: How to use local files as stress test datasets?**
 
-**A:** Specify `--dataset-path` and set `--dataset line_by_line`. The program will read file content line by line as prompts.
+**A:** Specify `--workload-path` and set `--workload line_by_line`. The program reads the file line by line.
 
 **Q: How to use pre-downloaded datasets in offline environments?**
 
-**A:** Use `--dataset-path` to point to the local dataset path. Two approaches are supported:
+**A:** Use `--workload-path` with `--data-source local`. Two approaches are supported:
 
 - **Point to a directory** (for Arrow/Parquet format datasets like `flickr8k`, `kontext_bench`, `longalpaca`):
   ```bash
-  evalscope perf --dataset kontext_bench --dataset-path /path/to/local/kontext-bench ...
+  evalscope perf --workload kontext_bench --workload-path /path/to/local/kontext-bench --data-source local ...
   ```
 - **Point to a file** (for JSONL format datasets like `openqa`, `share_gpt_zh`):
   ```bash
-  evalscope perf --dataset openqa --dataset-path /path/to/open_qa.jsonl ...
+  evalscope perf --workload openqa --workload-path /path/to/open_qa.jsonl --data-source local ...
   ```
 
 You can also use `--data-source` to specify the data source (defaults to `modelscope`, can be switched to `huggingface`).
 
 **Q: How to stress test multimodal models?**
 
-**A:** Currently supports the `flickr8k` dataset for multimodal stress testing. Set `--dataset flickr8k`.
+**A:** Use a multimodal workload such as `flickr8k`, `kontext_bench`, or `random_vl` with `--workload`.
 
 **Q: How to set System Prompt during stress testing?**
 
-**A:** Pass it as a JSON string in the `model` parameter, for example:
-```shell
---model '{"model": "my-model", "system_prompt": "You are a helpful assistant."}'
-```
+**A:** Use `line_by_line` with an OpenAI message array containing the system and user messages.
 
 ### Performance Metrics & Troubleshooting
 

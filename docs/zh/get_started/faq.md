@@ -199,41 +199,38 @@ judge_model_args={
 
 ### 基本用法与配置
 
-**Q: `evalscope perf` 的 `--url` 参数应该填什么？**
+**Q: `evalscope perf` 的 `--base-url` 参数应该填什么？**
 
 **A:**
-- **通用场景**：对于大多数与 OpenAI API 兼容的服务，请使用 `/v1/chat/completions` 端点。
-- **`speed_benchmark` 数据集**：此特定数据集用于测试补全（completion）性能，需配合 `/v1/completions` 端点使用，以避免 Chat Template 处理带来的开销。
+- **通用场景**：填写以 `/v1` 结尾的服务根地址，具体 endpoint 由 protocol 自动追加。
+- **完整 endpoint**：只有与 `--protocol` 一致时才接受，不匹配会在运行前报错。
 
 **Q: 如何使用本地文件作为压测数据集？**
 
-**A:** 指定 `--dataset-path` 并设置 `--dataset line_by_line`，程序会逐行读取文件内容作为 Prompt。
+**A:** 指定 `--workload-path` 并设置 `--workload line_by_line`，程序会逐行读取文件。
 
 **Q: 离线环境下如何使用已下载的数据集？**
 
-**A:** 通过 `--dataset-path` 指向本地数据集路径即可。支持两种方式：
+**A:** 使用 `--workload-path` 并设置 `--data-source local`。支持两种方式：
 
 - **指向目录**（适用于Arrow/Parquet格式数据集，如 `flickr8k`、`kontext_bench`、`longalpaca`）：
   ```bash
-  evalscope perf --dataset kontext_bench --dataset-path /path/to/local/kontext-bench ...
+  evalscope perf --workload kontext_bench --workload-path /path/to/local/kontext-bench --data-source local ...
   ```
 - **指向文件**（适用于JSONL格式数据集，如 `openqa`、`share_gpt_zh`）：
   ```bash
-  evalscope perf --dataset openqa --dataset-path /path/to/open_qa.jsonl ...
+  evalscope perf --workload openqa --workload-path /path/to/open_qa.jsonl --data-source local ...
   ```
 
 还可以通过 `--data-source` 指定数据源（默认为 `modelscope`，可切换为 `huggingface`）。
 
 **Q: 如何压测多模态模型？**
 
-**A:** 目前支持 `flickr8k` 数据集进行多模态压测。设置 `--dataset flickr8k` 即可。
+**A:** 使用 `--workload` 选择 `flickr8k`、`kontext_bench` 或 `random_vl` 等多模态 workload。
 
 **Q: 压测时如何设置 System Prompt？**
 
-**A:** 在 `model` 参数中以 JSON 字符串形式传入，例如：
-```shell
---model '{"model": "my-model", "system_prompt": "You are a helpful assistant."}'
-```
+**A:** 使用 `line_by_line`，在 OpenAI 消息数组中同时提供 system 与 user 消息。
 
 ### 性能指标与问题排查
 

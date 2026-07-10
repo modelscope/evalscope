@@ -1,16 +1,16 @@
 import contextlib
 import io
 import multiprocessing
+import os
 import queue
 import sys
 import threading
 import traceback
 
 from evalscope.config import TaskConfig
-from evalscope.perf.arguments import Arguments as PerfArguments
-from evalscope.perf.main import run_perf_benchmark
+from evalscope.perf import PerfConfig, run_perf
 from evalscope.run import run_task
-from evalscope.utils.logger import get_logger
+from evalscope.utils.logger import configure_logging, get_logger
 
 logger = get_logger()
 
@@ -175,9 +175,11 @@ def run_eval_wrapper(task_config: TaskConfig):
     return run_task(task_config)
 
 
-def run_perf_wrapper(perf_args: PerfArguments):
+def run_perf_wrapper(perf_args: PerfConfig):
     """Run a performance benchmark and return the result."""
-    return run_perf_benchmark(perf_args)
+    run_id = perf_args.output.run_id or 'perf'
+    configure_logging(perf_args.runtime.debug, os.path.join(perf_args.output.root, run_id, 'benchmark.log'))
+    return run_perf(perf_args)
 
 
 def serialize_result(result):

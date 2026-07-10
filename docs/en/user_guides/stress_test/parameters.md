@@ -1,189 +1,33 @@
-# Parameter
+# Parameters
 
-Execute `evalscope perf --help` to get a full parameter description.
+Perf configuration is grouped by responsibility instead of one global argument object.
 
-## Basic Settings
+| Group | CLI examples | Python model |
+| --- | --- | --- |
+| Target | `--model`, `--protocol`, `--base-url`, `--api-key`, timeouts | `TargetConfig` |
+| Workload | `--workload`, `--workload-path`, `--data-source`, `--prompt` | `WorkloadConfig` |
+| Generation | `--max-tokens`, `--temperature`, `--top-p`, `--no-stream` | `GenerationConfig` |
+| Load | `--mode`, `--requests`, `--concurrency`, `--request-rate` | `ClosedLoopLoad`, `OpenLoopLoad`, `ConversationLoad` |
+| Runtime | `--seed`, `--dataset-workers`, `--queue-size`, `--progress` | `RuntimeConfig` |
+| Output | `--output-root`, `--run-id`, `--overwrite` | `OutputConfig` |
 
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `--model` | `str` | Name or path of the test model | - |
-| `--url` | `str` | API address, supporting `/chat/completions`, `/completions`, and `/responses` endpoints | - |
-| `--name` | `str` | Name for wandb/swanlab database result and result database | `{model_name}_{current_time}` |
-| `--api` | `str` | Service API type<br>• `openai`: OpenAI-compatible Chat Completions API (requires `--url`)<br>• `openai_responses`: OpenAI official Responses API<br>• `openai_embedding`: OpenAI-compatible Embedding API<br>• `openai_rerank`: OpenAI/Cohere-compatible Rerank API<br>• `local`: Start local transformers inference<br>• `local_vllm`: Start local vLLM inference service<br>• Custom: See [Custom API Guide](./custom.md#custom-api-requests) | - |
-| `--port` | `int` | Port for local inference service<br>Only applicable to `local` and `local_vllm` | `8877` |
-| `--attn-implementation` | `str` | Attention implementation method<br>Only effective when `api=local` | `None`<br>(Optional: `flash_attention_2`, `eager`, `sdpa`) |
-| `--api-key` | `str` | API key | `None` |
-| `--debug` | `bool` | Whether to output debug information | `False` |
+Load modes:
 
-## Network Configuration
+- `closed_loop`: requires `concurrency` and a request count or duration.
+- `open_loop`: requires `request_rate`, a request count or duration, and an explicit `max_outstanding` bound.
+- `conversation`: requires a conversation workload, concurrency, and a conversation count or duration.
 
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `--total-timeout` | `int` | Total timeout for each request (seconds) | `21600` (6 hours) |
-| `--connect-timeout` | `int` | Network connection timeout (seconds) | `None` |
-| `--read-timeout` | `int` | Network read timeout (seconds) | `None` |
-| `--headers` | `str` | Additional HTTP headers<br>Format: `key1=value1 key2=value2`<br>Will be used for each query | - |
-| `--no-test-connection` | `bool` | Do not send connection test, start stress test directly | `False` |
+Use repeatable `--load '<JSON>'` arguments for a suite. For example:
 
-## Request Control
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `--parallel` | `list[int]` | Number of concurrent requests<br>Can input multiple values separated by spaces | `1` |
-| `--number` | `list[int]` | Total number of requests to be sent<br>Can input multiple values (must correspond one-to-one with `parallel`) | `1000` |
-| `--rate` | `float` | Request scheduling rate (requests/second)<br>• `-1`: No rate pacing; in the default closed-loop mode, requests are scheduled as fast as possible, but the number of in-flight HTTP requests is still capped by `--parallel`, so requests are not all sent to the server at once<br>• `> 0`: Requests are scheduled following a Poisson arrival model — the inter-arrival interval follows an exponential distribution with mean `1/rate`, resulting in an **average** of `rate` scheduled requests per second | `-1` |
-| `--log-every-n-query` | `int` | Log every N queries | `100` |
-| `--stream` | `bool` | Whether to use SSE stream output<br>Must be enabled to measure TTFT (Time to First Token) metric | `True` |
-| `--sleep-interval` | `int` | Sleep time between each performance test (seconds)<br>Helps avoid overloading the server | `5` |
-| `--open-loop` | `bool` | Enable open-loop mode: dispatch requests following a Poisson arrival schedule without semaphore backpressure.<br>Requests are fired at the rate set by `--rate` regardless of whether the server has finished processing previous requests.<br>• `--rate` becomes the sweep variable (accepts multiple values), replacing `--parallel` to drive multi-run iterations<br>• `--number` must have the same length as `--rate`; each pair `(rate, number)` corresponds to one independent run<br>• `--parallel` is ignored in this mode (internally set to -1 / INF)<br>See [Usage Example](./examples.md#open-loop-mode) | `False` |
-| `--warmup-num` | `float` | Number or ratio of warmup requests:<br>• `0`: disabled (default)<br>• `>= 1`: absolute count, e.g. `--warmup-num 10` sends 10 warmup requests<br>• `0 < value < 1`: ratio mode, e.g. `--warmup-num 0.1` = 10% of `--number`<br>Warmup requests are sent with the same concurrency/rate as the benchmark but **excluded from performance metrics**<br>Useful for eliminating cold-start effects (KV-cache filling, JIT compilation, etc.)<br>See [Usage Example](./examples.md#warmup-benchmarking) | `0` |
-| `--duration` | `float` | Wall-clock budget for one benchmark run (seconds)<br>Soft-exit semantics: once the deadline elapses **no new requests are dispatched**, but **already in-flight requests are allowed to finish** before exit<br>In multi-turn mode "in-flight" means **already-claimed traces run every remaining turn** (trace-level soft exit, aligned with upstream trie)<br>When combined with `--number`, **whichever cap is hit first** ends the run | `None` |
-
-```{tip}
-**Closed-loop (default)** vs **Open-loop** (`--open-loop`) — parameter behaviour comparison:
-
-| | Closed-loop (default) | Open-loop (`--open-loop`) |
-|---|---|---|
-| **`--rate`** | Controls request scheduling rate (`-1` = no pacing, but still bounded by the `--parallel` concurrency cap; `R` = Poisson-arrival mean) | Controls dispatch rate; **must be > 0**; accepts multiple values (e.g. `5 10 20`), each driving one independent run |
-| **`--number`** | Total requests per run; must match `--parallel` in length | Total requests per run; must match `--rate` in **length** |
-| **`--parallel`** | Max in-flight requests; each worker waits for a response before sending the next (**backpressure**) | **Ignored**; concurrency is unbounded (INF); requests are fired on schedule without waiting for responses |
-| **Use case** | Measure latency and throughput under controlled concurrency | Simulate realistic traffic (arrivals independent of service time); sweep throughput-latency curve across multiple rates |
+```bash
+--load '{"mode":"closed_loop","concurrency":1,"request_count":100}' \
+--load '{"mode":"closed_loop","concurrency":8,"request_count":400}'
 ```
 
-## SLA Settings
+`--warmup-count` and `--warmup-ratio` are mutually exclusive. Unsupported workload/protocol/load combinations fail before network traffic starts.
 
-| Parameter | Type | Description | Default |
-|------|------|------|--------|
-| `--sla-auto-tune` | `bool` | Whether to enable SLA auto-tuning mode | `False` |
-| `--sla-variable` | `str` | Variable for auto-tuning<br>Options: `parallel` (concurrency), `rate` (request rate) | `parallel` |
-| `--sla-params` | `str` | SLA constraint conditions<br>JSON string<br>Supported metrics: `avg_latency`, `p99_latency`, `avg_ttft`, `p99_ttft`, `avg_tpot`, `p99_tpot`, `rps`, `tps`<br>Supported operators: `<=`, `<`, `min` (for latency metrics); `>=`, `>`, `max` (for throughput metrics)<br>Example: `'[{"p99_latency": "<=2"}]'` | `None` |
-| `--sla-upper-bound` | `int` | Upper bound of the tuned SLA variable search range | `65536` |
-| `--sla-lower-bound` | `int` | Lower bound of the tuned SLA variable search range | `1` |
-| `--sla-fixed-parallel` | `int` | Fixed parallel workers used when `--sla-variable=rate`; defaults to `--sla-upper-bound` for backward compatibility | `None` |
-| `--sla-num-runs` | `int` | Number of runs per concurrency level (average taken) | `3` |
-| `--sla-number-multiplier` | `float` | Multiplier of total requests relative to the tuned variable (concurrency or rate), i.e. `number = round(variable × N)`; defaults to `2` when not set | `None` |
-```{seealso}
-For details on using the SLA auto-tuning feature, see the [Auto-tuning Guide](./sla_auto_tune.md).
-```
+## Legacy CLI arguments
 
-## Prompt Settings
+Existing `evalscope perf` commands continue to work through a shallow CLI translation layer. Common mappings include `--url` to `--base-url`, `--api` to `--protocol`, `--dataset` to `--workload`, `--number` to `--requests`, `--parallel` to `--concurrency`, and `--rate --open-loop` to `--request-rate --mode open_loop`. Legacy list sweeps are converted into explicit load specifications.
 
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `--max-prompt-length` | `int` | Maximum input prompt length<br>Prompts exceeding this length will be discarded | `131072` |
-| `--min-prompt-length` | `int` | Minimum input prompt length<br>Prompts shorter than this will be discarded | `0` |
-| `--prefix-length` | `int` | Length of the prompt prefix<br>Only effective for `random` dataset | `0` |
-| `--prompt` | `str` | Specify request prompt<br>String or local file (specify via `@/path/to/file`)<br>Higher priority than `dataset`<br>Example: `@./prompt.txt` | - |
-| `--query-template` | `str` | Specify query template<br>JSON string or local file (specify via `@/path/to/file`)<br>Example: `@./query_template.json` | - |
-| `--apply-chat-template` | `bool` | Whether to apply chat template | `None` (automatically determined based on URL suffix) |
-| `--image-width` | `int` | Image width for random VL dataset | `224` |
-| `--image-height` | `int` | Image height for random VL dataset | `224` |
-| `--image-format` | `str` | Image format for random VL dataset | `RGB` |
-| `--image-num` | `int` | Number of images for random VL dataset | `1` |
-| `--image-patch-size` | `int` | Patch size for the image<br>Only used for local image token calculation | `28` |
-
-## Dataset Configuration
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|--------|
-| `--dataset` | `str` | Dataset mode, see table below for details | - |
-| `--dataset-path` | `str` | Dataset file or directory path<br>Points to a file: read directly; points to a directory: looks for the corresponding data file inside (for offline use with pre-downloaded dataset cache) | - |
-| `--data-source` | `str` | Data source for dataset loading: `modelscope`, `huggingface`, or `local`<br>Defaults to `modelscope` when not specified; automatically treated as `local` when `--dataset-path` is a local directory | `modelscope` |
-
-### Dataset Mode Description
-
-**Text / Chat**
-
-| Mode | Description | Supports dataset-path |
-|------|-------------|----------------------|
-| `openqa` | Automatically downloads [OpenQA](https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/summary) from ModelScope<br>Prompts are relatively short (usually <100 tokens)<br>Uses `question` field from jsonl file when `dataset_path` is specified | ✓ |
-| `longalpaca` | Automatically downloads [LongAlpaca-12k](https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/dataPeview) from ModelScope<br>Prompts are much longer (generally >6000 tokens)<br>Uses `instruction` field from jsonl file when `dataset_path` is specified | ✓ |
-| `line_by_line` | Each line in txt file is used as a separate prompt<br>**Requires `dataset_path`** | ✓ (Required) |
-| `random` | Randomly generates prompts based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`<br>**Requires `tokenizer-path`**<br>[Usage example](./examples.md#using-the-random-dataset) | ✗ |
-| `custom` | Custom dataset parser<br>See [Custom Dataset Guide](custom.md#custom-dataset) | ✓ |
-
-**Multimodal**
-
-| Mode | Description | Supports dataset-path |
-|------|-------------|----------------------|
-| `flickr8k` | Automatically downloads [Flick8k](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview) from ModelScope<br>Builds image-text inputs; large dataset suitable for evaluating multimodal models<br>Supports `--dataset-path` pointing to a local dataset directory (offline) | ✓ (directory) |
-| `kontext_bench` | Automatically downloads [Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview) from ModelScope<br>Builds image-text inputs; approximately 1,000 samples, suitable for quick evaluation of multimodal models<br>Supports `--dataset-path` pointing to a local dataset directory (offline) | ✓ (directory) |
-| `random_vl` | Randomly generates both image and text inputs<br>Based on `random`, with additional image-related parameters<br>[Usage example](./examples.md#using-the-random-multimodal-dataset) | ✗ |
-
-**Embedding**
-
-| Mode | Description | Supports dataset-path |
-|------|-------------|----------------------|
-| `embedding` | Load text data from file to evaluate Embedding model<br>Supports Line-by-line (TXT) or JSONL format (with `text` field) | ✓ (Required) |
-| `random_embedding` | Randomly generate queries based on `max-prompt-length` and `min-prompt-length` to evaluate Embedding model<br>**Must specify `tokenizer-path`** | ✗ |
-| `embedding_batch` | Batch send text data to evaluate Embedding model<br>Load data from file<br>Supports `--extra-args '{"batch_size": 8}'` to set batch size | ✓ (Required) |
-| `random_embedding_batch` | Batch send randomly generated query data to evaluate Embedding model<br>**Must specify `tokenizer-path`**<br>Supports `--extra-args '{"batch_size": 8}'` to set batch size | ✗ |
-
-**Rerank**
-
-| Mode | Description | Supports dataset-path |
-|------|-------------|----------------------|
-| `rerank` | Load Query-Document pairs from file to evaluate Rerank model<br>Supports JSONL format (with `query` and `documents` fields) | ✓ (Required) |
-| `random_rerank` | Randomly generate query data to evaluate Rerank model<br>**Must specify `tokenizer-path`**<br>Supports `--extra-args '{"num_documents": 10, "document_length_ratio": 5}'` to set number of documents and length ratio | ✗ |
-
-**Multi-turn Conversation**
-
-Must be used with `--multi-turn`. See the [Multi-turn Benchmark Guide](./multi_turn.md) for details.
-
-| Mode | Description | Supports dataset-path |
-|------|-------------|----------------------|
-| `random_multi_turn` | Synthetic multi-turn conversations; each turn randomly generates a token sequence<br>**Requires `--tokenizer-path` and `--max-turns`**<br>[Usage example](./multi_turn.md#random_multi_turn) | ✗ |
-| `share_gpt_zh_multi_turn` | Automatically downloads the Chinese [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) dataset (~70k conversations) from ModelScope, preserving full multi-turn conversations<br>[Usage example](./multi_turn.md#share_gpt_multi_turn) | ✓ |
-| `share_gpt_en_multi_turn` | Automatically downloads the English [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) dataset (~70k conversations) from ModelScope, preserving full multi-turn conversations | ✓ |
-| `custom_multi_turn` | Uses a local JSONL file as a custom multi-turn dataset<br>Each line must be a JSON array of OpenAI message dicts; ideal for benchmarking with your own conversation data<br>**Requires `--dataset-path`**<br>[Usage example](./multi_turn.md#custom_multi_turn) | ✓ (Required) |
-
-## Model Settings
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `--tokenizer-path` | `str` | Tokenizer weights path<br>Used to calculate the number of tokens in input and output<br>Usually located in the same directory as model weights | `None` |
-| `--frequency-penalty` | `float` | frequency_penalty value | - |
-| `--logprobs` | `bool` | Whether to return logarithmic probabilities | - |
-| `--max-tokens` | `int` | Maximum number of tokens that can be generated | - |
-| `--min-tokens` | `int` | Minimum number of tokens to generate<br>Note: Not all model services support this parameter<br>For `vLLM>=0.8.1`, you need to additionally set<br>`--extra-args '{"ignore_eos": true}'` | - |
-| `--n-choices` | `int` | Number of completion choices to generate | - |
-| `--seed` | `int` | Random seed | `None` |
-| `--stop` | `str` | Tokens that stop the generation | - |
-| `--stop-token-ids` | `list[int]` | IDs of tokens that stop the generation | - |
-| `--temperature` | `float` | Sampling temperature | `0` |
-| `--top-p` | `float` | Top-p sampling | - |
-| `--top-k` | `int` | Top-k sampling | - |
-| `--extra-args` | `str` | Additional parameters to be passed in the request body<br>JSON string format<br>Example: `'{"ignore_eos": true}'` | - |
-| `--tokenize-prompt` | `bool` | Tokenize the prompt client-side into a token-ID list and send it directly via `/v1/completions`, bypassing server-side re-tokenization | `False` |
-
-## Data Storage
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `--visualizer` | `str` | Visualizer to use<br>Options: `wandb`, `swanlab`, `clearml`<br>If set, metrics will be saved to the specified visualizer | `None` |
-| `--enable-progress-tracker` | `bool` | Whether to enable progress tracking, writing hierarchical stress-test progress to `progress.json` in real time, queryable via the service API | `False` |
-| `--wandb-api-key` | `str` | wandb API key for logging metrics to wandb<br>**Deprecated**, please use `--visualizer wandb` instead | - |
-| `--swanlab-api-key` | `str` | swanlab API key for logging metrics to swanlab<br>**Deprecated**, please use `--visualizer swanlab` instead | - |
-| `--outputs-dir` | `str` | Output file path | `./outputs` |
-| `--no-timestamp` | `bool` | Exclude timestamp from output directory name | `False` |
-
-## Multi-turn Settings
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `--multi-turn` | `bool` | Enable multi-turn conversation benchmark mode; `--number` is the total number of turns to send and `--parallel` is the number of concurrent turn-level requests | `False` |
-| `--min-turns` | `int` | Minimum number of user turns per conversation; used by `random_multi_turn` and `swe_smith` | `1` |
-| `--max-turns` | `int` | Maximum number of user turns per conversation; required for `random_multi_turn`; optional for ShareGPT / `custom_multi_turn` (truncates long conversations); for `swe_smith` it's the upper bound for per-conversation turn sampling, falling back to `--min-turns` when unset | `None` |
-| `--num-workers` | `int` | Worker processes for CPU-bound dataset/request generation.<br>`0` = auto-detect from CPU affinity; `1` = serial (no multiprocessing); `>1` = explicit worker count.<br>Used by `random` (long-prompt parallel generation) and `swe_smith` (live construction). Supersedes the deprecated `multi_turn_args.num_workers`. | `0` |
-
-```{seealso}
-For details on using the multi-turn benchmark feature, see the [Multi-turn Benchmark Guide](./multi_turn.md).
-```
-
-## Other Parameters
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `--db-commit-interval` | `int` | Number of rows buffered before writing results to SQLite database | `1000` |
-| `--queue-size-multiplier` | `int` | Maximum size of the request queue<br>Calculated as: `parallel * multiplier` | `5` |
-| `--in-flight-task-multiplier` | `int` | Maximum number of in-flight tasks<br>Calculated as: `parallel * multiplier` | `2` |
+The CLI prints a deprecation warning with the corresponding new arguments. This compatibility applies only to command-line parsing; the removed Python `Arguments` API and legacy result schema are not restored.

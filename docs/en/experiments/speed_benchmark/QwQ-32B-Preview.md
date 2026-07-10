@@ -22,16 +22,14 @@ pip install evalscope[perf] -U
 ```
 ```shell
 CUDA_VISIBLE_DEVICES=0 evalscope perf \
- --parallel 1 \
+ --concurrency 1 \
  --model Qwen/QwQ-32B-Preview \
- --attn-implementation flash_attention_2 \
- --log-every-n-query 1 \
+ --target-kind local_transformers \
  --connect-timeout 60000 \
  --read-timeout 60000\
  --max-tokens 2048 \
  --min-tokens 2048 \
- --api local \
- --dataset speed_benchmark
+ --workload speed_benchmark
 ```
 
 ### Test Results
@@ -59,15 +57,14 @@ CUDA_VISIBLE_DEVICES=0 evalscope perf \
 ### Test Command
 ```shell
 CUDA_VISIBLE_DEVICES=0,1 evalscope perf \
- --parallel 1 \
+ --concurrency 1 \
  --model Qwen/QwQ-32B-Preview \
- --log-every-n-query 1 \
+ --target-kind local_vllm \
  --connect-timeout 60000 \
  --read-timeout 60000\
  --max-tokens 2048 \
  --min-tokens 2048 \
- --api local_vllm \
- --dataset speed_benchmark
+ --workload speed_benchmark
 ```
 
 ### Test Results
