@@ -74,6 +74,34 @@ METRICS: Dict[str, MetricDefinition] = {
         scope=MetricScope.REQUEST,
         provenance=MetricProvenance.SERVER_REPORTED
     ),
+    'input_throughput': MetricDefinition(
+        id='input_throughput',
+        name='Input throughput',
+        unit='tokens/s',
+        scope=MetricScope.REQUEST,
+        provenance=MetricProvenance.DERIVED
+    ),
+    'output_throughput': MetricDefinition(
+        id='output_throughput',
+        name='Output throughput',
+        unit='tokens/s',
+        scope=MetricScope.REQUEST,
+        provenance=MetricProvenance.DERIVED
+    ),
+    'total_throughput': MetricDefinition(
+        id='total_throughput',
+        name='Total throughput',
+        unit='tokens/s',
+        scope=MetricScope.REQUEST,
+        provenance=MetricProvenance.DERIVED
+    ),
+    'decode_throughput': MetricDefinition(
+        id='decode_throughput',
+        name='Decode throughput',
+        unit='tokens/s',
+        scope=MetricScope.REQUEST,
+        provenance=MetricProvenance.DERIVED
+    ),
     'decoded_tokens_per_iter': MetricDefinition(
         id='decoded_tokens_per_iter',
         name='Decoded tokens per iteration',

@@ -9,6 +9,7 @@ from evalscope.perf.metrics.definitions import MetricDefinition
 
 
 class PercentileStats(BaseModel):
+    minimum: Optional[float] = None
     p1: Optional[float] = None
     p5: Optional[float] = None
     p10: Optional[float] = None
@@ -44,9 +45,21 @@ class TraceSummary(BaseModel):
 
 
 class WorkloadSummary(BaseModel):
+    n_samples: int = 0
+    wall_time_seconds: float = 0.0
+    last_window_seconds: float = 10.0
+    steady_state_warmup_ratio: float = 0.1
     overall: Dict[str, float] = Field(default_factory=dict)
     last_window: Dict[str, float] = Field(default_factory=dict)
     steady_state: Dict[str, float] = Field(default_factory=dict)
+    points: List['WorkloadTimelinePoint'] = Field(default_factory=list)
+
+
+class WorkloadTimelinePoint(BaseModel):
+    t: float
+    cumulative_completion_tokens: int
+    cumulative_new_prompt_tokens: int
+    cumulative_cached_prompt_tokens: int
 
 
 class ArtifactManifest(BaseModel):

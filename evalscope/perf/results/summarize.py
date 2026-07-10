@@ -28,6 +28,7 @@ def _percentile(values: List[float], percentile: int) -> Optional[float]:
 def percentile_stats(values: Iterable[float]) -> PercentileStats:
     data = [float(value) for value in values if value is not None and math.isfinite(value)]
     result = {f'p{p}': _percentile(data, p) for p in _PERCENTILES}
+    result['minimum'] = min(data) if data else None
     result['maximum'] = max(data) if data else None
     return PercentileStats(**result)
 
@@ -50,6 +51,15 @@ def _metric_values(observations: Iterable[RequestObservation]) -> Dict[str, List
             values['input_tokens'].append(float(item.prompt_tokens))
         if item.completion_tokens is not None:
             values['output_tokens'].append(float(item.completion_tokens))
+        if item.latency and item.latency > 0:
+            if item.prompt_tokens is not None:
+                values['input_throughput'].append(item.prompt_tokens / item.latency)
+            if item.completion_tokens is not None:
+                values['output_throughput'].append(item.completion_tokens / item.latency)
+            if item.prompt_tokens is not None and item.completion_tokens is not None:
+                values['total_throughput'].append((item.prompt_tokens + item.completion_tokens) / item.latency)
+        if item.tpot and item.tpot > 0:
+            values['decode_throughput'].append(1 / item.tpot)
         if item.cached_tokens is not None and item.prompt_tokens:
             values['cache_hit_rate'].append(min(1.0, item.cached_tokens / item.prompt_tokens))
         if item.ttft is not None and item.turn_index is not None:
@@ -113,23 +123,46 @@ def _trace_summary(observations: List[RequestObservation]) -> Optional[TraceSumm
             grouped[item.trace_id].append(item)
     if not grouped:
         return None
-    trace_latencies = []
-    trace_turns = []
+    metrics: Dict[str, List[float]] = defaultdict(list)
     for items in grouped.values():
+        items.sort(key=lambda item: item.turn_index if item.turn_index is not None else 0)
         starts = [item.start_time for item in items if item.start_time is not None]
         ends = [item.completed_time for item in items if item.completed_time is not None]
         if starts and ends:
-            trace_latencies.append(max(ends) - min(starts))
-        trace_turns.append(float(len(items)))
+            metrics['trace_latency'].append(max(ends) - min(starts))
+        metrics['turns'].append(float(len(items)))
+        first = items[0]
+        last = items[-1]
+        if first.ttft is not None:
+            metrics['first_turn_ttft'].append(first.ttft)
+        if first.start_time is not None and last.start_time is not None and last.ttft is not None:
+            metrics['ttfat'].append(max(0.0, last.start_time + last.ttft - first.start_time))
+        decode_rates = [1 / item.tpot for item in items if item.tpot and item.tpot > 0]
+        if decode_rates:
+            metrics['decode_throughput'].append(mean(decode_rates))
+        prompt_tokens = sum(item.prompt_tokens or 0 for item in items)
+        if prompt_tokens:
+            metrics['cache_hit_rate'].append(sum(item.cached_tokens or 0 for item in items) / prompt_tokens * 100)
+        eligible = 0
+        eligible_cached = 0
+        for previous, current in zip(items, items[1:]):
+            previous_context = (previous.prompt_tokens or 0) + (previous.completion_tokens or 0)
+            if previous_context > 0:
+                eligible += previous_context
+                eligible_cached += current.cached_tokens or 0
+        if eligible:
+            metrics['eligible_cache_hit_rate'].append(eligible_cached / eligible * 100)
     return TraceSummary(
         trace_count=len(grouped),
         averages={
-            'trace_latency': mean(trace_latencies) if trace_latencies else 0,
-            'turns': mean(trace_turns),
+            name: mean(values)
+            for name, values in metrics.items()
+            if values
         },
         percentiles={
-            'trace_latency': percentile_stats(trace_latencies),
-            'turns': percentile_stats(trace_turns),
+            name: percentile_stats(values)
+            for name, values in metrics.items()
+            if values
         },
     )
 
@@ -139,7 +172,10 @@ def _workload_summary(
     last_window_seconds: float,
     steady_state_warmup_ratio: float,
 ) -> Optional[WorkloadSummary]:
-    successful = [item for item in observations if item.success and item.completed_time is not None]
+    successful = sorted(
+        (item for item in observations if item.success and item.completed_time is not None),
+        key=lambda item: item.completed_time,
+    )
     if not successful:
         return None
     starts = [item.start_time for item in successful if item.start_time is not None]
@@ -149,25 +185,75 @@ def _workload_summary(
     if duration <= 0:
         return None
 
-    def rates(items: List[RequestObservation], window_start: float, window_end: float) -> Dict[str, float]:
-        window = max(window_end - window_start, 1e-12)
-        output = sum(item.completion_tokens or 0 for item in items)
-        prompt = sum(item.prompt_tokens or 0 for item in items)
+    wall_start = successful[0].start_time
+    cumulative_completion = 0
+    cumulative_new_prompt = 0
+    cumulative_cached_prompt = 0
+    points = []
+    from evalscope.perf.domain.result import WorkloadTimelinePoint
+
+    for item in successful:
+        prompt = item.prompt_tokens or 0
+        cached = item.cached_tokens or 0
+        cumulative_completion += item.completion_tokens or 0
+        cumulative_new_prompt += max(prompt - cached, 0)
+        cumulative_cached_prompt += cached
+        points.append(
+            WorkloadTimelinePoint(
+                t=max(0.0, item.completed_time - wall_start),
+                cumulative_completion_tokens=cumulative_completion,
+                cumulative_new_prompt_tokens=cumulative_new_prompt,
+                cumulative_cached_prompt_tokens=cumulative_cached_prompt,
+            )
+        )
+    duration = points[-1].t
+    if duration <= 0:
+        return None
+
+    def rates(anchor_index: Optional[int]) -> Dict[str, float]:
+        last = points[-1]
+        if anchor_index is None:
+            elapsed = last.t
+            request_count = len(points)
+            completion = last.cumulative_completion_tokens
+            new_prompt = last.cumulative_new_prompt_tokens
+            cached = last.cumulative_cached_prompt_tokens
+        else:
+            anchor = points[anchor_index]
+            elapsed = last.t - anchor.t
+            request_count = len(points) - anchor_index - 1
+            completion = last.cumulative_completion_tokens - anchor.cumulative_completion_tokens
+            new_prompt = last.cumulative_new_prompt_tokens - anchor.cumulative_new_prompt_tokens
+            cached = last.cumulative_cached_prompt_tokens - anchor.cumulative_cached_prompt_tokens
+        window = max(elapsed, 1e-12)
         return {
-            'request_throughput': len(items) / window,
-            'input_token_throughput': prompt / window,
-            'output_token_throughput': output / window,
-            'total_token_throughput': (prompt + output) / window,
+            'request_throughput': request_count / window,
+            'total_prompt_token_throughput': (new_prompt + cached) / window,
+            'new_prompt_token_throughput': new_prompt / window,
+            'cached_prompt_token_throughput': cached / window,
+            'completion_token_throughput': completion / window,
         }
 
-    start = min(starts)
-    end = max(item.completed_time for item in successful)
-    last_start = max(start, end - last_window_seconds)
-    steady_start = start + duration * steady_state_warmup_ratio
-    last_items = [item for item in successful if item.completed_time >= last_start]
-    steady_items = [item for item in successful if item.completed_time >= steady_start]
+    def anchor(target: float) -> int:
+        chosen = 0
+        for index, point in enumerate(points):
+            if point.t <= target:
+                chosen = index
+            else:
+                break
+        return chosen
+
+    last_anchor = None if duration <= last_window_seconds else anchor(duration - last_window_seconds)
+    steady_anchor = anchor(duration * steady_state_warmup_ratio) if steady_state_warmup_ratio > 0 else None
+    if steady_anchor == len(points) - 1:
+        steady_anchor = None
     return WorkloadSummary(
-        overall=rates(successful, start, end),
-        last_window=rates(last_items, last_start, end),
-        steady_state=rates(steady_items, steady_start, end),
+        n_samples=len(successful),
+        wall_time_seconds=duration,
+        last_window_seconds=last_window_seconds,
+        steady_state_warmup_ratio=steady_state_warmup_ratio,
+        overall=rates(None),
+        last_window=rates(last_anchor),
+        steady_state=rates(steady_anchor),
+        points=points,
     )
