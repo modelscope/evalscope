@@ -17,7 +17,7 @@ with multiple reference captions.
 ## Evaluation Notes
 
 - Default data source: `AI-ModelScope/msr-vtt` on ModelScope, `validation` split
-- Hugging Face `VLM2Vec/MSR-VTT` remains available by setting `extra_params.dataset_hub="huggingface"`
+- Hugging Face `VLM2Vec/MSR-VTT` remains available by setting `dataset_hub="huggingface"` in TaskConfig
 - Primary metric: **CIDEr**
 - Additional metrics: BLEU-1/2/3/4, METEOR, ROUGE-L
 - Set `extra_params.video_dir` to prefer local media files over URL metadata
@@ -106,9 +106,6 @@ Describe the video in one concise sentence.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `dataset_hub` | `str` | `modelscope` | Dataset hub used to load MSR-VTT annotations. Choices: ['huggingface', 'modelscope', 'local'] |
-| `eval_split` | `str` | `` | Source split to load; defaults to validation for ModelScope and test for Hugging Face. |
-| `dataset_revision` | `str` | `` | Optional dataset revision; leave empty to use the hub default. |
 | `video_dir` | `str` | `` | Optional local directory containing MSR-VTT video files. |
 | `video_extension` | `str` | `` | Optional extension override for local videos, for example "mp4". |
 

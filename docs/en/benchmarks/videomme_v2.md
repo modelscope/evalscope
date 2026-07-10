@@ -73,9 +73,6 @@ Answer the following multiple choice question. The last line of your response sh
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `dataset_id` | `str` | `MME-Benchmarks/Video-MME-v2` | Dataset repository ID or local dataset root for Video-MME-v2. |
-| `dataset_hub` | `str` | `modelscope` | Dataset hub used to load annotations, subtitles, and optional video archives. Choices: ['huggingface', 'modelscope', 'local'] |
-| `dataset_revision` | `str` | `` | Optional dataset revision; leave empty to use the hub default. |
 | `video_source` | `str` | `url` | Use public URL fields for lightweight tests or official archived MP4 files. Choices: ['url', 'archive'] |
 | `use_subtitles` | `bool` | `False` | Include Video-MME-v2 subtitle text in the prompt. |
 | `subtitle_word_limit` | `int` | `512` | Maximum number of subtitle words included per sample when subtitles are enabled. |

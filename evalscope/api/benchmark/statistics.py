@@ -546,7 +546,7 @@ class SampleExample:
         # Check if truncation is needed
         truncated_data = truncate_value(raw_data, max_length, max_list_items)
         truncated_str = str(truncated_data)
-        was_truncated = '[TRUNCATED]' in truncated_str
+        was_truncated = '[TRUNCATED' in truncated_str
 
         return cls(
             data=truncated_data,

@@ -3,11 +3,11 @@
 
 ## 概述
 
-MVBench 是一个公开的多模态视频理解基准测试，涵盖时间感知、属性/状态推理、符号排序和高级认知任务。此原生适配器默认使用 ModelScope 上的 `PKU-Alignment/MVBench` 镜像，该镜像提供 JSON 标注文件及优化后的视频压缩包。
+MVBench 是一个公开的多模态视频理解基准测试，涵盖时间感知、属性/状态推理、符号排序和高级认知任务。此原生适配器默认使用 ModelScope 上的 `PKU-Alignment/MVBench` 镜像，该镜像提供 JSON 标注以及优化后的视频压缩包。
 
 ## 任务描述
 
-- **任务类型**：视频多项选择题问答（Video multiple-choice question answering）
+- **任务类型**：视频多项选择题问答
 - **输入**：视频 + 问题 + 答案选项
 - **输出**：单个正确答案字母
 - **子集**：20 个 MVBench 任务；默认的冒烟测试子集为 `action_antonym`
@@ -17,8 +17,8 @@ MVBench 是一个公开的多模态视频理解基准测试，涵盖时间感知
 - 默认配置使用 **0-shot** 评估
 - 主要指标：**准确率（Accuracy）**
 - 默认的 `action_antonym` 子集会下载一个小型公开 MP4 压缩包用于快速验证
-- 可通过设置 `subset_list` 参数指定额外的 MVBench 子集以进行完整基准测试
-- 对于带时间范围的记录，保留起始/结束元数据，并在提示词中添加简短的片段指令
+- 可通过设置 `subset_list` 为其他 MVBench 子集来请求完整基准测试评估
+- 带时间范围的记录保留起止元数据，并在提示词中添加简短的片段指令
 
 ## 属性
 
@@ -72,20 +72,12 @@ MVBench 是一个公开的多模态视频理解基准测试，涵盖时间感知
 
 **提示模板：**
 ```text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
+请回答以下多项选择题。你的回复最后一行应采用如下格式：'ANSWER: [LETTER]'（不含引号），其中 [LETTER] 是 {letters} 中的一个字母。在回答前请逐步思考。
 
 {question}
 
 {choices}
 ```
-
-## 额外参数
-
-| 参数 | 类型 | 默认值 | 描述 |
-|-----------|------|---------|-------------|
-| `dataset_id` | `str` | `PKU-Alignment/MVBench` | MVBench 标注和视频的数据集仓库 ID 或本地数据集根目录。 |
-| `dataset_hub` | `str` | `modelscope` | 用于加载标注和视频压缩包的数据集平台。可选值：['huggingface', 'modelscope', 'local'] |
-| `dataset_revision` | `str` | `` | 可选的数据集版本；留空则使用平台默认版本。 |
 
 ## 使用方法
 
@@ -114,7 +106,6 @@ task_cfg = TaskConfig(
     dataset_args={
         'mvbench': {
             # subset_list: ['action_antonym', 'action_count', 'action_localization']  # 可选，用于评估特定子集
-            # extra_params: {}  # 使用默认额外参数
         }
     },
     limit=10,  # 正式评估时请删除此行
