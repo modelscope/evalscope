@@ -3,40 +3,39 @@
 
 ## 概述
 
-ResearchRubrics 用于评估深度研究（Deep Research）智能体在真实、开放式研究任务上的表现。每个任务包含一个用户提示，以及由专家编写的细粒度评分标准（rubrics），涵盖显性和隐性需求、信息综合、参考文献、沟通质量以及指令遵循等方面。
+ResearchRubrics 用于评估深度研究（Deep Research）智能体在真实、开放式研究任务上的表现。每个任务包含一个用户提示，以及由专家编写的细粒度评分标准（rubrics），涵盖显性和隐性需求、信息整合、参考文献、沟通质量以及指令遵循等方面。
 
 ## 任务描述
 
 - **任务类型**：多轮研究智能体 / 长篇报告生成
 - **输入**：一个开放式研究提示
 - **输出**：通过迭代使用工具生成的 Markdown 格式研究报告
-- **数据集**：101 个任务，共包含 2,593 项加权评分标准
-- **评估指标**：二元评分标准符合度得分（Binary rubric compliance score）
+- **数据集**：101 个任务，共包含 2,593 条带权重的评分标准
+- **评估指标**：二元评分标准合规得分（Binary rubric compliance score）
 
-## 智能体运行时
+## 智能体运行环境
 
-- 默认使用 EvalScope 内置的 AgentLoop，采用 ``function_calling`` 策略，并默认提供 ``bash`` 工具。
-- 默认的 bash 工具通过 ``LocalAgentEnvironment`` 在每个样本的临时目录中运行，并使用主机网络。该环境**不是安全沙箱**：绝对路径仍可访问主机文件系统。请勿在共享或敏感机器上对不可信模型使用默认运行时。
-- 可通过 ``dataset_args.extra_params.strategy`` 将策略设为 ``react``。两种内置策略均需原生函数调用支持；ReAct 策略还会额外注入“思考 → 行动 → 观察”（Think → Act → Observation）的系统提示。
-- 来自 ``NativeAgentConfig.mcp_servers`` 的可选 MCP 服务器会与 bash 工具合并使用。若使用 ``ExternalAgentConfig``，则提示将通过 EvalScope 的外部智能体桥接器路由。
-- 对于本基准测试所拥有的 AgentLoop，策略和最大步数通过 ``dataset_args.extra_params`` 配置；``NativeAgentConfig`` 中对应的字段不会被使用。
-- 如果原生循环在达到 ``max_steps`` 后仍在调用工具，基准测试会再进行一次无工具调用的最终模型请求，以确保已收集的研究内容能保存为可审查的 Markdown 报告。
+- 默认使用 EvalScope 内置的智能体运行时，无需提供 ``agent_config``。智能体可通过 ``bash`` 访问网络、收集信息并生成最终报告。
+- 默认运行时使用主机网络和临时工作目录，但不提供完整的文件系统隔离。请勿在共享或敏感机器上运行不可信模型。
+- 可通过 ``dataset_args.extra_params`` 配置策略和最大步数。默认策略为 ``function_calling``，步数上限为 50；也可选择 ``react`` 策略。两者均需模型原生支持函数调用。
+- 可通过 ``NativeAgentConfig`` 添加专用搜索或网页抓取工具，或使用 ``ExternalAgentConfig`` 在其他智能体框架中运行任务。
+- 当达到步数上限时，模型会被要求基于已收集的信息生成最终报告，以便进行评审和打分。
 
 ## 评估说明
 
 - ResearchRubrics 要求显式配置 ``judge_model_args``，且 ``judge_strategy`` 必须为 ``'auto'`` 或 ``'llm'``。论文推荐使用 Gemini 2.5 Pro 作为评判模型，但未硬编码任何特定提供商或模型。
-- 每项评分标准独立评分：满足（1）或不满足（0），与公开的二元评分器一致。论文中使用的三元评分不可直接比较。
-- 负权重标准在出现不良行为时会从分子中减去相应分数，得分不会被截断。
-- 当报告长度超过配置的评判模型上下文阈值时，将使用官方的分块-证据-综合（chunk-evidence-synthesis）方法进行评估。
-- 完整运行需执行 2,593 次评分标准评估，成本较高。此外，涉及当前事件的任务对评估时的日期和可用网络资源敏感。
+- 每条评分标准独立评分：满足（1）或不满足（0），与公开的二元评分器一致。论文中使用的三元评分无法直接比较。
+- 负权重标准在出现不良行为时会从分子中扣除相应分数，且最终得分不会被截断。
+- 当报告长度超过配置的评判模型上下文阈值时，将采用官方的分块-证据-合成（chunk-evidence-synthesis）方法进行评估。
+- 完整运行需执行 2,593 次评分标准评估，成本较高。此外，涉及近期事件的任务对评估时的日期和可用网络资源较为敏感。
 
 ## 配置
 
-- ``strategy``：``function_calling``（默认）或 ``react``
-- ``max_steps``：默认为 50
-- ``judge_context_limit``：150,000 个估算 token
-- ``judge_chunk_size``：100,000 个估算 token
-- ``judge_retries``：每次评判请求最多重试 3 次
+- ``strategy``: ``function_calling``（默认）或 ``react``
+- ``max_steps``: 默认为 50
+- ``judge_context_limit``: 150,000 个估算 token
+- ``judge_chunk_size``: 100,000 个估算 token
+- ``judge_retries``: 每次评判请求最多重试 3 次
 
 评判模型必须显式配置。例如：
 
@@ -67,11 +66,11 @@ run_task(TaskConfig(
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `researchrubrics` |
-| **数据集 ID** | [evalscope/researchrubrics](https://modelscope.cn/datasets/evalscope/researchrubrics/summary) |
+| **数据集ID** | [evalscope/researchrubrics](https://modelscope.cn/datasets/evalscope/researchrubrics/summary) |
 | **论文** | [Paper](https://arxiv.org/abs/2511.07685) |
 | **标签** | `Agent`, `MultiTurn`, `Reasoning`, `Retrieval` |
 | **指标** | `compliance_score` |
-| **默认示例数** | 0-shot |
+| **默认示例数量** | 0-shot |
 | **评估划分** | `train` |
 
 
@@ -91,7 +90,7 @@ run_task(TaskConfig(
 {
   "input": [
     {
-      "id": "aeaec74a",
+      "id": "f1132c85",
       "content": "I want to create a plan for July 4, 2025, i.e., Independence Day in Washington DC. I would like an itinerary of all the things to do and all the activities that are planned for Independence Day. Create a plan for the whole day and also extend it to the weekend, if required. Provide some reviews or explain why one should visit the place or engage in the activity. Add any additional information that is required."
     }
   ],
@@ -143,9 +142,9 @@ run_task(TaskConfig(
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `strategy` | `str` | `function_calling` | 内置 AgentLoop 使用的智能体策略。选项：['function_calling', 'react'] |
+| `strategy` | `str` | `function_calling` | 内置 AgentLoop 使用的智能体策略。可选值：['function_calling', 'react'] |
 | `max_steps` | `int` | `50` | 每个样本的最大智能体步数。 |
-| `judge_context_limit` | `int` | `150000` | 切换到分块评判前的估算 token 上限。 |
+| `judge_context_limit` | `int` | `150000` | 超过此估算 token 数时，评分标准评判将启用分块处理。 |
 | `judge_chunk_size` | `int` | `100000` | 发送给评判模型的每个文档分块的最大估算 token 数。 |
 | `judge_retries` | `int` | `3` | 每次评分标准评判请求及 JSON 解析的最大重试次数。 |
 

@@ -78,18 +78,16 @@ references, communication quality, and instruction following.
 
 ## Agent Runtime
 
-- Uses EvalScope's built-in AgentLoop with the ``function_calling`` strategy and a ``bash`` tool by default.
-- The default bash tool runs in a per-sample temporary directory through ``LocalAgentEnvironment`` and uses the host
-  network. This environment is not a security sandbox: absolute paths can still access the host filesystem. Do not use
-  the default runtime with untrusted models on shared or sensitive machines.
-- ``dataset_args.extra_params.strategy`` can be set to ``react``. Both built-in strategies require native function
-  calling; ReAct additionally injects a Think -> Act -> Observation system prompt.
-- Optional MCP servers from ``NativeAgentConfig.mcp_servers`` are merged with bash. ``ExternalAgentConfig`` routes the
-  prompt through EvalScope's external agent bridge instead.
-- For this benchmark-owned AgentLoop, strategy and max steps are configured through ``dataset_args.extra_params``;
-  corresponding fields on ``NativeAgentConfig`` are not used.
-- If the native loop exhausts ``max_steps`` while still calling tools, the benchmark makes one final tool-free model
-  call so the gathered research is preserved as a reviewable Markdown report.
+- Uses EvalScope's built-in agent runtime by default and does not require ``agent_config``. The agent can use ``bash``
+  to access the network, gather information, and produce a final report.
+- The default runtime uses the host network and a temporary working directory, but does not provide complete filesystem
+  isolation. Do not run untrusted models on shared or sensitive machines.
+- Configure the strategy and maximum number of steps through ``dataset_args.extra_params``. The default strategy is
+  ``function_calling`` with a 50-step limit; ``react`` is also available. Both require native function calling support.
+- Add dedicated search or web-fetching tools through ``NativeAgentConfig``, or use ``ExternalAgentConfig`` to run the
+  task with another agent framework.
+- When the step limit is reached, the model is asked to produce a final report from the information already collected so
+  the result can still be reviewed and scored.
 
 ## Evaluation Notes
 
