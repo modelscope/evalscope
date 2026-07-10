@@ -1,11 +1,44 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field, PositiveFloat, PositiveInt, field_serializer, model_validator
-from typing import Annotated, Any, Dict, List, Literal, Mapping, Optional, Union
+from typing import Annotated, Any, Dict, Literal, Mapping, Optional, Tuple, Union
+
+
+class FrozenDict(dict):
+    """JSON-serializable mapping that rejects mutation after construction."""
+
+    @staticmethod
+    def _immutable(*args, **kwargs):
+        raise TypeError('performance configuration mappings are immutable')
+
+    __setitem__ = _immutable
+    __delitem__ = _immutable
+    __ior__ = _immutable
+    clear = _immutable
+    pop = _immutable
+    popitem = _immutable
+    setdefault = _immutable
+    update = _immutable
+
+
+def _freeze(value: Any) -> Any:
+    if isinstance(value, dict) and not isinstance(value, FrozenDict):
+        return FrozenDict({key: _freeze(item) for key, item in value.items()})
+    if isinstance(value, list):
+        return tuple(_freeze(item) for item in value)
+    if isinstance(value, set):
+        return frozenset(_freeze(item) for item in value)
+    return value
 
 
 class FrozenModel(BaseModel):
     model_config = ConfigDict(frozen=True, extra='forbid')
+
+    @model_validator(mode='after')
+    def freeze_nested_values(self) -> 'FrozenModel':
+        for name in type(self).model_fields:
+            object.__setattr__(self, name, _freeze(getattr(self, name)))
+        return self
 
 
 class TargetConfig(FrozenModel):
@@ -49,8 +82,8 @@ class GenerationConfig(FrozenModel):
     repetition_penalty: Optional[float] = None
     logprobs: Optional[bool] = None
     n_choices: Optional[PositiveInt] = None
-    stop: Optional[List[str]] = None
-    stop_token_ids: Optional[List[int]] = None
+    stop: Optional[Tuple[str, ...]] = None
+    stop_token_ids: Optional[Tuple[int, ...]] = None
     stream: bool = True
     extra: Dict[str, Any] = Field(default_factory=dict)
 
@@ -131,7 +164,7 @@ LoadSpec = Annotated[Union[ClosedLoopLoad, OpenLoopLoad, ConversationLoad], Fiel
 
 
 class BenchmarkSuite(FrozenModel):
-    loads: List[LoadSpec]
+    loads: Tuple[LoadSpec, ...]
     sleep_between_runs: float = Field(default=0.0, ge=0)
 
     @model_validator(mode='after')
@@ -176,7 +209,7 @@ class OutputConfig(FrozenModel):
 
 class SLAConfig(FrozenModel):
     variable: Literal['concurrency', 'request_rate']
-    criteria: List[Dict[str, str]] = Field(default_factory=list)
+    criteria: Tuple[Dict[str, str], ...] = Field(default_factory=tuple)
     objective: Optional[Literal['max_rps', 'max_output_tps', 'min_latency']] = None
     lower_bound: PositiveInt = 1
     upper_bound: PositiveInt = 1024

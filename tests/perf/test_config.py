@@ -96,3 +96,20 @@ def test_target_secrets_are_not_serialized() -> None:
     payload = target.model_dump(mode='json')
     assert 'api_key' not in payload
     assert payload['headers'] == {'Authorization': '***', 'X-Trace': 'visible'}
+
+
+def test_runtime_configuration_is_deeply_immutable() -> None:
+    config = PerfConfig(
+        target=TargetConfig(model='fake', headers={'X-Test': 'value'}),
+        workload=WorkloadConfig(name='prompt', prompt='hello', options={'nested': {
+            'items': [1, 2]
+        }}),
+        suite=BenchmarkSuite(loads=[ClosedLoopLoad(request_count=1)]),
+    )
+    with pytest.raises(AttributeError):
+        config.suite.loads.append(ClosedLoopLoad(request_count=2))
+    with pytest.raises(TypeError, match='immutable'):
+        config.target.headers['X-Test'] = 'changed'
+    with pytest.raises(TypeError, match='immutable'):
+        config.workload.options['nested']['new'] = True
+    assert PerfConfig.model_validate_json(config.model_dump_json()) == config
