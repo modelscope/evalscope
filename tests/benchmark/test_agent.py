@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import json
+import sys
 import tempfile
 from dotenv import dotenv_values, load_dotenv
 from pathlib import Path
@@ -11,6 +12,8 @@ env = dotenv_values('.env')
 
 import unittest
 
+from evalscope.api.agent import NativeAgentConfig
+from evalscope.api.agent.mcp import MCPServerConfigStdio
 from evalscope.benchmarks.toolathlon.toolathlon_adapter import ToolathlonAdapter
 from evalscope.config import SandboxTaskConfig
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
@@ -164,10 +167,6 @@ class TestAgentBenchmark(TestBenchmark):
         Using ``python -m mcp_server_fetch`` (rather than ``uvx``) keeps the
         test deterministic — no per-run package fetch / venv creation.
         """
-        import sys
-
-        from evalscope.api.agent import NativeAgentConfig
-        from evalscope.api.agent.mcp import MCPServerConfigStdio
         dataset_args = {
             'subset_list': ['2023_level1'],
         }
@@ -274,7 +273,6 @@ class TestAgentBenchmark(TestBenchmark):
 
     def test_swe_bench_verified_agentic_backticks(self):
         """Test SWE-bench-verified agentic dataset with backticks protocol."""
-        from evalscope.api.agent import NativeAgentConfig
         dataset_args = {
             'extra_params': {
                 'build_docker_images': True,

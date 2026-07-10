@@ -325,14 +325,14 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets mcp_atlas \
+    --agent-config '{"mode":"native","strategy":"function_calling","max_steps":100}' \
     --limit 10  # Remove this line for formal evaluation
 ```
 
 ### Using Python
 
 ```python
-from evalscope import run_task
-from evalscope.config import TaskConfig
+from evalscope import TaskConfig, run_task
 from evalscope.api.agent import NativeAgentConfig
 
 task_cfg = TaskConfig(
@@ -340,10 +340,10 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['mcp_atlas'],
-    # agent_config=NativeAgentConfig(
-    #     strategy='function_calling',
-    #     max_steps=100,
-    # ),
+    agent_config=NativeAgentConfig(
+        strategy='function_calling',
+        max_steps=100,
+    ),
     dataset_args={
         'mcp_atlas': {
             # extra_params: {}  # uses default extra parameters

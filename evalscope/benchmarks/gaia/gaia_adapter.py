@@ -223,7 +223,7 @@ class GaiaAdapter(AgentLoopAdapter):
         return EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config=sandbox_config,
-            timeout=180.0,
+            timeout=self._native_command_timeout(),
         )
 
     # ------------------------------------------------------------------

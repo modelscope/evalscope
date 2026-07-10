@@ -3,15 +3,15 @@
 
 ## 概述
 
-ResearchRubrics 用于评估深度研究（Deep Research）智能体在真实、开放式研究任务上的表现。每个任务包含一个用户提示，以及由专家编写的细粒度评分标准（rubrics），涵盖显性和隐性需求、信息综合、参考文献、沟通质量以及指令遵循等方面。
+ResearchRubrics 用于评估深度研究（Deep Research）智能体在真实、开放式研究任务上的表现。每个任务包含一个用户提示，以及由专家编写的细粒度评分标准（rubrics），涵盖显式与隐式需求、信息整合、参考文献、沟通质量以及指令遵循等方面。
 
 ## 任务描述
 
 - **任务类型**：多轮研究智能体 / 长篇报告生成
 - **输入**：一个开放式研究提示
-- **输出**：通过迭代使用工具后生成的 Markdown 格式研究报告
+- **输出**：通过迭代使用工具生成的 Markdown 格式研究报告
 - **数据集**：101 个任务，共包含 2,593 条带权重的评分标准
-- **评估指标**：二元评分标准合规得分（Binary rubric compliance score）
+- **评估指标**：二元评分标准符合度得分（Binary rubric compliance score）
 
 ## 智能体运行环境
 
@@ -19,15 +19,15 @@ ResearchRubrics 用于评估深度研究（Deep Research）智能体在真实、
 - 默认运行时使用主机网络和临时工作目录，但不提供完整的文件系统隔离。请勿在共享或敏感机器上运行不可信模型。
 - 默认策略为 ``function_calling``，最多执行 50 步。可通过 ``NativeAgentConfig`` 覆盖策略或步数限制；也可选择 ``react`` 策略。两种策略均需模型原生支持函数调用。
 - 可通过 ``NativeAgentConfig`` 添加专用搜索或网页抓取工具，或使用 ``ExternalAgentConfig`` 在其他智能体框架中运行任务。
-- 若达到步数上限，模型将被要求基于已收集的信息生成最终报告，以便进行评审和打分。
+- 当达到步数限制时，模型会被要求基于已收集的信息生成最终报告，以便后续评审和打分。
 
 ## 评估说明
 
-- ResearchRubrics 要求显式配置 ``judge_model_args``，且 ``judge_strategy`` 必须为 ``'auto'`` 或 ``'llm'``。论文推荐使用 Gemini 2.5 Pro 作为评判模型，但未硬编码任何特定提供商或模型。
+- ResearchRubrics 需要显式配置 ``judge_model_args``，且 ``judge_strategy`` 必须设为 ``'auto'`` 或 ``'llm'``。论文推荐使用 Gemini 2.5 Pro 作为评判模型，但未硬编码任何特定提供商或模型。
 - 每条评分标准独立判为“满足”（1）或“不满足”（0），与公开的二元评分器一致。论文中使用的三元评分无法直接比较。
 - 负权重标准在出现不良行为时会从分子中扣除相应分数，且最终得分不会被截断。
-- 当报告长度超过配置的评判模型上下文阈值时，将采用官方的分块-证据-综合（chunk-evidence-synthesis）方法进行评估。
-- 完整运行需执行 2,593 次评分标准评估，成本较高。涉及时事的任务对评估时的日期和可用网络资源也较为敏感。
+- 当报告长度超过配置的评判模型上下文阈值时，将采用官方的分块-证据-合成（chunk-evidence-synthesis）方法进行评估。
+- 完整运行需执行 2,593 次评分标准评估，成本较高。此外，涉及当前事件的任务对评估时的日期和可用网络资源较为敏感。
 
 ## 配置
 
@@ -127,7 +127,7 @@ run_task(TaskConfig(
 }
 ```
 
-*注：部分内容因显示需要已被截断。*
+*注：部分内容因展示需要已被截断。*
 
 ## 提示模板
 
@@ -140,7 +140,7 @@ run_task(TaskConfig(
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `judge_context_limit` | `int` | `150000` | 评判前允许的最大估算 token 数，超过此值将启用分块处理。 |
+| `judge_context_limit` | `int` | `150000` | 评判前允许的最大估算 token 数，超过后启用分块处理。 |
 | `judge_chunk_size` | `int` | `100000` | 发送给评判模型的每个文档分块的最大估算 token 数。 |
 | `judge_retries` | `int` | `3` | 每次评分标准评判请求及 JSON 解析的最大重试次数。 |
 
@@ -154,14 +154,14 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets researchrubrics \
+    --agent-config '{"mode":"native","strategy":"function_calling","max_steps":50}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
 ### 使用 Python
 
 ```python
-from evalscope import run_task
-from evalscope.config import TaskConfig
+from evalscope import TaskConfig, run_task
 from evalscope.api.agent import NativeAgentConfig
 
 task_cfg = TaskConfig(
@@ -169,10 +169,10 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['researchrubrics'],
-    # agent_config=NativeAgentConfig(
-    #     strategy='function_calling',
-    #     max_steps=50,
-    # ),
+    agent_config=NativeAgentConfig(
+        strategy='function_calling',
+        max_steps=50,
+    ),
     dataset_args={
         'researchrubrics': {
             # extra_params: {}  # 使用默认额外参数

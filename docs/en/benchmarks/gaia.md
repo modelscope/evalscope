@@ -128,14 +128,14 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets gaia \
+    --agent-config '{"mode":"native","strategy":"react","max_steps":50}' \
     --limit 10  # Remove this line for formal evaluation
 ```
 
 ### Using Python
 
 ```python
-from evalscope import run_task
-from evalscope.config import TaskConfig
+from evalscope import TaskConfig, run_task
 from evalscope.api.agent import NativeAgentConfig
 
 task_cfg = TaskConfig(
@@ -143,10 +143,10 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['gaia'],
-    # agent_config=NativeAgentConfig(
-    #     strategy='react',
-    #     max_steps=50,
-    # ),
+    agent_config=NativeAgentConfig(
+        strategy='react',
+        max_steps=50,
+    ),
     dataset_args={
         'gaia': {
             # subset_list: ['2023_level1', '2023_level2', '2023_level3']  # optional, evaluate specific subsets

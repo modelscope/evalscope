@@ -311,7 +311,7 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
         return EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config=sandbox_config,
-            timeout=60.0,
+            timeout=self._native_command_timeout(),
             interpreter=_SWE_BENCH_PRO_INTERPRETER,
         )
 

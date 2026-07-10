@@ -254,6 +254,53 @@ class TestAgentLoopAdapterOverrides(unittest.TestCase):
         self.assertIs(call_args['handlers']['bash'], benchmark_bash)
         self.assertEqual([tool.name for tool in call_args['all_tools']], ['bash'])
 
+    def test_native_command_timeout_defaults_bash_calls_and_tool_schema(self):
+        seen_args = []
+
+        async def benchmark_bash(call, env):
+            seen_args.append(call.function.arguments)
+            return 'benchmark'
+
+        class BenchmarkToolAdapter(AgentLoopAdapter):
+
+            def build_tools(self, sample):
+                return {'bash': benchmark_bash}
+
+        cfg = TaskConfig(model='dummy', agent_config=NativeAgentConfig(command_timeout=180))
+        adapter = BenchmarkToolAdapter.__new__(BenchmarkToolAdapter)
+        adapter._task_config = cfg
+        adapter.max_steps = 30
+        loop_result = AgentLoopResult(
+            messages=[],
+            final_output=ModelOutput.from_content(model='mock', content='answer'),
+            trace=AgentTrace(strategy='function_calling', max_steps=30),
+        )
+
+        with patch('evalscope.api.agent.run_agent_loop', return_value=loop_result) as run_loop:
+            adapter._on_inference(_mock_model_generate_final(), Sample(input='hi', tools=[BASH_TOOL_INFO]))
+
+        call_args = run_loop.call_args.kwargs
+        bash_schema = next(tool for tool in call_args['all_tools'] if tool.name == 'bash')
+        self.assertEqual(bash_schema.parameters.properties['timeout'].default, 180)
+        self.assertEqual(BASH_TOOL_INFO.parameters.properties['timeout'].default, 60)
+
+        wrapped_bash = call_args['handlers']['bash']
+        asyncio.run(
+            wrapped_bash(ToolCall(id='1', function=ToolFunction(name='bash', arguments={'command': 'pwd'})), None)
+        )
+        asyncio.run(
+            wrapped_bash(
+                ToolCall(id='2', function=ToolFunction(name='bash', arguments={
+                    'command': 'pwd',
+                    'timeout': 5,
+                })),
+                None,
+            )
+        )
+
+        self.assertEqual(seen_args[0]['timeout'], 180)
+        self.assertEqual(seen_args[1]['timeout'], 5)
+
     def test_explicit_native_config_selects_custom_benchmark_strategy(self):
         cfg = TaskConfig(model='dummy', agent_config=NativeAgentConfig(strategy='swe_bench_backticks'))
         adapter = self._make_adapter(cfg, strategy_name='swe_bench_toolcall', max_steps=250)
@@ -285,7 +332,7 @@ class TestAgentLoopAdapterOverrides(unittest.TestCase):
         self.assertEqual(adapter.build_tools(Sample(input='x')), {})
         self.assertIsNone(adapter.build_environment(Sample(input='x')))
 
-    def test_agent_loop_usage_example_contains_commented_native_config(self):
+    def test_agent_loop_usage_example_contains_native_config(self):
         usage = _format_usage_section(
             'gaia',
             agent_config={
@@ -294,10 +341,13 @@ class TestAgentLoopAdapterOverrides(unittest.TestCase):
             },
         )
 
+        self.assertIn('from evalscope import TaskConfig, run_task', usage)
         self.assertIn('from evalscope.api.agent import NativeAgentConfig', usage)
-        self.assertIn('# agent_config=NativeAgentConfig(', usage)
-        self.assertIn("#     strategy='react'", usage)
-        self.assertIn('#     max_steps=50', usage)
+        self.assertIn('agent_config=NativeAgentConfig(', usage)
+        self.assertIn("strategy='react'", usage)
+        self.assertIn('max_steps=50', usage)
+        self.assertIn('--agent-config \'{"mode":"native","strategy":"react","max_steps":50}\'', usage)
+        self.assertNotIn('# agent_config=NativeAgentConfig(', usage)
 
 
 if __name__ == '__main__':

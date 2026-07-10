@@ -208,7 +208,7 @@ def extract_adapter_meta(adapter) -> Dict[str, Any]:
             'strategy': adapter.strategy_name,
             'max_steps': adapter.max_steps,
         }
-    return {
+    adapter_meta = {
         'pretty_name': getattr(meta, 'pretty_name', None) or adapter.name,
         'dataset_id': getattr(meta, 'dataset_id', ''),
         'paper_url': getattr(meta, 'paper_url', None),
@@ -225,9 +225,11 @@ def extract_adapter_meta(adapter) -> Dict[str, Any]:
         'aggregation': getattr(meta, 'aggregation', 'mean') or 'mean',
         'extra_params': dict(getattr(meta, 'extra_params', {})) if getattr(meta, 'extra_params', None) else {},
         'sandbox_config': dict(getattr(meta, 'sandbox_config', {})) if getattr(meta, 'sandbox_config', None) else {},
-        'agent_config': agent_config,
         'category': get_adapter_category(adapter),
     }
+    if agent_config is not None:
+        adapter_meta['agent_config'] = agent_config
+    return adapter_meta
 
 
 def compute_adapter_statistics(adapter) -> Dict[str, Any]:
@@ -455,6 +457,7 @@ def generate_docs(data: Optional[Dict[str, Any]] = None) -> None:
 
     def write_markdown(path: Any, content: str) -> None:
         """Write generated markdown with exactly one trailing newline."""
+        content = '\n'.join(line.rstrip() for line in content.splitlines())
         with open(path, 'w', encoding='utf-8') as f:
             f.write(content.rstrip() + '\n')
 

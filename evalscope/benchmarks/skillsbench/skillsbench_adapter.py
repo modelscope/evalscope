@@ -12,6 +12,7 @@ from evalscope.agent.skills import (
     discover_skills,
 )
 from evalscope.agent.tools.bash import BASH_TOOL_INFO
+from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentAdapter
 from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
@@ -262,7 +263,6 @@ class SkillsBenchAdapter(AgentAdapter):
         from evalscope.agent.external.adapter import run_external_agent
         from evalscope.agent.external.config import ExternalAgentConfig
         from evalscope.agent.runner import run_native_agent
-        from evalscope.api.agent.types import NativeAgentConfig
 
         agent_config = self._task_config.agent_config
         if isinstance(agent_config, ExternalAgentConfig):

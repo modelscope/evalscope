@@ -7,10 +7,10 @@ SWE-bench Multilingual Agentic 是 SWE-bench Multilingual 的代理模式（agen
 
 ## 任务描述
 
-- **任务类型**：自动化软件工程 / 缺陷修复（代理模式，多语言）
-- **输入**：GitHub issue 描述（不含 oracle 文件上下文）
-- **输出**：自主编辑后通过 `git diff` 收集的代码补丁（diff 格式）
-- **语言**：C、C++、Go、Java、JavaScript/TypeScript、PHP、Ruby 和 Rust
+- **任务类型**：自动化软件工程 / 缺陷修复（代理式、多语言）
+- **输入**：GitHub issue 描述（不提供 oracle 文件上下文）
+- **输出**：模型自主编辑后通过 `git diff` 生成的代码补丁（diff 格式）
+- **支持语言**：C、C++、Go、Java、JavaScript/TypeScript、PHP、Ruby 和 Rust
 
 ## 主要特性
 
@@ -21,18 +21,18 @@ SWE-bench Multilingual Agentic 是 SWE-bench Multilingual 的代理模式（agen
 
 ## 评估说明
 
-- 评估前需执行 `pip install swebench==4.1.0`
+- 评估前需安装 `pip install swebench==4.1.0`
 - 自动使用官方 SWE-bench Multilingual x86_64 实例镜像，并自动设置 Docker 平台为 `linux/amd64`
 - 每个实例的 Docker 镜像会自动构建或拉取
-- 每个实例最终补丁验证超时时间为 1800 秒（30 分钟）
+- 每个实例最终补丁验证的超时时间为 1800 秒（30 分钟）
 - 详细设置说明请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
 - 支持本地构建镜像和远程拉取镜像两种方式
 
 ## 代理模式
 
-本基准测试在每个实例的 SWE-bench Docker 容器内驱动一个多轮代理循环（与 mini-swe-agent 的 `swebench.yaml` 类似）。模型通过发出 `bash` 命令探索 `/testbed` 目录、编辑源文件，并在完成时打印哨兵字符串 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 及其后的补丁内容来提交 `git diff` 补丁。
+本基准测试在每个实例的 SWE-bench Docker 容器内驱动一个多轮代理循环（与 mini-swe-agent 的 `swebench.yaml` 配置一致）。模型通过发出 `bash` 命令探索 `/testbed` 目录、编辑源文件，并在完成任务时打印哨兵字符串 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 后附上补丁内容以提交最终 `git diff` 补丁。
 
-默认的 `swe_bench_toolcall` 策略使用 OpenAI 函数调用，仅提供一个 `bash` 工具。不支持函数调用的模型可通过 `NativeAgentConfig.strategy` 选择 `swe_bench_backticks` 策略；该策略要求每轮输出一个 ` ```mswea_bash_command ``` ` 代码块。
+默认的 `swe_bench_toolcall` 策略使用 OpenAI 函数调用，仅提供一个 `bash` 工具。对于不支持函数调用的模型，可通过 `NativeAgentConfig.strategy` 选择 `swe_bench_backticks` 策略；该策略要求每轮输出一个 ` ```mswea_bash_command ``` ` 代码块。
 
 ## 属性
 
@@ -40,7 +40,7 @@ SWE-bench Multilingual Agentic 是 SWE-bench Multilingual 的代理模式（agen
 |----------|-------|
 | **基准测试名称** | `swe_bench_multilingual_agentic` |
 | **数据集ID** | [SWE-bench/SWE-bench_Multilingual](https://modelscope.cn/datasets/SWE-bench/SWE-bench_Multilingual/summary) |
-| **论文** | 无 |
+| **论文** | N/A |
 | **标签** | `Coding` |
 | **指标** | `acc` |
 | **默认示例数** | 0-shot |
@@ -126,8 +126,8 @@ SWE-bench Multilingual Agentic 是 SWE-bench Multilingual 的代理模式（agen
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
 | `build_docker_images` | `bool` | `True` | 为每个样本在本地构建 Docker 镜像。 |
-| `pull_remote_images_if_available` | `bool` | `True` | 构建前尝试拉取已存在的远程 Docker 镜像。 |
-| `force_arch` | `str` | `` | 可选地强制指定镜像构建/拉取的架构。可选项：['', 'arm64', 'x86_64'] |
+| `pull_remote_images_if_available` | `bool` | `True` | 在构建前尝试拉取已存在的远程 Docker 镜像。 |
+| `force_arch` | `str` | `` | 可选地强制指定镜像构建/拉取的目标架构。可选值：['', 'arm64', 'x86_64'] |
 | `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像在 DockerHub 上的用户/组织命名空间。 |
 
 ## 使用方法
@@ -140,14 +140,14 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets swe_bench_multilingual_agentic \
+    --agent-config '{"mode":"native","strategy":"swe_bench_toolcall","max_steps":250}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
 ### 使用 Python
 
 ```python
-from evalscope import run_task
-from evalscope.config import TaskConfig
+from evalscope import TaskConfig, run_task
 from evalscope.api.agent import NativeAgentConfig
 
 task_cfg = TaskConfig(
@@ -155,10 +155,10 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['swe_bench_multilingual_agentic'],
-    # agent_config=NativeAgentConfig(
-    #     strategy='swe_bench_toolcall',
-    #     max_steps=250,
-    # ),
+    agent_config=NativeAgentConfig(
+        strategy='swe_bench_toolcall',
+        max_steps=250,
+    ),
     dataset_args={
         'swe_bench_multilingual_agentic': {
             # extra_params: {}  # 使用默认额外参数

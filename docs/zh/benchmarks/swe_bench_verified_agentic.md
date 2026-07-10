@@ -17,7 +17,7 @@ SWE-bench Verified Agentic 是对 SWE-bench Verified 的代理模式（agentic-m
 - 包含 500 个人工验证的 Issue-Pull Request 对
 - 支持多轮代理循环（兼容 mini-swe-agent 的 `swebench.yaml` 配置）
 - 每个实例使用独立的 SWE-bench Docker 容器作为执行沙箱
-- 基于哨兵值（sentinel）的补丁提交协议（`COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`）
+- 基于哨兵（sentinel）的补丁提交协议（`COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`）
 - 同时支持函数调用（`toolcall`）和基于文本（`backticks`）的动作协议
 
 ## 评估说明
@@ -26,13 +26,13 @@ SWE-bench Verified Agentic 是对 SWE-bench Verified 的代理模式（agentic-m
 - 每个仓库的 Docker 镜像会自动构建或拉取
 - 每个实例的最终补丁验证超时时间为 1800 秒（30 分钟）
 - 详细设置说明请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
-- 支持本地镜像构建和远程镜像拉取两种方式
+- 支持本地构建镜像和远程拉取镜像两种方式
 
 ## 代理模式
 
-该基准测试在每个实例专属的 SWE-bench Docker 容器内驱动一个多轮代理循环（与 mini-swe-agent 的 `swebench.yaml` 配置一致）。模型通过发出 `bash` 命令来探索 `/testbed` 目录、编辑源文件，并最终通过打印哨兵值 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 及其后的补丁内容来提交 `git diff` 补丁。
+该基准测试在每个实例专属的 SWE-bench Docker 容器内驱动一个多轮代理循环（与 mini-swe-agent 的 `swebench.yaml` 配置一致）。模型通过发出 `bash` 命令来探索 `/testbed` 目录、编辑源文件，并最终通过打印哨兵字符串 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 及其后的补丁内容来提交 `git diff` 补丁。
 
-默认的 `swe_bench_toolcall` 策略使用 OpenAI 函数调用，仅包含一个 `bash` 工具。不支持函数调用的模型可通过 `NativeAgentConfig.strategy` 选择 `swe_bench_backticks` 策略；该策略要求每轮输出中包含一个 ` ```mswea_bash_command ``` ` 代码块。
+默认的 `swe_bench_toolcall` 策略使用 OpenAI 函数调用，仅提供一个 `bash` 工具。不支持函数调用的模型可通过 `NativeAgentConfig.strategy` 选择 `swe_bench_backticks` 策略；该策略要求每轮输出一个 ` ```mswea_bash_command ``` ` 代码块。
 
 ## 属性
 
@@ -44,7 +44,7 @@ SWE-bench Verified Agentic 是对 SWE-bench Verified 的代理模式（agentic-m
 | **标签** | `Coding` |
 | **指标** | `acc` |
 | **默认示例数** | 0-shot |
-| **评估分割** | `test` |
+| **评估划分** | `test` |
 
 
 ## 数据统计
@@ -126,7 +126,7 @@ SWE-bench Verified Agentic 是对 SWE-bench Verified 的代理模式（agentic-m
 
 ## 提示模板
 
-**提示模板：**
+**提示模板:**
 ```text
 {question}
 ```
@@ -137,7 +137,7 @@ SWE-bench Verified Agentic 是对 SWE-bench Verified 的代理模式（agentic-m
 |-----------|------|---------|-------------|
 | `build_docker_images` | `bool` | `True` | 为每个样本在本地构建 Docker 镜像。 |
 | `pull_remote_images_if_available` | `bool` | `True` | 在构建前尝试拉取已存在的远程 Docker 镜像。 |
-| `force_arch` | `str` | `` | 可选地强制指定镜像构建/拉取的目标架构。可选值：['', 'arm64', 'x86_64'] |
+| `force_arch` | `str` | `` | 可选地强制指定镜像构建/拉取的架构。可选项：['', 'arm64', 'x86_64'] |
 | `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像在 DockerHub 上的用户/组织命名空间。 |
 
 ## 使用方法
@@ -150,14 +150,14 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets swe_bench_verified_agentic \
+    --agent-config '{"mode":"native","strategy":"swe_bench_toolcall","max_steps":250}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
 ### 使用 Python
 
 ```python
-from evalscope import run_task
-from evalscope.config import TaskConfig
+from evalscope import TaskConfig, run_task
 from evalscope.api.agent import NativeAgentConfig
 
 task_cfg = TaskConfig(
@@ -165,10 +165,10 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['swe_bench_verified_agentic'],
-    # agent_config=NativeAgentConfig(
-    #     strategy='swe_bench_toolcall',
-    #     max_steps=250,
-    # ),
+    agent_config=NativeAgentConfig(
+        strategy='swe_bench_toolcall',
+        max_steps=250,
+    ),
     dataset_args={
         'swe_bench_verified_agentic': {
             # extra_params: {}  # 使用默认额外参数

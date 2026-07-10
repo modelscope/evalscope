@@ -7,6 +7,7 @@ files for benchmark datasets, including metadata, statistics, examples,
 and usage instructions.
 """
 
+import json
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
@@ -232,6 +233,16 @@ def _format_usage_section(
     ]
     if sandbox_config:
         cli_lines.append("    --sandbox '{\"enabled\": true}' \\")
+    if agent_config:
+        cli_agent_config = json.dumps(
+            {
+                'mode': 'native',
+                'strategy': agent_config['strategy'],
+                'max_steps': agent_config['max_steps'],
+            },
+            separators=(',', ':'),
+        )
+        cli_lines.append(f"    --agent-config '{cli_agent_config}' \\")
     cli_lines.append('    --limit 10  # Remove this line for formal evaluation')
 
     # Build Python code
@@ -248,11 +259,12 @@ def _format_usage_section(
     python_imports = ['from evalscope import run_task', 'from evalscope.config import TaskConfig']
     python_agent_config = ''
     if agent_config:
+        python_imports = ['from evalscope import TaskConfig, run_task']
         python_imports.append('from evalscope.api.agent import NativeAgentConfig')
-        python_agent_config = f'''    # agent_config=NativeAgentConfig(
-    #     strategy='{agent_config["strategy"]}',
-    #     max_steps={agent_config["max_steps"]},
-    # ),
+        python_agent_config = f'''    agent_config=NativeAgentConfig(
+        strategy='{agent_config["strategy"]}',
+        max_steps={agent_config["max_steps"]},
+    ),
 '''
 
     python_code = f'''{chr(10).join(python_imports)}

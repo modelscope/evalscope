@@ -158,21 +158,26 @@ All config classes share `name` (display name in logs) and `tools` (tool whiteli
 
 ## SWE-bench agentic benchmarks
 
-The `swe_bench_*_agentic` family (`swe_bench_verified_agentic`, `swe_bench_verified_mini_agentic`, `swe_bench_lite_agentic`) ships its own AgentLoop and **ignores** the global `agent_config`. All loop parameters go through `dataset_args.extra_params`.
+The `swe_bench_*_agentic` family (`swe_bench_verified_agentic`, `swe_bench_verified_mini_agentic`, `swe_bench_lite_agentic`) owns the per-sample Docker environment and required `bash` tool. Explicit `NativeAgentConfig` values can still override loop settings such as strategy and step limit. Keep `dataset_args.extra_params` for benchmark-specific image preparation options.
 
 ```python
+from evalscope.api.agent import NativeAgentConfig
+
 task_config = TaskConfig(
     model='qwen-plus',
     api_url='...',
     api_key='...',
     eval_type='openai_api',
     datasets=['swe_bench_verified_mini_agentic'],
+    agent_config=NativeAgentConfig(
+        strategy='swe_bench_toolcall',
+        max_steps=250,
+    ),
     dataset_args={
         'swe_bench_verified_mini_agentic': {
             'extra_params': {
-                'action_protocol': 'toolcall',  # or 'backticks'
-                'max_steps': 250,
-                'command_timeout': 60.0,
+                'build_docker_images': True,
+                'pull_remote_images_if_available': True,
             },
         },
     },
@@ -182,7 +187,7 @@ task_config = TaskConfig(
 run_task(task_config)
 ```
 
-Common `extra_params` keys: `action_protocol`, `max_steps`, `command_timeout`, `working_dir`. Full reference in the [SWE-bench dataset docs](../../third_party/swe_bench.md).
+Use `NativeAgentConfig(strategy='swe_bench_backticks')` for models that do not support function calling. Common `extra_params` keys are `build_docker_images`, `pull_remote_images_if_available`, and `force_arch`. Full reference in the benchmark docs.
 
 ```{important}
 Prerequisites: `pip install evalscope[swe_bench]`, Docker installed locally.

@@ -157,21 +157,26 @@ EvalScope 支持三种 MCP 传输协议，按场景选用：
 
 ## 用例：SWE-bench Agentic
 
-`swe_bench_*_agentic` 系列（`swe_bench_verified_agentic`、`swe_bench_verified_mini_agentic`、`swe_bench_lite_agentic`）是自带 AgentLoop 的基准，所有循环参数通过 `dataset_args.extra_params` 传入，**不读取**全局 `agent_config`。
+`swe_bench_*_agentic` 系列（`swe_bench_verified_agentic`、`swe_bench_verified_mini_agentic`、`swe_bench_lite_agentic`）由基准自己管理每个样本的 Docker 环境和必需的 `bash` 工具。显式设置的 `NativeAgentConfig` 仍可覆盖策略、步数上限等循环配置。`dataset_args.extra_params` 只用于镜像准备等基准专属参数。
 
 ```python
+from evalscope.api.agent import NativeAgentConfig
+
 task_config = TaskConfig(
     model='qwen-plus',
     api_url='...',
     api_key='...',
     eval_type='openai_api',
     datasets=['swe_bench_verified_mini_agentic'],
+    agent_config=NativeAgentConfig(
+        strategy='swe_bench_toolcall',
+        max_steps=250,
+    ),
     dataset_args={
         'swe_bench_verified_mini_agentic': {
             'extra_params': {
-                'action_protocol': 'toolcall',  # 或 'backticks'
-                'max_steps': 250,
-                'command_timeout': 60.0,
+                'build_docker_images': True,
+                'pull_remote_images_if_available': True,
             },
         },
     },
@@ -181,7 +186,7 @@ task_config = TaskConfig(
 run_task(task_config)
 ```
 
-常用 `extra_params`：`action_protocol`、`max_steps`、`command_timeout`、`working_dir`。完整说明见 [SWE-bench 数据集文档](../../third_party/swe_bench.md)。
+不支持 function calling 的模型可用 `NativeAgentConfig(strategy='swe_bench_backticks')`。常用 `extra_params` 包括 `build_docker_images`、`pull_remote_images_if_available`、`force_arch`。完整说明见对应 benchmark 文档。
 
 ```{important}
 前置依赖：`pip install evalscope[swe_bench]`，本机已装好 Docker。

@@ -7,7 +7,7 @@ import from ``evalscope.api.agent`` to participate.
 """
 
 from dataclasses import dataclass, field
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 
 from evalscope.api.messages import ChatMessage
@@ -72,6 +72,13 @@ class NativeAgentConfig(BaseAgentConfig):
     max_steps: int = Field(default=10)
     """Hard upper bound on loop iterations."""
 
+    command_timeout: Optional[float] = Field(default=None)
+    """Default timeout in seconds for native command-style tools.
+
+    Tool calls that explicitly pass a timeout keep their own value. ``None``
+    means use each tool's built-in default.
+    """
+
     mcp_servers: List[MCPServerConfig] = Field(default_factory=list)
     """List of MCP servers spawned alongside this agent's per-sample loop.
 
@@ -81,6 +88,13 @@ class NativeAgentConfig(BaseAgentConfig):
     :class:`MCPServer.__aenter__`, so configurations with empty
     ``mcp_servers`` (the default) do not require ``pip install mcp``.
     """
+
+    @field_validator('command_timeout')
+    @classmethod
+    def _validate_command_timeout(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None and v <= 0:
+            raise ValueError('command_timeout must be greater than 0.')
+        return v
 
 
 class ExecResult(BaseModel):
