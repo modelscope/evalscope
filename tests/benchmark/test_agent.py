@@ -202,6 +202,28 @@ class TestAgentBenchmark(TestBenchmark):
             debug=False,
         )
 
+    def test_wide_search(self):
+        """Test WideSearch with real qwen-plus, bash, Fetch MCP, and LLM judging."""
+        if not env.get('DASHSCOPE_API_KEY'):
+            self.skipTest('DASHSCOPE_API_KEY is required for the WideSearch real-API smoke test.')
+
+        self._run_dataset_test(
+            'wide_search',
+            limit=1,
+            eval_batch_size=1,
+            collect_perf=False,
+            debug=False,
+            agent_config=NativeAgentConfig(
+                mcp_servers=[
+                    MCPServerConfigStdio(
+                        command=sys.executable,
+                        args=['-m', 'mcp_server_fetch', '--ignore-robots-txt'],
+                        name='fetch',
+                    )
+                ],
+            ),
+        )
+
     def test_terminal_bench_v2_1(self):
         """Test Terminal-Bench v2.1 dataset."""
         dataset_args = {
