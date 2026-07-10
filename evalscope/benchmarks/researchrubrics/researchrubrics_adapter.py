@@ -6,13 +6,13 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional
 
+from evalscope.agent.environments.local import TemporaryLocalAgentEnvironment
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
-from evalscope.api.agent import AgentEnvironment, EventType
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import InferenceResult, TaskState
-from evalscope.api.messages import ChatMessageUser
+from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import JudgeStrategy, Tags
@@ -23,7 +23,6 @@ from .utils import (
     CHUNK_SYSTEM_PROMPT,
     CHUNK_USER_PROMPT,
     SYNTHESIS_USER_PROMPT,
-    TemporaryLocalAgentEnvironment,
     chunk_document,
     parse_json_object,
     validate_binary_result,
@@ -178,70 +177,12 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
 
     def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
         sample_id = sample.metadata.get('sample_id') or sample.id or 'unknown'
-        return TemporaryLocalAgentEnvironment(sample_id=sample_id)
+        return TemporaryLocalAgentEnvironment(sample_id=sample_id, prefix='evalscope-researchrubrics-')
 
-    def _on_inference(self, model: Any, sample: Sample) -> InferenceResult:
-        result = super()._on_inference(model, sample)
-        if result.output.completion.strip() or not self._reached_max_steps(result):
-            return result
-
-        finalization_message = ChatMessageUser(
-            content=(
-                'The tool-use budget is exhausted. Using the research already gathered, write and return the complete '
-                'final Markdown report now. Do not call any tools.'
-            )
-        )
-        finalization_input = list(result.messages or []) + [finalization_message]
-        final_output = model.generate(input=finalization_input, tools=None)
-        messages = finalization_input + [final_output.message]
-
-        if result.trace is not None:
-            step = result.trace.max_steps
-            result.trace.add_event(
-                step=step,
-                type=EventType.NUDGE,
-                message_id=finalization_message.id,
-                payload={'reason': 'max_steps_finalization'},
-            )
-            usage = None
-            if final_output.usage is not None:
-                usage = {
-                    'input': final_output.usage.input_tokens,
-                    'output': final_output.usage.output_tokens,
-                    'total': final_output.usage.total_tokens,
-                }
-            result.trace.add_event(
-                step=step,
-                type=EventType.MODEL_GENERATE,
-                message_id=final_output.message.id,
-                token_usage=usage,
-                payload={
-                    'stop_reason': final_output.stop_reason,
-                    'phase': 'max_steps_finalization'
-                },
-            )
-            if final_output.completion.strip():
-                result.trace.add_event(
-                    step=step,
-                    type=EventType.SUBMIT,
-                    message_id=final_output.message.id,
-                    payload={
-                        'final_answer': final_output.completion,
-                        'phase': 'max_steps_finalization'
-                    },
-                )
-                if result.trace.total_usage is not None and final_output.usage is not None:
-                    result.trace.total_usage += final_output.usage
-
-        return InferenceResult(output=final_output, messages=messages, trace=result.trace)
-
-    @staticmethod
-    def _reached_max_steps(result: InferenceResult) -> bool:
-        if result.trace is None:
-            return False
-        return any(
-            event.type == EventType.ERROR and event.payload.get('message') == 'max_steps_exceeded'
-            for event in result.trace.events
+    def build_max_steps_finalization_message(self, sample: Sample) -> str:
+        return (
+            'The tool-use budget is exhausted. Using the research already gathered, write and return the complete '
+            'final Markdown report now. Do not call any tools.'
         )
 
     def calculate_metrics(self, task_state: TaskState) -> SampleScore:

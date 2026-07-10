@@ -3,95 +3,30 @@
 
 ## Overview
 
-WideSearch evaluates search agents on broad information-seeking tasks: collecting a large, complete set of atomic facts
-from the live web and organizing them into one strictly structured Markdown table. The benchmark contains 200 manually
-curated tasks, evenly split between English and Chinese.
+WideSearch evaluates search agents on broad information-seeking tasks that require collecting many atomic facts from
+the web and organizing them into a structured Markdown table. It contains 200 manually curated tasks, evenly split
+between English and Chinese.
 
-## Task and Runtime
+## Task Description
 
-- **Input**: A natural-language collection request with an explicit Markdown table schema
+- **Task Type**: Multi-turn search agent
+- **Input**: A natural-language collection request with an explicit table schema
 - **Output**: One complete Markdown table
-- **Agent**: EvalScope's benchmark-owned AgentLoop with the official single-agent prompt and function-calling strategy
-- **Tools**: Bash by default; optional MCP servers are merged from ``NativeAgentConfig.mcp_servers``
-- **Environment**: Per-sample temporary local directory by default, optionally a Docker sandbox
+- **Dataset**: 200 tasks in the ``full`` split; 100 English and 100 Chinese
 
-The local environment uses the host network and is not a security sandbox: absolute paths can still access host files.
-Use it only with trusted models. Set ``environment_type='docker'`` for isolation, or attach search and page-fetching MCP
-servers for a more representative search-agent setup. The official multi-agent ``create_sub_agents`` baseline is not
-implemented by this adapter.
+## Key Features
 
-## Evaluation
+- Official single-agent prompt with ``function_calling`` and a 50-step default
+- Bash tool in a temporary local directory by default; optional Docker sandbox and MCP tools
+- Official Markdown parsing, table alignment, preprocessing, and hybrid rule/LLM scoring
+- One full run reports ``all``, ``en``, and ``zh`` results without repeated inference
 
-The scorer preserves the official table alignment and hybrid cell-level evaluation pipeline. It parses the Markdown
-table, aligns column names and primary-key entities with an LLM judge, then applies per-column exact, numerical, date,
-URL, or semantic matching. Rule-only judging is not supported; provide ``judge_model_args`` with
-``judge_strategy='auto'`` or ``'llm'``. GPT-4.1-2025-04-14 is recommended for comparison with the paper.
+## Evaluation Notes
 
-Each trial reports table success rate and row/item precision, recall, and F1. Repeated trials are aggregated into the
-paper's Avg@N, Pass@N, and Max@N metrics for ``all``, ``en``, and ``zh`` without evaluating samples more than once.
-Use ``repeats=4`` to reproduce the paper's reporting shape.
-
-## Configuration
-
-- ``max_steps``: 50 by default
-- ``environment_type``: ``local`` (default) or ``docker``
-- ``command_timeout``: 120 seconds for bash commands
-- ``docker_image``: ``python:3.11-slim``
-- ``network_enabled``: enabled by default for Docker
-
-Resources: [Paper](https://arxiv.org/abs/2508.07999) |
-[GitHub](https://github.com/ByteDance-Seed/WideSearch) |
-[Dataset](https://modelscope.cn/datasets/bytedance-community/WideSearch)
-
-## Usage
-
-Default local bash evaluation:
-
-```python
-from evalscope import TaskConfig, run_task
-
-run_task(TaskConfig(
-    model='YOUR_MODEL',
-    datasets=['wide_search'],
-    judge_strategy='llm',
-    judge_model_args={'model_id': 'YOUR_JUDGE_MODEL'},
-))
-```
-
-Choose the local or Docker environment through benchmark parameters:
-
-```python
-TaskConfig(
-    model='YOUR_MODEL',
-    datasets=['wide_search'],
-    dataset_args={'wide_search': {'extra_params': {'environment_type': 'docker'}}},
-    judge_strategy='llm',
-    judge_model_args={'model_id': 'YOUR_JUDGE_MODEL'},
-)
-```
-
-Reproduce the paper's four-trial report shape with bash and the Fetch MCP server:
-
-```python
-import sys
-
-from evalscope import TaskConfig, run_task
-from evalscope.api.agent import NativeAgentConfig
-from evalscope.api.agent.mcp import MCPServerConfigStdio
-
-run_task(TaskConfig(
-    model='YOUR_MODEL',
-    datasets=['wide_search'],
-    repeats=4,
-    agent_config=NativeAgentConfig(mcp_servers=[MCPServerConfigStdio(
-        command=sys.executable,
-        args=['-m', 'mcp_server_fetch', '--ignore-robots-txt'],
-        name='fetch',
-    )]),
-    judge_strategy='llm',
-    judge_model_args={'model_id': 'YOUR_JUDGE_MODEL'},
-))
-```
+- Requires ``judge_strategy='auto'`` or ``'llm'`` with explicit ``judge_model_args``; rule-only scoring is unsupported.
+- Reports success rate plus row/item precision, recall, and F1 using Avg@N, Pass@N, and Max@N aggregation.
+- Install with ``pip install evalscope[wide_search]``; Docker mode additionally requires ``evalscope[sandbox]``.
+- [Usage Documentation](https://evalscope.readthedocs.io/en/latest/third_party/wide_search.html)
 
 
 ## Properties
@@ -123,7 +58,7 @@ run_task(TaskConfig(
 {
   "input": [
     {
-      "id": "cf605347",
+      "id": "e1d4fcda",
       "content": "My son is about to start his university applications in 2025 for postgraduates but he’s still uncertain about both his major and which universities to apply to. Could you help me find the top five universities in each of the five broad subjec ... [TRUNCATED 691 chars] ... names in English. \nUse only Arabic numerals in the ranking, for example: 1.\nDon't ask me any questions, just output the results according to the columns without omitting cells arbitrarily. The output format is \n```markdown\n{data_content}\n```."
     }
   ],
@@ -252,16 +187,6 @@ run_task(TaskConfig(
 {question}
 ```
 
-## Extra Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `max_steps` | `int` | `50` | Maximum number of function-calling AgentLoop steps per sample. |
-| `environment_type` | `str` | `local` | Environment used by the built-in bash tool. Choices: ['local', 'docker'] |
-| `command_timeout` | `float` | `120.0` | Default timeout for bash commands in local or Docker environments. |
-| `docker_image` | `str` | `python:3.11-slim` | Docker image used when environment_type is docker. |
-| `network_enabled` | `bool` | `True` | Allow network access in the Docker environment. |
-
 ## Usage
 
 ### Using CLI
@@ -291,11 +216,6 @@ task_cfg = TaskConfig(
         strategy='function_calling',
         max_steps=50,
     ),
-    dataset_args={
-        'wide_search': {
-            # extra_params: {}  # uses default extra parameters
-        }
-    },
     limit=10,  # Remove this line for formal evaluation
 )
 

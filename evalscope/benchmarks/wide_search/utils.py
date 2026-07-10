@@ -6,15 +6,12 @@ from __future__ import annotations
 import json
 import pandas as pd
 import re
-import tempfile
 from collections import defaultdict
 from dataclasses import dataclass, field
 from io import StringIO
-from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from evalscope.agent.environments.local import LocalAgentEnvironment
 from evalscope.api.metric import AggScore, SampleScore
 
 METRIC_NAMES = (
@@ -84,23 +81,6 @@ Now start scoring. Please make sure to analyze each item step by step before pro
 class EvaluationResult:
     values: Dict[str, float] = field(default_factory=lambda: {name: 0.0 for name in METRIC_NAMES})
     diagnostics: Dict[str, Any] = field(default_factory=dict)
-
-
-class TemporaryLocalAgentEnvironment(LocalAgentEnvironment):
-    """Local agent environment with a per-sample temporary working directory."""
-
-    def __init__(self, sample_id: Any) -> None:
-        safe_id = ''.join(char if str(char).isalnum() else '-' for char in str(sample_id))[:64]
-        self._temporary_directory = tempfile.TemporaryDirectory(prefix=f'evalscope-wide-search-{safe_id}-')
-        super().__init__(working_dir=self._temporary_directory.name)
-
-    @property
-    def working_dir(self) -> Path:
-        return Path(self._temporary_directory.name)
-
-    async def close(self) -> None:
-        await super().close()
-        self._temporary_directory.cleanup()
 
 
 def norm_column(column: str) -> str:

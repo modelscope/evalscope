@@ -332,6 +332,34 @@ class TestAgentLoopAdapterOverrides(unittest.TestCase):
         self.assertEqual(adapter.build_tools(Sample(input='x')), {})
         self.assertIsNone(adapter.build_environment(Sample(input='x')))
 
+    def test_optional_max_steps_finalization_hook(self):
+
+        class FinalizingAdapter(AgentLoopAdapter):
+
+            def build_max_steps_finalization_message(self, sample):
+                return 'Return the final answer without tools.'
+
+        cfg = TaskConfig(model='dummy')
+        adapter = FinalizingAdapter.__new__(FinalizingAdapter)
+        adapter._task_config = cfg
+        adapter.max_steps = 2
+        trace = AgentTrace(strategy='function_calling', max_steps=2)
+        trace.add_event(step=2, type=EventType.ERROR, payload={'message': 'max_steps_exceeded'})
+        loop_result = AgentLoopResult(
+            messages=[ChatMessageUser(content='question')],
+            final_output=ModelOutput.from_content(model='mock', content=''),
+            trace=trace,
+        )
+        model = _mock_model_generate_final('finalized')
+
+        with patch('evalscope.api.agent.run_agent_loop', return_value=loop_result):
+            result = adapter._on_inference(model, Sample(input='question'))
+
+        self.assertEqual(result.output.completion, 'finalized')
+        self.assertEqual(result.messages[-2].content, 'Return the final answer without tools.')
+        self.assertEqual(result.trace.events[-1].type, EventType.SUBMIT)
+        model.generate.assert_called_once_with(input=result.messages[:-1], tools=None)
+
     def test_agent_loop_usage_example_contains_native_config(self):
         usage = _format_usage_section(
             'gaia',

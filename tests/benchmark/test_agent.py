@@ -209,10 +209,20 @@ class TestAgentBenchmark(TestBenchmark):
 
         self._run_dataset_test(
             'wide_search',
+            model='qwen-plus',
             limit=1,
             eval_batch_size=1,
             collect_perf=False,
             debug=False,
+            judge_model_args={
+                'model_id': 'qwen-plus',
+                'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'api_key': env.get('DASHSCOPE_API_KEY'),
+                'generation_config': {
+                    'temperature': 0.0,
+                    'extra_body': {'enable_thinking': False}
+                }
+            },
             agent_config=NativeAgentConfig(
                 mcp_servers=[
                     MCPServerConfigStdio(

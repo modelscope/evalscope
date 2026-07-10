@@ -2,16 +2,18 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
+from evalscope.agent.environments.local import TemporaryLocalAgentEnvironment
 from evalscope.agent.tools.bash import BASH_TOOL_INFO
 from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import SampleScore, Score
+from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.wide_search.utils import (
     METRIC_NAMES,
-    TemporaryLocalAgentEnvironment,
     WideSearchScorer,
     aggregate_official_scores,
     date_near,
@@ -19,7 +21,7 @@ from evalscope.benchmarks.wide_search.utils import (
     number_near,
     url_match,
 )
-from evalscope.config import TaskConfig
+from evalscope.config import SandboxTaskConfig, TaskConfig
 from evalscope.constants import JudgeStrategy
 
 
@@ -267,17 +269,72 @@ class TestWideSearchAdapter(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "judge_strategy='auto' or 'llm'"):
             adapter._validate_judge_config()
 
+    def test_base_metric_pipeline_uses_official_scorer(self) -> None:
+        config = TaskConfig(
+            model='mock',
+            datasets=['wide_search'],
+            judge_strategy=JudgeStrategy.LLM,
+            judge_model_args={'model_id': 'mock'},
+        )
+        adapter = get_benchmark('wide_search', config=config)
+        adapter.llm_judge = Mock(judge=_mapping_judge)
+        sample = Sample(
+            id=3,
+            group_id=2,
+            input='question',
+            target='id,value\nA,one\n',
+            metadata={
+                'instance_id': 'ws_en_001',
+                'language': 'en',
+                'evaluation': _evaluation(),
+            },
+        )
+        task_state = TaskState(
+            model='mock',
+            sample=sample,
+            output=ModelOutput.from_content(model='mock', content='| id | value |\n| --- | --- |\n| A | one |'),
+            completed=True,
+        )
+
+        sample_score = adapter.calculate_metrics(task_state)
+
+        self.assertEqual(sample_score.sample_id, 3)
+        self.assertEqual(sample_score.group_id, 2)
+        self.assertEqual(sample_score.score.value, {name: 1.0 for name in METRIC_NAMES})
+
+    def test_docker_uses_unified_sandbox_and_agent_timeout(self) -> None:
+        config = TaskConfig(
+            model='mock',
+            datasets=['wide_search'],
+            agent_config=NativeAgentConfig(command_timeout=17),
+            sandbox=SandboxTaskConfig(
+                enabled=True,
+                default_config={
+                    'image': 'custom:latest',
+                    'network_enabled': False,
+                },
+            ),
+            judge_model_args={'model_id': 'mock'},
+        )
+        adapter = get_benchmark('wide_search', config=config)
+        sample = Sample(input='question', metadata={'instance_id': 'docker-test', 'language': 'en'})
+        with patch('evalscope.benchmarks.wide_search.wide_search_adapter.check_import'
+                   ), patch('evalscope.agent.environments.enclave.EnclaveAgentEnvironment') as environment_cls:
+            adapter.build_environment(sample)
+        environment_cls.assert_called_once_with(
+            engine='docker',
+            sandbox_config={
+                'image': 'custom:latest',
+                'network_enabled': False,
+            },
+            timeout=17,
+        )
+
     def test_official_prompts_function_calling_and_max_steps(self) -> None:
         config = TaskConfig(
             model='mock',
             datasets=['wide_search'],
-            agent_config=NativeAgentConfig(),
-            dataset_args={'wide_search': {
-                'extra_params': {
-                    'max_steps': 7,
-                    'command_timeout': 12,
-                }
-            }},
+            agent_config=NativeAgentConfig(max_steps=7, command_timeout=12),
             judge_model_args={'model_id': 'mock'},
         )
         adapter = get_benchmark('wide_search', config=config)

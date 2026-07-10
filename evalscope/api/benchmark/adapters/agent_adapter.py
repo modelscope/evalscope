@@ -117,6 +117,18 @@ class AgentLoopAdapter(AgentAdapter):
             return list(sample.input)
         return [ChatMessageUser(content=sample.input)]
 
+    def build_max_steps_finalization_message(self, sample: Any) -> Optional[str]:
+        """Return a no-tools finalization prompt after the loop exhausts its step budget.
+
+        The default ``None`` keeps the standard AgentLoop result. Benchmarks whose
+        official protocol requires one final model turn can override this hook.
+        """
+        return None
+
+    def should_finalize_after_max_steps(self, result: AgentLoopResult) -> bool:
+        """Return whether a max-steps result needs the optional final model turn."""
+        return not result.final_output.completion.strip()
+
     def _maybe_run_external_agent(self, ac: Any, model: Any, sample: Any) -> Optional[InferenceResult]:
         if ac is None or isinstance(ac, NativeAgentConfig):
             return None
@@ -235,6 +247,10 @@ class AgentLoopAdapter(AgentAdapter):
             mcp_configs=mcp_configs,
         )
 
+        finalization_prompt = self.build_max_steps_finalization_message(sample)
+        if finalization_prompt and self._reached_max_steps(result) and self.should_finalize_after_max_steps(result):
+            return self._finalize_after_max_steps(model, result, finalization_prompt)
+
         # Resolve the final prediction through the strategy → adapter hook
         # chain so benchmarks (e.g. SWE-bench) can extract a custom payload
         # like a git patch from the trajectory.
@@ -243,6 +259,61 @@ class AgentLoopAdapter(AgentAdapter):
         output = result.final_output
         output.completion = final_text
         return InferenceResult(output=output, messages=result.messages, trace=result.trace)
+
+    @staticmethod
+    def _reached_max_steps(result: AgentLoopResult) -> bool:
+        from evalscope.api.agent import EventType
+        return any(
+            event.type == EventType.ERROR and event.payload.get('message') == 'max_steps_exceeded'
+            for event in result.trace.events
+        )
+
+    @staticmethod
+    def _finalize_after_max_steps(model: Any, result: AgentLoopResult, prompt: str) -> InferenceResult:
+        from evalscope.api.agent import EventType
+
+        finalization_message = ChatMessageUser(content=prompt)
+        finalization_input = list(result.messages) + [finalization_message]
+        final_output = model.generate(input=finalization_input, tools=None)
+        messages = finalization_input + [final_output.message]
+
+        step = result.trace.max_steps
+        result.trace.add_event(
+            step=step,
+            type=EventType.NUDGE,
+            message_id=finalization_message.id,
+            payload={'reason': 'max_steps_finalization'},
+        )
+        usage = None
+        if final_output.usage is not None:
+            usage = {
+                'input': final_output.usage.input_tokens,
+                'output': final_output.usage.output_tokens,
+                'total': final_output.usage.total_tokens,
+            }
+        result.trace.add_event(
+            step=step,
+            type=EventType.MODEL_GENERATE,
+            message_id=final_output.message.id,
+            token_usage=usage,
+            payload={
+                'stop_reason': final_output.stop_reason,
+                'phase': 'max_steps_finalization'
+            },
+        )
+        if final_output.completion.strip():
+            result.trace.add_event(
+                step=step,
+                type=EventType.SUBMIT,
+                message_id=final_output.message.id,
+                payload={
+                    'final_answer': final_output.completion,
+                    'phase': 'max_steps_finalization'
+                },
+            )
+            if result.trace.total_usage is not None and final_output.usage is not None:
+                result.trace.total_usage += final_output.usage
+        return InferenceResult(output=final_output, messages=messages, trace=result.trace)
 
     async def _external_extract_prediction(
         self,

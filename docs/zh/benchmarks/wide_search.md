@@ -3,85 +3,28 @@
 
 ## 概述
 
-WideSearch 评估搜索智能体在广泛信息检索任务上的表现：从实时网络中收集大量、完整的原子事实，并将其组织成一个严格结构化的 Markdown 表格。该基准测试包含 200 个手动整理的任务，英文和中文任务各占一半。
+WideSearch 用于评估搜索智能体在广泛信息检索任务上的表现，这类任务要求从网络中收集大量原子事实，并将其组织成结构化的 Markdown 表格。该基准包含 200 个经人工精心整理的任务，其中英文和中文任务各占一半。
 
-## 任务与运行时
+## 任务描述
 
-- **输入**：带有明确 Markdown 表格 schema 的自然语言收集请求
+- **任务类型**：多轮搜索智能体
+- **输入**：包含明确表格结构的自然语言信息收集请求
 - **输出**：一个完整的 Markdown 表格
-- **智能体**：EvalScope 基准测试自带的 AgentLoop，使用官方单智能体提示词和函数调用策略
-- **工具**：默认使用 Bash；可选的 MCP 服务器通过 ``NativeAgentConfig.mcp_servers`` 合并
-- **环境**：默认为每个样本创建临时本地目录，也可选择 Docker 沙箱
+- **数据集**：``full`` 划分中共有 200 个任务；其中 100 个为英文，100 个为中文
 
-本地环境使用主机网络，不具备安全沙箱特性：绝对路径仍可访问主机文件。仅在使用可信模型时才应启用此模式。如需隔离，请设置 ``environment_type='docker'``，或附加搜索和页面抓取 MCP 服务器以构建更具代表性的搜索智能体配置。本适配器未实现官方多智能体 ``create_sub_agents`` 基线。
+## 主要特性
 
-## 评估
+- 官方提供的单智能体提示模板，支持 ``function_calling``，默认最多执行 50 步
+- 默认在临时本地目录中提供 Bash 工具；可选 Docker 沙箱和 MCP 工具
+- 官方实现的 Markdown 解析、表格对齐、预处理，以及混合规则/大语言模型（LLM）评分机制
+- 单次完整运行即可同时报告 ``all``、``en`` 和 ``zh`` 的结果，无需重复推理
 
-评分器保留了官方的表格对齐方式和混合单元格级评估流程。它会解析 Markdown 表格，通过 LLM 评判器对齐列名和主键实体，然后对每列分别应用精确匹配、数值匹配、日期匹配、URL 匹配或语义匹配。不支持纯规则评判；请提供 ``judge_model_args`` 并设置 ``judge_strategy='auto'`` 或 ``'llm'``。建议使用 GPT-4.1-2025-04-14 以与论文结果进行比较。
+## 评估说明
 
-每次试验报告表格成功率以及行/项级别的精确率、召回率和 F1 分数。重复试验结果将聚合为论文中的 Avg@N、Pass@N 和 Max@N 指标，分别针对 ``all``、``en`` 和 ``zh``，且不会对同一样本重复评估。使用 ``repeats=4`` 可复现论文的报告形式。
-
-## 配置
-
-- ``max_steps``：默认为 50
-- ``environment_type``：``local``（默认）或 ``docker``
-- ``command_timeout``：Bash 命令超时时间为 120 秒
-- ``docker_image``：``python:3.11-slim``
-- ``network_enabled``：Docker 环境默认启用网络
-
-资源链接：[论文](https://arxiv.org/abs/2508.07999) |
-[GitHub](https://github.com/ByteDance-Seed/WideSearch) |
-[数据集](https://modelscope.cn/datasets/bytedance-community/WideSearch)
-
-## 使用方法
-
-默认本地 Bash 评估：
-
-```python
-from evalscope import TaskConfig, run_task
-
-run_task(TaskConfig(
-    model='YOUR_MODEL',
-    datasets=['wide_search'],
-    judge_strategy='llm',
-    judge_model_args={'model_id': 'YOUR_JUDGE_MODEL'},
-))
-```
-
-通过基准测试参数选择本地或 Docker 环境：
-
-```python
-TaskConfig(
-    model='YOUR_MODEL',
-    datasets=['wide_search'],
-    dataset_args={'wide_search': {'extra_params': {'environment_type': 'docker'}}},
-    judge_strategy='llm',
-    judge_model_args={'model_id': 'YOUR_JUDGE_MODEL'},
-)
-```
-
-使用 Bash 和 Fetch MCP 服务器复现论文的四次试验报告形式：
-
-```python
-import sys
-
-from evalscope import TaskConfig, run_task
-from evalscope.api.agent import NativeAgentConfig
-from evalscope.api.agent.mcp import MCPServerConfigStdio
-
-run_task(TaskConfig(
-    model='YOUR_MODEL',
-    datasets=['wide_search'],
-    repeats=4,
-    agent_config=NativeAgentConfig(mcp_servers=[MCPServerConfigStdio(
-        command=sys.executable,
-        args=['-m', 'mcp_server_fetch', '--ignore-robots-txt'],
-        name='fetch',
-    )]),
-    judge_strategy='llm',
-    judge_model_args={'model_id': 'YOUR_JUDGE_MODEL'},
-))
-```
+- 需设置 ``judge_strategy='auto'`` 或 ``'llm'``，并显式指定 ``judge_model_args``；不支持仅使用规则评分。
+- 报告成功率，以及基于 Avg@N、Pass@N 和 Max@N 聚合方式计算的行级/项级精确率、召回率和 F1 分数。
+- 通过 ``pip install evalscope[wide_search]`` 安装；若使用 Docker 模式，还需额外安装 ``evalscope[sandbox]``。
+- [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/wide_search.html)
 
 
 ## 属性
@@ -113,7 +56,7 @@ run_task(TaskConfig(
 {
   "input": [
     {
-      "id": "cf605347",
+      "id": "e1d4fcda",
       "content": "My son is about to start his university applications in 2025 for postgraduates but he’s still uncertain about both his major and which universities to apply to. Could you help me find the top five universities in each of the five broad subjec ... [TRUNCATED 691 chars] ... names in English. \nUse only Arabic numerals in the ranking, for example: 1.\nDon't ask me any questions, just output the results according to the columns without omitting cells arbitrarily. The output format is \n```markdown\n{data_content}\n```."
     }
   ],
@@ -233,7 +176,7 @@ run_task(TaskConfig(
 }
 ```
 
-*注：部分内容因显示需要已被截断。*
+*注：部分内容因展示需要已被截断。*
 
 ## 提示模板
 
@@ -241,16 +184,6 @@ run_task(TaskConfig(
 ```text
 {question}
 ```
-
-## 额外参数
-
-| 参数 | 类型 | 默认值 | 描述 |
-|-----------|------|---------|-------------|
-| `max_steps` | `int` | `50` | 每个样本的最大函数调用 AgentLoop 步数。 |
-| `environment_type` | `str` | `local` | 内置 bash 工具使用的环境。选项：['local', 'docker'] |
-| `command_timeout` | `float` | `120.0` | 本地或 Docker 环境中 bash 命令的默认超时时间。 |
-| `docker_image` | `str` | `python:3.11-slim` | 当 environment_type 为 docker 时使用的 Docker 镜像。 |
-| `network_enabled` | `bool` | `True` | 是否允许 Docker 环境访问网络。 |
 
 ## 使用方法
 
@@ -281,11 +214,6 @@ task_cfg = TaskConfig(
         strategy='function_calling',
         max_steps=50,
     ),
-    dataset_args={
-        'wide_search': {
-            # extra_params: {}  # 使用默认额外参数
-        }
-    },
     limit=10,  # 正式评估时请删除此行
 )
 
