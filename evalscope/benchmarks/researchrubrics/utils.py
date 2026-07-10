@@ -119,7 +119,7 @@ class TemporaryLocalAgentEnvironment(LocalAgentEnvironment):
     """Local agent environment with an isolated temporary working directory."""
 
     def __init__(self, sample_id: Any) -> None:
-        safe_id = ''.join(char if str(char).isalnum() else '-' for char in str(sample_id))
+        safe_id = ''.join(char if str(char).isalnum() else '-' for char in str(sample_id))[:64]
         self._temporary_directory = tempfile.TemporaryDirectory(prefix=f'evalscope-researchrubrics-{safe_id}-')
         super().__init__(working_dir=self._temporary_directory.name)
 

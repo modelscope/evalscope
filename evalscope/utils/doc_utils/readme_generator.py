@@ -233,12 +233,13 @@ def _format_usage_section(
     ]
     if sandbox_config:
         cli_lines.append("    --sandbox '{\"enabled\": true}' \\")
-    if agent_config:
+    emit_agent_config = bool(agent_config and agent_config.get('strategy') and agent_config.get('max_steps'))
+    if emit_agent_config:
         cli_agent_config = json.dumps(
             {
                 'mode': 'native',
-                'strategy': agent_config['strategy'],
-                'max_steps': agent_config['max_steps'],
+                'strategy': agent_config.get('strategy'),
+                'max_steps': agent_config.get('max_steps'),
             },
             separators=(',', ':'),
         )
@@ -258,12 +259,12 @@ def _format_usage_section(
     python_use_sandbox = "    sandbox={'enabled': True},\n" if sandbox_config else ''
     python_imports = ['from evalscope import run_task', 'from evalscope.config import TaskConfig']
     python_agent_config = ''
-    if agent_config:
+    if emit_agent_config:
         python_imports = ['from evalscope import TaskConfig, run_task']
         python_imports.append('from evalscope.api.agent import NativeAgentConfig')
         python_agent_config = f'''    agent_config=NativeAgentConfig(
-        strategy='{agent_config["strategy"]}',
-        max_steps={agent_config["max_steps"]},
+        strategy='{agent_config.get("strategy")}',
+        max_steps={agent_config.get("max_steps")},
     ),
 '''
 

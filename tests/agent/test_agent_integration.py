@@ -349,6 +349,12 @@ class TestAgentLoopAdapterOverrides(unittest.TestCase):
         self.assertIn('--agent-config \'{"mode":"native","strategy":"react","max_steps":50}\'', usage)
         self.assertNotIn('# agent_config=NativeAgentConfig(', usage)
 
+    def test_agent_loop_usage_example_skips_partial_agent_config(self):
+        usage = _format_usage_section('gaia', agent_config={'strategy': 'react'})
+
+        self.assertNotIn('--agent-config', usage)
+        self.assertNotIn('NativeAgentConfig', usage)
+
 
 if __name__ == '__main__':
     unittest.main()
