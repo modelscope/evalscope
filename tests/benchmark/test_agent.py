@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import json
-import tempfile
+import sys
 from dotenv import dotenv_values, load_dotenv
 from pathlib import Path
 from unittest.mock import patch
@@ -11,6 +11,8 @@ env = dotenv_values('.env')
 
 import unittest
 
+from evalscope.api.agent import NativeAgentConfig
+from evalscope.api.agent.mcp import MCPServerConfigStdio
 from evalscope.benchmarks.toolathlon.toolathlon_adapter import ToolathlonAdapter
 from evalscope.config import SandboxTaskConfig
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
@@ -54,32 +56,28 @@ class TestAgentBenchmark(TestBenchmark):
 
     def test_browsecomp(self):
         """Test BrowseComp benchmark end-to-end."""
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            config_overrides = {
-                'collect_perf': False,
-                'debug': False,
-                'eval_batch_size': 1,
-                'limit': 1,
-                'no_timestamp': True,
-                'work_dir': tmp_dir,
-            }
-            if not env.get('DASHSCOPE_API_KEY'):
-                config_overrides['judge_strategy'] = JudgeStrategy.RULE
+        config_overrides = {
+            'collect_perf': False,
+            'debug': False,
+            'eval_batch_size': 1,
+            'limit': 1,
+            'no_timestamp': True,
+            'work_dir': 'outputs/test_agent_browsecomp',
+        }
+        if not env.get('DASHSCOPE_API_KEY'):
+            config_overrides['judge_strategy'] = JudgeStrategy.RULE
 
-            self._run_dataset_test('browsecomp', **config_overrides)
+        self._run_dataset_test('browsecomp', **config_overrides)
 
-            review_files = list(Path(tmp_dir).glob('reviews/*/browsecomp_default.jsonl'))
-            self.assertEqual(len(review_files), 1)
-            review = json.loads(review_files[0].read_text(encoding='utf-8').strip())
-            self.assertNotIn('canary', review['sample_score']['sample_metadata'])
+        review_files = list(Path('outputs/test_agent_browsecomp').glob('reviews/*/browsecomp_default.jsonl'))
+        self.assertEqual(len(review_files), 1)
+        review = json.loads(review_files[0].read_text(encoding='utf-8').strip())
+        self.assertNotIn('canary', review['sample_score']['sample_metadata'])
 
     def test_swe_bench_verified_agentic(self):
         """Test SWE-bench-verified agentic dataset using docker environment."""
         dataset_args = {
             'extra_params': {
-                'action_protocol': 'toolcall',
-                'max_steps': 250,
-                'command_timeout': 60.0,
                 'build_docker_images': True,
                 'pull_remote_images_if_available': True,
                 'force_arch': 'arm64',
@@ -91,9 +89,6 @@ class TestAgentBenchmark(TestBenchmark):
         """Test SWE-bench-verified-mini agentic dataset using docker environment."""
         dataset_args = {
             'extra_params': {
-                'action_protocol': 'toolcall',
-                'max_steps': 250,
-                'command_timeout': 60.0,
                 'build_docker_images': True,
                 'pull_remote_images_if_available': True,
                 'force_arch': 'arm64',
@@ -105,9 +100,6 @@ class TestAgentBenchmark(TestBenchmark):
         """Test SWE-bench-lite agentic dataset using docker environment."""
         dataset_args = {
             'extra_params': {
-                'action_protocol': 'toolcall',
-                'max_steps': 250,
-                'command_timeout': 60.0,
                 'build_docker_images': True,
                 'pull_remote_images_if_available': True,
                 'force_arch': 'arm64',
@@ -119,9 +111,6 @@ class TestAgentBenchmark(TestBenchmark):
         """Test SWE-bench-multilingual agentic dataset using docker environment."""
         dataset_args = {
             'extra_params': {
-                'action_protocol': 'toolcall',
-                'max_steps': 250,
-                'command_timeout': 60.0,
                 'build_docker_images': False,
                 'pull_remote_images_if_available': True,
             }
@@ -143,9 +132,6 @@ class TestAgentBenchmark(TestBenchmark):
         """Test SWE-bench_Pro agentic dataset using docker environment."""
         dataset_args = {
             'extra_params': {
-                'action_protocol': 'toolcall',
-                'max_steps': 250,
-                'command_timeout': 60.0,
                 'eval_timeout': 1800,
             }
         }
@@ -164,14 +150,13 @@ class TestAgentBenchmark(TestBenchmark):
         """Test GAIA benchmark using docker environment with react + bash."""
         dataset_args = {
             'subset_list': ['2023_level1', '2023_level2', '2023_level3'],
-            'extra_params': {
-                'max_steps': 50,
-                'command_timeout': 180.0,
-                'docker_image': 'python:3.11',
-                'network_enabled': True,
-            }
         }
-        self._run_dataset_test('gaia', dataset_args, limit=1)
+        self._run_dataset_test(
+            'gaia',
+            dataset_args,
+            limit=1,
+            sandbox=SandboxTaskConfig(default_config={'image': 'python:3.11', 'network_enabled': True}),
+        )
 
     def test_gaia_with_mcp(self):
         """GAIA + MCP fetch server, exercising the host-side MCP plumbing.
@@ -180,30 +165,42 @@ class TestAgentBenchmark(TestBenchmark):
         Using ``python -m mcp_server_fetch`` (rather than ``uvx``) keeps the
         test deterministic — no per-run package fetch / venv creation.
         """
-        import sys
-
-        from evalscope.api.agent import NativeAgentConfig
-        from evalscope.api.agent.mcp import MCPServerConfigStdio
         dataset_args = {
             'subset_list': ['2023_level1'],
-            'extra_params': {
-                'max_steps': 30,
-                'command_timeout': 180.0,
-                'docker_image': 'python:3.11',
-                'network_enabled': True,
-            }
         }
-        agent_config = NativeAgentConfig(mcp_servers=[
-            MCPServerConfigStdio(
-                command=sys.executable,
-                # ``--ignore-robots-txt`` lets the server fetch sites whose
-                # robots.txt is unreachable (transient network failures /
-                # CDN-blocked UAs commonly seen during offline-ish CI runs).
-                args=['-m', 'mcp_server_fetch', '--ignore-robots-txt'],
-                name='fetch',
-            ),
-        ])
-        self._run_dataset_test('gaia', dataset_args, limit=1, agent_config=agent_config)
+        agent_config = NativeAgentConfig(
+            max_steps=30,
+            mcp_servers=[
+                MCPServerConfigStdio(
+                    command=sys.executable,
+                    # ``--ignore-robots-txt`` lets the server fetch sites whose
+                    # robots.txt is unreachable (transient network failures /
+                    # CDN-blocked UAs commonly seen during offline-ish CI runs).
+                    args=['-m', 'mcp_server_fetch', '--ignore-robots-txt'],
+                    name='fetch',
+                ),
+            ],
+        )
+        self._run_dataset_test(
+            'gaia',
+            dataset_args,
+            limit=1,
+            agent_config=agent_config,
+            sandbox=SandboxTaskConfig(default_config={'image': 'python:3.11', 'network_enabled': True}),
+        )
+
+    def test_researchrubrics(self):
+        """Test ResearchRubrics with a real agent API and binary LLM judge."""
+        if not env.get('DASHSCOPE_API_KEY'):
+            self.skipTest('DASHSCOPE_API_KEY is required for the ResearchRubrics real-API smoke test.')
+
+        self._run_dataset_test(
+            'researchrubrics',
+            limit=5,
+            eval_batch_size=5,
+            collect_perf=False,
+            debug=False,
+        )
 
     def test_terminal_bench_v2_1(self):
         """Test Terminal-Bench v2.1 dataset."""
@@ -250,41 +247,42 @@ class TestAgentBenchmark(TestBenchmark):
             }
         }
 
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            with patch.object(ToolathlonAdapter, 'client_cls', FakeToolathlonClient):
-                self._run_dataset_test(
-                    'toolathlon',
-                    dataset_args,
-                    use_mock=True,
-                    limit=1,
-                    eval_batch_size=1,
-                    no_timestamp=True,
-                    work_dir=tmp_dir,
-                    api_url='http://localhost:8000/v1',
-                    api_key='local-key',
-                )
+        with patch.object(ToolathlonAdapter, 'client_cls', FakeToolathlonClient):
+            self._run_dataset_test(
+                'toolathlon',
+                dataset_args,
+                use_mock=True,
+                limit=1,
+                eval_batch_size=1,
+                no_timestamp=True,
+                work_dir='outputs/test_agent_toolathlon',
+                api_url='http://localhost:8000/v1',
+                api_key='local-key',
+            )
 
-            self.assertIsNotNone(FakeToolathlonClient.last_config)
-            self.assertEqual(FakeToolathlonClient.last_config.base_url, 'http://localhost:8000/v1')
-            self.assertEqual(FakeToolathlonClient.last_config.api_key, 'local-key')
-            self.assertEqual(FakeToolathlonClient.last_config.task_list, ['find-alita-paper'])
-            self.assertEqual(FakeToolathlonClient.last_config.model_params['temperature'], 0.0)
-            self.assertNotIn('retries', FakeToolathlonClient.last_config.model_params)
-            self.assertNotIn('batch_size', FakeToolathlonClient.last_config.model_params)
+        self.assertIsNotNone(FakeToolathlonClient.last_config)
+        self.assertEqual(FakeToolathlonClient.last_config.base_url, 'http://localhost:8000/v1')
+        self.assertEqual(FakeToolathlonClient.last_config.api_key, 'local-key')
+        self.assertEqual(FakeToolathlonClient.last_config.task_list, ['find-alita-paper'])
+        self.assertEqual(FakeToolathlonClient.last_config.model_params['temperature'], 0.0)
+        self.assertNotIn('retries', FakeToolathlonClient.last_config.model_params)
+        self.assertNotIn('batch_size', FakeToolathlonClient.last_config.model_params)
 
     def test_swe_bench_verified_agentic_backticks(self):
         """Test SWE-bench-verified agentic dataset with backticks protocol."""
         dataset_args = {
             'extra_params': {
-                'action_protocol': 'backticks',
-                'max_steps': 250,
-                'command_timeout': 60.0,
                 'build_docker_images': True,
                 'pull_remote_images_if_available': True,
                 'force_arch': 'arm64',
             }
         }
-        self._run_dataset_test('swe_bench_verified_agentic', dataset_args, limit=1)
+        self._run_dataset_test(
+            'swe_bench_verified_agentic',
+            dataset_args,
+            limit=1,
+            agent_config=NativeAgentConfig(strategy='swe_bench_backticks'),
+        )
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_agent.TestAgentBenchmark.test_swe_bench_verified_agentic

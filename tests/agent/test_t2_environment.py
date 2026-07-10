@@ -44,6 +44,7 @@ from evalscope.api.registry import (
 )
 from evalscope.api.tool import ToolCall, ToolInfo
 from evalscope.api.tool.tool_call import ToolFunction
+from evalscope.config import TaskConfig
 from evalscope.utils.function_utils import AsyncioLoopRunner
 
 # ---------------------------------------------------------------------------
@@ -238,6 +239,18 @@ class TestEnclaveEnvironmentInterpreter:
         assert handle.payload['command'][-1] == "export FOO=bar; cd /tmp && echo 'hello world'"
         assert handle.payload['timeout'] == 60.0
 
+    def test_none_timeout_uses_environment_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+
+        _allow_enclave_construction(monkeypatch)
+        env = EnclaveAgentEnvironment(
+            engine='docker',
+            sandbox_config={'image': 'python:3.11-slim'},
+            timeout=None,
+        )
+
+        assert env._timeout == 60.0
+
     def test_exec_uses_configured_login_interpreter(self, monkeypatch: pytest.MonkeyPatch) -> None:
         env, handle = self._env_with_fake_handle(monkeypatch, interpreter=['bash', '-lc'])
         result = self._run(env.exec(['python', '-V']))
@@ -345,15 +358,26 @@ class TestEnclaveEnvironmentInterpreter:
         _allow_enclave_construction(monkeypatch)
         adapter = object.__new__(_SWEBenchAgenticAdapterBase)
         adapter.working_dir = '/testbed'
-        adapter.command_timeout = 60.0
         adapter.force_arch = ''
-        adapter._task_config = None
+        adapter._task_config = TaskConfig(
+            model='dummy',
+            agent_config=NativeAgentConfig(command_timeout=45),
+            sandbox={
+                'default_config': {
+                    'image': 'custom/base:latest',
+                    'network_enabled': False,
+                }
+            },
+        )
         sample = types.SimpleNamespace(metadata={'docker_image': 'swebench/example:latest', 'instance_id': 'example'})
 
         env = adapter.build_environment(sample)
 
         assert env._interpreter == ['bash', '-lc']
+        assert env._timeout == 45
         assert 'environment' not in env._sandbox_config_dict
+        assert env._sandbox_config_dict['image'] == 'swebench/example:latest'
+        assert env._sandbox_config_dict['network_enabled'] is False
         assert env._sandbox_config_dict['env_vars'] == {
             'PAGER': 'cat',
             'MANPAGER': 'cat',
@@ -368,8 +392,7 @@ class TestEnclaveEnvironmentInterpreter:
         _allow_enclave_construction(monkeypatch)
         adapter = object.__new__(SWEBenchProAgenticAdapter)
         adapter.working_dir = '/app'
-        adapter.command_timeout = 60.0
-        adapter._task_config = None
+        adapter._task_config = TaskConfig(model='dummy', agent_config=NativeAgentConfig(command_timeout=46))
         sample = types.SimpleNamespace(
             metadata={'docker_image': 'jefzda/sweap-images:example', 'instance_id': 'example'}
         )
@@ -377,6 +400,7 @@ class TestEnclaveEnvironmentInterpreter:
         env = adapter.build_environment(sample)
 
         assert env._interpreter == ['bash', '-lc']
+        assert env._timeout == 46
         assert 'environment' not in env._sandbox_config_dict
         assert env._sandbox_config_dict['env_vars'] == {
             'PAGER': 'cat',
@@ -391,15 +415,25 @@ class TestEnclaveEnvironmentInterpreter:
 
         _allow_enclave_construction(monkeypatch)
         adapter = object.__new__(GaiaAdapter)
-        adapter.docker_image = 'python:3.11'
-        adapter.network_enabled = True
-        adapter.command_timeout = 180.0
+        adapter._task_config = TaskConfig(
+            model='dummy',
+            agent_config=NativeAgentConfig(command_timeout=180),
+            sandbox={
+                'default_config': {
+                    'image': 'custom/gaia:latest',
+                    'network_enabled': False,
+                }
+            },
+        )
         adapter._host_files_dir = None
         sample = types.SimpleNamespace(metadata={'task_id': 'example'})
 
         env = adapter.build_environment(sample)
 
+        assert env._timeout == 180
         assert 'environment' not in env._sandbox_config_dict
+        assert env._sandbox_config_dict['image'] == 'custom/gaia:latest'
+        assert env._sandbox_config_dict['network_enabled'] is False
         assert env._sandbox_config_dict['env_vars'] == {
             'PAGER': 'cat',
             'MANPAGER': 'cat',
@@ -414,9 +448,17 @@ class TestEnclaveEnvironmentInterpreter:
         _allow_enclave_construction(monkeypatch)
         adapter = object.__new__(GDPvalAdapter)
         adapter._benchmark_meta = BenchmarkMeta(name='gdpval', dataset_id='dummy')
-        adapter.docker_image = 'evalscope/gdpval:latest'
-        adapter.network_enabled = True
-        adapter.command_timeout = 180.0
+        adapter._task_config = TaskConfig(
+            model='dummy',
+            agent_config=NativeAgentConfig(command_timeout=181),
+            sandbox={
+                'default_config': {
+                    'image': 'custom/gdpval:latest',
+                    'network_enabled': False,
+                }
+            },
+        )
+        adapter.docker_image = 'custom/gdpval:latest'
         adapter._current_output_dir = None
         adapter._ensure_docker_image = lambda: None
         sample = types.SimpleNamespace(id='example', metadata={'task_id': 'example'})
@@ -424,7 +466,10 @@ class TestEnclaveEnvironmentInterpreter:
         env = adapter.build_environment(sample)
 
         sandbox_env = env._env
+        assert sandbox_env._timeout == 181
         assert 'environment' not in sandbox_env._sandbox_config_dict
+        assert sandbox_env._sandbox_config_dict['image'] == 'custom/gdpval:latest'
+        assert sandbox_env._sandbox_config_dict['network_enabled'] is False
         assert sandbox_env._sandbox_config_dict['env_vars'] == {
             'PAGER': 'cat',
             'MANPAGER': 'cat',

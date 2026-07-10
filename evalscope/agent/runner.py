@@ -19,6 +19,7 @@ from evalscope.agent.skills import (
     install_agent_skills,
     resolve_agent_skills,
 )
+from evalscope.agent.tools.bash import apply_bash_command_timeout_defaults
 from evalscope.api.agent import AgentEnvironment, AgentLoopResult, run_agent_loop
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessageUser
@@ -106,6 +107,7 @@ def run_native_agent(
     # Merge sample-level tools with agent-config tools.
     sample_tools = list(sample.tools or [])
     all_tools = sample_tools + [t for t in registered_tool_infos if t not in sample_tools]
+    handlers, all_tools = apply_bash_command_timeout_defaults(handlers, all_tools, cfg.command_timeout)
 
     result: AgentLoopResult = run_agent_loop(
         model=model,
@@ -141,7 +143,8 @@ def _resolve_env_kwargs(
          carried alongside the pooled CodeExecutionSandboxMixin so sandbox settings are
          defined **once** at the task level.
       2. ``build_sandbox_config(sample)`` — per-sample override hook.
-      3. ``agent_config.environment_extra`` — raw kwargs forwarded verbatim
+      3. ``agent_config.command_timeout`` — default timeout for command-style environments.
+      4. ``agent_config.environment_extra`` — raw kwargs forwarded verbatim
          to the environment constructor (last word for power users).
     """
     env_kwargs: Dict[str, Any] = {}
@@ -163,6 +166,9 @@ def _resolve_env_kwargs(
     merged_sandbox_cfg: Dict[str, Any] = {**base_sandbox_cfg, **per_sample_cfg}
     if merged_sandbox_cfg:
         env_kwargs['sandbox_config'] = merged_sandbox_cfg
+
+    if task_config.agent_config.command_timeout is not None:
+        env_kwargs['timeout'] = task_config.agent_config.command_timeout
 
     # environment_extra wins over everything above.
     env_kwargs.update(task_config.agent_config.environment_extra)

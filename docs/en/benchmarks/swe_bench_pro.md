@@ -120,9 +120,6 @@ See the [user guide](https://evalscope.readthedocs.io/en/latest/third_party/swe_
 |-----------|------|---------|-------------|
 | `swe_bench_pro_repo_path` | `str` | `` | Local path to a clone of scaleapi/SWE-bench_Pro-os. If empty, auto-cloned to ~/.cache/evalscope/swe_bench_pro/SWE-bench_Pro-os and pinned to commit ca10a60. |
 | `dockerhub_username` | `str` | `jefzda` | DockerHub user/org hosting the sweap-images repository. |
-| `action_protocol` | `str` | `toolcall` | Agent action protocol: "toolcall" (function-calling) or "backticks" (text-based fallback for models without function-calling support). Choices: ['toolcall', 'backticks'] |
-| `max_steps` | `int` | `250` | Maximum number of agent steps per sample. |
-| `command_timeout` | `float` | `60.0` | Default per-bash-command timeout in seconds. |
 | `eval_timeout` | `int` | `3600` | Per-instance evaluation timeout in seconds. |
 
 ## Usage
@@ -135,20 +132,25 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets swe_bench_pro \
+    --agent-config '{"mode":"native","strategy":"swe_bench_toolcall","max_steps":250}' \
     --limit 10  # Remove this line for formal evaluation
 ```
 
 ### Using Python
 
 ```python
-from evalscope import run_task
-from evalscope.config import TaskConfig
+from evalscope import TaskConfig, run_task
+from evalscope.api.agent import NativeAgentConfig
 
 task_cfg = TaskConfig(
     model='YOUR_MODEL',
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['swe_bench_pro'],
+    agent_config=NativeAgentConfig(
+        strategy='swe_bench_toolcall',
+        max_steps=250,
+    ),
     dataset_args={
         'swe_bench_pro': {
             # extra_params: {}  # uses default extra parameters

@@ -89,20 +89,25 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets officeqa \
+    --agent-config '{"mode":"native","strategy":"function_calling","max_steps":15}' \
     --limit 10  # Remove this line for formal evaluation
 ```
 
 ### Using Python
 
 ```python
-from evalscope import run_task
-from evalscope.config import TaskConfig
+from evalscope import TaskConfig, run_task
+from evalscope.api.agent import NativeAgentConfig
 
 task_cfg = TaskConfig(
     model='YOUR_MODEL',
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['officeqa'],
+    agent_config=NativeAgentConfig(
+        strategy='function_calling',
+        max_steps=15,
+    ),
     limit=10,  # Remove this line for formal evaluation
 )
 

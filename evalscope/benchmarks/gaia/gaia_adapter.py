@@ -30,6 +30,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import get_strategy, register_benchmark
+from evalscope.api.sandbox import merge_sandbox_config_dicts
 from evalscope.constants import HubType, Tags
 from evalscope.utils.import_utils import is_build_doc
 from evalscope.utils.logger import get_logger
@@ -57,29 +58,6 @@ Here is the question:
 _DEFAULT_DOCKER_IMAGE = 'python:3.11'
 _SHARED_FILES_DIR = '/shared_files'
 _GAIA_DATASET_ID = 'gaia-benchmark/GAIA'
-
-_GAIA_EXTRA_PARAMS: Dict[str, Any] = {
-    'max_steps': {
-        'type': 'int',
-        'description': 'Maximum number of agent steps per sample.',
-        'value': 50,
-    },
-    'command_timeout': {
-        'type': 'float',
-        'description': 'Default per-bash-command timeout in seconds.',
-        'value': 180.0,
-    },
-    'docker_image': {
-        'type': 'str',
-        'description': 'Docker image used as the per-sample sandbox.',
-        'value': _DEFAULT_DOCKER_IMAGE,
-    },
-    'network_enabled': {
-        'type': 'bool',
-        'description': 'Allow the sandbox to access the network (GAIA browsing questions need this).',
-        'value': True,
-    },
-}
 
 
 @register_benchmark(
@@ -109,9 +87,9 @@ GAIA (General AI Assistants) is a benchmark of 450+ questions targeting next-gen
 ## Evaluation Notes
 
 - Requires Docker daemon running locally (or a remote sandbox engine via the ms_enclave configuration).
-- ``extra_params.max_steps`` caps the agent loop length (default 50).
-- ``extra_params.command_timeout`` sets per-``bash`` command timeout (default 180s, mirrors inspect_ai).
-- Network is enabled by default — many questions require browsing/searching.
+- The agent loop defaults to 50 steps. Use ``NativeAgentConfig.max_steps`` to override it.
+- Network is enabled by default because many questions require browsing. Override the image, network, CPU or memory
+  settings through ``TaskConfig.sandbox.default_config``.
 - Use ``subset_list`` to restrict to specific difficulty levels, e.g. ``['2023_level1']``, ``['2023_level1', '2023_level2']`` or ``['2023_all']`` (default).
 - [Usage Documentation](https://evalscope.readthedocs.io/en/latest/third_party/gaia.html)
 """,
@@ -121,7 +99,6 @@ GAIA (General AI Assistants) is a benchmark of 450+ questions targeting next-gen
         subset_list=['2023_level1', '2023_level2', '2023_level3'],
         default_subset='2023_level1',
         prompt_template='{question}',
-        extra_params=_GAIA_EXTRA_PARAMS,
     )
 )
 class GaiaAdapter(AgentLoopAdapter):
@@ -132,10 +109,6 @@ class GaiaAdapter(AgentLoopAdapter):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-
-        self.command_timeout: float = float(self.extra_params.get('command_timeout', 180.0))
-        self.docker_image: str = self.extra_params.get('docker_image', _DEFAULT_DOCKER_IMAGE)
-        self.network_enabled: bool = bool(self.extra_params.get('network_enabled', True))
 
         self._snapshot_dir: Optional[str] = None
         self._host_files_dir: Optional[str] = None
@@ -232,10 +205,10 @@ class GaiaAdapter(AgentLoopAdapter):
         if self._host_files_dir and os.path.isdir(self._host_files_dir):
             volumes[self._host_files_dir] = {'bind': _SHARED_FILES_DIR, 'mode': 'ro'}
 
-        sandbox_config: Dict[str, Any] = {
-            'image': self.docker_image,
+        defaults: Dict[str, Any] = {
+            'image': _DEFAULT_DOCKER_IMAGE,
             'working_dir': '/workspace',
-            'network_enabled': self.network_enabled,
+            'network_enabled': True,
             'env_vars': {
                 'PAGER': 'cat',
                 'MANPAGER': 'cat',
@@ -243,13 +216,14 @@ class GaiaAdapter(AgentLoopAdapter):
                 'TQDM_DISABLE': '1',
             },
         }
+        sandbox_config = merge_sandbox_config_dicts(defaults, self._task_sandbox_config())
         if volumes:
-            sandbox_config['volumes'] = volumes
+            sandbox_config['volumes'] = {**sandbox_config.get('volumes', {}), **volumes}
 
         return EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config=sandbox_config,
-            timeout=self.command_timeout,
+            timeout=self._native_command_timeout(),
         )
 
     # ------------------------------------------------------------------

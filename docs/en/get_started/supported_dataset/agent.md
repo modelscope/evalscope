@@ -16,6 +16,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 | `mcp_atlas` | [MCP-Atlas](../../benchmarks/mcp_atlas.md) | `Agent`, `MultiTurn` |
 | `minimax_verifier` | [MiniMax-Vendor-Verifier](../../benchmarks/minimax_verifier.md) | `Agent`, `FunctionCalling` |
 | `officeqa` | [OfficeQA](../../benchmarks/officeqa.md) | `Agent`, `Knowledge`, `QA` |
+| `researchrubrics` | [ResearchRubrics](../../benchmarks/researchrubrics.md) | `Agent`, `MultiTurn`, `Reasoning`, `Retrieval` |
 | `skillsbench` | [SkillsBench](../../benchmarks/skillsbench.md) | `Agent`, `MultiTurn` |
 | `swe_bench_lite_agentic` | [SWE-bench_Lite_Agentic](../../benchmarks/swe_bench_lite_agentic.md) | `Coding` |
 | `swe_bench_multilingual_agentic` | [SWE-bench_Multilingual_Agentic](../../benchmarks/swe_bench_multilingual_agentic.md) | `Coding` |
@@ -45,6 +46,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 ../../benchmarks/mcp_atlas.md
 ../../benchmarks/minimax_verifier.md
 ../../benchmarks/officeqa.md
+../../benchmarks/researchrubrics.md
 ../../benchmarks/skillsbench.md
 ../../benchmarks/swe_bench_lite_agentic.md
 ../../benchmarks/swe_bench_multilingual_agentic.md

@@ -22,9 +22,9 @@ GAIA (General AI Assistants) is a benchmark of 450+ questions targeting next-gen
 ## Evaluation Notes
 
 - Requires Docker daemon running locally (or a remote sandbox engine via the ms_enclave configuration).
-- ``extra_params.max_steps`` caps the agent loop length (default 50).
-- ``extra_params.command_timeout`` sets per-``bash`` command timeout (default 180s, mirrors inspect_ai).
-- Network is enabled by default — many questions require browsing/searching.
+- The agent loop defaults to 50 steps. Use ``NativeAgentConfig.max_steps`` to override it.
+- Network is enabled by default because many questions require browsing. Override the image, network, CPU or memory
+  settings through ``TaskConfig.sandbox.default_config``.
 - Use ``subset_list`` to restrict to specific difficulty levels, e.g. ``['2023_level1']``, ``['2023_level1', '2023_level2']`` or ``['2023_all']`` (default).
 - [Usage Documentation](https://evalscope.readthedocs.io/en/latest/third_party/gaia.html)
 
@@ -118,15 +118,6 @@ GAIA (General AI Assistants) is a benchmark of 450+ questions targeting next-gen
 {question}
 ```
 
-## Extra Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `max_steps` | `int` | `50` | Maximum number of agent steps per sample. |
-| `command_timeout` | `float` | `180.0` | Default per-bash-command timeout in seconds. |
-| `docker_image` | `str` | `python:3.11` | Docker image used as the per-sample sandbox. |
-| `network_enabled` | `bool` | `True` | Allow the sandbox to access the network (GAIA browsing questions need this). |
-
 ## Usage
 
 ### Using CLI
@@ -137,24 +128,28 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets gaia \
+    --agent-config '{"mode":"native","strategy":"react","max_steps":50}' \
     --limit 10  # Remove this line for formal evaluation
 ```
 
 ### Using Python
 
 ```python
-from evalscope import run_task
-from evalscope.config import TaskConfig
+from evalscope import TaskConfig, run_task
+from evalscope.api.agent import NativeAgentConfig
 
 task_cfg = TaskConfig(
     model='YOUR_MODEL',
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['gaia'],
+    agent_config=NativeAgentConfig(
+        strategy='react',
+        max_steps=50,
+    ),
     dataset_args={
         'gaia': {
             # subset_list: ['2023_level1', '2023_level2', '2023_level3']  # optional, evaluate specific subsets
-            # extra_params: {}  # uses default extra parameters
         }
     },
     limit=10,  # Remove this line for formal evaluation

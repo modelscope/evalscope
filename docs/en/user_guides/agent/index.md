@@ -37,7 +37,7 @@ For the Web dashboard in general (report comparison, predictions view, …), see
 **When should I set `agent_config`, and when should I rely on a benchmark's built-in AgentLoop?**
 
 - To turn a regular benchmark (GSM8K, AIME, IFEval, HLE, …) into a multi-turn tool-use task → set [`AgentConfig`](native.md) or [`ExternalAgentConfig`](bridge.md) on `TaskConfig.agent_config`.
-- For **intrinsically agentic** benchmarks (SWE-bench agentic, Terminal-Bench, …) → just run the dataset and tune `dataset_args.extra_params`. **Do not** set `agent_config`; it is ignored.
+- For benchmarks backed by `AgentLoopAdapter` (GAIA, ResearchRubrics, SWE-bench agentic, GDPval, …) → the benchmark provides its required tools and environment, while explicit `NativeAgentConfig` values can override loop settings such as `strategy`, `max_steps`, tools, and MCP servers. Dataset `extra_params` stay benchmark-specific, for example build or filter options.
 - Benchmarks like `swe_bench_pro` ship their own per-sample environment and can be combined with the [External Agent Bridge](bridge.md) — just leave `environment` empty.
 
 For mode-specific issues, see each sub-page: [Native AgentLoop FAQ](native.md#faq) · [External Agent Bridge FAQ](bridge.md#faq).

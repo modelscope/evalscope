@@ -37,7 +37,7 @@ Web 仪表盘的整体使用说明(报告对比、预测视图等)请参考 [可
 **何时使用 `agent_config`，何时依赖基准内置 AgentLoop?**
 
 - 想让常规基准(GSM8K、AIME、IFEval、HLE 等)变成多轮工具调用形式 → 在 `TaskConfig.agent_config` 设置 [`AgentConfig`](native.md) 或 [`ExternalAgentConfig`](bridge.md)。
-- 评测 SWE-bench agentic、Terminal-Bench 等**天生属于代理任务**的基准 → 直接运行对应数据集，通过 `dataset_args.extra_params` 调参，**不需要也不要**设置 `agent_config`(会被忽略)。
+- 评测基于 `AgentLoopAdapter` 的基准（GAIA、ResearchRubrics、SWE-bench agentic、GDPval 等）→ 基准会提供必需工具和环境；显式设置的 `NativeAgentConfig` 可覆盖 `strategy`、`max_steps`、工具和 MCP servers 等循环配置。`dataset_args.extra_params` 只保留各基准自己的构建、过滤等参数。
 - `swe_bench_pro` 等基准会带自己的样本级环境，可与 [外部 Agent Bridge](bridge.md) 组合，留空 `environment` 即可。
 
 其他模式特定的常见问题请见各自子页:[内置 AgentLoop FAQ](native.md#常见问题) · [外部 Agent Bridge FAQ](bridge.md#常见问题)。

@@ -274,6 +274,9 @@ class ModelResult(BaseModel):
     messages: List[ChatMessage] = []
     """Chat messages exchanged during evaluation (for conversational models)."""
 
+    agent_trace: Optional[AgentTrace] = None
+    """Structured agent trajectory, when prediction used an agent runner."""
+
     metadata: Optional[Dict[str, Any]] = None
     """Additional metadata associated with the model result."""
 
@@ -308,6 +311,7 @@ class ModelResult(BaseModel):
             model=task_state.model,
             index=task_state.sample_id,
             messages=task_state.messages,
+            agent_trace=task_state.agent_trace,
             model_output=task_state.output,
             metadata=task_state.metadata if save_metadata else {},
         )
@@ -335,13 +339,15 @@ class ModelResult(BaseModel):
         if self.metadata:
             sample.metadata.update(self.metadata)
 
-        return TaskState(
+        task_state = TaskState(
             model=self.model,
             sample=sample,
             messages=self.messages,
             output=ModelOutput.model_validate(self.model_output),
             completed=True,  # Mark as completed since it was cached
         )
+        task_state.agent_trace = self.agent_trace
+        return task_state
 
     def pretty_print(self) -> str:
         """

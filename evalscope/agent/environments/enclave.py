@@ -123,7 +123,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         (e.g. ``base_url`` / ``region`` / credentials).
     timeout:
         Default command timeout (seconds) used when :meth:`exec` is called
-        without an explicit timeout.
+        without an explicit timeout. ``None`` uses the environment default.
     interpreter:
         Command interpreter argv prefix. The rendered command string is
         appended as the final argument. Defaults to ``['bash', '-c']`` for
@@ -139,7 +139,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         engine: Union[str, SandboxEngine] = SandboxEngine.DOCKER,
         sandbox_config: Optional[Dict[str, Any]] = None,
         manager_config: Optional[Dict[str, Any]] = None,
-        timeout: float = 60.0,
+        timeout: Optional[float] = None,
         interpreter: Optional[Sequence[str]] = None,
         **_: Any,
     ) -> None:
@@ -149,7 +149,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         check_import('ms_enclave', extra='sandbox', raise_error=True, feature_name='EnclaveAgentEnvironment')
 
         self._engine: SandboxEngine = resolve_engine(engine)
-        self._timeout = float(timeout)
+        self._timeout = 60.0 if timeout is None else float(timeout)
         if isinstance(interpreter, str):
             raise TypeError(
                 'EnclaveAgentEnvironment.interpreter must be a non-empty sequence of non-empty strings, '

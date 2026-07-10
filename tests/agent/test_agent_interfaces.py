@@ -134,12 +134,22 @@ class TestAgentTypesBehavior(unittest.TestCase):
         self.assertEqual(cfg.strategy, 'function_calling')
         self.assertEqual(cfg.tools, [])
         self.assertEqual(cfg.max_steps, 10)
+        self.assertIsNone(cfg.command_timeout)
         self.assertIsNone(cfg.environment)
         self.assertEqual(cfg.kwargs, {})
 
     def test_agent_config_dict_validate(self):
-        cfg = NativeAgentConfig.model_validate({'strategy': 'function_calling', 'max_steps': 5})
+        cfg = NativeAgentConfig.model_validate({'strategy': 'function_calling', 'max_steps': 5, 'command_timeout': 180})
         self.assertEqual(cfg.max_steps, 5)
+        self.assertEqual(cfg.command_timeout, 180)
+
+    def test_agent_config_rejects_invalid_command_timeout(self):
+        with self.assertRaises(ValueError):
+            NativeAgentConfig(command_timeout=0)
+
+    def test_agent_config_rejects_invalid_max_steps(self):
+        with self.assertRaises(ValueError):
+            NativeAgentConfig(max_steps=0)
 
     def test_parsed_action_dataclass_defaults(self):
         pa = ParsedAction()
