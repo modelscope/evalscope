@@ -44,7 +44,16 @@ class StreamedResponseHandler:
             message, self.buffer = self.buffer.split('\n\n', 1)
             message = message.strip()
             if message:
-                messages.append(message)
+                # Extract the 'data:' field from multi-line SSE format
+                # SSE message may contain: id:..., event:..., data:..., etc.
+                data_line = None
+                for line in message.split('\n'):
+                    if line.startswith('data:'):
+                        data_line = line
+                        break
+                
+                if data_line:
+                    messages.append(data_line)
 
         # if self.buffer is not empty, check if it is a complete message
         # by removing data: prefix and check if it is a valid JSON
