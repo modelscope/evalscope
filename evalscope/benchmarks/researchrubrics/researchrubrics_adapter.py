@@ -7,14 +7,14 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional
 
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
-from evalscope.api.agent import AgentEnvironment, AgentStrategy, EventType
+from evalscope.api.agent import AgentEnvironment, EventType
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import InferenceResult, TaskState
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
-from evalscope.api.registry import get_strategy, register_benchmark
+from evalscope.api.registry import register_benchmark
 from evalscope.constants import JudgeStrategy, Tags
 from evalscope.utils.logger import get_logger
 from .utils import (
@@ -33,17 +33,6 @@ from .utils import (
 logger = get_logger()
 
 _EXTRA_PARAMS: Dict[str, Any] = {
-    'strategy': {
-        'type': 'str',
-        'description': 'Agent strategy used by the built-in AgentLoop.',
-        'value': 'function_calling',
-        'choices': ['function_calling', 'react'],
-    },
-    'max_steps': {
-        'type': 'int',
-        'description': 'Maximum number of agent steps per sample.',
-        'value': 50,
-    },
     'judge_context_limit': {
         'type': 'int',
         'description': 'Estimated token limit before rubric judging switches to chunking.',
@@ -82,8 +71,8 @@ references, communication quality, and instruction following.
   to access the network, gather information, and produce a final report.
 - The default runtime uses the host network and a temporary working directory, but does not provide complete filesystem
   isolation. Do not run untrusted models on shared or sensitive machines.
-- Configure the strategy and maximum number of steps through ``dataset_args.extra_params``. The default strategy is
-  ``function_calling`` with a 50-step limit; ``react`` is also available. Both require native function calling support.
+- The default strategy is ``function_calling`` with a 50-step limit. Use ``NativeAgentConfig`` to override the strategy
+  or step limit; ``react`` is also available. Both strategies require native function calling support.
 - Add dedicated search or web-fetching tools through ``NativeAgentConfig``, or use ``ExternalAgentConfig`` to run the
   task with another agent framework.
 - When the step limit is reached, the model is asked to produce a final report from the information already collected so
@@ -104,8 +93,6 @@ references, communication quality, and instruction following.
 
 ## Configuration
 
-- ``strategy``: ``function_calling`` (default) or ``react``
-- ``max_steps``: 50 by default
 - ``judge_context_limit``: 150,000 estimated tokens
 - ``judge_chunk_size``: 100,000 estimated tokens
 - ``judge_retries``: 3 attempts per judge request
@@ -159,13 +146,9 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.strategy_name = str(self.extra_params.get('strategy', self.strategy_name))
-        self.max_steps = int(self.extra_params.get('max_steps', self.max_steps_default))
         self.judge_context_limit = int(self.extra_params.get('judge_context_limit', 150000))
         self.judge_chunk_size = int(self.extra_params.get('judge_chunk_size', 100000))
         self.judge_retries = int(self.extra_params.get('judge_retries', 3))
-        if self.max_steps <= 0:
-            raise ValueError('ResearchRubrics max_steps must be greater than 0.')
         if self.judge_context_limit <= 0 or self.judge_chunk_size <= 0:
             raise ValueError('ResearchRubrics judge context and chunk limits must be greater than 0.')
         if self.judge_retries <= 0:
@@ -189,10 +172,6 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
                 'exploration': record.get('exploration'),
             },
         )
-
-    def build_strategy(self, sample: Sample) -> AgentStrategy:
-        strategy_cls = get_strategy(self.strategy_name)
-        return strategy_cls()
 
     def build_tools(self, sample: Sample) -> Dict[str, Any]:
         return {'bash': run_bash}

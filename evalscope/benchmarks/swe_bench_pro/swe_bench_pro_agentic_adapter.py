@@ -17,7 +17,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
-from evalscope.api.agent import AgentEnvironment, AgentStrategy
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
@@ -185,25 +185,6 @@ _EXTRA_PARAMS: Dict[str, Any] = {
         'description': 'DockerHub user/org hosting the sweap-images repository.',
         'value': 'jefzda',
     },
-    'action_protocol': {
-        'type': 'str',
-        'description': (
-            'Agent action protocol: "toolcall" (function-calling) or '
-            '"backticks" (text-based fallback for models without function-calling support).'
-        ),
-        'value': 'toolcall',
-        'choices': ['toolcall', 'backticks'],
-    },
-    'max_steps': {
-        'type': 'int',
-        'description': 'Maximum number of agent steps per sample.',
-        'value': 250,
-    },
-    'command_timeout': {
-        'type': 'float',
-        'description': 'Default per-bash-command timeout in seconds.',
-        'value': 60.0,
-    },
     'eval_timeout': {
         'type': 'int',
         'description': 'Per-instance evaluation timeout in seconds.',
@@ -227,14 +208,12 @@ _EXTRA_PARAMS: Dict[str, Any] = {
 )
 class SWEBenchProAgenticAdapter(AgentLoopAdapter):
 
+    strategy_name = 'swe_bench_toolcall'
+    max_steps_default = 250
+
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
-        self.action_protocol: str = self.extra_params.get('action_protocol', 'toolcall')
-        if self.action_protocol not in {'toolcall', 'backticks'}:
-            raise ValueError(f'Invalid action_protocol={self.action_protocol!r}; must be "toolcall" or "backticks".')
-        self.max_steps = int(self.extra_params.get('max_steps', 250))
-        self.command_timeout = float(self.extra_params.get('command_timeout', 60.0))
         # Hardcoded: must match the ``cd /app`` in utils.build_entry_script.
         self.working_dir: str = '/app'
         self.eval_timeout: int = int(self.extra_params.get('eval_timeout', 3600))
@@ -297,31 +276,14 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
     # Agent loop hooks
     # ------------------------------------------------------------------
 
-    def build_strategy(self, sample: Sample) -> AgentStrategy:
-        if self.action_protocol == 'toolcall':
-            from evalscope.agent.strategies.swe_bench import SweBenchToolcallStrategy
-            return SweBenchToolcallStrategy()
-        from evalscope.agent.strategies.swe_bench import SweBenchBackticksStrategy
-        return SweBenchBackticksStrategy()
-
     def build_tools(self, sample: Sample):
         return {'bash': run_bash}
 
     def _user_sandbox_config(self) -> Dict[str, Any]:
-        """Read ``TaskConfig.sandbox.default_config`` as the user-tunable base.
-
-        Both the agent loop sandbox and the per-instance eval sandbox consume
-        this dict, so users configure memory_limit / cpu_limit / platform /
-        network_enabled / ... in **one** place. Ignores ``sandbox.enabled`` —
-        SWE-bench_Pro is always sandboxed. Defaults ``platform`` to
-        ``linux/amd64`` so the amd64-only sweap-images work on Apple Silicon
-        without extra configuration.
-        """
-        cfg: Dict[str, Any] = {}
-        if self._task_config is not None and self._task_config.sandbox is not None:
-            cfg = dict(self._task_config.sandbox.default_config or {})
-        cfg.setdefault('platform', 'linux/amd64')
-        return cfg
+        """Return user sandbox defaults plus the SWE-bench Pro platform default."""
+        config = self._task_sandbox_config()
+        config.setdefault('platform', 'linux/amd64')
+        return config
 
     def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
         from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
@@ -349,7 +311,7 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
         return EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config=sandbox_config,
-            timeout=self.command_timeout,
+            timeout=60.0,
             interpreter=_SWE_BENCH_PRO_INTERPRETER,
         )
 

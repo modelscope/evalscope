@@ -17,17 +17,15 @@ from evalscope.benchmarks.gdpval.utils import (
     build_reference_volumes,
     relative_deliverable_path,
 )
-from evalscope.config import TaskConfig
+from evalscope.config import SandboxTaskConfig, TaskConfig
 from evalscope.constants import HubType, JudgeStrategy
 
 
-def make_adapter(local_path: str = '', **extra_params: Any) -> GDPvalAdapter:
+def make_adapter(
+    local_path: str = '', sandbox_config: Optional[Dict[str, Any]] = None, **extra_params: Any
+) -> GDPvalAdapter:
     base_extra_params = {
-        'max_steps': 250,
-        'command_timeout': 180.0,
-        'docker_image': 'evalscope/gdpval:latest',
         'auto_build_docker_image': True,
-        'network_enabled': True,
         'download_reference_files': False,
     }
     base_extra_params.update(extra_params)
@@ -46,6 +44,7 @@ def make_adapter(local_path: str = '', **extra_params: Any) -> GDPvalAdapter:
         dataset_args={'gdpval': {
             'extra_params': extra_params
         }},
+        sandbox=SandboxTaskConfig(default_config=sandbox_config or {}),
     )
     if local_path:
         cfg.dataset_args['gdpval']['local_path'] = local_path
@@ -293,7 +292,7 @@ def test_ensure_docker_image_builds_missing_default_image(monkeypatch: Any) -> N
 
 
 def test_ensure_docker_image_skips_custom_image(monkeypatch: Any) -> None:
-    adapter = make_adapter(docker_image='custom/gdpval:latest')
+    adapter = make_adapter(sandbox_config={'image': 'custom/gdpval:latest'})
 
     monkeypatch.setattr(
         'evalscope.benchmarks.gdpval.gdpval_adapter.prepare_docker_image',

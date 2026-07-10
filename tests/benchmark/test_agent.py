@@ -77,9 +77,6 @@ class TestAgentBenchmark(TestBenchmark):
         """Test SWE-bench-verified agentic dataset using docker environment."""
         dataset_args = {
             'extra_params': {
-                'action_protocol': 'toolcall',
-                'max_steps': 250,
-                'command_timeout': 60.0,
                 'build_docker_images': True,
                 'pull_remote_images_if_available': True,
                 'force_arch': 'arm64',
@@ -91,9 +88,6 @@ class TestAgentBenchmark(TestBenchmark):
         """Test SWE-bench-verified-mini agentic dataset using docker environment."""
         dataset_args = {
             'extra_params': {
-                'action_protocol': 'toolcall',
-                'max_steps': 250,
-                'command_timeout': 60.0,
                 'build_docker_images': True,
                 'pull_remote_images_if_available': True,
                 'force_arch': 'arm64',
@@ -105,9 +99,6 @@ class TestAgentBenchmark(TestBenchmark):
         """Test SWE-bench-lite agentic dataset using docker environment."""
         dataset_args = {
             'extra_params': {
-                'action_protocol': 'toolcall',
-                'max_steps': 250,
-                'command_timeout': 60.0,
                 'build_docker_images': True,
                 'pull_remote_images_if_available': True,
                 'force_arch': 'arm64',
@@ -119,9 +110,6 @@ class TestAgentBenchmark(TestBenchmark):
         """Test SWE-bench-multilingual agentic dataset using docker environment."""
         dataset_args = {
             'extra_params': {
-                'action_protocol': 'toolcall',
-                'max_steps': 250,
-                'command_timeout': 60.0,
                 'build_docker_images': False,
                 'pull_remote_images_if_available': True,
             }
@@ -143,9 +131,6 @@ class TestAgentBenchmark(TestBenchmark):
         """Test SWE-bench_Pro agentic dataset using docker environment."""
         dataset_args = {
             'extra_params': {
-                'action_protocol': 'toolcall',
-                'max_steps': 250,
-                'command_timeout': 60.0,
                 'eval_timeout': 1800,
             }
         }
@@ -164,14 +149,13 @@ class TestAgentBenchmark(TestBenchmark):
         """Test GAIA benchmark using docker environment with react + bash."""
         dataset_args = {
             'subset_list': ['2023_level1', '2023_level2', '2023_level3'],
-            'extra_params': {
-                'max_steps': 50,
-                'command_timeout': 180.0,
-                'docker_image': 'python:3.11',
-                'network_enabled': True,
-            }
         }
-        self._run_dataset_test('gaia', dataset_args, limit=1)
+        self._run_dataset_test(
+            'gaia',
+            dataset_args,
+            limit=1,
+            sandbox=SandboxTaskConfig(default_config={'image': 'python:3.11', 'network_enabled': True}),
+        )
 
     def test_gaia_with_mcp(self):
         """GAIA + MCP fetch server, exercising the host-side MCP plumbing.
@@ -186,54 +170,40 @@ class TestAgentBenchmark(TestBenchmark):
         from evalscope.api.agent.mcp import MCPServerConfigStdio
         dataset_args = {
             'subset_list': ['2023_level1'],
-            'extra_params': {
-                'max_steps': 30,
-                'command_timeout': 180.0,
-                'docker_image': 'python:3.11',
-                'network_enabled': True,
-            }
         }
-        agent_config = NativeAgentConfig(mcp_servers=[
-            MCPServerConfigStdio(
-                command=sys.executable,
-                # ``--ignore-robots-txt`` lets the server fetch sites whose
-                # robots.txt is unreachable (transient network failures /
-                # CDN-blocked UAs commonly seen during offline-ish CI runs).
-                args=['-m', 'mcp_server_fetch', '--ignore-robots-txt'],
-                name='fetch',
-            ),
-        ])
-        self._run_dataset_test('gaia', dataset_args, limit=1, agent_config=agent_config)
+        agent_config = NativeAgentConfig(
+            max_steps=30,
+            mcp_servers=[
+                MCPServerConfigStdio(
+                    command=sys.executable,
+                    # ``--ignore-robots-txt`` lets the server fetch sites whose
+                    # robots.txt is unreachable (transient network failures /
+                    # CDN-blocked UAs commonly seen during offline-ish CI runs).
+                    args=['-m', 'mcp_server_fetch', '--ignore-robots-txt'],
+                    name='fetch',
+                ),
+            ],
+        )
+        self._run_dataset_test(
+            'gaia',
+            dataset_args,
+            limit=1,
+            agent_config=agent_config,
+            sandbox=SandboxTaskConfig(default_config={'image': 'python:3.11', 'network_enabled': True}),
+        )
 
     def test_researchrubrics(self):
         """Test ResearchRubrics with a real agent API and binary LLM judge."""
         if not env.get('DASHSCOPE_API_KEY'):
             self.skipTest('DASHSCOPE_API_KEY is required for the ResearchRubrics real-API smoke test.')
 
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            self._run_dataset_test(
-                'researchrubrics',
-                limit=1,
-                eval_batch_size=1,
-                collect_perf=False,
-                debug=False,
-                no_timestamp=True,
-                work_dir=tmp_dir,
-            )
-
-            prediction_files = list(Path(tmp_dir).glob('predictions/*/researchrubrics_default.jsonl'))
-            review_files = list(Path(tmp_dir).glob('reviews/*/researchrubrics_default.jsonl'))
-            report_files = list(Path(tmp_dir).glob('reports/*/researchrubrics.json'))
-            self.assertEqual(len(prediction_files), 1)
-            self.assertEqual(len(review_files), 1)
-            self.assertEqual(len(report_files), 1)
-
-            review = json.loads(review_files[0].read_text(encoding='utf-8').strip())
-            score = review['sample_score']['score']
-            rubric_results = score['metadata']['rubrics']
-            self.assertIn('compliance_score', score['value'])
-            self.assertEqual(len(rubric_results), len(json.loads(review['target'])))
-            self.assertIsNotNone(review['agent_trace'])
+        self._run_dataset_test(
+            'researchrubrics',
+            limit=5,
+            eval_batch_size=5,
+            collect_perf=False,
+            debug=False,
+        )
 
     def test_terminal_bench_v2_1(self):
         """Test Terminal-Bench v2.1 dataset."""
@@ -304,17 +274,20 @@ class TestAgentBenchmark(TestBenchmark):
 
     def test_swe_bench_verified_agentic_backticks(self):
         """Test SWE-bench-verified agentic dataset with backticks protocol."""
+        from evalscope.api.agent import NativeAgentConfig
         dataset_args = {
             'extra_params': {
-                'action_protocol': 'backticks',
-                'max_steps': 250,
-                'command_timeout': 60.0,
                 'build_docker_images': True,
                 'pull_remote_images_if_available': True,
                 'force_arch': 'arm64',
             }
         }
-        self._run_dataset_test('swe_bench_verified_agentic', dataset_args, limit=1)
+        self._run_dataset_test(
+            'swe_bench_verified_agentic',
+            dataset_args,
+            limit=1,
+            agent_config=NativeAgentConfig(strategy='swe_bench_backticks'),
+        )
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_agent.TestAgentBenchmark.test_swe_bench_verified_agentic

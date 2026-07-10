@@ -52,16 +52,14 @@ class AgentLoopAdapter(AgentAdapter):
     #: ``'swe_bench_toolcall'``).
     strategy_name: str = 'function_calling'
 
-    #: Default upper bound on loop iterations per sample. Subclasses may
-    #: override either via class attribute or by pushing a ``max_steps``
-    #: entry into ``extra_params`` (read in ``__init__``).
+    #: Default upper bound on loop iterations per sample. Subclasses override
+    #: this class attribute; users can explicitly override it through
+    #: ``NativeAgentConfig.max_steps``.
     max_steps_default: int = 30
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        # Allow benchmarks to expose ``max_steps`` to end users via the
-        # ``extra_params`` block of their ``BenchmarkMeta`` registration.
-        self.max_steps = int(self.extra_params.get('max_steps', self.max_steps_default))
+        self.max_steps = self.max_steps_default
 
     # ------------------------------------------------------------------
     # Build hooks
@@ -90,6 +88,12 @@ class AgentLoopAdapter(AgentAdapter):
         """Return an :class:`AgentEnvironment` or ``None`` if not needed."""
         return None
 
+    def _task_sandbox_config(self) -> Dict[str, Any]:
+        """Return task-level sandbox defaults for benchmark-owned environments."""
+        if self._task_config is None or self._task_config.sandbox is None:
+            return {}
+        return dict(self._task_config.sandbox.default_config or {})
+
     def build_initial_messages(self, sample: Any) -> List[Any]:
         """Return the message list the loop starts with.
 
@@ -110,11 +114,11 @@ class AgentLoopAdapter(AgentAdapter):
     def _on_inference(self, model: Any, sample: Any) -> Any:
         """Drive :class:`AgentLoop` for this sample and return the final output.
 
-        ``NativeAgentConfig.mcp_servers`` (if any) is forwarded to
-        :func:`run_agent_loop` so MCP-advertised tools merge into this
-        adapter's tool set without any benchmark-side change. Other
-        ``NativeAgentConfig`` fields are ignored — agentic benchmarks
-        are self-contained by design.
+        Benchmark defaults remain authoritative when ``agent_config`` is
+        omitted. Explicit ``NativeAgentConfig`` strategy, tools and max_steps
+        fields override or extend those defaults; MCP tools are always merged.
+        The benchmark keeps ownership of its environment so task-specific
+        mounts and sandbox contracts remain intact.
 
         :class:`ExternalAgentConfig` routes through :func:`run_external_agent`
         directly, with the adapter's :meth:`build_environment` and
@@ -122,11 +126,11 @@ class AgentLoopAdapter(AgentAdapter):
         and prompt, and :meth:`_external_extract_prediction` recovering
         the prediction artifact before the env closes.
         """
-        from evalscope.api.agent import AgentLoopResult, run_agent_loop
+        from evalscope.api.agent import AgentLoopResult, NativeAgentConfig, run_agent_loop
         from evalscope.api.evaluator import InferenceResult
+        from evalscope.api.registry import get_strategy, resolve_tool_infos, resolve_tools
 
         ac = self._task_config.agent_config if self._task_config is not None else None
-        mcp_configs: Optional[List['MCPServerConfig']] = None
         if ac is not None:
             # Local import to keep the bridge stack out of the adapter's
             # module-load-time imports (no aiohttp dependency for non-
@@ -144,12 +148,35 @@ class AgentLoopAdapter(AgentAdapter):
                     instruction_override=instruction,
                     post_run_hook=self._external_extract_prediction,
                 )
-            # NativeAgentConfig: forward only ``mcp_servers``; benchmark
-            # adapters own their strategy / tools / max_steps.
-            mcp_configs = ac.mcp_servers or None
 
+        mcp_configs: Optional[List['MCPServerConfig']] = None
         strategy = self.build_strategy(sample)
         handlers = self.build_tools(sample)
+        all_tools = list(sample.tools or [])
+        max_steps = self.max_steps
+        if isinstance(ac, NativeAgentConfig):
+            # Do not let NativeAgentConfig's generic defaults replace benchmark
+            # defaults when the user only configured tools or MCP servers.
+            explicit_fields = ac.model_fields_set
+            if 'strategy' in explicit_fields or 'kwargs' in explicit_fields:
+                strategy_name = ac.strategy if 'strategy' in explicit_fields else strategy.name
+                strategy = get_strategy(strategy_name)(**ac.kwargs)
+            if 'max_steps' in explicit_fields:
+                max_steps = ac.max_steps
+            if ac.tools:
+                configured_handlers = resolve_tools(ac.tools)
+                # Benchmark handlers win name collisions so required task
+                # semantics cannot be replaced by a global config.
+                handlers = {**configured_handlers, **handlers}
+                existing_tool_names = {tool.name for tool in all_tools}
+                for tool_info in resolve_tool_infos(ac.tools):
+                    if tool_info.name not in existing_tool_names:
+                        all_tools.append(tool_info)
+                        existing_tool_names.add(tool_info.name)
+            mcp_configs = ac.mcp_servers or None
+
+        if max_steps <= 0:
+            raise ValueError('AgentLoop max_steps must be greater than 0.')
         environment = self.build_environment(sample)
 
         result: AgentLoopResult = run_agent_loop(
@@ -158,8 +185,8 @@ class AgentLoopAdapter(AgentAdapter):
             handlers=handlers,
             environment=environment,
             initial_messages=self.build_initial_messages(sample),
-            all_tools=list(sample.tools or []),
-            max_steps=self.max_steps,
+            all_tools=all_tools,
+            max_steps=max_steps,
             sample_id=sample.id,
             trace_strategy_name=getattr(strategy, 'name', None),
             trace_env_name=environment.name if environment else None,

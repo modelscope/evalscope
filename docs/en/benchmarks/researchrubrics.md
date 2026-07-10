@@ -21,8 +21,8 @@ references, communication quality, and instruction following.
   to access the network, gather information, and produce a final report.
 - The default runtime uses the host network and a temporary working directory, but does not provide complete filesystem
   isolation. Do not run untrusted models on shared or sensitive machines.
-- Configure the strategy and maximum number of steps through ``dataset_args.extra_params``. The default strategy is
-  ``function_calling`` with a 50-step limit; ``react`` is also available. Both require native function calling support.
+- The default strategy is ``function_calling`` with a 50-step limit. Use ``NativeAgentConfig`` to override the strategy
+  or step limit; ``react`` is also available. Both strategies require native function calling support.
 - Add dedicated search or web-fetching tools through ``NativeAgentConfig``, or use ``ExternalAgentConfig`` to run the
   task with another agent framework.
 - When the step limit is reached, the model is asked to produce a final report from the information already collected so
@@ -43,8 +43,6 @@ references, communication quality, and instruction following.
 
 ## Configuration
 
-- ``strategy``: ``function_calling`` (default) or ``react``
-- ``max_steps``: 50 by default
 - ``judge_context_limit``: 150,000 estimated tokens
 - ``judge_chunk_size``: 100,000 estimated tokens
 - ``judge_retries``: 3 attempts per judge request
@@ -154,8 +152,6 @@ Resources: [Paper](https://arxiv.org/abs/2511.07685) |
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `strategy` | `str` | `function_calling` | Agent strategy used by the built-in AgentLoop. Choices: ['function_calling', 'react'] |
-| `max_steps` | `int` | `50` | Maximum number of agent steps per sample. |
 | `judge_context_limit` | `int` | `150000` | Estimated token limit before rubric judging switches to chunking. |
 | `judge_chunk_size` | `int` | `100000` | Maximum estimated tokens in each document chunk sent to the judge. |
 | `judge_retries` | `int` | `3` | Maximum attempts for each rubric judge request and JSON parse. |
@@ -178,12 +174,17 @@ evalscope eval \
 ```python
 from evalscope import run_task
 from evalscope.config import TaskConfig
+from evalscope.api.agent import NativeAgentConfig
 
 task_cfg = TaskConfig(
     model='YOUR_MODEL',
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['researchrubrics'],
+    # agent_config=NativeAgentConfig(
+    #     strategy='function_calling',
+    #     max_steps=50,
+    # ),
     dataset_args={
         'researchrubrics': {
             # extra_params: {}  # uses default extra parameters

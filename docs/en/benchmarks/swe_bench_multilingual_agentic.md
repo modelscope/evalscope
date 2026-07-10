@@ -36,12 +36,10 @@ model issues `bash` commands to explore `/testbed`, edit source files,
 and finally submits its `git diff` patch by printing the sentinel
 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` followed by the patch contents.
 
-`extra_params.action_protocol` selects between:
-- `toolcall` (default): OpenAI function-calling protocol with a single
-  `bash` tool. Recommended for any model that supports tool calling.
-- `backticks`: text-based fallback expecting one
-  ` ```mswea_bash_command ``` ` block per turn. For models without
-  function-calling support.
+The default `swe_bench_toolcall` strategy uses OpenAI function calling with
+a single `bash` tool. Models without function-calling support can select
+`swe_bench_backticks` through `NativeAgentConfig.strategy`; that strategy
+expects one ` ```mswea_bash_command ``` ` block per turn.
 
 
 ## Properties
@@ -135,9 +133,6 @@ and finally submits its `git diff` patch by printing the sentinel
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `action_protocol` | `str` | `toolcall` | Agent action protocol: "toolcall" (mainline OpenAI function-calling, mirrors mini-swe-agent swebench.yaml) or "backticks" (textbased mswea_bash_command fallback for models without function-calling support). Choices: ['toolcall', 'backticks'] |
-| `max_steps` | `int` | `250` | Maximum number of agent steps per sample. |
-| `command_timeout` | `float` | `60.0` | Default per-bash-command timeout in seconds. |
 | `build_docker_images` | `bool` | `True` | Build Docker images locally for each sample. |
 | `pull_remote_images_if_available` | `bool` | `True` | Attempt to pull existing remote Docker images before building. |
 | `force_arch` | `str` | `` | Optionally force a specific architecture for image build/pull. Choices: ['', 'arm64', 'x86_64'] |
@@ -161,12 +156,17 @@ evalscope eval \
 ```python
 from evalscope import run_task
 from evalscope.config import TaskConfig
+from evalscope.api.agent import NativeAgentConfig
 
 task_cfg = TaskConfig(
     model='YOUR_MODEL',
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['swe_bench_multilingual_agentic'],
+    # agent_config=NativeAgentConfig(
+    #     strategy='swe_bench_toolcall',
+    #     max_steps=250,
+    # ),
     dataset_args={
         'swe_bench_multilingual_agentic': {
             # extra_params: {}  # uses default extra parameters

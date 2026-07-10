@@ -197,6 +197,7 @@ def _format_usage_section(
     subsets: Optional[List[str]] = None,
     sandbox_config: Optional[Dict] = None,
     extra_params: Optional[Dict] = None,
+    agent_config: Optional[Dict] = None,
 ) -> str:
     """
     Format the usage section with CLI and Python examples.
@@ -206,6 +207,7 @@ def _format_usage_section(
         subsets: List of subset names (if any)
         sandbox_config: Sandbox configuration (if any)
         extra_params: Extra parameters configuration (if any)
+        agent_config: Built-in AgentLoop defaults (if this is an agent-loop benchmark)
 
     Returns:
         Formatted usage section markdown string
@@ -243,16 +245,24 @@ def _format_usage_section(
 '''
 
     python_use_sandbox = "    sandbox={'enabled': True},\n" if sandbox_config else ''
+    python_imports = ['from evalscope import run_task', 'from evalscope.config import TaskConfig']
+    python_agent_config = ''
+    if agent_config:
+        python_imports.append('from evalscope.api.agent import NativeAgentConfig')
+        python_agent_config = f'''    # agent_config=NativeAgentConfig(
+    #     strategy='{agent_config["strategy"]}',
+    #     max_steps={agent_config["max_steps"]},
+    # ),
+'''
 
-    python_code = f'''from evalscope import run_task
-from evalscope.config import TaskConfig
+    python_code = f'''{chr(10).join(python_imports)}
 
 task_cfg = TaskConfig(
     model='YOUR_MODEL',
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['{name}'],
-{python_use_sandbox}{python_dataset_args}    limit=10,  # Remove this line for formal evaluation
+{python_use_sandbox}{python_agent_config}{python_dataset_args}    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)'''
@@ -492,6 +502,7 @@ def generate_readme_from_dict(
             subsets=subsets,
             sandbox_config=meta.get('sandbox_config'),
             extra_params=meta.get('extra_params'),
+            agent_config=meta.get('agent_config'),
         ),
     )
 

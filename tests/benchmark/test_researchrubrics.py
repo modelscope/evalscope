@@ -3,9 +3,10 @@ import json
 import pytest
 from collections import deque
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
 
+from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
@@ -64,7 +65,7 @@ def binary_response(verdict: str, score: float) -> str:
     })
 
 
-def make_adapter(**extra_params: Any) -> ResearchRubricsAdapter:
+def make_adapter(*, agent_config: Optional[NativeAgentConfig] = None, **extra_params: Any) -> ResearchRubricsAdapter:
     dataset_args = {'researchrubrics': {'extra_params': extra_params}} if extra_params else {}
     config = TaskConfig(
         model='mock-model',
@@ -76,6 +77,7 @@ def make_adapter(**extra_params: Any) -> ResearchRubricsAdapter:
             'api_url': 'http://localhost:1/v1',
             'api_key': 'fake-key',
         },
+        agent_config=agent_config,
         eval_batch_size=1,
     )
     adapter = get_benchmark('researchrubrics', config)
@@ -128,11 +130,20 @@ def test_researchrubrics_registration_and_sample_conversion() -> None:
 
 
 def test_react_strategy_is_configurable() -> None:
-    adapter = make_adapter(strategy='react')
-    strategy = adapter.build_strategy(Sample(input='prompt'))
+    adapter = make_adapter(agent_config=NativeAgentConfig(strategy='react'))
+    submit = ToolCall(id='submit-1', function=ToolFunction(name='submit', arguments={'answer': '# Report'}))
+    output = ModelOutput(
+        model='mock-model',
+        choices=[ChatCompletionChoice(message=ChatMessageAssistant(content='', tool_calls=[submit]))],
+    )
+    model = AsyncMock()
+    model.name = 'mock-model'
+    model.generate_async.return_value = output
 
-    assert adapter.strategy_name == 'react'
-    assert strategy.name == 'react'
+    result = adapter._on_inference(model, Sample(id=0, input='prompt'))
+
+    assert adapter.strategy_name == 'function_calling'
+    assert result.trace.strategy == 'react'
 
 
 def test_temporary_local_environment_cleans_working_directory() -> None:
@@ -146,7 +157,7 @@ def test_temporary_local_environment_cleans_working_directory() -> None:
 
 
 def test_default_agent_loop_runs_bash_without_agent_config() -> None:
-    adapter = make_adapter(max_steps=2)
+    adapter = make_adapter()
     bash = ToolCall(id='bash-1', function=ToolFunction(name='bash', arguments={'command': 'pwd'}))
     submit = ToolCall(id='submit-1', function=ToolFunction(name='submit', arguments={'answer': '# Report'}))
     bash_output = ModelOutput(
@@ -171,7 +182,7 @@ def test_default_agent_loop_runs_bash_without_agent_config() -> None:
     assert result.output.completion == '# Report'
     assert result.trace.strategy == 'function_calling'
     assert result.trace.environment == 'local'
-    assert result.trace.max_steps == 2
+    assert result.trace.max_steps == 50
     tool_message = next(message for message in result.messages if message.role == 'tool')
     working_dir = Path(tool_message.text.strip())
     assert 'evalscope-researchrubrics-' in working_dir.name
@@ -179,7 +190,7 @@ def test_default_agent_loop_runs_bash_without_agent_config() -> None:
 
 
 def test_max_steps_requests_a_tool_free_final_report() -> None:
-    adapter = make_adapter(max_steps=2)
+    adapter = make_adapter(agent_config=NativeAgentConfig(max_steps=2))
     bash = ToolCall(id='bash-1', function=ToolFunction(name='bash', arguments={'command': 'echo evidence'}))
     tool_output = ModelOutput(
         model='mock-model',

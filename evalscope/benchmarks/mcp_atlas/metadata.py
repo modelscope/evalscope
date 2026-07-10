@@ -21,11 +21,6 @@ EXTRA_PARAMS: Dict[str, Any] = {
         'description': 'Skip tasks whose ground-truth trajectory uses MCP servers that are not currently enabled.',
         'value': True,
     },
-    'max_steps': {
-        'type': 'int',
-        'description': 'Maximum number of EvalScope agent loop steps per sample.',
-        'value': 100,
-    },
     'max_tool_calls': {
         'type': 'int',
         'description': 'Maximum MCP tool calls allowed per sample.',

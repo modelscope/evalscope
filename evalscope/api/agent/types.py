@@ -55,9 +55,9 @@ class NativeAgentConfig(BaseAgentConfig):
 
     When carried by ``TaskConfig.agent_config``, every
     ``DefaultDataAdapter``-based benchmark routes inference through the
-    AgentLoop instead of calling ``model.generate`` once.  Individual
-    AgentAdapter subclasses (e.g. SWE-bench_Pro) ignore this global config
-    and use their own settings to avoid double wrapping.
+    AgentLoop instead of calling ``model.generate`` once.  AgentLoopAdapter
+    subclasses keep their benchmark defaults when fields are omitted and
+    accept explicitly configured strategy, tools and max_steps values.
     """
 
     mode: Literal['native'] = Field(default='native')

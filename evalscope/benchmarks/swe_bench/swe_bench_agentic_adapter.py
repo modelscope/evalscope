@@ -25,7 +25,7 @@ import json
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
-from evalscope.api.agent import AgentEnvironment, AgentStrategy
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import FieldSpec, RemoteDataLoader, Sample
@@ -166,27 +166,6 @@ If the command fails (nonzero exit status), it will not submit.
 # ---------------------------------------------------------------------------
 
 _AGENTIC_EXTRA_PARAMS: Dict[str, Any] = {
-    'action_protocol': {
-        'type': 'str',
-        'description': (
-            'Agent action protocol: "toolcall" (mainline OpenAI '
-            'function-calling, mirrors mini-swe-agent swebench.yaml) or '
-            '"backticks" (textbased mswea_bash_command fallback for models '
-            'without function-calling support).'
-        ),
-        'value': 'toolcall',
-        'choices': ['toolcall', 'backticks'],
-    },
-    'max_steps': {
-        'type': 'int',
-        'description': 'Maximum number of agent steps per sample.',
-        'value': 250,
-    },
-    'command_timeout': {
-        'type': 'float',
-        'description': 'Default per-bash-command timeout in seconds.',
-        'value': 60.0,
-    },
     'build_docker_images': {
         'type': 'bool',
         'description': 'Build Docker images locally for each sample.',
@@ -222,6 +201,9 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
     is identical otherwise.
     """
 
+    strategy_name = 'swe_bench_toolcall'
+    max_steps_default = 250
+
     @staticmethod
     def _parse_test_list(value: Any) -> List[str]:
         """Return SWE-bench test lists from either JSON strings or native lists."""
@@ -247,14 +229,6 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
 
         check_import('swebench', extra='swe_bench', raise_error=True, feature_name=self.pretty_name)
 
-        self.action_protocol: str = self.extra_params.get('action_protocol', 'toolcall')
-        if self.action_protocol not in {'toolcall', 'backticks'}:
-            raise ValueError(
-                f'Invalid action_protocol={self.action_protocol!r}; '
-                "must be 'toolcall' or 'backticks'."
-            )
-        self.max_steps = int(self.extra_params.get('max_steps', 250))
-        self.command_timeout = float(self.extra_params.get('command_timeout', 60.0))
         # Hardcoded: must match the /testbed path used by swebench harness eval_script.
         self.working_dir: str = '/testbed'
         self.build_docker_images: bool = self.extra_params.get('build_docker_images', True)
@@ -334,25 +308,9 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
     # AgentAdapter hooks
     # ------------------------------------------------------------------
 
-    def build_strategy(self, sample: Sample) -> AgentStrategy:
-        if self.action_protocol == 'toolcall':
-            from evalscope.agent.strategies.swe_bench import SweBenchToolcallStrategy
-            return SweBenchToolcallStrategy()
-        from evalscope.agent.strategies.swe_bench import SweBenchBackticksStrategy
-        return SweBenchBackticksStrategy()
-
     def build_tools(self, sample: Sample):
         # Only ``bash`` — sentinel protocol replaces the ``submit`` tool.
         return {'bash': run_bash}
-
-    def _user_sandbox_config(self) -> Dict[str, Any]:
-        """Read ``TaskConfig.sandbox.default_config`` as optional sandbox defaults."""
-        if self._task_config is None:
-            return {}
-        sandbox = getattr(self._task_config, 'sandbox', None)
-        if sandbox is None:
-            return {}
-        return dict(getattr(sandbox, 'default_config', None) or {})
 
     def _forced_docker_platform(self) -> Optional[str]:
         """Return the Docker platform matching the forced SWE-bench image arch."""
@@ -387,11 +345,11 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
         forced_platform = self._forced_docker_platform()
         if forced_platform is not None:
             sandbox_config['platform'] = forced_platform
-        sandbox_config = merge_sandbox_config_dicts(self._user_sandbox_config(), sandbox_config)
+        sandbox_config = merge_sandbox_config_dicts(self._task_sandbox_config(), sandbox_config)
         return EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config=sandbox_config,
-            timeout=self.command_timeout,
+            timeout=60.0,
             interpreter=_SWE_BENCH_INTERPRETER,
         )
 
@@ -500,12 +458,10 @@ model issues `bash` commands to explore `/testbed`, edit source files,
 and finally submits its `git diff` patch by printing the sentinel
 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` followed by the patch contents.
 
-`extra_params.action_protocol` selects between:
-- `toolcall` (default): OpenAI function-calling protocol with a single
-  `bash` tool. Recommended for any model that supports tool calling.
-- `backticks`: text-based fallback expecting one
-  ` ```mswea_bash_command ``` ` block per turn. For models without
-  function-calling support.
+The default `swe_bench_toolcall` strategy uses OpenAI function calling with
+a single `bash` tool. Models without function-calling support can select
+`swe_bench_backticks` through `NativeAgentConfig.strategy`; that strategy
+expects one ` ```mswea_bash_command ``` ` block per turn.
 """
 
 _SWE_BENCH_VERIFIED_AGENTIC_DESCRIPTION = """

@@ -199,7 +199,15 @@ def get_adapters():
 
 def extract_adapter_meta(adapter) -> Dict[str, Any]:
     """Extract metadata from a DataAdapter instance."""
+    from evalscope.api.benchmark.adapters import AgentLoopAdapter
+
     meta = adapter._benchmark_meta
+    agent_config = None
+    if isinstance(adapter, AgentLoopAdapter):
+        agent_config = {
+            'strategy': adapter.strategy_name,
+            'max_steps': adapter.max_steps,
+        }
     return {
         'pretty_name': getattr(meta, 'pretty_name', None) or adapter.name,
         'dataset_id': getattr(meta, 'dataset_id', ''),
@@ -217,6 +225,7 @@ def extract_adapter_meta(adapter) -> Dict[str, Any]:
         'aggregation': getattr(meta, 'aggregation', 'mean') or 'mean',
         'extra_params': dict(getattr(meta, 'extra_params', {})) if getattr(meta, 'extra_params', None) else {},
         'sandbox_config': dict(getattr(meta, 'sandbox_config', {})) if getattr(meta, 'sandbox_config', None) else {},
+        'agent_config': agent_config,
         'category': get_adapter_category(adapter),
     }
 
