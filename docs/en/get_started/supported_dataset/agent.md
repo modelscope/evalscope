@@ -27,6 +27,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 | `tau_bench` | [τ-bench](../../benchmarks/tau_bench.md) | `Agent`, `FunctionCalling`, `Reasoning` |
 | `terminal_bench_v2` | [Terminal-Bench-2.0](../../benchmarks/terminal_bench_v2.md) | `Coding` |
 | `terminal_bench_v2_1` | [Terminal-Bench-2.1](../../benchmarks/terminal_bench_v2_1.md) | `Coding` |
+| `toolathlon` | [Toolathlon Official Service Wrapper](../../benchmarks/toolathlon.md) | `Agent`, `FunctionCalling`, `MultiTurn` |
 
 :::{toctree}
 :hidden:
@@ -55,4 +56,5 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 ../../benchmarks/tau_bench.md
 ../../benchmarks/terminal_bench_v2.md
 ../../benchmarks/terminal_bench_v2_1.md
+../../benchmarks/toolathlon.md
 :::

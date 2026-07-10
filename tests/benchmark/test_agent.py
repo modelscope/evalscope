@@ -3,6 +3,7 @@ import json
 import tempfile
 from dotenv import dotenv_values, load_dotenv
 from pathlib import Path
+from unittest.mock import patch
 
 load_dotenv('.env')
 
@@ -10,6 +11,7 @@ env = dotenv_values('.env')
 
 import unittest
 
+from evalscope.benchmarks.toolathlon.toolathlon_adapter import ToolathlonAdapter
 from evalscope.config import SandboxTaskConfig
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
 from evalscope.utils.logger import get_logger
@@ -212,6 +214,63 @@ class TestAgentBenchmark(TestBenchmark):
             },
         }
         self._run_dataset_test('terminal_bench_v2_1', dataset_args, limit=3, eval_batch_size=3)
+
+    def test_toolathlon(self):
+        """Test Toolathlon official-service wrapper with a mocked service client."""
+
+        class FakeToolathlonClient:
+            last_config = None
+
+            def __init__(self, config):
+                FakeToolathlonClient.last_config = config
+
+            def run_private(self):
+                return {
+                    'job_id': self.last_config.job_id or 'fake-toolathlon-job',
+                    'output_dir': str(self.last_config.output_dir),
+                    'acc': 1.0,
+                    'eval_stats': {
+                        'passed': 1,
+                        'total': 1
+                    },
+                    'task_results': [{
+                        'task': 'find-alita-paper',
+                        'pass': True
+                    }],
+                }
+
+        dataset_args = {
+            'extra_params': {
+                'task_list': ['find-alita-paper'],
+                'workers': 1,
+                'skip_container_restart': True,
+                'model_params': {
+                    'temperature': 0.0
+                },
+            }
+        }
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            with patch.object(ToolathlonAdapter, 'client_cls', FakeToolathlonClient):
+                self._run_dataset_test(
+                    'toolathlon',
+                    dataset_args,
+                    use_mock=True,
+                    limit=1,
+                    eval_batch_size=1,
+                    no_timestamp=True,
+                    work_dir=tmp_dir,
+                    api_url='http://localhost:8000/v1',
+                    api_key='local-key',
+                )
+
+            self.assertIsNotNone(FakeToolathlonClient.last_config)
+            self.assertEqual(FakeToolathlonClient.last_config.base_url, 'http://localhost:8000/v1')
+            self.assertEqual(FakeToolathlonClient.last_config.api_key, 'local-key')
+            self.assertEqual(FakeToolathlonClient.last_config.task_list, ['find-alita-paper'])
+            self.assertEqual(FakeToolathlonClient.last_config.model_params['temperature'], 0.0)
+            self.assertNotIn('retries', FakeToolathlonClient.last_config.model_params)
+            self.assertNotIn('batch_size', FakeToolathlonClient.last_config.model_params)
 
     def test_swe_bench_verified_agentic_backticks(self):
         """Test SWE-bench-verified agentic dataset with backticks protocol."""

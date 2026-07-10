@@ -9,6 +9,7 @@
 
 terminal_bench.md
 skillsbench.md
+toolathlon.md
 gaia.md
 swe_bench.md
 swe_bench_pro.md
