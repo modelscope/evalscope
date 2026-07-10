@@ -205,6 +205,36 @@ class TestAgentBenchmark(TestBenchmark):
         ])
         self._run_dataset_test('gaia', dataset_args, limit=1, agent_config=agent_config)
 
+    def test_researchrubrics(self):
+        """Test ResearchRubrics with a real agent API and binary LLM judge."""
+        if not env.get('DASHSCOPE_API_KEY'):
+            self.skipTest('DASHSCOPE_API_KEY is required for the ResearchRubrics real-API smoke test.')
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            self._run_dataset_test(
+                'researchrubrics',
+                limit=1,
+                eval_batch_size=1,
+                collect_perf=False,
+                debug=False,
+                no_timestamp=True,
+                work_dir=tmp_dir,
+            )
+
+            prediction_files = list(Path(tmp_dir).glob('predictions/*/researchrubrics_default.jsonl'))
+            review_files = list(Path(tmp_dir).glob('reviews/*/researchrubrics_default.jsonl'))
+            report_files = list(Path(tmp_dir).glob('reports/*/researchrubrics.json'))
+            self.assertEqual(len(prediction_files), 1)
+            self.assertEqual(len(review_files), 1)
+            self.assertEqual(len(report_files), 1)
+
+            review = json.loads(review_files[0].read_text(encoding='utf-8').strip())
+            score = review['sample_score']['score']
+            rubric_results = score['metadata']['rubrics']
+            self.assertIn('compliance_score', score['value'])
+            self.assertEqual(len(rubric_results), len(json.loads(review['target'])))
+            self.assertIsNotNone(review['agent_trace'])
+
     def test_terminal_bench_v2_1(self):
         """Test Terminal-Bench v2.1 dataset."""
         dataset_args = {
