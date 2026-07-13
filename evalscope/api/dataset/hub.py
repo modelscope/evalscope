@@ -137,8 +137,8 @@ def download_dataset_file(
     data_source = _resolve_data_source(data_id_or_path, data_source)
 
     if data_source == HubType.LOCAL:
-        root_dir = os.path.abspath(data_id_or_path)
-        resolved_path = os.path.abspath(os.path.join(root_dir, file_path))
+        root_dir = os.path.realpath(data_id_or_path)
+        resolved_path = os.path.realpath(os.path.join(root_dir, file_path))
         if os.path.commonpath([root_dir, resolved_path]) != root_dir:
             raise ValueError(f'Invalid dataset file path: {file_path}')
         if not os.path.exists(resolved_path):
@@ -187,7 +187,10 @@ def download_dataset_snapshot(
     data_source = _resolve_data_source(data_id_or_path, data_source)
 
     if data_source == HubType.LOCAL:
-        return os.path.abspath(data_id_or_path)
+        root_dir = os.path.realpath(data_id_or_path)
+        if not os.path.isdir(root_dir):
+            raise FileNotFoundError(f'Local dataset directory was not found: {data_id_or_path}')
+        return root_dir
 
     if data_source == HubType.HUGGINGFACE:
         from huggingface_hub import snapshot_download

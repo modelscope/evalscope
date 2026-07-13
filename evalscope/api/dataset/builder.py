@@ -1,11 +1,13 @@
 import copy
-import random
-from typing import Callable, Dict, Iterable, Optional, Union
+from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Optional, Union
 
 from .dataset import DatasetDict, FieldSpec, MemoryDataset, Sample
 from .hub import DatasetHub
-from .loader import LocalDataLoader
+from .loader import LocalDataLoader, _shuffle_in_place
 from .utils import data_to_samples, record_to_sample_fn
+
+if TYPE_CHECKING:
+    from evalscope.api.benchmark import DataAdapter
 
 
 def build_dataset_from_records(
@@ -32,10 +34,12 @@ def build_dataset_from_records(
     """
     record_list = list(records)
     if shuffle:
-        random.Random(seed).shuffle(record_list)
+        _shuffle_in_place(record_list, seed)
 
     if limit is not None:
         if isinstance(limit, float):
+            if not (0.0 <= limit <= 1.0):
+                raise ValueError('Limit must be a non-negative integer or a float between 0 and 1.')
             limit = int(len(record_list) * limit)
         elif isinstance(limit, int) and limit < 0:
             raise ValueError('Limit must be a non-negative integer or a float between 0 and 1.')
@@ -84,7 +88,10 @@ def build_dataset_dict_from_record_map(
     return DatasetDict(datasets)
 
 
-def resolve_snapshot_or_local_path(adapter, allow_file_pattern=None) -> str:
+def resolve_snapshot_or_local_path(
+    adapter: 'DataAdapter',
+    allow_file_pattern: Optional[Union[str, List[str]]] = None,
+) -> str:
     """Resolve an adapter dataset_id as a local path or downloaded snapshot root."""
     return DatasetHub(
         data_id_or_path=adapter.dataset_id,
@@ -95,7 +102,7 @@ def resolve_snapshot_or_local_path(adapter, allow_file_pattern=None) -> str:
 
 
 def load_local_file_dataset(
-    adapter,
+    adapter: 'DataAdapter',
     dataset_path: str,
     subset: str,
     split: str,

@@ -26,7 +26,7 @@ from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, JudgeStrategy
 try:
     import evalscope.agent.environments.enclave  # noqa: F401
     _ENCLAVE_AVAILABLE = True
-except Exception:
+except ImportError:
     _ENCLAVE_AVAILABLE = False
 
 
