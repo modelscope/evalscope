@@ -8,7 +8,8 @@ from typing import List, Optional, Tuple
 
 from evalscope.api.agent import AgentTrace, AgentTraceEvent, EventType
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
-from evalscope.api.dataset import DatasetDict, DictDataLoader, Sample
+from evalscope.api.benchmark.adapters.dataset_utils import build_dataset_from_records
+from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessageTool, ChatMessageUser
 from evalscope.api.metric import Score
@@ -102,13 +103,16 @@ class _TerminalBenchBase(AgentAdapter):
         task_configs = AsyncioLoopRunner.run(config.get_task_configs())
 
         datasets = {}
-        dataset = DictDataLoader(
-            dict_list=[tc.model_dump(mode='json') for tc in task_configs],
+        dataset = build_dataset_from_records(
+            records=[tc.model_dump(mode='json') for tc in task_configs],
+            sample_fields=self.record_to_sample,
+            name=self.eval_split,
+            location=self.hub_dataset_name,
             limit=self.limit,
             repeats=self.repeats,
-            sample_fields=self.record_to_sample,
             shuffle=self.shuffle,
-        ).load()
+            seed=None,
+        )
 
         datasets[self.eval_split] = dataset
 

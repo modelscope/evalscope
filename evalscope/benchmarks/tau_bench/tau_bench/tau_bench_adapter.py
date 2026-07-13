@@ -2,9 +2,8 @@ from collections import defaultdict
 from typing import Dict, List
 
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
-from evalscope.api.dataset import Sample
-from evalscope.api.dataset.dataset import DatasetDict
-from evalscope.api.dataset.loader import DictDataLoader
+from evalscope.api.benchmark.adapters.dataset_utils import build_dataset_from_records
+from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.model import Model
@@ -148,14 +147,16 @@ class TauBenchAdapter(AgentAdapter):
                     'task_index': i,
                     'env_name': env_name,
                 })
-            # load dataset
-            dataset = DictDataLoader(
-                dict_list=tasks,
+            dataset = build_dataset_from_records(
+                records=tasks,
                 sample_fields=self.record_to_sample,
+                name=env_name,
+                location=self.dataset_id,
                 limit=self.limit,
                 repeats=self.repeats,
                 shuffle=self.shuffle,
-            ).load()
+                seed=None,
+            )
 
             data_dict[env_name] = dataset
 

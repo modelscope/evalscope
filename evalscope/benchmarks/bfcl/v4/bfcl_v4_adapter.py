@@ -6,9 +6,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
-from evalscope.api.dataset import Sample
-from evalscope.api.dataset.dataset import DatasetDict
-from evalscope.api.dataset.loader import DictDataLoader
+from evalscope.api.benchmark.adapters.dataset_utils import build_dataset_from_records
+from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import InferenceResult, TaskState
 from evalscope.api.messages.chat_message import ChatMessageAssistant, ChatMessageUser
 from evalscope.api.messages.perf_metrics import PerformanceMetrics
@@ -153,13 +152,16 @@ class BFCLV4Adapter(AgentAdapter):
         # collect prereq entries for later prereq inference
         self.prereq_entries.extend(prereq_entries)
 
-        return DictDataLoader(
-            dict_list=processed_entries,
+        return build_dataset_from_records(
+            records=processed_entries,
+            sample_fields=self.record_to_sample,
+            name=category,
+            location=self.dataset_id,
             limit=self.limit,
             repeats=self.repeats,
-            sample_fields=self.record_to_sample,
             shuffle=self.shuffle,
-        ).load()
+            seed=None,
+        )
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert a data record to a Sample object."""

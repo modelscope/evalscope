@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import threading
-from modelscope import dataset_snapshot_download
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -11,7 +10,8 @@ from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
 from evalscope.api.agent import AgentEnvironment, AgentLoopResult
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
-from evalscope.api.dataset import DatasetDict, LocalDataLoader, Sample
+from evalscope.api.benchmark.adapters.dataset_utils import load_local_file_dataset, resolve_snapshot_or_local_path
+from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageSystem
 from evalscope.api.metric import AggScore, SampleScore, Score
@@ -102,29 +102,26 @@ class WideSearchAdapter(AgentLoopAdapter):
         self._judge_lock = threading.Lock()
 
     def load(self) -> Tuple[DatasetDict, None]:
-        dataset_name_or_path = self.dataset_id
-        if Path(dataset_name_or_path).exists():
-            dataset_root = Path(dataset_name_or_path).expanduser().resolve()
-        else:
-            dataset_root = Path(
-                dataset_snapshot_download(
-                    dataset_name_or_path,
-                    allow_file_pattern=['widesearch.jsonl', 'widesearch_gold/*.csv'],
-                )
+        dataset_root = Path(
+            resolve_snapshot_or_local_path(
+                self,
+                allow_file_pattern=['widesearch.jsonl', 'widesearch_gold/*.csv'],
             )
+        )
         self._dataset_root = dataset_root
         data_path = dataset_root / 'widesearch.jsonl'
         if not data_path.exists():
             raise FileNotFoundError(f'WideSearch data file not found: {data_path}')
-        dataset = LocalDataLoader(
-            data_id_or_path=str(data_path),
-            split=self.eval_split,
+        dataset = load_local_file_dataset(
+            adapter=self,
+            dataset_path=str(data_path),
             subset='default',
+            split=self.eval_split,
             sample_fields=self.record_to_sample,
             limit=self.limit,
             repeats=self.repeats,
             shuffle=self.shuffle,
-        ).load()
+        )
         return DatasetDict({'default': dataset}), None
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

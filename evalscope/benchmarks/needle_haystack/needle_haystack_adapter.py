@@ -4,7 +4,8 @@ from tqdm import tqdm
 from typing import TYPE_CHECKING, Any, Dict, List, Union
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
-from evalscope.api.dataset import DatasetDict, DictDataLoader, MemoryDataset, Sample
+from evalscope.api.benchmark.adapters.dataset_utils import build_dataset_from_records, resolve_snapshot_or_local_path
+from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
@@ -189,16 +190,10 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
         self._init_tokenizer()
         self._init_length()
 
-        dataset_name_or_path = self.dataset_id
-        if os.path.exists(dataset_name_or_path):
-            logger.info(f'Loading dataset from {dataset_name_or_path}')
-            dataset_path = dataset_name_or_path
-        else:
-            from modelscope import dataset_snapshot_download
-            logger.info(f'Loading dataset from modelscope: > dataset_name: {dataset_name_or_path}')
-            dataset_path = dataset_snapshot_download(
-                dataset_name_or_path, allow_file_pattern=['PaulGraham_Essays.txt', 'Journey_to_the_West.txt']
-            )
+        dataset_path = resolve_snapshot_or_local_path(
+            self,
+            allow_file_pattern=['PaulGraham_Essays.txt', 'Journey_to_the_West.txt'],
+        )
 
         # Load datasets for both subsets
         datasets = {}
@@ -230,13 +225,16 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
                     }
                     records.append(record)
 
-                dataset = DictDataLoader(
-                    dict_list=records,
+                dataset = build_dataset_from_records(
+                    records=records,
+                    sample_fields=self.record_to_sample,
+                    name=subset_name,
+                    location=dataset_path,
                     limit=self.limit,
                     repeats=self.repeats,
-                    sample_fields=self.record_to_sample,
                     shuffle=self.shuffle,
-                ).load()
+                    seed=None,
+                )
 
                 datasets[subset_name] = dataset
 

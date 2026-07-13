@@ -1,14 +1,13 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import copy
 import os
-import random
 import zipfile
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
-from evalscope.api.dataset import DatasetDict, DatasetHub, MemoryDataset, Sample
+from evalscope.api.benchmark.adapters.dataset_utils import build_dataset_from_records
+from evalscope.api.dataset import DatasetDict, DatasetHub, Sample
 from evalscope.api.messages import ChatMessageUser, Content, ContentText, ContentVideo
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
@@ -109,20 +108,22 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         )
 
     def load_dataset(self) -> DatasetDict:
-        dataset_dict: Dict[str, MemoryDataset] = {}
+        dataset_dict = {}
         for subset in self.subset_list:
             if subset not in SUBSET_LIST:
                 raise ValueError(f'Unsupported MVBench subset: {subset}. Supported subsets: {SUBSET_LIST}')
             with self._temporary_attribute('current_subset_name', subset):
                 records = self._load_subset_records(subset)
-                if self.shuffle:
-                    random.Random(self.seed).shuffle(records)
-                records = self._apply_limit(records)
-                samples = [self.record_to_sample(record) for record in records]
-                if self.repeats > 1:
-                    samples = [copy.deepcopy(sample) for sample in samples for _ in range(self.repeats)]
-                dataset = MemoryDataset(samples=samples, name='mvbench', location=self.dataset_id)
-                dataset.reindex(group_size=self.repeats)
+                dataset = build_dataset_from_records(
+                    records=records,
+                    sample_fields=self.record_to_sample,
+                    name='mvbench',
+                    location=self.dataset_id,
+                    limit=self.limit,
+                    repeats=self.repeats,
+                    shuffle=self.shuffle,
+                    seed=self.seed,
+                )
                 dataset_dict[subset] = dataset
 
         self.test_dataset = DatasetDict(dataset_dict)
@@ -137,15 +138,6 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         if not records:
             raise ValueError(f'No records found for MVBench subset: {subset}')
         return records
-
-    def _apply_limit(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        if self.limit is None:
-            return records
-        if isinstance(self.limit, float):
-            limit = int(len(records) * self.limit)
-        else:
-            limit = self.limit
-        return records[:limit]
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         choices = [str(choice) for choice in record['candidates']]

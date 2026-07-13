@@ -4,7 +4,8 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, DataAdapter, DefaultDataAdapter
-from evalscope.api.dataset import DatasetDict, LocalDataLoader, Sample
+from evalscope.api.benchmark.adapters.dataset_utils import load_local_file_dataset, resolve_snapshot_or_local_path
+from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric.scorer import AggScore, SampleScore
 from evalscope.api.registry import get_benchmark, register_benchmark
@@ -64,28 +65,17 @@ class DataCollectionAdapter(DefaultDataAdapter):
         super().__init__(**kwargs)
 
     def load(self):
-        # Try to load dataset from local disk
-        dataset_name_or_path = self.dataset_id
-        if os.path.exists(dataset_name_or_path):
-            logger.info(f'Loading dataset from {dataset_name_or_path}')
-            dataset_path = dataset_name_or_path
-        else:
-            from modelscope import dataset_snapshot_download
-
-            # Load dataset from remote
-            logger.info(f'Loading dataset from modelscope: > dataset_name: {dataset_name_or_path}')
-            # download dataset snapshot
-            dataset_path = dataset_snapshot_download(dataset_name_or_path, allow_file_pattern='*.jsonl')
-
-        dataset = LocalDataLoader(
-            data_id_or_path=dataset_path,
+        dataset_path = resolve_snapshot_or_local_path(self, allow_file_pattern='*.jsonl')
+        dataset = load_local_file_dataset(
+            adapter=self,
+            dataset_path=dataset_path,
+            subset='test',  # NOTE: using hardcoded test subset
             split=self.eval_split,
             sample_fields=self.record_to_sample,
-            subset='test',  # NOTE: using hardcoded test subset
             limit=self.limit,
             repeats=self.repeats,
             shuffle=self.shuffle,
-        ).load()
+        )
 
         test_dataset = DatasetDict({self.default_subset: dataset})
 

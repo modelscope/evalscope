@@ -21,7 +21,7 @@ from evalscope.benchmarks.wide_search.utils import (
     url_match,
 )
 from evalscope.config import SandboxTaskConfig, TaskConfig
-from evalscope.constants import JudgeStrategy
+from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, JudgeStrategy
 
 
 def _evaluation(metric: str = 'exact_match') -> dict:
@@ -211,14 +211,19 @@ class TestWideSearchAdapter(unittest.TestCase):
             )
 
             with patch(
-                'evalscope.benchmarks.wide_search.wide_search_adapter.dataset_snapshot_download',
+                'evalscope.api.dataset.hub.download_dataset_snapshot',
                 return_value=tmp_dir,
             ) as snapshot_download:
                 dataset = get_benchmark('wide_search', config=config).load_dataset()['default']
 
         snapshot_download.assert_called_once_with(
-            'bytedance-community/WideSearch',
+            data_id_or_path='bytedance-community/WideSearch',
+            data_source='modelscope',
+            revision=None,
+            force_redownload=False,
+            cache_dir=DEFAULT_DATASET_CACHE_DIR,
             allow_file_pattern=['widesearch.jsonl', 'widesearch_gold/*.csv'],
+            ignore_file_pattern=None,
         )
         self.assertEqual(len(dataset), 1)
         self.assertEqual(dataset[0].metadata['instance_id'], 'ws_zh_001')

@@ -1,12 +1,11 @@
-import copy
 import json
 import os
-import random
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
-from evalscope.api.dataset import DatasetDict, DatasetHub, MemoryDataset, Sample
+from evalscope.api.benchmark.adapters.dataset_utils import build_dataset_from_records
+from evalscope.api.dataset import DatasetDict, DatasetHub, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentText, ContentVideo
 from evalscope.api.metric import SampleScore, Score
@@ -95,18 +94,20 @@ class MSVDAdapter(VisionLanguageAdapter):
         )
 
     def load_dataset(self) -> DatasetDict:
-        dataset_dict: Dict[str, MemoryDataset] = {}
+        dataset_dict = {}
         for subset in self.subset_list:
             with self._temporary_attribute('current_subset_name', subset):
                 records = self._group_records(self._load_records())
-                if self.shuffle:
-                    random.Random(self.seed).shuffle(records)
-                records = self._apply_limit(records)
-                samples = [self.record_to_sample(record) for record in records]
-                if self.repeats > 1:
-                    samples = [copy.deepcopy(sample) for sample in samples for _ in range(self.repeats)]
-                dataset = MemoryDataset(samples=samples, name=self.name, location=self.source_dataset_id)
-                dataset.reindex(group_size=self.repeats)
+                dataset = build_dataset_from_records(
+                    records=records,
+                    sample_fields=self.record_to_sample,
+                    name=self.name,
+                    location=self.source_dataset_id,
+                    limit=self.limit,
+                    repeats=self.repeats,
+                    shuffle=self.shuffle,
+                    seed=self.seed,
+                )
                 dataset_dict[subset] = dataset
 
         self.test_dataset = DatasetDict(dataset_dict)
@@ -190,15 +191,6 @@ class MSVDAdapter(VisionLanguageAdapter):
                 video_name = f'{os.path.splitext(video_name)[0]}{extension}'
             return os.path.join(os.path.abspath(video_dir), video_name)
         return video_name
-
-    def _apply_limit(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        if self.limit is None:
-            return records
-        if isinstance(self.limit, float):
-            limit = int(len(records) * self.limit)
-        else:
-            limit = self.limit
-        return records[:limit]
 
 
 def _optional_float(value: Any, field_name: str) -> Optional[float]:

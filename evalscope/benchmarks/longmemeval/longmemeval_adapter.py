@@ -1,13 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import copy
 import json
-import random
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
-from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
-from evalscope.api.dataset.hub import download_dataset_file
+from evalscope.api.benchmark.adapters.dataset_utils import build_dataset_from_records
+from evalscope.api.dataset import DatasetDict, DatasetHub, MemoryDataset, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
@@ -123,9 +121,16 @@ class LongMemEvalAdapter(DefaultDataAdapter):
         subset_dict = {}
         for subset in self.subset_list:
             records = self._load_subset_records(subset)
-            samples = self._records_to_samples(records)
-            dataset = MemoryDataset(samples=samples, name=f'longmemeval_{subset}', location=self.dataset_id)
-            dataset.reindex(group_size=self.repeats)
+            dataset = build_dataset_from_records(
+                records=records,
+                sample_fields=self.record_to_sample,
+                name=f'longmemeval_{subset}',
+                location=self.dataset_id,
+                limit=self.limit,
+                repeats=self.repeats,
+                shuffle=self.shuffle,
+                seed=self.seed,
+            )
             subset_dict[subset] = dataset
         return DatasetDict(subset_dict), None
 
@@ -158,7 +163,7 @@ class LongMemEvalAdapter(DefaultDataAdapter):
             raise ValueError(f'Unsupported LongMemEval subset: {subset}. Available subsets: {sorted(SUBSET_TO_FILE)}')
         file_path = self._resolve_dataset_file(SUBSET_TO_FILE[subset])
         records = json.loads(Path(file_path).read_text(encoding='utf-8'))
-        return self._apply_limit_and_repeats(records)
+        return records
 
     def _resolve_dataset_file(self, file_name: str) -> str:
         if Path(self.dataset_id).exists():
@@ -166,20 +171,25 @@ class LongMemEvalAdapter(DefaultDataAdapter):
             if not file_path.exists():
                 raise FileNotFoundError(f'LongMemEval data file not found: {file_path}')
             return str(file_path)
-        return download_dataset_file(
+        return DatasetHub(
             data_id_or_path=self.dataset_id,
-            file_path=file_name,
             data_source=self.dataset_hub,
             force_redownload=self.force_redownload,
             cache_dir=self.dataset_dir,
-        )
+        ).download_file(file_name)
 
     def _load_retrieval_log(self) -> MemoryDataset:
         records = self._read_json_or_jsonl(self.retrieval_log_path)
-        samples = self._records_to_samples(self._apply_limit_and_repeats(records))
-        dataset = MemoryDataset(samples=samples, name='longmemeval_retrieval_log', location=self.retrieval_log_path)
-        dataset.reindex(group_size=self.repeats)
-        return dataset
+        return build_dataset_from_records(
+            records=records,
+            sample_fields=self.record_to_sample,
+            name='longmemeval_retrieval_log',
+            location=self.retrieval_log_path,
+            limit=self.limit,
+            repeats=self.repeats,
+            shuffle=self.shuffle,
+            seed=self.seed,
+        )
 
     @staticmethod
     def _read_json_or_jsonl(path: Union[str, Path]) -> List[Dict[str, Any]]:
@@ -201,27 +211,6 @@ class LongMemEvalAdapter(DefaultDataAdapter):
         if records:
             return records
         raise ValueError(f'LongMemEval data must be a list of records: {path}')
-
-    def _apply_limit_and_repeats(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        if self.shuffle:
-            records = list(records)
-            random.Random(self.seed).shuffle(records)
-        if self.limit:
-            limit = int(len(records) * self.limit) if isinstance(self.limit, float) else self.limit
-            records = records[:limit]
-        if self.repeats > 1:
-            records = [copy.deepcopy(record) for record in records for _ in range(self.repeats)]
-        return records
-
-    def _records_to_samples(self, records: List[Dict[str, Any]]) -> List[Sample]:
-        samples = []
-        for record in records:
-            sample = self.record_to_sample(record)
-            if isinstance(sample, list):
-                samples.extend(sample)
-            else:
-                samples.append(sample)
-        return samples
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         prompt, prompt_metadata = build_generation_prompt(

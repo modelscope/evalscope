@@ -3,7 +3,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
-from evalscope.api.dataset import DatasetDict, DictDataLoader, Sample
+from evalscope.api.benchmark.adapters.dataset_utils import build_dataset_from_records
+from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.metric import Score
 from evalscope.api.model import Model, ModelOutput
@@ -80,14 +81,16 @@ class DeepSWEAdapter(AgentAdapter):
             languages=self.languages,
             categories=self.categories,
         )
-        dataset = DictDataLoader(
-            dict_list=task_records,
+        dataset = build_dataset_from_records(
+            records=task_records,
+            sample_fields=self.record_to_sample,
+            name=self.eval_split,
+            location=str(snapshot_path),
             limit=self.limit,
             repeats=self.repeats,
-            sample_fields=self.record_to_sample,
             shuffle=self.shuffle or self.sample_seed not in (None, ''),
             seed=self._sample_seed(),
-        ).load()
+        )
         return DatasetDict({self.eval_split: dataset}), None
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

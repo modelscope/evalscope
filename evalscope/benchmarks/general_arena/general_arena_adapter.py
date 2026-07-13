@@ -5,7 +5,8 @@ from collections import defaultdict
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
-from evalscope.api.dataset import DatasetDict, DictDataLoader, Sample
+from evalscope.api.benchmark.adapters.dataset_utils import build_dataset_from_records
+from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
@@ -107,13 +108,16 @@ class GeneralArenaAdapter(DefaultDataAdapter):
         # Convert to DatasetDict format
         dataset_dict = {}
         for subset_name, samples in datasets.items():
-            dataset = DictDataLoader(
-                dict_list=samples,
+            dataset = build_dataset_from_records(
+                records=samples,
+                sample_fields=self.record_to_sample,
+                name=subset_name,
+                location=None,
                 limit=self.limit,
                 shuffle=self.shuffle,
                 repeats=self.repeats,
-                sample_fields=self.record_to_sample
-            ).load()
+                seed=None,
+            )
             dataset_dict[subset_name] = dataset
 
         test_dataset = DatasetDict(dataset_dict)
