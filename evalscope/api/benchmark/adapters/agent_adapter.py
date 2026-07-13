@@ -19,6 +19,7 @@ Two extension modes are supported:
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+from evalscope.agent.tools.bash import apply_bash_command_timeout_defaults
 from evalscope.api.agent import AgentLoopResult, NativeAgentConfig
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessageUser
@@ -55,6 +56,10 @@ class AgentLoopAdapter(AgentAdapter):
     #: overridden. Subclasses can change this (e.g.
     #: ``'swe_bench_toolcall'``).
     strategy_name: str = 'function_calling'
+
+    #: Optional benchmark-level default timeout for bash-style tools. Explicit
+    #: ``NativeAgentConfig.command_timeout`` values take precedence.
+    command_timeout_default: Optional[float] = None
 
     #: Default upper bound on loop iterations per sample. Subclasses override
     #: this class attribute; users can explicitly override it through
@@ -105,6 +110,11 @@ class AgentLoopAdapter(AgentAdapter):
         if isinstance(ac, NativeAgentConfig):
             return ac.command_timeout
         return None
+
+    def _resolve_command_timeout(self, ac: Any) -> Optional[float]:
+        if isinstance(ac, NativeAgentConfig) and 'command_timeout' in ac.model_fields_set:
+            return ac.command_timeout
+        return self.command_timeout_default
 
     def build_initial_messages(self, sample: Any) -> List[Any]:
         """Return the message list the loop starts with.
@@ -172,12 +182,11 @@ class AgentLoopAdapter(AgentAdapter):
         return self.max_steps
 
     def _resolve_tools(self, sample: Any, ac: Any) -> tuple[Dict[str, Any], List[Any]]:
-        from evalscope.agent.tools.bash import apply_bash_command_timeout_defaults
-
         handlers = self.build_tools(sample)
         all_tools = list(sample.tools or [])
+        command_timeout = self._resolve_command_timeout(ac)
         if not isinstance(ac, NativeAgentConfig):
-            return handlers, all_tools
+            return apply_bash_command_timeout_defaults(handlers, all_tools, command_timeout)
 
         if ac.tools:
             configured_handlers = resolve_tools(ac.tools)
@@ -190,7 +199,7 @@ class AgentLoopAdapter(AgentAdapter):
                     all_tools.append(tool_info)
                     existing_tool_names.add(tool_info.name)
 
-        return apply_bash_command_timeout_defaults(handlers, all_tools, ac.command_timeout)
+        return apply_bash_command_timeout_defaults(handlers, all_tools, command_timeout)
 
     @staticmethod
     def _resolve_mcp_configs(ac: Any) -> Optional[List['MCPServerConfig']]:
@@ -262,6 +271,8 @@ class AgentLoopAdapter(AgentAdapter):
 
     @staticmethod
     def _reached_max_steps(result: AgentLoopResult) -> bool:
+        if result.trace is None:
+            return False
         from evalscope.api.agent import EventType
         return any(
             event.type == EventType.ERROR and event.payload.get('message') == 'max_steps_exceeded'

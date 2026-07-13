@@ -136,19 +136,6 @@ A single full run derives three report scopes without repeating inference: `all`
 The judge is also used for schema/entity alignment, so rule-only evaluation is intentionally unsupported. The paper
 recommends GPT-4.1-2025-04-14 for comparable judging, but EvalScope does not hard-code a judge model.
 
-## Local Dataset
-
-To avoid a remote download, set `dataset_args={'wide_search': {'local_path': '/path/to/WideSearch'}}`. The directory
-must contain:
-
-```text
-WideSearch/
-├── widesearch.jsonl
-└── widesearch_gold/
-    ├── ws_en_001.csv
-    └── ...
-```
-
 ## Resources
 
 - [Paper](https://arxiv.org/abs/2508.07999)

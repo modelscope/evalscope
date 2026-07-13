@@ -132,18 +132,6 @@ run_task(TaskConfig(
 列名和实体对齐同样依赖 judge，因此本 benchmark 不支持 rule-only 评分。论文推荐使用
 GPT-4.1-2025-04-14 以获得可比结果，但 EvalScope 不会硬编码 judge 模型。
 
-## 本地数据集
-
-如需避免远程下载，可设置 `dataset_args={'wide_search': {'local_path': '/path/to/WideSearch'}}`。目录结构必须为：
-
-```text
-WideSearch/
-├── widesearch.jsonl
-└── widesearch_gold/
-    ├── ws_en_001.csv
-    └── ...
-```
-
 ## 相关资源
 
 - [论文](https://arxiv.org/abs/2508.07999)

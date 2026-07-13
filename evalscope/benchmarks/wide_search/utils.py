@@ -220,6 +220,7 @@ class WideSearchScorer:
             response_df.columns = [norm_column(column) for column in response_df.columns]
             if set(required_columns) != set(response_df.columns):
                 column_map, judge_response = self._map_values(response_df.columns.tolist(), required_columns)
+                column_map = _unique_target_map(column_map)
                 diagnostics['column_map'] = column_map
                 diagnostics['column_map_judge'] = judge_response
                 response_df.rename(columns=column_map, inplace=True)
@@ -279,6 +280,9 @@ class WideSearchScorer:
                 'prediction_rows': len(response_df),
                 'matched_rows': len(inner_df),
             })
+            if inner_df.empty:
+                diagnostics['stage'] = 'complete'
+                return EvaluationResult(values={name: 0.0 for name in METRIC_NAMES}, diagnostics=diagnostics)
 
             diagnostics['stage'] = 'score'
             inner_scores = pd.DataFrame(index=inner_df.index)
@@ -390,6 +394,17 @@ class WideSearchScorer:
 
 def _f1(precision: float, recall: float) -> float:
     return 2 * precision * recall / (precision + recall) if precision + recall > 1e-9 else 0.0
+
+
+def _unique_target_map(column_map: Dict[str, str]) -> Dict[str, str]:
+    unique_map: Dict[str, str] = {}
+    seen_targets = set()
+    for source, target in column_map.items():
+        if target in seen_targets:
+            continue
+        unique_map[source] = target
+        seen_targets.add(target)
+    return unique_map
 
 
 def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore]:

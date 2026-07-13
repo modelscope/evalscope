@@ -3,30 +3,29 @@
 
 ## Overview
 
-WideSearch evaluates search agents on broad information-seeking tasks that require collecting many atomic facts from
-the web and organizing them into a structured Markdown table. It contains 200 manually curated tasks, evenly split
-between English and Chinese.
+WideSearch evaluates search agents on broad web information-seeking tasks. Each task asks the agent to collect many
+atomic facts and return one structured Markdown table. EvalScope uses the ModelScope
+`bytedance-community/WideSearch` dataset.
 
 ## Task Description
 
 - **Task Type**: Multi-turn search agent
-- **Input**: A natural-language collection request with an explicit table schema
-- **Output**: One complete Markdown table
+- **Input**: Natural-language collection request with an explicit table schema
+- **Output**: Complete Markdown table
 - **Dataset**: 200 tasks in the ``full`` split; 100 English and 100 Chinese
 
 ## Key Features
 
-- Official single-agent prompt with ``function_calling`` and a 50-step default
-- Bash tool in a temporary local directory by default; optional Docker sandbox and MCP tools
-- Official Markdown parsing, table alignment, preprocessing, and hybrid rule/LLM scoring
-- One full run reports ``all``, ``en``, and ``zh`` results without repeated inference
+- Official single-agent protocol: language-specific system prompt, ``function_calling``, and 50 default steps.
+- Bash is available by default in a per-sample temporary local directory; Docker sandbox and MCP servers are optional.
+- A single full run derives ``all``, ``en``, and ``zh`` reports without repeated inference.
 
 ## Evaluation Notes
 
+- Uses the official Markdown table alignment and hybrid rule/LLM scoring semantics.
 - Requires ``judge_strategy='auto'`` or ``'llm'`` with explicit ``judge_model_args``; rule-only scoring is unsupported.
-- Reports success rate plus row/item precision, recall, and F1 using Avg@N, Pass@N, and Max@N aggregation.
-- Install with ``pip install evalscope[wide_search]``; Docker mode additionally requires ``evalscope[sandbox]``.
-- [Usage Documentation](https://evalscope.readthedocs.io/en/latest/third_party/wide_search.html)
+- See the [WideSearch usage guide](https://evalscope.readthedocs.io/en/latest/third_party/wide_search.html) for runtime
+  examples and paper-style repeat settings.
 
 
 ## Properties
@@ -58,11 +57,11 @@ between English and Chinese.
 {
   "input": [
     {
-      "id": "e1d4fcda",
+      "id": "59f736f6",
       "content": "My son is about to start his university applications in 2025 for postgraduates but he’s still uncertain about both his major and which universities to apply to. Could you help me find the top five universities in each of the five broad subjec ... [TRUNCATED 691 chars] ... names in English. \nUse only Arabic numerals in the ranking, for example: 1.\nDon't ask me any questions, just output the results according to the columns without omitting cells arbitrarily. The output format is \n```markdown\n{data_content}\n```."
     }
   ],
-  "target": "﻿Subject,University,Country,QS World University Rankings by Subject 2025,QS World University Rankings 2025,Times Higher Education  World University Rankings 2025,Home Page,Application Deadline,Application Fee\nArts & Humanities,Harvard Univers ... [TRUNCATED 2838 chars] ... nuary 5,$90\nSocial Sciences & Management,Massachusetts Institute of Technology,United States,4,1,2,https://www.mit.edu/,January 6 ,$75\nSocial Sciences & Management,University of Cambridge,United Kingdom,5,5,5,https://www.cam.ac.uk/,Oct 15,£60",
+  "target": "Subject,University,Country,QS World University Rankings by Subject 2025,QS World University Rankings 2025,Times Higher Education  World University Rankings 2025,Home Page,Application Deadline,Application Fee\nArts & Humanities,Harvard Universi ... [TRUNCATED 2837 chars] ... nuary 5,$90\nSocial Sciences & Management,Massachusetts Institute of Technology,United States,4,1,2,https://www.mit.edu/,January 6 ,$75\nSocial Sciences & Management,University of Cambridge,United Kingdom,5,5,5,https://www.cam.ac.uk/,Oct 15,£60",
   "id": 0,
   "group_id": 0,
   "tools": [

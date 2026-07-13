@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import json
 import threading
+from modelscope import dataset_snapshot_download
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.agent.environments.local import TemporaryLocalAgentEnvironment
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
-from evalscope.api.agent import AgentEnvironment, AgentLoopResult, NativeAgentConfig
+from evalscope.api.agent import AgentEnvironment, AgentLoopResult
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import DatasetDict, LocalDataLoader, Sample
@@ -44,30 +45,29 @@ Upon receiving the user's query, you must thoroughly analyze and understand the 
 DESCRIPTION = """
 ## Overview
 
-WideSearch evaluates search agents on broad information-seeking tasks that require collecting many atomic facts from
-the web and organizing them into a structured Markdown table. It contains 200 manually curated tasks, evenly split
-between English and Chinese.
+WideSearch evaluates search agents on broad web information-seeking tasks. Each task asks the agent to collect many
+atomic facts and return one structured Markdown table. EvalScope uses the ModelScope
+`bytedance-community/WideSearch` dataset.
 
 ## Task Description
 
 - **Task Type**: Multi-turn search agent
-- **Input**: A natural-language collection request with an explicit table schema
-- **Output**: One complete Markdown table
+- **Input**: Natural-language collection request with an explicit table schema
+- **Output**: Complete Markdown table
 - **Dataset**: 200 tasks in the ``full`` split; 100 English and 100 Chinese
 
 ## Key Features
 
-- Official single-agent prompt with ``function_calling`` and a 50-step default
-- Bash tool in a temporary local directory by default; optional Docker sandbox and MCP tools
-- Official Markdown parsing, table alignment, preprocessing, and hybrid rule/LLM scoring
-- One full run reports ``all``, ``en``, and ``zh`` results without repeated inference
+- Official single-agent protocol: language-specific system prompt, ``function_calling``, and 50 default steps.
+- Bash is available by default in a per-sample temporary local directory; Docker sandbox and MCP servers are optional.
+- A single full run derives ``all``, ``en``, and ``zh`` reports without repeated inference.
 
 ## Evaluation Notes
 
+- Uses the official Markdown table alignment and hybrid rule/LLM scoring semantics.
 - Requires ``judge_strategy='auto'`` or ``'llm'`` with explicit ``judge_model_args``; rule-only scoring is unsupported.
-- Reports success rate plus row/item precision, recall, and F1 using Avg@N, Pass@N, and Max@N aggregation.
-- Install with ``pip install evalscope[wide_search]``; Docker mode additionally requires ``evalscope[sandbox]``.
-- [Usage Documentation](https://evalscope.readthedocs.io/en/latest/third_party/wide_search.html)
+- See the [WideSearch usage guide](https://evalscope.readthedocs.io/en/latest/third_party/wide_search.html) for runtime
+  examples and paper-style repeat settings.
 """
 
 
@@ -123,7 +123,6 @@ class WideSearchAdapter(AgentLoopAdapter):
             return Path(self.dataset_id).expanduser().resolve()
         if str(self.dataset_hub).lower() != HubType.MODELSCOPE:
             raise ValueError('WideSearch currently supports ModelScope or dataset_args.local_path.')
-        from modelscope import dataset_snapshot_download
         return Path(dataset_snapshot_download(self.dataset_id))
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
@@ -138,7 +137,7 @@ class WideSearchAdapter(AgentLoopAdapter):
             evaluation = json.loads(evaluation)
         return Sample(
             input=str(record['query']),
-            target=gold_path.read_text(encoding='utf-8'),
+            target=gold_path.read_text(encoding='utf-8-sig'),
             tools=[BASH_TOOL_INFO],
             metadata={
                 'instance_id': instance_id,
@@ -149,13 +148,6 @@ class WideSearchAdapter(AgentLoopAdapter):
 
     def build_tools(self, sample: Sample) -> Dict[str, Any]:
         return {'bash': run_bash}
-
-    def _resolve_tools(self, sample: Sample, ac: Any) -> Tuple[Dict[str, Any], List[Any]]:
-        handlers, tools = super()._resolve_tools(sample, ac)
-        if isinstance(ac, NativeAgentConfig) and ac.command_timeout is not None:
-            return handlers, tools
-        from evalscope.agent.tools.bash import apply_bash_command_timeout_defaults
-        return apply_bash_command_timeout_defaults(handlers, tools, self.command_timeout_default)
 
     def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
         sample_id = sample.metadata.get('instance_id') or sample.id or 'unknown'
@@ -174,7 +166,7 @@ class WideSearchAdapter(AgentLoopAdapter):
         return EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config=sandbox_config,
-            timeout=self._native_command_timeout() or self.command_timeout_default,
+            timeout=self._resolve_command_timeout(self._task_config.agent_config if self._task_config else None),
         )
 
     def build_initial_messages(self, sample: Sample) -> List[Any]:
