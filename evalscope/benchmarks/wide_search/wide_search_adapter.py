@@ -17,7 +17,7 @@ from evalscope.api.messages import ChatMessageSystem
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import merge_sandbox_config_dicts
-from evalscope.constants import HubType, JudgeStrategy, Tags
+from evalscope.constants import JudgeStrategy, Tags
 from evalscope.utils.import_utils import check_import
 from .utils import METRIC_NAMES, WideSearchScorer, aggregate_official_scores
 
@@ -102,7 +102,16 @@ class WideSearchAdapter(AgentLoopAdapter):
         self._judge_lock = threading.Lock()
 
     def load(self) -> Tuple[DatasetDict, None]:
-        dataset_root = self._resolve_dataset_root()
+        dataset_name_or_path = self.dataset_id
+        if Path(dataset_name_or_path).exists():
+            dataset_root = Path(dataset_name_or_path).expanduser().resolve()
+        else:
+            dataset_root = Path(
+                dataset_snapshot_download(
+                    dataset_name_or_path,
+                    allow_file_pattern=['widesearch.jsonl', 'widesearch_gold/*.csv'],
+                )
+            )
         self._dataset_root = dataset_root
         data_path = dataset_root / 'widesearch.jsonl'
         if not data_path.exists():
@@ -117,13 +126,6 @@ class WideSearchAdapter(AgentLoopAdapter):
             shuffle=self.shuffle,
         ).load()
         return DatasetDict({'default': dataset}), None
-
-    def _resolve_dataset_root(self) -> Path:
-        if Path(self.dataset_id).exists():
-            return Path(self.dataset_id).expanduser().resolve()
-        if str(self.dataset_hub).lower() != HubType.MODELSCOPE:
-            raise ValueError('WideSearch currently supports ModelScope or dataset_args.local_path.')
-        return Path(dataset_snapshot_download(self.dataset_id))
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         if self._dataset_root is None:
