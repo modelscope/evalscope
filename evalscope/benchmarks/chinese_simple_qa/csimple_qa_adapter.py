@@ -130,10 +130,11 @@ Chinese SimpleQA is a Chinese question-answering dataset designed to evaluate th
 )
 class ChineseSimpleQAAdapter(DefaultDataAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._use_llm_judge = True  # Use LLM as a judge by default
         self.reformat_subset = True  # Reformat subset to primary_category
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

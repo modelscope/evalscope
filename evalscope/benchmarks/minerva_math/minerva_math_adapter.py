@@ -55,10 +55,10 @@ Minerva-Math is a benchmark designed to evaluate advanced mathematical and quant
 )
 class MinervaMathAdapter(DefaultDataAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        self._use_llm_judge = True
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         return Sample(

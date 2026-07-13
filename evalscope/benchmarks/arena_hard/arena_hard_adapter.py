@@ -62,11 +62,11 @@ ArenaHard is a challenging benchmark that evaluates language models through comp
 )
 class ArenaHardAdapter(DefaultDataAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         check_import(module_name=['sklearn'], extra='arena_hard', raise_error=True, feature_name=self.pretty_name)
-
-        self._use_llm_judge = True  # Use LLM as a judge by default
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """

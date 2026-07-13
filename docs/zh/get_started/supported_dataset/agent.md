@@ -29,6 +29,7 @@
 | `terminal_bench_v2` | [Terminal-Bench-2.0](../../benchmarks/terminal_bench_v2.md) | `Coding` |
 | `terminal_bench_v2_1` | [Terminal-Bench-2.1](../../benchmarks/terminal_bench_v2_1.md) | `Coding` |
 | `toolathlon` | [Toolathlon Official Service Wrapper](../../benchmarks/toolathlon.md) | `Agent`, `FunctionCalling`, `MultiTurn` |
+| `wide_search` | [WideSearch](../../benchmarks/wide_search.md) | `Agent`, `MultiTurn`, `Retrieval` |
 
 :::{toctree}
 :hidden:
@@ -59,4 +60,5 @@
 ../../benchmarks/terminal_bench_v2.md
 ../../benchmarks/terminal_bench_v2_1.md
 ../../benchmarks/toolathlon.md
+../../benchmarks/wide_search.md
 :::

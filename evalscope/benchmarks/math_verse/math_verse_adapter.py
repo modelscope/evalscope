@@ -76,10 +76,11 @@ MathVerse is an all-around visual math benchmark designed for equitable and in-d
 )
 class MathVerseAdapter(VisionLanguageAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True
-        self._use_llm_judge = True
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """

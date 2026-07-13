@@ -50,13 +50,13 @@ logger = get_logger()
 )
 class MCPAtlasAdapter(AgentLoopAdapter):
     """EvalScope-native MCP-Atlas adapter using MCP-Atlas agent-environment."""
+    llm_judge_default = True
 
     strategy_name = 'function_calling'
     max_steps_default = 100
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self._use_llm_judge = True
         self.mcp_server_url = str(self.extra_params.get('mcp_server_url') or DEFAULT_MCP_SERVER_URL)
         self.filter_enabled_servers = bool(self.extra_params.get('filter_enabled_servers', True))
         self.max_tool_calls = int(self.extra_params.get('max_tool_calls', 100))

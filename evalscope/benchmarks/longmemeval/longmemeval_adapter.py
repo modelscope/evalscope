@@ -102,10 +102,10 @@ LongMemEval evaluates long-term interactive memory in chat assistants. Each ques
 )
 class LongMemEvalAdapter(DefaultDataAdapter):
     """Adapter for LongMemEval."""
+    llm_judge_default = True
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self._use_llm_judge = True
         self.eval_mode = self.extra_params.get('eval_mode', 'long_context')
         self.retrieval_log_path = self.extra_params.get('retrieval_log_path')
         self.retriever_type = self.extra_params.get('retriever_type', 'flat-session')

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
 
+from evalscope.agent.environments.local import TemporaryLocalAgentEnvironment
 from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
@@ -16,7 +17,7 @@ from evalscope.api.model.model_output import ChatCompletionChoice, ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.api.tool import ToolCall, ToolFunction
 from evalscope.benchmarks.researchrubrics.researchrubrics_adapter import ResearchRubricsAdapter
-from evalscope.benchmarks.researchrubrics.utils import TemporaryLocalAgentEnvironment, chunk_document
+from evalscope.benchmarks.researchrubrics.utils import chunk_document
 from evalscope.config import TaskConfig
 from evalscope.constants import JudgeStrategy
 

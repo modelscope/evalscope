@@ -1,9 +1,5 @@
 import json
-import tempfile
-from pathlib import Path
 from typing import Any, Dict, List
-
-from evalscope.agent.environments.local import LocalAgentEnvironment
 
 BINARY_SYSTEM_PROMPT = """You are an expert evaluator tasked with assessing whether a document satisfies specific rubric criteria. Your evaluation must be precise, objective, and based solely on the evidence present in the document.
 
@@ -113,23 +109,6 @@ Provide your final evaluation in JSON format:
   "missing_elements": ["Missing element 1"]
 }}
 """
-
-
-class TemporaryLocalAgentEnvironment(LocalAgentEnvironment):
-    """Local agent environment with an isolated temporary working directory."""
-
-    def __init__(self, sample_id: Any) -> None:
-        safe_id = ''.join(char if str(char).isalnum() else '-' for char in str(sample_id))[:64]
-        self._temporary_directory = tempfile.TemporaryDirectory(prefix=f'evalscope-researchrubrics-{safe_id}-')
-        super().__init__(working_dir=self._temporary_directory.name)
-
-    @property
-    def working_dir(self) -> Path:
-        return Path(self._temporary_directory.name)
-
-    async def close(self) -> None:
-        await super().close()
-        self._temporary_directory.cleanup()
 
 
 def strip_json_fence(text: str) -> str:

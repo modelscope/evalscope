@@ -86,11 +86,11 @@ GeneralArena is a custom benchmark designed to evaluate the performance of large
 )
 class GeneralArenaAdapter(DefaultDataAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         check_import(module_name=['sklearn'], extra='general_arena', raise_error=True, feature_name=self.pretty_name)
-
-        self._use_llm_judge = True
 
         self.models = self.extra_params.get('models', [])
         self.baseline = self.extra_params.get('baseline', None)

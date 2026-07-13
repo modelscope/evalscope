@@ -58,10 +58,10 @@ class MIABenchAdapter(VisionLanguageAdapter):
     Each sample is scored by an LLM judge that evaluates whether the model's
     response satisfies each weighted instruction component.
     """
+    llm_judge_default = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._use_llm_judge = True  # Always use LLM judge for this benchmark
         self.save_metadata = False  # Metadata (PIL images etc.) should not be serialised
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

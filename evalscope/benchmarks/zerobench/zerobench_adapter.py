@@ -63,10 +63,10 @@ ZeroBench is a challenging visual reasoning benchmark for Large Multimodal Model
 )
 class ZeroBenchAdapter(VisionLanguageAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self._use_llm_judge = True
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         question = record['question_text']

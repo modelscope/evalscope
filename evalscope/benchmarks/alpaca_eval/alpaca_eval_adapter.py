@@ -89,10 +89,10 @@ AlpacaEval 2.0 is an evaluation framework for instruction-following language mod
 )
 class AlpacaEvalAdapter(DefaultDataAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self._use_llm_judge = True  # Use LLM as a judge by default
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """
