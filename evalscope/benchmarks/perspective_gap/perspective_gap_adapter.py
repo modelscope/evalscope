@@ -103,7 +103,6 @@ class PerspectiveGapBaseAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._use_llm_judge = False
 
     def load_from_disk(self, **kwargs):
         return super().load_from_disk(use_local_loader=True)

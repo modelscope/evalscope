@@ -129,6 +129,7 @@ The official leaderboard uses `gpt-4-0125-preview` as the judge model. If that e
 )
 class AIRBenchChatAdapter(AudioLanguageAdapter):
     """Adapter for AIR-Bench Chat open-ended audio QA tasks."""
+    llm_judge_default = True
 
     # Per-sample folder layout for audio files. Distinct from Foundation since
     # Chat pre-merges some categories.
@@ -147,7 +148,6 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._use_llm_judge = True
         self.add_aggregation_name = False
         self.category_map = CHAT_TASK_TO_CATEGORY
         self._track_root: Optional[str] = None

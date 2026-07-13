@@ -139,6 +139,7 @@ Resources: [Paper](https://arxiv.org/abs/2511.07685) |
 )
 class ResearchRubricsAdapter(AgentLoopAdapter):
     """Deep Research agent benchmark with binary rubric-based LLM judging."""
+    llm_judge_default = True
 
     strategy_name = 'function_calling'
     max_steps_default = 50
@@ -152,7 +153,6 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
             raise ValueError('ResearchRubrics judge context and chunk limits must be greater than 0.')
         if self.judge_retries <= 0:
             raise ValueError('ResearchRubrics judge_retries must be greater than 0.')
-        self._use_llm_judge = True
         self.use_batch_scoring = True
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

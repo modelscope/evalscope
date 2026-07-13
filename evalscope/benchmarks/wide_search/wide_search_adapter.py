@@ -88,6 +88,7 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
 )
 class WideSearchAdapter(AgentLoopAdapter):
     """Official single-agent WideSearch benchmark adapter."""
+    llm_judge_default = True
 
     strategy_name = 'function_calling'
     max_steps_default = 50
@@ -97,7 +98,6 @@ class WideSearchAdapter(AgentLoopAdapter):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         check_import('dateparser', extra='wide_search', raise_error=True, feature_name='WideSearch evaluation')
-        self._use_llm_judge = True
         self._dataset_root: Optional[Path] = None
         self._judge_lock = threading.Lock()
 

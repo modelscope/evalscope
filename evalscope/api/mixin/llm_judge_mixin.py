@@ -18,12 +18,12 @@ class LLMJudgeMixin:
     Mixin class for LLM Judge functionality.
     """
 
+    llm_judge_default = False
+    """Whether JudgeStrategy.AUTO should use LLM judge by default."""
+
     def __init__(self, benchmark_meta: 'BenchmarkMeta', task_config: Optional['TaskConfig'] = None):
         self._benchmark_meta = benchmark_meta
         self._task_config = task_config
-
-        self._use_llm_judge = False
-        """Whether to use LLM as a judge"""
 
         self._llm_judge: Optional[LLMJudge] = None
         """LLM judge instance"""
@@ -57,7 +57,7 @@ class LLMJudgeMixin:
         elif self.judge_strategy == JudgeStrategy.LLM_RECALL:
             return True
         elif self.judge_strategy == JudgeStrategy.AUTO:
-            return self._use_llm_judge
+            return self.llm_judge_default
         else:
             logger.warning(f'Unknown judge strategy: {self.judge_strategy}. Defaulting to False.')
             return False

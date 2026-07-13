@@ -128,6 +128,8 @@ Needle in a Haystack is a benchmark focused on evaluating information retrieval 
 )
 class NeedleHaystackAdapter(DefaultDataAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         check_import(
@@ -137,7 +139,6 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
             feature_name=self.pretty_name
         )
 
-        self._use_llm_judge = True
         self.add_aggregation_name = False  # Don't add aggregation name for needle haystack adapter
         # set extra params
         self.retrieval_question = self.extra_params.get(

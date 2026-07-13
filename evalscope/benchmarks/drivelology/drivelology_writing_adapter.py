@@ -96,9 +96,10 @@ Please format your rating strictly as: "Rating: [[X]]" where X is a whole number
 )
 class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._use_llm_judge = True  # Use LLM as a judge by default
         self.use_batch_scoring = True  # Enable batch scoring
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

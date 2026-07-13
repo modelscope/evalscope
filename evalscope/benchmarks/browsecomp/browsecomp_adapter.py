@@ -118,10 +118,10 @@ BrowseComp is an OpenAI benchmark for evaluating browsing and search agents. It 
 )
 class BrowseCompAdapter(AgentAdapter):
     """Adapter for the BrowseComp browsing-agent benchmark."""
+    llm_judge_default = True
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._use_llm_judge = True
         self._suppress_doc_sample_example = True
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

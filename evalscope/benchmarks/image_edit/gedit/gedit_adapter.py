@@ -74,12 +74,13 @@ GEdit-Bench (Grounded Edit Benchmark) is an image editing benchmark grounded in 
 )
 class GEditAdapter(ImageEditAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         self.language = self.extra_params.get('language', 'en')
         self.reformat_subset = True
-        self._use_llm_judge = True
 
         self.load_prompt()
 

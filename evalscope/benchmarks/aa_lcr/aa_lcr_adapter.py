@@ -101,10 +101,10 @@ AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluatin
 )
 class AALCRAdapter(DefaultDataAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self._use_llm_judge = True
 
         # Get extra parameters
         self.text_dir = self.extra_params.get('text_dir')

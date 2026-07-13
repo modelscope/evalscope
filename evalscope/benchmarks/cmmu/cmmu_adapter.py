@@ -78,10 +78,11 @@ CMMU is a novel Chinese multi-modal benchmark designed to evaluate domain-specif
 )
 class CMMUAdapter(VisionLanguageAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.reformat_subset = True
-        self._use_llm_judge = True
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         content_list, answers_list = CMMUAdapter.create_content_and_answers_list(record)

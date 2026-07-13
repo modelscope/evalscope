@@ -63,9 +63,10 @@ FRAMES is a comprehensive evaluation dataset designed to test the capabilities o
 )
 class FramesAdapter(DefaultDataAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._use_llm_judge = True  # Enable LLM judge for FRAMES
 
     def load(self):
         # Try to load dataset from local disk

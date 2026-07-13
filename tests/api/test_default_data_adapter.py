@@ -5,6 +5,7 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.benchmark.statistics import SampleExample
 from evalscope.api.dataset import DataLoader, DatasetDict, MemoryDataset, Sample
 from evalscope.config import TaskConfig
+from evalscope.constants import JudgeStrategy
 
 
 class CapturingDataLoader(DataLoader):
@@ -40,6 +41,14 @@ class DummyReformatAdapter(DefaultDataAdapter):
         return Sample(input=str(record), target='', subset_key='subset-a')
 
 
+class DummyLLMJudgeAdapter(DefaultDataAdapter):
+
+    llm_judge_default = True
+
+    def record_to_sample(self, record: Any) -> Sample:
+        return Sample(input=str(record), target='')
+
+
 def make_adapter(repeats: int = 3, limit: Optional[int] = None) -> DummyReformatAdapter:
     task_config = TaskConfig(datasets=['dummy'], repeats=repeats, limit=limit)
     benchmark_meta = BenchmarkMeta(
@@ -66,6 +75,22 @@ def test_reformat_subset_repeats_are_applied_once_after_grouping() -> None:
     assert CapturingDataLoader.latest_repeats == 1
     assert len(dataset_dict['subset-a']) == 6
     assert [sample.group_id for sample in dataset_dict['subset-a']] == [0, 0, 0, 1, 1, 1]
+
+
+def test_auto_judge_strategy_uses_adapter_class_default() -> None:
+    benchmark_meta = BenchmarkMeta(name='dummy_judge', dataset_id='dummy', eval_split='test')
+    adapter = DummyLLMJudgeAdapter(
+        benchmark_meta=benchmark_meta,
+        task_config=TaskConfig(datasets=['dummy_judge'], judge_strategy=JudgeStrategy.AUTO),
+    )
+
+    assert adapter.use_llm_judge is True
+
+    adapter._task_config.judge_strategy = JudgeStrategy.RULE
+    assert adapter.use_llm_judge is False
+
+    adapter._task_config.judge_strategy = JudgeStrategy.LLM
+    assert adapter.use_llm_judge is True
 
 
 def test_sample_example_detects_parameterized_truncation_marker() -> None:

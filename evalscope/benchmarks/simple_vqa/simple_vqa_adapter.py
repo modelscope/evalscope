@@ -137,9 +137,10 @@ SimpleVQA is the first comprehensive multimodal benchmark to evaluate the factua
 )
 class SimpleVQAAdapter(VisionLanguageAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._use_llm_judge = True  # Use LLM as a judge by default
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         content_list: list[Content] = [ContentText(text=self.prompt_template.format(question=record['question']))]

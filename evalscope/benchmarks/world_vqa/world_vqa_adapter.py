@@ -67,10 +67,11 @@ WorldVQA is a benchmark designed to evaluate the atomic visual world knowledge o
 )
 class WorldVQAAdapter(VisionLanguageAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # WorldVQA requires LLM judge for semantic equivalence evaluation
-        self._use_llm_judge = True
         self.reformat_subset = True
         self.save_metadata = True
 

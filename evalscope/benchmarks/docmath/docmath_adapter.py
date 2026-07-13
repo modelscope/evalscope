@@ -63,9 +63,10 @@ DocMath-Eval is a comprehensive benchmark focused on numerical reasoning within 
 )
 class DocMathAdapter(DefaultDataAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._use_llm_judge = True  # Enable LLM judge for DocMath
         self.split_as_subset = True  # Use split as subset for DocMath
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

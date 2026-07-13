@@ -164,6 +164,7 @@ class HealthBenchAdapter(DefaultDataAdapter):
     This adapter supports multiple dataset versions and uses LLM judges to evaluate
     responses against detailed medical criteria.
     """
+    llm_judge_default = True
 
     def __init__(self, *args, **kwargs):
         """
@@ -176,7 +177,6 @@ class HealthBenchAdapter(DefaultDataAdapter):
         """
         super().__init__(*args, **kwargs)
 
-        self._use_llm_judge = True  # Use LLM as a judge by default
         self.reformat_subset = True
         self.add_aggregation_name = False
         # Get version from extra parameters, default to first version if not specified

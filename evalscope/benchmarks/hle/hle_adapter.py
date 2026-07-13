@@ -94,10 +94,11 @@ Humanity's Last Exam (HLE) is a comprehensive language model benchmark consistin
 )
 class HLEAdapter(DefaultDataAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._use_llm_judge = True  # Use LLM as a judge by default
         self.reformat_subset = True
         self.include_multi_modal = self.extra_params.get('include_multi_modal', True)
 
