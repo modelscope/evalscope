@@ -4,8 +4,7 @@ import zipfile
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
-from evalscope.api.benchmark.adapters.dataset_utils import resolve_snapshot_or_local_path
-from evalscope.api.dataset import Sample
+from evalscope.api.dataset import Sample, resolve_snapshot_or_local_path
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score

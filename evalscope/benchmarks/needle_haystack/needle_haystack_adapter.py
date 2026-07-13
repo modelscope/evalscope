@@ -4,8 +4,7 @@ from tqdm import tqdm
 from typing import TYPE_CHECKING, Any, Dict, List, Union
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
-from evalscope.api.benchmark.adapters.dataset_utils import build_dataset_from_records, resolve_snapshot_or_local_path
-from evalscope.api.dataset import DatasetDict, Sample
+from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records, resolve_snapshot_or_local_path
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark

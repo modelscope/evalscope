@@ -4,8 +4,7 @@ from collections import OrderedDict
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
-from evalscope.api.benchmark.adapters.dataset_utils import build_dataset_from_records
-from evalscope.api.dataset import DatasetDict, DatasetHub, Sample
+from evalscope.api.dataset import DatasetDict, DatasetHub, Sample, build_dataset_from_records
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentText, ContentVideo
 from evalscope.api.metric import SampleScore, Score

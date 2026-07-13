@@ -5,8 +5,7 @@ from collections import defaultdict
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
-from evalscope.api.benchmark.adapters.dataset_utils import build_dataset_from_records
-from evalscope.api.dataset import DatasetDict, Sample
+from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score

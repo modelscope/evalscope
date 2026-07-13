@@ -1,13 +1,14 @@
 from typing import Any, ClassVar, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
-from evalscope.api.benchmark.adapters.dataset_utils import (
+from evalscope.api.dataset import (
+    MemoryDataset,
+    Sample,
     build_dataset_dict_from_record_map,
     build_dataset_from_records,
     load_local_file_dataset,
     resolve_snapshot_or_local_path,
 )
-from evalscope.api.dataset import MemoryDataset, Sample
 from evalscope.config import TaskConfig
 
 
@@ -112,7 +113,7 @@ def test_load_local_file_dataset_passes_loader_args(monkeypatch) -> None:
             return MemoryDataset([Sample(input='ok')], name='loaded')
 
     monkeypatch.setattr(
-        'evalscope.api.benchmark.adapters.dataset_utils.LocalDataLoader',
+        'evalscope.api.dataset.builder.LocalDataLoader',
         CapturingLocalDataLoader,
     )
 

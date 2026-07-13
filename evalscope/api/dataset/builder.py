@@ -1,9 +1,11 @@
 import copy
 import random
-from typing import Callable, Dict, Iterable, List, Optional, Union
+from typing import Callable, Dict, Iterable, Optional, Union
 
-from evalscope.api.dataset import DatasetDict, DatasetHub, FieldSpec, LocalDataLoader, MemoryDataset, Sample
-from evalscope.api.dataset.utils import data_to_samples, record_to_sample_fn
+from .dataset import DatasetDict, FieldSpec, MemoryDataset, Sample
+from .hub import DatasetHub
+from .loader import LocalDataLoader
+from .utils import data_to_samples, record_to_sample_fn
 
 
 def build_dataset_from_records(
@@ -19,7 +21,15 @@ def build_dataset_from_records(
     filter_func: Optional[Callable[[Sample], bool]] = None,
     auto_id: bool = True,
 ) -> MemoryDataset:
-    """Build a MemoryDataset from raw records using the standard adapter mechanics."""
+    """Build a MemoryDataset from raw records using the standard adapter mechanics.
+
+    Note:
+        ``repeats`` duplicates each *resulting sample* (not the raw record) ``repeats``
+        times consecutively, then ``reindex`` groups them with ``group_size=repeats``.
+        This matches the single-sample-per-record adapters. If ``sample_fields`` maps one
+        record to multiple samples, the per-sample duplication order differs from record
+        level duplication, which callers relying on k-metric grouping should be aware of.
+    """
     record_list = list(records)
     if shuffle:
         random.Random(seed).shuffle(record_list)

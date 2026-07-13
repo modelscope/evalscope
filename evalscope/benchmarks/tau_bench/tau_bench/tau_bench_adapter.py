@@ -2,8 +2,7 @@ from collections import defaultdict
 from typing import Dict, List
 
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
-from evalscope.api.benchmark.adapters.dataset_utils import build_dataset_from_records
-from evalscope.api.dataset import DatasetDict, Sample
+from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.model import Model

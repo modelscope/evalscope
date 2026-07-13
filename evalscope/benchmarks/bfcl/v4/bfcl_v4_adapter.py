@@ -6,8 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
-from evalscope.api.benchmark.adapters.dataset_utils import build_dataset_from_records
-from evalscope.api.dataset import DatasetDict, Sample
+from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
 from evalscope.api.evaluator import InferenceResult, TaskState
 from evalscope.api.messages.chat_message import ChatMessageAssistant, ChatMessageUser
 from evalscope.api.messages.perf_metrics import PerformanceMetrics

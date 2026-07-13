@@ -7,8 +7,7 @@ import zipfile
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
-from evalscope.api.benchmark.adapters.dataset_utils import build_dataset_from_records
-from evalscope.api.dataset import DatasetDict, DatasetHub, Sample
+from evalscope.api.dataset import DatasetDict, DatasetHub, Sample, build_dataset_from_records
 from evalscope.api.messages import ChatMessageUser, Content, ContentText, ContentVideo
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags

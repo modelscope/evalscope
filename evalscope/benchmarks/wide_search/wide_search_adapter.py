@@ -10,8 +10,7 @@ from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
 from evalscope.api.agent import AgentEnvironment, AgentLoopResult
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
-from evalscope.api.benchmark.adapters.dataset_utils import load_local_file_dataset, resolve_snapshot_or_local_path
-from evalscope.api.dataset import DatasetDict, Sample
+from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageSystem
 from evalscope.api.metric import AggScore, SampleScore, Score
@@ -102,12 +101,11 @@ class WideSearchAdapter(AgentLoopAdapter):
         self._judge_lock = threading.Lock()
 
     def load(self) -> Tuple[DatasetDict, None]:
-        dataset_root = Path(
-            resolve_snapshot_or_local_path(
-                self,
-                allow_file_pattern=['widesearch.jsonl', 'widesearch_gold/*.csv'],
-            )
-        )
+        # NOTE: download the full snapshot rather than an ``allow_file_pattern`` list.
+        # ModelScope drops root-level file matches (e.g. ``widesearch.jsonl``) whenever the
+        # pattern list also contains a subdirectory glob (e.g. ``widesearch_gold/*.csv``),
+        # which left the data file missing. The dataset is small (one jsonl + gold CSVs).
+        dataset_root = Path(resolve_snapshot_or_local_path(self))
         self._dataset_root = dataset_root
         data_path = dataset_root / 'widesearch.jsonl'
         if not data_path.exists():

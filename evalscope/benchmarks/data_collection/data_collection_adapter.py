@@ -4,8 +4,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, DataAdapter, DefaultDataAdapter
-from evalscope.api.benchmark.adapters.dataset_utils import load_local_file_dataset, resolve_snapshot_or_local_path
-from evalscope.api.dataset import DatasetDict, Sample
+from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric.scorer import AggScore, SampleScore
 from evalscope.api.registry import get_benchmark, register_benchmark

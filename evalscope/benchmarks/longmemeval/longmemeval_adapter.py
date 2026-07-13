@@ -4,8 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
-from evalscope.api.benchmark.adapters.dataset_utils import build_dataset_from_records
-from evalscope.api.dataset import DatasetDict, DatasetHub, MemoryDataset, Sample
+from evalscope.api.dataset import DatasetDict, DatasetHub, MemoryDataset, Sample, build_dataset_from_records
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score

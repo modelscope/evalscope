@@ -23,6 +23,12 @@ from evalscope.benchmarks.wide_search.utils import (
 from evalscope.config import SandboxTaskConfig, TaskConfig
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, JudgeStrategy
 
+try:
+    import evalscope.agent.environments.enclave  # noqa: F401
+    _ENCLAVE_AVAILABLE = True
+except Exception:
+    _ENCLAVE_AVAILABLE = False
+
 
 def _evaluation(metric: str = 'exact_match') -> dict:
     return {
@@ -200,7 +206,7 @@ class TestWideSearchAdapter(unittest.TestCase):
         self.assertEqual([sample.metadata['language'] for sample in dataset], ['en', 'en', 'zh', 'zh'])
         self.assertTrue(all(sample.target.startswith('id,value') for sample in dataset))
 
-    def test_remote_dataset_snapshot_downloads_required_files_only(self) -> None:
+    def test_remote_dataset_downloads_full_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             root = Path(tmp_dir)
             self._write_dataset(root, count=1)
@@ -222,7 +228,7 @@ class TestWideSearchAdapter(unittest.TestCase):
             revision=None,
             force_redownload=False,
             cache_dir=DEFAULT_DATASET_CACHE_DIR,
-            allow_file_pattern=['widesearch.jsonl', 'widesearch_gold/*.csv'],
+            allow_file_pattern=None,
             ignore_file_pattern=None,
         )
         self.assertEqual(len(dataset), 1)
@@ -273,6 +279,7 @@ class TestWideSearchAdapter(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "judge_strategy='auto' or 'llm'"):
             adapter._validate_judge_config()
 
+    @unittest.skipUnless(_ENCLAVE_AVAILABLE, 'ms_enclave (sandbox extra) is not installed')
     def test_docker_uses_unified_sandbox_config(self) -> None:
         config = TaskConfig(
             model='mock',
