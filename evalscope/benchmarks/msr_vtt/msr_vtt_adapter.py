@@ -1,7 +1,6 @@
 import json
 import os
-from collections import OrderedDict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import DatasetDict, DatasetHub, Sample, build_dataset_from_records
@@ -13,10 +12,9 @@ from evalscope.benchmarks.caption.metrics import CAPTION_MAIN_SCORE, CAPTION_MET
 from evalscope.constants import HubType, Tags
 from evalscope.utils.logger import get_logger
 from evalscope.utils.url_utils import guess_video_format, is_http_url
+from .utils import DEFAULT_PROMPT, group_caption_records, optional_float
 
 logger = get_logger()
-
-DEFAULT_PROMPT = 'Describe the video in one concise sentence.'
 
 
 @register_benchmark(
@@ -45,7 +43,7 @@ with multiple reference captions.
 - Additional metrics: BLEU-1/2/3/4, METEOR, ROUGE-L
 - Set `extra_params.video_dir` to prefer local media files over URL metadata
 """,
-        tags=[Tags.MULTI_MODAL, Tags.IMAGE_CAPTIONING],
+        tags=[Tags.MULTI_MODAL, Tags.VIDEO, Tags.IMAGE_CAPTIONING],
         dataset_id='AI-ModelScope/msr-vtt',
         paper_url=
         'https://www.microsoft.com/en-us/research/publication/msr-vtt-a-large-video-description-dataset-for-bridging-video-and-language/',
@@ -106,11 +104,11 @@ class MSRVTTAdapter(VisionLanguageAdapter):
             force_redownload=self.force_redownload,
         )
 
-    def load_dataset(self) -> DatasetDict:
+    def load(self) -> Tuple[DatasetDict, None]:
         dataset_dict = {}
         for subset in self.subset_list:
             with self._temporary_attribute('current_subset_name', subset):
-                records = self._group_records(self._load_records())
+                records = group_caption_records(self._load_records())
                 dataset = build_dataset_from_records(
                     records=records,
                     sample_fields=self.record_to_sample,
@@ -123,10 +121,7 @@ class MSRVTTAdapter(VisionLanguageAdapter):
                 )
                 dataset_dict[subset] = dataset
 
-        self.test_dataset = DatasetDict(dataset_dict)
-        self.fewshot_dataset = None
-        self._post_process_samples()
-        return self.test_dataset
+        return DatasetDict(dataset_dict), None
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         references = record.get('references', [])
@@ -134,9 +129,9 @@ class MSRVTTAdapter(VisionLanguageAdapter):
             raise ValueError(f'No references found for MSR-VTT record: {record}')
 
         video = self._resolve_video(record)
-        start = _optional_float(record.get('start') or record.get('start time'), 'start')
-        end = _optional_float(record.get('end') or record.get('end time'), 'end')
-        fps = _optional_float(record.get('fps'), 'fps')
+        start = optional_float(record.get('start') or record.get('start time'), 'start')
+        end = optional_float(record.get('end') or record.get('end time'), 'end')
+        fps = optional_float(record.get('fps'), 'fps')
 
         content_list: List[Content] = [ContentText(text=self.prompt_template or DEFAULT_PROMPT)]
         if video:
@@ -190,20 +185,6 @@ class MSRVTTAdapter(VisionLanguageAdapter):
         dataset = self.source_dataset.load(split=self.source_eval_split, subset=subset)
         return list(dataset)
 
-    def _group_records(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        grouped: OrderedDict[str, Dict[str, Any]] = OrderedDict()
-        for record in records:
-            video_id = str(record.get('video_id') or record.get('id') or len(grouped))
-            captions = _extract_captions(record)
-            if video_id not in grouped:
-                grouped[video_id] = copy.deepcopy(record)
-                grouped[video_id]['references'] = []
-            grouped[video_id]['references'].extend(captions)
-
-        for record in grouped.values():
-            record['references'] = _unique_texts(record['references'])
-        return list(grouped.values())
-
     def _resolve_video(self, record: Dict[str, Any]) -> Optional[str]:
         video_name = record.get('video') or record.get('video_path')
         video_dir = self.extra_params.get('video_dir') or ''
@@ -218,37 +199,3 @@ class MSRVTTAdapter(VisionLanguageAdapter):
         if url and is_http_url(str(url)):
             return str(url)
         return str(video_name) if video_name else None
-
-
-def _optional_float(value: Any, field_name: str) -> Optional[float]:
-    if value is None or value == '':
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(f'Invalid {field_name} value: {value!r}') from exc
-
-
-def _extract_captions(record: Dict[str, Any]) -> List[str]:
-    for field in ('references', 'caption', 'captions'):
-        value = record.get(field)
-        if value is None:
-            continue
-        if isinstance(value, str):
-            text = value.strip()
-            return [text] if text else []
-        if isinstance(value, list):
-            return [str(v).strip() for v in value if str(v).strip()]
-    return []
-
-
-def _unique_texts(values: List[str]) -> List[str]:
-    seen = set()
-    result = []
-    for value in values:
-        text = str(value).strip()
-        if not text or text in seen:
-            continue
-        seen.add(text)
-        result.append(text)
-    return result

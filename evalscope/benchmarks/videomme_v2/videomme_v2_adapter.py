@@ -1,10 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import json
 import os
-import re
 import zipfile
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
 from evalscope.api.dataset import DatasetDict, DatasetHub, Sample, build_dataset_from_records
@@ -14,6 +12,15 @@ from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, prompt
 from evalscope.utils.url_utils import guess_video_format
+from .utils import (
+    archive_name,
+    build_question,
+    find_archive_member,
+    normalize_answer,
+    normalize_video_id,
+    parse_options,
+    subtitle_text_from_jsonl,
+)
 
 logger = get_logger()
 
@@ -23,7 +30,6 @@ DEFAULT_SUBSET_LIST = ['all']
 VIDEO_SOURCE_URL = 'url'
 VIDEO_SOURCE_ARCHIVE = 'archive'
 VIDEO_SOURCE_LIST = [VIDEO_SOURCE_URL, VIDEO_SOURCE_ARCHIVE]
-OPTION_PATTERN = re.compile(r'^\s*([A-Z])[\.\)]\s*(.*)$')
 
 
 @register_benchmark(
@@ -53,7 +59,7 @@ downloads, so it exercises the same reusable video benchmark path as MVBench.
 - Set `extra_params.video_source` to `archive` to download and use the official MP4 archives
 - Set `extra_params.use_subtitles` to `true` to include word-level subtitles in the prompt
 """,
-        tags=[Tags.MULTI_MODAL, Tags.MULTIPLE_CHOICE],
+        tags=[Tags.MULTI_MODAL, Tags.VIDEO, Tags.MULTIPLE_CHOICE],
         dataset_id=DATASET_ID,
         paper_url='https://arxiv.org/abs/2604.05015',
         subset_list=DEFAULT_SUBSET_LIST,
@@ -115,7 +121,7 @@ class VideoMMEv2Adapter(VisionLanguageAdapter, MultiChoiceAdapter):
     def subtitle_word_limit(self) -> int:
         return int(self.extra_params.get('subtitle_word_limit') or 0)
 
-    def load_dataset(self) -> DatasetDict:
+    def load(self) -> Tuple[DatasetDict, None]:
         dataset_dict = {}
         for subset in self.subset_list:
             if subset not in SUBSET_LIST:
@@ -134,10 +140,7 @@ class VideoMMEv2Adapter(VisionLanguageAdapter, MultiChoiceAdapter):
                 )
                 dataset_dict[subset] = dataset
 
-        self.test_dataset = DatasetDict(dataset_dict)
-        self.fewshot_dataset = None
-        self._post_process_samples()
-        return self.test_dataset
+        return DatasetDict(dataset_dict), None
 
     def _load_records(self) -> List[Dict[str, Any]]:
         if self._record_cache is None:
@@ -158,13 +161,13 @@ class VideoMMEv2Adapter(VisionLanguageAdapter, MultiChoiceAdapter):
         return [record for record in records if record.get('group_type') == subset]
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        choices = self._parse_options(record['options'])
-        target = self._normalize_answer(record['answer'], choices)
+        choices = parse_options(record['options'])
+        target = normalize_answer(record['answer'], choices)
         video_id = str(record['video_id'])
         video = self._resolve_video(record)
         subtitle = self._subtitle_for_record(video_id) if self.use_subtitles else None
         input_text = prompt(
-            question=self._question_with_context(record, subtitle=subtitle),
+            question=build_question(record, subtitle=subtitle),
             choices=choices,
             template=self.prompt_template,
         )
@@ -194,35 +197,6 @@ class VideoMMEv2Adapter(VisionLanguageAdapter, MultiChoiceAdapter):
             },
         )
 
-    @classmethod
-    def _parse_options(cls, options: Any) -> List[str]:
-        if isinstance(options, list):
-            choices = [str(option).strip() for option in options]
-        else:
-            choices = []
-            for line in str(options).splitlines():
-                line = line.strip()
-                if not line:
-                    continue
-                match = OPTION_PATTERN.match(line)
-                if match:
-                    choices.append(match.group(2).strip())
-                elif choices:
-                    choices[-1] = f'{choices[-1]} {line}'
-                else:
-                    choices.append(line)
-        if not choices:
-            raise ValueError(f'Invalid Video-MME-v2 options: {options!r}')
-        return choices
-
-    @staticmethod
-    def _normalize_answer(answer: Any, choices: List[str]) -> str:
-        target = str(answer).strip().upper()
-        valid_answers = {chr(ord('A') + idx) for idx in range(len(choices))}
-        if target not in valid_answers:
-            raise ValueError(f'Invalid Video-MME-v2 answer {answer!r}; expected one of {sorted(valid_answers)}.')
-        return target
-
     def _resolve_video(self, record: Dict[str, Any]) -> str:
         if self.video_source == VIDEO_SOURCE_URL:
             return str(record['url'])
@@ -235,51 +209,24 @@ class VideoMMEv2Adapter(VisionLanguageAdapter, MultiChoiceAdapter):
         if os.path.exists(output_path) and not self.force_redownload:
             return output_path
 
-        archive_path = self.source_dataset.download_file(f'videos/{self._archive_name(video_id)}')
-        member_name = self._find_archive_member(archive_path, video_id)
+        archive_file = self.source_dataset.download_file(f'videos/{archive_name(video_id)}')
+        member_name = find_archive_member(archive_file, video_id)
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        with zipfile.ZipFile(archive_path) as zip_file:
+        with zipfile.ZipFile(archive_file) as zip_file:
             with zip_file.open(member_name) as source, open(output_path, 'wb') as target:
                 target.write(source.read())
         return output_path
 
     def _cache_output_path(self, video_id: str) -> str:
-        video_id = self._normalize_video_id(video_id)
+        video_id = normalize_video_id(video_id)
         output_path = os.path.abspath(os.path.join(self.video_cache_dir, f'{video_id}.mp4'))
         cache_dir = os.path.abspath(self.video_cache_dir)
         if os.path.commonpath([cache_dir, output_path]) != cache_dir:
             raise ValueError(f'Invalid Video-MME-v2 video id: {video_id}')
         return output_path
 
-    @classmethod
-    def _archive_name(cls, video_id: str) -> str:
-        video_num = int(cls._normalize_video_id(video_id))
-        archive_num = ((video_num - 1) // 20) + 1
-        return f'{archive_num:03d}.zip'
-
-    @staticmethod
-    def _normalize_video_id(video_id: str) -> str:
-        if not re.fullmatch(r'\d{1,3}', str(video_id)):
-            raise ValueError(f'Invalid Video-MME-v2 video id: {video_id}')
-        video_num = int(video_id)
-        if not 1 <= video_num <= 800:
-            raise ValueError(f'Invalid Video-MME-v2 video id: {video_id}')
-        return f'{video_num:03d}'
-
-    @classmethod
-    def _find_archive_member(cls, archive_path: str, video_id: str) -> str:
-        expected = f'{cls._normalize_video_id(video_id)}.mp4'
-        with zipfile.ZipFile(archive_path) as zip_file:
-            matches = [
-                name for name in zip_file.namelist()
-                if not name.endswith('/') and (name.endswith(f'/{expected}') or name.endswith(expected))
-            ]
-        if not matches:
-            raise FileNotFoundError(f'Video {expected} was not found in archive {archive_path}.')
-        return sorted(matches)[0]
-
     def _subtitle_for_record(self, video_id: str) -> str:
-        video_id = self._normalize_video_id(video_id)
+        video_id = normalize_video_id(video_id)
         if video_id not in self._subtitle_cache:
             subtitle_path = self.source_dataset.download_file('subtitle.zip')
             member_name = f'subtitle/{video_id}.jsonl'
@@ -288,24 +235,5 @@ class VideoMMEv2Adapter(VisionLanguageAdapter, MultiChoiceAdapter):
                     raw_text = zip_file.read(member_name).decode('utf-8')
                 except KeyError as exc:
                     raise FileNotFoundError(f'Subtitle {member_name} was not found in {subtitle_path}.') from exc
-            self._subtitle_cache[video_id] = self._subtitle_text_from_jsonl(raw_text)
+            self._subtitle_cache[video_id] = subtitle_text_from_jsonl(raw_text, self.subtitle_word_limit)
         return self._subtitle_cache[video_id]
-
-    def _subtitle_text_from_jsonl(self, raw_text: str) -> str:
-        words = []
-        for line in raw_text.splitlines():
-            if not line.strip():
-                continue
-            item = json.loads(line)
-            text = str(item.get('text') or '').strip()
-            if text:
-                words.append(text)
-                if self.subtitle_word_limit and len(words) >= self.subtitle_word_limit:
-                    break
-        return ' '.join(words)
-
-    def _question_with_context(self, record: Dict[str, Any], subtitle: Optional[str]) -> str:
-        question = str(record['question'])
-        if not subtitle:
-            return question
-        return f'Subtitles:\n{subtitle}\n\n{question}'

@@ -3,7 +3,7 @@
 import os
 import zipfile
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
 from evalscope.api.dataset import DatasetDict, DatasetHub, Sample, build_dataset_from_records
@@ -13,6 +13,7 @@ from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_character, prompt
 from evalscope.utils.url_utils import guess_video_format
+from .utils import build_question, find_archive_member, optional_float
 
 logger = get_logger()
 
@@ -76,7 +77,7 @@ optimized video archives.
 - Full benchmark evaluation can be requested by setting `subset_list` to additional MVBench subsets
 - Time-bounded records keep start/end metadata and add a short segment instruction to the prompt
 """,
-        tags=[Tags.MULTI_MODAL, Tags.MULTIPLE_CHOICE],
+        tags=[Tags.MULTI_MODAL, Tags.VIDEO, Tags.MULTIPLE_CHOICE],
         dataset_id='PKU-Alignment/MVBench',
         paper_url='https://arxiv.org/abs/2311.17005',
         subset_list=DEFAULT_SUBSET_LIST,
@@ -106,7 +107,7 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
             force_redownload=self.force_redownload,
         )
 
-    def load_dataset(self) -> DatasetDict:
+    def load(self) -> Tuple[DatasetDict, None]:
         dataset_dict = {}
         for subset in self.subset_list:
             if subset not in SUBSET_LIST:
@@ -125,10 +126,7 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
                 )
                 dataset_dict[subset] = dataset
 
-        self.test_dataset = DatasetDict(dataset_dict)
-        self.fewshot_dataset = None
-        self._post_process_samples()
-        return self.test_dataset
+        return DatasetDict(dataset_dict), None
 
     def _load_subset_records(self, subset: str) -> List[Dict[str, Any]]:
         logger.info(f'Loading MVBench subset {subset} from {self.dataset_hub}: {self.dataset_id}.')
@@ -142,15 +140,15 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         choices = [str(choice) for choice in record['candidates']]
         answer = str(record['answer'])
         target = answer_character(choices.index(answer))
-        start = self._optional_float(record.get('start'), 'start')
-        end = self._optional_float(record.get('end'), 'end')
-        fps = self._optional_float(record.get('fps'), 'fps')
+        start = optional_float(record.get('start'), 'start')
+        end = optional_float(record.get('end'), 'end')
+        fps = optional_float(record.get('fps'), 'fps')
         if start is not None and end is not None and start > end:
             raise ValueError(f'Invalid MVBench time boundary: start={start} is greater than end={end}.')
 
         video_path = self._ensure_video_file(self.current_subset_name, str(record['video']))
         input_text = prompt(
-            question=self._question_with_video_context(record, start=start, end=end),
+            question=build_question(record, start=start, end=end),
             choices=choices,
             template=self.prompt_template,
         )
@@ -182,7 +180,7 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
             return output_path
 
         archive_path = self.source_dataset.download_file(f'video/{archive_name}')
-        member_name = self._find_archive_member(archive_path, subset, video_name)
+        member_name = find_archive_member(archive_path, subset, video_name)
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with zipfile.ZipFile(archive_path) as zip_file:
             with zip_file.open(member_name) as source, open(output_path, 'wb') as target:
@@ -195,65 +193,3 @@ class MVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         if os.path.commonpath([subset_dir, output_path]) != subset_dir:
             raise ValueError(f'Invalid MVBench video path: {video_name}')
         return output_path
-
-    @staticmethod
-    def _find_archive_member(archive_path: str, subset: str, video_name: str) -> str:
-        normalized_subset = subset.replace('_', '').lower()
-        with zipfile.ZipFile(archive_path) as zip_file:
-            matches = [
-                name for name in zip_file.namelist()
-                if not name.endswith('/') and (name.endswith(f'/{video_name}') or name.endswith(video_name))
-            ]
-        if not matches:
-            raise FileNotFoundError(f'Video {video_name} was not found in archive {archive_path}.')
-
-        preferred = [name for name in matches if normalized_subset in name.replace('_', '').lower()]
-        return sorted(preferred or matches)[0]
-
-    def _question_with_video_context(
-        self,
-        record: Dict[str, Any],
-        start: Optional[float],
-        end: Optional[float],
-    ) -> str:
-        context = self._format_video_context(record, start=start, end=end)
-        question = str(record['question'])
-        if not context:
-            return question
-        return f'{context}\n\n{question}'
-
-    @classmethod
-    def _format_video_context(cls, record: Dict[str, Any], start: Optional[float], end: Optional[float]) -> str:
-        context_parts = []
-        time_range = cls._format_time_range(start, end)
-        if time_range:
-            context_parts.append(f'Answer based on the video segment {time_range}.')
-
-        subtitle = record.get('subtitle') or record.get('subtitles')
-        if subtitle:
-            context_parts.append(f'Subtitles:\n{subtitle}')
-
-        return '\n'.join(context_parts)
-
-    @classmethod
-    def _format_time_range(cls, start: Optional[float], end: Optional[float]) -> str:
-        if start is None and end is None:
-            return ''
-        if start is not None and end is not None:
-            return f'from {cls._format_seconds(start)}s to {cls._format_seconds(end)}s'
-        if start is not None:
-            return f'after {cls._format_seconds(start)}s'
-        return f'before {cls._format_seconds(end)}s'
-
-    @staticmethod
-    def _format_seconds(value: float) -> str:
-        return f'{value:g}'
-
-    @staticmethod
-    def _optional_float(value: Any, field_name: str) -> Optional[float]:
-        if value is None or value == '':
-            return None
-        try:
-            return float(value)
-        except (TypeError, ValueError) as exc:
-            raise ValueError(f'Invalid MVBench {field_name}: {value!r}') from exc
