@@ -2,12 +2,12 @@ import { useLocale } from '@/contexts/LocaleContext'
 import { useQueryParams } from '@/hooks/useQueryParams'
 
 /**
- * Only allow same-origin relative URLs starting with /api/v1/reports/
+ * Only allow same-origin relative URLs under the reports or perf report APIs
  * to prevent open-redirect and javascript:/data: injection.
  */
 function isSafeReportUrl(url: string): boolean {
-  // Must be a relative path starting with the reports API prefix
-  return /^\/api\/v1\/reports\//.test(url)
+  // Must be a relative path starting with a known report API prefix
+  return /^\/api\/v1\/(reports|perf)\//.test(url)
 }
 
 export default function ReportViewerPage() {

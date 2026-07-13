@@ -52,15 +52,23 @@ export default function BenchmarksPage() {
   })
 
   useEffect(() => {
-    setLoading(true)
-    listBenchmarks(undefined, true)
-      .then((res) => {
+    let cancelled = false
+    const load = async () => {
+      setLoading(true)
+      try {
+        const res = await listBenchmarks(undefined, true)
+        if (cancelled) return
         const textList = (res.text ?? []).map((e) => normalize(e, 'llm'))
         const mmList = (res.multimodal ?? []).map((e) => normalize(e, 'vlm'))
         setAllBenchmarks([...textList, ...mmList])
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+      } catch {
+        /* ignore */
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
   }, [])
 
   // Debounce search

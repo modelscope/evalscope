@@ -91,6 +91,10 @@ def create_app(outputs: str = None):
                 'GET  /api/v1/perf/log': 'Get performance benchmark log',
                 'GET  /api/v1/perf/progress': 'Get real-time performance benchmark progress',
                 'GET  /api/v1/perf/report': 'Get HTML performance benchmark report',
+                'GET  /api/v1/perf/list': 'List historical performance benchmark runs',
+                'GET  /api/v1/perf/detail': 'Get native metadata for a perf run',
+                'GET  /api/v1/perf/chart': 'Render a single perf sweep chart (Plotly HTML)',
+                'GET  /api/v1/perf/history/report': 'Get HTML report for a historical perf run',
                 'GET  /api/v1/reports/scan': 'Scan available report folders',
                 'GET  /api/v1/reports/list': 'Filterable, paginated report listing',
                 'GET  /api/v1/reports/load': 'Load a single report',
@@ -137,6 +141,8 @@ def run_service(host: str = '0.0.0.0', port: int = 9000, debug: bool = False, ou
     logger.info('  GET  /api/v1/perf/log                - Get performance benchmark log')
     logger.info('  GET  /api/v1/perf/progress           - Get real-time performance benchmark progress')
     logger.info('  GET  /api/v1/perf/report             - Get HTML performance benchmark report')
+    logger.info('  GET  /api/v1/perf/list               - List historical performance benchmark runs')
+    logger.info('  GET  /api/v1/perf/history/report     - Get HTML report for a historical perf run')
     logger.info('Refer to docs for parameters: https://evalscope.readthedocs.io/en/latest/user_guides/service.html')
 
     # Print a user-friendly dashboard URL

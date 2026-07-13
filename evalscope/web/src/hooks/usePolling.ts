@@ -13,11 +13,14 @@ export function usePolling<T>({ fn, interval = 5000, enabled = false, onData }: 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const mountedRef = useRef(true)
 
-  // Use refs so that changes to fn / onData do NOT restart the polling cycle
+  // Use refs so that changes to fn / onData do NOT restart the polling cycle.
+  // Written in an effect (not during render) to satisfy react-hooks/refs.
   const fnRef = useRef(fn)
-  fnRef.current = fn
   const onDataRef = useRef(onData)
-  onDataRef.current = onData
+  useEffect(() => {
+    fnRef.current = fn
+    onDataRef.current = onData
+  })
 
   const poll = useCallback(async () => {
     try {

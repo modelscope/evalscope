@@ -11,6 +11,9 @@ const en: Dict = {
     perf: 'Performance',
     benchmarks: 'Benchmarks',
     reports: 'Reports',
+    evaluations: 'Evaluations',
+    performance: 'Performance',
+    tasks: 'Tasks',
   },
   single: {
     selectReport: 'Select Report',
@@ -337,6 +340,26 @@ const en: Dict = {
     bestScore: 'best',
     evaluations: 'Evaluations',
     noEvals: 'No evaluations found',
+    totalPerfRuns: 'Performance Runs',
+    latestRun: 'Latest Run',
+    recentRuns: 'Recent Runs',
+  },
+  performance: {
+    overview: 'Overview',
+    charts: 'Charts',
+    runs: 'runs',
+    viewFullHtml: 'View Full HTML Report',
+    summaryTable: 'Cross-Run Summary',
+    bestConfig: 'Best Configuration',
+    recommendations: 'Recommendations',
+    latencyGroup: 'Latency',
+    throughputGroup: 'Throughput',
+    noRuns: 'No performance runs found',
+    noRunsHint: 'Run `evalscope perf` and scan the output directory',
+  },
+  tasks: {
+    evalTab: 'Evaluation',
+    perfTab: 'Performance',
   },
 }
 
@@ -347,6 +370,9 @@ const zh: Dict = {
     perf: '性能测试',
     benchmarks: '基准测试',
     reports: '报告',
+    evaluations: '评估',
+    performance: '性能',
+    tasks: '任务',
   },
   single: {
     selectReport: '选择报告',
@@ -673,6 +699,26 @@ const zh: Dict = {
     bestScore: '最高',
     evaluations: '评估列表',
     noEvals: '暂无评估记录',
+    totalPerfRuns: '性能压测',
+    latestRun: '最近运行',
+    recentRuns: '最近运行',
+  },
+  performance: {
+    overview: '概览',
+    charts: '图表',
+    runs: '组',
+    viewFullHtml: '查看完整 HTML 报告',
+    summaryTable: '跨轮次汇总',
+    bestConfig: '最优配置',
+    recommendations: '优化建议',
+    latencyGroup: '延迟',
+    throughputGroup: '吞吐',
+    noRuns: '暂未发现性能压测记录',
+    noRunsHint: '运行 `evalscope perf` 后扫描该输出目录',
+  },
+  tasks: {
+    evalTab: '模型评估',
+    perfTab: '性能测试',
   },
 }
 

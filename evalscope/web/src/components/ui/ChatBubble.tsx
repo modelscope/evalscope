@@ -110,11 +110,13 @@ export default function ChatBubble({
 }
 
 /** Helper for chat-domain code that still needs the role's accent color (icon stroke, label text). */
+// eslint-disable-next-line react-refresh/only-export-components
 export function bubbleAccent(role: BubbleRole): string {
   return ROLE_ACCENT[role]
 }
 
 /** Helper for chat-domain code that needs the role's border token (decorative side bars). */
+// eslint-disable-next-line react-refresh/only-export-components
 export function bubbleBorder(role: BubbleRole, highlighted = false): string {
   return highlighted ? ROLE_TOKENS[role].borderHl : ROLE_TOKENS[role].border
 }

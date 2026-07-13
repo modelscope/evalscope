@@ -282,3 +282,45 @@ export interface ListReportsResponse {
     available_datasets: string[]
   }
 }
+
+// ------------------------------------------------------------------ //
+// Performance benchmark archive                                       //
+// ------------------------------------------------------------------ //
+
+/** One historical perf-run directory as returned by GET /api/v1/perf/list. */
+export interface PerfRunSummary {
+  /** Run directory path relative to the outputs root (used as id). */
+  path: string
+  model: string
+  api_type: string
+  dataset: string
+  num_runs: number
+  total_requests: number
+  success_rate: number
+  best_rps: number
+  best_latency: number
+  has_html: boolean
+  timestamp: string
+}
+
+export interface ListPerfRunsResponse {
+  runs: PerfRunSummary[]
+  total: number
+}
+
+/** Native-render metadata for a single perf run (GET /api/v1/perf/detail). */
+export interface PerfDetailResponse {
+  path: string
+  model: string
+  api_type: string
+  dataset: string
+  generated_at: string
+  basic_info: Record<string, string>
+  summary_columns: string[]
+  summary_rows: (string | number)[][]
+  best_config: Record<string, string>
+  recommendations: string[]
+  num_runs: number
+  is_embedding: boolean
+  has_html: boolean
+}

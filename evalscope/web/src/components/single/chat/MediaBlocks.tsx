@@ -40,8 +40,9 @@ export function AudioBlock({ src, format }: { src: string; format?: string }) {
   const mimeType = AUDIO_MIMES[format ?? ''] ?? 'audio/mpeg'
   return (
     <div className="mt-2 mb-1">
-      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-      <audio controls src={resolveMediaSrc(src, mimeType)} className="w-full rounded-[0.4rem]" />
+      <audio controls src={resolveMediaSrc(src, mimeType)} className="w-full rounded-[0.4rem]">
+        <track kind="captions" />
+      </audio>
     </div>
   )
 }
@@ -52,12 +53,13 @@ export function VideoBlock({ src, format }: { src: string; format?: string }) {
   const mimeType = VIDEO_MIMES[format ?? ''] ?? 'video/mp4'
   return (
     <div className="mt-2 mb-1">
-      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <video
         controls
         src={resolveMediaSrc(src, mimeType)}
         className="max-w-full max-h-[360px] rounded-lg border border-[var(--border)] block bg-[var(--media-video-bg)]"
-      />
+      >
+        <track kind="captions" />
+      </video>
     </div>
   )
 }
@@ -89,6 +91,7 @@ export function ReasoningBlock({ text, tokens }: { text: string; tokens?: number
 }
 
 /** Render ContentBlock[] into React nodes. */
+// eslint-disable-next-line react-refresh/only-export-components
 export function renderContentBlocks(
   blocks: ContentBlock[],
   opts: { includeReasoning?: boolean } = {},

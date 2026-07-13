@@ -99,8 +99,9 @@ export default function ComparePage() {
   // Reset per-model filters when selected models change
   const reportNamesKey = reportNames.join(';')
   useEffect(() => {
-    setPerModelFilter({})
-  }, [reportNamesKey]) // eslint-disable-line react-hooks/exhaustive-deps
+    const reset = () => setPerModelFilter({})
+    reset()
+  }, [reportNamesKey])
 
   // Sync root path
   useEffect(() => {
@@ -110,10 +111,21 @@ export default function ComparePage() {
   // Load score data and per-report cache (datasets/subsets) in one cache-aware pass
   useEffect(() => {
     if (reportNames.length < 2) return
-    setDataLoaded(false)
-    loadMultiReports(reportNames)
-      .then((list) => { setReports(list); setDataLoaded(true) })
-      .catch(() => setDataLoaded(true))
+    let cancelled = false
+    const load = async () => {
+      setDataLoaded(false)
+      try {
+        const list = await loadMultiReports(reportNames)
+        if (!cancelled) {
+          setReports(list)
+          setDataLoaded(true)
+        }
+      } catch {
+        if (!cancelled) setDataLoaded(true)
+      }
+    }
+    load()
+    return () => { cancelled = true }
   }, [reportNames, loadMultiReports])
 
   // ------------------------------------------------------------------ //
@@ -185,9 +197,12 @@ export default function ComparePage() {
   }, [reportNames, reportCache])
 
   useEffect(() => {
-    if (activeTab === 'prediction' && predCommonDatasets.length > 0 && !selectedDs) {
-      setSelectedDs(predCommonDatasets[0])
+    const applyDefault = () => {
+      if (activeTab === 'prediction' && predCommonDatasets.length > 0 && !selectedDs) {
+        setSelectedDs(predCommonDatasets[0])
+      }
     }
+    applyDefault()
   }, [activeTab, predCommonDatasets, selectedDs])
 
   const subsets = useMemo(() => {
@@ -209,39 +224,47 @@ export default function ComparePage() {
   }, [selectedDs, reportNames, reportCache])
 
   useEffect(() => {
-    if (subsets.length > 0 && !selectedSubset) setSelectedSubset(subsets[0])
+    const applyDefault = () => {
+      if (subsets.length > 0 && !selectedSubset) setSelectedSubset(subsets[0])
+    }
+    applyDefault()
   }, [subsets, selectedSubset])
 
-  const loadPredictions = useCallback(async () => {
+  useEffect(() => {
     if (!selectedDs || !selectedSubset || reportNames.length < 2) return
-    setPredictionsLoading(true)
-    try {
-      const results = await Promise.all(
-        reportNames.map((name) => getPredictions(rootPath, name, selectedDs, selectedSubset)),
-      )
-      const indexMap = new Map<string, MergedPrediction>()
-      results.forEach((res, i) => {
-        const modelName = reportNames[i]
-        for (const p of res.predictions) {
-          if (!indexMap.has(p.Index)) {
-            indexMap.set(p.Index, { Index: p.Index, Input: p.Input, Gold: p.Gold, models: {} })
+    let cancelled = false
+    const loadPredictions = async () => {
+      setPredictionsLoading(true)
+      try {
+        const results = await Promise.all(
+          reportNames.map((name) => getPredictions(rootPath, name, selectedDs, selectedSubset)),
+        )
+        const indexMap = new Map<string, MergedPrediction>()
+        results.forEach((res, i) => {
+          const modelName = reportNames[i]
+          for (const p of res.predictions) {
+            if (!indexMap.has(p.Index)) {
+              indexMap.set(p.Index, { Index: p.Index, Input: p.Input, Gold: p.Gold, models: {} })
+            }
+            indexMap.get(p.Index)!.models[modelName] = p
           }
-          indexMap.get(p.Index)!.models[modelName] = p
+        })
+        const merged = [...indexMap.values()].filter((row) =>
+          reportNames.every((m) => row.models[m]),
+        )
+        if (!cancelled) {
+          setMergedPredictions(merged)
+          setPage(1)
         }
-      })
-      const merged = [...indexMap.values()].filter((row) =>
-        reportNames.every((m) => row.models[m]),
-      )
-      setMergedPredictions(merged)
-      setPage(1)
-    } catch (e) {
-      console.error('Failed to load predictions:', e)
-    } finally {
-      setPredictionsLoading(false)
+      } catch (e) {
+        console.error('Failed to load predictions:', e)
+      } finally {
+        if (!cancelled) setPredictionsLoading(false)
+      }
     }
+    loadPredictions()
+    return () => { cancelled = true }
   }, [rootPath, reportNames, selectedDs, selectedSubset])
-
-  useEffect(() => { loadPredictions() }, [loadPredictions])
 
   // Filtered predictions using per-model constraints
   const filtered = useMemo(() => {
