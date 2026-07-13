@@ -31,7 +31,7 @@ optimized video archives.
 | **Benchmark Name** | `mvbench` |
 | **Dataset ID** | [PKU-Alignment/MVBench](https://modelscope.cn/datasets/PKU-Alignment/MVBench/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2311.17005) |
-| **Tags** | `MCQ`, `MultiModal` |
+| **Tags** | `MCQ`, `MultiModal`, `Video` |
 | **Metrics** | `acc` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |

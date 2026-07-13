@@ -3,7 +3,7 @@
 
 ## 概述
 
-General-VQA 是一个可自定义的视觉问答（Visual Question Answering）基准测试，用于评估多模态模型。  
+General-VQA 是一个可自定义的视觉问答（Visual Question Answering）基准测试，用于评估多模态模型。
 它支持 OpenAI 兼容的消息格式，并允许灵活的图像/视频输入方式（本地路径、URL 或 base64 编码）。
 
 ## 任务描述

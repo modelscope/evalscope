@@ -30,7 +30,7 @@ with multiple reference captions.
 | **Benchmark Name** | `msr_vtt` |
 | **Dataset ID** | [AI-ModelScope/msr-vtt](https://modelscope.cn/datasets/AI-ModelScope/msr-vtt/summary) |
 | **Paper** | [Paper](https://www.microsoft.com/en-us/research/publication/msr-vtt-a-large-video-description-dataset-for-bridging-video-and-language/) |
-| **Tags** | `ImageCaptioning`, `MultiModal` |
+| **Tags** | `ImageCaptioning`, `MultiModal`, `Video` |
 | **Metrics** | `Bleu_1`, `Bleu_2`, `Bleu_3`, `Bleu_4`, `METEOR`, `ROUGE_L`, `CIDEr` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `validation` |

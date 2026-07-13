@@ -1,7 +1,6 @@
+import pytest
 import sys
 import types
-
-import pytest
 
 from evalscope.api.dataset import DatasetHub, download_dataset_file, download_dataset_snapshot
 from evalscope.constants import HubType
