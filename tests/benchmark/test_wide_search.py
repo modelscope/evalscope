@@ -268,11 +268,10 @@ class TestWideSearchAdapter(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "judge_strategy='auto' or 'llm'"):
             adapter._validate_judge_config()
 
-    def test_docker_uses_unified_sandbox_and_agent_timeout(self) -> None:
+    def test_docker_uses_unified_sandbox_config(self) -> None:
         config = TaskConfig(
             model='mock',
             datasets=['wide_search'],
-            agent_config=NativeAgentConfig(command_timeout=17),
             sandbox=SandboxTaskConfig(
                 enabled=True,
                 default_config={
@@ -295,7 +294,6 @@ class TestWideSearchAdapter(unittest.TestCase):
                 'image': 'custom:latest',
                 'network_enabled': False,
             },
-            timeout=17,
         )
 
     def test_official_prompts_function_calling_and_timeout_defaults(self) -> None:

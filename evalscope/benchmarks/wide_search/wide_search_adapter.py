@@ -168,7 +168,6 @@ class WideSearchAdapter(AgentLoopAdapter):
         return EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config=sandbox_config,
-            timeout=self._resolve_command_timeout(self._task_config.agent_config if self._task_config else None),
         )
 
     def build_initial_messages(self, sample: Sample) -> List[Any]:
