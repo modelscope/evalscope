@@ -1,10 +1,17 @@
 import json
-import sys
-from typing import Any, Dict, Iterator, List, Union
+from pydantic import BaseModel, ConfigDict
+from typing import Any, Dict, Iterator, List, Literal, Union
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
 from evalscope.perf.plugin.registry import register_dataset
+from evalscope.perf.types import AnnotatedBody
+
+
+class LineByLineArgs(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    body_compose_mode: Literal['override', 'fill', 'passthrough'] = 'override'
 
 
 @register_dataset('line_by_line')
@@ -28,16 +35,32 @@ class LineByLineDatasetPlugin(DatasetPluginBase):
        called to merge CLI-level generation parameters.
 
     3. **Complete request body** (JSON object)::
-        # note max_tokens will be overridden by CLI-level generation parameters
+
         example: {"messages": [...], "temperature": 0.6, "max_tokens": 128}
 
-       Treated as a complete request body. The parameters inside the JSON object
-       (e.g. ``temperature``) take precedence and ``__compose_query_from_parameter``
-       is **NOT** called, so CLI-level generation parameters are ignored.
+       Treated as a complete request body. The interaction between CLI-level
+       generation parameters and body fields is controlled by the
+       ``body_compose_mode`` key in ``--dataset-args``:
+
+       - ``override`` (default): CLI params overwrite body fields.
+       - ``fill``: Body fields are preserved; CLI params only fill in missing
+         fields (``setdefault`` semantics).
+       - ``passthrough``: Body is sent as-is; ``__compose_query_from_parameter``
+         is skipped entirely, so CLI-level generation parameters are ignored.
+
+       Example::
+
+           --dataset-args '{"body_compose_mode": "fill"}'
+
+       .. note:: ``body_compose_mode`` is currently handled by ``--api openai``
+          (the default). Other API plugins treat the body as a plain dict
+          regardless of the mode.
     """
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
+        raw = query_parameters.dataset_args or {}
+        self._dataset_config = LineByLineArgs(**raw)
 
     def _try_parse_json(self, line: str) -> Union[str, List[Dict], Dict[str, Any]]:
         """Try to parse the line as JSON.
@@ -72,5 +95,9 @@ class LineByLineDatasetPlugin(DatasetPluginBase):
                 else:
                     result = prompt
             else:
-                result = parsed
+                mode = self._dataset_config.body_compose_mode
+                if mode == 'override' or not isinstance(parsed, dict):
+                    result = parsed
+                else:
+                    result = AnnotatedBody(parsed, compose_mode=mode)
             yield result
