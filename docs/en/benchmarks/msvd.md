@@ -29,7 +29,7 @@ The native adapter treats each video as one evaluation sample and uses all avail
 | **Benchmark Name** | `msvd` |
 | **Dataset ID** | [evalscope/MSVD](https://modelscope.cn/datasets/evalscope/MSVD/summary) |
 | **Paper** | [Paper](https://aclanthology.org/P11-1020/) |
-| **Tags** | `ImageCaptioning`, `MultiModal` |
+| **Tags** | `ImageCaptioning`, `MultiModal`, `Video` |
 | **Metrics** | `Bleu_1`, `Bleu_2`, `Bleu_3`, `Bleu_4`, `METEOR`, `ROUGE_L`, `CIDEr` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |

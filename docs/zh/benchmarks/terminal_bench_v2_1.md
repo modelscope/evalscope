@@ -7,26 +7,26 @@ Terminal-Bench v2.1 是 Terminal-Bench 2.0 的改进版本，修复了 26 项任
 
 ## 任务描述
 
-- **任务类型**：命令行智能体评估  
-- **输入**：终端任务规范  
-- **输出**：通过智能体操作完成任务  
-- **领域**：系统管理、编译、调试、文件操作  
+- **任务类型**：命令行智能体评估
+- **输入**：终端任务规范
+- **输出**：通过智能体操作完成任务
+- **领域**：系统管理、编译、调试、文件操作
 
 ## 主要特性
 
-- Terminal-Bench 2.0 的验证版，包含 26 项任务修复  
-- 提升了对奖励作弊的鲁棒性  
-- 隔离的容器化执行环境  
-- 二元评分（0/1），支持自动验证  
-- 支持多种智能体类型（terminus-2、claude-code、codex 等）  
+- Terminal-Bench 2.0 的验证版，包含 26 项任务修复
+- 提升了对奖励作弊的鲁棒性
+- 隔离的容器化执行环境
+- 二元评分（0/1），支持自动验证
+- 支持多种智能体类型（terminus-2、claude-code、codex 等）
 
 ## 评估说明
 
-- 需要 **Python>=3.12** 并安装 `pip install evalscope[terminal_bench]`  
-- 支持的环境选项：docker、daytona、e2b、modal  
-- 可配置智能体类型和超时设置  
-- 最大交互轮次可配置（默认：200）  
-- [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)  
+- 需要 **Python>=3.12** 并安装 `pip install evalscope[terminal_bench]`
+- 支持的环境选项：docker、daytona、e2b、modal
+- 可配置智能体类型和超时设置
+- 最大交互轮次可配置（默认：200）
+- [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)
 
 ## 属性
 

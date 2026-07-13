@@ -32,7 +32,7 @@ The EvalScope native adapter reads the official per-task JSON annotations from t
 | **Benchmark Name** | `tvbench` |
 | **Dataset ID** | [evalscope/TVBench](https://modelscope.cn/datasets/evalscope/TVBench/summary) |
 | **Paper** | N/A |
-| **Tags** | `MCQ`, `MultiModal` |
+| **Tags** | `MCQ`, `MultiModal`, `Video` |
 | **Metrics** | `acc` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |

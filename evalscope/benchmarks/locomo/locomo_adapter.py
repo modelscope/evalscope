@@ -4,8 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
-from evalscope.api.dataset import DatasetDict, DictDataLoader, Sample
-from evalscope.api.dataset.hub import download_dataset_file
+from evalscope.api.dataset import DatasetDict, DatasetHub, Sample, build_dataset_from_records
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
@@ -72,15 +71,16 @@ class LoCoMoAdapter(DefaultDataAdapter):
     def load(self) -> Tuple[DatasetDict, None]:
         self._validate_params()
         records = self._load_records()
-        dataset = DictDataLoader(
-            dict_list=records,
+        dataset = build_dataset_from_records(
+            records=records,
             sample_fields=self.record_to_sample,
-            subset='qa',
+            name='qa',
+            location=self.dataset_id,
             limit=self.limit,
             repeats=self.repeats,
             shuffle=self.shuffle,
             seed=self.seed,
-        ).load()
+        )
         return DatasetDict({'qa': dataset}), None
 
     def _validate_params(self) -> None:
@@ -114,13 +114,12 @@ class LoCoMoAdapter(DefaultDataAdapter):
             if not file_path.exists():
                 raise FileNotFoundError(f'LoCoMo data file not found: {file_path}')
             return str(file_path)
-        return download_dataset_file(
+        return DatasetHub(
             data_id_or_path=self.dataset_id,
-            file_path=DATA_FILE,
             data_source=self.dataset_hub,
             force_redownload=self.force_redownload,
             cache_dir=self.dataset_dir,
-        )
+        ).download_file(DATA_FILE)
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         qa = record['qa']

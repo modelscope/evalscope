@@ -4,7 +4,7 @@
 
 CL-bench 旨在推动构建具备上下文学习（Context Learning）这一基础能力的大语言模型，使其更加智能，并促进其在现实场景中的部署。该基准测试专门用于评估模型能否直接从上下文中学习特定的、通常是新颖或长尾的知识，并将其应用于解决问题，从而模拟真实世界中的学习过程。
 
-**资源：**  
+**资源：**
 [主页](https://github.com/Tencent-Hunyuan/CL-bench) | [数据集](https://huggingface.co/datasets/tencent/CL-bench)
 
 ## 任务描述

@@ -8,12 +8,12 @@ from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
-from evalscope.api.dataset import Sample
+from evalscope.api.dataset import Sample, resolve_snapshot_or_local_path
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import HubType, Tags
+from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 from .utils import DEFAULT_TOLERANCE, extract_final_answer, score_answer
 
@@ -122,12 +122,9 @@ class OfficeQAAdapter(AgentLoopAdapter):
         if self._corpus_dir is not None:
             return
 
-        from modelscope import dataset_snapshot_download
-
         logger.info('Downloading OfficeQA corpus (parsed txt files)...')
-        snapshot_dir = dataset_snapshot_download(
-            self.dataset_id,
-            allow_file_pattern=['treasury_bulletins_parsed/transformed/*.txt'],
+        snapshot_dir = resolve_snapshot_or_local_path(
+            self, allow_file_pattern=['treasury_bulletins_parsed/transformed/*.txt']
         )
         corpus_dir = os.path.join(snapshot_dir, 'treasury_bulletins_parsed', 'transformed')
         if not os.path.isdir(corpus_dir):

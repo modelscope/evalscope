@@ -154,6 +154,7 @@ class Tags:
     SPEECH_RECOGNITION = 'SpeechRecognition'
     AUDIO = 'Audio'
     IMAGE_CAPTIONING = 'ImageCaptioning'
+    VIDEO = 'Video'
 
 
 class FileConstants:

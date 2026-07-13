@@ -3,9 +3,7 @@ import os
 from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
-from evalscope.api.dataset import Sample
-from evalscope.api.dataset.dataset import DatasetDict
-from evalscope.api.dataset.loader import LocalDataLoader
+from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path
 from evalscope.api.messages.chat_message import ChatMessageUser, dict_to_chat_message
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
@@ -192,27 +190,17 @@ class HealthBenchAdapter(DefaultDataAdapter):
             tuple: (test_dataset, None) where test_dataset is a DatasetDict
                    containing the loaded data split by subsets
         """
-        # Try to load dataset from local disk
-        dataset_name_or_path = self.dataset_id
-        if os.path.exists(dataset_name_or_path):
-            logger.info(f'Loading dataset from {dataset_name_or_path}')
-            dataset_path = dataset_name_or_path
-        else:
-            from modelscope import dataset_snapshot_download
-
-            # Load dataset from remote
-            logger.info(f'Loading dataset from modelscope: > dataset_name: {dataset_name_or_path}')
-            # download dataset snapshot
-            dataset_path = dataset_snapshot_download(dataset_name_or_path, allow_file_pattern=self.version_file)
-
-        # Create local data loader with specified parameters
-        dataset = LocalDataLoader(
-            data_id_or_path=dataset_path,
+        dataset_path = resolve_snapshot_or_local_path(self, allow_file_pattern=self.version_file)
+        dataset = load_local_file_dataset(
+            adapter=self,
+            dataset_path=dataset_path,
+            subset=os.path.splitext(self.version_file)[0],  # NOTE: using hardcoded test subset
             split=self.eval_split,
             sample_fields=self.record_to_sample,
-            subset=os.path.splitext(self.version_file)[0],  # NOTE: using hardcoded test subset
+            limit=None,
+            repeats=1,
             shuffle=self.shuffle,
-        ).load()
+        )
 
         # Convert to DatasetDict and apply subset filtering and limiting
         test_dataset = DatasetDict.from_dataset(

@@ -7,27 +7,27 @@
 
 ## 任务描述
 
-- **任务类型**：高级对话智能体评估  
-- **输入**：包含复杂目标和多步骤需求的用户场景  
-- **输出**：智能体根据策略指南通过 API 工具调用执行动作  
-- **领域**：航空、零售、电信  
+- **任务类型**：高级对话智能体评估
+- **输入**：包含复杂目标和多步骤需求的用户场景
+- **输出**：智能体根据策略指南通过 API 工具调用执行动作
+- **领域**：航空、零售、电信
 
 ## 主要特性
 
-- 扩展领域覆盖范围（在航空和零售基础上新增电信领域）  
-- 提升任务复杂度与评估标准  
-- 基于大语言模型（LLM）模拟用户交互  
-- 支持多轮对话与工具调用  
-- 验证策略合规性  
+- 扩展领域覆盖范围（在航空和零售基础上新增电信领域）
+- 提升任务复杂度与评估标准
+- 基于大语言模型（LLM）模拟用户交互
+- 支持多轮对话与工具调用
+- 验证策略合规性
 
 ## 评估说明
 
-- **安装要求**：`pip install git+https://github.com/sierra-research/tau2-bench@v0.2.0`  
-- **用户模型配置**：需设置用户模拟模型  
-- 主要指标：基于任务完成奖励的 **准确率（Accuracy）**  
-- 支持 **航空（airline）**、**零售（retail）** 和 **电信（telecom）** 领域  
-- 使用 **pass@k** 聚合方法进行鲁棒性评估  
-- [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau2_bench.html)  
+- **安装要求**：`pip install git+https://github.com/sierra-research/tau2-bench@v0.2.0`
+- **用户模型配置**：需设置用户模拟模型
+- 主要指标：基于任务完成奖励的 **准确率（Accuracy）**
+- 支持 **航空（airline）**、**零售（retail）** 和 **电信（telecom）** 领域
+- 使用 **pass@k** 聚合方法进行鲁棒性评估
+- [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau2_bench.html)
 - 更新版本 **τ³-bench**（v1.0.0）已作为 `tau3_bench` 基准发布，新增 `banking_knowledge` 领域并修复 75+ 项任务。注意：两个版本不能在同一环境中同时安装。
 
 ## 属性

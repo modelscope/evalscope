@@ -3,11 +3,11 @@
 
 ## 概述
 
-Video-MME-v2 是一个公开的综合性视频理解基准测试。它包含 800 个视频、3,200 个多选问答（QA）样本，以及带有时间戳的词级字幕。该基准测试的原生适配器使用共享的 `DatasetHub` 抽象层来加载标注数据并可选地下载媒体归档文件，因此其复用了与 MVBench 相同的可重用视频基准测试路径。
+Video-MME-v2 是一个公开的综合性视频理解基准测试。它包含 800 个视频、3,200 个多选问答样本，以及带有时间戳的词级字幕。该基准测试的原生适配器使用共享的 `DatasetHub` 抽象来加载标注数据并可选地下载媒体存档，因此其复用了与 MVBench 相同的可重用视频基准测试路径。
 
 ## 任务描述
 
-- **任务类型**：视频多选问答（Multiple-choice Question Answering）
+- **任务类型**：视频多选问答（Video multiple-choice question answering）
 - **输入**：视频 URL 或归档的 MP4 文件 + 问题 + 答案选项
 - **输出**：单个正确答案字母
 - **子集**：`all`、`level_1`、`level_2`、`level_3`、`logic`、`relevance`
@@ -17,7 +17,7 @@ Video-MME-v2 是一个公开的综合性视频理解基准测试。它包含 800
 - 默认配置使用 **0-shot** 评估
 - 主要指标：**准确率（Accuracy）**
 - 默认视频源为公开的 `url` 字段，适用于轻量级冒烟测试
-- 将 `extra_params.video_source` 设置为 `archive` 以下载并使用官方 MP4 归档文件
+- 将 `extra_params.video_source` 设置为 `archive` 以下载并使用官方 MP4 存档
 - 将 `extra_params.use_subtitles` 设置为 `true` 以在提示中包含词级字幕
 
 ## 属性
@@ -27,7 +27,7 @@ Video-MME-v2 是一个公开的综合性视频理解基准测试。它包含 800
 | **基准测试名称** | `videomme_v2` |
 | **数据集ID** | [MME-Benchmarks/Video-MME-v2](https://modelscope.cn/datasets/MME-Benchmarks/Video-MME-v2/summary) |
 | **论文** | [Paper](https://arxiv.org/abs/2604.05015) |
-| **标签** | `MCQ`, `MultiModal` |
+| **标签** | `MCQ`, `MultiModal`, `Video` |
 | **指标** | `acc` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
@@ -39,7 +39,7 @@ Video-MME-v2 是一个公开的综合性视频理解基准测试。它包含 800
 |--------|-------|
 | 总样本数 | 3,200 |
 
-**各子集统计信息：**
+**各子集统计数据：**
 
 | 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
@@ -58,7 +58,7 @@ Video-MME-v2 是一个公开的综合性视频理解基准测试。它包含 800
 
 **提示模板：**
 ```text
-请回答以下多选题。你的回复最后一行应采用如下格式：'ANSWER: [LETTER]'（不含引号），其中 [LETTER] 是 {letters} 中的一个字母。请逐步思考后再作答。
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
