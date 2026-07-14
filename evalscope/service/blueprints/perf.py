@@ -427,8 +427,8 @@ def get_perf_detail():
         return jsonify({'error': str(e)}), 500
 
 
-# chart_type -> (builder attr, whether it needs the is_embedding flag)
-_CHART_BUILDERS = {
+# Sweep chart_type -> (builder attr, needs is_embedding flag). One point per run.
+_SWEEP_CHARTS = {
     'latency': ('build_latency_chart', False),
     'ttft': ('build_ttft_chart', False),
     'tpot': ('build_tpot_chart', False),
@@ -437,21 +437,60 @@ _CHART_BUILDERS = {
     'success': ('build_success_chart', False),
 }
 
+# Per-run request-detail chart_type -> tab label from build_request_detail_tabs.
+_REQUEST_CHARTS = {
+    'req_latency': 'Latency',
+    'req_ttft_tpot': 'TTFT / TPOT / ITL',
+    'req_tokens': 'Tokens',
+    'req_success': 'Success',
+}
+
+# Per-run percentile chart_type -> index into build_percentile_chart() tuple.
+_PERCENTILE_CHARTS = {'percentile_latency': 0, 'percentile_token': 1}
+
+
+def _wrap_chart_html(div: str) -> str:
+    """Wrap a Plotly <div> into a minimal standalone HTML page with the CDN."""
+    return (
+        '<!DOCTYPE html><html><head><meta charset="utf-8">'
+        f'<script src="{PLOTLY_CDN_URL}" charset="utf-8"></script>'
+        '<style>html,body{margin:0;padding:0;background:transparent;}</style>'
+        f'</head><body>{div}</body></html>'
+    )
+
+
+def _find_run(runs, run_name: str):
+    """Return the RunData whose dir_name matches *run_name* (regex-validated), or None."""
+    if not (_PARALLEL_RE.match(run_name) or _RATE_RE.match(run_name)):
+        return None
+    for r in runs:
+        if r.dir_name == run_name:
+            return r
+    return None
+
 
 @bp_perf.route('/chart', methods=['GET'])
 def get_perf_chart():
-    """Render a single sweep chart as standalone Plotly HTML for a perf run.
+    """Render a single chart as standalone Plotly HTML for a perf run.
 
     Query params:
         root_path  (str): output root directory
         path       (str): run directory path relative to root
-        chart_type (str): latency | ttft | tpot | rps | throughput | success
+        chart_type (str): sweep (latency|ttft|tpot|rps|throughput|success) or
+                          per-run (percentile_latency|percentile_token|
+                          req_latency|req_ttft_tpot|req_tokens|req_success)
+        run        (str): required for per-run chart types; the run sub-dir name
+        theme      (str): 'dark' (default) or 'light'
     """
     rel_path = request.args.get('path')
     chart_type = request.args.get('chart_type', 'latency')
+    run_name = request.args.get('run')
+    theme = 'light' if request.args.get('theme') == 'light' else 'dark'
     if not rel_path:
         return jsonify({'error': 'path is required'}), 400
-    if chart_type not in _CHART_BUILDERS:
+
+    known = set(_SWEEP_CHARTS) | set(_REQUEST_CHARTS) | set(_PERCENTILE_CHARTS)
+    if chart_type not in known:
         return jsonify({'error': f'Unknown chart_type: {chart_type}'}), 400
 
     run_dir = _resolve_run_dir(_root_path(), rel_path)
@@ -465,21 +504,135 @@ def get_perf_chart():
         runs = _load_runs(run_dir)
         if not runs:
             return jsonify({'error': f'No perf runs found under: {rel_path}'}), 404
-
         is_emb = _is_embedding(runs[0].args.get('api', ''))
-        builder_name, needs_emb = _CHART_BUILDERS[chart_type]
-        builder = getattr(perf_charts, builder_name)
-        div = builder(runs, is_emb) if needs_emb else builder(runs)
 
-        html = (
-            '<!DOCTYPE html><html><head><meta charset="utf-8">'
-            f'<script src="{PLOTLY_CDN_URL}" charset="utf-8"></script>'
-            '<style>html,body{margin:0;padding:0;background:transparent;}</style>'
-            f'</head><body>{div}</body></html>'
-        )
-        return html, 200, {'Content-Type': 'text/html'}
+        if chart_type in _SWEEP_CHARTS:
+            builder_name, needs_emb = _SWEEP_CHARTS[chart_type]
+            builder = getattr(perf_charts, builder_name)
+            div = builder(runs, is_emb, theme=theme) if needs_emb else builder(runs, theme=theme)
+        else:
+            # Per-run charts require a specific run sub-directory.
+            if not run_name:
+                return jsonify({'error': 'run is required for this chart_type'}), 400
+            run = _find_run(runs, run_name)
+            if run is None:
+                return jsonify({'error': f'Run not found: {run_name}'}), 404
+            if chart_type in _PERCENTILE_CHARTS:
+                charts = perf_charts.build_percentile_chart(run, is_emb, theme=theme)
+                div = charts[_PERCENTILE_CHARTS[chart_type]]
+            else:
+                label = _REQUEST_CHARTS[chart_type]
+                tabs = perf_charts.build_request_detail_tabs(run, is_emb, theme=theme)
+                div = next((t['chart'] for t in tabs if t['label'] == label), '')
+            if not div:
+                return jsonify({'error': 'Chart not available for this run'}), 404
+
+        return _wrap_chart_html(div), 200, {'Content-Type': 'text/html'}
     except Exception as e:
         logger.error(f'Failed to render perf chart {chart_type} for {rel_path}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@bp_perf.route('/runs', methods=['GET'])
+def list_perf_run_details():
+    """List individual runs (parallel_*/rate_*) within a perf-run directory.
+
+    Query params:
+        root_path (str): output root directory
+        path      (str): run directory path relative to root
+    """
+    rel_path = request.args.get('path')
+    if not rel_path:
+        return jsonify({'error': 'path is required'}), 400
+    run_dir = _resolve_run_dir(_root_path(), rel_path)
+    if run_dir is None:
+        return jsonify({'error': 'Invalid path'}), 400
+    try:
+        runs = _load_runs(run_dir)
+        items = []
+        for r in runs:
+            pct = r.percentiles.to_list()
+            items.append({
+                'dir_name': r.dir_name,
+                'name': r.name,
+                'parallel': r.parallel,
+                'number': r.number,
+                'rate': r.rate,
+                'total_requests': r.summary.total_requests,
+                'succeed_requests': r.summary.succeed_requests,
+                'success_rate': r.success_rate,
+                'num_requests': len(r.requests),
+                'has_requests': len(r.requests) > 0,
+                'percentile_columns': list(pct[0].keys()) if pct else [],
+                'percentile_rows': [list(p.values()) for p in pct],
+            })
+        return jsonify({'runs': items, 'total': len(items)}), 200
+    except Exception as e:
+        logger.error(f'Failed to list perf run details for {rel_path}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@bp_perf.route('/requests', methods=['GET'])
+def get_perf_requests():
+    """Return paginated per-request records (from benchmark_data.db) for one run.
+
+    Query params:
+        root_path (str): output root directory
+        path      (str): run directory path relative to root
+        run       (str): the run sub-dir name (parallel_*/rate_*)
+        status    (str): optional 'success' | 'failed' filter
+        page      (int): 1-based page (default 1)
+        page_size (int): rows per page (default 50, max 500)
+    """
+    rel_path = request.args.get('path')
+    run_name = request.args.get('run')
+    if not rel_path or not run_name:
+        return jsonify({'error': 'path and run are required'}), 400
+    run_dir = _resolve_run_dir(_root_path(), rel_path)
+    if run_dir is None:
+        return jsonify({'error': 'Invalid path'}), 400
+    try:
+        runs = _load_runs(run_dir)
+        run = _find_run(runs, run_name)
+        if run is None:
+            return jsonify({'error': f'Run not found: {run_name}'}), 404
+
+        status = request.args.get('status')
+        records = run.requests
+        if status == 'success':
+            records = [r for r in records if r.success]
+        elif status == 'failed':
+            records = [r for r in records if not r.success]
+
+        page = max(1, request.args.get('page', 1, type=int))
+        page_size = max(1, min(500, request.args.get('page_size', 50, type=int)))
+        total = len(records)
+        start = (page - 1) * page_size
+        page_records = records[start:start + page_size]
+
+        rows = []
+        for i, r in enumerate(page_records):
+            rows.append({
+                '#': start + i + 1,
+                'Latency(s)': round(r.latency, 3),
+                'TTFT(ms)': round(r.first_chunk_latency, 1) if r.first_chunk_latency is not None else None,
+                'TPOT(ms)': round(r.time_per_output_token, 1) if r.time_per_output_token is not None else None,
+                'Prompt': r.prompt_tokens,
+                'Completion': r.completion_tokens,
+                'Success': 'OK' if r.success else 'FAIL',
+            })
+
+        columns = ['#', 'Latency(s)', 'TTFT(ms)', 'TPOT(ms)', 'Prompt', 'Completion', 'Success']
+        return jsonify({
+            'columns': columns,
+            'rows': rows,
+            'total': total,
+            'page': page,
+            'page_size': page_size,
+            'has_db': len(run.requests) > 0,
+        }), 200
+    except Exception as e:
+        logger.error(f'Failed to load perf requests for {rel_path}/{run_name}: {e}')
         return jsonify({'error': str(e)}), 500
 
 

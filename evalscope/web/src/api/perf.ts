@@ -4,6 +4,8 @@ import type {
   ListPerfRunsResponse,
   LogResponse,
   PerfDetailResponse,
+  PerfRequestsResponse,
+  PerfRunsListResponse,
   ProgressResponse,
 } from './types'
 
@@ -44,8 +46,37 @@ export async function getPerfDetail(rootPath: string, path: string): Promise<Per
   return api<PerfDetailResponse>('/api/v1/perf/detail', { root_path: rootPath, path })
 }
 
-export function getPerfChartUrl(rootPath: string, path: string, chartType: string): string {
+export async function listPerfRunDetails(rootPath: string, path: string): Promise<PerfRunsListResponse> {
+  return api<PerfRunsListResponse>('/api/v1/perf/runs', { root_path: rootPath, path })
+}
+
+export async function getPerfRequests(params: {
+  rootPath: string
+  path: string
+  run: string
+  status?: 'success' | 'failed'
+  page?: number
+  pageSize?: number
+}): Promise<PerfRequestsResponse> {
+  return api<PerfRequestsResponse>('/api/v1/perf/requests', {
+    root_path: params.rootPath,
+    path: params.path,
+    run: params.run,
+    status: params.status,
+    page: params.page,
+    page_size: params.pageSize,
+  })
+}
+
+export function getPerfChartUrl(
+  rootPath: string,
+  path: string,
+  chartType: string,
+  opts: { run?: string; theme?: string } = {},
+): string {
   const params = new URLSearchParams({ root_path: rootPath, path, chart_type: chartType })
+  if (opts.run) params.set('run', opts.run)
+  if (opts.theme) params.set('theme', opts.theme)
   return `/api/v1/perf/chart?${params.toString()}`
 }
 

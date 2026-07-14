@@ -324,3 +324,33 @@ export interface PerfDetailResponse {
   is_embedding: boolean
   has_html: boolean
 }
+
+/** An individual run (a parallel_ or rate_ sub-directory) within a perf-run directory. */
+export interface PerfRunItem {
+  dir_name: string
+  name: string
+  parallel: number
+  number: number
+  rate: number | null
+  total_requests: number
+  succeed_requests: number
+  success_rate: number
+  num_requests: number
+  has_requests: boolean
+  percentile_columns: string[]
+  percentile_rows: (string | number)[][]
+}
+
+export interface PerfRunsListResponse {
+  runs: PerfRunItem[]
+  total: number
+}
+
+export interface PerfRequestsResponse {
+  columns: string[]
+  rows: Record<string, unknown>[]
+  total: number
+  page: number
+  page_size: number
+  has_db: boolean
+}

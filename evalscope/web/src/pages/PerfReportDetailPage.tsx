@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useReports } from '@/contexts/ReportsContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { getPerfDetail, getPerfChartUrl, getPerfHistoryReportUrl } from '@/api/perf'
 import type { PerfDetailResponse } from '@/api/types'
@@ -10,9 +11,10 @@ import Card from '@/components/ui/Card'
 import Skeleton from '@/components/ui/Skeleton'
 import Badge from '@/components/ui/Badge'
 import PlotlyChart from '@/components/charts/PlotlyChart'
+import PerfRunsTab from './PerfRunsTab'
 import { ExternalLink, Lightbulb } from 'lucide-react'
 
-type TabKey = 'overview' | 'charts'
+type TabKey = 'overview' | 'charts' | 'runs'
 
 // Sweep charts grouped like the standalone HTML report.
 const LATENCY_CHARTS = ['latency', 'ttft', 'tpot'] as const
@@ -95,6 +97,7 @@ export default function PerfReportDetailPage() {
   const { t } = useLocale()
   const { get } = useQueryParams()
   const { rootPath: ctxRoot } = useReports()
+  const { theme } = useTheme()
 
   const path = get('path') ?? ''
   const rootPath = get('root_path') ?? ctxRoot
@@ -173,6 +176,7 @@ export default function PerfReportDetailPage() {
   const tabs = [
     { key: 'overview', label: t('performance.overview') },
     { key: 'charts', label: t('performance.charts') },
+    { key: 'runs', label: t('performance.runsTab') },
   ]
 
   return (
@@ -244,23 +248,25 @@ export default function PerfReportDetailPage() {
             </Card>
           )}
         </div>
-      ) : (
+      ) : activeTab === 'charts' ? (
         <div className="flex flex-col gap-4">
           <Card title={t('performance.latencyGroup')}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {latencyCharts.map((ct) => (
-                <PlotlyChart key={ct} src={getPerfChartUrl(rootPath, path, ct)} title={CHART_TITLES[ct]} height={340} />
+                <PlotlyChart key={ct} src={getPerfChartUrl(rootPath, path, ct, { theme })} title={CHART_TITLES[ct]} height={340} />
               ))}
             </div>
           </Card>
           <Card title={t('performance.throughputGroup')}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {THROUGHPUT_CHARTS.map((ct) => (
-                <PlotlyChart key={ct} src={getPerfChartUrl(rootPath, path, ct)} title={CHART_TITLES[ct]} height={340} />
+                <PlotlyChart key={ct} src={getPerfChartUrl(rootPath, path, ct, { theme })} title={CHART_TITLES[ct]} height={340} />
               ))}
             </div>
           </Card>
         </div>
+      ) : (
+        <PerfRunsTab rootPath={rootPath} path={path} isEmbedding={data.is_embedding} theme={theme} />
       )}
     </div>
   )
