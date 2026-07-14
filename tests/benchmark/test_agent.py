@@ -5,7 +5,7 @@ import tempfile
 from dotenv import dotenv_values, load_dotenv
 from pathlib import Path
 from types import ModuleType
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 load_dotenv('.env')
 
@@ -38,14 +38,33 @@ logger = get_logger()
 
 def _fake_claw_eval_scoring_modules() -> dict[str, ModuleType]:
     claw_eval = ModuleType('claw_eval')
+    claw_eval.__path__ = []
     models = ModuleType('claw_eval.models')
     scoring = ModuleType('claw_eval.models.scoring')
-    scoring.compute_pass_at_k = lambda scores, k: 1.0 if scores else 0.0
-    scoring.compute_pass_hat_k = lambda scores, k: 1.0 if all(score >= 0.8 for score in scores) else 0.25
+
+    def compute_pass_at_k(scores, k):
+        return 1.0 if scores else 0.0
+
+    def compute_pass_hat_k(scores, k):
+        return 1.0 if all(score >= 0.8 for score in scores) else 0.25
+
+    scoring.compute_pass_at_k = compute_pass_at_k
+    scoring.compute_pass_hat_k = compute_pass_hat_k
     return {
         'claw_eval': claw_eval,
         'claw_eval.models': models,
         'claw_eval.models.scoring': scoring,
+    }
+
+
+def _fake_claw_eval_cli_modules(run_single_task) -> dict[str, ModuleType]:
+    claw_eval = ModuleType('claw_eval')
+    claw_eval.__path__ = []
+    cli = ModuleType('claw_eval.cli')
+    cli._run_single_task = run_single_task
+    return {
+        'claw_eval': claw_eval,
+        'claw_eval.cli': cli,
     }
 
 
@@ -473,18 +492,19 @@ class TestAgentBenchmark(TestBenchmark):
             task_dir = root / 'tasks' / 'T001_task'
             task_dir.mkdir(parents=True)
             (task_dir / 'task.yaml').write_text('id: T001_task\n', encoding='utf-8')
+            run = Mock(return_value={
+                'task_id': 'T001_task',
+                'task_name': 'Task 1',
+                'difficulty': 'easy',
+                'trials': [{
+                    'trace': str(trace_root / 'T001_task_abc.jsonl'),
+                    'task_score': 1.0,
+                    'passed': True,
+                }],
+                'error': None,
+            })
             with patch('evalscope.benchmarks.claw_eval.utils.validate_claw_eval_private_api', return_value=None), \
-                    patch('claw_eval.cli._run_single_task', return_value={
-                        'task_id': 'T001_task',
-                        'task_name': 'Task 1',
-                        'difficulty': 'easy',
-                        'trials': [{
-                            'trace': str(trace_root / 'T001_task_abc.jsonl'),
-                            'task_score': 1.0,
-                            'passed': True,
-                        }],
-                        'error': None,
-                    }) as run:
+                    patch.dict(sys.modules, _fake_claw_eval_cli_modules(run)):
                 parsed = run_claw_eval_task(
                     task_dir=task_dir,
                     trace_root=trace_root,
@@ -512,7 +532,7 @@ class TestAgentBenchmark(TestBenchmark):
         def incompatible_run_single_task(task_dir):
             return {}
 
-        with patch('claw_eval.cli._run_single_task', incompatible_run_single_task):
+        with patch.dict(sys.modules, _fake_claw_eval_cli_modules(incompatible_run_single_task)):
             with self.assertRaisesRegex(RuntimeError, 'private API is incompatible'):
                 validate_claw_eval_private_api()
 
@@ -633,7 +653,9 @@ class TestAgentBenchmark(TestBenchmark):
         self.assertEqual(trace.total_usage.total_tokens, 13)
         self.assertEqual([message.role for message in messages], ['user', 'assistant', 'tool'])
         self.assertEqual(messages[1].tool_calls[0].function.name, 'gmail_list_messages')
-        self.assertIn('tool_result', {event.type.value for event in trace.events})
+        event_types = {event.type.value for event in trace.events}
+        self.assertIn('env_exec', event_types)
+        self.assertIn('tool_result', event_types)
 
     def test_claw_eval_image_auto_build(self):
         """Test missing official sandbox image is built from the official repo."""

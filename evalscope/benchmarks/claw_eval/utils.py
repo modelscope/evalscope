@@ -368,6 +368,16 @@ def load_claw_eval_trace(trace_path: Optional[str]) -> Tuple[Optional[AgentTrace
                     else:
                         msg_id = uuid.uuid4().hex[:8]
                         messages.append(ChatMessageUser(id=msg_id, content=_content_part_to_text(part)))
+                        trace.add(
+                            AgentTraceEvent(
+                                step=step,
+                                type=EventType.ENV_EXEC,
+                                message_id=msg_id,
+                                timestamp=timestamp,
+                                payload={'role': role},
+                            )
+                        )
+                        step += 1
 
             last_timestamp = timestamp or last_timestamp
             continue
@@ -436,13 +446,19 @@ def _prepare_official_repo(
     cache_root.mkdir(parents=True, exist_ok=True)
     archive_path = cache_root / 'claw_eval_official.zip'
     if force_redownload or not archive_path.is_file():
-        urllib.request.urlretrieve(DEFAULT_CLAW_EVAL_REPO_ARCHIVE, archive_path)
+        tmp_archive_path = archive_path.with_suffix(f'{archive_path.suffix}.tmp')
+        try:
+            urllib.request.urlretrieve(DEFAULT_CLAW_EVAL_REPO_ARCHIVE, tmp_archive_path)
+            tmp_archive_path.replace(archive_path)
+        except Exception:
+            tmp_archive_path.unlink(missing_ok=True)
+            raise
 
     if extract_root.exists():
         shutil.rmtree(extract_root)
     extract_root.mkdir(parents=True)
     with zipfile.ZipFile(archive_path) as zf:
-        zf.extractall(extract_root)
+        _safe_extract_zip(zf, extract_root)
 
     repo_root = _find_repo_root(extract_root)
     if repo_root is None:
@@ -594,9 +610,33 @@ def _safe_extract_tar(tf: tarfile.TarFile, target_dir: Path) -> None:
     target_root = target_dir.resolve()
     for member in tf.getmembers():
         member_path = (target_dir / member.name).resolve()
-        if os.path.commonpath([target_root, member_path]) != str(target_root):
+        if not _is_relative_to(member_path, target_root):
             raise ValueError(f'Unsafe tar member path: {member.name}')
+        if member.issym() or member.islnk():
+            link_path = Path(member.linkname)
+            if member.issym():
+                target_path = link_path if link_path.is_absolute() else member_path.parent / link_path
+            else:
+                target_path = link_path if link_path.is_absolute() else target_dir / link_path
+            if not _is_relative_to(target_path.resolve(), target_root):
+                raise ValueError(f'Unsafe tar link target: {member.name} -> {member.linkname}')
     tf.extractall(target_dir)
+
+
+def _safe_extract_zip(zf: zipfile.ZipFile, target_dir: Path) -> None:
+    target_root = target_dir.resolve()
+    for member in zf.infolist():
+        member_path = (target_dir / member.filename).resolve()
+        if not _is_relative_to(member_path, target_root):
+            raise ValueError(f'Unsafe zip member path: {member.filename}')
+    zf.extractall(target_dir)
+
+
+def _is_relative_to(path: Path, root: Path) -> bool:
+    try:
+        return os.path.commonpath([str(root), str(path)]) == str(root)
+    except ValueError:
+        return False
 
 
 def _find_repo_root(extract_root: Path) -> Optional[Path]:
@@ -611,7 +651,11 @@ def _find_repo_root(extract_root: Path) -> Optional[Path]:
 
 
 def _symlink_or_copy(source: Path, dest: Path) -> None:
-    if dest.exists():
+    if dest.is_symlink():
+        if dest.exists():
+            return
+        dest.unlink()
+    elif dest.exists():
         return
     try:
         os.symlink(source, dest, target_is_directory=source.is_dir())

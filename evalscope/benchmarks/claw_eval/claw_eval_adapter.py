@@ -301,10 +301,7 @@ class ClawEvalAdapter(AgentAdapter):
                 num=num_groups
             ),
             AggScore(
-                score=sum(group_pass_at) / num_groups,
-                metric_name='pass_at_k',
-                aggregation_name='mean',
-                num=num_groups
+                score=sum(group_pass_at) / num_groups, metric_name='pass_at_k', aggregation_name='mean', num=num_groups
             ),
             AggScore(
                 score=sum(group_pass_hat) / num_groups,
@@ -313,10 +310,7 @@ class ClawEvalAdapter(AgentAdapter):
                 num=num_groups
             ),
             AggScore(
-                score=sample_errors / num_samples,
-                metric_name='error_rate',
-                aggregation_name='mean',
-                num=num_samples
+                score=sample_errors / num_samples, metric_name='error_rate', aggregation_name='mean', num=num_samples
             ),
         ]
 
@@ -388,9 +382,9 @@ class ClawEvalAdapter(AgentAdapter):
     def _redact_official_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         redacted = json.loads(json.dumps(config))
         for section in ('model', 'judge'):
-            api_key = redacted.get(section, {}).get('api_key')
-            if api_key:
-                redacted[section]['api_key'] = '<redacted>'
+            section_config = redacted.get(section)
+            if isinstance(section_config, dict) and section_config.get('api_key'):
+                section_config['api_key'] = '<redacted>'
         return redacted
 
     def _selected_splits(self) -> List[str]:
