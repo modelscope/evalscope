@@ -84,3 +84,14 @@ export function getPerfHistoryReportUrl(rootPath: string, path: string): string 
   const params = new URLSearchParams({ root_path: rootPath, path })
   return `/api/v1/perf/history/report?${params.toString()}`
 }
+
+export function getPerfCompareChartUrl(
+  rootPath: string,
+  paths: string[],
+  chartType: string,
+  theme?: string,
+): string {
+  const params = new URLSearchParams({ root_path: rootPath, paths: paths.join(';'), chart_type: chartType })
+  if (theme) params.set('theme', theme)
+  return `/api/v1/perf/compare/chart?${params.toString()}`
+}

@@ -27,7 +27,8 @@ GREEN = '#34d399'
 YELLOW = '#fbbf24'
 RED = '#f87171'
 
-PLOTLY_CONFIG: Dict[str, Any] = {'responsive': True}
+# Hide the modebar and Plotly logo so embedded charts read as clean cards.
+PLOTLY_CONFIG: Dict[str, Any] = {'responsive': True, 'displayModeBar': False, 'displaylogo': False}
 
 _GRID = dict(
     gridcolor='rgba(99,179,237,0.08)',
@@ -38,6 +39,7 @@ _LAYOUT_BASE = dict(
     template='plotly_dark',
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
+    hovermode='x unified',
     font=dict(
         family='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         size=13,
@@ -361,6 +363,77 @@ def build_success_chart(runs: List[RunData], theme: str = 'dark') -> str:
         extra_layout=dict(yaxis=dict(range=[0, 105], **_GRID)),
         theme=theme,
     )
+
+
+# ---------------------------------------------------------------------------
+# Cross-run comparison chart (one line per selected run directory)
+# ---------------------------------------------------------------------------
+
+_COMPARE_PALETTE = [ACCENT, GREEN, PURPLE, YELLOW, RED, '#f472b6', '#22d3ee', '#a3e635']
+
+_COMPARE_Y_TITLE = {
+    'latency': 'Latency (s)',
+    'ttft': 'TTFT (ms)',
+    'tpot': 'TPOT (ms)',
+    'rps': 'Requests/sec',
+    'throughput': 'Tokens/sec',
+    'success': 'Success Rate (%)',
+}
+
+
+def _compare_y(metric: str, r: 'RunData', is_embedding: bool) -> float:
+    """Return the y-value of *metric* for a single sweep sub-run."""
+    s = r.summary
+    if metric == 'latency':
+        return s.avg_latency
+    if metric == 'ttft':
+        return s.avg_ttft
+    if metric == 'tpot':
+        return s.avg_tpot
+    if metric == 'rps':
+        return s.request_throughput
+    if metric == 'success':
+        return r.success_rate
+    if metric == 'throughput':
+        return s.input_token_throughput if is_embedding else s.output_token_throughput
+    return 0.0
+
+
+def build_compare_chart(
+    series: 'List[Tuple[str, List[RunData]]]',
+    metric: str,
+    is_embedding: bool = False,
+    theme: str = 'dark',
+) -> str:
+    """Overlay one line per run directory for a single sweep *metric*.
+
+    Args:
+        series: list of ``(label, runs)`` where ``runs`` is the sweep sub-runs
+            of one perf-run directory.
+        metric: one of ``latency|ttft|tpot|rps|throughput|success``.
+        is_embedding: affects the ``throughput`` metric only.
+        theme: ``'dark'`` (default) or ``'light'``.
+    """
+    y_title = _COMPARE_Y_TITLE.get(metric, metric)
+    x_title = 'Concurrency'
+    traces = []
+    for i, (label, runs) in enumerate(series):
+        if not runs:
+            continue
+        xs, x_title = _x_axis(runs)
+        ys = [_compare_y(metric, r, is_embedding) for r in runs]
+        color = _COMPARE_PALETTE[i % len(_COMPARE_PALETTE)]
+        traces.append(
+            dict(
+                x=xs,
+                y=ys,
+                mode='lines+markers',
+                name=label,
+                line=dict(color=color, width=2),
+                marker=dict(size=8),
+            )
+        )
+    return ChartBuilder.line(traces, x_title=x_title, y_title=y_title, div_id=f'chart-compare-{metric}', theme=theme)
 
 
 # ---------------------------------------------------------------------------

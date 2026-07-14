@@ -14,6 +14,7 @@ const ComparePage = lazy(() => import('@/pages/ComparePage'))
 const TasksPage = lazy(() => import('@/pages/TasksPage'))
 const PerfReportsPage = lazy(() => import('@/pages/PerfReportsPage'))
 const PerfReportDetailPage = lazy(() => import('@/pages/PerfReportDetailPage'))
+const PerfComparePage = lazy(() => import('@/pages/PerfComparePage'))
 const ReportViewerPage = lazy(() => import('@/pages/ReportViewerPage'))
 const BenchmarksPage = lazy(() => import('@/pages/BenchmarksPage'))
 
@@ -28,6 +29,7 @@ function AppRoutes() {
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/performance" element={<PerfReportsPage />} />
           <Route path="/perf-report" element={<PerfReportDetailPage />} />
+          <Route path="/perf-compare" element={<PerfComparePage />} />
           <Route path="/tasks" element={<TasksPage />} />
           {/* Legacy task routes — redirect into the unified Tasks page */}
           <Route path="/eval" element={<Navigate to="/tasks?tab=eval" replace />} />

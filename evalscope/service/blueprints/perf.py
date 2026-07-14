@@ -450,11 +450,22 @@ _PERCENTILE_CHARTS = {'percentile_latency': 0, 'percentile_token': 1}
 
 
 def _wrap_chart_html(div: str) -> str:
-    """Wrap a Plotly <div> into a minimal standalone HTML page with the CDN."""
+    """Wrap a Plotly <div> into a standalone HTML page that fills the iframe.
+
+    The Plotly graph div is emitted with ``height:100%``; without giving the
+    html/body and the wrapping div a definite height it collapses to Plotly's
+    default size and overflows the fixed-height iframe (scrollbars + clipping).
+    Forcing the full chain to 100% height and hiding overflow makes the chart
+    fill the iframe cleanly.
+    """
     return (
         '<!DOCTYPE html><html><head><meta charset="utf-8">'
         f'<script src="{PLOTLY_CDN_URL}" charset="utf-8"></script>'
-        '<style>html,body{margin:0;padding:0;background:transparent;}</style>'
+        '<style>'
+        'html,body{margin:0;padding:0;background:transparent;height:100%;width:100%;overflow:hidden;}'
+        'body>div{height:100%;width:100%;}'
+        '.plotly-graph-div,.js-plotly-plot{width:100%!important;height:100%!important;}'
+        '</style>'
         f'</head><body>{div}</body></html>'
     )
 
@@ -530,6 +541,55 @@ def get_perf_chart():
         return _wrap_chart_html(div), 200, {'Content-Type': 'text/html'}
     except Exception as e:
         logger.error(f'Failed to render perf chart {chart_type} for {rel_path}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@bp_perf.route('/compare/chart', methods=['GET'])
+def get_perf_compare_chart():
+    """Overlay a single sweep metric across multiple perf-run directories.
+
+    Query params:
+        root_path  (str): output root directory
+        paths      (str): ';'-separated run directory paths (relative to root)
+        chart_type (str): sweep metric (latency|ttft|tpot|rps|throughput|success)
+        theme      (str): 'dark' (default) or 'light'
+    """
+    paths_raw = request.args.get('paths', '')
+    chart_type = request.args.get('chart_type', 'rps')
+    theme = 'light' if request.args.get('theme') == 'light' else 'dark'
+    rel_paths = [p for p in paths_raw.split(';') if p.strip()]
+    if not rel_paths:
+        return jsonify({'error': 'paths is required'}), 400
+    if chart_type not in _SWEEP_CHARTS:
+        return jsonify({'error': f'Unknown chart_type: {chart_type}'}), 400
+
+    root = _root_path()
+    try:
+        from evalscope.perf.utils.report import perf_charts
+        from evalscope.perf.utils.report.generate_report import _is_embedding
+
+        series = []
+        is_emb = False
+        for rel in rel_paths:
+            run_dir = _resolve_run_dir(root, rel)
+            if run_dir is None:
+                return jsonify({'error': f'Invalid path: {rel}'}), 400
+            runs = _load_runs(run_dir)
+            if not runs:
+                continue
+            first_args = runs[0].args or {}
+            is_emb = _is_embedding(first_args.get('api', ''))
+            model = first_args.get('model', first_args.get('model_id', rel))
+            ts = _extract_timestamp(rel, run_dir)
+            label = f'{model} · {ts}' if ts else model
+            series.append((label, runs))
+        if not series:
+            return jsonify({'error': 'No perf runs found for the given paths'}), 404
+
+        div = perf_charts.build_compare_chart(series, chart_type, is_embedding=is_emb, theme=theme)
+        return _wrap_chart_html(div), 200, {'Content-Type': 'text/html'}
+    except Exception as e:
+        logger.error(f'Failed to render perf compare chart {chart_type}: {e}')
         return jsonify({'error': str(e)}), 500
 
 

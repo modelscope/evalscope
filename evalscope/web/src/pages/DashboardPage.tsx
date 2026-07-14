@@ -11,7 +11,12 @@ import Skeleton from '@/components/ui/Skeleton'
 import KpiCard from '@/components/ui/KpiCard'
 import ScoreBadge from '@/components/ui/ScoreBadge'
 import EmptyState from '@/components/common/EmptyState'
+import SearchInput from '@/components/ui/SearchInput'
+import Button from '@/components/ui/Button'
 import { FileText, Gauge, Cpu, Clock, Inbox, FlaskConical, ChevronRight } from 'lucide-react'
+
+// Number of recent runs shown before the "view all" toggle.
+const RECENT_LIMIT = 15
 
 // ------------------------------------------------------------------ //
 // Helpers                                                             //
@@ -113,6 +118,11 @@ export default function DashboardPage() {
   const [reports, setReports] = useState<ReportSummary[]>([])
   const [perfRuns, setPerfRuns] = useState<PerfRunSummary[]>([])
 
+  // Recent-runs feed controls.
+  const [query, setQuery] = useState('')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'eval' | 'perf'>('all')
+  const [page, setPage] = useState(1)
+
   // Fetch eval + perf whenever the global scan token or root changes.
   useEffect(() => {
     if (!rootPath) return
@@ -135,27 +145,52 @@ export default function DashboardPage() {
     }
   }, [rootPath, scanToken])
 
-  // Merge into a single time-sorted feed.
-  const recent = useMemo<RunItem[]>(() => {
+  // Merge into a single time-sorted feed (uncapped).
+  const allItems = useMemo<RunItem[]>(() => {
     const items: RunItem[] = [
       ...reports.map((r): RunItem => ({ kind: 'eval', ts: r.timestamp || '', report: r })),
       ...perfRuns.map((r): RunItem => ({ kind: 'perf', ts: r.timestamp || '', run: r })),
     ]
-    return items.sort((a, b) => b.ts.localeCompare(a.ts)).slice(0, 20)
+    return items.sort((a, b) => b.ts.localeCompare(a.ts))
   }, [reports, perfRuns])
+
+  // Apply the type filter + keyword search.
+  const filteredItems = useMemo<RunItem[]>(() => {
+    const q = query.trim().toLowerCase()
+    return allItems.filter((it) => {
+      if (typeFilter !== 'all' && it.kind !== typeFilter) return false
+      if (!q) return true
+      if (it.kind === 'eval') {
+        return (
+          (it.report.model_name || '').toLowerCase().includes(q) ||
+          (it.report.dataset_name || '').toLowerCase().includes(q)
+        )
+      }
+      return (
+        (it.run.model || '').toLowerCase().includes(q) ||
+        (it.run.dataset || '').toLowerCase().includes(q) ||
+        (it.run.api_type || '').toLowerCase().includes(q)
+      )
+    })
+  }, [allItems, typeFilter, query])
+
+  // Paginate the filtered feed (page is reset to 1 by the filter/search handlers).
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / RECENT_LIMIT))
+  const safePage = Math.min(page, totalPages)
+  const visibleItems = filteredItems.slice((safePage - 1) * RECENT_LIMIT, safePage * RECENT_LIMIT)
 
   const kpi = useMemo(() => {
     const models = new Set<string>()
     reports.forEach((r) => models.add(r.model_name))
     perfRuns.forEach((r) => r.model && models.add(r.model))
-    const latestTs = recent.length > 0 ? recent[0].ts : ''
+    const latestTs = allItems.length > 0 ? allItems[0].ts : ''
     return {
       evals: reports.length,
       perfs: perfRuns.length,
       models: models.size,
       latest: latestTs ? formatFull(latestTs) : t('dashboard.neverText'),
     }
-  }, [reports, perfRuns, recent, t])
+  }, [reports, perfRuns, allItems, t])
 
   const openItem = (item: RunItem) => {
     if (item.kind === 'eval') {
@@ -165,7 +200,7 @@ export default function DashboardPage() {
     }
   }
 
-  const hasData = scanned && recent.length > 0
+  const hasData = scanned && allItems.length > 0
 
   return (
     <div className="flex flex-col gap-5 min-h-0">
@@ -243,12 +278,84 @@ export default function DashboardPage() {
           <Skeleton lines={8} height={14} />
         </Card>
       ) : hasData ? (
-        <Card title={t('dashboard.recentRuns')} badge={<Badge>{recent.length}</Badge>}>
-          <div className="flex flex-col gap-1">
-            {recent.map((item, i) => (
-              <RunRow key={`${item.kind}-${i}`} item={item} onClick={() => openItem(item)} />
-            ))}
+        <Card title={t('dashboard.recentRuns')} badge={<Badge>{filteredItems.length}</Badge>}>
+          {/* Filter controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+            <div className="flex items-center gap-1 p-0.5 rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] w-fit">
+              {(['all', 'eval', 'perf'] as const).map((k) => (
+                <button
+                  key={k}
+                  onClick={() => {
+                    setTypeFilter(k)
+                    setPage(1)
+                  }}
+                  className={[
+                    'px-3 py-1 rounded-[var(--radius-sm)] type-body-xs transition-colors',
+                    typeFilter === k
+                      ? 'bg-[var(--accent)] text-[var(--text-on-filled)]'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text)]',
+                  ].join(' ')}
+                >
+                  {t(`dashboard.filter_${k}`)}
+                </button>
+              ))}
+            </div>
+            <SearchInput
+              value={query}
+              onChange={(v) => {
+                setQuery(v)
+                setPage(1)
+              }}
+              placeholder={t('dashboard.searchPlaceholder')}
+              className="sm:ml-auto w-full sm:w-64"
+            />
           </div>
+
+          {visibleItems.length > 0 ? (
+            <div className="flex flex-col gap-1">
+              {visibleItems.map((item, i) => (
+                <RunRow key={`${item.kind}-${i}`} item={item} onClick={() => openItem(item)} />
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center type-body-sm text-[var(--text-muted)]">{t('dashboard.noMatch')}</div>
+          )}
+
+          {filteredItems.length > RECENT_LIMIT && (
+            <div className="flex items-center justify-center gap-2 mt-3">
+              <Button variant="ghost" size="sm" disabled={safePage <= 1} onClick={() => setPage(Math.max(1, safePage - 1))}>
+                ←
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
+                .reduce<(number | 'ellipsis')[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('ellipsis')
+                  acc.push(p)
+                  return acc
+                }, [])
+                .map((item, idx) =>
+                  item === 'ellipsis' ? (
+                    // text-dim allowed: decorative pagination ellipsis (DESIGN.md §Text)
+                    <span key={`e${idx}`} className="px-1 text-[var(--text-dim)]">
+                      ...
+                    </span>
+                  ) : (
+                    <Button
+                      key={item}
+                      variant={item === safePage ? 'primary' : 'ghost'}
+                      size="sm"
+                      onClick={() => setPage(item as number)}
+                      className="!min-w-[32px]"
+                    >
+                      {item}
+                    </Button>
+                  ),
+                )}
+              <Button variant="ghost" size="sm" disabled={safePage >= totalPages} onClick={() => setPage(Math.min(totalPages, safePage + 1))}>
+                →
+              </Button>
+            </div>
+          )}
         </Card>
       ) : scanned ? (
         <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">

@@ -21,12 +21,12 @@ const LATENCY_CHARTS = ['latency', 'ttft', 'tpot'] as const
 const THROUGHPUT_CHARTS = ['rps', 'throughput', 'success'] as const
 
 const CHART_TITLES: Record<string, string> = {
-  latency: 'Latency',
-  ttft: 'TTFT',
-  tpot: 'TPOT',
-  rps: 'Request Throughput',
-  throughput: 'Token Throughput',
-  success: 'Success Rate',
+  latency: 'Latency (s)',
+  ttft: 'TTFT (ms)',
+  tpot: 'TPOT (ms)',
+  rps: 'Requests/sec',
+  throughput: 'Tokens/sec',
+  success: 'Success Rate (%)',
 }
 
 function formatFull(ts: string): string {
@@ -107,6 +107,10 @@ export default function PerfReportDetailPage() {
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState<TabKey>('overview')
 
+  // Single-run sweeps have no meaningful trend curve; hide the Charts tab and
+  // steer users to the per-run percentile / per-request (DB) views instead.
+  const singleRun = (data?.num_runs ?? 0) <= 1
+
   useEffect(() => {
     if (!path) return
     let cancelled = false
@@ -115,7 +119,11 @@ export default function PerfReportDetailPage() {
       setError('')
       try {
         const res = await getPerfDetail(rootPath, path)
-        if (!cancelled) setData(res)
+        if (!cancelled) {
+          setData(res)
+          // Front-load the per-run (DB) views for single-run reports.
+          if ((res.num_runs ?? 0) <= 1) setActiveTab('runs')
+        }
       } catch (err) {
         if (!cancelled) setError(String(err))
       } finally {
@@ -173,11 +181,16 @@ export default function PerfReportDetailPage() {
     )
   }
 
-  const tabs = [
-    { key: 'overview', label: t('performance.overview') },
-    { key: 'charts', label: t('performance.charts') },
-    { key: 'runs', label: t('performance.runsTab') },
-  ]
+  const tabs = singleRun
+    ? [
+        { key: 'overview', label: t('performance.overview') },
+        { key: 'runs', label: t('performance.runsTab') },
+      ]
+    : [
+        { key: 'overview', label: t('performance.overview') },
+        { key: 'charts', label: t('performance.charts') },
+        { key: 'runs', label: t('performance.runsTab') },
+      ]
 
   return (
     <div className="page-enter flex flex-col gap-4">
@@ -216,6 +229,12 @@ export default function PerfReportDetailPage() {
       {/* Overview */}
       {activeTab === 'overview' ? (
         <div className="flex flex-col gap-4">
+          {singleRun && (
+            <div className="flex items-start gap-2 px-4 py-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-card2)] type-body-sm text-[var(--text-muted)]">
+              <Lightbulb size={15} className="text-[var(--accent)] shrink-0 mt-0.5" />
+              <span>{t('performance.singleRunHint')}</span>
+            </div>
+          )}
           <KpiStrip info={data.basic_info} />
 
           <Card title={t('performance.summaryTable')}>
