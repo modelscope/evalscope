@@ -154,6 +154,8 @@ class OpenaiPlugin(DefaultApiPlugin):
         if payload.get('stream') is True:
             if not preserve_existing or 'stream_options' not in payload:
                 payload['stream_options'] = {'include_usage': True}
+        else:
+            payload.pop('stream_options', None)
         if param.stop_token_ids is not None:
             _set('stop_token_ids', param.stop_token_ids)
         if param.temperature is not None:
