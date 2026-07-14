@@ -362,7 +362,11 @@ def list_perf_runs():
         root_abs = os.path.abspath(root)
         runs = []
         for rel_path in _scan_perf_runs(root_abs):
-            meta = _build_run_summary(rel_path, os.path.join(root_abs, rel_path))
+            try:
+                meta = _build_run_summary(rel_path, os.path.join(root_abs, rel_path))
+            except Exception as e:
+                logger.warning(f'Skipping unreadable perf run {rel_path}: {e}')
+                continue
             if meta is not None:
                 runs.append(meta)
 
@@ -515,7 +519,7 @@ def get_perf_chart():
         runs = _load_runs(run_dir)
         if not runs:
             return jsonify({'error': f'No perf runs found under: {rel_path}'}), 404
-        is_emb = _is_embedding(runs[0].args.get('api', ''))
+        is_emb = _is_embedding((runs[0].args or {}).get('api', ''))
 
         if chart_type in _SWEEP_CHARTS:
             builder_name, needs_emb = _SWEEP_CHARTS[chart_type]
@@ -569,7 +573,7 @@ def get_perf_compare_chart():
         from evalscope.perf.utils.report.generate_report import _is_embedding
 
         series = []
-        is_emb = False
+        emb_modes = set()
         for rel in rel_paths:
             run_dir = _resolve_run_dir(root, rel)
             if run_dir is None:
@@ -578,13 +582,16 @@ def get_perf_compare_chart():
             if not runs:
                 continue
             first_args = runs[0].args or {}
-            is_emb = _is_embedding(first_args.get('api', ''))
+            emb_modes.add(_is_embedding(first_args.get('api', '')))
             model = first_args.get('model', first_args.get('model_id', rel))
             ts = _extract_timestamp(rel, run_dir)
             label = f'{model} · {ts}' if ts else model
             series.append((label, runs))
         if not series:
             return jsonify({'error': 'No perf runs found for the given paths'}), 404
+        if len(emb_modes) > 1:
+            return jsonify({'error': 'Cannot compare embedding and LLM runs in the same chart'}), 400
+        is_emb = emb_modes.pop()
 
         div = perf_charts.build_compare_chart(series, chart_type, is_embedding=is_emb, theme=theme)
         return _wrap_chart_html(div), 200, {'Content-Type': 'text/html'}
@@ -723,7 +730,7 @@ def get_perf_history_report():
         if not runs:
             return jsonify({'error': f'No perf runs found under: {rel_path}'}), 404
 
-        api_type = runs[0].args.get('api', '')
+        api_type = (runs[0].args or {}).get('api', '')
         out_path = gen_perf_html_report(run_dir, {}, SimpleNamespace(api=api_type))
         if not out_path or not os.path.isfile(out_path):
             return jsonify({'error': 'Failed to generate perf report'}), 500

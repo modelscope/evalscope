@@ -10,6 +10,7 @@ Skipped automatically when Flask (service extra) is not installed.
 import json
 import os
 import pytest
+import shutil
 import tempfile
 import unittest
 
@@ -53,6 +54,9 @@ class TestPerfArchive(unittest.TestCase):
         _make_run(os.path.join(self.tmp, self.svc_rel), with_html=False)
 
         self.client = create_app().test_client()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_list_finds_both_layouts(self):
         res = self.client.get('/api/v1/perf/list', query_string={'root_path': self.tmp})
