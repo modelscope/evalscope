@@ -4,11 +4,12 @@ import queue
 import sys
 import threading
 from collections import defaultdict
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
-from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
+from evalscope.api.dataset import DatasetDict, Sample, build_dataset_dict_from_record_map
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
@@ -134,26 +135,19 @@ class ClawEvalAdapter(AgentAdapter):
                 normalized['split'] = split
                 records_by_split[split].append(normalized)
 
-        datasets: Dict[str, Any] = {}
-        for split, split_records in records_by_split.items():
-            if not split_records:
-                continue
-
-            datasets[split] = build_dataset_from_records(
-                records=split_records,
-                sample_fields=self.record_to_sample,
-                name=f'claw_eval_{split}',
-                location=self.dataset_id,
-                limit=self.limit,
-                repeats=self.repeats,
-                shuffle=self.shuffle,
-                seed=None,
-            )
-
-        if not datasets:
+        records_by_split = {split: split_records for split, split_records in records_by_split.items() if split_records}
+        if not records_by_split:
             raise ValueError('No Claw-Eval tasks selected. Check splits, task_ids, and limit.')
 
-        return DatasetDict(datasets), None
+        return build_dataset_dict_from_record_map(
+            record_map=records_by_split,
+            sample_fields=self.record_to_sample,
+            location=self.dataset_id,
+            limit=self.limit,
+            repeats=self.repeats,
+            shuffle=self.shuffle,
+            seed=None,
+        ), None
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         task_id = str(record.get('task_id') or '').strip()
@@ -208,7 +202,7 @@ class ClawEvalAdapter(AgentAdapter):
         )
         write_claw_eval_config(config_path, official_config)
 
-        port_slot = self._acquire_port_slot()
+        port_slot = self._get_port_slots().get()
         try:
             result = run_claw_eval_task(
                 task_dir=tasks_dir / task_id,
@@ -224,7 +218,7 @@ class ClawEvalAdapter(AgentAdapter):
                 proxy=os.environ.get('CLAW_EVAL_PROXY') or None,
             )
         finally:
-            self._release_port_slot(port_slot)
+            self._get_port_slots().put(port_slot)
             write_claw_eval_config(config_path, self._redact_official_config(official_config))
         sample.metadata['claw_eval_result'] = result
 
@@ -380,7 +374,7 @@ class ClawEvalAdapter(AgentAdapter):
         return getattr(model.api, 'api_key', None)
 
     def _redact_official_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        redacted = json.loads(json.dumps(config))
+        redacted = deepcopy(config)
         for section in ('model', 'judge'):
             section_config = redacted.get(section)
             if isinstance(section_config, dict) and section_config.get('api_key'):
@@ -407,12 +401,6 @@ class ClawEvalAdapter(AgentAdapter):
                 ensure_claw_eval_sandbox_image(self._assets.repo_root)
                 self._image_prepared = True
             return self._assets
-
-    def _acquire_port_slot(self) -> int:
-        return self._get_port_slots().get()
-
-    def _release_port_slot(self, slot: int) -> None:
-        self._get_port_slots().put(slot)
 
     def _get_port_slots(self) -> queue.Queue[int]:
         with self._port_slots_lock:

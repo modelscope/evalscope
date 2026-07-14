@@ -8,6 +8,7 @@ import yaml
 import zipfile
 from dataclasses import dataclass
 from datetime import datetime
+from functools import lru_cache
 from inspect import signature
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
@@ -203,6 +204,7 @@ def run_claw_eval_task(
     return parse_single_task_result(result, trace_root=trace_root, task_dir=task_dir, repo_root=repo_root)
 
 
+@lru_cache(maxsize=1)
 def validate_claw_eval_private_api() -> None:
     """Fail fast when the installed Claw-Eval package is not the pinned private API shape."""
     try:
