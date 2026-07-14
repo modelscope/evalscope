@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type CSSProperties } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -26,7 +26,7 @@ export default function MarkdownRenderer({ content }: Props) {
         return (
           <SyntaxHighlighter
             language={match[1]}
-            style={(theme === 'dark' ? vscDarkPlus : oneLight) as any}
+            style={(theme === 'dark' ? vscDarkPlus : oneLight) as { [key: string]: CSSProperties }}
             PreTag="div"
             customStyle={{
               margin: 0,

@@ -73,7 +73,7 @@ export function ToolCallsGroup({ calls }: { calls: ToolCallEntry[] }) {
 
   const funcNames = Array.from(new Set(calls.map(c => c.function).filter(Boolean)))
   const summaryLabel =
-    t('trace.toolCallsCount').replace('${n}', String(calls.length)) +
+    t('trace.toolCallsCount', { n: calls.length }) +
     (funcNames.length > 0 ? ` (${funcNames.join(', ')})` : '')
 
   return (

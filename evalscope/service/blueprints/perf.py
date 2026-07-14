@@ -1,12 +1,14 @@
 import json
 import os
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, current_app, jsonify, request, send_file
 from tabulate import tabulate
 
 from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.perf.utils.benchmark_util import Metrics
 from evalscope.perf.utils.rich_display import EmbeddingResultAnalyzer, LLMResultAnalyzer
 from evalscope.utils.logger import get_logger
+from .. import perf_archive
+from ..perf_archive import PerfArchiveError
 from ..utils import (
     OUTPUT_DIR,
     create_log_file,
@@ -19,6 +21,11 @@ from ..utils import (
 )
 
 logger = get_logger()
+
+
+def _root_path() -> str:
+    """Resolve the outputs root: query param > app config > OUTPUT_DIR."""
+    return request.args.get('root_path', current_app.config.get('OUTPUTS_ROOT') or OUTPUT_DIR)
 
 
 def _build_perf_table(result, api_type: str = None) -> str:
@@ -190,4 +197,182 @@ def get_performance_progress():
         return jsonify({'percent': 0.0}), 200
     except Exception as e:
         logger.error(f'Failed to get progress for task {task_id}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+# ------------------------------------------------------------------
+# Historical perf-run archive
+#
+# These endpoints stay thin: request parsing + JSON/error translation only.
+# All discovery / view-model / chart / paging logic lives in
+# :mod:`evalscope.service.perf_archive`.
+# ------------------------------------------------------------------
+
+
+@bp_perf.route('/list', methods=['GET'])
+def list_perf_runs():
+    """List historical performance-benchmark runs discovered under the output root.
+
+    Query params:
+        root_path (str): output root directory (optional; falls back to config)
+    """
+    try:
+        root = _root_path()
+        if not root or not os.path.isdir(root):
+            return jsonify({'error': 'root_path is required and must be an existing directory'}), 400
+
+        runs = perf_archive.list_run_summaries(root)
+        return jsonify({'runs': runs, 'total': len(runs)}), 200
+    except Exception as e:
+        logger.error(f'Failed to list perf runs: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@bp_perf.route('/detail', methods=['GET'])
+def get_perf_detail():
+    """Return native-render metadata for a single perf-run directory.
+
+    Query params:
+        root_path (str): output root directory
+        path      (str): run directory path relative to root
+    """
+    rel_path = request.args.get('path')
+    if not rel_path:
+        return jsonify({'error': 'path is required'}), 400
+    try:
+        return jsonify(perf_archive.build_run_detail(_root_path(), rel_path)), 200
+    except PerfArchiveError as e:
+        return jsonify({'error': e.message}), e.status
+    except Exception as e:
+        logger.error(f'Failed to load perf detail for {rel_path}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@bp_perf.route('/chart', methods=['GET'])
+def get_perf_chart():
+    """Render a single chart as standalone Plotly HTML for a perf run.
+
+    Query params:
+        root_path  (str): output root directory
+        path       (str): run directory path relative to root
+        chart_type (str): sweep (latency|ttft|tpot|rps|throughput|success) or
+                          per-run (percentile_latency|percentile_token|
+                          req_latency|req_ttft_tpot|req_tokens|req_success)
+        run        (str): required for per-run chart types; the run sub-dir name
+        theme      (str): 'dark' (default) or 'light'
+    """
+    rel_path = request.args.get('path')
+    chart_type = request.args.get('chart_type', 'latency')
+    run_name = request.args.get('run')
+    theme = 'light' if request.args.get('theme') == 'light' else 'dark'
+    if not rel_path:
+        return jsonify({'error': 'path is required'}), 400
+    try:
+        html = perf_archive.render_chart(_root_path(), rel_path, chart_type, run_name, theme)
+        return html, 200, {'Content-Type': 'text/html'}
+    except PerfArchiveError as e:
+        return jsonify({'error': e.message}), e.status
+    except Exception as e:
+        logger.error(f'Failed to render perf chart {chart_type} for {rel_path}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@bp_perf.route('/compare/chart', methods=['GET'])
+def get_perf_compare_chart():
+    """Overlay a single sweep metric across multiple perf-run directories.
+
+    Query params:
+        root_path  (str): output root directory
+        paths      (str): ';'-separated run directory paths (relative to root)
+        chart_type (str): sweep metric (latency|ttft|tpot|rps|throughput|success)
+        theme      (str): 'dark' (default) or 'light'
+    """
+    paths_raw = request.args.get('paths', '')
+    chart_type = request.args.get('chart_type', 'rps')
+    theme = 'light' if request.args.get('theme') == 'light' else 'dark'
+    rel_paths = [p for p in paths_raw.split(';') if p.strip()]
+    if not rel_paths:
+        return jsonify({'error': 'paths is required'}), 400
+    try:
+        html = perf_archive.render_compare_chart(_root_path(), rel_paths, chart_type, theme)
+        return html, 200, {'Content-Type': 'text/html'}
+    except PerfArchiveError as e:
+        return jsonify({'error': e.message}), e.status
+    except Exception as e:
+        logger.error(f'Failed to render perf compare chart {chart_type}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@bp_perf.route('/runs', methods=['GET'])
+def list_perf_run_details():
+    """List individual runs (parallel_*/rate_*) within a perf-run directory.
+
+    Query params:
+        root_path (str): output root directory
+        path      (str): run directory path relative to root
+    """
+    rel_path = request.args.get('path')
+    if not rel_path:
+        return jsonify({'error': 'path is required'}), 400
+    try:
+        items = perf_archive.list_run_items(_root_path(), rel_path)
+        return jsonify({'runs': items, 'total': len(items)}), 200
+    except PerfArchiveError as e:
+        return jsonify({'error': e.message}), e.status
+    except Exception as e:
+        logger.error(f'Failed to list perf run details for {rel_path}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@bp_perf.route('/requests', methods=['GET'])
+def get_perf_requests():
+    """Return paginated per-request records (from benchmark_data.db) for one run.
+
+    Query params:
+        root_path (str): output root directory
+        path      (str): run directory path relative to root
+        run       (str): the run sub-dir name (parallel_*/rate_*)
+        status    (str): optional 'success' | 'failed' filter
+        page      (int): 1-based page (default 1)
+        page_size (int): rows per page (default 50, max 500)
+    """
+    rel_path = request.args.get('path')
+    run_name = request.args.get('run')
+    if not rel_path or not run_name:
+        return jsonify({'error': 'path and run are required'}), 400
+    try:
+        result = perf_archive.query_request_page(
+            _root_path(),
+            rel_path,
+            run_name,
+            request.args.get('status'),
+            request.args.get('page', 1, type=int),
+            request.args.get('page_size', 50, type=int),
+        )
+        return jsonify(result), 200
+    except PerfArchiveError as e:
+        return jsonify({'error': e.message}), e.status
+    except Exception as e:
+        logger.error(f'Failed to load perf requests for {rel_path}/{run_name}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@bp_perf.route('/history/report', methods=['GET'])
+def get_perf_history_report():
+    """Serve (or lazily generate) the full HTML report for a historical perf run.
+
+    Query params:
+        root_path (str): output root directory
+        path      (str): run directory path relative to root
+    """
+    rel_path = request.args.get('path')
+    if not rel_path:
+        return jsonify({'error': 'path is required'}), 400
+    try:
+        report_file = perf_archive.ensure_history_report(_root_path(), rel_path)
+        return send_file(report_file, mimetype='text/html')
+    except PerfArchiveError as e:
+        return jsonify({'error': e.message}), e.status
+    except Exception as e:
+        logger.error(f'Failed to serve perf history report for {rel_path}: {e}')
         return jsonify({'error': str(e)}), 500

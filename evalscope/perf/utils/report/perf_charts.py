@@ -27,7 +27,8 @@ GREEN = '#34d399'
 YELLOW = '#fbbf24'
 RED = '#f87171'
 
-PLOTLY_CONFIG: Dict[str, Any] = {'responsive': True}
+# Hide the modebar and Plotly logo so embedded charts read as clean cards.
+PLOTLY_CONFIG: Dict[str, Any] = {'responsive': True, 'displayModeBar': False, 'displaylogo': False}
 
 _GRID = dict(
     gridcolor='rgba(99,179,237,0.08)',
@@ -38,6 +39,7 @@ _LAYOUT_BASE = dict(
     template='plotly_dark',
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
+    hovermode='x unified',
     font=dict(
         family='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         size=13,
@@ -69,9 +71,16 @@ class ChartBuilder:
         return fig.to_html(**kwargs)
 
     @staticmethod
-    def layout(**overrides: Any) -> dict:
-        """Return a layout dict by merging *_LAYOUT_BASE* with *overrides*."""
+    def layout(theme: str = 'dark', **overrides: Any) -> dict:
+        """Return a layout dict by merging *_LAYOUT_BASE* with *overrides*.
+
+        *theme* selects the Plotly template ('plotly_white' for light, else
+        'plotly_dark'); backgrounds stay transparent so charts blend into the
+        host surface on both themes. An explicit ``template`` in *overrides*
+        takes precedence.
+        """
         merged = dict(_LAYOUT_BASE)
+        merged['template'] = 'plotly_white' if theme == 'light' else 'plotly_dark'
         merged.update(overrides)
         return merged
 
@@ -83,6 +92,7 @@ class ChartBuilder:
         y_title: str,
         div_id: str = '',
         extra_layout: Optional[dict] = None,
+        theme: str = 'dark',
     ) -> str:
         """Build a multi-trace ``Scatter`` (line) chart and return an HTML div."""
         import plotly.graph_objects as go
@@ -100,7 +110,7 @@ class ChartBuilder:
         if extra_layout:
             layout_kwargs.update(extra_layout)
 
-        fig.update_layout(**cls.layout(**layout_kwargs))
+        fig.update_layout(**cls.layout(theme=theme, **layout_kwargs))
         return cls.to_div(fig, div_id)
 
     @classmethod
@@ -110,6 +120,7 @@ class ChartBuilder:
         x_title: str,
         y_title: str,
         div_id: str = '',
+        theme: str = 'dark',
     ) -> str:
         """Build a ``Scatter`` (marker-only) chart and return an HTML div."""
         import plotly.graph_objects as go
@@ -120,6 +131,7 @@ class ChartBuilder:
 
         fig.update_layout(
             **cls.layout(
+                theme=theme,
                 xaxis_title=x_title,
                 yaxis_title=y_title,
                 xaxis=dict(**_GRID),
@@ -136,6 +148,7 @@ class ChartBuilder:
         x_title: str,
         y_title: str,
         div_id: str = '',
+        theme: str = 'dark',
     ) -> str:
         """Build a ``Histogram`` chart and return an HTML div."""
         import plotly.graph_objects as go
@@ -152,6 +165,7 @@ class ChartBuilder:
         )
         fig.update_layout(
             **cls.layout(
+                theme=theme,
                 xaxis_title=x_title,
                 yaxis_title=y_title,
                 xaxis=dict(**_GRID),
@@ -188,7 +202,7 @@ def _x_axis(runs: 'List[RunData]'):
 # ---------------------------------------------------------------------------
 
 
-def build_latency_chart(runs: List[RunData]) -> str:
+def build_latency_chart(runs: List[RunData], theme: str = 'dark') -> str:
     """Line chart: Avg + P99 end-to-end latency vs concurrency / rate."""
     xs, x_title = _x_axis(runs)
     traces = [
@@ -209,10 +223,10 @@ def build_latency_chart(runs: List[RunData]) -> str:
             marker=dict(size=8),
         ),
     ]
-    return ChartBuilder.line(traces, x_title=x_title, y_title='Latency (s)', div_id='chart-latency')
+    return ChartBuilder.line(traces, x_title=x_title, y_title='Latency (s)', div_id='chart-latency', theme=theme)
 
 
-def build_ttft_chart(runs: List[RunData]) -> str:
+def build_ttft_chart(runs: List[RunData], theme: str = 'dark') -> str:
     """Line chart: Avg + P99 Time-To-First-Token vs concurrency / rate (LLM only)."""
     xs, x_title = _x_axis(runs)
     traces = [
@@ -233,10 +247,10 @@ def build_ttft_chart(runs: List[RunData]) -> str:
             marker=dict(size=8),
         ),
     ]
-    return ChartBuilder.line(traces, x_title=x_title, y_title='TTFT (ms)', div_id='chart-ttft')
+    return ChartBuilder.line(traces, x_title=x_title, y_title='TTFT (ms)', div_id='chart-ttft', theme=theme)
 
 
-def build_tpot_chart(runs: List[RunData]) -> str:
+def build_tpot_chart(runs: List[RunData], theme: str = 'dark') -> str:
     """Line chart: Avg + P99 Time-Per-Output-Token vs concurrency / rate (LLM only)."""
     xs, x_title = _x_axis(runs)
     traces = [
@@ -257,10 +271,10 @@ def build_tpot_chart(runs: List[RunData]) -> str:
             marker=dict(size=8),
         ),
     ]
-    return ChartBuilder.line(traces, x_title=x_title, y_title='TPOT (ms)', div_id='chart-tpot')
+    return ChartBuilder.line(traces, x_title=x_title, y_title='TPOT (ms)', div_id='chart-tpot', theme=theme)
 
 
-def build_rps_chart(runs: List[RunData]) -> str:
+def build_rps_chart(runs: List[RunData], theme: str = 'dark') -> str:
     """Line chart: request throughput (RPS) vs concurrency / rate."""
     xs, x_title = _x_axis(runs)
     traces = [
@@ -275,10 +289,10 @@ def build_rps_chart(runs: List[RunData]) -> str:
             fillcolor='rgba(99,179,237,0.08)',
         ),
     ]
-    return ChartBuilder.line(traces, x_title=x_title, y_title='Requests/sec', div_id='chart-rps')
+    return ChartBuilder.line(traces, x_title=x_title, y_title='Requests/sec', div_id='chart-rps', theme=theme)
 
 
-def build_throughput_chart(runs: List[RunData], is_embedding: bool) -> str:
+def build_throughput_chart(runs: List[RunData], is_embedding: bool, theme: str = 'dark') -> str:
     """Line chart: token throughput vs concurrency / rate."""
     xs, x_title = _x_axis(runs)
 
@@ -322,10 +336,11 @@ def build_throughput_chart(runs: List[RunData], is_embedding: bool) -> str:
         x_title=x_title,
         y_title='Tokens/sec',
         div_id='chart-throughput',
+        theme=theme,
     )
 
 
-def build_success_chart(runs: List[RunData]) -> str:
+def build_success_chart(runs: List[RunData], theme: str = 'dark') -> str:
     """Line chart: success rate (%) vs concurrency / rate."""
     xs, x_title = _x_axis(runs)
     traces = [
@@ -345,8 +360,80 @@ def build_success_chart(runs: List[RunData]) -> str:
         x_title=x_title,
         y_title='Success Rate (%)',
         div_id='chart-success',
-        extra_layout=dict(yaxis=dict(range=[0, 105], **_GRID))
+        extra_layout=dict(yaxis=dict(range=[0, 105], **_GRID)),
+        theme=theme,
     )
+
+
+# ---------------------------------------------------------------------------
+# Cross-run comparison chart (one line per selected run directory)
+# ---------------------------------------------------------------------------
+
+_COMPARE_PALETTE = [ACCENT, GREEN, PURPLE, YELLOW, RED, '#f472b6', '#22d3ee', '#a3e635']
+
+_COMPARE_Y_TITLE = {
+    'latency': 'Latency (s)',
+    'ttft': 'TTFT (ms)',
+    'tpot': 'TPOT (ms)',
+    'rps': 'Requests/sec',
+    'throughput': 'Tokens/sec',
+    'success': 'Success Rate (%)',
+}
+
+
+def _compare_y(metric: str, r: 'RunData', is_embedding: bool) -> float:
+    """Return the y-value of *metric* for a single sweep sub-run."""
+    s = r.summary
+    if metric == 'latency':
+        return s.avg_latency
+    if metric == 'ttft':
+        return s.avg_ttft
+    if metric == 'tpot':
+        return s.avg_tpot
+    if metric == 'rps':
+        return s.request_throughput
+    if metric == 'success':
+        return r.success_rate
+    if metric == 'throughput':
+        return s.input_token_throughput if is_embedding else s.output_token_throughput
+    return 0.0
+
+
+def build_compare_chart(
+    series: 'List[Tuple[str, List[RunData]]]',
+    metric: str,
+    is_embedding: bool = False,
+    theme: str = 'dark',
+) -> str:
+    """Overlay one line per run directory for a single sweep *metric*.
+
+    Args:
+        series: list of ``(label, runs)`` where ``runs`` is the sweep sub-runs
+            of one perf-run directory.
+        metric: one of ``latency|ttft|tpot|rps|throughput|success``.
+        is_embedding: affects the ``throughput`` metric only.
+        theme: ``'dark'`` (default) or ``'light'``.
+    """
+    y_title = _COMPARE_Y_TITLE.get(metric, metric)
+    x_title = 'Concurrency'
+    traces = []
+    for i, (label, runs) in enumerate(series):
+        if not runs:
+            continue
+        xs, x_title = _x_axis(runs)
+        ys = [_compare_y(metric, r, is_embedding) for r in runs]
+        color = _COMPARE_PALETTE[i % len(_COMPARE_PALETTE)]
+        traces.append(
+            dict(
+                x=xs,
+                y=ys,
+                mode='lines+markers',
+                name=label,
+                line=dict(color=color, width=2),
+                marker=dict(size=8),
+            )
+        )
+    return ChartBuilder.line(traces, x_title=x_title, y_title=y_title, div_id=f'chart-compare-{metric}', theme=theme)
 
 
 # ---------------------------------------------------------------------------
@@ -354,7 +441,7 @@ def build_success_chart(runs: List[RunData]) -> str:
 # ---------------------------------------------------------------------------
 
 
-def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
+def build_request_detail_tabs(run: 'RunData', is_embedding: bool, theme: str = 'dark') -> list:
     """Build per-request line charts (sorted by start_time) organised as tabs.
 
     Tabs returned:
@@ -391,6 +478,7 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
             x_title='Request Index',
             y_title='Latency (s)',
             div_id=f'req-latency-{safe}',
+            theme=theme,
         ),
     })
 
@@ -431,6 +519,7 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
                 x_title='Request Index',
                 y_title='Time (ms)',
                 div_id=f'req-ttft-tpot-itl-{safe}',
+                theme=theme,
             ),
         })
 
@@ -463,6 +552,7 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
             x_title='Request Index',
             y_title='Token Count',
             div_id=f'req-tokens-{safe}',
+            theme=theme,
         ),
     })
 
@@ -490,13 +580,14 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool) -> list:
             y_title='Success (1 = OK, 0 = Fail)',
             div_id=f'req-success-{safe}',
             extra_layout=dict(yaxis=dict(range=[-0.2, 1.4], tickvals=[0, 1], ticktext=['Fail', 'OK'], **_GRID)),
+            theme=theme,
         ),
     })
 
     return tabs
 
 
-def build_percentile_chart(run: 'RunData', is_embedding: bool) -> 'Tuple[str, str]':
+def build_percentile_chart(run: 'RunData', is_embedding: bool, theme: str = 'dark') -> 'Tuple[str, str]':
     """Line charts: metric values across percentile levels (P10-P99).
 
     Returns a tuple ``(latency_chart_html, token_latency_chart_html)`` where:
@@ -526,6 +617,7 @@ def build_percentile_chart(run: 'RunData', is_embedding: bool) -> 'Tuple[str, st
         x_title='Percentile',
         y_title='Latency (s)',
         div_id=f'chart-percentile-latency-{safe}',
+        theme=theme,
     )
 
     # Chart 2: TTFT / TPOT / ITL (ms) — LLM only
@@ -562,6 +654,7 @@ def build_percentile_chart(run: 'RunData', is_embedding: bool) -> 'Tuple[str, st
             x_title='Percentile',
             y_title='Time (ms)',
             div_id=f'chart-percentile-token-lat-{safe}',
+            theme=theme,
         )
 
     return latency_chart, token_lat_chart

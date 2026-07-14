@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Eye, FolderOpen, GitCompareArrows, Loader2, ScanSearch } from 'lucide-react'
+import { Eye, GitCompareArrows, Inbox } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useReports } from '@/contexts/ReportsContext'
 import * as reportsApi from '@/api/reports'
@@ -8,6 +8,7 @@ import type { ListReportsResponse, ReportSummary } from '@/api/types'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Button from '@/components/ui/Button'
 import Skeleton from '@/components/ui/Skeleton'
+import EmptyState from '@/components/common/EmptyState'
 import ReportFiltersBar, { type ReportFilters } from '@/components/reports/ReportFilters'
 import ReportCard from '@/components/reports/ReportCard'
 
@@ -30,6 +31,7 @@ export default function ReportsPage() {
 
   const {
     rootPath,
+    scanToken,
     setRootPath,
     selectedForCompare,
     toggleSelectForCompare,
@@ -46,7 +48,7 @@ export default function ReportsPage() {
   const [availableDatasets, setAvailableDatasets] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [hasScanned, setHasScanned] = useState(false)
+  const [hasLoaded, setHasLoaded] = useState(false)
 
   // Debounce search
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -57,100 +59,77 @@ export default function ReportsPage() {
     return () => clearTimeout(searchTimer.current)
   }, [filters.search])
 
-  // Fetch reports when filters/page change
-  const fetchReports = useCallback(async () => {
-    if (!hasScanned) return
-    setLoading(true)
-    setError(null)
-    try {
-      const res: ListReportsResponse = await reportsApi.listReports({
-        rootPath,
-        search: debouncedSearch || undefined,
-        models: filters.models.length ? filters.models : undefined,
-        datasets: filters.datasets.length ? filters.datasets : undefined,
-        scoreMin: filters.scoreMin > 0 ? filters.scoreMin : undefined,
-        scoreMax: filters.scoreMax < 1 ? filters.scoreMax : undefined,
-        sortBy: filters.sortBy,
-        sortOrder: filters.sortOrder,
-        page,
-        pageSize: PAGE_SIZE,
-      })
-      setReports(res.reports)
-      setTotal(res.total)
-      setAvailableModels(res.filters.available_models)
-      setAvailableDatasets(res.filters.available_datasets)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load reports')
-    } finally {
-      setLoading(false)
-    }
-  }, [rootPath, debouncedSearch, filters.models, filters.datasets, filters.scoreMin, filters.scoreMax, filters.sortBy, filters.sortOrder, page, hasScanned])
-
-  useEffect(() => {
-    fetchReports()
-  }, [fetchReports])
-
-  // Reset page on filter change
-  useEffect(() => {
-    setPage(1)
-  }, [debouncedSearch, filters.models, filters.datasets, filters.scoreMin, filters.scoreMax, filters.sortBy, filters.sortOrder])
-
-  const handleScan = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    setHasScanned(true)
-    try {
-      const res = await reportsApi.listReports({
-        rootPath,
-        page: 1,
-        pageSize: PAGE_SIZE,
-        sortBy: filters.sortBy,
-        sortOrder: filters.sortOrder,
-      })
-      setReports(res.reports)
-      setTotal(res.total)
-      setAvailableModels(res.filters.available_models)
-      setAvailableDatasets(res.filters.available_datasets)
-      setPage(1)
-      setFilters(defaultFilters)
-      clearCompareSelection()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Scan failed')
-    } finally {
-      setLoading(false)
-    }
-  }, [rootPath, filters.sortBy, filters.sortOrder, clearCompareSelection])
-
   // Sync root_path from URL on mount (e.g. when navigating back from detail page)
   useEffect(() => {
     const urlRoot = searchParams.get('root_path')
-    if (urlRoot) {
-      setRootPath(urlRoot)
-    }
+    if (urlRoot) setRootPath(urlRoot)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-scan on mount if rootPath is available
-  const hasAutoScanned = useRef(false)
+  // A new global scan (or root change) resets filters/pagination/compare.
   useEffect(() => {
-    const urlRoot = searchParams.get('root_path')
-    const effectiveRoot = urlRoot || rootPath
-    if (effectiveRoot && !hasScanned && !hasAutoScanned.current) {
-      hasAutoScanned.current = true
-      handleScan()
+    const reset = () => {
+      setPage(1)
+      setFilters(defaultFilters)
+      clearCompareSelection()
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    reset()
+  }, [rootPath, scanToken]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset to the first page whenever the user changes a filter.
+  const handleFiltersChange = useCallback((next: ReportFilters) => {
+    setFilters(next)
+    setPage(1)
+  }, [])
+
+  // Fetch reports on root/scan/filter/page change.
+  useEffect(() => {
+    if (!rootPath) return
+    let cancelled = false
+    const load = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const res: ListReportsResponse = await reportsApi.listReports({
+          rootPath,
+          search: debouncedSearch || undefined,
+          models: filters.models.length ? filters.models : undefined,
+          datasets: filters.datasets.length ? filters.datasets : undefined,
+          scoreMin: filters.scoreMin > 0 ? filters.scoreMin : undefined,
+          scoreMax: filters.scoreMax < 1 ? filters.scoreMax : undefined,
+          sortBy: filters.sortBy,
+          sortOrder: filters.sortOrder,
+          page,
+          pageSize: PAGE_SIZE,
+        })
+        if (cancelled) return
+        setReports(res.reports)
+        setTotal(res.total)
+        setAvailableModels(res.filters.available_models)
+        setAvailableDatasets(res.filters.available_datasets)
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load reports')
+          setReports([])
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+          setHasLoaded(true)
+        }
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [rootPath, scanToken, debouncedSearch, filters.models, filters.datasets, filters.scoreMin, filters.scoreMax, filters.sortBy, filters.sortOrder, page])
 
   // ---- Selection helpers ----
   const currentPageNames = useMemo(() => reports.map((r) => r.name), [reports])
-
   const allSelected = currentPageNames.length > 0 && currentPageNames.every((n) => selectedForCompare.includes(n))
 
   const handleSelectAll = useCallback(() => {
     if (allSelected) {
-      // Deselect current page
       setCompareSelection(selectedForCompare.filter((n) => !currentPageNames.includes(n)))
     } else {
-      // Select current page (merge with existing)
       const merged = new Set([...selectedForCompare, ...currentPageNames])
       setCompareSelection(Array.from(merged))
     }
@@ -158,7 +137,6 @@ export default function ReportsPage() {
 
   const handleCardClick = useCallback(
     (name: string) => {
-      // Navigate to detail — use the report load route or a detail page
       navigate(`/reports/${encodeURIComponent(name)}?root_path=${encodeURIComponent(rootPath)}`)
     },
     [navigate, rootPath],
@@ -177,53 +155,24 @@ export default function ReportsPage() {
     }
   }, [selectedForCompare, rootPath])
 
-  // Pagination
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
     <div className="page-enter flex flex-col gap-5">
       {/* Breadcrumb */}
-      <Breadcrumb items={[{ label: t('reports.title') }]} />
-
-      {/* Path bar */}
-      <div className="flex items-center gap-2">
-        <FolderOpen size={16} className="text-[var(--text-muted)] shrink-0" />
-        <input
-          type="text"
-          value={rootPath}
-          onChange={(e) => setRootPath(e.target.value)}
-          className="flex-1 px-3 py-2 text-sm rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent)] transition-all duration-[var(--transition)]"
-          placeholder={t('reports.pathLabel')}
-        />
-        <Button onClick={handleScan} disabled={loading} size="md">
-          {loading ? (
-            <>
-              <Loader2 size={14} className="animate-spin" />
-              {t('reports.scanning')}
-            </>
-          ) : (
-            <>
-              <ScanSearch size={14} />
-              {t('reports.scan')}
-            </>
-          )}
-        </Button>
-      </div>
+      <Breadcrumb items={[{ label: t('nav.evaluations') }]} />
 
       {/* Filters */}
-      {hasScanned && (
-        <ReportFiltersBar
-          filters={filters}
-          availableModels={availableModels}
-          availableDatasets={availableDatasets}
-          onChange={setFilters}
-        />
-      )}
+      <ReportFiltersBar
+        filters={filters}
+        availableModels={availableModels}
+        availableDatasets={availableDatasets}
+        onChange={handleFiltersChange}
+      />
 
       {/* Action bar */}
-      {hasScanned && reports.length > 0 && (
+      {reports.length > 0 && (
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Select-all checkbox */}
           <button
             type="button"
             onClick={handleSelectAll}
@@ -239,16 +188,7 @@ export default function ReportsPage() {
               }}
             >
               {allSelected && (
-                <svg
-                  width="10"
-                  height="10"
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="2,6 5,9 10,3" />
                 </svg>
               )}
@@ -266,21 +206,11 @@ export default function ReportsPage() {
           )}
 
           <div className="flex items-center gap-2 ml-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={selectedForCompare.length < 2}
-              onClick={handleCompare}
-            >
+            <Button variant="outline" size="sm" disabled={selectedForCompare.length < 2} onClick={handleCompare}>
               <GitCompareArrows size={14} />
               {t('reports.compare')}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={selectedForCompare.length !== 1}
-              onClick={handleViewHtml}
-            >
+            <Button variant="outline" size="sm" disabled={selectedForCompare.length !== 1} onClick={handleViewHtml}>
               <Eye size={14} />
               {t('reports.viewHtml')}
             </Button>
@@ -296,16 +226,20 @@ export default function ReportsPage() {
       )}
 
       {/* Content */}
-      {loading && !hasScanned ? null : loading ? (
+      {loading ? (
         <div className="flex flex-col gap-2">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} height={64} className="rounded-[var(--radius)]" />
           ))}
         </div>
-      ) : !hasScanned ? (
-        <EmptyState icon={<ScanSearch size={40} />} title={t('reports.noReports')} subtitle={t('reports.scanFirst')} />
       ) : reports.length === 0 ? (
-        <EmptyState icon={<ScanSearch size={40} />} title={t('reports.noReports')} subtitle={t('reports.scanFirst')} />
+        <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
+          <EmptyState
+            icon={<Inbox size={28} strokeWidth={1.5} />}
+            title={t('reports.noReports')}
+            hint={hasLoaded ? t('reports.scanFirst') : ''}
+          />
+        </div>
       ) : (
         <div className="flex flex-col gap-2">
           {reports.map((report) => (
@@ -321,14 +255,9 @@ export default function ReportsPage() {
       )}
 
       {/* Pagination */}
-      {hasScanned && totalPages > 1 && (
+      {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 pt-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-          >
+          <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
             ←
           </Button>
           {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -356,36 +285,11 @@ export default function ReportsPage() {
                 </Button>
               ),
             )}
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          >
+          <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
             →
           </Button>
         </div>
       )}
-    </div>
-  )
-}
-
-// ---- Internal EmptyState component ----
-function EmptyState({
-  icon,
-  title,
-  subtitle,
-}: {
-  icon: ReactNode
-  title: string
-  subtitle: string
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 gap-3">
-      {/* text-dim allowed: empty-state icon (DESIGN.md §Text) */}
-      <div className="text-[var(--text-dim)]">{icon}</div>
-      <h3 className="text-lg font-semibold text-[var(--text)]">{title}</h3>
-      <p className="text-sm text-[var(--text-muted)]">{subtitle}</p>
     </div>
   )
 }

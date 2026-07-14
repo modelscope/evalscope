@@ -64,23 +64,24 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
   }, [datasetName, reportName, rootPath, initialSubset])
 
   // Load predictions when subset changes
-  const loadPredictions = useCallback(async () => {
-    if (!selectedSubset || !reportName || !datasetName) return
-    setLoading(true)
-    try {
-      const res = await getPredictions(rootPath, reportName, datasetName, selectedSubset)
-      setPredictions(res.predictions)
-    } catch (e) {
-      console.error('Failed to load predictions:', e)
-      setPredictions([])
-    } finally {
-      setLoading(false)
-    }
-  }, [rootPath, reportName, datasetName, selectedSubset])
-
   useEffect(() => {
+    if (!selectedSubset || !reportName || !datasetName) return
+    let cancelled = false
+    const loadPredictions = async () => {
+      setLoading(true)
+      try {
+        const res = await getPredictions(rootPath, reportName, datasetName, selectedSubset)
+        if (!cancelled) setPredictions(res.predictions)
+      } catch (e) {
+        console.error('Failed to load predictions:', e)
+        if (!cancelled) setPredictions([])
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
     loadPredictions()
-  }, [loadPredictions])
+    return () => { cancelled = true }
+  }, [rootPath, reportName, datasetName, selectedSubset])
 
   const filtered = useMemo(() => {
     if (mode === 'Pass') return predictions.filter((p) => p.NScore >= threshold)
@@ -95,12 +96,15 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
 
   // Reset page & search state when filter changes
   useEffect(() => {
-    setPage(1)
-    setIndexSearch('')
-    setMsgIdSearch('')
-    setIndexError(false)
-    setMsgIdError(false)
-    setHighlightMsgId(undefined)
+    const reset = () => {
+      setPage(1)
+      setIndexSearch('')
+      setMsgIdSearch('')
+      setIndexError(false)
+      setMsgIdError(false)
+      setHighlightMsgId(undefined)
+    }
+    reset()
   }, [mode, threshold, selectedSubset])
 
   // Keyboard navigation (skip when search inputs are focused)

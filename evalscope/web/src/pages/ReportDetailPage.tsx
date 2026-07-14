@@ -42,24 +42,23 @@ export default function ReportDetailPage() {
   useEffect(() => {
     if (!reportName) return
     let cancelled = false
-    setLoading(true)
-    setError('')
-
-    apiLoadReport(rootPath, reportName)
-      .then((res) => {
+    const load = async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const res = await apiLoadReport(rootPath, reportName)
         if (cancelled) return
         setData(res)
         if (res.datasets.length > 0) {
           setActiveDataset(res.datasets[0])
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         if (!cancelled) setError(String(err))
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false)
-      })
-
+      }
+    }
+    load()
     return () => { cancelled = true }
   }, [rootPath, reportName])
 

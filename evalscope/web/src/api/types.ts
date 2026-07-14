@@ -220,7 +220,7 @@ export interface BenchmarkEntry {
   name: string
   pretty_name: string
   tags: string[]
-  category: 'llm' | 'vlm'
+  category: 'llm' | 'vlm' | 'agent' | 'aigc'
   subset_list: string[]
   total_samples: number
   few_shot_num: number
@@ -237,6 +237,8 @@ export interface BenchmarkEntry {
 export interface BenchmarksResponse {
   text?: BenchmarkEntry[]
   multimodal?: BenchmarkEntry[]
+  agent?: BenchmarkEntry[]
+  aigc?: BenchmarkEntry[]
 }
 
 export type InvokeStatus = 'ok' | 'error' | 'stopped'
@@ -281,4 +283,78 @@ export interface ListReportsResponse {
     available_models: string[]
     available_datasets: string[]
   }
+}
+
+// ------------------------------------------------------------------ //
+// Performance benchmark archive                                       //
+// ------------------------------------------------------------------ //
+
+/** One historical perf-run directory as returned by GET /api/v1/perf/list. */
+export interface PerfRunSummary {
+  /** Run directory path relative to the outputs root (used as id). */
+  path: string
+  model: string
+  api_type: string
+  dataset: string
+  num_runs: number
+  total_requests: number
+  success_rate: number
+  best_rps: number
+  best_latency: number
+  /** True for embedding/rerank runs (which omit TTFT/TPOT charts). */
+  is_embedding: boolean
+  has_html: boolean
+  timestamp: string
+}
+
+export interface ListPerfRunsResponse {
+  runs: PerfRunSummary[]
+  total: number
+}
+
+/** Native-render metadata for a single perf run (GET /api/v1/perf/detail). */
+export interface PerfDetailResponse {
+  path: string
+  model: string
+  api_type: string
+  dataset: string
+  generated_at: string
+  basic_info: Record<string, string>
+  summary_columns: string[]
+  summary_rows: (string | number)[][]
+  best_config: Record<string, string>
+  recommendations: string[]
+  num_runs: number
+  is_embedding: boolean
+  has_html: boolean
+}
+
+/** An individual run (a parallel_ or rate_ sub-directory) within a perf-run directory. */
+export interface PerfRunItem {
+  dir_name: string
+  name: string
+  parallel: number
+  number: number
+  rate: number | null
+  total_requests: number
+  succeed_requests: number
+  success_rate: number
+  num_requests: number
+  has_requests: boolean
+  percentile_columns: string[]
+  percentile_rows: (string | number)[][]
+}
+
+export interface PerfRunsListResponse {
+  runs: PerfRunItem[]
+  total: number
+}
+
+export interface PerfRequestsResponse {
+  columns: string[]
+  rows: Record<string, unknown>[]
+  total: number
+  page: number
+  page_size: number
+  has_db: boolean
 }

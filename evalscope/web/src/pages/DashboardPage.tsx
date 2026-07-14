@@ -1,431 +1,363 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useReports } from '@/contexts/ReportsContext'
 import { useLocale } from '@/contexts/LocaleContext'
 import { listReports } from '@/api/reports'
-import type { ReportSummary } from '@/api/types'
+import { listPerfRuns } from '@/api/perf'
+import type { PerfRunSummary, ReportSummary } from '@/api/types'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import Skeleton from '@/components/ui/Skeleton'
 import KpiCard from '@/components/ui/KpiCard'
-import ScoreChip from '@/components/ui/ScoreChip'
 import ScoreBadge from '@/components/ui/ScoreBadge'
-import PathBar from '@/components/ui/PathBar'
-import EvalRunCard from '@/components/ui/EvalRunCard'
-import ModelGroupHeader from '@/components/ui/ModelGroupHeader'
 import EmptyState from '@/components/common/EmptyState'
-import {
-  FileText,
-  Cpu,
-  Database,
-  Clock,
-  Inbox,
-  FolderOpen,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
+import SearchInput from '@/components/ui/SearchInput'
+import Button from '@/components/ui/Button'
+import { FileText, Gauge, Cpu, Clock, Inbox, FlaskConical, ChevronRight } from 'lucide-react'
+
+// Number of recent runs shown before the "view all" toggle.
+const RECENT_LIMIT = 15
 
 // ------------------------------------------------------------------ //
-// Helpers                                                              //
+// Helpers                                                             //
 // ------------------------------------------------------------------ //
 
-/** Format timestamp to YYYY-MM-DD HH:MM:SS */
-function formatTimestamp(ts: string): string {
-  return ts.replace('T', ' ').slice(0, 19)
+/** Format ISO timestamp to short form MM-DD HH:MM. */
+function formatShort(ts: string): string {
+  return ts ? ts.replace('T', ' ').slice(5, 16) : ''
 }
 
-/** Format timestamp to short form MM-DD HH:MM */
-function formatTimestampShort(ts: string): string {
-  return ts.replace('T', ' ').slice(5, 16)
+/** Format ISO timestamp to YYYY-MM-DD HH:MM:SS. */
+function formatFull(ts: string): string {
+  return ts ? ts.replace('T', ' ').slice(0, 19) : ''
 }
 
-// ------------------------------------------------------------------ //
-// CompactRunRow (Grouped view)                                         //
-// ------------------------------------------------------------------ //
-interface CompactRunRowProps {
-  report: ReportSummary
-  onClick: () => void
-}
+// Unified recent-run item across eval + perf.
+type RunItem =
+  | { kind: 'eval'; ts: string; report: ReportSummary }
+  | { kind: 'perf'; ts: string; run: PerfRunSummary }
 
-function CompactRunRow({ report, onClick }: CompactRunRowProps) {
-  const dsScores = report.dataset_scores
+// ------------------------------------------------------------------ //
+// Recent run row                                                      //
+// ------------------------------------------------------------------ //
+function RunRow({ item, onClick }: { item: RunItem; onClick: () => void }) {
+  const isEval = item.kind === 'eval'
+  const model = isEval ? item.report.model_name : item.run.model
+  const sub = isEval
+    ? item.report.dataset_name
+    : `${item.run.dataset || item.run.api_type || 'perf'} · ${item.run.num_runs} runs`
 
   return (
     <button
       onClick={onClick}
       className="flex items-center gap-3 py-2.5 px-3 rounded-[var(--radius-sm)] hover:bg-[var(--bg-card2)] transition-colors w-full text-left"
     >
-      {report.timestamp && (
-        <span className="type-caption-mono text-[var(--text-muted)] shrink-0 w-[110px]">
-          {formatTimestampShort(report.timestamp)}
+      <Badge
+        variant="default"
+        className={item.kind === 'perf' ? '!bg-[var(--bg-card2)] !text-[var(--text-muted)]' : undefined}
+      >
+        {isEval ? 'Eval' : 'Perf'}
+      </Badge>
+      <span className="type-caption-mono text-[var(--text-muted)] shrink-0 w-[100px]">
+        {formatShort(item.ts)}
+      </span>
+      <div className="flex flex-col min-w-0 flex-1">
+        <span className="type-body-sm text-[var(--text)] truncate">{model}</span>
+        <span className="type-caption-mono text-[var(--text-muted)] truncate">{sub}</span>
+      </div>
+      {isEval ? (
+        <ScoreBadge score={item.report.score} className="shrink-0 !text-xs !px-2" />
+      ) : (
+        <span className="type-caption-mono text-[var(--text)] shrink-0">
+          {item.run.best_rps.toFixed(2)} req/s
         </span>
       )}
-      <div className="flex flex-wrap gap-1 flex-1 min-w-0">
-        {dsScores && Object.keys(dsScores).length > 0 ? (
-          Object.entries(dsScores).map(([ds, s]) => <ScoreChip key={ds} label={ds} score={s} />)
-        ) : (
-          <span className="type-caption-mono text-[var(--text-muted)]">{report.dataset_name}</span>
-        )}
-      </div>
-      <ScoreBadge score={report.score} className="shrink-0 !text-xs !px-2" />
+      <ChevronRight size={14} className="text-[var(--text-dim)] shrink-0" />
     </button>
   )
 }
 
 // ------------------------------------------------------------------ //
-// View toggle (segmented control)                                      //
+// Quick-link card                                                     //
 // ------------------------------------------------------------------ //
-type DashboardView = 'timeline' | 'grouped' | 'byDataset'
-
-interface ViewToggleProps {
-  value: DashboardView
-  onChange: (v: DashboardView) => void
-  labels: Record<DashboardView, string>
-}
-
-function ViewToggle({ value, onChange, labels }: ViewToggleProps) {
-  const items: DashboardView[] = ['timeline', 'grouped', 'byDataset']
+function QuickLink({
+  icon,
+  title,
+  desc,
+  onClick,
+}: {
+  icon: ReactNode
+  title: string
+  desc: string
+  onClick: () => void
+}) {
   return (
-    <div className="inline-flex rounded-[var(--radius-sm)] border border-[var(--border-md)] overflow-hidden">
-      {items.map((key) => (
-        <button
-          key={key}
-          onClick={() => onChange(key)}
-          className={cn(
-            'px-3.5 py-1.5 type-button-sm transition-colors cursor-pointer',
-            value === key
-              ? 'bg-[var(--accent)] text-[var(--text-on-filled)]'
-              : 'bg-[var(--bg-card2)] text-[var(--text-muted)] hover:text-[var(--text)]',
-          )}
-        >
-          {labels[key]}
-        </button>
-      ))}
-    </div>
+    <button
+      onClick={onClick}
+      className="flex items-center gap-3 p-4 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] hover:bg-[var(--bg-card2)] hover:border-[var(--border-strong)] transition-colors text-left"
+    >
+      <span className="text-[var(--accent)] shrink-0">{icon}</span>
+      <div className="min-w-0">
+        <div className="type-body-sm-strong text-[var(--text)]">{title}</div>
+        <div className="type-body-xs text-[var(--text-muted)] truncate">{desc}</div>
+      </div>
+    </button>
   )
 }
 
 // ------------------------------------------------------------------ //
-// KPI Skeleton                                                        //
-// ------------------------------------------------------------------ //
-function KpiSkeleton() {
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div
-          key={i}
-          className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-5"
-        >
-          <Skeleton width={40} height={40} className="mb-3" />
-          <Skeleton width={60} height={28} className="mb-1" />
-          <Skeleton width={100} height={14} />
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ------------------------------------------------------------------ //
-// Dashboard Page                                                      //
+// Dashboard (overview home)                                           //
 // ------------------------------------------------------------------ //
 export default function DashboardPage() {
   const { t } = useLocale()
-  const { rootPath, setRootPath } = useReports()
+  const { rootPath, scanToken } = useReports()
   const navigate = useNavigate()
 
-  const [pathInput, setPathInput] = useState(rootPath || './outputs')
-  const [scanning, setScanning] = useState(false)
-  const [reports, setReports] = useState<ReportSummary[]>([])
+  const [loading, setLoading] = useState(false)
   const [scanned, setScanned] = useState(false)
+  const [reports, setReports] = useState<ReportSummary[]>([])
+  const [perfRuns, setPerfRuns] = useState<PerfRunSummary[]>([])
 
-  // Evaluation list state
-  const [view, setView] = useState<DashboardView>('timeline')
-  const evalListRef = useRef<HTMLDivElement>(null)
-  const [search, setSearch] = useState('')
-  const [sortBy, setSortBy] = useState('time')
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  // Recent-runs feed controls.
+  const [query, setQuery] = useState('')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'eval' | 'perf'>('all')
+  const [page, setPage] = useState(1)
 
-  // Scan for reports using listReports API
-  const handleScan = useCallback(async () => {
-    const trimmed = pathInput.trim()
-    if (!trimmed) return
-    setRootPath(trimmed)
-    setScanning(true)
-    try {
-      const res = await listReports({ rootPath: trimmed, pageSize: 1000, sortBy: 'time', sortOrder: 'desc' })
-      setReports(res.reports)
-      setScanned(true)
-    } catch {
-      setReports([])
-      setScanned(true)
-    } finally {
-      setScanning(false)
-    }
-  }, [pathInput, setRootPath])
-
-  // Auto-scan if rootPath is already set on mount
+  // Fetch eval + perf whenever the global scan token or root changes.
   useEffect(() => {
-    if (rootPath && !scanned) {
-      setPathInput(rootPath)
-      handleScan()
+    if (!rootPath) return
+    let cancelled = false
+    const load = async () => {
+      setLoading(true)
+      const [evalRes, perfRes] = await Promise.allSettled([
+        listReports({ rootPath, pageSize: 1000, sortBy: 'time', sortOrder: 'desc' }),
+        listPerfRuns(rootPath),
+      ])
+      if (cancelled) return
+      setReports(evalRes.status === 'fulfilled' ? evalRes.value.reports : [])
+      setPerfRuns(perfRes.status === 'fulfilled' ? perfRes.value.runs : [])
+      setScanned(true)
+      setLoading(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [rootPath, scanToken])
 
-  // KPI stats
-  const kpiStats = useMemo(() => {
-    const totalEvals = reports.length
-    const models = new Set(reports.map((r) => r.model_name))
-    const datasets = new Set(reports.map((r) => r.dataset_name))
-    const latest = reports.length > 0
-      ? formatTimestamp(reports[0].timestamp || reports[0].name)
-      : t('dashboard.neverText')
-    return { totalEvals, models: models.size, datasets: datasets.size, latest }
-  }, [reports, t])
+  // Merge into a single time-sorted feed (uncapped).
+  const allItems = useMemo<RunItem[]>(() => {
+    const items: RunItem[] = [
+      ...reports.map((r): RunItem => ({ kind: 'eval', ts: r.timestamp || '', report: r })),
+      ...perfRuns.map((r): RunItem => ({ kind: 'perf', ts: r.timestamp || '', run: r })),
+    ]
+    return items.sort((a, b) => b.ts.localeCompare(a.ts))
+  }, [reports, perfRuns])
 
-  // Filtered & sorted reports
-  const sortedReports = useMemo(() => {
-    let filtered = reports
-    if (search) {
-      const q = search.toLowerCase()
-      filtered = reports.filter(r =>
-        r.model_name.toLowerCase().includes(q) ||
-        r.dataset_name.toLowerCase().includes(q)
+  // Apply the type filter + keyword search.
+  const filteredItems = useMemo<RunItem[]>(() => {
+    const q = query.trim().toLowerCase()
+    return allItems.filter((it) => {
+      if (typeFilter !== 'all' && it.kind !== typeFilter) return false
+      if (!q) return true
+      if (it.kind === 'eval') {
+        return (
+          (it.report.model_name || '').toLowerCase().includes(q) ||
+          (it.report.dataset_name || '').toLowerCase().includes(q)
+        )
+      }
+      return (
+        (it.run.model || '').toLowerCase().includes(q) ||
+        (it.run.dataset || '').toLowerCase().includes(q) ||
+        (it.run.api_type || '').toLowerCase().includes(q)
       )
-    }
-    return [...filtered].sort((a, b) => {
-      if (sortBy === 'time') return (b.timestamp || '').localeCompare(a.timestamp || '')
-      if (sortBy === 'score') return (b.score ?? 0) - (a.score ?? 0)
-      if (sortBy === 'model') return a.model_name.localeCompare(b.model_name)
-      return 0
     })
-  }, [reports, search, sortBy])
+  }, [allItems, typeFilter, query])
 
-  // Grouped by model
-  const grouped = useMemo(() => {
-    const map = new Map<string, ReportSummary[]>()
-    for (const r of sortedReports) {
-      const list = map.get(r.model_name) || []
-      list.push(r)
-      map.set(r.model_name, list)
+  // Paginate the filtered feed (page is reset to 1 by the filter/search handlers).
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / RECENT_LIMIT))
+  const safePage = Math.min(page, totalPages)
+  const visibleItems = filteredItems.slice((safePage - 1) * RECENT_LIMIT, safePage * RECENT_LIMIT)
+
+  const kpi = useMemo(() => {
+    const models = new Set<string>()
+    reports.forEach((r) => models.add(r.model_name))
+    perfRuns.forEach((r) => r.model && models.add(r.model))
+    const latestTs = allItems.length > 0 ? allItems[0].ts : ''
+    return {
+      evals: reports.length,
+      perfs: perfRuns.length,
+      models: models.size,
+      latest: latestTs ? formatFull(latestTs) : t('dashboard.neverText'),
     }
-    return Array.from(map.entries())
-  }, [sortedReports])
+  }, [reports, perfRuns, allItems, t])
 
-  // Grouped by dataset
-  const groupedByDataset = useMemo(() => {
-    const map = new Map<string, ReportSummary[]>()
-    for (const r of sortedReports) {
-      const list = map.get(r.dataset_name) || []
-      list.push(r)
-      map.set(r.dataset_name, list)
+  const openItem = (item: RunItem) => {
+    if (item.kind === 'eval') {
+      navigate(`/reports/${encodeURIComponent(item.report.name)}?root_path=${encodeURIComponent(rootPath)}`)
+    } else {
+      navigate(`/perf-report?path=${encodeURIComponent(item.run.path)}&root_path=${encodeURIComponent(rootPath)}`)
     }
-    return Array.from(map.entries())
-  }, [sortedReports])
-
-  const toggleGroup = (model: string) => {
-    setExpandedGroups(prev => {
-      const next = new Set(prev)
-      if (next.has(model)) next.delete(model)
-      else next.add(model)
-      return next
-    })
   }
 
-  const navigateToReport = (report: ReportSummary) => {
-    navigate(`/reports/${encodeURIComponent(report.name)}?root_path=${encodeURIComponent(rootPath)}`)
-  }
-
-  const hasData = scanned && reports.length > 0
-
-  const viewLabels: Record<DashboardView, string> = {
-    timeline: t('dashboard.timelineView'),
-    grouped: t('dashboard.groupedView'),
-    byDataset: t('dashboard.byDatasetView'),
-  }
+  const hasData = scanned && allItems.length > 0
 
   return (
     <div className="flex flex-col gap-5 min-h-0">
-      {/* ── Path Bar ── */}
-      <PathBar
-        value={pathInput}
-        onChange={setPathInput}
-        onSubmit={handleScan}
-        placeholder={t('dashboard.pathPlaceholder')}
-        submitLabel={t('dashboard.scanBtn')}
-        scanningLabel={t('dashboard.scanning')}
-        scanning={scanning}
-        disabled={!pathInput.trim()}
-      />
-
       {/* ── KPI Cards ── */}
-      {scanning ? (
-        <KpiSkeleton />
+      {loading && !scanned ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-5">
+              <Skeleton width={40} height={40} className="mb-3" />
+              <Skeleton width={60} height={28} className="mb-1" />
+              <Skeleton width={100} height={14} />
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <KpiCard
             icon={<FileText size={18} strokeWidth={2} />}
-            value={String(kpiStats.totalEvals)}
+            value={String(kpi.evals)}
             label={t('dashboard.totalEvaluations')}
             gradient="var(--kpi-grad-0)"
             delay={0}
-            onClick={() => { setView('timeline'); evalListRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
+            onClick={() => navigate('/reports')}
+          />
+          <KpiCard
+            icon={<Gauge size={18} strokeWidth={2} />}
+            value={String(kpi.perfs)}
+            label={t('dashboard.totalPerfRuns')}
+            gradient="var(--kpi-grad-1)"
+            delay={60}
+            onClick={() => navigate('/performance')}
           />
           <KpiCard
             icon={<Cpu size={18} strokeWidth={2} />}
-            value={String(kpiStats.models)}
+            value={String(kpi.models)}
             label={t('dashboard.modelsEvaluated')}
-            gradient="var(--kpi-grad-1)"
-            delay={60}
-            onClick={() => { setView('grouped'); evalListRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
-          />
-          <KpiCard
-            icon={<Database size={18} strokeWidth={2} />}
-            value={String(kpiStats.datasets)}
-            label={t('dashboard.datasetsUsed')}
             gradient="var(--kpi-grad-2)"
             delay={120}
-            onClick={() => { setView('byDataset'); evalListRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
           />
           <KpiCard
             icon={<Clock size={18} strokeWidth={2} />}
-            value={kpiStats.latest.length > 20 ? kpiStats.latest.slice(0, 20) + '…' : kpiStats.latest}
-            label={t('dashboard.latestEval')}
+            value={kpi.latest.length > 20 ? kpi.latest.slice(0, 20) + '…' : kpi.latest}
+            label={t('dashboard.latestRun')}
             gradient="var(--kpi-grad-3)"
             delay={180}
-            onClick={() => reports.length > 0 && navigateToReport(reports[0])}
           />
         </div>
       )}
 
-      {/* ── Loading skeleton for content ── */}
-      {scanning && (
-        <Card title={t('dashboard.evaluations')}>
+      {/* ── Quick Links ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <QuickLink
+          icon={<FileText size={20} />}
+          title={t('nav.evaluations')}
+          desc={t('dashboard.browseReportsDesc')}
+          onClick={() => navigate('/reports')}
+        />
+        <QuickLink
+          icon={<Gauge size={20} />}
+          title={t('nav.performance')}
+          desc={t('dashboard.newPerfDesc')}
+          onClick={() => navigate('/performance')}
+        />
+        <QuickLink
+          icon={<FlaskConical size={20} />}
+          title={t('nav.tasks')}
+          desc={t('dashboard.newEvalDesc')}
+          onClick={() => navigate('/tasks')}
+        />
+      </div>
+
+      {/* ── Recent Runs ── */}
+      {loading && !scanned ? (
+        <Card title={t('dashboard.recentRuns')}>
           <Skeleton lines={8} height={14} />
         </Card>
-      )}
-
-      {/* ── Unified Evaluation List ── */}
-      {hasData && !scanning && (
-        <div ref={evalListRef}>
-          <Card title={t('dashboard.evaluations')} badge={<Badge>{sortedReports.length}</Badge>}>
-            {/* Controls bar */}
-            <div className="flex items-center gap-3 flex-wrap mb-4">
-              <ViewToggle value={view} onChange={setView} labels={viewLabels} />
-
-              {/* Search */}
-              <input
-                type="text"
-                placeholder={t('dashboard.searchPlaceholder')}
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="flex-1 min-w-[160px] max-w-[300px] px-3 py-1.5 type-body-xs rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)] placeholder-[var(--text-dim)]"
-              />
-
-              {/* Sort */}
-              <select
-                value={sortBy}
-                onChange={e => setSortBy(e.target.value)}
-                className="px-3 py-1.5 type-body-xs rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)]"
-              >
-                <option value="time">{t('dashboard.sortTime')}</option>
-                <option value="score">{t('dashboard.sortScore')}</option>
-                <option value="model">{t('dashboard.sortModel')}</option>
-              </select>
+      ) : hasData ? (
+        <Card title={t('dashboard.recentRuns')} badge={<Badge>{filteredItems.length}</Badge>}>
+          {/* Filter controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+            <div className="flex items-center gap-1 p-0.5 rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] w-fit">
+              {(['all', 'eval', 'perf'] as const).map((k) => (
+                <button
+                  key={k}
+                  onClick={() => {
+                    setTypeFilter(k)
+                    setPage(1)
+                  }}
+                  className={[
+                    'px-3 py-1 rounded-[var(--radius-sm)] type-body-xs transition-colors',
+                    typeFilter === k
+                      ? 'bg-[var(--accent)] text-[var(--text-on-filled)]'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text)]',
+                  ].join(' ')}
+                >
+                  {t(`dashboard.filter_${k}`)}
+                </button>
+              ))}
             </div>
+            <SearchInput
+              value={query}
+              onChange={(v) => {
+                setQuery(v)
+                setPage(1)
+              }}
+              placeholder={t('dashboard.searchPlaceholder')}
+              className="sm:ml-auto w-full sm:w-64"
+            />
+          </div>
 
-            {/* List content */}
-            <div className="overflow-y-auto max-h-[calc(100vh-300px)]">
-              {sortedReports.length === 0 ? (
-                <div className="text-center py-8 type-body-sm text-[var(--text-muted)]">
-                  {t('dashboard.noEvals')}
-                </div>
-              ) : view === 'timeline' ? (
-                /* ── Timeline view ── */
-                <div className="flex flex-col gap-3">
-                  {sortedReports.map((report) => (
-                    <EvalRunCard
-                      key={`${report.name}-${report.dataset_name}`}
-                      report={report}
-                      onClick={() => navigateToReport(report)}
-                    />
-                  ))}
-                </div>
-              ) : view === 'grouped' ? (
-                /* ── Grouped view ── */
-                <div className="flex flex-col gap-2">
-                  {grouped.map(([model, runs]) => {
-                    const expanded = expandedGroups.has(model)
-                    const bestScore = Math.max(...runs.map(r => r.score))
-
-                    return (
-                      <div key={model} className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
-                        <ModelGroupHeader
-                          title={model}
-                          count={runs.length}
-                          runsLabel={t('dashboard.runs')}
-                          bestScore={bestScore}
-                          bestScoreLabel={t('dashboard.bestScore')}
-                          expanded={expanded}
-                          onToggle={() => toggleGroup(model)}
-                        />
-
-                        {expanded && (
-                          <div className="border-t border-[var(--border)]">
-                            {runs.map((report) => (
-                              <CompactRunRow
-                                key={`${report.name}-${report.dataset_name}`}
-                                report={report}
-                                onClick={() => navigateToReport(report)}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : view === 'byDataset' ? (
-                /* ── By Dataset view ── */
-                <div className="flex flex-col gap-2">
-                  {groupedByDataset.map(([dataset, runs]) => {
-                    const expanded = expandedGroups.has(dataset)
-                    const bestScore = Math.max(...runs.map(r => r.score))
-
-                    return (
-                      <div key={dataset} className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
-                        <ModelGroupHeader
-                          title={dataset}
-                          count={runs.length}
-                          runsLabel={t('dashboard.runs')}
-                          bestScore={bestScore}
-                          bestScoreLabel={t('dashboard.bestScore')}
-                          expanded={expanded}
-                          onToggle={() => toggleGroup(dataset)}
-                        />
-
-                        {expanded && (
-                          <div className="border-t border-[var(--border)]">
-                            {runs.map((report) => (
-                              <CompactRunRow
-                                key={`${report.name}-${report.dataset_name}`}
-                                report={report}
-                                onClick={() => navigateToReport(report)}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : null}
+          {visibleItems.length > 0 ? (
+            <div className="flex flex-col gap-1">
+              {visibleItems.map((item, i) => (
+                <RunRow key={`${item.kind}-${i}`} item={item} onClick={() => openItem(item)} />
+              ))}
             </div>
-          </Card>
-        </div>
-      )}
+          ) : (
+            <div className="py-8 text-center type-body-sm text-[var(--text-muted)]">{t('dashboard.noMatch')}</div>
+          )}
 
-      {/* ── Empty state after scan ── */}
-      {scanned && !hasData && !scanning && (
+          {filteredItems.length > RECENT_LIMIT && (
+            <div className="flex items-center justify-center gap-2 mt-3">
+              <Button variant="ghost" size="sm" disabled={safePage <= 1} onClick={() => setPage(Math.max(1, safePage - 1))}>
+                ←
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
+                .reduce<(number | 'ellipsis')[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('ellipsis')
+                  acc.push(p)
+                  return acc
+                }, [])
+                .map((item, idx) =>
+                  item === 'ellipsis' ? (
+                    // text-dim allowed: decorative pagination ellipsis (DESIGN.md §Text)
+                    <span key={`e${idx}`} className="px-1 text-[var(--text-dim)]">
+                      ...
+                    </span>
+                  ) : (
+                    <Button
+                      key={item}
+                      variant={item === safePage ? 'primary' : 'ghost'}
+                      size="sm"
+                      onClick={() => setPage(item as number)}
+                      className="!min-w-[32px]"
+                    >
+                      {item}
+                    </Button>
+                  ),
+                )}
+              <Button variant="ghost" size="sm" disabled={safePage >= totalPages} onClick={() => setPage(Math.min(totalPages, safePage + 1))}>
+                →
+              </Button>
+            </div>
+          )}
+        </Card>
+      ) : scanned ? (
         <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
           <EmptyState
             icon={<Inbox size={28} strokeWidth={1.5} />}
@@ -433,14 +365,11 @@ export default function DashboardPage() {
             hint={t('dashboard.noReportsHint')}
           />
         </div>
-      )}
-
-      {/* ── Welcome state (before any scan) ── */}
-      {!scanned && !scanning && (
+      ) : (
         <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
           <EmptyState
             variant="welcome"
-            icon={<FolderOpen size={28} strokeWidth={1.5} />}
+            icon={<FileText size={28} strokeWidth={1.5} />}
             title={t('dashboard.welcomeTitle')}
             hint={t('dashboard.welcomeDesc')}
           />

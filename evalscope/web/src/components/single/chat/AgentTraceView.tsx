@@ -200,6 +200,7 @@ export interface TraceContext {
   consumedToolMsgIds: Set<string>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function buildTraceContext(
   messages: ChatMessage[],
   trace: AgentTrace,
@@ -231,6 +232,7 @@ export function buildTraceContext(
   return { toolMsgByCallId, toolResultEvByCallId, consumedToolMsgIds }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function buildStepGroups(messages: ChatMessage[], trace: AgentTrace): StepGroup[] {
   const messageById = new Map<string, ChatMessage>()
   for (const m of messages) if (m.id) messageById.set(m.id, m)

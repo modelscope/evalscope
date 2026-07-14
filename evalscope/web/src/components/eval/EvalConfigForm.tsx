@@ -41,7 +41,10 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
   const datasetInputRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (initialDataset) setDatasets(initialDataset)
+    const applyInitial = () => {
+      if (initialDataset) setDatasets(initialDataset)
+    }
+    applyInitial()
   }, [initialDataset])
 
   useEffect(() => {
