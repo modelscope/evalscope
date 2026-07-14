@@ -1,0 +1,112 @@
+{
+  "meta": {
+    "pretty_name": "Claw-Eval",
+    "dataset_id": "claw-eval/Claw-Eval",
+    "paper_url": null,
+    "tags": [
+      "Agent",
+      "MultiModal",
+      "MultiTurn"
+    ],
+    "metrics": [
+      "avg_score",
+      "pass_at_k",
+      "pass_hat_k",
+      "error_rate"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "general",
+      "multimodal",
+      "multi_turn"
+    ],
+    "description": "\n## Overview\n\nClaw-Eval evaluates assistant agents on realistic personal-assistant workflows that require tool use, file and fixture\naccess, multimodal inputs, and simulated user interactions. EvalScope runs the pinned official Claw-Eval Python runner,\nDocker sandbox, and graders while exposing each Claw-Eval task as a normal EvalScope sample for caching, repeats,\nparallel execution, reporting, and dashboard trace review.\n\n## Task Description\n\n- **Task Type**: Agentic personal-assistant tasks with tool use, sandbox files, multimodal fixtures, and optional\n  simulated user turns.\n- **Dataset**: `claw-eval/Claw-Eval` on ModelScope.\n- **Subsets**: `general`, `multimodal`, and `multi_turn`; the current ModelScope manifest contains 300 tasks\n  (161 general, 101 multimodal, and 38 multi_turn). Use `subset_list` to select subsets.\n- **Output**: Official Claw-Eval scores and JSONL traces, EvalScope sample-level reviews, grouped summary metrics, and\n  dashboard-rendered agent traces.\n\n## Evaluation Notes\n\n- Requires Python 3.11+ and the official package installed from the pinned source commit:\n  `pip install \"claw-eval[sandbox,mock,web] @\n  git+https://github.com/claw-eval/claw-eval.git@d3f02d4938ab0832377d90535013def2b1a2fdc0\"`.\n- The installed package provides the Claw-Eval runner APIs. EvalScope also caches the same pinned source archive because\n  `tasks/` and `Dockerfile.agent` are runtime assets, then loads the task manifest and fixtures from ModelScope.\n- Full fixtures are downloaded from ModelScope (`data/fixtures.tar.gz`) and linked into the official task tree before\n  execution. The archive is large; use `limit` or `extra_params.task_ids` for smoke runs.\n- Each selected Claw-Eval task is one EvalScope sample. Official scoring runs once per sample; use EvalScope `repeats`\n  for repeated trials per task and `eval_batch_size` for task-level worker concurrency.\n- Claw-Eval runs with the official Docker sandbox image. If `claw-eval-agent:latest` is missing locally, EvalScope\n  builds it automatically from the cached official `Dockerfile.agent`. The first run can be slow.\n- EvalScope `use_cache` resumes completed task-level samples. Claw-Eval trace JSONL files are stored under\n  `outputs/.../claw_eval/<split>/traces` and converted to EvalScope agent traces for dashboard visualization.\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "task_ids": {
+        "type": "list",
+        "description": "Optional exact Claw-Eval task ids to run after split filtering.",
+        "value": []
+      }
+    },
+    "sandbox_config": {},
+    "category": "agent"
+  },
+  "statistics": {
+    "total_samples": 300,
+    "subset_stats": [
+      {
+        "name": "general",
+        "sample_count": 161,
+        "prompt_length_mean": 46.47,
+        "prompt_length_min": 34,
+        "prompt_length_max": 58,
+        "prompt_length_std": 4.87,
+        "target_length_mean": null
+      },
+      {
+        "name": "multimodal",
+        "sample_count": 101,
+        "prompt_length_mean": 49.75,
+        "prompt_length_min": 30,
+        "prompt_length_max": 60,
+        "prompt_length_std": 5.97,
+        "target_length_mean": null
+      },
+      {
+        "name": "multi_turn",
+        "sample_count": 38,
+        "prompt_length_mean": 44.79,
+        "prompt_length_min": 35,
+        "prompt_length_max": 51,
+        "prompt_length_std": 3.68,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 47.36,
+      "min": 30,
+      "max": 60,
+      "std": 5.43
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-07-14T16:59:09.900658"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "a34b7f6b",
+          "content": "Run Claw-Eval task T001zh_email_triage."
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "general",
+      "metadata": {
+        "task_id": "T001zh_email_triage",
+        "split": "general",
+        "task_name": "",
+        "difficulty": "",
+        "dataset_id": "claw-eval/Claw-Eval",
+        "dataset_hub": "modelscope"
+      }
+    },
+    "subset": "general",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# Claw-Eval\n\n\n## Overview\n\nClaw-Eval evaluates assistant agents on realistic personal-assistant workflows that require tool use, file and fixture\naccess, multimodal inputs, and simulated user interactions. EvalScope runs the pinned official Claw-Eval Python runner,\nDocker sandbox, and graders while exposing each Claw-Eval task as a normal EvalScope sample for caching, repeats,\nparallel execution, reporting, and dashboard trace review.\n\n## Task Description\n\n- **Task Type**: Agentic personal-assistant tasks with tool use, sandbox files, multimodal fixtures, and optional\n  simulated user turns.\n- **Dataset**: `claw-eval/Claw-Eval` on ModelScope.\n- **Subsets**: `general`, `multimodal`, and `multi_turn`; the current ModelScope manifest contains 300 tasks\n  (161 general, 101 multimodal, and 38 multi_turn). Use `subset_list` to select subsets.\n- **Output**: Official Claw-Eval scores and JSONL traces, EvalScope sample-level reviews, grouped summary metrics, and\n  dashboard-rendered agent traces.\n\n## Evaluation Notes\n\n- Requires Python 3.11+ and the official package installed from the pinned source commit:\n  `pip install \"claw-eval[sandbox,mock,web] @\n  git+https://github.com/claw-eval/claw-eval.git@d3f02d4938ab0832377d90535013def2b1a2fdc0\"`.\n- The installed package provides the Claw-Eval runner APIs. EvalScope also caches the same pinned source archive because\n  `tasks/` and `Dockerfile.agent` are runtime assets, then loads the task manifest and fixtures from ModelScope.\n- Full fixtures are downloaded from ModelScope (`data/fixtures.tar.gz`) and linked into the official task tree before\n  execution. The archive is large; use `limit` or `extra_params.task_ids` for smoke runs.\n- Each selected Claw-Eval task is one EvalScope sample. Official scoring runs once per sample; use EvalScope `repeats`\n  for repeated trials per task and `eval_batch_size` for task-level worker concurrency.\n- Claw-Eval runs with the official Docker sandbox image. If `claw-eval-agent:latest` is missing locally, EvalScope\n  builds it automatically from the cached official `Dockerfile.agent`. The first run can be slow.\n- EvalScope `use_cache` resumes completed task-level samples. Claw-Eval trace JSONL files are stored under\n  `outputs/.../claw_eval/<split>/traces` and converted to EvalScope agent traces for dashboard visualization.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `claw_eval` |\n| **Dataset ID** | [claw-eval/Claw-Eval](https://modelscope.cn/datasets/claw-eval/Claw-Eval/summary) |\n| **Paper** | N/A |\n| **Tags** | `Agent`, `MultiModal`, `MultiTurn` |\n| **Metrics** | `avg_score`, `pass_at_k`, `pass_hat_k`, `error_rate` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 300 |\n| Prompt Length (Mean) | 47.36 chars |\n| Prompt Length (Min/Max) | 30 / 60 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `general` | 161 | 46.47 | 34 | 58 |\n| `multimodal` | 101 | 49.75 | 30 | 60 |\n| `multi_turn` | 38 | 44.79 | 35 | 51 |\n\n## Sample Example\n\n**Subset**: `general`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a34b7f6b\",\n      \"content\": \"Run Claw-Eval task T001zh_email_triage.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"general\",\n  \"metadata\": {\n    \"task_id\": \"T001zh_email_triage\",\n    \"split\": \"general\",\n    \"task_name\": \"\",\n    \"difficulty\": \"\",\n    \"dataset_id\": \"claw-eval/Claw-Eval\",\n    \"dataset_hub\": \"modelscope\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `task_ids` | `list` | `[]` | Optional exact Claw-Eval task ids to run after split filtering. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets claw_eval \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['claw_eval'],\n    dataset_args={\n        'claw_eval': {\n            # subset_list: ['general', 'multimodal', 'multi_turn']  # optional, evaluate specific subsets\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Claw-Eval\n\n\n## 概述\n\nClaw-Eval 用于评估助手代理在真实个人助理工作流中的表现，这些工作流需要使用工具、访问文件和固定资源（fixtures）、处理多模态输入，并支持模拟用户交互。EvalScope 运行官方指定版本的 Claw-Eval Python 执行器、Docker 沙箱和评分器，同时将每个 Claw-Eval 任务作为标准的 EvalScope 样本进行处理，以支持缓存、重复执行、并行运行、报告生成以及仪表盘轨迹审查。\n\n## 任务描述\n\n- **任务类型**：涉及工具调用、沙箱文件、多模态固定资源及可选模拟用户轮次的代理型个人助理任务。\n- **数据集**：ModelScope 上的 `claw-eval/Claw-Eval`。\n- **子集**：`general`、`multimodal` 和 `multi_turn`；当前 ModelScope 清单包含 300 个任务（161 个 general、101 个 multimodal、38 个 multi_turn）。可通过 `subset_list` 选择子集。\n- **输出**：官方 Claw-Eval 评分与 JSONL 轨迹、EvalScope 样本级评审结果、分组汇总指标，以及仪表盘渲染的代理轨迹。\n\n## 评估说明\n\n- 需要 Python 3.11+，并从指定源代码提交安装官方包：\n  `pip install \"claw-eval[sandbox,mock,web] @ git+https://github.com/claw-eval/claw-eval.git@d3f02d4938ab0832377d90535013def2b1a2fdc0\"`。\n- 安装的包提供 Claw-Eval 执行器 API。EvalScope 同时缓存相同版本的源代码归档，因为 `tasks/` 和 `Dockerfile.agent` 是运行时资产，随后从 ModelScope 加载任务清单和固定资源。\n- 完整的固定资源从 ModelScope 下载（`data/fixtures.tar.gz`），并在执行前链接到官方任务目录中。该归档较大；建议在试运行时使用 `limit` 或 `extra_params.task_ids` 参数。\n- 每个选定的 Claw-Eval 任务对应一个 EvalScope 样本。官方评分对每个样本仅运行一次；如需对同一任务进行多次试验，请使用 EvalScope 的 `repeats` 参数；如需任务级并发执行，请使用 `eval_batch_size`。\n- Claw-Eval 使用官方 Docker 沙箱镜像运行。若本地缺少 `claw-eval-agent:latest` 镜像，EvalScope 会自动基于缓存的官方 `Dockerfile.agent` 构建。首次运行可能较慢。\n- EvalScope 的 `use_cache` 功能可恢复已完成的任务级样本。Claw-Eval 轨迹 JSONL 文件存储在 `outputs/.../claw_eval/<split>/traces` 目录下，并转换为 EvalScope 代理轨迹以供仪表盘可视化。\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `claw_eval` |\n| **数据集ID** | [claw-eval/Claw-Eval](https://modelscope.cn/datasets/claw-eval/Claw-Eval/summary) |\n| **论文** | 无 |\n| **标签** | `Agent`, `MultiModal`, `MultiTurn` |\n| **指标** | `avg_score`, `pass_at_k`, `pass_hat_k`, `error_rate` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 300 |\n| 提示词长度（平均） | 47.36 字符 |\n| 提示词长度（最小/最大） | 30 / 60 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `general` | 161 | 46.47 | 34 | 58 |\n| `multimodal` | 101 | 49.75 | 30 | 60 |\n| `multi_turn` | 38 | 44.79 | 35 | 51 |\n\n## 样例示例\n\n**子集**: `general`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a34b7f6b\",\n      \"content\": \"Run Claw-Eval task T001zh_email_triage.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"general\",\n  \"metadata\": {\n    \"task_id\": \"T001zh_email_triage\",\n    \"split\": \"general\",\n    \"task_name\": \"\",\n    \"difficulty\": \"\",\n    \"dataset_id\": \"claw-eval/Claw-Eval\",\n    \"dataset_hub\": \"modelscope\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `task_ids` | `list` | `[]` | 可选，在子集过滤后精确指定要运行的 Claw-Eval 任务 ID 列表。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets claw_eval \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['claw_eval'],\n    dataset_args={\n        'claw_eval': {\n            # subset_list: ['general', 'multimodal', 'multi_turn']  # 可选，评估特定子集\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "96fad09d5529737f9cd0025e2494c9cd",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-14T17:44:31.169240",
+  "translation_updated_at": "2026-07-14T17:44:38"
+}
