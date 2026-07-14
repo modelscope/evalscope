@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Gauge, Inbox, ChevronRight, Check, GitCompareArrows } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useReports } from '@/contexts/ReportsContext'
@@ -89,7 +89,15 @@ function PerfRunCard({
 export default function PerfReportsPage() {
   const { t } = useLocale()
   const navigate = useNavigate()
-  const { rootPath, scanToken } = useReports()
+  const [searchParams] = useSearchParams()
+  const { rootPath, scanToken, setRootPath } = useReports()
+
+  // Sync root_path from URL on mount (e.g. when navigating back from a detail
+  // or compare page, which carry the active root in their breadcrumbs).
+  useEffect(() => {
+    const urlRoot = searchParams.get('root_path')
+    if (urlRoot) setRootPath(urlRoot)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [runs, setRuns] = useState<PerfRunSummary[]>([])
   const [loading, setLoading] = useState(false)

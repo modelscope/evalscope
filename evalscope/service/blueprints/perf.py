@@ -1,17 +1,14 @@
 import json
 import os
-import re
-from datetime import datetime
 from flask import Blueprint, current_app, jsonify, request, send_file
 from tabulate import tabulate
-from types import SimpleNamespace
-from typing import List, Optional
 
-from evalscope.constants import PLOTLY_CDN_URL
 from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.perf.utils.benchmark_util import Metrics
 from evalscope.perf.utils.rich_display import EmbeddingResultAnalyzer, LLMResultAnalyzer
 from evalscope.utils.logger import get_logger
+from .. import perf_archive
+from ..perf_archive import PerfArchiveError
 from ..utils import (
     OUTPUT_DIR,
     create_log_file,
@@ -25,159 +22,10 @@ from ..utils import (
 
 logger = get_logger()
 
-# Recognized perf run-directory markers (mirror perf_data.py)
-_PARALLEL_RE = re.compile(r'^parallel_(\d+)_number_(\d+)$')
-_RATE_RE = re.compile(r'^rate_([\d.]+)_number_(\d+)$')
-# Bound recursive scan depth so large output trees stay cheap to walk.
-_MAX_SCAN_DEPTH = 3
-
 
 def _root_path() -> str:
     """Resolve the outputs root: query param > app config > OUTPUT_DIR."""
     return request.args.get('root_path', current_app.config.get('OUTPUTS_ROOT') or OUTPUT_DIR)
-
-
-def _is_run_dir(entry_path: str) -> bool:
-    """Return True when *entry_path* is a perf-run directory.
-
-    A perf-run directory either contains ``perf_report.html`` directly or has at
-    least one ``parallel_*_number_*`` / ``rate_*_number_*`` sub-directory that
-    holds a ``benchmark_summary.json`` file.
-    """
-    if os.path.isfile(os.path.join(entry_path, 'perf_report.html')):
-        return True
-    try:
-        for child in os.listdir(entry_path):
-            if not (_PARALLEL_RE.match(child) or _RATE_RE.match(child)):
-                continue
-            if os.path.isfile(os.path.join(entry_path, child, 'benchmark_summary.json')):
-                return True
-    except OSError:
-        return False
-    return False
-
-
-def _scan_perf_runs(root: str) -> List[str]:
-    """Recursively discover perf-run directories under *root* (bounded depth).
-
-    Returns a sorted (desc) list of paths relative to *root*. Covers both the
-    CLI layout (``<ts>/<model>/``) and the service layout (``<task_id>/perf/``)
-    because both share the same marker files.
-    """
-    if not root or not os.path.isdir(root):
-        return []
-
-    root = os.path.abspath(root)
-    root_real = os.path.realpath(root)
-    found: List[str] = []
-
-    def _walk(current: str, depth: int) -> None:
-        if depth > _MAX_SCAN_DEPTH:
-            return
-        try:
-            entries = sorted(os.listdir(current))
-        except OSError:
-            return
-        for name in entries:
-            entry_path = os.path.join(current, name)
-            if not os.path.isdir(entry_path):
-                continue
-            # Reject entries whose realpath escapes the outputs root (e.g. via a
-            # symlink pointing outside the tree) to avoid reading foreign files.
-            if not os.path.realpath(entry_path).startswith(root_real + os.sep):
-                continue
-            if _is_run_dir(entry_path):
-                found.append(os.path.relpath(entry_path, root))
-                # Do not descend further: its children are individual runs.
-                continue
-            _walk(entry_path, depth + 1)
-
-    _walk(root, 0)
-    return sorted(found, reverse=True)
-
-
-def _extract_timestamp(rel_path: str, abs_path: str) -> str:
-    """Parse a timestamp from a path segment (YYYYMMDD_HHMMSS) or fall back to mtime."""
-    for seg in rel_path.replace('\\', '/').split('/'):
-        for fmt in ('%Y%m%d_%H%M%S', '%Y%m%d'):
-            try:
-                return datetime.strptime(seg, fmt).isoformat()
-            except ValueError:
-                continue
-    try:
-        return datetime.fromtimestamp(os.path.getmtime(abs_path)).isoformat()
-    except OSError:
-        return ''
-
-
-def _resolve_run_dir(root: str, rel_path: str) -> Optional[str]:
-    """Resolve *rel_path* against *root*, rejecting path traversal.
-
-    Returns the absolute directory path, or ``None`` when the resolved path
-    escapes *root* or is not a directory.
-    """
-    root_real = os.path.realpath(root)
-    target = os.path.realpath(os.path.join(root_real, rel_path))
-    if target != root_real and not target.startswith(root_real + os.sep):
-        return None
-    if not os.path.isdir(target):
-        return None
-    return target
-
-
-def _load_runs(run_dir: str):
-    """Load all runs from *run_dir* via RunLoader (lazy import to avoid cycles)."""
-    from evalscope.perf.utils.report.perf_data import RunLoader
-    return RunLoader.load_all(run_dir)
-
-
-def _build_run_summary(rel_path: str, abs_path: str) -> Optional[dict]:
-    """Build lightweight list-item metadata for one perf-run directory."""
-    from evalscope.perf.utils.report.generate_report import _is_embedding
-
-    runs = _load_runs(abs_path)
-    has_html = os.path.isfile(os.path.join(abs_path, 'perf_report.html'))
-    if not runs:
-        if not has_html:
-            return None
-        return {
-            'path': rel_path,
-            'model': os.path.basename(rel_path.rstrip('/')),
-            'api_type': '',
-            'dataset': '',
-            'num_runs': 0,
-            'total_requests': 0,
-            'success_rate': 0.0,
-            'best_rps': 0.0,
-            'best_latency': 0.0,
-            'is_embedding': False,
-            'has_html': has_html,
-            'timestamp': _extract_timestamp(rel_path, abs_path),
-        }
-
-    first_args = runs[0].args or {}
-    api_type = first_args.get('api', '')
-    total_requests = sum(r.summary.total_requests for r in runs)
-    total_succeed = sum(r.summary.succeed_requests for r in runs)
-    success_rate = round(total_succeed / total_requests * 100, 1) if total_requests else 0.0
-    best_rps = max(r.summary.request_throughput for r in runs)
-    valid_lat = [r.summary.avg_latency for r in runs if r.summary.avg_latency >= 0]
-    best_latency = min(valid_lat) if valid_lat else 0.0
-
-    return {
-        'path': rel_path,
-        'model': first_args.get('model', first_args.get('model_id', 'N/A')),
-        'api_type': api_type,
-        'dataset': first_args.get('dataset', ''),
-        'num_runs': len(runs),
-        'total_requests': total_requests,
-        'success_rate': success_rate,
-        'best_rps': round(best_rps, 4),
-        'best_latency': round(best_latency, 4),
-        'is_embedding': _is_embedding(api_type),
-        'has_html': has_html,
-        'timestamp': _extract_timestamp(rel_path, abs_path),
-    }
 
 
 def _build_perf_table(result, api_type: str = None) -> str:
@@ -354,6 +202,10 @@ def get_performance_progress():
 
 # ------------------------------------------------------------------
 # Historical perf-run archive
+#
+# These endpoints stay thin: request parsing + JSON/error translation only.
+# All discovery / view-model / chart / paging logic lives in
+# :mod:`evalscope.service.perf_archive`.
 # ------------------------------------------------------------------
 
 
@@ -369,18 +221,7 @@ def list_perf_runs():
         if not root or not os.path.isdir(root):
             return jsonify({'error': 'root_path is required and must be an existing directory'}), 400
 
-        root_abs = os.path.abspath(root)
-        runs = []
-        for rel_path in _scan_perf_runs(root_abs):
-            try:
-                meta = _build_run_summary(rel_path, os.path.join(root_abs, rel_path))
-            except Exception as e:
-                logger.warning(f'Skipping unreadable perf run {rel_path}: {e}')
-                continue
-            if meta is not None:
-                runs.append(meta)
-
-        runs.sort(key=lambda x: x['timestamp'], reverse=True)
+        runs = perf_archive.list_run_summaries(root)
         return jsonify({'runs': runs, 'total': len(runs)}), 200
     except Exception as e:
         logger.error(f'Failed to list perf runs: {e}')
@@ -398,100 +239,13 @@ def get_perf_detail():
     rel_path = request.args.get('path')
     if not rel_path:
         return jsonify({'error': 'path is required'}), 400
-
-    run_dir = _resolve_run_dir(_root_path(), rel_path)
-    if run_dir is None:
-        return jsonify({'error': 'Invalid path'}), 400
-
     try:
-        from evalscope.perf.utils.report.generate_report import (
-            _build_basic_info,
-            _build_best_config,
-            _build_recommendations,
-            _build_summary_table,
-            _is_embedding,
-        )
-
-        runs = _load_runs(run_dir)
-        if not runs:
-            return jsonify({'error': f'No perf runs found under: {rel_path}'}), 404
-
-        first_args = runs[0].args or {}
-        api_type = first_args.get('api', '')
-        is_emb = _is_embedding(api_type)
-        summary_columns, summary_rows = _build_summary_table(runs, is_emb)
-
-        return jsonify({
-            'path': rel_path,
-            'model': first_args.get('model', first_args.get('model_id', 'N/A')),
-            'api_type': api_type,
-            'dataset': first_args.get('dataset', 'N/A'),
-            'generated_at': _extract_timestamp(rel_path, run_dir),
-            'basic_info': dict(_build_basic_info(first_args, runs, is_emb)),
-            'summary_columns': summary_columns,
-            'summary_rows': summary_rows,
-            'best_config': dict(_build_best_config(runs)),
-            'recommendations': _build_recommendations(runs),
-            'num_runs': len(runs),
-            'is_embedding': is_emb,
-            'has_html': os.path.isfile(os.path.join(run_dir, 'perf_report.html')),
-        }), 200
+        return jsonify(perf_archive.build_run_detail(_root_path(), rel_path)), 200
+    except PerfArchiveError as e:
+        return jsonify({'error': e.message}), e.status
     except Exception as e:
         logger.error(f'Failed to load perf detail for {rel_path}: {e}')
         return jsonify({'error': str(e)}), 500
-
-
-# Sweep chart_type -> (builder attr, needs is_embedding flag). One point per run.
-_SWEEP_CHARTS = {
-    'latency': ('build_latency_chart', False),
-    'ttft': ('build_ttft_chart', False),
-    'tpot': ('build_tpot_chart', False),
-    'rps': ('build_rps_chart', False),
-    'throughput': ('build_throughput_chart', True),
-    'success': ('build_success_chart', False),
-}
-
-# Per-run request-detail chart_type -> tab label from build_request_detail_tabs.
-_REQUEST_CHARTS = {
-    'req_latency': 'Latency',
-    'req_ttft_tpot': 'TTFT / TPOT / ITL',
-    'req_tokens': 'Tokens',
-    'req_success': 'Success',
-}
-
-# Per-run percentile chart_type -> index into build_percentile_chart() tuple.
-_PERCENTILE_CHARTS = {'percentile_latency': 0, 'percentile_token': 1}
-
-
-def _wrap_chart_html(div: str) -> str:
-    """Wrap a Plotly <div> into a standalone HTML page that fills the iframe.
-
-    The Plotly graph div is emitted with ``height:100%``; without giving the
-    html/body and the wrapping div a definite height it collapses to Plotly's
-    default size and overflows the fixed-height iframe (scrollbars + clipping).
-    Forcing the full chain to 100% height and hiding overflow makes the chart
-    fill the iframe cleanly.
-    """
-    return (
-        '<!DOCTYPE html><html><head><meta charset="utf-8">'
-        f'<script src="{PLOTLY_CDN_URL}" charset="utf-8"></script>'
-        '<style>'
-        'html,body{margin:0;padding:0;background:transparent;height:100%;width:100%;overflow:hidden;}'
-        'body>div{height:100%;width:100%;}'
-        '.plotly-graph-div,.js-plotly-plot{width:100%!important;height:100%!important;}'
-        '</style>'
-        f'</head><body>{div}</body></html>'
-    )
-
-
-def _find_run(runs, run_name: str):
-    """Return the RunData whose dir_name matches *run_name* (regex-validated), or None."""
-    if not (_PARALLEL_RE.match(run_name) or _RATE_RE.match(run_name)):
-        return None
-    for r in runs:
-        if r.dir_name == run_name:
-            return r
-    return None
 
 
 @bp_perf.route('/chart', methods=['GET'])
@@ -513,46 +267,11 @@ def get_perf_chart():
     theme = 'light' if request.args.get('theme') == 'light' else 'dark'
     if not rel_path:
         return jsonify({'error': 'path is required'}), 400
-
-    known = set(_SWEEP_CHARTS) | set(_REQUEST_CHARTS) | set(_PERCENTILE_CHARTS)
-    if chart_type not in known:
-        return jsonify({'error': f'Unknown chart_type: {chart_type}'}), 400
-
-    run_dir = _resolve_run_dir(_root_path(), rel_path)
-    if run_dir is None:
-        return jsonify({'error': 'Invalid path'}), 400
-
     try:
-        from evalscope.perf.utils.report import perf_charts
-        from evalscope.perf.utils.report.generate_report import _is_embedding
-
-        runs = _load_runs(run_dir)
-        if not runs:
-            return jsonify({'error': f'No perf runs found under: {rel_path}'}), 404
-        is_emb = _is_embedding((runs[0].args or {}).get('api', ''))
-
-        if chart_type in _SWEEP_CHARTS:
-            builder_name, needs_emb = _SWEEP_CHARTS[chart_type]
-            builder = getattr(perf_charts, builder_name)
-            div = builder(runs, is_emb, theme=theme) if needs_emb else builder(runs, theme=theme)
-        else:
-            # Per-run charts require a specific run sub-directory.
-            if not run_name:
-                return jsonify({'error': 'run is required for this chart_type'}), 400
-            run = _find_run(runs, run_name)
-            if run is None:
-                return jsonify({'error': f'Run not found: {run_name}'}), 404
-            if chart_type in _PERCENTILE_CHARTS:
-                charts = perf_charts.build_percentile_chart(run, is_emb, theme=theme)
-                div = charts[_PERCENTILE_CHARTS[chart_type]]
-            else:
-                label = _REQUEST_CHARTS[chart_type]
-                tabs = perf_charts.build_request_detail_tabs(run, is_emb, theme=theme)
-                div = next((t['chart'] for t in tabs if t['label'] == label), '')
-            if not div:
-                return jsonify({'error': 'Chart not available for this run'}), 404
-
-        return _wrap_chart_html(div), 200, {'Content-Type': 'text/html'}
+        html = perf_archive.render_chart(_root_path(), rel_path, chart_type, run_name, theme)
+        return html, 200, {'Content-Type': 'text/html'}
+    except PerfArchiveError as e:
+        return jsonify({'error': e.message}), e.status
     except Exception as e:
         logger.error(f'Failed to render perf chart {chart_type} for {rel_path}: {e}')
         return jsonify({'error': str(e)}), 500
@@ -574,37 +293,11 @@ def get_perf_compare_chart():
     rel_paths = [p for p in paths_raw.split(';') if p.strip()]
     if not rel_paths:
         return jsonify({'error': 'paths is required'}), 400
-    if chart_type not in _SWEEP_CHARTS:
-        return jsonify({'error': f'Unknown chart_type: {chart_type}'}), 400
-
-    root = _root_path()
     try:
-        from evalscope.perf.utils.report import perf_charts
-        from evalscope.perf.utils.report.generate_report import _is_embedding
-
-        series = []
-        emb_modes = set()
-        for rel in rel_paths:
-            run_dir = _resolve_run_dir(root, rel)
-            if run_dir is None:
-                return jsonify({'error': f'Invalid path: {rel}'}), 400
-            runs = _load_runs(run_dir)
-            if not runs:
-                continue
-            first_args = runs[0].args or {}
-            emb_modes.add(_is_embedding(first_args.get('api', '')))
-            model = first_args.get('model', first_args.get('model_id', rel))
-            ts = _extract_timestamp(rel, run_dir)
-            label = f'{model} · {ts}' if ts else model
-            series.append((label, runs))
-        if not series:
-            return jsonify({'error': 'No perf runs found for the given paths'}), 404
-        if len(emb_modes) > 1:
-            return jsonify({'error': 'Cannot compare embedding and LLM runs in the same chart'}), 400
-        is_emb = emb_modes.pop()
-
-        div = perf_charts.build_compare_chart(series, chart_type, is_embedding=is_emb, theme=theme)
-        return _wrap_chart_html(div), 200, {'Content-Type': 'text/html'}
+        html = perf_archive.render_compare_chart(_root_path(), rel_paths, chart_type, theme)
+        return html, 200, {'Content-Type': 'text/html'}
+    except PerfArchiveError as e:
+        return jsonify({'error': e.message}), e.status
     except Exception as e:
         logger.error(f'Failed to render perf compare chart {chart_type}: {e}')
         return jsonify({'error': str(e)}), 500
@@ -621,29 +314,11 @@ def list_perf_run_details():
     rel_path = request.args.get('path')
     if not rel_path:
         return jsonify({'error': 'path is required'}), 400
-    run_dir = _resolve_run_dir(_root_path(), rel_path)
-    if run_dir is None:
-        return jsonify({'error': 'Invalid path'}), 400
     try:
-        runs = _load_runs(run_dir)
-        items = []
-        for r in runs:
-            pct = r.percentiles.to_list()
-            items.append({
-                'dir_name': r.dir_name,
-                'name': r.name,
-                'parallel': r.parallel,
-                'number': r.number,
-                'rate': r.rate,
-                'total_requests': r.summary.total_requests,
-                'succeed_requests': r.summary.succeed_requests,
-                'success_rate': r.success_rate,
-                'num_requests': len(r.requests),
-                'has_requests': len(r.requests) > 0,
-                'percentile_columns': list(pct[0].keys()) if pct else [],
-                'percentile_rows': [list(p.values()) for p in pct],
-            })
+        items = perf_archive.list_run_items(_root_path(), rel_path)
         return jsonify({'runs': items, 'total': len(items)}), 200
+    except PerfArchiveError as e:
+        return jsonify({'error': e.message}), e.status
     except Exception as e:
         logger.error(f'Failed to list perf run details for {rel_path}: {e}')
         return jsonify({'error': str(e)}), 500
@@ -665,49 +340,18 @@ def get_perf_requests():
     run_name = request.args.get('run')
     if not rel_path or not run_name:
         return jsonify({'error': 'path and run are required'}), 400
-    run_dir = _resolve_run_dir(_root_path(), rel_path)
-    if run_dir is None:
-        return jsonify({'error': 'Invalid path'}), 400
     try:
-        runs = _load_runs(run_dir)
-        run = _find_run(runs, run_name)
-        if run is None:
-            return jsonify({'error': f'Run not found: {run_name}'}), 404
-
-        status = request.args.get('status')
-        records = run.requests
-        if status == 'success':
-            records = [r for r in records if r.success]
-        elif status == 'failed':
-            records = [r for r in records if not r.success]
-
-        page = max(1, request.args.get('page', 1, type=int))
-        page_size = max(1, min(500, request.args.get('page_size', 50, type=int)))
-        total = len(records)
-        start = (page - 1) * page_size
-        page_records = records[start:start + page_size]
-
-        rows = []
-        for i, r in enumerate(page_records):
-            rows.append({
-                '#': start + i + 1,
-                'Latency(s)': round(r.latency, 3),
-                'TTFT(ms)': round(r.first_chunk_latency, 1) if r.first_chunk_latency is not None else None,
-                'TPOT(ms)': round(r.time_per_output_token, 1) if r.time_per_output_token is not None else None,
-                'Prompt': r.prompt_tokens,
-                'Completion': r.completion_tokens,
-                'Success': 'OK' if r.success else 'FAIL',
-            })
-
-        columns = ['#', 'Latency(s)', 'TTFT(ms)', 'TPOT(ms)', 'Prompt', 'Completion', 'Success']
-        return jsonify({
-            'columns': columns,
-            'rows': rows,
-            'total': total,
-            'page': page,
-            'page_size': page_size,
-            'has_db': len(run.requests) > 0,
-        }), 200
+        result = perf_archive.query_request_page(
+            _root_path(),
+            rel_path,
+            run_name,
+            request.args.get('status'),
+            request.args.get('page', 1, type=int),
+            request.args.get('page_size', 50, type=int),
+        )
+        return jsonify(result), 200
+    except PerfArchiveError as e:
+        return jsonify({'error': e.message}), e.status
     except Exception as e:
         logger.error(f'Failed to load perf requests for {rel_path}/{run_name}: {e}')
         return jsonify({'error': str(e)}), 500
@@ -724,27 +368,11 @@ def get_perf_history_report():
     rel_path = request.args.get('path')
     if not rel_path:
         return jsonify({'error': 'path is required'}), 400
-
-    run_dir = _resolve_run_dir(_root_path(), rel_path)
-    if run_dir is None:
-        return jsonify({'error': 'Invalid path'}), 400
-
-    report_file = os.path.join(run_dir, 'perf_report.html')
-    if os.path.isfile(report_file):
-        return send_file(report_file, mimetype='text/html')
-
     try:
-        from evalscope.perf.utils.report.generate_report import gen_perf_html_report
-
-        runs = _load_runs(run_dir)
-        if not runs:
-            return jsonify({'error': f'No perf runs found under: {rel_path}'}), 404
-
-        api_type = (runs[0].args or {}).get('api', '')
-        out_path = gen_perf_html_report(run_dir, {}, SimpleNamespace(api=api_type))
-        if not out_path or not os.path.isfile(out_path):
-            return jsonify({'error': 'Failed to generate perf report'}), 500
-        return send_file(out_path, mimetype='text/html')
+        report_file = perf_archive.ensure_history_report(_root_path(), rel_path)
+        return send_file(report_file, mimetype='text/html')
+    except PerfArchiveError as e:
+        return jsonify({'error': e.message}), e.status
     except Exception as e:
         logger.error(f'Failed to serve perf history report for {rel_path}: {e}')
         return jsonify({'error': str(e)}), 500
