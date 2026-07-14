@@ -301,6 +301,8 @@ export interface PerfRunSummary {
   success_rate: number
   best_rps: number
   best_latency: number
+  /** True for embedding/rerank runs (which omit TTFT/TPOT charts). */
+  is_embedding: boolean
   has_html: boolean
   timestamp: string
 }

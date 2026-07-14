@@ -68,6 +68,7 @@ def _scan_perf_runs(root: str) -> List[str]:
         return []
 
     root = os.path.abspath(root)
+    root_real = os.path.realpath(root)
     found: List[str] = []
 
     def _walk(current: str, depth: int) -> None:
@@ -80,6 +81,10 @@ def _scan_perf_runs(root: str) -> List[str]:
         for name in entries:
             entry_path = os.path.join(current, name)
             if not os.path.isdir(entry_path):
+                continue
+            # Reject entries whose realpath escapes the outputs root (e.g. via a
+            # symlink pointing outside the tree) to avoid reading foreign files.
+            if not os.path.realpath(entry_path).startswith(root_real + os.sep):
                 continue
             if _is_run_dir(entry_path):
                 found.append(os.path.relpath(entry_path, root))
@@ -128,6 +133,8 @@ def _load_runs(run_dir: str):
 
 def _build_run_summary(rel_path: str, abs_path: str) -> Optional[dict]:
     """Build lightweight list-item metadata for one perf-run directory."""
+    from evalscope.perf.utils.report.generate_report import _is_embedding
+
     runs = _load_runs(abs_path)
     has_html = os.path.isfile(os.path.join(abs_path, 'perf_report.html'))
     if not runs:
@@ -143,11 +150,13 @@ def _build_run_summary(rel_path: str, abs_path: str) -> Optional[dict]:
             'success_rate': 0.0,
             'best_rps': 0.0,
             'best_latency': 0.0,
+            'is_embedding': False,
             'has_html': has_html,
             'timestamp': _extract_timestamp(rel_path, abs_path),
         }
 
     first_args = runs[0].args or {}
+    api_type = first_args.get('api', '')
     total_requests = sum(r.summary.total_requests for r in runs)
     total_succeed = sum(r.summary.succeed_requests for r in runs)
     success_rate = round(total_succeed / total_requests * 100, 1) if total_requests else 0.0
@@ -158,13 +167,14 @@ def _build_run_summary(rel_path: str, abs_path: str) -> Optional[dict]:
     return {
         'path': rel_path,
         'model': first_args.get('model', first_args.get('model_id', 'N/A')),
-        'api_type': first_args.get('api', ''),
+        'api_type': api_type,
         'dataset': first_args.get('dataset', ''),
         'num_runs': len(runs),
         'total_requests': total_requests,
         'success_rate': success_rate,
         'best_rps': round(best_rps, 4),
         'best_latency': round(best_latency, 4),
+        'is_embedding': _is_embedding(api_type),
         'has_html': has_html,
         'timestamp': _extract_timestamp(rel_path, abs_path),
     }

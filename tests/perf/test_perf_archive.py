@@ -17,7 +17,7 @@ import unittest
 flask = pytest.importorskip('flask')  # noqa: F841  (service extra not installed → skip)
 
 
-def _write_json(path: str, obj) -> None:
+def _write_json(path: str, obj: object) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(obj, f)

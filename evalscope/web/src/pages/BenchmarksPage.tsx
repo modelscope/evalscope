@@ -188,9 +188,7 @@ export default function BenchmarksPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">{t('benchmarks.title')}</h1>
         <span className="text-sm text-[var(--text-muted)]">
-          {t('benchmarks.showing')
-            .replace('${n}', String(items.length))
-            .replace('${total}', String(allBenchmarks.length))}
+          {t('benchmarks.showing', { n: items.length, total: allBenchmarks.length })}
         </span>
       </div>
 
@@ -313,7 +311,7 @@ export default function BenchmarksPage() {
               )}
               <span className="inline-flex items-center gap-1">
                 <FlaskConical size={10} />
-                {t('benchmarks.shots').replace('${n}', String(entry.few_shot_num))}
+                {t('benchmarks.shots', { n: entry.few_shot_num })}
               </span>
             </div>
 
@@ -413,7 +411,7 @@ export default function BenchmarksPage() {
                   )}
                   <span className="inline-flex items-center gap-1">
                     <FlaskConical size={11} />
-                    {t('benchmarks.shots').replace('${n}', String(selectedEntry.few_shot_num))}
+                    {t('benchmarks.shots', { n: selectedEntry.few_shot_num })}
                   </span>
                   {selectedEntry.paper_url && (
                     <a

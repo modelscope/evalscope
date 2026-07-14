@@ -10,12 +10,9 @@ import Badge from '@/components/ui/Badge'
 import Skeleton from '@/components/ui/Skeleton'
 import EmptyState from '@/components/common/EmptyState'
 import SearchInput from '@/components/ui/SearchInput'
+import { formatFull } from '@/utils/perf'
 
 type SortKey = 'time' | 'rps' | 'latency'
-
-function formatFull(ts: string): string {
-  return ts ? ts.replace('T', ' ').slice(0, 19) : ''
-}
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -111,8 +108,13 @@ export default function PerfReportsPage() {
 
   const compareSelected = () => {
     if (selected.length < 2) return
+    // Forward the first run's mode so the compare page can hide TTFT/TPOT for
+    // embedding/rerank runs without an extra detail round-trip.
+    const first = runs.find((r) => r.path === selected[0])
+    const embedding = first?.is_embedding ? '1' : '0'
     navigate(
-      `/perf-compare?paths=${encodeURIComponent(selected.join(';'))}&root_path=${encodeURIComponent(rootPath)}`,
+      `/perf-compare?paths=${encodeURIComponent(selected.join(';'))}`
+        + `&embedding=${embedding}&root_path=${encodeURIComponent(rootPath)}`,
     )
   }
 
@@ -210,27 +212,27 @@ export default function PerfReportsPage() {
                 </button>
               ))}
             </div>
-          <div className="flex items-center gap-2 sm:ml-auto w-full sm:w-auto">
-            <button
-              onClick={compareSelected}
-              disabled={selected.length < 2}
-              className={[
-                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] type-body-sm border transition-colors shrink-0',
-                selected.length >= 2
-                  ? 'border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--bg-card2)] cursor-pointer'
-                  : 'border-[var(--border)] text-[var(--text-dim)] cursor-not-allowed',
-              ].join(' ')}
-            >
-              <GitCompareArrows size={14} />
-              {t('performance.compareN').replace('${n}', String(selected.length))}
-            </button>
-            <SearchInput
-              value={query}
-              onChange={setQuery}
-              placeholder={t('performance.searchPlaceholder')}
-              className="w-full sm:w-64"
-            />
-          </div>
+            <div className="flex items-center gap-2 sm:ml-auto w-full sm:w-auto">
+              <button
+                onClick={compareSelected}
+                disabled={selected.length < 2}
+                className={[
+                  'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] type-body-sm border transition-colors shrink-0',
+                  selected.length >= 2
+                    ? 'border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--bg-card2)] cursor-pointer'
+                    : 'border-[var(--border)] text-[var(--text-dim)] cursor-not-allowed',
+                ].join(' ')}
+              >
+                <GitCompareArrows size={14} />
+                {t('performance.compareN', { n: selected.length })}
+              </button>
+              <SearchInput
+                value={query}
+                onChange={setQuery}
+                placeholder={t('performance.searchPlaceholder')}
+                className="w-full sm:w-64"
+              />
+            </div>
           </div>
 
           {visibleRuns.length > 0 ? (

@@ -12,26 +12,10 @@ import Skeleton from '@/components/ui/Skeleton'
 import Badge from '@/components/ui/Badge'
 import PlotlyChart from '@/components/charts/PlotlyChart'
 import PerfRunsTab from './PerfRunsTab'
+import { LATENCY_CHARTS, THROUGHPUT_CHARTS, CHART_TITLES, formatFull } from '@/utils/perf'
 import { ExternalLink, Lightbulb } from 'lucide-react'
 
 type TabKey = 'overview' | 'charts' | 'runs'
-
-// Sweep charts grouped like the standalone HTML report.
-const LATENCY_CHARTS = ['latency', 'ttft', 'tpot'] as const
-const THROUGHPUT_CHARTS = ['rps', 'throughput', 'success'] as const
-
-const CHART_TITLES: Record<string, string> = {
-  latency: 'Latency (s)',
-  ttft: 'TTFT (ms)',
-  tpot: 'TPOT (ms)',
-  rps: 'Requests/sec',
-  throughput: 'Tokens/sec',
-  success: 'Success Rate (%)',
-}
-
-function formatFull(ts: string): string {
-  return ts ? ts.replace('T', ' ').slice(0, 19) : ''
-}
 
 // ------------------------------------------------------------------ //
 // Overview building blocks                                            //
