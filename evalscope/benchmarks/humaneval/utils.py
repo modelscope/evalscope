@@ -88,7 +88,7 @@ def check_correctness(problem: Dict, completion: str, timeout: float, completion
 @contextlib.contextmanager
 def time_limit(seconds: float):
 
-    if not hasattr(signal, 'setitimer'):
+    if not (hasattr(signal, 'setitimer') and hasattr(signal, 'SIGALRM')):
         yield
         return
 
