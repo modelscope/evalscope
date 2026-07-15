@@ -6,7 +6,7 @@ from pydantic import Field, SecretStr, field_validator, model_validator
 from typing import Any, Dict, List, Optional, Union
 
 from evalscope.constants import DEFAULT_WORK_DIR, VisualizerType
-from evalscope.perf.multi_turn_args import IntOrRange, MultiTurnArgs, _sample_int_or_range
+from evalscope.perf.multi_turn_args import IntOrRange, MultiTurnArgs
 from evalscope.utils import BaseArgument, get_secret_value, secretize_auth_headers
 from evalscope.utils.logger import get_logger
 
@@ -22,6 +22,19 @@ _OPENAI_API_ENDPOINT_MAP = {
     'openai_rerank': 'reranks',
     'rerank': 'reranks',
 }
+
+_OPENAI_RESPONSES_APIS = ('openai_responses', 'openai_response', 'responses')
+_KNOWN_OPENAI_ENDPOINTS = ('chat/completions', 'completions', 'responses', 'embeddings', 'reranks')
+
+
+def _as_list_if_scalar(value: Any, scalar_type: Any) -> Any:
+    if isinstance(value, scalar_type):
+        return [value]
+    return value
+
+
+def _at_least_one(value: int) -> int:
+    return max(value, 1) if value <= 0 else value
 
 
 class Arguments(BaseArgument):
@@ -98,10 +111,9 @@ class Arguments(BaseArgument):
         """
         if self.warmup_num <= 0:
             return 0
-        n = self.number if isinstance(self.number, int) else self.number[0]
         if self.warmup_num >= 1:
             return int(self.warmup_num)
-        return max(1, int(self.warmup_num * n))
+        return max(1, int(self.warmup_num * self._current_number()))
 
     @property
     def total_count(self) -> int:
@@ -110,8 +122,7 @@ class Arguments(BaseArgument):
         Equal to ``number + warmup_count``.  When ``number`` is a list
         (sweep mode), uses the first element.
         """
-        n = self.number if isinstance(self.number, int) else self.number[0]
-        return n + self.warmup_count
+        return self._current_number() + self.warmup_count
 
     open_loop: bool = False
     """Enable open-loop rate mode: dispatch requests at the scheduled rate without semaphore backpressure.
@@ -379,7 +390,7 @@ class Arguments(BaseArgument):
 
     @field_validator('max_tokens', mode='before')
     @classmethod
-    def _validate_max_tokens(cls, v):
+    def _validate_max_tokens(cls, v: Any) -> Any:
         if isinstance(v, list):
             if len(v) == 1:
                 return v[0]  # single value from nargs='+'
@@ -393,7 +404,7 @@ class Arguments(BaseArgument):
 
     @field_validator('multi_turn_args', mode='before')
     @classmethod
-    def _validate_multi_turn_args(cls, v):
+    def _validate_multi_turn_args(cls, v: Any) -> Any:
         if v is None:
             return v
         if isinstance(v, MultiTurnArgs):
@@ -414,39 +425,33 @@ class Arguments(BaseArgument):
 
     @field_validator('rate', mode='before')
     @classmethod
-    def _validate_rate(cls, v):
-        if isinstance(v, (int, float)):
-            return [float(v)]
-        return v
+    def _validate_rate(cls, v: Any) -> Any:
+        return _as_list_if_scalar(float(v), (int, float)) if isinstance(v, (int, float)) else v
 
     @field_validator('number', mode='before')
     @classmethod
-    def _validate_number(cls, v):
-        if isinstance(v, int):
-            return [v]
-        return v
+    def _validate_number(cls, v: Any) -> Any:
+        return _as_list_if_scalar(v, int)
 
     @field_validator('parallel', mode='before')
     @classmethod
-    def _validate_parallel(cls, v):
-        if isinstance(v, int):
-            return [v]
-        return v
+    def _validate_parallel(cls, v: Any) -> Any:
+        return _as_list_if_scalar(v, int)
 
     @field_validator('db_commit_interval', mode='after')
     @classmethod
-    def _validate_db_commit_interval(cls, v):
-        return max(v, 1) if v <= 0 else v
+    def _validate_db_commit_interval(cls, v: int) -> int:
+        return _at_least_one(v)
 
     @field_validator('queue_size_multiplier', mode='after')
     @classmethod
-    def _validate_queue_size_multiplier(cls, v):
-        return max(v, 1) if v <= 0 else v
+    def _validate_queue_size_multiplier(cls, v: int) -> int:
+        return _at_least_one(v)
 
     @field_validator('in_flight_task_multiplier', mode='after')
     @classmethod
-    def _validate_in_flight_task_multiplier(cls, v):
-        return max(v, 1) if v <= 0 else v
+    def _validate_in_flight_task_multiplier(cls, v: int) -> int:
+        return _at_least_one(v)
 
     @field_validator('num_workers', mode='after')
     @classmethod
@@ -487,68 +492,86 @@ class Arguments(BaseArgument):
 
         return self
 
-    def _resolve_url(self):
+    def _current_number(self) -> int:
+        return self.number if isinstance(self.number, int) else self.number[0]
+
+    def _resolve_url(self) -> None:
         """Resolve URL based on api, dataset, port, and tokenize_prompt settings."""
-        # Set the URL based on the dataset type
+        self._resolve_local_url()
+        self._resolve_openai_compatible_url()
+        self._resolve_tokenize_prompt_url()
+
+    def _resolve_local_url(self) -> None:
         if self.api.startswith('local'):
             if self.dataset.startswith('speed_benchmark'):
                 self.url = f'http://127.0.0.1:{self.port}/v1/completions'
             else:
                 self.url = f'http://127.0.0.1:{self.port}/v1/chat/completions'
 
-        # Auto-append endpoint path for openai-compatible APIs when URL has no known endpoint suffix
+    def _resolve_openai_compatible_url(self) -> None:
         if self.api in _OPENAI_API_ENDPOINT_MAP:
-            _stripped = self.url.rstrip('/')
-            _expected_suffix = _OPENAI_API_ENDPOINT_MAP[self.api]
-            _known_endpoints = ('chat/completions', 'completions', 'responses', 'embeddings', 'reranks')
-            if self.api in ('openai_responses', 'openai_response',
-                            'responses') and _stripped.endswith('/chat/completions'):
-                self.url = _stripped[:-len('chat/completions')] + 'responses'
-                logger.warning(f'OpenAI Responses API selected: URL auto-adjusted to responses endpoint: {self.url}')
-            elif not any(_stripped.endswith('/' + ep) for ep in _known_endpoints):
-                self.url = _stripped + '/' + _expected_suffix
+            stripped_url = self.url.rstrip('/')
+            expected_suffix = _OPENAI_API_ENDPOINT_MAP[self.api]
+            if self._redirect_responses_url(stripped_url):
+                return
+            if not any(stripped_url.endswith('/' + endpoint) for endpoint in _KNOWN_OPENAI_ENDPOINTS):
+                self.url = stripped_url + '/' + expected_suffix
                 logger.warning(
-                    f'URL "{_stripped}" has no endpoint path, auto-appended "/{_expected_suffix}". '
+                    f'URL "{stripped_url}" has no endpoint path, auto-appended "/{expected_suffix}". '
                     'If this is not intended, please specify the full URL explicitly.'
                 )
 
-        # When tokenize_prompt is enabled, redirect to the completions endpoint.
-        if self.tokenize_prompt:
-            if self.api in ('openai_responses', 'openai_response', 'responses'):
-                raise ValueError('--tokenize-prompt is not supported with the OpenAI Responses API.')
-            if not self.tokenizer_path:
-                raise ValueError('--tokenizer-path is required when --tokenize-prompt is set.')
-            _stripped = self.url.rstrip('/')
-            if _stripped.endswith('chat/completions'):
-                self.url = _stripped[:-len('chat/completions')] + 'completions'
-                logger.warning(
-                    f'--tokenize-prompt is set: URL auto-adjusted from chat/completions '
-                    f'to completions endpoint: {self.url}'
-                )
+    def _redirect_responses_url(self, stripped_url: str) -> bool:
+        if self.api in _OPENAI_RESPONSES_APIS and stripped_url.endswith('/chat/completions'):
+            self.url = stripped_url[:-len('chat/completions')] + 'responses'
+            logger.warning(f'OpenAI Responses API selected: URL auto-adjusted to responses endpoint: {self.url}')
+            return True
+        return False
 
-    def _validate_sweep_params(self):
+    def _resolve_tokenize_prompt_url(self) -> None:
+        if not self.tokenize_prompt:
+            return
+        if self.api in _OPENAI_RESPONSES_APIS:
+            raise ValueError('--tokenize-prompt is not supported with the OpenAI Responses API.')
+        if not self.tokenizer_path:
+            raise ValueError('--tokenizer-path is required when --tokenize-prompt is set.')
+        stripped_url = self.url.rstrip('/')
+        if stripped_url.endswith('chat/completions'):
+            self.url = stripped_url[:-len('chat/completions')] + 'completions'
+            logger.warning(
+                f'--tokenize-prompt is set: URL auto-adjusted from chat/completions '
+                f'to completions endpoint: {self.url}'
+            )
+
+    def _validate_sweep_params(self) -> None:
         """Validate number/parallel/rate consistency after normalization."""
         if self.open_loop:
-            if len(self.number) != len(self.rate):
-                raise ValueError(
-                    f'In open-loop mode the length of --number and --rate must match, '
-                    f'but got number: {self.number} and rate: {self.rate}'
-                )
-            if not all(r > 0 for r in self.rate):
-                raise ValueError(f'In open-loop mode all --rate values must be > 0, but got: {self.rate}')
-            # In open-loop mode concurrency is unbounded; set parallel=-1 so downstream
-            # display layers render it as INF instead of a numeric value.
-            self.parallel = [-1]
-            logger.info(
-                'open-loop mode enabled: concurrency is unbounded (parallel set to -1 / INF). '
-                f'Rate sweep: {self.rate}, number sweep: {self.number}.'
+            self._validate_open_loop_sweep_params()
+            return
+        self._validate_closed_loop_sweep_params()
+
+    def _validate_open_loop_sweep_params(self) -> None:
+        if len(self.number) != len(self.rate):
+            raise ValueError(
+                f'In open-loop mode the length of --number and --rate must match, '
+                f'but got number: {self.number} and rate: {self.rate}'
             )
-        else:
-            if len(self.number) != len(self.parallel):
-                raise ValueError(
-                    f'The length of number and parallel should be the same, '
-                    f'but got number: {self.number} and parallel: {self.parallel}'
-                )
+        if not all(r > 0 for r in self.rate):
+            raise ValueError(f'In open-loop mode all --rate values must be > 0, but got: {self.rate}')
+        # In open-loop mode concurrency is unbounded; set parallel=-1 so downstream
+        # display layers render it as INF instead of a numeric value.
+        self.parallel = [-1]
+        logger.info(
+            'open-loop mode enabled: concurrency is unbounded (parallel set to -1 / INF). '
+            f'Rate sweep: {self.rate}, number sweep: {self.number}.'
+        )
+
+    def _validate_closed_loop_sweep_params(self) -> None:
+        if len(self.number) != len(self.parallel):
+            raise ValueError(
+                f'The length of number and parallel should be the same, '
+                f'but got number: {self.number} and parallel: {self.parallel}'
+            )
 
     @contextmanager
     def output_context(self, path: str):
@@ -592,16 +615,16 @@ class ParseKVAction(argparse.Action):
                 parser.error(f'Error parsing key-value pairs: {e}')
 
 
-def add_argument(parser: argparse.ArgumentParser):
-    # yapf: disable
-    # Model and API
+# yapf: disable
+def _add_model_api_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--model', type=str, required=True, help='The test model name.')
-    parser.add_argument('--attn-implementation', required=False, default=None, help='Attention implementaion')
+    parser.add_argument('--attn-implementation', required=False, default=None, help='Attention implementation')
     parser.add_argument('--api', type=str, default='openai', help='Service API protocol: openai | openai_responses/responses | openai_embedding/embedding | openai_rerank/rerank | local/local_vllm. Determines the auto-appended endpoint path on --url.')  # noqa: E501
     parser.add_argument(
         '--tokenizer-path', type=str, required=False, default=None, help='Specify the tokenizer weight path')
 
-    # Connection settings
+
+def _add_connection_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--url', type=str, default='http://127.0.0.1:8877/v1/chat/completions')
     parser.add_argument('--port', type=int, default=8877, help='The port for local inference')
     parser.add_argument('--headers', nargs='+', dest='headers', action=ParseKVAction, help='Extra HTTP headers')
@@ -611,7 +634,8 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--total-timeout', type=int, default=6 * 60 * 60, help='The total timeout for each request')  # noqa: E501
     parser.add_argument('--no-test-connection', action='store_true', default=False, help='Do not test the connection before starting the benchmark')  # noqa: E501
 
-    # Performance and parallelism
+
+def _add_performance_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('-n', '--number', type=int, default=1000, nargs='+', help='How many requests to be made')
     parser.add_argument('--parallel', type=int, default=1, nargs='+', help='Set number of concurrency requests, default 1')  # noqa: E501
     parser.add_argument('--rate', type=float, default=-1, nargs='+',
@@ -634,7 +658,8 @@ def add_argument(parser: argparse.ArgumentParser):
              'matching trie). Warmup ignores this. When both --number and --duration are set, '
              'whichever limit is reached first ends the run.')  # noqa: E501
 
-    # SLA Auto-tuning
+
+def _add_sla_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--sla-auto-tune', action='store_true', default=False, help='Enable SLA auto-tuning')
     parser.add_argument('--sla-variable', type=str, default='parallel', choices=['parallel', 'rate'], help='The variable to tune, can be parallel or rate')  # noqa: E501
     parser.add_argument('--sla-params', type=json.loads, default=None, help='SLA constraints in JSON format')
@@ -644,7 +669,8 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--sla-fixed-parallel', type=int, default=None, help='Fixed parallel workers used when --sla-variable=rate. Defaults to --sla-upper-bound for backward compatibility.')  # noqa: E501
     parser.add_argument('--sla-number-multiplier', type=float, default=None, help='Multiplier for number of requests relative to parallel/rate in SLA auto-tuning. number = round(val * N). Defaults to 2 if not set.')  # noqa: E501
 
-    # Tuning knobs
+
+def _add_tuning_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--db-commit-interval', type=int, default=1000, help='Rows buffered before SQLite commit')
     parser.add_argument('--queue-size-multiplier', type=int, default=5, help='Queue maxsize = parallel * multiplier')
     parser.add_argument('--in-flight-task-multiplier', type=int, default=2, help='Max scheduled tasks = parallel * multiplier')  # noqa: E501
@@ -658,7 +684,8 @@ def add_argument(parser: argparse.ArgumentParser):
         ),
     )
 
-    # Logging and debugging
+
+def _add_logging_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--log-every-n-query', type=int, default=100, help='Logging every n query')
     parser.add_argument('--debug', action='store_true', default=False, help='Debug request send')
     parser.add_argument('--visualizer', type=str, default=None,
@@ -673,14 +700,15 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--name', type=str, help='The wandb/swanlab/clearml result name and result db name')
     parser.add_argument('--enable-progress-tracker', action='store_true', default=False, help='Enable progress tracker')
 
-    # Prompt settings
+
+def _add_prompt_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--max-prompt-length', type=int, default=131072, help='Maximum input prompt length')
     parser.add_argument('--min-prompt-length', type=int, default=0, help='Minimum input prompt length')
     parser.add_argument('--prefix-length', type=int, default=0, help='The prefix length')
     parser.add_argument('--prompt', type=str, required=False, default=None, help='Specified the request prompt')
     parser.add_argument('--query-template', type=str, default=None, help='Specify the query template')
     parser.add_argument(
-        '--apply-chat-template', type=argparse.BooleanOptionalAction, default=None, help='Apply chat template to the prompt')  # noqa: E501
+        '--apply-chat-template', action=argparse.BooleanOptionalAction, default=None, help='Apply chat template to the prompt')  # noqa: E501
     # random vl settings
     parser.add_argument('--image-width', type=int, default=224, help='Width of the image for random VL dataset')
     parser.add_argument('--image-height', type=int, default=224, help='Height of the image for random VL dataset')
@@ -688,11 +716,13 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--image-num', type=int, default=1, help='Number of images for random VL dataset')
     parser.add_argument('--image-patch-size', type=int, default=28, help='Patch size for image tokenizer, only for local image token calculation')  # noqa: E501
 
-    # Output settings
+
+def _add_output_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--outputs-dir', help='Outputs dir.', default='outputs')
     parser.add_argument('--no-timestamp', action='store_true', default=False, help='Do not add timestamp to output directory')  # noqa: E501
 
-    # Dataset settings
+
+def _add_dataset_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--dataset', type=str, default='openqa', help='Specify the dataset')
     parser.add_argument('--dataset-path', type=str, required=False, help='Path to the dataset file or directory')
     parser.add_argument(
@@ -713,7 +743,8 @@ def add_argument(parser: argparse.ArgumentParser):
         ),
     )
 
-    # Response settings
+
+def _add_response_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--frequency-penalty', type=float, help='The frequency_penalty value', default=None)
     parser.add_argument('--repetition-penalty', type=float, help='The repetition_penalty value', default=None)
     parser.add_argument('--logprobs', action='store_true', help='The logprobs', default=None)
@@ -741,7 +772,9 @@ def add_argument(parser: argparse.ArgumentParser):
             'Requires --tokenizer-path to be set.'
         ),
     )
-    # Multi-turn settings
+
+
+def _add_multi_turn_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         '--multi-turn',
         action='store_true',
@@ -786,7 +819,21 @@ def add_argument(parser: argparse.ArgumentParser):
             'use top-level --num-workers for live construction parallelism.'
         ),
     )
-    # yapf: enable
+
+
+def add_argument(parser: argparse.ArgumentParser) -> None:
+    _add_model_api_arguments(parser)
+    _add_connection_arguments(parser)
+    _add_performance_arguments(parser)
+    _add_sla_arguments(parser)
+    _add_tuning_arguments(parser)
+    _add_logging_arguments(parser)
+    _add_prompt_arguments(parser)
+    _add_output_arguments(parser)
+    _add_dataset_arguments(parser)
+    _add_response_arguments(parser)
+    _add_multi_turn_arguments(parser)
+# yapf: enable
 
 
 def parse_args():

@@ -283,7 +283,7 @@ class TaskConfig(BaseArgument):
 
     @field_validator('limit', mode='before')
     @classmethod
-    def _validate_limit(cls, v):
+    def _validate_limit(cls, v: Any) -> Any:
         if v is not None:
             v = parse_int_or_float(v)
             if v < 0:
@@ -294,7 +294,7 @@ class TaskConfig(BaseArgument):
 
     @field_validator('eval_config', mode='before')
     @classmethod
-    def _validate_eval_config(cls, v):
+    def _validate_eval_config(cls, v: Any) -> Any:
         if not v:
             return v
         if isinstance(v, dict):
@@ -315,7 +315,7 @@ class TaskConfig(BaseArgument):
 
     @field_validator('agent_config', mode='before')
     @classmethod
-    def _validate_agent_config(cls, v):
+    def _validate_agent_config(cls, v: Any) -> Any:
         if v is None or isinstance(v, (NativeAgentConfig, ExternalAgentConfig)):
             return v
         if isinstance(v, dict):
@@ -332,17 +332,13 @@ class TaskConfig(BaseArgument):
 
     @field_validator('judge_model_args', mode='before')
     @classmethod
-    def _validate_judge_model_args(cls, v):
+    def _validate_judge_model_args(cls, v: Any) -> Any:
         return _secretize_api_keys(v)
 
     @field_validator('sandbox', mode='before')
     @classmethod
-    def _validate_sandbox(cls, v):
-        if v is None or isinstance(v, SandboxTaskConfig):
-            return v
-        if isinstance(v, dict):
-            return SandboxTaskConfig.model_validate(v)
-        raise ValueError(f'`sandbox` must be a dict, SandboxTaskConfig or None, got {type(v).__name__}.')
+    def _validate_sandbox(cls, v: Any) -> Any:
+        return cls._coerce_sandbox_config(v)
 
     # --- Model validator (cross-field logic, replaces __post_init__) ---
 
@@ -363,7 +359,7 @@ class TaskConfig(BaseArgument):
 
         return self
 
-    def _parse_rag_eval_config(self):
+    def _parse_rag_eval_config(self) -> None:
         """Parse eval_config into typed Pydantic models for RAGEval backend."""
         if self.eval_backend != EvalBackend.RAG_EVAL or not isinstance(self.eval_config, dict):
             return
@@ -378,7 +374,7 @@ class TaskConfig(BaseArgument):
             from evalscope.backend.rag_eval.clip_benchmark.arguments import ClipBenchmarkToolConfig
             self.eval_config = ClipBenchmarkToolConfig(**self.eval_config)
 
-    def _init_model_and_id(self):
+    def _init_model_and_id(self) -> None:
         # Set model to DummyCustomModel if not provided
         if self.model is None:
             logger.info('No model is provided, using DummyCustomModel for testing.')
@@ -408,14 +404,13 @@ class TaskConfig(BaseArgument):
             return safe_filename(self.model.model_name)
         return 'dummy_model'
 
-    def _init_default_generation_config(self):
+    def _init_default_generation_config(self) -> None:
         # 1. Set defaults if empty
         if not self.generation_config:
             self.generation_config = self._get_default_generation_config()
 
         # 2. Validate/Convert to GenerateConfig object
-        if isinstance(self.generation_config, dict):
-            self.generation_config = GenerateConfig.model_validate(self.generation_config)
+        self.generation_config = self._coerce_generation_config(self.generation_config)
 
         # 3. Sync batch size
         self.generation_config.batch_size = self.eval_batch_size
@@ -435,7 +430,21 @@ class TaskConfig(BaseArgument):
 
         return {}
 
-    def _handle_generation_config_deprecations(self):
+    @staticmethod
+    def _coerce_generation_config(value: Union[Dict, GenerateConfig]) -> GenerateConfig:
+        if isinstance(value, GenerateConfig):
+            return value
+        return GenerateConfig.model_validate(value)
+
+    @staticmethod
+    def _coerce_sandbox_config(value: Any) -> Optional[SandboxTaskConfig]:
+        if value is None or isinstance(value, SandboxTaskConfig):
+            return value
+        if isinstance(value, dict):
+            return SandboxTaskConfig.model_validate(value)
+        raise ValueError(f'`sandbox` must be a dict, SandboxTaskConfig or None, got {type(value).__name__}.')
+
+    def _handle_generation_config_deprecations(self) -> None:
         assert isinstance(self.generation_config, GenerateConfig)
 
         if self.timeout is not None:
@@ -460,13 +469,13 @@ class TaskConfig(BaseArgument):
                 'The `n` parameter in generation_config is deprecated and will be removed in v2.0.0. Use `TaskConfig.repeats` instead.'
             )
 
-    def _init_default_model_args(self):
+    def _init_default_model_args(self) -> None:
         if self.model_args:
             return
         if self.model_task == ModelTask.TEXT_GENERATION and self.eval_type == EvalType.CHECKPOINT:
             self.model_args = DEFAULT_MODEL_ARGS_CHECKPOINT.copy()
 
-    def _init_default_sandbox_config(self):
+    def _init_default_sandbox_config(self) -> None:
         """Normalise sandbox configuration into ``self.sandbox``.
 
         After this method every consumer (``CodeExecutionSandboxMixin``, data adapters,
@@ -481,16 +490,11 @@ class TaskConfig(BaseArgument):
           * Otherwise ``sandbox`` is constructed from the legacy fields so
             historical task configs keep working.
         """
-        legacy_set = bool(self.use_sandbox) or (self.sandbox_type
-                                                not in (None, 'docker')) or bool(self.sandbox_manager_config)
+        legacy_set = self._legacy_sandbox_fields_set()
 
         if self.sandbox is None:
             # Build from legacy fields (possibly all defaults).
-            self.sandbox = SandboxTaskConfig(
-                enabled=bool(self.use_sandbox),
-                engine=self.sandbox_type or 'docker',
-                manager_config=dict(self.sandbox_manager_config or {}),
-            )
+            self.sandbox = self._build_sandbox_from_legacy_fields()
         elif legacy_set:
             deprecated_warning(
                 logger, 'Both `sandbox` and legacy sandbox fields '
@@ -503,6 +507,18 @@ class TaskConfig(BaseArgument):
             return
 
         check_import('ms_enclave', 'evalscope[sandbox]', raise_error=True)
+
+    def _legacy_sandbox_fields_set(self) -> bool:
+        return bool(self.use_sandbox) or (self.sandbox_type not in (None, 'docker')) or bool(
+            self.sandbox_manager_config
+        )
+
+    def _build_sandbox_from_legacy_fields(self) -> SandboxTaskConfig:
+        return SandboxTaskConfig(
+            enabled=bool(self.use_sandbox),
+            engine=self.sandbox_type or 'docker',
+            manager_config=dict(self.sandbox_manager_config or {}),
+        )
 
     @staticmethod
     def _deep_merge(base: dict, override: dict) -> dict:
@@ -521,9 +537,9 @@ class TaskConfig(BaseArgument):
         other = _secretize_api_keys(other)
         merged = self._deep_merge(self._to_update_dict(), other)
         if isinstance(merged.get('generation_config'), dict):
-            merged['generation_config'] = GenerateConfig.model_validate(merged['generation_config'])
+            merged['generation_config'] = self._coerce_generation_config(merged['generation_config'])
         if isinstance(merged.get('sandbox'), dict):
-            merged['sandbox'] = SandboxTaskConfig.model_validate(merged['sandbox'])
+            merged['sandbox'] = self._coerce_sandbox_config(merged['sandbox'])
         for key, value in merged.items():
             setattr(self, key, value)
 
@@ -543,7 +559,7 @@ class TaskConfig(BaseArgument):
             kwargs['mode'] = mode
         return self.generation_config.model_dump(**kwargs)
 
-    def dump_yaml(self, output_dir: str):
+    def dump_yaml(self, output_dir: str) -> None:
         """Dump the task configuration to a YAML file."""
         task_cfg_file = os.path.join(output_dir, f'task_config.yaml')
         try:
@@ -552,7 +568,7 @@ class TaskConfig(BaseArgument):
         except Exception as e:
             logger.warning(f'Failed to dump overall task config: {e}')
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         result = self.model_dump(mode='json', exclude={'model', 'generation_config'})
 
         # Serialize Model objects
