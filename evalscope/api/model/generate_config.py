@@ -1,8 +1,9 @@
 # flake8: noqa: E501
 from copy import deepcopy
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Any, Dict, List, Literal, Optional
 
+from evalscope.utils.argument_utils import secretize_auth_headers
 from evalscope.utils.json_schema import JSONSchema
 
 
@@ -151,7 +152,7 @@ class GenerateConfig(BaseModel):
     extra_query: Optional[Dict[str, Any]] = Field(default=None)
     """Extra query parameters to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, and SGLang only."""
 
-    extra_headers: Optional[Dict[str, str]] = Field(default=None)
+    extra_headers: Optional[Dict[str, Any]] = Field(default=None)
     """Extra headers to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, and SGLang only."""
 
     height: Optional[int] = Field(default=None)
@@ -175,6 +176,11 @@ class GenerateConfig(BaseModel):
                 'Use `anthropic_cache_strategy` to choose breakpoint placement.'
             )
         return data
+
+    @field_validator('extra_headers', mode='after')
+    @classmethod
+    def _validate_extra_headers(cls, value: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        return secretize_auth_headers(value)
 
     def merge(self, other: 'GenerateConfig') -> 'GenerateConfig':
         """Merge another model configuration into this one.

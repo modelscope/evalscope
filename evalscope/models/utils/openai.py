@@ -57,7 +57,7 @@ from evalscope.api.model import (
     as_stop_reason,
 )
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, parse_tool_call
-from evalscope.utils import get_logger
+from evalscope.utils import get_logger, get_secret_value
 from evalscope.utils.url_utils import (
     data_uri_to_base64,
     file_as_data_uri,
@@ -299,7 +299,7 @@ def openai_completion_params(model: str, config: GenerateConfig, tools: bool) ->
     if config.extra_query:
         params['extra_query'] = config.extra_query
     if config.extra_headers:
-        params['extra_headers'] = config.extra_headers
+        params['extra_headers'] = get_secret_value(config.extra_headers)
 
     return params
 

@@ -12,6 +12,7 @@ from evalscope.api.messages import (
 )
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelOutput, ModelUsage, StopReason
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, parse_tool_call
+from evalscope.utils import get_secret_value
 from evalscope.utils.url_utils import file_as_data_uri, is_data_uri, is_http_url
 from .openai import openai_assistant_content
 
@@ -149,7 +150,7 @@ def openai_response_params(model: str, config: GenerateConfig, tools: bool) -> D
     if config.extra_query:
         params['extra_query'] = config.extra_query
     if config.extra_headers:
-        params['extra_headers'] = config.extra_headers
+        params['extra_headers'] = get_secret_value(config.extra_headers)
     return params
 
 

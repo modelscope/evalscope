@@ -4,6 +4,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.constants import JudgeStrategy
 from evalscope.metrics import LLMJudge
+from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
@@ -78,7 +79,8 @@ class LLMJudgeMixin:
                     'LLM judge model arguments must be provided for LLM-based judge strategies. '
                     'Please check your task configuration.'
                 )
-            return LLMJudge(**self._task_config.judge_model_args)
+            judge_model_args = get_secret_value(self._task_config.judge_model_args)
+            return LLMJudge(**judge_model_args)
 
     def maybe_llm_match_score(
         self,

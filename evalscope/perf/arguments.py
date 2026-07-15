@@ -2,12 +2,12 @@ import argparse
 import json
 import os
 from contextlib import contextmanager
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from typing import Any, Dict, List, Optional, Union
 
 from evalscope.constants import DEFAULT_WORK_DIR, VisualizerType
 from evalscope.perf.multi_turn_args import IntOrRange, MultiTurnArgs, _sample_int_or_range
-from evalscope.utils import BaseArgument
+from evalscope.utils import BaseArgument, get_secret_value, secretize_auth_headers
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -63,7 +63,7 @@ class Arguments(BaseArgument):
     total_timeout: Optional[int] = 6 * 60 * 60
     """Total timeout in seconds."""
 
-    api_key: Optional[str] = None
+    api_key: Optional[SecretStr] = None
     """The API key for authentication."""
 
     no_test_connection: bool = False
@@ -208,11 +208,11 @@ class Arguments(BaseArgument):
     visualizer: Optional[str] = None
     """Visualizer for logging, supports 'swanlab' or 'wandb'."""
 
-    wandb_api_key: Optional[str] = None
+    wandb_api_key: Optional[SecretStr] = None
     """API key for wandb visualizer. [Deprecated] Prefer the WANDB_API_KEY env var; this field
     will be removed in a future release."""
 
-    swanlab_api_key: Optional[str] = None
+    swanlab_api_key: Optional[SecretStr] = None
     """API key for swanlab visualizer. [Deprecated] Prefer the SWANLAB_API_KEY env var; this
     field will be removed in a future release."""
 
@@ -407,6 +407,11 @@ class Arguments(BaseArgument):
             return MultiTurnArgs(**v)
         return v
 
+    @field_validator('headers', mode='after')
+    @classmethod
+    def _validate_headers(cls, v: Dict[str, Any]) -> Dict[str, Any]:
+        return secretize_auth_headers(v) or {}
+
     @field_validator('rate', mode='before')
     @classmethod
     def _validate_rate(cls, v):
@@ -456,8 +461,9 @@ class Arguments(BaseArgument):
     def _post_init(self) -> 'Arguments':
         # Set the default headers
         self.headers = self.headers or {}
-        if self.api_key:
-            self.headers['Authorization'] = f'Bearer {self.api_key}'
+        api_key = get_secret_value(self.api_key)
+        if api_key:
+            self.headers['Authorization'] = SecretStr(f'Bearer {api_key}')
 
         # Set the model ID based on the model name
         self.model_id = os.path.basename(self.model)
@@ -561,6 +567,10 @@ class Arguments(BaseArgument):
             yield path
         finally:
             self.outputs_dir = original_path
+
+    def to_dict(self) -> dict:
+        """Convert the instance to a display-safe dictionary."""
+        return self.model_dump(mode='json')
 
 
 class ParseKVAction(argparse.Action):

@@ -15,6 +15,7 @@ from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.report import Report
+from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.function_utils import thread_safe
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
@@ -179,7 +180,7 @@ class BFCLV4Adapter(AgentAdapter):
 
         # Set env variables for OpenAI API
         base_url = _normalize_openai_base_url(self._task_config.api_url)
-        os.environ['OPENAI_API_KEY'] = self._task_config.api_key
+        os.environ['OPENAI_API_KEY'] = get_secret_value(self._task_config.api_key) or ''
         if base_url:
             os.environ['OPENAI_BASE_URL'] = base_url
         else:

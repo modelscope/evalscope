@@ -16,6 +16,7 @@ from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType, JudgeStrategy, Tags
+from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 from .utils import (
@@ -327,7 +328,7 @@ class ClawEvalAdapter(AgentAdapter):
                 'temperature': getattr(model.config, 'temperature', 0.0),
             },
             'judge': {
-                'api_key': judge_args.get('api_key') or api_key,
+                'api_key': get_secret_value(judge_args.get('api_key')) or api_key,
                 'base_url': judge_args.get('api_url') or judge_args.get('base_url') or base_url,
                 'model_id': judge_model or model.name,
                 'enabled': not no_judge,
@@ -370,7 +371,7 @@ class ClawEvalAdapter(AgentAdapter):
 
     def _resolve_api_key(self, model: Model) -> Optional[str]:
         if self._task_config is not None:
-            return self._task_config.api_key
+            return get_secret_value(self._task_config.api_key)
         return getattr(model.api, 'api_key', None)
 
     def _redact_official_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
