@@ -509,9 +509,8 @@ class TaskConfig(BaseArgument):
         check_import('ms_enclave', 'evalscope[sandbox]', raise_error=True)
 
     def _legacy_sandbox_fields_set(self) -> bool:
-        return bool(self.use_sandbox) or (self.sandbox_type not in (None, 'docker')) or bool(
-            self.sandbox_manager_config
-        )
+        return bool(self.use_sandbox) or (self.sandbox_type
+                                          not in (None, 'docker')) or bool(self.sandbox_manager_config)
 
     def _build_sandbox_from_legacy_fields(self) -> SandboxTaskConfig:
         return SandboxTaskConfig(

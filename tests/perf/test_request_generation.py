@@ -1,5 +1,5 @@
-import asyncio
 import argparse
+import asyncio
 import numpy as np
 from pytest import MonkeyPatch
 from typing import Dict, Iterator, List, Optional, Tuple
@@ -68,6 +68,18 @@ def _parse_perf_args(argv: List[str]) -> Arguments:
     parser = argparse.ArgumentParser()
     add_argument(parser)
     return Arguments.from_args(parser.parse_args(argv))
+
+
+def test_sweep_scalar_strings_are_normalized_to_lists() -> None:
+    args = _make_args(number='10', parallel='2')
+
+    assert args.number == [10]
+    assert args.parallel == [2]
+
+    args = _make_args(number='10', rate='5.0', open_loop=True)
+
+    assert args.number == [10]
+    assert args.rate == [5.0]
 
 
 def test_parallel_dataset_generation_hook_preserves_order_and_warmup() -> None:

@@ -27,10 +27,12 @@ _OPENAI_RESPONSES_APIS = ('openai_responses', 'openai_response', 'responses')
 _KNOWN_OPENAI_ENDPOINTS = ('chat/completions', 'completions', 'responses', 'embeddings', 'reranks')
 
 
-def _as_list_if_scalar(value: Any, scalar_type: Any) -> Any:
-    if isinstance(value, scalar_type):
-        return [value]
-    return value
+def _as_list_if_scalar(value: Any) -> Any:
+    if value is None:
+        return value
+    if isinstance(value, (list, tuple, set)):
+        return list(value)
+    return [value]
 
 
 def _at_least_one(value: int) -> int:
@@ -426,17 +428,17 @@ class Arguments(BaseArgument):
     @field_validator('rate', mode='before')
     @classmethod
     def _validate_rate(cls, v: Any) -> Any:
-        return _as_list_if_scalar(float(v), (int, float)) if isinstance(v, (int, float)) else v
+        return _as_list_if_scalar(v)
 
     @field_validator('number', mode='before')
     @classmethod
     def _validate_number(cls, v: Any) -> Any:
-        return _as_list_if_scalar(v, int)
+        return _as_list_if_scalar(v)
 
     @field_validator('parallel', mode='before')
     @classmethod
     def _validate_parallel(cls, v: Any) -> Any:
-        return _as_list_if_scalar(v, int)
+        return _as_list_if_scalar(v)
 
     @field_validator('db_commit_interval', mode='after')
     @classmethod

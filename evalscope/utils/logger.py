@@ -59,26 +59,17 @@ warning_set = set()
 
 
 def _get_loaded_torch_distributed() -> Optional[ModuleType]:
-    if 'torch' not in sys.modules:
-        return None
-
-    try:
-        import torch.distributed as dist
-    except Exception:
-        return None
-    return dist
+    return sys.modules.get('torch.distributed')
 
 
 def _is_torch_dist() -> bool:
     dist = _get_loaded_torch_distributed()
-    if dist is None:
-        return False
-    return dist.is_available() and dist.is_initialized()
+    return dist is not None and dist.is_available() and dist.is_initialized()
 
 
 def _is_torch_master() -> bool:
     dist = _get_loaded_torch_distributed()
-    if dist is None or not _is_torch_dist():
+    if dist is None or not (dist.is_available() and dist.is_initialized()):
         return True
     return dist.get_rank() == 0
 
