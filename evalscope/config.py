@@ -4,7 +4,7 @@ import copy
 import json
 import os
 from argparse import Namespace
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from typing import Annotated, Any, Dict, List, Optional, Union
 
 from evalscope.agent.external.config import ExternalAgentConfig
@@ -32,6 +32,24 @@ AgentConfigUnion = Annotated[
 ]
 
 logger = get_logger()
+
+
+def _secretize_api_keys(value: Any) -> Any:
+    if isinstance(value, SecretStr):
+        return value
+    if isinstance(value, list):
+        return [_secretize_api_keys(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+
+    result = {}
+    for key, val in value.items():
+        if key == 'api_key' and isinstance(val, str):
+            result[key] = SecretStr(val)
+        else:
+            result[key] = _secretize_api_keys(val)
+    return result
+
 
 # Default configurations
 DEFAULT_IMAGE_GEN_CONFIG = {
@@ -189,7 +207,7 @@ class TaskConfig(BaseArgument):
     api_url: Optional[str] = None
     """API endpoint URL for server-based model evaluation."""
 
-    api_key: Optional[str] = 'EMPTY'
+    api_key: Optional[SecretStr] = SecretStr('EMPTY')
     """API key for authenticating with server-based models."""
 
     timeout: Optional[float] = None
@@ -311,6 +329,11 @@ class TaskConfig(BaseArgument):
             f'`agent_config` must be a dict, NativeAgentConfig, ExternalAgentConfig or None, '
             f'got {type(v).__name__}.'
         )
+
+    @field_validator('judge_model_args', mode='before')
+    @classmethod
+    def _validate_judge_model_args(cls, v):
+        return _secretize_api_keys(v)
 
     @field_validator('sandbox', mode='before')
     @classmethod
@@ -492,12 +515,33 @@ class TaskConfig(BaseArgument):
                 result[key] = copy.deepcopy(value)
         return result
 
-    def update(self, other: Union['TaskConfig', dict]):
+    def update(self, other: Union['TaskConfig', dict]) -> None:
         if isinstance(other, TaskConfig):
-            other = other.to_dict()
-        merged = self._deep_merge(self.to_dict(), other)
+            other = other._to_update_dict()
+        other = _secretize_api_keys(other)
+        merged = self._deep_merge(self._to_update_dict(), other)
+        if isinstance(merged.get('generation_config'), dict):
+            merged['generation_config'] = GenerateConfig.model_validate(merged['generation_config'])
+        if isinstance(merged.get('sandbox'), dict):
+            merged['sandbox'] = SandboxTaskConfig.model_validate(merged['sandbox'])
         for key, value in merged.items():
             setattr(self, key, value)
+
+    def _to_update_dict(self) -> dict:
+        result = self.model_dump(exclude={'model', 'generation_config', 'sandbox'})
+        result['model'] = self.model
+        result['generation_config'] = self._dump_generation_config()
+        result['sandbox'] = self.sandbox
+        return result
+
+    def _dump_generation_config(self, mode: Optional[str] = None) -> Union[dict, GenerateConfig, None]:
+        if not isinstance(self.generation_config, GenerateConfig):
+            return self.generation_config
+
+        kwargs = {'exclude_unset': True}
+        if mode is not None:
+            kwargs['mode'] = mode
+        return self.generation_config.model_dump(**kwargs)
 
     def dump_yaml(self, output_dir: str):
         """Dump the task configuration to a YAML file."""
@@ -509,23 +553,16 @@ class TaskConfig(BaseArgument):
             logger.warning(f'Failed to dump overall task config: {e}')
 
     def to_dict(self):
-        result = self.model_dump()
-
-        # Remove sensitive info
-        result.pop('api_key', None)
-
-        # Handle nested sensitive info in judge_model_args
-        if self.judge_model_args:
-            result['judge_model_args'] = copy.deepcopy(self.judge_model_args)
-            result['judge_model_args'].pop('api_key', None)
+        result = self.model_dump(mode='json', exclude={'model', 'generation_config'})
 
         # Serialize Model objects
         if isinstance(self.model, (Model, ModelAPI)):
             result['model'] = self.model.__class__.__name__
+        else:
+            result['model'] = self.model
 
         # Serialize GenerateConfig
-        if isinstance(self.generation_config, GenerateConfig):
-            result['generation_config'] = self.generation_config.model_dump(exclude_unset=True)
+        result['generation_config'] = self._dump_generation_config(mode='json')
 
         return result
 

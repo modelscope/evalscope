@@ -9,6 +9,7 @@ from evalscope.api.metric import Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.utils.argument_utils import get_secret_value
 from .client import (
     DEFAULT_POLL_INTERVAL_SECONDS,
     DEFAULT_SERVER_HOST,
@@ -366,7 +367,7 @@ class ToolathlonAdapter(AgentAdapter):
 
     def _resolve_api_key(self, model: Model) -> Optional[str]:
         if self._task_config is not None and self._task_config.api_key:
-            return self._task_config.api_key
+            return get_secret_value(self._task_config.api_key)
         return getattr(model.api, 'api_key', None)
 
     def _resolve_model_params(self, model: Model) -> Dict[str, Any]:

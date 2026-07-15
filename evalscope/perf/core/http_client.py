@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.benchmark_util import BenchmarkData
+from evalscope.utils.argument_utils import SECRET_HEADER_KEYS, get_secret_value
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
@@ -21,7 +22,7 @@ class AioHttpClient:
         api_plugin: 'ApiPluginBase',
     ):
         self.url = args.url
-        self.headers = {'user-agent': 'modelscope_bench', **(args.headers or {})}
+        self.headers = {'user-agent': 'modelscope_bench', **self._get_runtime_headers(args.headers or {})}
         self.total_timeout = args.total_timeout
         self.read_timeout = args.read_timeout
         self.connect_timeout = args.connect_timeout
@@ -50,6 +51,10 @@ class AioHttpClient:
             timeout=client_timeout,
             trace_configs=[self._create_trace_config()] if args.debug else []
         )
+
+    @staticmethod
+    def _get_runtime_headers(headers: dict) -> dict:
+        return {key: get_secret_value(value) for key, value in headers.items()}
 
     async def __aenter__(self):
         pass
@@ -87,7 +92,11 @@ class AioHttpClient:
 
     @staticmethod
     async def on_request_start(session, context, params: aiohttp.TraceRequestStartParams):
-        logger.debug(f'Starting request: <{params}>')
+        headers = {
+            key: '**********' if str(key).lower() in SECRET_HEADER_KEYS else value
+            for key, value in params.headers.items()
+        }
+        logger.debug(f'Starting request: <method={params.method}, url={params.url}, headers={headers}>')
 
     @staticmethod
     async def on_request_chunk_sent(session, context, params: aiohttp.TraceRequestChunkSentParams):
