@@ -3,8 +3,7 @@ import re
 import string
 import unicodedata
 from collections import Counter
-from nltk.stem import PorterStemmer
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 DATA_FILE = 'locomo10.json'
 CATEGORY_IDS = [4, 1, 2, 3, 5]
@@ -16,7 +15,7 @@ CATEGORY_NAMES = {
     5: 'adversarial',
 }
 PUNCTUATION_TABLE = str.maketrans('', '', string.punctuation)
-STEMMER = PorterStemmer()
+STEMMER: Optional[Any] = None
 
 CONV_START_PROMPT = (
     'Below is a conversation between two people: {} and {}. The conversation takes place over multiple days and '
@@ -131,7 +130,16 @@ def _normalize_answer(text: str) -> str:
 
 
 def _stem(word: str) -> str:
-    return STEMMER.stem(word)
+    return _get_stemmer().stem(word)
+
+
+def _get_stemmer() -> Any:
+    global STEMMER
+    if STEMMER is None:
+        from nltk.stem import PorterStemmer
+
+        STEMMER = PorterStemmer()
+    return STEMMER
 
 
 def _token_f1(prediction: str, reference: str) -> float:

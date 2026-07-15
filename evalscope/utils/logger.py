@@ -1,9 +1,10 @@
 import colorlog
-import importlib.util as iutil
 import logging
 import os
+import sys
 from datetime import datetime
 from logging import Logger
+from types import ModuleType
 from typing import List, Optional
 
 from evalscope.constants import BEIJING_TZ, USE_OSS, LoggingConstants
@@ -55,6 +56,31 @@ logging.getLogger('transformers_modules').setLevel(logging.ERROR)
 
 info_set = set()
 warning_set = set()
+
+
+def _get_loaded_torch_distributed() -> Optional[ModuleType]:
+    if 'torch' not in sys.modules:
+        return None
+
+    try:
+        import torch.distributed as dist
+    except Exception:
+        return None
+    return dist
+
+
+def _is_torch_dist() -> bool:
+    dist = _get_loaded_torch_distributed()
+    if dist is None:
+        return False
+    return dist.is_available() and dist.is_initialized()
+
+
+def _is_torch_master() -> bool:
+    dist = _get_loaded_torch_distributed()
+    if dist is None or not _is_torch_dist():
+        return True
+    return dist.get_rank() == 0
 
 
 def info_once(self, msg, *args, **kwargs):
@@ -154,13 +180,8 @@ def get_logger(
         return logger
 
     # handle duplicate logs to the console
-    torch_dist = False
-    is_worker0 = True
-    if iutil.find_spec('torch') is not None:
-        from modelscope.utils.torch_utils import is_dist, is_master
-
-        torch_dist = is_dist()
-        is_worker0 = is_master()
+    torch_dist = _is_torch_dist()
+    is_worker0 = _is_torch_master()
 
     if torch_dist:
         for handler in logger.root.handlers:
@@ -214,14 +235,7 @@ def add_file_handler_if_needed(
     if log_file is None:
         return
 
-    # Only worker-0 writes files
-    if iutil.find_spec('torch') is not None:
-        from modelscope.utils.torch_utils import is_master
-        is_worker0 = is_master()
-    else:
-        is_worker0 = True
-
-    if not is_worker0:
+    if not _is_torch_master():
         return
 
     target_path = os.path.abspath(log_file)
