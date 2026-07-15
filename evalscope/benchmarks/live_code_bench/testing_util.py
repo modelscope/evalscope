@@ -63,7 +63,7 @@ def _set_alarm(seconds: float) -> None:
     # ints, so a float timeout would truncate (e.g. 0.5 -> 0 cancels the
     # timeout, 1.9 -> 1 fires early). setitimer(ITIMER_REAL, 0) cancels, matching
     # alarm(0). Delivers SIGALRM, so the existing handler still fires.
-    if hasattr(signal, 'setitimer') and hasattr(signal, 'SIGALRM'):
+    if hasattr(signal, 'setitimer') and hasattr(signal, 'SIGALRM') and hasattr(signal, 'ITIMER_REAL'):
         signal.setitimer(signal.ITIMER_REAL, seconds)
 
 
@@ -398,7 +398,7 @@ def run_test(sample, test=None, debug=False, timeout=6):
     otherwise it'll just return an input and output pair.
     """
     timeout_handler_wrapper = partial(timeout_handler, debug)
-    if hasattr(signal, 'setitimer') and hasattr(signal, 'SIGALRM'):
+    if hasattr(signal, 'setitimer') and hasattr(signal, 'SIGALRM') and hasattr(signal, 'ITIMER_REAL'):
         signal.signal(signal.SIGALRM, timeout_handler_wrapper)
 
     # Disable functionalities that can make destructive changes to the test.
