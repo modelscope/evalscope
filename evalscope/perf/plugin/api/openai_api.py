@@ -2,14 +2,13 @@ import json
 import math
 import os
 from collections import defaultdict
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Union
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.multi_turn_args import _sample_int_or_range
 from evalscope.perf.plugin.api.default_api import DefaultApiPlugin
 from evalscope.perf.plugin.datasets.utils import load_tokenizer, tokenize_chat_messages
 from evalscope.perf.plugin.registry import register_api
-from evalscope.perf.types import AnnotatedBody
 from evalscope.utils.io_utils import base64_to_PIL
 from evalscope.utils.logger import get_logger
 
@@ -71,19 +70,11 @@ class OpenaiPlugin(DefaultApiPlugin):
 
                 # replace template messages with input messages.
                 query['messages'] = messages
-            elif isinstance(messages, AnnotatedBody):
-                query = dict(messages)
-                mode = messages.compose_mode
-                if mode == 'passthrough':
-                    return query
-                elif mode == 'fill':
-                    return self.__compose_query_from_parameter(query, param, preserve_existing=True)
-                elif mode == 'override':
-                    return self.__compose_query_from_parameter(query, param, preserve_existing=False)
-                else:
-                    raise ValueError(f'Invalid compose mode: {mode}')
             elif isinstance(messages, dict):
-                query = messages
+                # A complete request body (e.g. a line_by_line JSON object). Honor the
+                # user-provided fields and only fill in generation params that are
+                # missing, so CLI-level defaults do not silently overwrite the body.
+                return self.__compose_query_from_parameter(dict(messages), param, preserve_existing=True)
             elif isinstance(messages, str):
                 query = {'prompt': messages}
             else:
@@ -126,7 +117,7 @@ class OpenaiPlugin(DefaultApiPlugin):
 
     def __compose_query_from_parameter(self, payload: Dict, param: Arguments, preserve_existing: bool = False):
 
-        def _set(key, value):
+        def _set(key: str, value: Any) -> None:
             if preserve_existing:
                 payload.setdefault(key, value)
             else:

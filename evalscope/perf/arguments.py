@@ -278,12 +278,6 @@ class Arguments(BaseArgument):
     Defaults to 'modelscope' when not specified. When --dataset-path points to a local
     directory containing Arrow/Parquet files, this is automatically treated as 'local'."""
 
-    dataset_args: Optional[Dict[str, Any]] = None
-    """Dataset-specific parameters as a JSON object.
-
-    Supported keys depend on ``--dataset``; see each dataset plugin's docstring.
-    """
-
     dataset_offset: int = 0
     """Global token-sequence offset for random datasets.
 
@@ -588,16 +582,6 @@ class ParseKVAction(argparse.Action):
                 parser.error(f'Error parsing key-value pairs: {e}')
 
 
-def _parse_dataset_args(value: str) -> Dict[str, Any]:
-    try:
-        parsed = json.loads(value)
-    except json.JSONDecodeError as e:
-        raise argparse.ArgumentTypeError(f'Invalid JSON for --dataset-args: {e}') from e
-    if not isinstance(parsed, dict):
-        raise argparse.ArgumentTypeError('--dataset-args must be a JSON object, e.g. \'{"body_compose_mode": "fill"}\'')
-    return parsed
-
-
 def add_argument(parser: argparse.ArgumentParser):
     # yapf: disable
     # Model and API
@@ -716,15 +700,6 @@ def add_argument(parser: argparse.ArgumentParser):
             'Global token-sequence offset for random datasets. '
             'Automatically incremented between runs to avoid KV-cache hits. '
             'Default 0.'
-        ),
-    )
-    parser.add_argument(
-        '--dataset-args',
-        type=_parse_dataset_args,
-        default=None,
-        help=(
-            'Dataset-specific parameters as a JSON object. '
-            'Supported keys depend on --dataset; see each dataset plugin\'s docstring.'
         ),
     )
 
