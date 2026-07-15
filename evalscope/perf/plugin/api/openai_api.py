@@ -2,7 +2,7 @@ import json
 import math
 import os
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Union
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.multi_turn_args import _sample_int_or_range
@@ -71,7 +71,10 @@ class OpenaiPlugin(DefaultApiPlugin):
                 # replace template messages with input messages.
                 query['messages'] = messages
             elif isinstance(messages, dict):
-                query = messages
+                # A complete request body (e.g. a line_by_line JSON object). Honor the
+                # user-provided fields and only fill in generation params that are
+                # missing, so CLI-level defaults do not silently overwrite the body.
+                return self.__compose_query_from_parameter(dict(messages), param, preserve_existing=True)
             elif isinstance(messages, str):
                 query = {'prompt': messages}
             else:
@@ -112,37 +115,52 @@ class OpenaiPlugin(DefaultApiPlugin):
         logger.warning(f'_messages_to_token_ids: unexpected messages type {type(messages)}, returning []')
         return []
 
-    def __compose_query_from_parameter(self, payload: Dict, param: Arguments):
-        payload['model'] = param.model
+    def __compose_query_from_parameter(self, payload: Dict, param: Arguments, preserve_existing: bool = False):
+
+        def _set(key: str, value: Any) -> None:
+            if preserve_existing:
+                payload.setdefault(key, value)
+            else:
+                payload[key] = value
+
+        _set('model', param.model)
         if param.max_tokens is not None:
-            payload['max_tokens'] = _sample_int_or_range(param.max_tokens)
+            _set('max_tokens', _sample_int_or_range(param.max_tokens))
         if param.min_tokens is not None:
-            payload['min_tokens'] = param.min_tokens
+            _set('min_tokens', param.min_tokens)
         if param.frequency_penalty is not None:
-            payload['frequency_penalty'] = param.frequency_penalty
+            _set('frequency_penalty', param.frequency_penalty)
         if param.repetition_penalty is not None:
-            payload['repetition_penalty'] = param.repetition_penalty
+            _set('repetition_penalty', param.repetition_penalty)
         if param.logprobs is not None:
-            payload['logprobs'] = param.logprobs
+            _set('logprobs', param.logprobs)
         if param.n_choices is not None:
-            payload['n'] = param.n_choices
+            _set('n', param.n_choices)
         if param.seed is not None:
-            payload['seed'] = param.seed
+            _set('seed', param.seed)
         if param.stop is not None:
-            payload['stop'] = param.stop
-        if param.stream is not None and param.stream:
-            payload['stream'] = param.stream
-            payload['stream_options'] = {'include_usage': True}
+            _set('stop', param.stop)
+        if param.stream is not None:
+            _set('stream', param.stream)
+        if payload.get('stream') is True:
+            if not preserve_existing or 'stream_options' not in payload:
+                payload['stream_options'] = {'include_usage': True}
+        else:
+            payload.pop('stream_options', None)
         if param.stop_token_ids is not None:
-            payload['stop_token_ids'] = param.stop_token_ids
+            _set('stop_token_ids', param.stop_token_ids)
         if param.temperature is not None:
-            payload['temperature'] = param.temperature
+            _set('temperature', param.temperature)
         if param.top_p is not None:
-            payload['top_p'] = param.top_p
+            _set('top_p', param.top_p)
         if param.top_k is not None:
-            payload['top_k'] = param.top_k
+            _set('top_k', param.top_k)
         if param.extra_args is not None:
-            payload.update(param.extra_args)
+            if preserve_existing:
+                for k, v in param.extra_args.items():
+                    payload.setdefault(k, v)
+            else:
+                payload.update(param.extra_args)
         return payload
 
     def parse_responses(self, responses: List[Dict], request: str = None, **kwargs) -> tuple[int, int]:
