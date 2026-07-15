@@ -173,6 +173,16 @@ def test_apply_chat_template_boolean_cli_flags() -> None:
     assert disabled_args.apply_chat_template is False
 
 
+def test_tokenize_prompt_preserves_chat_template_default_before_redirect() -> None:
+    args = _make_args(
+        tokenize_prompt=True,
+        tokenizer_path='dummy-tokenizer',
+    )
+
+    assert args.url == 'http://127.0.0.1:8000/v1/completions'
+    assert args.apply_chat_template is True
+
+
 def test_random_dataset_parallel_uses_spawn_context() -> None:
     assert _get_random_generation_context().get_start_method() == 'spawn'
 

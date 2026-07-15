@@ -62,16 +62,45 @@ def _get_loaded_torch_distributed() -> Optional[ModuleType]:
     return sys.modules.get('torch.distributed')
 
 
+def _get_distributed_rank_from_env() -> Optional[int]:
+    for key in ('RANK', 'LOCAL_RANK'):
+        value = os.getenv(key)
+        if value is None:
+            continue
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _is_distributed_from_env() -> bool:
+    world_size = os.getenv('WORLD_SIZE')
+    if world_size is None:
+        return _get_distributed_rank_from_env() is not None
+    try:
+        return int(world_size) > 1
+    except ValueError:
+        return False
+
+
 def _is_torch_dist() -> bool:
     dist = _get_loaded_torch_distributed()
-    return dist is not None and dist.is_available() and dist.is_initialized()
+    if dist is not None:
+        return dist.is_available() and dist.is_initialized()
+    return _is_distributed_from_env()
 
 
 def _is_torch_master() -> bool:
     dist = _get_loaded_torch_distributed()
-    if dist is None or not (dist.is_available() and dist.is_initialized()):
-        return True
-    return dist.get_rank() == 0
+    if dist is not None and dist.is_available() and dist.is_initialized():
+        return dist.get_rank() == 0
+
+    rank = _get_distributed_rank_from_env()
+    if rank is not None:
+        return rank == 0
+
+    return True
 
 
 def info_once(self, msg, *args, **kwargs):

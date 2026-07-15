@@ -475,12 +475,15 @@ class Arguments(BaseArgument):
         # Set the model ID based on the model name
         self.model_id = os.path.basename(self.model)
 
-        # Set the URL based on the dataset type
-        self._resolve_url()
+        # Set the URL based on the dataset type.
+        self._resolve_local_url()
+        self._resolve_openai_compatible_url()
 
-        # Resolve apply_chat_template from the *original* URL before any redirects.
+        # Resolve apply_chat_template before tokenize_prompt redirects chat/completions to completions.
         if self.apply_chat_template is None:
             self.apply_chat_template = self.url.strip('/').endswith('chat/completions')
+
+        self._resolve_tokenize_prompt_url()
 
         # Validate sweep params (number/parallel/rate consistency)
         self._validate_sweep_params()
