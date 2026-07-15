@@ -78,8 +78,11 @@ class AioHttpClient:
             BenchmarkData: The benchmark data object containing request and response information.
         """
         try:
+            headers, request_id = self.api_plugin.extract_body_meta(body, self.headers)
             # Delegate the request processing to the API plugin
-            output = await self.api_plugin.process_request(self.client, self.url, self.headers, body)
+            output = await self.api_plugin.process_request(self.client, self.url, headers, body)
+            if request_id:
+                output.trace_id = request_id
             return output
         except asyncio.TimeoutError as e:
             logger.error(

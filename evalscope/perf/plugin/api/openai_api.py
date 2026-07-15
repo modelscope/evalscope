@@ -123,7 +123,8 @@ class OpenaiPlugin(DefaultApiPlugin):
             else:
                 payload[key] = value
 
-        _set('model', param.model)
+        if param.model is not None:
+            _set('model', param.model)
         if param.max_tokens is not None:
             _set('max_tokens', _sample_int_or_range(param.max_tokens))
         if param.min_tokens is not None:

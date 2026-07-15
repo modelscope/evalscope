@@ -41,7 +41,7 @@ def _at_least_one(value: int) -> int:
 
 class Arguments(BaseArgument):
     # Model and API
-    model: str
+    model: Optional[str] = None
     """Model name or path."""
 
     model_id: Optional[str] = None
@@ -493,7 +493,12 @@ class Arguments(BaseArgument):
             self.headers['Authorization'] = SecretStr(f'Bearer {api_key}')
 
         # Set the model ID based on the model name
-        self.model_id = os.path.basename(self.model)
+        self.model_id = os.path.basename(self.model) if self.model else (self.dataset or 'unknown')
+
+        if self.model is None:
+            from evalscope.perf.plugin.registry import DatasetRegistry
+            if not self.dataset or DatasetRegistry.get_class(self.dataset).requires_model:
+                raise ValueError('--model is required.')
 
         # Set the URL based on the dataset type.
         self._resolve_local_url()
@@ -636,7 +641,10 @@ class Arguments(BaseArgument):
                 f'but got number: {self.number} and rate: {self.rate}'
             )
         if not all(r > 0 for r in self.rate):
-            raise ValueError(f'In open-loop mode all --rate values must be > 0, but got: {self.rate}')
+            from evalscope.perf.plugin.registry import DatasetRegistry
+            dataset_cls = DatasetRegistry.get_class(self.dataset)
+            if not dataset_cls.provides_arrival_schedule:
+                raise ValueError(f'In open-loop mode all --rate values must be > 0, but got: {self.rate}')
         # In open-loop mode concurrency is unbounded; set parallel=-1 so downstream
         # display layers render it as INF instead of a numeric value.
         self.parallel = [-1]
@@ -696,7 +704,7 @@ class ParseKVAction(argparse.Action):
 
 # yapf: disable
 def _add_model_api_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument('--model', type=str, required=True, help='The test model name.')
+    parser.add_argument('--model', type=str, default=None, help='The test model name.')
     parser.add_argument('--attn-implementation', required=False, default=None, help='Attention implementation')
     parser.add_argument('--api', type=str, default='openai', help='Service API protocol: openai | openai_responses/responses | openai_embedding/embedding | openai_rerank/rerank | local/local_vllm. Determines the auto-appended endpoint path on --url.')  # noqa: E501
     parser.add_argument(
@@ -715,7 +723,7 @@ def _add_connection_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def _add_performance_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument('-n', '--number', type=int, default=1000, nargs='+', help='How many requests to be made')
+    parser.add_argument('-n', '--number', type=int, default=None, nargs='+', help='How many requests to be made')
     parser.add_argument('--parallel', type=int, default=1, nargs='+', help='Set number of concurrency requests, default 1')  # noqa: E501
     parser.add_argument('--rate', type=float, default=-1, nargs='+',
                         help='Number of requests per second. default -1 means no rate limit. '
