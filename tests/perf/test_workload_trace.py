@@ -266,11 +266,14 @@ class TestValidation:
         with pytest.raises(ValueError, match=r'(?s)line 1.*timestamp.*(?:missing|required)'):
             WorkloadTraceDatasetPlugin(_make_args(path))
 
-    def test_non_monotonic_timestamps(self, tmp_path):
+    def test_non_monotonic_timestamps_sorted(self, tmp_path, caplog):
         records = [_record(timestamp=5.0), _record(timestamp=3.0)]
         path = _make_trace_file(records, tmp_path)
-        with pytest.raises(ValueError, match='monotonically non-decreasing'):
-            WorkloadTraceDatasetPlugin(_make_args(path))
+        plugin = WorkloadTraceDatasetPlugin(_make_args(path))
+        # Should sort rather than reject
+        assert plugin._records[0].timestamp == 3.0
+        assert plugin._records[1].timestamp == 5.0
+        assert 'not monotonic' in caplog.text
 
     def test_body_meta_key_collision(self, tmp_path):
         body = {'model': 'm', 'messages': [], BODY_META_HEADERS: {}}

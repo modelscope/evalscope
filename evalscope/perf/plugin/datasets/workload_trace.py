@@ -196,13 +196,9 @@ class WorkloadTraceDatasetPlugin(DatasetPluginBase):
         if not self._records:
             raise ValueError('workload_trace: dataset is empty')
 
-        for i in range(1, len(self._records)):
-            if self._records[i].timestamp < self._records[i - 1].timestamp:
-                raise ValueError(
-                    f'Timestamps must be monotonically non-decreasing: '
-                    f'record {i + 1} (t={self._records[i].timestamp}) < '
-                    f'record {i} (t={self._records[i - 1].timestamp})'
-                )
+        if any(self._records[i].timestamp < self._records[i - 1].timestamp for i in range(1, len(self._records))):
+            logger.warning('workload_trace: timestamps not monotonic, sorting by timestamp')
+        self._records.sort(key=lambda r: r.timestamp)
 
     def _compute_schedule(self) -> np.ndarray:
         if not self._records:
