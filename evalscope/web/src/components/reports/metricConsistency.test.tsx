@@ -54,7 +54,8 @@ function tableScoreText(report: ReportSummary): string {
       <ReportsTable
         reports={[report]}
         selected={[]}
-        compareMode={false}
+        allSelected={false}
+        onToggleSelectAll={() => {}}
         onToggleSelect={() => {}}
         onRowClick={() => {}}
       />

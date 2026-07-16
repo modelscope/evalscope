@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import type { MouseEvent } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportSummary } from '@/api/types'
 import { scoreColor } from '@/utils/colorScale'
@@ -9,9 +10,11 @@ interface ReportsTableProps {
   reports: ReportSummary[]
   /** Names currently selected for compare. */
   selected: string[]
-  /** Whether the explicit compare-selection mode is active. */
-  compareMode: boolean
-  /** Toggle a run's selection (only meaningful while in compare mode). */
+  /** Whether every run on the current page is selected. */
+  allSelected: boolean
+  /** Toggle every run on the current page. */
+  onToggleSelectAll: () => void
+  /** Toggle a run's selection. */
   onToggleSelect: (name: string) => void
   /** Navigate to a run's detail view. */
   onRowClick: (name: string) => void
@@ -21,23 +24,39 @@ function formatTimestamp(ts: string): string {
   return ts.replace('T', ' ').slice(0, 16)
 }
 
-function Checkbox({ checked }: { checked: boolean }) {
+function Checkbox({
+  checked,
+  label,
+  onClick,
+}: {
+  checked: boolean
+  label: string
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void
+}) {
   return (
-    <span
+    <button
+      type="button"
       role="checkbox"
       aria-checked={checked}
-      className="w-4.5 h-4.5 rounded-[var(--radius-xs)] border-2 flex items-center justify-center transition-all duration-150 shrink-0"
-      style={{
-        borderColor: checked ? 'var(--accent)' : 'var(--border-strong)',
-        background: checked ? 'var(--accent)' : 'transparent',
-      }}
+      aria-label={label}
+      onClick={onClick}
+      className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center"
     >
-      {checked && (
-        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="2,6 5,9 10,3" />
-        </svg>
-      )}
-    </span>
+      <span
+        aria-hidden="true"
+        className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border-2 transition-all duration-150"
+        style={{
+          borderColor: checked ? 'var(--accent)' : 'var(--border-strong)',
+          background: checked ? 'var(--accent)' : 'transparent',
+        }}
+      >
+        {checked && (
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="2,6 5,9 10,3" />
+          </svg>
+        )}
+      </span>
+    </button>
   )
 }
 
@@ -47,14 +66,14 @@ function Checkbox({ checked }: { checked: boolean }) {
  * Columns are fixed and ordered: model, dataset, time, samples, score, status
  * (Req 5.1, 5.2). Each run's model/dataset are derived through
  * `buildDisplayLabel` so the row shows a meaningful label rather than the raw
- * timestamped run name (Req 5.6). When compare mode is active a leading
- * selection column is shown and row clicks toggle selection instead of
- * navigating.
+ * timestamped run name (Req 5.6). A leading selection column is always visible
+ * while row clicks continue to open the report detail.
  */
 export default function ReportsTable({
   reports,
   selected,
-  compareMode,
+  allSelected,
+  onToggleSelectAll,
   onToggleSelect,
   onRowClick,
 }: ReportsTableProps) {
@@ -66,7 +85,9 @@ export default function ReportsTable({
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-[var(--border)] text-left">
-            {compareMode && <th scope="col" className="w-10 px-4 py-3" />}
+            <th scope="col" className="w-10 px-4 py-3">
+              <Checkbox checked={allSelected} label={t('reports.selectAll')} onClick={onToggleSelectAll} />
+            </th>
             {/* Fixed, ordered columns: model, dataset, time, samples, score, status */}
             <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">
               {t('reports.columns.model')}
@@ -95,32 +116,25 @@ export default function ReportsTable({
             const model = report.model_name || parsed.model || report.name
             const dataset = report.dataset_name || parsed.dataset
             const score = formatMetricByKey('score', report.score, t)
-            const handleClick = () => {
-              if (compareMode) onToggleSelect(report.name)
-              else onRowClick(report.name)
-            }
             return (
               <tr
                 key={report.name}
-                onClick={handleClick}
+                onClick={() => onRowClick(report.name)}
                 className={cn(
                   'border-b border-[var(--border)] last:border-b-0 cursor-pointer transition-colors',
                   isSelected ? 'bg-[var(--accent-dim)]' : 'hover:bg-[var(--bg-card2)]',
                 )}
               >
-                {compareMode && (
-                  <td className="px-4 py-3">
-                    <span
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onToggleSelect(report.name)
-                      }}
-                      className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] -m-3 p-3 cursor-pointer"
-                    >
-                      <Checkbox checked={isSelected} />
-                    </span>
-                  </td>
-                )}
+                <td className="px-4 py-3">
+                  <Checkbox
+                    checked={isSelected}
+                    label={`${t('reports.selectReport')}: ${model}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onToggleSelect(report.name)
+                    }}
+                  />
+                </td>
                 <td className="px-4 py-3 font-semibold text-[var(--text)] break-words min-w-0">
                   {model}
                 </td>

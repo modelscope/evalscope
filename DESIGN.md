@@ -42,26 +42,26 @@ colors:
   # ────────────────────────────────────────────────────────────────
 
   # Surface ladder — warm-cream, sunken → elevated
-  bg-light: "#faf9f5"            # warm cream canvas — was cool #f5f6fa
-  bg-deep-light: "#f0ebe1"       # input wells, one step below canvas — was cool #e8eaf2
-  bg-card-light: "#ffffff"       # pure white — strongest possible contrast against cream canvas
-  bg-card2-light: "#f5f0e7"      # hover / elevated — warm cream-soft, was cool #eef0f7
-  surface-glass-light: "rgba(250, 249, 245, 0.80)"  # warm-tinted glass — was pure white
+  bg-light: "#faf9f5" # warm cream canvas — was cool #f5f6fa
+  bg-deep-light: "#f0ebe1" # input wells, one step below canvas — was cool #e8eaf2
+  bg-card-light: "#ffffff" # pure white — strongest possible contrast against cream canvas
+  bg-card2-light: "#f5f0e7" # hover / elevated — warm cream-soft, was cool #eef0f7
+  surface-glass-light: "rgba(250, 249, 245, 0.80)" # warm-tinted glass — was pure white
 
   # Accent (unchanged from dark — violet is the brand constant)
   accent-light: "#6c57e8"
-  accent-dim-light: "rgba(108, 87, 232, 0.14)"   # slightly stronger on white card
+  accent-dim-light: "rgba(108, 87, 232, 0.14)" # slightly stronger on white card
 
   # Text — warm-ink ladder
-  text-light: "#141413"          # warm near-black — was cool #1a1f2e
-  text-muted-light: "#6c6a64"    # warm grey — was cool #5a6378
-  text-dim-light: "#8e8b82"      # warm grey — was cool #7c8497
+  text-light: "#141413" # warm near-black — was cool #1a1f2e
+  text-muted-light: "#6c6a64" # warm grey — was cool #5a6378
+  text-dim-light: "#8e8b82" # warm grey — was cool #7c8497
 
   # Hairlines — SOLID warm hex, not translucent violet. Three concrete tones.
   # Critical: translucent violet at 0.20 alpha composites to near-invisible
   # on white cards. Solid warm-grey gives every card a definite boundary.
-  border-light: "#e6dfd8"        # standard hairline — was rgba(violet,0.20)
-  border-md-light: "#d6cdbe"     # emphasized — was rgba(violet,0.30)
+  border-light: "#e6dfd8" # standard hairline — was rgba(violet,0.20)
+  border-md-light: "#d6cdbe" # emphasized — was rgba(violet,0.30)
   border-strong-light: "#c1b6a3" # hover / focus boundary — was rgba(violet,0.40)
 
   # Compare slot accents (per-model tagging in compare view)
@@ -155,11 +155,11 @@ fontFamily:
   mono: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", "DejaVu Sans Mono", "Courier New", monospace'
 rounded:
   none: 0px
-  xs: 4px
-  sm: 8px
-  md: 12px
-  lg: 16px
-  xl: 20px
+  xs: "4px"
+  sm: "8px"
+  md: "12px"
+  lg: "16px"
+  xl: "20px"
   full: 9999px
 spacing:
   xs: 4px
@@ -243,7 +243,7 @@ Type is the second decisive voice and is **theme-agnostic**. The brand uses cros
 
 ## Design Tokens {#tokens}
 
-> **Addressable section — `tokens`.** The executable token reference: color, typography, layout, elevation, and shape scales. The canonical machine-readable values live in this document's YAML frontmatter and the single source of truth at `evalscope/web/design/tokens.source.ts`; the drift check (`scripts/drift/tokenDrift.ts`) enforces byte-for-byte parity between the frontmatter, the CSS custom properties in `src/index.css`, and that SSOT.
+> **Addressable section — `tokens`.** The executable token reference: color, typography, layout, elevation, and shape scales. Runtime CSS custom properties in `evalscope/web/src/index.css` are the source of truth. `npm run design:tokens` synchronizes the matching frontmatter values, while the drift check fails CI when the generated documentation is stale.
 
 ### Colors
 
@@ -848,7 +848,7 @@ The brand loads no `@font-face`; cross-platform `system-ui` / `ui-monospace` sta
 
 ### D5 — Token single source of truth and drift governance
 
-Token values live once in `evalscope/web/design/tokens.source.ts` and are validated against both the CSS custom properties and this document's frontmatter by `scripts/drift/tokenDrift.ts`. The check never mutates the SSOT; on any inconsistency it fails and lists every drifting token.
+Token values live once in `evalscope/web/src/index.css`. Run `npm run design:tokens` after changing shared runtime tokens; `scripts/drift/tokenDrift.ts` verifies that this document's frontmatter was generated from the current CSS values.
 
 ### D6 — Additive, reversible migration
 

@@ -4,8 +4,28 @@ import { cn } from '@/lib/utils'
 import Skeleton from '@/components/ui/Skeleton'
 import { useLocale } from '@/contexts/LocaleContext'
 import DataTableFallback, { type DataTableModel } from '@/components/common/DataTableFallback'
-import { withTheme, type ChartTheme } from '@/domain/chart/chartTheme'
-import { classifyChartResponse, type ChartFailureKind } from '@/domain/chart/chartPreflight'
+
+type ChartTheme = 'light' | 'dark'
+type ChartFailureKind = '4xx' | '5xx' | 'timeout' | 'network'
+type ChartResponseClass = 'success' | '4xx' | '5xx'
+const THEME_PARAM = 'theme'
+
+function withTheme(baseSrc: string, theme: ChartTheme): string {
+  const hashIndex = baseSrc.indexOf('#')
+  const hash = hashIndex >= 0 ? baseSrc.slice(hashIndex) : ''
+  const withoutHash = hashIndex >= 0 ? baseSrc.slice(0, hashIndex) : baseSrc
+  const queryIndex = withoutHash.indexOf('?')
+  const path = queryIndex >= 0 ? withoutHash.slice(0, queryIndex) : withoutHash
+  const params = new URLSearchParams(queryIndex >= 0 ? withoutHash.slice(queryIndex + 1) : '')
+  params.set(THEME_PARAM, theme)
+  return `${path}?${params.toString()}${hash}`
+}
+
+function classifyChartResponse(status: number): ChartResponseClass {
+  if (status >= 500 && status < 600) return '5xx'
+  if (status >= 400 && status < 500) return '4xx'
+  return 'success'
+}
 
 /** Public phase of the chart lifecycle exposed to consumers (Req 2.6, 2.7). */
 export type ChartPhase =

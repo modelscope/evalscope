@@ -2,55 +2,85 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertCircle, Inbox, SearchX } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
-import { localeDictionaries, type Locale } from '@/i18n/translations'
-import {
-  buildEmptyStateSpec,
-  resolveEmptyState,
-  type EmptyLocaleMaps,
-  type EmptyReason,
-  type EmptyStateContext,
-  type ResolvedEmptyStateAction,
-} from '@/domain/empty/emptyState'
 import EmptyState from '@/components/common/EmptyState'
 import Button from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 
-/** Default locale used when the active locale lacks a string (Req 6.5). */
-const FALLBACK_LOCALE: Locale = 'en'
-
-/**
- * Upper bound on how long the empty state may take to appear after a load
- * completes (Req 6.1). The reveal delay is clamped to this budget so the empty
- * state is always shown within 300ms.
- */
 export const MAX_REVEAL_DELAY_MS = 300
 
-type NestedDict = { [key: string]: string | NestedDict }
+export type EmptyReason = 'no-data' | 'load-error' | 'no-match'
+export type EmptyStateView =
+  | 'dashboard'
+  | 'reports'
+  | 'evaluations'
+  | 'compare'
+  | 'performance'
+  | 'perf-compare'
+  | 'benchmarks'
 
-/** Flatten a nested translation dictionary into dot-separated keys. */
-function flattenDict(dict: NestedDict, prefix: string, out: Record<string, string>): Record<string, string> {
-  for (const [key, value] of Object.entries(dict)) {
-    const path = prefix ? `${prefix}.${key}` : key
-    if (typeof value === 'string') {
-      out[path] = value
-    } else {
-      flattenDict(value, path, out)
-    }
-  }
-  return out
+interface EmptyStateAction {
+  labelKey: string
+  navigateTo: string
 }
 
-/**
- * Flattened locale maps derived once from the static translation dictionaries.
- * Keys that are absent from a locale are simply missing from its map, which is
- * exactly what {@link resolveEmptyState} needs to trigger fallback (Req 6.5).
- */
-const LOCALE_MAPS: EmptyLocaleMaps = Object.fromEntries(
-  Object.entries(localeDictionaries).map(([locale, dict]) => [
-    locale,
-    flattenDict(dict as NestedDict, '', {}),
-  ]),
-)
+export interface ResolvedEmptyStateAction {
+  label: string
+  navigateTo: string
+}
+
+export interface EmptyStateContext {
+  view?: EmptyStateView
+  retryTo?: string
+  clearFiltersTo?: string
+  createTaskTo?: string
+  extraActions?: EmptyStateAction[]
+}
+
+const VIEW_ROUTES: Record<EmptyStateView, string> = {
+  dashboard: '/dashboard',
+  reports: '/reports',
+  evaluations: '/reports',
+  compare: '/compare',
+  performance: '/performance',
+  'perf-compare': '/perf-compare',
+  benchmarks: '/benchmarks',
+}
+
+function viewRoute(context: EmptyStateContext): string {
+  return context.view ? VIEW_ROUTES[context.view] : '/dashboard'
+}
+
+function createTaskRoute(context: EmptyStateContext): string {
+  if (context.createTaskTo?.trim()) return context.createTaskTo.trim()
+  if (context.view === 'performance' || context.view === 'perf-compare') return '/tasks?tab=perf'
+  if (context.view === 'reports' || context.view === 'evaluations' || context.view === 'compare') {
+    return '/tasks?tab=eval'
+  }
+  return '/tasks'
+}
+
+function actionsFor(reason: EmptyReason, context: EmptyStateContext): EmptyStateAction[] {
+  const actions: EmptyStateAction[] = reason === 'no-data'
+    ? [
+        { labelKey: 'empty.action.createTask', navigateTo: createTaskRoute(context) },
+        { labelKey: 'empty.action.browseBenchmarks', navigateTo: '/benchmarks' },
+      ]
+    : reason === 'load-error'
+      ? [
+          { labelKey: 'empty.action.retry', navigateTo: context.retryTo?.trim() || viewRoute(context) },
+          { labelKey: 'empty.action.backToDashboard', navigateTo: '/dashboard' },
+        ]
+      : [
+          { labelKey: 'empty.action.clearFilters', navigateTo: context.clearFiltersTo?.trim() || viewRoute(context) },
+          { labelKey: 'empty.action.createTask', navigateTo: createTaskRoute(context) },
+        ]
+
+  const seen = new Set<string>()
+  return [...actions, ...(context.extraActions ?? [])]
+    .map((action) => ({ ...action, navigateTo: action.navigateTo.trim() }))
+    .filter((action) => action.navigateTo && !seen.has(action.navigateTo) && seen.add(action.navigateTo))
+    .slice(0, 3)
+}
 
 /** Default reason-specific icon (28px Lucide, matching `EmptyState`). */
 const REASON_ICON: Record<EmptyReason, ReactNode> = {
@@ -60,31 +90,13 @@ const REASON_ICON: Record<EmptyReason, ReactNode> = {
 }
 
 export interface EmptyStateSystemProps {
-  /** The reason the view is empty; selects the message + default actions (Req 6.1). */
   reason: EmptyReason
-  /**
-   * When true the empty state is suppressed. Callers gate this on their loading
-   * flag so the empty state never flashes mid-load and only appears once a load
-   * has completed (Req 6.1).
-   */
   loading?: boolean
-  /** View context selecting default recovery targets and route overrides (Req 6.2, 6.3). */
   context?: EmptyStateContext
-  /** Override the default reason icon. */
   icon?: ReactNode
-  /** Optional already-localized secondary hint rendered under the message. */
   hint?: string
   className?: string
-  /**
-   * Per-action handler invoked before navigation. Return `true` to indicate the
-   * action was handled in-view (e.g. retry or clear-filters) and suppress the
-   * default route navigation. Any other return value falls through to navigation.
-   */
   onAction?: (action: ResolvedEmptyStateAction) => boolean | void
-  /**
-   * Delay before the empty state is revealed once loading completes. Clamped to
-   * `[0, MAX_REVEAL_DELAY_MS]`; defaults to 0 (revealed on the next render).
-   */
   revealDelayMs?: number
 }
 
@@ -100,15 +112,6 @@ function RevealAfterDelay({ delay, children }: { delay: number; children: ReactN
   return visible ? children : null
 }
 
-/**
- * Empty_State_System — actionable empty state (Req 6.1–6.5).
- *
- * Consumes the pure {@link buildEmptyStateSpec}/{@link resolveEmptyState} logic to
- * render a reason-specific message plus 1–3 in-product recovery actions. Each
- * action navigates to its corresponding in-product flow via the router (Req 6.2);
- * callers may intercept individual actions through {@link EmptyStateSystemProps.onAction}
- * to handle in-view recovery (retry, clear filters) without leaving the page.
- */
 export default function EmptyStateSystem({
   reason,
   loading = false,
@@ -119,14 +122,17 @@ export default function EmptyStateSystem({
   onAction,
   revealDelayMs = 0,
 }: EmptyStateSystemProps) {
-  const { locale } = useLocale()
+  const { t } = useLocale()
   const navigate = useNavigate()
   const delay = Math.min(Math.max(revealDelayMs, 0), MAX_REVEAL_DELAY_MS)
 
   const resolved = useMemo(() => {
-    const spec = buildEmptyStateSpec(reason, context ?? {})
-    return resolveEmptyState(spec, locale, FALLBACK_LOCALE, LOCALE_MAPS)
-  }, [reason, context, locale])
+    const actions = actionsFor(reason, context ?? {}).map((action) => ({
+      label: t(action.labelKey),
+      navigateTo: action.navigateTo,
+    }))
+    return { message: t(`empty.${reason}.message`), actions }
+  }, [reason, context, t])
 
   if (loading) return null
 

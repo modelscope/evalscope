@@ -46,14 +46,15 @@ function RunRow({ item, onClick }: { item: RunItem; onClick: () => void }) {
   const { t } = useLocale()
   const isEval = item.kind === 'eval'
   const model = isEval ? item.report.model_name : item.run.model
-  const sub = isEval
-    ? item.report.dataset_name
-    : `${item.run.dataset || item.run.api_type || 'perf'} · ${item.run.num_runs} runs`
+  const dataset = isEval ? item.report.dataset_name : item.run.dataset || item.run.api_type || 'perf'
+  const meta = isEval
+    ? `${item.report.num_samples} ${t('dashboard.samples')}`
+    : `${item.run.num_runs} ${t('dashboard.runs')}`
 
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-3 py-2.5 px-3 rounded-[var(--radius-sm)] hover:bg-[var(--bg-card2)] transition-colors w-full text-left"
+      className="grid min-h-14 w-full grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-2 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-card2)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)] md:grid-cols-[4.5rem_minmax(8rem,1fr)_minmax(10rem,1.5fr)_8rem_7rem_1rem] md:gap-x-3"
     >
       <Badge
         variant="default"
@@ -61,13 +62,18 @@ function RunRow({ item, onClick }: { item: RunItem; onClick: () => void }) {
       >
         {isEval ? 'Eval' : 'Perf'}
       </Badge>
-      <span className="type-caption-mono text-[var(--text-muted)] shrink-0 w-[100px]">
-        {formatShort(item.ts)}
-      </span>
       <div className="flex flex-col min-w-0 flex-1">
         <span className="type-body-sm text-[var(--text)] break-words">{model}</span>
-        <span className="type-caption-mono text-[var(--text-muted)] break-words">{sub}</span>
+        <span className="type-caption-mono text-[var(--text-muted)] break-words md:hidden">{dataset}</span>
+        <span className="type-caption-mono mt-0.5 text-[var(--text-dim)] md:hidden">{formatShort(item.ts)}</span>
       </div>
+      <div className="hidden min-w-0 flex-col md:flex">
+        <span className="type-body-sm break-words text-[var(--text)]">{dataset}</span>
+        <span className="type-caption-mono text-[var(--text-muted)]">{meta}</span>
+      </div>
+      <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text-muted)] md:block">
+        {formatShort(item.ts)}
+      </span>
       {isEval ? (
         <ScoreBadge score={item.report.score} className="shrink-0 !text-xs !px-2" />
       ) : (
@@ -184,7 +190,7 @@ export default function DashboardPage() {
   const hasData = scanned && allItems.length > 0
 
   return (
-    <div className="flex flex-col gap-5 min-h-0">
+    <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-col gap-5">
       {loadError && (
         <div role="alert" className="rounded-[var(--radius-sm)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-4 py-3 text-sm text-[var(--danger)]">
           {loadError}
@@ -245,7 +251,7 @@ export default function DashboardPage() {
       ) : hasData ? (
         <Card title={t('dashboard.recentRuns')} badge={<Badge>{filteredItems.length}</Badge>}>
           {/* Filter controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+          <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="flex items-center gap-1 p-0.5 rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] w-fit">
               {(['all', 'eval', 'perf'] as const).map((k) => (
                 <button
@@ -272,12 +278,20 @@ export default function DashboardPage() {
                 setPage(1)
               }}
               placeholder={t('dashboard.searchPlaceholder')}
-              className="sm:ml-auto w-full sm:w-64"
+              className="w-full sm:ml-auto sm:w-72"
             />
           </div>
 
           {visibleItems.length > 0 ? (
-            <div className="flex flex-col gap-1">
+            <div className="divide-y divide-[var(--border)] overflow-hidden rounded-[var(--radius-sm)]">
+              <div className="hidden grid-cols-[4.5rem_minmax(8rem,1fr)_minmax(10rem,1.5fr)_8rem_7rem_1rem] items-center gap-x-3 border-b border-[var(--border)] px-3 py-3 text-xs font-semibold text-[var(--text-muted)] md:grid">
+                <span />
+                <span>{t('dashboard.model')}</span>
+                <span>{t('dashboard.dataset')}</span>
+                <span>{t('dashboard.date')}</span>
+                <span>{t('dashboard.result')}</span>
+                <span />
+              </div>
               {visibleItems.map((item, i) => (
                 <RunRow key={`${item.kind}-${i}`} item={item} onClick={() => openItem(item)} />
               ))}

@@ -7,7 +7,6 @@ import type { PerfDetailResponse } from '@/api/types'
 import { buildCompareModel, classifySampleSize } from '@/domain/perf/compareModel'
 import type { DeltaVerdict, PerfCompareModel, SampleTier } from '@/domain/perf/compareModel'
 import { getMetricSpec } from '@/domain/metric/registry'
-import { selectCompareVisualization } from '@/domain/perf/compareVisualization'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Badge from '@/components/ui/Badge'
 import Card from '@/components/ui/Card'
@@ -15,6 +14,12 @@ import Skeleton from '@/components/ui/Skeleton'
 import PlotlyChart from '@/components/charts/PlotlyChart'
 import { LATENCY_CHARTS, THROUGHPUT_CHARTS, CHART_TITLES, formatFull } from '@/utils/perf'
 import { AlertTriangle, ArrowLeftRight, GitCompareArrows, Info } from 'lucide-react'
+
+type CompareVisualization = 'sparse' | 'trend'
+
+function selectCompareVisualization(n: number): CompareVisualization {
+  return Number.isFinite(n) && n > 2 ? 'trend' : 'sparse'
+}
 
 // ------------------------------------------------------------------ //
 // Low-sample de-emphasis helpers (Req 9.6–9.9)                        //

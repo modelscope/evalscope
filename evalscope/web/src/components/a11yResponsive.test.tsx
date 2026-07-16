@@ -117,7 +117,8 @@ describe('Responsive wrapping — metadata wraps, never truncates (Req 7.1, 7.2)
       <ReportsTable
         reports={[report]}
         selected={[]}
-        compareMode={false}
+        allSelected={false}
+        onToggleSelectAll={() => {}}
         onToggleSelect={() => {}}
         onRowClick={() => {}}
       />,
@@ -159,14 +160,13 @@ describe('Touch targets — primary controls carry the 44px guarantee (Req 7.4, 
   it('ReportCard compare-selection control has a >=44x44 hit area', () => {
     const report = makeReport()
     renderWithLocale(
-      <ReportCard report={report} selected={false} onSelect={() => {}} onClick={() => {}} compareMode />,
+      <ReportCard report={report} selected={false} onSelect={() => {}} onClick={() => {}} />,
     )
 
     // The tappable wrapper around the checkbox pads the hit area to 44x44.
     const checkbox = screen.getByRole('checkbox')
-    const hitArea = checkbox.parentElement as HTMLElement
-    expect(hitArea.className).toContain('min-w-[44px]')
-    expect(hitArea.className).toContain('min-h-[44px]')
+    expect(checkbox.className).toContain('min-w-[44px]')
+    expect(checkbox.className).toContain('min-h-[44px]')
   })
 
   it('ReportsTable compare-selection control has a >=44x44 hit area', () => {
@@ -175,16 +175,16 @@ describe('Touch targets — primary controls carry the 44px guarantee (Req 7.4, 
       <ReportsTable
         reports={[report]}
         selected={[]}
-        compareMode
+        allSelected={false}
+        onToggleSelectAll={() => {}}
         onToggleSelect={() => {}}
         onRowClick={() => {}}
       />,
     )
 
-    const checkbox = screen.getByRole('checkbox')
-    const hitArea = checkbox.parentElement as HTMLElement
-    expect(hitArea.className).toContain('min-w-[44px]')
-    expect(hitArea.className).toContain('min-h-[44px]')
+    const checkbox = screen.getByRole('checkbox', { name: /Select report/ })
+    expect(checkbox.className).toContain('min-w-[44px]')
+    expect(checkbox.className).toContain('min-h-[44px]')
   })
 })
 

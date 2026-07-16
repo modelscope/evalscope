@@ -1,7 +1,7 @@
 # Test fixtures
 
 Deterministic, redacted JSON fixtures consumed by `loadFixture()`
-(`src/test/loadFixture.ts`) and by Playwright functional tests.
+(`src/test/loadFixture.ts`) in the Vitest suite.
 
 These stay under `evalscope/web/src/test` because they are consumed by the
 Vitest/Vite TypeScript toolchain and `@/test` alias. The repository-level

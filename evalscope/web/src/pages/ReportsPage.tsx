@@ -6,11 +6,12 @@ import { useReports } from '@/contexts/ReportsContext'
 import * as reportsApi from '@/api/reports'
 import { isDomainError } from '@/api/errors'
 import type { ListReportsResponse, ReportSummary } from '@/api/types'
-import Breadcrumb from '@/components/ui/Breadcrumb'
 import Button from '@/components/ui/Button'
 import Skeleton from '@/components/ui/Skeleton'
-import EmptyStateSystem from '@/components/common/EmptyStateSystem'
-import type { EmptyReason, ResolvedEmptyStateAction } from '@/domain/empty/emptyState'
+import EmptyStateSystem, {
+  type EmptyReason,
+  type ResolvedEmptyStateAction,
+} from '@/components/common/EmptyStateSystem'
 import ReportFiltersBar, { type ReportFilters } from '@/components/reports/ReportFilters'
 import ReportCard from '@/components/reports/ReportCard'
 import ReportsTable from '@/components/reports/ReportsTable'
@@ -58,8 +59,7 @@ export default function ReportsPage() {
   const [hasLoaded, setHasLoaded] = useState(false)
   // Bumped to re-trigger the fetch effect when the user retries from an empty state.
   const [reloadToken, setReloadToken] = useState(0)
-  // Explicit compare-selection mode (Req 5.4) and a transient cap notice (Req 5.9).
-  const [compareMode, setCompareMode] = useState(false)
+  // Transient notice shown when the compare-selection cap is reached (Req 5.9).
   const [capNotice, setCapNotice] = useState(false)
   const capTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
@@ -84,7 +84,6 @@ export default function ReportsPage() {
       setPage(1)
       setFilters(defaultFilters)
       clearCompareSelection()
-      setCompareMode(false)
     }
     reset()
   }, [rootPath, scanToken]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -197,13 +196,6 @@ export default function ReportsPage() {
     setCompareSelection(nextSel)
   }, [allSelected, selectedForCompare, currentPageNames, setCompareSelection, flagCapReached])
 
-  const enterCompareMode = useCallback(() => setCompareMode(true), [])
-
-  const exitCompareMode = useCallback(() => {
-    setCompareMode(false)
-    setCapNotice(false)
-  }, [])
-
   useEffect(() => () => clearTimeout(capTimer.current), [])
 
   const handleCardClick = useCallback(
@@ -257,10 +249,7 @@ export default function ReportsPage() {
   }, [])
 
   return (
-    <div className="page-enter flex flex-col gap-5">
-      {/* Breadcrumb */}
-      <Breadcrumb items={[{ label: t('nav.evaluations') }]} />
-
+    <div className="page-enter mx-auto flex w-full max-w-7xl flex-col gap-5">
       {/* Filters */}
       <ReportFiltersBar
         filters={filters}
@@ -268,47 +257,6 @@ export default function ReportsPage() {
         availableDatasets={availableDatasets}
         onChange={handleFiltersChange}
       />
-
-      {/* Action bar */}
-      {reports.length > 0 && (
-        <div className="flex items-center gap-3 flex-wrap min-h-[40px]">
-          {compareMode ? (
-            <>
-              <button
-                type="button"
-                onClick={handleSelectAll}
-                className="flex items-center gap-2 text-sm text-[var(--text-muted)] cursor-pointer hover:text-[var(--text)] transition-colors min-h-[44px]"
-              >
-                <span
-                  role="checkbox"
-                  aria-checked={allSelected}
-                  className="w-4.5 h-4.5 rounded-[var(--radius-xs)] border-2 flex items-center justify-center transition-all duration-150 shrink-0"
-                  style={{
-                    borderColor: allSelected ? 'var(--accent)' : 'var(--border-strong)',
-                    background: allSelected ? 'var(--accent)' : 'transparent',
-                  }}
-                >
-                  {allSelected && (
-                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="2,6 5,9 10,3" />
-                    </svg>
-                  )}
-                </span>
-                {t('reports.selectAll')}
-              </button>
-
-              <Button variant="ghost" size="sm" onClick={exitCompareMode} className="ml-auto">
-                {t('reports.exitCompareMode')}
-              </Button>
-            </>
-          ) : (
-            <Button variant="outline" size="sm" onClick={enterCompareMode} className="ml-auto">
-              <GitCompareArrows size={14} />
-              {t('reports.enterCompareMode')}
-            </Button>
-          )}
-        </div>
-      )}
 
       {/* Error */}
       {error && (
@@ -344,7 +292,8 @@ export default function ReportsPage() {
             <ReportsTable
               reports={reports}
               selected={selectedForCompare}
-              compareMode={compareMode}
+              allSelected={allSelected}
+              onToggleSelectAll={handleSelectAll}
               onToggleSelect={handleToggleSelect}
               onRowClick={handleCardClick}
             />
@@ -352,6 +301,29 @@ export default function ReportsPage() {
 
           {/* Narrow (<1024px): card view with fields consistent with the table (Req 5.3). */}
           <div className="flex flex-col gap-2 lg:hidden">
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={allSelected}
+              onClick={handleSelectAll}
+              className="flex min-h-11 w-fit items-center gap-2 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
+            >
+              <span
+                aria-hidden="true"
+                className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border-2 transition-all duration-150"
+                style={{
+                  borderColor: allSelected ? 'var(--accent)' : 'var(--border-strong)',
+                  background: allSelected ? 'var(--accent)' : 'transparent',
+                }}
+              >
+                {allSelected && (
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="2,6 5,9 10,3" />
+                  </svg>
+                )}
+              </span>
+              {t('reports.selectAll')}
+            </button>
             {reports.map((report) => (
               <ReportCard
                 key={report.name}
@@ -359,7 +331,6 @@ export default function ReportsPage() {
                 selected={selectedForCompare.includes(report.name)}
                 onSelect={handleToggleSelect}
                 onClick={handleCardClick}
-                compareMode={compareMode}
               />
             ))}
           </div>

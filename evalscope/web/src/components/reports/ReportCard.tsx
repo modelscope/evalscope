@@ -12,48 +12,50 @@ interface ReportCardProps {
   onSelect: (name: string) => void
   /** Navigate to report detail */
   onClick: (name: string) => void
-  /**
-   * Whether the explicit compare-selection mode is active. When active the
-   * selection checkbox is always shown and tapping the card toggles selection
-   * instead of navigating (Req 5.4).
-   */
-  compareMode?: boolean
 }
 
 function formatTimestamp(ts: string): string {
   return ts.replace('T', ' ').slice(0, 16)
 }
 
-function Checkbox({ checked }: { checked: boolean }) {
+function Checkbox({ checked, label, onClick }: { checked: boolean; label: string; onClick: (event: MouseEvent<HTMLButtonElement>) => void }) {
   return (
-    <div
+    <button
+      type="button"
       role="checkbox"
       aria-checked={checked}
-      className="w-4.5 h-4.5 rounded-[var(--radius-xs)] border-2 flex items-center justify-center transition-all duration-150 shrink-0"
-      style={{
-        borderColor: checked ? 'var(--accent)' : 'var(--border-strong)',
-        background: checked ? 'var(--accent)' : 'transparent',
-      }}
+      aria-label={label}
+      onClick={onClick}
+      className="flex min-h-[44px] min-w-[44px] items-center justify-center"
     >
-      {checked && (
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 12 12"
-          fill="none"
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="2,6 5,9 10,3" />
-        </svg>
-      )}
-    </div>
+      <span
+        aria-hidden="true"
+        className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border-2 transition-all duration-150"
+        style={{
+          borderColor: checked ? 'var(--accent)' : 'var(--border-strong)',
+          background: checked ? 'var(--accent)' : 'transparent',
+        }}
+      >
+        {checked && (
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="2,6 5,9 10,3" />
+          </svg>
+        )}
+      </span>
+    </button>
   )
 }
 
-export default function ReportCard({ report, selected, onSelect, onClick, compareMode = false }: ReportCardProps) {
+export default function ReportCard({ report, selected, onSelect, onClick }: ReportCardProps) {
   const { t } = useLocale()
 
   const formattedDate = report.timestamp ? formatTimestamp(report.timestamp) : ''
@@ -61,12 +63,6 @@ export default function ReportCard({ report, selected, onSelect, onClick, compar
   const handleDetailClick = (e: MouseEvent) => {
     e.stopPropagation()
     onClick(report.name)
-  }
-
-  // In compare mode the whole card toggles selection; otherwise it navigates.
-  const handleContentClick = () => {
-    if (compareMode) onSelect(report.name)
-    else onClick(report.name)
   }
 
   return (
@@ -79,24 +75,20 @@ export default function ReportCard({ report, selected, onSelect, onClick, compar
           : 'border-[var(--border)] hover:border-[var(--border-md)]',
       )}
     >
-      {/* Checkbox — only shown in the explicit compare-selection mode (Req 5.4). */}
-      {compareMode && (
-        <div
-          onClick={(e) => {
-            e.stopPropagation()
-            onSelect(report.name)
-          }}
-          className="transition-opacity duration-150 cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] -m-2 p-2"
-        >
-          <Checkbox checked={selected} />
-        </div>
-      )}
+      <Checkbox
+        checked={selected}
+        label={`${t('reports.selectReport')}: ${report.model_name}`}
+        onClick={(e) => {
+          e.stopPropagation()
+          onSelect(report.name)
+        }}
+      />
 
-      {/* Content — clicking navigates to detail, or toggles selection in compare mode. */}
+      {/* Content — clicking navigates to detail; selection stays on the checkbox. */}
       <button
         type="button"
         className="flex-1 min-w-0 min-h-11 flex items-center gap-4 cursor-pointer text-left"
-        onClick={handleContentClick}
+        onClick={() => onClick(report.name)}
       >
         {/* Model + Dataset */}
         <div className="flex-1 min-w-0">

@@ -8,8 +8,7 @@
 //     control and never mounts a blank iframe (Req 2.6);
 //   - a visible loading state is shown while the preflight is in flight, ahead
 //     of any error state (Req 2.7);
-//   - selectVisualization's discrete boundaries and the preflight timeout branch
-//     are classified deterministically (Req 3.5, 2.5).
+//   - the preflight timeout branch is classified deterministically (Req 2.5).
 //
 // The suite runs under the global deterministic setup (fake timers, fixed
 // system time, network disabled). Each test installs its own controllable
@@ -22,7 +21,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 
 import ChartFrame from './ChartFrame'
-import { selectVisualization } from '@/domain/chart/adaptiveVisualization'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import type { DataTableModel } from '@/components/common/DataTableFallback'
@@ -202,14 +200,5 @@ describe('ChartFrame — loading precedes error (Req 2.7)', () => {
     expect(screen.getByRole('alert')).toBeInTheDocument()
     expect(screen.getByText('The chart request timed out.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Retry/i })).toBeInTheDocument()
-  })
-})
-
-describe('selectVisualization — discrete dimension boundaries (Req 3.5)', () => {
-  it('maps 0/1/2/3 dimensions to the expected visualization kind', () => {
-    expect(selectVisualization(0)).toBe('empty')
-    expect(selectVisualization(1)).toBe('single-value')
-    expect(selectVisualization(2)).toBe('grouped-bar')
-    expect(selectVisualization(3)).toBe('radar')
   })
 })

@@ -69,7 +69,7 @@ export default function ReportSummaryStats({ reports }: Props) {
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {/* Score ring cards */}
       {scoreCards.map((card, i) => (
         <div

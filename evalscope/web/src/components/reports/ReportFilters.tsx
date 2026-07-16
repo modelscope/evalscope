@@ -148,7 +148,7 @@ export default function ReportFiltersBar({
           value={filters.search}
           onChange={(v) => update({ search: v })}
           placeholder={t('reports.filters.search')}
-          className="w-[220px]"
+          className="w-full sm:w-72"
         />
 
         <MultiSelectDropdown

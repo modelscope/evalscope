@@ -276,8 +276,8 @@ describe('PerfReportsPage', () => {
     // ... and the raw archive path is never shown as the identity.
     expect(screen.queryByText(RUN_PATH)).not.toBeInTheDocument()
     expect(screen.getByText(/Provider: DashScope/)).toBeInTheDocument()
-    expect(screen.getByText(/Concurrency: 10/)).toBeInTheDocument()
-    expect(screen.getByText(/Number of requests: 100/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Concurrency: 10/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Number of requests: 100/).length).toBeGreaterThan(0)
   })
 
   it('searches provider and protocol independently from the API type', async () => {

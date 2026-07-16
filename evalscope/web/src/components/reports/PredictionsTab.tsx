@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, Hash, List, ArrowUp, ArrowDown, HelpCircle, Search, MessageSquare, AlertCircle } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { PredictionRow, ReportData } from '@/api/types'
+import { isDomainError } from '@/api/errors'
 import { getPredictions, getDataFrame } from '@/api/reports'
 import Select from '@/components/ui/Select'
 
@@ -60,7 +61,8 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
         setSelectedSubset(target)
         setPredictions([])
       } catch (e) {
-        if (!controller.signal.aborted) setLoadError(e instanceof Error ? e.message : t('common.loadError'))
+        if (controller.signal.aborted || (isDomainError(e) && e.kind === 'aborted')) return
+        setLoadError(e instanceof Error ? e.message : t('common.loadError'))
         console.error('Failed to load subsets:', e)
       }
     }
@@ -79,8 +81,9 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
         const res = await getPredictions(rootPath, reportName, datasetName, selectedSubset, controller.signal)
         if (!controller.signal.aborted) setPredictions(res.predictions)
       } catch (e) {
+        if (controller.signal.aborted || (isDomainError(e) && e.kind === 'aborted')) return
         console.error('Failed to load predictions:', e)
-        if (!controller.signal.aborted) setLoadError(e instanceof Error ? e.message : t('common.loadError'))
+        setLoadError(e instanceof Error ? e.message : t('common.loadError'))
       } finally {
         if (!controller.signal.aborted) setLoading(false)
       }

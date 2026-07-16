@@ -144,7 +144,7 @@ describe('buildCompareModel — delta field completeness (Property 15: Delta 汇
     )
     const candidate = makeWideRun(
       'run-p2', '2026-07-15T15:39:04', 6,
-      ['2', 'INF', '1.9256', '1.027', '1.210', '493.17', '656.15', '17.21', '17.77', '61.62', '100.0%'],
+      ['1', 'INF', '1.9256', '1.027', '1.210', '493.17', '656.15', '17.21', '17.77', '61.62', '100.0%'],
     )
 
     const model = buildCompareModel([candidate, baseline], '')
@@ -158,11 +158,45 @@ describe('buildCompareModel — delta field completeness (Property 15: Delta 汇
     expect(rps?.verdict).toBe('improvement')
     expect(latency?.verdict).toBe('regression')
     expect(success?.absoluteDelta.primary).toBe('0.0 pp')
-    expect(model.configDiff).toEqual(expect.arrayContaining([
-      { key: 'Concurrency', baseline: '1', candidate: '2' },
-      { key: 'Number of requests', baseline: '4', candidate: '6' },
-    ]))
-    expect(model.workloadMismatch).toBe(true)
+    expect(model.configDiff).toEqual([{ key: 'Number of requests', baseline: '4', candidate: '6' }])
+    expect(model.workloadMismatch).toBe(false)
+  })
+
+  it('does not combine or compare metrics from different wide-table workload rows', () => {
+    const columns = ['Conc.', 'Rate', 'RPS', 'Avg Lat.(s)']
+    const makeRun = (path: string, generatedAt: string, rows: (string | number)[][]): PerfDetailResponse => ({
+      path,
+      model: 'qwen-plus',
+      api_type: 'openai',
+      dataset: 'openqa',
+      generated_at: generatedAt,
+      basic_info: { 'Total Requests': '20' },
+      summary_columns: columns,
+      summary_rows: rows,
+      best_config: {},
+      recommendations: [],
+      num_runs: 1,
+      is_embedding: false,
+      has_html: true,
+    })
+    const baseline = makeRun('baseline', '2026-07-15T15:37:19', [
+      ['1', 'INF', 10, 1],
+      ['2', 'INF', 20, 2],
+    ])
+    const candidate = makeRun('candidate', '2026-07-15T15:39:04', [
+      ['1', 'INF', 11, 0.9],
+      ['2', 'INF', 21, 2.1],
+    ])
+
+    const model = buildCompareModel([baseline, candidate], '')
+    expect(model.workloadMismatch).toBe(false)
+    expect(model.deltas.find((delta) => delta.metricKey === 'rps')?.baseline.raw).toBe('10.00')
+    expect(model.deltas.find((delta) => delta.metricKey === 'latency')?.baseline.raw).toBe('1.00')
+
+    const mismatched = makeRun('mismatch', '2026-07-15T15:40:04', [['8', 'INF', 80, 8]])
+    const mismatchModel = buildCompareModel([baseline, mismatched], '')
+    expect(mismatchModel.workloadMismatch).toBe(true)
+    expect(mismatchModel.deltas).toEqual([])
   })
 
   it('keeps every delta field complete for default and explicit baselines', () => {

@@ -24,7 +24,6 @@ export default mergeConfig(
         exclude: [
           'src/**/*.{test,spec}.{ts,tsx}',
           'src/test/**',
-          'src/**/*.stories.{ts,tsx}',
         ],
       },
     },

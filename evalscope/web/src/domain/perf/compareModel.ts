@@ -181,12 +181,6 @@ function getWideMetricColumns(run: PerfDetailResponse): WideMetricColumn[] {
   })
 }
 
-function selectBestObserved(values: number[], metricKey: string): number | null {
-  if (values.length === 0) return null
-  const { spec } = getMetricSpec(metricKey)
-  return spec.direction === 'lower-is-better' ? Math.min(...values) : Math.max(...values)
-}
-
 /**
  * Build an ordered metric map from a run's summary rows.
  *
@@ -194,16 +188,12 @@ function selectBestObserved(values: number[], metricKey: string): number | null 
  * second is the (possibly non-numeric) value. Insertion order is preserved so
  * deltas follow the baseline's natural metric order.
  */
-function toMetricMap(run: PerfDetailResponse): Map<string, number | null> {
+function toMetricMap(run: PerfDetailResponse, wideRow?: (string | number)[]): Map<string, number | null> {
   const map = new Map<string, number | null>()
   const rows = Array.isArray(run.summary_rows) ? run.summary_rows : []
   if (!isVerticalSummary(run)) {
     for (const { key, columnIndex } of getWideMetricColumns(run)) {
-      const values = rows.flatMap((row) => {
-        const value = toNumeric(row[columnIndex])
-        return value === null ? [] : [value]
-      })
-      map.set(key, selectBestObserved(values, key))
+      map.set(key, wideRow ? toNumeric(wideRow[columnIndex]) : null)
     }
     return map
   }
@@ -214,6 +204,39 @@ function toMetricMap(run: PerfDetailResponse): Map<string, number | null> {
     map.set(key, toNumeric(row[1]))
   }
   return map
+}
+
+function wideRowConfig(run: PerfDetailResponse, row: (string | number)[]): Record<string, string> {
+  const metricIndexes = new Set(getWideMetricColumns(run).map(({ columnIndex }) => columnIndex))
+  const aliases: Record<string, string> = { conc: 'Concurrency', concurrency: 'Concurrency', rate: 'Request rate' }
+  const config: Record<string, string> = {}
+  run.summary_columns.forEach((column, index) => {
+    if (metricIndexes.has(index)) return
+    const normalized = normalizeColumn(column)
+    config[aliases[normalized] ?? column.trim()] = String(row[index] ?? '').trim()
+  })
+  return config
+}
+
+function configIdentity(config: Record<string, string>): string {
+  return JSON.stringify(Object.entries(config).sort(([a], [b]) => a.localeCompare(b)))
+}
+
+function matchingWideRows(
+  baseline: PerfDetailResponse,
+  candidate: PerfDetailResponse,
+): { baseline: (string | number)[]; candidate: (string | number)[] } | null {
+  if (isVerticalSummary(baseline) || isVerticalSummary(candidate)) return null
+  if (baseline.dataset.trim().toLowerCase() !== candidate.dataset.trim().toLowerCase()) return null
+
+  const candidates = new Map(
+    candidate.summary_rows.map((row) => [configIdentity(wideRowConfig(candidate, row)), row]),
+  )
+  for (const row of baseline.summary_rows) {
+    const match = candidates.get(configIdentity(wideRowConfig(baseline, row)))
+    if (match) return { baseline: row, candidate: match }
+  }
+  return null
 }
 
 /** Compute the direction-aware verdict for a metric (Req 9.4, 9.5, 9.14). */
@@ -319,6 +342,11 @@ function wideConfig(run: PerfDetailResponse): Record<string, string> | null {
   return config
 }
 
+function selectedWideConfig(run: PerfDetailResponse, row?: (string | number)[]): Record<string, string> | null {
+  if (!row) return wideConfig(run)
+  return { ...wideRowConfig(run, row), 'Number of requests': String(getSampleCount(run)) }
+}
+
 function comparisonConfig(run: PerfDetailResponse): Record<string, string> {
   return wideConfig(run) ?? (run.best_config ?? {})
 }
@@ -399,8 +427,11 @@ export function buildCompareModel(runs: PerfDetailResponse[], baselineId: string
   const others = runs.filter((run) => run !== baseline)
   const candidate = others.length > 0 ? pickNewest(others) : baseline
 
-  const baselineMetrics = toMetricMap(baseline)
-  const candidateMetrics = toMetricMap(candidate)
+  const comparesWideRows = !isVerticalSummary(baseline) || !isVerticalSummary(candidate)
+  const matchedRows = comparesWideRows ? matchingWideRows(baseline, candidate) : null
+  const canCompare = !comparesWideRows || matchedRows !== null
+  const baselineMetrics = canCompare ? toMetricMap(baseline, matchedRows?.baseline) : new Map<string, number | null>()
+  const candidateMetrics = canCompare ? toMetricMap(candidate, matchedRows?.candidate) : new Map<string, number | null>()
 
   // Union of metric keys, baseline order first then candidate-only keys.
   const metricKeys: string[] = [...baselineMetrics.keys()]
@@ -417,8 +448,12 @@ export function buildCompareModel(runs: PerfDetailResponse[], baselineId: string
     [candidate.path]: getSampleCount(candidate),
   }
 
-  const configDiff = computeConfigDiff(comparisonConfig(baseline), comparisonConfig(candidate))
-  const workloadMismatch = baseline !== candidate && workloadIdentity(baseline) !== workloadIdentity(candidate)
+  const baselineConfig = selectedWideConfig(baseline, matchedRows?.baseline) ?? comparisonConfig(baseline)
+  const candidateConfig = selectedWideConfig(candidate, matchedRows?.candidate) ?? comparisonConfig(candidate)
+  const configDiff = computeConfigDiff(baselineConfig, candidateConfig)
+  const workloadMismatch = baseline !== candidate && (
+    comparesWideRows ? matchedRows === null : workloadIdentity(baseline) !== workloadIdentity(candidate)
+  )
 
   return {
     baselineId: baseline.path,

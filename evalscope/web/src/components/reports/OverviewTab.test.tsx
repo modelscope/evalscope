@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { ReportData } from '@/api/types'
@@ -20,28 +20,32 @@ function renderOverview(reports: ReportData[]) {
   )
 }
 
-describe('OverviewTab adaptive visualization', () => {
+describe('OverviewTab dataset score view', () => {
   const multi = loadFixture<{ report_list: ReportData[] }>('report-multi-dataset').report_list
 
-  it('renders a labelled single value instead of a one-axis radar', () => {
+  it('renders a single dataset in the score table without a duplicate visualization', () => {
     renderOverview(multi.slice(0, 1))
 
-    const visualization = screen.getByRole('img', { name: 'Single metric value' })
-    expect(visualization).toBeInTheDocument()
-    expect(visualization).toHaveTextContent('gsm8k')
+    expect(screen.getByRole('progressbar', { name: 'gsm8k Score' })).toBeInTheDocument()
+    expect(screen.queryByText('Dataset Score Visualization')).not.toBeInTheDocument()
     expect(screen.queryByTestId('radar-chart')).not.toBeInTheDocument()
   })
 
-  it('renders a grouped comparison instead of a two-axis radar', () => {
+  it('keeps two datasets in one sortable table', () => {
     renderOverview(multi.slice(0, 2))
 
-    expect(screen.getByRole('img', { name: 'Grouped bar chart' })).toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: 'gsm8k Score' })).toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: 'arc_challenge Score' })).toBeInTheDocument()
     expect(screen.queryByTestId('radar-chart')).not.toBeInTheDocument()
   })
 
-  it('renders the radar chart only for three or more dimensions', () => {
+  it('offers radar as an optional view for three or more datasets', () => {
     renderOverview(multi)
 
+    expect(screen.queryByTestId('radar-chart')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Radar' }))
     expect(screen.getByTestId('radar-chart')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Table' }))
+    expect(screen.queryByTestId('radar-chart')).not.toBeInTheDocument()
   })
 })

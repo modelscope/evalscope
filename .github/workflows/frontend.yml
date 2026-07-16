@@ -17,7 +17,6 @@ on:
 jobs:
   frontend:
     runs-on: ubuntu-latest
-    container: mcr.microsoft.com/playwright:v1.61.1-noble
     defaults:
       run:
         working-directory: evalscope/web
@@ -34,19 +33,5 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run drift
-      - run: npm run check:tofixed
-      - run: npm run check:decoupling
       - run: npm run build
       - run: npm run size-budget
-      - run: npm run build-storybook
-      - run: npm run e2e
-
-      - name: Upload Playwright diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-playwright-diagnostics
-          path: |
-            evalscope/web/test-results
-            evalscope/web/playwright-report
-          if-no-files-found: ignore

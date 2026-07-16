@@ -4,7 +4,16 @@ import { hasSystemPrompt, parseSystemUser } from './chat/chatHelpers'
 import { MessageRow, SystemPromptRow, HeaderPerfChip } from './chat/MessageComponents'
 import { StructuredMessages, TracedTimeline, buildStepGroups } from './chat/AgentTraceView'
 import { EvalResultPanel } from './chat/EvalResultPanel'
-import { selectChatPresentation } from '@/domain/predictions/chatPresentation'
+
+type ChatPresentation = 'traced' | 'structured' | 'legacy'
+
+function selectChatPresentation(prediction: Pick<PredictionRow, 'Messages' | 'AgentTrace'>): ChatPresentation {
+  const hasMessages = Boolean(prediction.Messages?.length)
+  const hasTrace = Boolean(prediction.AgentTrace?.events?.length)
+  if (hasMessages && hasTrace) return 'traced'
+  if (hasMessages) return 'structured'
+  return 'legacy'
+}
 
 interface Props {
   prediction: PredictionRow

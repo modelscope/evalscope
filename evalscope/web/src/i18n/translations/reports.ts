@@ -15,6 +15,7 @@ export const en: Dict = {
     score: 'Score',
   },
   selectAll: 'Select All',
+  selectReport: 'Select report',
   selected: 'selected',
   compare: 'Compare',
   viewHtml: 'View HTML',
@@ -32,8 +33,6 @@ export const en: Dict = {
   status: {
     completed: 'Completed',
   },
-  enterCompareMode: 'Select to compare',
-  exitCompareMode: 'Done',
   clearSelection: 'Clear',
   capReached: 'You can compare up to 5 runs.',
   trayHint: 'Select runs to compare',
@@ -54,6 +53,7 @@ export const zh: Dict = {
     score: '分数',
   },
   selectAll: '全选',
+  selectReport: '选择报告',
   selected: '已选',
   compare: '对比',
   viewHtml: '查看HTML',
@@ -71,8 +71,6 @@ export const zh: Dict = {
   status: {
     completed: '已完成',
   },
-  enterCompareMode: '选择对比',
-  exitCompareMode: '完成',
   clearSelection: '清空',
   capReached: '最多可对比 5 个运行。',
   trayHint: '选择要对比的运行',

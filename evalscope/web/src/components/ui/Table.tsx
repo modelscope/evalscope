@@ -9,6 +9,8 @@ interface Column<T> {
   key: string
   label: string
   render?: (row: T, index: number) => ReactNode
+  headerClassName?: string
+  cellClassName?: string
   /** Enable column sorting. Provide a comparator or leave true for default (string/number). */
   sortable?: boolean | ((a: T, b: T) => number)
 }
@@ -83,6 +85,7 @@ export default function Table<T extends Record<string, unknown>>({
                     'px-4 py-3 text-left type-table-xs select-none',
                     isSortable && 'cursor-pointer hover:text-[var(--text)]',
                     isActive && '!text-[var(--accent)]',
+                    col.headerClassName,
                   )}
                 >
                   <span className="inline-flex items-center gap-1">
@@ -113,7 +116,7 @@ export default function Table<T extends Record<string, unknown>>({
               )}
             >
               {columns.map((col) => (
-                <td key={col.key} className="px-4 py-3 text-[var(--text)]">
+                <td key={col.key} className={cn('px-4 py-3 text-[var(--text)]', col.cellClassName)}>
                   {col.render ? col.render(row, i) : (row[col.key] as ReactNode)}
                 </td>
               ))}

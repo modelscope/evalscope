@@ -11,7 +11,7 @@
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
-    "moduleDetection": "force",
+    "moduleDetection": "auto",
     "noEmit": true,
 
     /* Linting */

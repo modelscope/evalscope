@@ -4,9 +4,28 @@ import remarkGfm from 'remark-gfm'
 import type { Components, Options } from 'react-markdown'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLocale } from '@/contexts/LocaleContext'
-import { containsMath, isLargeTable, shouldRenderHeavy } from '@/domain/markdown/heavyContent'
 import ImageLightbox from './ImageLightbox'
 import LazyCodeBlock from './LazyCodeBlock'
+
+type ContentKind = 'text' | 'math' | 'code' | 'large-table'
+const HEAVY_CONTENT_KINDS: readonly ContentKind[] = ['math', 'code', 'large-table']
+const LARGE_TABLE_LINE_THRESHOLD = 50
+
+function isHeavyContent(contentType: ContentKind): boolean {
+  return HEAVY_CONTENT_KINDS.includes(contentType)
+}
+
+function shouldRenderHeavy(collapsed: boolean, contentType: ContentKind): boolean {
+  return !isHeavyContent(contentType) || !collapsed
+}
+
+function isLargeTable(lineCount: number): boolean {
+  return Number.isFinite(lineCount) && lineCount > LARGE_TABLE_LINE_THRESHOLD
+}
+
+function containsMath(content: string): boolean {
+  return /\$\$[\s\S]+?\$\$/.test(content) || /\$[^\n$]+\$/.test(content)
+}
 
 interface Props {
   content: string

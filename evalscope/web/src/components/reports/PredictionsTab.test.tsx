@@ -20,6 +20,7 @@ vi.mock('@/api/reports', () => ({
 
 afterEach(() => {
   cleanup()
+  vi.restoreAllMocks()
   getDataFrameMock.mockReset()
   getPredictionsMock.mockReset()
 })
@@ -77,5 +78,27 @@ describe('PredictionsTab controls', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('Prediction response schema mismatch')
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
+  })
+
+  it('silently ignores an intentionally aborted subset request', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    getDataFrameMock.mockRejectedValue(new DomainError('aborted', 'Request was aborted'))
+
+    render(
+      <MemoryRouter>
+        <LocaleProvider>
+          <PredictionsTab reportName="real-report" datasetName="general_mcq" rootPath="/outputs" />
+        </LocaleProvider>
+      </MemoryRouter>,
+    )
+
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(consoleError).not.toHaveBeenCalled()
+    consoleError.mockRestore()
   })
 })

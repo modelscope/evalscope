@@ -1,15 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Gauge, ChevronRight, Check, GitCompareArrows } from 'lucide-react'
+import { ChevronRight, Check, GitCompareArrows } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useReports } from '@/contexts/ReportsContext'
 import { listPerfRuns } from '@/api/perf'
 import { isDomainError } from '@/api/errors'
 import type { PerfRunSummary } from '@/api/types'
-import Breadcrumb from '@/components/ui/Breadcrumb'
 import Skeleton from '@/components/ui/Skeleton'
-import EmptyStateSystem from '@/components/common/EmptyStateSystem'
-import type { ResolvedEmptyStateAction } from '@/domain/empty/emptyState'
+import EmptyStateSystem, { type ResolvedEmptyStateAction } from '@/components/common/EmptyStateSystem'
 import SearchInput from '@/components/ui/SearchInput'
 import { formatMetricByKey } from '@/domain/metric/registry'
 import { formatFull } from '@/utils/perf'
@@ -20,20 +18,10 @@ type Translate = (key: string, vars?: Record<string, string | number>) => string
 
 type SortKey = 'time' | 'rps' | 'latency'
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col">
-      <span className="type-caption-mono text-[var(--text)] tabular-nums">{value}</span>
-      <span className="type-table-xs uppercase tracking-wider text-[var(--text-muted)]">{label}</span>
-    </div>
-  )
-}
-
 function Checkbox({ checked }: { checked: boolean }) {
   return (
     <span
-      role="checkbox"
-      aria-checked={checked}
+      aria-hidden="true"
       className={[
         'flex items-center justify-center w-4 h-4 rounded-[4px] border transition-colors',
         checked
@@ -65,42 +53,61 @@ function PerfRunCard({
   return (
     <div
       className={[
-        'flex items-center gap-3 p-4 rounded-[var(--radius)] border bg-[var(--bg-card)] transition-colors',
-        selected ? 'border-[var(--accent)]' : 'border-[var(--border)] hover:border-[var(--border-strong)]',
+        'flex items-center gap-1 px-3 py-2 transition-colors',
+        selected ? 'bg-[var(--accent-dim)]' : 'hover:bg-[var(--bg-card2)]',
       ].join(' ')}
     >
-      <button type="button" onClick={onToggle} aria-label="Select for compare" className="shrink-0 flex min-h-11 min-w-11 items-center justify-center cursor-pointer">
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={selected}
+        onClick={onToggle}
+        aria-label={`${t('performance.selectRun')}: ${run.model || run.dataset || '—'}`}
+        className="shrink-0 flex min-h-11 min-w-11 items-center justify-center cursor-pointer"
+      >
         <Checkbox checked={selected} />
       </button>
-      <button type="button" onClick={onClick} className="flex min-h-11 items-center gap-4 flex-1 min-w-0 text-left">
-        <span className="text-[var(--accent)] shrink-0">
-          <Gauge size={20} />
-        </span>
-        <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-          <div className="flex flex-wrap items-center gap-2 min-w-0">
-            {/* Model alias is the primary identity; fall back to dataset, never
-                the raw path/timestamp, when the alias is absent (Req 8.9). */}
-            <span className="type-title-md text-[var(--text)] break-words min-w-0">{run.model || run.dataset || '—'}</span>
-          </div>
+      <button
+        type="button"
+        onClick={onClick}
+        className="grid min-h-11 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-left lg:grid-cols-[minmax(10rem,1.6fr)_minmax(9rem,1.2fr)_9.5rem_4rem_7rem_6rem_6rem_auto]"
+      >
+        <div className="flex min-w-0 flex-col gap-0.5">
+          {/* Model alias is the primary identity; fall back to dataset, never
+              the raw path/timestamp, when the alias is absent (Req 8.9). */}
+          <span className="type-body-sm font-semibold text-[var(--text)] break-words min-w-0">{run.model || run.dataset || '—'}</span>
           <span className="type-caption-mono text-[var(--text-muted)] break-words">
             {t('performance.provider')}: {identity.provider} · {t('performance.protocol')}: {identity.protocol}
           </span>
-          <span className="type-caption-mono text-[var(--text-muted)] break-words">
+          <span className="type-caption-mono text-[var(--text-muted)] break-words lg:hidden">
             {t('performance.concurrency')}: {concurrency} · {t('performance.numberOfRequests')}: {run.total_requests}
           </span>
-          <span className="type-caption-mono text-[var(--text-muted)] break-words">
+          <span className="type-caption-mono text-[var(--text-muted)] break-words lg:hidden">
             {(run.dataset || '—')} · {formatFull(run.timestamp)}
           </span>
         </div>
-        <div className="hidden lg:flex items-center gap-6 shrink-0">
-          <Stat label="Runs" value={String(run.num_runs)} />
-          {/* Domain metrics render through the shared formatter so the same
-              value rounds identically here, in the detail view and per-run
-              tables (Req 8.10). */}
-          <Stat label="Best RPS" value={formatMetricByKey('rps', run.best_rps, t).primary} />
-          <Stat label="Min Lat" value={formatMetricByKey('latency', run.best_latency, t).primary} />
-          <Stat label="Success" value={formatMetricByKey('success_rate', run.success_rate, t).primary} />
+        <div className="hidden min-w-0 flex-col gap-0.5 lg:flex">
+          <span className="type-body-sm text-[var(--text)] break-words">{run.dataset || '—'}</span>
+          <span className="type-caption-mono text-[var(--text-muted)] break-words">
+            {t('performance.concurrency')}: {concurrency} · {t('performance.numberOfRequests')}: {run.total_requests}
+          </span>
         </div>
+        <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text-muted)] lg:block">
+          {formatFull(run.timestamp)}
+        </span>
+        <span className="type-caption-mono hidden text-[var(--text)] lg:block">{run.num_runs}</span>
+        {/* Domain metrics render through the shared formatter so the same
+            value rounds identically here, in the detail view and per-run
+            tables (Req 8.10). */}
+        <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text)] lg:block">
+          {formatMetricByKey('rps', run.best_rps, t).primary}
+        </span>
+        <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text)] lg:block">
+          {formatMetricByKey('latency', run.best_latency, t).primary}
+        </span>
+        <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text)] lg:block">
+          {formatMetricByKey('success_rate', run.success_rate, t).primary}
+        </span>
         <ChevronRight size={16} className="text-[var(--text-dim)] shrink-0" />
       </button>
     </div>
@@ -219,9 +226,7 @@ export default function PerfReportsPage() {
   }, [runs, query, sortBy])
 
   return (
-    <div className="page-enter flex flex-col gap-5">
-      <Breadcrumb items={[{ label: t('nav.performance') }]} />
-
+    <div className="page-enter mx-auto flex w-full max-w-7xl flex-col gap-5">
       {error && (
         <div role="alert" className="px-4 py-3 rounded-[var(--radius)] bg-[var(--danger-bg)] border border-[var(--danger-border)] text-sm text-[var(--danger)]">
           {error}
@@ -246,7 +251,13 @@ export default function PerfReportsPage() {
       ) : (
         <>
           {/* Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <SearchInput
+              value={query}
+              onChange={setQuery}
+              placeholder={t('performance.searchPlaceholder')}
+              className="w-full sm:w-72"
+            />
             <div className="flex items-center gap-1 p-0.5 rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] w-fit">
               {(['time', 'rps', 'latency'] as const).map((k) => (
                 <button
@@ -263,7 +274,7 @@ export default function PerfReportsPage() {
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-2 sm:ml-auto w-full sm:w-auto">
+            <div className="flex items-center gap-2 sm:ml-auto">
               <button
                 onClick={compareSelected}
                 disabled={selected.length < 2}
@@ -277,17 +288,23 @@ export default function PerfReportsPage() {
                 <GitCompareArrows size={14} />
                 {t('performance.compareN', { n: selected.length })}
               </button>
-              <SearchInput
-                value={query}
-                onChange={setQuery}
-                placeholder={t('performance.searchPlaceholder')}
-                className="w-full sm:w-64"
-              />
             </div>
           </div>
 
           {visibleRuns.length > 0 ? (
-            <div className="flex flex-col gap-2">
+            <div className="overflow-hidden rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
+              <div className="hidden grid-cols-[2.75rem_minmax(10rem,1.6fr)_minmax(9rem,1.2fr)_9.5rem_4rem_7rem_6rem_6rem_1rem] items-center gap-3 border-b border-[var(--border)] px-3 py-3 text-xs font-semibold text-[var(--text-muted)] lg:grid">
+                <span />
+                <span>{t('reports.columns.model')}</span>
+                <span>{t('reports.columns.dataset')}</span>
+                <span>{t('reports.columns.time')}</span>
+                <span>{t('performance.runsColumn')}</span>
+                <span>{t('performance.sort_rps')}</span>
+                <span>{t('performance.sort_latency')}</span>
+                <span>{t('performance.successColumn')}</span>
+                <span />
+              </div>
+              <div className="divide-y divide-[var(--border)]">
               {visibleRuns.map((run) => (
                 <PerfRunCard
                   key={run.path}
@@ -298,6 +315,7 @@ export default function PerfReportsPage() {
                   t={t}
                 />
               ))}
+              </div>
             </div>
           ) : (
             <EmptyStateSystem

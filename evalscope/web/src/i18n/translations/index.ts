@@ -83,13 +83,17 @@ const translations: Record<Locale, Dict> = { en, zh }
  */
 export const localeDictionaries: Readonly<Record<Locale, Dict>> = translations
 
-export function lookupTranslation(locale: Locale, path: string): string {
+function lookup(locale: Locale, path: string): string | undefined {
   const keys = path.split('.')
   let node: string | Dict = translations[locale]
   for (const key of keys) {
-    if (typeof node === 'string') return path
+    if (typeof node === 'string') return undefined
     node = (node as Dict)[key]
-    if (node === undefined) return path
+    if (node === undefined) return undefined
   }
-  return typeof node === 'string' ? node : path
+  return typeof node === 'string' ? node : undefined
+}
+
+export function lookupTranslation(locale: Locale, path: string): string {
+  return lookup(locale, path) ?? lookup('en', path) ?? path
 }

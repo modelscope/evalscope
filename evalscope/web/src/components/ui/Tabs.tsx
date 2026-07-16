@@ -2,7 +2,32 @@ import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'rea
 
 import { useLocale } from '@/contexts/LocaleContext'
 import { cn } from '@/lib/utils'
-import { moveRovingIndex, type RovingOrientation } from '@/domain/tabs/roving'
+
+type RovingDirection = 'next' | 'prev'
+type RovingOrientation = 'horizontal' | 'vertical'
+
+function nextRovingIndex(current: number, count: number, direction: RovingDirection): number {
+  if (count <= 0) return -1
+  if (count === 1) return 0
+  const normalized = ((Math.trunc(current) % count) + count) % count
+  return (normalized + (direction === 'next' ? 1 : -1) + count) % count
+}
+
+function moveRovingIndex(
+  current: number,
+  count: number,
+  key: string,
+  orientation: RovingOrientation = 'horizontal',
+): number | null {
+  if (count <= 0) return -1
+  const nextKey = orientation === 'vertical' ? 'ArrowDown' : 'ArrowRight'
+  const prevKey = orientation === 'vertical' ? 'ArrowUp' : 'ArrowLeft'
+  if (key === nextKey) return nextRovingIndex(current, count, 'next')
+  if (key === prevKey) return nextRovingIndex(current, count, 'prev')
+  if (key === 'Home') return 0
+  if (key === 'End') return count - 1
+  return null
+}
 
 /**
  * A single tab descriptor.
