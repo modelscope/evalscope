@@ -30,7 +30,7 @@ def _make_args(trace_path, **kwargs):
     )
 
 
-def _record(body=None, timestamp=0.0, headers=None, request_id=None):
+def _record(body=None, timestamp=0.0, headers=None, request_id=None, completion_tokens=None):
     r = {
         'body': body or {'model': 'qwen-72b', 'messages': [{'role': 'user', 'content': 'hi'}], 'temperature': 0.5},
         'timestamp': timestamp,
@@ -39,6 +39,8 @@ def _record(body=None, timestamp=0.0, headers=None, request_id=None):
         r['headers'] = headers
     if request_id is not None:
         r['request_id'] = request_id
+    if completion_tokens is not None:
+        r['completion_tokens'] = completion_tokens
     return r
 
 
@@ -256,12 +258,12 @@ class TestValidation:
 
     def test_missing_body(self, tmp_path):
         path = _make_trace_file([{'timestamp': 0.0}], tmp_path)
-        with pytest.raises(ValueError, match='line 1.*missing.*body'):
+        with pytest.raises(ValueError, match=r'(?s)line 1.*body.*(?:missing|required)'):
             WorkloadTraceDatasetPlugin(_make_args(path))
 
     def test_missing_timestamp(self, tmp_path):
         path = _make_trace_file([{'body': {'model': 'm', 'messages': []}}], tmp_path)
-        with pytest.raises(ValueError, match='line 1.*missing.*timestamp'):
+        with pytest.raises(ValueError, match=r'(?s)line 1.*timestamp.*(?:missing|required)'):
             WorkloadTraceDatasetPlugin(_make_args(path))
 
     def test_non_monotonic_timestamps(self, tmp_path):
@@ -464,3 +466,49 @@ class TestRateValidation:
         )
         plugin = WorkloadTraceDatasetPlugin(args)
         assert len(list(plugin.build_messages())) == 1
+
+
+# ---------------------------------------------------------------------------
+# Match output length
+# ---------------------------------------------------------------------------
+
+
+class TestMatchOutputLength:
+
+    def test_sets_max_tokens_and_ignore_eos(self, tmp_path):
+        path = _make_trace_file([_record(completion_tokens=42, timestamp=0.0)], tmp_path)
+        args = _make_args(path, dataset_args={'match_output_length': True})
+        plugin = WorkloadTraceDatasetPlugin(args)
+        msg = list(plugin.build_messages())[0]
+        assert msg['max_tokens'] == 42
+        assert msg['ignore_eos'] is True
+
+    def test_no_effect_when_disabled(self, tmp_path):
+        path = _make_trace_file([_record(completion_tokens=42, timestamp=0.0)], tmp_path)
+        args = _make_args(path)
+        plugin = WorkloadTraceDatasetPlugin(args)
+        msg = list(plugin.build_messages())[0]
+        assert 'ignore_eos' not in msg
+        assert msg.get('max_tokens') is None  # original body has no max_tokens
+
+    def test_skips_when_completion_tokens_missing(self, tmp_path):
+        """Records without completion_tokens are left untouched."""
+        path = _make_trace_file([_record(timestamp=0.0)], tmp_path)
+        args = _make_args(path, dataset_args={'match_output_length': True})
+        plugin = WorkloadTraceDatasetPlugin(args)
+        msg = list(plugin.build_messages())[0]
+        assert 'ignore_eos' not in msg
+
+    def test_overwrites_existing_max_tokens(self, tmp_path):
+        body = {'model': 'qwen', 'messages': [{'role': 'user', 'content': 'hi'}], 'max_tokens': 999}
+        path = _make_trace_file([_record(body=body, completion_tokens=50, timestamp=0.0)], tmp_path)
+        args = _make_args(path, dataset_args={'match_output_length': True})
+        plugin = WorkloadTraceDatasetPlugin(args)
+        msg = list(plugin.build_messages())[0]
+        assert msg['max_tokens'] == 50
+
+    @pytest.mark.parametrize('bad_value', [0, -1, -100])
+    def test_rejects_non_positive_completion_tokens(self, tmp_path, bad_value):
+        path = _make_trace_file([_record(completion_tokens=bad_value, timestamp=0.0)], tmp_path)
+        with pytest.raises(ValueError, match='completion_tokens must be > 0'):
+            WorkloadTraceDatasetPlugin(_make_args(path))

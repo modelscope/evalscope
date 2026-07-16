@@ -5,6 +5,7 @@ from typing import Any, Dict, Iterator, List, Optional
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
+from evalscope.perf.plugin.datasets.dataset_args import BaseDatasetArgs
 from evalscope.perf.plugin.registry import register_dataset
 from evalscope.perf.utils.body_meta import (
     BODY_META_ARRIVAL_OFFSET,
@@ -19,12 +20,14 @@ logger = get_logger()
 RESERVED_BODY_KEYS = frozenset({BODY_META_HEADERS, BODY_META_REQUEST_ID, BODY_META_ARRIVAL_OFFSET, BODY_META_IS_WARMUP})
 
 
-class WorkloadTraceArgs(BaseModel):
-    model_config = ConfigDict(extra='forbid')
+class WorkloadTraceArgs(BaseDatasetArgs):
 
     speed: float = 1.0
     model_override: Optional[str] = None
     model_mapping: Optional[Dict[str, str]] = None
+    match_output_length: bool = False
+    """Set max_tokens from recorded completion_tokens and enable ignore_eos.
+    Requires an endpoint that supports ignore_eos (e.g. vLLM)."""
 
     @field_validator('speed')
     @classmethod
@@ -40,6 +43,10 @@ def _normalise_timestamp(v: Any) -> float:
     if isinstance(v, str):
         from datetime import datetime, timezone
         s = v.strip()
+        try:
+            return float(s)
+        except ValueError:
+            pass
         if s.endswith('Z') or s.endswith('z'):
             s = s[:-1] + '+00:00'
         try:
@@ -59,6 +66,14 @@ class TraceRecord(BaseModel):
     timestamp: float
     headers: Optional[Dict[str, str]] = None
     request_id: Optional[str] = None
+    completion_tokens: Optional[int] = None
+
+    @field_validator('completion_tokens')
+    @classmethod
+    def _completion_tokens_must_be_positive(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v <= 0:
+            raise ValueError(f'completion_tokens must be > 0, got {v}')
+        return v
 
     @field_validator('timestamp', mode='before')
     @classmethod
@@ -75,7 +90,11 @@ class TraceRecord(BaseModel):
                 raise ValueError(f'body is a string but not valid JSON: {e}')
             if not isinstance(parsed, dict):
                 raise ValueError(f'body JSON string must decode to a dict, got {type(parsed).__name__}')
-            return parsed
+            v = parsed
+        if isinstance(v, dict):
+            collisions = RESERVED_BODY_KEYS & v.keys()
+            if collisions:
+                raise ValueError(f'body contains reserved key(s) {collisions}; remove them from the trace body')
         return v
 
 
@@ -95,6 +114,7 @@ class WorkloadTraceDatasetPlugin(DatasetPluginBase):
 
     provides_arrival_schedule = True
     requires_model = False
+    args_schema = WorkloadTraceArgs
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
@@ -106,8 +126,6 @@ class WorkloadTraceDatasetPlugin(DatasetPluginBase):
         if not query_parameters.dataset_path:
             raise ValueError('workload_trace requires --dataset-path pointing to a JSONL trace file.')
 
-        raw_args = query_parameters.dataset_args or {}
-        self._config = WorkloadTraceArgs(**raw_args)
         self._records: List[TraceRecord] = []
         self._load_and_validate()
         self._schedule = self._compute_schedule()
@@ -123,8 +141,8 @@ class WorkloadTraceDatasetPlugin(DatasetPluginBase):
 
         # --model: if user explicitly passed it, treat as model_override fallback.
         if 'model' in query_parameters.model_fields_set:
-            if not self._config.model_override and not self._config.model_mapping:
-                self._config.model_override = query_parameters.model
+            if not self.dataset_args.model_override and not self.dataset_args.model_mapping:
+                self.dataset_args.model_override = query_parameters.model
 
         self._warmup_count = min(query_parameters.warmup_count, n)
 
@@ -132,7 +150,14 @@ class WorkloadTraceDatasetPlugin(DatasetPluginBase):
 
         warmup_msg = f', warmup={self._warmup_count}' if self._warmup_count else ''
         logger.info(f'workload_trace: loaded {n} records, '
-                    f'speed={self._config.speed}x{warmup_msg}')
+                    f'speed={self.dataset_args.speed}x{warmup_msg}')
+        if self.dataset_args.match_output_length:
+            logger.info(
+                'workload_trace: match_output_length enabled — '
+                'setting max_tokens from completion_tokens (requires ignore_eos support, e.g. vLLM)'
+            )
+        if not query_parameters.name:
+            logger.info('Tip: use --name to set a meaningful output directory name.')
 
     def _load_and_validate(self) -> None:
         errors: List[str] = []
@@ -153,34 +178,6 @@ class WorkloadTraceDatasetPlugin(DatasetPluginBase):
                 if not isinstance(data, dict):
                     errors.append(f'line {line_num}: expected JSON object, got {type(data).__name__}')
                     continue
-
-                if 'body' not in data:
-                    errors.append(f'line {line_num}: missing required field "body"')
-                    continue
-                if not isinstance(data['body'], (dict, str)):
-                    errors.append(f'line {line_num}: "body" must be a dict or JSON string')
-                    continue
-                if 'timestamp' not in data:
-                    errors.append(f'line {line_num}: missing required field "timestamp"')
-                    continue
-                if not isinstance(data['timestamp'], (int, float, str)):
-                    errors.append(f'line {line_num}: "timestamp" must be a number or ISO-8601 string')
-                    continue
-
-                body_for_check = data['body']
-                if isinstance(body_for_check, str):
-                    try:
-                        body_for_check = json.loads(body_for_check)
-                    except (json.JSONDecodeError, TypeError):
-                        pass
-                if isinstance(body_for_check, dict):
-                    collisions = RESERVED_BODY_KEYS & body_for_check.keys()
-                    if collisions:
-                        errors.append(
-                            f'line {line_num}: body contains reserved key(s) {collisions}; '
-                            f'remove them from the trace body'
-                        )
-                        continue
 
                 try:
                     self._records.append(TraceRecord(**data))
@@ -205,12 +202,12 @@ class WorkloadTraceDatasetPlugin(DatasetPluginBase):
         if not self._records:
             return np.array([])
         t0 = self._records[0].timestamp
-        return np.array([(r.timestamp - t0) / self._config.speed for r in self._records])
+        return np.array([(r.timestamp - t0) / self.dataset_args.speed for r in self._records])
 
     def _rewrite_model(self, body: Dict[str, Any]) -> None:
         original = body.get('model')
-        mapping = self._config.model_mapping
-        override = self._config.model_override
+        mapping = self.dataset_args.model_mapping
+        override = self.dataset_args.model_override
 
         if mapping and original in mapping:
             body['model'] = mapping[original]
@@ -218,9 +215,14 @@ class WorkloadTraceDatasetPlugin(DatasetPluginBase):
             body['model'] = override
 
     def build_messages(self) -> Iterator[Dict[str, Any]]:
+        match_output = self.dataset_args.match_output_length
         for i, record in enumerate(self._records):
             body = dict(record.body)
             self._rewrite_model(body)
+
+            if match_output and record.completion_tokens is not None:
+                body['max_tokens'] = record.completion_tokens
+                body['ignore_eos'] = True
 
             body[BODY_META_ARRIVAL_OFFSET] = float(self._schedule[i])
             if i < self._warmup_count:
