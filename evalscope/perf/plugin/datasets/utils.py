@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from evalscope.utils.logger import get_logger
 
@@ -137,3 +137,60 @@ def gen_prompt_decode_to_target_len(
         remain_num_try -= 1
 
     return prompt, token_sequence, token_mismatch
+
+
+def truncate_text_to_token_len(text: str, target_len: int, tokenizer, add_special_tokens: bool = False) -> str:
+    """Truncate ``text`` so it occupies at most ``target_len`` tokens.
+
+    Encodes with ``add_special_tokens=False`` by default (bare content tokens),
+    keeps the first ``target_len`` ids and decodes back to text.
+
+    Args:
+        text: The input text to truncate.
+        target_len: Maximum number of tokens to keep.
+        tokenizer: A HuggingFace / ModelScope tokenizer instance.
+        add_special_tokens: Whether to add special tokens when encoding.
+
+    Returns:
+        The truncated text.
+    """
+    ids = tokenizer.encode(text, add_special_tokens=add_special_tokens)
+    return tokenizer.decode(ids[:target_len], skip_special_tokens=True)
+
+
+def fit_text_to_token_len(
+    text: str,
+    target_len: int,
+    mode: str,
+    tokenizer,
+    add_special_tokens: bool = False,
+) -> Optional[str]:
+    """Fit ``text`` to ``target_len`` tokens according to ``mode``.
+
+    Over-length text is always truncated to ``target_len``.  The handling of
+    text shorter than ``target_len`` depends on ``mode``:
+
+    - ``cap``: keep the shorter text as-is (result <= target).
+    - ``drop``: return ``None`` so the caller skips it (exact length only).
+
+    Args:
+        text: The input text.
+        target_len: Target token length.
+        mode: One of ``'cap'``, ``'drop'``.
+        tokenizer: A HuggingFace / ModelScope tokenizer instance.
+        add_special_tokens: Whether to add special tokens when encoding.
+
+    Returns:
+        The adjusted text, or ``None`` when the prompt should be skipped.
+
+    Raises:
+        ValueError: If ``mode`` is not one of the supported values.
+    """
+    ids = tokenizer.encode(text, add_special_tokens=add_special_tokens)
+    if len(ids) >= target_len:
+        return tokenizer.decode(ids[:target_len], skip_special_tokens=True)
+    if mode == 'cap':
+        return text
+    if mode == 'drop':
+        return None
+    raise ValueError(f"Unknown input_len_mode: {mode!r}. Expected one of 'cap', 'drop'.")
