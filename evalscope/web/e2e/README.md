@@ -24,7 +24,8 @@ e2e/
 
 ```bash
 npm run build      # 先构建静态产物
-npm run e2e        # 运行全部 E2E（playwright test）
+npm run e2e        # 运行关键流程 E2E（不生成开发机视觉基线）
+npm run e2e:visual # 运行视觉回归；CI 使用已提交的 Linux goldens
 ```
 
 新增流程测试时，从 `./fixtures` 导入 `test` / `expect`，并用 `page.route` 挂载脱敏 fixtures。

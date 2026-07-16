@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
 
 /**
  * Light/dark dual-theme visual baseline capture helpers.
@@ -46,27 +46,6 @@ interface BaseCaptureOptions {
 export interface PageBaselineOptions extends BaseCaptureOptions {
   /** Capture the full scrollable page rather than the viewport. Defaults to true. */
   fullPage?: boolean
-}
-
-/** Options for capturing a single-element (component) baseline. */
-export type ElementBaselineOptions = BaseCaptureOptions
-
-/**
- * Seeds the theme BEFORE the app boots.
- *
- * Registers an init script so that when the page next navigates, `ThemeProvider`
- * initialises directly into `theme` (reading `evalscope-theme` from localStorage)
- * and drives `data-theme` accordingly. Use this for fresh-navigation flows (E2E)
- * where you want the first paint to already be in the target theme.
- */
-export async function seedThemeBeforeLoad(page: Page, theme: VisualTheme): Promise<void> {
-  await page.addInitScript(
-    ({ key, value }) => {
-      window.localStorage.setItem(key, value)
-      document.documentElement.setAttribute('data-theme', value)
-    },
-    { key: THEME_STORAGE_KEY, value: theme },
-  )
 }
 
 /**
@@ -118,29 +97,6 @@ export async function captureThemeBaselines(
     await applyTheme(page, theme)
     await expect(page).toHaveScreenshot(`${name}-${theme}.png`, {
       fullPage,
-      animations: disableAnimations ? 'disabled' : 'allow',
-    })
-  }
-}
-
-/**
- * Captures a single-element (component) visual baseline in both themes.
- *
- * Intended for Storybook-backed component baselines (task 19.1): pin the story,
- * then snapshot just the mounted component. The theme is toggled on the owning
- * page via {@link applyTheme}; the locator is re-resolved implicitly by Playwright
- * after each reload.
- */
-export async function captureElementThemeBaselines(
-  page: Page,
-  target: Locator,
-  name: string,
-  options: ElementBaselineOptions = {},
-): Promise<void> {
-  const { themes = VISUAL_THEMES, disableAnimations = true } = options
-  for (const theme of themes) {
-    await applyTheme(page, theme)
-    await expect(target).toHaveScreenshot(`${name}-${theme}.png`, {
       animations: disableAnimations ? 'disabled' : 'allow',
     })
   }

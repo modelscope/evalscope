@@ -3,6 +3,11 @@
 Deterministic, redacted JSON fixtures consumed by `loadFixture()`
 (`src/test/loadFixture.ts`) and by Playwright / visual-regression tests.
 
+These stay under `evalscope/web/src/test` because they are consumed by the
+Vitest/Vite TypeScript toolchain and `@/test` alias. The repository-level
+`tests/` tree is collected by pytest (`pyproject.toml`) and remains the home for
+Python service/report regression tests.
+
 Rules:
 
 - Fixtures MUST be static local JSON. No network, no system time, no randomness.

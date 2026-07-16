@@ -40,6 +40,7 @@ jobs:
       - run: npm run size-budget
       - run: npm run build-storybook
       - run: npm run e2e
+      - run: npm run e2e:visual
 
       - name: Upload Playwright diagnostics
         if: failure()

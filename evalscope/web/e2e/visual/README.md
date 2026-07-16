@@ -13,6 +13,7 @@ e2e/visual/
 
 - **快照集中存放**：所有基线图片统一放在 `e2e/visual/__screenshots__/`，而非默认散落在各测试文件旁的 `*-snapshots/` 目录。集中路径由任务 19.3 在 `playwright.config.ts` 中通过 `snapshotPathTemplate` 配置。
 - **命名**：每次捕获对每个主题产出 `${name}-${theme}.png`（如 `reports-page-light.png`）。Playwright 会再自动追加当前 project（`mobile-390` / `desktop-1024`）与平台后缀，因此单次调用即可覆盖 light/dark × 视口 的基线矩阵。
+- **提交策略**：只提交 CI 使用的 `*-linux.png` golden。Darwin/Windows 本地捕获属于一次性产物，由 `.gitignore` 排除，避免同一基线按开发平台重复占用仓库。
 
 ## 双主题机制
 
@@ -34,10 +35,8 @@ e2e/visual/
 
 | 函数 | 用途 |
 | --- | --- |
-| `seedThemeBeforeLoad(page, theme)` | 导航前注入 theme，使首屏即为目标主题（适合 E2E 全新导航流程）。 |
 | `applyTheme(page, theme)` | 将已加载页面切换到指定主题（写 localStorage + reload + 等待 `data-theme` 生效）。 |
 | `captureThemeBaselines(page, name, options?)` | 对当前路由捕获整页 light/dark 基线。 |
-| `captureElementThemeBaselines(page, target, name, options?)` | 对单个元素（组件）捕获 light/dark 基线（适合 Storybook 组件基线）。 |
 
 ## 使用示例
 
