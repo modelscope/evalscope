@@ -17,6 +17,7 @@ on:
 jobs:
   frontend:
     runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.61.1-noble
     defaults:
       run:
         working-directory: evalscope/web
@@ -30,7 +31,6 @@ jobs:
           cache-dependency-path: evalscope/web/package-lock.json
 
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
       - run: npm run lint
       - run: npm test
       - run: npm run drift
