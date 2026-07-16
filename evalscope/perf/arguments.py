@@ -514,20 +514,27 @@ class Arguments(BaseArgument):
         # schema), so the config layer stays free of any plugin dependency.
         self._normalize_legacy_dataset_args()
 
-        # Promote deprecated num_workers (from --dataset-args / --multi-turn-args) to top-level.
-        if 'num_workers' not in self.model_fields_set:
-            legacy_num_workers = (self.dataset_args or {}).get('num_workers')
-            if (
-                legacy_num_workers is None and self.multi_turn_args is not None
-                and 'num_workers' in self.multi_turn_args.model_fields_set
-            ):
-                legacy_num_workers = self.multi_turn_args.num_workers
-            if legacy_num_workers is not None:
-                logger.warning(
-                    '`num_workers` in dataset/multi-turn args is deprecated. '
-                    'Please use top-level `--num-workers` instead.'
-                )
-                self.num_workers = legacy_num_workers
+        # Promote deprecated num_workers to top-level. It must be removed from
+        # dataset_args regardless, otherwise non-multi-turn schemas (extra='forbid')
+        # would reject it during plugin construction.
+        legacy_num_workers = None
+        if self.dataset_args and 'num_workers' in self.dataset_args:
+            legacy_num_workers = self.dataset_args.pop('num_workers')
+        elif self.multi_turn_args is not None and 'num_workers' in self.multi_turn_args.model_fields_set:
+            legacy_num_workers = self.multi_turn_args.num_workers
+        if legacy_num_workers is not None:
+            logger.warning(
+                '`num_workers` in dataset/multi-turn args is deprecated. '
+                'Please use top-level `--num-workers` instead.'
+            )
+            if 'num_workers' not in self.model_fields_set:
+                try:
+                    coerced = int(legacy_num_workers)
+                except (TypeError, ValueError) as e:
+                    raise ValueError(f'`num_workers` must be an integer, got {legacy_num_workers!r}') from e
+                if coerced < 0:
+                    raise ValueError(f'`num_workers` must be >= 0, got {coerced}')
+                self.num_workers = coerced
 
         return self
 

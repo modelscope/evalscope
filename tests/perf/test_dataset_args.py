@@ -124,6 +124,15 @@ class TestMultiTurnArgsFolding:
         args = _args(dataset='swe_smith', multi_turn_args='{"num_workers": 3}')
         assert args.num_workers == 3
 
+    def test_num_workers_in_dataset_args_promoted_and_popped(self):
+        # num_workers passed directly in --dataset-args must be promoted to top-level
+        # and removed, so non-multi-turn schemas (extra='forbid') do not reject it.
+        args = _args(dataset='openqa', dataset_args='{"num_workers": 4, "target_input_len": 100}')
+        assert args.num_workers == 4
+        assert 'num_workers' not in args.dataset_args
+        # remaining keys still validate against the dataset schema
+        assert _resolve(args).target_input_len == 100
+
     def test_no_multi_turn_args_leaves_dataset_args_none(self):
         args = _args(dataset='swe_smith')
         assert args.dataset_args is None

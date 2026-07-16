@@ -178,7 +178,7 @@ class DatasetPluginBase:
         to the existing ``min/max_prompt_length`` filter and returns the prompt
         unchanged when valid (``None`` when out of range).  When it is set, the
         prompt is fit to the target length per ``input_len_mode`` (``cap`` /
-        ``drop`` / ``pad``); ``None`` means the caller should skip this item.
+        ``drop``); ``None`` means the caller should skip this item.
 
         Args:
             prompt (str): The raw prompt text.

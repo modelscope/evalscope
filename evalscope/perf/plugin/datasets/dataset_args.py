@@ -2,8 +2,8 @@
 
 Each dataset plugin declares an ``args_schema`` (a subclass of
 :class:`BaseDatasetArgs`).  The raw ``--dataset-args`` JSON is validated against
-the schema selected by ``--dataset`` (see
-:meth:`evalscope.perf.arguments.Arguments.resolve_dataset_args`), giving plugins
+the plugin's own ``args_schema`` at plugin construction time (see
+:class:`~evalscope.perf.plugin.datasets.base.DatasetPluginBase`), giving plugins
 a strongly-typed, fail-fast accessor instead of scattered ``query_parameters.*``
 reads.
 

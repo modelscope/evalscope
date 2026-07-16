@@ -142,8 +142,9 @@ def gen_prompt_decode_to_target_len(
 def truncate_text_to_token_len(text: str, target_len: int, tokenizer, add_special_tokens: bool = False) -> str:
     """Truncate ``text`` so it occupies at most ``target_len`` tokens.
 
-    Encodes with ``add_special_tokens=False`` by default (bare content tokens),
-    keeps the first ``target_len`` ids and decodes back to text.
+    Encodes with ``add_special_tokens=False`` by default (bare content tokens).
+    Text that already fits within ``target_len`` is returned unchanged; longer
+    text is truncated to the first ``target_len`` ids and decoded back.
 
     Args:
         text: The input text to truncate.
@@ -155,6 +156,8 @@ def truncate_text_to_token_len(text: str, target_len: int, tokenizer, add_specia
         The truncated text.
     """
     ids = tokenizer.encode(text, add_special_tokens=add_special_tokens)
+    if len(ids) <= target_len:
+        return text
     return tokenizer.decode(ids[:target_len], skip_special_tokens=True)
 
 
@@ -187,9 +190,11 @@ def fit_text_to_token_len(
         ValueError: If ``mode`` is not one of the supported values.
     """
     ids = tokenizer.encode(text, add_special_tokens=add_special_tokens)
-    if len(ids) >= target_len:
+    if len(ids) > target_len:
         return tokenizer.decode(ids[:target_len], skip_special_tokens=True)
-    if mode == 'cap':
+    # Already at or below the target: avoid a redundant decode/re-encode round-trip
+    # (which could otherwise alter the token count).
+    if mode == 'cap' or len(ids) == target_len:
         return text
     if mode == 'drop':
         return None
