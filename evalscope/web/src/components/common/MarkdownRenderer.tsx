@@ -32,8 +32,8 @@ interface Props {
   /**
    * Whether heavy content (math, code blocks, large tables) is collapsed.
    * Defaults to `false` so the rendered output is identical to before; when a
-   * caller collapses the region the heavy content is not rendered (Req 16.3)
-   * and its optional modules are not loaded (Req 16.1).
+   * caller collapses the region the heavy content is not rendered
+   * and its optional modules are not loaded.
    */
   collapsed?: boolean
 }
@@ -68,9 +68,9 @@ function nodeLineSpan(node: unknown): number {
  * Lazily load the math pipeline (`remark-math` + `rehype-katex` + KaTeX CSS).
  *
  * The modules are imported only when the content actually contains math and the
- * math region is not collapsed (Req 16.1, 16.3). On load failure the hook
+ * math region is not collapsed. On load failure the hook
  * reports `'error'` so the caller can show a placeholder while still rendering
- * the rest of the document (Req 16.5).
+ * the rest of the document.
  */
 function useMathPlugins(content: string, collapsed: boolean): { plugins: MathPlugins | null; state: MathState } {
   const needsMath = useMemo(
@@ -119,8 +119,8 @@ export default function MarkdownRenderer({ content, collapsed = false }: Props) 
     code: ({ className, children }) => {
       const match = /language-(\w+)/.exec(className || '')
       if (match) {
-        // Fenced code block: heavy content, gated by collapse (Req 16.3) and
-        // rendered by the on-demand highlighter (Req 16.1, 16.2).
+        // Fenced code block: heavy content, gated by collapse and
+        // rendered by the on-demand highlighter.
         if (!shouldRenderHeavy(collapsed, 'code')) {
           return (
             <div className="not-prose my-3 text-[0.75rem] text-[var(--text-dim)] italic" role="status">
@@ -138,8 +138,8 @@ export default function MarkdownRenderer({ content, collapsed = false }: Props) 
     },
     pre: ({ children }) => <div className="not-prose my-3">{children}</div>,
     table: ({ children, node }) => {
-      // A table longer than the threshold is heavy and gated by collapse
-      // (Req 16.3); smaller tables always render.
+      // A table longer than the threshold is heavy and gated by collapse;
+      // smaller tables always render.
       const large = isLargeTable(nodeLineSpan(node))
       if (large && !shouldRenderHeavy(collapsed, 'large-table')) {
         return (

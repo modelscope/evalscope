@@ -1,5 +1,5 @@
 /**
- * Performance workload normalization — pure logic (Req 8.4, 8.5, 8.6, 8.7).
+ * Performance workload normalization — pure logic.
  *
  * This module turns a raw `PerfRunItem` into the workload context a reader needs
  * to interpret a performance run: concurrency, number of requests, and a request
@@ -13,12 +13,12 @@
 
 import type { PerfRunItem } from '../../api/types'
 
-/** Placeholder shown for a missing workload parameter (Req 8.5). */
+/** Placeholder shown for a missing workload parameter. */
 export const MISSING_WORKLOAD = 'N/A'
 
-/** Semantic label for a concurrency-bound run with no rate limit (Req 8.6). */
+/** Semantic label for a concurrency-bound run with no rate limit. */
 export const CLOSED_LOOP_LABEL = 'closed-loop'
-/** Semantic label for an unbounded run with no rate limit (Req 8.6). */
+/** Semantic label for an unbounded run with no rate limit. */
 export const OPEN_LOOP_LABEL = 'open-loop'
 
 /**
@@ -28,15 +28,15 @@ export const OPEN_LOOP_LABEL = 'open-loop'
  * {@link MISSING_WORKLOAD}; `rateLabel` never contains the literal `INF`.
  */
 export interface PerfWorkload {
-  /** Concurrency (parallel clients); missing → {@link MISSING_WORKLOAD} (Req 8.4, 8.5). */
+  /** Concurrency (parallel clients); missing → {@link MISSING_WORKLOAD}. */
   concurrency: string
-  /** Number of requests; missing → {@link MISSING_WORKLOAD} (Req 8.4, 8.5). */
+  /** Number of requests; missing → {@link MISSING_WORKLOAD}. */
   numberOfRequests: string
   /**
    * Request rate label:
    * - truly unlimited → a semantic label ({@link CLOSED_LOOP_LABEL} /
-   *   {@link OPEN_LOOP_LABEL}), never `INF` (Req 8.6);
-   * - finite → the finite value (e.g. `5/s`), never `INF` (Req 8.7).
+   *   {@link OPEN_LOOP_LABEL}), never `INF`;
+   * - finite → the finite value (e.g. `5/s`), never `INF`.
    */
   rateLabel: string
 }
@@ -97,11 +97,11 @@ export function normalizeWorkload(run: PerfRunItem): PerfWorkload {
   let rateLabel: string
   if (isUnlimitedRate(run?.rate)) {
     // No rate limit: the run is either concurrency-bound (closed-loop) or,
-    // without a concurrency limit, unbounded (open-loop) (Req 8.6).
+    // without a concurrency limit, unbounded (open-loop).
     const hasConcurrencyLimit = isFiniteNumber(run?.parallel) && run.parallel > 0
     rateLabel = hasConcurrencyLimit ? CLOSED_LOOP_LABEL : OPEN_LOOP_LABEL
   } else {
-    // Limited rate: show the finite value, never an `INF` label (Req 8.7).
+    // Limited rate: show the finite value, never an `INF` label.
     rateLabel = formatRate(run.rate as number)
   }
 

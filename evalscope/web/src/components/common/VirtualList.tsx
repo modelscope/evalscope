@@ -7,7 +7,7 @@ import { computeVirtualWindow } from './virtualWindow'
  * Long Predictions / agent-Trace lists can contain hundreds of message rows or
  * step blocks; rendering them all is expensive. This component windows the list
  * so only the items intersecting the viewport (plus a small overscan) are
- * mounted, while a sized spacer preserves the real scroll height (Req 4.1, 4.2).
+ * mounted, while a sized spacer preserves the real scroll height.
  *
  * Design notes:
  * - Variable row heights are supported: each rendered item is measured (initial

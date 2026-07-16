@@ -40,18 +40,18 @@ const RAW_CODE_STYLE: CSSProperties = {
 }
 
 /**
- * Dynamically-loaded syntax highlighter (Req 16.1, 16.2).
+ * Dynamically-loaded syntax highlighter.
  *
  * The heavy `react-syntax-highlighter` core is imported via `import()` only
  * when a code block is actually rendered, and only the specific Prism language
- * module for this block is registered — never the full language set (Req 16.2).
+ * module for this block is registered — never the full language set.
  * The core module and styles are cached at module scope, and each language is
  * registered at most once.
  *
  * Until the highlighter is ready the raw code is shown as plain preformatted
  * text, so content is never blank. If the on-demand modules fail to load, a
  * localized placeholder is shown alongside the raw code and the rest of the
- * document is unaffected (Req 16.5).
+ * document is unaffected.
  */
 
 // Module-scope caches so the highlighter core + styles load at most once, and
@@ -96,7 +96,7 @@ async function registerLanguage(
   let promise = languagePromises.get(language)
   if (!promise) {
     promise = (async () => {
-      // Only the language actually used by this block is imported (Req 16.2).
+      // Only the language actually used by this block is imported.
       const mod = await import(
         /* @vite-ignore */ `react-syntax-highlighter/dist/esm/languages/prism/${language}`
       )
@@ -163,7 +163,7 @@ export default function LazyCodeBlock({ language, value }: Props) {
   }
 
   // Loading and error states both show the raw code so content is never blank.
-  // The error state adds a localized placeholder without hiding the code (Req 16.5).
+  // The error state adds a localized placeholder without hiding the code.
   return (
     <div>
       {current.state === 'error' && (

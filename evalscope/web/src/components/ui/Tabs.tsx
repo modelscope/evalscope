@@ -48,7 +48,7 @@ export interface TabItem {
   /**
    * The `id` of the corresponding tabpanel. A tab whose `panelId` has no matching
    * entry in the required `panels` map is treated as invalid: it is not
-   * rendered and an error is surfaced (Req 11.8).
+   * rendered and an error is surfaced.
    */
   panelId?: string
 }
@@ -62,8 +62,8 @@ export interface TabsProps {
   onChange: (key: string) => void
   /**
    * Required panel content keyed by `panelId`. The component renders
-   * `role="tabpanel"` elements, guarantees exactly one visible panel (Req 11.7),
-   * and enforces the one-to-one tab/panel relationship (Req 11.2, 11.8).
+   * `role="tabpanel"` elements, guarantees exactly one visible panel,
+   * and enforces the one-to-one tab/panel relationship.
    */
   panels: Record<string, ReactNode>
   /** Tablist orientation, controls which arrow keys move focus. */
@@ -73,17 +73,17 @@ export interface TabsProps {
 }
 
 /**
- * Accessible tabs implementing the WAI-ARIA tablist pattern (Req 11).
+ * Accessible tabs implementing the WAI-ARIA tablist pattern.
  *
- * - Exposes `tablist` / `tab` / `tabpanel` roles (Req 11.1).
+ * - Exposes `tablist` / `tab` / `tabpanel` roles.
  * - Wires `aria-controls` (tab -> panel) and `aria-labelledby` (panel -> tab)
- *   with no orphan references (Req 11.2).
- * - Keeps exactly one `aria-selected=true` tab (Req 11.3).
- * - Applies roving `tabindex` (selected 0, others -1) (Req 11.4).
- * - Moves focus with arrow / Home / End keys and wraps around (Req 11.5).
- * - Activates the focused tab on Enter / Space (Req 11.6).
- * - Renders exactly one visible tabpanel when `panels` is supplied (Req 11.7).
- * - Skips tabs whose panel reference is missing and reports an error (Req 11.8).
+ *   with no orphan references.
+ * - Keeps exactly one `aria-selected=true` tab.
+ * - Applies roving `tabindex` (selected 0, others -1).
+ * - Moves focus with arrow / Home / End keys and wraps around.
+ * - Activates the focused tab on Enter / Space.
+ * - Renders exactly one visible tabpanel when `panels` is supplied.
+ * - Skips tabs whose panel reference is missing and reports an error.
  */
 export default function Tabs({
   tabs,
@@ -104,7 +104,7 @@ export default function Tabs({
   const invalidTabs = tabs.filter((tab) => !isValid(tab))
 
   // Guarantee exactly one selected tab: fall back to the first valid tab when
-  // `activeKey` does not match any renderable tab (Req 11.3).
+  // `activeKey` does not match any renderable tab.
   const selectedKey = validTabs.some((tab) => tab.key === activeKey) ? activeKey : validTabs[0]?.key
 
   // Track which tab currently owns the roving `tabindex=0` / DOM focus. It is
@@ -121,13 +121,13 @@ export default function Tabs({
 
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number, tabKey: string) => {
     if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
-      // Manual activation: activate the currently focused tab (Req 11.6).
+      // Manual activation: activate the currently focused tab.
       event.preventDefault()
       onChange(tabKey)
       return
     }
 
-    // Arrow / Home / End move focus with wrap-around (Req 11.5).
+    // Arrow / Home / End move focus with wrap-around.
     const nextIndex = moveRovingIndex(index, validTabs.length, event.key, orientation)
     if (nextIndex === null || nextIndex < 0) {
       return

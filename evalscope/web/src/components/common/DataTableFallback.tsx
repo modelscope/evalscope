@@ -7,7 +7,7 @@ import { useLocale } from '@/contexts/LocaleContext'
  *
  * A {@link DataTableModel} is the single source the chart and its table
  * fallback both render, so the fallback always presents the *same* data the
- * chart would have visualised (Req 2.8).
+ * chart would have visualised.
  */
 export interface DataTableModel {
   /** Ordered column headers. */
@@ -28,7 +28,7 @@ interface DataTableFallbackProps {
  * Renders the authoritative data-table fallback for a chart.
  *
  * This is shown whenever the chart itself cannot be rendered so users still
- * have access to the exact same underlying data (Req 2.8). It reuses the shared
+ * have access to the exact same underlying data. It reuses the shared
  * {@link DataTable} primitive and adds a localized caption/hint.
  */
 export default function DataTableFallback({ model, className }: DataTableFallbackProps) {

@@ -45,7 +45,7 @@ const PROVIDER_KEY = 'Provider'
 const PROTOCOL_KEY = 'Protocol'
 const API_URL_KEY = 'API URL'
 
-/** Assert both output fields are independent, non-empty strings (Req 8.1). */
+/** Assert both output fields are independent, non-empty strings. */
 function expectIndependentNonEmptyFields(result: ReturnType<typeof resolveProvider>): void {
   expect(typeof result.provider).toBe('string')
   expect(typeof result.protocol).toBe('string')
@@ -192,7 +192,7 @@ describe('resolveProvider (Property 13: Provider 优先级解析)', () => {
   })
 
   // Cross-cutting: the two fields are always present and independent, even for
-  // fully arbitrary / degenerate inputs (Req 8.1).
+  // fully arbitrary / degenerate inputs.
   it('always returns independent non-empty provider and protocol for any input', () => {
     const arbitraryInfoArb = fc.option(
       fc.dictionary(fc.string({ maxLength: 20 }), fc.string({ maxLength: 40 }), { maxKeys: 6 }),

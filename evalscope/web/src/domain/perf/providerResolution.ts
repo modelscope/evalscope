@@ -4,9 +4,9 @@
  * These helpers have no DOM, network, timer or randomness dependencies so they
  * can be exercised directly by property-based tests. They back the two
  * independent, individually-labelled `Provider` and `Protocol` fields shown in
- * the Performance views (Req 8.1).
+ * the Performance views.
  *
- * Provider is resolved by a strict priority order (Req 8.2, 8.3):
+ * Provider is resolved by a strict priority order:
  *   1. explicit provider metadata,
  *   2. known-host detection from the API URL,
  *   3. a `Custom` fallback when neither is available.
@@ -15,14 +15,14 @@
  * collapse into a single combined field.
  */
 
-/** Which resolution step produced the returned provider (Req 8.2, 8.3). */
+/** Which resolution step produced the returned provider. */
 export type ProviderSource = 'metadata' | 'host-detection' | 'custom-fallback'
 
 /**
  * Result of resolving a run's identity.
  *
  * `provider` and `protocol` are always populated and are independent of each
- * other (Req 8.1): the protocol is never derived from the provider and the
+ * other: the protocol is never derived from the provider and the
  * provider is never derived from the protocol.
  */
 export interface ProviderResolution {
@@ -56,7 +56,7 @@ export interface ProviderResolutionInput {
   api_type?: string | null
 }
 
-/** Fallback provider label when no explicit metadata or known host matches (Req 8.3). */
+/** Fallback provider label when no explicit metadata or known host matches. */
 export const CUSTOM_PROVIDER = 'Custom'
 
 /** Fallback protocol label when no explicit protocol metadata is present. */
@@ -69,7 +69,7 @@ const API_URL_KEY = 'API URL'
 const API_HOST_KEY = 'API Host'
 
 /**
- * Known host → provider mapping used for host detection (Req 8.2 step 2).
+ * Known host → provider mapping used for host detection.
  *
  * Keys are bare hostnames (no scheme/port). A run's API URL host matches a key
  * when it equals the key exactly or is a subdomain of it.
@@ -124,7 +124,7 @@ function extractHost(apiUrl: string | undefined): string | undefined {
 }
 
 /**
- * Detect a known provider from an API URL host (Req 8.2 step 2).
+ * Detect a known provider from an API URL host.
  *
  * Matches when the host equals a known host exactly or is a subdomain of one.
  * Returns `undefined` when the host is absent or unrecognized so the caller can
@@ -144,7 +144,7 @@ function detectProviderFromHost(apiUrl: string | undefined): string | undefined 
 }
 
 /**
- * Resolve the protocol label independently of the provider (Req 8.1).
+ * Resolve the protocol label independently of the provider.
  *
  * Prefers explicit `Protocol` metadata, then falls back to a default protocol.
  * `api_type` is reserved as a hint but all currently supported backends speak
@@ -161,13 +161,13 @@ function resolveProtocol(input: ProviderResolutionInput): string {
 /**
  * Resolve a run's provider and protocol into two independent fields.
  *
- * Provider resolution follows the priority order (Req 8.2, 8.3):
+ * Provider resolution follows the priority order:
  *   1. explicit `Provider` metadata → `source = 'metadata'`;
  *   2. otherwise a known host detected from the API URL → `source = 'host-detection'`;
  *   3. otherwise `Custom` → `source = 'custom-fallback'`.
  *
  * The returned `protocol` is always resolved independently of `provider`, and
- * both fields are always present (Req 8.1).
+ * both fields are always present.
  *
  * @param run - Structural perf run input carrying `basic_info` and `api_type`.
  * @returns The resolved provider, protocol and the source that produced the provider.

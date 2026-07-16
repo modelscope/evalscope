@@ -65,7 +65,7 @@ describe('roundHalfUp — round-half-up boundaries', () => {
   })
 })
 
-describe('formatMetric — missing values (Req 1.8)', () => {
+describe('formatMetric — missing values', () => {
   it('renders null as the missing placeholder with isMissing = true', () => {
     const result = formatMetric(null, boundedSpec(), identityTranslate)
     expect(result.primary).toBe(MISSING_PLACEHOLDER)
@@ -97,7 +97,7 @@ describe('formatMetric — missing values (Req 1.8)', () => {
   })
 })
 
-describe('formatMetric — bounded ratio rendering (Req 1.2, 1.3)', () => {
+describe('formatMetric — bounded ratio rendering', () => {
   it('renders a 0-1 ratio as a percentage primary and 0-1 raw', () => {
     const result = formatMetric(0.92, boundedSpec(), identityTranslate)
     expect(result.primary).toBe('92.0%')
@@ -108,7 +108,7 @@ describe('formatMetric — bounded ratio rendering (Req 1.2, 1.3)', () => {
   })
 })
 
-describe('formatMetric — storedAsHundred normalization (Req 1.2, 1.3)', () => {
+describe('formatMetric — storedAsHundred normalization', () => {
   it('normalizes a stored 0-100 value to a 0-1 ratio before formatting', () => {
     const result = formatMetric(92, boundedSpec({ storedAsHundred: true }), identityTranslate)
     expect(result.primary).toBe('92.0%')

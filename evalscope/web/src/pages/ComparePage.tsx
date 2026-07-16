@@ -288,7 +288,7 @@ export default function ComparePage() {
         const f = perModelFilter[name] ?? 'any'
         if (f === 'any') return true
         // The threshold is a view-only filter (above/below), not a pass/fail
-        // verdict (Req 1.11).
+        // verdict.
         const above = (row.models[name]?.NScore ?? 0) >= threshold
         return f === 'above' ? above : !above
       }),
@@ -310,7 +310,7 @@ export default function ComparePage() {
   const currentRow = filtered.length > 0 ? filtered[Math.min(page - 1, filtered.length - 1)] : null
 
   // Meaningful model + dataset display label per run, used for table headers and
-  // column identifiers instead of the raw timestamped run path (Req 5.7).
+  // column identifiers instead of the raw timestamped run path.
   const displayLabels = useMemo(() => {
     const map: Record<string, string> = {}
     for (const name of reportNames) {
@@ -321,7 +321,7 @@ export default function ComparePage() {
 
   // Incompatibility check across the selected runs. When runs share no common
   // dataset they cannot be aligned for comparison; we surface the localized
-  // reason and keep the existing selection untouched (Req 5.10).
+  // reason and keep the existing selection untouched.
   const incompatibilityReason = useMemo(() => {
     if (reportNames.length < 2) return null
     const runs = reportNames.map((name) => ({ name }) as ReportData)
@@ -405,7 +405,7 @@ export default function ComparePage() {
         </div>
       </Card>
 
-      {/* Incompatible runs notice — selection is preserved (Req 5.10) */}
+      {/* Incompatible runs notice — selection is preserved */}
       {incompatibilityReason && (
         <div
           role="status"
@@ -790,7 +790,7 @@ function PredictionTab({
             const cur = perModelFilter[name] ?? 'any'
             const rate = aboveRates[name]
             // Threshold-based filter chips (above/below) are neutral view
-            // filters, not pass/fail verdicts (Req 1.11): they share the accent
+            // filters, not pass/fail verdicts: they share the accent
             // color instead of the pass/fail palette.
             const chips: { key: PerModelFilter; label: string; icon?: ReactNode; activeBg: string }[] = [
               { key: 'any', label: t('compare.any'), activeBg: 'var(--accent)' },
@@ -932,8 +932,8 @@ function PredictionTab({
                   </div>
                   {/*
                     Native normalized score with a neutral gradient, independent
-                    of the view threshold (Req 1.12). The threshold only filters
-                    rows in this view and is not a pass/fail verdict (Req 1.11).
+                    of the view threshold. The threshold only filters
+                    rows in this view and is not a pass/fail verdict.
                   */}
                   <ScoreBadge
                     score={modelRow.NScore}

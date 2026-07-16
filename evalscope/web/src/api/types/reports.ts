@@ -4,7 +4,7 @@
 //
 // All endpoint response types are derived from runtime zod schemas. This barrel
 // preserves the stable `@/api/types` import path while keeping the schemas as
-// the single compile-time/runtime source of truth (Req 13.1, 15.3).
+// the single compile-time/runtime source of truth.
 
 export type {
   // Report score tree

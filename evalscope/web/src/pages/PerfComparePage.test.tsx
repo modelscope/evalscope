@@ -4,13 +4,13 @@
 // (rather than in the pure `compareModel` domain logic, which is covered by the
 // property tests in tasks 13.2-13.7):
 //   - the baseline swap is persisted to the URL `baseline` query param so it
-//     survives re-render and the effective-baseline marker follows it (Req 9.3);
+//     survives re-render and the effective-baseline marker follows it;
 //   - low sample sizes (n < 30) surface a strong warning and de-emphasize the
-//     P90 / P95 / P99 delta rows while leaving other rows emphasized (Req 9.6);
+//     P90 / P95 / P99 delta rows while leaving other rows emphasized;
 //   - runs with mismatched workloads show a non-blocking mismatch hint while the
-//     delta table still renders (Req 9.10);
+//     delta table still renders;
 //   - a run missing performance data surfaces the missing-data hint while the
-//     available metrics are still compared (Req 9.14).
+//     available metrics are still compared.
 //
 // The suite runs under the global deterministic setup (fake timers, fixed system
 // time, network disabled). `@/api/perf` is mocked so `getPerfDetail` resolves
@@ -156,7 +156,7 @@ afterEach(() => {
 })
 
 describe('PerfComparePage', () => {
-  describe('baseline swap persistence (Req 9.3)', () => {
+  describe('baseline swap persistence', () => {
     it('persists the swapped baseline to the URL and updates the effective-baseline marker', async () => {
       const older = makePerfDetail({ path: 'run-a', model: 'model-a', generated_at: '2026-06-01T00:00:00Z' })
       const newer = makePerfDetail({ path: 'run-b', model: 'model-b', generated_at: '2026-06-02T00:00:00Z' })
@@ -198,7 +198,7 @@ describe('PerfComparePage', () => {
     })
   })
 
-  describe('low-sample de-emphasis (Req 9.6)', () => {
+  describe('low-sample de-emphasis', () => {
     it('shows the critical warning and de-emphasizes P90/P95/P99 rows while keeping others emphasized', async () => {
       const older = makePerfDetail({ path: 'run-a', generated_at: '2026-06-01T00:00:00Z', __sampleCount: 10 })
       const newer = makePerfDetail({
@@ -225,7 +225,7 @@ describe('PerfComparePage', () => {
     })
   })
 
-  describe('workload mismatch hint (Req 9.10)', () => {
+  describe('workload mismatch hint', () => {
     it('shows a non-blocking mismatch hint and still renders the delta table', async () => {
       const older = makePerfDetail({ path: 'run-a', dataset: 'openqa', generated_at: '2026-06-01T00:00:00Z' })
       const newer = makePerfDetail({
@@ -246,7 +246,7 @@ describe('PerfComparePage', () => {
     })
   })
 
-  describe('missing performance data hint (Req 9.14)', () => {
+  describe('missing performance data hint', () => {
     it('shows the missing-data hint while still comparing the available metrics', async () => {
       const withData = makePerfDetail({ path: 'run-a', generated_at: '2026-06-01T00:00:00Z' })
       // Candidate is missing its performance summary rows entirely.

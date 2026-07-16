@@ -24,7 +24,7 @@ const NON_NUMERIC_TOKENS = ['N/A', '-', 'error', 'null', '']
 /**
  * Per-metric scenario describing how a metric appears across the two runs.
  * Every scenario except `bothValid` leaves the metric missing on one side, so
- * its delta must be incomputable (Req 9.14).
+ * its delta must be incomputable.
  */
 type Scenario =
   | 'bothValid' // valid numeric on both sides → computable
@@ -50,7 +50,7 @@ interface MetricCase {
 }
 
 // Fixed, distinct run identities. The baseline run is strictly older so the
-// default baseline selection (Req 9.2) resolves to `baselineRun` deterministically.
+// default baseline selection resolves to `baselineRun` deterministically.
 const BASELINE_TIMESTAMP = '2020-01-01T00:00:00.000Z'
 const CANDIDATE_TIMESTAMP = '2021-01-01T00:00:00.000Z'
 const BASELINE_PATH = 'perf/baseline'
@@ -186,7 +186,7 @@ describe('buildCompareModel — missing-data de-emphasis (Property 20: 缺数据
 
         const model = buildCompareModel([baselineRun, candidateRun], '')
 
-        // The older run is the baseline; the newer run is the candidate (Req 9.2).
+        // The older run is the baseline; the newer run is the candidate.
         expect(model.baselineId).toBe(BASELINE_PATH)
         expect(model.candidateId).toBe(CANDIDATE_PATH)
 
@@ -199,14 +199,14 @@ describe('buildCompareModel — missing-data de-emphasis (Property 20: 缺数据
 
           if (mc.scenario === 'bothValid') {
             // Computable metric retained: verdict is a real direction and the
-            // absolute delta is a fully-formed (non-missing) value (Req 9.14).
+            // absolute delta is a fully-formed (non-missing) value.
             expect(delta.verdict).not.toBe('incomputable')
             expect(delta.absoluteDelta.isMissing).toBe(false)
             expect(delta.percentDelta.isMissing).toBe(false)
             expect(delta.baseline.isMissing).toBe(false)
             expect(delta.candidate.isMissing).toBe(false)
           } else {
-            // Missing on one side → de-emphasized incomputable delta (Req 9.14).
+            // Missing on one side → de-emphasized incomputable delta.
             expect(delta.verdict).toBe('incomputable')
             expect(delta.absoluteDelta.isMissing).toBe(true)
             expect(delta.percentDelta.isMissing).toBe(true)

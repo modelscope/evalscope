@@ -19,7 +19,7 @@ type TabKey = 'overview' | 'charts' | 'runs'
 /**
  * A single, individually-labelled identity field. `Provider` and `Protocol`
  * are rendered as two of these so the two never collapse into one combined
- * field (Req 8.1).
+ * field.
  */
 function IdentityField({ label, value }: { label: string; value: string }) {
   return (
@@ -125,7 +125,7 @@ export default function PerfReportDetailPage() {
   const singleRun = (data?.num_runs ?? 0) <= 1
 
   // Resolve Provider and Protocol as two independent fields, applying the
-  // metadata → known-host → Custom fallback priority (Req 8.1, 8.2, 8.3).
+  // metadata → known-host → Custom fallback priority.
   const identity = useMemo(() => resolveProvider(data ?? {}), [data])
 
   useEffect(() => {
@@ -298,9 +298,9 @@ export default function PerfReportDetailPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-5">
         <div className="flex flex-col gap-1.5 min-w-0">
           {/* Model alias is the primary identity; fall back to dataset, never
-              the raw path/timestamp, when the alias is absent (Req 8.9). */}
+              the raw path/timestamp, when the alias is absent. */}
           <h1 className="type-title-md text-[var(--text)] break-words">{data.model || data.dataset || '—'}</h1>
-          {/* Provider and Protocol as two independent, individually-labelled fields (Req 8.1). */}
+          {/* Provider and Protocol as two independent, individually-labelled fields. */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <IdentityField label={t('performance.provider')} value={identity.provider} />
             <IdentityField label={t('performance.protocol')} value={identity.protocol} />

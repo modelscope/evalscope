@@ -2,13 +2,13 @@
 //
 // Covers ChartFrame behaviour that cannot be expressed as a pure property:
 //   - a light theme never renders a dark chart, because the active theme is
-//     carried on the iframe request path (Req 2.2);
-//   - switching the theme re-renders the chart against the new theme (Req 2.3);
+//     carried on the iframe request path;
+//   - switching the theme re-renders the chart against the new theme;
 //   - a failed preflight (404/500/timeout) shows visible error text plus a retry
-//     control and never mounts a blank iframe (Req 2.6);
+//     control and never mounts a blank iframe;
 //   - a visible loading state is shown while the preflight is in flight, ahead
-//     of any error state (Req 2.7);
-//   - the preflight timeout branch is classified deterministically (Req 2.5).
+//     of any error state;
+//   - the preflight timeout branch is classified deterministically.
 //
 // The suite runs under the global deterministic setup (fake timers, fixed
 // system time, network disabled). Each test installs its own controllable
@@ -91,12 +91,12 @@ afterEach(() => {
   cleanup()
 })
 
-describe('ChartFrame — theme injection on the request path (Req 2.2, 2.3)', () => {
+describe('ChartFrame — theme injection on the request path', () => {
   beforeEach(() => {
     stubFetchStatus(200)
   })
 
-  it('carries theme=light on the iframe request and never renders a dark chart (Req 2.2)', async () => {
+  it('carries theme=light on the iframe request and never renders a dark chart', async () => {
     const { container } = renderChart({ theme: 'light' })
     await flushAsync()
 
@@ -107,7 +107,7 @@ describe('ChartFrame — theme injection on the request path (Req 2.2, 2.3)', ()
     expect(src).not.toContain('theme=dark')
   })
 
-  it('re-renders the chart against the new theme when the theme changes (Req 2.3)', async () => {
+  it('re-renders the chart against the new theme when the theme changes', async () => {
     const { container, rerender } = renderChart({ theme: 'light' })
     await flushAsync()
     expect(container.querySelector('iframe')?.getAttribute('src')).toContain('theme=light')
@@ -129,7 +129,7 @@ describe('ChartFrame — theme injection on the request path (Req 2.2, 2.3)', ()
   })
 })
 
-describe('ChartFrame — failure states (Req 2.6)', () => {
+describe('ChartFrame — failure states', () => {
   it.each([
     { status: 404, kind: '4xx', detail: 'The chart could not be found.' },
     { status: 500, kind: '5xx', detail: 'The chart service encountered an error.' },
@@ -144,10 +144,10 @@ describe('ChartFrame — failure states (Req 2.6)', () => {
     expect(screen.getByText(detail)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Retry/i })).toBeInTheDocument()
 
-    // No blank iframe is mounted in the error state (Req 2.6).
+    // No blank iframe is mounted in the error state.
     expect(container.querySelector('iframe')).toBeNull()
 
-    // The authoritative data-table fallback is offered instead (Req 2.8).
+    // The authoritative data-table fallback is offered instead.
     expect(screen.getByText('Data table')).toBeInTheDocument()
   })
 
@@ -169,7 +169,7 @@ describe('ChartFrame — failure states (Req 2.6)', () => {
   })
 })
 
-describe('ChartFrame — loading precedes error (Req 2.7)', () => {
+describe('ChartFrame — loading precedes error', () => {
   it('shows a visible loading state while the preflight is in flight, before any error', async () => {
     stubFetchPending()
     const { container } = renderChart()
@@ -181,7 +181,7 @@ describe('ChartFrame — loading precedes error (Req 2.7)', () => {
     expect(container.querySelector('iframe')).toBeNull()
   })
 
-  it('classifies a 10s non-responding preflight as a timeout error (Req 2.5)', async () => {
+  it('classifies a 10s non-responding preflight as a timeout error', async () => {
     stubFetchPending()
     renderChart({ preflightTimeoutMs: 10000 })
 

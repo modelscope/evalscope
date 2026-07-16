@@ -40,8 +40,8 @@ export default function ReportDetailPage() {
   const [initialSubset, setInitialSubset] = useState<string | undefined>(undefined)
 
   // Load report when the detail inputs change. A change aborts the previous
-  // request (Req 13.5) and drops its late/aborted response so only the newest
-  // request updates the view (Req 13.6, 13.7).
+  // request and drops its late/aborted response so only the newest
+  // request updates the view.
   useEffect(() => {
     if (!reportName) return
     const controller = new AbortController()

@@ -8,7 +8,7 @@
 //     positives), formatMetric returns `isMissing === false` and never renders
 //     the missing placeholder. In particular a legitimate `0` is never mistaken
 //     for a missing value, so a real zero stays distinguishable from an absent
-//     one (Req 1.8).
+//     one.
 //
 // Validates: Requirements 1.8
 

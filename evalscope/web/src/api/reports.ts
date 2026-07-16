@@ -29,7 +29,7 @@ export async function listReports(params: {
   sortOrder?: 'asc' | 'desc'
   page?: number
   pageSize?: number
-  /** Optional signal to cancel a superseded list/search request (Req 13.3, 13.5). */
+  /** Optional signal to cancel a superseded list/search request. */
   signal?: AbortSignal
 }): Promise<ListReportsResponse> {
   return apiValidated(`${BASE}/list`, listReportsResponseSchema, {

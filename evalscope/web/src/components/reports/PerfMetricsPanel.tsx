@@ -13,7 +13,7 @@ type Translate = (key: string) => string
  * appended in JSX (or are unit-less), so no locale unit lookup is needed. The
  * value still flows through the centralized `formatMetric` primitive so
  * precision and round-half-up stay consistent with every other surface,
- * eliminating direct domain `toFixed` calls (Req 1.6, 15.5).
+ * eliminating direct domain `toFixed` calls.
  */
 const RAW_TRANSLATE: Translate = (key: string) => key
 
@@ -21,7 +21,7 @@ const RAW_TRANSLATE: Translate = (key: string) => key
  * Format a raw performance value at a fixed precision through the shared
  * `formatMetric` primitive (unbounded, no percentage conversion, round half up).
  * This replaces scattered `value.toFixed(n)` calls with the single centralized
- * formatting entry point (Req 1.4, 1.6, 15.5).
+ * formatting entry point.
  */
 function fmtRaw(value: number | null | undefined, precision: number, t: Translate = RAW_TRANSLATE): string {
   return formatMetric(value, { ...DEFAULT_METRIC_SPEC, rawPrecision: precision }, t).primary

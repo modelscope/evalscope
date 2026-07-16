@@ -5,7 +5,7 @@
  * presented across every surface (lists, page headers, overviews, detail views,
  * predictions, comparison tables and exports). Display form is decided from this
  * metadata rather than inferred from the magnitude of a value, so the same score
- * always renders with consistent semantics and units (Req 1.1).
+ * always renders with consistent semantics and units.
  */
 
 /** Whether a metric has a fixed value range (e.g. a 0-1 ratio) or is open-ended. */
@@ -18,10 +18,10 @@ export type MetricDirection = 'higher-is-better' | 'lower-is-better'
 export interface MetricDisplaySpec {
   /**
    * Implementation-level metric name. Hidden from users as a primary label and
-   * only surfaced as secondary information in detail views / tooltips (Req 1.9).
+   * only surfaced as secondary information in detail views / tooltips.
    */
   key: string
-  /** Localized label key resolved through the locale system (Req 1.9). */
+  /** Localized label key resolved through the locale system. */
   labelKey: string
   boundedness: MetricBoundedness
   direction: MetricDirection
@@ -53,7 +53,7 @@ export const DEFAULT_PERCENT_PRECISION = 1
  * It represents an "undefined display form": the metric is treated as unbounded,
  * its raw value is shown with 4 decimal places, and no unit is assumed. The
  * display form is never guessed to be a percentage and the unit is never
- * converted (Req 1.13).
+ * converted.
  */
 export const DEFAULT_METRIC_SPEC: MetricDisplaySpec = {
   key: '',
@@ -82,7 +82,7 @@ export interface ResolvedMetricSpec {
  * On a registry hit the registered spec is returned with `isFallback: false`.
  * On a miss `DEFAULT_METRIC_SPEC` is returned with `isFallback: true`, signalling
  * to the UI that the display form is undefined and the raw value should be shown
- * with default precision without any percentage/unit inference (Req 1.13).
+ * with default precision without any percentage/unit inference.
  *
  * @param key Implementation-level metric key to resolve.
  * @param registry Registry of known metric display specs.

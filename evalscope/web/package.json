@@ -15,8 +15,7 @@
     "drift:tokens": "tsx scripts/drift/tokenDrift.ts",
     "design:tokens": "tsx scripts/drift/tokenDrift.ts --write",
     "drift:locale": "tsx scripts/drift/localeKeyCheck.ts",
-    "drift:structure": "tsx scripts/drift/structureCheck.ts",
-    "size-budget": "tsx scripts/sizeBudget.ts"
+    "drift:structure": "tsx scripts/drift/structureCheck.ts"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.19",

@@ -111,7 +111,7 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
             <span className="text-xs text-[var(--text-muted)] shrink-0">
               {t('reports.samples')}: {report.num_samples}
             </span>
-            {/* Status — keeps card fields consistent with the desktop table (Req 5.3). */}
+            {/* Status — keeps card fields consistent with the desktop table. */}
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--success-bg)] text-[var(--success)] shrink-0">
               {t('reports.status.completed')}
             </span>

@@ -4,15 +4,13 @@
 // pages (task 12.5) rather than in the pure `providerResolution` /
 // `perfWorkload` domain logic (which have their own property tests):
 //   - Provider and Protocol render as two independent, individually-labelled
-//     fields and never collapse into one combined field (Req 8.1);
+//     fields and never collapse into one combined field;
 //   - a single-run report uses single-run wording (`Run Summary` /
 //     `Run Configuration`) and never the cross-run "best configuration" /
-//     "Cross-Run" phrasing, while a multi-run report does the opposite
-//     (Req 8.8);
-//   - the run identity is the model alias, not the raw path or timestamp
-//     (Req 8.9);
+//     "Cross-Run" phrasing, while a multi-run report does the opposite;
+//   - the run identity is the model alias, not the raw path or timestamp;
 //   - the per-run workload context (concurrency, number of requests, request
-//     rate) is surfaced and never shows `INF` (Req 8.4).
+//     rate) is surfaced and never shows `INF`.
 //
 // The suite runs under the global deterministic setup (fake timers, fixed
 // system time, network disabled). The perf API module is mocked so the pages
@@ -21,7 +19,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
@@ -141,7 +139,7 @@ async function renderDetail(detail: PerfDetailResponse = detailFixture) {
 }
 
 describe('PerfReportDetailPage', () => {
-  it('renders Provider and Protocol as two independent labelled fields (Req 8.1)', async () => {
+  it('renders Provider and Protocol as two independent labelled fields', async () => {
     await renderDetail()
 
     // Both labels are present as distinct fields ...
@@ -164,7 +162,7 @@ describe('PerfReportDetailPage', () => {
     expect(screen.queryByText('dashscope.aliyuncs.com')).not.toBeInTheDocument()
   })
 
-  it('uses the model alias as the primary identity, not the path/timestamp (Req 8.9)', async () => {
+  it('uses the model alias as the primary identity, not the path/timestamp', async () => {
     await renderDetail()
 
     const heading = screen.getByRole('heading', { level: 1 })
@@ -174,7 +172,7 @@ describe('PerfReportDetailPage', () => {
     expect(heading.textContent).not.toContain('perf/')
   })
 
-  it('uses single-run wording and avoids cross-run "best configuration" phrasing (Req 8.8)', async () => {
+  it('uses single-run wording and avoids cross-run "best configuration" phrasing', async () => {
     await renderDetail() // detailFixture has num_runs === 1
 
     // A single-run report front-loads the Runs tab; switch to Overview to
@@ -202,7 +200,7 @@ describe('PerfReportDetailPage', () => {
     expect(screen.queryByText(/^INF$/i)).not.toBeInTheDocument()
   })
 
-  it('uses cross-run wording for a multi-run report (Req 8.8)', async () => {
+  it('uses cross-run wording for a multi-run report', async () => {
     await renderDetail({ ...detailFixture, num_runs: 3 })
 
     // A multi-run report stays on the Overview tab by default.
@@ -231,7 +229,7 @@ async function renderRunsTab() {
 }
 
 describe('PerfRunsTab', () => {
-  it('surfaces the workload parameters for the selected run (Req 8.4)', async () => {
+  it('surfaces the workload parameters for the selected run', async () => {
     await renderRunsTab()
 
     // The single-run fixture is parallel=10, number=100, rate=null.
@@ -239,7 +237,7 @@ describe('PerfRunsTab', () => {
     expect(labelledValue('Number of requests')).toBe('100')
     // A null rate under a concurrency limit is a closed-loop workload ...
     expect(labelledValue('Request rate')).toBe('closed-loop')
-    // ... and never the raw `INF` sentinel (Req 8.6).
+    // ... and never the raw `INF` sentinel.
     expect(screen.queryByText(/INF/i)).not.toBeInTheDocument()
   })
 })
@@ -255,11 +253,17 @@ async function renderReports() {
       <ReportsProvider>
         <MemoryRouter initialEntries={['/performance']}>
           <PerfReportsPage />
+          <LocationProbe />
         </MemoryRouter>
       </ReportsProvider>
     </LocaleProvider>,
   )
   await settle()
+}
+
+function LocationProbe() {
+  const location = useLocation()
+  return <span data-testid="location-probe">{location.pathname}{location.search}</span>
 }
 
 function RescanHarness() {
@@ -268,16 +272,15 @@ function RescanHarness() {
 }
 
 describe('PerfReportsPage', () => {
-  it('lists a run by its model alias, not the raw path (Req 8.9)', async () => {
+  it('lists a run by its model alias, not the raw path', async () => {
     await renderReports()
 
     // The model alias is the primary identity in the card ...
     expect(screen.getByText('test-model-a')).toBeInTheDocument()
     // ... and the raw archive path is never shown as the identity.
     expect(screen.queryByText(RUN_PATH)).not.toBeInTheDocument()
-    expect(screen.getByText(/Provider: DashScope/)).toBeInTheDocument()
-    expect(screen.getAllByText(/Concurrency: 10/).length).toBeGreaterThan(0)
-    expect(screen.getAllByText(/Number of requests: 100/).length).toBeGreaterThan(0)
+    expect(screen.getByText('DashScope · OpenAI-compatible')).toBeInTheDocument()
+    expect(screen.getAllByText('C 10 · Req 100 · Runs 1').length).toBeGreaterThan(0)
   })
 
   it('searches provider and protocol independently from the API type', async () => {
@@ -291,7 +294,41 @@ describe('PerfReportsPage', () => {
     expect(screen.getByText('test-model-a')).toBeInTheDocument()
   })
 
-  it('keeps the existing run visible when a refreshed response fails schema validation (Req 13.4)', async () => {
+  it('shows the shared selection tray and opens the selected HTML report', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    await renderReports()
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select performance run: test-model-a' }))
+
+    expect(screen.getByText('1 selected')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Compare' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'View HTML' }))
+
+    expect(perfApi.getPerfHistoryReportUrl).toHaveBeenCalledWith(expect.any(String), RUN_PATH)
+    expect(openSpy).toHaveBeenCalledWith('/api/v1/perf/history/report', '_blank')
+    openSpy.mockRestore()
+  })
+
+  it('enables comparison after selecting two performance runs', async () => {
+    vi.mocked(perfApi.listPerfRuns).mockResolvedValue({
+      runs: [RUN_SUMMARY, { ...RUN_SUMMARY, path: `${RUN_PATH}-2`, timestamp: '2024-01-02T00:00:00' }],
+      total: 2,
+    })
+    await renderReports()
+
+    const checkboxes = screen.getAllByRole('checkbox', { name: 'Select performance run: test-model-a' })
+    fireEvent.click(checkboxes[0])
+    fireEvent.click(checkboxes[1])
+
+    expect(screen.getByText('2 selected')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'View HTML' })).toBeDisabled()
+    const compareButton = screen.getByRole('button', { name: 'Compare' })
+    expect(compareButton).toBeEnabled()
+    fireEvent.click(compareButton)
+    expect(screen.getByTestId('location-probe')).toHaveTextContent('/perf-compare?paths=')
+  })
+
+  it('keeps the existing run visible when a refreshed response fails schema validation', async () => {
     render(
       <LocaleProvider>
         <ReportsProvider>

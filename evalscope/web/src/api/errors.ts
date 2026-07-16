@@ -3,18 +3,17 @@
  *
  * These provide a machine-discriminable error category (`kind`) so consumers can
  * branch on the failure mode (e.g. show a validation error state, silently ignore
- * an aborted request) without parsing error messages. See design section 11 and
- * Requirement 13.2.
+ * an aborted request) without parsing error messages. See design section 11.
  */
 
 /**
  * Machine-discriminable category of a {@link DomainError}.
  *
- * - `validation`: response failed runtime schema validation (Req 13.2).
+ * - `validation`: response failed runtime schema validation.
  * - `http-4xx`: server responded with a 4xx client error status.
  * - `http-5xx`: server responded with a 5xx server error status.
  * - `network`: the request never completed (e.g. connection failure).
- * - `aborted`: the request was cancelled via an `AbortSignal` (Req 13.7).
+ * - `aborted`: the request was cancelled via an `AbortSignal`.
  */
 export type DomainErrorKind = 'validation' | 'http-4xx' | 'http-5xx' | 'network' | 'aborted'
 
@@ -23,7 +22,7 @@ export type DomainErrorKind = 'validation' | 'http-4xx' | 'http-5xx' | 'network'
  * `kind` and an optional HTTP `status`.
  */
 export class DomainError extends Error {
-  /** Machine-discriminable error category (Req 13.2). */
+  /** Machine-discriminable error category. */
   readonly kind: DomainErrorKind
   /** HTTP status code when the failure originated from an HTTP response. */
   readonly status?: number

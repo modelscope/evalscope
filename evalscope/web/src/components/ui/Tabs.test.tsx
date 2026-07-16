@@ -2,15 +2,12 @@
 //
 // Covers the WAI-ARIA tablist behaviour that the pure roving-index logic cannot
 // express on its own:
-//   - ARIA roles and non-orphan aria-controls / aria-labelledby wiring
-//     (Req 11.1, 11.2);
-//   - exactly one selected tab (Req 11.3);
-//   - roving focus movement with wrap-around via arrow / Home / End keys
-//     (Req 11.4, 11.5);
-//   - manual activation of the focused tab on Enter / Space (Req 11.6);
-//   - exactly one visible tabpanel in managed-panels mode (Req 11.7);
-//   - orphan tabs (missing panel) are dropped and reported via role="alert"
-//     (Req 11.8);
+//   - ARIA roles and non-orphan aria-controls / aria-labelledby wiring;
+//   - exactly one selected tab;
+//   - roving focus movement with wrap-around via arrow / Home / End keys;
+//   - manual activation of the focused tab on Enter / Space;
+//   - exactly one visible tabpanel in managed-panels mode;
+//   - orphan tabs (missing panel) are dropped and reported via role="alert";
 //   - a rendered tablist has no axe accessibility violations.
 //
 // The suite runs under the global deterministic setup (fake timers, fixed
@@ -57,7 +54,7 @@ afterEach(() => {
   cleanup()
 })
 
-describe('Tabs — ARIA roles and relationships (Req 11.1, 11.2)', () => {
+describe('Tabs — ARIA roles and relationships', () => {
   it('exposes tablist / tab roles and applies the orientation', () => {
     renderTabs({ orientation: 'horizontal' })
 
@@ -69,7 +66,7 @@ describe('Tabs — ARIA roles and relationships (Req 11.1, 11.2)', () => {
     expect(tabs.map((tab) => tab.textContent)).toEqual(['Alpha', 'Beta', 'Gamma'])
   })
 
-  it('renders tabpanels and wires aria-controls / aria-labelledby with no orphan references (Req 11.2)', () => {
+  it('renders tabpanels and wires aria-controls / aria-labelledby with no orphan references', () => {
     const tabs: TabItem[] = [
       { key: 'a', label: 'Alpha', panelId: 'panel-a' },
       { key: 'b', label: 'Beta', panelId: 'panel-b' },
@@ -105,7 +102,7 @@ describe('Tabs — ARIA roles and relationships (Req 11.1, 11.2)', () => {
   })
 })
 
-describe('Tabs — single selection (Req 11.3)', () => {
+describe('Tabs — single selection', () => {
   it('keeps exactly one tab selected', () => {
     renderTabs({ activeKey: 'b' })
 
@@ -123,7 +120,7 @@ describe('Tabs — single selection (Req 11.3)', () => {
   })
 })
 
-describe('Tabs — keyboard activation (Req 11.6)', () => {
+describe('Tabs — keyboard activation', () => {
   it('activates the focused tab on Enter', () => {
     const onChange = vi.fn()
     renderTabs({ onChange })
@@ -149,7 +146,7 @@ describe('Tabs — keyboard activation (Req 11.6)', () => {
   })
 })
 
-describe('Tabs — roving focus (Req 11.4, 11.5)', () => {
+describe('Tabs — roving focus', () => {
   it('applies roving tabindex: selected tab is 0, others -1', () => {
     renderTabs({ activeKey: 'b' })
 
@@ -177,7 +174,7 @@ describe('Tabs — roving focus (Req 11.4, 11.5)', () => {
     expect(document.activeElement).toBe(alpha)
   })
 
-  it('wraps focus around at both ends (Req 11.5)', () => {
+  it('wraps focus around at both ends', () => {
     renderTabs({ activeKey: 'a' })
     const [alpha, beta, gamma] = screen.getAllByRole('tab')
 
@@ -205,7 +202,7 @@ describe('Tabs — roving focus (Req 11.4, 11.5)', () => {
   })
 })
 
-describe('Tabs — single visible panel (Req 11.7)', () => {
+describe('Tabs — single visible panel', () => {
   it('shows only the selected panel and hides the rest', () => {
     const tabs: TabItem[] = [
       { key: 'a', label: 'Alpha', panelId: 'panel-a' },
@@ -234,7 +231,7 @@ describe('Tabs — single visible panel (Req 11.7)', () => {
   })
 })
 
-describe('Tabs — orphan tab handling (Req 11.8)', () => {
+describe('Tabs — orphan tab handling', () => {
   it('drops tabs whose panel is missing and reports them via role="alert"', () => {
     const tabs: TabItem[] = [
       { key: 'a', label: 'Alpha', panelId: 'panel-a' },

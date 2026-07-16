@@ -4,7 +4,7 @@ import fc from 'fast-check'
 
 // Deterministic test environment.
 //
-// Requirement 14.1: unit and component tests must produce consistent results
+// Unit and component tests must produce consistent results
 // across repeated runs. That requires eliminating the three common sources of
 // non-determinism: the system clock, the random-number generator and network
 // access. This setup file locks all three down for the whole test suite.

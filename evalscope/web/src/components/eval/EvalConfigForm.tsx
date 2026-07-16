@@ -37,7 +37,7 @@ const IDS = {
   datasetArgs: 'eval-datasetArgs',
 } as const
 
-/** DOM order of focusable fields, drives first-invalid focus on submit (Req 10.4). */
+/** DOM order of focusable fields, drives first-invalid focus on submit. */
 const DOM_ORDER: string[] = [
   IDS.model,
   IDS.datasets,
@@ -83,7 +83,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
   const [topK, setTopK] = useState('')
   const [datasetArgs, setDatasetArgs] = useState('')
 
-  // Validation: field id -> locale message key (never a hard-coded string, Req 10.10).
+  // Validation: field id -> locale message key (never a hard-coded string).
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   // Dataset autocomplete
@@ -193,11 +193,11 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
     e.preventDefault()
     const newErrors: Record<string, string> = {}
 
-    // Required text fields (Req 10.2).
+    // Required text fields.
     if (!model.trim()) newErrors[IDS.model] = FORM_MESSAGE_KEYS.required
     if (!datasets.trim()) newErrors[IDS.datasets] = FORM_MESSAGE_KEYS.required
 
-    // Numeric fields with min/max/step constraints (Req 10.9). Empty optional
+    // Numeric fields with min/max/step constraints. Empty optional
     // fields are skipped; non-empty values are validated.
     const numericChecks: Array<{ id: string; value: string; min?: number; max?: number; step?: number }> = [
       { id: IDS.limit, value: limit, min: 1 },
@@ -215,7 +215,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
       if (err) newErrors[check.id] = err.messageKey
     }
 
-    // Dataset_Args JSON validation without mutating the raw input (Req 10.6, 10.7).
+    // Dataset_Args JSON validation without mutating the raw input.
     let parsedDatasetArgs: Record<string, unknown> | undefined
     if (datasetArgs.trim()) {
       const result = validateDatasetArgs(datasetArgs)
@@ -228,7 +228,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
-      // Move focus to the first invalid field in DOM order (Req 10.4).
+      // Move focus to the first invalid field in DOM order.
       const firstInvalid = computeFirstInvalid(DOM_ORDER, Object.keys(newErrors))
       if (firstInvalid) {
         if (MORE_PARAMS_IDS.includes(firstInvalid) && !showMore) {

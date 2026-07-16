@@ -1,10 +1,10 @@
-// Cross-surface metric display consistency (Task 4.4, Req 1.6).
+// Cross-surface metric display consistency (Task 4.4).
 //
 // The same metric must render identically wherever it appears. Both the card
 // view (`ReportCard`, narrow screens) and the desktop table (`ReportsTable`)
 // funnel their score through the centralized `formatMetricByKey` entry point, so
 // a single score value must produce byte-for-byte identical display text on both
-// surfaces (Req 1.6). This test renders both components against the same
+// surfaces. This test renders both components against the same
 // `ReportSummary` and asserts the rendered score text matches, and matches the
 // value the centralized formatter produces.
 
@@ -67,7 +67,7 @@ function tableScoreText(report: ReportSummary): string {
   return badge!.textContent ?? ''
 }
 
-describe('metric display consistency across surfaces (Req 1.6)', () => {
+describe('metric display consistency across surfaces', () => {
   // A score whose 4-decimal round-half-up representation is stable and
   // unambiguous, plus a legitimate zero and a rounding boundary.
   const scores = [0.8567, 0.92005, 0, 0.123456, 1]
@@ -88,7 +88,7 @@ describe('metric display consistency across surfaces (Req 1.6)', () => {
 
   it('produces a stable value for the same key/value from the centralized entry', () => {
     // The single-source guarantee: identical inputs always yield identical output
-    // regardless of call site (Req 1.6).
+    // regardless of call site.
     const a = formatMetricByKey('score', 0.8567, identity)
     const b = formatMetricByKey('score', 0.8567, identity)
     expect(a).toEqual(b)

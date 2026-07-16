@@ -2,15 +2,14 @@
 //
 // Covers the behaviour that lives in the component layer rather than in the pure
 // `emptyState` domain logic:
-//   - the three distinguishable reason messages render their localized text
-//     (Req 6.1);
+//   - the three distinguishable reason messages render their localized text;
 //   - the empty state is gated on loading and appears within the 300ms reveal
-//     budget once a load completes (Req 6.1);
+//     budget once a load completes;
 //   - each recovery action navigates to its in-product route, while an
 //     `onAction` handler that returns `true` intercepts the action in-view and
-//     suppresses navigation (Req 6.2);
+//     suppresses navigation;
 //   - a Performance view with no data offers an action that routes into the
-//     Tasks flow rather than relying on CLI text (Req 6.3).
+//     Tasks flow rather than relying on CLI text.
 //
 // The suite runs under the global deterministic setup (fake timers, fixed system
 // time, network disabled). Because `useNavigate` is used, the component is
@@ -71,7 +70,7 @@ function currentLocation(): string {
 }
 
 describe('EmptyStateSystem', () => {
-  describe('reason messages (Req 6.1)', () => {
+  describe('reason messages', () => {
     it.each([
       ['no-data', 'Nothing here yet'],
       ['load-error', 'Something went wrong while loading'],
@@ -82,7 +81,7 @@ describe('EmptyStateSystem', () => {
     })
   })
 
-  describe('reveal timing (Req 6.1)', () => {
+  describe('reveal timing', () => {
     it('renders nothing while loading', () => {
       renderEmptyState({ reason: 'no-data', loading: true })
       expect(screen.queryByText('Nothing here yet')).not.toBeInTheDocument()
@@ -118,7 +117,7 @@ describe('EmptyStateSystem', () => {
     })
   })
 
-  describe('action navigation (Req 6.2)', () => {
+  describe('action navigation', () => {
     it('navigates to the action route when clicked', () => {
       renderEmptyState({ reason: 'no-data', context: { view: 'reports' } })
 
@@ -153,7 +152,7 @@ describe('EmptyStateSystem', () => {
     })
   })
 
-  describe('Performance no-data entry into Tasks (Req 6.3)', () => {
+  describe('Performance no-data entry into Tasks', () => {
     it('offers an action that routes into the Tasks flow', () => {
       renderEmptyState(
         { reason: 'no-data', context: { view: 'performance' } },

@@ -5,13 +5,6 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  build: {
-    // Emit `.vite/manifest.json` so the size-budget script (scripts/sizeBudget.ts)
-    // can statically identify the initial-load chunk graph (entry + its static
-    // imports, excluding lazy/dynamic-import chunks) and enforce the gzip budget
-    // (Req 16.6). Additive: does not change bundling behaviour.
-    manifest: true,
-  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

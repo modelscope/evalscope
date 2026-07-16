@@ -4,8 +4,8 @@
  *
  * Every surface (lists, page headers, overviews, detail views, predictions,
  * comparison tables and exports) formats metrics through `formatMetric`, so the
- * same value renders with identical precision and rounding everywhere
- * (Req 1.6, 8.10, 15.4). This module is pure logic: it has no DOM, network,
+ * same value renders with identical precision and rounding everywhere.
+ * This module is pure logic: it has no DOM, network,
  * clock or randomness dependency, which makes it the target of property tests.
  */
 
@@ -15,7 +15,7 @@ import { DEFAULT_METRIC_SPEC } from './MetricDisplaySpec'
 /**
  * Placeholder shown for a missing metric value. It is intentionally distinct
  * from a legitimate `0` or an empty string so a missing value can never be
- * mistaken for a real zero (Req 1.8).
+ * mistaken for a real zero.
  */
 export const MISSING_PLACEHOLDER = '—'
 
@@ -40,7 +40,7 @@ export interface FormattedMetric {
    * `true` when the metric has no registered spec and the default fallback is
    * used. Detected by reference-equality against `DEFAULT_METRIC_SPEC`, which
    * `resolveSpec` returns on a registry miss (its `isFallback` flag). The UI
-   * uses this to signal that the display form is undefined (Req 1.13).
+   * uses this to signal that the display form is undefined.
    */
   isSpecUndefined: boolean
 }
@@ -102,18 +102,18 @@ function joinUnit(numberStr: string, spec: MetricDisplaySpec, unitLabel: string)
  *
  * Behaviour:
  * - Missing value (`null` / `undefined` / `NaN` / non-finite) → `primary` and
- *   `raw` are the missing placeholder, `isMissing = true` (Req 1.8).
+ *   `raw` are the missing placeholder, `isMissing = true`.
  * - Bounded ratio (`spec.boundedness === 'bounded'`) → `primary` is a percentage
  *   with `percentPrecision` decimals (round half up, e.g. `"92.0%"`) and `raw`
  *   is the 0-1 ratio with `rawPrecision` decimals (e.g. `"0.9200"`). When
  *   `spec.storedAsHundred` is set the raw value is stored as 0-100 and is
- *   normalized to 0-1 before both computations (Req 1.2, 1.3).
+ *   normalized to 0-1 before both computations.
  * - Unbounded / benchmark-native metric → `primary` is the raw value plus its
  *   unit at `rawPrecision`; no percentage conversion happens, regardless of
- *   whether the value exceeds 1 (Req 1.4, 1.5, 1.7).
+ *   whether the value exceeds 1.
  * - Missing spec (the shared `DEFAULT_METRIC_SPEC`, detected by reference) →
  *   `isSpecUndefined = true`; the value is shown as a raw number with the default
- *   precision, without inferring a percentage or unit (Req 1.13).
+ *   precision, without inferring a percentage or unit.
  *
  * The function is pure and deterministic: the same `(value, spec)` always
  * produces field-for-field identical output (Property 1).
@@ -130,7 +130,7 @@ export function formatMetric(
 ): FormattedMetric {
   const isSpecUndefined = spec === DEFAULT_METRIC_SPEC
 
-  // Missing value: distinct placeholder, never rendered as 0 or blank (Req 1.8).
+  // Missing value: distinct placeholder, never rendered as 0 or blank.
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return {
       primary: MISSING_PLACEHOLDER,
@@ -144,7 +144,7 @@ export function formatMetric(
   const rawPrecision = spec.rawPrecision
   const percentPrecision = spec.percentPrecision
 
-  // Bounded ratio → percentage primary + 0-1 raw (Req 1.2, 1.3).
+  // Bounded ratio → percentage primary + 0-1 raw.
   if (spec.boundedness === 'bounded') {
     const ratio = spec.storedAsHundred ? value / 100 : value
     const primary = `${toFixedString(ratio * 100, percentPrecision)}%`
@@ -158,9 +158,9 @@ export function formatMetric(
     }
   }
 
-  // Unbounded / native metric → keep unit, no percentage conversion
-  // (Req 1.4, 1.5, 1.7). Missing spec falls through here as a plain raw value
-  // with default precision and no unit (Req 1.13).
+  // Unbounded / native metric → keep unit, no percentage conversion.
+  // Missing spec falls through here as a plain raw value
+  // with default precision and no unit.
   const rawStr = toFixedString(value, rawPrecision)
   const unitLabel = spec.unit ? t(spec.unit) : ''
   return {

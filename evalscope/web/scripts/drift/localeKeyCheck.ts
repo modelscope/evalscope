@@ -1,5 +1,5 @@
 /**
- * Locale key drift checker (Requirement 17.5).
+ * Locale key drift checker.
  *
  * Provides a pure function `checkLocaleKeys(base, target)` that computes the
  * symmetric difference between two locale key sets:
@@ -8,8 +8,7 @@
  *
  * This check is intentionally self-contained: it depends only on its inputs and
  * never reads token drift state, so it can run independently of the token drift
- * checker and its pass/fail result is unaffected by token drift results
- * (Requirement 17.5).
+ * checker and its pass/fail result is unaffected by token drift results.
  */
 
 /**

@@ -22,7 +22,7 @@ function selectCompareVisualization(n: number): CompareVisualization {
 }
 
 // ------------------------------------------------------------------ //
-// Low-sample de-emphasis helpers (Req 9.6–9.9)                        //
+// Low-sample de-emphasis helpers                        //
 // ------------------------------------------------------------------ //
 
 /** Rank a sample tier so the worst (lowest-sample) tier can be selected. */
@@ -43,8 +43,8 @@ function percentileLevel(metricKey: string): 90 | 95 | 99 | null {
 }
 
 /**
- * Whether a percentile metric should be de-emphasized at the given sample tier
- * (Req 9.6–9.8): `critical` de-emphasizes P90/P95/P99, `warn` de-emphasizes
+ * Whether a percentile metric should be de-emphasized at the given sample tier.
+ * `critical` de-emphasizes P90/P95/P99, `warn` de-emphasizes
  * P95/P99, `ok` de-emphasizes nothing.
  */
 function percentileDeEmphasized(tier: SampleTier, level: 90 | 95 | 99): boolean {
@@ -90,7 +90,7 @@ export default function PerfComparePage() {
     [get],
   )
 
-  // Persisted baseline selection (Req 9.3): the effective baseline id lives in
+  // Persisted baseline selection: the effective baseline id lives in
   // the `baseline` query param so a swap survives subsequent loads of this view.
   const baselineParam = get('baseline') ?? ''
 
@@ -155,7 +155,7 @@ export default function PerfComparePage() {
   const canSwap = Boolean(model && model.candidateId && model.candidateId !== model.baselineId)
 
   const sampleTier: SampleTier = model ? worstSampleTier(model.sampleCounts) : 'ok'
-  // A run missing performance data has no summary rows (Req 9.14).
+  // A run missing performance data has no summary rows.
   const hasEmptyRun = (details ?? []).some((d) => !Array.isArray(d.summary_rows) || d.summary_rows.length === 0)
   const showMissingHint = missingCount > 0 || hasEmptyRun || Boolean(model?.deltas.some((d) => d.verdict === 'incomputable'))
   const vizMode = selectCompareVisualization((details ?? []).length)
@@ -197,7 +197,7 @@ export default function PerfComparePage() {
       ) : (
         model && (
           <>
-            {/* Baseline / candidate selector with effective-baseline marker (Req 9.2, 9.3) */}
+            {/* Baseline / candidate selector with effective-baseline marker */}
             <div
               className="flex flex-wrap items-stretch gap-3 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-4"
               data-testid="baseline-selector"
@@ -241,7 +241,7 @@ export default function PerfComparePage() {
               </div>
             </div>
 
-            {/* Warnings — informational, never blocking (Req 9.6, 9.7, 9.10, 9.14) */}
+            {/* Warnings — informational, never blocking */}
             {model.workloadMismatch && (
               <div
                 className="flex items-start gap-2 px-4 py-3 rounded-[var(--radius-sm)] border border-[var(--warning-border)] bg-[var(--warning-bg)] type-body-sm text-[var(--text)]"
@@ -281,7 +281,7 @@ export default function PerfComparePage() {
               </div>
             )}
 
-            {/* Delta summary table (Req 9.1, 9.4, 9.5, 9.14) */}
+            {/* Delta summary table */}
             <Card title={t('performance.deltaSummary')}>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse" data-testid="delta-table">
@@ -314,7 +314,7 @@ export default function PerfComparePage() {
                       const lowSample = level !== null && percentileDeEmphasized(sampleTier, level)
                       const incomputable = delta.verdict === 'incomputable'
                       // De-emphasize incomputable deltas and low-sample percentiles,
-                      // but keep raw values available via the cell tooltip (Req 9.9, 9.14).
+                      // but keep raw values available via the cell tooltip.
                       const deEmphasized = lowSample || incomputable
                       return (
                         <tr
@@ -372,7 +372,7 @@ export default function PerfComparePage() {
               <p className="mt-3 type-caption text-[var(--text-muted)]">{t('performance.deltaInfoNote')}</p>
             </Card>
 
-            {/* Configuration differences (Req 9.13) */}
+            {/* Configuration differences */}
             <Card title={t('performance.configDiffTitle')}>
               {model.configDiff.length === 0 ? (
                 <div className="type-body-sm text-[var(--text-muted)]">{t('performance.noConfigDiff')}</div>
@@ -418,7 +418,7 @@ export default function PerfComparePage() {
         )
       )}
 
-      {/* Sparse-vs-trend hint for the visualization (Req 9.11, 9.12) */}
+      {/* Sparse-vs-trend hint for the visualization */}
       {details !== null && vizMode === 'sparse' && (
         <div
           className="flex items-start gap-2 px-4 py-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-card2)] type-body-sm text-[var(--text-muted)]"

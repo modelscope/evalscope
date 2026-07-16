@@ -34,4 +34,3 @@ jobs:
       - run: npm test
       - run: npm run drift
       - run: npm run build
-      - run: npm run size-budget

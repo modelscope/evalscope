@@ -74,10 +74,10 @@ describe('formatMetric (Property 3: 非 bounded 与 spec 缺失不触发百分�
         expect(result.primary.includes('%')).toBe(false)
         expect(result.raw.includes('%')).toBe(false)
 
-        // Raw value is rendered at the spec's rawPrecision (Req 1.4, 1.7).
+        // Raw value is rendered at the spec's rawPrecision.
         expect(decimalPlaces(result.raw)).toBe(spec.rawPrecision)
 
-        // Unit is preserved as-is (Req 1.4); a registered spec is not "undefined".
+        // Unit is preserved as-is; a registered spec is not "undefined".
         expect(result.unitLabel).toBe(spec.unit ?? '')
         expect(result.isMissing).toBe(false)
         expect(result.isSpecUndefined).toBe(false)
@@ -98,7 +98,7 @@ describe('formatMetric (Property 3: 非 bounded 与 spec 缺失不触发百分�
       fc.property(valueArb, (value) => {
         const result = formatMetric(value, DEFAULT_METRIC_SPEC, identityTranslate)
 
-        // Missing spec is detected by reference equality (Req 1.13).
+        // Missing spec is detected by reference equality.
         expect(result.isSpecUndefined).toBe(true)
         expect(result.isMissing).toBe(false)
 

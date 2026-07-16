@@ -81,7 +81,7 @@ export default function PerfRunsTab({ rootPath, path, isEmbedding }: Props) {
 
   // Workload context needed to interpret the selected run: concurrency, number
   // of requests and a request-rate label. Missing params show `N/A` and an
-  // unlimited rate shows a semantic loop label rather than `INF` (Req 8.4-8.7).
+  // unlimited rate shows a semantic loop label rather than `INF`.
   const workload = useMemo(() => (run ? normalizeWorkload(run) : null), [run])
 
   // Load per-request records for the selected run / filter / page.
@@ -175,7 +175,7 @@ export default function PerfRunsTab({ rootPath, path, isEmbedding }: Props) {
         </div>
       )}
 
-      {/* Workload context for the selected run (Req 8.4). */}
+      {/* Workload context for the selected run. */}
       {workload && (
         <div className="flex flex-wrap gap-x-6 gap-y-2 px-4 py-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-card)]">
           <WorkloadField label={t('performance.concurrency')} value={workload.concurrency} />

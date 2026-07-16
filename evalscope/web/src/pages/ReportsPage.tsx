@@ -59,7 +59,7 @@ export default function ReportsPage() {
   const [hasLoaded, setHasLoaded] = useState(false)
   // Bumped to re-trigger the fetch effect when the user retries from an empty state.
   const [reloadToken, setReloadToken] = useState(0)
-  // Transient notice shown when the compare-selection cap is reached (Req 5.9).
+  // Transient notice shown when the compare-selection cap is reached.
   const [capNotice, setCapNotice] = useState(false)
   const capTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
@@ -95,9 +95,8 @@ export default function ReportsPage() {
   }, [])
 
   // Fetch reports on root/scan/filter/page change. When any dependency changes
-  // the previous in-flight request is aborted (Req 13.5); its late/aborted
-  // response is dropped so only the newest request updates the UI (Req 13.6,
-  // 13.7).
+  // the previous in-flight request is aborted; its late/aborted
+  // response is dropped so only the newest request updates the UI.
   useEffect(() => {
     if (!rootPath) return
     const controller = new AbortController()
@@ -145,13 +144,13 @@ export default function ReportsPage() {
   // Selection is stored by run name in context, so it is naturally independent
   // of the current sort/filter order. Reconcile it against the freshly ordered
   // list so the tray follows the on-screen order while never dropping a run
-  // that was filtered off the current page (Req 5.8).
+  // that was filtered off the current page.
   const orderedSelection = useMemo(
     () => preserveSelectionAcrossReorder(selectedForCompare, currentPageNames),
     [selectedForCompare, currentPageNames],
   )
 
-  // Surface the selection-cap notice briefly, then let it fade (Req 5.9).
+  // Surface the selection-cap notice briefly, then let it fade.
   const flagCapReached = useCallback(() => {
     setCapNotice(true)
     clearTimeout(capTimer.current)
@@ -159,7 +158,7 @@ export default function ReportsPage() {
   }, [])
 
   // Cap-aware toggle: removing is always allowed; adding is rejected once the
-  // selection is at MAX_COMPARE_SELECTION (Req 5.9).
+  // selection is at MAX_COMPARE_SELECTION.
   const handleToggleSelect = useCallback(
     (name: string) => {
       if (selectedForCompare.includes(name)) {
@@ -181,7 +180,7 @@ export default function ReportsPage() {
       setCompareSelection(selectedForCompare.filter((n) => !currentPageNames.includes(n)))
       return
     }
-    // Add current-page runs one at a time so the cap is enforced (Req 5.9).
+    // Add current-page runs one at a time so the cap is enforced.
     let nextSel = selectedForCompare
     let hitCap = false
     for (const name of currentPageNames) {
@@ -220,7 +219,7 @@ export default function ReportsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
-  // Distinguish the three empty-state reasons (Req 6.1): a load failure, an
+  // Distinguish the three empty-state reasons: a load failure, an
   // active-filter miss, or a genuinely empty directory.
   const hasActiveFilters = useMemo(
     () =>
@@ -234,7 +233,7 @@ export default function ReportsPage() {
   const emptyReason: EmptyReason = error ? 'load-error' : hasActiveFilters ? 'no-match' : 'no-data'
 
   // In-view recovery for retry / clear-filters (routed via sentinel targets);
-  // other actions fall through to real navigation (Req 6.2).
+  // other actions fall through to real navigation.
   const handleEmptyAction = useCallback((action: ResolvedEmptyStateAction) => {
     if (action.navigateTo === '#retry') {
       setReloadToken((n) => n + 1)
@@ -287,7 +286,7 @@ export default function ReportsPage() {
         </div>
       ) : (
         <>
-          {/* Desktop (>=1024px): tabular view with fixed, ordered columns (Req 5.1, 5.2). */}
+          {/* Desktop (>=1024px): tabular view with fixed, ordered columns. */}
           <div className="hidden lg:block">
             <ReportsTable
               reports={reports}
@@ -299,7 +298,7 @@ export default function ReportsPage() {
             />
           </div>
 
-          {/* Narrow (<1024px): card view with fields consistent with the table (Req 5.3). */}
+          {/* Narrow (<1024px): card view with fields consistent with the table. */}
           <div className="flex flex-col gap-2 lg:hidden">
             <button
               type="button"
@@ -375,7 +374,7 @@ export default function ReportsPage() {
       )}
 
       {/* Sticky selection tray — shown whenever at least one run is selected,
-          displaying the current count and the compare actions (Req 5.5). */}
+          displaying the current count and the compare actions. */}
       {orderedSelection.length >= 1 && (
         <div className="sticky bottom-0 z-30 mt-2 -mx-1 px-1">
           <div className="flex items-center gap-3 flex-wrap px-4 py-3 rounded-[var(--radius)] border border-[var(--accent-dim)] bg-[var(--bg-card)] shadow-[var(--shadow-lg)]">

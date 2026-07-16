@@ -3,13 +3,12 @@
  *
  * These helpers back the `Field_Primitive` form semantics for the Eval and
  * Performance task forms. They compute focus order for submit-time error
- * handling (Req 10.4), validate the free-form `Dataset_Args` JSON input without
- * mutating it (Req 10.6, 10.7) and enforce numeric min/max/step constraints
- * (Req 10.9).
+ * handling, validate the free-form `Dataset_Args` JSON input without
+ * mutating it and enforce numeric min/max/step constraints.
  *
  * All user-facing text is referenced by locale `messageKey` rather than being
- * hard-coded, so the render layer can resolve strings through the locale system
- * (Req 10.10, 10.11). This module never resolves or hard-codes English copy.
+ * hard-coded, so the render layer can resolve strings through the locale system.
+ * This module never resolves or hard-codes English copy.
  */
 
 /** A validation error associated with a form field. */
@@ -30,7 +29,7 @@ export interface FormValidationResult {
   errors: FieldError[]
   /**
    * Id of the first invalid field in DOM order, used to move focus on a failed
-   * submit (Req 10.4); `null` when there are no invalid fields.
+   * submit; `null` when there are no invalid fields.
    */
   firstInvalidId: string | null
 }
@@ -47,19 +46,19 @@ export type DatasetArgsValidation =
  * of truth. Values are dot-notation keys, not display strings.
  */
 export const FORM_MESSAGE_KEYS = {
-  /** A required field is empty (Req 10.2, 10.10). */
+  /** A required field is empty. */
   required: 'form.validation.required',
-  /** `Dataset_Args` text is not parseable as JSON (Req 10.6). */
+  /** `Dataset_Args` text is not parseable as JSON. */
   datasetArgsInvalidJson: 'form.validation.datasetArgs.invalidJson',
-  /** `Dataset_Args` is valid JSON but not a JSON object (Req 10.7). */
+  /** `Dataset_Args` is valid JSON but not a JSON object. */
   datasetArgsInvalidStructure: 'form.validation.datasetArgs.invalidStructure',
-  /** Numeric value is below the allowed minimum (Req 10.9). */
+  /** Numeric value is below the allowed minimum. */
   numericBelowMin: 'form.validation.numeric.belowMin',
-  /** Numeric value is above the allowed maximum (Req 10.9). */
+  /** Numeric value is above the allowed maximum. */
   numericAboveMax: 'form.validation.numeric.aboveMax',
-  /** Numeric value is not aligned to the required step (Req 10.9). */
+  /** Numeric value is not aligned to the required step. */
   numericStepMismatch: 'form.validation.numeric.stepMismatch',
-  /** Numeric value is not a finite number (Req 10.9). */
+  /** Numeric value is not a finite number. */
   numericNotFinite: 'form.validation.numeric.notFinite',
 } as const
 
@@ -68,7 +67,7 @@ export const FORM_MESSAGE_KEYS = {
  *
  * Scans `order` (the fields as they appear in the DOM) and returns the id of the
  * earliest field that is also present in `invalidIds`. This drives submit-time
- * focus management so the user lands on the first problem field (Req 10.4).
+ * focus management so the user lands on the first problem field.
  *
  * The invalid set is looked up in `order`, not the other way around, so the
  * result always reflects DOM ordering regardless of how `invalidIds` was built.
@@ -95,8 +94,7 @@ export function computeFirstInvalid(order: string[], invalidIds: Set<string> | s
  * Validate the free-form `Dataset_Args` JSON input.
  *
  * Parsing failures and structurally invalid input both block submission while
- * preserving the raw text (this function is pure and never mutates its input,
- * Req 10.6, 10.7):
+ * preserving the raw text (this function is pure and never mutates its input):
  * - Non-JSON text -> `{ ok: false, messageKey: datasetArgsInvalidJson }`.
  * - Valid JSON that is not a JSON object (array, `null` or a primitive) ->
  *   `{ ok: false, messageKey: datasetArgsInvalidStructure }`.
@@ -125,7 +123,7 @@ export function validateDatasetArgs(rawText: string): DatasetArgsValidation {
  * Validate a numeric field value against optional min/max/step constraints.
  *
  * A value outside the `[min, max]` range is a validation failure; a value within
- * the inclusive range is valid (Req 10.9). When a positive `step` is provided the
+ * the inclusive range is valid. When a positive `step` is provided the
  * value must also align to the step grid (anchored at `min`, or `0` when `min`
  * is omitted). Non-finite values (`NaN`, `Infinity`) are treated as invalid.
  *

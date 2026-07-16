@@ -7,7 +7,7 @@
  * `src/utils/formatUtils.ts` via ad-hoc `toFixed` calls), every metric is looked
  * up here by its implementation-level key and rendered through the shared
  * `formatMetric` primitive. This guarantees that the same metric renders with
- * identical precision, rounding and units on every view (Req 1.9, 15.4).
+ * identical precision, rounding and units on every view.
  *
  * Specs are grouped by domain (evaluation vs performance) so ownership stays
  * clear, then merged into a single `METRIC_REGISTRY` for resolution. The display
@@ -32,7 +32,7 @@ type Translate = (key: string) => string
  *
  * These are Bounded_Ratio_Metrics stored as a 0-1 ratio: they render as a
  * percentage primary (1 decimal, round half up) with a 0-1 raw value (4
- * decimals) for tooltips and exports (Req 1.2, 1.3). `higher-is-better` for all
+ * decimals) for tooltips and exports. `higher-is-better` for all
  * accuracy-style scores.
  */
 export const EVALUATION_METRIC_SPECS: MetricRegistry = {
@@ -96,7 +96,7 @@ export const EVALUATION_METRIC_SPECS: MetricRegistry = {
  * Performance-domain metrics.
  *
  * These are Unbounded_Metrics: they keep their native unit and are never
- * converted to a percentage regardless of magnitude (Req 1.4, 1.5, 1.7). Latency
+ * converted to a percentage regardless of magnitude. Latency
  * metrics are `lower-is-better`; throughput metrics are `higher-is-better`.
  * Units are stored as their literal display string (e.g. `'ms'`, `'tokens/s'`)
  * so they render correctly even without a dedicated locale entry, while still
@@ -177,7 +177,7 @@ export const PERFORMANCE_METRIC_SPECS: MetricRegistry = {
   },
   // Success rate is a Bounded_Ratio_Metric stored as 0-100 (e.g. `100` for
   // 100%). It renders as a percentage primary so the same value rounds
-  // identically across the list, detail and per-run views (Req 8.10).
+  // identically across the list, detail and per-run views.
   success_rate: {
     key: 'success_rate',
     labelKey: 'metrics.success_rate',
@@ -207,7 +207,7 @@ export const METRIC_REGISTRY: MetricRegistry = {
  * `_`) before lookup, so variants such as `Average Accuracy`, `pass@1`,
  * `Output TPS` or `TTFT` all resolve to a single canonical spec. Anything not
  * listed here (and not a direct registry key) falls through to the default
- * fallback spec, preserving the "undefined display form" contract (Req 1.13).
+ * fallback spec, preserving the "undefined display form" contract.
  */
 const METRIC_ALIASES: Record<string, string> = {
   acc: 'accuracy',
@@ -287,7 +287,7 @@ export function resolveMetricKey(key: string): string {
 /**
  * Resolve the `MetricDisplaySpec` for a metric key, applying alias
  * normalization. On a registry miss the shared `DEFAULT_METRIC_SPEC` is returned
- * (via `resolveSpec`), signalling an undefined display form to the UI (Req 1.13).
+ * (via `resolveSpec`), signalling an undefined display form to the UI.
  *
  * @param key Raw metric key.
  * @param registry Registry to resolve against (defaults to `METRIC_REGISTRY`).
@@ -306,7 +306,7 @@ export function getMetricSpec(
  * This is the single call site every surface should use to render a metric. It
  * resolves the key to a `MetricDisplaySpec` (with alias normalization and
  * default fallback) and delegates to the pure `formatMetric` primitive, so
- * precision, rounding and units stay consistent everywhere (Req 1.9, 15.4).
+ * precision, rounding and units stay consistent everywhere.
  *
  * @param key Raw metric key (canonical key or a known alias/spelling).
  * @param value Raw metric value; `null` / `undefined` / `NaN` render as missing.

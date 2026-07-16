@@ -5,20 +5,20 @@
 // logic layer cannot express — they live in the rendered DOM (class names,
 // ARIA, computed structure) rather than in a pure function:
 //
-//   - Responsive wrapping, not truncation (Req 7.1, 7.2): the elements that
+//   - Responsive wrapping, not truncation: the elements that
 //     carry latest-run metadata (model, dataset, …) wrap on word boundaries via
 //     `break-words` + `min-w-0` and never use `truncate`, so no characters are
 //     dropped at 390px. jsdom has no layout engine, so we assert the wrapping
 //     *strategy* is present in the class list (and truncation absent) rather
 //     than measuring pixels.
 //
-//   - Touch targets ≥ 44×44 (Req 7.4, 12.5): the primary navigation / disclosure
+//   - Touch targets ≥ 44×44: the primary navigation / disclosure
 //     / compare-selection controls carry the 44px guarantee through either the
 //     `coarse-target` utility class or explicit `min-w-[44px] min-h-[44px]`
 //     hit-area padding. jsdom cannot report real pixel sizes, so we assert the
 //     class/attribute that encodes the 44px guarantee is present.
 //
-//   - Contrast-related a11y (Req 12.1): a representative metadata component is
+//   - Contrast-related a11y: a representative metadata component is
 //     run through axe. Note that axe-core's `color-contrast` rule is disabled
 //     under jsdom because there is no layout/paint to sample colours from, so a
 //     passing axe run here validates the other a11y rules. Contrast tokens are
@@ -78,7 +78,7 @@ afterEach(() => {
   cleanup()
 })
 
-describe('Responsive wrapping — metadata wraps, never truncates (Req 7.1, 7.2)', () => {
+describe('Responsive wrapping — metadata wraps, never truncates', () => {
   it('ReportCard renders model and dataset with break-words + min-w-0 and no truncate', () => {
     const report = makeReport()
     const { container } = renderWithLocale(
@@ -138,7 +138,7 @@ describe('Responsive wrapping — metadata wraps, never truncates (Req 7.1, 7.2)
   })
 })
 
-describe('Touch targets — primary controls carry the 44px guarantee (Req 7.4, 12.5)', () => {
+describe('Touch targets — primary controls carry the 44px guarantee', () => {
   it('TopNav navigation links carry the coarse-target utility', () => {
     const { container } = renderWithRouter(<TopNav />)
 
@@ -188,7 +188,7 @@ describe('Touch targets — primary controls carry the 44px guarantee (Req 7.4, 
   })
 })
 
-describe('Contrast-related accessibility (axe) (Req 12.1)', () => {
+describe('Contrast-related accessibility (axe)', () => {
   it('ReportCard has no axe violations (incl. no color-contrast violations)', async () => {
     // ReportCard renders essential metadata text (model, dataset, score) using
     // the design system's --text / --text-muted tokens — a representative

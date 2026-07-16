@@ -73,7 +73,7 @@ describe('normalizeWorkload (Property 14: workload 归一化不呈现 INF 且缺
         const { rateLabel } = normalizeWorkload(makeRun(parallel, number, rate))
 
         // Invariant: the rate label must never surface the literal INF marker,
-        // in any casing (Req 8.6, 8.7).
+        // in any casing.
         expect(rateLabel.toLowerCase()).not.toContain('inf')
 
         if (isUnlimitedRate(rate)) {
@@ -83,7 +83,7 @@ describe('normalizeWorkload (Property 14: workload 归一化不呈现 INF 且缺
           const hasConcurrencyLimit = isValidCount(parallel) && parallel > 0
           expect(rateLabel).toBe(hasConcurrencyLimit ? CLOSED_LOOP_LABEL : OPEN_LOOP_LABEL)
         } else {
-          // Limited rate → the finite value is present in the label (Req 8.7).
+          // Limited rate → the finite value is present in the label.
           expect(rateLabel).toContain(String(rate))
         }
       }),

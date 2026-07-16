@@ -53,7 +53,7 @@ function makeRun(
   }
 }
 
-/** The direction rule under test (Req 9.4, 9.5), expressed independently of the SUT. */
+/** The direction rule under test, expressed independently of the SUT. */
 function expectedVerdict(baseline: number, candidate: number, higherIsBetter: boolean): DeltaVerdict {
   if (candidate === baseline) return 'neutral'
   const candidateIsHigher = candidate > baseline

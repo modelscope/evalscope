@@ -93,7 +93,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
   }, [rootPath, reportName, datasetName, selectedSubset, reloadToken, t])
 
   // The threshold is a view-only filter (above/below), not a pass/fail verdict,
-  // and it never leaves this view (Req 1.10, 1.11).
+  // and it never leaves this view.
   const filtered = useMemo(() => {
     if (mode === 'Above') return predictions.filter((p) => p.NScore >= threshold)
     if (mode === 'Below') return predictions.filter((p) => p.NScore < threshold)
@@ -170,7 +170,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
   const subsetOptions = subsets.map((s) => ({ value: s, label: s }))
 
   // Filter button config. Labels describe the view filter (above/below the
-  // threshold), not a pass/fail outcome (Req 1.11).
+  // threshold), not a pass/fail outcome.
   const filterBtns = [
     { key: 'All', label: t('common.all'), icon: <List size={13} />, count: predictions.length },
     { key: 'Above', label: t('prediction.aboveFilter'), icon: <ArrowUp size={13} />, count: aboveCount },

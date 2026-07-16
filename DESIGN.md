@@ -448,7 +448,7 @@ The brand's voice is **information-rich but uncluttered** — a typical dashboar
 
 ##### Touch Targets
 
-**Normative rule (executable, enforced — see [Component Contracts](#component-contracts)).** Every primary `Pointer_Target` — navigation, mobile menu, compare-selection, and disclosure controls — MUST expose a hit area of **≥ 44 × 44 CSS px on coarse pointers** (Req 12.5, 12.7). This is a hard floor asserted by the E2E/axe suite at the 390 px viewport, **not** a documented known-failure or accepted compromise.
+**Normative rule (executable, enforced — see [Component Contracts](#component-contracts)).** Every primary `Pointer_Target` — navigation, mobile menu, compare-selection, and disclosure controls — MUST expose a hit area of **≥ 44 × 44 CSS px on coarse pointers**. This is a hard floor asserted by the E2E/axe suite at the 390 px viewport, **not** a documented known-failure or accepted compromise.
 
 The *visual* chrome may be smaller than the *hit area*, and only the hit area is governed by the rule. The top-nav icon-only buttons (tablet) render a 32 × 32 visual box, but on coarse pointers their tappable region is expanded to ≥ 44 × 44 via symmetric padding / an `::before` hit-area overlay — the icon stays 32 × 32, the target does not shrink below the floor. Primary buttons reach ~36 px tall in `md` and ~44 px in `lg`; where an `md` button is a primary `Pointer_Target` on touch, it is promoted to the 44 px hit area by the same rule.
 
@@ -627,18 +627,18 @@ Disabled = `opacity: 0.5` + `cursor: not-allowed`. Transitions use `{tokens.tran
 
 ### Component Contracts (Responsive & State) {#component-contracts}
 
-> **Addressable sub-section — `component-contracts`.** Every responsive component below carries two contracts, and both are **normative and executable** (Req 7.3, 12.7, 17.6) — not descriptive prose:
+> **Addressable sub-section — `component-contracts`.** Every responsive component below carries two contracts, and both are **normative and executable** — not descriptive prose:
 >
 > - a **Responsive contract** — the layout, wrapping, and visibility behavior at each of the five breakpoints (**Mobile < 640 px · Small 640–767 px · Tablet 768–1023 px · Desktop 1024–1279 px · Wide ≥ 1280 px**, per [Responsive Strategy](#tokens)'s breakpoint table), and
 > - a **State contract** — the presentation requirement for every visible state (**default · hover · focus · active · disabled · error**). A state a component cannot enter is listed as *n/a* with the reason, so the enumeration stays complete.
 
 #### Normative contract rules (executable, not aspirational)
 
-These thresholds are **enforceable rules, not logged known-failures** (Req 12.7). The E2E/axe suite (task 19.2) asserts them at the 390 px viewport and in both themes; a violation fails CI. Each component contract below inherits them.
+These thresholds are **enforceable rules, not logged known-failures**. The E2E/axe suite (task 19.2) asserts them at the 390 px viewport and in both themes; a violation fails CI. Each component contract below inherits them.
 
-- **R-TOUCH — Touch-target floor 44 × 44 CSS px.** On coarse pointers, every primary `Pointer_Target` in navigation, the mobile menu, compare-selection, and disclosure controls MUST expose a hit area **≥ 44 × 44 CSS px**, independent of the visual icon/box size (padding or an `::before` overlay carries the extra area). (Req 7.4, 12.5)
-- **R-CONTRAST — AA contrast floor.** Essential text MUST meet **AA_Contrast in both themes**: **≥ 4.5 : 1** for normal text and **≥ 3 : 1** for large text (≥ 24 px, or ≥ 18.66 px bold). `dim`/`muted` tokens applied to essential content are promoted to clear this floor; non-text focus indicators MUST reach **≥ 3 : 1** against the adjacent background. (Req 12.1–12.6)
-- **R-WRAP — No lossy truncation of essential metadata.** Responsive text containers use `break-words` + `min-w-0` and MUST NOT apply `truncate`/ellipsis/overflow-hidden to essential metadata; at 390 px every field label and value stays visible and wraps at word (then character) boundaries with no page-level horizontal scroll. (Req 7.1, 7.2)
+- **R-TOUCH — Touch-target floor 44 × 44 CSS px.** On coarse pointers, every primary `Pointer_Target` in navigation, the mobile menu, compare-selection, and disclosure controls MUST expose a hit area **≥ 44 × 44 CSS px**, independent of the visual icon/box size (padding or an `::before` overlay carries the extra area).
+- **R-CONTRAST — AA contrast floor.** Essential text MUST meet **AA_Contrast in both themes**: **≥ 4.5 : 1** for normal text and **≥ 3 : 1** for large text (≥ 24 px, or ≥ 18.66 px bold). `dim`/`muted` tokens applied to essential content are promoted to clear this floor; non-text focus indicators MUST reach **≥ 3 : 1** against the adjacent background.
+- **R-WRAP — No lossy truncation of essential metadata.** Responsive text containers use `break-words` + `min-w-0` and MUST NOT apply `truncate`/ellipsis/overflow-hidden to essential metadata; at 390 px every field label and value stays visible and wraps at word (then character) boundaries with no page-level horizontal scroll.
 - **R-FOCUS — Visible focus in both themes.** Every interactive component's **focus** state renders a visible focus indicator (`{colors.accent}` ring + `{colors.accent-dim}` fill) meeting R-CONTRAST's ≥ 3 : 1 non-text floor on both themes. Individual state contracts reference this rule rather than restating it.
 
 #### `{components.top-nav}` / `{components.nav-link}` / `{components.icon-button}` — navigation
@@ -702,7 +702,7 @@ These thresholds are **enforceable rules, not logged known-failures** (Req 12.7)
   - **focus:** the single active tab holds `tabindex=0`; arrow keys move focus with wrap-around; per R-FOCUS.
   - **active (selected):** `{colors.accent}` fill + `{colors.on-filled}` text + soft glow `0 0 12 px rgba(129,109,248,0.2)`; exactly one tab has `aria-selected=true` and one visible `tabpanel`.
   - **disabled:** disabled tab renders at `opacity: 0.5`, `aria-disabled=true`, skipped by roving navigation.
-  - **error (orphan item):** a tab with no matching `tabpanel` reference is **not rendered** and an error is surfaced (Req 11.8).
+  - **error (orphan item):** a tab with no matching `tabpanel` reference is **not rendered** and an error is surfaced.
 
 #### `{components.table}` — sortable data table
 
@@ -727,7 +727,7 @@ These thresholds are **enforceable rules, not logged known-failures** (Req 12.7)
   - **focus:** border → `{colors.accent}` + 1-px `{colors.accent-dim}` ring (soft halo); per R-FOCUS.
   - **active:** same as focus while editing.
   - **disabled:** `opacity: 0.5`, `cursor: not-allowed`, `aria-disabled`; still exposes its accessible name.
-  - **error:** border + ring swap to the danger family, `aria-invalid=true`, `aria-describedby` points at a 12 px `{colors.danger}` helper line; the message is announced via a polite live region within 1 s and receives focus first among invalid fields on submit (Req 10.3, 10.4).
+  - **error:** border + ring swap to the danger family, `aria-invalid=true`, `aria-describedby` points at a 12 px `{colors.danger}` helper line; the message is announced via a polite live region within 1 s and receives focus first among invalid fields on submit.
 
 #### `{components.empty-state}` — actionable empty states
 
@@ -740,7 +740,7 @@ These thresholds are **enforceable rules, not logged known-failures** (Req 12.7)
 
 #### `{components.eval-run-card}` — eval timeline run row
 
-- **Responsive contract:** single full-width column at every breakpoint (the timeline is already a vertical list). At 390 px all metadata fields (model, dataset, time, samples, score, status, per-benchmark score chips) stay visible and wrap per R-WRAP — no ellipsis, no horizontal scroll (Req 7.1, 7.2). The score-chip row wraps onto multiple lines rather than clipping.
+- **Responsive contract:** single full-width column at every breakpoint (the timeline is already a vertical list). At 390 px all metadata fields (model, dataset, time, samples, score, status, per-benchmark score chips) stay visible and wrap per R-WRAP — no ellipsis, no horizontal scroll. The score-chip row wraps onto multiple lines rather than clipping.
 - **State contract:**
   - **default:** `{colors.bg-card}`, 1-px `{colors.border}`; bold model name + score badge; mono timestamp + wrapped `{components.score-chip}` set.
   - **hover:** border tint → `{colors.border-md}` only (no lift, calm for dense lists).
@@ -771,7 +771,7 @@ These thresholds are **enforceable rules, not logged known-failures** (Req 12.7)
   - **hover:** column header/row tint strengthens via the slot's `bg-hl` where interactive.
   - **focus:** compare-selection controls follow R-FOCUS and R-TOUCH.
   - **active (selected for compare):** slot accent applied; selection persists across sort/filter and is reflected in the sticky selection tray count.
-  - **disabled (selection limit / incompatible):** at `MAX_COMPARE_SELECTION = 5` further checkboxes are disabled with an explanatory message; an incompatible run shows its incompatibility reason and retains existing selection (Req 5.9, 5.10).
+  - **disabled (selection limit / incompatible):** at `MAX_COMPARE_SELECTION = 5` further checkboxes are disabled with an explanatory message; an incompatible run shows its incompatibility reason and retains existing selection.
   - **error:** incompatibility reason text is the error presentation; it does not drop the selection.
 
 ### Examples (illustrative)

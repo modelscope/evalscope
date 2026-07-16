@@ -3,10 +3,10 @@
  *
  * Every exported request helper validates the parsed response with a zod schema
  * and rejects with a typed {@link DomainError} on failure, so consumers never
- * receive unvalidated data (Req 13.1, 13.2).
+ * receive unvalidated data.
  *
- * All outward methods accept an optional `AbortSignal` for cancellation
- * (Req 13.3). Failures are normalised to {@link DomainError} categories:
+ * All outward methods accept an optional `AbortSignal` for cancellation.
+ * Failures are normalised to {@link DomainError} categories:
  * `http-4xx` / `http-5xx` for HTTP error statuses, `network` for transport
  * failures, and `aborted` when a request is cancelled via its signal.
  *
@@ -20,7 +20,7 @@ import { DomainError } from './errors'
 export interface RequestOptions {
   /** Query-string parameters appended to the request URL. */
   params?: Record<string, unknown>
-  /** Optional signal used to cancel the in-flight request (Req 13.3). */
+  /** Optional signal used to cancel the in-flight request. */
   signal?: AbortSignal
 }
 
@@ -101,7 +101,7 @@ async function parseJson<T>(res: Response): Promise<T> {
 /**
  * Run a parsed value through a zod schema, converting validation failures into
  * a typed {@link DomainError} (`kind='validation'`) so consumers never receive
- * unvalidated data and no uncaught exception escapes (Req 13.2, 13.4).
+ * unvalidated data and no uncaught exception escapes.
  */
 function validate<T>(schema: ZodType<T>, data: unknown): T {
   const result = schema.safeParse(data)
@@ -115,10 +115,10 @@ function validate<T>(schema: ZodType<T>, data: unknown): T {
  * GET a JSON resource and validate it against `schema` at runtime.
  *
  * On schema mismatch this rejects with `DomainError(kind='validation')` rather
- * than returning unvalidated data (Req 13.1, 13.2). HTTP, network, and abort
+ * than returning unvalidated data. HTTP, network, and abort
  * failures reject with their respective {@link DomainError} kinds. It never
  * throws synchronously, so consumers can handle all failures via the returned
- * promise (Req 13.4).
+ * promise.
  */
 export async function apiValidated<T>(path: string, schema: ZodType<T>, options?: RequestOptions): Promise<T> {
   const res = await doFetch(buildUrl(path, options?.params), { signal: options?.signal })
@@ -131,7 +131,7 @@ export async function apiValidated<T>(path: string, schema: ZodType<T>, options?
  * POST a JSON body and validate the response against `schema` at runtime.
  *
  * Mirrors {@link apiValidated} for mutating endpoints: schema mismatch rejects
- * with `DomainError(kind='validation')` (Req 13.2, 13.4).
+ * with `DomainError(kind='validation')`.
  */
 export async function apiPostValidated<T>(
   path: string,

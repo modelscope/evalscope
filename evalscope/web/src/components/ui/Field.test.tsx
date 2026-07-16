@@ -5,12 +5,12 @@
 // region for validation errors. These tests cover the parts of the
 // accessibility contract that the pure validation logic cannot express:
 //   - every control exposes a non-empty, programmatically associated
-//     accessible name (Req 10.1, 10.2);
+//     accessible name;
 //   - when an error is present the control is marked aria-invalid, associated
 //     with the error element via aria-describedby, and the error container is a
-//     polite live region with role="alert" (Req 10.3);
+//     polite live region with role="alert";
 //   - the autoComplete hint is forwarded to the control, including API-key
-//     scenarios (Req 10.12);
+//     scenarios;
 //   - a rendered field has no axe accessibility violations.
 //
 // The suite runs under the global deterministic setup (fake timers, fixed
@@ -50,7 +50,7 @@ afterEach(() => {
   cleanup()
 })
 
-describe('Field — accessible name (Req 10.1, 10.2)', () => {
+describe('Field — accessible name', () => {
   it('gives the control a non-empty accessible name via aria-labelledby', () => {
     renderTextField()
 
@@ -78,7 +78,7 @@ describe('Field — accessible name (Req 10.1, 10.2)', () => {
   })
 })
 
-describe('Field — error association and live region (Req 10.3)', () => {
+describe('Field — error association and live region', () => {
   it('has no aria-invalid=true and no describedby when there is no error', () => {
     renderTextField()
 
@@ -111,7 +111,7 @@ describe('Field — error association and live region (Req 10.3)', () => {
   })
 })
 
-describe('Field — autoComplete passthrough (Req 10.12)', () => {
+describe('Field — autoComplete passthrough', () => {
   it('forwards the autoComplete hint to the control', () => {
     renderTextField({ autoComplete: 'off' })
 

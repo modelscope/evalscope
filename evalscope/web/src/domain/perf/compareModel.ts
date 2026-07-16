@@ -1,5 +1,5 @@
 /**
- * Performance comparison data model — pure logic, no rendering (Req 9, task 13.1).
+ * Performance comparison data model — pure logic, no rendering.
  *
  * This module turns a set of `PerfDetailResponse` records into a decision-surface
  * model for the Performance_Compare_View: per-metric deltas (baseline / candidate
@@ -14,7 +14,7 @@
  * contract.
  *
  * Formatting is delegated to the single metric-formatting entry point
- * `formatMetric` so the same metric rounds identically everywhere (Req 8.10).
+ * `formatMetric` so the same metric rounds identically everywhere.
  * `metricFormat.ts` (task 3.2) is a forward dependency and may not exist yet;
  * this module imports it per the design contract and the checkpoint validates
  * the wiring once both are present.
@@ -28,17 +28,17 @@ import { DEFAULT_METRIC_SPEC } from '../metric/MetricDisplaySpec'
 import { getMetricSpec } from '../metric/registry'
 
 /**
- * Direction-aware verdict for a single metric delta (Req 9.4, 9.5).
+ * Direction-aware verdict for a single metric delta.
  *
  * This is an informational direction annotation, never a hard pass/fail gate:
  * - `improvement` / `regression` — candidate moved in the better / worse
  *   direction relative to baseline given the metric's `direction`;
  * - `neutral` — candidate equals baseline;
- * - `incomputable` — a value is missing on either side (Req 9.14).
+ * - `incomputable` — a value is missing on either side.
  */
 export type DeltaVerdict = 'improvement' | 'regression' | 'neutral' | 'incomputable'
 
-/** Per-metric comparison entry between baseline and candidate (Req 9.1). */
+/** Per-metric comparison entry between baseline and candidate. */
 export interface MetricDelta {
   /** Implementation-level metric name (the summary-row label). */
   metricKey: string
@@ -50,19 +50,19 @@ export interface MetricDelta {
   absoluteDelta: FormattedMetric
   /** Percent delta (`(candidate - baseline) / |baseline| * 100`), formatted as a `%` value. */
   percentDelta: FormattedMetric
-  /** Direction-aware, informational verdict (Req 9.4, 9.5, 9.14). */
+  /** Direction-aware, informational verdict. */
   verdict: DeltaVerdict
 }
 
 /**
- * Low-sample tier for percentile statistics (Req 9.6–9.8):
+ * Low-sample tier for percentile statistics:
  * - `critical` — `n < 30` (strong warning, de-emphasize P90/P95/P99);
  * - `warn` — `30 <= n < 100` (warn/de-emphasize P95/P99);
  * - `ok` — `n >= 100` (show normally).
  */
 export type SampleTier = 'critical' | 'warn' | 'ok'
 
-/** A single differing entry in the config diff (Req 9.13). */
+/** A single differing entry in the config diff. */
 export interface ConfigDiffEntry {
   /** Config key that differs or exists on only one side. */
   key: string
@@ -76,21 +76,21 @@ export interface ConfigDiffEntry {
  * Full comparison model consumed by the Performance_Compare_View.
  *
  * The model is always between a single `baselineId` and `candidateId`; sample
- * counts are always recorded (Req 9.9) and the config diff is a symmetric
- * difference over the two runs' configs (Req 9.13).
+ * counts are always recorded and the config diff is a symmetric
+ * difference over the two runs' configs.
  */
 export interface PerfCompareModel {
-  /** Id (run path) of the baseline run — defaults to the oldest run (Req 9.2). */
+  /** Id (run path) of the baseline run — defaults to the oldest run. */
   baselineId: string
   /** Id (run path) of the candidate run. */
   candidateId: string
-  /** Per-metric deltas across the union of both runs' metrics (Req 9.1, 9.14). */
+  /** Per-metric deltas across the union of both runs' metrics. */
   deltas: MetricDelta[]
-  /** Sample count per run id; always recorded (Req 9.9). */
+  /** Sample count per run id; always recorded. */
   sampleCounts: Record<string, number>
-  /** True when the two runs used different workloads (Req 9.10). */
+  /** True when the two runs used different workloads. */
   workloadMismatch: boolean
-  /** Symmetric config differences between the two runs (Req 9.13). */
+  /** Symmetric config differences between the two runs. */
   configDiff: ConfigDiffEntry[]
 }
 
@@ -100,7 +100,7 @@ const CRITICAL_SAMPLE_THRESHOLD = 30
 const WARN_SAMPLE_THRESHOLD = 100
 
 /**
- * Classify a percentile sample size into a low-sample tier (Req 9.6–9.8).
+ * Classify a percentile sample size into a low-sample tier.
  *
  * Boundaries are explicit: `29 → 'critical'`, `30 → 'warn'`, `99 → 'warn'`,
  * `100 → 'ok'`. Non-positive / non-finite inputs collapse to `'critical'`.
@@ -133,7 +133,7 @@ const PERCENTAGE_POINT_SPEC: MetricDisplaySpec = {
 
 /**
  * Coerce a raw summary-row cell into a finite number, or `null` when it cannot
- * be interpreted as one (missing value → incomputable delta, Req 9.14).
+ * be interpreted as one (missing value → incomputable delta).
  */
 function toNumeric(value: unknown): number | null {
   if (typeof value === 'number') {
@@ -239,7 +239,7 @@ function matchingWideRows(
   return null
 }
 
-/** Compute the direction-aware verdict for a metric (Req 9.4, 9.5, 9.14). */
+/** Compute the direction-aware verdict for a metric. */
 function computeVerdict(
   baseline: number | null,
   candidate: number | null,
@@ -289,7 +289,7 @@ function timestampOf(run: PerfDetailResponse): number {
 
 /**
  * Pick the oldest run (smallest timestamp). Ties are broken by original index,
- * so the earliest-listed run wins, keeping the choice deterministic (Req 9.2).
+ * so the earliest-listed run wins, keeping the choice deterministic.
  */
 function pickOldest(runs: PerfDetailResponse[]): PerfDetailResponse {
   return runs.reduce((oldest, run) => (timestampOf(run) < timestampOf(oldest) ? run : oldest))
@@ -303,7 +303,7 @@ function pickNewest(runs: PerfDetailResponse[]): PerfDetailResponse {
   return runs.reduce((newest, run) => (timestampOf(run) > timestampOf(newest) ? run : newest))
 }
 
-/** Extract the number of requests for a run (used as its sample count, Req 9.9). */
+/** Extract the number of requests for a run (used as its sample count). */
 function getSampleCount(run: PerfDetailResponse): number {
   const rows = Array.isArray(run.summary_rows) ? run.summary_rows : []
   for (const row of rows) {
@@ -352,7 +352,7 @@ function comparisonConfig(run: PerfDetailResponse): Record<string, string> {
 }
 
 /**
- * Compute the symmetric config difference between two runs (Req 9.13).
+ * Compute the symmetric config difference between two runs.
  *
  * A key is included when it exists on only one side, or exists on both sides
  * with different values. Keys present on both sides with equal values are
@@ -402,17 +402,17 @@ function emptyModel(): PerfCompareModel {
 /**
  * Build the performance comparison model between a baseline and a candidate run.
  *
- * Baseline selection (Req 9.2): the run whose `path` equals `baselineId`, or the
+ * Baseline selection: the run whose `path` equals `baselineId`, or the
  * oldest run when `baselineId` is empty or does not match any run. The candidate
  * is the newest of the remaining runs (or the baseline itself when only one run
  * is supplied).
  *
  * For every metric in the union of both runs' summary rows a `MetricDelta` is
  * produced with baseline / candidate / absolute delta / percent delta and a
- * direction-aware verdict (Req 9.1, 9.4, 9.5). Metrics missing on either side are
- * marked `incomputable` while metrics present on both sides still yield deltas
- * (Req 9.14). Sample counts are always recorded (Req 9.9), workload mismatch is
- * flagged (Req 9.10) and the config diff is a symmetric difference (Req 9.13).
+ * direction-aware verdict. Metrics missing on either side are
+ * marked `incomputable` while metrics present on both sides still yield deltas.
+ * Sample counts are always recorded, workload mismatch is
+ * flagged and the config diff is a symmetric difference.
  *
  * @param runs - Performance run details participating in the comparison.
  * @param baselineId - Explicitly selected baseline run id (path); empty selects the default.

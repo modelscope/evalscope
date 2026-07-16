@@ -54,14 +54,20 @@ function RunRow({ item, onClick }: { item: RunItem; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="grid min-h-14 w-full grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-2 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-card2)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)] md:grid-cols-[4.5rem_minmax(8rem,1fr)_minmax(10rem,1.5fr)_8rem_7rem_1rem] md:gap-x-3"
+      className="grid min-h-14 w-full grid-cols-[3rem_minmax(0,1fr)_auto_auto] items-center gap-x-2 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-card2)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)] md:grid-cols-[3rem_minmax(8rem,1fr)_minmax(10rem,1.5fr)_8rem_7rem_1rem] md:gap-x-3"
     >
-      <Badge
-        variant="default"
-        className={item.kind === 'perf' ? '!bg-[var(--bg-card2)] !text-[var(--text-muted)]' : undefined}
+      <span
+        aria-label={t(`dashboard.filter_${item.kind}`)}
+        title={t(`dashboard.filter_${item.kind}`)}
+        className={[
+          'mx-auto flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)]',
+          isEval
+            ? 'bg-[var(--accent-dim)] text-[var(--accent)]'
+            : 'bg-[var(--bg-card2)] text-[var(--text-muted)]',
+        ].join(' ')}
       >
-        {isEval ? 'Eval' : 'Perf'}
-      </Badge>
+        {isEval ? <FileText size={16} strokeWidth={2} /> : <Gauge size={16} strokeWidth={2} />}
+      </span>
       <div className="flex flex-col min-w-0 flex-1">
         <span className="type-body-sm text-[var(--text)] break-words">{model}</span>
         <span className="type-caption-mono text-[var(--text-muted)] break-words md:hidden">{dataset}</span>
@@ -284,7 +290,7 @@ export default function DashboardPage() {
 
           {visibleItems.length > 0 ? (
             <div className="divide-y divide-[var(--border)] overflow-hidden rounded-[var(--radius-sm)]">
-              <div className="hidden grid-cols-[4.5rem_minmax(8rem,1fr)_minmax(10rem,1.5fr)_8rem_7rem_1rem] items-center gap-x-3 border-b border-[var(--border)] px-3 py-3 text-xs font-semibold text-[var(--text-muted)] md:grid">
+              <div className="hidden grid-cols-[3rem_minmax(8rem,1fr)_minmax(10rem,1.5fr)_8rem_7rem_1rem] items-center gap-x-3 border-b border-[var(--border)] px-3 py-3 text-xs font-semibold text-[var(--text-muted)] md:grid">
                 <span />
                 <span>{t('dashboard.model')}</span>
                 <span>{t('dashboard.dataset')}</span>

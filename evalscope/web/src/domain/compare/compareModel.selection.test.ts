@@ -8,8 +8,8 @@ import { preserveSelectionAcrossReorder } from './compareModel'
 // For any current selection of run ids and any list reorder (sort/filter), the
 // preserved selection must be identical to the pre-operation selection *as a
 // set* (set identity). Reordering or filtering the list only changes how runs
-// are arranged / which are visible; it must never add or drop a selected run
-// (Req 5.8). This means:
+// are arranged / which are visible; it must never add or drop a selected run.
+// This means:
 //   - No selected run is lost, even when the reordered/filtered list omits it.
 //   - No run is introduced that was not already selected.
 //   - The result is de-duplicated (the selection is a set).

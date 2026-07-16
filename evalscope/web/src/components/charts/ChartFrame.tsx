@@ -27,7 +27,7 @@ function classifyChartResponse(status: number): ChartResponseClass {
   return 'success'
 }
 
-/** Public phase of the chart lifecycle exposed to consumers (Req 2.6, 2.7). */
+/** Public phase of the chart lifecycle exposed to consumers. */
 export type ChartPhase =
   | { status: 'loading' }
   | { status: 'ready' }
@@ -36,30 +36,30 @@ export type ChartPhase =
 export interface ChartFrameProps {
   /**
    * Base chart URL. The active `theme` is injected by this component via
-   * {@link withTheme}; callers must not pre-append a theme parameter (Req 2.1).
+   * {@link withTheme}; callers must not pre-append a theme parameter.
    */
   baseSrc: string
-  /** Active theme carried on every chart request path (Req 2.1, 2.2). */
+  /** Active theme carried on every chart request path. */
   theme: ChartTheme
   height?: number
   className?: string
   title?: string
-  /** Authoritative data-table fallback presenting the same data (Req 2.8). */
+  /** Authoritative data-table fallback presenting the same data. */
   fallbackTable: DataTableModel
-  /** Preflight timeout in milliseconds; defaults to 10000 (Req 2.5). */
+  /** Preflight timeout in milliseconds; defaults to 10000. */
   preflightTimeoutMs?: number
   /** Optional callback invoked when the user triggers a retry. */
   onRetry?: () => void
 }
 
-/** Default preflight timeout: 10 seconds (Req 2.5). */
+/** Default preflight timeout: 10 seconds. */
 const DEFAULT_PREFLIGHT_TIMEOUT_MS = 10000
 
 /**
  * Internal state machine. `loading` optionally renders the iframe: `iframe` is
  * `false` while the preflight is in flight and `true` once preflight succeeds
  * and we are waiting for the iframe's own `load` event. The error state never
- * renders an iframe so a blank iframe is never shown (Req 2.6).
+ * renders an iframe so a blank iframe is never shown.
  */
 type InternalPhase =
   | { status: 'loading'; iframe: boolean }
@@ -105,22 +105,22 @@ function errorMessageKey(kind: ChartFailureKind): string {
  *
  * Behavior:
  * - Injects the active `theme` into the request URL, so a light theme never
- *   renders a dark chart (Req 2.1, 2.2).
+ *   renders a dark chart.
  * - Re-runs the preflight and reloads the iframe whenever the theme changes, so
- *   an already-rendered chart re-renders to match the new theme (Req 2.3). The
+ *   an already-rendered chart re-renders to match the new theme. The
  *   themed URL is a `useEffect` dependency, so the browser reloads the iframe
  *   immediately (well within 1s).
  * - Preflights the chart request with `fetch` + `AbortSignal`; a request that
  *   does not respond within `preflightTimeoutMs` is aborted and classified as a
- *   `timeout` failure (Req 2.4, 2.5).
+ *   `timeout` failure.
  * - Shows a visible loading state while the preflight (and subsequent iframe
  *   load) is in flight, and only decides on an error state after loading
- *   completes (Req 2.7).
+ *   completes.
  * - On failure renders visible error text plus a retry control and never shows
- *   a blank iframe (Req 2.6).
+ *   a blank iframe.
  * - Always offers the authoritative data-table fallback when the chart cannot
- *   render (Req 2.8).
- * - All loading and error copy is localized (Req 2.9).
+ *   render.
+ * - All loading and error copy is localized.
  */
 export default function ChartFrame({
   baseSrc,
@@ -135,13 +135,13 @@ export default function ChartFrame({
   const { t } = useLocale()
 
   // The themed URL is the single dependency that drives the preflight. It
-  // changes when either `baseSrc` or `theme` changes (Req 2.1, 2.3).
+  // changes when either `baseSrc` or `theme` changes.
   const themedSrc = withTheme(baseSrc, theme)
 
   const [phase, dispatch] = useReducer(phaseReducer, { status: 'loading', iframe: false })
 
   // `retryNonce` forces the preflight effect to re-run on an explicit retry
-  // even when the themed URL is unchanged (Req 2.6).
+  // even when the themed URL is unchanged.
   const [retryNonce, bumpRetry] = useReducer((n: number) => n + 1, 0)
 
   useEffect(() => {
@@ -153,7 +153,7 @@ export default function ChartFrame({
 
     // Abort the request if it does not respond within the timeout budget. The
     // abort is distinguished from a cleanup abort via the `timedOut` flag so it
-    // is classified as a `timeout` failure (Req 2.5).
+    // is classified as a `timeout` failure.
     const timeoutId = window.setTimeout(() => {
       timedOut = true
       controller.abort()
@@ -167,7 +167,7 @@ export default function ChartFrame({
         const responseClass = classifyChartResponse(response.status)
         if (responseClass === 'success') {
           // Preflight passed; render the iframe and wait for its load event
-          // before declaring success (Req 2.7).
+          // before declaring success.
           dispatch({ type: 'preflight-ok' })
         } else {
           dispatch({ type: 'fail', kind: responseClass })
@@ -210,7 +210,7 @@ export default function ChartFrame({
   const isLoading = phase.status === 'loading'
   const isError = phase.status === 'error'
   // Render the iframe once the preflight passes and keep it mounted while
-  // ready. It is never mounted in the error state (Req 2.6).
+  // ready. It is never mounted in the error state.
   const showIframe = (phase.status === 'loading' && phase.iframe) || phase.status === 'ready'
 
   return (
@@ -227,7 +227,7 @@ export default function ChartFrame({
       )}
       {isError ? (
         // Error state: visible error text + retry entry point + authoritative
-        // data-table fallback. No iframe is rendered (Req 2.6, 2.8, 2.9).
+        // data-table fallback. No iframe is rendered.
         <div className="p-4">
           <div
             role="alert"

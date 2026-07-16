@@ -26,7 +26,7 @@ const IDS = {
   minPromptLen: 'perf-minPromptLen',
 } as const
 
-/** DOM order of focusable fields, drives first-invalid focus on submit (Req 10.4). */
+/** DOM order of focusable fields, drives first-invalid focus on submit. */
 const DOM_ORDER: string[] = [
   IDS.model,
   IDS.api,
@@ -57,7 +57,7 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
   const [maxPromptLen, setMaxPromptLen] = useState('')
   const [minPromptLen, setMinPromptLen] = useState('')
 
-  // Validation: field id -> locale message key (never a hard-coded string, Req 10.10).
+  // Validation: field id -> locale message key (never a hard-coded string).
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   /** Localized error for a field id, or undefined when the field is valid. */
@@ -78,7 +78,7 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
     e.preventDefault()
     const newErrors: Record<string, string> = {}
 
-    // Required text fields (Req 10.2).
+    // Required text fields.
     if (!model.trim()) newErrors[IDS.model] = FORM_MESSAGE_KEYS.required
 
     const positiveIntegerListChecks = [
@@ -92,7 +92,7 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
       }
     }
 
-    // Numeric fields with min constraints (Req 10.9). Empty optional fields are
+    // Numeric fields with min constraints. Empty optional fields are
     // skipped; non-empty values are validated.
     const numericChecks: Array<{ id: string; value: string; min?: number; max?: number; step?: number }> = [
       { id: IDS.rate, value: rate, min: 0 },
@@ -109,7 +109,7 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
-      // Move focus to the first invalid field in DOM order (Req 10.4).
+      // Move focus to the first invalid field in DOM order.
       const firstInvalid = computeFirstInvalid(DOM_ORDER, Object.keys(newErrors))
       if (firstInvalid) {
         requestAnimationFrame(() => document.getElementById(firstInvalid)?.focus())

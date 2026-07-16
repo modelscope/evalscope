@@ -63,10 +63,10 @@ function Checkbox({
 /**
  * Desktop (>=1024px) tabular view of the evaluation history.
  *
- * Columns are fixed and ordered: model, dataset, time, samples, score, status
- * (Req 5.1, 5.2). Each run's model/dataset are derived through
+ * Columns are fixed and ordered: model, dataset, time, samples, score, status.
+ * Each run's model/dataset are derived through
  * `buildDisplayLabel` so the row shows a meaningful label rather than the raw
- * timestamped run name (Req 5.6). A leading selection column is always visible
+ * timestamped run name. A leading selection column is always visible
  * while row clicks continue to open the report detail.
  */
 export default function ReportsTable({

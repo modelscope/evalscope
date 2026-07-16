@@ -1,5 +1,5 @@
 /**
- * Compare data model (no rendering, Req 15.1).
+ * Compare data model (no rendering).
  *
  * This module holds the pure data logic behind the Evaluation History /
  * Compare surfaces: how a run is labelled, how compare selection is bounded and
@@ -16,7 +16,7 @@ const LABEL_SEPARATOR = ' · '
 
 /**
  * A meaningful display label for a run, derived from its model and dataset(s)
- * rather than the raw timestamped path (Req 5.6, 5.7, 8.9).
+ * rather than the raw timestamped path.
  */
 export interface RunDisplayLabel {
   /** Parsed model name; empty string when no meaningful model could be parsed. */
@@ -57,7 +57,7 @@ export function buildDisplayLabel(runName: string): RunDisplayLabel {
   return { model: trimmedModel, dataset, label }
 }
 
-/** Maximum number of runs that can be selected for a single comparison (Req 5.9). */
+/** Maximum number of runs that can be selected for a single comparison. */
 export const MAX_COMPARE_SELECTION = 5
 
 /** Result of attempting to add a run to the current compare selection. */
@@ -72,7 +72,7 @@ export interface AddToSelectionResult {
  * Add a run to the compare selection, enforcing the selection cap and de-duping.
  *
  * When the selection is already at `MAX_COMPARE_SELECTION`, the addition is
- * rejected and the selection is returned unchanged (Req 5.9). Otherwise the run
+ * rejected and the selection is returned unchanged. Otherwise the run
  * is appended unless it is already selected (de-dup), and the resulting size
  * never exceeds the cap.
  *
@@ -97,7 +97,7 @@ export function addToSelection(state: string[], runId: string): AddToSelectionRe
  * The compare selection is a set of run ids that is conceptually independent of
  * the order in which runs happen to be listed. Sorting or filtering the list
  * only changes how runs are arranged (and which are currently visible); it must
- * never drop any selected run (Req 5.8). This helper realises that contract:
+ * never drop any selected run. This helper realises that contract:
  *
  *   - The returned selection is the *same set* as the input selection: no run is
  *     added or removed, and duplicates in the input are collapsed. As a set the
@@ -166,7 +166,7 @@ function runDatasets(run: ReportData): Set<string> {
  * Runs are compatible when they share at least one common dataset. When there is
  * no common dataset the runs cannot be aligned for comparison, so a localized
  * reason key is returned; the caller keeps the existing selection and surfaces
- * the reason (Req 5.10). Fewer than two runs is not yet an incompatibility, so
+ * the reason. Fewer than two runs is not yet an incompatibility, so
  * `null` is returned.
  *
  * @param runs Runs selected for comparison.
