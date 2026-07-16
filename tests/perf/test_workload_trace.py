@@ -515,3 +515,119 @@ class TestMatchOutputLength:
         path = _make_trace_file([_record(completion_tokens=bad_value, timestamp=0.0)], tmp_path)
         with pytest.raises(ValueError, match='completion_tokens must be > 0'):
             WorkloadTraceDatasetPlugin(_make_args(path))
+
+    # -- constrained-decoding guard: ignore_eos must be skipped ----------------
+
+    @pytest.mark.parametrize(
+        'rf_type',
+        ['json_object', 'json_schema'],
+    )
+    def test_skips_ignore_eos_for_response_format(self, tmp_path, rf_type, caplog):
+        """response_format with json_object/json_schema triggers constrained
+        decoding — ignore_eos must NOT be injected."""
+        body = {
+            'model': 'qwen',
+            'messages': [{'role': 'user', 'content': 'hi'}],
+            'response_format': {'type': rf_type},
+        }
+        path = _make_trace_file([_record(body=body, completion_tokens=50, timestamp=0.0)], tmp_path)
+        args = _make_args(path, dataset_args={'match_output_length': True})
+        plugin = WorkloadTraceDatasetPlugin(args)
+        msg = list(plugin.build_messages())[0]
+        assert msg['max_tokens'] == 50
+        assert 'ignore_eos' not in msg
+        assert 'constrained decoding' in caplog.text
+
+    def test_allows_ignore_eos_for_response_format_text(self, tmp_path):
+        """response_format with type=text does NOT trigger constrained decoding."""
+        body = {
+            'model': 'qwen',
+            'messages': [{'role': 'user', 'content': 'hi'}],
+            'response_format': {'type': 'text'},
+        }
+        path = _make_trace_file([_record(body=body, completion_tokens=50, timestamp=0.0)], tmp_path)
+        args = _make_args(path, dataset_args={'match_output_length': True})
+        plugin = WorkloadTraceDatasetPlugin(args)
+        msg = list(plugin.build_messages())[0]
+        assert msg['max_tokens'] == 50
+        assert msg['ignore_eos'] is True
+
+    @pytest.mark.parametrize(
+        'tool_choice',
+        ['required', {'type': 'function', 'function': {'name': 'get_weather'}}],
+    )
+    def test_skips_ignore_eos_for_forced_tool_choice(self, tmp_path, tool_choice, caplog):
+        """tools + tool_choice=required or named function → constrained decoding."""
+        body = {
+            'model': 'qwen',
+            'messages': [{'role': 'user', 'content': 'hi'}],
+            'tools': [{'type': 'function', 'function': {'name': 'get_weather'}}],
+            'tool_choice': tool_choice,
+        }
+        path = _make_trace_file([_record(body=body, completion_tokens=50, timestamp=0.0)], tmp_path)
+        args = _make_args(path, dataset_args={'match_output_length': True})
+        plugin = WorkloadTraceDatasetPlugin(args)
+        msg = list(plugin.build_messages())[0]
+        assert msg['max_tokens'] == 50
+        assert 'ignore_eos' not in msg
+        assert 'constrained decoding' in caplog.text
+
+    @pytest.mark.parametrize('tool_choice', ['auto', 'none'])
+    def test_allows_ignore_eos_for_auto_none_tool_choice(self, tmp_path, tool_choice):
+        """tools + tool_choice=auto/none → no grammar constraint, ignore_eos safe."""
+        body = {
+            'model': 'qwen',
+            'messages': [{'role': 'user', 'content': 'hi'}],
+            'tools': [{'type': 'function', 'function': {'name': 'get_weather'}}],
+            'tool_choice': tool_choice,
+        }
+        path = _make_trace_file([_record(body=body, completion_tokens=50, timestamp=0.0)], tmp_path)
+        args = _make_args(path, dataset_args={'match_output_length': True})
+        plugin = WorkloadTraceDatasetPlugin(args)
+        msg = list(plugin.build_messages())[0]
+        assert msg['max_tokens'] == 50
+        assert msg['ignore_eos'] is True
+
+    def test_allows_ignore_eos_for_tools_without_tool_choice(self, tmp_path):
+        """tools present but no tool_choice key → defaults to auto, safe."""
+        body = {
+            'model': 'qwen',
+            'messages': [{'role': 'user', 'content': 'hi'}],
+            'tools': [{'type': 'function', 'function': {'name': 'get_weather'}}],
+        }
+        path = _make_trace_file([_record(body=body, completion_tokens=50, timestamp=0.0)], tmp_path)
+        args = _make_args(path, dataset_args={'match_output_length': True})
+        plugin = WorkloadTraceDatasetPlugin(args)
+        msg = list(plugin.build_messages())[0]
+        assert msg['max_tokens'] == 50
+        assert msg['ignore_eos'] is True
+
+    def test_mixed_constrained_and_plain(self, tmp_path, caplog):
+        """Only constrained requests skip ignore_eos; plain ones still get it."""
+        constrained_body = {
+            'model': 'qwen',
+            'messages': [{'role': 'user', 'content': 'json'}],
+            'response_format': {'type': 'json_object'},
+        }
+        plain_body = {
+            'model': 'qwen',
+            'messages': [{'role': 'user', 'content': 'text'}],
+        }
+        records = [
+            _record(body=constrained_body, completion_tokens=30, timestamp=0.0),
+            _record(body=plain_body, completion_tokens=60, timestamp=1.0),
+        ]
+        path = _make_trace_file(records, tmp_path)
+        args = _make_args(path, dataset_args={'match_output_length': True})
+        plugin = WorkloadTraceDatasetPlugin(args)
+        msgs = list(plugin.build_messages())
+
+        # constrained → max_tokens set, no ignore_eos
+        assert msgs[0]['max_tokens'] == 30
+        assert 'ignore_eos' not in msgs[0]
+
+        # plain → both set
+        assert msgs[1]['max_tokens'] == 60
+        assert msgs[1]['ignore_eos'] is True
+
+        assert '1 request(s) use constrained decoding' in caplog.text

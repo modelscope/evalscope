@@ -19,6 +19,18 @@ logger = get_logger()
 
 RESERVED_BODY_KEYS = frozenset({BODY_META_HEADERS, BODY_META_REQUEST_ID, BODY_META_ARRIVAL_OFFSET, BODY_META_IS_WARMUP})
 
+# When match_output_length is enabled, ignore_eos=true is injected into the
+# request body.  This is unsafe for requests that use constrained decoding
+# (grammar / FSM) — the grammar terminates generation independently of EOS,
+# and forcing past that point causes crashes (see vLLM#37506).
+#
+# _has_constrained_decoding() currently checks OpenAI-standard fields only
+# (response_format, tools + tool_choice).  Engine-specific keys that also
+# trigger constrained decoding are listed below for future reference:
+#   vLLM legacy:  guided_json, guided_regex, guided_choice, guided_grammar
+#   vLLM new:     structured_outputs
+#   SGLang:       json_schema, regex, ebnf, structural_tag
+
 
 class WorkloadTraceArgs(BaseDatasetArgs):
 
@@ -216,15 +228,49 @@ class WorkloadTraceDatasetPlugin(DatasetPluginBase):
         elif override is not None:
             body['model'] = override
 
+    @staticmethod
+    def _has_constrained_decoding(body: Dict[str, Any]) -> bool:
+        """Return True if *body* contains OpenAI fields that trigger constrained
+        decoding (grammar / FSM), making ``ignore_eos`` unsafe.
+
+        Checked fields (OpenAI standard only):
+
+        - ``response_format`` with ``type`` in {``json_object``, ``json_schema``}.
+          ``type=text`` does not trigger constrained decoding.
+        - ``tools`` with ``tool_choice`` in {``required``, or a named function
+          dict}.  ``tool_choice="auto"`` does **not** activate grammar
+          constraints in vLLM or SGLang — the model freely decides whether to
+          emit content or a tool call.
+
+        Returns False for plain text generation and ``tool_choice="auto"``
+        requests, where ``ignore_eos`` is safe to use.
+        """
+        # response_format with constrained type
+        rf = body.get('response_format')
+        if isinstance(rf, dict) and rf.get('type') in ('json_object', 'json_schema'):
+            return True
+        # tools + forced tool_choice ("required" or named function)
+        # "auto" / "none" / absent → no grammar constraint
+        tc = body.get('tool_choice')
+        if body.get('tools') and tc not in (None, 'none', 'auto'):
+            return True
+        return False
+
     def build_messages(self) -> Iterator[Dict[str, Any]]:
         match_output = self.dataset_args.match_output_length
+        skipped = 0
         for i, record in enumerate(self._records):
             body = dict(record.body)
             self._rewrite_model(body)
 
             if match_output and record.completion_tokens is not None:
                 body['max_tokens'] = record.completion_tokens
-                body['ignore_eos'] = True
+                if self._has_constrained_decoding(body):
+                    # Skip ignore_eos to avoid crashing constrained-decoding
+                    # requests; max_tokens still serves as an upper bound.
+                    skipped += 1
+                else:
+                    body['ignore_eos'] = True
 
             body[BODY_META_ARRIVAL_OFFSET] = float(self._schedule[i])
             if i < self._warmup_count:
@@ -235,3 +281,11 @@ class WorkloadTraceDatasetPlugin(DatasetPluginBase):
                 body[BODY_META_REQUEST_ID] = record.request_id
 
             yield body
+
+        if skipped:
+            logger.warning(
+                'workload_trace: %d request(s) use constrained decoding '
+                '(response_format / tools); ignore_eos skipped for these '
+                '(max_tokens still set)',
+                skipped,
+            )
