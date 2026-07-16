@@ -69,6 +69,10 @@ class BenchmarkData:
     for trace-level aggregation in multi-turn benchmarks.  None for single-turn
     runs.  Format is opaque (e.g. ``trace-42`` from MultiTurnStrategy)."""
 
+    request_id: Optional[str] = None
+    """Optional identifier from trace data for correlating benchmark results
+    with original production requests.  None for non-trace benchmarks."""
+
     # --- Warmup ---
     is_warmup: bool = False
     """True when this request is a warmup request, excluded from final metrics."""

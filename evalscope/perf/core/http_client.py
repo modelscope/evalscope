@@ -82,7 +82,7 @@ class AioHttpClient:
             # Delegate the request processing to the API plugin
             output = await self.api_plugin.process_request(self.client, self.url, headers, body)
             if request_id:
-                output.trace_id = request_id
+                output.request_id = request_id
             return output
         except asyncio.TimeoutError as e:
             logger.error(

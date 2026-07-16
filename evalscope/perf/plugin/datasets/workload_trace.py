@@ -139,10 +139,16 @@ class WorkloadTraceDatasetPlugin(DatasetPluginBase):
             self._schedule = self._schedule[:n]
         query_parameters.number = n
 
-        # --model: if user explicitly passed it, treat as model_override fallback.
+        # --model: if user explicitly passed it and no dataset-args model
+        # rewriting is configured, treat as model_override fallback.
+        # For explicit control, prefer --dataset-args '{"model_override": "..."}' or model_mapping.
         if 'model' in query_parameters.model_fields_set:
             if not self.dataset_args.model_override and not self.dataset_args.model_mapping:
                 self.dataset_args.model_override = query_parameters.model
+                logger.info(
+                    f'workload_trace: using --model {query_parameters.model!r} as model_override. '
+                    'Use --dataset-args model_override/model_mapping for explicit control.'
+                )
 
         self._warmup_count = min(query_parameters.warmup_count, n)
 

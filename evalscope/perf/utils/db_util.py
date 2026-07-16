@@ -33,6 +33,7 @@ class DatabaseColumns:
     COMPLETION_TOKENS = 'completion_tokens'
     MAX_GPU_MEMORY_COST = 'max_gpu_memory_cost'
     TIME_PER_OUTPUT_TOKEN = 'time_per_output_token'
+    REQUEST_ID = 'request_id'
 
 
 def load_prompt(prompt_path_or_text):
@@ -66,7 +67,8 @@ def create_result_table(cursor):
                       {DatabaseColumns.PROMPT_TOKENS} INTEGER,
                       {DatabaseColumns.COMPLETION_TOKENS} INTEGER,
                       {DatabaseColumns.MAX_GPU_MEMORY_COST} REAL,
-                      {DatabaseColumns.TIME_PER_OUTPUT_TOKEN} REAL
+                      {DatabaseColumns.TIME_PER_OUTPUT_TOKEN} REAL,
+                      {DatabaseColumns.REQUEST_ID} TEXT
                    )'''
     )
 
@@ -84,6 +86,7 @@ def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData)
         benchmark_data.success,
         response_messages,
         benchmark_data.completed_time,
+        benchmark_data.request_id,
     )
 
     if benchmark_data.success:
@@ -95,16 +98,18 @@ def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData)
         query = f"""INSERT INTO result(
                       {DatabaseColumns.REQUEST}, {DatabaseColumns.START_TIME}, {DatabaseColumns.INTER_TOKEN_LATENCIES},
                       {DatabaseColumns.SUCCESS}, {DatabaseColumns.RESPONSE_MESSAGES}, {DatabaseColumns.COMPLETED_TIME},
+                      {DatabaseColumns.REQUEST_ID},
                       {DatabaseColumns.LATENCY}, {DatabaseColumns.FIRST_CHUNK_LATENCY}, {DatabaseColumns.PROMPT_TOKENS},
                       {DatabaseColumns.COMPLETION_TOKENS}, {DatabaseColumns.MAX_GPU_MEMORY_COST},
                       {DatabaseColumns.TIME_PER_OUTPUT_TOKEN}
-                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
         cursor.execute(query, common_columns + additional_columns)
     else:
         query = f"""INSERT INTO result(
                       {DatabaseColumns.REQUEST}, {DatabaseColumns.START_TIME}, {DatabaseColumns.INTER_TOKEN_LATENCIES},
-                      {DatabaseColumns.SUCCESS}, {DatabaseColumns.RESPONSE_MESSAGES}, {DatabaseColumns.COMPLETED_TIME}
-                   ) VALUES (?, ?, ?, ?, ?, ?)"""
+                      {DatabaseColumns.SUCCESS}, {DatabaseColumns.RESPONSE_MESSAGES}, {DatabaseColumns.COMPLETED_TIME},
+                      {DatabaseColumns.REQUEST_ID}
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?)"""
         cursor.execute(query, common_columns)
 
 

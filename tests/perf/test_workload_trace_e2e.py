@@ -216,8 +216,27 @@ class TestE2EBodyPassthrough:
         server = _run(go())
         assert server.headers_log[0].get('X-Canary') == 'true'
 
+    def test_hop_by_hop_headers_stripped(self, tmp_path):
+        """Hop-by-hop headers from trace data are stripped before sending."""
+        records = [{
+            'body': {'model': 'm', 'messages': [{'role': 'user', 'content': 'hi'}]},
+            'timestamp': 0.0,
+            'headers': {'X-Custom': 'keep', 'Host': 'evil.com', 'Connection': 'close'},
+        }]
+
+        async def go():
+            server, _ = await _run_e2e(records, tmp_path)
+            await server.stop()
+            return server
+
+        server = _run(go())
+        sent_headers = server.headers_log[0]
+        assert sent_headers.get('X-Custom') == 'keep'
+        # Host should be set by aiohttp to the actual target, not the trace value
+        assert sent_headers.get('Host') != 'evil.com'
+
     def test_request_id_propagated(self, tmp_path):
-        """request_id flows through to BenchmarkData.trace_id."""
+        """request_id flows through to BenchmarkData.request_id (not trace_id)."""
         records = [{
             'body': {'model': 'm', 'messages': [{'role': 'user', 'content': 'hi'}]},
             'timestamp': 0.0,
@@ -231,7 +250,8 @@ class TestE2EBodyPassthrough:
 
         results = _run(go())
         assert len(results) == 1
-        assert results[0].trace_id == 'req-abc-123'
+        assert results[0].request_id == 'req-abc-123'
+        assert results[0].trace_id is None
 
 
 class TestE2EWarmup:
