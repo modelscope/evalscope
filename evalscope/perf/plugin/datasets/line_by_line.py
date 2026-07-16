@@ -4,6 +4,7 @@ from typing import Any, Dict, Iterator, List, Union
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
+from evalscope.perf.plugin.datasets.dataset_args import TextDatasetArgs
 from evalscope.perf.plugin.registry import register_dataset
 
 
@@ -38,6 +39,8 @@ class LineByLineDatasetPlugin(DatasetPluginBase):
        defaults do not silently overwrite a user-supplied body.
     """
 
+    args_schema = TextDatasetArgs
+
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
 
@@ -64,13 +67,11 @@ class LineByLineDatasetPlugin(DatasetPluginBase):
             parsed = self._try_parse_json(line)
 
             if isinstance(parsed, str):
-                prompt = parsed
-                is_valid, _ = self.check_prompt_length(prompt)
-                if not is_valid:
+                prompt = self.prepare_prompt(parsed)
+                if prompt is None:
                     continue
                 if self.query_parameters.apply_chat_template:
-                    message = self.create_message(prompt)
-                    result = [message]
+                    result = [self.create_message(prompt)]
                 else:
                     result = prompt
             else:

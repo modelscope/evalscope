@@ -36,6 +36,7 @@ from typing import Any, Dict, Iterator, List
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import Conversation, Turn
+from evalscope.perf.plugin.datasets.dataset_args import MultiTurnDatasetArgs
 from evalscope.perf.plugin.datasets.random_dataset import RandomDatasetPlugin
 from evalscope.perf.plugin.datasets.share_gpt import ShareGPTDatasetPluginBase
 from evalscope.perf.plugin.registry import register_dataset
@@ -59,6 +60,8 @@ class RandomMultiTurnDatasetPlugin(RandomDatasetPlugin):
     Produces ``args.number`` conversations upfront (worst-case one turn each
     guarantees enough turn budget for the benchmark runner).
     """
+
+    args_schema = MultiTurnDatasetArgs
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
@@ -149,6 +152,8 @@ class RandomMultiTurnDatasetPlugin(RandomDatasetPlugin):
 
 class ShareGPTMultiTurnBase(ShareGPTDatasetPluginBase):
     """ShareGPT plugin that preserves the full user+assistant alternation."""
+
+    args_schema = MultiTurnDatasetArgs
 
     def _convert_to_openai_messages_full(self, conversation: List[Dict]) -> Conversation:
         """Convert swift/sharegpt format to a ``Conversation`` (``List[Turn]``).

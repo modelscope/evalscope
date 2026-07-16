@@ -22,7 +22,11 @@
 
 ### `multi_turn_args`（`swe_smith` 专属参数）
 
-`swe_smith` 数据集的 live 构建模式支持通过 `MultiTurnArgs` 对象精细控制对话 token 长度目标。
+```{note}
+`--multi-turn-args` 已**废弃**，请改用统一的 `--dataset-args` 传入同名参数。旧参数仍可用，其内容会自动折叠进 `--dataset-args`（同名键以 `--dataset-args` 为准）。下表参数键名不变。
+```
+
+`swe_smith` 数据集的 live 构建模式支持通过 `--dataset-args` 精细控制对话 token 长度目标。
 
 每条对话的轮次数量从 `[--min-turns, --max-turns]` 中随机采样，每轮按以下 token 长度参数填充消息。
 
@@ -384,7 +388,7 @@ evalscope perf \
   --max-tokens 512 1024 \
   --min-tokens 512 \
   --multi-turn \
-  --multi-turn-args '{
+  --dataset-args '{
       "first_turn_length": [4096, 8192],
       "subsequent_turn_length": [512, 1024]
   }' \

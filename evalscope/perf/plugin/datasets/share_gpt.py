@@ -4,6 +4,7 @@ from typing import Dict, Iterator, List
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
+from evalscope.perf.plugin.datasets.dataset_args import TextDatasetArgs
 from evalscope.perf.plugin.registry import register_dataset
 
 
@@ -33,6 +34,8 @@ class ShareGPTDatasetPluginBase(DatasetPluginBase):
 
     # Subclasses must set this
     FILE_NAME: str = None
+
+    args_schema = TextDatasetArgs
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
@@ -76,11 +79,13 @@ class ShareGPTDatasetPluginBase(DatasetPluginBase):
             if not messages:
                 continue
 
-            # Check prompt length using the last user turn content
+            # Fit / filter using the last user turn content.
             last_user_content = messages[-1]['content']
-            is_valid, _ = self.check_prompt_length(last_user_content)
-            if is_valid:
-                yield messages
+            prepared = self.prepare_prompt(last_user_content)
+            if prepared is None:
+                continue
+            messages[-1]['content'] = prepared
+            yield messages
 
 
 @register_dataset('share_gpt_zh')

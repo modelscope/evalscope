@@ -303,6 +303,14 @@ class Arguments(BaseArgument):
     A non-zero initial value shifts the starting position of the first run.
     """
 
+    dataset_args: Optional[Dict[str, Any]] = None
+    """Per-dataset arguments as a dict (parsed from a JSON string on the CLI).
+
+    Validated against the schema declared by the selected ``--dataset`` plugin
+    (``args_schema``), giving strongly-typed, fail-fast per-dataset options.
+    The deprecated ``--multi-turn-args`` is folded into this field.
+    """
+
     # Response settings
     frequency_penalty: Optional[float] = None
     """Frequency penalty for the response."""
@@ -420,6 +428,18 @@ class Arguments(BaseArgument):
             return MultiTurnArgs(**v)
         return v
 
+    @field_validator('dataset_args', mode='before')
+    @classmethod
+    def _validate_dataset_args(cls, v: Any) -> Any:
+        if v is None or isinstance(v, dict):
+            return v
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except Exception as e:
+                raise ValueError(f'Failed to parse --dataset-args JSON: {e}') from e
+        return v
+
     @field_validator('headers', mode='after')
     @classmethod
     def _validate_headers(cls, v: Dict[str, Any]) -> Dict[str, Any]:
@@ -488,14 +508,68 @@ class Arguments(BaseArgument):
         # Validate sweep params (number/parallel/rate consistency)
         self._validate_sweep_params()
 
-        if (
-            'num_workers' not in self.model_fields_set and self.multi_turn_args is not None
-            and 'num_workers' in self.multi_turn_args.model_fields_set
-        ):
-            logger.warning('`multi_turn_args.num_workers` is deprecated. Please use top-level `--num-workers` instead.')
-            self.num_workers = self.multi_turn_args.num_workers
+        # Fold deprecated --multi-turn-args into --dataset-args (pure dict merge).
+        # NOTE: dataset_args is kept as a raw dict here; validation against the
+        # dataset's typed schema happens in the plugin layer (which owns the
+        # schema), so the config layer stays free of any plugin dependency.
+        self._normalize_legacy_dataset_args()
+
+        # Promote deprecated num_workers to top-level. It must be removed from
+        # dataset_args regardless, otherwise non-multi-turn schemas (extra='forbid')
+        # would reject it during plugin construction.
+        legacy_num_workers = None
+        if self.dataset_args and 'num_workers' in self.dataset_args:
+            legacy_num_workers = self.dataset_args.pop('num_workers')
+        elif self.multi_turn_args is not None and 'num_workers' in self.multi_turn_args.model_fields_set:
+            legacy_num_workers = self.multi_turn_args.num_workers
+        if legacy_num_workers is not None:
+            logger.warning(
+                '`num_workers` in dataset/multi-turn args is deprecated. '
+                'Please use top-level `--num-workers` instead.'
+            )
+            if 'num_workers' not in self.model_fields_set:
+                try:
+                    coerced = int(legacy_num_workers)
+                except (TypeError, ValueError) as e:
+                    raise ValueError(f'`num_workers` must be an integer, got {legacy_num_workers!r}') from e
+                if coerced < 0:
+                    raise ValueError(f'`num_workers` must be >= 0, got {coerced}')
+                self.num_workers = coerced
 
         return self
+
+    def _normalize_legacy_dataset_args(self) -> None:
+        """Fold the deprecated ``--multi-turn-args`` into ``--dataset-args``.
+
+        Only user-set keys are folded (``setdefault`` semantics): on a key
+        conflict, ``--dataset-args`` takes precedence and a warning is emitted
+        (never an error).  Other legacy top-level flags (``prefix_length``,
+        ``image_*``, ``min/max_turns``, ``min/max_prompt_length``) are left
+        untouched and are still read directly by the plugins.
+        """
+        if self.multi_turn_args is None:
+            return
+        legacy = self.multi_turn_args.model_dump(exclude_unset=True)
+        # ``num_workers`` is a cross-cutting deprecated alias for top-level
+        # ``--num-workers`` (promoted separately); never fold it into dataset_args,
+        # which would otherwise be rejected by non-multi-turn dataset schemas.
+        legacy.pop('num_workers', None)
+        if not legacy:
+            return
+        merged = dict(self.dataset_args) if self.dataset_args else {}
+        conflicts = [k for k in legacy if k in merged]
+        for k, v in legacy.items():
+            merged.setdefault(k, v)
+        self.dataset_args = merged
+        logger.warning(
+            '`--multi-turn-args` is deprecated; its values were folded into `--dataset-args`. '
+            'Please migrate to `--dataset-args`.'
+        )
+        if conflicts:
+            logger.warning(
+                f'Keys {conflicts} were set in both --multi-turn-args and --dataset-args; '
+                '--dataset-args takes precedence.'
+            )
 
     def _current_number(self) -> int:
         return self.number if isinstance(self.number, int) else self.number[0]
@@ -745,6 +819,17 @@ def _add_dataset_arguments(parser: argparse.ArgumentParser) -> None:
             'Global token-sequence offset for random datasets. '
             'Automatically incremented between runs to avoid KV-cache hits. '
             'Default 0.'
+        ),
+    )
+    parser.add_argument(
+        '--dataset-args',
+        type=json.loads,
+        default=None,
+        dest='dataset_args',
+        help=(
+            'Per-dataset arguments as a JSON string, validated against the selected dataset schema. '
+            'Example: \'{"target_input_len": 2048, "input_len_mode": "cap"}\'. '
+            'Supersedes the deprecated --multi-turn-args.'
         ),
     )
 
