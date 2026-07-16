@@ -5,7 +5,8 @@ import { getChartUrl } from '@/api/reports'
 import Card from '@/components/ui/Card'
 import Table from '@/components/ui/Table'
 import { scoreColor } from '@/utils/colorScale'
-import PlotlyChart from '@/components/charts/PlotlyChart'
+import { formatMetricByKey } from '@/domain/metric/registry'
+import AdaptiveVisualization from '@/components/charts/AdaptiveVisualization'
 import ReportSummaryStats from './ReportSummaryStats'
 import JsonViewer from '@/components/common/JsonViewer'
 
@@ -54,7 +55,7 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
       sortable: true,
       render: (row: Record<string, unknown>) => {
         const score = Number(row.Score)
-        const norm = score > 1 ? score / 100 : score
+        const norm = Math.max(0, Math.min(1, score))
         return (
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-[60px] min-w-[60px] rounded-full bg-[var(--border)] overflow-hidden">
@@ -67,7 +68,7 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
               />
             </div>
             <span className="font-mono font-medium tabular-nums" style={{ color: scoreColor(norm) }}>
-              {score.toFixed(4)}
+              {formatMetricByKey('score', score, t).primary}
             </span>
           </div>
         )
@@ -97,11 +98,12 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
         />
       </Card>
 
-      {/* Radar Chart */}
-      <PlotlyChart
-        src={getChartUrl(rootPath, 'radar', { reportName })}
+      {/* Visualization form follows the number of dataset dimensions. */}
+      <AdaptiveVisualization
+        dimensions={reports.map((report) => ({ label: report.dataset_name, value: report.score }))}
+        radarSrc={reports.length >= 3 ? getChartUrl(rootPath, 'radar', { reportName }) : undefined}
         height={400}
-        title={t('single.radarChart')}
+        title={t('single.scoreVisualization')}
       />
 
       {/* Task Config */}

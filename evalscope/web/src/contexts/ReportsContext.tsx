@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react'
 import type { LoadReportResponse, ReportData } from '@/api/types'
 import * as reportsApi from '@/api/reports'
-import { api } from '@/api/client'
+import { apiValidated } from '@/api/client'
+import { configResponseSchema } from '@/api/schemas'
 
 // ------------------------------------------------------------------ //
 // State                                                               //
@@ -101,8 +102,8 @@ interface ReportsCtx extends ReportsState {
   triggerScan: (p?: string) => void
   scanReports: () => Promise<void>
   selectReports: (r: string[]) => void
-  loadReport: (name: string) => Promise<LoadReportResponse>
-  loadMultiReports: (names: string[]) => Promise<ReportData[]>
+  loadReport: (name: string, signal?: AbortSignal) => Promise<LoadReportResponse>
+  loadMultiReports: (names: string[], signal?: AbortSignal) => Promise<ReportData[]>
   toggleSelectForCompare: (name: string) => void
   setCompareSelection: (names: string[]) => void
   clearCompareSelection: () => void
@@ -123,7 +124,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
   // initial default (checked at resolve time via the state ref).
   useEffect(() => {
     let cancelled = false
-    api<{ outputs_root: string }>('/api/v1/config')
+    apiValidated('/api/v1/config', configResponseSchema)
       .then((cfg) => {
         if (!cancelled && cfg.outputs_root && stateRef.current.rootPath === INITIAL_ROOT) {
           dispatch({ type: 'SET_ROOT', rootPath: cfg.outputs_root })
@@ -156,11 +157,11 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
   const selectReports = useCallback((r: string[]) => dispatch({ type: 'SET_SELECTED', reports: r }), [])
 
   const loadReport = useCallback(
-    async (name: string) => {
+    async (name: string, signal?: AbortSignal) => {
       if (state.reportCache[name]) return state.reportCache[name]
       dispatch({ type: 'SET_LOADING', loading: true })
       try {
-        const data = await reportsApi.loadReport(state.rootPath, name)
+        const data = await reportsApi.loadReport(state.rootPath, name, signal)
         dispatch({ type: 'CACHE_REPORT', name, data })
         return data
       } finally {
@@ -171,7 +172,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
   )
 
   const loadMultiReports = useCallback(
-    async (names: string[]) => {
+    async (names: string[], signal?: AbortSignal) => {
       dispatch({ type: 'SET_LOADING', loading: true })
       try {
         // Load via cache-aware path so repeat loads in compare view don't refetch.
@@ -180,7 +181,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
         const results = await Promise.all(
           names.map(async (name) => {
             if (reportCache[name]) return reportCache[name]
-            const data = await reportsApi.loadReport(rootPath, name)
+            const data = await reportsApi.loadReport(rootPath, name, signal)
             dispatch({ type: 'CACHE_REPORT', name, data })
             return data
           }),

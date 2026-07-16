@@ -1,0 +1,52 @@
+name: Frontend checks
+
+on:
+  pull_request:
+    paths:
+      - 'evalscope/web/**'
+      - 'DESIGN.md'
+      - '.github/workflows/frontend.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'evalscope/web/**'
+      - 'DESIGN.md'
+      - '.github/workflows/frontend.yml'
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: evalscope/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: evalscope/web/package-lock.json
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run lint
+      - run: npm test
+      - run: npm run drift
+      - run: npm run check:tofixed
+      - run: npm run check:decoupling
+      - run: npm run build
+      - run: npm run size-budget
+      - run: npm run build-storybook
+      - run: npm run e2e
+
+      - name: Upload Playwright diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-playwright-diagnostics
+          path: |
+            evalscope/web/test-results
+            evalscope/web/playwright-report
+          if-no-files-found: ignore

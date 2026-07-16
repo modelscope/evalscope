@@ -1,5 +1,6 @@
 @import "tailwindcss";
-@import "katex/dist/katex.min.css";
+/* KaTeX stylesheet is loaded on demand by MarkdownRenderer alongside the math
+   pipeline (Req 16.1); it must not be part of the initial CSS bundle. */
 @plugin "@tailwindcss/typography";
 
 /* ------------------------------------------------------------------ */
@@ -348,6 +349,25 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
+/* Focus indicator — WCAG 2.1 SC 2.4.7 / 1.4.11 (Req 12.6)            */
+/* A single accent ring shown on BOTH themes for every interactive     */
+/* element. `outline` keeps layout intact; `outline-offset` lifts the  */
+/* ring off the control so it also reads on accent-filled buttons —    */
+/* the ring sits on the page canvas where the violet accent scores     */
+/* ≥3:1 non-text contrast against both warm-cream (light) and          */
+/* near-black indigo (dark). `:where()` keeps specificity at 0 so a    */
+/* component can still opt into a bespoke focus treatment.             */
+/* ------------------------------------------------------------------ */
+:where(a, button, input, select, textarea, summary,
+       [tabindex]:not([tabindex="-1"]),
+       [role="button"], [role="tab"], [role="option"],
+       [role="menuitem"], [role="checkbox"], [role="radio"],
+       [role="switch"], [role="link"]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ */
 /* Typography utility classes — aligned to DESIGN.md §Typography 12-token */
 /* These give us a single source of truth so Tabs / Toolbars / new pages */
 /* don't re-hand-write `text-sm font-medium`, `text-xs ... uppercase`, etc. */
@@ -359,7 +379,12 @@ body {
   .type-body-sm-strong { @apply text-sm font-medium; }
   .type-body-xs        { @apply text-xs; }
   .type-label-xs       { @apply text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]; }
-  .type-table-xs       { @apply text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)]; }
+  /* Essential table / section headers. Bumped from 10px→12px so header text
+     clears the 12px floor (Req 12.4) and defaulted to --text-muted (AA on both
+     themes) instead of --text-dim (~3.6:1, below AA Normal) so headers applied
+     to essential content meet AA_Contrast (Req 12.1, 12.3). --text-dim stays
+     reserved for ≥14px non-essential metadata per DESIGN.md §Text. */
+  .type-table-xs       { @apply text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]; }
   .type-caption-mono   { @apply text-xs font-mono tabular-nums; }
   .type-code           { @apply text-[13px] font-mono; }
   .type-button-sm      { @apply text-xs font-medium; }
@@ -462,6 +487,31 @@ body {
   transform: translateY(-3px);
   box-shadow: var(--shadow-lg);
   border-color: var(--border-strong);
+}
+
+/* ------------------------------------------------------------------ */
+/* Touch targets — DESIGN.md §Touch Targets (Req 7.4, 12.5, 12.7)      */
+/* On coarse pointers, expand a control's tappable region to >=44x44   */
+/* CSS px via a centered ::before overlay WITHOUT changing the visual   */
+/* chrome (icon/label keep their design size, e.g. tablet icon-only    */
+/* nav stays 32x32). The overlay never paints and forwards taps to the  */
+/* host control. Fine-pointer devices are unaffected.                  */
+/* ------------------------------------------------------------------ */
+@media (pointer: coarse) {
+  .coarse-target {
+    position: relative;
+  }
+  .coarse-target::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 /* Skeleton pulse animation */

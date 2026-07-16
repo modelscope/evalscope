@@ -1,0 +1,7 @@
+{
+  "name": "example",
+  "value": 42,
+  "nested": {
+    "items": [1, 2, 3]
+  }
+}

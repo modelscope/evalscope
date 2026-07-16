@@ -114,6 +114,12 @@ def _root_path() -> str:
     return request.args.get('root_path', current_app.config.get('OUTPUTS_ROOT') or _DEFAULT_ROOT)
 
 
+def _apply_chart_theme(fig: go.Figure, theme: str) -> None:
+    """Apply the Web console theme to a generated Plotly figure."""
+    template = 'plotly_white' if theme == 'light' else PLOTLY_THEME
+    fig.update_layout(template=template)
+
+
 # ------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------
@@ -497,6 +503,7 @@ def get_chart():
         chart_type   (str): 'scores' | 'sunburst' | 'dataset_scores' | 'radar' | 'histogram' | 'grouped_bar'
         dataset_name (str): required for chart_type=dataset_scores
         subset_name  (str): required for chart_type=histogram
+        theme        (str): 'light' | 'dark'; defaults to the existing dark report theme
     """
     chart_type = request.args.get('chart_type', 'scores')
     root = _root_path()
@@ -595,6 +602,7 @@ def get_chart():
                    'justify-content:center;height:100vh;font-family:sans-serif;">No data to plot</body></html>', \
                    200, {'Content-Type': 'text/html'}
 
+        _apply_chart_theme(fig, request.args.get('theme', 'dark'))
         html = fig.to_html(full_html=True, include_plotlyjs=False, config={'responsive': True})
         plotly_script = f'<script src="{PLOTLY_CDN_URL}" charset="utf-8"></script>'
         html = html.replace('</head>', f'  {plotly_script}\n</head>')

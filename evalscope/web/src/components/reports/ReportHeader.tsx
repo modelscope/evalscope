@@ -3,8 +3,8 @@ import { ExternalLink, ArrowLeft } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
-import { formatScore } from '@/utils/formatUtils'
 import { scoreColor } from '@/utils/colorScale'
+import { formatMetricByKey } from '@/domain/metric/registry'
 
 interface Props {
   modelName: string
@@ -28,8 +28,8 @@ export default function ReportHeader({
   const { t } = useLocale()
   const navigate = useNavigate()
 
-  const normalizedScore = score > 1 ? score / 100 : score
-  const variant = normalizedScore >= 0.7 ? 'success' : normalizedScore >= 0.4 ? 'warning' : 'danger'
+  const normalizedScore = Math.max(0, Math.min(1, score))
+  const variant = score >= 0.7 ? 'success' : score >= 0.4 ? 'warning' : 'danger'
 
   return (
     <div
@@ -68,7 +68,7 @@ export default function ReportHeader({
           </div>
           <div className="flex items-center gap-3">
             <Badge variant={variant} className="font-mono text-sm px-3 py-1">
-              <span style={{ color: scoreColor(normalizedScore) }}>{formatScore(score)}</span>
+              <span style={{ color: scoreColor(normalizedScore) }}>{formatMetricByKey('score', score, t).primary}</span>
             </Badge>
             <span className="text-sm text-[var(--text-muted)]">
               {totalSamples.toLocaleString()} {t('single.samples')}

@@ -1,0 +1,70 @@
+{
+  "report_list": [
+    {
+      "name": "test-model-a_gsm8k",
+      "dataset_name": "gsm8k",
+      "model_name": "test-model-a",
+      "score": 0.92,
+      "analysis": "Single-dataset evaluation for test-model-a on gsm8k. Metrics below cover a bounded ratio (0-1), a bounded percentage (0-100) and an unbounded latency metric to exercise the metric display contract.",
+      "metrics": [
+        {
+          "name": "AverageAccuracy",
+          "num": 200,
+          "score": 0.92,
+          "categories": [
+            {
+              "name": ["default"],
+              "num": 200,
+              "score": 0.92,
+              "subsets": [
+                { "name": "main", "score": 0.9235, "num": 130 },
+                { "name": "hard", "score": 0.905, "num": 70 }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "PassRatePercent",
+          "num": 200,
+          "score": 87.5,
+          "categories": [
+            {
+              "name": ["default"],
+              "num": 200,
+              "score": 87.5,
+              "subsets": [
+                { "name": "main", "score": 90.0, "num": 130 },
+                { "name": "hard", "score": 82.857, "num": 70 }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "AverageLatencyMs",
+          "num": 200,
+          "score": 1234.56,
+          "categories": [
+            {
+              "name": ["default"],
+              "num": 200,
+              "score": 1234.56,
+              "subsets": [
+                { "name": "main", "score": 1180.42, "num": 130 },
+                { "name": "hard", "score": 1335.11, "num": 70 }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "datasets": ["gsm8k"],
+  "task_config": {
+    "model": "test-model-a",
+    "api_url": "http://localhost:8000/v1",
+    "api_key": "sk-***REDACTED***",
+    "datasets": ["gsm8k"],
+    "limit": 200,
+    "eval_type": "openai_api"
+  }
+}

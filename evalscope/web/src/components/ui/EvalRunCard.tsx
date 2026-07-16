@@ -26,7 +26,7 @@ export default function EvalRunCard({ report, onClick }: EvalRunCardProps) {
       className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--border-md)] transition-colors p-4 sm:p-5 cursor-pointer w-full text-left"
     >
       <div className="flex items-center gap-2">
-        <span className="type-title-md text-[var(--text)] truncate flex-1 min-w-0">
+        <span className="type-title-md text-[var(--text)] break-words flex-1 min-w-0">
           {report.model_name}
         </span>
         <ScoreBadge score={report.score} className="shrink-0" />

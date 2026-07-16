@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useReports } from '@/contexts/ReportsContext'
 import { useLocale } from '@/contexts/LocaleContext'
@@ -11,9 +11,11 @@ import Skeleton from '@/components/ui/Skeleton'
 import KpiCard from '@/components/ui/KpiCard'
 import ScoreBadge from '@/components/ui/ScoreBadge'
 import EmptyState from '@/components/common/EmptyState'
+import EmptyStateSystem from '@/components/common/EmptyStateSystem'
 import SearchInput from '@/components/ui/SearchInput'
 import Button from '@/components/ui/Button'
-import { FileText, Gauge, Cpu, Clock, Inbox, FlaskConical, ChevronRight } from 'lucide-react'
+import { FileText, Gauge, Cpu, Clock, ChevronRight } from 'lucide-react'
+import { formatMetricByKey } from '@/domain/metric/registry'
 
 // Number of recent runs shown before the "view all" toggle.
 const RECENT_LIMIT = 15
@@ -41,6 +43,7 @@ type RunItem =
 // Recent run row                                                      //
 // ------------------------------------------------------------------ //
 function RunRow({ item, onClick }: { item: RunItem; onClick: () => void }) {
+  const { t } = useLocale()
   const isEval = item.kind === 'eval'
   const model = isEval ? item.report.model_name : item.run.model
   const sub = isEval
@@ -62,45 +65,17 @@ function RunRow({ item, onClick }: { item: RunItem; onClick: () => void }) {
         {formatShort(item.ts)}
       </span>
       <div className="flex flex-col min-w-0 flex-1">
-        <span className="type-body-sm text-[var(--text)] truncate">{model}</span>
-        <span className="type-caption-mono text-[var(--text-muted)] truncate">{sub}</span>
+        <span className="type-body-sm text-[var(--text)] break-words">{model}</span>
+        <span className="type-caption-mono text-[var(--text-muted)] break-words">{sub}</span>
       </div>
       {isEval ? (
         <ScoreBadge score={item.report.score} className="shrink-0 !text-xs !px-2" />
       ) : (
         <span className="type-caption-mono text-[var(--text)] shrink-0">
-          {item.run.best_rps.toFixed(2)} req/s
+          {formatMetricByKey('rps', item.run.best_rps, t).primary}
         </span>
       )}
       <ChevronRight size={14} className="text-[var(--text-dim)] shrink-0" />
-    </button>
-  )
-}
-
-// ------------------------------------------------------------------ //
-// Quick-link card                                                     //
-// ------------------------------------------------------------------ //
-function QuickLink({
-  icon,
-  title,
-  desc,
-  onClick,
-}: {
-  icon: ReactNode
-  title: string
-  desc: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-3 p-4 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] hover:bg-[var(--bg-card2)] hover:border-[var(--border-strong)] transition-colors text-left"
-    >
-      <span className="text-[var(--accent)] shrink-0">{icon}</span>
-      <div className="min-w-0">
-        <div className="type-body-sm-strong text-[var(--text)]">{title}</div>
-        <div className="type-body-xs text-[var(--text-muted)] truncate">{desc}</div>
-      </div>
     </button>
   )
 }
@@ -117,6 +92,7 @@ export default function DashboardPage() {
   const [scanned, setScanned] = useState(false)
   const [reports, setReports] = useState<ReportSummary[]>([])
   const [perfRuns, setPerfRuns] = useState<PerfRunSummary[]>([])
+  const [loadError, setLoadError] = useState('')
 
   // Recent-runs feed controls.
   const [query, setQuery] = useState('')
@@ -126,24 +102,29 @@ export default function DashboardPage() {
   // Fetch eval + perf whenever the global scan token or root changes.
   useEffect(() => {
     if (!rootPath) return
-    let cancelled = false
+    const controller = new AbortController()
     const load = async () => {
       setLoading(true)
+      setLoadError('')
       const [evalRes, perfRes] = await Promise.allSettled([
-        listReports({ rootPath, pageSize: 1000, sortBy: 'time', sortOrder: 'desc' }),
-        listPerfRuns(rootPath),
+        listReports({ rootPath, pageSize: 1000, sortBy: 'time', sortOrder: 'desc', signal: controller.signal }),
+        listPerfRuns(rootPath, controller.signal),
       ])
-      if (cancelled) return
-      setReports(evalRes.status === 'fulfilled' ? evalRes.value.reports : [])
-      setPerfRuns(perfRes.status === 'fulfilled' ? perfRes.value.runs : [])
+      if (controller.signal.aborted) return
+      if (evalRes.status === 'fulfilled') setReports(evalRes.value.reports)
+      if (perfRes.status === 'fulfilled') setPerfRuns(perfRes.value.runs)
+      if (evalRes.status === 'rejected' || perfRes.status === 'rejected') {
+        const reason = evalRes.status === 'rejected' ? evalRes.reason : perfRes.status === 'rejected' ? perfRes.reason : null
+        setLoadError(reason instanceof Error ? reason.message : t('common.loadError'))
+      }
       setScanned(true)
       setLoading(false)
     }
     load()
     return () => {
-      cancelled = true
+      controller.abort()
     }
-  }, [rootPath, scanToken])
+  }, [rootPath, scanToken, t])
 
   // Merge into a single time-sorted feed (uncapped).
   const allItems = useMemo<RunItem[]>(() => {
@@ -204,6 +185,12 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-5 min-h-0">
+      {loadError && (
+        <div role="alert" className="rounded-[var(--radius-sm)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-4 py-3 text-sm text-[var(--danger)]">
+          {loadError}
+        </div>
+      )}
+
       {/* ── KPI Cards ── */}
       {loading && !scanned ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -242,35 +229,13 @@ export default function DashboardPage() {
           />
           <KpiCard
             icon={<Clock size={18} strokeWidth={2} />}
-            value={kpi.latest.length > 20 ? kpi.latest.slice(0, 20) + '…' : kpi.latest}
+            value={kpi.latest}
             label={t('dashboard.latestRun')}
             gradient="var(--kpi-grad-3)"
             delay={180}
           />
         </div>
       )}
-
-      {/* ── Quick Links ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <QuickLink
-          icon={<FileText size={20} />}
-          title={t('nav.evaluations')}
-          desc={t('dashboard.browseReportsDesc')}
-          onClick={() => navigate('/reports')}
-        />
-        <QuickLink
-          icon={<Gauge size={20} />}
-          title={t('nav.performance')}
-          desc={t('dashboard.newPerfDesc')}
-          onClick={() => navigate('/performance')}
-        />
-        <QuickLink
-          icon={<FlaskConical size={20} />}
-          title={t('nav.tasks')}
-          desc={t('dashboard.newEvalDesc')}
-          onClick={() => navigate('/tasks')}
-        />
-      </div>
 
       {/* ── Recent Runs ── */}
       {loading && !scanned ? (
@@ -359,9 +324,9 @@ export default function DashboardPage() {
         </Card>
       ) : scanned ? (
         <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
-          <EmptyState
-            icon={<Inbox size={28} strokeWidth={1.5} />}
-            title={t('dashboard.noReportsYet')}
+          <EmptyStateSystem
+            reason="no-data"
+            context={{ view: 'dashboard' }}
             hint={t('dashboard.noReportsHint')}
           />
         </div>

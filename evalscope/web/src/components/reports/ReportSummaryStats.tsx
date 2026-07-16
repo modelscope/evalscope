@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportData } from '@/api/types'
 import { scoreColor } from '@/utils/colorScale'
+import { formatScore } from '@/domain/metric/registry'
 
 interface Props {
   reports: ReportData[]
@@ -12,7 +13,7 @@ function ScoreRing({ score, size = 80 }: { score: number; size?: number }) {
   const stroke = 8
   const r = (size - stroke) / 2
   const circ = 2 * Math.PI * r
-  const offset = circ * (1 - Math.min(1, score))
+  const offset = circ * (1 - Math.max(0, Math.min(1, score)))
   const color = scoreColor(score)
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
@@ -56,8 +57,10 @@ export default function ReportSummaryStats({ reports }: Props) {
 
   if (!stats) return null
 
-  const toNorm = (s: number) => (s > 1 ? s / 100 : s)
-  const formatPct = (s: number) => (s > 1 ? s.toFixed(1) : (s * 100).toFixed(1)) + '%'
+  const toNorm = (s: number) => Math.max(0, Math.min(1, s))
+  // Bounded ratio → canonical percentage via the centralized formatter
+  // (round half up, 1 decimal), keeping precision consistent across surfaces.
+  const formatPct = (s: number) => formatScore('score', s, t)
 
   const scoreCards = [
     { label: t('reportDetail.avgScore'), norm: toNorm(stats.avg), pct: formatPct(stats.avg) },
@@ -85,7 +88,7 @@ export default function ReportSummaryStats({ reports }: Props) {
               {card.pct}
             </span>
             {card.sub && (
-              <span className="text-xs text-[var(--text-muted)] truncate" title={card.sub}>
+              <span className="text-xs text-[var(--text-muted)] break-words min-w-0" title={card.sub}>
                 {card.sub}
               </span>
             )}

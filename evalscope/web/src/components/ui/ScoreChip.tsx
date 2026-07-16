@@ -1,5 +1,7 @@
 import { cn } from '@/lib/utils'
 import { scoreColor } from '@/utils/colorScale'
+import { useLocale } from '@/contexts/LocaleContext'
+import { formatMetricByKey } from '@/domain/metric/registry'
 
 interface ScoreChipProps {
   score: number
@@ -18,9 +20,10 @@ interface ScoreChipProps {
  * For the larger body-sm bold percentage badge atop an eval row, use `ScoreBadge`.
  */
 export default function ScoreChip({ score, label, format = 'percent', className }: ScoreChipProps) {
+  const { t } = useLocale()
   const fg = scoreColor(score)
-  const text =
-    format === 'percent' ? (score * 100).toFixed(1) : format === 'raw' ? score.toFixed(3) : ''
+  const metric = formatMetricByKey('score', score, t)
+  const text = format === 'percent' ? metric.primary : format === 'raw' ? metric.raw : ''
 
   return (
     <span

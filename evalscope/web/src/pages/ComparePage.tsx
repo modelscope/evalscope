@@ -5,10 +5,12 @@ import { useQueryParams } from '@/hooks/useQueryParams'
 import { getPredictions, getChartUrl } from '@/api/reports'
 import type { ReportData, PredictionRow } from '@/api/types'
 import { getDisplayNames, parseReportName } from '@/utils/reportParser'
+import { buildDisplayLabel, compatibilityReason } from '@/domain/compare/compareModel'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Card from '@/components/ui/Card'
 import Tabs from '@/components/ui/Tabs'
 import { scoreColor } from '@/utils/colorScale'
+import { formatScore } from '@/domain/metric/registry'
 import FilterChip from '@/components/ui/FilterChip'
 import Button from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
@@ -19,7 +21,8 @@ import Eyebrow from '@/components/ui/Eyebrow'
 import { cn } from '@/lib/utils'
 import PlotlyChart from '@/components/charts/PlotlyChart'
 import ChatView from '@/components/single/ChatView'
-import { Plus, ChevronLeft, ChevronRight, AlertCircle, CircleCheck, CircleX } from 'lucide-react'
+import EmptyStateSystem from '@/components/common/EmptyStateSystem'
+import { Plus, ChevronLeft, ChevronRight, AlertCircle, ArrowUp, ArrowDown } from 'lucide-react'
 
 // ------------------------------------------------------------------ //
 // Types                                                               //
@@ -32,7 +35,7 @@ interface MergedPrediction {
   models: Record<string, PredictionRow>
 }
 
-type PerModelFilter = 'any' | 'pass' | 'fail'
+type PerModelFilter = 'any' | 'above' | 'below'
 
 // Distinct accent color palette for each model column (up to 3)
 // DESIGN.md §Compare Slots: only 3 brand-color slots exist.
@@ -84,6 +87,8 @@ export default function ComparePage() {
   const [reports, setReports] = useState<ReportData[]>([])
   const [activeTab, setActiveTab] = useState<'score' | 'prediction'>('score')
   const [dataLoaded, setDataLoaded] = useState(false)
+  const [scoreLoadError, setScoreLoadError] = useState('')
+  const [scoreReloadToken, setScoreReloadToken] = useState(0)
   const [addInput, setAddInput] = useState('')
   const [showAddInput, setShowAddInput] = useState(false)
 
@@ -95,6 +100,8 @@ export default function ComparePage() {
   const [threshold, setThreshold] = useState(0.99)
   const [page, setPage] = useState(1)
   const [predictionsLoading, setPredictionsLoading] = useState(false)
+  const [predictionsError, setPredictionsError] = useState('')
+  const [predictionsReloadToken, setPredictionsReloadToken] = useState(0)
 
   // Reset per-model filters when selected models change
   const reportNamesKey = reportNames.join(';')
@@ -111,22 +118,26 @@ export default function ComparePage() {
   // Load score data and per-report cache (datasets/subsets) in one cache-aware pass
   useEffect(() => {
     if (reportNames.length < 2) return
-    let cancelled = false
+    const controller = new AbortController()
     const load = async () => {
       setDataLoaded(false)
+      setScoreLoadError('')
       try {
-        const list = await loadMultiReports(reportNames)
-        if (!cancelled) {
+        const list = await loadMultiReports(reportNames, controller.signal)
+        if (!controller.signal.aborted) {
           setReports(list)
           setDataLoaded(true)
         }
-      } catch {
-        if (!cancelled) setDataLoaded(true)
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setScoreLoadError(error instanceof Error ? error.message : t('common.loadError'))
+          setDataLoaded(true)
+        }
       }
     }
     load()
-    return () => { cancelled = true }
-  }, [reportNames, loadMultiReports])
+    return () => controller.abort()
+  }, [reportNames, loadMultiReports, scoreReloadToken, t])
 
   // ------------------------------------------------------------------ //
   // Score Tab Data                                                      //
@@ -232,12 +243,13 @@ export default function ComparePage() {
 
   useEffect(() => {
     if (!selectedDs || !selectedSubset || reportNames.length < 2) return
-    let cancelled = false
+    const controller = new AbortController()
     const loadPredictions = async () => {
       setPredictionsLoading(true)
+      setPredictionsError('')
       try {
         const results = await Promise.all(
-          reportNames.map((name) => getPredictions(rootPath, name, selectedDs, selectedSubset)),
+          reportNames.map((name) => getPredictions(rootPath, name, selectedDs, selectedSubset, controller.signal)),
         )
         const indexMap = new Map<string, MergedPrediction>()
         results.forEach((res, i) => {
@@ -252,19 +264,22 @@ export default function ComparePage() {
         const merged = [...indexMap.values()].filter((row) =>
           reportNames.every((m) => row.models[m]),
         )
-        if (!cancelled) {
+        if (!controller.signal.aborted) {
           setMergedPredictions(merged)
           setPage(1)
         }
       } catch (e) {
         console.error('Failed to load predictions:', e)
+        if (!controller.signal.aborted) {
+          setPredictionsError(e instanceof Error ? e.message : t('common.loadError'))
+        }
       } finally {
-        if (!cancelled) setPredictionsLoading(false)
+        if (!controller.signal.aborted) setPredictionsLoading(false)
       }
     }
     loadPredictions()
-    return () => { cancelled = true }
-  }, [rootPath, reportNames, selectedDs, selectedSubset])
+    return () => controller.abort()
+  }, [rootPath, reportNames, selectedDs, selectedSubset, predictionsReloadToken, t])
 
   // Filtered predictions using per-model constraints
   const filtered = useMemo(() => {
@@ -272,25 +287,46 @@ export default function ComparePage() {
       reportNames.every((name) => {
         const f = perModelFilter[name] ?? 'any'
         if (f === 'any') return true
-        const pass = (row.models[name]?.NScore ?? 0) >= threshold
-        return f === 'pass' ? pass : !pass
+        // The threshold is a view-only filter (above/below), not a pass/fail
+        // verdict (Req 1.11).
+        const above = (row.models[name]?.NScore ?? 0) >= threshold
+        return f === 'above' ? above : !above
       }),
     )
   }, [mergedPredictions, perModelFilter, threshold, reportNames])
 
-  // Pass rates per model (based on full set)
-  const passRates = useMemo(() => {
+  // Fraction of samples per model that sit above the view filter (full set).
+  const aboveRates = useMemo(() => {
     if (!mergedPredictions.length) return {} as Record<string, number>
     const rates: Record<string, number> = {}
     for (const name of reportNames) {
-      const pass = mergedPredictions.filter((r) => (r.models[name]?.NScore ?? 0) >= threshold).length
-      rates[name] = pass / mergedPredictions.length
+      const above = mergedPredictions.filter((r) => (r.models[name]?.NScore ?? 0) >= threshold).length
+      rates[name] = above / mergedPredictions.length
     }
     return rates
   }, [mergedPredictions, reportNames, threshold])
 
   const totalPages = filtered.length
   const currentRow = filtered.length > 0 ? filtered[Math.min(page - 1, filtered.length - 1)] : null
+
+  // Meaningful model + dataset display label per run, used for table headers and
+  // column identifiers instead of the raw timestamped run path (Req 5.7).
+  const displayLabels = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const name of reportNames) {
+      map[name] = buildDisplayLabel(name).label
+    }
+    return map
+  }, [reportNames])
+
+  // Incompatibility check across the selected runs. When runs share no common
+  // dataset they cannot be aligned for comparison; we surface the localized
+  // reason and keep the existing selection untouched (Req 5.10).
+  const incompatibilityReason = useMemo(() => {
+    if (reportNames.length < 2) return null
+    const runs = reportNames.map((name) => ({ name }) as ReportData)
+    return compatibilityReason(runs)
+  }, [reportNames])
 
   // ------------------------------------------------------------------ //
   // URL manipulation                                                    //
@@ -345,12 +381,19 @@ export default function ComparePage() {
                 value={addInput}
                 onChange={(e) => setAddInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') addReport(); if (e.key === 'Escape') setShowAddInput(false) }}
-                placeholder="Report name..."
+                placeholder={t('compare.reportNamePlaceholder')}
                 autoFocus
                 className="px-3 py-1.5 text-sm rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent)]"
               />
               <Button size="sm" onClick={addReport}>{t('compare.addModel')}</Button>
-              <Button size="sm" variant="ghost" onClick={() => setShowAddInput(false)}>✕</Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                aria-label={t('compare.cancelAdd')}
+                onClick={() => setShowAddInput(false)}
+              >
+                ✕
+              </Button>
             </div>
           ) : (
             <Button size="sm" variant="outline" onClick={() => setShowAddInput(true)}>
@@ -362,56 +405,91 @@ export default function ComparePage() {
         </div>
       </Card>
 
+      {/* Incompatible runs notice — selection is preserved (Req 5.10) */}
+      {incompatibilityReason && (
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-[var(--radius)] border border-[var(--warning-border)] bg-[var(--warning-bg)] px-4 py-3"
+        >
+          <AlertCircle size={18} className="mt-0.5 shrink-0 text-[var(--warning-color)]" />
+          <div className="flex flex-col gap-0.5">
+            <p className="text-sm font-medium text-[var(--text)]">{t('compare.incompatible')}</p>
+            <p className="text-xs text-[var(--text-muted)]">
+              {t(incompatibilityReason)} · {t('compare.incompatibleHint')}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {scoreLoadError && (
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-[var(--radius)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-4 py-3 text-[var(--danger)]">
+          <span className="type-body-sm break-words">{scoreLoadError}</span>
+          <Button size="sm" variant="outline" onClick={() => setScoreReloadToken((value) => value + 1)}>
+            {t('common.retry')}
+          </Button>
+        </div>
+      )}
+
       {/* Tab Switch */}
       <Tabs
         tabs={[
-          { key: 'score', label: t('compare.scoreComparison') },
-          { key: 'prediction', label: t('compare.predictionComparison') },
+          { key: 'score', label: t('compare.scoreComparison'), panelId: 'compare-score-panel' },
+          { key: 'prediction', label: t('compare.predictionComparison'), panelId: 'compare-prediction-panel' },
         ]}
         activeKey={activeTab}
         onChange={(k) => setActiveTab(k as 'score' | 'prediction')}
+        panels={{
+          'compare-score-panel': loading && !dataLoaded ? (
+            <div className="flex flex-col gap-4">
+              <Skeleton height={450} />
+              <Skeleton height={300} />
+            </div>
+          ) : (
+            <ScoreTab
+              rootPath={rootPath}
+              reportNames={reportNames}
+              scoreTableColumns={scoreTableColumns}
+              scoreTableData={scoreTableData}
+              displayNames={displayNames}
+              displayLabels={displayLabels}
+              t={t}
+            />
+          ),
+          'compare-prediction-panel': loading && !dataLoaded ? (
+            <div className="flex flex-col gap-4">
+              <Skeleton height={450} />
+              <Skeleton height={300} />
+            </div>
+          ) : (
+            <PredictionTab
+              reportNames={reportNames}
+              displayNames={displayNames}
+              displayLabels={displayLabels}
+              predCommonDatasets={predCommonDatasets}
+              selectedDs={selectedDs}
+              setSelectedDs={setSelectedDs}
+              subsets={subsets}
+              selectedSubset={selectedSubset}
+              setSelectedSubset={setSelectedSubset}
+              perModelFilter={perModelFilter}
+              setPerModelFilter={setPerModelFilter}
+              threshold={threshold}
+              setThreshold={setThreshold}
+              aboveRates={aboveRates}
+              mergedPredictions={mergedPredictions}
+              filtered={filtered}
+              currentRow={currentRow}
+              page={page}
+              setPage={setPage}
+              totalPages={totalPages}
+              predictionsLoading={predictionsLoading}
+              predictionsError={predictionsError}
+              onRetryPredictions={() => setPredictionsReloadToken((value) => value + 1)}
+              t={t}
+            />
+          ),
+        }}
       />
-
-      {/* Content */}
-      {loading && !dataLoaded ? (
-        <div className="flex flex-col gap-4">
-          <Skeleton height={450} />
-          <Skeleton height={300} />
-        </div>
-      ) : activeTab === 'score' ? (
-        <ScoreTab
-          rootPath={rootPath}
-          reportNames={reportNames}
-          scoreTableColumns={scoreTableColumns}
-          scoreTableData={scoreTableData}
-          displayNames={displayNames}
-          t={t}
-        />
-      ) : (
-        <PredictionTab
-          reportNames={reportNames}
-          displayNames={displayNames}
-          predCommonDatasets={predCommonDatasets}
-          selectedDs={selectedDs}
-          setSelectedDs={setSelectedDs}
-          subsets={subsets}
-          selectedSubset={selectedSubset}
-          setSelectedSubset={setSelectedSubset}
-          perModelFilter={perModelFilter}
-          setPerModelFilter={setPerModelFilter}
-          threshold={threshold}
-          setThreshold={setThreshold}
-          passRates={passRates}
-          mergedPredictions={mergedPredictions}
-          filtered={filtered}
-          currentRow={currentRow}
-          page={page}
-          setPage={setPage}
-          totalPages={totalPages}
-          predictionsLoading={predictionsLoading}
-          t={t}
-        />
-      )}
     </div>
   )
 }
@@ -426,6 +504,7 @@ function ScoreTab({
   scoreTableColumns,
   scoreTableData,
   displayNames,
+  displayLabels,
   t,
 }: {
   rootPath: string
@@ -433,6 +512,7 @@ function ScoreTab({
   scoreTableColumns: { key: string; label: string }[]
   scoreTableData: Record<string, unknown>[]
   displayNames: Record<string, string>
+  displayLabels: Record<string, string>
   t: (p: string) => string
 }) {
   const reportKeys = scoreTableColumns.slice(1).map((c) => c.key)
@@ -444,6 +524,11 @@ function ScoreTab({
     <div className="flex flex-col gap-6">
       <PlotlyChart
         src={getChartUrl(rootPath, 'radar', { reportNames })}
+        fallbackTable={{
+          columns: scoreTableColumns.map((column) => column.key),
+          rows: scoreTableData,
+          scoreColumns: reportKeys,
+        }}
         height={450}
         title={t('multi.modelRadar')}
       />
@@ -454,15 +539,14 @@ function ScoreTab({
         </div>
 
         {scoreTableData.length === 0 ? (
-          // text-dim allowed: non-essential ≥14px metadata (DESIGN.md §Text)
-          <div className="py-12 text-center text-sm text-[var(--text-dim)]">{t('common.noData')}</div>
+          <EmptyStateSystem reason="no-data" context={{ view: 'compare' }} />
         ) : (
           <div className="overflow-x-auto">
             <table className="text-sm border-collapse w-full">
               <thead>
                 <tr className="border-b border-[var(--border)]">
                   <th className="px-3 py-2.5 text-left type-table-xs sticky left-0 bg-[var(--bg-card)] z-10 border-r border-[var(--border)] w-32">
-                    Model
+                    {t('compare.model')}
                   </th>
                   {datasetNames.map((ds) => (
                     <th key={ds} className="py-2.5 text-center type-table-xs whitespace-nowrap w-[100px]">
@@ -482,8 +566,8 @@ function ScoreTab({
                     <td className="px-3 py-2 text-xs font-medium whitespace-nowrap sticky left-0 bg-[var(--bg-card)] z-10 border-r border-[var(--border)] w-32">
                       <div className="flex items-center gap-1.5">
                         <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: MODEL_PALETTE[rkIdx]?.dot }} />
-                        <span className="text-[var(--text-muted)] truncate max-w-[110px]" title={displayNames[rk] ?? rk}>
-                          {displayNames[rk] ?? rk}
+                        <span className="text-[var(--text-muted)] truncate max-w-[110px]" title={displayLabels[rk] ?? displayNames[rk] ?? rk}>
+                          {displayLabels[rk] ?? displayNames[rk] ?? rk}
                         </span>
                       </div>
                     </td>
@@ -496,7 +580,7 @@ function ScoreTab({
                           {score != null ? (
                             <div className="w-full py-1.5 px-2 rounded-[var(--radius-xs)] text-xs font-mono font-medium text-center text-white" style={{ backgroundColor: scoreColor(score) }}>
                               {isBest && <span className="inline-block w-1.5 h-1.5 rounded-full bg-white mr-1 align-middle opacity-80" />}
-                              {(score * 100).toFixed(1)}%
+                              {formatScore('score', score, t)}
                             </div>
                           ) : (
                             // text-dim allowed: em-dash placeholder, decorative non-essential glyph (DESIGN.md §Text)
@@ -512,7 +596,7 @@ function ScoreTab({
                         <td className="px-1 py-1 border-l border-[var(--border)] w-[100px]">
                           <div className="w-full py-1.5 px-2 rounded-[var(--radius-xs)] text-xs font-mono font-semibold text-center text-white" style={{ backgroundColor: scoreColor(score) }}>
                             {isBest && <span className="inline-block w-1.5 h-1.5 rounded-full bg-white mr-1 align-middle opacity-80" />}
-                            {(score * 100).toFixed(1)}%
+                            {formatScore('score', score, t)}
                           </div>
                         </td>
                       )
@@ -535,6 +619,7 @@ function ScoreTab({
 function PredictionTab({
   reportNames,
   displayNames,
+  displayLabels,
   predCommonDatasets,
   selectedDs,
   setSelectedDs,
@@ -545,7 +630,7 @@ function PredictionTab({
   setPerModelFilter,
   threshold,
   setThreshold,
-  passRates,
+  aboveRates,
   mergedPredictions,
   filtered,
   currentRow,
@@ -553,10 +638,13 @@ function PredictionTab({
   setPage,
   totalPages,
   predictionsLoading,
+  predictionsError,
+  onRetryPredictions,
   t,
 }: {
   reportNames: string[]
   displayNames: Record<string, string>
+  displayLabels: Record<string, string>
   predCommonDatasets: string[]
   selectedDs: string
   setSelectedDs: (ds: string) => void
@@ -567,7 +655,7 @@ function PredictionTab({
   setPerModelFilter: (f: Record<string, PerModelFilter>) => void
   threshold: number
   setThreshold: (n: number) => void
-  passRates: Record<string, number>
+  aboveRates: Record<string, number>
   mergedPredictions: MergedPrediction[]
   filtered: MergedPrediction[]
   currentRow: MergedPrediction | null
@@ -575,6 +663,8 @@ function PredictionTab({
   setPage: (p: number) => void
   totalPages: number
   predictionsLoading: boolean
+  predictionsError: string
+  onRetryPredictions: () => void
   t: (p: string) => string
 }) {
   // ── Filter helpers ──────────────────────────────────────────────
@@ -588,8 +678,8 @@ function PredictionTab({
   }
 
   const isAllAny = reportNames.every((n) => (perModelFilter[n] ?? 'any') === 'any')
-  const isAllPass = reportNames.every((n) => (perModelFilter[n] ?? 'any') === 'pass')
-  const isAllFail = reportNames.every((n) => (perModelFilter[n] ?? 'any') === 'fail')
+  const isAllAbove = reportNames.every((n) => (perModelFilter[n] ?? 'any') === 'above')
+  const isAllBelow = reportNames.every((n) => (perModelFilter[n] ?? 'any') === 'below')
 
   // ── Keyboard navigation ─────────────────────────────────────────
   useEffect(() => {
@@ -605,11 +695,11 @@ function PredictionTab({
   if (predCommonDatasets.length === 0) {
     return (
       <Card>
-        <div className="flex flex-col items-center justify-center gap-3 py-12">
-          {/* text-dim allowed: empty-state alert icon (DESIGN.md §Text) */}
-          <AlertCircle size={32} className="text-[var(--text-dim)]" />
-          <p className="text-[var(--text-muted)]">{t('compare.noCommon')}</p>
-        </div>
+        <EmptyStateSystem
+          reason="no-match"
+          context={{ view: 'compare' }}
+          hint={t('compare.noCommon')}
+        />
       </Card>
     )
   }
@@ -617,8 +707,8 @@ function PredictionTab({
   // Preset buttons config
   const presets = [
     { label: t('common.all'), active: isAllAny, onClick: () => { setPerModelFilter({}); setPage(1) } },
-    { label: t('compare.allPass'), active: isAllPass, onClick: () => { setAllFilters('pass'); setPage(1) } },
-    { label: t('compare.allFail'), active: isAllFail, onClick: () => { setAllFilters('fail'); setPage(1) } },
+    { label: t('compare.allAbove'), active: isAllAbove, onClick: () => { setAllFilters('above'); setPage(1) } },
+    { label: t('compare.allBelow'), active: isAllBelow, onClick: () => { setAllFilters('below'); setPage(1) } },
   ]
 
   return (
@@ -648,10 +738,15 @@ function PredictionTab({
             </div>
           )}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">
+            <label
+              htmlFor="compare-score-threshold"
+              className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]"
+            >
               {t('compare.scoreThreshold')}
             </label>
             <input
+              id="compare-score-threshold"
+              name="compare-score-threshold"
               type="number"
               value={threshold}
               step={0.01}
@@ -693,11 +788,14 @@ function PredictionTab({
           {reportNames.map((name, idx) => {
             const palette = MODEL_PALETTE[idx] ?? MODEL_PALETTE[0]
             const cur = perModelFilter[name] ?? 'any'
-            const rate = passRates[name]
+            const rate = aboveRates[name]
+            // Threshold-based filter chips (above/below) are neutral view
+            // filters, not pass/fail verdicts (Req 1.11): they share the accent
+            // color instead of the pass/fail palette.
             const chips: { key: PerModelFilter; label: string; icon?: ReactNode; activeBg: string }[] = [
               { key: 'any', label: t('compare.any'), activeBg: 'var(--accent)' },
-              { key: 'pass', label: t('common.pass'), icon: <CircleCheck size={12} />, activeBg: 'var(--pass)' },
-              { key: 'fail', label: t('common.fail'), icon: <CircleX size={12} />, activeBg: 'var(--fail)' },
+              { key: 'above', label: t('prediction.aboveFilter'), icon: <ArrowUp size={12} />, activeBg: 'var(--accent)' },
+              { key: 'below', label: t('prediction.belowFilter'), icon: <ArrowDown size={12} />, activeBg: 'var(--accent)' },
             ]
             return (
               <div key={name} className="flex items-center gap-3 flex-wrap">
@@ -707,9 +805,9 @@ function PredictionTab({
                   <span
                     className="text-xs font-medium truncate"
                     style={{ color: palette.dot }}
-                    title={displayNames[name] ?? (parseReportName(name).model || name)}
+                    title={displayLabels[name] ?? displayNames[name] ?? (parseReportName(name).model || name)}
                   >
-                    {displayNames[name] ?? (parseReportName(name).model || name)}
+                    {displayLabels[name] ?? displayNames[name] ?? (parseReportName(name).model || name)}
                   </span>
                 </div>
 
@@ -735,10 +833,10 @@ function PredictionTab({
                   })}
                 </div>
 
-                {/* Pass rate badge */}
+                {/* Above-filter rate badge (informational, not a pass verdict) */}
                 {rate !== undefined && mergedPredictions.length > 0 && (
-                  <Badge variant={rate >= 0.5 ? 'success' : 'warning'}>
-                    {(rate * 100).toFixed(1)}%
+                  <Badge variant="default">
+                    {formatScore('pass_rate', rate, t)}
                   </Badge>
                 )}
               </div>
@@ -762,6 +860,7 @@ function PredictionTab({
           </span>
           <div className="flex items-center gap-2">
             <button
+              aria-label={t('prediction.previousSample')}
               disabled={page <= 1}
               onClick={() => setPage(page - 1)}
               className="p-1.5 rounded-[var(--radius-sm)] hover:bg-[var(--bg-card2)] disabled:opacity-30 transition-colors cursor-pointer disabled:cursor-not-allowed"
@@ -772,6 +871,7 @@ function PredictionTab({
               {t('compare.sample')} {page} / {totalPages}
             </span>
             <button
+              aria-label={t('prediction.nextSample')}
               disabled={page >= totalPages}
               onClick={() => setPage(page + 1)}
               className="p-1.5 rounded-[var(--radius-sm)] hover:bg-[var(--bg-card2)] disabled:opacity-30 transition-colors cursor-pointer disabled:cursor-not-allowed"
@@ -784,6 +884,15 @@ function PredictionTab({
 
       {/* ── Loading skeleton ── */}
       {predictionsLoading && <Skeleton height={400} />}
+
+      {predictionsError && (
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-[var(--radius)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-4 py-3 text-[var(--danger)]">
+          <span className="type-body-sm break-words">{predictionsError}</span>
+          <Button size="sm" variant="outline" onClick={onRetryPredictions}>
+            {t('common.retry')}
+          </Button>
+        </div>
+      )}
 
       {/* ── ChatView Columns ── */}
       {!predictionsLoading && currentRow && (
@@ -816,14 +925,18 @@ function PredictionTab({
                     <span
                       className="text-xs font-semibold truncate"
                       style={{ color: palette.dot }}
-                      title={displayNames[name] ?? (parseReportName(name).model || name)}
+                      title={displayLabels[name] ?? displayNames[name] ?? (parseReportName(name).model || name)}
                     >
-                      {displayNames[name] ?? (parseReportName(name).model || name)}
+                      {displayLabels[name] ?? displayNames[name] ?? (parseReportName(name).model || name)}
                     </span>
                   </div>
+                  {/*
+                    Native normalized score with a neutral gradient, independent
+                    of the view threshold (Req 1.12). The threshold only filters
+                    rows in this view and is not a pass/fail verdict (Req 1.11).
+                  */}
                   <ScoreBadge
                     score={modelRow.NScore}
-                    threshold={threshold}
                     className="ml-2 shrink-0 !font-mono"
                   />
                 </div>
@@ -842,10 +955,15 @@ function PredictionTab({
       )}
 
       {/* ── Empty state ── */}
-      {!predictionsLoading && mergedPredictions.length > 0 && filtered.length === 0 && (
+      {!predictionsLoading && !predictionsError && mergedPredictions.length === 0 && (
         <Card>
-          {/* text-dim allowed: non-essential ≥14px metadata (DESIGN.md §Text) */}
-          <div className="text-center py-8 text-[var(--text-dim)]">{t('common.noData')}</div>
+          <EmptyStateSystem reason="no-data" context={{ view: 'compare' }} />
+        </Card>
+      )}
+
+      {!predictionsLoading && !predictionsError && mergedPredictions.length > 0 && filtered.length === 0 && (
+        <Card>
+          <EmptyStateSystem reason="no-match" context={{ view: 'compare' }} />
         </Card>
       )}
     </div>

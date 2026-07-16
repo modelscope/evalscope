@@ -4,6 +4,7 @@ import { hasSystemPrompt, parseSystemUser } from './chat/chatHelpers'
 import { MessageRow, SystemPromptRow, HeaderPerfChip } from './chat/MessageComponents'
 import { StructuredMessages, TracedTimeline, buildStepGroups } from './chat/AgentTraceView'
 import { EvalResultPanel } from './chat/EvalResultPanel'
+import { selectChatPresentation } from '@/domain/predictions/chatPresentation'
 
 interface Props {
   prediction: PredictionRow
@@ -45,16 +46,14 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId 
     prediction.Pred.trim() !== prediction.Generated.trim()
 
   const messages = prediction.Messages
-  const hasStructured = !!(messages && messages.length > 0)
-
   const agentTrace = prediction.AgentTrace
-  const hasTrace = !!(agentTrace && agentTrace.events && agentTrace.events.length > 0)
+  const presentation = selectChatPresentation(prediction)
   const [highlightedStep, setHighlightedStep] = useState<number | null>(null)
 
   const stepGroups = useMemo(() => {
-    if (!hasTrace || !hasStructured || !messages || !agentTrace) return null
+    if (presentation !== 'traced' || !messages || !agentTrace) return null
     return buildStepGroups(messages, agentTrace)
-  }, [hasTrace, hasStructured, messages, agentTrace])
+  }, [presentation, messages, agentTrace])
 
   const handleStepClick = useCallback((step: number) => {
     setHighlightedStep(prev => (prev === step ? null : step))
@@ -62,7 +61,7 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId 
 
   return (
     <div className="flex flex-col gap-4 py-2">
-      {hasTrace && stepGroups && messages && agentTrace ? (
+      {presentation === 'traced' && stepGroups && messages && agentTrace ? (
         <TracedTimeline
           groups={stepGroups}
           messages={messages}
@@ -71,9 +70,9 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId 
           highlightId={highlightMsgId}
           onStepClick={handleStepClick}
         />
-      ) : hasStructured ? (
+      ) : presentation === 'structured' && messages ? (
         <div className="flex flex-col gap-2">
-          <StructuredMessages messages={messages!} highlightId={highlightMsgId} />
+          <StructuredMessages messages={messages} highlightId={highlightMsgId} />
         </div>
       ) : (
         <LegacyMessages prediction={prediction} />

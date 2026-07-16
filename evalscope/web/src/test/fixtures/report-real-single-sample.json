@@ -1,0 +1,56 @@
+{
+  "report_list": [
+    {
+      "name": "qwen-plus@general_mcq",
+      "dataset_name": "general_mcq",
+      "model_name": "qwen-plus",
+      "score": 1.0,
+      "analysis": "N/A",
+      "metrics": [
+        {
+          "name": "acc",
+          "num": 1,
+          "score": 1.0,
+          "categories": [
+            {
+              "name": ["default"],
+              "num": 1,
+              "score": 1.0,
+              "subsets": [
+                {"name": "default", "score": 1.0, "num": 1}
+              ]
+            }
+          ]
+        }
+      ],
+      "perf_metrics": {
+        "summary": {
+          "n_samples": 1,
+          "latency": {"mean": 0.706361, "std": null, "min": 0.706361, "25%": 0.706361, "50%": 0.706361, "75%": 0.706361, "90%": 0.706361, "99%": 0.706361, "max": 0.706361},
+          "throughput": {"avg_output_tps": 4.25, "avg_req_ps": 1.4157},
+          "usage": {
+            "input_tokens": {"mean": 111.0, "std": null, "min": 111.0, "25%": 111.0, "50%": 111.0, "75%": 111.0, "90%": 111.0, "99%": 111.0, "max": 111.0},
+            "output_tokens": {"mean": 3.0, "std": null, "min": 3.0, "25%": 3.0, "50%": 3.0, "75%": 3.0, "90%": 3.0, "99%": 3.0, "max": 3.0},
+            "total_tokens": {"mean": 114.0, "std": null, "min": 114.0, "25%": 114.0, "50%": 114.0, "75%": 114.0, "90%": 114.0, "99%": 114.0, "max": 114.0},
+            "total_input_tokens": 111,
+            "total_output_tokens": 3,
+            "total_tokens_count": 114
+          },
+          "ttft": {"mean": 0.700828, "std": null, "min": 0.700828, "25%": 0.700828, "50%": 0.700828, "75%": 0.700828, "90%": 0.700828, "99%": 0.700828, "max": 0.700828},
+          "tpot": {"mean": 0.002767, "std": null, "min": 0.002767, "25%": 0.002767, "50%": 0.002767, "75%": 0.002767, "90%": 0.002767, "99%": 0.002767, "max": 0.002767}
+        }
+      }
+    },
+    {
+      "name": "qwen-plus@iquiz",
+      "dataset_name": "iquiz",
+      "model_name": "qwen-plus",
+      "score": 0.0,
+      "analysis": "N/A",
+      "metrics": [],
+      "perf_metrics": null
+    }
+  ],
+  "datasets": ["general_mcq", "iquiz"],
+  "task_config": {"model": "qwen-plus", "collect_perf": true}
+}

@@ -4,6 +4,7 @@ import { getAnalysis, getDataFrame } from '@/api/reports'
 import Card from '@/components/ui/Card'
 import Table from '@/components/ui/Table'
 import { scoreColor } from '@/utils/colorScale'
+import { formatMetricByKey } from '@/domain/metric/registry'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import Skeleton from '@/components/ui/Skeleton'
 import PerfMetricsPanel from '@/components/reports/PerfMetricsPanel'
@@ -13,7 +14,7 @@ interface Props {
   reportName: string
   datasetName: string
   rootPath: string
-  perfMetrics?: PerfMetrics
+  perfMetrics?: PerfMetrics | null
   onSubsetClick?: (subset: string) => void
   overallScore?: number
 }
@@ -29,24 +30,24 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
 
   useEffect(() => {
     if (!datasetName || !reportName) return
-    let cancelled = false
+    const controller = new AbortController()
 
     const load = async () => {
       setAnalysisLoading(true)
       try {
         const [analysisText, dfRes] = await Promise.all([
-          getAnalysis(rootPath, reportName, datasetName).catch(() => ''),
-          getDataFrame(rootPath, reportName, 'dataset', datasetName).catch(() => ({ columns: [], data: [] })),
+          getAnalysis(rootPath, reportName, datasetName, controller.signal).catch(() => ''),
+          getDataFrame(rootPath, reportName, 'dataset', datasetName, controller.signal).catch(() => ({ columns: [], data: [] })),
         ])
-        if (cancelled) return
+        if (controller.signal.aborted) return
         setAnalysis(analysisText)
         setSubsetData({ columns: dfRes.columns, data: dfRes.data })
       } finally {
-        if (!cancelled) setAnalysisLoading(false)
+        if (!controller.signal.aborted) setAnalysisLoading(false)
       }
     }
     load()
-    return () => { cancelled = true }
+    return () => controller.abort()
   }, [datasetName, reportName, rootPath])
 
   // Detect whether data has Metric column
@@ -87,7 +88,7 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
       sortable: true,
       render: (row: Record<string, unknown>) => {
         const score = Number(row.Score ?? 0)
-        const norm = score > 1 ? score / 100 : score
+        const norm = Math.max(0, Math.min(1, score))
         // Inline score bar
         return (
           <div className="flex items-center gap-2">
@@ -101,7 +102,7 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
               />
             </div>
             <span className="font-mono font-medium tabular-nums" style={{ color: scoreColor(norm) }}>
-              {score.toFixed(4)}
+              {formatMetricByKey('score', score, t).primary}
             </span>
           </div>
         )
@@ -117,7 +118,7 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
     },
   ]
 
-  const normOverall = overallScore != null ? (overallScore > 1 ? overallScore / 100 : overallScore) : null
+  const normOverall = overallScore != null ? Math.max(0, Math.min(1, overallScore)) : null
 
   return (
     <div className="flex flex-col gap-6">
@@ -132,7 +133,7 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
               className="text-3xl font-bold font-mono tabular-nums"
               style={{ color: scoreColor(normOverall) }}
             >
-              {(normOverall * 100).toFixed(2)}
+              {formatMetricByKey('score', overallScore, t).primary}
             </span>
           </div>
           {/* mini progress ring — 6px stroke (DESIGN.md `{components.score-ring}`) */}
@@ -168,8 +169,7 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
         ) : analysis && analysis !== 'N/A' ? (
           <MarkdownRenderer content={analysis} />
         ) : (
-          // text-dim allowed: non-essential ≥14px metadata (DESIGN.md §Text)
-          <p className="text-sm text-[var(--text-dim)]">{t('common.noData')}</p>
+          <p className="text-sm text-[var(--text-muted)]">{t('common.noData')}</p>
         )}
       </Card>
 

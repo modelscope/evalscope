@@ -1,5 +1,7 @@
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { scoreColor } from '@/utils/colorScale'
+import { useLocale } from '@/contexts/LocaleContext'
+import { formatMetricByKey } from '@/domain/metric/registry'
 
 interface ModelGroupHeaderProps {
   /** Title text (model name or dataset name) */
@@ -30,6 +32,7 @@ export default function ModelGroupHeader({
   expanded,
   onToggle,
 }: ModelGroupHeaderProps) {
+  const { t } = useLocale()
   return (
     <button
       onClick={onToggle}
@@ -48,7 +51,7 @@ export default function ModelGroupHeader({
         className="ml-auto type-body-sm font-mono tabular-nums"
         style={{ color: scoreColor(bestScore) }}
       >
-        {bestScoreLabel}: {(bestScore * 100).toFixed(1)}%
+        {bestScoreLabel}: {formatMetricByKey('score', bestScore, t).primary}
       </span>
     </button>
   )

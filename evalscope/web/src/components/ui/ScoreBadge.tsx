@@ -1,11 +1,13 @@
 import { cn } from '@/lib/utils'
 import { scoreColor, scoreBg } from '@/utils/colorScale'
+import { useLocale } from '@/contexts/LocaleContext'
+import { formatMetricByKey } from '@/domain/metric/registry'
 
 interface ScoreBadgeProps {
   score: number
   /** When provided, score is rendered as `score >= threshold ? PASS : FAIL` with the deep pass/fail color. */
   threshold?: number
-  /** Override the displayed text. Defaults: percent if no threshold, `score.toFixed(4)` if threshold. */
+  /** Override the displayed text. Defaults come from the metric display contract. */
   label?: string
   className?: string
 }
@@ -14,13 +16,15 @@ interface ScoreBadgeProps {
  * Bold percentage / boolean pill — DESIGN.md `{components.score-badge}`.
  * Larger and heavier than `ScoreChip`: body-sm bold + 10/2 padding.
  * Two modes:
- *   - no threshold: dynamic HSL fg/bg, renders `(score*100).toFixed(1)%`.
- *   - threshold:    deep `--pass` / `--fail` background with white text, renders raw score.
+ *   - no threshold: dynamic HSL fg/bg, renders the canonical percentage.
+ *   - threshold: deep `--pass` / `--fail` background with white text, renders the canonical raw score.
  */
 export default function ScoreBadge({ score, threshold, label, className }: ScoreBadgeProps) {
+  const { t } = useLocale()
+  const formatted = formatMetricByKey('score', score, t)
   if (threshold !== undefined) {
     const pass = score >= threshold
-    const text = label ?? score.toFixed(4)
+    const text = label ?? formatted.raw
     return (
       <span
         className={cn(
@@ -39,7 +43,7 @@ export default function ScoreBadge({ score, threshold, label, className }: Score
 
   const fg = scoreColor(score)
   const bg = scoreBg(score)
-  const text = label ?? `${(score * 100).toFixed(1)}%`
+  const text = label ?? formatted.primary
   return (
     <span
       className={cn(

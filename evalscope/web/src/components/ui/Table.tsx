@@ -1,6 +1,7 @@
 import { type ReactNode, useState, useMemo } from 'react'
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useLocale } from '@/contexts/LocaleContext'
 
 type SortDir = 'asc' | 'desc'
 
@@ -28,6 +29,7 @@ export default function Table<T extends Record<string, unknown>>({
   className,
   defaultSort,
 }: TableProps<T>) {
+  const { t } = useLocale()
   const [sortKey, setSortKey] = useState<string | null>(defaultSort?.key ?? null)
   const [sortDir, setSortDir] = useState<SortDir>(defaultSort?.dir ?? 'desc')
 
@@ -121,10 +123,9 @@ export default function Table<T extends Record<string, unknown>>({
             <tr>
               <td
                 colSpan={columns.length}
-                // text-dim allowed: non-essential ≥14px metadata (DESIGN.md §Text)
-                className="px-4 py-8 text-center text-[var(--text-dim)]"
+                className="px-4 py-8 text-center text-[var(--text-muted)]"
               >
-                No data
+                {t('common.noData')}
               </td>
             </tr>
           )}

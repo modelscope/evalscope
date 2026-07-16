@@ -45,7 +45,7 @@ export default function KpiCard({
           {icon}
         </div>
       </div>
-      <div className="type-display-xl text-[var(--text)] relative">{value}</div>
+      <div className="type-display-xl text-[var(--text)] relative break-words">{value}</div>
       <div className="type-body-xs text-[var(--text-muted)] mt-0.5 font-medium relative">{label}</div>
     </div>
   )

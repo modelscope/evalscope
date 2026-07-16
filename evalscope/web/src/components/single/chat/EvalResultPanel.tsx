@@ -138,9 +138,16 @@ export function EvalResultPanel({
             {t('prediction.score')}
           </div>
           <div className="flex flex-col gap-1">
-            <ScoreBadge score={nScore} threshold={threshold} />
-            <span className="text-[0.65rem] text-[var(--text-muted)] opacity-50">
-              thr: {threshold}
+            {/*
+              Score is the benchmark-native normalized outcome, rendered with a
+              neutral score gradient independent of any threshold (Req 1.12).
+              The threshold is only a view-level filter, surfaced here as a
+              neutral `Above filter` / `Below filter` annotation rather than a
+              pass/fail verdict (Req 1.10, 1.11).
+            */}
+            <ScoreBadge score={nScore} />
+            <span className="text-[0.65rem] text-[var(--text-muted)] opacity-60">
+              {nScore >= threshold ? t('prediction.aboveFilter') : t('prediction.belowFilter')} · {threshold}
             </span>
           </div>
         </div>

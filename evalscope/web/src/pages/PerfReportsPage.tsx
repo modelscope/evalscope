@@ -1,16 +1,22 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Gauge, Inbox, ChevronRight, Check, GitCompareArrows } from 'lucide-react'
+import { Gauge, ChevronRight, Check, GitCompareArrows } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useReports } from '@/contexts/ReportsContext'
 import { listPerfRuns } from '@/api/perf'
+import { isDomainError } from '@/api/errors'
 import type { PerfRunSummary } from '@/api/types'
 import Breadcrumb from '@/components/ui/Breadcrumb'
-import Badge from '@/components/ui/Badge'
 import Skeleton from '@/components/ui/Skeleton'
-import EmptyState from '@/components/common/EmptyState'
+import EmptyStateSystem from '@/components/common/EmptyStateSystem'
+import type { ResolvedEmptyStateAction } from '@/domain/empty/emptyState'
 import SearchInput from '@/components/ui/SearchInput'
+import { formatMetricByKey } from '@/domain/metric/registry'
 import { formatFull } from '@/utils/perf'
+import { resolveProvider } from '@/domain/perf/providerResolution'
+
+/** Locale translate contract (kept minimal so cards can format metrics). */
+type Translate = (key: string, vars?: Record<string, string | number>) => string
 
 type SortKey = 'time' | 'rps' | 'latency'
 
@@ -45,12 +51,17 @@ function PerfRunCard({
   selected,
   onToggle,
   onClick,
+  t,
 }: {
   run: PerfRunSummary
   selected: boolean
   onToggle: () => void
   onClick: () => void
+  t: Translate
 }) {
+  const identity = resolveProvider(run)
+  const concurrency = run.concurrency?.length ? run.concurrency.join(', ') : 'N/A'
+
   return (
     <div
       className={[
@@ -58,27 +69,37 @@ function PerfRunCard({
         selected ? 'border-[var(--accent)]' : 'border-[var(--border)] hover:border-[var(--border-strong)]',
       ].join(' ')}
     >
-      <button onClick={onToggle} aria-label="Select for compare" className="shrink-0 p-0.5 cursor-pointer">
+      <button type="button" onClick={onToggle} aria-label="Select for compare" className="shrink-0 flex min-h-11 min-w-11 items-center justify-center cursor-pointer">
         <Checkbox checked={selected} />
       </button>
-      <button onClick={onClick} className="flex items-center gap-4 flex-1 min-w-0 text-left">
+      <button type="button" onClick={onClick} className="flex min-h-11 items-center gap-4 flex-1 min-w-0 text-left">
         <span className="text-[var(--accent)] shrink-0">
           <Gauge size={20} />
         </span>
         <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="type-title-md text-[var(--text)] truncate">{run.model}</span>
-            {run.api_type && <Badge>{run.api_type}</Badge>}
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            {/* Model alias is the primary identity; fall back to dataset, never
+                the raw path/timestamp, when the alias is absent (Req 8.9). */}
+            <span className="type-title-md text-[var(--text)] break-words min-w-0">{run.model || run.dataset || '—'}</span>
           </div>
-          <span className="type-caption-mono text-[var(--text-muted)] truncate">
+          <span className="type-caption-mono text-[var(--text-muted)] break-words">
+            {t('performance.provider')}: {identity.provider} · {t('performance.protocol')}: {identity.protocol}
+          </span>
+          <span className="type-caption-mono text-[var(--text-muted)] break-words">
+            {t('performance.concurrency')}: {concurrency} · {t('performance.numberOfRequests')}: {run.total_requests}
+          </span>
+          <span className="type-caption-mono text-[var(--text-muted)] break-words">
             {(run.dataset || '—')} · {formatFull(run.timestamp)}
           </span>
         </div>
-        <div className="hidden sm:flex items-center gap-6 shrink-0">
+        <div className="hidden lg:flex items-center gap-6 shrink-0">
           <Stat label="Runs" value={String(run.num_runs)} />
-          <Stat label="Best RPS" value={run.best_rps.toFixed(2)} />
-          <Stat label="Min Lat" value={`${run.best_latency.toFixed(2)}s`} />
-          <Stat label="Success" value={`${run.success_rate.toFixed(0)}%`} />
+          {/* Domain metrics render through the shared formatter so the same
+              value rounds identically here, in the detail view and per-run
+              tables (Req 8.10). */}
+          <Stat label="Best RPS" value={formatMetricByKey('rps', run.best_rps, t).primary} />
+          <Stat label="Min Lat" value={formatMetricByKey('latency', run.best_latency, t).primary} />
+          <Stat label="Success" value={formatMetricByKey('success_rate', run.success_rate, t).primary} />
         </div>
         <ChevronRight size={16} className="text-[var(--text-dim)] shrink-0" />
       </button>
@@ -103,6 +124,8 @@ export default function PerfReportsPage() {
   const [loading, setLoading] = useState(false)
   const [hasLoaded, setHasLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Bumped to re-trigger the fetch effect when the user retries from an empty state.
+  const [reloadToken, setReloadToken] = useState(0)
 
   // List controls (symmetric with the Evaluations page).
   const [query, setQuery] = useState('')
@@ -128,31 +151,44 @@ export default function PerfReportsPage() {
 
   useEffect(() => {
     if (!rootPath) return
-    let cancelled = false
+    const controller = new AbortController()
     const load = async () => {
       setLoading(true)
       setError(null)
-      setSelected([])
       try {
-        const res = await listPerfRuns(rootPath)
-        if (!cancelled) setRuns(res.runs)
+        const res = await listPerfRuns(rootPath, controller.signal)
+        if (!controller.signal.aborted) {
+          setRuns(res.runs)
+          setSelected([])
+        }
       } catch (err) {
-        if (!cancelled) {
+        if (!controller.signal.aborted && !(isDomainError(err) && err.kind === 'aborted')) {
           setError(err instanceof Error ? err.message : 'Failed to load perf runs')
-          setRuns([])
         }
       } finally {
-        if (!cancelled) {
+        if (!controller.signal.aborted) {
           setLoading(false)
           setHasLoaded(true)
         }
       }
     }
     load()
-    return () => {
-      cancelled = true
+    return () => controller.abort()
+  }, [rootPath, scanToken, reloadToken])
+
+  // In-view recovery: retry re-fetches, clear-filters resets the search query;
+  // other empty-state actions (create task, browse benchmarks) navigate (Req 6.2, 6.3).
+  const handleEmptyAction = useCallback((action: ResolvedEmptyStateAction) => {
+    if (action.navigateTo === '#retry') {
+      setReloadToken((n) => n + 1)
+      return true
     }
-  }, [rootPath, scanToken])
+    if (action.navigateTo === '#clear-filters') {
+      setQuery('')
+      return true
+    }
+    return false
+  }, [])
 
   const openRun = (run: PerfRunSummary) => {
     navigate(`/perf-report?path=${encodeURIComponent(run.path)}&root_path=${encodeURIComponent(rootPath)}`)
@@ -163,10 +199,16 @@ export default function PerfReportsPage() {
     const q = query.trim().toLowerCase()
     const filtered = q
       ? runs.filter(
-          (r) =>
-            (r.model || '').toLowerCase().includes(q) ||
-            (r.dataset || '').toLowerCase().includes(q) ||
-            (r.api_type || '').toLowerCase().includes(q),
+          (r) => {
+            const identity = resolveProvider(r)
+            return (
+              (r.model || '').toLowerCase().includes(q) ||
+              (r.dataset || '').toLowerCase().includes(q) ||
+              (r.api_type || '').toLowerCase().includes(q) ||
+              identity.provider.toLowerCase().includes(q) ||
+              identity.protocol.toLowerCase().includes(q)
+            )
+          },
         )
       : runs
     const sorted = [...filtered]
@@ -181,7 +223,7 @@ export default function PerfReportsPage() {
       <Breadcrumb items={[{ label: t('nav.performance') }]} />
 
       {error && (
-        <div className="px-4 py-3 rounded-[var(--radius)] bg-[var(--danger-bg)] border border-[var(--danger-border)] text-sm text-[var(--danger)]">
+        <div role="alert" className="px-4 py-3 rounded-[var(--radius)] bg-[var(--danger-bg)] border border-[var(--danger-border)] text-sm text-[var(--danger)]">
           {error}
         </div>
       )}
@@ -194,10 +236,11 @@ export default function PerfReportsPage() {
         </div>
       ) : runs.length === 0 ? (
         <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
-          <EmptyState
-            icon={<Inbox size={28} strokeWidth={1.5} />}
-            title={t('performance.noRuns')}
-            hint={hasLoaded ? t('performance.noRunsHint') : ''}
+          <EmptyStateSystem
+            reason={error ? 'load-error' : 'no-data'}
+            context={{ view: 'performance', retryTo: '#retry' }}
+            hint={!error && hasLoaded ? t('performance.noRunsHint') : undefined}
+            onAction={handleEmptyAction}
           />
         </div>
       ) : (
@@ -210,7 +253,7 @@ export default function PerfReportsPage() {
                   key={k}
                   onClick={() => setSortBy(k)}
                   className={[
-                    'px-3 py-1 rounded-[var(--radius-sm)] type-body-xs transition-colors',
+                    'min-h-11 px-3 py-1 rounded-[var(--radius-sm)] type-body-xs transition-colors',
                     sortBy === k
                       ? 'bg-[var(--accent)] text-[var(--text-on-filled)]'
                       : 'text-[var(--text-muted)] hover:text-[var(--text)]',
@@ -225,7 +268,7 @@ export default function PerfReportsPage() {
                 onClick={compareSelected}
                 disabled={selected.length < 2}
                 className={[
-                  'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] type-body-sm border transition-colors shrink-0',
+                  'inline-flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] type-body-sm border transition-colors shrink-0',
                   selected.length >= 2
                     ? 'border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--bg-card2)] cursor-pointer'
                     : 'border-[var(--border)] text-[var(--text-dim)] cursor-not-allowed',
@@ -252,11 +295,16 @@ export default function PerfReportsPage() {
                   selected={selected.includes(run.path)}
                   onToggle={() => toggleSelect(run.path)}
                   onClick={() => openRun(run)}
+                  t={t}
                 />
               ))}
             </div>
           ) : (
-            <div className="py-10 text-center type-body-sm text-[var(--text-muted)]">{t('performance.noMatch')}</div>
+            <EmptyStateSystem
+              reason="no-match"
+              context={{ view: 'performance', clearFiltersTo: '#clear-filters' }}
+              onAction={handleEmptyAction}
+            />
           )}
         </>
       )}

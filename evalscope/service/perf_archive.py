@@ -17,6 +17,7 @@ import re
 from datetime import datetime
 from types import SimpleNamespace
 from typing import List, Optional
+from urllib.parse import urlsplit
 
 from evalscope.constants import PLOTLY_CDN_URL
 from evalscope.perf.utils.report.summary import (
@@ -185,6 +186,28 @@ def _find_run(runs, run_name: str):
 # ------------------------------------------------------------------
 
 
+def _build_identity_metadata(args_dict: dict) -> dict:
+    """Return explicit identity plus a sanitized endpoint host for web views."""
+    metadata = {}
+
+    provider = args_dict.get('provider')
+    if isinstance(provider, str) and provider.strip():
+        metadata['provider'] = provider.strip()
+
+    protocol = args_dict.get('protocol')
+    if isinstance(protocol, str) and protocol.strip():
+        metadata['protocol'] = protocol.strip()
+
+    raw_url = args_dict.get('url')
+    if isinstance(raw_url, str) and raw_url.strip():
+        candidate = raw_url.strip()
+        parsed = urlsplit(candidate if '://' in candidate else f'//{candidate}')
+        if parsed.hostname:
+            metadata['api_host'] = parsed.hostname.lower()
+
+    return metadata
+
+
 def build_run_summary(rel_path: str, abs_path: str) -> Optional[dict]:
     """Build lightweight list-item metadata for one perf-run directory."""
     runs = _load_runs(abs_path, with_requests=False)
@@ -208,6 +231,7 @@ def build_run_summary(rel_path: str, abs_path: str) -> Optional[dict]:
         }
 
     first_args = runs[0].args or {}
+    identity = _build_identity_metadata(first_args)
     api_type = first_args.get('api', '')
     total_requests = sum(r.summary.total_requests for r in runs)
     total_succeed = sum(r.summary.succeed_requests for r in runs)
@@ -229,6 +253,10 @@ def build_run_summary(rel_path: str, abs_path: str) -> Optional[dict]:
         'is_embedding': is_embedding(api_type),
         'has_html': has_html,
         'timestamp': extract_timestamp(rel_path, abs_path),
+        'concurrency': sorted({r.parallel
+                               for r in runs
+                               if r.parallel > 0}),
+        **identity,
     }
 
 
@@ -259,9 +287,18 @@ def build_run_detail(root: str, rel_path: str) -> dict:
         raise PerfArchiveError(f'No perf runs found under: {rel_path}', 404)
 
     first_args = runs[0].args or {}
+    identity = _build_identity_metadata(first_args)
     api_type = first_args.get('api', '')
     is_emb = is_embedding(api_type)
     summary_columns, summary_rows = build_summary_table(runs, is_emb)
+
+    basic_info = dict(build_basic_info(first_args, runs, is_emb))
+    if identity.get('provider'):
+        basic_info['Provider'] = identity['provider']
+    if identity.get('protocol'):
+        basic_info['Protocol'] = identity['protocol']
+    if identity.get('api_host'):
+        basic_info['API Host'] = identity['api_host']
 
     return {
         'path': rel_path,
@@ -269,7 +306,7 @@ def build_run_detail(root: str, rel_path: str) -> dict:
         'api_type': api_type,
         'dataset': first_args.get('dataset', 'N/A'),
         'generated_at': extract_timestamp(rel_path, run_dir),
-        'basic_info': dict(build_basic_info(first_args, runs, is_emb)),
+        'basic_info': basic_info,
         'summary_columns': summary_columns,
         'summary_rows': summary_rows,
         'best_config': dict(build_best_config(runs)),

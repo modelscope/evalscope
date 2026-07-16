@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportSummary } from '@/api/types'
 import { scoreColor } from '@/utils/colorScale'
+import { formatMetricByKey } from '@/domain/metric/registry'
 
 interface ReportCardProps {
   report: ReportSummary
@@ -11,6 +12,12 @@ interface ReportCardProps {
   onSelect: (name: string) => void
   /** Navigate to report detail */
   onClick: (name: string) => void
+  /**
+   * Whether the explicit compare-selection mode is active. When active the
+   * selection checkbox is always shown and tapping the card toggles selection
+   * instead of navigating (Req 5.4).
+   */
+  compareMode?: boolean
 }
 
 function formatTimestamp(ts: string): string {
@@ -46,7 +53,7 @@ function Checkbox({ checked }: { checked: boolean }) {
   )
 }
 
-export default function ReportCard({ report, selected, onSelect, onClick }: ReportCardProps) {
+export default function ReportCard({ report, selected, onSelect, onClick, compareMode = false }: ReportCardProps) {
   const { t } = useLocale()
 
   const formattedDate = report.timestamp ? formatTimestamp(report.timestamp) : ''
@@ -54,6 +61,12 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
   const handleDetailClick = (e: MouseEvent) => {
     e.stopPropagation()
     onClick(report.name)
+  }
+
+  // In compare mode the whole card toggles selection; otherwise it navigates.
+  const handleContentClick = () => {
+    if (compareMode) onSelect(report.name)
+    else onClick(report.name)
   }
 
   return (
@@ -66,30 +79,30 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
           : 'border-[var(--border)] hover:border-[var(--border-md)]',
       )}
     >
-      {/* Checkbox — always visible; dimmed when unchecked, full opacity on hover or when checked */}
-      <div
-        onClick={(e) => {
-          e.stopPropagation()
-          onSelect(report.name)
-        }}
-        className={cn(
-          'transition-opacity duration-150 cursor-pointer',
-          selected ? 'opacity-100' : 'opacity-30 group-hover:opacity-70',
-        )}
-      >
-        <Checkbox checked={selected} />
-      </div>
+      {/* Checkbox — only shown in the explicit compare-selection mode (Req 5.4). */}
+      {compareMode && (
+        <div
+          onClick={(e) => {
+            e.stopPropagation()
+            onSelect(report.name)
+          }}
+          className="transition-opacity duration-150 cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] -m-2 p-2"
+        >
+          <Checkbox checked={selected} />
+        </div>
+      )}
 
-      {/* Content — clicking navigates to detail */}
-      <div
-        className="flex-1 min-w-0 flex items-center gap-4 cursor-pointer"
-        onClick={() => onClick(report.name)}
+      {/* Content — clicking navigates to detail, or toggles selection in compare mode. */}
+      <button
+        type="button"
+        className="flex-1 min-w-0 min-h-11 flex items-center gap-4 cursor-pointer text-left"
+        onClick={handleContentClick}
       >
         {/* Model + Dataset */}
         <div className="flex-1 min-w-0">
           {/* Primary row: model name + timestamp for disambiguation */}
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="font-bold text-base text-[var(--text)] truncate">
+            <span className="font-bold text-base text-[var(--text)] break-words min-w-0">
               {report.model_name}
             </span>
             {formattedDate && (
@@ -100,11 +113,15 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
           </div>
           {/* Secondary row: dataset + sample count */}
           <div className="flex items-center gap-3 mt-0.5">
-            <span className="text-sm text-[var(--text-muted)] truncate">
+            <span className="text-sm text-[var(--text-muted)] break-words min-w-0">
               {report.dataset_name}
             </span>
             <span className="text-xs text-[var(--text-muted)] shrink-0">
               {t('reports.samples')}: {report.num_samples}
+            </span>
+            {/* Status — keeps card fields consistent with the desktop table (Req 5.3). */}
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--success-bg)] text-[var(--success)] shrink-0">
+              {t('reports.status.completed')}
             </span>
           </div>
         </div>
@@ -114,16 +131,16 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
           className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-mono font-semibold shrink-0"
           style={{ backgroundColor: `${scoreColor(report.score)}20`, color: scoreColor(report.score) }}
         >
-          {report.score.toFixed(4)}
+          {formatMetricByKey('score', report.score, t).primary}
         </span>
-      </div>
+      </button>
 
       {/* Chevron — dedicated detail navigation button */}
       <button
         type="button"
         aria-label="View report detail"
         onClick={handleDetailClick}
-        className="shrink-0 flex items-center justify-center rounded p-0.5 transition-colors cursor-pointer opacity-40 group-hover:opacity-100 hover:bg-[var(--bg-card2)]"
+        className="shrink-0 flex min-h-11 min-w-11 items-center justify-center rounded transition-colors cursor-pointer opacity-60 group-hover:opacity-100 hover:bg-[var(--bg-card2)]"
       >
         {/* text-dim allowed: detail-nav chevron icon (DESIGN.md §Text) */}
         <ChevronRight

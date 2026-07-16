@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, Hash, List, CircleCheck, CircleX, HelpCircle, Search, MessageSquare, AlertCircle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Hash, List, ArrowUp, ArrowDown, HelpCircle, Search, MessageSquare, AlertCircle } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { PredictionRow, ReportData } from '@/api/types'
 import { getPredictions, getDataFrame } from '@/api/reports'
@@ -7,6 +7,7 @@ import Select from '@/components/ui/Select'
 
 import ChatView from '@/components/single/ChatView'
 import Skeleton from '@/components/ui/Skeleton'
+import EmptyStateSystem from '@/components/common/EmptyStateSystem'
 
 interface Props {
   reportName: string
@@ -22,6 +23,8 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
   const [selectedSubset, setSelectedSubset] = useState('')
   const [predictions, setPredictions] = useState<PredictionRow[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState('')
+  const [reloadToken, setReloadToken] = useState(0)
   const [mode, setMode] = useState('All')
   const [threshold, setThreshold] = useState(0.99)
   const [page, setPage] = useState(1)
@@ -38,12 +41,13 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
   // Load subsets when dataset changes
   useEffect(() => {
     if (!datasetName || !reportName) return
-    let cancelled = false
+    const controller = new AbortController()
 
     const loadSubsets = async () => {
+      setLoadError('')
       try {
-        const dfRes = await getDataFrame(rootPath, reportName, 'dataset', datasetName)
-        if (cancelled) return
+        const dfRes = await getDataFrame(rootPath, reportName, 'dataset', datasetName, controller.signal)
+        if (controller.signal.aborted) return
         const subNames: string[] = []
         for (const row of dfRes.data) {
           const catCol = Object.keys(row).find((k) => k.startsWith('Cat.'))
@@ -56,41 +60,45 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
         setSelectedSubset(target)
         setPredictions([])
       } catch (e) {
+        if (!controller.signal.aborted) setLoadError(e instanceof Error ? e.message : t('common.loadError'))
         console.error('Failed to load subsets:', e)
       }
     }
     loadSubsets()
-    return () => { cancelled = true }
-  }, [datasetName, reportName, rootPath, initialSubset])
+    return () => controller.abort()
+  }, [datasetName, reportName, rootPath, initialSubset, t])
 
   // Load predictions when subset changes
   useEffect(() => {
     if (!selectedSubset || !reportName || !datasetName) return
-    let cancelled = false
+    const controller = new AbortController()
     const loadPredictions = async () => {
       setLoading(true)
+      setLoadError('')
       try {
-        const res = await getPredictions(rootPath, reportName, datasetName, selectedSubset)
-        if (!cancelled) setPredictions(res.predictions)
+        const res = await getPredictions(rootPath, reportName, datasetName, selectedSubset, controller.signal)
+        if (!controller.signal.aborted) setPredictions(res.predictions)
       } catch (e) {
         console.error('Failed to load predictions:', e)
-        if (!cancelled) setPredictions([])
+        if (!controller.signal.aborted) setLoadError(e instanceof Error ? e.message : t('common.loadError'))
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!controller.signal.aborted) setLoading(false)
       }
     }
     loadPredictions()
-    return () => { cancelled = true }
-  }, [rootPath, reportName, datasetName, selectedSubset])
+    return () => controller.abort()
+  }, [rootPath, reportName, datasetName, selectedSubset, reloadToken, t])
 
+  // The threshold is a view-only filter (above/below), not a pass/fail verdict,
+  // and it never leaves this view (Req 1.10, 1.11).
   const filtered = useMemo(() => {
-    if (mode === 'Pass') return predictions.filter((p) => p.NScore >= threshold)
-    if (mode === 'Fail') return predictions.filter((p) => p.NScore < threshold)
+    if (mode === 'Above') return predictions.filter((p) => p.NScore >= threshold)
+    if (mode === 'Below') return predictions.filter((p) => p.NScore < threshold)
     return predictions
   }, [predictions, mode, threshold])
 
-  const passCount = useMemo(() => predictions.filter((p) => p.NScore >= threshold).length, [predictions, threshold])
-  const failCount = predictions.length - passCount
+  const aboveCount = useMemo(() => predictions.filter((p) => p.NScore >= threshold).length, [predictions, threshold])
+  const belowCount = predictions.length - aboveCount
   const totalPages = filtered.length
   const row = totalPages > 0 ? filtered[Math.min(page - 1, totalPages - 1)] : null
 
@@ -158,14 +166,15 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
 
   const subsetOptions = subsets.map((s) => ({ value: s, label: s }))
 
-  // Filter button config
+  // Filter button config. Labels describe the view filter (above/below the
+  // threshold), not a pass/fail outcome (Req 1.11).
   const filterBtns = [
-    { key: 'All', icon: <List size={13} />, count: predictions.length },
-    { key: 'Pass', icon: <CircleCheck size={13} />, count: passCount },
-    { key: 'Fail', icon: <CircleX size={13} />, count: failCount },
+    { key: 'All', label: t('common.all'), icon: <List size={13} />, count: predictions.length },
+    { key: 'Above', label: t('prediction.aboveFilter'), icon: <ArrowUp size={13} />, count: aboveCount },
+    { key: 'Below', label: t('prediction.belowFilter'), icon: <ArrowDown size={13} />, count: belowCount },
   ] as const
 
-  const navBtnBase = 'bg-transparent border border-[var(--border)] rounded-full w-8 h-8 flex items-center justify-center text-[var(--text)] transition-colors'
+  const navBtnBase = 'bg-transparent border border-[var(--border)] rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--text)] transition-colors'
   const searchInputBase = 'pl-7 pr-2 py-[0.3rem] text-[0.8rem] w-[120px] bg-[var(--bg-deep)] rounded-[var(--radius-sm)] text-[var(--text)] outline-none transition-colors'
 
   return (
@@ -186,10 +195,12 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
 
         {/* 右：Score Threshold + ? 图标 */}
         <div className="flex items-center gap-[0.4rem] shrink-0 pb-[2px]">
-          <label className="text-xs text-[var(--text-muted)] whitespace-nowrap">
+          <label htmlFor="prediction-score-threshold" className="text-xs text-[var(--text-muted)] whitespace-nowrap">
             {t('single.scoreThreshold')}
           </label>
           <input
+            id="prediction-score-threshold"
+            name="prediction-score-threshold"
             type="number"
             value={threshold}
             step={0.01}
@@ -236,13 +247,31 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
 
       {loading && <Skeleton lines={4} />}
 
+      {loadError && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-3 py-2 text-sm text-[var(--danger)]"
+        >
+          <span>{loadError}</span>
+          {selectedSubset && (
+            <button
+              type="button"
+              onClick={() => setReloadToken((value) => value + 1)}
+              className="min-h-11 rounded-[var(--radius-sm)] border border-current px-3 font-medium"
+            >
+              {t('common.retry')}
+            </button>
+          )}
+        </div>
+      )}
+
       {!loading && predictions.length > 0 && (
         <>
           {/* ── 行 2：操作区 — 过滤器（左）+ 搜索框（右） ── */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
             {/* 左：All / Pass / Fail 按钮组 */}
             <div className="inline-flex rounded-[var(--radius)] border border-[var(--border-md)] overflow-hidden">
-              {filterBtns.map(({ key, icon, count }, idx) => {
+              {filterBtns.map(({ key, label, icon, count }, idx) => {
                 const isActive = mode === key
                 return (
                   <button
@@ -255,7 +284,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
                     ].join(' ')}
                   >
                     {icon}
-                    <span>{key}</span>
+                    <span>{label}</span>
                     <span className="opacity-65 text-[0.8rem]">{count}</span>
                   </button>
                 )
@@ -269,6 +298,8 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
                 <Search size={12} className="absolute left-2 text-[var(--text-dim)] pointer-events-none" />
                 <input
                   ref={indexInputRef}
+                  aria-label={t('prediction.searchByIndex')}
+                  name="prediction-index-search"
                   type="text"
                   value={indexSearch}
                   onChange={e => { setIndexSearch(e.target.value); setIndexError(false) }}
@@ -288,6 +319,8 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
                 <MessageSquare size={12} className="absolute left-2 text-[var(--text-dim)] pointer-events-none" />
                 <input
                   ref={msgIdInputRef}
+                  aria-label={t('prediction.searchByMsgId')}
+                  name="prediction-message-id-search"
                   type="text"
                   value={msgIdSearch}
                   onChange={e => { setMsgIdSearch(e.target.value); setMsgIdError(false) }}
@@ -308,6 +341,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
           <div className="flex items-center gap-3">
             {/* Left arrow */}
             <button
+              aria-label={t('prediction.previousSample')}
               onClick={() => { setPage(p => Math.max(1, p - 1)); setHighlightMsgId(undefined) }}
               disabled={page <= 1}
               className={`${navBtnBase} ${page <= 1 ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
@@ -328,6 +362,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
 
             {/* Right arrow */}
             <button
+              aria-label={t('prediction.nextSample')}
               onClick={() => { setPage(p => Math.min(totalPages, p + 1)); setHighlightMsgId(undefined) }}
               disabled={page >= totalPages}
               className={`${navBtnBase} ${page >= totalPages ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
@@ -339,6 +374,11 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
           {/* Content area */}
           {row && (
             <div className="transition-all duration-200">
+              {highlightMsgId && (
+                <p className="mb-2 type-caption text-[var(--text-muted)]" role="status">
+                  {t('prediction.messageLocated', { id: highlightMsgId })}
+                </p>
+              )}
               <ChatView prediction={row} threshold={threshold} highlightMsgId={highlightMsgId} />
             </div>
           )}
@@ -346,8 +386,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
       )}
 
       {!loading && predictions.length === 0 && selectedSubset && (
-        // text-dim allowed: non-essential ≥14px metadata (DESIGN.md §Text)
-        <p className="text-sm text-[var(--text-dim)] py-4">{t('common.noData')}</p>
+        <EmptyStateSystem reason="no-data" context={{ view: 'evaluations' }} />
       )}
     </div>
   )

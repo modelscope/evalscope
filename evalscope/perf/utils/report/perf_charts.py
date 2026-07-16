@@ -417,6 +417,7 @@ def build_compare_chart(
     y_title = _COMPARE_Y_TITLE.get(metric, metric)
     x_title = 'Concurrency'
     traces = []
+    sparse = sum(len(runs) for _, runs in series) <= 2
     for i, (label, runs) in enumerate(series):
         if not runs:
             continue
@@ -427,7 +428,7 @@ def build_compare_chart(
             dict(
                 x=xs,
                 y=ys,
-                mode='lines+markers',
+                mode='markers' if sparse else 'lines+markers',
                 name=label,
                 line=dict(color=color, width=2),
                 marker=dict(size=8),
