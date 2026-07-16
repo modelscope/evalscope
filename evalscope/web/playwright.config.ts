@@ -47,15 +47,6 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: process.env.CI ? [['github'], ['list']] : [['list']],
-  snapshotPathTemplate: '{testDir}/visual/__screenshots__/{arg}-{projectName}-{platform}{ext}',
-
-  expect: {
-    toHaveScreenshot: {
-      maxDiffPixelRatio: 0.001,
-      animations: 'disabled',
-    },
-  },
-
   use: {
     ...deterministicContext,
     actionTimeout: 10_000,

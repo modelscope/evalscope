@@ -8,10 +8,10 @@ import { MISSING_PLACEHOLDER } from '@/domain/metric/metricFormat'
  *
  * There is no single "metric display" component; the system is the centralized
  * `formatMetricByKey` entry point (`src/domain/metric/registry.ts`) that every
- * surface renders through. To give the visual-regression baseline a concrete
- * anchor, this file defines a small presentational `MetricDisplay` that renders
- * the `FormattedMetric` produced by that entry point, exposing every display
- * form the contract distinguishes:
+ * surface renders through. For focused component review, this file defines a
+ * small presentational `MetricDisplay` that renders the `FormattedMetric`
+ * produced by that entry point, exposing every display form the contract
+ * distinguishes:
  *
  * - Bounded ratio → percentage primary + 4-decimal raw (Req 1.2, 1.3).
  * - Unbounded metric → native unit, never a percentage (Req 1.4, 1.5, 1.7).

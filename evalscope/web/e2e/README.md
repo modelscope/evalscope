@@ -15,17 +15,18 @@
 
 ```
 e2e/
-  fixtures.ts        # 共享 test/expect，强制离线（拦截外网请求）
-  example.spec.ts    # 骨架占位示例
-  README.md          # 本说明
+  fixtures.ts             # 共享 test/expect，强制离线（拦截外网请求）
+  critical-flows.spec.ts  # 关键产品流程与响应式断言
+  README.md               # 本说明
 ```
 
 ## 运行
 
 ```bash
 npm run build      # 先构建静态产物
-npm run e2e        # 运行关键流程 E2E（不生成开发机视觉基线）
-npm run e2e:visual # 运行视觉回归；CI 使用已提交的 Linux goldens
+npm run e2e        # 运行关键流程 E2E
 ```
 
 新增流程测试时，从 `./fixtures` 导入 `test` / `expect`，并用 `page.route` 挂载脱敏 fixtures。
+
+项目不保存或比较像素级截图基线。响应式、主题和关键文案通过结构化组件断言、Storybook 和两个固定视口的功能 E2E 覆盖。

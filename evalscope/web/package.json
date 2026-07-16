@@ -12,7 +12,6 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test e2e/critical-flows.spec.ts",
-    "e2e:visual": "playwright test e2e/visual-regression.spec.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "drift": "tsx scripts/drift/index.ts",

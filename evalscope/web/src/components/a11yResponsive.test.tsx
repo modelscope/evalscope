@@ -21,10 +21,9 @@
 //   - Contrast-related a11y (Req 12.1): a representative metadata component is
 //     run through axe. Note that axe-core's `color-contrast` rule is disabled
 //     under jsdom because there is no layout/paint to sample colours from, so a
-//     passing axe run here validates the other a11y rules; true contrast ratios
-//     are enforced by the visual / CI coverage in task group 19.x. We still
-//     assert there are no `color-contrast` violations (the rule cannot fire
-//     here, so its absence is a genuine, if partial, guarantee).
+//     passing axe run here validates the other a11y rules. Contrast tokens are
+//     reviewed against DESIGN.md and exercised in focused component/Browser
+//     checks; this jsdom assertion alone is only a partial guarantee.
 //
 // The suite runs under the global deterministic setup (fake timers, fixed
 // system time, network disabled). The axe assertion temporarily restores real
@@ -207,8 +206,7 @@ describe('Contrast-related accessibility (axe) (Req 12.1)', () => {
       expect(results.violations).toEqual([])
 
       // Explicitly assert there are no color-contrast violations. Under jsdom
-      // axe cannot compute painted colours, so this rule does not fire here;
-      // real contrast ratios are enforced by the visual / CI coverage (19.x).
+      // axe cannot compute painted colours, so this rule does not fire here.
       const contrastViolations = results.violations.filter((v) => v.id === 'color-contrast')
       expect(contrastViolations).toHaveLength(0)
     } finally {

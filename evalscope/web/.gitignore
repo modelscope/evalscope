@@ -18,11 +18,6 @@ coverage
 .nyc_output
 *.local
 
-# Visual regression goldens are generated on Linux in CI. Developer-machine
-# captures are disposable and must not grow the repository on every platform.
-e2e/visual/__screenshots__/*
-!e2e/visual/__screenshots__/*-linux.png
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
