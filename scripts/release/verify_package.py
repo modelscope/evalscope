@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Dict, Iterable, Set
 from zipfile import ZipFile
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FORBIDDEN_PARTS = {'__pycache__', '.DS_Store', '.pytest_cache', 'coverage', 'node_modules'}
 
