@@ -1,4 +1,4 @@
-// Component tests for the Empty_State_System (Task 10.5).
+// Component tests for the Empty_State_System.
 //
 // Covers the behaviour that lives in the component layer rather than in the pure
 // `emptyState` domain logic:

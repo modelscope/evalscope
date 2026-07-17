@@ -1,4 +1,4 @@
-// Component tests for the Performance_Compare_View (Task 13.11).
+// Component tests for the Performance_Compare_View.
 //
 // These cover the behaviour that lives in the PerfComparePage component layer
 // (rather than in the pure `compareModel` domain logic, which is covered by the

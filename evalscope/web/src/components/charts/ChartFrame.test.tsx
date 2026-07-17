@@ -1,4 +1,4 @@
-// Component and boundary unit tests for the Chart_Renderer (Task 6.7).
+// Component and boundary unit tests for the Chart_Renderer.
 //
 // Covers ChartFrame behaviour that cannot be expressed as a pure property:
 //   - a light theme never renders a dark chart, because the active theme is

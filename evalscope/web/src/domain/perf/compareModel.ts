@@ -10,12 +10,12 @@
  * It has no dependency on React, the DOM, the network, the system clock or
  * randomness, so it is the target of the property tests in tasks 13.2–13.7. The
  * rendering (delta table, baseline swap, low-sample de-emphasis, mismatch hint)
- * lives in the component layer (task 13.10); this module only produces the data
+ * lives in the component layer; this module only produces the data
  * contract.
  *
  * Formatting is delegated to the single metric-formatting entry point
  * `formatMetric` so the same metric rounds identically everywhere.
- * `metricFormat.ts` (task 3.2) is a forward dependency and may not exist yet;
+ * `metricFormat.ts` is a forward dependency and may not exist yet;
  * this module imports it per the design contract and the checkpoint validates
  * the wiring once both are present.
  */

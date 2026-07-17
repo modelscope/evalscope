@@ -1,4 +1,4 @@
-// Component and accessibility unit tests for the Tabs component (Task 18.4).
+// Component and accessibility unit tests for the Tabs component.
 //
 // Covers the WAI-ARIA tablist behaviour that the pure roving-index logic cannot
 // express on its own:

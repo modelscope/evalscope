@@ -1,5 +1,4 @@
-// Contrast / touch-target / responsive-wrapping component tests + axe
-// (Task 7.4).
+// Contrast / touch-target / responsive-wrapping component tests + axe.
 //
 // This suite covers the accessibility and responsive contracts that the pure
 // logic layer cannot express — they live in the rendered DOM (class names,

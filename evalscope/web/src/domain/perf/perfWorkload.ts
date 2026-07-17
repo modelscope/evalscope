@@ -7,8 +7,8 @@
  * clock, or randomness, which makes it the target of a property test
  * (Property 14: workload never renders `INF` and missing params show a placeholder).
  *
- * Rendering (list/detail layout, labels, columns) lives in the component layer
- * (task 12.5); this module only produces the data contract.
+ * Rendering (list/detail layout, labels, columns) lives in the component layer;
+ * this module only produces the data contract.
  */
 
 import type { PerfRunItem } from '../../api/types'

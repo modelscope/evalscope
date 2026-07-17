@@ -1,4 +1,4 @@
-// Cross-surface metric display consistency (Task 4.4).
+// Cross-surface metric display consistency.
 //
 // The same metric must render identically wherever it appears. Both the card
 // view (`ReportCard`, narrow screens) and the desktop table (`ReportsTable`)

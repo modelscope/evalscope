@@ -327,7 +327,7 @@ export function formatMetricByKey(
 /**
  * Thin convenience wrapper returning only the primary display string for a
  * metric key. Intended as the drop-in replacement for scattered
- * `score.toFixed(n)` call sites during the incremental migration (task 4.2/4.3).
+ * `score.toFixed(n)` call sites during the incremental migration.
  *
  * @param key Raw metric key.
  * @param value Raw metric value.

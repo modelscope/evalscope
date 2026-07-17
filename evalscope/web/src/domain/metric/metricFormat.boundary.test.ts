@@ -1,4 +1,4 @@
-// Feature: frontend-refactor-2026-07, Task 3.6: metricFormat boundary unit tests.
+// Feature: frontend-refactor-2026-07, metricFormat boundary unit tests.
 //
 // Example-based (non-property) coverage of the numeric edges that the property
 // tests assert only in aggregate:

@@ -1,7 +1,7 @@
-// Component tests for the Performance_View surfaces (Task 12.6).
+// Component tests for the Performance_View surfaces.
 //
 // These cover the display behaviour that lives in the migrated Performance
-// pages (task 12.5) rather than in the pure `providerResolution` /
+// pages rather than in the pure `providerResolution` /
 // `perfWorkload` domain logic (which have their own property tests):
 //   - Provider and Protocol render as two independent, individually-labelled
 //     fields and never collapse into one combined field;

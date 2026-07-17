@@ -1,4 +1,4 @@
-// Component and accessibility unit tests for the Field primitive (Task 5.8).
+// Component and accessibility unit tests for the Field primitive.
 //
 // Field is a control-agnostic form primitive: it renders a localized <label>
 // linked to the control supplied through a render prop, and reserves a live
