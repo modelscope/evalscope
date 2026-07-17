@@ -2,6 +2,30 @@ import type { ReactNode } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { PerfMetrics, PercentileStats } from '@/api/types'
 import { cn } from '@/lib/utils'
+import { formatMetric } from '@/domain/metric/metricFormat'
+import { DEFAULT_METRIC_SPEC } from '@/domain/metric/MetricDisplaySpec'
+
+/** Translate function contract shared with `formatMetric`. */
+type Translate = (key: string) => string
+
+/**
+ * Identity translate used for the percentile / token tables: their units are
+ * appended in JSX (or are unit-less), so no locale unit lookup is needed. The
+ * value still flows through the centralized `formatMetric` primitive so
+ * precision and round-half-up stay consistent with every other surface,
+ * eliminating direct domain `toFixed` calls.
+ */
+const RAW_TRANSLATE: Translate = (key: string) => key
+
+/**
+ * Format a raw performance value at a fixed precision through the shared
+ * `formatMetric` primitive (unbounded, no percentage conversion, round half up).
+ * This replaces scattered `value.toFixed(n)` calls with the single centralized
+ * formatting entry point.
+ */
+function fmtRaw(value: number | null | undefined, precision: number, t: Translate = RAW_TRANSLATE): string {
+  return formatMetric(value, { ...DEFAULT_METRIC_SPEC, rawPrecision: precision }, t).primary
+}
 
 interface PerfMetricsPanelProps {
   perfMetrics: PerfMetrics
@@ -24,7 +48,7 @@ interface PercTableProps {
 }
 
 function PercTable({ stats, unit, accentCol = 'var(--accent)', scale = 1 }: PercTableProps) {
-  const fmt = (v: number) => (v * scale).toFixed(scale === 1000 ? 1 : 3)
+  const fmt = (v: number | null) => fmtRaw(v === null ? null : v * scale, scale === 1000 ? 1 : 3)
 
   const cols: { label: string; key: keyof PercentileStats; accent?: boolean }[] = [
     { label: 'Mean', key: 'mean', accent: true },
@@ -62,7 +86,7 @@ function PercTable({ stats, unit, accentCol = 'var(--accent)', scale = 1 }: Perc
                 c.accent ? 'text-[var(--text)] font-medium' : 'text-[var(--text-muted)]',
               )}
             >
-              {fmt(stats[c.key] as number)}{unit}
+              {fmt(stats[c.key])}{stats[c.key] === null ? '' : unit}
             </td>
           ))}
         </tr>
@@ -160,22 +184,22 @@ function TokenTable({ usage, labels }: TokenTableProps) {
               {row.label}
             </td>
             <td className={cn(cellBase, 'text-[var(--text)] font-medium')}>
-              {row.stats.mean.toFixed(0)}
+              {fmtRaw(row.stats.mean, 0)}
             </td>
             <td className={cn(cellBase, 'text-[var(--text-muted)]')}>
-              {row.stats.std.toFixed(0)}
+              {fmtRaw(row.stats.std, 0)}
             </td>
             <td className={cn(cellBase, 'text-[var(--text-muted)]')}>
-              {row.stats['50%'].toFixed(0)}
+              {fmtRaw(row.stats['50%'], 0)}
             </td>
             <td className={cn(cellBase, 'text-[var(--text-muted)]')}>
-              {row.stats['99%'].toFixed(0)}
+              {fmtRaw(row.stats['99%'], 0)}
             </td>
             <td className={cn(cellBase, 'text-[var(--text-muted)]')}>
-              {row.stats.min.toFixed(0)}
+              {fmtRaw(row.stats.min, 0)}
             </td>
             <td className={cn(cellBase, 'text-[var(--text-muted)]')}>
-              {row.stats.max.toFixed(0)}
+              {fmtRaw(row.stats.max, 0)}
             </td>
             {hasCount && (
               <td className={cn(cellBase, 'text-[var(--text)] font-semibold')}>
@@ -197,14 +221,11 @@ function KpiStrip({
   items: { label: string; value: string; color: string }[]
 }) {
   return (
-    <div className="flex bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-sm)] overflow-hidden">
-      {items.map((item, i) => (
+    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-px bg-[var(--border)] border border-[var(--border)] rounded-[var(--radius-sm)] overflow-hidden">
+      {items.map((item) => (
         <div
           key={item.label}
-          className={cn(
-            'flex-1 px-3 py-2.5',
-            i < items.length - 1 && 'border-r border-[var(--border)]',
-          )}
+          className="min-w-0 bg-[var(--bg-card)] px-3 py-2.5"
         >
           <div
             className="text-lg font-semibold tabular-nums leading-tight"
@@ -212,7 +233,7 @@ function KpiStrip({
           >
             {item.value}
           </div>
-          <div className="text-[10px] text-[var(--text-muted)] mt-0.5 whitespace-nowrap">
+          <div className="text-[10px] text-[var(--text-muted)] mt-0.5 break-words">
             {item.label}
           </div>
         </div>
@@ -241,18 +262,18 @@ export default function PerfMetricsPanel({ perfMetrics }: PerfMetricsPanelProps)
     },
     {
       label: t('reportDetail.avgLatency'),
-      value: `${latency.mean.toFixed(3)}s`,
+      value: `${fmtRaw(latency.mean, 3, t)}s`,
       color: C_LATENCY,
     },
     ...(ttft
-      ? [{ label: t('reportDetail.ttft'), value: `${(ttft.mean * 1000).toFixed(0)}ms`, color: C_TTFT }]
+      ? [{ label: t('reportDetail.ttft'), value: `${fmtRaw(ttft.mean * 1000, 0, t)}ms`, color: C_TTFT }]
       : []),
     ...(tpot
-      ? [{ label: t('reportDetail.tpot'), value: `${(tpot.mean * 1000).toFixed(0)}ms`, color: C_TPOT }]
+      ? [{ label: t('reportDetail.tpot'), value: `${fmtRaw(tpot.mean * 1000, 0, t)}ms`, color: C_TPOT }]
       : []),
     {
       label: t('reportDetail.outputTps'),
-      value: `${throughput.avg_output_tps.toFixed(1)} tok/s`,
+      value: `${fmtRaw(throughput.avg_output_tps, 1, t)} tok/s`,
       color: 'var(--text)',
     },
     ...(usage.total_input_tokens !== undefined

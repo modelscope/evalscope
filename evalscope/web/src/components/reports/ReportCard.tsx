@@ -1,9 +1,11 @@
 import { ChevronRight } from 'lucide-react'
 import type { MouseEvent } from 'react'
 import { cn } from '@/lib/utils'
+import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportSummary } from '@/api/types'
 import { scoreColor } from '@/utils/colorScale'
+import { formatMetricByKey, getBoundedMetricRatio } from '@/domain/metric/registry'
 
 interface ReportCardProps {
   report: ReportSummary
@@ -17,39 +19,13 @@ function formatTimestamp(ts: string): string {
   return ts.replace('T', ' ').slice(0, 16)
 }
 
-function Checkbox({ checked }: { checked: boolean }) {
-  return (
-    <div
-      role="checkbox"
-      aria-checked={checked}
-      className="w-4.5 h-4.5 rounded-[var(--radius-xs)] border-2 flex items-center justify-center transition-all duration-150 shrink-0"
-      style={{
-        borderColor: checked ? 'var(--accent)' : 'var(--border-strong)',
-        background: checked ? 'var(--accent)' : 'transparent',
-      }}
-    >
-      {checked && (
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 12 12"
-          fill="none"
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="2,6 5,9 10,3" />
-        </svg>
-      )}
-    </div>
-  )
-}
-
 export default function ReportCard({ report, selected, onSelect, onClick }: ReportCardProps) {
   const { t } = useLocale()
 
   const formattedDate = report.timestamp ? formatTimestamp(report.timestamp) : ''
+  const metricName = report.metric_name ?? 'score'
+  const scoreValue = report.metric_name === '' ? null : report.score
+  const scoreRatio = getBoundedMetricRatio(metricName, scoreValue)
 
   const handleDetailClick = (e: MouseEvent) => {
     e.stopPropagation()
@@ -66,30 +42,26 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
           : 'border-[var(--border)] hover:border-[var(--border-md)]',
       )}
     >
-      {/* Checkbox — always visible; dimmed when unchecked, full opacity on hover or when checked */}
-      <div
+      <SelectionCheckbox
+        checked={selected}
+        label={`${t('reports.selectReport')}: ${report.model_name}`}
         onClick={(e) => {
           e.stopPropagation()
           onSelect(report.name)
         }}
-        className={cn(
-          'transition-opacity duration-150 cursor-pointer',
-          selected ? 'opacity-100' : 'opacity-30 group-hover:opacity-70',
-        )}
-      >
-        <Checkbox checked={selected} />
-      </div>
+      />
 
-      {/* Content — clicking navigates to detail */}
-      <div
-        className="flex-1 min-w-0 flex items-center gap-4 cursor-pointer"
+      {/* Content — clicking navigates to detail; selection stays on the checkbox. */}
+      <button
+        type="button"
+        className="flex-1 min-w-0 min-h-11 flex items-center gap-4 cursor-pointer text-left"
         onClick={() => onClick(report.name)}
       >
         {/* Model + Dataset */}
-        <div className="flex-1 min-w-0">
+        <span className="block flex-1 min-w-0">
           {/* Primary row: model name + timestamp for disambiguation */}
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="font-bold text-base text-[var(--text)] truncate">
+          <span className="flex items-baseline gap-2 flex-wrap">
+            <span className="font-bold text-base text-[var(--text)] break-words min-w-0">
               {report.model_name}
             </span>
             {formattedDate && (
@@ -97,33 +69,39 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
                 {formattedDate}
               </span>
             )}
-          </div>
+          </span>
           {/* Secondary row: dataset + sample count */}
-          <div className="flex items-center gap-3 mt-0.5">
-            <span className="text-sm text-[var(--text-muted)] truncate">
+          <span className="flex items-center gap-3 mt-0.5">
+            <span className="text-sm text-[var(--text-muted)] break-words min-w-0">
               {report.dataset_name}
             </span>
             <span className="text-xs text-[var(--text-muted)] shrink-0">
               {t('reports.samples')}: {report.num_samples}
             </span>
-          </div>
-        </div>
+            {/* Status — keeps card fields consistent with the desktop table. */}
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--success-bg)] text-[var(--success)] shrink-0">
+              {t('reports.status.completed')}
+            </span>
+          </span>
+        </span>
 
         {/* Score badge */}
         <span
           className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-mono font-semibold shrink-0"
-          style={{ backgroundColor: `${scoreColor(report.score)}20`, color: scoreColor(report.score) }}
+          style={scoreRatio == null
+            ? { backgroundColor: 'var(--accent-dim)', color: 'var(--text)' }
+            : { backgroundColor: `${scoreColor(scoreRatio)}20`, color: scoreColor(scoreRatio) }}
         >
-          {report.score.toFixed(4)}
+          {formatMetricByKey(metricName, scoreValue, t).primary}
         </span>
-      </div>
+      </button>
 
       {/* Chevron — dedicated detail navigation button */}
       <button
         type="button"
         aria-label="View report detail"
         onClick={handleDetailClick}
-        className="shrink-0 flex items-center justify-center rounded p-0.5 transition-colors cursor-pointer opacity-40 group-hover:opacity-100 hover:bg-[var(--bg-card2)]"
+        className="shrink-0 flex min-h-11 min-w-11 items-center justify-center rounded transition-colors cursor-pointer opacity-60 group-hover:opacity-100 hover:bg-[var(--bg-card2)]"
       >
         {/* text-dim allowed: detail-nav chevron icon (DESIGN.md §Text) */}
         <ChevronRight

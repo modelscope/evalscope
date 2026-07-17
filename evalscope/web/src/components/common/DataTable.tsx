@@ -1,5 +1,6 @@
 import { scoreBg } from '@/utils/colorScale'
-import { formatScore } from '@/utils/formatUtils'
+import { useLocale } from '@/contexts/LocaleContext'
+import { formatMetricByKey } from '@/domain/metric/registry'
 
 interface Props {
   columns: string[]
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function DataTable({ columns, data, scoreColumns = [] }: Props) {
+  const { t } = useLocale()
   if (!data.length) return null
   const scoreCols = new Set(scoreColumns.length ? scoreColumns : columns.filter((c) => c.toLowerCase().includes('score')))
 
@@ -35,7 +37,7 @@ export default function DataTable({ columns, data, scoreColumns = [] }: Props) {
                     className="px-3 py-1.5 whitespace-nowrap"
                     style={isScore ? { backgroundColor: scoreBg(val as number) } : undefined}
                   >
-                    {isScore ? formatScore(val as number) : String(val ?? '')}
+                    {isScore ? formatMetricByKey('score', val as number, t).primary : String(val ?? '')}
                   </td>
                 )
               })}

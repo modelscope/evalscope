@@ -1,0 +1,42 @@
+{
+  "path": "perf/test-model-a/20240101_000000",
+  "model": "test-model-a",
+  "api_type": "openai_api",
+  "dataset": "openqa",
+  "generated_at": "2024-01-01T00:00:00Z",
+  "basic_info": {
+    "Model": "test-model-a",
+    "API URL": "http://localhost:8000/v1/chat/completions",
+    "API Key": "sk-***REDACTED***",
+    "Provider": "Custom",
+    "Protocol": "OpenAI-compatible",
+    "Dataset": "openqa",
+    "Total requests": "100"
+  },
+  "summary_columns": [
+    "Metric",
+    "Value"
+  ],
+  "summary_rows": [
+    ["Concurrency", 10],
+    ["Number of requests", 100],
+    ["Success rate", 1.0],
+    ["Average latency (s)", 1.842],
+    ["Average TTFT (s)", 0.214],
+    ["Average TPOT (s)", 0.031],
+    ["Output throughput (tokens/s)", 512.0],
+    ["Request throughput (req/s)", 5.43]
+  ],
+  "best_config": {
+    "Concurrency": "10",
+    "Request rate": "closed-loop",
+    "Output throughput (tokens/s)": "512.00"
+  },
+  "recommendations": [
+    "Single run summary; no cross-run comparison is available for this record.",
+    "Increase concurrency to explore higher throughput configurations."
+  ],
+  "num_runs": 1,
+  "is_embedding": false,
+  "has_html": true
+}

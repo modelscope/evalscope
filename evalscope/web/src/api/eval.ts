@@ -1,34 +1,23 @@
-import { apiPost, api } from './client'
-import type { BenchmarksResponse, EvalInvokeResponse, LogResponse, ProgressResponse } from './types'
+import { apiValidated } from './client'
+import { benchmarksResponseSchema } from './schemas'
+import type { BenchmarksResponse } from './types'
+import { createTaskApi } from './task'
 
-export async function submitEvalTask(
-  payload: Record<string, unknown>,
-  taskId: string,
-): Promise<EvalInvokeResponse> {
-  return apiPost<EvalInvokeResponse>('/api/v1/eval/invoke', payload, { 'EvalScope-Task-Id': taskId })
-}
+const evalTaskApi = createTaskApi('eval')
 
-export async function getEvalProgress(taskId: string): Promise<ProgressResponse> {
-  return api<ProgressResponse>('/api/v1/eval/progress', { task_id: taskId })
-}
+export const submitEvalTask = evalTaskApi.submit
+export const getEvalProgress = evalTaskApi.progress
+export const getEvalLog = evalTaskApi.log
+export const getEvalReportUrl = evalTaskApi.reportUrl
+export const stopEvalTask = evalTaskApi.stop
 
-export async function getEvalLog(taskId: string, startLine?: number, page = 500): Promise<LogResponse> {
-  const params: Record<string, string> = { task_id: taskId, page: String(page) }
-  if (startLine !== undefined) params.start_line = String(startLine)
-  return api<LogResponse>('/api/v1/eval/log', params)
-}
-
-export function getEvalReportUrl(taskId: string): string {
-  return `/api/v1/eval/report?task_id=${encodeURIComponent(taskId)}`
-}
-
-export async function stopEvalTask(taskId: string): Promise<{ status: string; task_id: string }> {
-  return apiPost<{ status: string; task_id: string }>(`/api/v1/eval/stop?task_id=${encodeURIComponent(taskId)}`, {})
-}
-
-export async function listBenchmarks(type?: 'text' | 'multimodal', all?: boolean): Promise<BenchmarksResponse> {
+export async function listBenchmarks(
+  type?: 'text' | 'multimodal',
+  all?: boolean,
+  signal?: AbortSignal,
+): Promise<BenchmarksResponse> {
   const params: Record<string, string> = {}
   if (type) params.type = type
   if (all) params.all = 'true'
-  return api<BenchmarksResponse>('/api/v1/eval/benchmarks', params)
+  return apiValidated('/api/v1/eval/benchmarks', benchmarksResponseSchema, { params, signal })
 }

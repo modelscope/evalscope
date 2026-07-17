@@ -16,6 +16,7 @@ import { type Role } from './roleConfig'
 import { MessageRow, SystemPromptRow, HeaderPerfChip } from './MessageComponents'
 import { type ToolCallEntry, ToolCallsGroup } from './ToolCallComponents'
 import { bubbleAccent } from '@/components/ui/ChatBubble'
+import VirtualList from '@/components/common/VirtualList'
 
 /* ─── EnvExecRow ───────────────────────────────────────────── */
 
@@ -80,32 +81,25 @@ export function StructuredMessages({
     if (m.role === 'tool' && m.tool_call_id) byToolCallId.set(m.tool_call_id, m)
   }
 
-  const rendered: React.ReactNode[] = []
+  // Each entry pairs a stable key with its rendered node so the list can be
+  // windowed by VirtualList (only visible rows mount) for long traces.
+  const rendered: { key: string; node: React.ReactNode }[] = []
   const consumedToolIds = new Set<string>()
 
   messages.forEach((msg, idx) => {
     if (msg.role === 'system') {
-      rendered.push(
-        <SystemPromptRow
-          key={idx}
-          content={msg.content}
-          msgId={msg.id}
-          highlightId={highlightId}
-        />
-      )
+      rendered.push({
+        key: `system-${idx}`,
+        node: <SystemPromptRow content={msg.content} msgId={msg.id} highlightId={highlightId} />,
+      })
       return
     }
 
     if (msg.role === 'user') {
-      rendered.push(
-        <MessageRow
-          key={idx}
-          role="user"
-          content={msg.content}
-          msgId={msg.id}
-          highlightId={highlightId}
-        />
-      )
+      rendered.push({
+        key: `user-${idx}`,
+        node: <MessageRow role="user" content={msg.content} msgId={msg.id} highlightId={highlightId} />,
+      })
       return
     }
 
@@ -133,41 +127,55 @@ export function StructuredMessages({
         }
       })
 
-      rendered.push(
-        <MessageRow
-          key={idx}
-          role="assistant"
-          content={msg.content}
-          msgId={msg.id}
-          model={msg.model}
-          highlightId={highlightId}
-          headerExtra={headerPerf}
-        >
-          {entries.length > 0 && <ToolCallsGroup calls={entries} />}
-        </MessageRow>
-      )
+      rendered.push({
+        key: `assistant-${idx}`,
+        node: (
+          <MessageRow
+            role="assistant"
+            content={msg.content}
+            msgId={msg.id}
+            model={msg.model}
+            highlightId={highlightId}
+            headerExtra={headerPerf}
+          >
+            {entries.length > 0 && <ToolCallsGroup calls={entries} />}
+          </MessageRow>
+        ),
+      })
       return
     }
 
     if (msg.role === 'tool') {
       // Skip tool messages already consumed by a ToolCallsGroup above
       if (msg.id && consumedToolIds.has(msg.id)) return
-      rendered.push(
-        <MessageRow
-          key={idx}
-          role="tool"
-          content={msg.content}
-          msgId={msg.id}
-          highlightId={highlightId}
-          toolError={msg.error ?? null}
-          toolFunction={msg.function}
-        />
-      )
+      rendered.push({
+        key: `tool-${idx}`,
+        node: (
+          <MessageRow
+            role="tool"
+            content={msg.content}
+            msgId={msg.id}
+            highlightId={highlightId}
+            toolError={msg.error ?? null}
+            toolFunction={msg.function}
+          />
+        ),
+      })
       return
     }
   })
 
-  return <>{rendered}</>
+  // Windowed rendering: short lists render in normal flow (gap-2 == 8px),
+  // long lists mount only the visible rows.
+  return (
+    <VirtualList
+      items={rendered}
+      getKey={(r) => r.key}
+      renderItem={(r) => r.node}
+      gap={8}
+      estimateHeight={140}
+    />
+  )
 }
 
 /* ─── StepGroup / buildStepGroups ─────────────────────────── */
@@ -605,19 +613,23 @@ export function TracedTimeline({
           ctx={ctx}
         />
       )}
-      {agentGroups.map((g) => {
-        const isActive = highlightStep === g.step
-        return (
+      {/* Windowed step list: short traces render in normal flow (gap 0.6rem),
+          long traces mount only the visible step blocks. */}
+      <VirtualList
+        items={agentGroups}
+        getKey={(g) => g.step}
+        renderItem={(g) => (
           <StepBlock
-            key={g.step}
             group={g}
             highlightId={highlightId}
-            highlighted={isActive}
+            highlighted={highlightStep === g.step}
             onStepClick={onStepClick}
             ctx={ctx}
           />
-        )
-      })}
+        )}
+        gap={9.6}
+        estimateHeight={220}
+      />
     </div>
   )
 }

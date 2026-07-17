@@ -6,9 +6,8 @@ import type { BenchmarkEntry } from '@/api/types'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import SearchInput from '@/components/ui/SearchInput'
-import Tabs from '@/components/ui/Tabs'
 import Badge from '@/components/ui/Badge'
-import Button from '@/components/ui/Button'
+import Pagination from '@/components/ui/Pagination'
 import { BookOpen, X, Database, Layers, FlaskConical, Tag, ExternalLink } from 'lucide-react'
 
 type TabKey = 'all' | 'text' | 'multimodal' | 'agent' | 'aigc'
@@ -64,12 +63,12 @@ export default function BenchmarksPage() {
   })
 
   useEffect(() => {
-    let cancelled = false
+    const controller = new AbortController()
     const load = async () => {
       setLoading(true)
       try {
-        const res = await listBenchmarks(undefined, true)
-        if (cancelled) return
+        const res = await listBenchmarks(undefined, true, controller.signal)
+        if (controller.signal.aborted) return
         const textList = (res.text ?? []).map((e) => normalize(e, 'llm'))
         const mmList = (res.multimodal ?? []).map((e) => normalize(e, 'vlm'))
         const agentList = (res.agent ?? []).map((e) => normalize(e, 'agent'))
@@ -78,11 +77,11 @@ export default function BenchmarksPage() {
       } catch {
         /* ignore */
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!controller.signal.aborted) setLoading(false)
       }
     }
     load()
-    return () => { cancelled = true }
+    return () => controller.abort()
   }, [])
 
   // Debounce search
@@ -195,7 +194,27 @@ export default function BenchmarksPage() {
       {/* Controls row */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <Tabs tabs={tabItems} activeKey={tab} onChange={(k) => { setTab(k as TabKey); setPage(1) }} />
+          <div
+            role="toolbar"
+            aria-label={t('benchmarks.title')}
+            className="inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-deep)] p-1"
+          >
+            {tabItems.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                aria-pressed={tab === item.key}
+                onClick={() => { setTab(item.key as TabKey); setPage(1) }}
+                className={`min-h-11 shrink-0 rounded-[var(--radius-sm)] px-4 text-sm font-medium transition-all duration-[var(--transition)] ${
+                  tab === item.key
+                    ? 'bg-[var(--accent)] text-[var(--text-on-filled)] shadow-[var(--shadow-glow-soft)]'
+                    : 'bg-[var(--bg-card)] text-[var(--text-muted)] hover:bg-[var(--bg-card2)] hover:text-[var(--text)]'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
           <SearchInput
             value={search}
             onChange={(v) => { setSearch(v); setPage(1) }}
@@ -333,41 +352,7 @@ export default function BenchmarksPage() {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-2">
-          <Button variant="ghost" size="sm" disabled={safePage <= 1} onClick={() => setPage(Math.max(1, safePage - 1))}>
-            ←
-          </Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
-            .reduce<(number | 'ellipsis')[]>((acc, p, idx, arr) => {
-              if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('ellipsis')
-              acc.push(p)
-              return acc
-            }, [])
-            .map((item, idx) =>
-              item === 'ellipsis' ? (
-                // text-dim allowed: decorative pagination ellipsis (DESIGN.md §Text)
-                <span key={`e${idx}`} className="px-1 text-[var(--text-dim)]">
-                  ...
-                </span>
-              ) : (
-                <Button
-                  key={item}
-                  variant={item === safePage ? 'primary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setPage(item as number)}
-                  className="!min-w-[32px]"
-                >
-                  {item}
-                </Button>
-              ),
-            )}
-          <Button variant="ghost" size="sm" disabled={safePage >= totalPages} onClick={() => setPage(Math.min(totalPages, safePage + 1))}>
-            →
-          </Button>
-        </div>
-      )}
+      <Pagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
 
       {/* Detail modal */}
       {selectedEntry != null && createPortal(

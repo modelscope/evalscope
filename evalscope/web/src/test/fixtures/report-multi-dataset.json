@@ -1,0 +1,81 @@
+{
+  "report_list": [
+    {
+      "name": "test-model-a_gsm8k",
+      "dataset_name": "gsm8k",
+      "model_name": "test-model-a",
+      "score": 0.92,
+      "analysis": "Multi-dataset report entry: gsm8k with a bounded ratio accuracy metric.",
+      "metrics": [
+        {
+          "name": "AverageAccuracy",
+          "num": 200,
+          "score": 0.92,
+          "categories": [
+            {
+              "name": ["default"],
+              "num": 200,
+              "score": 0.92,
+              "subsets": [{ "name": "main", "score": 0.92, "num": 200 }]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "test-model-a_arc_challenge",
+      "dataset_name": "arc_challenge",
+      "model_name": "test-model-a",
+      "score": 81.5,
+      "analysis": "Multi-dataset report entry: arc_challenge with a bounded percentage metric (0-100).",
+      "metrics": [
+        {
+          "name": "WeightedScorePercent",
+          "num": 150,
+          "score": 81.5,
+          "categories": [
+            {
+              "name": ["reasoning"],
+              "num": 150,
+              "score": 81.5,
+              "subsets": [
+                { "name": "easy", "score": 88.0, "num": 90 },
+                { "name": "challenge", "score": 71.667, "num": 60 }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "test-model-a_throughput_suite",
+      "dataset_name": "throughput_suite",
+      "model_name": "test-model-a",
+      "score": 512.0,
+      "analysis": "Multi-dataset report entry: throughput_suite with an unbounded tokens-per-second metric.",
+      "metrics": [
+        {
+          "name": "AverageOutputTps",
+          "num": 100,
+          "score": 512.0,
+          "categories": [
+            {
+              "name": ["default"],
+              "num": 100,
+              "score": 512.0,
+              "subsets": [{ "name": "main", "score": 512.0, "num": 100 }]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "datasets": ["gsm8k", "arc_challenge", "throughput_suite"],
+  "task_config": {
+    "model": "test-model-a",
+    "api_url": "http://localhost:8000/v1",
+    "api_key": "sk-***REDACTED***",
+    "datasets": ["gsm8k", "arc_challenge", "throughput_suite"],
+    "eval_type": "openai_api"
+  }
+}

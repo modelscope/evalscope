@@ -4,6 +4,7 @@ import { getAnalysis, getDataFrame } from '@/api/reports'
 import Card from '@/components/ui/Card'
 import Table from '@/components/ui/Table'
 import { scoreColor } from '@/utils/colorScale'
+import { formatMetricByKey, getBoundedMetricRatio } from '@/domain/metric/registry'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import Skeleton from '@/components/ui/Skeleton'
 import PerfMetricsPanel from '@/components/reports/PerfMetricsPanel'
@@ -13,12 +14,13 @@ interface Props {
   reportName: string
   datasetName: string
   rootPath: string
-  perfMetrics?: PerfMetrics
+  perfMetrics?: PerfMetrics | null
   onSubsetClick?: (subset: string) => void
   overallScore?: number
+  metricName?: string
 }
 
-export default function DetailsTab({ reportName, datasetName, rootPath, perfMetrics, onSubsetClick, overallScore }: Props) {
+export default function DetailsTab({ reportName, datasetName, rootPath, perfMetrics, onSubsetClick, overallScore, metricName = 'score' }: Props) {
   const { t } = useLocale()
   const [analysis, setAnalysis] = useState('')
   const [analysisLoading, setAnalysisLoading] = useState(false)
@@ -29,24 +31,24 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
 
   useEffect(() => {
     if (!datasetName || !reportName) return
-    let cancelled = false
+    const controller = new AbortController()
 
     const load = async () => {
       setAnalysisLoading(true)
       try {
         const [analysisText, dfRes] = await Promise.all([
-          getAnalysis(rootPath, reportName, datasetName).catch(() => ''),
-          getDataFrame(rootPath, reportName, 'dataset', datasetName).catch(() => ({ columns: [], data: [] })),
+          getAnalysis(rootPath, reportName, datasetName, controller.signal).catch(() => ''),
+          getDataFrame(rootPath, reportName, 'dataset', datasetName, controller.signal).catch(() => ({ columns: [], data: [] })),
         ])
-        if (cancelled) return
+        if (controller.signal.aborted) return
         setAnalysis(analysisText)
         setSubsetData({ columns: dfRes.columns, data: dfRes.data })
       } finally {
-        if (!cancelled) setAnalysisLoading(false)
+        if (!controller.signal.aborted) setAnalysisLoading(false)
       }
     }
     load()
-    return () => { cancelled = true }
+    return () => controller.abort()
   }, [datasetName, reportName, rootPath])
 
   // Detect whether data has Metric column
@@ -87,21 +89,21 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
       sortable: true,
       render: (row: Record<string, unknown>) => {
         const score = Number(row.Score ?? 0)
-        const norm = score > 1 ? score / 100 : score
+        const rowMetricName = String(row.Metric ?? metricName)
+        const ratio = getBoundedMetricRatio(rowMetricName, score)
         // Inline score bar
         return (
           <div className="flex items-center gap-2">
-            <div className="h-1.5 w-[60px] min-w-[60px] rounded-full bg-[var(--border)] overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-300"
-                style={{
-                  width: `${Math.min(100, norm * 100)}%`,
-                  background: scoreColor(norm),
-                }}
-              />
-            </div>
-            <span className="font-mono font-medium tabular-nums" style={{ color: scoreColor(norm) }}>
-              {score.toFixed(4)}
+            {ratio != null && (
+              <div className="h-1.5 w-[60px] min-w-[60px] rounded-full bg-[var(--border)] overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{ width: `${ratio * 100}%`, background: scoreColor(ratio) }}
+                />
+              </div>
+            )}
+            <span className="font-mono font-medium tabular-nums" style={{ color: ratio == null ? 'var(--text)' : scoreColor(ratio) }}>
+              {formatMetricByKey(rowMetricName, score, t).primary}
             </span>
           </div>
         )
@@ -117,12 +119,12 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
     },
   ]
 
-  const normOverall = overallScore != null ? (overallScore > 1 ? overallScore / 100 : overallScore) : null
+  const normOverall = getBoundedMetricRatio(metricName, overallScore)
 
   return (
     <div className="flex flex-col gap-6">
       {/* Overall Score Stat */}
-      {normOverall != null && (
+      {overallScore != null && (
         <div className="flex items-center gap-3 p-4 rounded-[var(--radius)] bg-[var(--bg-card2)] border border-[var(--border)]">
           <div className="flex flex-col gap-0.5">
             <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
@@ -130,23 +132,24 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
             </span>
             <span
               className="text-3xl font-bold font-mono tabular-nums"
-              style={{ color: scoreColor(normOverall) }}
+              style={{ color: normOverall == null ? 'var(--text)' : scoreColor(normOverall) }}
             >
-              {(normOverall * 100).toFixed(2)}
+              {formatMetricByKey(metricName, overallScore, t).primary}
             </span>
           </div>
-          {/* mini progress ring — 6px stroke (DESIGN.md `{components.score-ring}`) */}
-          <svg width="48" height="48" viewBox="0 0 48 48" style={{ transform: 'rotate(-90deg)' }}>
-            <circle cx="24" cy="24" r="19" fill="none" stroke="var(--border)" strokeWidth="6" />
-            <circle
-              cx="24" cy="24" r="19" fill="none"
-              stroke={scoreColor(normOverall)}
-              strokeWidth="6"
-              strokeDasharray={`${2 * Math.PI * 19}`}
-              strokeDashoffset={`${2 * Math.PI * 19 * (1 - normOverall)}`}
-              strokeLinecap="round"
-            />
-          </svg>
+          {normOverall != null && (
+            <svg width="48" height="48" viewBox="0 0 48 48" style={{ transform: 'rotate(-90deg)' }}>
+              <circle cx="24" cy="24" r="19" fill="none" stroke="var(--border)" strokeWidth="6" />
+              <circle
+                cx="24" cy="24" r="19" fill="none"
+                stroke={scoreColor(normOverall)}
+                strokeWidth="6"
+                strokeDasharray={`${2 * Math.PI * 19}`}
+                strokeDashoffset={`${2 * Math.PI * 19 * (1 - normOverall)}`}
+                strokeLinecap="round"
+              />
+            </svg>
+          )}
         </div>
       )}
 
@@ -168,8 +171,7 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
         ) : analysis && analysis !== 'N/A' ? (
           <MarkdownRenderer content={analysis} />
         ) : (
-          // text-dim allowed: non-essential ≥14px metadata (DESIGN.md §Text)
-          <p className="text-sm text-[var(--text-dim)]">{t('common.noData')}</p>
+          <p className="text-sm text-[var(--text-muted)]">{t('common.noData')}</p>
         )}
       </Card>
 

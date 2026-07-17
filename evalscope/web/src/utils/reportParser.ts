@@ -15,11 +15,6 @@ export function parseReportName(name: string): { prefix: string; model: string; 
   return { prefix, model, datasets }
 }
 
-/** Extract just the model name portion of a report identifier. */
-export function modelFromReport(name: string): string {
-  return parseReportName(name).model
-}
-
 /**
  * Generate a display name that is unique among a list of report names.
  * If multiple reports share the same model name, append the timestamp prefix to distinguish them.

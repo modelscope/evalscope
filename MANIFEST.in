@@ -4,16 +4,23 @@ include README.md
 recursive-include evalscope *
 
 # Exclude cache/compiled artifacts
-global-exclude *.py[cod] __pycache__ *.so *.dylib
+global-exclude *.py[cod] __pycache__ *.so *.dylib .DS_Store
 
 # Exclude large data files
 global-exclude *.h5 *.hdf5 *.parquet *.bin *.safetensors *.gguf *.pth *.pt
 
 # Exclude frontend dev files (only dist/ is needed at runtime)
+prune evalscope/web/coverage
 prune evalscope/web/node_modules
+prune evalscope/web/public
+prune evalscope/web/scripts
 prune evalscope/web/src
+exclude evalscope/web/.gitignore
+exclude evalscope/web/README.md
+exclude evalscope/web/index.html
 exclude evalscope/web/package.json
 exclude evalscope/web/package-lock.json
 exclude evalscope/web/tsconfig*.json
 exclude evalscope/web/vite.config.ts
+exclude evalscope/web/vitest.config.ts
 exclude evalscope/web/eslint.config.js

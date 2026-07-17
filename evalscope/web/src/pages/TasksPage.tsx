@@ -15,14 +15,21 @@ export default function TasksPage() {
   const tab = get('tab') === 'perf' ? 'perf' : 'eval'
 
   const tabs = [
-    { key: 'eval', label: t('tasks.evalTab') },
-    { key: 'perf', label: t('tasks.perfTab') },
+    { key: 'eval', label: t('tasks.evalTab'), panelId: 'tasks-eval-panel' },
+    { key: 'perf', label: t('tasks.perfTab'), panelId: 'tasks-perf-panel' },
   ]
 
   return (
     <div className="page-enter flex flex-col gap-4">
-      <Tabs tabs={tabs} activeKey={tab} onChange={(k) => set('tab', k)} />
-      {tab === 'perf' ? <PerfTaskPage /> : <EvalTaskPage />}
+      <Tabs
+        tabs={tabs}
+        activeKey={tab}
+        onChange={(k) => set('tab', k)}
+        panels={{
+          'tasks-eval-panel': <EvalTaskPage />,
+          'tasks-perf-panel': <PerfTaskPage />,
+        }}
+      />
     </div>
   )
 }

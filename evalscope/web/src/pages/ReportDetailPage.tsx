@@ -1,16 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useLocale } from '@/contexts/LocaleContext'
 import { loadReport as apiLoadReport, getHtmlReportUrl } from '@/api/reports'
+import { isDomainError } from '@/api/errors'
 import type { LoadReportResponse, ReportData } from '@/api/types'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Tabs from '@/components/ui/Tabs'
 import Skeleton from '@/components/ui/Skeleton'
+import ErrorAlert from '@/components/ui/ErrorAlert'
 import ReportHeader from '@/components/reports/ReportHeader'
 import DatasetNav from '@/components/reports/DatasetNav'
 import OverviewTab from '@/components/reports/OverviewTab'
 import DetailsTab from '@/components/reports/DetailsTab'
 import PredictionsTab from '@/components/reports/PredictionsTab'
+import { resolveMetricKey } from '@/domain/metric/registry'
 
 type TabKey = 'overview' | 'details' | 'predictions'
 
@@ -38,28 +41,31 @@ export default function ReportDetailPage() {
   const [activeDataset, setActiveDataset] = useState('')
   const [initialSubset, setInitialSubset] = useState<string | undefined>(undefined)
 
-  // Load report on mount
+  // Load report when the detail inputs change. A change aborts the previous
+  // request and drops its late/aborted response so only the newest
+  // request updates the view.
   useEffect(() => {
     if (!reportName) return
-    let cancelled = false
+    const controller = new AbortController()
     const load = async () => {
       setLoading(true)
       setError('')
       try {
-        const res = await apiLoadReport(rootPath, reportName)
-        if (cancelled) return
+        const res = await apiLoadReport(rootPath, reportName, controller.signal)
+        if (controller.signal.aborted) return
         setData(res)
         if (res.datasets.length > 0) {
           setActiveDataset(res.datasets[0])
         }
       } catch (err) {
-        if (!cancelled) setError(String(err))
+        if (controller.signal.aborted || (isDomainError(err) && err.kind === 'aborted')) return
+        setError(String(err))
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!controller.signal.aborted) setLoading(false)
       }
     }
     load()
-    return () => { cancelled = true }
+    return () => controller.abort()
   }, [rootPath, reportName])
 
   const reportList = useMemo<ReportData[]>(() => data?.report_list ?? [], [data])
@@ -67,9 +73,18 @@ export default function ReportDetailPage() {
   // Derive overall info from report list
   const modelName = reportList[0]?.model_name ?? reportName
   const primaryDataset = reportList[0]?.dataset_name ?? ''
-  const overallScore = reportList.length > 0
-    ? reportList.reduce((s, r) => s + r.score, 0) / reportList.length
-    : 0
+  const overallMetric = useMemo(() => {
+    if (reportList.length === 0) return { score: null, metricName: '' }
+    const metricNames = reportList.map((report) => report.metrics[0]?.name ?? 'score')
+    const firstKey = resolveMetricKey(metricNames[0])
+    if (!metricNames.every((name) => resolveMetricKey(name) === firstKey)) {
+      return { score: null, metricName: '' }
+    }
+    return {
+      score: reportList.reduce((sum, report) => sum + report.score, 0) / reportList.length,
+      metricName: metricNames[0],
+    }
+  }, [reportList])
   const totalSamples = reportList.reduce((sum, r) => {
     return sum + (r.metrics[0]?.categories?.reduce((s, c) => s + c.num, 0) ?? 0)
   }, 0)
@@ -93,12 +108,41 @@ export default function ReportDetailPage() {
   }
 
   const tabs = [
-    { key: 'overview', label: t('reportDetail.overview') },
-    { key: 'details', label: t('reportDetail.details') },
-    { key: 'predictions', label: t('reportDetail.predictions') },
+    { key: 'overview', label: t('reportDetail.overview'), panelId: 'report-overview-panel' },
+    { key: 'details', label: t('reportDetail.details'), panelId: 'report-details-panel' },
+    { key: 'predictions', label: t('reportDetail.predictions'), panelId: 'report-predictions-panel' },
   ]
 
-  if (loading) {
+  const renderDatasetPanel = (content: ReactNode) => (
+    <div className="flex flex-col md:flex-row gap-0 rounded-b-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
+      {datasets.length > 0 && (
+        <>
+          <div className="md:hidden flex items-center gap-1 px-4 py-2 border-b border-[var(--border)] overflow-x-auto">
+            {datasets.map((ds) => (
+              <button
+                key={ds}
+                type="button"
+                onClick={() => handleDatasetChange(ds)}
+                className={`min-h-11 whitespace-nowrap px-3 py-1.5 text-xs rounded-full transition-all duration-150 ${
+                  ds === activeDataset
+                    ? 'bg-[var(--accent-dim)] text-[var(--accent)] font-medium'
+                    : 'text-[var(--text-muted)] hover:bg-[var(--bg-card2)]'
+                }`}
+              >
+                {ds}
+              </button>
+            ))}
+          </div>
+          <div className="hidden md:block">
+            <DatasetNav datasets={datasets} active={activeDataset} onChange={handleDatasetChange} />
+          </div>
+        </>
+      )}
+      <div className="flex-1 min-w-0 p-5">{content}</div>
+    </div>
+  )
+
+  if (loading && !data) {
     return (
       <div className="page-enter p-6 flex flex-col gap-4">
         <Skeleton width={300} height={20} />
@@ -108,7 +152,7 @@ export default function ReportDetailPage() {
     )
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="page-enter p-6">
         <Breadcrumb
@@ -117,9 +161,9 @@ export default function ReportDetailPage() {
             { label: breadcrumbLabel || 'Detail' },
           ]}
         />
-        <div className="mt-6 p-6 rounded-[var(--radius)] border border-[var(--danger)] bg-[var(--danger-bg)] text-[var(--danger)]">
+        <ErrorAlert className="mt-6 p-6 border-[var(--danger)]">
           <p className="text-sm">Failed to load report: {error}</p>
-        </div>
+        </ErrorAlert>
       </div>
     )
   }
@@ -134,90 +178,62 @@ export default function ReportDetailPage() {
         ]}
       />
 
+      {error && (
+        <ErrorAlert>{error}</ErrorAlert>
+      )}
+
       {/* Report Header */}
       <ReportHeader
         modelName={modelName}
         datasetName={primaryDataset}
         datasets={datasets}
-        score={overallScore}
+        score={overallMetric.score}
+        metricName={overallMetric.metricName}
         totalSamples={totalSamples}
         htmlReportUrl={htmlReportUrl}
         onDatasetClick={handleDatasetChange}
       />
 
-      {/* Tabs bar */}
-      <div className="rounded-t-[var(--radius)] border border-b-0 border-[var(--border)] bg-[var(--bg-card)] px-5 pt-4 pb-2">
-        <Tabs tabs={tabs} activeKey={activeTab} onChange={(k) => setActiveTab(k as TabKey)} />
-      </div>
-
-      {/* Tab content */}
-      {activeTab === 'overview' ? (
-        <div className="rounded-b-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-5">
-          <OverviewTab
-            reports={reportList}
-            reportName={reportName}
-            rootPath={rootPath}
-            taskConfig={data?.task_config}
-            onDatasetClick={handleDatasetChange}
-          />
-        </div>
-      ) : (
-        <div className="flex flex-col md:flex-row gap-0 rounded-b-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
-          {/* Dataset nav - horizontal scroll on mobile, vertical sidebar on desktop */}
-          {datasets.length > 0 && (
-            <>
-              {/* Mobile horizontal dataset nav */}
-              <div className="md:hidden flex items-center gap-1 px-4 py-2 border-b border-[var(--border)] overflow-x-auto">
-                {datasets.map((ds) => (
-                  <button
-                    key={ds}
-                    onClick={() => handleDatasetChange(ds)}
-                    className={`whitespace-nowrap px-3 py-1.5 text-xs rounded-full transition-all duration-150 ${
-                      ds === activeDataset
-                        ? 'bg-[var(--accent-dim)] text-[var(--accent)] font-medium'
-                        : 'text-[var(--text-muted)] hover:bg-[var(--bg-card2)]'
-                    }`}
-                  >
-                    {ds}
-                  </button>
-                ))}
-              </div>
-              {/* Desktop vertical dataset nav */}
-              <div className="hidden md:block">
-                <DatasetNav
-                  datasets={datasets}
-                  active={activeDataset}
-                  onChange={handleDatasetChange}
-                />
-              </div>
-            </>
-          )}
-
-          {/* Right content area */}
-          <div className="flex-1 min-w-0 p-5">
-            {activeTab === 'details' && (
-              <DetailsTab
-                key={activeDataset}
+      <Tabs
+        tabs={tabs}
+        activeKey={activeTab}
+        onChange={(k) => setActiveTab(k as TabKey)}
+        className="w-full justify-start rounded-b-none border-b-0 bg-[var(--bg-card)] px-5 pt-4 pb-2"
+        panels={{
+          'report-overview-panel': (
+            <div className="rounded-b-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-5">
+              <OverviewTab
+                reports={reportList}
                 reportName={reportName}
-                datasetName={activeDataset}
                 rootPath={rootPath}
-                perfMetrics={reportList.find((r) => r.dataset_name === activeDataset)?.perf_metrics}
-                overallScore={reportList.find((r) => r.dataset_name === activeDataset)?.score}
-                onSubsetClick={handleSubsetClick}
+                taskConfig={data?.task_config}
+                onDatasetClick={handleDatasetChange}
               />
-            )}
-            {activeTab === 'predictions' && (
-              <PredictionsTab
-                key={`${activeDataset}-${initialSubset ?? ''}`}
-                reportName={reportName}
-                datasetName={activeDataset}
-                rootPath={rootPath}
-                initialSubset={initialSubset}
-              />
-            )}
-          </div>
-        </div>
-      )}
+            </div>
+          ),
+          'report-details-panel': renderDatasetPanel(
+            <DetailsTab
+              key={activeDataset}
+              reportName={reportName}
+              datasetName={activeDataset}
+              rootPath={rootPath}
+              perfMetrics={reportList.find((r) => r.dataset_name === activeDataset)?.perf_metrics}
+              overallScore={reportList.find((r) => r.dataset_name === activeDataset)?.score}
+              metricName={reportList.find((r) => r.dataset_name === activeDataset)?.metrics[0]?.name}
+              onSubsetClick={handleSubsetClick}
+            />,
+          ),
+          'report-predictions-panel': renderDatasetPanel(
+            <PredictionsTab
+              key={`${activeDataset}-${initialSubset ?? ''}`}
+              reportName={reportName}
+              datasetName={activeDataset}
+              rootPath={rootPath}
+              initialSubset={initialSubset}
+            />,
+          ),
+        }}
+      />
     </div>
   )
 }

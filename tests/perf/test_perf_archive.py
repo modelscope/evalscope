@@ -34,6 +34,7 @@ def _make_run(run_dir: str, *, with_html: bool) -> None:
             'model': 'my-model',
             'api': 'openai',
             'dataset': 'openqa',
+            'url': 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
         }
     )
     if with_html:
@@ -99,6 +100,9 @@ class TestPerfArchive(unittest.TestCase):
         self.assertIn(self.cli_rel, paths)
         self.assertIn(self.svc_rel, paths)
         self.assertEqual(body['total'], 2)
+        cli_run = next(run for run in body['runs'] if run['path'] == self.cli_rel)
+        self.assertEqual(cli_run['api_host'], 'dashscope.aliyuncs.com')
+        self.assertEqual(cli_run['concurrency'], [1])
 
     def test_detail_returns_summary_fields(self):
         res = self.client.get('/api/v1/perf/detail', query_string={'root_path': self.tmp, 'path': self.cli_rel})
@@ -108,6 +112,7 @@ class TestPerfArchive(unittest.TestCase):
         self.assertIn('summary_columns', body)
         self.assertIn('summary_rows', body)
         self.assertEqual(body['num_runs'], 1)
+        self.assertEqual(body['basic_info']['API Host'], 'dashscope.aliyuncs.com')
 
     def test_history_report_serves_existing_html(self):
         res = self.client.get('/api/v1/perf/history/report', query_string={'root_path': self.tmp, 'path': self.cli_rel})

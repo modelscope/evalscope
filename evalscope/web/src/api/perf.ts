@@ -1,53 +1,57 @@
-import { apiPost, api } from './client'
+import { apiValidated } from './client'
+import {
+  listPerfRunsResponseSchema,
+  perfDetailResponseSchema,
+  perfRequestsResponseSchema,
+  perfRunsListResponseSchema,
+} from './schemas'
 import type {
-  EvalInvokeResponse,
   ListPerfRunsResponse,
-  LogResponse,
   PerfDetailResponse,
   PerfRequestsResponse,
   PerfRunsListResponse,
-  ProgressResponse,
 } from './types'
+import { createTaskApi } from './task'
 
-export async function submitPerfTask(
-  payload: Record<string, unknown>,
-  taskId: string,
-): Promise<EvalInvokeResponse> {
-  return apiPost<EvalInvokeResponse>('/api/v1/perf/invoke', payload, { 'EvalScope-Task-Id': taskId })
-}
+const perfTaskApi = createTaskApi('perf')
 
-export async function getPerfProgress(taskId: string): Promise<ProgressResponse> {
-  return api<ProgressResponse>('/api/v1/perf/progress', { task_id: taskId })
-}
-
-export async function getPerfLog(taskId: string, startLine?: number, page = 500): Promise<LogResponse> {
-  const params: Record<string, string> = { task_id: taskId, page: String(page) }
-  if (startLine !== undefined) params.start_line = String(startLine)
-  return api<LogResponse>('/api/v1/perf/log', params)
-}
-
-export function getPerfReportUrl(taskId: string): string {
-  return `/api/v1/perf/report?task_id=${encodeURIComponent(taskId)}`
-}
-
-export async function stopPerfTask(taskId: string): Promise<{ status: string; task_id: string }> {
-  return apiPost<{ status: string; task_id: string }>(`/api/v1/perf/stop?task_id=${encodeURIComponent(taskId)}`, {})
-}
+export const submitPerfTask = perfTaskApi.submit
+export const getPerfProgress = perfTaskApi.progress
+export const getPerfLog = perfTaskApi.log
+export const getPerfReportUrl = perfTaskApi.reportUrl
+export const stopPerfTask = perfTaskApi.stop
 
 // ------------------------------------------------------------------ //
 // Historical perf-run archive                                         //
 // ------------------------------------------------------------------ //
 
-export async function listPerfRuns(rootPath: string): Promise<ListPerfRunsResponse> {
-  return api<ListPerfRunsResponse>('/api/v1/perf/list', { root_path: rootPath })
+export async function listPerfRuns(rootPath: string, signal?: AbortSignal): Promise<ListPerfRunsResponse> {
+  return apiValidated('/api/v1/perf/list', listPerfRunsResponseSchema, {
+    params: { root_path: rootPath },
+    signal,
+  })
 }
 
-export async function getPerfDetail(rootPath: string, path: string): Promise<PerfDetailResponse> {
-  return api<PerfDetailResponse>('/api/v1/perf/detail', { root_path: rootPath, path })
+export async function getPerfDetail(
+  rootPath: string,
+  path: string,
+  signal?: AbortSignal,
+): Promise<PerfDetailResponse> {
+  return apiValidated('/api/v1/perf/detail', perfDetailResponseSchema, {
+    params: { root_path: rootPath, path },
+    signal,
+  })
 }
 
-export async function listPerfRunDetails(rootPath: string, path: string): Promise<PerfRunsListResponse> {
-  return api<PerfRunsListResponse>('/api/v1/perf/runs', { root_path: rootPath, path })
+export async function listPerfRunDetails(
+  rootPath: string,
+  path: string,
+  signal?: AbortSignal,
+): Promise<PerfRunsListResponse> {
+  return apiValidated('/api/v1/perf/runs', perfRunsListResponseSchema, {
+    params: { root_path: rootPath, path },
+    signal,
+  })
 }
 
 export async function getPerfRequests(params: {
@@ -57,14 +61,18 @@ export async function getPerfRequests(params: {
   status?: 'success' | 'failed'
   page?: number
   pageSize?: number
+  signal?: AbortSignal
 }): Promise<PerfRequestsResponse> {
-  return api<PerfRequestsResponse>('/api/v1/perf/requests', {
-    root_path: params.rootPath,
-    path: params.path,
-    run: params.run,
-    status: params.status,
-    page: params.page,
-    page_size: params.pageSize,
+  return apiValidated('/api/v1/perf/requests', perfRequestsResponseSchema, {
+    params: {
+      root_path: params.rootPath,
+      path: params.path,
+      run: params.run,
+      status: params.status,
+      page: params.page,
+      page_size: params.pageSize,
+    },
+    signal: params.signal,
   })
 }
 
