@@ -24,9 +24,8 @@ model names, endpoints and keys are generic placeholders (e.g. `test-model-a`,
 
 | File | Response type | Purpose |
 | --- | --- | --- |
-| `report-single-dataset.json` | `LoadReportResponse` | Single-dataset report with a bounded ratio metric (`AverageAccuracy`, 0–1), a bounded percentage metric (`PassRatePercent`, 0–100) and an unbounded metric (`AverageLatencyMs`). |
 | `report-multi-dataset.json` | `LoadReportResponse` | Multi-dataset report spanning `gsm8k`, `arc_challenge` and `throughput_suite`, each exercising a different metric boundedness. |
+| `report-real-single-sample.json` | `LoadReportResponse` | Real-shaped single-sample report used to validate schema parsing and perf-metric extraction. |
 | `predictions-tool-trace.json` | `PredictionsResponse` | Long predictions with structured `Messages` and `AgentTrace` tool traces, including a successful multi-tool-call sample and a sample whose tool call returns an error. |
 | `perf-detail.json` | `PerfDetailResponse` | Single-run performance detail (`num_runs: 1`) with summary rows, workload context and single-run wording. |
 | `perf-single-run.json` | `PerfRunsListResponse` | One `PerfRunItem` (`rate: null` → closed-loop) with percentile rows. |
-| `perf-multi-run.json` | `PerfRunsListResponse` | Three `PerfRunItem`s (concurrency 1, concurrency 10, request-rate 5/s) for multi-run comparison. |
