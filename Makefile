@@ -1,6 +1,9 @@
 # default rule
 default: install
 
+PYTHON   ?= python
+DIST_DIR ?= $(CURDIR)/dist
+
 # ============================================================================
 # Documentation Generation
 # ============================================================================
@@ -108,9 +111,33 @@ web-install:
 web-build:
 	cd evalscope/web && npm install && npm run build
 
+.PHONY: web-release-build
+web-release-build:
+	cd evalscope/web && npm ci && npm run build
+
 .PHONY: web-dev
 web-dev:
 	cd evalscope/web && npm install && npm run dev
+
+# ============================================================================
+# Release Package
+# ============================================================================
+
+.PHONY: package
+package:
+	$(MAKE) web-release-build
+	$(MAKE) package-build
+	$(MAKE) package-check
+
+# Run outside the repository so a local build/ directory cannot shadow the Python build package.
+.PHONY: package-build
+package-build:
+	cd "$(CURDIR)/.." && $(PYTHON) -m build "$(CURDIR)" --outdir "$(DIST_DIR)"
+
+.PHONY: package-check
+package-check:
+	$(PYTHON) scripts/release/verify_package.py --dist-dir "$(DIST_DIR)"
+	$(PYTHON) -m twine check "$(DIST_DIR)"/*
 
 # ============================================================================
 # Development

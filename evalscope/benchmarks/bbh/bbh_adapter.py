@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import os
 import re
 from typing import Any, Dict
 
@@ -10,6 +9,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+from .cot_prompts import COT_PROMPTS
 
 logger = get_logger()
 
@@ -94,7 +94,7 @@ BBH (BIG-Bench Hard) is a subset of 23 challenging tasks from the BIG-Bench benc
 ## Evaluation Notes
 
 - Default configuration uses **3-shot** with CoT prompting (recommended)
-- CoT prompts are pre-defined for each subset in `cot_prompts/` directory
+- CoT prompts are pre-defined for each subset in `cot_prompts.py`
 - Answers should follow the format: "So the answer is [ANSWER]"
 - Setting `few_shot_num=0` disables few-shot examples
 - Multiple-choice answers are normalized to single letters (A, B, C, etc.)
@@ -142,13 +142,9 @@ class BBHAdapter(DefaultDataAdapter):
         return Sample(input=input, target=target, metadata=metadata, subset_key=subset_name)
 
     def format_fewshot_template(self, fewshot: str, sample: Sample) -> str:
-        # Load CoT prompts from file for BBH
         subset_name = sample.subset_key
         if subset_name:
-            cot_file_path = os.path.join(os.path.dirname(__file__), 'cot_prompts', f'{subset_name}.txt')
-            if os.path.exists(cot_file_path):
-                with open(cot_file_path, 'r', encoding='utf-8') as f:
-                    fewshot = f.read().strip()
+            fewshot = COT_PROMPTS.get(subset_name, fewshot).strip()
         return self.few_shot_prompt_template.format(
             fewshot=fewshot,
             question=sample.input,

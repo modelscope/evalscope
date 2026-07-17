@@ -17,7 +17,7 @@
 // real timers, which fake timers would otherwise stall.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { axe } from 'jest-axe'
 
 import Tabs, { type TabItem, type TabsProps } from './Tabs'
@@ -127,7 +127,7 @@ describe('Tabs — keyboard activation', () => {
 
     const beta = screen.getByRole('tab', { name: 'Beta' })
     beta.focus()
-    fireEvent.keyDown(beta, { key: 'Enter' })
+    act(() => fireEvent.keyDown(beta, { key: 'Enter' }))
 
     expect(onChange).toHaveBeenCalledTimes(1)
     expect(onChange).toHaveBeenCalledWith('b')
@@ -139,7 +139,7 @@ describe('Tabs — keyboard activation', () => {
 
     const gamma = screen.getByRole('tab', { name: 'Gamma' })
     gamma.focus()
-    fireEvent.keyDown(gamma, { key: ' ' })
+    act(() => fireEvent.keyDown(gamma, { key: ' ' }))
 
     expect(onChange).toHaveBeenCalledTimes(1)
     expect(onChange).toHaveBeenCalledWith('c')

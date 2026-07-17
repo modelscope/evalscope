@@ -85,12 +85,4 @@ describe('metric display consistency across surfaces', () => {
     const expected = formatMetricByKey('score', score, identity).primary
     expect(cardText).toBe(expected)
   })
-
-  it('produces a stable value for the same key/value from the centralized entry', () => {
-    // The single-source guarantee: identical inputs always yield identical output
-    // regardless of call site.
-    const a = formatMetricByKey('score', 0.8567, identity)
-    const b = formatMetricByKey('score', 0.8567, identity)
-    expect(a).toEqual(b)
-  })
 })

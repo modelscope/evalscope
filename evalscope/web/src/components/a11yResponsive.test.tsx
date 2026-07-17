@@ -1,4 +1,4 @@
-// Contrast / touch-target / responsive-wrapping component tests + axe.
+// Accessibility / touch-target / responsive-wrapping component tests + axe.
 //
 // This suite covers the accessibility and responsive contracts that the pure
 // logic layer cannot express — they live in the rendered DOM (class names,
@@ -17,12 +17,9 @@
 //     hit-area padding. jsdom cannot report real pixel sizes, so we assert the
 //     class/attribute that encodes the 44px guarantee is present.
 //
-//   - Contrast-related a11y: a representative metadata component is
-//     run through axe. Note that axe-core's `color-contrast` rule is disabled
-//     under jsdom because there is no layout/paint to sample colours from, so a
-//     passing axe run here validates the other a11y rules. Contrast tokens are
-//     reviewed against DESIGN.md and exercised in focused component/Browser
-//     checks; this jsdom assertion alone is only a partial guarantee.
+//   - Structural a11y: a representative metadata component is run through axe.
+//     The `color-contrast` rule cannot run under jsdom because there is no
+//     layout/paint, so contrast is intentionally outside this suite's claims.
 //
 // The suite runs under the global deterministic setup (fake timers, fixed
 // system time, network disabled). The axe assertion temporarily restores real
@@ -128,19 +125,14 @@ describe('Touch targets — primary controls carry the 44px guarantee', () => {
   it('TopNav navigation links carry the coarse-target utility', () => {
     const { container } = renderWithRouter(<TopNav />)
 
-    // Every rendered navigation link (desktop + tablet + right-hand controls)
-    // opts into the 44px coarse-pointer hit area via `coarse-target`.
-    const links = container.querySelectorAll('a[href], a[class]')
-    const navLinks = Array.from(container.querySelectorAll('a')).filter((a) =>
-      a.className.includes('coarse-target'),
-    )
-    expect(navLinks.length).toBeGreaterThan(0)
+    const links = Array.from(container.querySelectorAll('a'))
+    expect(links.length).toBeGreaterThan(0)
+    for (const link of links) expect(link.className).toContain('coarse-target')
 
     // The mobile menu toggle button is also a coarse target.
     const menuButton = screen.getByLabelText('Toggle menu')
     expect(menuButton.className).toContain('coarse-target')
 
-    void links
   })
 
   it('ReportCard compare-selection control has a >=44x44 hit area', () => {
@@ -174,11 +166,8 @@ describe('Touch targets — primary controls carry the 44px guarantee', () => {
   })
 })
 
-describe('Contrast-related accessibility (axe)', () => {
-  it('ReportCard has no axe violations (incl. no color-contrast violations)', async () => {
-    // ReportCard renders essential metadata text (model, dataset, score) using
-    // the design system's --text / --text-muted tokens — a representative
-    // contrast surface.
+describe('Structural accessibility (axe)', () => {
+  it('ReportCard has no jsdom-supported axe violations', async () => {
     const report = makeReport()
     const { container } = renderWithLocale(
       <ReportCard report={report} selected={false} onSelect={() => {}} onClick={() => {}} />,
@@ -190,11 +179,6 @@ describe('Contrast-related accessibility (axe)', () => {
     try {
       const results = await axe(container)
       expect(results.violations).toEqual([])
-
-      // Explicitly assert there are no color-contrast violations. Under jsdom
-      // axe cannot compute painted colours, so this rule does not fire here.
-      const contrastViolations = results.violations.filter((v) => v.id === 'color-contrast')
-      expect(contrastViolations).toHaveLength(0)
     } finally {
       vi.useFakeTimers()
       vi.setSystemTime(FIXED_SYSTEM_TIME)

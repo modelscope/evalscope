@@ -25,13 +25,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Build frontend
-        run: make web-build
-      - name: Install wheel
-        run: pip install wheel && pip install -r requirements/framework.txt
-      - name: Build EvalScope
-        run: python setup.py sdist bdist_wheel
+      - name: Install build dependencies
+        run: pip install build twine
+      - name: Build and verify EvalScope
+        run: make package
       - name: Publish package to PyPI
-        run: |
-          pip install twine
-          twine upload dist/* --skip-existing -u __token__ -p ${{ secrets.PYPI_TOKEN }}
+        run: twine upload dist/* --skip-existing -u __token__ -p ${{ secrets.PYPI_TOKEN }}
