@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils'
 import PlotlyChart from '@/components/charts/PlotlyChart'
 import ChatView from '@/components/single/ChatView'
 import EmptyStateSystem from '@/components/common/EmptyStateSystem'
+import ErrorAlert from '@/components/ui/ErrorAlert'
 import { Plus, ChevronLeft, ChevronRight, AlertCircle, ArrowUp, ArrowDown } from 'lucide-react'
 
 // ------------------------------------------------------------------ //
@@ -422,12 +423,12 @@ export default function ComparePage() {
       )}
 
       {scoreLoadError && (
-        <div role="alert" className="flex items-center justify-between gap-3 rounded-[var(--radius)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-4 py-3 text-[var(--danger)]">
+        <ErrorAlert className="flex items-center justify-between gap-3">
           <span className="type-body-sm break-words">{scoreLoadError}</span>
           <Button size="sm" variant="outline" onClick={() => setScoreReloadToken((value) => value + 1)}>
             {t('common.retry')}
           </Button>
-        </div>
+        </ErrorAlert>
       )}
 
       {/* Tab Switch */}
@@ -886,12 +887,12 @@ function PredictionTab({
       {predictionsLoading && <Skeleton height={400} />}
 
       {predictionsError && (
-        <div role="alert" className="flex items-center justify-between gap-3 rounded-[var(--radius)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-4 py-3 text-[var(--danger)]">
+        <ErrorAlert className="flex items-center justify-between gap-3">
           <span className="type-body-sm break-words">{predictionsError}</span>
           <Button size="sm" variant="outline" onClick={onRetryPredictions}>
             {t('common.retry')}
           </Button>
-        </div>
+        </ErrorAlert>
       )}
 
       {/* ── ChatView Columns ── */}

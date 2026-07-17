@@ -1,65 +1,25 @@
-import { apiValidated, apiPostValidated } from './client'
+import { apiValidated } from './client'
 import {
-  evalInvokeResponseSchema,
-  logResponseSchema,
   listPerfRunsResponseSchema,
   perfDetailResponseSchema,
   perfRequestsResponseSchema,
   perfRunsListResponseSchema,
-  progressResponseSchema,
-  taskStatusResponseSchema,
 } from './schemas'
 import type {
-  EvalInvokeResponse,
   ListPerfRunsResponse,
-  LogResponse,
   PerfDetailResponse,
   PerfRequestsResponse,
   PerfRunsListResponse,
-  ProgressResponse,
 } from './types'
+import { createTaskApi } from './task'
 
-export async function submitPerfTask(
-  payload: Record<string, unknown>,
-  taskId: string,
-  signal?: AbortSignal,
-): Promise<EvalInvokeResponse> {
-  return apiPostValidated('/api/v1/perf/invoke', payload, evalInvokeResponseSchema, {
-    headers: { 'EvalScope-Task-Id': taskId },
-    signal,
-  })
-}
+const perfTaskApi = createTaskApi('perf')
 
-export async function getPerfProgress(taskId: string, signal?: AbortSignal): Promise<ProgressResponse> {
-  return apiValidated('/api/v1/perf/progress', progressResponseSchema, {
-    params: { task_id: taskId },
-    signal,
-  })
-}
-
-export async function getPerfLog(
-  taskId: string,
-  startLine?: number,
-  page = 500,
-  signal?: AbortSignal,
-): Promise<LogResponse> {
-  const params: Record<string, string> = { task_id: taskId, page: String(page) }
-  if (startLine !== undefined) params.start_line = String(startLine)
-  return apiValidated('/api/v1/perf/log', logResponseSchema, { params, signal })
-}
-
-export function getPerfReportUrl(taskId: string): string {
-  return `/api/v1/perf/report?task_id=${encodeURIComponent(taskId)}`
-}
-
-export async function stopPerfTask(taskId: string, signal?: AbortSignal): Promise<{ status: string; task_id: string }> {
-  return apiPostValidated(
-    '/api/v1/perf/stop',
-    {},
-    taskStatusResponseSchema,
-    { params: { task_id: taskId }, signal },
-  )
-}
+export const submitPerfTask = perfTaskApi.submit
+export const getPerfProgress = perfTaskApi.progress
+export const getPerfLog = perfTaskApi.log
+export const getPerfReportUrl = perfTaskApi.reportUrl
+export const stopPerfTask = perfTaskApi.stop
 
 // ------------------------------------------------------------------ //
 // Historical perf-run archive                                         //

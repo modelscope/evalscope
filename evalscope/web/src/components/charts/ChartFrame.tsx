@@ -27,12 +27,6 @@ function classifyChartResponse(status: number): ChartResponseClass {
   return 'success'
 }
 
-/** Public phase of the chart lifecycle exposed to consumers. */
-export type ChartPhase =
-  | { status: 'loading' }
-  | { status: 'ready' }
-  | { status: 'error'; kind: ChartFailureKind }
-
 export interface ChartFrameProps {
   /**
    * Base chart URL. The active `theme` is injected by this component via

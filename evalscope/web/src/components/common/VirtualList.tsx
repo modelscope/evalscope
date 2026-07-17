@@ -118,14 +118,15 @@ export default function VirtualList<T>({
   // Measure mounted items. The ResizeObserver delivers an initial notification
   // for every observed target, so this covers both the first measurement after
   // render and later async growth (Markdown / image load, disclosure toggling).
-  // Re-observes the currently mounted items every commit; the mounted set is
-  // bounded by the window size so this stays cheap.
+  // Re-observes when the mounted set or measured heights change; scoping the
+  // dependencies keeps scroll ticks (which only update scrollTop) from
+  // needlessly tearing down and recreating the observer on every frame.
   useEffect(() => {
     if (!active) return
     const ro = new ResizeObserver(() => measure())
     itemEls.current.forEach((el) => ro.observe(el))
     return () => ro.disconnect()
-  })
+  }, [active, measure, heights, items])
 
   if (!active) {
     // Short list (or no ResizeObserver): render everything in normal flow.

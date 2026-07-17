@@ -8,9 +8,10 @@ import Breadcrumb from '@/components/ui/Breadcrumb'
 import Tabs from '@/components/ui/Tabs'
 import Card from '@/components/ui/Card'
 import Skeleton from '@/components/ui/Skeleton'
-import PlotlyChart from '@/components/charts/PlotlyChart'
+import ErrorAlert from '@/components/ui/ErrorAlert'
+import PerfChartGroup from '@/components/perf/PerfChartGroup'
 import PerfRunsTab from './PerfRunsTab'
-import { LATENCY_CHARTS, THROUGHPUT_CHARTS, CHART_TITLES, formatFull } from '@/utils/perf'
+import { LATENCY_CHARTS, THROUGHPUT_CHARTS, formatFull } from '@/utils/perf'
 import { resolveProvider } from '@/domain/perf/providerResolution'
 import { ExternalLink, Lightbulb } from 'lucide-react'
 
@@ -191,9 +192,9 @@ export default function PerfReportDetailPage() {
             { label: 'Detail' },
           ]}
         />
-        <div className="p-6 rounded-[var(--radius)] border border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger)]">
+        <ErrorAlert className="p-6">
           <p className="text-sm">Failed to load perf report: {error || 'not found'}</p>
-        </div>
+        </ErrorAlert>
       </div>
     )
   }
@@ -250,32 +251,18 @@ export default function PerfReportDetailPage() {
 
   const chartsPanel = (
     <div className="flex flex-col gap-4">
-      <Card title={t('performance.latencyGroup')}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {latencyCharts.map((ct) => (
-            <PlotlyChart
-              key={ct}
-              src={getPerfChartUrl(rootPath, path, ct)}
-              fallbackTable={{ columns: data.summary_columns, rows: rowsToRecords(data.summary_columns, data.summary_rows) }}
-              title={CHART_TITLES[ct]}
-              height={340}
-            />
-          ))}
-        </div>
-      </Card>
-      <Card title={t('performance.throughputGroup')}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {THROUGHPUT_CHARTS.map((ct) => (
-            <PlotlyChart
-              key={ct}
-              src={getPerfChartUrl(rootPath, path, ct)}
-              fallbackTable={{ columns: data.summary_columns, rows: rowsToRecords(data.summary_columns, data.summary_rows) }}
-              title={CHART_TITLES[ct]}
-              height={340}
-            />
-          ))}
-        </div>
-      </Card>
+      <PerfChartGroup
+        title={t('performance.latencyGroup')}
+        charts={latencyCharts}
+        fallbackTable={{ columns: data.summary_columns, rows: rowsToRecords(data.summary_columns, data.summary_rows) }}
+        getChartUrl={(chart) => getPerfChartUrl(rootPath, path, chart)}
+      />
+      <PerfChartGroup
+        title={t('performance.throughputGroup')}
+        charts={THROUGHPUT_CHARTS}
+        fallbackTable={{ columns: data.summary_columns, rows: rowsToRecords(data.summary_columns, data.summary_rows) }}
+        getChartUrl={(chart) => getPerfChartUrl(rootPath, path, chart)}
+      />
     </div>
   )
 
@@ -289,9 +276,7 @@ export default function PerfReportDetailPage() {
       />
 
       {error && (
-        <div role="alert" className="rounded-[var(--radius)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-4 py-3 text-sm text-[var(--danger)]">
-          {error}
-        </div>
+        <ErrorAlert>{error}</ErrorAlert>
       )}
 
       {/* Header */}

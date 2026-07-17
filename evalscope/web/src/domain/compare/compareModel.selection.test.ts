@@ -3,7 +3,7 @@ import fc from 'fast-check'
 
 import { preserveSelectionAcrossReorder } from './compareModel'
 
-// Feature: frontend-refactor-2026-07, Property 9: 排序/筛选保留选中集合
+// Feature: frontend-refactor-2026-07, Property 9: sorting/filtering preserves the selected set
 //
 // For any current selection of run ids and any list reorder (sort/filter), the
 // preserved selection must be identical to the pre-operation selection *as a

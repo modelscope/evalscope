@@ -36,7 +36,6 @@ import { axe } from 'jest-axe'
 
 import ReportCard from './reports/ReportCard'
 import ReportsTable from './reports/ReportsTable'
-import EvalRunCard from './ui/EvalRunCard'
 import TopNav from './nav/TopNav'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import type { ReportSummary } from '@/api/types'
@@ -95,18 +94,6 @@ describe('Responsive wrapping — metadata wraps, never truncates', () => {
     }
 
     // No element anywhere in the card relies on truncation to hide overflow.
-    expect(container.querySelector('.truncate')).toBeNull()
-  })
-
-  it('EvalRunCard renders the model name with break-words + min-w-0 and no truncate', () => {
-    const report = makeReport()
-    const { container } = renderWithLocale(<EvalRunCard report={report} onClick={() => {}} />)
-
-    const model = screen.getByText(report.model_name)
-    expect(model.className).toContain('break-words')
-    expect(model.className).toContain('min-w-0')
-    expect(model.className).not.toContain('truncate')
-
     expect(container.querySelector('.truncate')).toBeNull()
   })
 

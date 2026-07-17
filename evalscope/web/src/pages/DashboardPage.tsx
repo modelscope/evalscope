@@ -13,7 +13,8 @@ import ScoreBadge from '@/components/ui/ScoreBadge'
 import EmptyState from '@/components/common/EmptyState'
 import EmptyStateSystem from '@/components/common/EmptyStateSystem'
 import SearchInput from '@/components/ui/SearchInput'
-import Button from '@/components/ui/Button'
+import Pagination from '@/components/ui/Pagination'
+import ErrorAlert from '@/components/ui/ErrorAlert'
 import { FileText, Gauge, Cpu, Clock, ChevronRight } from 'lucide-react'
 import { formatMetricByKey } from '@/domain/metric/registry'
 
@@ -198,9 +199,7 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-col gap-5">
       {loadError && (
-        <div role="alert" className="rounded-[var(--radius-sm)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-4 py-3 text-sm text-[var(--danger)]">
-          {loadError}
-        </div>
+        <ErrorAlert className="rounded-[var(--radius-sm)]">{loadError}</ErrorAlert>
       )}
 
       {/* ── KPI Cards ── */}
@@ -306,41 +305,12 @@ export default function DashboardPage() {
             <div className="py-8 text-center type-body-sm text-[var(--text-muted)]">{t('dashboard.noMatch')}</div>
           )}
 
-          {filteredItems.length > RECENT_LIMIT && (
-            <div className="flex items-center justify-center gap-2 mt-3">
-              <Button variant="ghost" size="sm" disabled={safePage <= 1} onClick={() => setPage(Math.max(1, safePage - 1))}>
-                ←
-              </Button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1)
-                .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
-                .reduce<(number | 'ellipsis')[]>((acc, p, idx, arr) => {
-                  if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('ellipsis')
-                  acc.push(p)
-                  return acc
-                }, [])
-                .map((item, idx) =>
-                  item === 'ellipsis' ? (
-                    // text-dim allowed: decorative pagination ellipsis (DESIGN.md §Text)
-                    <span key={`e${idx}`} className="px-1 text-[var(--text-dim)]">
-                      ...
-                    </span>
-                  ) : (
-                    <Button
-                      key={item}
-                      variant={item === safePage ? 'primary' : 'ghost'}
-                      size="sm"
-                      onClick={() => setPage(item as number)}
-                      className="!min-w-[32px]"
-                    >
-                      {item}
-                    </Button>
-                  ),
-                )}
-              <Button variant="ghost" size="sm" disabled={safePage >= totalPages} onClick={() => setPage(Math.min(totalPages, safePage + 1))}>
-                →
-              </Button>
-            </div>
-          )}
+          <Pagination
+            page={safePage}
+            totalPages={filteredItems.length > RECENT_LIMIT ? totalPages : 1}
+            onPageChange={setPage}
+            className="mt-3"
+          />
         </Card>
       ) : scanned ? (
         <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">

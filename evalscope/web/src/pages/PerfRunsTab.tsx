@@ -7,6 +7,7 @@ import Skeleton from '@/components/ui/Skeleton'
 import DataTable from '@/components/common/DataTable'
 import EmptyState from '@/components/common/EmptyState'
 import EmptyStateSystem from '@/components/common/EmptyStateSystem'
+import ErrorAlert from '@/components/ui/ErrorAlert'
 import PlotlyChart from '@/components/charts/PlotlyChart'
 import { normalizeWorkload } from '@/domain/perf/perfWorkload'
 import { Database } from 'lucide-react'
@@ -136,7 +137,7 @@ export default function PerfRunsTab({ rootPath, path, isEmbedding }: Props) {
   if (runs.length === 0) {
     return (
       <div className="flex flex-col gap-3">
-        {runError && <div role="alert" className="rounded-[var(--radius-sm)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-3 py-2 text-sm text-[var(--danger)]">{runError}</div>}
+        {runError && <ErrorAlert className="rounded-[var(--radius-sm)] px-3 py-2">{runError}</ErrorAlert>}
         <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
           <EmptyStateSystem reason={runError ? 'load-error' : 'no-data'} context={{ view: 'performance' }} />
         </div>
@@ -151,9 +152,7 @@ export default function PerfRunsTab({ rootPath, path, isEmbedding }: Props) {
   return (
     <div className="flex flex-col gap-4">
       {(runError || requestError) && (
-        <div role="alert" className="rounded-[var(--radius-sm)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-3 py-2 text-sm text-[var(--danger)]">
-          {runError || requestError}
-        </div>
+        <ErrorAlert className="rounded-[var(--radius-sm)] px-3 py-2">{runError || requestError}</ErrorAlert>
       )}
       {/* Run selector */}
       {runs.length > 1 && (

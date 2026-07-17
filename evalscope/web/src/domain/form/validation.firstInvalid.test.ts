@@ -3,7 +3,7 @@ import fc from 'fast-check'
 
 import { computeFirstInvalid } from './validation'
 
-// Feature: frontend-refactor-2026-07, Property 22: First-invalid 聚焦顺序
+// Feature: frontend-refactor-2026-07, Property 22: First-invalid focus order
 //
 // For any field DOM order and any subset of invalid field ids,
 // computeFirstInvalid must return the id of the earliest invalid field in DOM

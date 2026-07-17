@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { dirname, join, normalize } from 'node:path'
+import { dirname, join, normalize, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 /**
@@ -30,7 +30,9 @@ export function loadFixture<T>(name: string): T {
   const filePath = normalize(join(FIXTURES_DIR, fileName))
 
   // Guard against path traversal so the loader can only read local fixtures.
-  if (!filePath.startsWith(FIXTURES_DIR)) {
+  // Require a separator boundary so a sibling directory sharing the fixtures
+  // prefix (e.g. `fixtures-evil`) cannot satisfy the check.
+  if (filePath !== FIXTURES_DIR && !filePath.startsWith(FIXTURES_DIR + sep)) {
     throw new Error(`Fixture name resolves outside the fixtures directory: ${name}`)
   }
 

@@ -1,4 +1,4 @@
-// Feature: frontend-refactor-2026-07, Property 21: 配置差异对称计算
+// Feature: frontend-refactor-2026-07, Property 21: symmetric config diff computation
 //
 // For any two runs' config key/value maps (best_config), buildCompareModel's
 // configDiff must list exactly the keys that either take a different value on
@@ -102,7 +102,7 @@ function makeRun(path: string, bestConfig: Record<string, string>, generatedAt: 
   }
 }
 
-describe('buildCompareModel — symmetric config diff (Property 21: 配置差异对称计算)', () => {
+describe('buildCompareModel — symmetric config diff (Property 21: symmetric config diff computation)', () => {
   it('lists exactly the keys that differ or exist on one side, never identical keys', () => {
     fc.assert(
       fc.property(keySpecsArb, (specs) => {

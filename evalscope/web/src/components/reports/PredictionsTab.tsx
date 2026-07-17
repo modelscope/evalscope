@@ -9,6 +9,7 @@ import Select from '@/components/ui/Select'
 import ChatView from '@/components/single/ChatView'
 import Skeleton from '@/components/ui/Skeleton'
 import EmptyStateSystem from '@/components/common/EmptyStateSystem'
+import ErrorAlert from '@/components/ui/ErrorAlert'
 
 interface Props {
   reportName: string
@@ -183,9 +184,9 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
   return (
     <div className="flex flex-col gap-3">
 
-      {/* ── 行 1：全局配置区 — Subset（左）+ Threshold（右） ── */}
+      {/* ── Row 1: global config — Subset (left) + Threshold (right) ── */}
       <div className="flex items-end justify-between gap-4 flex-wrap">
-        {/* 左：Subset 选择器 */}
+        {/* Left: Subset selector */}
         <div className="flex-none max-w-[280px] min-w-[160px]">
           <Select
             label={t('reportDetail.selectSubset')}
@@ -196,7 +197,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
           />
         </div>
 
-        {/* 右：Score Threshold + ? 图标 */}
+        {/* Right: Score Threshold + ? icon */}
         <div className="flex items-center gap-[0.4rem] shrink-0 pb-[2px]">
           <label htmlFor="prediction-score-threshold" className="text-xs text-[var(--text-muted)] whitespace-nowrap">
             {t('single.scoreThreshold')}
@@ -245,16 +246,13 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
         </div>
       </div>
 
-      {/* 分隔线 */}
+      {/* Divider */}
       <hr className="border-none border-t border-[var(--border)] m-0" />
 
       {loading && <Skeleton lines={4} />}
 
       {loadError && (
-        <div
-          role="alert"
-          className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-3 py-2 text-sm text-[var(--danger)]"
-        >
+        <ErrorAlert className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-sm)] px-3 py-2">
           <span>{loadError}</span>
           {selectedSubset && (
             <button
@@ -265,14 +263,14 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
               {t('common.retry')}
             </button>
           )}
-        </div>
+        </ErrorAlert>
       )}
 
       {!loading && predictions.length > 0 && (
         <>
-          {/* ── 行 2：操作区 — 过滤器（左）+ 搜索框（右） ── */}
+          {/* ── Row 2: actions — filters (left) + search box (right) ── */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            {/* 左：All / Pass / Fail 按钮组 */}
+            {/* Left: All / Pass / Fail button group */}
             <div className="inline-flex rounded-[var(--radius)] border border-[var(--border-md)] overflow-hidden">
               {filterBtns.map(({ key, label, icon, count }, idx) => {
                 const isActive = mode === key
@@ -294,7 +292,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
               })}
             </div>
 
-            {/* 右：搜索跳转框 */}
+            {/* Right: search-jump box */}
             <div className="flex items-center gap-2">
               {/* Sample index search */}
               <div className="relative flex items-center">

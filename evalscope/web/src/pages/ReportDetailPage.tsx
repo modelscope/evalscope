@@ -7,6 +7,7 @@ import type { LoadReportResponse, ReportData } from '@/api/types'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Tabs from '@/components/ui/Tabs'
 import Skeleton from '@/components/ui/Skeleton'
+import ErrorAlert from '@/components/ui/ErrorAlert'
 import ReportHeader from '@/components/reports/ReportHeader'
 import DatasetNav from '@/components/reports/DatasetNav'
 import OverviewTab from '@/components/reports/OverviewTab'
@@ -150,9 +151,9 @@ export default function ReportDetailPage() {
             { label: breadcrumbLabel || 'Detail' },
           ]}
         />
-        <div className="mt-6 p-6 rounded-[var(--radius)] border border-[var(--danger)] bg-[var(--danger-bg)] text-[var(--danger)]">
+        <ErrorAlert className="mt-6 p-6 border-[var(--danger)]">
           <p className="text-sm">Failed to load report: {error}</p>
-        </div>
+        </ErrorAlert>
       </div>
     )
   }
@@ -168,9 +169,7 @@ export default function ReportDetailPage() {
       />
 
       {error && (
-        <div role="alert" className="rounded-[var(--radius)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-4 py-3 text-sm text-[var(--danger)]">
-          {error}
-        </div>
+        <ErrorAlert>{error}</ErrorAlert>
       )}
 
       {/* Report Header */}

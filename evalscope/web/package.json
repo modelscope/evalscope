@@ -21,7 +21,6 @@
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.2.4",
     "@types/react-syntax-highlighter": "^15.5.13",
-    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.11.0",
     "react": "^19.2.5",
@@ -53,8 +52,8 @@
     "globals": "^17.5.0",
     "jest-axe": "10.0.0",
     "jsdom": "29.1.1",
-    "typescript": "~6.0.2",
     "tsx": "4.20.6",
+    "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
     "vite": "^8.0.10",
     "vitest": "4.1.10"

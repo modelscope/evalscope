@@ -3,7 +3,7 @@ import fc from 'fast-check'
 
 import { FORM_MESSAGE_KEYS, validateNumeric } from './validation'
 
-// Feature: frontend-refactor-2026-07, Property 24: 数值 min/max 约束
+// Feature: frontend-refactor-2026-07, Property 24: numeric min/max constraints
 //
 // For any finite numeric value and optional min/max bounds, `validateNumeric`
 // must reject values outside the inclusive `[min, max]` range and accept values

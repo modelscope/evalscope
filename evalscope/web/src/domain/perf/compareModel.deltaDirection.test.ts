@@ -1,4 +1,4 @@
-// Feature: frontend-refactor-2026-07, Property 16: Delta 方向与度量 direction 一致
+// Feature: frontend-refactor-2026-07, Property 16: Delta sign matches the metric direction
 //
 // For any baseline / candidate numeric pair and a metric whose `direction` is
 // inferred from its label, the `MetricDelta.verdict` produced by
@@ -87,7 +87,7 @@ function verdictFor(runs: PerfDetailResponse[], metricKey: string): DeltaVerdict
   return delta.verdict
 }
 
-describe('buildCompareModel verdict direction (Property 16: Delta 方向与度量 direction 一致)', () => {
+describe('buildCompareModel verdict direction (Property 16: Delta sign matches the metric direction)', () => {
   it('follows higher-is-better for a throughput metric', () => {
     fc.assert(
       fc.property(valuePairArb, ({ baseline, candidate }) => {

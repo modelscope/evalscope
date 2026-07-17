@@ -1,4 +1,4 @@
-// Feature: frontend-refactor-2026-07, Property 8: 运行 display label 由 model 与 dataset 组成
+// Feature: frontend-refactor-2026-07, Property 8: run display label is composed of model and dataset
 //
 // For any run identifier string, `buildDisplayLabel` must produce a `label`
 // that is composed of the parsed model and dataset and always contains the
@@ -38,7 +38,7 @@ function makeRunName(prefix: string, model: string, datasets: string[]): string 
   return `${prefix}${REPORT_TOKEN}${model}${MODEL_TOKEN}${datasets.join(DATASET_TOKEN)}`
 }
 
-describe('buildDisplayLabel (Property 8: 运行 display label 由 model 与 dataset 组成)', () => {
+describe('buildDisplayLabel (Property 8: run display label is composed of model and dataset)', () => {
   it('composes the label from model and dataset for well-formed run names', () => {
     const caseArb = fc.record({
       prefix: prefixArb,

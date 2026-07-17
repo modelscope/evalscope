@@ -10,7 +10,7 @@
  * breaking the dark theme's established appearance. See index.css
  * `--score-fg-s` / `--score-fg-l` / `--score-bg-a-mul`.
  *
- * These helpers back `<ScoreChip>`, `<ScoreBadge>`, `<ScoreRing>`, dataset
+ * These helpers back `<ScoreBadge>`, `<ScoreRing>`, dataset
  * chips and the group-header best-score callouts. Anything that paints a
  * dynamic score MUST funnel through here — do not roll a parallel palette.
  */

@@ -4,6 +4,8 @@ import Button from '@/components/ui/Button'
 import Field from '@/components/ui/Field'
 import { FORM_INPUT_CLASS, inputClass } from '@/components/ui/formStyles'
 import { computeFirstInvalid, validateNumeric, FORM_MESSAGE_KEYS } from '@/domain/form/validation'
+import { useFormErrors } from '@/hooks/useFormErrors'
+import { ApiKeyField, ApiUrlField, ModelField } from '@/components/tasks/TaskFormFields'
 
 interface Props {
   onSubmit: (config: Record<string, unknown>) => void
@@ -57,22 +59,7 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
   const [maxPromptLen, setMaxPromptLen] = useState('')
   const [minPromptLen, setMinPromptLen] = useState('')
 
-  // Validation: field id -> locale message key (never a hard-coded string).
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
-  /** Localized error for a field id, or undefined when the field is valid. */
-  const errMsg = (id: string): string | undefined => (errors[id] ? t(errors[id]) : undefined)
-
-  /** Clear a single field's error (called as the user edits the field). */
-  const clearErr = (id: string) => {
-    if (errors[id]) {
-      setErrors((prev) => {
-        const next = { ...prev }
-        delete next[id]
-        return next
-      })
-    }
-  }
+  const { setErrors, errorFor: errMsg, clearError: clearErr } = useFormErrors()
 
   const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -138,18 +125,12 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field id={IDS.model} name="model" labelKey="eval.modelName" required error={errMsg(IDS.model)} autoComplete="off">
-          {(aria) => (
-            <input
-              {...aria}
-              type="text"
-              value={model}
-              onChange={(e) => { setModel(e.target.value); clearErr(IDS.model) }}
-              className={inputClass(errMsg(IDS.model))}
-              placeholder="Qwen/Qwen2.5-0.5B-Instruct"
-            />
-          )}
-        </Field>
+        <ModelField
+          id={IDS.model}
+          value={model}
+          error={errMsg(IDS.model)}
+          onChange={(value) => { setModel(value); clearErr(IDS.model) }}
+        />
 
         <Field id={IDS.api} name="api" labelKey="perf.apiType">
           {(aria) => (
@@ -161,17 +142,8 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
           )}
         </Field>
 
-        <Field id={IDS.url} name="url" labelKey="eval.apiUrl" autoComplete="url">
-          {(aria) => (
-            <input {...aria} type="text" value={url} onChange={(e) => setUrl(e.target.value)} className={FORM_INPUT_CLASS} placeholder="http://localhost:8000/v1" />
-          )}
-        </Field>
-
-        <Field id={IDS.apiKey} name="api_key" labelKey="eval.apiKey" autoComplete="off">
-          {(aria) => (
-            <input {...aria} type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} className={FORM_INPUT_CLASS} placeholder="sk-..." />
-          )}
-        </Field>
+        <ApiUrlField id={IDS.url} name="url" value={url} onChange={setUrl} />
+        <ApiKeyField id={IDS.apiKey} value={apiKey} onChange={setApiKey} />
 
         <Field id={IDS.parallel} name="parallel" labelKey="perf.parallel" error={errMsg(IDS.parallel)}>
           {(aria) => (

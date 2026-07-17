@@ -14,7 +14,7 @@ interface ScoreBadgeProps {
 
 /**
  * Bold percentage / boolean pill — DESIGN.md `{components.score-badge}`.
- * Larger and heavier than `ScoreChip`: body-sm bold + 10/2 padding.
+ * Uses body-sm bold text with compact pill padding.
  * Two modes:
  *   - no threshold: dynamic HSL fg/bg, renders the canonical percentage.
  *   - threshold: restrained semantic background/border, renders the canonical percentage.

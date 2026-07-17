@@ -1,4 +1,4 @@
-// Feature: frontend-refactor-2026-07, Property 20: 缺数据度量去强调且保留可算度量
+// Feature: frontend-refactor-2026-07, Property 20: missing-data metrics are de-emphasized while computable metrics are preserved
 //
 // For any pair of baseline/candidate metric sets, buildCompareModel must mark a
 // metric's MetricDelta verdict as 'incomputable' whenever the metric is missing
@@ -169,7 +169,7 @@ function makeRun(
   }
 }
 
-describe('buildCompareModel — missing-data de-emphasis (Property 20: 缺数据度量去强调且保留可算度量)', () => {
+describe('buildCompareModel — missing-data de-emphasis (Property 20: missing-data metrics are de-emphasized while computable metrics are preserved)', () => {
   it('marks metrics missing on either side incomputable while keeping both-sided metrics computable', () => {
     fc.assert(
       fc.property(metricCasesArb, (cases) => {

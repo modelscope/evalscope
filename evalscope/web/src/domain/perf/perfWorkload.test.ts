@@ -1,4 +1,4 @@
-// Feature: frontend-refactor-2026-07, Property 14: Workload 归一化不呈现 INF 且缺失占位
+// Feature: frontend-refactor-2026-07, Property 14: Workload normalization never renders INF and shows missing placeholders
 //
 // For any request rate and workload parameters, `normalizeWorkload`'s output
 // must satisfy:
@@ -66,7 +66,7 @@ function isUnlimitedRate(rate: unknown): boolean {
   return rate <= 0
 }
 
-describe('normalizeWorkload (Property 14: workload 归一化不呈现 INF 且缺失占位)', () => {
+describe('normalizeWorkload (Property 14: normalization never renders INF and shows missing placeholders)', () => {
   it('never emits an INF marker and uses semantic labels for unlimited rates', () => {
     fc.assert(
       fc.property(countArb, countArb, rateArb, (parallel, number, rate) => {

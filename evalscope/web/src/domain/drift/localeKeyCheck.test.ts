@@ -3,7 +3,7 @@ import fc from 'fast-check'
 
 import { checkLocaleKeys, type LocaleMap } from '../../../scripts/drift/localeKeyCheck'
 
-// Feature: frontend-refactor-2026-07, Property 30: Locale key 对称差检测
+// Feature: frontend-refactor-2026-07, Property 30: Locale key symmetric-difference detection
 //
 // For any base and target locale key maps, `checkLocaleKeys` must return the
 // symmetric difference between their leaf-key sets: `missing` is exactly the set

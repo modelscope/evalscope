@@ -1,4 +1,4 @@
-// Feature: frontend-refactor-2026-07, Property 1: Bounded ratio 百分比展示与舍入不变量
+// Feature: frontend-refactor-2026-07, Property 1: Bounded ratio percentage display and rounding invariants
 //
 // For any bounded-ratio metric value and its MetricDisplaySpec
 // (boundedness === 'bounded'), formatMetric must produce:
@@ -123,7 +123,7 @@ const caseArb = boundedSpecArb.chain((spec) =>
   storedValueArb(spec).map((value) => ({ spec, value })),
 )
 
-describe('formatMetric — bounded ratio (Property 1: Bounded ratio 百分比展示与舍入不变量)', () => {
+describe('formatMetric — bounded ratio (Property 1: Bounded ratio percentage display and rounding invariants)', () => {
   it('renders primary as a round-half-up percentage and raw as the round-half-up ratio', () => {
     fc.assert(
       fc.property(caseArb, ({ spec, value }) => {

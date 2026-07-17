@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
-import type { MouseEvent } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
+import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import type { ReportSummary } from '@/api/types'
 import { scoreColor } from '@/utils/colorScale'
 import { formatMetricByKey } from '@/domain/metric/registry'
@@ -22,42 +22,6 @@ interface ReportsTableProps {
 
 function formatTimestamp(ts: string): string {
   return ts.replace('T', ' ').slice(0, 16)
-}
-
-function Checkbox({
-  checked,
-  label,
-  onClick,
-}: {
-  checked: boolean
-  label: string
-  onClick: (event: MouseEvent<HTMLButtonElement>) => void
-}) {
-  return (
-    <button
-      type="button"
-      role="checkbox"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={onClick}
-      className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center"
-    >
-      <span
-        aria-hidden="true"
-        className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border-2 transition-all duration-150"
-        style={{
-          borderColor: checked ? 'var(--accent)' : 'var(--border-strong)',
-          background: checked ? 'var(--accent)' : 'transparent',
-        }}
-      >
-        {checked && (
-          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="2,6 5,9 10,3" />
-          </svg>
-        )}
-      </span>
-    </button>
-  )
 }
 
 /**
@@ -86,7 +50,7 @@ export default function ReportsTable({
         <thead>
           <tr className="border-b border-[var(--border)] text-left">
             <th scope="col" className="w-10 px-4 py-3">
-              <Checkbox checked={allSelected} label={t('reports.selectAll')} onClick={onToggleSelectAll} />
+              <SelectionCheckbox checked={allSelected} label={t('reports.selectAll')} onClick={onToggleSelectAll} />
             </th>
             {/* Fixed, ordered columns: model, dataset, time, samples, score, status */}
             <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">
@@ -126,7 +90,7 @@ export default function ReportsTable({
                 )}
               >
                 <td className="px-4 py-3">
-                  <Checkbox
+                  <SelectionCheckbox
                     checked={isSelected}
                     label={`${t('reports.selectReport')}: ${model}`}
                     onClick={(e) => {

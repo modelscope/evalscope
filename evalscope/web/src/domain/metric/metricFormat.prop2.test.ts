@@ -1,4 +1,4 @@
-// Feature: frontend-refactor-2026-07, Property 2: 缺失占位与合法 0 可区分
+// Feature: frontend-refactor-2026-07, Property 2: missing placeholder is distinguishable from a legitimate 0
 //
 // For any metric spec (bounded or unbounded) and any value:
 //   - When the value is `null`, `undefined` or `NaN` (a "missing" value),
@@ -71,7 +71,7 @@ const finiteValueArb: fc.Arbitrary<number> = fc.oneof(
   fc.integer({ min: -1_000_000, max: 1_000_000 }),
 )
 
-describe('formatMetric (Property 2: 缺失占位与合法 0 可区分)', () => {
+describe('formatMetric (Property 2: missing placeholder is distinguishable from a legitimate 0)', () => {
   it('renders the missing placeholder with isMissing=true for null/undefined/NaN', () => {
     fc.assert(
       fc.property(specArb, missingValueArb, (spec, value) => {

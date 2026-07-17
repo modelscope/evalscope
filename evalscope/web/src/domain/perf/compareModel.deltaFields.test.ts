@@ -1,4 +1,4 @@
-// Feature: frontend-refactor-2026-07, Property 15: Delta 汇总字段完整
+// Feature: frontend-refactor-2026-07, Property 15: Delta summary field completeness
 //
 // For any baseline and candidate metric set, buildCompareModel must produce a
 // MetricDelta for every metric in the union of both runs' summary rows, and
@@ -112,7 +112,7 @@ const runsArb: fc.Arbitrary<PerfDetailResponse[]> = fc
   .integer({ min: 2, max: 5 })
   .chain((count) => fc.tuple(...Array.from({ length: count }, (_, i) => perfRunArb(i))))
 
-describe('buildCompareModel — delta field completeness (Property 15: Delta 汇总字段完整)', () => {
+describe('buildCompareModel — delta field completeness (Property 15: Delta summary field completeness)', () => {
   it('extracts metrics and sample counts from the real archive wide-table shape', () => {
     const columns = [
       'Conc.', 'Rate', 'RPS', 'Avg Lat.(s)', 'P99 Lat.(s)', 'Avg TTFT(ms)',

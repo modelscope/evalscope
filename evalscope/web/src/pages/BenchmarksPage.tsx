@@ -7,7 +7,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import SearchInput from '@/components/ui/SearchInput'
 import Badge from '@/components/ui/Badge'
-import Button from '@/components/ui/Button'
+import Pagination from '@/components/ui/Pagination'
 import { BookOpen, X, Database, Layers, FlaskConical, Tag, ExternalLink } from 'lucide-react'
 
 type TabKey = 'all' | 'text' | 'multimodal' | 'agent' | 'aigc'
@@ -352,41 +352,7 @@ export default function BenchmarksPage() {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-2">
-          <Button variant="ghost" size="sm" disabled={safePage <= 1} onClick={() => setPage(Math.max(1, safePage - 1))}>
-            ←
-          </Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
-            .reduce<(number | 'ellipsis')[]>((acc, p, idx, arr) => {
-              if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('ellipsis')
-              acc.push(p)
-              return acc
-            }, [])
-            .map((item, idx) =>
-              item === 'ellipsis' ? (
-                // text-dim allowed: decorative pagination ellipsis (DESIGN.md §Text)
-                <span key={`e${idx}`} className="px-1 text-[var(--text-dim)]">
-                  ...
-                </span>
-              ) : (
-                <Button
-                  key={item}
-                  variant={item === safePage ? 'primary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setPage(item as number)}
-                  className="!min-w-[32px]"
-                >
-                  {item}
-                </Button>
-              ),
-            )}
-          <Button variant="ghost" size="sm" disabled={safePage >= totalPages} onClick={() => setPage(Math.min(totalPages, safePage + 1))}>
-            →
-          </Button>
-        </div>
-      )}
+      <Pagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
 
       {/* Detail modal */}
       {selectedEntry != null && createPortal(

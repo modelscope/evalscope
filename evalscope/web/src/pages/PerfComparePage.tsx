@@ -11,8 +11,9 @@ import Breadcrumb from '@/components/ui/Breadcrumb'
 import Badge from '@/components/ui/Badge'
 import Card from '@/components/ui/Card'
 import Skeleton from '@/components/ui/Skeleton'
-import PlotlyChart from '@/components/charts/PlotlyChart'
-import { LATENCY_CHARTS, THROUGHPUT_CHARTS, CHART_TITLES, formatFull } from '@/utils/perf'
+import PerfChartGroup from '@/components/perf/PerfChartGroup'
+import ErrorAlert from '@/components/ui/ErrorAlert'
+import { LATENCY_CHARTS, THROUGHPUT_CHARTS, formatFull } from '@/utils/perf'
 import { AlertTriangle, ArrowLeftRight, GitCompareArrows, Info } from 'lucide-react'
 
 type CompareVisualization = 'sparse' | 'trend'
@@ -159,6 +160,16 @@ export default function PerfComparePage() {
   const hasEmptyRun = (details ?? []).some((d) => !Array.isArray(d.summary_rows) || d.summary_rows.length === 0)
   const showMissingHint = missingCount > 0 || hasEmptyRun || Boolean(model?.deltas.some((d) => d.verdict === 'incomputable'))
   const vizMode = selectCompareVisualization((details ?? []).length)
+  const chartFallback = {
+    columns: ['Metric', 'Baseline', 'Candidate', 'Absolute delta', 'Percent delta'],
+    rows: (model?.deltas ?? []).map((delta) => ({
+      Metric: delta.metricKey,
+      Baseline: delta.baseline.primary,
+      Candidate: delta.candidate.primary,
+      'Absolute delta': delta.absoluteDelta.primary,
+      'Percent delta': delta.percentDelta.primary,
+    })),
+  }
 
   return (
     <div className="page-enter flex flex-col gap-4">
@@ -191,9 +202,7 @@ export default function PerfComparePage() {
       {details === null ? (
         <Skeleton width="100%" height={220} />
       ) : loadError ? (
-        <div className="p-6 rounded-[var(--radius)] border border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger)] type-body-sm">
-          {loadError}
-        </div>
+        <ErrorAlert className="p-6 type-body-sm">{loadError}</ErrorAlert>
       ) : (
         model && (
           <>
@@ -429,57 +438,20 @@ export default function PerfComparePage() {
         </div>
       )}
 
-      {/* Latency group */}
-      <Card title={t('performance.latencyGroup')}>
-        {details === null ? (
-          <Skeleton width="100%" height={340} />
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {latencyCharts.map((ct) => (
-              <PlotlyChart
-                key={ct}
-                src={getPerfCompareChartUrl(rootPath, paths, ct)}
-                fallbackTable={{
-                  columns: ['Metric', 'Baseline', 'Candidate', 'Absolute delta', 'Percent delta'],
-                  rows: (model?.deltas ?? []).map((delta) => ({
-                    Metric: delta.metricKey,
-                    Baseline: delta.baseline.primary,
-                    Candidate: delta.candidate.primary,
-                    'Absolute delta': delta.absoluteDelta.primary,
-                    'Percent delta': delta.percentDelta.primary,
-                  })),
-                }}
-                title={CHART_TITLES[ct]}
-                height={340}
-              />
-            ))}
-          </div>
-        )}
-      </Card>
-
-      {/* Throughput group */}
-      <Card title={t('performance.throughputGroup')}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {THROUGHPUT_CHARTS.map((ct) => (
-            <PlotlyChart
-              key={ct}
-              src={getPerfCompareChartUrl(rootPath, paths, ct)}
-              fallbackTable={{
-                columns: ['Metric', 'Baseline', 'Candidate', 'Absolute delta', 'Percent delta'],
-                rows: (model?.deltas ?? []).map((delta) => ({
-                  Metric: delta.metricKey,
-                  Baseline: delta.baseline.primary,
-                  Candidate: delta.candidate.primary,
-                  'Absolute delta': delta.absoluteDelta.primary,
-                  'Percent delta': delta.percentDelta.primary,
-                })),
-              }}
-              title={CHART_TITLES[ct]}
-              height={340}
-            />
-          ))}
-        </div>
-      </Card>
+      <PerfChartGroup
+        title={t('performance.latencyGroup')}
+        charts={latencyCharts}
+        fallbackTable={chartFallback}
+        getChartUrl={(chart) => getPerfCompareChartUrl(rootPath, paths, chart)}
+        loading={details === null}
+      />
+      <PerfChartGroup
+        title={t('performance.throughputGroup')}
+        charts={THROUGHPUT_CHARTS}
+        fallbackTable={chartFallback}
+        getChartUrl={(chart) => getPerfCompareChartUrl(rootPath, paths, chart)}
+        loading={details === null}
+      />
     </div>
   )
 }

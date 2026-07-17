@@ -3,7 +3,7 @@ import fc from 'fast-check'
 
 import { FORM_MESSAGE_KEYS, validateDatasetArgs } from './validation'
 
-// Feature: frontend-refactor-2026-07, Property 23: Dataset_Args JSON 校验与 round-trip
+// Feature: frontend-refactor-2026-07, Property 23: Dataset_Args JSON validation and round-trip
 //
 // For any JSON value serialized via JSON.stringify and handed to
 // validateDatasetArgs:

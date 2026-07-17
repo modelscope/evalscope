@@ -1,44 +1,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronRight, Check, Eye, GitCompareArrows, X } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useReports } from '@/contexts/ReportsContext'
 import { getPerfHistoryReportUrl, listPerfRuns } from '@/api/perf'
 import { isDomainError } from '@/api/errors'
 import type { PerfRunSummary } from '@/api/types'
 import Skeleton from '@/components/ui/Skeleton'
-import Button from '@/components/ui/Button'
 import EmptyStateSystem, { type ResolvedEmptyStateAction } from '@/components/common/EmptyStateSystem'
 import SearchInput from '@/components/ui/SearchInput'
+import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
+import ErrorAlert from '@/components/ui/ErrorAlert'
+import SelectionTray from '@/components/reports/SelectionTray'
 import { formatMetricByKey } from '@/domain/metric/registry'
 import { formatFull } from '@/utils/perf'
 import { resolveProvider } from '@/domain/perf/providerResolution'
-import {
-  MAX_COMPARE_SELECTION,
-  addToSelection,
-  preserveSelectionAcrossReorder,
-} from '@/domain/compare/compareModel'
+import { addToSelection, preserveSelectionAcrossReorder } from '@/domain/compare/compareModel'
 
 /** Locale translate contract (kept minimal so cards can format metrics). */
 type Translate = (key: string, vars?: Record<string, string | number>) => string
 
 type SortKey = 'time' | 'rps' | 'latency'
-
-function Checkbox({ checked }: { checked: boolean }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={[
-        'flex items-center justify-center w-4 h-4 rounded-[4px] border transition-colors',
-        checked
-          ? 'bg-[var(--accent)] border-[var(--accent)] text-[var(--text-on-filled)]'
-          : 'border-[var(--border-md)] text-transparent',
-      ].join(' ')}
-    >
-      <Check size={12} />
-    </span>
-  )
-}
 
 function PerfRunCard({
   run,
@@ -63,16 +45,12 @@ function PerfRunCard({
         selected ? 'bg-[var(--accent-dim)]' : 'hover:bg-[var(--bg-card2)]',
       ].join(' ')}
     >
-      <button
-        type="button"
-        role="checkbox"
-        aria-checked={selected}
+      <SelectionCheckbox
+        checked={selected}
         onClick={onToggle}
-        aria-label={`${t('performance.selectRun')}: ${run.model || run.dataset || '—'}`}
-        className="shrink-0 flex min-h-11 min-w-11 items-center justify-center cursor-pointer"
-      >
-        <Checkbox checked={selected} />
-      </button>
+        label={`${t('performance.selectRun')}: ${run.model || run.dataset || '—'}`}
+        className="shrink-0 cursor-pointer"
+      />
       <button
         type="button"
         onClick={onClick}
@@ -266,9 +244,7 @@ export default function PerfReportsPage() {
   return (
     <div className="page-enter mx-auto flex w-full max-w-7xl flex-col gap-5">
       {error && (
-        <div role="alert" className="px-4 py-3 rounded-[var(--radius)] bg-[var(--danger-bg)] border border-[var(--danger-border)] text-sm text-[var(--danger)]">
-          {error}
-        </div>
+        <ErrorAlert>{error}</ErrorAlert>
       )}
 
       {loading ? (
@@ -347,51 +323,14 @@ export default function PerfReportsPage() {
             />
           )}
 
-          {orderedSelection.length >= 1 && (
-            <div className="sticky bottom-0 z-30 mt-2 -mx-1 px-1">
-              <div className="flex flex-wrap items-center gap-3 rounded-[var(--radius)] border border-[var(--accent-dim)] bg-[var(--bg-card)] px-4 py-3 shadow-[var(--shadow-lg)]">
-                <span className="text-sm font-semibold text-[var(--text)]">
-                  {orderedSelection.length} {t('reports.selected')}
-                  <span className="ml-1 text-xs font-normal text-[var(--text-muted)]">
-                    / {MAX_COMPARE_SELECTION}
-                  </span>
-                </span>
-
-                {capNotice && (
-                  <span className="text-xs text-[var(--warning-color)]" role="status" aria-live="polite">
-                    {t('reports.capReached')}
-                  </span>
-                )}
-                {!capNotice && orderedSelection.length > 3 && (
-                  <span className="text-xs text-[var(--warning-color)]">{t('compare.maxThreeSelected')}</span>
-                )}
-
-                <div className="ml-auto flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={orderedSelection.length !== 1 || !selectedRun?.has_html}
-                    onClick={viewSelectedHtml}
-                  >
-                    <Eye size={14} />
-                    {t('reports.viewHtml')}
-                  </Button>
-                  <Button variant="primary" size="sm" disabled={orderedSelection.length < 2} onClick={compareSelected}>
-                    <GitCompareArrows size={14} />
-                    {t('reports.compare')}
-                  </Button>
-                  <button
-                    type="button"
-                    aria-label={t('reports.clearSelection')}
-                    onClick={() => setSelected([])}
-                    className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-[var(--radius-sm)] text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-card2)] hover:text-[var(--text)]"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          <SelectionTray
+            count={orderedSelection.length}
+            capNotice={capNotice}
+            canViewHtml={orderedSelection.length === 1 && !!selectedRun?.has_html}
+            onViewHtml={viewSelectedHtml}
+            onCompare={compareSelected}
+            onClear={() => setSelected([])}
+          />
         </>
       )}
     </div>

@@ -1,4 +1,4 @@
-// Feature: frontend-refactor-2026-07, Property 18: 低样本分级边界
+// Feature: frontend-refactor-2026-07, Property 18: low-sample tier boundaries
 //
 // For any non-negative sample count n, classifySampleSize(n) must return the
 // low-sample tier dictated by the two fixed thresholds:
@@ -32,7 +32,7 @@ function expectedTier(n: number): SampleTier {
   return 'ok'
 }
 
-describe('classifySampleSize — low-sample tier boundaries (Property 18: 低样本分级边界)', () => {
+describe('classifySampleSize — low-sample tier boundaries (Property 18: low-sample tier boundaries)', () => {
   it('matches the reference classifier for any non-negative sample count', () => {
     fc.assert(
       fc.property(fc.nat({ max: 1_000_000 }), (n) => {

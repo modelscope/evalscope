@@ -1,4 +1,4 @@
-// Feature: frontend-refactor-2026-07, Property 17: 默认 baseline 为最旧运行
+// Feature: frontend-refactor-2026-07, Property 17: default baseline is the oldest run
 //
 // For any set of runs participating in a comparison, when no baseline is
 // explicitly selected (empty `baselineId`), the default baseline chosen by
@@ -66,7 +66,7 @@ const runsArb = fc
     ),
   )
 
-describe('buildCompareModel default baseline (Property 17: 默认 baseline 为最旧运行)', () => {
+describe('buildCompareModel default baseline (Property 17: default baseline is the oldest run)', () => {
   it('selects the oldest run as the default baseline when none is specified', () => {
     fc.assert(
       fc.property(runsArb, (runs) => {

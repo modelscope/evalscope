@@ -1,6 +1,7 @@
 import { ChevronRight } from 'lucide-react'
 import type { MouseEvent } from 'react'
 import { cn } from '@/lib/utils'
+import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportSummary } from '@/api/types'
 import { scoreColor } from '@/utils/colorScale'
@@ -16,43 +17,6 @@ interface ReportCardProps {
 
 function formatTimestamp(ts: string): string {
   return ts.replace('T', ' ').slice(0, 16)
-}
-
-function Checkbox({ checked, label, onClick }: { checked: boolean; label: string; onClick: (event: MouseEvent<HTMLButtonElement>) => void }) {
-  return (
-    <button
-      type="button"
-      role="checkbox"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={onClick}
-      className="flex min-h-[44px] min-w-[44px] items-center justify-center"
-    >
-      <span
-        aria-hidden="true"
-        className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border-2 transition-all duration-150"
-        style={{
-          borderColor: checked ? 'var(--accent)' : 'var(--border-strong)',
-          background: checked ? 'var(--accent)' : 'transparent',
-        }}
-      >
-        {checked && (
-          <svg
-            width="10"
-            height="10"
-            viewBox="0 0 12 12"
-            fill="none"
-            stroke="white"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="2,6 5,9 10,3" />
-          </svg>
-        )}
-      </span>
-    </button>
-  )
 }
 
 export default function ReportCard({ report, selected, onSelect, onClick }: ReportCardProps) {
@@ -75,7 +39,7 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
           : 'border-[var(--border)] hover:border-[var(--border-md)]',
       )}
     >
-      <Checkbox
+      <SelectionCheckbox
         checked={selected}
         label={`${t('reports.selectReport')}: ${report.model_name}`}
         onClick={(e) => {
@@ -91,9 +55,9 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
         onClick={() => onClick(report.name)}
       >
         {/* Model + Dataset */}
-        <div className="flex-1 min-w-0">
+        <span className="block flex-1 min-w-0">
           {/* Primary row: model name + timestamp for disambiguation */}
-          <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="flex items-baseline gap-2 flex-wrap">
             <span className="font-bold text-base text-[var(--text)] break-words min-w-0">
               {report.model_name}
             </span>
@@ -102,9 +66,9 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
                 {formattedDate}
               </span>
             )}
-          </div>
+          </span>
           {/* Secondary row: dataset + sample count */}
-          <div className="flex items-center gap-3 mt-0.5">
+          <span className="flex items-center gap-3 mt-0.5">
             <span className="text-sm text-[var(--text-muted)] break-words min-w-0">
               {report.dataset_name}
             </span>
@@ -115,8 +79,8 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--success-bg)] text-[var(--success)] shrink-0">
               {t('reports.status.completed')}
             </span>
-          </div>
-        </div>
+          </span>
+        </span>
 
         {/* Score badge */}
         <span

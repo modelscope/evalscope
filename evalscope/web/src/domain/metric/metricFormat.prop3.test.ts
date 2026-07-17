@@ -1,4 +1,4 @@
-// Feature: frontend-refactor-2026-07, Property 3: 非 bounded 与 spec 缺失不触发百分比转换
+// Feature: frontend-refactor-2026-07, Property 3: non-bounded and missing specs do not trigger percentage conversion
 //
 // For any unbounded / benchmark-native metric spec (including the shared
 // DEFAULT_METRIC_SPEC used when a spec is missing) and any value — whether it is
@@ -63,7 +63,7 @@ const unboundedSpecArb: fc.Arbitrary<MetricDisplaySpec> = fc
   })
   .map((partial) => ({ ...partial, boundedness: 'unbounded' as const }))
 
-describe('formatMetric (Property 3: 非 bounded 与 spec 缺失不触发百分比转换)', () => {
+describe('formatMetric (Property 3: non-bounded and missing specs do not trigger percentage conversion)', () => {
   it('never converts an unbounded metric to a percentage, regardless of magnitude', () => {
     fc.assert(
       fc.property(unboundedSpecArb, valueArb, (spec, value) => {

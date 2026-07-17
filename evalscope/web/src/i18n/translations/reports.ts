@@ -9,7 +9,6 @@ export const en: Dict = {
     search: 'Search reports...',
     model: 'Model',
     dataset: 'Dataset',
-    scoreRange: 'Score Range',
     sortBy: 'Sort By',
     time: 'Time',
     score: 'Score',
@@ -20,7 +19,6 @@ export const en: Dict = {
   compare: 'Compare',
   viewHtml: 'View HTML',
   samples: 'Samples',
-  noReports: 'No reports found',
   scanFirst: 'Scan a directory to view reports',
   columns: {
     model: 'Model',
@@ -35,7 +33,6 @@ export const en: Dict = {
   },
   clearSelection: 'Clear',
   capReached: 'You can compare up to 5 runs.',
-  trayHint: 'Select runs to compare',
 }
 
 export const zh: Dict = {
@@ -47,7 +44,6 @@ export const zh: Dict = {
     search: '搜索报告...',
     model: '模型',
     dataset: '数据集',
-    scoreRange: '分数范围',
     sortBy: '排序',
     time: '时间',
     score: '分数',
@@ -58,7 +54,6 @@ export const zh: Dict = {
   compare: '对比',
   viewHtml: '查看HTML',
   samples: '样本数',
-  noReports: '未找到报告',
   scanFirst: '扫描目录以查看报告',
   columns: {
     model: '模型',
@@ -73,5 +68,4 @@ export const zh: Dict = {
   },
   clearSelection: '清空',
   capReached: '最多可对比 5 个运行。',
-  trayHint: '选择要对比的运行',
 }

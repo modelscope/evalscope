@@ -201,8 +201,11 @@ def _build_identity_metadata(args_dict: dict) -> dict:
     raw_url = args_dict.get('url')
     if isinstance(raw_url, str) and raw_url.strip():
         candidate = raw_url.strip()
-        parsed = urlsplit(candidate if '://' in candidate else f'//{candidate}')
-        if parsed.hostname:
+        try:
+            parsed = urlsplit(candidate if '://' in candidate else f'//{candidate}')
+        except ValueError:
+            parsed = None
+        if parsed and parsed.hostname:
             metadata['api_host'] = parsed.hostname.lower()
 
     return metadata

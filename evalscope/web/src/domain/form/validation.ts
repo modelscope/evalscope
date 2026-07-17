@@ -12,7 +12,7 @@
  */
 
 /** A validation error associated with a form field. */
-export interface FieldError {
+interface FieldError {
   /**
    * Id of the offending field. Numeric validation cannot know the field id, so
    * `validateNumeric` returns an empty string here and the caller associates the
@@ -23,19 +23,8 @@ export interface FieldError {
   messageKey: string
 }
 
-/** Aggregate result of validating a whole form. */
-export interface FormValidationResult {
-  /** All field errors found during validation. */
-  errors: FieldError[]
-  /**
-   * Id of the first invalid field in DOM order, used to move focus on a failed
-   * submit; `null` when there are no invalid fields.
-   */
-  firstInvalidId: string | null
-}
-
 /** Result of validating the `Dataset_Args` JSON input. */
-export type DatasetArgsValidation =
+type DatasetArgsValidation =
   | { ok: true; value: Record<string, unknown> }
   | { ok: false; messageKey: string }
 

@@ -3,7 +3,7 @@ import fc from 'fast-check'
 
 import { addToSelection, MAX_COMPARE_SELECTION } from './compareModel'
 
-// Feature: frontend-refactor-2026-07, Property 10: 对比选择上限
+// Feature: frontend-refactor-2026-07, Property 10: comparison selection cap
 //
 // For any current selection of run ids, `addToSelection` must enforce the
 // selection cap and de-duplicate:

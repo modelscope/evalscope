@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Eye, GitCompareArrows, X } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useReports } from '@/contexts/ReportsContext'
 import * as reportsApi from '@/api/reports'
 import { isDomainError } from '@/api/errors'
 import type { ListReportsResponse, ReportSummary } from '@/api/types'
-import Button from '@/components/ui/Button'
 import Skeleton from '@/components/ui/Skeleton'
+import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
+import Pagination from '@/components/ui/Pagination'
+import ErrorAlert from '@/components/ui/ErrorAlert'
 import EmptyStateSystem, {
   type EmptyReason,
   type ResolvedEmptyStateAction,
@@ -15,8 +16,8 @@ import EmptyStateSystem, {
 import ReportFiltersBar, { type ReportFilters } from '@/components/reports/ReportFilters'
 import ReportCard from '@/components/reports/ReportCard'
 import ReportsTable from '@/components/reports/ReportsTable'
+import SelectionTray from '@/components/reports/SelectionTray'
 import {
-  MAX_COMPARE_SELECTION,
   addToSelection,
   preserveSelectionAcrossReorder,
 } from '@/domain/compare/compareModel'
@@ -158,7 +159,7 @@ export default function ReportsPage() {
   }, [])
 
   // Cap-aware toggle: removing is always allowed; adding is rejected once the
-  // selection is at MAX_COMPARE_SELECTION.
+  // selection is at the domain cap.
   const handleToggleSelect = useCallback(
     (name: string) => {
       if (selectedForCompare.includes(name)) {
@@ -259,9 +260,7 @@ export default function ReportsPage() {
 
       {/* Error */}
       {error && (
-        <div role="alert" className="px-4 py-3 rounded-[var(--radius)] bg-[var(--danger-bg)] border border-[var(--danger-border)] text-sm text-[var(--danger)]">
-          {error}
-        </div>
+        <ErrorAlert>{error}</ErrorAlert>
       )}
 
       {/* Content */}
@@ -300,29 +299,14 @@ export default function ReportsPage() {
 
           {/* Narrow (<1024px): card view with fields consistent with the table. */}
           <div className="flex flex-col gap-2 lg:hidden">
-            <button
-              type="button"
-              role="checkbox"
-              aria-checked={allSelected}
+            <SelectionCheckbox
+              checked={allSelected}
+              label={t('reports.selectAll')}
               onClick={handleSelectAll}
-              className="flex min-h-11 w-fit items-center gap-2 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
+              className="w-fit text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
             >
-              <span
-                aria-hidden="true"
-                className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border-2 transition-all duration-150"
-                style={{
-                  borderColor: allSelected ? 'var(--accent)' : 'var(--border-strong)',
-                  background: allSelected ? 'var(--accent)' : 'transparent',
-                }}
-              >
-                {allSelected && (
-                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="2,6 5,9 10,3" />
-                  </svg>
-                )}
-              </span>
               {t('reports.selectAll')}
-            </button>
+            </SelectionCheckbox>
             {reports.map((report) => (
               <ReportCard
                 key={report.name}
@@ -337,84 +321,16 @@ export default function ReportsPage() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-2">
-          <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-            ←
-          </Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
-            .reduce<(number | 'ellipsis')[]>((acc, p, idx, arr) => {
-              if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('ellipsis')
-              acc.push(p)
-              return acc
-            }, [])
-            .map((item, idx) =>
-              item === 'ellipsis' ? (
-                // text-dim allowed: decorative pagination ellipsis (DESIGN.md §Text)
-                <span key={`e${idx}`} className="px-1 text-[var(--text-dim)]">
-                  ...
-                </span>
-              ) : (
-                <Button
-                  key={item}
-                  variant={item === page ? 'primary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setPage(item as number)}
-                  className="!min-w-[32px]"
-                >
-                  {item}
-                </Button>
-              ),
-            )}
-          <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
-            →
-          </Button>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
-      {/* Sticky selection tray — shown whenever at least one run is selected,
-          displaying the current count and the compare actions. */}
-      {orderedSelection.length >= 1 && (
-        <div className="sticky bottom-0 z-30 mt-2 -mx-1 px-1">
-          <div className="flex items-center gap-3 flex-wrap px-4 py-3 rounded-[var(--radius)] border border-[var(--accent-dim)] bg-[var(--bg-card)] shadow-[var(--shadow-lg)]">
-            <span className="text-sm font-semibold text-[var(--text)]">
-              {orderedSelection.length} {t('reports.selected')}
-              <span className="ml-1 text-xs font-normal text-[var(--text-muted)]">
-                / {MAX_COMPARE_SELECTION}
-              </span>
-            </span>
-
-            {capNotice && (
-              <span className="text-xs text-[var(--warning-color)]" role="status" aria-live="polite">
-                {t('reports.capReached')}
-              </span>
-            )}
-            {!capNotice && orderedSelection.length > 3 && (
-              <span className="text-xs text-[var(--warning-color)]">{t('compare.maxThreeSelected')}</span>
-            )}
-
-            <div className="flex items-center gap-2 ml-auto">
-              <Button variant="outline" size="sm" disabled={orderedSelection.length !== 1} onClick={handleViewHtml}>
-                <Eye size={14} />
-                {t('reports.viewHtml')}
-              </Button>
-              <Button variant="primary" size="sm" disabled={orderedSelection.length < 2} onClick={handleCompare}>
-                <GitCompareArrows size={14} />
-                {t('reports.compare')}
-              </Button>
-              <button
-                type="button"
-                aria-label={t('reports.clearSelection')}
-                onClick={clearCompareSelection}
-                className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-[var(--radius-sm)] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card2)] transition-colors cursor-pointer"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SelectionTray
+        count={orderedSelection.length}
+        capNotice={capNotice}
+        canViewHtml={orderedSelection.length === 1}
+        onViewHtml={handleViewHtml}
+        onCompare={handleCompare}
+        onClear={clearCompareSelection}
+      />
     </div>
   )
 }
