@@ -20,11 +20,13 @@ async def _send_request_open_loop(
     is_warmup: bool,
     queue: asyncio.Queue,
     client: 'AioHttpClient',
+    track_gpu_memory: bool = False,
 ) -> None:
     """Open-loop send: fires immediately regardless of in-flight count."""
     benchmark_data = await client.post(request)
     benchmark_data.is_warmup = is_warmup
-    benchmark_data.update_gpu_usage()
+    if track_gpu_memory:
+        benchmark_data.update_gpu_usage()
     await queue.put(benchmark_data)
 
 
@@ -120,7 +122,9 @@ class OpenLoopStrategy(BenchmarkStrategy):
                 if sleep_s > 0:
                     await asyncio.sleep(sleep_s)
                 task = asyncio.create_task(
-                    _send_request_open_loop(request, is_warmup or is_warmup_req, self.queue, self.client)
+                    _send_request_open_loop(
+                        request, is_warmup or is_warmup_req, self.queue, self.client, self.track_gpu_memory
+                    )
                 )
                 in_flight.add(task)
         elif rate == -1 or n == 0:
@@ -129,7 +133,9 @@ class OpenLoopStrategy(BenchmarkStrategy):
                 if deadline is not None and time.perf_counter() >= deadline:
                     logger.info('Duration deadline reached; stopping further dispatches.')
                     break
-                task = asyncio.create_task(_send_request_open_loop(request, is_warmup, self.queue, self.client))
+                task = asyncio.create_task(
+                    _send_request_open_loop(request, is_warmup, self.queue, self.client, self.track_gpu_memory)
+                )
                 in_flight.add(task)
         else:
             # 1) Sample n Poisson inter-arrival intervals (mean = 1/rate).
@@ -168,7 +174,9 @@ class OpenLoopStrategy(BenchmarkStrategy):
                     await asyncio.sleep(sleep_s)
                 # If sleep_s <= 0 we are behind schedule; dispatch immediately
                 # to absorb the drift.
-                task = asyncio.create_task(_send_request_open_loop(request, is_warmup, self.queue, self.client))
+                task = asyncio.create_task(
+                    _send_request_open_loop(request, is_warmup, self.queue, self.client, self.track_gpu_memory)
+                )
                 in_flight.add(task)
 
         # Phase barrier: let already-fired requests finish even past the

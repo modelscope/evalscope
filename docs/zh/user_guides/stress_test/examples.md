@@ -264,6 +264,59 @@ evalscope perf \
 - 本模式与 closed-loop（默认）模式的核心区别：closed-loop 每个 worker 等待响应后再发下一条（背压保护），open-loop 不等待、按调度直接发出（更接近真实流量）。
 ```
 
+## 生产流量回放（workload_trace）
+
+`workload_trace` 数据集把录制的生产流量按**原始到达节奏**逐字回放，贴近真实负载——突发到达、异构请求形状、多模型混合路由，这些是合成数据集（`random`、`openqa` 等）难以复现的。它基于 open-loop 调度，但到达时刻由 trace 里的 `timestamp` 决定，**无需 `--rate`**。
+
+准备一个 JSONL trace 文件（每行一条请求），字段说明见[参数说明 · 场景三](./parameters.md#dataset-args数据集专属参数)：
+
+```jsonl
+{"body": {"model": "qwen-plus", "messages": [{"role": "user", "content": "你好"}]}, "timestamp": 1700000000.0}
+{"body": {"model": "qwen-max", "messages": [{"role": "user", "content": "写一首诗"}]}, "timestamp": 1700000001.5, "request_id": "req-42"}
+```
+
+**基础回放**：按原始时间戳逐字重放整个 trace。
+
+```bash
+evalscope perf \
+  --dataset workload_trace \
+  --dataset-path trace.jsonl \
+  --url http://127.0.0.1:8000/v1/chat/completions \
+  --open-loop
+```
+
+**倍速 + 模型映射**：2× 速率回放，把 trace 里的 `gpt-4` 映射到本地 `qwen-max`，并按记录的输出长度对齐（需 vLLM 等支持 `ignore_eos`）。
+
+```bash
+evalscope perf \
+  --dataset workload_trace \
+  --dataset-path trace.jsonl \
+  --url http://127.0.0.1:8000/v1/chat/completions \
+  --open-loop \
+  --dataset-args '{"speed": 2.0, "model_mapping": {"gpt-4": "qwen-max"}, "match_output_length": true}'
+```
+
+**只回放前 500 条**：用 `--number` 截断。
+
+```bash
+evalscope perf \
+  --dataset workload_trace \
+  --dataset-path trace.jsonl \
+  --url http://127.0.0.1:8000/v1/chat/completions \
+  --open-loop \
+  --number 500
+```
+
+```{note}
+**注意事项**
+
+- **仅支持 open-loop**：必须加 `--open-loop`，否则报错。
+- **`--model` 可选且不改写 body**：每条请求保留自己的 `model`（多模型路由得以保留）。需要改模型请用 `--dataset-args` 的 `model_override`（全量替换）或 `model_mapping`（按名映射）。
+- **`--number` 可选**：不传则回放全部记录，传入则截断到前 N 条。
+- **时间戳须单调不减**：支持 epoch 数字或 ISO-8601 字符串；乱序会告警并按时间戳排序。
+- 建议用 `--name` 指定有意义的输出目录名（不传 `--model` 时目录名默认取数据集名）。
+```
+
 ## Warmup 预热压测
 
 在正式压测前发送一批预热请求，消除冷启动影响（如 KV-cache 填充、JIT 编译、连接池初始化等），使性能指标更准确。

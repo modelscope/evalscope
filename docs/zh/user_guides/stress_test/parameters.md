@@ -139,6 +139,14 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `share_gpt_en_multi_turn` | 从 ModelScope 自动下载英文 [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) 数据集（约 70k 条），保留完整多轮对话 | ✓ |
 | `custom_multi_turn` | 使用本地 JSONL 文件作为自定义多轮对话数据集<br>每行为 OpenAI messages 格式的 JSON 数组，适合已有对话数据直接压测<br>**必需提供`dataset_path`**<br>[使用示例](./multi_turn.md#custom_multi_turn) | ✓（必需） |
 
+**生产流量回放类**
+
+需配合 `--open-loop` 使用，按录制的**原始到达节奏**逐字回放真实请求。详见[使用示例](./examples.md#生产流量回放workload_trace)。
+
+| 模式 | 说明 | 支持dataset-path |
+|------|------|------------------|
+| `workload_trace` | 回放录制的生产流量 JSONL：按原始时间戳、请求体、headers 逐字重放，贴近真实负载（突发流量、异构请求、多模型路由）<br>每条请求自带 `model`，保留多模型混合路由<br>**必需 `--open-loop` 和 `--dataset-path`**；`--model`/`--number` 可选（trace 自带模型与条数） | ✓（必需） |
+
 ### dataset-args：数据集专属参数
 
 `--dataset-args` 用一个 JSON 字符串为不同数据集传入专属参数（键名写错会直接报错，便于排查）。常见两个场景：
@@ -169,6 +177,36 @@ evalscope perf \
 **场景二：多轮对话数据集的长度参数**
 
 `swe_smith` 等多轮数据集的 token 长度参数也通过 `--dataset-args` 传入，详见[多轮对话压测指南](./multi_turn.md)。
+
+**场景三：回放真实生产流量**
+
+用 `workload_trace` 把录制的生产流量按**原始到达节奏**逐字回放，贴近真实负载。**必需 `--open-loop`**，无需 `--rate`（到达时刻由 trace 时间戳决定）。完整示例见[生产流量回放（workload_trace）](./examples.md#生产流量回放workload_trace)。
+
+trace 文件为 JSONL，每行一条请求记录：
+
+```jsonl
+{"body": {"model": "qwen-plus", "messages": [{"role": "user", "content": "hi"}]}, "timestamp": 1700000000.0}
+{"body": {"model": "qwen-max", "messages": [...]}, "timestamp": 1700000001.5, "headers": {"X-Tag": "exp"}, "request_id": "req-42", "completion_tokens": 256}
+```
+
+| 字段 | 必需 | 说明 |
+|------|------|------|
+| `body` | ✓ | 完整请求体（dict 或 JSON 字符串），原样发送 |
+| `timestamp` | ✓ | 到达时刻（数字或 ISO-8601 字符串），仅相对间隔有意义，须单调不减 |
+| `headers` | | 该请求专属 HTTP 头（与 CLI headers 合并，CLI 优先；hop-by-hop 头会被剔除） |
+| `request_id` | | 透传到结果，用于与原始请求关联 |
+| `completion_tokens` | | 配合 `match_output_length` 使用 |
+
+| 键 | 类型 | 说明 | 默认值 |
+|----|------|------|--------|
+| `speed` | float | 回放倍速（2.0 = 2× 快，0.5 = 2× 慢） | `1.0` |
+| `model_override` | str | 把所有请求的 `model` 全量替换为该值 | 不启用 |
+| `model_mapping` | dict | 按名映射 `model`（命中优先；未命中保留原值） | 不启用 |
+| `match_output_length` | bool | 用记录的 `completion_tokens` 设 `max_tokens` 并启用 `ignore_eos`（需 vLLM 等支持；对约束解码请求自动跳过 `ignore_eos`） | `false` |
+
+```{note}
+`--model` 对 `workload_trace` **不会改写** trace body——每条请求保留自己的 `model`，从而保留多模型混合路由。需要改模型请用 `model_override` / `model_mapping`。
+```
 
 ```{note}
 `--multi-turn-args` 已废弃，请改用 `--dataset-args`（键名不变）。旧参数仍可用，会自动并入 `--dataset-args`（同名键以 `--dataset-args` 为准）。

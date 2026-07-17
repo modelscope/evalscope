@@ -145,6 +145,18 @@ class TestModelRewriting:
         msg = list(plugin.build_messages())[0]
         assert msg['model'] == 'mapped'
 
+    def test_cli_model_does_not_rewrite_body(self, tmp_path):
+        """--model must not rewrite trace bodies (issue #1489); the trace's own
+        model is preserved so multi-model routing stays intact."""
+        path = _make_trace_file([_record(timestamp=0.0)], tmp_path)
+        args = Arguments(
+            model='cli-model', url='http://localhost:8080/v1/chat/completions',
+            dataset='workload_trace', dataset_path=path, open_loop=True, rate=1,
+        )
+        plugin = WorkloadTraceDatasetPlugin(args)
+        msg = list(plugin.build_messages())[0]
+        assert msg['model'] == 'qwen-72b'
+
 
 # ---------------------------------------------------------------------------
 # Arrival schedule

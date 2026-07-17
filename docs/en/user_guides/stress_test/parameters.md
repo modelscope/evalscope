@@ -138,6 +138,14 @@ Must be used with `--multi-turn`. See the [Multi-turn Benchmark Guide](./multi_t
 | `share_gpt_en_multi_turn` | Automatically downloads the English [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) dataset (~70k conversations) from ModelScope, preserving full multi-turn conversations | ✓ |
 | `custom_multi_turn` | Uses a local JSONL file as a custom multi-turn dataset<br>Each line must be a JSON array of OpenAI message dicts; ideal for benchmarking with your own conversation data<br>**Requires `--dataset-path`**<br>[Usage example](./multi_turn.md#custom_multi_turn) | ✓ (Required) |
 
+**Production Traffic Replay**
+
+Must be used with `--open-loop`; replays recorded requests verbatim following their **original arrival timing**. See [Usage example](./examples.md#production-traffic-replay-workload_trace).
+
+| Mode | Description | Supports dataset-path |
+|------|-------------|----------------------|
+| `workload_trace` | Replays a recorded production-traffic JSONL verbatim — original timestamps, request bodies, and headers — for benchmarking against real-world load (bursty arrivals, heterogeneous requests, multi-model routing)<br>Each request carries its own `model`, preserving multi-model routing<br>**Requires `--open-loop` and `--dataset-path`**; `--model`/`--number` are optional (the trace carries its own model and count) | ✓ (Required) |
+
 ### dataset-args: Per-dataset Arguments
 
 `--dataset-args` passes per-dataset arguments as a JSON string (a mistyped key raises an error, making mistakes easy to spot). Two common use cases:
@@ -168,6 +176,36 @@ How it differs from `--max/min-prompt-length`:
 **Case 2: Length arguments for multi-turn datasets**
 
 Token-length arguments for multi-turn datasets such as `swe_smith` are also passed via `--dataset-args`; see the [Multi-turn Benchmark Guide](./multi_turn.md).
+
+**Case 3: Replay real production traffic**
+
+Use `workload_trace` to replay recorded production traffic verbatim following its **original arrival timing**, closely matching real-world load. **Requires `--open-loop`**; no `--rate` is needed (arrival times come from the trace timestamps). See the full example at [Production Traffic Replay (workload_trace)](./examples.md#production-traffic-replay-workload_trace).
+
+The trace file is JSONL, one request record per line:
+
+```jsonl
+{"body": {"model": "qwen-plus", "messages": [{"role": "user", "content": "hi"}]}, "timestamp": 1700000000.0}
+{"body": {"model": "qwen-max", "messages": [...]}, "timestamp": 1700000001.5, "headers": {"X-Tag": "exp"}, "request_id": "req-42", "completion_tokens": 256}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `body` | ✓ | Complete request body (dict or JSON string), sent as-is |
+| `timestamp` | ✓ | Arrival time (number or ISO-8601 string); only relative deltas matter; must be monotonically non-decreasing |
+| `headers` | | Per-request HTTP headers (merged with CLI headers, CLI wins; hop-by-hop headers are stripped) |
+| `request_id` | | Propagated to results for correlation with the original request |
+| `completion_tokens` | | Used together with `match_output_length` |
+
+| Key | Type | Description | Default |
+|-----|------|-------------|--------|
+| `speed` | float | Replay speed multiplier (2.0 = 2× faster, 0.5 = 2× slower) | `1.0` |
+| `model_override` | str | Replace the `model` of every request with this value | disabled |
+| `model_mapping` | dict | Remap `model` by name (a match takes priority; unmatched keeps the original) | disabled |
+| `match_output_length` | bool | Set `max_tokens` from the recorded `completion_tokens` and enable `ignore_eos` (requires vLLM or compatible; `ignore_eos` is auto-skipped for constrained-decoding requests) | `false` |
+
+```{note}
+`--model` **does not rewrite** the trace body for `workload_trace` — each request keeps its own `model`, preserving multi-model routing. To rewrite models, use `model_override` / `model_mapping`.
+```
 
 ```{note}
 `--multi-turn-args` is deprecated; use `--dataset-args` instead (the key names are unchanged). The old flag still works and is automatically merged into `--dataset-args` (on a key conflict, `--dataset-args` takes precedence).
