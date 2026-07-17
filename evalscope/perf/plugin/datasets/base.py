@@ -44,6 +44,12 @@ class DatasetPluginBase:
     default empty schema rejects any ``--dataset-args`` keys (fail-fast).
     """
 
+    provides_arrival_schedule: bool = False
+    """True if the dataset embeds per-request arrival times, bypassing ``--rate``."""
+
+    requires_model: bool = True
+    """False if the dataset carries model info in each request body, making ``--model`` optional."""
+
     def __init__(self, query_parameters: Arguments):
         """Build data set plugin
 

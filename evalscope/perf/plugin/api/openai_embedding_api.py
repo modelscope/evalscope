@@ -88,8 +88,9 @@ class OpenaiEmbeddingPlugin(ApiPluginBase):
             # Build the embedding request
             payload = {
                 'input': input_text,
-                'model': param.model,
             }
+            if param.model is not None:
+                payload['model'] = param.model
 
             # Add optional parameters if specified
             if param.extra_args:

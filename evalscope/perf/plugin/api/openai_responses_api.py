@@ -191,7 +191,8 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                 output.real_cached_tokens = cached
 
     def _compose_query_from_parameter(self, payload: Dict, param: Arguments) -> Dict:
-        payload['model'] = param.model
+        if param.model is not None:
+            payload['model'] = param.model
         if param.max_tokens is not None:
             payload['max_output_tokens'] = _sample_int_or_range(param.max_tokens)
         if param.stream is not None:

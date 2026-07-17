@@ -4,6 +4,21 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.benchmark_util import BenchmarkData
+from evalscope.perf.utils.body_meta import BODY_META_HEADERS, BODY_META_PREFIX, BODY_META_REQUEST_ID
+
+# Hop-by-hop headers that must not be forwarded from trace data.
+_HOP_BY_HOP_HEADERS = frozenset({
+    'host',
+    'connection',
+    'content-length',
+    'transfer-encoding',
+    'keep-alive',
+    'proxy-authenticate',
+    'proxy-authorization',
+    'te',
+    'trailers',
+    'upgrade',
+})
 
 
 class ApiPluginBase:
@@ -11,6 +26,30 @@ class ApiPluginBase:
     def __init__(self, param: Arguments) -> None:
         self.param = param
         self.model_path = param.tokenizer_path
+
+    @staticmethod
+    def extract_body_meta(body: Dict, headers: Dict) -> Tuple[Dict, Optional[str]]:
+        """Pop body-meta keys and return updated headers and request id.
+
+        Must be called before ``process_request`` so that plugins receive a
+        clean body dict regardless of whether they handle body-meta keys.
+
+        Per-request headers from trace data are merged with CLI headers using
+        fill semantics: CLI-set headers (e.g. Authorization from --api-key)
+        take precedence; trace headers only fill in keys not already present.
+        Hop-by-hop headers from trace data are stripped.
+
+        Returns:
+            (headers, request_id)
+        """
+        extra_headers = body.pop(BODY_META_HEADERS, None)
+        request_id = body.pop(BODY_META_REQUEST_ID, None)
+        if extra_headers:
+            extra_headers = {k: v for k, v in extra_headers.items() if k.lower() not in _HOP_BY_HOP_HEADERS}
+            headers = {**extra_headers, **headers}
+        for k in [k for k in body if k.startswith(BODY_META_PREFIX)]:
+            body.pop(k)
+        return headers, request_id
 
     @abstractmethod
     def build_request(self, messages: Union[List[Dict], str], param: Optional[Arguments] = None) -> Dict:

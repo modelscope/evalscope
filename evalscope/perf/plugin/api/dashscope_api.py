@@ -53,7 +53,8 @@ class DashScopeApiPlugin(ApiPluginBase):
             return None
 
     def __compose_query_from_parameter(self, payload: Dict, param: Arguments):
-        payload['model'] = param.model
+        if param.model is not None:
+            payload['model'] = param.model
         if 'parameters' not in payload:
             payload['parameters'] = {}
         if param.max_tokens is not None:

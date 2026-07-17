@@ -1,5 +1,4 @@
 import asyncio
-import numpy as np
 from typing import TYPE_CHECKING, AsyncGenerator, List, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
@@ -50,6 +49,9 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
     async def _generate_from_dataset():
         """Generate requests by cycling through a dataset."""
         message_generator = DatasetRegistry.get_class(args.dataset)(args)
+        # Re-read: dataset plugins may adjust args.number / args.warmup_num.
+        total_count = args.total_count
+        warmup_count = args.warmup_count
         supports_parallel_generation = message_generator.supports_parallel_message_generation(total_count)
         dataset_generation_workers = resolve_dataset_generation_workers(
             args=args,

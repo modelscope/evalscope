@@ -79,7 +79,8 @@ class CustomPlugin(ApiPluginBase):
             Dict: The request payload with added parameters.
         """
         # Add the model name
-        payload['model'] = param.model
+        if param.model is not None:
+            payload['model'] = param.model
 
         # Add various parameters if they are provided
         if param.max_tokens is not None:
