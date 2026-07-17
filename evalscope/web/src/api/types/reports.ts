@@ -8,12 +8,7 @@
 
 export type {
   // Report score tree
-  SubsetData,
-  CategoryData,
-  MetricData,
-  // Performance metrics embedded on a report
   PercentileStats,
-  PerfMetricsSummary,
   PerfMetrics,
   // Report payloads
   ReportData,
@@ -22,12 +17,9 @@ export type {
   ReportSummary,
   ListReportsResponse,
   // Prediction rows (chat messages + agent trace)
-  SamplePerfMetrics,
   ContentBlock,
   ToolCall,
-  ToolMessageError,
   ChatMessage,
-  AgentTraceEventType,
   AgentTraceEvent,
   AgentTrace,
   PredictionRow,

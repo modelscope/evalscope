@@ -7,7 +7,6 @@
 export type {
   BenchmarkEntry,
   BenchmarksResponse,
-  InvokeStatus,
   EvalInvokeResponse,
   ProgressResponse,
 } from '@/api/schemas/eval.schema'

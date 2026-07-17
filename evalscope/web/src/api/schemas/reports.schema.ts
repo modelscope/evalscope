@@ -251,22 +251,15 @@ export const analysisResponseSchema = z.object({
 // Inferred types (schema-as-source-of-truth)                          //
 // ------------------------------------------------------------------ //
 
-export type SubsetData = z.infer<typeof subsetDataSchema>
-export type CategoryData = z.infer<typeof categoryDataSchema>
-export type MetricData = z.infer<typeof metricDataSchema>
 export type PercentileStats = z.infer<typeof percentileStatsSchema>
-export type PerfMetricsSummary = z.infer<typeof perfMetricsSummarySchema>
 export type PerfMetrics = z.infer<typeof perfMetricsSchema>
 export type ReportData = z.infer<typeof reportDataSchema>
 export type LoadReportResponse = z.infer<typeof loadReportResponseSchema>
 export type ReportSummary = z.infer<typeof reportSummarySchema>
 export type ListReportsResponse = z.infer<typeof listReportsResponseSchema>
-export type SamplePerfMetrics = z.infer<typeof samplePerfMetricsSchema>
 export type ContentBlock = z.infer<typeof contentBlockSchema>
 export type ToolCall = z.infer<typeof toolCallSchema>
-export type ToolMessageError = z.infer<typeof toolMessageErrorSchema>
 export type ChatMessage = z.infer<typeof chatMessageSchema>
-export type AgentTraceEventType = z.infer<typeof agentTraceEventTypeSchema>
 export type AgentTraceEvent = z.infer<typeof agentTraceEventSchema>
 export type AgentTrace = z.infer<typeof agentTraceSchema>
 export type PredictionRow = z.infer<typeof predictionRowSchema>

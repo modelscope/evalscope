@@ -24,4 +24,3 @@ export const configResponseSchema = z.object({
 export type DataFrameResponse = z.infer<typeof dataFrameResponseSchema>
 export type LogResponse = z.infer<typeof logResponseSchema>
 export type TaskStatusResponse = z.infer<typeof taskStatusResponseSchema>
-export type ConfigResponse = z.infer<typeof configResponseSchema>

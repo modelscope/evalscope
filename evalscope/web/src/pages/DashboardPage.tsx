@@ -17,6 +17,7 @@ import Pagination from '@/components/ui/Pagination'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import { FileText, Gauge, Cpu, Clock, ChevronRight } from 'lucide-react'
 import { formatMetricByKey } from '@/domain/metric/registry'
+import { formatFull } from '@/utils/perf'
 
 // Number of recent runs shown before the "view all" toggle.
 const RECENT_LIMIT = 15
@@ -28,11 +29,6 @@ const RECENT_LIMIT = 15
 /** Format ISO timestamp to short form MM-DD HH:MM. */
 function formatShort(ts: string): string {
   return ts ? ts.replace('T', ' ').slice(5, 16) : ''
-}
-
-/** Format ISO timestamp to YYYY-MM-DD HH:MM:SS. */
-function formatFull(ts: string): string {
-  return ts ? ts.replace('T', ' ').slice(0, 19) : ''
 }
 
 // Unified recent-run item across eval + perf.

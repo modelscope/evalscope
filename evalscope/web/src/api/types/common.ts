@@ -6,7 +6,6 @@
 // from the common runtime schemas so compile-time and runtime contracts cannot
 // drift.
 export type {
-  ConfigResponse,
   DataFrameResponse,
   LogResponse,
   TaskStatusResponse,

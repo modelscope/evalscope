@@ -66,7 +66,6 @@ export const benchmarksResponseSchema = z.object({
 // Inferred types (schema-as-source-of-truth)                          //
 // ------------------------------------------------------------------ //
 
-export type InvokeStatus = z.infer<typeof invokeStatusSchema>
 export type EvalInvokeResponse = z.infer<typeof evalInvokeResponseSchema>
 export type ProgressResponse = z.infer<typeof progressResponseSchema>
 export type BenchmarkEntry = z.infer<typeof benchmarkEntrySchema>
