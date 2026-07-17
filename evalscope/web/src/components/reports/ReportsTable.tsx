@@ -3,7 +3,7 @@ import { useLocale } from '@/contexts/LocaleContext'
 import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import type { ReportSummary } from '@/api/types'
 import { scoreColor } from '@/utils/colorScale'
-import { formatMetricByKey } from '@/domain/metric/registry'
+import { formatMetricByKey, getBoundedMetricRatio } from '@/domain/metric/registry'
 import { buildDisplayLabel } from '@/domain/compare/compareModel'
 
 interface ReportsTableProps {
@@ -79,7 +79,10 @@ export default function ReportsTable({
             const parsed = buildDisplayLabel(report.name)
             const model = report.model_name || parsed.model || report.name
             const dataset = report.dataset_name || parsed.dataset
-            const score = formatMetricByKey('score', report.score, t)
+            const metricName = report.metric_name ?? 'score'
+            const scoreValue = report.metric_name === '' ? null : report.score
+            const score = formatMetricByKey(metricName, scoreValue, t)
+            const scoreRatio = getBoundedMetricRatio(metricName, scoreValue)
             return (
               <tr
                 key={report.name}
@@ -114,7 +117,9 @@ export default function ReportsTable({
                 <td className="px-4 py-3 text-right">
                   <span
                     className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-mono font-semibold"
-                    style={{ backgroundColor: `${scoreColor(report.score)}20`, color: scoreColor(report.score) }}
+                    style={scoreRatio == null
+                      ? { backgroundColor: 'var(--accent-dim)', color: 'var(--text)' }
+                      : { backgroundColor: `${scoreColor(scoreRatio)}20`, color: scoreColor(scoreRatio) }}
                   >
                     {score.primary}
                   </span>

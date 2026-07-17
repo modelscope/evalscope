@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportData } from '@/api/types'
 import { scoreColor } from '@/utils/colorScale'
-import { formatScore } from '@/domain/metric/registry'
+import { formatScore, getBoundedMetricRatio, resolveMetricKey } from '@/domain/metric/registry'
 
 interface Props {
   reports: ReportData[]
@@ -37,8 +37,15 @@ export default function ReportSummaryStats({ reports }: Props) {
   const stats = useMemo(() => {
     if (!reports.length) return null
 
-    const scores = reports.map((r) => r.score)
-    const avg = scores.reduce((s, v) => s + v, 0) / scores.length
+    const entries = reports.map((report) => ({
+      name: report.dataset_name,
+      score: report.score,
+      metricName: report.metrics[0]?.name ?? 'score',
+    }))
+    const metricKey = resolveMetricKey(entries[0].metricName)
+    const comparable = entries.every((entry) => resolveMetricKey(entry.metricName) === metricKey)
+    const scores = entries.map((entry) => entry.score)
+    const avg = comparable ? scores.reduce((s, v) => s + v, 0) / scores.length : null
 
     const bestIdx = scores.indexOf(Math.max(...scores))
     const worstIdx = scores.indexOf(Math.min(...scores))
@@ -49,24 +56,24 @@ export default function ReportSummaryStats({ reports }: Props) {
 
     return {
       avg,
-      best: { name: reports[bestIdx].dataset_name, score: scores[bestIdx] },
-      worst: { name: reports[worstIdx].dataset_name, score: scores[worstIdx] },
+      metricName: entries[0].metricName,
+      best: comparable ? { name: entries[bestIdx].name, score: scores[bestIdx] } : null,
+      worst: comparable ? { name: entries[worstIdx].name, score: scores[worstIdx] } : null,
       totalSamples,
     }
   }, [reports])
 
   if (!stats) return null
 
-  const toNorm = (s: number) => Math.max(0, Math.min(1, s))
-  // Bounded ratio → canonical percentage via the centralized formatter
-  // (round half up, 1 decimal), keeping precision consistent across surfaces.
-  const formatPct = (s: number) => formatScore('score', s, t)
-
-  const scoreCards = [
-    { label: t('reportDetail.avgScore'), norm: toNorm(stats.avg), pct: formatPct(stats.avg) },
-    { label: t('reportDetail.bestDataset'), norm: toNorm(stats.best.score), pct: formatPct(stats.best.score), sub: stats.best.name },
-    { label: t('reportDetail.worstDataset'), norm: toNorm(stats.worst.score), pct: formatPct(stats.worst.score), sub: stats.worst.name },
-  ]
+  const scoreCards = stats.avg == null || stats.best == null || stats.worst == null ? [] : [
+    { label: t('reportDetail.avgScore'), value: stats.avg },
+    { label: t('reportDetail.bestDataset'), value: stats.best.score, sub: stats.best.name },
+    { label: t('reportDetail.worstDataset'), value: stats.worst.score, sub: stats.worst.name },
+  ].map((card) => ({
+    ...card,
+    norm: getBoundedMetricRatio(stats.metricName, card.value),
+    display: formatScore(stats.metricName, card.value, t),
+  }))
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -76,16 +83,16 @@ export default function ReportSummaryStats({ reports }: Props) {
           key={i}
           className="flex items-center gap-3 p-4 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]"
         >
-          <ScoreRing score={card.norm} size={72} />
+          {card.norm != null && <ScoreRing score={card.norm} size={72} />}
           <div className="flex flex-col gap-0.5 min-w-0">
             <span className="type-table-xs">
               {card.label}
             </span>
             <span
               className="text-xl font-bold font-mono tabular-nums leading-tight"
-              style={{ color: scoreColor(card.norm) }}
+              style={{ color: card.norm == null ? 'var(--text)' : scoreColor(card.norm) }}
             >
-              {card.pct}
+              {card.display}
             </span>
             {card.sub && (
               <span className="text-xs text-[var(--text-muted)] break-words min-w-0" title={card.sub}>

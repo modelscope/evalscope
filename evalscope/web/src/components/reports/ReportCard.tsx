@@ -5,7 +5,7 @@ import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportSummary } from '@/api/types'
 import { scoreColor } from '@/utils/colorScale'
-import { formatMetricByKey } from '@/domain/metric/registry'
+import { formatMetricByKey, getBoundedMetricRatio } from '@/domain/metric/registry'
 
 interface ReportCardProps {
   report: ReportSummary
@@ -23,6 +23,9 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
   const { t } = useLocale()
 
   const formattedDate = report.timestamp ? formatTimestamp(report.timestamp) : ''
+  const metricName = report.metric_name ?? 'score'
+  const scoreValue = report.metric_name === '' ? null : report.score
+  const scoreRatio = getBoundedMetricRatio(metricName, scoreValue)
 
   const handleDetailClick = (e: MouseEvent) => {
     e.stopPropagation()
@@ -85,9 +88,11 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
         {/* Score badge */}
         <span
           className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-mono font-semibold shrink-0"
-          style={{ backgroundColor: `${scoreColor(report.score)}20`, color: scoreColor(report.score) }}
+          style={scoreRatio == null
+            ? { backgroundColor: 'var(--accent-dim)', color: 'var(--text)' }
+            : { backgroundColor: `${scoreColor(scoreRatio)}20`, color: scoreColor(scoreRatio) }}
         >
-          {formatMetricByKey('score', report.score, t).primary}
+          {formatMetricByKey(metricName, scoreValue, t).primary}
         </span>
       </button>
 

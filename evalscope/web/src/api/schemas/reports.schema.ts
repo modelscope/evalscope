@@ -110,6 +110,7 @@ export const reportSummarySchema = z.object({
   model_name: z.string(),
   dataset_name: z.string(),
   score: z.number(),
+  metric_name: z.string().optional(),
   dataset_scores: z.record(z.string(), z.number()).optional(),
   num_samples: z.number(),
   timestamp: z.string(),

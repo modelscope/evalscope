@@ -36,16 +36,38 @@ describe('OverviewTab dataset score view', () => {
 
     expect(screen.getByRole('progressbar', { name: 'gsm8k Score' })).toBeInTheDocument()
     expect(screen.getByRole('progressbar', { name: 'arc_challenge Score' })).toBeInTheDocument()
+    expect(screen.getByText('81.5%')).toBeInTheDocument()
+    expect(screen.queryByText('8150.0%')).not.toBeInTheDocument()
     expect(screen.queryByTestId('radar-chart')).not.toBeInTheDocument()
   })
 
-  it('offers radar as an optional view for three or more datasets', () => {
-    renderOverview(multi)
+  it('keeps unbounded metrics in their native unit without a percentage bar', () => {
+    renderOverview([multi[2]])
+
+    expect(screen.getAllByText('512.00 tokens/s')).not.toHaveLength(0)
+    expect(screen.queryByText('51200.0%')).not.toBeInTheDocument()
+    expect(screen.queryByRole('progressbar', { name: 'throughput_suite Score' })).not.toBeInTheDocument()
+  })
+
+  it('offers radar only for three or more comparable bounded metrics', () => {
+    const comparable = [0, 1, 2].map((index) => ({
+      ...multi[0],
+      name: `accuracy-${index}`,
+      dataset_name: `accuracy_${index}`,
+      score: 0.7 + index * 0.1,
+    }))
+    renderOverview(comparable)
 
     expect(screen.queryByTestId('radar-chart')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Radar' }))
     expect(screen.getByTestId('radar-chart')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Table' }))
     expect(screen.queryByTestId('radar-chart')).not.toBeInTheDocument()
+  })
+
+  it('does not compare heterogeneous metrics in a radar chart', () => {
+    renderOverview(multi)
+
+    expect(screen.queryByRole('button', { name: 'Radar' })).not.toBeInTheDocument()
   })
 })

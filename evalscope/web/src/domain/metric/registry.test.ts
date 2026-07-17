@@ -5,6 +5,7 @@ import { DEFAULT_METRIC_SPEC } from './MetricDisplaySpec'
 import {
   formatMetricByKey,
   formatScore,
+  getBoundedMetricRatio,
   getMetricSpec,
   METRIC_REGISTRY,
   resolveMetricKey,
@@ -24,6 +25,12 @@ describe('resolveMetricKey', () => {
     expect(resolveMetricKey('AverageAccuracy')).toBe('accuracy')
     expect(resolveMetricKey('pass@1')).toBe('pass_rate')
     expect(resolveMetricKey('Output TPS')).toBe('throughput')
+    expect(resolveMetricKey('AverageOutputTps')).toBe('throughput')
+    expect(resolveMetricKey('WeightedScorePercent')).toBe('score_percent')
+    expect(resolveMetricKey('mean_avg_score')).toBe('accuracy')
+    expect(resolveMetricKey('sum_total_tokens')).toBe('tokens')
+    expect(resolveMetricKey('mean_total_wall_time_s')).toBe('latency')
+    expect(resolveMetricKey('overall_f1')).toBe('f1')
     expect(resolveMetricKey('Avg Latency')).toBe('latency')
     expect(resolveMetricKey('Time to First Token')).toBe('ttft')
   })
@@ -62,6 +69,11 @@ describe('formatMetricByKey', () => {
     expect(result.unitLabel).toBe('tokens/s')
   })
 
+  it('formats backend metric names without guessing from their magnitude', () => {
+    expect(formatMetricByKey('WeightedScorePercent', 81.5, t).primary).toBe('81.5%')
+    expect(formatMetricByKey('AverageOutputTps', 512, t).primary).toBe('512.00 tokens/s')
+  })
+
   it('does not convert a value greater than 1 to a percentage for unbounded metrics', () => {
     const result = formatMetricByKey('latency', 12.5, t)
     expect(result.primary).toBe('12.50 s')
@@ -82,6 +94,15 @@ describe('formatMetricByKey', () => {
     expect(result.isSpecUndefined).toBe(true)
     expect(result.primary).toBe('42.0000')
     expect(result.primary.includes('%')).toBe(false)
+  })
+})
+
+describe('getBoundedMetricRatio', () => {
+  it('normalizes only metrics whose registered contract is bounded', () => {
+    expect(getBoundedMetricRatio('accuracy', 0.815)).toBe(0.815)
+    expect(getBoundedMetricRatio('WeightedScorePercent', 81.5)).toBe(0.815)
+    expect(getBoundedMetricRatio('AverageOutputTps', 512)).toBeNull()
+    expect(getBoundedMetricRatio('unknown_metric', 0.5)).toBeNull()
   })
 })
 

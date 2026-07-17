@@ -26,7 +26,7 @@
       "name": "test-model-a_arc_challenge",
       "dataset_name": "arc_challenge",
       "model_name": "test-model-a",
-      "score": 0.815,
+      "score": 81.5,
       "analysis": "Multi-dataset report entry: arc_challenge with a bounded percentage metric (0-100).",
       "metrics": [
         {

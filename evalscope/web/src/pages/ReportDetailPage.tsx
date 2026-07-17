@@ -13,6 +13,7 @@ import DatasetNav from '@/components/reports/DatasetNav'
 import OverviewTab from '@/components/reports/OverviewTab'
 import DetailsTab from '@/components/reports/DetailsTab'
 import PredictionsTab from '@/components/reports/PredictionsTab'
+import { resolveMetricKey } from '@/domain/metric/registry'
 
 type TabKey = 'overview' | 'details' | 'predictions'
 
@@ -72,9 +73,18 @@ export default function ReportDetailPage() {
   // Derive overall info from report list
   const modelName = reportList[0]?.model_name ?? reportName
   const primaryDataset = reportList[0]?.dataset_name ?? ''
-  const overallScore = reportList.length > 0
-    ? reportList.reduce((s, r) => s + r.score, 0) / reportList.length
-    : 0
+  const overallMetric = useMemo(() => {
+    if (reportList.length === 0) return { score: null, metricName: '' }
+    const metricNames = reportList.map((report) => report.metrics[0]?.name ?? 'score')
+    const firstKey = resolveMetricKey(metricNames[0])
+    if (!metricNames.every((name) => resolveMetricKey(name) === firstKey)) {
+      return { score: null, metricName: '' }
+    }
+    return {
+      score: reportList.reduce((sum, report) => sum + report.score, 0) / reportList.length,
+      metricName: metricNames[0],
+    }
+  }, [reportList])
   const totalSamples = reportList.reduce((sum, r) => {
     return sum + (r.metrics[0]?.categories?.reduce((s, c) => s + c.num, 0) ?? 0)
   }, 0)
@@ -177,7 +187,8 @@ export default function ReportDetailPage() {
         modelName={modelName}
         datasetName={primaryDataset}
         datasets={datasets}
-        score={overallScore}
+        score={overallMetric.score}
+        metricName={overallMetric.metricName}
         totalSamples={totalSamples}
         htmlReportUrl={htmlReportUrl}
         onDatasetClick={handleDatasetChange}
@@ -208,6 +219,7 @@ export default function ReportDetailPage() {
               rootPath={rootPath}
               perfMetrics={reportList.find((r) => r.dataset_name === activeDataset)?.perf_metrics}
               overallScore={reportList.find((r) => r.dataset_name === activeDataset)?.score}
+              metricName={reportList.find((r) => r.dataset_name === activeDataset)?.metrics[0]?.name}
               onSubsetClick={handleSubsetClick}
             />,
           ),

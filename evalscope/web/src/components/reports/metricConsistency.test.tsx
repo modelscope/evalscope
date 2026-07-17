@@ -23,12 +23,13 @@ afterEach(cleanup)
 const identity = (key: string): string => key
 
 /** Build a representative report summary with the given score. */
-function makeReport(score: number): ReportSummary {
+function makeReport(score: number, metricName?: string): ReportSummary {
   return {
     name: 'Qwen2.5-0.5B_gsm8k_20260701_120000',
     model_name: 'Qwen2.5-0.5B',
     dataset_name: 'gsm8k',
     score,
+    metric_name: metricName,
     num_samples: 128,
     timestamp: '2026-07-01T12:00:00',
   }
@@ -84,5 +85,21 @@ describe('metric display consistency across surfaces', () => {
     // ... and it must be exactly what the centralized formatter produces.
     const expected = formatMetricByKey('score', score, identity).primary
     expect(cardText).toBe(expected)
+  })
+
+  it('preserves an unbounded metric unit in both report-list surfaces', () => {
+    const report = makeReport(512, 'AverageOutputTps')
+
+    expect(cardScoreText(report)).toBe('512.00 tokens/s')
+    cleanup()
+    expect(tableScoreText(report)).toBe('512.00 tokens/s')
+  })
+
+  it('does not display a meaningless aggregate for mixed metrics', () => {
+    const report = makeReport(256.5, '')
+
+    expect(cardScoreText(report)).toBe('—')
+    cleanup()
+    expect(tableScoreText(report)).toBe('—')
   })
 })

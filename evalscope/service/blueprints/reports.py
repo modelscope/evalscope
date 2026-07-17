@@ -175,14 +175,15 @@ def _build_report_meta(report_name: str, root: str) -> dict:
 
     avg_score = round(score_sum / len(report_list), 4) if report_list else 0.0
     timestamp = _extract_timestamp(report_name, root)
+    metric_names = [r.metrics[0].name for r in report_list if r.metrics]
+    metric_name = metric_names[0] if len(metric_names) == len(report_list) and all(
+        name == metric_names[0] for name in metric_names
+    ) else ''
 
-    # Build per-dataset score mapping (normalized to 0-1 range)
+    # Preserve each metric's native scale; consumers use metric_name to format it.
     dataset_scores = {}
     for r in report_list:
-        score = r.score
-        if score is not None and score > 1:
-            score = score / 100
-        dataset_scores[r.dataset_name] = round(score, 4) if score is not None else None
+        dataset_scores[r.dataset_name] = round(r.score, 4) if r.score is not None else None
 
     return {
         'name': report_name,
@@ -190,6 +191,7 @@ def _build_report_meta(report_name: str, root: str) -> dict:
         'dataset_name': ', '.join(dataset_names) if len(dataset_names) > 1 else
         (dataset_names[0] if dataset_names else ''),
         'score': avg_score,
+        'metric_name': metric_name,
         'dataset_scores': dataset_scores,
         'num_samples': total_num,
         'timestamp': timestamp,

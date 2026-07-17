@@ -5,7 +5,7 @@ import type { ReportData } from '@/api/types'
 import { getChartUrl } from '@/api/reports'
 import Card from '@/components/ui/Card'
 import Table from '@/components/ui/Table'
-import { formatMetricByKey } from '@/domain/metric/registry'
+import { formatMetricByKey, getBoundedMetricRatio, getMetricSpec, resolveMetricKey } from '@/domain/metric/registry'
 import PlotlyChart from '@/components/charts/PlotlyChart'
 import ReportSummaryStats from './ReportSummaryStats'
 import JsonViewer from '@/components/common/JsonViewer'
@@ -21,12 +21,16 @@ interface Props {
 export default function OverviewTab({ reports, reportName, rootPath, taskConfig, onDatasetClick }: Props) {
   const { t } = useLocale()
   const [scoreView, setScoreView] = useState<'table' | 'radar'>('table')
+  const metricKeys = reports.map((report) => resolveMetricKey(report.metrics[0]?.name ?? 'score'))
   const canShowRadar = reports.length >= 3
+    && metricKeys.every((key) => key === metricKeys[0])
+    && getMetricSpec(metricKeys[0] ?? '').spec.boundedness === 'bounded'
 
   const tableData = useMemo(() => {
     return reports.map((r) => ({
       Dataset: r.dataset_name,
       Score: r.score,
+      Metric: r.metrics[0]?.name ?? 'score',
       Samples: r.metrics[0]?.categories?.reduce((s, c) => s + c.num, 0) ?? 0,
     }))
   }, [reports])
@@ -65,25 +69,25 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
       sortable: true,
       render: (row: Record<string, unknown>) => {
         const score = Number(row.Score)
-        const norm = Math.max(0, Math.min(1, score))
+        const metricName = String(row.Metric ?? 'score')
+        const ratio = getBoundedMetricRatio(metricName, score)
         return (
-          <div className="flex min-w-[92px] items-center gap-1.5 sm:min-w-[240px] sm:gap-3">
-            <div className="h-2 min-w-9 flex-1 overflow-hidden rounded-full border border-[var(--border)] bg-[var(--bg-deep)] sm:h-2.5">
-              <div
-                role="progressbar"
-                aria-label={`${String(row.Dataset)} ${t('prediction.score')}`}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(norm * 100)}
-                className="h-full rounded-full transition-all duration-300"
-                style={{
-                  width: `${Math.min(100, norm * 100)}%`,
-                  background: 'var(--accent)',
-                }}
-              />
-            </div>
-            <span className="w-12 text-right font-mono text-xs font-semibold tabular-nums text-[var(--text)] sm:w-16 sm:text-sm">
-              {formatMetricByKey('score', score, t).primary}
+          <div className="flex min-w-[92px] items-center justify-end gap-1.5 sm:min-w-[240px] sm:gap-3">
+            {ratio != null && (
+              <div className="h-2 min-w-9 flex-1 overflow-hidden rounded-full border border-[var(--border)] bg-[var(--bg-deep)] sm:h-2.5">
+                <div
+                  role="progressbar"
+                  aria-label={`${String(row.Dataset)} ${t('prediction.score')}`}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(ratio * 100)}
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{ width: `${ratio * 100}%`, background: 'var(--accent)' }}
+                />
+              </div>
+            )}
+            <span className="min-w-12 text-right font-mono text-xs font-semibold tabular-nums text-[var(--text)] sm:text-sm">
+              {formatMetricByKey(metricName, score, t).primary}
             </span>
           </div>
         )

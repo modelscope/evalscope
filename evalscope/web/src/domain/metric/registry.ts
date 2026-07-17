@@ -90,6 +90,16 @@ export const EVALUATION_METRIC_SPECS: MetricRegistry = {
     rawPrecision: DEFAULT_RAW_PRECISION,
     percentPrecision: DEFAULT_PERCENT_PRECISION,
   },
+  score_percent: {
+    key: 'score_percent',
+    labelKey: 'metrics.accuracy',
+    boundedness: 'bounded',
+    direction: 'higher-is-better',
+    unit: null,
+    rawPrecision: DEFAULT_RAW_PRECISION,
+    percentPrecision: DEFAULT_PERCENT_PRECISION,
+    storedAsHundred: true,
+  },
 }
 
 /**
@@ -216,7 +226,15 @@ const METRIC_ALIASES: Record<string, string> = {
   weightedaverageaccuracy: 'accuracy',
   weighted_average_accuracy: 'accuracy',
   score: 'accuracy',
+  avg_score: 'accuracy',
   mean_acc: 'accuracy',
+  strict_pass: 'pass_rate',
+  required_coverage: 'accuracy',
+  net_match_score: 'accuracy',
+  boundary_precision: 'precision',
+  compliance_score: 'accuracy',
+  pass_at_k: 'pass_rate',
+  pass_hat_k: 'pass_rate',
   pass_1: 'pass_rate',
   'pass@1': 'pass_rate',
   passrate: 'pass_rate',
@@ -225,6 +243,9 @@ const METRIC_ALIASES: Record<string, string> = {
   exactmatch: 'exact_match',
   f1_score: 'f1',
   f1score: 'f1',
+  temporal_f1: 'f1',
+  task_averaged_f1: 'f1',
+  overall_f1: 'f1',
   avg_latency: 'latency',
   avglatency: 'latency',
   average_latency: 'latency',
@@ -243,6 +264,8 @@ const METRIC_ALIASES: Record<string, string> = {
   average_tpot_s: 'tpot',
   output_tps: 'throughput',
   outputtps: 'throughput',
+  average_output_tps: 'throughput',
+  averageoutputtps: 'throughput',
   tps: 'throughput',
   gen_throughput: 'throughput',
   output_throughput_tokens_s: 'throughput',
@@ -251,10 +274,18 @@ const METRIC_ALIASES: Record<string, string> = {
   requests_per_second: 'rps',
   request_throughput_req_s: 'rps',
   total_tokens: 'tokens',
+  total_model_input_tokens: 'tokens',
+  total_model_output_tokens: 'tokens',
   output_tokens: 'tokens',
   input_tokens: 'tokens',
+  total_wall_time_s: 'latency',
+  total_model_time_s: 'latency',
+  total_tool_time_s: 'latency',
+  total_other_time_s: 'latency',
   successrate: 'success_rate',
   success: 'success_rate',
+  weighted_score_percent: 'score_percent',
+  weightedscorepercent: 'score_percent',
 }
 
 /**
@@ -278,10 +309,16 @@ export function resolveMetricKey(key: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9@]+/g, '_')
     .replace(/^_+|_+$/g, '')
-  if (normalized in METRIC_REGISTRY) {
-    return normalized
+  const candidates = [normalized, normalized.replace(/^(mean|sum)_/, '')]
+  for (const candidate of candidates) {
+    if (candidate in METRIC_REGISTRY) {
+      return candidate
+    }
+    if (candidate in METRIC_ALIASES) {
+      return METRIC_ALIASES[candidate]
+    }
   }
-  return METRIC_ALIASES[normalized] ?? normalized
+  return normalized
 }
 
 /**
@@ -322,6 +359,19 @@ export function formatMetricByKey(
 ): FormattedMetric {
   const { spec } = getMetricSpec(key, registry)
   return formatMetric(value, spec, t)
+}
+
+/** Return a clamped 0-1 ratio only when the metric contract is bounded. */
+export function getBoundedMetricRatio(key: string, value: number | null | undefined): number | null {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return null
+  }
+  const { spec } = getMetricSpec(key)
+  if (spec.boundedness !== 'bounded') {
+    return null
+  }
+  const ratio = spec.storedAsHundred ? value / 100 : value
+  return Math.max(0, Math.min(1, ratio))
 }
 
 /**
