@@ -171,10 +171,11 @@ class DefaultEvaluator(Evaluator):
             num_subsets = len(dataset_dict)
             total_items = sum(len(v) for v in dataset_dict.values())
             subset_word = 'subset' if num_subsets == 1 else 'subsets'
-            if self.benchmark.limit is not None:
+            limit = self.task_config.limit
+            if limit is not None:
                 logger.warning(
                     f'{self.benchmark_name}: {total_items} samples to evaluate '
-                    f'({num_subsets} {subset_word}, --limit={self.benchmark.limit} per subset). '
+                    f'({num_subsets} {subset_word}, --limit={limit} per subset). '
                     f'Remove `--limit` for a formal evaluation.'
                 )
             else:
@@ -183,11 +184,16 @@ class DefaultEvaluator(Evaluator):
 
             # Phase 1 – build unified work pool from all subsets
             context = self._collect_work_items(dataset_dict)
-            # Only report the cache split when resuming; otherwise the total above already covers it.
-            if context.total_cached > 0:
+            # Report the cache split when resuming. Count items that still need prediction;
+            # everything else was loaded from the prediction cache (fully cached or review
+            # pending). Deriving both from `total_items` keeps this consistent with the total
+            # logged above, including batch-scoring benchmarks whose review-pending items are
+            # tracked separately from the work pool (and thus excluded from `grand_total`).
+            to_run = sum(1 for item in context.work_items if item.needs_predict)
+            if to_run < total_items:
                 logger.info(
-                    f'{self.benchmark_name}: resuming from cache — {context.total_cached} cached, '
-                    f'{len(context.work_items)} to run ({context.grand_total} total).'
+                    f'{self.benchmark_name}: resuming from cache — {total_items - to_run} cached, '
+                    f'{to_run} to run ({total_items} total).'
                 )
 
             # Phase 2 – execute unified thread pool (single progress bar)
