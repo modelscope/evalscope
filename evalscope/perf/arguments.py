@@ -24,7 +24,7 @@ _OPENAI_API_ENDPOINT_MAP = {
 }
 
 _OPENAI_RESPONSES_APIS = ('openai_responses', 'openai_response', 'responses')
-_KNOWN_OPENAI_ENDPOINTS = ('chat/completions', 'completions', 'responses', 'embeddings', 'reranks')
+_KNOWN_OPENAI_ENDPOINTS = ('chat/completions', 'completions', 'responses', 'embeddings', 'reranks', 'rerank')
 
 
 def _as_list_if_scalar(value: Any) -> Any:
