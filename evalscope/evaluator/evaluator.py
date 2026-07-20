@@ -184,11 +184,9 @@ class DefaultEvaluator(Evaluator):
 
             # Phase 1 – build unified work pool from all subsets
             context = self._collect_work_items(dataset_dict)
-            # Report the cache split when resuming. Count items that still need prediction;
-            # everything else was loaded from the prediction cache (fully cached or review
-            # pending). Deriving both from `total_items` keeps this consistent with the total
-            # logged above, including batch-scoring benchmarks whose review-pending items are
-            # tracked separately from the work pool (and thus excluded from `grand_total`).
+            # Report the cache split when resuming: items still needing prediction vs. the
+            # rest loaded from cache. Derived from `total_items` so it stays accurate for
+            # batch-scoring benchmarks too (their review-pending items skip `grand_total`).
             to_run = sum(1 for item in context.work_items if item.needs_predict)
             if to_run < total_items:
                 logger.info(
