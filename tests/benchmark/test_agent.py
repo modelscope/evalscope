@@ -120,6 +120,25 @@ class TestAgentBenchmark(TestBenchmark):
         review = json.loads(review_files[0].read_text(encoding='utf-8').strip())
         self.assertNotIn('canary', review['sample_score']['sample_metadata'])
 
+    def test_deepsearchqa(self):
+        """Test DeepSearchQA benchmark end-to-end."""
+        config_overrides = {
+            'collect_perf': False,
+            'debug': False,
+            'eval_batch_size': 1,
+            'judge_strategy': JudgeStrategy.RULE,
+            'limit': 1,
+            'no_timestamp': True,
+            'work_dir': 'outputs/test_agent_deepsearchqa',
+        }
+
+        self._run_dataset_test('deepsearchqa', use_mock=True, **config_overrides)
+
+        review_files = list(Path('outputs/test_agent_deepsearchqa').glob('reviews/*/deepsearchqa_default.jsonl'))
+        self.assertEqual(len(review_files), 1)
+        review = json.loads(review_files[0].read_text(encoding='utf-8').strip())
+        self.assertIn('answer_type', review['sample_score']['sample_metadata'])
+
     def test_swe_bench_verified_agentic(self):
         """Test SWE-bench-verified agentic dataset using docker environment."""
         dataset_args = {

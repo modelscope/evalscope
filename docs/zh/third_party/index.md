@@ -12,6 +12,7 @@ skillsbench.md
 toolathlon.md
 gaia.md
 wide_search.md
+deepsearchqa.md
 swe_bench.md
 swe_bench_pro.md
 tau_bench.md

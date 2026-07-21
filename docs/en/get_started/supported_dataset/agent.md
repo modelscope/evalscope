@@ -9,6 +9,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 | `browsecomp` | [BrowseComp](../../benchmarks/browsecomp.md) | `Agent`, `Knowledge`, `QA` |
 | `claw_eval` | [Claw-Eval](../../benchmarks/claw_eval.md) | `Agent`, `MultiModal`, `MultiTurn` |
 | `deep_swe` | [DeepSWE](../../benchmarks/deep_swe.md) | `Agent`, `Coding`, `MultiTurn` |
+| `deepsearchqa` | [DeepSearchQA](../../benchmarks/deepsearchqa.md) | `Agent`, `Knowledge`, `QA`, `Retrieval` |
 | `gaia` | [GAIA](../../benchmarks/gaia.md) | `Agent`, `MultiTurn`, `Reasoning` |
 | `gdpval` | [GDPval](../../benchmarks/gdpval.md) | `Agent`, `Knowledge`, `MultiTurn` |
 | `general_fc` | [General-FunctionCalling](../../benchmarks/general_fc.md) | `Agent`, `Custom`, `FunctionCalling` |
@@ -41,6 +42,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 ../../benchmarks/browsecomp.md
 ../../benchmarks/claw_eval.md
 ../../benchmarks/deep_swe.md
+../../benchmarks/deepsearchqa.md
 ../../benchmarks/gaia.md
 ../../benchmarks/gdpval.md
 ../../benchmarks/general_fc.md

@@ -99,6 +99,9 @@ pip install evalscope[mcp]
 
 `evalscope[mcp]` bundles the official `mcp` Python SDK plus `mcp-server-fetch` (universal HTTP fetching, no API key). Other MCP servers can be installed on demand or run via `uvx` / `npx`.
 
+For search-agent benchmark examples that combine search MCP servers with fetch/browser-style tools, see the
+[DeepSearchQA](../../third_party/deepsearchqa.md) and [WideSearch](../../third_party/wide_search.md) guides.
+
 ### Quick start
 
 Attach HTTP fetching and a remote MCP tool to a GAIA evaluation:
