@@ -80,8 +80,8 @@ class ContentVideo(ContentBase):
     video: str
     """Video file path, URL, or base64 encoded data URL."""
 
-    format: Literal['mp4', 'mpeg', 'mov']
-    """Format of video data ('mp4', 'mpeg', or 'mov')"""
+    format: Literal['mp4', 'mpeg', 'mov', 'avi']
+    """Format of video data ('mp4', 'mpeg', 'mov', or 'avi')"""
 
     start: Optional[float] = Field(default=None)
     """Optional start time of the relevant video segment in seconds."""

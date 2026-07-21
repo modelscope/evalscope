@@ -39,6 +39,12 @@ class BenchmarkStrategy(ABC):
         self.api_plugin = api_plugin
         self.client = client
         self.queue = queue
+        # GPU-memory accounting is only meaningful when the model runs in this
+        # process (``--api local`` in-process inference).  For remote APIs and
+        # ``local_vllm`` (subprocess) the client process holds no CUDA memory,
+        # so the measurement would be 0 and the per-request first-time
+        # ``import torch`` would only block the event loop.  Skip it there.
+        self.track_gpu_memory = args.api == 'local'
 
     @abstractmethod
     async def run(self) -> None:

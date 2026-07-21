@@ -7,6 +7,7 @@ No container isolation - suitable only for development and CI tests.
 import asyncio
 import os
 import shutil
+import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -98,4 +99,28 @@ class LocalAgentEnvironment(AgentEnvironment):
         shutil.copytree(source, target, dirs_exist_ok=True)
 
 
-__all__ = ['LocalAgentEnvironment']
+class TemporaryLocalAgentEnvironment(LocalAgentEnvironment):
+    """Local environment backed by a temporary working directory."""
+
+    def __init__(
+        self,
+        sample_id: Any = None,
+        *,
+        prefix: str = 'evalscope-local-',
+        env_vars: Optional[Dict[str, str]] = None,
+    ) -> None:
+        raw_sample_id = 'sample' if sample_id is None else str(sample_id)
+        safe_id = ''.join(char if char.isalnum() else '-' for char in raw_sample_id)[:64]
+        self._temporary_directory = tempfile.TemporaryDirectory(prefix=f'{prefix}{safe_id}-')
+        super().__init__(working_dir=self._temporary_directory.name, env_vars=env_vars)
+
+    @property
+    def working_dir(self) -> Path:
+        return Path(self._temporary_directory.name)
+
+    async def close(self) -> None:
+        await super().close()
+        self._temporary_directory.cleanup()
+
+
+__all__ = ['LocalAgentEnvironment', 'TemporaryLocalAgentEnvironment']

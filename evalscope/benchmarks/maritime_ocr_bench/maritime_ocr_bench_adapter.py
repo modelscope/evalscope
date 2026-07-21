@@ -7,7 +7,7 @@ from PIL import Image
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
-from evalscope.api.dataset import DatasetDict, LocalDataLoader, Sample
+from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path
 from evalscope.api.evaluator.state import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
@@ -85,29 +85,20 @@ class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
             raise_error=True,
             feature_name='Maritime-OCR-Bench benchmark',
         )
-        dataset_name_or_path = self.dataset_id
-
-        if os.path.exists(dataset_name_or_path):
-            dataset_path = dataset_name_or_path
-            logger.info(f'Loading Maritime-OCR-Bench from local path: {dataset_path}')
-        else:
-            from modelscope import dataset_snapshot_download
-
-            logger.info(f'Downloading Maritime-OCR-Bench dataset from ModelScope: {dataset_name_or_path}')
-            dataset_path = dataset_snapshot_download(dataset_name_or_path)
-
+        dataset_path = resolve_snapshot_or_local_path(self)
         dataset_file = self._resolve_dataset_file(dataset_path)
         self.data_root = os.path.dirname(dataset_file)
 
-        dataset = LocalDataLoader(
-            data_id_or_path=dataset_file,
+        dataset = load_local_file_dataset(
+            adapter=self,
+            dataset_path=dataset_file,
+            subset='test',
             split=self.eval_split,
             sample_fields=self.record_to_sample,
-            subset='test',
             limit=None,
             repeats=self.repeats,
             shuffle=self.shuffle,
-        ).load()
+        )
 
         return DatasetDict.from_dataset(
             dataset=dataset,

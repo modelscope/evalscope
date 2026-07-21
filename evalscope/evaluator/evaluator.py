@@ -165,19 +165,38 @@ class DefaultEvaluator(Evaluator):
                 return {}
 
             subset_list = list(dataset_dict.keys())
-            logger.info(f'Start evaluating {len(dataset_dict)} subsets of {self.benchmark_name}: {subset_list}')
+
+            # Report the resolved sample total up front. `--limit` applies per subset,
+            # so on multi-subset datasets the total can be much larger than expected.
+            num_subsets = len(dataset_dict)
+            total_items = sum(len(v) for v in dataset_dict.values())
+            subset_word = 'subset' if num_subsets == 1 else 'subsets'
+            limit = self.task_config.limit
+            if limit is not None:
+                logger.warning(
+                    f'{self.benchmark_name}: {total_items} samples to evaluate '
+                    f'({num_subsets} {subset_word}, --limit={limit} per subset). '
+                    f'Remove `--limit` for a formal evaluation.'
+                )
+            else:
+                logger.info(f'{self.benchmark_name}: {total_items} samples to evaluate ({num_subsets} {subset_word})')
+            logger.info(f'Subsets of {self.benchmark_name}: {subset_list}')
 
             # Phase 1 – build unified work pool from all subsets
             context = self._collect_work_items(dataset_dict)
-            logger.info(
-                f'Unified pool: {len(context.work_items)} items to process, '
-                f'{context.total_cached} already fully cached '
-                f'({context.grand_total} total across all subsets).'
-            )
+            # Report the cache split when resuming: items still needing prediction vs. the
+            # rest loaded from cache. Derived from `total_items` so it stays accurate for
+            # batch-scoring benchmarks too (their review-pending items skip `grand_total`).
+            to_run = sum(1 for item in context.work_items if item.needs_predict)
+            if to_run < total_items:
+                logger.info(
+                    f'{self.benchmark_name}: resuming from cache — {total_items - to_run} cached, '
+                    f'{to_run} to run ({total_items} total).'
+                )
 
             # Phase 2 – execute unified thread pool (single progress bar)
             results_by_subset = self._run_pool(context)
-            logger.info(f'Unified pool finished for {self.benchmark_name}.')
+            logger.info(f'{self.benchmark_name}: predictions complete, aggregating scores...')
 
             # Phase 3 – aggregate scores per subset (batch review happens here too)
             agg_score_dict = self._aggregate_scores(dataset_dict, context, results_by_subset)

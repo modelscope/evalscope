@@ -1,0 +1,71 @@
+import type { Dict } from './types'
+
+export const en: Dict = {
+  title: 'Reports',
+  pathLabel: 'Output Directory',
+  scan: 'Scan',
+  scanning: 'Scanning...',
+  filters: {
+    search: 'Search reports...',
+    model: 'Model',
+    dataset: 'Dataset',
+    sortBy: 'Sort By',
+    time: 'Time',
+    score: 'Score',
+  },
+  selectAll: 'Select All',
+  selectReport: 'Select report',
+  selected: 'selected',
+  compare: 'Compare',
+  viewHtml: 'View HTML',
+  samples: 'Samples',
+  scanFirst: 'Scan a directory to view reports',
+  columns: {
+    model: 'Model',
+    dataset: 'Dataset',
+    time: 'Time',
+    samples: 'Samples',
+    score: 'Score',
+    status: 'Status',
+  },
+  status: {
+    completed: 'Completed',
+  },
+  clearSelection: 'Clear',
+  capReached: 'You can compare up to 5 runs.',
+}
+
+export const zh: Dict = {
+  title: '报告',
+  pathLabel: '输出目录',
+  scan: '扫描',
+  scanning: '扫描中...',
+  filters: {
+    search: '搜索报告...',
+    model: '模型',
+    dataset: '数据集',
+    sortBy: '排序',
+    time: '时间',
+    score: '分数',
+  },
+  selectAll: '全选',
+  selectReport: '选择报告',
+  selected: '已选',
+  compare: '对比',
+  viewHtml: '查看HTML',
+  samples: '样本数',
+  scanFirst: '扫描目录以查看报告',
+  columns: {
+    model: '模型',
+    dataset: '数据集',
+    time: '时间',
+    samples: '样本数',
+    score: '分数',
+    status: '状态',
+  },
+  status: {
+    completed: '已完成',
+  },
+  clearSelection: '清空',
+  capReached: '最多可对比 5 个运行。',
+}

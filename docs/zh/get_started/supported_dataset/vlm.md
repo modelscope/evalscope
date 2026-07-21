@@ -38,9 +38,9 @@
 | `mmau` | [MMAU](../../benchmarks/mmau.md) | `Audio`, `MCQ` |
 | `mmmu` | [MMMU](../../benchmarks/mmmu.md) | `Knowledge`, `MultiModal`, `QA` |
 | `mmmu_pro` | [MMMU-PRO](../../benchmarks/mmmu_pro.md) | `Knowledge`, `MCQ`, `MultiModal` |
-| `msr_vtt` | [MSR-VTT](../../benchmarks/msr_vtt.md) | `ImageCaptioning`, `MultiModal` |
-| `msvd` | [MSVD](../../benchmarks/msvd.md) | `ImageCaptioning`, `MultiModal` |
-| `mvbench` | [MVBench](../../benchmarks/mvbench.md) | `MCQ`, `MultiModal` |
+| `msr_vtt` | [MSR-VTT](../../benchmarks/msr_vtt.md) | `ImageCaptioning`, `MultiModal`, `Video` |
+| `msvd` | [MSVD](../../benchmarks/msvd.md) | `ImageCaptioning`, `MultiModal`, `Video` |
+| `mvbench` | [MVBench](../../benchmarks/mvbench.md) | `MCQ`, `MultiModal`, `Video` |
 | `ocr_bench` | [OCRBench](../../benchmarks/ocr_bench.md) | `Knowledge`, `MultiModal`, `QA` |
 | `ocr_bench_v2` | [OCRBench-v2](../../benchmarks/ocr_bench_v2.md) | `Knowledge`, `MultiModal`, `QA` |
 | `olympiad_bench` | [OlympiadBench](../../benchmarks/olympiad_bench.md) | `Math`, `Reasoning` |
@@ -53,7 +53,8 @@
 | `simple_vqa` | [SimpleVQA](../../benchmarks/simple_vqa.md) | `MultiModal`, `QA`, `Reasoning` |
 | `tir_bench` | [TIR-Bench](../../benchmarks/tir_bench.md) | `MultiModal`, `QA`, `Reasoning` |
 | `torgo` | [TORGO](../../benchmarks/torgo.md) | `Audio`, `SpeechRecognition` |
-| `videomme_v2` | [Video-MME-v2](../../benchmarks/videomme_v2.md) | `MCQ`, `MultiModal` |
+| `tvbench` | [TVBench](../../benchmarks/tvbench.md) | `MCQ`, `MultiModal`, `Video` |
+| `videomme_v2` | [Video-MME-v2](../../benchmarks/videomme_v2.md) | `MCQ`, `MultiModal`, `Video` |
 | `visulogic` | [VisuLogic](../../benchmarks/visulogic.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `vqav2` | [VQAv2](../../benchmarks/vqav2.md) | `MultiModal`, `QA` |
 | `vstar_bench` | [V*Bench](../../benchmarks/vstar_bench.md) | `Grounding`, `MCQ`, `MultiModal` |
@@ -114,6 +115,7 @@
 ../../benchmarks/simple_vqa.md
 ../../benchmarks/tir_bench.md
 ../../benchmarks/torgo.md
+../../benchmarks/tvbench.md
 ../../benchmarks/videomme_v2.md
 ../../benchmarks/visulogic.md
 ../../benchmarks/vqav2.md

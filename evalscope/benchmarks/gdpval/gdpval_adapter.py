@@ -13,7 +13,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import prepare_docker_image
+from evalscope.api.sandbox import merge_sandbox_config_dicts, prepare_docker_image
 from evalscope.constants import HubType, Tags
 from evalscope.utils.import_utils import check_import, is_build_doc
 from evalscope.utils.logger import get_logger
@@ -38,29 +38,9 @@ _DATASET_ID = 'openai-mirror/gdpval'
 _DEFAULT_DOCKER_IMAGE = 'evalscope/gdpval:latest'
 
 _GDPVAL_EXTRA_PARAMS: Dict[str, Any] = {
-    'max_steps': {
-        'type': 'int',
-        'description': 'Maximum number of agent steps per sample.',
-        'value': 250,
-    },
-    'command_timeout': {
-        'type': 'float',
-        'description': 'Default per-command timeout in seconds.',
-        'value': 180.0,
-    },
-    'docker_image': {
-        'type': 'str',
-        'description': 'Docker image used as the per-sample sandbox.',
-        'value': _DEFAULT_DOCKER_IMAGE,
-    },
     'auto_build_docker_image': {
         'type': 'bool',
         'description': 'Automatically build the default GDPval Docker image if it is missing locally.',
-        'value': True,
-    },
-    'network_enabled': {
-        'type': 'bool',
-        'description': 'Allow the sandbox to access the network.',
         'value': True,
     },
     'download_reference_files': {
@@ -95,8 +75,8 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
 ## Evaluation Notes
 
 - The default Docker image is built automatically from the bundled Dockerfile into a content-hashed local tag. Set
-  `extra_params.auto_build_docker_image=false` to require a pre-built `evalscope/gdpval:latest`, or override
-  `extra_params.docker_image`.
+  `extra_params.auto_build_docker_image=false` to require a pre-built `evalscope/gdpval:latest`. Override the image,
+  network, CPU or memory settings through `TaskConfig.sandbox.default_config`.
 - `submission_ready` is a local readiness metric: it is 1 when the model produced final text or at least one
   deliverable file. It is not an official GDPval quality score.
 - EvalScope does not run a local GDPval judge. Use the exported submission package with OpenAI's official GDPval judge
@@ -151,10 +131,9 @@ class GDPvalAdapter(AgentLoopAdapter):
             raise_error=True,
             feature_name='GDPval submission export',
         )
-        self.command_timeout = float(self.extra_params.get('command_timeout', 180.0))
-        self.docker_image = self.extra_params.get('docker_image') or _DEFAULT_DOCKER_IMAGE
+        user_sandbox_config = self._task_sandbox_config()
+        self.docker_image = user_sandbox_config.get('image') or _DEFAULT_DOCKER_IMAGE
         self.auto_build_docker_image = bool(self.extra_params.get('auto_build_docker_image', True))
-        self.network_enabled = bool(self.extra_params.get('network_enabled', True))
         self.download_reference_files = bool(self.extra_params.get('download_reference_files', True))
         self._current_output_dir: Optional[str] = None
         self._docker_image_checked = False
@@ -226,24 +205,26 @@ class GDPvalAdapter(AgentLoopAdapter):
 
         self._ensure_docker_image()
         volumes = build_reference_volumes(sample)
-        sandbox_config: Dict[str, Any] = {
+        defaults: Dict[str, Any] = {
             'image': self.docker_image,
             'working_dir': '/workspace',
-            'network_enabled': self.network_enabled,
-            'environment': {
+            'network_enabled': True,
+            'env_vars': {
                 'PAGER': 'cat',
                 'MANPAGER': 'cat',
                 'PIP_PROGRESS_BAR': 'off',
                 'TQDM_DISABLE': '1',
             },
         }
+        sandbox_config = merge_sandbox_config_dicts(defaults, self._task_sandbox_config())
+        sandbox_config['image'] = self.docker_image
         if volumes:
-            sandbox_config['volumes'] = volumes
+            sandbox_config['volumes'] = {**sandbox_config.get('volumes', {}), **volumes}
 
         env = EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config=sandbox_config,
-            timeout=self.command_timeout,
+            timeout=self._native_command_timeout(),
         )
         return GDPvalArtifactEnvironment(
             env=env,

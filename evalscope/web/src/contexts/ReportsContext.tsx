@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react'
 import type { LoadReportResponse, ReportData } from '@/api/types'
 import * as reportsApi from '@/api/reports'
-import { api } from '@/api/client'
+import { apiValidated } from '@/api/client'
+import { configResponseSchema } from '@/api/schemas'
 
 // ------------------------------------------------------------------ //
 // State                                                               //
@@ -9,6 +10,8 @@ import { api } from '@/api/client'
 
 interface ReportsState {
   rootPath: string
+  /** Monotonically-increasing token; bumped by triggerScan to fan out a rescan. */
+  scanToken: number
   availableReports: string[]
   selectedReports: string[]
   /** Keyed by report_name */
@@ -22,6 +25,7 @@ interface ReportsState {
 
 type Action =
   | { type: 'SET_ROOT'; rootPath: string }
+  | { type: 'TRIGGER_SCAN'; rootPath: string }
   | { type: 'SET_AVAILABLE'; reports: string[] }
   | { type: 'SET_SELECTED'; reports: string[] }
   | { type: 'CACHE_REPORT'; name: string; data: LoadReportResponse }
@@ -37,6 +41,7 @@ const REPORT_CACHE_LIMIT = 32 // bound the in-memory cache so long sessions don'
 
 const initialState: ReportsState = {
   rootPath: INITIAL_ROOT,
+  scanToken: 0,
   availableReports: [],
   selectedReports: [],
   reportCache: {},
@@ -49,6 +54,8 @@ function reducer(state: ReportsState, action: Action): ReportsState {
   switch (action.type) {
     case 'SET_ROOT':
       return { ...state, rootPath: action.rootPath }
+    case 'TRIGGER_SCAN':
+      return { ...state, rootPath: action.rootPath, scanToken: state.scanToken + 1, reportCache: {}, multiReportList: [] }
     case 'SET_AVAILABLE':
       return { ...state, availableReports: action.reports }
     case 'SET_SELECTED':
@@ -92,10 +99,11 @@ function reducer(state: ReportsState, action: Action): ReportsState {
 
 interface ReportsCtx extends ReportsState {
   setRootPath: (p: string) => void
+  triggerScan: (p?: string) => void
   scanReports: () => Promise<void>
   selectReports: (r: string[]) => void
-  loadReport: (name: string) => Promise<LoadReportResponse>
-  loadMultiReports: (names: string[]) => Promise<ReportData[]>
+  loadReport: (name: string, signal?: AbortSignal) => Promise<LoadReportResponse>
+  loadMultiReports: (names: string[], signal?: AbortSignal) => Promise<ReportData[]>
   toggleSelectForCompare: (name: string) => void
   setCompareSelection: (names: string[]) => void
   clearCompareSelection: () => void
@@ -106,28 +114,34 @@ const ReportsContext = createContext<ReportsCtx>(null!)
 export function ReportsProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
 
-  // Fetch the server-side default outputs_root from /api/v1/config on mount
+  // Mirror the latest state into a ref so async callbacks can read fresh
+  // values without joining effect dependency arrays.
+  const stateRef = useRef(state)
+  useEffect(() => { stateRef.current = state }, [state])
+
+  // Fetch the server-side default outputs_root from /api/v1/config on mount.
+  // Only apply it when the user has not already changed the root away from the
+  // initial default (checked at resolve time via the state ref).
   useEffect(() => {
     let cancelled = false
-    api<{ outputs_root: string }>('/api/v1/config')
+    apiValidated('/api/v1/config', configResponseSchema)
       .then((cfg) => {
-        if (!cancelled && cfg.outputs_root && !userSetRootRef.current) {
+        if (!cancelled && cfg.outputs_root && stateRef.current.rootPath === INITIAL_ROOT) {
           dispatch({ type: 'SET_ROOT', rootPath: cfg.outputs_root })
         }
       })
       .catch(() => {/* ignore; keep default */})
     return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const userSetRootRef = useRef(false)
-  const stateRef = useRef(state)
-  useEffect(() => { stateRef.current = state }, [state])
-
   const setRootPath = useCallback((p: string) => {
-    userSetRootRef.current = true
     dispatch({ type: 'SET_ROOT', rootPath: p })
     dispatch({ type: 'CLEAR_CACHE' })
+  }, [])
+
+  const triggerScan = useCallback((p?: string) => {
+    const nextRoot = p ?? stateRef.current.rootPath
+    dispatch({ type: 'TRIGGER_SCAN', rootPath: nextRoot })
   }, [])
 
   const scanReportsAction = useCallback(async () => {
@@ -143,11 +157,11 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
   const selectReports = useCallback((r: string[]) => dispatch({ type: 'SET_SELECTED', reports: r }), [])
 
   const loadReport = useCallback(
-    async (name: string) => {
+    async (name: string, signal?: AbortSignal) => {
       if (state.reportCache[name]) return state.reportCache[name]
       dispatch({ type: 'SET_LOADING', loading: true })
       try {
-        const data = await reportsApi.loadReport(state.rootPath, name)
+        const data = await reportsApi.loadReport(state.rootPath, name, signal)
         dispatch({ type: 'CACHE_REPORT', name, data })
         return data
       } finally {
@@ -158,7 +172,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
   )
 
   const loadMultiReports = useCallback(
-    async (names: string[]) => {
+    async (names: string[], signal?: AbortSignal) => {
       dispatch({ type: 'SET_LOADING', loading: true })
       try {
         // Load via cache-aware path so repeat loads in compare view don't refetch.
@@ -167,7 +181,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
         const results = await Promise.all(
           names.map(async (name) => {
             if (reportCache[name]) return reportCache[name]
-            const data = await reportsApi.loadReport(rootPath, name)
+            const data = await reportsApi.loadReport(rootPath, name, signal)
             dispatch({ type: 'CACHE_REPORT', name, data })
             return data
           }),
@@ -203,6 +217,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     () => ({
       ...state,
       setRootPath,
+      triggerScan,
       scanReports: scanReportsAction,
       selectReports,
       loadReport,
@@ -211,12 +226,13 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
       setCompareSelection,
       clearCompareSelection,
     }),
-    [state, setRootPath, scanReportsAction, selectReports, loadReport, loadMultiReports, toggleSelectForCompare, setCompareSelection, clearCompareSelection],
+    [state, setRootPath, triggerScan, scanReportsAction, selectReports, loadReport, loadMultiReports, toggleSelectForCompare, setCompareSelection, clearCompareSelection],
   )
 
   return <ReportsContext.Provider value={value}>{children}</ReportsContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useReports() {
   return useContext(ReportsContext)
 }

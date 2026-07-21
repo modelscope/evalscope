@@ -6,21 +6,21 @@ import ThemeToggle from './ThemeToggle'
 import { BarChart3, Gauge, FlaskConical, BookOpen, FileText, Menu, X } from 'lucide-react'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+  `coarse-target flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
     isActive
       ? 'bg-[var(--accent)] text-[var(--text-on-filled)] shadow-[var(--shadow-glow-soft)]'
       : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card2)]'
   }`
 
 const iconLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
+  `coarse-target flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
     isActive
       ? 'bg-[var(--accent)] text-[var(--text-on-filled)] shadow-[var(--shadow-glow-soft)]'
       : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card2)]'
   }`
 
 const mobileLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+  `coarse-target flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
     isActive
       ? 'bg-[var(--accent)] text-white'
       : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card2)]'
@@ -32,9 +32,9 @@ export default function TopNav() {
 
   const navItems = [
     { to: '/dashboard', icon: <BarChart3 size={15} />, label: t('nav.dashboard') },
-    { to: '/reports', icon: <FileText size={15} />, label: t('nav.reports') },
-    { to: '/eval', icon: <FlaskConical size={15} />, label: t('nav.eval') },
-    { to: '/perf', icon: <Gauge size={15} />, label: t('nav.perf') },
+    { to: '/reports', icon: <FileText size={15} />, label: t('nav.evaluations') },
+    { to: '/performance', icon: <Gauge size={15} />, label: t('nav.performance') },
+    { to: '/tasks', icon: <FlaskConical size={15} />, label: t('nav.tasks') },
     { to: '/benchmarks', icon: <BookOpen size={15} />, label: t('nav.benchmarks') },
   ]
 
@@ -83,7 +83,7 @@ export default function TopNav() {
             target="_blank"
             rel="noreferrer"
             title={t('common.github')}
-            className="hidden sm:flex w-8 h-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card2)] transition-all duration-200"
+            className="coarse-target hidden sm:flex w-8 h-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card2)] transition-all duration-200"
           >
             <svg viewBox="0 0 24 24" width={16} height={16} fill="currentColor">
               <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
@@ -94,7 +94,7 @@ export default function TopNav() {
           {/* Mobile menu button */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card2)] transition-all duration-200"
+            className="coarse-target md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card2)] transition-all duration-200"
             aria-label="Toggle menu"
           >
             {mobileOpen ? <X size={18} /> : <Menu size={18} />}

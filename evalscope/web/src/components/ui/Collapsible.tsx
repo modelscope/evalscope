@@ -4,6 +4,8 @@ import { ChevronDown, ChevronRight } from 'lucide-react'
 interface Props {
   /** Header content rendered to the right of the chevron. May be a render fn for open-aware headers. */
   header: ReactNode | ((open: boolean) => ReactNode)
+  /** Optional interactive content placed beside, not inside, the toggle button. */
+  headerAfter?: ReactNode
   children: ReactNode
   /** Initial open state when uncontrolled. */
   defaultOpen?: boolean
@@ -22,6 +24,7 @@ interface Props {
 /** Lightweight chevron + content collapsible. The 4 chat collapsibles in chat/ all share this shape. */
 export default function Collapsible({
   header,
+  headerAfter,
   children,
   defaultOpen = false,
   style,
@@ -34,24 +37,28 @@ export default function Collapsible({
   const Chevron = open ? ChevronDown : ChevronRight
   return (
     <div style={style}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          width: '100%',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          padding: '0.2rem 0',
-          textAlign: 'left',
-          ...headerStyle,
-        }}
-      >
-        <Chevron size={chevronSize} style={{ color: chevronColor, flexShrink: 0 }} />
-        {typeof header === 'function' ? header(open) : header}
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            flex: 1,
+            minWidth: 0,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '0.2rem 0',
+            textAlign: 'left',
+            ...headerStyle,
+          }}
+        >
+          <Chevron size={chevronSize} style={{ color: chevronColor, flexShrink: 0 }} />
+          {typeof header === 'function' ? header(open) : header}
+        </button>
+        {headerAfter}
+      </div>
       {open && <div style={bodyStyle}>{children}</div>}
     </div>
   )

@@ -309,7 +309,6 @@ and expert claims used for LLM-as-judge coverage scoring.
 |-----------|------|---------|-------------|
 | `mcp_server_url` | `str` | `http://localhost:1984` | MCP-Atlas agent-environment base URL. |
 | `filter_enabled_servers` | `bool` | `True` | Skip tasks whose ground-truth trajectory uses MCP servers that are not currently enabled. |
-| `max_steps` | `int` | `100` | Maximum number of EvalScope agent loop steps per sample. |
 | `max_tool_calls` | `int` | `100` | Maximum MCP tool calls allowed per sample. |
 | `request_timeout` | `float` | `60.0` | Timeout in seconds for MCP tool calls. |
 | `list_tools_timeout` | `float` | `180.0` | Timeout in seconds for MCP server preflight and list-tools requests. |
@@ -326,20 +325,25 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets mcp_atlas \
+    --agent-config '{"mode":"native","strategy":"function_calling","max_steps":100}' \
     --limit 10  # Remove this line for formal evaluation
 ```
 
 ### Using Python
 
 ```python
-from evalscope import run_task
-from evalscope.config import TaskConfig
+from evalscope import TaskConfig, run_task
+from evalscope.api.agent import NativeAgentConfig
 
 task_cfg = TaskConfig(
     model='YOUR_MODEL',
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['mcp_atlas'],
+    agent_config=NativeAgentConfig(
+        strategy='function_calling',
+        max_steps=100,
+    ),
     dataset_args={
         'mcp_atlas': {
             # extra_params: {}  # uses default extra parameters
@@ -350,5 +354,3 @@ task_cfg = TaskConfig(
 
 run_task(task_cfg=task_cfg)
 ```
-
-

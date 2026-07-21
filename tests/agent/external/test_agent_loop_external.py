@@ -114,9 +114,9 @@ def test_agent_loop_adapter_routes_external_config_through_bridge():
     assert EventType.MODEL_GENERATE in types
 
 
-def test_agent_loop_adapter_ignores_native_agent_config():
+def test_agent_loop_adapter_routes_native_config_to_agent_loop():
     """Sanity check: ``mode='native'`` still falls through to the
-    AgentLoop path; the new branch only fires for ExternalAgentConfig.
+    AgentLoop path; only ExternalAgentConfig uses the external bridge.
     The actual loop is exercised by ``test_agent_integration``; here we
     only assert that the external-bridge dispatch did *not* run.
     """

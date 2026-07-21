@@ -19,3 +19,4 @@ from .share_gpt import ShareGPTEnDatasetPlugin, ShareGPTZhDatasetPlugin
 from .speed_benchmark import SpeedBenchmarkDatasetPlugin, SpeedBenchmarkLongDatasetPlugin
 from .swe_smith import SweSmithDatasetPlugin  # noqa: F401
 from .trie import TrieAgenticCodingPlugin, TrieCodeQaPlugin, TrieOfficeWorkPlugin  # noqa: F401
+from .workload_trace import WorkloadTraceDatasetPlugin  # noqa: F401

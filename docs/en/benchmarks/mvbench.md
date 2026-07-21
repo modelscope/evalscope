@@ -31,7 +31,7 @@ optimized video archives.
 | **Benchmark Name** | `mvbench` |
 | **Dataset ID** | [PKU-Alignment/MVBench](https://modelscope.cn/datasets/PKU-Alignment/MVBench/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2311.17005) |
-| **Tags** | `MCQ`, `MultiModal` |
+| **Tags** | `MCQ`, `MultiModal`, `Video` |
 | **Metrics** | `acc` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
@@ -83,14 +83,6 @@ Answer the following multiple choice question. The last line of your response sh
 {choices}
 ```
 
-## Extra Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `dataset_id` | `str` | `PKU-Alignment/MVBench` | Dataset repository ID or local dataset root for MVBench annotations and videos. |
-| `dataset_hub` | `str` | `modelscope` | Dataset hub used to load annotations and video archives. Choices: ['huggingface', 'modelscope', 'local'] |
-| `dataset_revision` | `str` | `` | Optional dataset revision; leave empty to use the hub default. |
-
 ## Usage
 
 ### Using CLI
@@ -118,7 +110,6 @@ task_cfg = TaskConfig(
     dataset_args={
         'mvbench': {
             # subset_list: ['action_antonym', 'action_count', 'action_localization']  # optional, evaluate specific subsets
-            # extra_params: {}  # uses default extra parameters
         }
     },
     limit=10,  # Remove this line for formal evaluation
@@ -126,5 +117,3 @@ task_cfg = TaskConfig(
 
 run_task(task_cfg=task_cfg)
 ```
-
-

@@ -3,9 +3,7 @@ from collections import defaultdict
 from typing import Dict, List
 
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
-from evalscope.api.dataset import Sample
-from evalscope.api.dataset.dataset import DatasetDict
-from evalscope.api.dataset.loader import DictDataLoader
+from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records, resolve_snapshot_or_local_path
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
@@ -108,9 +106,8 @@ class Tau2BenchAdapter(AgentAdapter):
             logger.info(f'Loading dataset from {dataset_name_or_path}')
             dataset_path = dataset_name_or_path
         else:
-            from modelscope import dataset_snapshot_download
             logger.info(f'Loading dataset from modelscope: > dataset_name: {dataset_name_or_path}')
-            dataset_path = dataset_snapshot_download(dataset_name_or_path)
+            dataset_path = resolve_snapshot_or_local_path(self)
 
         # Set Tau2 data dir
         os.environ['TAU2_DATA_DIR'] = dataset_path
@@ -126,14 +123,16 @@ class Tau2BenchAdapter(AgentAdapter):
             tasks = task_loader()
             tasks = [task.model_dump(exclude_unset=True) for task in tasks]
 
-            # load dataset
-            dataset = DictDataLoader(
-                dict_list=tasks,
+            dataset = build_dataset_from_records(
+                records=tasks,
                 sample_fields=self.record_to_sample,
+                name=domain_name,
+                location=dataset_path,
                 limit=self.limit,
                 repeats=self.repeats,
                 shuffle=self.shuffle,
-            ).load()
+                seed=None,
+            )
 
             data_dict[domain_name] = dataset
 

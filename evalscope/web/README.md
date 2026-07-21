@@ -12,15 +12,12 @@ hand-written eyebrow class strings.
 
 | Import | Purpose | DESIGN.md ref |
 |---|---|---|
-| `import ScoreChip from '@/components/ui/ScoreChip'` | Small caption-mono score pill | `{components.score-chip}` |
 | `import ScoreBadge from '@/components/ui/ScoreBadge'` | Bold percentage / boolean pill | `{components.score-badge}` |
 | `import KpiCard from '@/components/ui/KpiCard'` | Dashboard hero metric tile | `{components.kpi-card}` |
 | `import Eyebrow from '@/components/ui/Eyebrow'` | UPPERCASE section eyebrow label | `{typography.label-xs}` |
 | `import ChatBubble from '@/components/ui/ChatBubble'` | 5-role chat surface (user / bot / tool / reasoning / system) | `{components.chat-bubble}` |
 | `import EmptyState from '@/components/common/EmptyState'` | Empty / welcome state — 64×64 icon tile + 2 lines | `{components.empty-state}` |
 | `import PathBar from '@/components/ui/PathBar'` | Dashboard "scan this directory" input row | `{components.path-bar}` |
-| `import EvalRunCard from '@/components/ui/EvalRunCard'` | Eval-row in the dashboard timeline | `{components.eval-run-card}` |
-| `import ModelGroupHeader from '@/components/ui/ModelGroupHeader'` | Collapsible model / dataset group header | `{ex-model-group-header}` |
 
 ### Typography utility classes (defined in `src/index.css`)
 

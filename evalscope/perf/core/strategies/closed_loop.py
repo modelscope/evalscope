@@ -20,11 +20,13 @@ async def _send_request(
     is_warmup: bool,
     queue: asyncio.Queue,
     client: 'AioHttpClient',
+    track_gpu_memory: bool = False,
 ) -> None:
     async with semaphore:
         benchmark_data = await client.post(request)
     benchmark_data.is_warmup = is_warmup
-    benchmark_data.update_gpu_usage()
+    if track_gpu_memory:
+        benchmark_data.update_gpu_usage()
     await queue.put(benchmark_data)
 
 
@@ -119,7 +121,9 @@ class ClosedLoopStrategy(BenchmarkStrategy):
                 done, pending = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
                 in_flight = pending
 
-            task = asyncio.create_task(_send_request(semaphore, request, is_warmup, self.queue, self.client))
+            task = asyncio.create_task(
+                _send_request(semaphore, request, is_warmup, self.queue, self.client, self.track_gpu_memory)
+            )
             in_flight.add(task)
             dispatched += 1
 

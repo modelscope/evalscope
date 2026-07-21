@@ -1,9 +1,12 @@
 import json
 from argparse import Namespace
 from inspect import signature
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, SecretStr
+from typing import Optional, Union
 
 from evalscope.utils.io_utils import json_to_dict, yaml_to_dict
+
+SECRET_HEADER_KEYS = {'authorization', 'proxy-authorization', 'x-api-key', 'x-auth-token'}
 
 
 class BaseArgument(BaseModel):
@@ -62,6 +65,27 @@ def parse_int_or_float(num):
     if number.is_integer():
         return int(number)
     return number
+
+
+def get_secret_value(value: Optional[Union[str, SecretStr, dict, list]]) -> Optional[Union[str, dict, list]]:
+    """Return the raw value for runtime use while keeping SecretStr masked for display."""
+    if isinstance(value, SecretStr):
+        return value.get_secret_value()
+    if isinstance(value, dict):
+        return {key: get_secret_value(val) for key, val in value.items()}
+    if isinstance(value, list):
+        return [get_secret_value(item) for item in value]
+    return value
+
+
+def secretize_auth_headers(headers: Optional[dict]) -> Optional[dict]:
+    """Wrap auth-style header values as SecretStr for display-safe serialization."""
+    if not headers:
+        return headers
+    return {
+        key: SecretStr(value) if str(key).lower() in SECRET_HEADER_KEYS and isinstance(value, str) else value
+        for key, value in headers.items()
+    }
 
 
 def get_supported_params(func):

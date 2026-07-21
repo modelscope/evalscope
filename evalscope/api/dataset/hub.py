@@ -3,7 +3,7 @@
 import inspect
 import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Optional, Union
 
 from evalscope.constants import HubType
 from evalscope.utils.logger import get_logger
@@ -44,6 +44,27 @@ class DatasetHub:
             cache_dir=self.cache_dir,
         )
 
+    def download_snapshot(
+        self,
+        allow_file_pattern: Optional[Union[str, List[str]]] = None,
+        ignore_file_pattern: Optional[Union[str, List[str]]] = None,
+    ) -> str:
+        return download_dataset_snapshot(
+            data_id_or_path=self.data_id_or_path,
+            data_source=self.data_source,
+            revision=self.revision,
+            force_redownload=self.force_redownload,
+            cache_dir=self.cache_dir,
+            allow_file_pattern=allow_file_pattern,
+            ignore_file_pattern=ignore_file_pattern,
+        )
+
+
+def _resolve_data_source(data_id_or_path: str, data_source: Optional[str]) -> str:
+    if data_source == HubType.LOCAL or os.path.exists(data_id_or_path):
+        return HubType.LOCAL
+    return data_source or HubType.MODELSCOPE
+
 
 def load_dataset_from_hub(
     data_id_or_path: str,
@@ -61,7 +82,7 @@ def load_dataset_from_hub(
     from modelscope import MsDataset
     from modelscope.utils.constant import DownloadMode as MSDownloadMode
 
-    data_source = data_source or HubType.MODELSCOPE
+    data_source = _resolve_data_source(data_id_or_path, data_source)
     hf_download_mode = None if not force_redownload else HFDownloadMode.FORCE_REDOWNLOAD
     ms_download_mode = None if not force_redownload else MSDownloadMode.FORCE_REDOWNLOAD
 
@@ -113,7 +134,16 @@ def download_dataset_file(
     cache_dir: Optional[str] = None,
 ) -> str:
     """Download or resolve a single file from a dataset hub."""
-    data_source = data_source or HubType.MODELSCOPE
+    data_source = _resolve_data_source(data_id_or_path, data_source)
+
+    if data_source == HubType.LOCAL:
+        root_dir = os.path.realpath(data_id_or_path)
+        resolved_path = os.path.realpath(os.path.join(root_dir, file_path))
+        if os.path.commonpath([root_dir, resolved_path]) != root_dir:
+            raise ValueError(f'Invalid dataset file path: {file_path}')
+        if not os.path.exists(resolved_path):
+            raise FileNotFoundError(f'Dataset file {file_path} was not found in {root_dir}.')
+        return resolved_path
 
     if data_source == HubType.HUGGINGFACE:
         from huggingface_hub import hf_hub_download
@@ -133,19 +163,60 @@ def download_dataset_file(
         download_kwargs = {'allow_file_pattern': file_path}
         if revision:
             download_kwargs['revision'] = revision
+        if cache_dir:
+            download_kwargs['cache_dir'] = cache_dir
         snapshot_dir = dataset_snapshot_download(data_id_or_path, **download_kwargs)
         resolved_path = os.path.join(snapshot_dir, file_path)
         if not os.path.exists(resolved_path):
             raise FileNotFoundError(f'Dataset file {file_path} was not found in {snapshot_dir}.')
         return resolved_path
 
+    raise ValueError(f'Unsupported dataset hub: {data_source}')
+
+
+def download_dataset_snapshot(
+    data_id_or_path: str,
+    data_source: Optional[str] = HubType.MODELSCOPE,
+    revision: Optional[str] = None,
+    force_redownload: bool = False,
+    cache_dir: Optional[str] = None,
+    allow_file_pattern: Optional[Union[str, List[str]]] = None,
+    ignore_file_pattern: Optional[Union[str, List[str]]] = None,
+) -> str:
+    """Download or resolve a dataset snapshot root from a supported hub."""
+    data_source = _resolve_data_source(data_id_or_path, data_source)
+
     if data_source == HubType.LOCAL:
-        root_dir = os.path.abspath(data_id_or_path)
-        resolved_path = os.path.abspath(os.path.join(root_dir, file_path))
-        if os.path.commonpath([root_dir, resolved_path]) != root_dir:
-            raise ValueError(f'Invalid dataset file path: {file_path}')
-        if not os.path.exists(resolved_path):
-            raise FileNotFoundError(f'Dataset file {file_path} was not found in {root_dir}.')
-        return resolved_path
+        root_dir = os.path.realpath(data_id_or_path)
+        if not os.path.isdir(root_dir):
+            raise FileNotFoundError(f'Local dataset directory was not found: {data_id_or_path}')
+        return root_dir
+
+    if data_source == HubType.HUGGINGFACE:
+        from huggingface_hub import snapshot_download
+
+        return snapshot_download(
+            repo_id=data_id_or_path,
+            repo_type='dataset',
+            revision=revision,
+            cache_dir=cache_dir,
+            force_download=force_redownload,
+            allow_patterns=allow_file_pattern,
+            ignore_patterns=ignore_file_pattern,
+        )
+
+    if data_source == HubType.MODELSCOPE:
+        from modelscope import dataset_snapshot_download
+
+        download_kwargs = {}
+        if revision:
+            download_kwargs['revision'] = revision
+        if cache_dir:
+            download_kwargs['cache_dir'] = cache_dir
+        if allow_file_pattern is not None:
+            download_kwargs['allow_file_pattern'] = allow_file_pattern
+        if ignore_file_pattern is not None:
+            download_kwargs['ignore_file_pattern'] = ignore_file_pattern
+        return dataset_snapshot_download(data_id_or_path, **download_kwargs)
 
     raise ValueError(f'Unsupported dataset hub: {data_source}')

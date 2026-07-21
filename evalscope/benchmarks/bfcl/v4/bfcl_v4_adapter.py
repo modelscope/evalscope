@@ -3,12 +3,10 @@ import os
 import traceback
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
-from evalscope.api.dataset import Sample
-from evalscope.api.dataset.dataset import DatasetDict
-from evalscope.api.dataset.loader import DictDataLoader
+from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
 from evalscope.api.evaluator import InferenceResult, TaskState
 from evalscope.api.messages.chat_message import ChatMessageAssistant, ChatMessageUser
 from evalscope.api.messages.perf_metrics import PerformanceMetrics
@@ -17,6 +15,7 @@ from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.report import Report
+from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.function_utils import thread_safe
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
@@ -31,6 +30,13 @@ from .utils import (
 )
 
 logger = get_logger()
+
+
+def _normalize_openai_base_url(api_url: Optional[str]) -> str:
+    """Return the API root expected by the OpenAI SDK."""
+    if not api_url:
+        return ''
+    return api_url.strip().rstrip('/').removesuffix('/chat/completions')
 
 
 @register_benchmark(
@@ -146,13 +152,16 @@ class BFCLV4Adapter(AgentAdapter):
         # collect prereq entries for later prereq inference
         self.prereq_entries.extend(prereq_entries)
 
-        return DictDataLoader(
-            dict_list=processed_entries,
+        return build_dataset_from_records(
+            records=processed_entries,
+            sample_fields=self.record_to_sample,
+            name=category,
+            location=self.dataset_id,
             limit=self.limit,
             repeats=self.repeats,
-            sample_fields=self.record_to_sample,
             shuffle=self.shuffle,
-        ).load()
+            seed=None,
+        )
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert a data record to a Sample object."""
@@ -170,8 +179,12 @@ class BFCLV4Adapter(AgentAdapter):
         from bfcl_eval.model_handler.api_inference.openai_completion import OpenAICompletionsHandler
 
         # Set env variables for OpenAI API
-        os.environ['OPENAI_API_KEY'] = self._task_config.api_key
-        os.environ['OPENAI_BASE_URL'] = self._task_config.api_url
+        base_url = _normalize_openai_base_url(self._task_config.api_url)
+        os.environ['OPENAI_API_KEY'] = get_secret_value(self._task_config.api_key) or ''
+        if base_url:
+            os.environ['OPENAI_BASE_URL'] = base_url
+        else:
+            os.environ.pop('OPENAI_BASE_URL', None)
 
         self.handler = OpenAICompletionsHandler(
             model_name=self._task_config.model,

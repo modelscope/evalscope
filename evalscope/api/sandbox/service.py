@@ -248,6 +248,14 @@ class SandboxService:
                 logger.info('SandboxService: manager stopped.')
             except Exception as exc:
                 logger.warning(f'SandboxService: error stopping manager: {exc}')
+                cleanup_all = getattr(manager, 'cleanup_all_sandboxes', None)
+                if not callable(cleanup_all):
+                    continue
+                try:
+                    await cleanup_all()
+                    logger.info('SandboxService: fallback sandbox cleanup completed.')
+                except Exception as cleanup_exc:
+                    logger.warning(f'SandboxService: fallback sandbox cleanup failed: {cleanup_exc}')
 
     def shutdown_all(self) -> None:
         """Synchronous wrapper around :meth:`shutdown_all_async`."""

@@ -70,10 +70,11 @@ IMO-AnswerBench is a benchmark of 400 challenging problems sourced from the Inte
 )
 class IMOAnswerBenchAdapter(DefaultDataAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self._use_llm_judge = True
         self.reformat_subset = True
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

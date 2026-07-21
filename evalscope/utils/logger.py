@@ -1,9 +1,10 @@
 import colorlog
-import importlib.util as iutil
 import logging
 import os
+import sys
 from datetime import datetime
 from logging import Logger
+from types import ModuleType
 from typing import List, Optional
 
 from evalscope.constants import BEIJING_TZ, USE_OSS, LoggingConstants
@@ -55,6 +56,51 @@ logging.getLogger('transformers_modules').setLevel(logging.ERROR)
 
 info_set = set()
 warning_set = set()
+
+
+def _get_loaded_torch_distributed() -> Optional[ModuleType]:
+    return sys.modules.get('torch.distributed')
+
+
+def _get_distributed_rank_from_env() -> Optional[int]:
+    for key in ('RANK', 'LOCAL_RANK'):
+        value = os.getenv(key)
+        if value is None:
+            continue
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _is_distributed_from_env() -> bool:
+    world_size = os.getenv('WORLD_SIZE')
+    if world_size is None:
+        return _get_distributed_rank_from_env() is not None
+    try:
+        return int(world_size) > 1
+    except ValueError:
+        return False
+
+
+def _is_torch_dist() -> bool:
+    dist = _get_loaded_torch_distributed()
+    if dist is not None:
+        return dist.is_available() and dist.is_initialized()
+    return _is_distributed_from_env()
+
+
+def _is_torch_master() -> bool:
+    dist = _get_loaded_torch_distributed()
+    if dist is not None and dist.is_available() and dist.is_initialized():
+        return dist.get_rank() == 0
+
+    rank = _get_distributed_rank_from_env()
+    if rank is not None:
+        return rank == 0
+
+    return True
 
 
 def info_once(self, msg, *args, **kwargs):
@@ -154,13 +200,8 @@ def get_logger(
         return logger
 
     # handle duplicate logs to the console
-    torch_dist = False
-    is_worker0 = True
-    if iutil.find_spec('torch') is not None:
-        from modelscope.utils.torch_utils import is_dist, is_master
-
-        torch_dist = is_dist()
-        is_worker0 = is_master()
+    torch_dist = _is_torch_dist()
+    is_worker0 = _is_torch_master()
 
     if torch_dist:
         for handler in logger.root.handlers:
@@ -214,14 +255,7 @@ def add_file_handler_if_needed(
     if log_file is None:
         return
 
-    # Only worker-0 writes files
-    if iutil.find_spec('torch') is not None:
-        from modelscope.utils.torch_utils import is_master
-        is_worker0 = is_master()
-    else:
-        is_worker0 = True
-
-    if not is_worker0:
+    if not _is_torch_master():
         return
 
     target_path = os.path.abspath(log_file)

@@ -114,6 +114,12 @@ def _root_path() -> str:
     return request.args.get('root_path', current_app.config.get('OUTPUTS_ROOT') or _DEFAULT_ROOT)
 
 
+def _apply_chart_theme(fig: go.Figure, theme: str) -> None:
+    """Apply the Web console theme to a generated Plotly figure."""
+    template = 'plotly_white' if theme == 'light' else PLOTLY_THEME
+    fig.update_layout(template=template)
+
+
 # ------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------
@@ -169,14 +175,15 @@ def _build_report_meta(report_name: str, root: str) -> dict:
 
     avg_score = round(score_sum / len(report_list), 4) if report_list else 0.0
     timestamp = _extract_timestamp(report_name, root)
+    metric_names = [r.metrics[0].name for r in report_list if r.metrics]
+    metric_name = metric_names[0] if len(metric_names) == len(report_list) and all(
+        name == metric_names[0] for name in metric_names
+    ) else ''
 
-    # Build per-dataset score mapping (normalized to 0-1 range)
+    # Preserve each metric's native scale; consumers use metric_name to format it.
     dataset_scores = {}
     for r in report_list:
-        score = r.score
-        if score is not None and score > 1:
-            score = score / 100
-        dataset_scores[r.dataset_name] = round(score, 4) if score is not None else None
+        dataset_scores[r.dataset_name] = round(r.score, 4) if r.score is not None else None
 
     return {
         'name': report_name,
@@ -184,6 +191,7 @@ def _build_report_meta(report_name: str, root: str) -> dict:
         'dataset_name': ', '.join(dataset_names) if len(dataset_names) > 1 else
         (dataset_names[0] if dataset_names else ''),
         'score': avg_score,
+        'metric_name': metric_name,
         'dataset_scores': dataset_scores,
         'num_samples': total_num,
         'timestamp': timestamp,
@@ -497,6 +505,7 @@ def get_chart():
         chart_type   (str): 'scores' | 'sunburst' | 'dataset_scores' | 'radar' | 'histogram' | 'grouped_bar'
         dataset_name (str): required for chart_type=dataset_scores
         subset_name  (str): required for chart_type=histogram
+        theme        (str): 'light' | 'dark'; defaults to the existing dark report theme
     """
     chart_type = request.args.get('chart_type', 'scores')
     root = _root_path()
@@ -595,6 +604,7 @@ def get_chart():
                    'justify-content:center;height:100vh;font-family:sans-serif;">No data to plot</body></html>', \
                    200, {'Content-Type': 'text/html'}
 
+        _apply_chart_theme(fig, request.args.get('theme', 'dark'))
         html = fig.to_html(full_html=True, include_plotlyjs=False, config={'responsive': True})
         plotly_script = f'<script src="{PLOTLY_CDN_URL}" charset="utf-8"></script>'
         html = html.replace('</head>', f'  {plotly_script}\n</head>')

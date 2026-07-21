@@ -1,0 +1,37 @@
+import type { Dict } from './types'
+
+export const en: Dict = {
+  title: 'Benchmark Catalog',
+  all: 'All',
+  text: 'Text (LLM)',
+  multimodal: 'Multimodal (VLM)',
+  agent: 'Agent',
+  aigc: 'AIGC',
+  noDescription: 'No description available',
+  search: 'Search benchmarks...',
+  filterByTag: 'Filter by tag',
+  subsets: 'Subsets',
+  samples: 'Samples',
+  shots: '${n}-shot',
+  noResults: 'No matching benchmarks found',
+  clearFilters: 'Clear filters',
+  showing: 'Showing ${n} of ${total}',
+}
+
+export const zh: Dict = {
+  title: '基准测试目录',
+  all: '全部',
+  text: '文本 (LLM)',
+  multimodal: '多模态 (VLM)',
+  agent: '智能体 (Agent)',
+  aigc: '生成 (AIGC)',
+  noDescription: '暂无描述',
+  search: '搜索基准测试...',
+  filterByTag: '按标签筛选',
+  subsets: '子集',
+  samples: '样本数',
+  shots: '${n}-shot',
+  noResults: '未找到匹配的基准测试',
+  clearFilters: '清除筛选',
+  showing: '显示 ${n} / ${total}',
+}

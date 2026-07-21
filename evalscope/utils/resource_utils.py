@@ -144,7 +144,7 @@ def load_benchmark_data(benchmark_name: Optional[str] = None) -> Dict[str, Any]:
         return result
 
 
-def save_benchmark_data(data: Dict[str, Any], benchmark_name: Optional[str] = None):
+def save_benchmark_data(data: Dict[str, Any], benchmark_name: Optional[str] = None) -> None:
     """
     Save benchmark metadata to individual JSON files in benchmarks/_meta/.
 
@@ -159,11 +159,13 @@ def save_benchmark_data(data: Dict[str, Any], benchmark_name: Optional[str] = No
         json_path = BENCHMARK_META_DIR / f'{benchmark_name}.json'
         with open(json_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            f.write('\n')
     else:
         for name, benchmark_data in data.items():
             json_path = BENCHMARK_META_DIR / f'{name}.json'
             with open(json_path, 'w', encoding='utf-8') as f:
                 json.dump(benchmark_data, f, ensure_ascii=False, indent=2)
+                f.write('\n')
 
 
 def compute_eval_total_count(task_config: 'TaskConfig') -> Optional[int]:

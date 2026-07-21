@@ -25,8 +25,8 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
 ## Evaluation Notes
 
 - The default Docker image is built automatically from the bundled Dockerfile into a content-hashed local tag. Set
-  `extra_params.auto_build_docker_image=false` to require a pre-built `evalscope/gdpval:latest`, or override
-  `extra_params.docker_image`.
+  `extra_params.auto_build_docker_image=false` to require a pre-built `evalscope/gdpval:latest`. Override the image,
+  network, CPU or memory settings through `TaskConfig.sandbox.default_config`.
 - `submission_ready` is a local readiness metric: it is 1 when the model produced final text or at least one
   deliverable file. It is not an official GDPval quality score.
 - EvalScope does not run a local GDPval judge. Use the exported submission package with OpenAI's official GDPval judge
@@ -158,11 +158,7 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `max_steps` | `int` | `250` | Maximum number of agent steps per sample. |
-| `command_timeout` | `float` | `180.0` | Default per-command timeout in seconds. |
-| `docker_image` | `str` | `evalscope/gdpval:latest` | Docker image used as the per-sample sandbox. |
 | `auto_build_docker_image` | `bool` | `True` | Automatically build the default GDPval Docker image if it is missing locally. |
-| `network_enabled` | `bool` | `True` | Allow the sandbox to access the network. |
 | `download_reference_files` | `bool` | `True` | Download each selected sample reference file from the dataset hub before inference. |
 
 ## Usage
@@ -175,20 +171,25 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets gdpval \
+    --agent-config '{"mode":"native","strategy":"function_calling","max_steps":250}' \
     --limit 10  # Remove this line for formal evaluation
 ```
 
 ### Using Python
 
 ```python
-from evalscope import run_task
-from evalscope.config import TaskConfig
+from evalscope import TaskConfig, run_task
+from evalscope.api.agent import NativeAgentConfig
 
 task_cfg = TaskConfig(
     model='YOUR_MODEL',
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['gdpval'],
+    agent_config=NativeAgentConfig(
+        strategy='function_calling',
+        max_steps=250,
+    ),
     dataset_args={
         'gdpval': {
             # extra_params: {}  # uses default extra parameters
@@ -199,5 +200,3 @@ task_cfg = TaskConfig(
 
 run_task(task_cfg=task_cfg)
 ```
-
-

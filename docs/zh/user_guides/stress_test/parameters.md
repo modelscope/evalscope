@@ -90,6 +90,7 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `--dataset` | `str` | 数据集模式，详见下表 | - |
 | `--dataset-path` | `str` | 数据集文件或目录路径<br>指向文件时直接读取；指向目录时在目录内查找对应数据文件（适用于离线环境使用已下载的数据集缓存） | - |
 | `--data-source` | `str` | 数据集加载源，可选值：`modelscope`、`huggingface`、`local`<br>未指定时默认使用 `modelscope`；当 `--dataset-path` 为本地目录时自动视为 `local` | `modelscope` |
+| `--dataset-args` | `str` | 数据集专属参数（JSON 字符串），按 `--dataset` 所选数据集的 schema 校验（传入未知键会直接报错）。承载真实文本数据集的定长输入参数 `target_input_len` / `input_len_mode`，并取代已废弃的 `--multi-turn-args`。详见下方「dataset-args：数据集专属参数」小节 | - |
 
 ### dataset 模式说明
 
@@ -137,6 +138,79 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `share_gpt_zh_multi_turn` | 从 ModelScope 自动下载中文 [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) 数据集（约 70k 条），保留完整多轮对话<br>[使用示例](./multi_turn.md#share_gpt_multi_turn) | ✓ |
 | `share_gpt_en_multi_turn` | 从 ModelScope 自动下载英文 [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) 数据集（约 70k 条），保留完整多轮对话 | ✓ |
 | `custom_multi_turn` | 使用本地 JSONL 文件作为自定义多轮对话数据集<br>每行为 OpenAI messages 格式的 JSON 数组，适合已有对话数据直接压测<br>**必需提供`dataset_path`**<br>[使用示例](./multi_turn.md#custom_multi_turn) | ✓（必需） |
+
+**生产流量回放类**
+
+需配合 `--open-loop` 使用，按录制的**原始到达节奏**逐字回放真实请求。详见[使用示例](./examples.md#生产流量回放workload_trace)。
+
+| 模式 | 说明 | 支持dataset-path |
+|------|------|------------------|
+| `workload_trace` | 回放录制的生产流量 JSONL：按原始时间戳、请求体、headers 逐字重放，贴近真实负载（突发流量、异构请求、多模型路由）<br>每条请求自带 `model`，保留多模型混合路由<br>**必需 `--open-loop` 和 `--dataset-path`**；`--model`/`--number` 可选（trace 自带模型与条数） | ✓（必需） |
+
+### dataset-args：数据集专属参数
+
+`--dataset-args` 用一个 JSON 字符串为不同数据集传入专属参数（键名写错会直接报错，便于排查）。常见两个场景：
+
+**场景一：把真实数据的输入截断到固定长度**
+
+想用真实数据（而非 `random`）压测某个**固定输入长度**时用它。支持 `openqa`、`longalpaca`、`line_by_line`、单轮 ShareGPT（`share_gpt_zh` / `share_gpt_en`），**需配合 `--tokenizer-path`**。
+
+```bash
+# 把每条输入截断到 2048 token
+evalscope perf \
+  --model qwen2.5 --url http://127.0.0.1:8000/v1/completions \
+  --dataset share_gpt_zh --tokenizer-path /path/to/tokenizer \
+  --dataset-args '{"target_input_len": 2048}'
+```
+
+| 键 | 说明 | 默认值 |
+|------|------|--------|
+| `target_input_len` | 目标输入 token 数。设置后每条 prompt 都会被截断到该长度 | 不启用 |
+| `input_len_mode` | 对**短于目标**的 prompt 怎么处理：`cap`（原样保留，该条长度可能小于目标）；`drop`（丢弃，保证产出的每条都恰好等于目标） | `cap` |
+
+它和 `--max/min-prompt-length` 的区别：
+- `--max/min-prompt-length` 只**筛选**、不改内容——长度不在区间内的样本被丢弃，你得到的是长短不一的真实样本；
+- `target_input_len` 会**改写内容**——把每条 prompt 截到指定长度，适合“固定输入长度”的对照压测。
+
+> 想让“每条恰好 N token”，只能用 `target_input_len`；把 `--min-prompt-length` 和 `--max-prompt-length` 设成相等是做不到的（真实数据几乎没有恰好等于 N 的，会被筛空）。`random` 数据集除外——它是现场生成的，min=max 即可定长，无需本参数。
+
+**场景二：多轮对话数据集的长度参数**
+
+`swe_smith` 等多轮数据集的 token 长度参数也通过 `--dataset-args` 传入，详见[多轮对话压测指南](./multi_turn.md)。
+
+**场景三：回放真实生产流量**
+
+用 `workload_trace` 把录制的生产流量按**原始到达节奏**逐字回放，贴近真实负载。**必需 `--open-loop`**，无需 `--rate`（到达时刻由 trace 时间戳决定）。完整示例见[生产流量回放（workload_trace）](./examples.md#生产流量回放workload_trace)。
+
+trace 文件为 JSONL，每行一条请求记录：
+
+```jsonl
+{"body": {"model": "qwen-plus", "messages": [{"role": "user", "content": "hi"}]}, "timestamp": 1700000000.0}
+{"body": {"model": "qwen-max", "messages": [...]}, "timestamp": 1700000001.5, "headers": {"X-Tag": "exp"}, "request_id": "req-42", "completion_tokens": 256}
+```
+
+| 字段 | 必需 | 说明 |
+|------|------|------|
+| `body` | ✓ | 完整请求体（dict 或 JSON 字符串），原样发送 |
+| `timestamp` | ✓ | 到达时刻（数字或 ISO-8601 字符串），仅相对间隔有意义，须单调不减 |
+| `headers` | | 该请求专属 HTTP 头（与 CLI headers 合并，CLI 优先；hop-by-hop 头会被剔除） |
+| `request_id` | | 透传到结果，用于与原始请求关联 |
+| `completion_tokens` | | 配合 `match_output_length` 使用 |
+
+| 键 | 类型 | 说明 | 默认值 |
+|----|------|------|--------|
+| `speed` | float | 回放倍速（2.0 = 2× 快，0.5 = 2× 慢） | `1.0` |
+| `model_override` | str | 把所有请求的 `model` 全量替换为该值 | 不启用 |
+| `model_mapping` | dict | 按名映射 `model`（命中优先；未命中保留原值） | 不启用 |
+| `match_output_length` | bool | 用记录的 `completion_tokens` 设 `max_tokens` 并启用 `ignore_eos`（需 vLLM 等支持；对约束解码请求自动跳过 `ignore_eos`） | `false` |
+
+```{note}
+`--model` 对 `workload_trace` **不会改写** trace body——每条请求保留自己的 `model`，从而保留多模型混合路由。需要改模型请用 `model_override` / `model_mapping`。
+```
+
+```{note}
+`--multi-turn-args` 已废弃，请改用 `--dataset-args`（键名不变）。旧参数仍可用，会自动并入 `--dataset-args`（同名键以 `--dataset-args` 为准）。
+```
 
 ## 模型设置
 

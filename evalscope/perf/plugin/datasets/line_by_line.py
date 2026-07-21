@@ -4,6 +4,7 @@ from typing import Any, Dict, Iterator, List, Union
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
+from evalscope.perf.plugin.datasets.dataset_args import TextDatasetArgs
 from evalscope.perf.plugin.registry import register_dataset
 
 
@@ -28,13 +29,17 @@ class LineByLineDatasetPlugin(DatasetPluginBase):
        called to merge CLI-level generation parameters.
 
     3. **Complete request body** (JSON object)::
-        # note max_tokens will be overridden by CLI-level generation parameters
+
         example: {"messages": [...], "temperature": 0.6, "max_tokens": 128}
 
-       Treated as a complete request body. The parameters inside the JSON object
-       (e.g. ``temperature``) take precedence and ``__compose_query_from_parameter``
-       is **NOT** called, so CLI-level generation parameters are ignored.
+       Treated as a complete request body. Fields provided in the JSON object
+       (e.g. ``temperature``, ``max_tokens``) are preserved and take precedence;
+       ``__compose_query_from_parameter`` only fills in generation parameters that
+       are **missing** from the body (``setdefault`` semantics), so CLI-level
+       defaults do not silently overwrite a user-supplied body.
     """
+
+    args_schema = TextDatasetArgs
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
@@ -62,13 +67,11 @@ class LineByLineDatasetPlugin(DatasetPluginBase):
             parsed = self._try_parse_json(line)
 
             if isinstance(parsed, str):
-                prompt = parsed
-                is_valid, _ = self.check_prompt_length(prompt)
-                if not is_valid:
+                prompt = self.prepare_prompt(parsed)
+                if prompt is None:
                     continue
                 if self.query_parameters.apply_chat_template:
-                    message = self.create_message(prompt)
-                    result = [message]
+                    result = [self.create_message(prompt)]
                 else:
                     result = prompt
             else:

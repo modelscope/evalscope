@@ -442,6 +442,18 @@ class TestVLMBenchmark(TestBenchmark):
         }
         self._run_dataset_test('videomme_v2', dataset_args=dataset_args, limit=10)
 
+    def test_tvbench(self):
+        dataset_args = {
+            'subset_list': ['action_count']
+        }
+        self._run_dataset_test('tvbench', dataset_args=dataset_args, limit=5)
+
+    def test_tvbench_mock(self):
+        dataset_args = {
+            'subset_list': ['action_count']
+        }
+        self._run_dataset_test('tvbench', dataset_args=dataset_args, limit=5, use_mock=True)
+
     def test_common_voice_15(self):
         dataset_args = {
             'subset_list': ['en'],

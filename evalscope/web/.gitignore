@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+coverage
+.nyc_output
 *.local
 
 # Editor directories and files

@@ -312,6 +312,59 @@ evalscope perf \
 - Core difference from closed-loop (default) mode: closed-loop workers wait for a response before sending the next request (backpressure protection); open-loop fires requests on schedule without waiting (closer to real traffic).
 ```
 
+## Production Traffic Replay (workload_trace)
+
+The `workload_trace` dataset replays recorded production traffic verbatim following its **original arrival timing**, closely matching real-world load — bursty arrivals, heterogeneous request shapes, and multi-model routing that synthetic datasets (`random`, `openqa`, etc.) cannot reproduce. It builds on open-loop scheduling, but arrival times come from the trace's `timestamp` field, so **no `--rate` is needed**.
+
+Prepare a JSONL trace file (one request record per line); field reference is in [Parameters · Case 3](./parameters.md#dataset-args-per-dataset-arguments):
+
+```jsonl
+{"body": {"model": "qwen-plus", "messages": [{"role": "user", "content": "hello"}]}, "timestamp": 1700000000.0}
+{"body": {"model": "qwen-max", "messages": [{"role": "user", "content": "write a poem"}]}, "timestamp": 1700000001.5, "request_id": "req-42"}
+```
+
+**Basic replay**: replay the whole trace verbatim following the original timestamps.
+
+```bash
+evalscope perf \
+  --dataset workload_trace \
+  --dataset-path trace.jsonl \
+  --url http://127.0.0.1:8000/v1/chat/completions \
+  --open-loop
+```
+
+**Speed-up + model mapping**: replay at 2× rate, map `gpt-4` in the trace to a local `qwen-max`, and match the recorded output lengths (requires `ignore_eos` support, e.g. vLLM).
+
+```bash
+evalscope perf \
+  --dataset workload_trace \
+  --dataset-path trace.jsonl \
+  --url http://127.0.0.1:8000/v1/chat/completions \
+  --open-loop \
+  --dataset-args '{"speed": 2.0, "model_mapping": {"gpt-4": "qwen-max"}, "match_output_length": true}'
+```
+
+**Replay only the first 500 records**: truncate with `--number`.
+
+```bash
+evalscope perf \
+  --dataset workload_trace \
+  --dataset-path trace.jsonl \
+  --url http://127.0.0.1:8000/v1/chat/completions \
+  --open-loop \
+  --number 500
+```
+
+```{note}
+**Important Notes**
+
+- **Open-loop only**: `--open-loop` is required, otherwise it raises an error.
+- **`--model` is optional and does not rewrite the body**: each request keeps its own `model` (multi-model routing is preserved). To rewrite models, use `model_override` (replace all) or `model_mapping` (remap by name) via `--dataset-args`.
+- **`--number` is optional**: omit to replay all records, or pass it to truncate to the first N.
+- **Timestamps must be monotonically non-decreasing**: epoch numbers or ISO-8601 strings are accepted; out-of-order records trigger a warning and are sorted by timestamp.
+- Use `--name` to set a meaningful output directory name (without `--model`, the directory name defaults to the dataset name).
+```
+
 ## Debugging Requests
 Use the `--debug` option to output the requests and responses.
 

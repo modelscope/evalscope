@@ -89,6 +89,7 @@ For details on using the SLA auto-tuning feature, see the [Auto-tuning Guide](./
 | `--dataset` | `str` | Dataset mode, see table below for details | - |
 | `--dataset-path` | `str` | Dataset file or directory path<br>Points to a file: read directly; points to a directory: looks for the corresponding data file inside (for offline use with pre-downloaded dataset cache) | - |
 | `--data-source` | `str` | Data source for dataset loading: `modelscope`, `huggingface`, or `local`<br>Defaults to `modelscope` when not specified; automatically treated as `local` when `--dataset-path` is a local directory | `modelscope` |
+| `--dataset-args` | `str` | Per-dataset arguments (JSON string), validated against the schema of the selected `--dataset` (unknown keys raise an error). Carries the fixed-length input args `target_input_len` / `input_len_mode` for real-text datasets, and supersedes the deprecated `--multi-turn-args`. See the "dataset-args: Per-dataset Arguments" section below | - |
 
 ### Dataset Mode Description
 
@@ -136,6 +137,79 @@ Must be used with `--multi-turn`. See the [Multi-turn Benchmark Guide](./multi_t
 | `share_gpt_zh_multi_turn` | Automatically downloads the Chinese [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) dataset (~70k conversations) from ModelScope, preserving full multi-turn conversations<br>[Usage example](./multi_turn.md#share_gpt_multi_turn) | ✓ |
 | `share_gpt_en_multi_turn` | Automatically downloads the English [ShareGPT](https://www.modelscope.cn/datasets/swift/sharegpt) dataset (~70k conversations) from ModelScope, preserving full multi-turn conversations | ✓ |
 | `custom_multi_turn` | Uses a local JSONL file as a custom multi-turn dataset<br>Each line must be a JSON array of OpenAI message dicts; ideal for benchmarking with your own conversation data<br>**Requires `--dataset-path`**<br>[Usage example](./multi_turn.md#custom_multi_turn) | ✓ (Required) |
+
+**Production Traffic Replay**
+
+Must be used with `--open-loop`; replays recorded requests verbatim following their **original arrival timing**. See [Usage example](./examples.md#production-traffic-replay-workload_trace).
+
+| Mode | Description | Supports dataset-path |
+|------|-------------|----------------------|
+| `workload_trace` | Replays a recorded production-traffic JSONL verbatim — original timestamps, request bodies, and headers — for benchmarking against real-world load (bursty arrivals, heterogeneous requests, multi-model routing)<br>Each request carries its own `model`, preserving multi-model routing<br>**Requires `--open-loop` and `--dataset-path`**; `--model`/`--number` are optional (the trace carries its own model and count) | ✓ (Required) |
+
+### dataset-args: Per-dataset Arguments
+
+`--dataset-args` passes per-dataset arguments as a JSON string (a mistyped key raises an error, making mistakes easy to spot). Two common use cases:
+
+**Case 1: Truncate real data to a fixed input length**
+
+Use it when you want to benchmark a **fixed input length** with real data (instead of `random`). Supported on `openqa`, `longalpaca`, `line_by_line`, and single-turn ShareGPT (`share_gpt_zh` / `share_gpt_en`). **Requires `--tokenizer-path`**.
+
+```bash
+# Truncate every input to 2048 tokens
+evalscope perf \
+  --model qwen2.5 --url http://127.0.0.1:8000/v1/completions \
+  --dataset share_gpt_zh --tokenizer-path /path/to/tokenizer \
+  --dataset-args '{"target_input_len": 2048}'
+```
+
+| Key | Description | Default |
+|-----|-------------|--------|
+| `target_input_len` | Target input length in tokens. When set, every prompt is truncated to this length | disabled |
+| `input_len_mode` | What to do with prompts **shorter than** the target: `cap` (keep as-is; that prompt may be shorter than the target); `drop` (discard it, so every emitted prompt is exactly the target) | `cap` |
+
+How it differs from `--max/min-prompt-length`:
+- `--max/min-prompt-length` only **filters** and never changes content — samples outside the range are dropped, so you get real samples of varying lengths;
+- `target_input_len` **rewrites content** — it truncates every prompt to the given length, ideal for controlled fixed-length benchmarking.
+
+> To get "every prompt exactly N tokens", you must use `target_input_len`; setting `--min-prompt-length` equal to `--max-prompt-length` cannot achieve it (real data almost never has prompts of exactly N tokens, so they get filtered out). The `random` dataset is the exception — it is generated on the fly, so min=max already yields a fixed length and this arg is not needed.
+
+**Case 2: Length arguments for multi-turn datasets**
+
+Token-length arguments for multi-turn datasets such as `swe_smith` are also passed via `--dataset-args`; see the [Multi-turn Benchmark Guide](./multi_turn.md).
+
+**Case 3: Replay real production traffic**
+
+Use `workload_trace` to replay recorded production traffic verbatim following its **original arrival timing**, closely matching real-world load. **Requires `--open-loop`**; no `--rate` is needed (arrival times come from the trace timestamps). See the full example at [Production Traffic Replay (workload_trace)](./examples.md#production-traffic-replay-workload_trace).
+
+The trace file is JSONL, one request record per line:
+
+```jsonl
+{"body": {"model": "qwen-plus", "messages": [{"role": "user", "content": "hi"}]}, "timestamp": 1700000000.0}
+{"body": {"model": "qwen-max", "messages": [...]}, "timestamp": 1700000001.5, "headers": {"X-Tag": "exp"}, "request_id": "req-42", "completion_tokens": 256}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `body` | ✓ | Complete request body (dict or JSON string), sent as-is |
+| `timestamp` | ✓ | Arrival time (number or ISO-8601 string); only relative deltas matter; must be monotonically non-decreasing |
+| `headers` | | Per-request HTTP headers (merged with CLI headers, CLI wins; hop-by-hop headers are stripped) |
+| `request_id` | | Propagated to results for correlation with the original request |
+| `completion_tokens` | | Used together with `match_output_length` |
+
+| Key | Type | Description | Default |
+|-----|------|-------------|--------|
+| `speed` | float | Replay speed multiplier (2.0 = 2× faster, 0.5 = 2× slower) | `1.0` |
+| `model_override` | str | Replace the `model` of every request with this value | disabled |
+| `model_mapping` | dict | Remap `model` by name (a match takes priority; unmatched keeps the original) | disabled |
+| `match_output_length` | bool | Set `max_tokens` from the recorded `completion_tokens` and enable `ignore_eos` (requires vLLM or compatible; `ignore_eos` is auto-skipped for constrained-decoding requests) | `false` |
+
+```{note}
+`--model` **does not rewrite** the trace body for `workload_trace` — each request keeps its own `model`, preserving multi-model routing. To rewrite models, use `model_override` / `model_mapping`.
+```
+
+```{note}
+`--multi-turn-args` is deprecated; use `--dataset-args` instead (the key names are unchanged). The old flag still works and is automatically merged into `--dataset-args` (on a key conflict, `--dataset-args` takes precedence).
+```
 
 ## Model Settings
 

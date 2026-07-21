@@ -1,8 +1,9 @@
 # flake8: noqa: E501
 from copy import deepcopy
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Any, Dict, List, Literal, Optional
 
+from evalscope.utils.argument_utils import secretize_auth_headers
 from evalscope.utils.json_schema import JSONSchema
 
 
@@ -21,6 +22,18 @@ class ResponseSchema(BaseModel):
     strict: Optional[bool] = Field(default=None)
     """Whether to enable strict schema adherence when generating the output. If set to true, the model will always follow the exact schema defined in the schema field.
     OpenAI and Mistral only."""
+
+
+class AnthropicCacheControl(BaseModel):
+    """Anthropic prompt cache control."""
+
+    model_config = {'extra': 'forbid'}
+
+    type: Literal['ephemeral'] = Field(default='ephemeral')
+    """Anthropic cache type."""
+
+    ttl: Optional[Literal['5m', '1h']] = Field(default=None)
+    """Optional cache time-to-live."""
 
 
 class GenerateConfig(BaseModel):
@@ -99,6 +112,16 @@ class GenerateConfig(BaseModel):
     reasoning_tokens: Optional[int] = Field(default=None)
     """Maximum number of tokens to use for reasoning. Anthropic Claude models only."""
 
+    anthropic_cache_control: Optional[AnthropicCacheControl] = Field(default=None)
+    """Anthropic prompt cache control. Set to ``{"type": "ephemeral"}`` to enable prompt caching."""
+
+    anthropic_cache_strategy: Literal['evaluation', 'recent_messages'] = Field(default='evaluation')
+    """Anthropic prompt cache breakpoint placement strategy.
+
+    ``evaluation`` caches stable evaluation prefixes such as tools, system prompts, and few-shot examples.
+    ``recent_messages`` caches stable agent prefixes and the growing multi-turn conversation history.
+    """
+
     reasoning_summary: Optional[Literal['concise', 'detailed', 'auto']] = Field(default=None)
     """Provide summary of reasoning steps (defaults to no summary). Use 'auto' to access the most detailed summarizer available for the current model. OpenAI reasoning models only."""
 
@@ -129,7 +152,7 @@ class GenerateConfig(BaseModel):
     extra_query: Optional[Dict[str, Any]] = Field(default=None)
     """Extra query parameters to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, and SGLang only."""
 
-    extra_headers: Optional[Dict[str, str]] = Field(default=None)
+    extra_headers: Optional[Dict[str, Any]] = Field(default=None)
     """Extra headers to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, and SGLang only."""
 
     height: Optional[int] = Field(default=None)
@@ -143,6 +166,21 @@ class GenerateConfig(BaseModel):
 
     guidance_scale: Optional[float] = Field(default=None)
     """Guidance scale for image generation model only"""
+
+    @model_validator(mode='before')
+    @classmethod
+    def reject_legacy_anthropic_cache_config(cls, data: Any) -> Any:
+        if isinstance(data, dict) and 'anthropic_content_cache_control' in data:
+            raise ValueError(
+                '`anthropic_content_cache_control` has been replaced by `anthropic_cache_control`. '
+                'Use `anthropic_cache_strategy` to choose breakpoint placement.'
+            )
+        return data
+
+    @field_validator('extra_headers', mode='after')
+    @classmethod
+    def _validate_extra_headers(cls, value: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        return secretize_auth_headers(value)
 
     def merge(self, other: 'GenerateConfig') -> 'GenerateConfig':
         """Merge another model configuration into this one.

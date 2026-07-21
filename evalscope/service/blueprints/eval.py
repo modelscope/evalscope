@@ -331,9 +331,14 @@ def list_benchmarks():
             elif filter_type == 'multimodal':
                 result = {'multimodal': [e for e in all_entries if e.get('category') == 'vlm']}
             else:
+                # Bucket by category. Besides text (llm) and multimodal (vlm),
+                # the registry also has agent and aigc benchmarks which must not
+                # be dropped from the catalogue.
                 result = {
                     'text': [e for e in all_entries if e.get('category') == 'llm'],
                     'multimodal': [e for e in all_entries if e.get('category') == 'vlm'],
+                    'agent': [e for e in all_entries if e.get('category') == 'agent'],
+                    'aigc': [e for e in all_entries if e.get('category') == 'aigc'],
                 }
         else:
             # Use the curated default lists (backward-compatible)

@@ -22,7 +22,11 @@ The multi-turn conversation benchmark allows you to test a model service in real
 
 ### `multi_turn_args` (swe_smith-specific parameters)
 
-The `swe_smith` dataset's live construction mode supports fine-grained control of conversation structure and token-length targets via a `MultiTurnArgs` object.
+```{note}
+`--multi-turn-args` is **deprecated**; pass the same parameters via the unified `--dataset-args` instead. The old flag still works and its content is automatically folded into `--dataset-args` (on a key conflict, `--dataset-args` takes precedence). The parameter key names below are unchanged.
+```
+
+The `swe_smith` dataset's live construction mode supports fine-grained control of conversation structure and token-length targets via `--dataset-args`.
 
 The number of turns per conversation is sampled from `[--min-turns, --max-turns]`; the amount of content filled per turn is controlled by the token-length parameters below.
 
@@ -384,7 +388,7 @@ evalscope perf \
   --max-tokens 512 \
   --min-tokens 512 \
   --multi-turn \
-  --multi-turn-args '{
+  --dataset-args '{
       "first_turn_length": 8192,
       "subsequent_turn_length": 1024
   }' \

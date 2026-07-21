@@ -1,4 +1,5 @@
 h5py
 numpy
-scipy
+# Problems 2 and 28 import scipy.integrate.simps, which was removed in SciPy 1.14.
+scipy<1.14
 sympy

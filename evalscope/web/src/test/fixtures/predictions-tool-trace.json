@@ -1,0 +1,265 @@
+{
+  "predictions": [
+    {
+      "Index": "0",
+      "Input": "A store sells notebooks at 3 dollars each. If a customer buys 7 notebooks and pays with a 50 dollar bill, how much change do they receive?",
+      "Metadata": { "category": "arithmetic", "difficulty": "easy" },
+      "Generated": "The customer buys 7 notebooks at 3 dollars each, costing 21 dollars. Change is 50 - 21 = 29 dollars.",
+      "Gold": "29",
+      "Pred": "29",
+      "Score": { "acc": 1 },
+      "NScore": 1,
+      "PerfMetrics": {
+        "latency": 1.842,
+        "ttft": 0.214,
+        "tpot": 0.031,
+        "input_tokens": 48,
+        "output_tokens": 36
+      },
+      "Messages": [
+        {
+          "id": "msg-sys-0",
+          "role": "system",
+          "content": "You are a helpful math assistant. Use the calculator tool when arithmetic is required."
+        },
+        {
+          "id": "msg-usr-0",
+          "role": "user",
+          "content": "A store sells notebooks at 3 dollars each. If a customer buys 7 notebooks and pays with a 50 dollar bill, how much change do they receive?"
+        },
+        {
+          "id": "msg-ast-0",
+          "role": "assistant",
+          "model": "test-model-a",
+          "content": [
+            {
+              "type": "reasoning",
+              "reasoning": "First compute total cost 7 * 3 = 21, then subtract from 50 to get the change.",
+              "reasoning_tokens": 22
+            },
+            { "type": "text", "text": "Let me calculate the total cost and the change." }
+          ],
+          "tool_calls": [
+            {
+              "id": "call-1",
+              "function": "calculator",
+              "arguments": { "expression": "7 * 3" }
+            }
+          ],
+          "perf_metrics": {
+            "latency": 0.912,
+            "ttft": 0.214,
+            "tpot": 0.028,
+            "input_tokens": 48,
+            "output_tokens": 18
+          }
+        },
+        {
+          "id": "msg-tool-0",
+          "role": "tool",
+          "tool_call_id": "call-1",
+          "function": "calculator",
+          "content": "21"
+        },
+        {
+          "id": "msg-ast-1",
+          "role": "assistant",
+          "model": "test-model-a",
+          "content": [{ "type": "text", "text": "Total cost is 21 dollars." }],
+          "tool_calls": [
+            {
+              "id": "call-2",
+              "function": "calculator",
+              "arguments": { "expression": "50 - 21" }
+            }
+          ]
+        },
+        {
+          "id": "msg-tool-1",
+          "role": "tool",
+          "tool_call_id": "call-2",
+          "function": "calculator",
+          "content": "29"
+        },
+        {
+          "id": "msg-ast-2",
+          "role": "assistant",
+          "model": "test-model-a",
+          "content": [
+            { "type": "text", "text": "The customer receives 29 dollars in change." }
+          ]
+        }
+      ],
+      "AgentTrace": {
+        "strategy": "react",
+        "environment": "calculator-sandbox",
+        "max_steps": 8,
+        "events": [
+          {
+            "step": 0,
+            "timestamp": 1700000000000,
+            "type": "run_start",
+            "payload": { "task": "arithmetic-word-problem" }
+          },
+          {
+            "step": 1,
+            "timestamp": 1700000000912,
+            "type": "model_generate",
+            "message_id": "msg-ast-0",
+            "latency_ms": 912,
+            "token_usage": { "input": 48, "output": 18, "total": 66 },
+            "payload": { "finish_reason": "tool_calls" }
+          },
+          {
+            "step": 2,
+            "timestamp": 1700000001010,
+            "type": "tool_call",
+            "message_id": "msg-ast-0",
+            "payload": { "tool": "calculator", "arguments": { "expression": "7 * 3" } }
+          },
+          {
+            "step": 3,
+            "timestamp": 1700000001040,
+            "type": "tool_result",
+            "message_id": "msg-tool-0",
+            "latency_ms": 30,
+            "payload": { "tool": "calculator", "result": "21" }
+          },
+          {
+            "step": 4,
+            "timestamp": 1700000001560,
+            "type": "tool_call",
+            "message_id": "msg-ast-1",
+            "payload": { "tool": "calculator", "arguments": { "expression": "50 - 21" } }
+          },
+          {
+            "step": 5,
+            "timestamp": 1700000001585,
+            "type": "tool_result",
+            "message_id": "msg-tool-1",
+            "latency_ms": 25,
+            "payload": { "tool": "calculator", "result": "29" }
+          },
+          {
+            "step": 6,
+            "timestamp": 1700000001842,
+            "type": "submit",
+            "message_id": "msg-ast-2",
+            "payload": { "answer": "29" }
+          },
+          {
+            "step": 7,
+            "timestamp": 1700000001843,
+            "type": "run_end",
+            "payload": { "status": "completed" }
+          }
+        ]
+      }
+    },
+    {
+      "Index": "1",
+      "Input": "What is the current population of the imaginary city of Exampleville?",
+      "Metadata": { "category": "lookup", "difficulty": "medium" },
+      "Generated": "",
+      "Gold": "unknown",
+      "Pred": "",
+      "Score": { "acc": 0 },
+      "NScore": 0,
+      "PerfMetrics": {
+        "latency": 3.401,
+        "ttft": 0.402,
+        "tpot": 0.045,
+        "input_tokens": 39,
+        "output_tokens": 0
+      },
+      "Messages": [
+        {
+          "id": "msg-sys-1",
+          "role": "system",
+          "content": "You are a research assistant. Use the web_lookup tool to find facts."
+        },
+        {
+          "id": "msg-usr-1",
+          "role": "user",
+          "content": "What is the current population of the imaginary city of Exampleville?"
+        },
+        {
+          "id": "msg-ast-3",
+          "role": "assistant",
+          "model": "test-model-a",
+          "content": [
+            {
+              "type": "reasoning",
+              "reasoning": "I should look up the population using the web_lookup tool.",
+              "reasoning_tokens": 14
+            }
+          ],
+          "tool_calls": [
+            {
+              "id": "call-3",
+              "function": "web_lookup",
+              "arguments": { "query": "Exampleville population" }
+            }
+          ]
+        },
+        {
+          "id": "msg-tool-2",
+          "role": "tool",
+          "tool_call_id": "call-3",
+          "function": "web_lookup",
+          "content": "",
+          "error": {
+            "type": "ToolExecutionError",
+            "message": "web_lookup failed: upstream endpoint returned status 503"
+          }
+        }
+      ],
+      "AgentTrace": {
+        "strategy": "react",
+        "environment": "web-lookup-sandbox",
+        "max_steps": 8,
+        "events": [
+          {
+            "step": 0,
+            "timestamp": 1700000100000,
+            "type": "run_start",
+            "payload": { "task": "fact-lookup" }
+          },
+          {
+            "step": 1,
+            "timestamp": 1700000100402,
+            "type": "model_generate",
+            "message_id": "msg-ast-3",
+            "latency_ms": 402,
+            "token_usage": { "input": 39, "output": 14, "total": 53 },
+            "payload": { "finish_reason": "tool_calls" }
+          },
+          {
+            "step": 2,
+            "timestamp": 1700000100520,
+            "type": "tool_call",
+            "message_id": "msg-ast-3",
+            "payload": { "tool": "web_lookup", "arguments": { "query": "Exampleville population" } }
+          },
+          {
+            "step": 3,
+            "timestamp": 1700000103401,
+            "type": "error",
+            "message_id": "msg-tool-2",
+            "payload": {
+              "tool": "web_lookup",
+              "error_type": "ToolExecutionError",
+              "message": "upstream endpoint returned status 503"
+            }
+          },
+          {
+            "step": 4,
+            "timestamp": 1700000103402,
+            "type": "run_end",
+            "payload": { "status": "error" }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "runs": [
+    {
+      "dir_name": "parallel_10",
+      "name": "Concurrency 10",
+      "parallel": 10,
+      "number": 100,
+      "rate": null,
+      "total_requests": 100,
+      "succeed_requests": 100,
+      "success_rate": 1.0,
+      "num_requests": 100,
+      "has_requests": true,
+      "percentile_columns": [
+        "Percentile",
+        "TTFT (s)",
+        "TPOT (s)",
+        "Latency (s)",
+        "Input tokens",
+        "Output tokens",
+        "Throughput (tokens/s)"
+      ],
+      "percentile_rows": [
+        ["10%", 0.182, 0.028, 1.402, 40, 28, 480.0],
+        ["25%", 0.196, 0.029, 1.588, 44, 32, 496.0],
+        ["50%", 0.214, 0.031, 1.842, 48, 36, 512.0],
+        ["75%", 0.238, 0.034, 2.104, 53, 41, 528.0],
+        ["90%", 0.271, 0.038, 2.451, 60, 47, 544.0],
+        ["99%", 0.402, 0.045, 3.401, 72, 58, 560.0]
+      ]
+    }
+  ],
+  "total": 1
+}

@@ -25,7 +25,7 @@ from typing import Any, AsyncIterator, Dict, Optional
 
 from evalscope.api.model import ModelOutput
 from ._sse_common import PING_INTERVAL_S, TEXT_CHUNK, TOOL_INPUT_CHUNK, iter_chunks
-from .translate_anthropic import map_stop_reason_to_anthropic, unpack_tool_call
+from .translate_anthropic import anthropic_usage_payload, map_stop_reason_to_anthropic, unpack_tool_call
 
 
 def _sse(event_type: str, data: Dict[str, Any]) -> bytes:
@@ -107,17 +107,13 @@ async def stream_anthropic_response(
 
     # 4. message_delta — stop reason + cumulative usage.
     stop_reason = map_stop_reason_to_anthropic(output.choices[0].stop_reason if output.choices else 'stop')
-    usage = output.usage
     delta_payload: Dict[str, Any] = {
         'type': 'message_delta',
         'delta': {
             'stop_reason': stop_reason,
             'stop_sequence': None
         },
-        'usage': {
-            'input_tokens': usage.input_tokens if usage else 0,
-            'output_tokens': usage.output_tokens if usage else 0,
-        },
+        'usage': anthropic_usage_payload(output.usage),
     }
     yield _sse('message_delta', delta_payload)
 

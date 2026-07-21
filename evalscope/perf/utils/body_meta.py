@@ -1,0 +1,5 @@
+BODY_META_PREFIX = '__evalscope_'
+BODY_META_HEADERS = '__evalscope_headers'
+BODY_META_REQUEST_ID = '__evalscope_request_id'
+BODY_META_ARRIVAL_OFFSET = '__evalscope_arrival_offset'
+BODY_META_IS_WARMUP = '__evalscope_is_warmup'

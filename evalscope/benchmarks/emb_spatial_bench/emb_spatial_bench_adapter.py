@@ -1,14 +1,12 @@
 # flake8: noqa: E501
 import json
-import os
 from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
-from evalscope.api.dataset import Sample, download_dataset_file
-from evalscope.api.dataset.dataset import DatasetDict, MemoryDataset
+from evalscope.api.dataset import DatasetDict, DatasetHub, Sample, build_dataset_from_records
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import HubType, Tags
+from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, prompt
 
@@ -78,24 +76,30 @@ class EmbSpatialBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
     def load(self) -> Tuple[DatasetDict, None]:
         """Download embspatial_bench.json and build a DatasetDict split by relation."""
-        data_source = HubType.LOCAL if os.path.exists(self.dataset_id) else self.dataset_hub
-        bench_json = download_dataset_file(
+        bench_json = DatasetHub(
             data_id_or_path=self.dataset_id,
-            file_path='embspatial_bench.json',
-            data_source=data_source,
-        )
+            data_source=self.dataset_hub,
+            force_redownload=self.force_redownload,
+            cache_dir=self.dataset_dir,
+        ).download_file('embspatial_bench.json')
         logger.info(f'Loading EmbSpatial-Bench records from {bench_json}')
         with open(bench_json, 'r', encoding='utf-8') as fh:
             records: List[Dict[str, Any]] = json.load(fh)
 
-        samples: List[Sample] = []
-        for rec in records:
-            s = self.record_to_sample(rec)
-            if s is not None:
-                samples.append(s)
+        def optional_record_to_sample(record: Dict[str, Any]) -> List[Sample]:
+            sample = self.record_to_sample(record)
+            return [sample] if sample is not None else []
 
-        mem_dataset = MemoryDataset(samples, name='emb_spatial_bench')
-
+        mem_dataset = build_dataset_from_records(
+            records=records,
+            sample_fields=optional_record_to_sample,
+            name='emb_spatial_bench',
+            location=bench_json,
+            limit=None,
+            repeats=1,
+            shuffle=False,
+            seed=None,
+        )
         dataset_dict = DatasetDict.from_dataset(
             dataset=mem_dataset,
             subset_list=self.subset_list,

@@ -49,7 +49,7 @@ function MultiSelectDropdown({
         type="button"
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          'flex items-center gap-1.5 px-3 py-2 text-sm rounded-[var(--radius-sm)]',
+          'coarse-target flex items-center gap-1.5 px-3 py-2 text-sm rounded-[var(--radius-sm)]',
           'bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)]',
           'hover:border-[var(--border-md)] transition-all duration-[var(--transition)]',
           'cursor-pointer',
@@ -148,7 +148,7 @@ export default function ReportFiltersBar({
           value={filters.search}
           onChange={(v) => update({ search: v })}
           placeholder={t('reports.filters.search')}
-          className="w-[220px]"
+          className="w-full sm:w-72"
         />
 
         <MultiSelectDropdown

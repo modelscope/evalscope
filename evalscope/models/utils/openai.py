@@ -57,7 +57,7 @@ from evalscope.api.model import (
     as_stop_reason,
 )
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, parse_tool_call
-from evalscope.utils import get_logger
+from evalscope.utils import get_logger, get_secret_value
 from evalscope.utils.url_utils import (
     data_uri_to_base64,
     file_as_data_uri,
@@ -299,7 +299,7 @@ def openai_completion_params(model: str, config: GenerateConfig, tools: bool) ->
     if config.extra_query:
         params['extra_query'] = config.extra_query
     if config.extra_headers:
-        params['extra_headers'] = config.extra_headers
+        params['extra_headers'] = get_secret_value(config.extra_headers)
 
     return params
 
@@ -822,17 +822,20 @@ def collect_stream_response(
             continue
         collected_chunks.append(chunk)
         for choice in chunk.choices:
+            reasoning_content = getattr(choice.delta, 'reasoning_content', None)
+            if reasoning_content is None or reasoning_content == '':
+                reasoning_content = getattr(choice.delta, 'reasoning', None)
+
             # Detect first meaningful content chunk for TTFT
-            has_content = ((choice.delta.content is not None and choice.delta.content != '') or (
-                hasattr(choice.delta, 'reasoning_content') and choice.delta.reasoning_content is not None
-                and choice.delta.reasoning_content != ''
-            ) or (hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls))
+            has_content = ((choice.delta.content is not None and choice.delta.content != '')
+                           or (reasoning_content is not None and reasoning_content != '')
+                           or (hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls))
             if ttft is None and has_content:
                 ttft = time.monotonic() - t_start
 
             # Handle reasoning content
-            if hasattr(choice.delta, 'reasoning_content') and choice.delta.reasoning_content is not None:
-                collected_reasoning[choice.index].append(choice.delta.reasoning_content)
+            if reasoning_content is not None:
+                collected_reasoning[choice.index].append(str(reasoning_content))
 
             # Handle regular content
             if choice.delta.content is not None:
@@ -950,17 +953,20 @@ async def async_collect_stream_response(
             continue
         collected_chunks.append(chunk)
         for choice in chunk.choices:
+            reasoning_content = getattr(choice.delta, 'reasoning_content', None)
+            if reasoning_content is None or reasoning_content == '':
+                reasoning_content = getattr(choice.delta, 'reasoning', None)
+
             # Detect first meaningful content chunk for TTFT
-            has_content = ((choice.delta.content is not None and choice.delta.content != '') or (
-                hasattr(choice.delta, 'reasoning_content') and choice.delta.reasoning_content is not None
-                and choice.delta.reasoning_content != ''
-            ) or (hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls))
+            has_content = ((choice.delta.content is not None and choice.delta.content != '')
+                           or (reasoning_content is not None and reasoning_content != '')
+                           or (hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls))
             if ttft is None and has_content:
                 ttft = time.monotonic() - t_start
 
             # Handle reasoning content
-            if hasattr(choice.delta, 'reasoning_content') and choice.delta.reasoning_content is not None:
-                collected_reasoning[choice.index].append(choice.delta.reasoning_content)
+            if reasoning_content is not None:
+                collected_reasoning[choice.index].append(str(reasoning_content))
 
             # Handle regular content
             if choice.delta.content is not None:

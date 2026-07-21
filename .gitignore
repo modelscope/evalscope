@@ -165,6 +165,7 @@ docs/zh/learn/
 examples/api_test/
 .qoder
 .claude
+.kiro
 
 # Frontend (evalscope/web)
 node_modules/

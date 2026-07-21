@@ -2,12 +2,13 @@ import json
 import os
 from abc import abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, ClassVar, Dict, Iterator, List, Optional, Tuple, Type, Union
 
 from evalscope.api.dataset.hub import download_dataset_file, load_dataset_from_hub
 from evalscope.constants import HubType
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.plugin.datasets.utils import load_tokenizer, tokenize_chat_messages
+from evalscope.perf.plugin.datasets.dataset_args import BaseDatasetArgs, TextLengthArgs
+from evalscope.perf.plugin.datasets.utils import fit_text_to_token_len, load_tokenizer, tokenize_chat_messages
 
 Message = Dict[str, Any]  # single OpenAI message: {"role": ..., "content": ...}
 Messages = List[Message]  # delta messages for one turn
@@ -36,6 +37,19 @@ Conversation = List[Turn]
 
 class DatasetPluginBase:
 
+    args_schema: ClassVar[Type[BaseDatasetArgs]] = BaseDatasetArgs
+    """Pydantic schema for this dataset's ``--dataset-args``.
+
+    Subclasses override this to declare their own typed argument model.  The
+    default empty schema rejects any ``--dataset-args`` keys (fail-fast).
+    """
+
+    provides_arrival_schedule: bool = False
+    """True if the dataset embeds per-request arrival times, bypassing ``--rate``."""
+
+    requires_model: bool = True
+    """False if the dataset carries model info in each request body, making ``--model`` optional."""
+
     def __init__(self, query_parameters: Arguments):
         """Build data set plugin
 
@@ -43,10 +57,19 @@ class DatasetPluginBase:
             dataset_path (str, optional): The input dataset path. Defaults to None.
         """
         self.query_parameters = query_parameters
+        # Validate the raw --dataset-args against this plugin's own schema.  The
+        # plugin owns the schema, so no registry lookup (and no import cycle with
+        # the config layer) is needed.
+        self.dataset_args = self.args_schema(**(query_parameters.dataset_args or {}))
         if query_parameters.tokenizer_path:
             self.tokenizer = load_tokenizer(query_parameters.tokenizer_path)
         else:
             self.tokenizer = None
+        if (
+            isinstance(self.dataset_args, TextLengthArgs) and self.dataset_args.target_input_len is not None
+            and self.tokenizer is None
+        ):
+            raise ValueError('`target_input_len` requires a tokenizer; please set --tokenizer-path.')
 
     def __next__(self):
         for item in self.build_messages():
@@ -134,19 +157,48 @@ class DatasetPluginBase:
         return message
 
     def get_sampled_multi_turn_params(self) -> dict:
-        """Return multi-turn parameters if ``multi_turn_args`` is set.
+        """Return multi-turn parameters if configured.
 
-        Provides a common entry-point for all dataset plugins to obtain
-        concrete multi-turn parameter values from
-        :class:`~evalscope.perf.multi_turn_args.MultiTurnArgs`.
+        Reads from the resolved ``dataset_args`` when it is a
+        :class:`~evalscope.perf.multi_turn_args.MultiTurnArgs` (the new
+        ``--dataset-args`` path), otherwise falls back to the deprecated
+        ``--multi-turn-args`` field.
 
         Returns:
-            Dict with field values, or an empty dict when ``multi_turn_args``
-            is not configured.
+            Dict with field values, or an empty dict when neither is set.
         """
-        if self.query_parameters.multi_turn_args:
-            return self.query_parameters.multi_turn_args.sample_params()
-        return {}
+        mt_args = self._get_multi_turn_args()
+        return mt_args.sample_params() if mt_args else {}
+
+    def _get_multi_turn_args(self):
+        """Resolve the effective MultiTurnArgs (new dataset_args or legacy field)."""
+        from evalscope.perf.multi_turn_args import MultiTurnArgs
+        if isinstance(self.dataset_args, MultiTurnArgs):
+            return self.dataset_args
+        return self.query_parameters.multi_turn_args
+
+    def prepare_prompt(self, prompt: str) -> Optional[str]:
+        """Apply the input-length policy to a single-turn text prompt.
+
+        When ``target_input_len`` is not set (via ``--dataset-args``), falls back
+        to the existing ``min/max_prompt_length`` filter and returns the prompt
+        unchanged when valid (``None`` when out of range).  When it is set, the
+        prompt is fit to the target length per ``input_len_mode`` (``cap`` /
+        ``drop``); ``None`` means the caller should skip this item.
+
+        Args:
+            prompt (str): The raw prompt text.
+
+        Returns:
+            Optional[str]: The adjusted prompt, or ``None`` to skip.
+        """
+        args = self.dataset_args
+        if not isinstance(args, TextLengthArgs) or args.target_input_len is None:
+            is_valid, _ = self.check_prompt_length(prompt)
+            return prompt if is_valid else None
+        if self.tokenizer is None:
+            raise ValueError('`target_input_len` requires a tokenizer; please set --tokenizer-path.')
+        return fit_text_to_token_len(prompt, args.target_input_len, args.input_len_mode, self.tokenizer)
 
     def check_prompt_length(self, prompt: str) -> Tuple[bool, int]:
         """Check if the prompt length is within the specified range.

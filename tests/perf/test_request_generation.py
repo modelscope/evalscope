@@ -1,9 +1,10 @@
+import argparse
 import asyncio
 import numpy as np
 from pytest import MonkeyPatch
 from typing import Dict, Iterator, List, Optional, Tuple
 
-from evalscope.perf.arguments import Arguments
+from evalscope.perf.arguments import Arguments, add_argument
 from evalscope.perf.benchmark import get_requests
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
 from evalscope.perf.plugin.datasets.random_dataset import RandomDatasetPlugin, _get_random_generation_context
@@ -61,6 +62,24 @@ def _make_args(**kwargs) -> Arguments:
     }
     params.update(kwargs)
     return Arguments(**params)
+
+
+def _parse_perf_args(argv: List[str]) -> Arguments:
+    parser = argparse.ArgumentParser()
+    add_argument(parser)
+    return Arguments.from_args(parser.parse_args(argv))
+
+
+def test_sweep_scalar_strings_are_normalized_to_lists() -> None:
+    args = _make_args(number='10', parallel='2')
+
+    assert args.number == [10]
+    assert args.parallel == [2]
+
+    args = _make_args(number='10', rate='5.0', open_loop=True)
+
+    assert args.number == [10]
+    assert args.rate == [5.0]
 
 
 def test_parallel_dataset_generation_hook_preserves_order_and_warmup() -> None:
@@ -130,6 +149,38 @@ def test_top_level_num_workers_takes_precedence_over_multi_turn_value() -> None:
     args = _make_args(num_workers=0, multi_turn_args={'num_workers': 3})
 
     assert args.num_workers == 0
+
+
+def test_apply_chat_template_boolean_cli_flags() -> None:
+    default_args = _parse_perf_args(['--model', 'test-model', '--url', 'http://127.0.0.1:8000/v1/completions'])
+    enabled_args = _parse_perf_args([
+        '--model',
+        'test-model',
+        '--url',
+        'http://127.0.0.1:8000/v1/completions',
+        '--apply-chat-template',
+    ])
+    disabled_args = _parse_perf_args([
+        '--model',
+        'test-model',
+        '--url',
+        'http://127.0.0.1:8000/v1/chat/completions',
+        '--no-apply-chat-template',
+    ])
+
+    assert default_args.apply_chat_template is False
+    assert enabled_args.apply_chat_template is True
+    assert disabled_args.apply_chat_template is False
+
+
+def test_tokenize_prompt_preserves_chat_template_default_before_redirect() -> None:
+    args = _make_args(
+        tokenize_prompt=True,
+        tokenizer_path='dummy-tokenizer',
+    )
+
+    assert args.url == 'http://127.0.0.1:8000/v1/completions'
+    assert args.apply_chat_template is True
 
 
 def test_random_dataset_parallel_uses_spawn_context() -> None:

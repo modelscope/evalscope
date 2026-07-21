@@ -2,6 +2,7 @@ import os
 
 from evalscope.constants import VisualizerType
 from evalscope.perf.arguments import Arguments
+from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.io_utils import current_time
 from evalscope.utils.logger import get_logger
 
@@ -83,8 +84,9 @@ def init_wandb(args: Arguments) -> None:
 
     logging_config = _get_sanitized_config(args)
 
-    if args.wandb_api_key is not None:
-        wandb.login(key=args.wandb_api_key)
+    wandb_api_key = get_secret_value(args.wandb_api_key)
+    if wandb_api_key is not None:
+        wandb.login(key=wandb_api_key)
     wandb.init(project='perf_benchmark', name=name, config=logging_config)
 
 
@@ -103,11 +105,12 @@ def init_swanlab(args: Arguments) -> None:
 
     logging_config = _get_sanitized_config(args)
 
+    swanlab_api_key = get_secret_value(args.swanlab_api_key)
     init_kwargs = {
         'project': os.getenv('SWANLAB_PROJ_NAME', 'perf_benchmark'),
         'name': name,
         'config': logging_config,
-        'mode': 'local' if args.swanlab_api_key == 'local' else None
+        'mode': 'local' if swanlab_api_key == 'local' else None
     }
 
     workspace = os.getenv('SWANLAB_WORKSPACE')
@@ -115,11 +118,11 @@ def init_swanlab(args: Arguments) -> None:
         init_kwargs['workspace'] = workspace
 
     swanlab_host = args.swanlab_host or os.getenv('SWANLAB_HOST')
-    is_local = args.swanlab_api_key == 'local'
-    if not is_local and (isinstance(args.swanlab_api_key, str) or swanlab_host):
+    is_local = swanlab_api_key == 'local'
+    if not is_local and (swanlab_api_key is not None or swanlab_host):
         login_kwargs = {}
-        if isinstance(args.swanlab_api_key, str):
-            login_kwargs['api_key'] = args.swanlab_api_key
+        if swanlab_api_key is not None:
+            login_kwargs['api_key'] = swanlab_api_key
         if swanlab_host:
             login_kwargs['host'] = swanlab_host
         swanlab.login(**login_kwargs)
@@ -164,8 +167,4 @@ def _get_sanitized_config(args: Arguments) -> dict:
     Returns:
         Dict with sensitive keys removed
     """
-    config = args.to_dict()
-    sensitive_keys = ['api_key', 'wandb_api_key', 'swanlab_api_key']
-    for key in sensitive_keys:
-        config.pop(key, None)
-    return config
+    return args.to_dict()

@@ -8,6 +8,7 @@ from typing_extensions import Self
 
 from evalscope.metrics import macro_mean, micro_mean
 from evalscope.utils import get_logger
+from evalscope.utils.argument_utils import get_secret_value
 
 if TYPE_CHECKING:
     from evalscope.config import TaskConfig
@@ -269,10 +270,11 @@ class Report(BaseModel):
 
             # Use judge_model_args if configured; otherwise fall back to the task's own model settings
             if task_config.judge_model_args:
-                judge_llm = LLMJudge(**task_config.judge_model_args)
+                judge_model_args = get_secret_value(task_config.judge_model_args)
+                judge_llm = LLMJudge(**judge_model_args)
             else:
                 judge_llm = LLMJudge(
-                    api_key=task_config.api_key,
+                    api_key=get_secret_value(task_config.api_key),
                     api_url=task_config.api_url,
                     model_id=task_config.model,
                     eval_type=task_config.eval_type,

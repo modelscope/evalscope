@@ -5,13 +5,15 @@ from datetime import timedelta, timezone
 
 os.environ['MODELSCOPE_LOG_LEVEL'] = '40'  # Set default log level to ERROR
 
-from modelscope.utils.constant import DEFAULT_REPOSITORY_REVISION
-from modelscope.utils.file_utils import get_dataset_cache_root, get_model_cache_root
+
+def _get_modelscope_cache_dir() -> str:
+    return os.path.expanduser(os.getenv('MODELSCOPE_CACHE', '~/.cache/modelscope/hub'))
+
 
 DEFAULT_WORK_DIR = './outputs'
-DEFAULT_MODEL_REVISION = DEFAULT_REPOSITORY_REVISION  # master
-DEFAULT_MODEL_CACHE_DIR = get_model_cache_root()  # ~/.cache/modelscope/hub/models
-DEFAULT_DATASET_CACHE_DIR = get_dataset_cache_root()  # ~/.cache/modelscope/hub/datasets
+DEFAULT_MODEL_REVISION = 'master'
+DEFAULT_MODEL_CACHE_DIR = os.path.join(_get_modelscope_cache_dir(), 'models')  # ~/.cache/modelscope/hub/models
+DEFAULT_DATASET_CACHE_DIR = os.path.join(_get_modelscope_cache_dir(), 'datasets')  # ~/.cache/modelscope/hub/datasets
 DEFAULT_ROOT_CACHE_DIR = DEFAULT_DATASET_CACHE_DIR  # compatible with old version
 DEFAULT_EVALSCOPE_CACHE_DIR = os.path.expanduser(
     os.getenv('EVALSCOPE_CACHE', '~/.cache/evalscope')
@@ -154,6 +156,7 @@ class Tags:
     SPEECH_RECOGNITION = 'SpeechRecognition'
     AUDIO = 'Audio'
     IMAGE_CAPTIONING = 'ImageCaptioning'
+    VIDEO = 'Video'
 
 
 class FileConstants:

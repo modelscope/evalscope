@@ -35,12 +35,13 @@ def data_uri_to_base64(data_uri: str) -> str:
     return stripped_uri
 
 
-VideoFormat = Literal['mp4', 'mpeg', 'mov']
-SUPPORTED_VIDEO_FORMATS: tuple[VideoFormat, ...] = ('mp4', 'mpeg', 'mov')
+VideoFormat = Literal['mp4', 'mpeg', 'mov', 'avi']
+SUPPORTED_VIDEO_FORMATS: tuple[VideoFormat, ...] = ('mp4', 'mpeg', 'mov', 'avi')
 VIDEO_FORMAT_TO_MIME_TYPE: dict[VideoFormat, str] = {
     'mp4': 'video/mp4',
     'mpeg': 'video/mpeg',
     'mov': 'video/quicktime',
+    'avi': 'video/x-msvideo',
 }
 
 
@@ -62,6 +63,8 @@ def guess_video_format(video: Optional[str], default: VideoFormat = 'mp4') -> Vi
         subtype = mime_type.split('/', 1)[1].lower()
         if subtype == 'quicktime':
             return 'mov'
+        if subtype == 'x-msvideo':
+            return 'avi'
         if subtype in SUPPORTED_VIDEO_FORMATS:
             return cast(VideoFormat, subtype)
 

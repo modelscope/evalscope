@@ -5,7 +5,13 @@ from typing import TYPE_CHECKING
 from .import_utils import _LazyModule
 
 if TYPE_CHECKING:
-    from .argument_utils import BaseArgument, get_supported_params, parse_int_or_float
+    from .argument_utils import (
+        BaseArgument,
+        get_secret_value,
+        get_supported_params,
+        parse_int_or_float,
+        secretize_auth_headers,
+    )
     from .deprecation_utils import deprecated
     from .function_utils import async_retry_call, run_once, thread_safe
     from .import_utils import get_module_path, is_module_installed
@@ -30,7 +36,9 @@ else:
     _import_structure = {
         'argument_utils': [
             'BaseArgument',
+            'get_secret_value',
             'parse_int_or_float',
+            'secretize_auth_headers',
             'get_supported_params',
         ],
         'model_utils': [

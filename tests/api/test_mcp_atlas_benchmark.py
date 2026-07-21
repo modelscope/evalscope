@@ -85,7 +85,6 @@ def make_adapter(limit: Any = None, local_path: str = '', **extra_params: Any) -
     base_extra_params = {
         'mcp_server_url': 'http://localhost:1984',
         'filter_enabled_servers': True,
-        'max_steps': 100,
         'max_tool_calls': 100,
         'request_timeout': 60.0,
         'list_tools_timeout': 180.0,

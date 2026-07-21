@@ -1,1 +1,1 @@
-ms-enclave[docker]
+ms-enclave[docker]>=0.0.7

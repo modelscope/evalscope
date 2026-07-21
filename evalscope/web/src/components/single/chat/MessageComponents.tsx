@@ -235,9 +235,9 @@ export function SystemPromptRow({
                 {previewShort}
               </span>
             )}
-            {msgId && <MsgIdChip msgId={msgId} />}
           </>
         )}
+        headerAfter={msgId ? <MsgIdChip msgId={msgId} /> : undefined}
         headerStyle={{ gap: '0.45rem', padding: '0.45rem 0.75rem' }}
         bodyStyle={{ padding: '0 0.75rem 0.6rem 1.6rem' }}
       >

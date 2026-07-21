@@ -4,7 +4,7 @@ import zipfile
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
-from evalscope.api.dataset import Sample
+from evalscope.api.dataset import Sample, resolve_snapshot_or_local_path
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
@@ -100,18 +100,7 @@ class TIRBenchAdapter(VisionLanguageAdapter):
 
     def load(self):
         """Download data.zip (if needed), extract images, then load the dataset."""
-        dataset_name_or_path = self.dataset_id
-
-        if os.path.exists(dataset_name_or_path):
-            dataset_path = dataset_name_or_path
-            logger.info(f'Loading TIR-Bench from local path: {dataset_path}')
-        else:
-            from modelscope import dataset_snapshot_download
-            logger.info(f'Downloading TIR-Bench dataset from ModelScope: {dataset_name_or_path}')
-            dataset_path = dataset_snapshot_download(
-                dataset_name_or_path,
-                allow_file_pattern=['data.zip'],
-            )
+        dataset_path = resolve_snapshot_or_local_path(self, allow_file_pattern=['data.zip'])
 
         # Save for use in record_to_sample
         self.image_root = dataset_path

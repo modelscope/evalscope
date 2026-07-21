@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 from evalscope.agent.skills import (
@@ -12,6 +12,7 @@ from evalscope.agent.skills import (
     discover_skills,
 )
 from evalscope.agent.tools.bash import BASH_TOOL_INFO
+from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentAdapter
 from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
@@ -160,9 +161,9 @@ class SkillsBenchAdapter(AgentAdapter):
         self._build_contexts: List[str] = []
         self._current_output_dir: Optional[str] = None
 
-    def load_dataset(self) -> DatasetDict:
+    def load(self) -> Tuple[DatasetDict, None]:
         if is_build_doc():
-            return DatasetDict({_DEFAULT_SUBSET: MemoryDataset([], name=_DEFAULT_SUBSET)})
+            return DatasetDict({_DEFAULT_SUBSET: MemoryDataset([], name=_DEFAULT_SUBSET)}), None
         if not self.tasks_dir.is_dir():
             raise FileNotFoundError(
                 f'SkillsBench tasks_dir not found: {self.tasks_dir}. '
@@ -170,9 +171,7 @@ class SkillsBenchAdapter(AgentAdapter):
             )
         task_dirs = self._select_task_dirs()
         samples = [self._task_to_sample(task_dir, idx) for idx, task_dir in enumerate(task_dirs)]
-        self.test_dataset = DatasetDict({_DEFAULT_SUBSET: MemoryDataset(samples, name=_DEFAULT_SUBSET)})
-        self._post_process_samples()
-        return self.test_dataset
+        return DatasetDict({_DEFAULT_SUBSET: MemoryDataset(samples, name=_DEFAULT_SUBSET)}), None
 
     def _select_task_dirs(self) -> List[Path]:
         if self.task_ids:
@@ -262,7 +261,6 @@ class SkillsBenchAdapter(AgentAdapter):
         from evalscope.agent.external.adapter import run_external_agent
         from evalscope.agent.external.config import ExternalAgentConfig
         from evalscope.agent.runner import run_native_agent
-        from evalscope.api.agent.types import NativeAgentConfig
 
         agent_config = self._task_config.agent_config
         if isinstance(agent_config, ExternalAgentConfig):

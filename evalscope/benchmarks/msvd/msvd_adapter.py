@@ -1,12 +1,9 @@
-import copy
 import json
 import os
-import random
-from collections import OrderedDict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
-from evalscope.api.dataset import DatasetDict, DatasetHub, MemoryDataset, Sample
+from evalscope.api.dataset import DatasetDict, DatasetHub, Sample, build_dataset_from_records
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentText, ContentVideo
 from evalscope.api.metric import SampleScore, Score
@@ -15,10 +12,9 @@ from evalscope.benchmarks.caption.metrics import CAPTION_MAIN_SCORE, CAPTION_MET
 from evalscope.constants import HubType, Tags
 from evalscope.utils.logger import get_logger
 from evalscope.utils.url_utils import guess_video_format
+from .utils import DEFAULT_PROMPT, group_caption_records, optional_float
 
 logger = get_logger()
-
-DEFAULT_PROMPT = 'Describe the video in one concise sentence.'
 
 
 @register_benchmark(
@@ -41,12 +37,12 @@ The native adapter treats each video as one evaluation sample and uses all avail
 ## Evaluation Notes
 
 - Default data source: `evalscope/MSVD` on ModelScope, `test` split
-- Hugging Face `VLM2Vec/MSVD` remains available by setting `extra_params.dataset_hub="huggingface"`
+- Hugging Face `VLM2Vec/MSVD` remains available by setting `dataset_hub="huggingface"` in TaskConfig
 - Primary metric: **CIDEr**
 - Additional metrics: BLEU-1/2/3/4, METEOR, ROUGE-L
 - Set `extra_params.video_dir` when the dataset only provides video file names and local media files are required
 """,
-        tags=[Tags.MULTI_MODAL, Tags.IMAGE_CAPTIONING],
+        tags=[Tags.MULTI_MODAL, Tags.VIDEO, Tags.IMAGE_CAPTIONING],
         dataset_id='evalscope/MSVD',
         paper_url='https://aclanthology.org/P11-1020/',
         subset_list=['default'],
@@ -54,22 +50,6 @@ The native adapter treats each video as one evaluation sample and uses all avail
         eval_split='test',
         prompt_template=DEFAULT_PROMPT,
         extra_params={
-            'dataset_hub': {
-                'type': 'str',
-                'description': 'Dataset hub used to load MSVD annotations.',
-                'value': HubType.MODELSCOPE,
-                'choices': [HubType.HUGGINGFACE, HubType.MODELSCOPE, HubType.LOCAL],
-            },
-            'eval_split': {
-                'type': 'str',
-                'description': 'Source split to load; defaults to test.',
-                'value': '',
-            },
-            'dataset_revision': {
-                'type': 'str',
-                'description': 'Optional dataset revision; leave empty to use the hub default.',
-                'value': '',
-            },
             'video_dir': {
                 'type': 'str',
                 'description': 'Optional local directory containing MSVD video files.',
@@ -97,47 +77,37 @@ class MSVDAdapter(VisionLanguageAdapter):
         self.add_aggregation_name = False
 
     @property
-    def source_dataset_hub(self) -> str:
-        return self.extra_params.get('dataset_hub') or HubType.MODELSCOPE
-
-    @property
     def source_dataset_id(self) -> str:
         if self.dataset_id != self.name and self.dataset_id not in self.SOURCE_DATASET_IDS.values():
             return self.dataset_id
-        return self.SOURCE_DATASET_IDS.get(self.source_dataset_hub, self.dataset_id)
-
-    @property
-    def source_eval_split(self) -> str:
-        return self.extra_params.get('eval_split') or self.eval_split
+        return self.SOURCE_DATASET_IDS.get(self.dataset_hub, self.dataset_id)
 
     @property
     def source_dataset(self) -> DatasetHub:
         return DatasetHub(
             data_id_or_path=self.source_dataset_id,
-            data_source=self.source_dataset_hub,
-            revision=self.extra_params.get('dataset_revision') or None,
+            data_source=self.dataset_hub,
             force_redownload=self.force_redownload,
         )
 
-    def load_dataset(self) -> DatasetDict:
-        dataset_dict: Dict[str, MemoryDataset] = {}
+    def load(self) -> Tuple[DatasetDict, None]:
+        dataset_dict = {}
         for subset in self.subset_list:
             with self._temporary_attribute('current_subset_name', subset):
-                records = self._group_records(self._load_records())
-                if self.shuffle:
-                    random.Random(self.seed).shuffle(records)
-                records = self._apply_limit(records)
-                samples = [self.record_to_sample(record) for record in records]
-                if self.repeats > 1:
-                    samples = [copy.deepcopy(sample) for sample in samples for _ in range(self.repeats)]
-                dataset = MemoryDataset(samples=samples, name=self.name, location=self.source_dataset_id)
-                dataset.reindex(group_size=self.repeats)
+                records = group_caption_records(self._load_records())
+                dataset = build_dataset_from_records(
+                    records=records,
+                    sample_fields=self.record_to_sample,
+                    name=self.name,
+                    location=self.source_dataset_id,
+                    limit=self.limit,
+                    repeats=self.repeats,
+                    shuffle=self.shuffle,
+                    seed=self.seed,
+                )
                 dataset_dict[subset] = dataset
 
-        self.test_dataset = DatasetDict(dataset_dict)
-        self.fewshot_dataset = None
-        self._post_process_samples()
-        return self.test_dataset
+        return DatasetDict(dataset_dict), None
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         references = record.get('references', [])
@@ -145,7 +115,7 @@ class MSVDAdapter(VisionLanguageAdapter):
             raise ValueError(f'No references found for MSVD record: {record}')
 
         video = self._resolve_video(record)
-        fps = _optional_float(record.get('fps'), 'fps')
+        fps = optional_float(record.get('fps'), 'fps')
         content_list: List[Content] = [ContentText(text=self.prompt_template or DEFAULT_PROMPT)]
         if video:
             content_list.append(ContentVideo(video=video, format=guess_video_format(video), fps=fps))
@@ -157,7 +127,7 @@ class MSVDAdapter(VisionLanguageAdapter):
                 'references': references,
                 'subset': self.current_subset_name,
                 'dataset_id': self.source_dataset_id,
-                'dataset_hub': self.source_dataset_hub,
+                'dataset_hub': self.dataset_hub,
                 'video': video,
                 'video_id': record.get('video_id'),
                 'source': record.get('source'),
@@ -183,26 +153,10 @@ class MSVDAdapter(VisionLanguageAdapter):
         return sample_scores
 
     def _load_records(self) -> List[Dict[str, Any]]:
-        logger.info(
-            f'Loading MSVD from {self.source_dataset_hub}: '
-            f'{self.source_dataset_id}, split={self.source_eval_split}.'
-        )
-        dataset = self.source_dataset.load(split=self.source_eval_split, subset='default')
+        logger.info(f'Loading MSVD from {self.dataset_hub}: '
+                    f'{self.source_dataset_id}, split={self.eval_split}.')
+        dataset = self.source_dataset.load(split=self.eval_split, subset='default')
         return list(dataset)
-
-    def _group_records(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        grouped: OrderedDict[str, Dict[str, Any]] = OrderedDict()
-        for record in records:
-            video_id = str(record.get('video_id') or record.get('id') or len(grouped))
-            captions = _extract_captions(record)
-            if video_id not in grouped:
-                grouped[video_id] = copy.deepcopy(record)
-                grouped[video_id]['references'] = []
-            grouped[video_id]['references'].extend(captions)
-
-        for record in grouped.values():
-            record['references'] = _unique_texts(record['references'])
-        return list(grouped.values())
 
     def _resolve_video(self, record: Dict[str, Any]) -> Optional[str]:
         video_name = record.get('video') or record.get('video_path')
@@ -217,46 +171,3 @@ class MSVDAdapter(VisionLanguageAdapter):
                 video_name = f'{os.path.splitext(video_name)[0]}{extension}'
             return os.path.join(os.path.abspath(video_dir), video_name)
         return video_name
-
-    def _apply_limit(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        if self.limit is None:
-            return records
-        if isinstance(self.limit, float):
-            limit = int(len(records) * self.limit)
-        else:
-            limit = self.limit
-        return records[:limit]
-
-
-def _optional_float(value: Any, field_name: str) -> Optional[float]:
-    if value is None or value == '':
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(f'Invalid {field_name} value: {value!r}') from exc
-
-
-def _extract_captions(record: Dict[str, Any]) -> List[str]:
-    for field in ('references', 'caption', 'captions'):
-        value = record.get(field)
-        if value is None:
-            continue
-        if isinstance(value, str):
-            text = value.strip()
-            return [text] if text else []
-        if isinstance(value, list):
-            return [str(v).strip() for v in value if str(v).strip()]
-    return []
-
-
-def _unique_texts(values: List[str]) -> List[str]:
-    seen = set()
-    result = []
-    for value in values:
-        text = str(value).strip()
-        if not text or text in seen:
-            continue
-        seen.add(text)
-        result.append(text)
-    return result

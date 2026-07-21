@@ -3,14 +3,15 @@ import { ExternalLink, ArrowLeft } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
-import { formatScore } from '@/utils/formatUtils'
 import { scoreColor } from '@/utils/colorScale'
+import { formatMetricByKey, getBoundedMetricRatio } from '@/domain/metric/registry'
 
 interface Props {
   modelName: string
   datasetName: string
   datasets?: string[]
-  score: number
+  score: number | null
+  metricName?: string
   totalSamples: number
   htmlReportUrl: string
   onDatasetClick?: (dataset: string) => void
@@ -21,6 +22,7 @@ export default function ReportHeader({
   datasetName,
   datasets,
   score,
+  metricName = 'score',
   totalSamples,
   htmlReportUrl,
   onDatasetClick,
@@ -28,8 +30,10 @@ export default function ReportHeader({
   const { t } = useLocale()
   const navigate = useNavigate()
 
-  const normalizedScore = score > 1 ? score / 100 : score
-  const variant = normalizedScore >= 0.7 ? 'success' : normalizedScore >= 0.4 ? 'warning' : 'danger'
+  const normalizedScore = getBoundedMetricRatio(metricName, score)
+  const variant = normalizedScore == null
+    ? 'default'
+    : normalizedScore >= 0.7 ? 'success' : normalizedScore >= 0.4 ? 'warning' : 'danger'
 
   return (
     <div
@@ -68,7 +72,9 @@ export default function ReportHeader({
           </div>
           <div className="flex items-center gap-3">
             <Badge variant={variant} className="font-mono text-sm px-3 py-1">
-              <span style={{ color: scoreColor(normalizedScore) }}>{formatScore(score)}</span>
+              <span style={{ color: normalizedScore == null ? undefined : scoreColor(normalizedScore) }}>
+                {formatMetricByKey(metricName, score, t).primary}
+              </span>
             </Badge>
             <span className="text-sm text-[var(--text-muted)]">
               {totalSamples.toLocaleString()} {t('single.samples')}

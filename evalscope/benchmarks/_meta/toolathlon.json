@@ -1,0 +1,177 @@
+{
+  "meta": {
+    "pretty_name": "Toolathlon Official Service Wrapper",
+    "dataset_id": "https://github.com/hkust-nlp/Toolathlon",
+    "paper_url": null,
+    "tags": [
+      "Agent",
+      "FunctionCalling",
+      "MultiTurn"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nToolathlon is an agent benchmark for realistic, long-horizon tool use across many MCP-backed software\nenvironments. This EvalScope benchmark is a wrapper around the official Toolathlon remote evaluation service,\nnot a local reimplementation of the MCP environments or official evaluator.\n\n## Evaluation Mode\n\n- Benchmark id: `toolathlon`\n- Supported mode: official service private mode\n- EvalScope controls model endpoint, task selection, job parameters, polling, result download, and reporting\n- The official Toolathlon service controls MCP environments, task containers, agent loop execution, and scoring\n- No Toolathlon, MCP application accounts, or Toolathlon Python package installation are required when using the\n  official public evaluation service\n- A local or intranet OpenAI-compatible endpoint is required for private mode\n- EvalScope represents one remote Toolathlon job as one local sample; the generated data statistics count wrapper\n  jobs, while `task_list` and `limit` control the Toolathlon tasks submitted inside that job\n- The bundled Toolathlon-Verified task list was inspected from official repository commit\n  `b7bbac3f9a1f381b095c878debe1a47dd164ad85`\n\n## Usage Guide\n\nSee the Toolathlon usage guide for public-service limits, private-mode data flow, self-hosted service setup, and\nEvalScope configuration examples:\n\n- https://evalscope.readthedocs.io/en/latest/third_party/toolathlon.html\n\nOfficial sources:\n\n- https://github.com/hkust-nlp/Toolathlon\n- https://github.com/hkust-nlp/Toolathlon/blob/main/EVAL_SERVICE_README.md\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "mode": {
+        "type": "str",
+        "description": "Toolathlon service mode. EvalScope supports private mode for this wrapper.",
+        "value": "private",
+        "choices": [
+          "private"
+        ]
+      },
+      "server_host": {
+        "type": "str",
+        "description": "Official Toolathlon evaluation service host.",
+        "value": "47.253.6.47"
+      },
+      "server_port": {
+        "type": "int",
+        "description": "Official Toolathlon HTTP service port.",
+        "value": 8080
+      },
+      "ws_proxy_port": {
+        "type": "int",
+        "description": "Official Toolathlon WebSocket proxy port for private mode.",
+        "value": 8081
+      },
+      "workers": {
+        "type": "int",
+        "description": "Number of parallel Toolathlon workers requested from the official service.",
+        "value": 10
+      },
+      "provider": {
+        "type": "str",
+        "description": "Toolathlon model provider type.",
+        "value": "unified",
+        "choices": [
+          "unified",
+          "openai_stateful_responses"
+        ]
+      },
+      "task_list": {
+        "type": "list",
+        "description": "Optional Toolathlon task names to evaluate. Empty uses the bundled Toolathlon-Verified list.",
+        "value": []
+      },
+      "task_list_file": {
+        "type": "str",
+        "description": "Optional file containing one Toolathlon task name per line.",
+        "value": ""
+      },
+      "model_params": {
+        "type": "dict",
+        "description": "Extra model parameters forwarded to Toolathlon, merged after TaskConfig.generation_config.",
+        "value": {}
+      },
+      "job_id": {
+        "type": "str",
+        "description": "Optional Toolathlon job id. Reuse to resume an incomplete official-service job.",
+        "value": ""
+      },
+      "force_redownload": {
+        "type": "bool",
+        "description": "Force redownload of Toolathlon result archives.",
+        "value": false
+      },
+      "override_output_dir": {
+        "type": "bool",
+        "description": "Clear the Toolathlon output directory when it already contains files.",
+        "value": false
+      },
+      "skip_container_restart": {
+        "type": "bool",
+        "description": "Skip Toolathlon container restart. Use only for small debug task subsets.",
+        "value": false
+      },
+      "trust_env_in_httpx": {
+        "type": "bool",
+        "description": "Allow httpx to use proxy environment variables.",
+        "value": false
+      },
+      "timeout_seconds": {
+        "type": "int",
+        "description": "Maximum time to wait for a Toolathlon official-service job.",
+        "value": 14400
+      },
+      "poll_interval": {
+        "type": "int",
+        "description": "Polling interval in seconds for Toolathlon job status.",
+        "value": 5
+      }
+    },
+    "sandbox_config": {},
+    "category": "agent"
+  },
+  "statistics": {
+    "total_samples": 1,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1,
+        "prompt_length_mean": 50,
+        "prompt_length_min": 50,
+        "prompt_length_max": 50,
+        "prompt_length_std": null,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 50,
+      "min": 50,
+      "max": 50,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-07-10T10:05:26.379976"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "22a512d8",
+          "content": "Run Toolathlon official remote evaluation service."
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "metadata": {
+        "task_list": [
+          "ab-testing",
+          "academic-pdf-report",
+          "academic-warning",
+          "add-bibtex",
+          "apply-phd-email",
+          "arrange-workspace",
+          "canvas-arrange-exam",
+          "canvas-art-manager",
+          "canvas-art-quiz",
+          "canvas-do-quiz",
+          "... [TRUNCATED 98 more items] ..."
+        ],
+        "mode": "private"
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# Toolathlon Official Service Wrapper\n\n\n## Overview\n\nToolathlon is an agent benchmark for realistic, long-horizon tool use across many MCP-backed software\nenvironments. This EvalScope benchmark is a wrapper around the official Toolathlon remote evaluation service,\nnot a local reimplementation of the MCP environments or official evaluator.\n\n## Evaluation Mode\n\n- Benchmark id: `toolathlon`\n- Supported mode: official service private mode\n- EvalScope controls model endpoint, task selection, job parameters, polling, result download, and reporting\n- The official Toolathlon service controls MCP environments, task containers, agent loop execution, and scoring\n- No Toolathlon, MCP application accounts, or Toolathlon Python package installation are required when using the\n  official public evaluation service\n- A local or intranet OpenAI-compatible endpoint is required for private mode\n- EvalScope represents one remote Toolathlon job as one local sample; the generated data statistics count wrapper\n  jobs, while `task_list` and `limit` control the Toolathlon tasks submitted inside that job\n- The bundled Toolathlon-Verified task list was inspected from official repository commit\n  `b7bbac3f9a1f381b095c878debe1a47dd164ad85`\n\n## Usage Guide\n\nSee the Toolathlon usage guide for public-service limits, private-mode data flow, self-hosted service setup, and\nEvalScope configuration examples:\n\n- https://evalscope.readthedocs.io/en/latest/third_party/toolathlon.html\n\nOfficial sources:\n\n- https://github.com/hkust-nlp/Toolathlon\n- https://github.com/hkust-nlp/Toolathlon/blob/main/EVAL_SERVICE_README.md\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `toolathlon` |\n| **Dataset ID** | [Toolathlon](https://github.com/hkust-nlp/Toolathlon) |\n| **Paper** | N/A |\n| **Tags** | `Agent`, `FunctionCalling`, `MultiTurn` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1 |\n| Prompt Length (Mean) | 50 chars |\n| Prompt Length (Min/Max) | 50 / 50 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"22a512d8\",\n      \"content\": \"Run Toolathlon official remote evaluation service.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"metadata\": {\n    \"task_list\": [\n      \"ab-testing\",\n      \"academic-pdf-report\",\n      \"academic-warning\",\n      \"add-bibtex\",\n      \"apply-phd-email\",\n      \"arrange-workspace\",\n      \"canvas-arrange-exam\",\n      \"canvas-art-manager\",\n      \"canvas-art-quiz\",\n      \"canvas-do-quiz\",\n      \"... [TRUNCATED 98 more items] ...\"\n    ],\n    \"mode\": \"private\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `mode` | `str` | `private` | Toolathlon service mode. EvalScope supports private mode for this wrapper. Choices: ['private'] |\n| `server_host` | `str` | `47.253.6.47` | Official Toolathlon evaluation service host. |\n| `server_port` | `int` | `8080` | Official Toolathlon HTTP service port. |\n| `ws_proxy_port` | `int` | `8081` | Official Toolathlon WebSocket proxy port for private mode. |\n| `workers` | `int` | `10` | Number of parallel Toolathlon workers requested from the official service. |\n| `provider` | `str` | `unified` | Toolathlon model provider type. Choices: ['unified', 'openai_stateful_responses'] |\n| `task_list` | `list` | `[]` | Optional Toolathlon task names to evaluate. Empty uses the bundled Toolathlon-Verified list. |\n| `task_list_file` | `str` | `` | Optional file containing one Toolathlon task name per line. |\n| `model_params` | `dict` | `{}` | Extra model parameters forwarded to Toolathlon, merged after TaskConfig.generation_config. |\n| `job_id` | `str` | `` | Optional Toolathlon job id. Reuse to resume an incomplete official-service job. |\n| `force_redownload` | `bool` | `False` | Force redownload of Toolathlon result archives. |\n| `override_output_dir` | `bool` | `False` | Clear the Toolathlon output directory when it already contains files. |\n| `skip_container_restart` | `bool` | `False` | Skip Toolathlon container restart. Use only for small debug task subsets. |\n| `trust_env_in_httpx` | `bool` | `False` | Allow httpx to use proxy environment variables. |\n| `timeout_seconds` | `int` | `14400` | Maximum time to wait for a Toolathlon official-service job. |\n| `poll_interval` | `int` | `5` | Polling interval in seconds for Toolathlon job status. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets toolathlon \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['toolathlon'],\n    dataset_args={\n        'toolathlon': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Toolathlon Official Service Wrapper\n\n\n## 概述\n\nToolathlon 是一个面向现实场景、长周期工具使用的智能体基准测试，覆盖多种基于 MCP 的软件环境。本 EvalScope 基准测试是对官方 Toolathlon 远程评估服务的封装，并非对 MCP 环境或官方评估器的本地重新实现。\n\n## 评估模式\n\n- 基准测试 ID：`toolathlon`\n- 支持模式：官方服务私有模式（official service private mode）\n- EvalScope 负责控制模型端点、任务选择、作业参数、轮询、结果下载和报告生成\n- 官方 Toolathlon 服务负责控制 MCP 环境、任务容器、智能体循环执行和评分\n- 使用官方公共评估服务时，无需安装 Toolathlon、MCP 应用账户或 Toolathlon Python 包\n- 私有模式下需要一个本地或内网的 OpenAI 兼容端点\n- EvalScope 将一个远程 Toolathlon 作业视为一个本地样本；生成的数据统计计数的是封装作业数量，而 `task_list` 和 `limit` 控制该作业内部提交的 Toolathlon 任务\n- 所附带的 Toolathlon-Verified 任务列表源自官方仓库提交记录 `b7bbac3f9a1f381b095c878debe1a47dd164ad85`\n\n## 使用指南\n\n有关公共服务限制、私有模式数据流、自托管服务设置以及 EvalScope 配置示例，请参阅 Toolathlon 使用指南：\n\n- https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolathlon.html\n\n官方资源：\n\n- https://github.com/hkust-nlp/Toolathlon\n- https://github.com/hkust-nlp/Toolathlon/blob/main/EVAL_SERVICE_README.md\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `toolathlon` |\n| **数据集ID** | [Toolathlon](https://github.com/hkust-nlp/Toolathlon) |\n| **论文** | N/A |\n| **标签** | `Agent`, `FunctionCalling`, `MultiTurn` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1 |\n| 提示词长度（平均） | 50 字符 |\n| 提示词长度（最小/最大） | 50 / 50 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"22a512d8\",\n      \"content\": \"Run Toolathlon official remote evaluation service.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"metadata\": {\n    \"task_list\": [\n      \"ab-testing\",\n      \"academic-pdf-report\",\n      \"academic-warning\",\n      \"add-bibtex\",\n      \"apply-phd-email\",\n      \"arrange-workspace\",\n      \"canvas-arrange-exam\",\n      \"canvas-art-manager\",\n      \"canvas-art-quiz\",\n      \"canvas-do-quiz\",\n      \"... [TRUNCATED 98 more items] ...\"\n    ],\n    \"mode\": \"private\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板:**\n```text\n{question}\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `mode` | `str` | `private` | Toolathlon 服务模式。EvalScope 此封装仅支持私有模式。选项：['private'] |\n| `server_host` | `str` | `47.253.6.47` | 官方 Toolathlon 评估服务主机地址。 |\n| `server_port` | `int` | `8080` | 官方 Toolathlon HTTP 服务端口。 |\n| `ws_proxy_port` | `int` | `8081` | 私有模式下官方 Toolathlon WebSocket 代理端口。 |\n| `workers` | `int` | `10` | 向官方服务请求的并行 Toolathlon 工作进程数量。 |\n| `provider` | `str` | `unified` | Toolathlon 模型提供者类型。选项：['unified', 'openai_stateful_responses'] |\n| `task_list` | `list` | `[]` | 可选的待评估 Toolathlon 任务名称列表。留空则使用内置的 Toolathlon-Verified 列表。 |\n| `task_list_file` | `str` | `` | 可选文件路径，每行包含一个 Toolathlon 任务名称。 |\n| `model_params` | `dict` | `{}` | 额外模型参数，将转发给 Toolathlon，并在 TaskConfig.generation_config 之后合并。 |\n| `job_id` | `str` | `` | 可选的 Toolathlon 作业 ID。可用于恢复未完成的官方服务作业。 |\n| `force_redownload` | `bool` | `False` | 强制重新下载 Toolathlon 结果压缩包。 |\n| `override_output_dir` | `bool` | `False` | 当 Toolathlon 输出目录已存在文件时，是否清空目录。 |\n| `skip_container_restart` | `bool` | `False` | 跳过 Toolathlon 容器重启。仅用于小型调试任务子集。 |\n| `trust_env_in_httpx` | `bool` | `False` | 允许 httpx 使用代理环境变量。 |\n| `timeout_seconds` | `int` | `14400` | 等待 Toolathlon 官方服务作业的最大时间（秒）。 |\n| `poll_interval` | `int` | `5` | 轮询 Toolathlon 作业状态的时间间隔（秒）。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets toolathlon \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['toolathlon'],\n    dataset_args={\n        'toolathlon': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "1bd327d70c75f087d1902656a5ddb66e",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-10T10:05:26.380342",
+  "translation_updated_at": "2026-07-10T10:05:29"
+}

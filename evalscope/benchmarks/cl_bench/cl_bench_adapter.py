@@ -61,9 +61,10 @@ CL-bench represents a step towards building LMs with this fundamental capability
 )
 class CLBenchAdapter(DefaultDataAdapter):
 
+    llm_judge_default = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._use_llm_judge = True
 
     def load(self):
         last_error = None

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Dict, Generator, List, Literal, Optional,
 from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessageSystem, ChatMessageUser
 from evalscope.api.registry import get_model_api
 from evalscope.api.tool import ToolChoice, ToolFunction, ToolInfo
-from evalscope.utils import get_logger
+from evalscope.utils import get_logger, get_secret_value
 from evalscope.utils.function_utils import thread_safe
 from .generate_config import GenerateConfig
 from .model_output import ModelOutput
@@ -305,7 +305,7 @@ def get_model_with_task_config(task_config: 'TaskConfig') -> Model:
     model = task_config.model
     eval_type = task_config.eval_type
     base_url = task_config.api_url
-    api_key = task_config.api_key
+    api_key = get_secret_value(task_config.api_key)
     config = task_config.generation_config
     model_args = task_config.model_args or {}
 
