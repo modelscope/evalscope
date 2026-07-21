@@ -6,15 +6,15 @@ from evalscope.benchmarks.deepsearchqa.utils import aggregate_official_scores, p
 
 
 class TestDeepSearchQAUtils(unittest.TestCase):
-    def test_rule_fallback_handles_single_answer_aliases(self):
-        value, metadata = rule_fallback_score('The answer is Aotearoa.', ['New Zealand', 'Aotearoa'], 'Single Answer')
+    def test_rule_fallback_handles_single_answer_substring(self):
+        value, metadata = rule_fallback_score('The answer is Aotearoa.', 'Aotearoa', 'Single Answer')
 
         self.assertEqual(metadata['correct'], 1)
         self.assertEqual(metadata['expected'], 1)
         self.assertEqual(value['f1_score'], 1.0)
 
     def test_rule_fallback_does_not_match_empty_reference_part(self):
-        value, metadata = rule_fallback_score('', [''], 'Single Answer')
+        value, metadata = rule_fallback_score('', '', 'Single Answer')
 
         self.assertEqual(metadata['correct'], 0)
         self.assertEqual(metadata['expected'], 0)

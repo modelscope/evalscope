@@ -73,11 +73,10 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
         problem = record['problem']
         return Sample(
             input=problem,
-            target=record.get('answer') or '',
+            target=record['answer'] or '',
             metadata={
-                'problem_category': record.get('problem_category') or '',
-                'answer_type': record.get('answer_type') or 'Set Answer',
-                'question': problem,
+                'problem_category': record['problem_category'],
+                'answer_type': record['answer_type'],
             },
         )
 
@@ -97,7 +96,7 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
         reference: str,
         task_state: TaskState,
     ) -> Score:
-        answer_type = (task_state.metadata or {}).get('answer_type') or 'Set Answer'
+        answer_type = task_state.metadata['answer_type']
         value, metadata = rule_fallback_score(filtered_prediction, reference, answer_type)
         return Score(
             extracted_prediction=filtered_prediction,
@@ -114,11 +113,9 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
         reference: str,
         task_state: TaskState,
     ) -> Score:
-        metadata = task_state.metadata or {}
-        answer_type = metadata.get('answer_type') or 'Set Answer'
-        question = metadata.get('question') or task_state.input_text
+        answer_type = task_state.metadata['answer_type']
         prompt = build_grader_prompt(
-            question=question,
+            question=task_state.input_text,
             reference=reference,
             answer_type=answer_type,
             response=filtered_prediction,

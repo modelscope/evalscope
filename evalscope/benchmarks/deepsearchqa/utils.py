@@ -78,14 +78,15 @@ def build_grader_prompt(question: str, reference: str, answer_type: str, respons
     )
 
 
-def rule_fallback_score(prediction: str, reference: Any, answer_type: str) -> Tuple[Dict[str, float], Dict[str, Any]]:
+def rule_fallback_score(prediction: str, reference: str, answer_type: str) -> Tuple[Dict[str, float], Dict[str, Any]]:
     normalized_prediction = _normalize_text(prediction)
-    reference_parts = _split_reference(reference)
     if answer_type == 'Single Answer':
+        reference_parts = [reference.strip()] if reference.strip() else []
         correct = int(any(part and _normalize_text(part) in normalized_prediction for part in reference_parts))
         expected = 1 if reference_parts else 0
         excessive = 0
     else:
+        reference_parts = _split_reference(reference)
         correct = sum(1 for part in reference_parts if part and _normalize_text(part) in normalized_prediction)
         expected = len(reference_parts)
         excessive = 0
@@ -205,33 +206,17 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
     return agg_scores
 
 
-def _normalize_text(text: Any) -> str:
-    if not isinstance(text, str):
-        return ''
+def _normalize_text(text: str) -> str:
     return ' '.join(re.sub(r'[^\w\s]', ' ', text.lower()).split())
 
 
-def _split_reference(answer: Any) -> List[str]:
+def _split_reference(answer: str) -> List[str]:
     if not answer:
         return []
-    if isinstance(answer, (list, tuple)):
-        return [str(part).strip() for part in answer if str(part).strip()]
-    if not isinstance(answer, str):
-        return [str(answer).strip()]
-
     answer_text = answer.strip()
     if not answer_text:
         return []
-    if answer_text.startswith('[') and answer_text.endswith(']'):
-        try:
-            parsed = json.loads(answer_text)
-        except json.JSONDecodeError:
-            parsed = None
-        if isinstance(parsed, list):
-            return [str(part).strip() for part in parsed if str(part).strip()]
-
-    parts = [part.strip() for part in re.split(r',|;|\n', answer_text) if part.strip()]
-    return parts or [answer_text]
+    return [part.strip() for part in re.split(r',|;|\n', answer_text) if part.strip()]
 
 
 def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
