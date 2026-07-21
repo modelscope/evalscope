@@ -1,3 +1,4 @@
+import threading
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import AgentLoopAdapter, BenchmarkMeta
@@ -68,6 +69,7 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._suppress_doc_sample_example = True
+        self._judge_lock = threading.Lock()
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         problem = record['problem']
@@ -76,7 +78,7 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
             target=record.get('answer') or '',
             metadata={
                 'problem_category': record.get('problem_category') or '',
-                'answer_type': record['answer_type'],
+                'answer_type': record.get('answer_type') or 'Set Answer',
                 'question': problem,
             },
         )
@@ -131,7 +133,8 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
                 'error_message': 'AI response was empty.',
             }
         else:
-            judge_response = self.llm_judge.judge(prompt)
+            with self._judge_lock:
+                judge_response = self.llm_judge.judge(prompt)
             value, judge_metadata = parse_judge_response(judge_response)
 
         score = Score(
