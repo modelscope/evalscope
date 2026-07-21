@@ -88,7 +88,7 @@ def rule_fallback_score(prediction: str, reference: Any, answer_type: str) -> Tu
     else:
         correct = sum(1 for part in reference_parts if part and _normalize_text(part) in normalized_prediction)
         expected = len(reference_parts)
-        excessive = int(expected > 0 and correct < expected)
+        excessive = 0
     return _score_from_counts(correct=correct, expected=expected, excessive=excessive), {
         'source': 'rule_fallback',
         'correct': correct,

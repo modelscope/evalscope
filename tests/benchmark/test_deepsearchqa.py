@@ -27,6 +27,15 @@ class TestDeepSearchQAUtils(unittest.TestCase):
         self.assertEqual(metadata['excessive'], 0)
         self.assertEqual(value['f1_score'], 1.0)
 
+    def test_rule_fallback_does_not_count_missing_set_answers_as_excessive(self):
+        value, metadata = rule_fallback_score('Belgium', 'Belgium, France', 'Set Answer')
+
+        self.assertEqual(metadata['correct'], 1)
+        self.assertEqual(metadata['expected'], 2)
+        self.assertEqual(metadata['excessive'], 0)
+        self.assertEqual(value['precision'], 1.0)
+        self.assertEqual(value['recall'], 0.5)
+
     def test_parse_judge_response_handles_official_json_fence(self):
         judge_response = """
         ```json
