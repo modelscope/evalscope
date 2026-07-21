@@ -110,17 +110,17 @@ class OpenLoopStrategy(BenchmarkStrategy):
                     # Deadline anchored to first non-warmup request's dispatch time.
                     if i == first_bench:
                         actual_deadline = self._compute_deadline(self.args.duration)
-                    if actual_deadline is not None and time.perf_counter() >= actual_deadline:
-                        logger.info(
-                            f'Duration deadline reached after dispatching {i}/{n} requests; '
-                            'stopping further dispatches.'
-                        )
-                        break
                     sleep_s = target_times[i] - time.perf_counter()
                     if actual_deadline is not None:
                         sleep_s = min(sleep_s, actual_deadline - time.perf_counter())
                 if sleep_s > 0:
                     await asyncio.sleep(sleep_s)
+                if not is_warmup_req and actual_deadline is not None and time.perf_counter() >= actual_deadline:
+                    logger.info(
+                        f'Duration deadline reached after dispatching {i}/{n} requests; '
+                        'stopping further dispatches.'
+                    )
+                    break
                 task = asyncio.create_task(
                     _send_request_open_loop(
                         request, is_warmup or is_warmup_req, self.queue, self.client, self.track_gpu_memory
@@ -159,12 +159,6 @@ class OpenLoopStrategy(BenchmarkStrategy):
             #    loop, otherwise the anchor will skew.
             target_times = delay_ts + time.perf_counter()
             for i, request in enumerate(requests):
-                if deadline is not None and time.perf_counter() >= deadline:
-                    logger.info(
-                        f'Duration deadline reached after dispatching {i}/{n} requests; '
-                        'stopping further dispatches.'
-                    )
-                    break
                 sleep_s = target_times[i] - time.perf_counter()
                 # Cap the sleep at the remaining time-to-deadline so we don't
                 # sleep past the cancellation point.
@@ -172,6 +166,12 @@ class OpenLoopStrategy(BenchmarkStrategy):
                     sleep_s = min(sleep_s, deadline - time.perf_counter())
                 if sleep_s > 0:
                     await asyncio.sleep(sleep_s)
+                if deadline is not None and time.perf_counter() >= deadline:
+                    logger.info(
+                        f'Duration deadline reached after dispatching {i}/{n} requests; '
+                        'stopping further dispatches.'
+                    )
+                    break
                 # If sleep_s <= 0 we are behind schedule; dispatch immediately
                 # to absorb the drift.
                 task = asyncio.create_task(
