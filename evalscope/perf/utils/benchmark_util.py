@@ -12,6 +12,14 @@ logger = get_logger()
 # ===========================================================================
 
 
+def is_stream_body(body: dict) -> bool:
+    """Best-effort stream classification from the request body.
+
+    Used only when no response is available (error/timeout paths).
+    """
+    return body.get('stream') is True
+
+
 @dataclass
 class BenchmarkData:
     """Data container for a single benchmark request/response cycle.
@@ -26,6 +34,7 @@ class BenchmarkData:
     completed_time: float = 0.0
     chunk_times: List[float] = field(default_factory=list)
     success: bool = False
+    is_stream: bool = False
     response_messages: List[Any] = field(default_factory=list)
 
     # --- Derived timing (populated by finalize) ---
@@ -161,6 +170,14 @@ class MetricsAccumulator:
     total_time_per_output_token: float = 0.0
     all_inter_token_latencies: List[float] = field(default_factory=list)
 
+    # --- Stream-only cumulative sums (stream requests only) ---
+    n_stream_success: int = 0
+    n_stream_total: int = 0
+    n_non_stream_total: int = 0
+    total_first_chunk_latency_stream: float = 0.0
+    total_time_per_output_token_stream: float = 0.0
+    all_inter_token_latencies_stream: List[float] = field(default_factory=list)
+
     # --- Multi-turn cumulative sums ---
     total_input_turns: int = 0
     # Token-level accumulators for unbiased global cache hit rate.
@@ -212,6 +229,10 @@ class MetricsAccumulator:
             return  # Warmup requests are excluded from all metrics
 
         self.n_total += 1
+        if data.is_stream:
+            self.n_stream_total += 1
+        else:
+            self.n_non_stream_total += 1
 
         if data.success:
             self.n_success += 1
@@ -223,6 +244,12 @@ class MetricsAccumulator:
             self.total_completion_tokens += data.completion_tokens
             self.total_time_per_output_token += data.time_per_output_token
             self.all_inter_token_latencies += data.inter_chunk_latency
+
+            if data.is_stream:
+                self.n_stream_success += 1
+                self.total_first_chunk_latency_stream += data.first_chunk_latency
+                self.total_time_per_output_token_stream += data.time_per_output_token
+                self.all_inter_token_latencies_stream += data.inter_chunk_latency
 
             # Multi-turn specific
             if data.input_num_turns > 0:
@@ -280,15 +307,24 @@ class MetricsAccumulator:
 
         try:
             avg_latency = _safe_div(self.total_latency, n)
-            avg_first_chunk_latency = _safe_div(self.total_first_chunk_latency, n)
+            # Streaming-specific metrics use stream-only denominators to avoid
+            # pollution from non-stream requests (whose first_chunk_latency equals
+            # the full query latency and whose TPOT is 0). Pure non-stream runs
+            # fall back to the all-request computation so their values are unchanged.
+            if self.n_stream_success > 0:
+                avg_first_chunk_latency = _safe_div(self.total_first_chunk_latency_stream, self.n_stream_success)
+                avg_time_per_output_token = _safe_div(self.total_time_per_output_token_stream, self.n_stream_success)
+            else:
+                avg_first_chunk_latency = _safe_div(self.total_first_chunk_latency, n)
+                avg_time_per_output_token = _safe_div(self.total_time_per_output_token, n)
             avg_prompt_tokens = _safe_div(self.total_prompt_tokens, n)
             avg_completion_tokens = _safe_div(self.total_completion_tokens, n)
-            avg_time_per_output_token = _safe_div(self.total_time_per_output_token, n)
             avg_inter_token_latency = (
-                sum(self.all_inter_token_latencies)
-                / len(self.all_inter_token_latencies) if self.all_inter_token_latencies else 0.0
+                sum(self.all_inter_token_latencies_stream)
+                / len(self.all_inter_token_latencies_stream) if self.all_inter_token_latencies_stream else 0.0
             )
             qps = _safe_div(n, t)
+            # Deliberately population-wide: only used by embedding/rerank APIs
             avg_input_token_throughput = _safe_div(self.total_prompt_tokens, self.total_first_chunk_latency)
             avg_output_token_throughput = _safe_div(self.total_completion_tokens, t)
             avg_total_token_throughput = _safe_div(self.total_prompt_tokens + self.total_completion_tokens, t)
@@ -333,6 +369,8 @@ class MetricsAccumulator:
             total_requests=self.n_total,
             succeed_requests=self.n_success,
             failed_requests=self.n_failed,
+            stream_requests=self.n_stream_total,
+            non_stream_requests=self.n_non_stream_total,
             total_time=t,
             avg_latency=avg_latency,
             avg_first_chunk_latency=avg_first_chunk_latency,
@@ -373,6 +411,8 @@ class BenchmarkMetrics:
     total_requests: int = 0
     succeed_requests: int = 0
     failed_requests: int = 0
+    stream_requests: int = 0
+    non_stream_requests: int = 0
     total_time: float = 0.0
 
     # --- Latency averages ---
@@ -431,6 +471,8 @@ class BenchmarkMetrics:
             Metrics.TOTAL_REQUESTS: int(self.total_requests),
             Metrics.SUCCEED_REQUESTS: self.succeed_requests,
             Metrics.FAILED_REQUESTS: self.failed_requests,
+            Metrics.STREAM_REQUESTS: self.stream_requests,
+            Metrics.NON_STREAM_REQUESTS: self.non_stream_requests,
             Metrics.REQUEST_THROUGHPUT: round(self.qps, r),
             Metrics.AVERAGE_LATENCY: round(self.avg_latency, r),
             Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST: round(self.avg_prompt_tokens, r),

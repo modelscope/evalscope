@@ -8,7 +8,7 @@ from typing import Any, Dict
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.base import ApiPluginBase
-from evalscope.perf.utils.benchmark_util import BenchmarkData
+from evalscope.perf.utils.benchmark_util import BenchmarkData, is_stream_body
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -129,6 +129,7 @@ class DefaultApiPlugin(ApiPluginBase):
                 if response.status == 200:
                     # Handle streaming responses (SSE)
                     if 'text/event-stream' in content_type:
+                        output.is_stream = True
                         handler = StreamedResponseHandler()
                         async for chunk_bytes in response.content.iter_any():
 
@@ -258,5 +259,9 @@ class DefaultApiPlugin(ApiPluginBase):
             exc_info = sys.exc_info()
             output.error = ''.join(traceback.format_exception(*exc_info))
             logger.error(output.error)
+
+        # Fall back to request body — response may not have been SSE (or arrived at all).
+        if not output.success and not output.is_stream:
+            output.is_stream = is_stream_body(body)
 
         return output

@@ -4,7 +4,7 @@ import time
 from typing import TYPE_CHECKING
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.utils.benchmark_util import BenchmarkData
+from evalscope.perf.utils.benchmark_util import BenchmarkData, is_stream_body
 from evalscope.utils.argument_utils import SECRET_HEADER_KEYS, get_secret_value
 from evalscope.utils.logger import get_logger
 
@@ -88,10 +88,10 @@ class AioHttpClient:
             logger.error(
                 f'TimeoutError: total_timeout: {self.total_timeout}, connect_timeout: {self.connect_timeout}, read_timeout: {self.read_timeout}. Please set longer timeout.'  # noqa: E501
             )
-            return BenchmarkData(success=False, error=str(e))
+            return BenchmarkData(success=False, error=str(e), is_stream=is_stream_body(body))
         except (aiohttp.ClientConnectorError, Exception) as e:
             logger.error(e)
-            return BenchmarkData(success=False, error=str(e))
+            return BenchmarkData(success=False, error=str(e), is_stream=is_stream_body(body))
 
     @staticmethod
     async def on_request_start(session, context, params: aiohttp.TraceRequestStartParams):
