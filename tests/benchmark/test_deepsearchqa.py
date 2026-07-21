@@ -27,14 +27,13 @@ class TestDeepSearchQAUtils(unittest.TestCase):
         self.assertEqual(metadata['excessive'], 0)
         self.assertEqual(value['f1_score'], 1.0)
 
-    def test_parse_judge_response_handles_common_json_variants(self):
+    def test_parse_judge_response_handles_official_json_fence(self):
         judge_response = """
-        Here is the rating:
-        ```JSON
+        ```json
         {
           "Answer Correctness": {
             "Explanation": "Both answers are present.",
-            "Correctness Details": {"Belgium": "true", "France": 1},
+            "Correctness Details": {"Belgium": true, "France": true},
             "Excessive Answers": []
           }
         }
@@ -46,7 +45,7 @@ class TestDeepSearchQAUtils(unittest.TestCase):
         self.assertEqual(value['f1_score'], 1.0)
         self.assertEqual(metadata['correctness_details'], {'Belgium': True, 'France': True})
 
-    def test_parse_judge_response_handles_surrounding_text(self):
+    def test_parse_judge_response_rejects_surrounding_text_to_match_official_parser(self):
         payload = {
             'Answer Correctness': {
                 'Explanation': 'Only one expected answer is present.',
@@ -57,10 +56,8 @@ class TestDeepSearchQAUtils(unittest.TestCase):
 
         value, metadata = parse_judge_response(f'Rating follows:\n{json.dumps(payload)}\nDone.')
 
-        self.assertEqual(metadata['correct'], 1)
-        self.assertEqual(metadata['expected'], 2)
-        self.assertEqual(metadata['excessive'], 1)
-        self.assertAlmostEqual(value['precision'], 0.5)
+        self.assertEqual(value, {})
+        self.assertTrue(metadata['invalid_auto_rater_response'])
 
     def test_parse_judge_response_rejects_unknown_boolean_strings(self):
         payload = {

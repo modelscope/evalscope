@@ -117,14 +117,14 @@ def parse_judge_response(response: str) -> Tuple[Dict[str, float], Dict[str, Any
     if not isinstance(explanation, str):
         return _invalid_score("Missing or malformed 'Explanation' in Answer Correctness.", response)
 
-    details = _normalize_correctness_details(answer_correctness.get('Correctness Details'))
-    if details is None:
+    details = answer_correctness.get('Correctness Details')
+    if not isinstance(details, dict) or not all(isinstance(k, str) for k in details.keys()) \
+            or not all(isinstance(v, bool) for v in details.values()):
         return _invalid_score("Invalid 'Correctness Details' in Answer Correctness.", response)
 
     excessive_answers = answer_correctness.get('Excessive Answers', [])
-    if not isinstance(excessive_answers, list):
+    if not isinstance(excessive_answers, list) or not all(isinstance(item, str) for item in excessive_answers):
         return _invalid_score("Invalid 'Excessive Answers' in Answer Correctness.", response)
-    excessive_answers = [str(item) for item in excessive_answers]
 
     expected = len(details)
     correct = sum(1 for value in details.values() if value)
@@ -238,50 +238,21 @@ def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
     if not text:
         return None
 
-    candidates = [text.strip()]
-    candidates.extend(
-        match.group(1).strip() for match in re.finditer(r'```(?:json)?\s*(.*?)\s*```', text, re.DOTALL | re.IGNORECASE)
-    )
+    json_str = text.strip()
+    start_marker = '```json'
+    start_idx = json_str.find(start_marker)
+    if start_idx != -1:
+        json_str = json_str[start_idx + len(start_marker):].strip()
+        end_idx = json_str.rfind('```')
+        if end_idx != -1:
+            json_str = json_str[:end_idx].strip()
 
-    start_idx = text.find('{')
-    end_idx = text.rfind('}')
-    if start_idx != -1 and end_idx > start_idx:
-        candidates.append(text[start_idx:end_idx + 1])
-
-    for json_str in candidates:
-        try:
-            parsed = json.loads(json_str)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(parsed, dict):
-            return parsed
-
-    return None
-
-
-def _normalize_correctness_details(details: Any) -> Optional[Dict[str, bool]]:
-    if not isinstance(details, dict) or not all(isinstance(k, str) for k in details.keys()):
+    try:
+        parsed = json.loads(json_str)
+    except json.JSONDecodeError:
         return None
 
-    normalized = {}
-    for key, value in details.items():
-        if isinstance(value, bool):
-            normalized[key] = value
-            continue
-        if isinstance(value, str):
-            value_lower = value.strip().lower()
-            if value_lower in {'true', '1', 'yes'}:
-                normalized[key] = True
-                continue
-            if value_lower in {'false', '0', 'no'}:
-                normalized[key] = False
-                continue
-            return None
-        if isinstance(value, (int, float)):
-            normalized[key] = bool(value)
-            continue
-        return None
-    return normalized
+    return parsed if isinstance(parsed, dict) else None
 
 
 def _calculate_metric(true_positives: int, false_positives: int, false_negatives: int) -> Dict[str, float]:
