@@ -210,12 +210,13 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Percent
         }
     else:
         # For LLM models, show all metrics
-        # Prepare data for each metric
-        inter_token_latencies_stream = []
-        for row in streaming_rows:
+        # Prepare data for each metric.
+        # ITL over all rows: non-stream rows carry empty ITL, so no bucketing needed.
+        inter_token_latencies_all = []
+        for row in rows:
             try:
                 itl = json.loads(row[col_indices[DatabaseColumns.INTER_TOKEN_LATENCIES]]) or []
-                inter_token_latencies_stream.extend(itl)
+                inter_token_latencies_all.extend(itl)
             except (json.JSONDecodeError, TypeError) as e:
                 logger.error(f'Error parsing inter token latencies: {e}')
 
@@ -224,7 +225,7 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Percent
             PercentileMetrics.TTFT: [
                 row[col_indices[DatabaseColumns.FIRST_CHUNK_LATENCY]] * 1000 for row in streaming_rows
             ],
-            PercentileMetrics.ITL: [v * 1000 for v in inter_token_latencies_stream],
+            PercentileMetrics.ITL: [v * 1000 for v in inter_token_latencies_all],
             PercentileMetrics.TPOT: [
                 row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]] * 1000 for row in streaming_rows
             ],

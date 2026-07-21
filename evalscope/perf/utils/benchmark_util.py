@@ -12,12 +12,15 @@ logger = get_logger()
 # ===========================================================================
 
 
-def is_stream_body(body: dict) -> bool:
+def is_stream_body(body: Any) -> bool:
     """Best-effort stream classification from the request body.
 
-    Used only when no response is available (error/timeout paths).
+    Used only when no response is available (error/timeout paths), where the
+    body may be ``None`` or a non-dict type.
     """
-    return body.get('stream') is True
+    if isinstance(body, dict):
+        return body.get('stream') is True
+    return False
 
 
 @dataclass
@@ -171,12 +174,14 @@ class MetricsAccumulator:
     all_inter_token_latencies: List[float] = field(default_factory=list)
 
     # --- Stream-only cumulative sums (stream requests only) ---
+    # ITL is intentionally *not* bucketed here: non-stream requests contribute an
+    # empty inter_chunk_latency list, so all_inter_token_latencies is already
+    # stream-only by construction and needs no separate accumulator.
     n_stream_success: int = 0
     n_stream_total: int = 0
     n_non_stream_total: int = 0
     total_first_chunk_latency_stream: float = 0.0
     total_time_per_output_token_stream: float = 0.0
-    all_inter_token_latencies_stream: List[float] = field(default_factory=list)
 
     # --- Multi-turn cumulative sums ---
     total_input_turns: int = 0
@@ -249,7 +254,6 @@ class MetricsAccumulator:
                 self.n_stream_success += 1
                 self.total_first_chunk_latency_stream += data.first_chunk_latency
                 self.total_time_per_output_token_stream += data.time_per_output_token
-                self.all_inter_token_latencies_stream += data.inter_chunk_latency
 
             # Multi-turn specific
             if data.input_num_turns > 0:
@@ -320,8 +324,8 @@ class MetricsAccumulator:
             avg_prompt_tokens = _safe_div(self.total_prompt_tokens, n)
             avg_completion_tokens = _safe_div(self.total_completion_tokens, n)
             avg_inter_token_latency = (
-                sum(self.all_inter_token_latencies_stream)
-                / len(self.all_inter_token_latencies_stream) if self.all_inter_token_latencies_stream else 0.0
+                sum(self.all_inter_token_latencies)
+                / len(self.all_inter_token_latencies) if self.all_inter_token_latencies else 0.0
             )
             qps = _safe_div(n, t)
             # Deliberately population-wide: only used by embedding/rerank APIs
