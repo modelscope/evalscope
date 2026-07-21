@@ -1,12 +1,21 @@
 name: Qoder Auto Code Review
 
+# Manually triggered: a maintainer comments "/review" (or "/review-pr") on a PR.
+# This avoids running on every commit (the previous `synchronize` trigger) and
+# lets a human decide when a review is needed.
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
 
 jobs:
-  qoder-review-trusted:
-    if: contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
+  qoder-review:
+    # Only run when the comment is on a PR, starts with /review, and the
+    # commenter is a trusted member. Restricting the trigger to trusted authors
+    # makes the "/review" comment itself the human gate for fork PR code.
+    if: >
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/review') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -18,9 +27,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
-          # Opt in to fork checkout under pull_request_target. Trusted authors
-          # (OWNER/MEMBER/COLLABORATOR) gate this job, so the risk is bounded.
+          # issue_comment does not carry the PR head SHA, so resolve the PR
+          # code via its head ref (works for fork PRs too).
+          ref: refs/pull/${{ github.event.issue.number }}/head
           allow-unsafe-pr-checkout: true
 
       - name: Run Qoder Code Review
@@ -29,32 +38,4 @@ jobs:
           qoder_personal_access_token: ${{ secrets.QODER_PERSONAL_ACCESS_TOKEN }}
           prompt: |
             /review-pr
-            REPO:${{ github.repository }} PR_NUMBER:${{ github.event.pull_request.number }}
-
-  qoder-review-external:
-    if: ${{ !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association) }}
-    runs-on: ubuntu-latest
-    environment: qoder-review
-    permissions:
-      contents: read
-      pull-requests: write
-      id-token: write
-
-    steps:
-      - name: Checkout PR head
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
-          # Fork code checkout is intentionally opted in here. This is only safe
-          # because the qoder-review environment gates this job behind required
-          # reviewers, so a maintainer approves the PR before untrusted code runs.
-          allow-unsafe-pr-checkout: true
-
-      - name: Run Qoder Code Review
-        uses: QoderAI/qoder-action@v0
-        with:
-          qoder_personal_access_token: ${{ secrets.QODER_PERSONAL_ACCESS_TOKEN }}
-          prompt: |
-            /review-pr
-            REPO:${{ github.repository }} PR_NUMBER:${{ github.event.pull_request.number }}
+            REPO:${{ github.repository }} PR_NUMBER:${{ github.event.issue.number }}
