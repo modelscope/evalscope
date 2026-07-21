@@ -19,6 +19,9 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
+          # Opt in to fork checkout under pull_request_target. Trusted authors
+          # (OWNER/MEMBER/COLLABORATOR) gate this job, so the risk is bounded.
+          allow-unsafe-pr-checkout: true
 
       - name: Run Qoder Code Review
         uses: QoderAI/qoder-action@v0
@@ -43,6 +46,10 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
+          # Fork code checkout is intentionally opted in here. This is only safe
+          # because the qoder-review environment gates this job behind required
+          # reviewers, so a maintainer approves the PR before untrusted code runs.
+          allow-unsafe-pr-checkout: true
 
       - name: Run Qoder Code Review
         uses: QoderAI/qoder-action@v0
