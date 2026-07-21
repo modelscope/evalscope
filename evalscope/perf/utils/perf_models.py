@@ -45,6 +45,8 @@ class BenchmarkSummary(BaseModel):
     total_requests: int = Field(0, alias=Metrics.TOTAL_REQUESTS)
     succeed_requests: int = Field(0, alias=Metrics.SUCCEED_REQUESTS)
     failed_requests: int = Field(0, alias=Metrics.FAILED_REQUESTS)
+    stream_requests: int = Field(0, alias=Metrics.STREAM_REQUESTS)
+    non_stream_requests: int = Field(0, alias=Metrics.NON_STREAM_REQUESTS)
     request_throughput: float = Field(0.0, alias=Metrics.REQUEST_THROUGHPUT)
     avg_latency: float = Field(0.0, alias=Metrics.AVERAGE_LATENCY)
     avg_input_tokens: float = Field(0.0, alias=Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST)
@@ -71,7 +73,15 @@ class BenchmarkSummary(BaseModel):
     approx_spec_acceptance_rate: Optional[float] = Field(None, alias=Metrics.APPROX_SPECULATIVE_ACCEPTANCE_RATE)
 
     # Multi-run averaging produces fractional ints; round before validation.
-    @field_validator('concurrency', 'total_requests', 'succeed_requests', 'failed_requests', mode='before')
+    @field_validator(
+        'concurrency',
+        'total_requests',
+        'succeed_requests',
+        'failed_requests',
+        'stream_requests',
+        'non_stream_requests',
+        mode='before'
+    )
     @classmethod
     def _round_to_int(cls, v):
         if isinstance(v, float):
@@ -123,6 +133,8 @@ class BenchmarkSummary(BaseModel):
         rows.append(
             ('Total / Success / Failed', f'{self.total_requests} / {self.succeed_requests} / {self.failed_requests}')
         )
+        if self.stream_requests > 0 and self.non_stream_requests > 0:
+            rows.append(('Stream / Non-Stream', f'{self.stream_requests} / {self.non_stream_requests}'))
         rows.append((Metrics.REQUEST_THROUGHPUT, _fmt(self.request_throughput)))
 
         # ── Latency ──

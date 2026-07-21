@@ -13,7 +13,7 @@ from evalscope.perf.multi_turn_args import _sample_int_or_range
 from evalscope.perf.plugin.api.default_api import DefaultApiPlugin, StreamedResponseHandler
 from evalscope.perf.plugin.datasets.utils import load_tokenizer
 from evalscope.perf.plugin.registry import register_api
-from evalscope.perf.utils.benchmark_util import BenchmarkData
+from evalscope.perf.utils.benchmark_util import BenchmarkData, is_stream_body
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -92,9 +92,13 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                     except Exception:
                         output.error = await response.text()
                     output.success = False
+                    # No SSE response; classify from request body.
+                    if not output.is_stream:
+                        output.is_stream = is_stream_body(body)
                     return output
 
                 if 'text/event-stream' in content_type:
+                    output.is_stream = True
                     handler = StreamedResponseHandler()
                     stream_failed = False
                     async for chunk_bytes in response.content.iter_any():
@@ -172,6 +176,9 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
             output.success = False
             output.error = ''.join(traceback.format_exception(*sys.exc_info()))
             logger.error(output.error)
+            # Response may not have arrived; classify from request body.
+            if not output.is_stream:
+                output.is_stream = is_stream_body(body)
             return output
 
     @staticmethod

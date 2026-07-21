@@ -30,6 +30,8 @@ class Metrics:
     TOTAL_REQUESTS = 'Total Requests'
     SUCCEED_REQUESTS = 'Success Requests'
     FAILED_REQUESTS = 'Failed Requests'
+    STREAM_REQUESTS = 'Stream Requests'
+    NON_STREAM_REQUESTS = 'Non-Stream Requests'
     REQUEST_THROUGHPUT = 'Req Throughput (req/s)'
     AVERAGE_LATENCY = 'Avg Latency (s)'
     AVERAGE_INPUT_TOKENS_PER_REQUEST = 'Avg Input Tokens'
