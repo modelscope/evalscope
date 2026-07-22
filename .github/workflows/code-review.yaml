@@ -20,9 +20,34 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      # checks:write lets us attach a check run to the PR head SHA, so the
+      # comment-triggered review still shows up in the PR "checks" section.
+      checks: write
       id-token: write
 
     steps:
+      - name: Resolve PR head SHA
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.issue.number }} --jq .head.sha)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Start check run
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          id=$(gh api repos/${{ github.repository }}/check-runs -X POST \
+            -f name="Qoder Code Review" \
+            -f head_sha="${{ steps.pr.outputs.sha }}" \
+            -f status="in_progress" \
+            -f "output[title]=Qoder Code Review" \
+            -f "output[summary]=Review triggered by /review comment; running..." \
+            --jq .id)
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
       - name: Checkout PR head
         uses: actions/checkout@v4
         with:
@@ -33,9 +58,27 @@ jobs:
           allow-unsafe-pr-checkout: true
 
       - name: Run Qoder Code Review
+        id: review
         uses: QoderAI/qoder-action@v0
         with:
           qoder_personal_access_token: ${{ secrets.QODER_PERSONAL_ACCESS_TOKEN }}
           prompt: |
             /review-pr
             REPO:${{ github.repository }} PR_NUMBER:${{ github.event.issue.number }}
+
+      - name: Finalize check run
+        if: always() && steps.check.outputs.id != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          conclusion="success"
+          if [ "${{ steps.review.outcome }}" != "success" ]; then
+            conclusion="failure"
+          fi
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          gh api repos/${{ github.repository }}/check-runs/${{ steps.check.outputs.id }} -X PATCH \
+            -f status="completed" \
+            -f conclusion="$conclusion" \
+            -f details_url="$run_url" \
+            -f "output[title]=Qoder Code Review" \
+            -f "output[summary]=Review finished with status: $conclusion. See PR comments and the run log."
