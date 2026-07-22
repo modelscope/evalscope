@@ -1,10 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import atexit
 import json
-import signal
 import sys
 import tempfile
-import threading
 from dotenv import dotenv_values, load_dotenv
 from pathlib import Path
 from types import ModuleType
@@ -21,7 +18,8 @@ from evalscope.api.agent.mcp import MCPServerConfigStdio
 from evalscope.api.metric import SampleScore, Score
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.automation_bench.utils import (
-    _official_environment_init_context,
+    _create_automation_bench_env,
+    _normalize_result,
     ensure_automation_bench_runtime,
 )
 from evalscope.benchmarks.claw_eval.claw_eval_adapter import ClawEvalAdapter
@@ -708,25 +706,52 @@ class TestAgentBenchmark(TestBenchmark):
         self.assertEqual(aggregated['simple_error_rate'], 0.5)
         self.assertNotIn('pass_rate', aggregated)
 
-    def test_automation_bench_environment_init_is_worker_safe(self):
-        """Test official signal registration is suppressed only during worker-thread environment setup."""
-        original_signal = signal.signal
-        original_atexit_register = atexit.register
-        observed = {}
+    def test_automation_bench_environment_init_has_no_process_hooks(self):
+        """Test the EvalScope environment discovers handlers without registering process hooks."""
 
-        def initialize_in_worker():
-            with _official_environment_init_context():
-                observed['signal_result'] = signal.signal(signal.SIGINT, signal.default_int_handler)
-                observed['atexit_result'] = atexit.register(lambda: None)
+        class FakeOfficialEnvironment:
 
-        worker = threading.Thread(target=initialize_in_worker)
-        worker.start()
-        worker.join()
+            def __init__(self, **kwargs):
+                self.kwargs = kwargs
+                self.__post_init__()
 
-        self.assertIsNone(observed['signal_result'])
-        self.assertIsNone(observed['atexit_result'])
-        self.assertIs(signal.signal, original_signal)
-        self.assertIs(atexit.register, original_atexit_register)
+        handlers = {
+            'stop': ['stop'],
+            'cleanup': ['cleanup'],
+            'teardown': ['teardown'],
+        }
+        discover_decorated = Mock(side_effect=lambda _, kind: handlers[kind])
+        with patch('signal.signal') as signal_register, patch('atexit.register') as atexit_register:
+            env = _create_automation_bench_env(
+                environment_cls=FakeOfficialEnvironment,
+                discover_decorated=discover_decorated,
+                dataset='dataset',
+            )
+
+        self.assertEqual(env._stop_conditions, ['stop'])
+        self.assertEqual(env._cleanup_handlers, ['cleanup'])
+        self.assertEqual(env._teardown_handlers, ['teardown'])
+        self.assertEqual(env.kwargs, {'dataset': 'dataset'})
+        signal_register.assert_not_called()
+        atexit_register.assert_not_called()
+
+    def test_automation_bench_normalization_uses_official_result_fields(self):
+        """Test reward and debug diagnostics do not override official metrics or error state."""
+        result = _normalize_result({
+            'task': 'sales.update_contact',
+            'reward': 1.0,
+            'metrics': {
+                'partial_credit': 0.25,
+            },
+            '_debug': {
+                'errors': ['diagnostic only']
+            },
+        })
+
+        self.assertEqual(result['metrics']['partial_credit'], 0.25)
+        self.assertEqual(result['metrics']['task_completed_correctly'], 0.0)
+        self.assertIsNone(result['error'])
+        self.assertEqual(result['debug']['errors'], ['diagnostic only'])
 
     def test_claw_eval_init_checks_runtime(self):
         """Test Claw-Eval fails early when the official package is unavailable."""

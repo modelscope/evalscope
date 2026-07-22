@@ -1,11 +1,7 @@
-import atexit
 import importlib
 import json
-import signal
 import sys
-import threading
-from contextlib import contextmanager
-from typing import Any, Dict, Iterable, Iterator, List
+from typing import Any, Callable, Dict, Iterable, List
 
 from evalscope.api.messages import ChatMessage, dict_to_chat_message
 from evalscope.utils.function_utils import AsyncioLoopRunner
@@ -16,7 +12,6 @@ DEFAULT_AUTOMATION_BENCH_PACKAGE = (
 )
 DEFAULT_AUTOMATION_BENCH_VERIFIERS = 'verifiers==0.1.12.dev2'
 PUBLIC_DOMAINS = ['sales', 'marketing', 'operations', 'support', 'finance', 'hr']
-_ENVIRONMENT_INIT_LOCK = threading.Lock()
 
 
 def ensure_automation_bench_runtime() -> None:
@@ -87,6 +82,7 @@ async def _run_automation_bench_task(
     from automationbench.rubric import create_rubric
     from automationbench.runner import AutomationBenchEnv
     from datasets import Dataset
+    from verifiers.decorators import discover_decorated
 
     try:
         native_client = model_api.async_client
@@ -105,14 +101,15 @@ async def _run_automation_bench_task(
     else:
         client = RetryingOpenAIChatCompletionsClient(native_client)
 
-    with _official_environment_init_context():
-        env = AutomationBenchEnv(
-            dataset=Dataset.from_list([task_record]),
-            rubric=create_rubric(),
-            max_turns=max_turns,
-            toolset=toolset,
-            search_top_k=20,
-        )
+    env = _create_automation_bench_env(
+        environment_cls=AutomationBenchEnv,
+        discover_decorated=discover_decorated,
+        dataset=Dataset.from_list([task_record]),
+        rubric=create_rubric(),
+        max_turns=max_turns,
+        toolset=toolset,
+        search_top_k=20,
+    )
 
     results = await env.evaluate(
         client=client,
@@ -131,47 +128,34 @@ async def _run_automation_bench_task(
     return _normalize_result(outputs[0])
 
 
-@contextmanager
-def _official_environment_init_context() -> Iterator[None]:
-    """Suppress Verifiers' process hooks while constructing an environment in a worker thread."""
-    if threading.current_thread() is threading.main_thread():
-        yield
-        return
+def _create_automation_bench_env(
+    environment_cls: Any,
+    discover_decorated: Callable[[Any, str], Any],
+    **kwargs: Any,
+) -> Any:
+    """Construct the official environment without Verifiers' process-level hooks."""
 
-    # Verifiers 0.1.12.dev2 unconditionally installs signal and atexit handlers in Environment.__post_init__.
-    # EvalScope constructs each sample environment in a worker thread, where signal.signal raises ValueError. The
-    # upstream API has no switch for these process hooks, so suppress only the two registrations during construction.
-    with _ENVIRONMENT_INIT_LOCK:
-        original_signal = signal.signal
-        original_atexit_register = atexit.register
+    class EvalScopeAutomationBenchEnv(environment_cls):
 
-        def ignore_registration(*args: Any, **kwargs: Any) -> None:
-            return None
+        def __post_init__(self) -> None:
+            self._stop_conditions = discover_decorated(self, 'stop')
+            self._cleanup_handlers = discover_decorated(self, 'cleanup')
+            self._teardown_handlers = discover_decorated(self, 'teardown')
 
-        signal.signal = ignore_registration
-        atexit.register = ignore_registration
-        try:
-            yield
-        finally:
-            signal.signal = original_signal
-            atexit.register = original_atexit_register
+    return EvalScopeAutomationBenchEnv(**kwargs)
 
 
 def _normalize_result(raw_output: Dict[str, Any]) -> Dict[str, Any]:
     raw = dict(raw_output)
     metrics = dict(raw.get('metrics') or {})
-    partial_credit = float(metrics.get('partial_credit', raw.get('reward', 0.0)) or 0.0)
-    completed = float(metrics.get('task_completed_correctly', partial_credit == 1.0) or 0.0)
     debug = dict(raw.get('_debug') or {})
-    errors = debug.get('errors') or []
-    error = raw.get('error') or (str(errors[0]) if errors else None)
     prompt = [_serialize_message(message) for message in (raw.get('prompt') or [])]
     completion = [_serialize_message(message) for message in (raw.get('completion') or [])]
     return {
         'task': raw.get('task', 'unknown'),
         'metrics': {
-            'partial_credit': partial_credit,
-            'task_completed_correctly': completed,
+            'partial_credit': float(metrics.get('partial_credit', 0.0) or 0.0),
+            'task_completed_correctly': float(metrics.get('task_completed_correctly', 0.0) or 0.0),
         },
         'messages': prompt + completion,
         'usage': raw.get('_usage') or {},
@@ -179,7 +163,7 @@ def _normalize_result(raw_output: Dict[str, Any]) -> Dict[str, Any]:
         'assertion_results': raw.get('_assertion_results') or [],
         'end_state': raw.get('_end_state'),
         'perf': raw.get('_perf') or {},
-        'error': error,
+        'error': raw.get('error'),
     }
 
 
