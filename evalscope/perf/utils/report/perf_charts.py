@@ -180,8 +180,6 @@ class ChartBuilder:
 # X-axis helper: adapts to open-loop (rate) vs closed-loop (concurrency)
 # ---------------------------------------------------------------------------
 
-_RATE_DIR_RE = re.compile(r'^rate_[\d.]+_number_\d+$')
-
 
 def _x_axis(runs: 'List[RunData]'):
     """Return *(xs, x_title)* appropriate for the run mode.
@@ -191,7 +189,7 @@ def _x_axis(runs: 'List[RunData]'):
     * closed-loop (``parallel_*_number_*`` dirs) → xs = concurrency integers,
       x_title = ``'Concurrency'``
     """
-    is_open = any(_RATE_DIR_RE.match(r.dir_name) for r in runs)
+    is_open = any(r.is_open_loop for r in runs)
     if is_open:
         return [r.summary.request_rate for r in runs], 'Rate (req/s)'
     return [r.parallel for r in runs], 'Concurrency'
