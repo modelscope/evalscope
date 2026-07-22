@@ -1,0 +1,152 @@
+{
+  "meta": {
+    "pretty_name": "AutomationBench",
+    "dataset_id": "https://github.com/zapier/AutomationBench",
+    "paper_url": "https://arxiv.org/abs/2604.18934",
+    "tags": [
+      "Agent",
+      "FunctionCalling",
+      "MultiTurn"
+    ],
+    "metrics": [
+      "pass_rate",
+      "partial_credit",
+      "error_rate"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "sales",
+      "marketing",
+      "operations",
+      "support",
+      "finance",
+      "hr"
+    ],
+    "description": "\n## Overview\n\nAutomationBench evaluates agents on realistic business workflows across sales, marketing, operations, support,\nfinance, and HR. EvalScope runs the public tasks, simulated SaaS services, and assertion-based scoring provided by\nZapier's official Python package.\n\n## Task Description\n\n- **Task Type**: Stateful business workflows across 47 simulated SaaS tools.\n- **Public Dataset**: 600 tasks, with 100 tasks in each of `sales`, `marketing`, `operations`, `support`, `finance`,\n  and `hr`.\n- **Simple Baseline**: The optional `simple` subset contains 200 foundational single- and two-step tasks. Its metrics\n  use the `simple_` prefix and are reported separately from the public benchmark score.\n- **Scoring**: `partial_credit` is the fraction of scored assertions satisfied. `pass_rate` is the mean official\n  `task_completed_correctly` signal, which is 1 only when every scored assertion passes.\n\n## Evaluation Notes\n\n- Prepare a Python 3.13+ environment and install the pinned dependencies before evaluation:\n  `python -m pip install \"verifiers==0.1.12.dev2\" \"automation-bench @ git+https://github.com/zapier/AutomationBench.git@a321764ace3cfbe42289e6a13abef2f0f4f56fad\"`.\n- By default, EvalScope evaluates all six public domains (600 tasks). Use `subset_list` to select domains or `limit`\n  for a smaller run.\n- Use an API-backed EvalScope model with `openai_api`, `openai_responses_api`, or `anthropic_api` evaluation type.\n- No Docker runtime, external dataset download, or real SaaS credentials are required. Model API credentials are still\n  required.\n- The released tasks are public. Zapier's official leaderboard uses a separate held-out private set, so local public\n  scores are directional rather than leaderboard-identical.\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "toolset": {
+        "type": "str",
+        "description": "Official tool style exposed to the agent.",
+        "value": "api",
+        "choices": [
+          "api",
+          "zapier",
+          "limited_zapier"
+        ]
+      }
+    },
+    "sandbox_config": {},
+    "category": "agent"
+  },
+  "statistics": {
+    "total_samples": 600,
+    "subset_stats": [
+      {
+        "name": "sales",
+        "sample_count": 100,
+        "prompt_length_mean": 832.89,
+        "prompt_length_min": 586,
+        "prompt_length_max": 1245,
+        "prompt_length_std": 147.16,
+        "target_length_mean": null
+      },
+      {
+        "name": "marketing",
+        "sample_count": 100,
+        "prompt_length_mean": 953.02,
+        "prompt_length_min": 612,
+        "prompt_length_max": 1275,
+        "prompt_length_std": 146.53,
+        "target_length_mean": null
+      },
+      {
+        "name": "operations",
+        "sample_count": 100,
+        "prompt_length_mean": 1259.54,
+        "prompt_length_min": 787,
+        "prompt_length_max": 1785,
+        "prompt_length_std": 198.5,
+        "target_length_mean": null
+      },
+      {
+        "name": "support",
+        "sample_count": 100,
+        "prompt_length_mean": 937.56,
+        "prompt_length_min": 711,
+        "prompt_length_max": 1577,
+        "prompt_length_std": 143.69,
+        "target_length_mean": null
+      },
+      {
+        "name": "finance",
+        "sample_count": 100,
+        "prompt_length_mean": 990.51,
+        "prompt_length_min": 709,
+        "prompt_length_max": 1259,
+        "prompt_length_std": 114.98,
+        "target_length_mean": null
+      },
+      {
+        "name": "hr",
+        "sample_count": 100,
+        "prompt_length_mean": 927.91,
+        "prompt_length_min": 689,
+        "prompt_length_max": 1276,
+        "prompt_length_std": 123.31,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 983.57,
+      "min": 586,
+      "max": 1785,
+      "std": 198.22
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-07-22T16:02:16.107002"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "97a20b04",
+          "content": "You are a workflow automation agent. Execute the requested tasks using the available tools. Do not ask clarifying questions - use the information provided and make reasonable assumptions when needed. You have a budget of ~50 tool-using turns  ... [TRUNCATED 47 chars] ...  searches. When summarizing your work in messages or records, list only items you acted on. Do not name, enumerate, or explain items you skipped, excluded, or rejected — handle exclusions silently in the action, not narratively in the output.",
+          "source": "input",
+          "role": "system"
+        },
+        {
+          "id": "4d75f740",
+          "content": "We just closed the Meridian Corp Platform Deal! Mark it as won and route the win notice to the right team per our routing policy. Be sure to follow the latest routing guidelines. Confirm the account tier from the 'Account Hierarchy' spreadshe ... [TRUNCATED 160 chars] ... support-escalation@example.com, executive-team@example.com, sales-team@example.com, smb-team@example.com, vp-sales@example.com\n\nUse Gmail for all email sends. Include the names of affected entities and the relevant amounts in your message(s).",
+          "source": "input",
+          "role": "user"
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "sales",
+      "metadata": {
+        "record_key": "sales:0",
+        "domain": "sales",
+        "task": "sales.multi_hop_lookup",
+        "official_example_id": 501
+      }
+    },
+    "subset": "sales",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# AutomationBench\n\n\n## Overview\n\nAutomationBench evaluates agents on realistic business workflows across sales, marketing, operations, support,\nfinance, and HR. EvalScope runs the public tasks, simulated SaaS services, and assertion-based scoring provided by\nZapier's official Python package.\n\n## Task Description\n\n- **Task Type**: Stateful business workflows across 47 simulated SaaS tools.\n- **Public Dataset**: 600 tasks, with 100 tasks in each of `sales`, `marketing`, `operations`, `support`, `finance`,\n  and `hr`.\n- **Simple Baseline**: The optional `simple` subset contains 200 foundational single- and two-step tasks. Its metrics\n  use the `simple_` prefix and are reported separately from the public benchmark score.\n- **Scoring**: `partial_credit` is the fraction of scored assertions satisfied. `pass_rate` is the mean official\n  `task_completed_correctly` signal, which is 1 only when every scored assertion passes.\n\n## Evaluation Notes\n\n- Prepare a Python 3.13+ environment and install the pinned dependencies before evaluation:\n  `python -m pip install \"verifiers==0.1.12.dev2\" \"automation-bench @ git+https://github.com/zapier/AutomationBench.git@a321764ace3cfbe42289e6a13abef2f0f4f56fad\"`.\n- By default, EvalScope evaluates all six public domains (600 tasks). Use `subset_list` to select domains or `limit`\n  for a smaller run.\n- Use an API-backed EvalScope model with `openai_api`, `openai_responses_api`, or `anthropic_api` evaluation type.\n- No Docker runtime, external dataset download, or real SaaS credentials are required. Model API credentials are still\n  required.\n- The released tasks are public. Zapier's official leaderboard uses a separate held-out private set, so local public\n  scores are directional rather than leaderboard-identical.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `automation_bench` |\n| **Dataset ID** | [AutomationBench](https://github.com/zapier/AutomationBench) |\n| **Paper** | [Paper](https://arxiv.org/abs/2604.18934) |\n| **Tags** | `Agent`, `FunctionCalling`, `MultiTurn` |\n| **Metrics** | `pass_rate`, `partial_credit`, `error_rate` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 600 |\n| Prompt Length (Mean) | 983.57 chars |\n| Prompt Length (Min/Max) | 586 / 1785 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `sales` | 100 | 832.89 | 586 | 1245 |\n| `marketing` | 100 | 953.02 | 612 | 1275 |\n| `operations` | 100 | 1259.54 | 787 | 1785 |\n| `support` | 100 | 937.56 | 711 | 1577 |\n| `finance` | 100 | 990.51 | 709 | 1259 |\n| `hr` | 100 | 927.91 | 689 | 1276 |\n\n## Sample Example\n\n**Subset**: `sales`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"97a20b04\",\n      \"content\": \"You are a workflow automation agent. Execute the requested tasks using the available tools. Do not ask clarifying questions - use the information provided and make reasonable assumptions when needed. You have a budget of ~50 tool-using turns  ... [TRUNCATED 47 chars] ...  searches. When summarizing your work in messages or records, list only items you acted on. Do not name, enumerate, or explain items you skipped, excluded, or rejected — handle exclusions silently in the action, not narratively in the output.\",\n      \"source\": \"input\",\n      \"role\": \"system\"\n    },\n    {\n      \"id\": \"4d75f740\",\n      \"content\": \"We just closed the Meridian Corp Platform Deal! Mark it as won and route the win notice to the right team per our routing policy. Be sure to follow the latest routing guidelines. Confirm the account tier from the 'Account Hierarchy' spreadshe ... [TRUNCATED 160 chars] ... support-escalation@example.com, executive-team@example.com, sales-team@example.com, smb-team@example.com, vp-sales@example.com\\n\\nUse Gmail for all email sends. Include the names of affected entities and the relevant amounts in your message(s).\",\n      \"source\": \"input\",\n      \"role\": \"user\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"sales\",\n  \"metadata\": {\n    \"record_key\": \"sales:0\",\n    \"domain\": \"sales\",\n    \"task\": \"sales.multi_hop_lookup\",\n    \"official_example_id\": 501\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `toolset` | `str` | `api` | Official tool style exposed to the agent. Choices: ['api', 'zapier', 'limited_zapier'] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets automation_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['automation_bench'],\n    dataset_args={\n        'automation_bench': {\n            # subset_list: ['sales', 'marketing', 'operations']  # optional, evaluate specific subsets\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# AutomationBench\n\n\n## 概述\n\nAutomationBench 在销售、营销、运营、支持、财务和人力资源等领域的实际业务工作流中评估智能体。EvalScope 使用 Zapier 官方 Python 包提供的公开任务、模拟的 SaaS 服务以及基于断言的评分机制进行评测。\n\n## 任务描述\n\n- **任务类型**：涵盖 47 个模拟 SaaS 工具的状态化业务工作流。\n- **公开数据集**：共 600 个任务，分别来自 `sales`（销售）、`marketing`（营销）、`operations`（运营）、`support`（支持）、`finance`（财务）和 `hr`（人力资源）六个领域，每个领域各 100 个任务。\n- **简单基线**：可选的 `simple` 子集包含 200 个基础性的单步或两步任务。其指标使用 `simple_` 前缀，并与公开基准测试分数分开报告。\n- **评分方式**：`partial_credit` 表示满足的评分断言所占比例；`pass_rate` 是官方 `task_completed_correctly` 信号的平均值，仅当所有评分断言全部通过时该值才为 1。\n\n## 评测说明\n\n- 评测前请准备 Python 3.13+ 环境并安装指定依赖：\n  `python -m pip install \"verifiers==0.1.12.dev2\" \"automation-bench @ git+https://github.com/zapier/AutomationBench.git@a321764ace3cfbe42289e6a13abef2f0f4f56fad\"`。\n- 默认情况下，EvalScope 会评测全部六个公开领域（共 600 个任务）。可通过 `subset_list` 参数选择特定领域，或使用 `limit` 参数进行小规模运行。\n- 需使用基于 API 的 EvalScope 模型，并指定 `openai_api`、`openai_responses_api` 或 `anthropic_api` 作为评测类型。\n- 无需 Docker 运行环境、外部数据集下载或真实的 SaaS 凭据，但仍需提供模型 API 凭据。\n- 发布的任务是公开的。Zapier 官方排行榜使用的是独立的私有保留集，因此本地公开分数仅具参考意义，无法与排行榜完全一致。\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `automation_bench` |\n| **数据集ID** | [AutomationBench](https://github.com/zapier/AutomationBench) |\n| **论文** | [Paper](https://arxiv.org/abs/2604.18934) |\n| **标签** | `Agent`, `FunctionCalling`, `MultiTurn` |\n| **指标** | `pass_rate`, `partial_credit`, `error_rate` |\n| **默认示例数** | 0-shot |\n| **评测划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 600 |\n| 提示词长度（平均） | 983.57 字符 |\n| 提示词长度（最小/最大） | 586 / 1785 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `sales` | 100 | 832.89 | 586 | 1245 |\n| `marketing` | 100 | 953.02 | 612 | 1275 |\n| `operations` | 100 | 1259.54 | 787 | 1785 |\n| `support` | 100 | 937.56 | 711 | 1577 |\n| `finance` | 100 | 990.51 | 709 | 1259 |\n| `hr` | 100 | 927.91 | 689 | 1276 |\n\n## 样例示例\n\n**子集**: `sales`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"97a20b04\",\n      \"content\": \"You are a workflow automation agent. Execute the requested tasks using the available tools. Do not ask clarifying questions - use the information provided and make reasonable assumptions when needed. You have a budget of ~50 tool-using turns  ... [TRUNCATED 47 chars] ...  searches. When summarizing your work in messages or records, list only items you acted on. Do not name, enumerate, or explain items you skipped, excluded, or rejected — handle exclusions silently in the action, not narratively in the output.\",\n      \"source\": \"input\",\n      \"role\": \"system\"\n    },\n    {\n      \"id\": \"4d75f740\",\n      \"content\": \"We just closed the Meridian Corp Platform Deal! Mark it as won and route the win notice to the right team per our routing policy. Be sure to follow the latest routing guidelines. Confirm the account tier from the 'Account Hierarchy' spreadshe ... [TRUNCATED 160 chars] ... support-escalation@example.com, executive-team@example.com, sales-team@example.com, smb-team@example.com, vp-sales@example.com\\n\\nUse Gmail for all email sends. Include the names of affected entities and the relevant amounts in your message(s).\",\n      \"source\": \"input\",\n      \"role\": \"user\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"sales\",\n  \"metadata\": {\n    \"record_key\": \"sales:0\",\n    \"domain\": \"sales\",\n    \"task\": \"sales.multi_hop_lookup\",\n    \"official_example_id\": 501\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `toolset` | `str` | `api` | 提供给智能体的官方工具风格。选项：['api', 'zapier', 'limited_zapier'] |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets automation_bench \\\n    --limit 10  # 正式评测时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['automation_bench'],\n    dataset_args={\n        'automation_bench': {\n            # subset_list: ['sales', 'marketing', 'operations']  # 可选，用于评测特定子集\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评测时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "5c0094941e963cbdc9cb2c12f43f9025",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-22T16:02:16.242636",
+  "translation_updated_at": "2026-07-22T16:02:21"
+}
