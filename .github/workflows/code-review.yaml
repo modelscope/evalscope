@@ -1,84 +1,39 @@
 name: Qoder Auto Code Review
 
-# Manually triggered: a maintainer comments "/review" (or "/review-pr") on a PR.
-# This avoids running on every commit (the previous `synchronize` trigger) and
-# lets a human decide when a review is needed.
+# Manually triggered: add the "qoder-review" label to a PR. This avoids running
+# on every commit (the previous `synchronize` trigger) and lets a maintainer
+# decide when a review is needed. Because the trigger is pull_request_target,
+# the job is natively associated with the PR head and shows up as a PR check.
 on:
-  issue_comment:
-    types: [created]
+  pull_request_target:
+    types: [labeled]
 
 jobs:
   qoder-review:
-    # Only run when the comment is on a PR, starts with /review, and the
-    # commenter is a trusted member. Restricting the trigger to trusted authors
-    # makes the "/review" comment itself the human gate for fork PR code.
-    if: >
-      github.event.issue.pull_request &&
-      startsWith(github.event.comment.body, '/review') &&
-      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+    # Only run when the label added is exactly "qoder-review". Adding a label
+    # requires write/triage access, so the labeling action is itself the human
+    # gate that authorizes running fork PR code in this trusted context.
+    if: github.event.label.name == 'qoder-review'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
-      # checks:write lets us attach a check run to the PR head SHA, so the
-      # comment-triggered review still shows up in the PR "checks" section.
-      checks: write
       id-token: write
 
     steps:
-      - name: Resolve PR head SHA
-        id: pr
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          sha=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.issue.number }} --jq .head.sha)
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
-
-      - name: Start check run
-        id: check
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          id=$(gh api repos/${{ github.repository }}/check-runs -X POST \
-            -f name="Qoder Code Review" \
-            -f head_sha="${{ steps.pr.outputs.sha }}" \
-            -f status="in_progress" \
-            -f "output[title]=Qoder Code Review" \
-            -f "output[summary]=Review triggered by /review comment; running..." \
-            --jq .id)
-          echo "id=$id" >> "$GITHUB_OUTPUT"
-
       - name: Checkout PR head
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # issue_comment does not carry the PR head SHA, so resolve the PR
-          # code via its head ref (works for fork PRs too).
-          ref: refs/pull/${{ github.event.issue.number }}/head
+          ref: ${{ github.event.pull_request.head.sha }}
+          # Fork code checkout is opted in; the qoder-review label (settable only
+          # by trusted users) is the gate that makes this safe.
           allow-unsafe-pr-checkout: true
 
       - name: Run Qoder Code Review
-        id: review
         uses: QoderAI/qoder-action@v0
         with:
           qoder_personal_access_token: ${{ secrets.QODER_PERSONAL_ACCESS_TOKEN }}
           prompt: |
             /review-pr
-            REPO:${{ github.repository }} PR_NUMBER:${{ github.event.issue.number }}
-
-      - name: Finalize check run
-        if: always() && steps.check.outputs.id != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          conclusion="success"
-          if [ "${{ steps.review.outcome }}" != "success" ]; then
-            conclusion="failure"
-          fi
-          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          gh api repos/${{ github.repository }}/check-runs/${{ steps.check.outputs.id }} -X PATCH \
-            -f status="completed" \
-            -f conclusion="$conclusion" \
-            -f details_url="$run_url" \
-            -f "output[title]=Qoder Code Review" \
-            -f "output[summary]=Review finished with status: $conclusion. See PR comments and the run log."
+            REPO:${{ github.repository }} PR_NUMBER:${{ github.event.pull_request.number }}
