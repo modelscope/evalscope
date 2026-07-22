@@ -434,14 +434,15 @@ class RunData(BaseModel):
     def name(self) -> str:
         """Human-readable run label.
 
-        * ``parallel_<N>_number_<M>`` directories  → "Parallel N / Number M"
-        * ``rate_<R>_number_<M>`` directories       → "Rate R rps / Number M"
+        * closed-loop (``parallel_<N>_number_<M>``) → "Parallel N / Number M"
+        * open-loop with a fixed rate               → "Rate R rps / Number M"
+        * open-loop with no fixed rate (rate=-1)    → "Open-loop / Number M"
         """
-        import re
-        m = re.match(r'^rate_([\d.]+)_number_(\d+)$', self.dir_name)
-        if m:
-            return f'Rate {m.group(1)} rps / Number {m.group(2)}'
-        return f'Parallel {self.parallel} / Number {self.number}'
+        if not self.is_open_loop:
+            return f'Parallel {self.parallel} / Number {self.number}'
+        if self.rate is not None and self.rate < 0:
+            return f'Open-loop / Number {self.number}'
+        return f'Rate {self.rate} rps / Number {self.number}'
 
     @property
     def success_rate(self) -> float:
