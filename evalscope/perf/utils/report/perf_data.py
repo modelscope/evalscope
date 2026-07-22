@@ -36,7 +36,7 @@ logger = get_logger()
 
 # Patterns for recognized run directory names
 _PARALLEL_RE = re.compile(r'^parallel_(\d+)_number_(\d+)$')
-_RATE_RE = re.compile(r'^rate_([\d.]+)_number_(\d+)$')
+_RATE_RE = re.compile(r'^rate_(-?[\d.]+)_number_(\d+)$')
 
 
 class RunLoader:
