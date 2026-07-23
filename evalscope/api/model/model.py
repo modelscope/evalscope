@@ -104,6 +104,14 @@ class ModelAPI(abc.ABC):
             ),
         )
 
+    async def aclose(self) -> None:
+        """Release asynchronous resources owned by this model API.
+
+        Implementations should be idempotent. The default implementation has
+        no resources to release. Call this before stopping any event loop used
+        by :meth:`generate_async`.
+        """
+
     def max_tokens(self) -> Optional[int]:
         """Default max_tokens."""
         return None
@@ -240,6 +248,13 @@ class Model:
         )
 
         return output
+
+    async def aclose(self) -> None:
+        """Release asynchronous resources owned by the underlying model API.
+
+        Call this before stopping any event loop used by :meth:`generate_async`.
+        """
+        await self.api.aclose()
 
     def _preprocess_input(
         self,

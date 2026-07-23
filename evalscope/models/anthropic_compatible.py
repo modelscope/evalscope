@@ -1,6 +1,4 @@
-import asyncio
 import os
-import threading
 import time
 from anthropic import Anthropic, APIStatusError, AsyncAnthropic, BadRequestError, PermissionDeniedError
 from anthropic.types import Message
@@ -12,7 +10,7 @@ from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, 
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_supported_params
-from evalscope.utils.function_utils import AsyncioLoopRunner, async_retry_call, retry_call
+from evalscope.utils.function_utils import async_retry_call, retry_call
 from .utils.anthropic import (
     anthropic_chat_messages,
     anthropic_chat_tool_choice,
@@ -24,6 +22,7 @@ from .utils.anthropic import (
     collect_stream_response,
     model_output_from_anthropic,
 )
+from .utils.async_client import LoopBoundAsyncClientPool
 
 logger = get_logger()
 
@@ -76,41 +75,19 @@ class AnthropicCompatibleAPI(ModelAPI):
 
         self.client = Anthropic(**client_kwargs)
 
-        # AsyncAnthropic, like AsyncOpenAI, wraps an httpx.AsyncClient
-        # whose internal anyio primitives bind to the event loop they
-        # first run on. Build one per loop (AsyncioLoopRunner is per-thread).
+        # AsyncAnthropic wraps loop-bound httpx/anyio resources. Keep one
+        # client per loop so worker-owned and caller-managed loops stay isolated.
         self._async_client_kwargs: Dict[str, Any] = client_kwargs
-        self._async_clients: Dict[int, AsyncAnthropic] = {}
-        self._async_clients_lock = threading.Lock()
+        self._async_client_pool = LoopBoundAsyncClientPool(lambda: AsyncAnthropic(**self._async_client_kwargs))
 
     @property
     def async_client(self) -> AsyncAnthropic:
         """Return an AsyncAnthropic bound to the currently running event loop."""
-        loop = asyncio.get_running_loop()
-        loop_id = id(loop)
-        client = self._async_clients.get(loop_id)
-        if client is not None:
-            return client
-        with self._async_clients_lock:
-            client = self._async_clients.get(loop_id)
-            if client is None:
-                client = AsyncAnthropic(**self._async_client_kwargs)
-                self._async_clients[loop_id] = client
-                self._register_loop_close_cleanup(loop_id, client)
-            return client
+        return self._async_client_pool.get()
 
-    def _register_loop_close_cleanup(self, loop_id: int, client: AsyncAnthropic) -> None:
-        """Close the per-loop AsyncAnthropic when its loop shuts down."""
-
-        async def _cleanup() -> None:
-            try:
-                await client.close()
-            finally:
-                with self._async_clients_lock:
-                    if self._async_clients.get(loop_id) is client:
-                        self._async_clients.pop(loop_id, None)
-
-        AsyncioLoopRunner.register_close_callback(_cleanup)
+    async def aclose(self) -> None:
+        """Close all loop-bound async clients while keeping this model reusable."""
+        await self._async_client_pool.aclose()
 
     def generate(
         self,
