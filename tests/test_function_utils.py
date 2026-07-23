@@ -1,4 +1,7 @@
 import asyncio
+import threading
+import time
+from typing import AsyncGenerator
 
 from evalscope.utils.function_utils import AsyncioLoopRunner, AsyncioLoopThread
 
@@ -54,3 +57,104 @@ def test_asyncio_loop_runner_runs_registered_cleanup_before_shutdown() -> None:
 
     assert cleanup_loops == [owner_loop]
     assert owner_loop.is_closed()
+
+
+def test_asyncio_loop_thread_finalizes_async_generators() -> None:
+    runtime = AsyncioLoopThread(name='TestLoop')
+    finalized = threading.Event()
+    generators: list[AsyncGenerator[None, None]] = []
+
+    async def _generator() -> AsyncGenerator[None, None]:
+        try:
+            yield
+        finally:
+            finalized.set()
+
+    async def _start_generator() -> asyncio.AbstractEventLoop:
+        generator = _generator()
+        generators.append(generator)
+        await anext(generator)
+        return asyncio.get_running_loop()
+
+    owner_loop = runtime.run_sync(_start_generator())
+    runtime.stop()
+
+    assert finalized.is_set()
+    assert owner_loop.is_closed()
+
+
+def test_asyncio_loop_thread_cancels_pending_tasks() -> None:
+    runtime = AsyncioLoopThread(name='TestLoop')
+    cancelled = threading.Event()
+
+    async def _wait_forever() -> None:
+        try:
+            await asyncio.Event().wait()
+        finally:
+            cancelled.set()
+
+    async def _start_task() -> asyncio.AbstractEventLoop:
+        asyncio.create_task(_wait_forever())
+        await asyncio.sleep(0)
+        return asyncio.get_running_loop()
+
+    owner_loop = runtime.run_sync(_start_task())
+    runtime.stop()
+
+    assert cancelled.is_set()
+    assert owner_loop.is_closed()
+
+
+def test_asyncio_loop_thread_waits_for_default_executor() -> None:
+    runtime = AsyncioLoopThread(name='TestLoop')
+    release_worker = threading.Event()
+    worker_completed = threading.Event()
+
+    def _work() -> None:
+        release_worker.wait()
+        worker_completed.set()
+
+    async def _start_work() -> asyncio.AbstractEventLoop:
+        asyncio.get_running_loop().run_in_executor(None, _work)
+        return asyncio.get_running_loop()
+
+    owner_loop = runtime.run_sync(_start_work())
+    threading.Timer(0.05, release_worker.set).start()
+    runtime.stop()
+
+    assert worker_completed.is_set()
+    assert owner_loop.is_closed()
+
+
+def test_asyncio_loop_thread_stop_from_owner_runs_callbacks() -> None:
+    runtime = AsyncioLoopThread(name='TestLoop')
+    callback_completed = threading.Event()
+
+    async def _stop_from_owner() -> asyncio.AbstractEventLoop:
+        owner_loop = asyncio.get_running_loop()
+
+        async def _cleanup() -> None:
+            callback_completed.set()
+
+        runtime.add_close_callback(_cleanup)
+        runtime.stop()
+        return owner_loop
+
+    owner_loop = runtime.run_sync(_stop_from_owner(), timeout=1)
+    deadline = time.monotonic() + 1
+    while not owner_loop.is_closed() and time.monotonic() < deadline:
+        time.sleep(0.01)
+
+    assert callback_completed.is_set()
+    assert owner_loop.is_closed()
+
+
+def test_asyncio_loop_thread_stop_is_idempotent() -> None:
+    runtime = AsyncioLoopThread(name='TestLoop')
+    owner_loop = runtime.run_sync(_current_loop())
+
+    runtime.stop()
+    runtime.stop()
+
+    assert owner_loop.is_closed()
+    assert not runtime.active

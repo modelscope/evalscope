@@ -18,6 +18,33 @@ R = TypeVar('R')
 _THREAD_SAFE_GLOBAL_LOCK = threading.RLock()
 
 
+async def cancel_and_wait(task: 'asyncio.Task[Any]') -> None:
+    """Cancel an unfinished task and wait until its cleanup completes."""
+    if task.done():
+        return
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+
+def shutdown_event_loop(loop: asyncio.AbstractEventLoop) -> None:
+    """Gracefully close an event loop that is no longer running."""
+    if loop.is_closed():
+        return
+
+    pending = asyncio.all_tasks(loop)
+    for task in pending:
+        task.cancel()
+    if pending:
+        loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+
+    loop.run_until_complete(loop.shutdown_asyncgens())
+    loop.run_until_complete(loop.shutdown_default_executor())
+    loop.close()
+
+
 def thread_safe(func: Callable[..., T]) -> Callable[..., T]:
     """Thread-safe decorator.
     - If decorating a bound method, uses a per-instance, per-method lock.
@@ -150,8 +177,8 @@ class AsyncioLoopThread:
                 try:
                     loop.run_forever()
                 finally:
+                    shutdown_event_loop(loop)
                     asyncio.set_event_loop(None)
-                    loop.close()
 
             thread = threading.Thread(target=_run, daemon=True, name=self._name)
             self._loop = loop
@@ -194,20 +221,22 @@ class AsyncioLoopThread:
         with self._close_callbacks_lock:
             self._close_callbacks.append(cb)
 
-    def _run_close_callbacks(self, loop: asyncio.AbstractEventLoop, per_cb_timeout: float) -> None:
-        """Run registered close callbacks on this loop. Runs from external thread."""
+    async def _run_close_callbacks(self, per_cb_timeout: float) -> None:
+        """Run and clear registered close callbacks on the owned loop."""
         with self._close_callbacks_lock:
             callbacks = list(self._close_callbacks)
             self._close_callbacks.clear()
         for cb in callbacks:
-            future = None
             try:
-                future = asyncio.run_coroutine_threadsafe(cb(), loop)
-                future.result(timeout=per_cb_timeout)
+                await asyncio.wait_for(cb(), timeout=per_cb_timeout)
             except Exception as e:
-                if future is not None:
-                    future.cancel()
                 logger.warning(f'loop close callback failed: {e}')
+
+    async def _request_stop(self, loop: asyncio.AbstractEventLoop, per_cb_timeout: float) -> None:
+        try:
+            await self._run_close_callbacks(per_cb_timeout)
+        finally:
+            loop.call_later(0, loop.stop)
 
     def stop(self, join_timeout: float = 5.0) -> None:
         """Run cleanup callbacks, stop the loop, and join its thread."""
@@ -221,17 +250,20 @@ class AsyncioLoopThread:
             return
 
         if thread is threading.current_thread():
-            loop.stop()
+            loop.call_later(0, asyncio.create_task, self._request_stop(loop, join_timeout))
             return
 
-        # Drain async cleanup hooks while the loop is still running, so
-        # resources like httpx pools tied to this loop get closed properly.
         if loop.is_running():
-            self._run_close_callbacks(loop, per_cb_timeout=join_timeout)
-        try:
-            loop.call_soon_threadsafe(loop.stop)
-        except Exception:
-            pass
+            future = asyncio.run_coroutine_threadsafe(self._request_stop(loop, join_timeout), loop)
+            try:
+                future.result(timeout=join_timeout)
+            except Exception as e:
+                future.cancel()
+                logger.warning(f'loop shutdown request failed: {e}')
+                try:
+                    loop.call_soon_threadsafe(loop.stop)
+                except RuntimeError:
+                    pass
         if thread is not None:
             thread.join(timeout=join_timeout)
             if thread.is_alive():
