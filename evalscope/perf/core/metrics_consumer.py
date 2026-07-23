@@ -2,7 +2,7 @@ import asyncio
 import json
 import sqlite3
 from tqdm import tqdm as tqdm_std
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Any, Coroutine, Optional, Tuple
 
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.perf.arguments import Arguments
@@ -13,6 +13,7 @@ from evalscope.perf.utils.handler import exception_handler
 from evalscope.perf.utils.log_utils import maybe_log_to_visualizer
 from evalscope.perf.utils.trace_metrics import TraceAccumulator, TraceLevelSummary
 from evalscope.perf.utils.workload_timeline import WorkloadTimeline
+from evalscope.utils.function_utils import cancel_and_wait
 from evalscope.utils.logger import get_logger
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 
@@ -21,16 +22,13 @@ if TYPE_CHECKING:
 
 logger = get_logger()
 
-# Global event signalling that all requests have been dispatched and the
-# metrics consumer should flush remaining items and exit.
-data_process_completed_event = asyncio.Event()
-
 
 @exception_handler
 async def statistic_benchmark_metric(
     benchmark_data_queue: asyncio.Queue,
     args: Arguments,
     api_plugin: 'ApiPluginBase',
+    completed_event: asyncio.Event,
 ) -> Tuple['MetricsAccumulator', 'TraceLevelSummary', 'WorkloadTimeline', str]:
     """Consume benchmark results from the queue, update metrics, and persist to DB.
 
@@ -38,6 +36,7 @@ async def statistic_benchmark_metric(
         benchmark_data_queue: Queue populated by request workers.
         args: Benchmark configuration.
         api_plugin: API plugin used to finalise token counts.
+        completed_event: Per-benchmark signal indicating that production has finished.
 
     Returns:
         Tuple of ``(metrics_accumulator_result, trace_level_summary, workload_timeline, result_db_path)``.
@@ -79,7 +78,7 @@ async def statistic_benchmark_metric(
             log_interval=HEARTBEAT_INTERVAL_SEC,
             track_progress=True,
         ) as pbar:
-            while not (data_process_completed_event.is_set() and benchmark_data_queue.empty()):
+            while not (completed_event.is_set() and benchmark_data_queue.empty()):
                 try:
                     benchmark_data = await asyncio.wait_for(benchmark_data_queue.get(), timeout=0.1)
                 except asyncio.TimeoutError:
@@ -134,6 +133,45 @@ async def statistic_benchmark_metric(
         await asyncio.to_thread(con.commit)
 
     return accumulator.to_result(), trace_acc.to_summary(), workload_timeline, result_db_path
+
+
+async def run_benchmark_pipeline(
+    producer: Coroutine[Any, Any, None],
+    benchmark_data_queue: asyncio.Queue,
+    args: Arguments,
+    api_plugin: 'ApiPluginBase',
+) -> Tuple['MetricsAccumulator', 'TraceLevelSummary', 'WorkloadTimeline', str]:
+    """Run one producer and its metrics consumer with coordinated cleanup."""
+    completed_event = asyncio.Event()
+    producer_task = asyncio.create_task(producer)
+    consumer_task = asyncio.create_task(
+        statistic_benchmark_metric(benchmark_data_queue, args, api_plugin, completed_event)
+    )
+    drain_task: Optional[asyncio.Task[None]] = None
+
+    try:
+        done, _ = await asyncio.wait((producer_task, consumer_task), return_when=asyncio.FIRST_COMPLETED)
+        if consumer_task in done:
+            await consumer_task
+            raise RuntimeError('Metrics consumer exited before request production completed.')
+
+        await producer_task
+        drain_task = asyncio.create_task(benchmark_data_queue.join())
+        done, _ = await asyncio.wait((drain_task, consumer_task), return_when=asyncio.FIRST_COMPLETED)
+        if consumer_task in done:
+            await consumer_task
+            raise RuntimeError('Metrics consumer exited before the result queue was drained.')
+
+        await drain_task
+        completed_event.set()
+        return await consumer_task
+    finally:
+        completed_event.set()
+        tasks = [producer_task, consumer_task]
+        if drain_task is not None:
+            tasks.append(drain_task)
+        await asyncio.gather(*(cancel_and_wait(task) for task in tasks), return_exceptions=True)
+        await asyncio.gather(*tasks, return_exceptions=True)
 
 
 @exception_handler

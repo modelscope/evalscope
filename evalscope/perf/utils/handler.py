@@ -1,9 +1,9 @@
 import asyncio
 import functools
+import inspect
 import os
 import platform
 import signal
-import sys
 
 from evalscope.utils.logger import get_logger
 
@@ -76,6 +76,19 @@ def install_uvloop_if_available() -> None:
 
 
 def exception_handler(func):
+    if inspect.isasyncgenfunction(func):
+
+        @functools.wraps(func)
+        async def async_generator_wrapper(*args, **kwargs):
+            try:
+                async for item in func(*args, **kwargs):
+                    yield item
+            except Exception as e:
+                logger.exception(f"Exception in async generator '{func.__name__}': {e}")
+                raise
+
+        return async_generator_wrapper
+
     if asyncio.iscoroutinefunction(func):
 
         @functools.wraps(func)
@@ -84,7 +97,7 @@ def exception_handler(func):
                 return await func(*args, **kwargs)
             except Exception as e:
                 logger.exception(f"Exception in async function '{func.__name__}': {e}")
-                sys.exit(1)
+                raise
 
         return async_wrapper
     else:
@@ -95,7 +108,7 @@ def exception_handler(func):
                 return func(*args, **kwargs)
             except Exception as e:
                 logger.exception(f"Exception in function '{func.__name__}': {e}")
-                sys.exit(1)
+                raise
 
         return sync_wrapper
 

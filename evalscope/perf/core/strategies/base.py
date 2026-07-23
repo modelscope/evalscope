@@ -52,7 +52,7 @@ class BenchmarkStrategy(ABC):
 
         The caller is responsible for:
         - awaiting ``queue.join()`` after this coroutine returns.
-        - setting ``data_process_completed_event`` to signal the consumer.
+        - signalling its metrics consumer after the queue is drained.
         """
 
     @staticmethod
