@@ -127,6 +127,10 @@ class BenchmarkData:
         if self.completion_tokens and self.completion_tokens > 1 and n_chunks > 1:
             self.decoded_tokens_per_iter = (self.completion_tokens - 1) / (n_chunks - 1)
 
+        # Sync server-reported cached tokens for single-turn runs; don't overwrite.
+        if self.cached_tokens is None and self.real_cached_tokens is not None:
+            self.cached_tokens = self.real_cached_tokens
+
     def update_gpu_usage(self) -> None:
         """Update max GPU memory usage across all visible CUDA devices."""
         if check_import('torch', raise_warning=False):
