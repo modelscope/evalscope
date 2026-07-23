@@ -4,7 +4,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence, TypeVar, Union
+from typing import Any, Awaitable, Callable, Coroutine, Dict, List, Optional, Sequence, TypeVar, Union
 
 from evalscope.utils.logger import get_logger
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
@@ -98,70 +98,144 @@ async def async_retry_call(
                 raise
 
 
-class _LoopHandle:
-    """One asyncio loop running on its own daemon thread.
+class AsyncioLoopThread:
+    """Long-lived asyncio event loop hosted by one daemon thread.
 
-    Owned by ``AsyncioLoopRunner`` and stored thread-locally so each
-    calling worker thread gets its own isolated event loop.
+    The owning thread starts, runs, and closes the loop. Callers may submit
+    coroutines synchronously or asynchronously from other threads and loops.
     """
 
-    __slots__ = ('loop', 'thread', '_health_task', '_close_callbacks', '_close_callbacks_lock')
+    __slots__ = (
+        '_name',
+        '_health_label',
+        '_start_lock',
+        '_loop',
+        '_thread',
+        '_close_callbacks',
+        '_close_callbacks_lock',
+    )
 
-    def __init__(self, owner_thread_name: str) -> None:
-        self.loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
-        self._health_task: Optional[asyncio.Handle] = None
-        # Async cleanup callbacks to run on this loop just before it stops.
-        # Used by per-loop resource caches (e.g. AsyncOpenAI / AsyncAnthropic
-        # clients) to close their httpx connection pools while the loop they
-        # were bound to is still alive.
+    def __init__(self, name: str, *, health_label: Optional[str] = None) -> None:
+        self._name = name
+        self._health_label = health_label
+        self._start_lock = threading.Lock()
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._thread: Optional[threading.Thread] = None
         self._close_callbacks: List[Callable[[], Awaitable[None]]] = []
         self._close_callbacks_lock = threading.Lock()
 
-        def _run() -> None:
-            asyncio.set_event_loop(self.loop)
-            self.loop.run_forever()
+    @property
+    def active(self) -> bool:
+        """Return whether the owned event loop is available."""
+        return self._loop is not None and not self._loop.is_closed()
 
-        self.thread = threading.Thread(
-            target=_run,
-            daemon=True,
-            name=f'EvalLoop[{owner_thread_name}]',
-        )
-        self.thread.start()
+    @property
+    def loop(self) -> asyncio.AbstractEventLoop:
+        """Return the owned event loop, starting its thread lazily."""
+        return self._ensure_started()
 
-        if _LOOP_HEALTH_ENABLED:
-            self.loop.call_soon_threadsafe(_install_loop_health_monitor, self.loop, owner_thread_name)
+    def owns(self, loop: asyncio.AbstractEventLoop) -> bool:
+        """Return whether ``loop`` is the currently owned event loop."""
+        return self._loop is loop
+
+    def _ensure_started(self) -> asyncio.AbstractEventLoop:
+        with self._start_lock:
+            if self._loop is not None and not self._loop.is_closed():
+                return self._loop
+
+            loop = asyncio.new_event_loop()
+
+            def _run() -> None:
+                asyncio.set_event_loop(loop)
+                try:
+                    loop.run_forever()
+                finally:
+                    asyncio.set_event_loop(None)
+                    loop.close()
+
+            thread = threading.Thread(target=_run, daemon=True, name=self._name)
+            self._loop = loop
+            self._thread = thread
+            thread.start()
+
+            if _LOOP_HEALTH_ENABLED and self._health_label:
+                loop.call_soon_threadsafe(_install_loop_health_monitor, loop, self._health_label)
+            return loop
+
+    async def run(self, coro: Coroutine[Any, Any, T]) -> T:
+        """Run ``coro`` on the owned loop and await it from any event loop."""
+        loop = self._ensure_started()
+        if asyncio.get_running_loop() is loop:
+            return await coro
+
+        future = asyncio.run_coroutine_threadsafe(coro, loop)
+        return await asyncio.wrap_future(future)
+
+    def run_sync(self, coro: Coroutine[Any, Any, T], timeout: Optional[float] = None) -> T:
+        """Run ``coro`` on the owned loop and block until it completes."""
+        loop = self._ensure_started()
+        try:
+            running_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            running_loop = None
+        if running_loop is loop:
+            coro.close()
+            raise RuntimeError('Cannot synchronously wait on the owned event loop.')
+
+        future = asyncio.run_coroutine_threadsafe(coro, loop)
+        try:
+            return future.result(timeout=timeout)
+        except Exception:
+            future.cancel()
+            raise
 
     def add_close_callback(self, cb: Callable[[], Awaitable[None]]) -> None:
         """Register an async cleanup callback to run before this loop stops."""
         with self._close_callbacks_lock:
             self._close_callbacks.append(cb)
 
-    def _run_close_callbacks(self, per_cb_timeout: float) -> None:
+    def _run_close_callbacks(self, loop: asyncio.AbstractEventLoop, per_cb_timeout: float) -> None:
         """Run registered close callbacks on this loop. Runs from external thread."""
         with self._close_callbacks_lock:
             callbacks = list(self._close_callbacks)
             self._close_callbacks.clear()
         for cb in callbacks:
+            future = None
             try:
-                fut = asyncio.run_coroutine_threadsafe(cb(), self.loop)
-                fut.result(timeout=per_cb_timeout)
+                future = asyncio.run_coroutine_threadsafe(cb(), loop)
+                future.result(timeout=per_cb_timeout)
             except Exception as e:
+                if future is not None:
+                    future.cancel()
                 logger.warning(f'loop close callback failed: {e}')
 
     def stop(self, join_timeout: float = 5.0) -> None:
+        """Run cleanup callbacks, stop the loop, and join its thread."""
+        with self._start_lock:
+            loop = self._loop
+            thread = self._thread
+            self._loop = None
+            self._thread = None
+
+        if loop is None:
+            return
+
+        if thread is threading.current_thread():
+            loop.stop()
+            return
+
         # Drain async cleanup hooks while the loop is still running, so
         # resources like httpx pools tied to this loop get closed properly.
-        if self.loop.is_running():
-            self._run_close_callbacks(per_cb_timeout=join_timeout)
+        if loop.is_running():
+            self._run_close_callbacks(loop, per_cb_timeout=join_timeout)
         try:
-            self.loop.call_soon_threadsafe(self.loop.stop)
+            loop.call_soon_threadsafe(loop.stop)
         except Exception:
             pass
-        self.thread.join(timeout=join_timeout)
-        try:
-            self.loop.close()
-        except Exception:
-            pass
+        if thread is not None:
+            thread.join(timeout=join_timeout)
+            if thread.is_alive():
+                logger.warning(f'{self._name} did not stop within {join_timeout} seconds')
 
 
 # Health monitor: schedules a periodic call_soon and measures the wall-clock
@@ -203,35 +277,25 @@ class AsyncioLoopRunner:
 
     _local = threading.local()
     _all_handles_lock = threading.Lock()
-    _all_handles: List[_LoopHandle] = []  # for atexit cleanup
+    _all_handles: List[AsyncioLoopThread] = []  # for atexit cleanup
 
     @classmethod
-    def _get_handle(cls) -> _LoopHandle:
-        handle: Optional[_LoopHandle] = getattr(cls._local, 'handle', None)
+    def _get_handle(cls) -> AsyncioLoopThread:
+        handle: Optional[AsyncioLoopThread] = getattr(cls._local, 'handle', None)
         if handle is not None:
             return handle
         owner_name = threading.current_thread().name
-        handle = _LoopHandle(owner_name)
+        handle = AsyncioLoopThread(name=f'EvalLoop[{owner_name}]', health_label=owner_name)
         cls._local.handle = handle
         with cls._all_handles_lock:
             cls._all_handles.append(handle)
         return handle
 
     @classmethod
-    def run(cls, coro: Awaitable[T], timeout: Optional[float] = None) -> T:
+    def run(cls, coro: Coroutine[Any, Any, T], timeout: Optional[float] = None) -> T:
         """Submit a coroutine to *this thread's* loop and wait for result."""
         handle = cls._get_handle()
-        fut = asyncio.run_coroutine_threadsafe(coro, handle.loop)
-        try:
-            return fut.result(timeout=timeout)
-        except Exception:
-            # On timeout/cancel, request the running coroutine to cancel as
-            # well so it doesn't keep running on the background loop.
-            try:
-                fut.cancel()
-            except Exception:
-                pass
-            raise
+        return handle.run_sync(coro, timeout=timeout)
 
     @classmethod
     def shutdown_for_thread(cls, join_timeout: float = 5.0) -> None:
@@ -241,7 +305,7 @@ class AsyncioLoopRunner:
         in a ``finally`` block to avoid leaking a daemon thread + loop per
         worker.
         """
-        handle: Optional[_LoopHandle] = getattr(cls._local, 'handle', None)
+        handle: Optional[AsyncioLoopThread] = getattr(cls._local, 'handle', None)
         if handle is None:
             return
         handle.stop(join_timeout=join_timeout)
@@ -277,7 +341,7 @@ class AsyncioLoopRunner:
             return False
         with cls._all_handles_lock:
             for handle in cls._all_handles:
-                if handle.loop is running:
+                if handle.owns(running):
                     handle.add_close_callback(cb)
                     return True
         return False
@@ -285,7 +349,7 @@ class AsyncioLoopRunner:
     @classmethod
     def loop_for_current_thread(cls) -> Optional[asyncio.AbstractEventLoop]:
         """Read-only access to the calling thread's loop, if one exists."""
-        handle: Optional[_LoopHandle] = getattr(cls._local, 'handle', None)
+        handle: Optional[AsyncioLoopThread] = getattr(cls._local, 'handle', None)
         return handle.loop if handle is not None else None
 
 

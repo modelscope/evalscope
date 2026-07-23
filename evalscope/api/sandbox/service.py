@@ -20,6 +20,7 @@ import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Coroutine, Dict, List, Optional, Tuple, TypeVar
 
+from evalscope.utils.function_utils import AsyncioLoopThread
 from evalscope.utils.logger import get_logger
 from .config_builder import build_sandbox_config
 from .engine import SandboxEngine, get_enclave_types, resolve_engine
@@ -29,77 +30,6 @@ if TYPE_CHECKING:
 
 logger = get_logger()
 T = TypeVar('T')
-
-
-class _EventLoopThread:
-    """Run loop-bound async resources on one long-lived event loop."""
-
-    def __init__(self, name: str) -> None:
-        self._name = name
-        self._lock = threading.Lock()
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
-        self._thread: Optional[threading.Thread] = None
-
-    @property
-    def active(self) -> bool:
-        return self._loop is not None
-
-    def _ensure_started(self) -> asyncio.AbstractEventLoop:
-        with self._lock:
-            if self._loop is not None and not self._loop.is_closed():
-                return self._loop
-
-            loop = asyncio.new_event_loop()
-
-            def _run() -> None:
-                asyncio.set_event_loop(loop)
-                try:
-                    loop.run_forever()
-                finally:
-                    loop.close()
-
-            self._loop = loop
-            self._thread = threading.Thread(target=_run, daemon=True, name=self._name)
-            self._thread.start()
-            return loop
-
-    async def run(self, operation: Coroutine[Any, Any, T]) -> T:
-        loop = self._ensure_started()
-        if asyncio.get_running_loop() is loop:
-            return await operation
-
-        future = asyncio.run_coroutine_threadsafe(operation, loop)
-        return await asyncio.wrap_future(future)
-
-    def run_sync(
-        self,
-        operation: Coroutine[Any, Any, T],
-        timeout: Optional[float] = None,
-    ) -> T:
-        loop = self._ensure_started()
-        try:
-            running_loop = asyncio.get_running_loop()
-        except RuntimeError:
-            running_loop = None
-        if running_loop is loop:
-            raise RuntimeError('Cannot synchronously wait on the event loop thread.')
-
-        future = asyncio.run_coroutine_threadsafe(operation, loop)
-        return future.result(timeout=timeout)
-
-    def stop(self, join_timeout: float = 5.0) -> None:
-        with self._lock:
-            loop = self._loop
-            thread = self._thread
-            self._loop = None
-            self._thread = None
-
-        if loop is None:
-            return
-
-        loop.call_soon_threadsafe(loop.stop)
-        if thread is not None and thread is not threading.current_thread():
-            thread.join(timeout=join_timeout)
 
 
 async def _run_manager_operation(
@@ -221,7 +151,7 @@ class SandboxService:
         self._managers: Dict[Tuple[SandboxEngine, str], 'SandboxManager'] = {}
         # In-flight starts are shared by concurrent callers on the service loop.
         self._manager_starts: Dict[Tuple[SandboxEngine, str], asyncio.Task['SandboxManager']] = {}
-        self._runtime = _EventLoopThread(name='SandboxServiceLoop')
+        self._runtime = AsyncioLoopThread(name='SandboxServiceLoop')
 
     # ------------------------------------------------------------------
     # Dedicated async runtime
