@@ -5,6 +5,7 @@ import binascii
 import hashlib
 import json
 import re
+from contextlib import closing
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from zipfile import BadZipFile, ZipFile
@@ -508,25 +509,24 @@ def _sqlite_to_text(path: Path) -> str:
     import sqlite3 as sqlite
 
     try:
-        con = sqlite.connect(str(path))
-        cur = con.cursor()
-        schema = con.execute('SELECT sql FROM sqlite_master WHERE sql IS NOT NULL').fetchall()
-        parts = ['=== Schema ===']
-        parts.extend(row[0] for row in schema if row[0])
-        tables = [row[0] for row in con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
-        for table in tables:
-            parts.append(f'\n=== Table: {table} ===')
-            try:
-                total_rows = con.execute(f'SELECT COUNT(*) FROM "{table}"').fetchone()[0]
-                rows = cur.execute(f'SELECT * FROM "{table}" LIMIT {SQLITE_ROWS_PER_TABLE}').fetchall()
-                cols = [d[0] for d in cur.description]
-                parts.append(f'-- total_rows: {total_rows}; shown: {len(rows)} (LIMIT {SQLITE_ROWS_PER_TABLE})')
-                parts.append(','.join(cols))
-                for row in rows:
-                    parts.append(','.join('' if value is None else str(value) for value in row))
-            except Exception as exc:
-                parts.append(f'[ERROR reading table {table}: {exc}]')
-        con.close()
+        with closing(sqlite.connect(str(path))) as con:
+            cur = con.cursor()
+            schema = con.execute('SELECT sql FROM sqlite_master WHERE sql IS NOT NULL').fetchall()
+            parts = ['=== Schema ===']
+            parts.extend(row[0] for row in schema if row[0])
+            tables = [row[0] for row in con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+            for table in tables:
+                parts.append(f'\n=== Table: {table} ===')
+                try:
+                    total_rows = con.execute(f'SELECT COUNT(*) FROM "{table}"').fetchone()[0]
+                    rows = cur.execute(f'SELECT * FROM "{table}" LIMIT {SQLITE_ROWS_PER_TABLE}').fetchall()
+                    cols = [d[0] for d in cur.description]
+                    parts.append(f'-- total_rows: {total_rows}; shown: {len(rows)} (LIMIT {SQLITE_ROWS_PER_TABLE})')
+                    parts.append(','.join(cols))
+                    for row in rows:
+                        parts.append(','.join('' if value is None else str(value) for value in row))
+                except Exception as exc:
+                    parts.append(f'[ERROR reading table {table}: {exc}]')
         return '\n'.join(parts)
     except Exception as exc:
         return f'[ERROR: Failed to read SQLite {path.name}: {exc}]'

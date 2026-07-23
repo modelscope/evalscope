@@ -15,7 +15,7 @@ from evalscope.api.metric import Score
 from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import merge_sandbox_config_dicts
-from evalscope.constants import HubType, Tags
+from evalscope.constants import HubType, JudgeStrategy, Tags
 from evalscope.utils.import_utils import is_build_doc
 from evalscope.utils.logger import get_logger
 from .utils import (
@@ -91,6 +91,8 @@ class JobBenchAdapter(AgentLoopAdapter):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
+        if self.judge_strategy == JudgeStrategy.LLM_RECALL:
+            raise ValueError("JobBench does not support judge_strategy='llm_recall'; use 'auto' or 'llm'.")
         self._snapshot_dir: Optional[Path] = None
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
