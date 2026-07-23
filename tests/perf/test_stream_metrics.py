@@ -182,5 +182,38 @@ class TestPercentileBucketing(unittest.TestCase):
                 os.unlink(db)
 
 
+class TestSingleTurnCachedTokenSync(unittest.TestCase):
+    """Cache-hit normalization for single-turn (open-loop / closed-loop) runs.
+
+    Regression coverage for issue #1506: server-reported cached tokens land in
+    ``real_cached_tokens`` but were never synced to ``cached_tokens``, so single-turn
+    cache metrics stayed at 0.
+    """
+
+    def setUp(self):
+        self.plugin = _DummyPlugin(152, 24)
+
+    def test_finalize_syncs_real_cached_tokens(self):
+        data = _make(prompt_tokens=152, completion_tokens=24, is_stream=False)
+        data.real_cached_tokens = 128
+        data.finalize(self.plugin)
+        self.assertEqual(data.cached_tokens, 128)
+
+    def test_finalize_does_not_overwrite_existing_cached_tokens(self):
+        data = _make(prompt_tokens=152, completion_tokens=24, is_stream=False)
+        data.real_cached_tokens = 128
+        data.cached_tokens = 0
+        data.finalize(self.plugin)
+        self.assertEqual(data.cached_tokens, 0)
+
+    def test_accumulator_reports_cached_percent_for_single_turn(self):
+        acc = MetricsAccumulator()
+        data = _make(prompt_tokens=152, completion_tokens=24, is_stream=False)
+        data.real_cached_tokens = 128
+        acc.update(data, self.plugin)
+        result = acc.to_result()
+        self.assertAlmostEqual(result.avg_cached_percent, 128 / 152 * 100.0)
+
+
 if __name__ == '__main__':
     unittest.main()
