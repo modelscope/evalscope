@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
+from evalscope.utils.function_utils import cancel_and_wait
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
@@ -24,6 +25,8 @@ DEFAULT_SERVER_PORT = 8080
 DEFAULT_WS_PROXY_PORT = 8081
 DEFAULT_TIMEOUT_SECONDS = 240 * 60
 DEFAULT_POLL_INTERVAL_SECONDS = 5
+WS_HEARTBEAT_INTERVAL_SECONDS = 30
+WS_HEARTBEAT_TIMEOUT_SECONDS = 120
 
 
 @dataclass
@@ -359,6 +362,7 @@ async def run_ws_proxy(server_url: str, llm_base_url: str, llm_api_key: str, job
     async with connect(ws_url, ping_interval=20, ping_timeout=120, max_size=32 * 1024 * 1024) as websocket:
         request_queue: asyncio.Queue = asyncio.Queue()
         last_heartbeat_ack = {'time': time.monotonic()}
+        active_request_tasks: set[asyncio.Task] = set()
 
         async def receive_messages() -> None:
             async for message in websocket:
@@ -372,15 +376,7 @@ async def run_ws_proxy(server_url: str, llm_base_url: str, llm_api_key: str, job
                     for request in data.get('requests', []):
                         await request_queue.put(request)
 
-        async def process_requests() -> None:
-            active_tasks = set()
-            while True:
-                request = await request_queue.get()
-                task = asyncio.create_task(process_request(request))
-                active_tasks.add(task)
-                task.add_done_callback(active_tasks.discard)
-
-        async def process_request(request: Dict[str, Any]) -> None:
+        async def process_request(request: Dict[str, Any], client: Any) -> None:
             request_id = request['request_id']
             endpoint = request.get('_endpoint', '/chat/completions')
             payload = {
@@ -390,37 +386,74 @@ async def run_ws_proxy(server_url: str, llm_base_url: str, llm_api_key: str, job
             }
             headers = {'Authorization': f'Bearer {llm_api_key}'} if llm_api_key else {}
             try:
-                async with httpx.AsyncClient(timeout=600.0) as client:
+                try:
                     response = await client.post(f'{llm_base_url}{endpoint}', json=payload, headers=headers)
-                response_data = {'status_code': response.status_code, 'body': response.json()}
-            except Exception as exc:
-                response_data = {
-                    'status_code': 500,
-                    'body': {
-                        'error': {
-                            'message': f'{type(exc).__name__}: {exc}',
-                            'type': 'network_error',
-                            'code': 'client_error',
-                        }
-                    },
-                }
-            await websocket.send(json.dumps({'type': 'response', 'request_id': request_id, 'data': response_data}))
-            request_queue.task_done()
+                    response_data = {'status_code': response.status_code, 'body': response.json()}
+                except Exception as exc:
+                    response_data = {
+                        'status_code': 500,
+                        'body': {
+                            'error': {
+                                'message': f'{type(exc).__name__}: {exc}',
+                                'type': 'network_error',
+                                'code': 'client_error',
+                            }
+                        },
+                    }
+                await websocket.send(json.dumps({'type': 'response', 'request_id': request_id, 'data': response_data}))
+            finally:
+                request_queue.task_done()
+
+        async def process_requests(client: Any) -> None:
+            queue_get_task = asyncio.create_task(request_queue.get())
+            try:
+                while True:
+                    done, _ = await asyncio.wait({queue_get_task, *active_request_tasks},
+                                                 return_when=asyncio.FIRST_COMPLETED)
+                    if queue_get_task in done:
+                        request = queue_get_task.result()
+                        request_task = asyncio.create_task(process_request(request, client))
+                        active_request_tasks.add(request_task)
+                        queue_get_task = asyncio.create_task(request_queue.get())
+
+                    completed_requests = done.intersection(active_request_tasks)
+                    active_request_tasks.difference_update(completed_requests)
+                    if completed_requests:
+                        await asyncio.gather(*completed_requests)
+            finally:
+                if queue_get_task.done() and not queue_get_task.cancelled():
+                    try:
+                        queue_get_task.result()
+                    except Exception:
+                        pass
+                    else:
+                        request_queue.task_done()
+                else:
+                    await cancel_and_wait(queue_get_task)
+                await asyncio.gather(
+                    *(cancel_and_wait(task) for task in active_request_tasks),
+                    return_exceptions=True,
+                )
+                await asyncio.gather(*active_request_tasks, return_exceptions=True)
+                active_request_tasks.clear()
 
         async def send_heartbeat() -> None:
             while True:
-                await asyncio.sleep(30)
+                await asyncio.sleep(WS_HEARTBEAT_INTERVAL_SECONDS)
                 await websocket.send(json.dumps({'type': 'heartbeat'}))
-                if time.monotonic() - last_heartbeat_ack['time'] > 120:
+                if time.monotonic() - last_heartbeat_ack['time'] > WS_HEARTBEAT_TIMEOUT_SECONDS:
                     raise TimeoutError('Toolathlon WebSocket heartbeat timed out.')
 
-        tasks = [
-            asyncio.create_task(receive_messages()),
-            asyncio.create_task(process_requests()),
-            asyncio.create_task(send_heartbeat()),
-        ]
-        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
-        for task in pending:
-            task.cancel()
-        for task in done:
-            task.result()
+        async with httpx.AsyncClient(timeout=600.0) as client:
+            tasks = {
+                asyncio.create_task(receive_messages()),
+                asyncio.create_task(process_requests(client)),
+                asyncio.create_task(send_heartbeat()),
+            }
+            try:
+                done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+                for task in done:
+                    task.result()
+            finally:
+                await asyncio.gather(*(cancel_and_wait(task) for task in tasks), return_exceptions=True)
+                await asyncio.gather(*tasks, return_exceptions=True)
