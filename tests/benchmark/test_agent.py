@@ -17,6 +17,11 @@ from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.agent.mcp import MCPServerConfigStdio
 from evalscope.api.metric import SampleScore, Score
 from evalscope.api.registry import get_benchmark
+from evalscope.benchmarks.automation_bench.utils import (
+    _create_automation_bench_env,
+    _normalize_result,
+    ensure_automation_bench_runtime,
+)
 from evalscope.benchmarks.claw_eval.claw_eval_adapter import ClawEvalAdapter
 from evalscope.benchmarks.claw_eval.utils import (
     DEFAULT_CLAW_EVAL_SANDBOX_IMAGE,
@@ -491,6 +496,262 @@ class TestAgentBenchmark(TestBenchmark):
         self.assertEqual({row['sample_score']['group_id'] for row in reviews}, {0})
         self.assertNotIn('selected_task_ids', metadata)
         self.assertNotIn('selected_records', metadata)
+
+    def test_automation_bench(self):
+        """Test AutomationBench's official task wrapper with a mocked in-process runner."""
+        run_calls = []
+
+        def fake_record_loader(domains):
+            self.assertEqual(domains, ['sales'])
+            return {
+                'sales': [{
+                    'example_id': 501,
+                    'task': 'sales.update_contact',
+                    'prompt': [
+                        {
+                            'role': 'system',
+                            'content': 'Use the available business APIs.'
+                        },
+                        {
+                            'role': 'user',
+                            'content': 'Update the contact phone number.'
+                        },
+                    ],
+                    'answer': '',
+                    'info': '{}',
+                }]
+            }
+
+        def fake_task_runner(**kwargs):
+            run_calls.append(kwargs)
+            return {
+                'task': 'sales.update_contact',
+                'reward': 0.5,
+                'metrics': {
+                    'partial_credit': 0.5,
+                    'task_completed_correctly': 0.0,
+                },
+                'messages': [
+                    {
+                        'role': 'system',
+                        'content': 'Use the available business APIs.'
+                    },
+                    {
+                        'role': 'user',
+                        'content': 'Update the contact phone number.'
+                    },
+                    {
+                        'role': 'assistant',
+                        'content': None,
+                        'tool_calls': [
+                            '{"id":"call-1","name":"salesforce_update_contact",'
+                            '"arguments":"{\\"contact_id\\":\\"123\\"}"}'
+                        ],
+                    },
+                    {
+                        'role': 'tool',
+                        'tool_call_id': 'call-1',
+                        'content': '{"ok": true}'
+                    },
+                    {
+                        'role': 'assistant',
+                        'content': 'Done.'
+                    },
+                ],
+                'usage': {
+                    'input_tokens': 20,
+                    'output_tokens': 5
+                },
+                'debug': {},
+                'assertion_results': [{
+                    'type': 'contact_phone_equals',
+                    'passed': True,
+                    'excluded': False
+                }],
+                'end_state': {
+                    'salesforce': {}
+                },
+                'perf': {
+                    'tool_calls': 1
+                },
+                'error': None,
+            }
+
+        dataset_args = {
+            'subset_list': ['sales'],
+            'extra_params': {
+                'toolset': 'api',
+            },
+        }
+        with patch('evalscope.benchmarks.automation_bench.automation_bench_adapter.ensure_automation_bench_runtime'), \
+                patch('evalscope.benchmarks.automation_bench.automation_bench_adapter.load_automation_bench_records',
+                      side_effect=fake_record_loader), \
+                patch('evalscope.benchmarks.automation_bench.automation_bench_adapter.run_automation_bench_task',
+                      side_effect=fake_task_runner):
+            self._run_dataset_test(
+                'automation_bench',
+                dataset_args,
+                use_mock=True,
+                limit=1,
+                repeats=2,
+                eval_batch_size=1,
+                no_timestamp=True,
+                work_dir='outputs/test_agent_automation_bench',
+                api_url='http://localhost:8000/v1',
+                api_key='local-key',
+                agent_config=NativeAgentConfig(max_steps=7),
+                generation_config={
+                    'temperature': 0.2,
+                    'reasoning_effort': 'low',
+                    'extra_body': {
+                        'enable_thinking': True
+                    },
+                    'extra_headers': {
+                        'X-Test': 'value'
+                    },
+                },
+            )
+
+        self.assertEqual(len(run_calls), 2)
+        self.assertTrue(all(call['model_name'] == 'qwen3-max' for call in run_calls))
+        self.assertTrue(all(call['api'] == 'chat_completions' for call in run_calls))
+        self.assertTrue(all(call['toolset'] == 'api' for call in run_calls))
+        self.assertTrue(all(call['max_turns'] == 7 for call in run_calls))
+        self.assertTrue(all(call['extra_headers'] == {'X-Test': 'value'} for call in run_calls))
+        self.assertTrue(
+            all(
+                call['sampling_args'] == {
+                    'temperature': 0.2,
+                    'reasoning_effort': 'low',
+                    'extra_body': {
+                        'enable_thinking': True
+                    },
+                } for call in run_calls
+            )
+        )
+
+        review_files = list(Path('outputs/test_agent_automation_bench').glob('reviews/*/automation_bench_sales.jsonl'))
+        self.assertEqual(len(review_files), 1)
+        reviews = [json.loads(line) for line in review_files[0].read_text().splitlines() if line]
+        self.assertEqual(len(reviews), 2)
+        review = reviews[0]
+        self.assertEqual(review['sample_score']['score']['main_score_name'], 'pass_rate')
+        self.assertEqual(review['sample_score']['score']['value']['pass_rate'], 0.0)
+        self.assertEqual(review['sample_score']['score']['value']['partial_credit'], 0.5)
+        self.assertEqual(review['sample_score']['sample_metadata']['domain'], 'sales')
+        self.assertNotIn('automation_bench_result', review['sample_score']['sample_metadata'])
+        prediction_file = next(Path('outputs/test_agent_automation_bench').glob('predictions/*/automation_bench_sales.jsonl'))
+        prediction = json.loads(prediction_file.read_text().splitlines()[-1])
+        self.assertNotIn('automation_bench_result', prediction['metadata'])
+        self.assertNotIn('messages', prediction['model_output']['metadata'])
+        assistant = next(message for message in prediction['messages'] if message['role'] == 'assistant')
+        self.assertEqual(assistant['tool_calls'][0]['function']['name'], 'salesforce_update_contact')
+
+    def test_automation_bench_requires_python_313(self):
+        """Test AutomationBench rejects unsupported Python interpreters before import."""
+        with patch('evalscope.benchmarks.automation_bench.utils.sys.version_info', (3, 12, 0)):
+            with self.assertRaisesRegex(RuntimeError, 'Python 3.13'):
+                ensure_automation_bench_runtime()
+
+    def test_automation_bench_missing_package_has_install_hint(self):
+        """Test a missing official package reports the pinned installation command."""
+        with patch('evalscope.benchmarks.automation_bench.utils.sys.version_info', (3, 13, 0)), \
+                patch('evalscope.benchmarks.automation_bench.utils.importlib.import_module',
+                      side_effect=ImportError('missing')):
+            with self.assertRaisesRegex(ImportError, 'python -m pip install'):
+                ensure_automation_bench_runtime()
+
+    def test_automation_bench_simple_aggregate_is_separate(self):
+        """Test the simple baseline does not contribute to the public pass-rate metric."""
+        with patch('evalscope.benchmarks.automation_bench.automation_bench_adapter.ensure_automation_bench_runtime'):
+            adapter = get_benchmark(
+                'automation_bench',
+                TaskConfig(
+                    datasets=['automation_bench'],
+                    dataset_args={'automation_bench': {
+                        'subset_list': ['simple']
+                    }},
+                ),
+            )
+
+        def simple_score(completed, partial_credit, error=None):
+            task_state = Mock(
+                metadata={'domain': 'simple'},
+                output=Mock(metadata={
+                    'metrics': {
+                        'task_completed_correctly': completed,
+                        'partial_credit': partial_credit,
+                    },
+                    'error': error,
+                }),
+            )
+            return adapter.match_score('', '', '', task_state)
+
+        scores = [
+            SampleScore(
+                score=simple_score(1.0, 1.0),
+                sample_id=0,
+                sample_metadata={'domain': 'simple'},
+            ),
+            SampleScore(
+                score=simple_score(0.0, 0.5, 'failed'),
+                sample_id=1,
+                sample_metadata={'domain': 'simple'},
+            ),
+        ]
+
+        aggregated = {score.metric_name: score.score for score in adapter.aggregate_scores(scores)}
+        self.assertEqual(aggregated['simple_pass_rate'], 0.5)
+        self.assertEqual(aggregated['simple_partial_credit'], 0.75)
+        self.assertEqual(aggregated['simple_error_rate'], 0.5)
+        self.assertNotIn('pass_rate', aggregated)
+
+    def test_automation_bench_environment_init_has_no_process_hooks(self):
+        """Test the EvalScope environment discovers handlers without registering process hooks."""
+
+        class FakeOfficialEnvironment:
+
+            def __init__(self, **kwargs):
+                self.kwargs = kwargs
+                self.__post_init__()
+
+        handlers = {
+            'stop': ['stop'],
+            'cleanup': ['cleanup'],
+            'teardown': ['teardown'],
+        }
+        discover_decorated = Mock(side_effect=lambda _, kind: handlers[kind])
+        with patch('signal.signal') as signal_register, patch('atexit.register') as atexit_register:
+            env = _create_automation_bench_env(
+                environment_cls=FakeOfficialEnvironment,
+                discover_decorated=discover_decorated,
+                dataset='dataset',
+            )
+
+        self.assertEqual(env._stop_conditions, ['stop'])
+        self.assertEqual(env._cleanup_handlers, ['cleanup'])
+        self.assertEqual(env._teardown_handlers, ['teardown'])
+        self.assertEqual(env.kwargs, {'dataset': 'dataset'})
+        signal_register.assert_not_called()
+        atexit_register.assert_not_called()
+
+    def test_automation_bench_normalization_uses_official_result_fields(self):
+        """Test reward and debug diagnostics do not override official metrics or error state."""
+        result = _normalize_result({
+            'task': 'sales.update_contact',
+            'reward': 1.0,
+            'metrics': {
+                'partial_credit': 0.25,
+            },
+            '_debug': {
+                'errors': ['diagnostic only']
+            },
+        })
+
+        self.assertEqual(result['metrics']['partial_credit'], 0.25)
+        self.assertEqual(result['metrics']['task_completed_correctly'], 0.0)
+        self.assertIsNone(result['error'])
+        self.assertEqual(result['debug']['errors'], ['diagnostic only'])
 
     def test_claw_eval_init_checks_runtime(self):
         """Test Claw-Eval fails early when the official package is unavailable."""

@@ -4,6 +4,7 @@
 
 | 数据集名称 | 标准名称 | 任务类别 |
 |------------|----------|----------|
+| `automation_bench` | [AutomationBench](../../benchmarks/automation_bench.md) | `Agent`, `FunctionCalling`, `MultiTurn` |
 | `bfcl_v3` | [BFCL-v3](../../benchmarks/bfcl_v3.md) | `Agent`, `FunctionCalling` |
 | `bfcl_v4` | [BFCL-v4](../../benchmarks/bfcl_v4.md) | `Agent`, `FunctionCalling` |
 | `browsecomp` | [BrowseComp](../../benchmarks/browsecomp.md) | `Agent`, `Knowledge`, `QA` |
@@ -37,6 +38,7 @@
 :hidden:
 :maxdepth: 1
 
+../../benchmarks/automation_bench.md
 ../../benchmarks/bfcl_v3.md
 ../../benchmarks/bfcl_v4.md
 ../../benchmarks/browsecomp.md
