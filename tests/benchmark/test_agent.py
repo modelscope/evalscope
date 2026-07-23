@@ -272,6 +272,26 @@ class TestAgentBenchmark(TestBenchmark):
             debug=False,
         )
 
+    def test_job_bench(self):
+        """Test JobBench end-to-end with Docker artifacts and LLM judging."""
+        if not env.get('DASHSCOPE_API_KEY'):
+            self.skipTest('DASHSCOPE_API_KEY is required for the JobBench end-to-end test.')
+
+        self._run_dataset_test(
+            'job_bench',
+            limit=5,
+            eval_batch_size=5,
+            collect_perf=False,
+            debug=False,
+            agent_config=NativeAgentConfig(environment='docker', max_steps=80),
+            sandbox=SandboxTaskConfig(
+                default_config={
+                    'image': 'python:3.11-slim-bookworm',
+                    'network_enabled': True,
+                }
+            ),
+        )
+
     def test_wide_search(self):
         """Test WideSearch with real qwen-plus, bash, Fetch MCP, and LLM judging."""
         if not env.get('DASHSCOPE_API_KEY'):
