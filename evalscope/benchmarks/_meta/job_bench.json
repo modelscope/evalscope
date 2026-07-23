@@ -1,0 +1,129 @@
+{
+  "meta": {
+    "pretty_name": "JobBench",
+    "dataset_id": "evalscope/job-bench",
+    "paper_url": null,
+    "tags": [
+      "Agent",
+      "Knowledge",
+      "MultiTurn"
+    ],
+    "metrics": [
+      "normalized_score",
+      "pass_rate",
+      "total_score"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "main",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nJobBench evaluates agentic systems on realistic professional work tasks that require reading reference files, producing\ndeliverables, and reconciling multi-source information. This adapter uses the ModelScope dataset\n`evalscope/job-bench`.\n\n## Task Description\n\n- **Task Type**: Agentic professional work / deliverable generation\n- **Input**: Workplace-style task prompt with optional reference files under `reference_files/`\n- **Output**: Final deliverable files written to `jobbench_output/`\n- **Dataset**: ModelScope `evalscope/job-bench`\n- **Metric**: Weighted LLM-judge rubric score (`normalized_score`)\n\n## Evaluation Notes\n\n- The default evaluation split is `main`.\n- Configure `judge_model_args` for rubric scoring.\n- `normalized_score` is the primary weighted score (`total_score / max_score`); `pass_rate` is the unweighted\n  proportion of fully passed rubrics; `total_score` is the raw sum of passed rubric weights.\n- Docker runs use `python:3.11-slim-bookworm` by default. For formal evaluation, provide an image with the Office,\n  PDF, and spreadsheet tools required by the tasks.\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "agent",
+    "agent_config": {
+      "strategy": "function_calling",
+      "max_steps": 250
+    }
+  },
+  "statistics": {
+    "total_samples": 65,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 65,
+        "prompt_length_mean": 3344.32,
+        "prompt_length_min": 2000,
+        "prompt_length_max": 4920,
+        "prompt_length_std": 582.11,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 3344.32,
+      "min": 2000,
+      "max": 4920,
+      "std": 582.11
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-07-23T16:40:07.716638"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "203fd1aa",
+          "content": "You are preparing the Statistical Analysis Plan for Phase III trial XR-2847 evaluating cardiovascular disease prevention. The sponsor requires validation of statistical assumptions against empirical data and regulatory alignment before protoc ... [TRUNCATED 2026 chars] ... erables.\n\nWrite every final deliverable file under `jobbench_output`. Do not put intermediate scratch files there.\nYour final message may summarize what you produced, but files requested by the task must be actual files in\n`jobbench_output`.\n"
+        }
+      ],
+      "id": 0,
+      "group_id": 0,
+      "tools": [
+        {
+          "name": "bash",
+          "description": "Execute a bash command inside the sandbox environment. Returns the combined stdout / stderr output of the command.",
+          "parameters": {
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "The bash command to execute."
+              },
+              "timeout": {
+                "type": "number",
+                "description": "Maximum execution time in seconds (default: 60).",
+                "default": 60
+              }
+            },
+            "required": [
+              "command"
+            ]
+          }
+        },
+        {
+          "name": "python_exec",
+          "description": "Execute Python source code inside the sandbox environment. Returns stdout and stderr output.",
+          "parameters": {
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Python source code to execute."
+              },
+              "timeout": {
+                "type": "number",
+                "description": "Maximum execution time in seconds (default: 60).",
+                "default": 60
+              }
+            },
+            "required": [
+              "code"
+            ]
+          }
+        }
+      ],
+      "metadata": {
+        "task_id": "biostatisticians__task1",
+        "reference_files": [
+          "dataset/biostatisticians/task1/task_folder/Clinical_Study_Proposal_CVD_Prevention.csv",
+          "dataset/biostatisticians/task1/task_folder/framingham.csv"
+        ],
+        "rubric_json": "{\n  \"rubrics\": [\n    {\n      \"rubric\": \"Does the analysis calculate the observed 10-year CHD event rate in the eligible population as 20.2% (236/1166) and identify this as higher than the assumed 15% control group rate?\",\n      \"weight\": 10,\n ... [TRUNCATED 4642 chars] ... ge criterion and by the sysBP criterion separately\",\n        \"The flow shows the final eligible population count (1,166)\",\n        \"The flow enables verification of the filtering process and assessment of generalizability\"\n      ]\n    }\n  ]\n}"
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# JobBench\n\n\n## Overview\n\nJobBench evaluates agentic systems on realistic professional work tasks that require reading reference files, producing\ndeliverables, and reconciling multi-source information. This adapter uses the ModelScope dataset\n`evalscope/job-bench`.\n\n## Task Description\n\n- **Task Type**: Agentic professional work / deliverable generation\n- **Input**: Workplace-style task prompt with optional reference files under `reference_files/`\n- **Output**: Final deliverable files written to `jobbench_output/`\n- **Dataset**: ModelScope `evalscope/job-bench`\n- **Metric**: Weighted LLM-judge rubric score (`normalized_score`)\n\n## Evaluation Notes\n\n- The default evaluation split is `main`.\n- Configure `judge_model_args` for rubric scoring.\n- `normalized_score` is the primary weighted score (`total_score / max_score`); `pass_rate` is the unweighted\n  proportion of fully passed rubrics; `total_score` is the raw sum of passed rubric weights.\n- Docker runs use `python:3.11-slim-bookworm` by default. For formal evaluation, provide an image with the Office,\n  PDF, and spreadsheet tools required by the tasks.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `job_bench` |\n| **Dataset ID** | [evalscope/job-bench](https://modelscope.cn/datasets/evalscope/job-bench/summary) |\n| **Paper** | N/A |\n| **Tags** | `Agent`, `Knowledge`, `MultiTurn` |\n| **Metrics** | `normalized_score`, `pass_rate`, `total_score` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `main` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 65 |\n| Prompt Length (Mean) | 3344.32 chars |\n| Prompt Length (Min/Max) | 2000 / 4920 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"203fd1aa\",\n      \"content\": \"You are preparing the Statistical Analysis Plan for Phase III trial XR-2847 evaluating cardiovascular disease prevention. The sponsor requires validation of statistical assumptions against empirical data and regulatory alignment before protoc ... [TRUNCATED 2026 chars] ... erables.\\n\\nWrite every final deliverable file under `jobbench_output`. Do not put intermediate scratch files there.\\nYour final message may summarize what you produced, but files requested by the task must be actual files in\\n`jobbench_output`.\\n\"\n    }\n  ],\n  \"id\": 0,\n  \"group_id\": 0,\n  \"tools\": [\n    {\n      \"name\": \"bash\",\n      \"description\": \"Execute a bash command inside the sandbox environment. Returns the combined stdout / stderr output of the command.\",\n      \"parameters\": {\n        \"properties\": {\n          \"command\": {\n            \"type\": \"string\",\n            \"description\": \"The bash command to execute.\"\n          },\n          \"timeout\": {\n            \"type\": \"number\",\n            \"description\": \"Maximum execution time in seconds (default: 60).\",\n            \"default\": 60\n          }\n        },\n        \"required\": [\n          \"command\"\n        ]\n      }\n    },\n    {\n      \"name\": \"python_exec\",\n      \"description\": \"Execute Python source code inside the sandbox environment. Returns stdout and stderr output.\",\n      \"parameters\": {\n        \"properties\": {\n          \"code\": {\n            \"type\": \"string\",\n            \"description\": \"Python source code to execute.\"\n          },\n          \"timeout\": {\n            \"type\": \"number\",\n            \"description\": \"Maximum execution time in seconds (default: 60).\",\n            \"default\": 60\n          }\n        },\n        \"required\": [\n          \"code\"\n        ]\n      }\n    }\n  ],\n  \"metadata\": {\n    \"task_id\": \"biostatisticians__task1\",\n    \"reference_files\": [\n      \"dataset/biostatisticians/task1/task_folder/Clinical_Study_Proposal_CVD_Prevention.csv\",\n      \"dataset/biostatisticians/task1/task_folder/framingham.csv\"\n    ],\n    \"rubric_json\": \"{\\n  \\\"rubrics\\\": [\\n    {\\n      \\\"rubric\\\": \\\"Does the analysis calculate the observed 10-year CHD event rate in the eligible population as 20.2% (236/1166) and identify this as higher than the assumed 15% control group rate?\\\",\\n      \\\"weight\\\": 10,\\n ... [TRUNCATED 4642 chars] ... ge criterion and by the sysBP criterion separately\\\",\\n        \\\"The flow shows the final eligible population count (1,166)\\\",\\n        \\\"The flow enables verification of the filtering process and assessment of generalizability\\\"\\n      ]\\n    }\\n  ]\\n}\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets job_bench \\\n    --agent-config '{\"mode\":\"native\",\"strategy\":\"function_calling\",\"max_steps\":250}' \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import TaskConfig, run_task\nfrom evalscope.api.agent import NativeAgentConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['job_bench'],\n    agent_config=NativeAgentConfig(\n        strategy='function_calling',\n        max_steps=250,\n    ),\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# JobBench\n\n\n## 概述\n\nJobBench 评估智能体系统在真实专业工作场景中的表现，这些任务要求系统能够阅读参考文件、生成交付成果，并整合多源信息。本适配器使用 ModelScope 数据集 `evalscope/job-bench`。\n\n## 任务描述\n\n- **任务类型**：智能体专业工作 / 交付成果生成\n- **输入**：包含可选参考文件（位于 `reference_files/` 目录下）的职场风格任务提示\n- **输出**：最终交付成果文件写入 `jobbench_output/` 目录\n- **数据集**：ModelScope `evalscope/job-bench`\n- **评估指标**：加权 LLM 评分标准得分（`normalized_score`）\n\n## 评估说明\n\n- 默认评估划分（split）为 `main`。\n- 请配置 `judge_model_args` 以进行评分标准打分。\n- `normalized_score` 是主要的加权得分（`total_score / max_score`）；`pass_rate` 是完全通过评分项的未加权比例；`total_score` 是通过评分项权重的原始总和。\n- Docker 运行默认使用 `python:3.11-slim-bookworm` 镜像。正式评估时，请提供包含任务所需 Office、PDF 和电子表格工具的镜像。\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `job_bench` |\n| **数据集ID** | [evalscope/job-bench](https://modelscope.cn/datasets/evalscope/job-bench/summary) |\n| **论文** | 无 |\n| **标签** | `Agent`, `Knowledge`, `MultiTurn` |\n| **指标** | `normalized_score`, `pass_rate`, `total_score` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `main` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 65 |\n| 提示词长度（平均） | 3344.32 字符 |\n| 提示词长度（最小/最大） | 2000 / 4920 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"203fd1aa\",\n      \"content\": \"You are preparing the Statistical Analysis Plan for Phase III trial XR-2847 evaluating cardiovascular disease prevention. The sponsor requires validation of statistical assumptions against empirical data and regulatory alignment before protoc ... [TRUNCATED 2026 chars] ... erables.\\n\\nWrite every final deliverable file under `jobbench_output`. Do not put intermediate scratch files there.\\nYour final message may summarize what you produced, but files requested by the task must be actual files in\\n`jobbench_output`.\\n\"\n    }\n  ],\n  \"id\": 0,\n  \"group_id\": 0,\n  \"tools\": [\n    {\n      \"name\": \"bash\",\n      \"description\": \"Execute a bash command inside the sandbox environment. Returns the combined stdout / stderr output of the command.\",\n      \"parameters\": {\n        \"properties\": {\n          \"command\": {\n            \"type\": \"string\",\n            \"description\": \"The bash command to execute.\"\n          },\n          \"timeout\": {\n            \"type\": \"number\",\n            \"description\": \"Maximum execution time in seconds (default: 60).\",\n            \"default\": 60\n          }\n        },\n        \"required\": [\n          \"command\"\n        ]\n      }\n    },\n    {\n      \"name\": \"python_exec\",\n      \"description\": \"Execute Python source code inside the sandbox environment. Returns stdout and stderr output.\",\n      \"parameters\": {\n        \"properties\": {\n          \"code\": {\n            \"type\": \"string\",\n            \"description\": \"Python source code to execute.\"\n          },\n          \"timeout\": {\n            \"type\": \"number\",\n            \"description\": \"Maximum execution time in seconds (default: 60).\",\n            \"default\": 60\n          }\n        },\n        \"required\": [\n          \"code\"\n        ]\n      }\n    }\n  ],\n  \"metadata\": {\n    \"task_id\": \"biostatisticians__task1\",\n    \"reference_files\": [\n      \"dataset/biostatisticians/task1/task_folder/Clinical_Study_Proposal_CVD_Prevention.csv\",\n      \"dataset/biostatisticians/task1/task_folder/framingham.csv\"\n    ],\n    \"rubric_json\": \"{\\n  \\\"rubrics\\\": [\\n    {\\n      \\\"rubric\\\": \\\"Does the analysis calculate the observed 10-year CHD event rate in the eligible population as 20.2% (236/1166) and identify this as higher than the assumed 15% control group rate?\\\",\\n      \\\"weight\\\": 10,\\n ... [TRUNCATED 4642 chars] ... ge criterion and by the sysBP criterion separately\\\",\\n        \\\"The flow shows the final eligible population count (1,166)\\\",\\n        \\\"The flow enables verification of the filtering process and assessment of generalizability\\\"\\n      ]\\n    }\\n  ]\\n}\"\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets job_bench \\\n    --agent-config '{\"mode\":\"native\",\"strategy\":\"function_calling\",\"max_steps\":250}' \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import TaskConfig, run_task\nfrom evalscope.api.agent import NativeAgentConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['job_bench'],\n    agent_config=NativeAgentConfig(\n        strategy='function_calling',\n        max_steps=250,\n    ),\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "f4b6eb26760810f544eb8754db85c162",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-23T16:40:07.724714",
+  "translation_updated_at": "2026-07-23T16:40:09"
+}
