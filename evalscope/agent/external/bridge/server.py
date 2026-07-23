@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, Optional
 from urllib.parse import urlsplit, urlunsplit
 
 from evalscope.api.model import GenerateConfig, Model
-from evalscope.utils.function_utils import AsyncioLoopRunner
+from evalscope.utils.function_utils import AsyncioLoopRunner, cancel_and_wait
 from evalscope.utils.logger import get_logger
 from ..runners.base import BridgeEndpoint
 from .sse_anthropic import stream_anthropic_response
@@ -137,7 +137,7 @@ class TrialSession:
 class ModelProxyServer:
     """Per-loop aiohttp server that routes ``trial_id`` → :class:`Model`.
 
-    Keyed on ``id(loop)`` rather than process-global so each
+    Keyed on the owning loop rather than process-global so each
     :class:`AsyncioLoopRunner`-owned worker thread gets its own bridge
     (and its own port) — the alternative would be cross-loop calls into
     aiohttp internals, which silently break the moment a second worker
@@ -147,16 +147,17 @@ class ModelProxyServer:
     :meth:`AsyncioLoopRunner.register_close_callback`.
     """
 
-    _instances: Dict[int, 'ModelProxyServer'] = {}
+    _instances: Dict[asyncio.AbstractEventLoop, 'ModelProxyServer'] = {}
     # Plain ``threading.Lock`` rather than ``asyncio.Lock``: the registry is
     # shared across event loops (one per AsyncioLoopRunner worker) and an
     # asyncio.Lock binds to the loop of its first ``await acquire()``, making
     # subsequent acquisitions from a different loop raise ``RuntimeError``.
     _instances_lock = threading.Lock()
 
-    def __init__(self, host: str, port: Optional[int]) -> None:
+    def __init__(self, host: str, port: Optional[int], owner_loop: asyncio.AbstractEventLoop) -> None:
         self._host = host
         self._configured_port = port
+        self._owner_loop = owner_loop
         self._actual_port: Optional[int] = None
         self._app: Optional[web.Application] = None
         self._runner: Optional[web.AppRunner] = None
@@ -178,13 +179,19 @@ class ModelProxyServer:
         :class:`AsyncioLoopRunner`) gets its own instance — bridges bound
         to a different loop are unreachable from here anyway.
         """
-        loop_key = id(asyncio.get_running_loop())
+        owner_loop = asyncio.get_running_loop()
         with cls._instances_lock:
-            inst = cls._instances.get(loop_key)
+            inst = cls._instances.get(owner_loop)
             if inst is None:
-                inst = cls(host=host, port=port)
-                cls._instances[loop_key] = inst
-        await inst._ensure_started()
+                inst = cls(host=host, port=port, owner_loop=owner_loop)
+                cls._instances[owner_loop] = inst
+        try:
+            await inst._ensure_started()
+        except BaseException:
+            with cls._instances_lock:
+                if cls._instances.get(owner_loop) is inst and not inst._started:
+                    cls._instances.pop(owner_loop, None)
+            raise
         return inst
 
     async def _ensure_started(self) -> None:
@@ -272,20 +279,22 @@ class ModelProxyServer:
         machinery when the owning loop shuts down, but also exposed for
         explicit teardown in tests.
         """
-        if not self._started:
-            return
-        if self._site is not None:
-            await self._site.stop()
-        if self._runner is not None:
-            await self._runner.cleanup()
-        self._started = False
-        self._site = None
-        self._runner = None
-        self._app = None
-        loop_key = id(asyncio.get_running_loop())
-        with self._instances_lock:
-            if ModelProxyServer._instances.get(loop_key) is self:
-                ModelProxyServer._instances.pop(loop_key, None)
+        if asyncio.get_running_loop() is not self._owner_loop:
+            raise RuntimeError('ModelProxyServer must be shut down on its owning event loop.')
+
+        try:
+            if self._site is not None:
+                await self._site.stop()
+            if self._runner is not None:
+                await self._runner.cleanup()
+        finally:
+            self._started = False
+            self._site = None
+            self._runner = None
+            self._app = None
+            with self._instances_lock:
+                if ModelProxyServer._instances.get(self._owner_loop) is self:
+                    ModelProxyServer._instances.pop(self._owner_loop, None)
 
     @asynccontextmanager
     async def trial_session(
@@ -452,8 +461,7 @@ class ModelProxyServer:
             except ConnectionResetError:
                 pass
         finally:
-            if not generate_task.done():
-                generate_task.cancel()
+            await cancel_and_wait(generate_task)
         await response.write_eof()
         return response
 
@@ -676,8 +684,7 @@ class ModelProxyServer:
             except ConnectionResetError:
                 pass
         finally:
-            if not generate_task.done():
-                generate_task.cancel()
+            await cancel_and_wait(generate_task)
         await response.write_eof()
         return response
 
@@ -760,8 +767,7 @@ class ModelProxyServer:
             except ConnectionResetError:
                 pass
         finally:
-            if not generate_task.done():
-                generate_task.cancel()
+            await cancel_and_wait(generate_task)
         await response.write_eof()
         return response
 
