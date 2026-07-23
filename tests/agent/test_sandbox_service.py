@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import pytest
+import threading
 from typing import Any, Dict, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -198,6 +199,36 @@ class TestSandboxServiceCache:
 
         asyncio.run(_run())
 
+    def test_cancelled_waiter_does_not_cancel_shared_manager_start(self, service):
+        start_entered = threading.Event()
+        release_start = threading.Event()
+
+        class SlowManager:
+
+            async def start(self):
+                start_entered.set()
+                await asyncio.to_thread(release_start.wait)
+
+            async def stop(self):
+                return None
+
+        manager = SlowManager()
+
+        async def _run():
+            with patch.object(service, '_construct_manager', return_value=manager):
+                first = asyncio.create_task(service.get_or_create_manager(SandboxEngine.DOCKER, {}))
+                second = asyncio.create_task(service.get_or_create_manager(SandboxEngine.DOCKER, {}))
+                assert await asyncio.to_thread(start_entered.wait, 1)
+
+                first.cancel()
+                with pytest.raises(asyncio.CancelledError):
+                    await first
+
+                release_start.set()
+                assert await second is manager
+
+        asyncio.run(_run())
+
     def test_different_config_creates_new_manager(self, service):
         fake_1 = self._make_mock_manager()
         fake_2 = self._make_mock_manager()
@@ -303,6 +334,74 @@ class TestSandboxServiceCache:
             assert second == 2
         finally:
             AsyncioLoopRunner.shutdown_for_thread()
+
+    def test_concurrent_pool_acquisition_initializes_pool_once(self, service):
+        class SlowPoolManager:
+
+            def __init__(self):
+                self._pool_initialized = False
+                self.initialize_calls = 0
+
+            async def start(self):
+                return None
+
+            async def initialize_pool(self, **kwargs):
+                self.initialize_calls += 1
+                await asyncio.sleep(0)
+                self._pool_initialized = True
+                return ['sandbox-1']
+
+            async def stop(self):
+                return None
+
+        manager = SlowPoolManager()
+
+        async def _run():
+            with patch.object(service, '_construct_manager', return_value=manager), \
+                    patch('evalscope.api.sandbox.service.get_enclave_types',
+                          return_value=('sandbox-type', None, None, None)):
+                first, second = await asyncio.gather(
+                    service.acquire_pool(SandboxEngine.DOCKER, 1, object()),
+                    service.acquire_pool(SandboxEngine.DOCKER, 1, object()),
+                )
+                assert first.manager is manager
+                assert second.manager is manager
+
+        asyncio.run(_run())
+        assert manager.initialize_calls == 1
+
+    def test_shutdown_cleans_partially_started_manager(self, service):
+        start_entered = threading.Event()
+        start_cancelled = threading.Event()
+
+        class SlowManager:
+
+            def __init__(self):
+                self.stop_calls = 0
+
+            async def start(self):
+                start_entered.set()
+                try:
+                    await asyncio.Event().wait()
+                finally:
+                    start_cancelled.set()
+
+            async def stop(self):
+                self.stop_calls += 1
+
+        manager = SlowManager()
+
+        async def _run():
+            with patch.object(service, '_construct_manager', return_value=manager):
+                acquire_task = asyncio.create_task(service.get_or_create_manager(SandboxEngine.DOCKER, {}))
+                assert await asyncio.to_thread(start_entered.wait, 1)
+                await asyncio.to_thread(service.shutdown_all)
+                with pytest.raises(asyncio.CancelledError):
+                    await acquire_task
+
+        asyncio.run(_run())
+        assert start_cancelled.is_set()
+        assert manager.stop_calls == 1
 
     def test_shutdown_sandbox_service_noop_when_uncreated(self):
         from evalscope.api.sandbox import service as service_module

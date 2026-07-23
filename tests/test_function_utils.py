@@ -1,4 +1,5 @@
 import asyncio
+import pytest
 import threading
 import time
 from typing import AsyncGenerator
@@ -158,3 +159,66 @@ def test_asyncio_loop_thread_stop_is_idempotent() -> None:
 
     assert owner_loop.is_closed()
     assert not runtime.active
+
+
+def test_asyncio_loop_thread_rejects_restart_until_previous_generation_stops() -> None:
+    runtime = AsyncioLoopThread(name='TestLoop')
+    owner_loop = runtime.run_sync(_current_loop())
+    blocker_started = threading.Event()
+    release_blocker = threading.Event()
+
+    def _block_owner_loop() -> None:
+        blocker_started.set()
+        release_blocker.wait()
+
+    owner_loop.call_soon_threadsafe(_block_owner_loop)
+    assert blocker_started.wait(timeout=1)
+
+    stop_thread = threading.Thread(target=runtime.stop)
+    stop_thread.start()
+    deadline = time.monotonic() + 1
+    while runtime.active and time.monotonic() < deadline:
+        time.sleep(0.01)
+
+    try:
+        with pytest.raises(RuntimeError, match='stopping'):
+            runtime.run_sync(_current_loop())
+    finally:
+        release_blocker.set()
+        stop_thread.join(timeout=1)
+
+    assert not stop_thread.is_alive()
+    assert owner_loop.is_closed()
+
+    cleanup_loops: list[asyncio.AbstractEventLoop] = []
+
+    async def _register_cleanup() -> asyncio.AbstractEventLoop:
+        new_loop = asyncio.get_running_loop()
+
+        async def _cleanup() -> None:
+            cleanup_loops.append(asyncio.get_running_loop())
+
+        runtime.add_close_callback(_cleanup)
+        return new_loop
+
+    new_loop = runtime.run_sync(_register_cleanup())
+    runtime.stop()
+
+    assert new_loop is not owner_loop
+    assert cleanup_loops == [new_loop]
+
+
+def test_asyncio_loop_thread_allows_each_callback_its_timeout_budget() -> None:
+    runtime = AsyncioLoopThread(name='TestLoop')
+    runtime.run_sync(_current_loop())
+    completed: list[str] = []
+
+    async def _cleanup(name: str) -> None:
+        await asyncio.sleep(0.15)
+        completed.append(name)
+
+    runtime.add_close_callback(lambda: _cleanup('first'))
+    runtime.add_close_callback(lambda: _cleanup('second'))
+    runtime.stop(join_timeout=0.25)
+
+    assert completed == ['first', 'second']

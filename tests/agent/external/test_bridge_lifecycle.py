@@ -2,6 +2,7 @@ import asyncio
 import pytest
 from types import SimpleNamespace
 from typing import Any, Iterator
+from unittest.mock import AsyncMock
 
 from evalscope.agent.external.bridge import ModelProxyServer
 from evalscope.api.model import GenerateConfig
@@ -52,6 +53,59 @@ def test_shutdown_rejects_non_owner_loop() -> None:
 
     AsyncioLoopRunner.shutdown_for_thread()
     assert ModelProxyServer._instances == {}
+
+
+def test_cancelled_start_waiter_does_not_orphan_shared_instance(monkeypatch: pytest.MonkeyPatch) -> None:
+    start_entered = asyncio.Event()
+    release_start = asyncio.Event()
+
+    async def slow_start(self: ModelProxyServer) -> None:
+        start_entered.set()
+        await release_start.wait()
+        self._started = True
+
+    async def run() -> None:
+        owner_loop = asyncio.get_running_loop()
+        first = asyncio.create_task(ModelProxyServer.get_or_start())
+        second = asyncio.create_task(ModelProxyServer.get_or_start())
+        await start_entered.wait()
+
+        first.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await first
+
+        release_start.set()
+        proxy = await second
+        assert ModelProxyServer._instances == {owner_loop: proxy}
+        assert await ModelProxyServer.get_or_start() is proxy
+
+        await proxy.shutdown()
+
+    monkeypatch.setattr(ModelProxyServer, '_start_server', slow_start)
+    asyncio.run(run())
+
+
+def test_start_failure_cleans_runner_and_registry(monkeypatch: pytest.MonkeyPatch) -> None:
+    runner = SimpleNamespace(setup=AsyncMock(), cleanup=AsyncMock())
+
+    class FailingSite:
+
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            pass
+
+        async def start(self) -> None:
+            raise OSError('bind failed')
+
+    async def run() -> None:
+        with pytest.raises(OSError, match='bind failed'):
+            await ModelProxyServer.get_or_start()
+        assert ModelProxyServer._instances == {}
+
+    monkeypatch.setattr('evalscope.agent.external.bridge.server.web.AppRunner', lambda *args, **kwargs: runner)
+    monkeypatch.setattr('evalscope.agent.external.bridge.server.web.TCPSite', FailingSite)
+    asyncio.run(run())
+
+    runner.cleanup.assert_awaited_once()
 
 
 @pytest.mark.parametrize('protocol', ['openai', 'anthropic', 'gemini'])

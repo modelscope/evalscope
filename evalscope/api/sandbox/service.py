@@ -151,6 +151,7 @@ class SandboxService:
         self._managers: Dict[Tuple[SandboxEngine, str], 'SandboxManager'] = {}
         # In-flight starts are shared by concurrent callers on the service loop.
         self._manager_starts: Dict[Tuple[SandboxEngine, str], asyncio.Task['SandboxManager']] = {}
+        self._pool_starts: Dict[Tuple[SandboxEngine, str], asyncio.Task[None]] = {}
         self._runtime = AsyncioLoopThread(name='SandboxServiceLoop')
 
     # ------------------------------------------------------------------
@@ -194,11 +195,28 @@ class SandboxService:
         if start_task is None:
             start_task = asyncio.create_task(self._start_manager(key, engine, manager_config or {}))
             self._manager_starts[key] = start_task
-        try:
-            return await start_task
-        finally:
-            if self._manager_starts.get(key) is start_task:
-                self._manager_starts.pop(key, None)
+            start_task.add_done_callback(lambda task: self._remove_manager_start(key, task))
+        return await asyncio.shield(start_task)
+
+    def _remove_manager_start(
+        self,
+        key: Tuple[SandboxEngine, str],
+        task: asyncio.Task['SandboxManager'],
+    ) -> None:
+        if not task.cancelled():
+            task.exception()
+        if self._manager_starts.get(key) is task:
+            self._manager_starts.pop(key, None)
+
+    def _remove_pool_start(
+        self,
+        key: Tuple[SandboxEngine, str],
+        task: asyncio.Task[None],
+    ) -> None:
+        if not task.cancelled():
+            task.exception()
+        if self._pool_starts.get(key) is task:
+            self._pool_starts.pop(key, None)
 
     async def _start_manager(
         self,
@@ -207,13 +225,52 @@ class SandboxService:
         manager_config: Dict[str, Any],
     ) -> 'SandboxManager':
         manager = self._construct_manager(engine, manager_config)
-        await manager.start()
+        try:
+            await manager.start()
+        except BaseException:
+            await self._stop_manager(manager, context='partially started manager')
+            raise
+
         self._managers[key] = manager
         logger.info(
             f'SandboxService: manager started for engine={engine.value} '
             f'(total_managers={len(self._managers)}).'
         )
         return manager
+
+    async def _initialize_pool(
+        self,
+        engine: SandboxEngine,
+        manager: 'SandboxManager',
+        pool_size: int,
+        sandbox_config: Any,
+    ) -> None:
+        sandbox_type, _, _, _ = get_enclave_types(engine)
+        pool = await manager.initialize_pool(pool_size=pool_size, sandbox_type=sandbox_type, config=sandbox_config)
+        logger.info(f'SandboxService: pool initialized with {len(pool)} sandboxes (engine={engine.value}).')
+
+    async def _stop_manager(self, manager: 'SandboxManager', *, context: str = 'manager') -> None:
+        try:
+            await manager.stop()
+            logger.info(f'SandboxService: {context} stopped.')
+        except Exception as exc:
+            logger.warning(f'SandboxService: error stopping {context}: {exc}')
+            cleanup_all = getattr(manager, 'cleanup_all_sandboxes', None)
+            if not callable(cleanup_all):
+                return
+            try:
+                await cleanup_all()
+                logger.info(f'SandboxService: fallback cleanup completed for {context}.')
+            except Exception as cleanup_exc:
+                logger.warning(f'SandboxService: fallback cleanup failed for {context}: {cleanup_exc}')
+
+    @staticmethod
+    async def _cancel_tasks(tasks: List[asyncio.Task[Any]]) -> None:
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
 
     def _construct_manager(self, engine: SandboxEngine, manager_config: Dict[str, Any]) -> 'SandboxManager':
         _, _, manager_cls, manager_config_cls = get_enclave_types(engine)
@@ -249,11 +306,15 @@ class SandboxService:
         manager_config: Optional[Dict[str, Any]] = None,
     ) -> PoolHandle:
         """Warm up (if needed) and return a pooled handle for ``engine``."""
+        key = (engine, _freeze(manager_config))
         manager = await self._get_or_create_manager(engine, manager_config)
         if not getattr(manager, '_pool_initialized', False):
-            sandbox_type, _, _, _ = get_enclave_types(engine)
-            pool = await manager.initialize_pool(pool_size=pool_size, sandbox_type=sandbox_type, config=sandbox_config)
-            logger.info(f'SandboxService: pool initialized with {len(pool)} sandboxes (engine={engine.value}).')
+            start_task = self._pool_starts.get(key)
+            if start_task is None:
+                start_task = asyncio.create_task(self._initialize_pool(engine, manager, pool_size, sandbox_config))
+                self._pool_starts[key] = start_task
+                start_task.add_done_callback(lambda task: self._remove_pool_start(key, task))
+            await asyncio.shield(start_task)
         return PoolHandle(manager, service=self)
 
     async def create_sandbox(
@@ -288,26 +349,19 @@ class SandboxService:
             self._runtime.stop()
 
     async def _shutdown_all_async(self) -> None:
+        await self._cancel_tasks(list(self._pool_starts.values()))
+        await self._cancel_tasks(list(self._manager_starts.values()))
+        self._pool_starts.clear()
+        self._manager_starts.clear()
+
         managers = list(self._managers.values())
         self._managers.clear()
         for manager in managers:
-            try:
-                await manager.stop()
-                logger.info('SandboxService: manager stopped.')
-            except Exception as exc:
-                logger.warning(f'SandboxService: error stopping manager: {exc}')
-                cleanup_all = getattr(manager, 'cleanup_all_sandboxes', None)
-                if not callable(cleanup_all):
-                    continue
-                try:
-                    await cleanup_all()
-                    logger.info('SandboxService: fallback sandbox cleanup completed.')
-                except Exception as cleanup_exc:
-                    logger.warning(f'SandboxService: fallback sandbox cleanup failed: {cleanup_exc}')
+            await self._stop_manager(manager)
 
     def shutdown_all(self) -> None:
         """Synchronous wrapper around :meth:`shutdown_all_async`."""
-        if not self._managers and not self._runtime.active:
+        if not self._managers and not self._manager_starts and not self._pool_starts and not self._runtime.active:
             return
         try:
             self._run_sync(self._shutdown_all_async(), timeout=600)

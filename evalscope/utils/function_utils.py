@@ -135,7 +135,8 @@ class AsyncioLoopThread:
     __slots__ = (
         '_name',
         '_health_label',
-        '_start_lock',
+        '_state_lock',
+        '_stopping',
         '_loop',
         '_thread',
         '_close_callbacks',
@@ -145,7 +146,8 @@ class AsyncioLoopThread:
     def __init__(self, name: str, *, health_label: Optional[str] = None) -> None:
         self._name = name
         self._health_label = health_label
-        self._start_lock = threading.Lock()
+        self._state_lock = threading.Lock()
+        self._stopping = False
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._thread: Optional[threading.Thread] = None
         self._close_callbacks: List[Callable[[], Awaitable[None]]] = []
@@ -154,7 +156,8 @@ class AsyncioLoopThread:
     @property
     def active(self) -> bool:
         """Return whether the owned event loop is available."""
-        return self._loop is not None and not self._loop.is_closed()
+        with self._state_lock:
+            return self._loop is not None and not self._loop.is_closed() and not self._stopping
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:
@@ -163,10 +166,13 @@ class AsyncioLoopThread:
 
     def owns(self, loop: asyncio.AbstractEventLoop) -> bool:
         """Return whether ``loop`` is the currently owned event loop."""
-        return self._loop is loop
+        with self._state_lock:
+            return self._loop is loop
 
     def _ensure_started(self) -> asyncio.AbstractEventLoop:
-        with self._start_lock:
+        with self._state_lock:
+            if self._stopping:
+                raise RuntimeError(f'{self._name} is stopping and cannot accept new work.')
             if self._loop is not None and not self._loop.is_closed():
                 return self._loop
 
@@ -177,8 +183,15 @@ class AsyncioLoopThread:
                 try:
                     loop.run_forever()
                 finally:
-                    shutdown_event_loop(loop)
-                    asyncio.set_event_loop(None)
+                    try:
+                        shutdown_event_loop(loop)
+                    finally:
+                        asyncio.set_event_loop(None)
+                        with self._state_lock:
+                            if self._loop is loop:
+                                self._loop = None
+                                self._thread = None
+                                self._stopping = False
 
             thread = threading.Thread(target=_run, daemon=True, name=self._name)
             self._loop = loop
@@ -191,7 +204,11 @@ class AsyncioLoopThread:
 
     async def run(self, coro: Coroutine[Any, Any, T]) -> T:
         """Run ``coro`` on the owned loop and await it from any event loop."""
-        loop = self._ensure_started()
+        try:
+            loop = self._ensure_started()
+        except BaseException:
+            coro.close()
+            raise
         if asyncio.get_running_loop() is loop:
             return await coro
 
@@ -200,7 +217,11 @@ class AsyncioLoopThread:
 
     def run_sync(self, coro: Coroutine[Any, Any, T], timeout: Optional[float] = None) -> T:
         """Run ``coro`` on the owned loop and block until it completes."""
-        loop = self._ensure_started()
+        try:
+            loop = self._ensure_started()
+        except BaseException:
+            coro.close()
+            raise
         try:
             running_loop = asyncio.get_running_loop()
         except RuntimeError:
@@ -240,13 +261,18 @@ class AsyncioLoopThread:
 
     def stop(self, join_timeout: float = 5.0) -> None:
         """Run cleanup callbacks, stop the loop, and join its thread."""
-        with self._start_lock:
+        with self._state_lock:
             loop = self._loop
             thread = self._thread
-            self._loop = None
-            self._thread = None
+            already_stopping = self._stopping
+            if loop is not None:
+                self._stopping = True
 
         if loop is None:
+            return
+        if already_stopping:
+            if thread is not None and thread is not threading.current_thread():
+                thread.join(timeout=join_timeout)
             return
 
         if thread is threading.current_thread():
@@ -254,9 +280,11 @@ class AsyncioLoopThread:
             return
 
         if loop.is_running():
+            with self._close_callbacks_lock:
+                callback_count = len(self._close_callbacks)
             future = asyncio.run_coroutine_threadsafe(self._request_stop(loop, join_timeout), loop)
             try:
-                future.result(timeout=join_timeout)
+                future.result(timeout=join_timeout * (callback_count + 1))
             except Exception as e:
                 future.cancel()
                 logger.warning(f'loop shutdown request failed: {e}')

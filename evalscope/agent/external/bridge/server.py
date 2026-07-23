@@ -166,6 +166,8 @@ class ModelProxyServer:
         self._sessions_lock = asyncio.Lock()
         self._started = False
         self._start_lock = asyncio.Lock()
+        self._start_task: Optional[asyncio.Task[None]] = None
+        self._closing = False
 
     @classmethod
     async def get_or_start(
@@ -185,21 +187,35 @@ class ModelProxyServer:
             if inst is None:
                 inst = cls(host=host, port=port, owner_loop=owner_loop)
                 cls._instances[owner_loop] = inst
-        try:
-            await inst._ensure_started()
-        except BaseException:
-            with cls._instances_lock:
-                if cls._instances.get(owner_loop) is inst and not inst._started:
-                    cls._instances.pop(owner_loop, None)
-            raise
+        await inst._ensure_started()
         return inst
 
     async def _ensure_started(self) -> None:
         if self._started:
             return
+
+        start_task = self._start_task
+        if start_task is None:
+            start_task = asyncio.create_task(self._start_server())
+            self._start_task = start_task
+            start_task.add_done_callback(self._finish_start_task)
+        await asyncio.shield(start_task)
+        if self._closing:
+            raise RuntimeError('ModelProxyServer shut down while it was starting.')
+
+    def _finish_start_task(self, task: asyncio.Task[None]) -> None:
+        if not task.cancelled():
+            task.exception()
+        if self._start_task is task:
+            self._start_task = None
+
+    async def _start_server(self) -> None:
         async with self._start_lock:
             if self._started:
                 return
+            if self._closing:
+                raise RuntimeError('ModelProxyServer is shutting down.')
+
             app = web.Application()
             app.router.add_post('/anthropic/v1/messages', self._handle_anthropic_messages)
             app.router.add_post('/openai/v1/chat/completions', self._handle_openai_chat_completions)
@@ -240,23 +256,33 @@ class ModelProxyServer:
 
             app.router.add_route('*', '/{tail:.*}', _catchall)
             runner = web.AppRunner(app, access_log=None)
-            await runner.setup()
-            site = web.TCPSite(runner, host=self._host, port=self._configured_port or 0)
-            await site.start()
-            # Resolve the actual port (handles port=0 / auto-pick).
-            self._actual_port = self._resolve_actual_port(site)
-            self._app = app
-            self._runner = runner
-            self._site = site
-            self._started = True
-            # Auto-release the port when the owning loop shuts down so we don't
-            # leak the singleton across pytest sessions / worker tear-down.
-            AsyncioLoopRunner.register_close_callback(self.shutdown)
-            logger.info(
-                f'ModelProxyServer started on http://{self._host}:{self._actual_port} '
-                f'(routes: /anthropic/v1/messages, /openai/v1/chat/completions, '
-                f'/openai/v1/responses, /gemini/v1beta/models/*)'
-            )
+            try:
+                await runner.setup()
+                site = web.TCPSite(runner, host=self._host, port=self._configured_port or 0)
+                await site.start()
+                # Resolve the actual port (handles port=0 / auto-pick).
+                self._actual_port = self._resolve_actual_port(site)
+                self._app = app
+                self._runner = runner
+                self._site = site
+                self._started = True
+                # Auto-release the port when the owning loop shuts down so we don't
+                # leak the singleton across pytest sessions / worker tear-down.
+                AsyncioLoopRunner.register_close_callback(self.shutdown)
+                logger.info(
+                    f'ModelProxyServer started on http://{self._host}:{self._actual_port} '
+                    f'(routes: /anthropic/v1/messages, /openai/v1/chat/completions, '
+                    f'/openai/v1/responses, /gemini/v1beta/models/*)'
+                )
+            except BaseException:
+                try:
+                    await runner.cleanup()
+                except Exception as cleanup_exc:
+                    logger.warning(f'ModelProxyServer startup cleanup failed: {cleanup_exc}')
+                with self._instances_lock:
+                    if ModelProxyServer._instances.get(self._owner_loop) is self:
+                        ModelProxyServer._instances.pop(self._owner_loop, None)
+                raise
 
     @staticmethod
     def _resolve_actual_port(site: web.TCPSite) -> int:
@@ -282,19 +308,21 @@ class ModelProxyServer:
         if asyncio.get_running_loop() is not self._owner_loop:
             raise RuntimeError('ModelProxyServer must be shut down on its owning event loop.')
 
-        try:
-            if self._site is not None:
-                await self._site.stop()
-            if self._runner is not None:
-                await self._runner.cleanup()
-        finally:
-            self._started = False
-            self._site = None
-            self._runner = None
-            self._app = None
-            with self._instances_lock:
-                if ModelProxyServer._instances.get(self._owner_loop) is self:
-                    ModelProxyServer._instances.pop(self._owner_loop, None)
+        self._closing = True
+        async with self._start_lock:
+            try:
+                if self._site is not None:
+                    await self._site.stop()
+                if self._runner is not None:
+                    await self._runner.cleanup()
+            finally:
+                self._started = False
+                self._site = None
+                self._runner = None
+                self._app = None
+                with self._instances_lock:
+                    if ModelProxyServer._instances.get(self._owner_loop) is self:
+                        ModelProxyServer._instances.pop(self._owner_loop, None)
 
     @asynccontextmanager
     async def trial_session(
