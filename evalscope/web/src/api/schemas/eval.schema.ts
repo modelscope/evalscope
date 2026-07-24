@@ -10,7 +10,7 @@
 import { z } from 'zod'
 
 /** Accepted invoke status values. */
-export const invokeStatusSchema = z.enum(['ok', 'error', 'stopped'])
+export const invokeStatusSchema = z.enum(['ok', 'completed', 'error', 'stopped'])
 
 /** Runtime contract for an evaluation invoke response. */
 export const evalInvokeResponseSchema = z.object({

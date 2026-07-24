@@ -29,7 +29,7 @@ const ENDPOINT_CASES: Array<{ name: string; schema: ZodType; valid: unknown }> =
   },
   { name: 'log', schema: logResponseSchema, valid: { text: '', head_line: 0, tail_line: 0, total_lines: 0 } },
   { name: 'task status', schema: taskStatusResponseSchema, valid: { status: 'running', task_id: 'task-1' } },
-  { name: 'eval invoke', schema: evalInvokeResponseSchema, valid: { status: 'ok', task_id: 'task-1' } },
+  { name: 'eval invoke', schema: evalInvokeResponseSchema, valid: { status: 'completed', task_id: 'task-1' } },
   { name: 'progress', schema: progressResponseSchema, valid: { percent: 50, phase: 'evaluate' } },
   { name: 'benchmarks', schema: benchmarksResponseSchema, valid: { text: [] } },
   { name: 'report scan', schema: scanResponseSchema, valid: { reports: ['run-a'] } },
@@ -121,5 +121,15 @@ describe('endpoint response schemas', () => {
 
   it.each(ENDPOINT_CASES)('rejects a non-object $name response', ({ schema }) => {
     expect(schema.safeParse(null).success).toBe(false)
+  })
+})
+
+describe('invoke response status schema', () => {
+  it.each(['ok', 'completed', 'error', 'stopped'])('accepts the supported status %s', (status) => {
+    expect(evalInvokeResponseSchema.safeParse({ status, task_id: 'task-1' }).success).toBe(true)
+  })
+
+  it('rejects an unknown status', () => {
+    expect(evalInvokeResponseSchema.safeParse({ status: 'unknown', task_id: 'task-1' }).success).toBe(false)
   })
 })
