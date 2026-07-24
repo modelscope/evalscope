@@ -4,7 +4,6 @@ import os
 import pickle
 import re
 import sqlite3
-import sys
 from tabulate import tabulate
 from typing import Dict, List, Optional, Tuple
 
@@ -129,13 +128,12 @@ def get_output_path(args: Arguments) -> str:
     return output_path
 
 
-def get_result_db_path(args: Arguments):
+def get_result_db_path(args: Arguments) -> str:
     result_db_path = os.path.join(args.outputs_dir, 'benchmark_data.db')
 
     logger.info(f'Save the data base to: {result_db_path}')
     if os.path.exists(result_db_path):
-        logger.error(f'The db file {result_db_path} exists, delete it and start again!.')
-        sys.exit(1)
+        raise FileExistsError(f'The database file already exists: {result_db_path}')
 
     return result_db_path
 

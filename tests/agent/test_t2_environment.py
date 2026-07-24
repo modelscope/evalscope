@@ -45,7 +45,7 @@ from evalscope.api.registry import (
 from evalscope.api.tool import ToolCall, ToolInfo
 from evalscope.api.tool.tool_call import ToolFunction
 from evalscope.config import TaskConfig
-from evalscope.utils.function_utils import AsyncioLoopRunner
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 
 # ---------------------------------------------------------------------------
 # Helpers

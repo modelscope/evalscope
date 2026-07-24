@@ -97,41 +97,51 @@ class ClosedLoopStrategy(BenchmarkStrategy):
             target_times = delay_ts + time.perf_counter()
 
         dispatched = 0
-        for i, request in enumerate(requests):
-            # Duration cap: stop dispatching new requests once the deadline is hit.
-            if deadline is not None and time.perf_counter() >= deadline:
-                logger.info(
-                    f'Duration deadline reached after dispatching {dispatched}/{n} requests; '
-                    'stopping further dispatches.'
+        all_tasks: set[asyncio.Task] = set()
+        try:
+            for i, request in enumerate(requests):
+                # Duration cap: stop dispatching new requests once the deadline is hit.
+                if deadline is not None and time.perf_counter() >= deadline:
+                    logger.info(
+                        f'Duration deadline reached after dispatching {dispatched}/{n} requests; '
+                        'stopping further dispatches.'
+                    )
+                    break
+
+                # Sleep until the absolute target dispatch time (drift-corrected).
+                # Cap the sleep at the remaining time-to-deadline so we don't sleep
+                # past the cancellation point.
+                if target_times is not None:
+                    sleep_s = target_times[i] - time.perf_counter()
+                    if deadline is not None:
+                        sleep_s = min(sleep_s, deadline - time.perf_counter())
+                    if sleep_s > 0:
+                        await asyncio.sleep(sleep_s)
+
+                # Keep the number of scheduled tasks bounded to avoid OOM.
+                if len(in_flight) >= max_in_flight:
+                    done, pending = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
+                    in_flight = pending
+                    await asyncio.gather(*done)
+
+                task = asyncio.create_task(
+                    _send_request(semaphore, request, is_warmup, self.queue, self.client, self.track_gpu_memory)
                 )
-                break
+                in_flight.add(task)
+                all_tasks.add(task)
+                dispatched += 1
 
-            # Sleep until the absolute target dispatch time (drift-corrected).
-            # Cap the sleep at the remaining time-to-deadline so we don't sleep
-            # past the cancellation point.
-            if target_times is not None:
-                sleep_s = target_times[i] - time.perf_counter()
-                if deadline is not None:
-                    sleep_s = min(sleep_s, deadline - time.perf_counter())
-                if sleep_s > 0:
-                    await asyncio.sleep(sleep_s)
-
-            # Keep the number of scheduled tasks bounded to avoid OOM.
-            if len(in_flight) >= max_in_flight:
-                done, pending = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
-                in_flight = pending
-
-            task = asyncio.create_task(
-                _send_request(semaphore, request, is_warmup, self.queue, self.client, self.track_gpu_memory)
-            )
-            in_flight.add(task)
-            dispatched += 1
-
-        # Phase barrier: wait for all in-flight requests to finish.  Even when
-        # the duration deadline has elapsed we let in-flight requests complete
-        # (soft exit), matching trie: cap is "stop starting new requests at the
-        # deadline", not "kill in-flight work".
-        if in_flight:
-            if deadline is not None and time.perf_counter() >= deadline:
-                logger.info(f'Duration deadline reached; awaiting {len(in_flight)} in-flight request(s).')
-            await asyncio.gather(*in_flight, return_exceptions=True)
+            # Phase barrier: wait for all in-flight requests to finish.  Even when
+            # the duration deadline has elapsed we let in-flight requests complete
+            # (soft exit), matching trie: cap is "stop starting new requests at the
+            # deadline", not "kill in-flight work".
+            if in_flight:
+                if deadline is not None and time.perf_counter() >= deadline:
+                    logger.info(f'Duration deadline reached; awaiting {len(in_flight)} in-flight request(s).')
+                await asyncio.gather(*in_flight)
+        finally:
+            for task in all_tasks:
+                if not task.done():
+                    task.cancel()
+            if all_tasks:
+                await asyncio.gather(*all_tasks, return_exceptions=True)

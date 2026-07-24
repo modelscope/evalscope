@@ -21,16 +21,13 @@ if TYPE_CHECKING:
 
 logger = get_logger()
 
-# Global event signalling that all requests have been dispatched and the
-# metrics consumer should flush remaining items and exit.
-data_process_completed_event = asyncio.Event()
-
 
 @exception_handler
 async def statistic_benchmark_metric(
     benchmark_data_queue: asyncio.Queue,
     args: Arguments,
     api_plugin: 'ApiPluginBase',
+    completed_event: asyncio.Event,
 ) -> Tuple['MetricsAccumulator', 'TraceLevelSummary', 'WorkloadTimeline', str]:
     """Consume benchmark results from the queue, update metrics, and persist to DB.
 
@@ -38,6 +35,7 @@ async def statistic_benchmark_metric(
         benchmark_data_queue: Queue populated by request workers.
         args: Benchmark configuration.
         api_plugin: API plugin used to finalise token counts.
+        completed_event: Per-benchmark signal indicating that production has finished.
 
     Returns:
         Tuple of ``(metrics_accumulator_result, trace_level_summary, workload_timeline, result_db_path)``.
@@ -79,7 +77,7 @@ async def statistic_benchmark_metric(
             log_interval=HEARTBEAT_INTERVAL_SEC,
             track_progress=True,
         ) as pbar:
-            while not (data_process_completed_event.is_set() and benchmark_data_queue.empty()):
+            while not (completed_event.is_set() and benchmark_data_queue.empty()):
                 try:
                     benchmark_data = await asyncio.wait_for(benchmark_data_queue.get(), timeout=0.1)
                 except asyncio.TimeoutError:

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.sandbox import SandboxEngine, build_sandbox_config, get_sandbox_service, merge_sandbox_config_dicts
-from evalscope.utils.function_utils import AsyncioLoopRunner
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

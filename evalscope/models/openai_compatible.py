@@ -1,6 +1,4 @@
-import asyncio
 import os
-import threading
 import time
 from openai import APIStatusError, AsyncOpenAI, BadRequestError, OpenAI, PermissionDeniedError, UnprocessableEntityError
 from openai._types import NOT_GIVEN
@@ -13,7 +11,8 @@ from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, 
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_supported_params
-from evalscope.utils.function_utils import AsyncioLoopRunner, async_retry_call, retry_call
+from evalscope.utils.function_utils import async_retry_call, retry_call
+from .utils.async_client import LoopBoundAsyncClientPool
 from .utils.openai import (
     async_collect_stream_response,
     chat_choices_from_openai,
@@ -65,18 +64,14 @@ class OpenAICompatibleAPI(ModelAPI):
             **model_args,
         )
 
-        # AsyncOpenAI wraps an httpx.AsyncClient whose internal anyio
-        # primitives bind to the event loop they first run on. Since
-        # AsyncioLoopRunner is now per-thread (each worker thread has its
-        # own loop), we must build a separate AsyncOpenAI per loop.
-        # See plan: ms-enlave-evalscope-asynciolooprunner-radiant-sphinx.md
+        # AsyncOpenAI wraps loop-bound httpx/anyio resources. Keep one client
+        # per loop so worker-owned and caller-managed loops remain isolated.
         self._async_client_kwargs: Dict[str, Any] = {
             'api_key': self.api_key,
             'base_url': self.base_url,
             **model_args,
         }
-        self._async_clients: Dict[int, AsyncOpenAI] = {}
-        self._async_clients_lock = threading.Lock()
+        self._async_client_pool = LoopBoundAsyncClientPool(lambda: AsyncOpenAI(**self._async_client_kwargs))
 
     @property
     def async_client(self) -> AsyncOpenAI:
@@ -85,31 +80,11 @@ class OpenAICompatibleAPI(ModelAPI):
         Lazily constructed once per loop and cached. Callers must invoke
         from within a coroutine running on a real event loop.
         """
-        loop = asyncio.get_running_loop()
-        loop_id = id(loop)
-        client = self._async_clients.get(loop_id)
-        if client is not None:
-            return client
-        with self._async_clients_lock:
-            client = self._async_clients.get(loop_id)
-            if client is None:
-                client = AsyncOpenAI(**self._async_client_kwargs)
-                self._async_clients[loop_id] = client
-                self._register_loop_close_cleanup(loop_id, client)
-            return client
+        return self._async_client_pool.get()
 
-    def _register_loop_close_cleanup(self, loop_id: int, client: AsyncOpenAI) -> None:
-        """Close the per-loop AsyncOpenAI when its loop shuts down."""
-
-        async def _cleanup() -> None:
-            try:
-                await client.close()
-            finally:
-                with self._async_clients_lock:
-                    if self._async_clients.get(loop_id) is client:
-                        self._async_clients.pop(loop_id, None)
-
-        AsyncioLoopRunner.register_close_callback(_cleanup)
+    async def aclose(self) -> None:
+        """Close all loop-bound async clients while keeping this model reusable."""
+        await self._async_client_pool.aclose()
 
     def generate(
         self,

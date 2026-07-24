@@ -24,7 +24,7 @@ from evalscope.api.model.model_output import ChatCompletionChoice
 from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import DockerImageSpec, prepare_docker_image
 from evalscope.constants import Tags
-from evalscope.utils.function_utils import AsyncioLoopRunner
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.import_utils import is_build_doc
 from .utils import (
     SKILL_MODE_NO_SKILL,

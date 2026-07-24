@@ -44,7 +44,8 @@ from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.http_client import AioHttpClient
-from evalscope.perf.core.metrics_consumer import connect_test, data_process_completed_event, statistic_benchmark_metric
+from evalscope.perf.core.metrics_consumer import connect_test
+from evalscope.perf.core.pipeline import run_benchmark_pipeline
 from evalscope.perf.core.strategies import MultiTurnStrategy
 from evalscope.perf.plugin import ApiRegistry, DatasetRegistry
 from evalscope.perf.plugin.datasets.base import Conversation
@@ -106,27 +107,15 @@ async def run_multi_turn_benchmark(
     # 2. Setup shared state
     # ------------------------------------------------------------------
     queue: asyncio.Queue = asyncio.Queue(maxsize=max(1, args.parallel * args.queue_size_multiplier))
-    data_process_completed_event.clear()
 
     # ------------------------------------------------------------------
     # 3. Test connection
     # ------------------------------------------------------------------
     await connect_test(args, api_plugin)
 
-    # ------------------------------------------------------------------
-    # 4. Shared HTTP client
-    # ------------------------------------------------------------------
     client = AioHttpClient(args, api_plugin)
 
     async with client:
-        # ----------------------------------------------------------------
-        # 5. Start the metrics consumer task
-        # ----------------------------------------------------------------
-        statistic_task = asyncio.create_task(statistic_benchmark_metric(queue, args, api_plugin))
-
-        # ----------------------------------------------------------------
-        # 6. Run multi-turn strategy
-        # ----------------------------------------------------------------
         strategy = MultiTurnStrategy(
             args=args,
             api_plugin=api_plugin,
@@ -134,19 +123,10 @@ async def run_multi_turn_benchmark(
             queue=queue,
             all_conversations=all_conversations,
         )
-        await strategy.run()
+        metrics, trace_summary, workload_timeline, result_db_path = await run_benchmark_pipeline(
+            strategy.run(), queue, args, api_plugin
+        )
 
-        # ----------------------------------------------------------------
-        # 7. Drain the metrics queue and signal the consumer to stop
-        # ----------------------------------------------------------------
-        await queue.join()
-        data_process_completed_event.set()
-
-        metrics, trace_summary, workload_timeline, result_db_path = await statistic_task
-
-    # ------------------------------------------------------------------
-    # 8. Summarise and return
-    # ------------------------------------------------------------------
     return summary_result(
         args,
         metrics,

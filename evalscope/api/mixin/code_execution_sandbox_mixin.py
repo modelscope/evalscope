@@ -23,7 +23,8 @@ from evalscope.api.sandbox import (
     prepare_docker_image,
     resolve_engine,
 )
-from evalscope.utils.function_utils import AsyncioLoopRunner, thread_safe
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
+from evalscope.utils.function_utils import thread_safe
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:

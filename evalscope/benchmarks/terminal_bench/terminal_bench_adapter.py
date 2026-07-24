@@ -16,7 +16,7 @@ from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolCall, ToolFunction
 from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, Tags
-from evalscope.utils.function_utils import AsyncioLoopRunner
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 

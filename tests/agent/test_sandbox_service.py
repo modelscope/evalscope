@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import asyncio
 import pytest
-from typing import Any, Dict
+import threading
+from typing import Any, Dict, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from evalscope.api.benchmark import BenchmarkMeta
@@ -24,6 +25,7 @@ from evalscope.api.sandbox import (
     SandboxService,
     build_sandbox_config,
     ensure_docker_image_built,
+    get_sandbox_service,
     merge_sandbox_config_dicts,
     normalize_docker_build_context,
     resolve_engine,
@@ -31,6 +33,17 @@ from evalscope.api.sandbox import (
 )
 from evalscope.config import SandboxTaskConfig, TaskConfig
 from evalscope.run import shutdown_sandbox_service_if_enabled
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
+
+
+@pytest.fixture
+def service() -> Generator[SandboxService, None, None]:
+    service = SandboxService()
+    try:
+        yield service
+    finally:
+        service.shutdown_all()
+
 
 # ===========================================================================
 # Engine resolution
@@ -173,21 +186,51 @@ class TestSandboxServiceCache:
         m.stop = AsyncMock()
         return m
 
-    def test_same_config_returns_cached_manager(self):
-        service = SandboxService()
+    def test_same_config_returns_cached_manager(self, service):
         fake = self._make_mock_manager()
 
         async def _run():
             with patch.object(service, '_construct_manager', return_value=fake) as ctor:
-                a = await service.get_or_create_manager(SandboxEngine.DOCKER, {'base_url': 'x'})
-                b = await service.get_or_create_manager(SandboxEngine.DOCKER, {'base_url': 'x'})
+                a, b = await asyncio.gather(
+                    service.get_or_create_manager(SandboxEngine.DOCKER, {'base_url': 'x'}),
+                    service.get_or_create_manager(SandboxEngine.DOCKER, {'base_url': 'x'}),
+                )
                 assert a is b
                 ctor.assert_called_once()
 
         asyncio.run(_run())
 
-    def test_different_config_creates_new_manager(self):
-        service = SandboxService()
+    def test_cancelled_waiter_does_not_cancel_shared_manager_start(self, service):
+        start_entered = threading.Event()
+        release_start = threading.Event()
+
+        class SlowManager:
+
+            async def start(self):
+                start_entered.set()
+                await asyncio.to_thread(release_start.wait)
+
+            async def stop(self):
+                return None
+
+        manager = SlowManager()
+
+        async def _run():
+            with patch.object(service, '_construct_manager', return_value=manager):
+                first = asyncio.create_task(service.get_or_create_manager(SandboxEngine.DOCKER, {}))
+                second = asyncio.create_task(service.get_or_create_manager(SandboxEngine.DOCKER, {}))
+                assert await asyncio.to_thread(start_entered.wait, 1)
+
+                first.cancel()
+                with pytest.raises(asyncio.CancelledError):
+                    await first
+
+                release_start.set()
+                assert await second is manager
+
+        asyncio.run(_run())
+
+    def test_different_config_creates_new_manager(self, service):
         fake_1 = self._make_mock_manager()
         fake_2 = self._make_mock_manager()
 
@@ -200,8 +243,7 @@ class TestSandboxServiceCache:
 
         asyncio.run(_run())
 
-    def test_shutdown_all_async_stops_and_clears(self):
-        service = SandboxService()
+    def test_shutdown_all_async_stops_and_clears(self, service):
         fake = self._make_mock_manager()
 
         async def _run():
@@ -214,8 +256,7 @@ class TestSandboxServiceCache:
 
         asyncio.run(_run())
 
-    def test_shutdown_all_async_falls_back_to_direct_cleanup(self):
-        service = SandboxService()
+    def test_shutdown_all_async_falls_back_to_direct_cleanup(self, service):
         fake = self._make_mock_manager()
         fake.stop.side_effect = RuntimeError('Event loop is closed')
         fake.cleanup_all_sandboxes = AsyncMock()
@@ -230,8 +271,7 @@ class TestSandboxServiceCache:
         fake.cleanup_all_sandboxes.assert_awaited_once()
         assert service._managers == {}
 
-    def test_shutdown_continues_when_fallback_cleanup_fails(self):
-        service = SandboxService()
+    def test_shutdown_continues_when_fallback_cleanup_fails(self, service):
         fake_1 = self._make_mock_manager()
         fake_2 = self._make_mock_manager()
         fake_1.stop.side_effect = RuntimeError('first stop failed')
@@ -250,6 +290,205 @@ class TestSandboxServiceCache:
         fake_1.cleanup_all_sandboxes.assert_awaited_once()
         fake_2.cleanup_all_sandboxes.assert_awaited_once()
         assert service._managers == {}
+
+    def test_pooled_manager_survives_worker_loop_cleanup(self, service):
+        class LoopBoundManager:
+
+            def __init__(self):
+                self.loop = None
+                self._pool_initialized = False
+                self.calls = 0
+
+            async def start(self):
+                self.loop = asyncio.get_running_loop()
+
+            async def initialize_pool(self, **kwargs):
+                assert asyncio.get_running_loop() is self.loop
+                self._pool_initialized = True
+                return ['sandbox-1']
+
+            async def execute_tool_in_pool(self, tool_name, parameters):
+                assert asyncio.get_running_loop() is self.loop
+                self.calls += 1
+                return self.calls
+
+            async def stop(self):
+                assert asyncio.get_running_loop() is self.loop
+
+        manager = LoopBoundManager()
+
+        async def _acquire():
+            with patch.object(service, '_construct_manager', return_value=manager), \
+                    patch('evalscope.api.sandbox.service.get_enclave_types',
+                          return_value=('sandbox-type', None, None, None)):
+                return await service.acquire_pool(SandboxEngine.VOLCENGINE, 1, object(), {'base_url': 'x'})
+
+        try:
+            handle = AsyncioLoopRunner.run(_acquire())
+            AsyncioLoopRunner.shutdown_for_thread()
+
+            first = AsyncioLoopRunner.run(handle.execute_tool('python_executor', {'code': 'print(1)'}))
+            AsyncioLoopRunner.shutdown_for_thread()
+            second = AsyncioLoopRunner.run(handle.execute_tool('python_executor', {'code': 'print(2)'}))
+
+            assert first == 1
+            assert second == 2
+        finally:
+            AsyncioLoopRunner.shutdown_for_thread()
+
+    def test_concurrent_pool_acquisition_initializes_pool_once(self, service):
+        class SlowPoolManager:
+
+            def __init__(self):
+                self._pool_initialized = False
+                self.initialize_calls = 0
+
+            async def start(self):
+                return None
+
+            async def initialize_pool(self, **kwargs):
+                self.initialize_calls += 1
+                await asyncio.sleep(0)
+                self._pool_initialized = True
+                return ['sandbox-1']
+
+            async def stop(self):
+                return None
+
+        manager = SlowPoolManager()
+
+        async def _run():
+            with patch.object(service, '_construct_manager', return_value=manager), \
+                    patch('evalscope.api.sandbox.service.get_enclave_types',
+                          return_value=('sandbox-type', None, None, None)):
+                first, second = await asyncio.gather(
+                    service.acquire_pool(SandboxEngine.DOCKER, 1, object()),
+                    service.acquire_pool(SandboxEngine.DOCKER, 1, object()),
+                )
+                assert first.manager is manager
+                assert second.manager is manager
+
+        asyncio.run(_run())
+        assert manager.initialize_calls == 1
+
+    def test_shutdown_cleans_partially_started_manager(self, service):
+        start_entered = threading.Event()
+        start_cancelled = threading.Event()
+
+        class SlowManager:
+
+            def __init__(self):
+                self.stop_calls = 0
+
+            async def start(self):
+                start_entered.set()
+                try:
+                    await asyncio.Event().wait()
+                finally:
+                    start_cancelled.set()
+
+            async def stop(self):
+                self.stop_calls += 1
+
+        manager = SlowManager()
+
+        async def _run():
+            with patch.object(service, '_construct_manager', return_value=manager):
+                acquire_task = asyncio.create_task(service.get_or_create_manager(SandboxEngine.DOCKER, {}))
+                assert await asyncio.to_thread(start_entered.wait, 1)
+                await asyncio.to_thread(service.shutdown_all)
+                with pytest.raises(asyncio.CancelledError):
+                    await acquire_task
+
+        asyncio.run(_run())
+        assert start_cancelled.is_set()
+        assert manager.stop_calls == 1
+
+    def test_shutdown_rejects_new_manager_while_existing_manager_stops(self, service):
+        stop_entered = threading.Event()
+        release_stop = threading.Event()
+
+        class SlowStopManager:
+
+            async def start(self):
+                return None
+
+            async def stop(self):
+                stop_entered.set()
+                await asyncio.to_thread(release_stop.wait)
+
+        manager = SlowStopManager()
+
+        async def _run():
+            with patch.object(service, '_construct_manager', return_value=manager) as construct:
+                await service.get_or_create_manager(SandboxEngine.DOCKER, {})
+                shutdown_task = asyncio.create_task(service.shutdown_all_async())
+                assert await asyncio.to_thread(stop_entered.wait, 1)
+
+                try:
+                    with pytest.raises(RuntimeError, match='closing|closed'):
+                        await service.get_or_create_manager(SandboxEngine.DOCKER, {'base_url': 'new'})
+                finally:
+                    release_stop.set()
+                    await shutdown_task
+                assert service._managers == {}
+                construct.assert_called_once()
+
+        asyncio.run(_run())
+
+    def test_shutdown_waits_for_accepted_manager_operation(self, service):
+        operation_started = threading.Event()
+        release_operation = threading.Event()
+        stop_entered = threading.Event()
+
+        class BusyManager:
+
+            async def start(self):
+                return None
+
+            async def execute_tool_in_pool(self, tool_name, parameters):
+                operation_started.set()
+                await asyncio.to_thread(release_operation.wait)
+                return 'done'
+
+            async def stop(self):
+                stop_entered.set()
+
+        manager = BusyManager()
+
+        async def _run():
+            with patch.object(service, '_construct_manager', return_value=manager):
+                cached = await service.get_or_create_manager(SandboxEngine.DOCKER, {})
+                handle = PoolHandle(cached, service=service)
+                operation_task = asyncio.create_task(handle.execute_tool('shell_executor', {}))
+                assert await asyncio.to_thread(operation_started.wait, 1)
+
+                shutdown_task = asyncio.create_task(service.shutdown_all_async())
+
+                try:
+
+                    async def _wait_for_closing() -> None:
+                        while service._phase.value == 'open':
+                            await asyncio.sleep(0)
+
+                    await asyncio.wait_for(_wait_for_closing(), timeout=1)
+                    assert not stop_entered.is_set()
+                finally:
+                    release_operation.set()
+                    assert await operation_task == 'done'
+                    await shutdown_task
+                assert stop_entered.is_set()
+
+        asyncio.run(_run())
+
+    def test_closed_service_rejects_reuse(self, service):
+
+        async def _run():
+            await service.shutdown_all_async()
+            with pytest.raises(RuntimeError, match='closed'):
+                await service.get_or_create_manager(SandboxEngine.DOCKER, {})
+
+        asyncio.run(_run())
 
     def test_shutdown_sandbox_service_noop_when_uncreated(self):
         from evalscope.api.sandbox import service as service_module
@@ -271,6 +510,22 @@ class TestSandboxServiceCache:
             shutdown_sandbox_service()
             fake.shutdown_all.assert_called_once()
         finally:
+            service_module._SERVICE = old_service
+
+    def test_shutdown_sandbox_service_recreates_singleton(self):
+        from evalscope.api.sandbox import service as service_module
+
+        old_service = service_module._SERVICE
+        service_module._SERVICE = None
+        try:
+            first = get_sandbox_service()
+            shutdown_sandbox_service()
+            second = get_sandbox_service()
+
+            assert second is not first
+            assert service_module._SERVICE is second
+        finally:
+            shutdown_sandbox_service()
             service_module._SERVICE = old_service
 
 
@@ -296,10 +551,10 @@ class TestSandboxServiceRunTeardown:
 
 class TestHandles:
 
-    def test_pool_handle_execute_delegates(self):
+    def test_pool_handle_execute_delegates(self, service):
         manager = MagicMock()
         manager.execute_tool_in_pool = AsyncMock(return_value='OK')
-        handle = PoolHandle(manager)
+        handle = PoolHandle(manager, service)
 
         out = asyncio.run(handle.execute_tool('shell_executor', {'command': 'ls'}))
         assert out == 'OK'
@@ -307,10 +562,10 @@ class TestHandles:
             'shell_executor', {'command': 'ls'}
         )
 
-    def test_sandbox_handle_close_idempotent(self):
+    def test_sandbox_handle_close_idempotent(self, service):
         manager = MagicMock()
         manager.delete_sandbox = AsyncMock()
-        handle = SandboxHandle(manager, 'sb-1')
+        handle = SandboxHandle(manager, 'sb-1', service)
 
         async def _run():
             await handle.close()
@@ -319,10 +574,10 @@ class TestHandles:
         asyncio.run(_run())
         manager.delete_sandbox.assert_awaited_once_with('sb-1')
 
-    def test_sandbox_handle_execute_after_close_raises(self):
+    def test_sandbox_handle_execute_after_close_raises(self, service):
         manager = MagicMock()
         manager.delete_sandbox = AsyncMock()
-        handle = SandboxHandle(manager, 'sb-1')
+        handle = SandboxHandle(manager, 'sb-1', service)
 
         async def _run():
             await handle.close()
@@ -331,10 +586,10 @@ class TestHandles:
         with pytest.raises(RuntimeError, match='already closed'):
             asyncio.run(_run())
 
-    def test_sandbox_handle_put_dir_delegates_to_manager(self):
+    def test_sandbox_handle_put_dir_delegates_to_manager(self, service):
         manager = MagicMock()
         manager.put_dir = AsyncMock(return_value=True)
-        handle = SandboxHandle(manager, 'sb-1')
+        handle = SandboxHandle(manager, 'sb-1', service)
 
         async def _run():
             return await handle.put_dir('/host/skills', '/skills')

@@ -1,7 +1,7 @@
 import aiohttp
 import asyncio
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.benchmark_util import BenchmarkData, is_stream_body
@@ -56,11 +56,12 @@ class AioHttpClient:
     def _get_runtime_headers(headers: dict) -> dict:
         return {key: get_secret_value(value) for key, value in headers.items()}
 
-    async def __aenter__(self):
-        pass
+    async def __aenter__(self) -> 'AioHttpClient':
+        return self
 
-    async def __aexit__(self, exc_type, exc, tb):
-        await self.client.close()
+    async def __aexit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        if not self.client.closed:
+            await self.client.close()
 
     def _create_trace_config(self):
         """Create trace configuration for debugging."""

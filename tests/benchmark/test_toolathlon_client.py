@@ -12,6 +12,7 @@ from unittest.mock import patch
 if importlib.util.find_spec('httpx') is None or importlib.util.find_spec('websockets') is None:
     raise unittest.SkipTest('Toolathlon client tests require `evalscope[toolathlon]`.')
 
+from evalscope.benchmarks.toolathlon import client as toolathlon_client
 from evalscope.benchmarks.toolathlon.client import (
     ToolathlonServiceClient,
     ToolathlonServiceConfig,
@@ -316,6 +317,7 @@ class TestToolathlonClient(unittest.TestCase):
 
     def test_ws_proxy_omits_empty_authorization_header(self) -> None:
         headers_seen = {}
+        client_lifecycle = {'created': 0, 'closed': 0}
 
         class FakeResponse:
             status_code = 200
@@ -326,12 +328,13 @@ class TestToolathlonClient(unittest.TestCase):
         class FakeAsyncClient:
 
             def __init__(self, *args: Any, **kwargs: Any) -> None:
-                pass
+                client_lifecycle['created'] += 1
 
             async def __aenter__(self) -> 'FakeAsyncClient':
                 return self
 
             async def __aexit__(self, exc_type: Any, exc: Any, traceback: Any) -> bool:
+                client_lifecycle['closed'] += 1
                 return False
 
             async def post(self, url: str, json: dict, headers: dict) -> FakeResponse:
@@ -346,12 +349,18 @@ class TestToolathlonClient(unittest.TestCase):
             async def __aiter__(self):
                 yield json.dumps({
                     'type': 'new_requests',
-                    'requests': [{
-                        'request_id': 'request-1',
-                        'messages': [],
-                    }]
+                    'requests': [
+                        {
+                            'request_id': 'request-1',
+                            'messages': [],
+                        },
+                        {
+                            'request_id': 'request-2',
+                            'messages': [],
+                        },
+                    ]
                 })
-                while not self.sent_messages:
+                while len(self.sent_messages) < 2:
                     await asyncio.sleep(0)
                 yield json.dumps({'type': 'error', 'message': 'done'})
 
@@ -372,6 +381,198 @@ class TestToolathlonClient(unittest.TestCase):
                     asyncio.run(run_ws_proxy('http://toolathlon.example:8081', 'http://localhost:8000/v1', '', 'job-1'))
 
         self.assertNotIn('Authorization', headers_seen)
+        self.assertEqual(client_lifecycle, {'created': 1, 'closed': 1})
+
+    def test_ws_proxy_error_cancels_active_requests(self) -> None:
+        request_started = asyncio.Event()
+        request_cancelled = asyncio.Event()
+        websocket_closed = asyncio.Event()
+        client_closed = asyncio.Event()
+
+        class FakeAsyncClient:
+
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                pass
+
+            async def __aenter__(self) -> 'FakeAsyncClient':
+                return self
+
+            async def __aexit__(self, exc_type: Any, exc: Any, traceback: Any) -> bool:
+                client_closed.set()
+                return False
+
+            async def post(self, url: str, json: dict, headers: dict) -> None:
+                request_started.set()
+                try:
+                    await asyncio.Event().wait()
+                finally:
+                    request_cancelled.set()
+
+        class FakeWebSocket:
+
+            async def __aiter__(self):
+                try:
+                    yield json.dumps({
+                        'type': 'new_requests',
+                        'requests': [{
+                            'request_id': 'request-1',
+                            'messages': [],
+                        }]
+                    })
+                    await request_started.wait()
+                    yield json.dumps({'type': 'error', 'message': 'relay failed'})
+                finally:
+                    websocket_closed.set()
+
+            async def send(self, message: str) -> None:
+                return None
+
+        class FakeConnect:
+
+            async def __aenter__(self) -> FakeWebSocket:
+                return FakeWebSocket()
+
+            async def __aexit__(self, exc_type: Any, exc: Any, traceback: Any) -> bool:
+                return False
+
+        with patch('websockets.connect', return_value=FakeConnect()):
+            with patch('httpx.AsyncClient', FakeAsyncClient):
+                with self.assertRaisesRegex(RuntimeError, 'relay failed'):
+                    asyncio.run(
+                        run_ws_proxy('http://toolathlon.example:8081', 'http://localhost:8000/v1', 'key', 'job-1')
+                    )
+
+        self.assertTrue(request_cancelled.is_set())
+        self.assertTrue(websocket_closed.is_set())
+        self.assertTrue(client_closed.is_set())
+
+    def test_ws_proxy_heartbeat_timeout_cancels_all_tasks(self) -> None:
+        request_started = asyncio.Event()
+        request_cancelled = asyncio.Event()
+        receive_cancelled = asyncio.Event()
+        client_closed = asyncio.Event()
+
+        class FakeAsyncClient:
+
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                pass
+
+            async def __aenter__(self) -> 'FakeAsyncClient':
+                return self
+
+            async def __aexit__(self, exc_type: Any, exc: Any, traceback: Any) -> bool:
+                client_closed.set()
+                return False
+
+            async def post(self, url: str, json: dict, headers: dict) -> None:
+                request_started.set()
+                try:
+                    await asyncio.Event().wait()
+                finally:
+                    request_cancelled.set()
+
+        class FakeWebSocket:
+
+            async def __aiter__(self):
+                try:
+                    yield json.dumps({
+                        'type': 'new_requests',
+                        'requests': [{
+                            'request_id': 'request-1',
+                            'messages': [],
+                        }]
+                    })
+                    await asyncio.Event().wait()
+                finally:
+                    receive_cancelled.set()
+
+            async def send(self, message: str) -> None:
+                if json.loads(message).get('type') == 'heartbeat':
+                    await request_started.wait()
+
+        class FakeConnect:
+
+            async def __aenter__(self) -> FakeWebSocket:
+                return FakeWebSocket()
+
+            async def __aexit__(self, exc_type: Any, exc: Any, traceback: Any) -> bool:
+                return False
+
+        with patch('websockets.connect', return_value=FakeConnect()):
+            with patch('httpx.AsyncClient', FakeAsyncClient):
+                with patch.object(toolathlon_client, 'WS_HEARTBEAT_INTERVAL_SECONDS', 0):
+                    with patch.object(toolathlon_client, 'WS_HEARTBEAT_TIMEOUT_SECONDS', -1):
+                        with self.assertRaisesRegex(TimeoutError, 'heartbeat timed out'):
+                            asyncio.run(
+                                run_ws_proxy(
+                                    'http://toolathlon.example:8081',
+                                    'http://localhost:8000/v1',
+                                    'key',
+                                    'job-1',
+                                )
+                            )
+
+        self.assertTrue(request_cancelled.is_set())
+        self.assertTrue(receive_cancelled.is_set())
+        self.assertTrue(client_closed.is_set())
+
+    def test_ws_proxy_request_send_error_propagates(self) -> None:
+        receive_cancelled = asyncio.Event()
+
+        class FakeResponse:
+            status_code = 200
+
+            def json(self) -> dict:
+                return {'id': 'chatcmpl-mock'}
+
+        class FakeAsyncClient:
+
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                pass
+
+            async def __aenter__(self) -> 'FakeAsyncClient':
+                return self
+
+            async def __aexit__(self, exc_type: Any, exc: Any, traceback: Any) -> bool:
+                return False
+
+            async def post(self, url: str, json: dict, headers: dict) -> FakeResponse:
+                return FakeResponse()
+
+        class FakeWebSocket:
+
+            async def __aiter__(self):
+                try:
+                    yield json.dumps({
+                        'type': 'new_requests',
+                        'requests': [{
+                            'request_id': 'request-1',
+                            'messages': [],
+                        }]
+                    })
+                    await asyncio.Event().wait()
+                finally:
+                    receive_cancelled.set()
+
+            async def send(self, message: str) -> None:
+                raise RuntimeError('websocket send failed')
+
+        class FakeConnect:
+
+            async def __aenter__(self) -> FakeWebSocket:
+                return FakeWebSocket()
+
+            async def __aexit__(self, exc_type: Any, exc: Any, traceback: Any) -> bool:
+                return False
+
+        with patch('websockets.connect', return_value=FakeConnect()):
+            with patch('httpx.AsyncClient', FakeAsyncClient):
+                with self.assertRaisesRegex(RuntimeError, 'websocket send failed'):
+                    asyncio.run(
+                        run_ws_proxy('http://toolathlon.example:8081', 'http://localhost:8000/v1', 'key', 'job-1')
+                    )
+
+        self.assertTrue(receive_cancelled.is_set())
 
 
 def _make_task_archive(member_name: str = 'find-alita-paper/README.md') -> bytes:

@@ -7,6 +7,7 @@ import time
 from argparse import Namespace
 
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
+from evalscope.utils.asyncio_runtime import shutdown_event_loop
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
@@ -63,7 +64,7 @@ def run_one_benchmark(args: Arguments, output_path: str = None):
                     run_benchmark(args)
                 )
     finally:
-        loop.close()
+        shutdown_event_loop(loop)
 
     # Return unified format; key reflects the sweep dimension.  trace_summary
     # is None for single-turn runs; workload_throughput is None for runs with

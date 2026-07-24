@@ -252,4 +252,10 @@ class MultiTurnStrategy(BenchmarkStrategy):
         self._phase_is_warmup = is_warmup
         self._phase_deadline = deadline
         workers = [asyncio.create_task(self._worker(worker_id=i)) for i in range(self.args.parallel)]
-        await asyncio.gather(*workers, return_exceptions=True)
+        try:
+            await asyncio.gather(*workers)
+        finally:
+            for worker in workers:
+                if not worker.done():
+                    worker.cancel()
+            await asyncio.gather(*workers, return_exceptions=True)

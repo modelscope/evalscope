@@ -3,7 +3,8 @@ from typing import TYPE_CHECKING, AsyncGenerator, List, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.http_client import AioHttpClient
-from evalscope.perf.core.metrics_consumer import connect_test, data_process_completed_event, statistic_benchmark_metric
+from evalscope.perf.core.metrics_consumer import connect_test
+from evalscope.perf.core.pipeline import run_benchmark_pipeline
 from evalscope.perf.core.strategies import ClosedLoopStrategy, OpenLoopStrategy
 from evalscope.perf.plugin import ApiRegistry, DatasetRegistry
 from evalscope.perf.utils.db_util import load_prompt, summary_result
@@ -137,24 +138,17 @@ async def run_benchmark(
     else:
         queue = asyncio.Queue(maxsize=max(1, args.parallel * args.queue_size_multiplier))
 
-    data_process_completed_event.clear()
-
     client = AioHttpClient(args, api_plugin)
     async with client:
-        statistic_task = asyncio.create_task(statistic_benchmark_metric(queue, args, api_plugin))
-
         request_gen = get_requests(args, api_plugin)
         if args.open_loop:
             strategy = OpenLoopStrategy(args, api_plugin, client, queue, request_gen)
         else:
             strategy = ClosedLoopStrategy(args, api_plugin, client, queue, request_gen)
 
-        await strategy.run()
-
-        await queue.join()
-        data_process_completed_event.set()
-
-        metrics, trace_summary, workload_timeline, result_db_path = await statistic_task
+        metrics, trace_summary, workload_timeline, result_db_path = await run_benchmark_pipeline(
+            strategy.run(), queue, args, api_plugin
+        )
 
     return summary_result(
         args,
