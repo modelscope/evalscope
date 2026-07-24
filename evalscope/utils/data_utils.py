@@ -199,7 +199,7 @@ def _serialize_messages(review_result: ReviewResult) -> List[Dict[str, Any]]:
                 # reasoning, text, …).  model_dump() mirrors the Python
                 # ContentBase subclasses to plain dicts that match the
                 # TypeScript ContentBlock interface in types.ts.
-                serialised_content = [c.model_dump() for c in m.content]
+                serialised_content = [c.model_dump(exclude_none=True) for c in m.content]
             else:
                 # Text-only / legacy path – content is already a str.
                 serialised_content = m.content
