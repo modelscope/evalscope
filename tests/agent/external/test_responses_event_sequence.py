@@ -15,7 +15,7 @@ import pytest
 from typing import Any, Dict, List, Tuple
 
 from evalscope.agent.external.bridge.sse_responses import stream_responses_payload
-from evalscope.utils.function_utils import AsyncioLoopRunner
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 
 
 @pytest.fixture(autouse=True)

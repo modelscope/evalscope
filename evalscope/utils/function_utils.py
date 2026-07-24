@@ -5,7 +5,7 @@ from concurrent.futures import Future, ThreadPoolExecutor, wait
 from functools import wraps
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence, TypeVar, Union
 
-from evalscope.utils.asyncio_runtime import AsyncioLoopRunner, AsyncioLoopThread, cancel_and_wait, shutdown_event_loop
+from evalscope.utils import asyncio_runtime
 from evalscope.utils.logger import get_logger
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 
@@ -176,7 +176,7 @@ def run_in_threads_with_progress(
         try:
             return worker(item)
         finally:
-            AsyncioLoopRunner.shutdown_for_thread()
+            asyncio_runtime.AsyncioLoopRunner.shutdown_for_thread()
 
     with ThreadPoolExecutor(max_workers=effective_max_workers) as executor:
         with tqdm(

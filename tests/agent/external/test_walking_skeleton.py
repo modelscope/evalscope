@@ -25,7 +25,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.model import GenerateConfig, Model, ModelOutput
 from evalscope.models.mockllm import MockLLM
-from evalscope.utils.function_utils import AsyncioLoopRunner
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 
 
 @pytest.fixture(autouse=True)

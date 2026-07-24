@@ -20,7 +20,7 @@ import urllib.request
 from evalscope.agent.external.bridge import ModelProxyServer
 from evalscope.api.model import GenerateConfig, Model
 from evalscope.models.mockllm import MockLLM
-from evalscope.utils.function_utils import AsyncioLoopRunner
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 
 
 @pytest.fixture(autouse=True)
