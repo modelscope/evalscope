@@ -147,6 +147,15 @@ class _ProxyClosingError(RuntimeError):
     pass
 
 
+async def _finish_generation_task(task: 'asyncio.Task[Any]', *, failure_handled: bool) -> None:
+    """Observe generation cleanup without rethrowing an error already sent as SSE."""
+    try:
+        await cancel_and_wait(task)
+    except Exception:
+        if not failure_handled:
+            raise
+
+
 class ModelProxyServer:
     """Per-loop aiohttp server that routes ``trial_id`` → :class:`Model`.
 
@@ -511,6 +520,7 @@ class ModelProxyServer:
                 config=gen_config,
             )
         )
+        failure_handled = False
         try:
             async for chunk in stream_openai_response(
                 generate_task,
@@ -523,6 +533,7 @@ class ModelProxyServer:
             session.recorder.record_openai_turn(body, output, latency_ms=latency_ms)
             _log_turn(session, output, latency_ms, mode='stream')
         except Exception as exc:  # pragma: no cover - upstream-dependent
+            failure_handled = True
             _log_upstream_failure(session, exc, mode='stream')
             error_event = (
                 f'data: {json.dumps({"error": {"type": "api_error", "message": repr(exc)}})}\n\n'
@@ -533,7 +544,7 @@ class ModelProxyServer:
             except ConnectionResetError:
                 pass
         finally:
-            await cancel_and_wait(generate_task)
+            await _finish_generation_task(generate_task, failure_handled=failure_handled)
         await response.write_eof()
         return response
 
@@ -741,6 +752,7 @@ class ModelProxyServer:
                 config=gen_config,
             )
         )
+        failure_handled = False
         try:
             async for chunk in stream_gemini_response(generate_task, request_model=body.get('model')):
                 await response.write(chunk)
@@ -749,6 +761,7 @@ class ModelProxyServer:
             session.recorder.record_gemini_turn(body, output, latency_ms=latency_ms)
             _log_turn(session, output, latency_ms, mode='stream')
         except Exception as exc:
+            failure_handled = True
             _log_upstream_failure(session, exc, mode='stream')
             error_data = json.dumps({'error': {'code': 502, 'message': repr(exc), 'status': 'UNAVAILABLE'}})
             try:
@@ -756,7 +769,7 @@ class ModelProxyServer:
             except ConnectionResetError:
                 pass
         finally:
-            await cancel_and_wait(generate_task)
+            await _finish_generation_task(generate_task, failure_handled=failure_handled)
         await response.write_eof()
         return response
 
@@ -818,6 +831,7 @@ class ModelProxyServer:
                 config=gen_config,
             )
         )
+        failure_handled = False
         try:
             async for chunk in stream_anthropic_response(generate_task, request_model=body.get('model')):
                 await response.write(chunk)
@@ -828,6 +842,7 @@ class ModelProxyServer:
             session.recorder.record_anthropic_turn(body, output, latency_ms=latency_ms)
             _log_turn(session, output, latency_ms, mode='stream')
         except Exception as exc:  # pragma: no cover - upstream-dependent
+            failure_handled = True
             _log_upstream_failure(session, exc, mode='stream')
             error_event = (
                 f'event: error\ndata: '
@@ -839,7 +854,7 @@ class ModelProxyServer:
             except ConnectionResetError:
                 pass
         finally:
-            await cancel_and_wait(generate_task)
+            await _finish_generation_task(generate_task, failure_handled=failure_handled)
         await response.write_eof()
         return response
 

@@ -1,6 +1,7 @@
 import asyncio
 import pytest
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from typing import AsyncGenerator
 
 from evalscope.utils import asyncio_runtime
@@ -23,6 +24,31 @@ def test_cancel_and_wait_observes_completed_task_failure() -> None:
 
         with pytest.raises(RuntimeError, match='task failed'):
             await cancel_and_wait(task)
+
+    asyncio.run(_run())
+
+
+def test_cancel_and_wait_propagates_waiter_cancellation() -> None:
+
+    async def _run() -> None:
+        cleanup_started = asyncio.Event()
+
+        async def _slow_cancel() -> None:
+            try:
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                cleanup_started.set()
+                await asyncio.Event().wait()
+
+        target = asyncio.create_task(_slow_cancel())
+        waiter = asyncio.create_task(cancel_and_wait(target))
+        await cleanup_started.wait()
+
+        waiter.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await waiter
+
+        assert target.cancelled()
 
     asyncio.run(_run())
 
@@ -362,3 +388,39 @@ def test_asyncio_loop_runner_keeps_timed_out_generation_registered() -> None:
     assert AsyncioLoopRunner._local.handle is None
     assert handle not in AsyncioLoopRunner._all_handles
     assert owner_loop.is_closed()
+
+
+def test_asyncio_loop_runner_keeps_worker_handle_registered_after_shutdown_all() -> None:
+    cleanup_loops: list[asyncio.AbstractEventLoop] = []
+
+    def _run(register_cleanup: bool) -> tuple[AsyncioLoopThread, asyncio.AbstractEventLoop, bool]:
+
+        async def _operation() -> tuple[asyncio.AbstractEventLoop, bool]:
+            owner_loop = asyncio.get_running_loop()
+
+            async def _cleanup() -> None:
+                cleanup_loops.append(asyncio.get_running_loop())
+
+            registered = not register_cleanup or AsyncioLoopRunner.register_close_callback(_cleanup)
+            return owner_loop, registered
+
+        owner_loop, registered = AsyncioLoopRunner.run(_operation())
+        return AsyncioLoopRunner._local.handle, owner_loop, registered
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        handle, first_loop, _ = executor.submit(_run, False).result()
+        AsyncioLoopRunner.shutdown_all()
+        assert first_loop.is_closed()
+
+        reused_handle, second_loop, registered = executor.submit(_run, True).result()
+        assert reused_handle is handle
+        assert registered
+        assert handle in AsyncioLoopRunner._all_handles
+
+        AsyncioLoopRunner.shutdown_all()
+        assert second_loop.is_closed()
+        assert cleanup_loops == [second_loop]
+
+        executor.submit(AsyncioLoopRunner.shutdown_for_thread).result()
+
+    assert handle not in AsyncioLoopRunner._all_handles

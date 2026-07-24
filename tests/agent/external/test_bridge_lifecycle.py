@@ -1,3 +1,4 @@
+import aiohttp
 import asyncio
 import gc
 import pytest
@@ -215,7 +216,11 @@ def test_stream_disconnect_waits_for_generation_task(
     asyncio.run(run())
 
 
-def test_stream_disconnect_observes_already_failed_generation_task(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize('protocol', ['openai', 'anthropic', 'gemini'])
+def test_stream_disconnect_observes_already_failed_generation_task(
+    monkeypatch: pytest.MonkeyPatch,
+    protocol: str,
+) -> None:
     unhandled_contexts: list[dict[str, Any]] = []
 
     class FailingModel:
@@ -246,17 +251,23 @@ def test_stream_disconnect_observes_already_failed_generation_task(monkeypatch: 
             recorder=None,
         )
 
-        with pytest.raises(RuntimeError, match='generation failed'):
+        body = {'model': 'test-model'}
+        config = GenerateConfig()
+        if protocol == 'openai':
             await proxy._respond_streaming_openai(
                 None,
                 session,
-                {'model': 'test-model'},
+                body,
                 [],
                 [],
                 None,
-                GenerateConfig(),
+                config,
                 include_usage=False,
             )
+        elif protocol == 'gemini':
+            await proxy._respond_streaming_gemini(None, session, body, [], [], None, config)
+        else:
+            await proxy._respond_streaming(None, session, body, [], [], config)
         gc.collect()
         await asyncio.sleep(0)
 
@@ -264,6 +275,42 @@ def test_stream_disconnect_observes_already_failed_generation_task(monkeypatch: 
     asyncio.run(run())
 
     assert unhandled_contexts == []
+
+
+def test_streaming_upstream_failure_returns_complete_error_response() -> None:
+
+    class FailingModel:
+        name = 'failing-model'
+
+        async def generate_async(self, **kwargs: Any) -> None:
+            raise RuntimeError('generation failed')
+
+    async def run() -> None:
+        proxy = await ModelProxyServer.get_or_start()
+        try:
+            async with proxy.trial_session(model=FailingModel(), framework='test') as session:
+                async with aiohttp.ClientSession() as client:
+                    async with client.post(
+                        f'{proxy.base_url}/openai/v1/chat/completions',
+                        headers={'Authorization': f'Bearer {session.token}'},
+                        json={
+                            'model': 'test-model',
+                            'messages': [{
+                                'role': 'user',
+                                'content': 'test'
+                            }],
+                            'stream': True,
+                        },
+                    ) as response:
+                        body = await response.text()
+
+            assert response.status == 200
+            assert 'generation failed' in body
+            assert 'data: [DONE]' in body
+        finally:
+            await proxy.shutdown()
+
+    asyncio.run(run())
 
 
 def test_stream_write_disconnect_waits_for_generation_task(monkeypatch: pytest.MonkeyPatch) -> None:

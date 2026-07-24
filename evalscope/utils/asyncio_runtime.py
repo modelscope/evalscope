@@ -15,13 +15,19 @@ T = TypeVar('T')
 
 
 async def cancel_and_wait(task: 'asyncio.Task[Any]') -> None:
-    """Cancel an unfinished task and wait until its cleanup completes."""
+    """Cancel and observe a task while preserving cancellation of the caller."""
     if not task.done():
         task.cancel()
+    waiter = asyncio.gather(task, return_exceptions=True)
     try:
-        await task
+        await asyncio.shield(waiter)
     except asyncio.CancelledError:
-        pass
+        if not task.done():
+            task.cancel()
+        await waiter
+        raise
+    if not task.cancelled():
+        task.result()
 
 
 def shutdown_event_loop(loop: asyncio.AbstractEventLoop) -> None:
@@ -349,13 +355,10 @@ class AsyncioLoopRunner:
         """Stop every loop created by this runner."""
         with cls._all_handles_lock:
             handles = list(cls._all_handles)
+        # Only the owner thread can clear its thread-local handle. Keep stopped
+        # handles registered in case a worker thread later starts a generation.
         for handle in handles:
-            if handle.stop(join_timeout=join_timeout):
-                with cls._all_handles_lock:
-                    try:
-                        cls._all_handles.remove(handle)
-                    except ValueError:
-                        pass
+            handle.stop(join_timeout=join_timeout)
 
     @classmethod
     def register_close_callback(cls, cb: Callable[[], Awaitable[None]]) -> bool:
