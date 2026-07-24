@@ -4,11 +4,27 @@ import threading
 import time
 from typing import AsyncGenerator
 
-from evalscope.utils.function_utils import AsyncioLoopRunner, AsyncioLoopThread
+from evalscope.utils.function_utils import AsyncioLoopRunner, AsyncioLoopThread, cancel_and_wait
 
 
 async def _current_loop() -> asyncio.AbstractEventLoop:
     return asyncio.get_running_loop()
+
+
+def test_cancel_and_wait_observes_completed_task_failure() -> None:
+
+    async def _run() -> None:
+
+        async def _fail() -> None:
+            raise RuntimeError('task failed')
+
+        task = asyncio.create_task(_fail())
+        await asyncio.sleep(0)
+
+        with pytest.raises(RuntimeError, match='task failed'):
+            await cancel_and_wait(task)
+
+    asyncio.run(_run())
 
 
 def test_asyncio_loop_thread_survives_caller_loop_shutdown() -> None:
@@ -222,3 +238,112 @@ def test_asyncio_loop_thread_allows_each_callback_its_timeout_budget() -> None:
     runtime.stop(join_timeout=0.25)
 
     assert completed == ['first', 'second']
+
+
+def test_asyncio_loop_thread_immediate_stop_waits_for_owner_thread(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entered_run_forever = threading.Event()
+    release_run_forever = threading.Event()
+    original_run_forever = asyncio.BaseEventLoop.run_forever
+
+    def _delayed_run_forever(loop: asyncio.BaseEventLoop) -> None:
+        entered_run_forever.set()
+        release_run_forever.wait()
+        original_run_forever(loop)
+
+    monkeypatch.setattr(asyncio.BaseEventLoop, 'run_forever', _delayed_run_forever)
+    runtime = AsyncioLoopThread(name='DelayedStartLoop')
+    owner_loop = runtime.loop
+    assert entered_run_forever.wait(timeout=1)
+
+    stop_thread = threading.Thread(target=runtime.stop)
+    stop_thread.start()
+    release_run_forever.set()
+    stop_thread.join(timeout=1)
+
+    assert not stop_thread.is_alive()
+    assert owner_loop.is_closed()
+    assert not runtime.active
+
+
+def test_asyncio_loop_thread_drains_callbacks_registered_during_shutdown() -> None:
+    runtime = AsyncioLoopThread(name='TestLoop')
+    runtime.run_sync(_current_loop())
+    callbacks: list[str] = []
+
+    async def _second_cleanup() -> None:
+        callbacks.append('second')
+
+    async def _first_cleanup() -> None:
+        callbacks.append('first')
+        assert runtime.add_close_callback(_second_cleanup)
+
+    assert runtime.add_close_callback(_first_cleanup)
+    runtime.stop()
+
+    assert callbacks == ['first', 'second']
+
+    runtime.run_sync(_current_loop())
+    runtime.stop()
+    assert callbacks == ['first', 'second']
+
+
+def test_asyncio_loop_thread_drains_task_finalizer_callbacks_before_loop_close() -> None:
+    runtime = AsyncioLoopThread(name='TestLoop')
+    order: list[str] = []
+    callback_loops: list[asyncio.AbstractEventLoop] = []
+
+    async def _late_cleanup() -> None:
+        order.append('late_cleanup')
+        callback_loops.append(asyncio.get_running_loop())
+
+    async def _application_task() -> None:
+        try:
+            await asyncio.Event().wait()
+        finally:
+            order.append('task_finalizer')
+            assert runtime.add_close_callback(_late_cleanup)
+
+    async def _start() -> asyncio.AbstractEventLoop:
+        asyncio.create_task(_application_task())
+        await asyncio.sleep(0)
+        return asyncio.get_running_loop()
+
+    async def _early_cleanup() -> None:
+        order.append('early_cleanup')
+        callback_loops.append(asyncio.get_running_loop())
+
+    owner_loop = runtime.run_sync(_start())
+    assert runtime.add_close_callback(_early_cleanup)
+    runtime.stop()
+
+    assert order == ['early_cleanup', 'task_finalizer', 'late_cleanup']
+    assert callback_loops == [owner_loop, owner_loop]
+    assert owner_loop.is_closed()
+
+
+def test_asyncio_loop_runner_keeps_timed_out_generation_registered() -> None:
+    owner_loop = AsyncioLoopRunner.run(_current_loop())
+    blocker_started = threading.Event()
+    release_blocker = threading.Event()
+
+    def _block_owner_loop() -> None:
+        blocker_started.set()
+        release_blocker.wait()
+
+    owner_loop.call_soon_threadsafe(_block_owner_loop)
+    assert blocker_started.wait(timeout=1)
+
+    AsyncioLoopRunner.shutdown_for_thread(join_timeout=0.01)
+    handle = AsyncioLoopRunner._local.handle
+    assert handle is not None
+    assert handle in AsyncioLoopRunner._all_handles
+    assert handle.owns(owner_loop)
+
+    release_blocker.set()
+    AsyncioLoopRunner.shutdown_for_thread(join_timeout=1)
+
+    assert AsyncioLoopRunner._local.handle is None
+    assert handle not in AsyncioLoopRunner._all_handles
+    assert owner_loop.is_closed()

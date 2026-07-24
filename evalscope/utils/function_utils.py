@@ -3,6 +3,8 @@ import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, wait
+from dataclasses import dataclass, field
+from enum import Enum
 from functools import wraps
 from typing import Any, Awaitable, Callable, Coroutine, Dict, List, Optional, Sequence, TypeVar, Union
 
@@ -20,9 +22,8 @@ _THREAD_SAFE_GLOBAL_LOCK = threading.RLock()
 
 async def cancel_and_wait(task: 'asyncio.Task[Any]') -> None:
     """Cancel an unfinished task and wait until its cleanup completes."""
-    if task.done():
-        return
-    task.cancel()
+    if not task.done():
+        task.cancel()
     try:
         await task
     except asyncio.CancelledError:
@@ -125,6 +126,27 @@ async def async_retry_call(
                 raise
 
 
+class _LoopPhase(Enum):
+    STARTING = 'starting'
+    RUNNING = 'running'
+    STOPPING = 'stopping'
+    CLOSED = 'closed'
+
+
+@dataclass
+class _LoopGeneration:
+    loop: asyncio.AbstractEventLoop
+    phase: _LoopPhase = _LoopPhase.STARTING
+    ready: threading.Event = field(default_factory=threading.Event)
+    stopped: threading.Event = field(default_factory=threading.Event)
+    thread: Optional[threading.Thread] = None
+    close_callbacks: List[Callable[[], Awaitable[None]]] = field(default_factory=list)
+    accepts_close_callbacks: bool = True
+    shutdown_scheduled: bool = False
+    shutdown_task: Optional[asyncio.Task[None]] = None
+    callback_timeout: float = 5.0
+
+
 class AsyncioLoopThread:
     """Long-lived asyncio event loop hosted by one daemon thread.
 
@@ -136,28 +158,21 @@ class AsyncioLoopThread:
         '_name',
         '_health_label',
         '_state_lock',
-        '_stopping',
-        '_loop',
-        '_thread',
-        '_close_callbacks',
-        '_close_callbacks_lock',
+        '_generation',
     )
 
     def __init__(self, name: str, *, health_label: Optional[str] = None) -> None:
         self._name = name
         self._health_label = health_label
         self._state_lock = threading.Lock()
-        self._stopping = False
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
-        self._thread: Optional[threading.Thread] = None
-        self._close_callbacks: List[Callable[[], Awaitable[None]]] = []
-        self._close_callbacks_lock = threading.Lock()
+        self._generation: Optional[_LoopGeneration] = None
 
     @property
     def active(self) -> bool:
         """Return whether the owned event loop is available."""
         with self._state_lock:
-            return self._loop is not None and not self._loop.is_closed() and not self._stopping
+            generation = self._generation
+            return generation is not None and generation.phase in (_LoopPhase.STARTING, _LoopPhase.RUNNING)
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:
@@ -167,135 +182,178 @@ class AsyncioLoopThread:
     def owns(self, loop: asyncio.AbstractEventLoop) -> bool:
         """Return whether ``loop`` is the currently owned event loop."""
         with self._state_lock:
-            return self._loop is loop
+            generation = self._generation
+            return generation is not None and generation.loop is loop and generation.phase is not _LoopPhase.CLOSED
 
     def _ensure_started(self) -> asyncio.AbstractEventLoop:
         with self._state_lock:
-            if self._stopping:
+            return self._ensure_generation_locked().loop
+
+    def _ensure_generation_locked(self) -> _LoopGeneration:
+        generation = self._generation
+        if generation is not None:
+            if generation.phase is _LoopPhase.STOPPING:
                 raise RuntimeError(f'{self._name} is stopping and cannot accept new work.')
-            if self._loop is not None and not self._loop.is_closed():
-                return self._loop
+            if generation.phase is not _LoopPhase.CLOSED:
+                return generation
 
-            loop = asyncio.new_event_loop()
+        loop = asyncio.new_event_loop()
+        generation = _LoopGeneration(loop=loop)
+        thread = threading.Thread(
+            target=self._run_generation,
+            args=(generation, ),
+            daemon=True,
+            name=self._name,
+        )
+        generation.thread = thread
+        self._generation = generation
+        thread.start()
 
-            def _run() -> None:
-                asyncio.set_event_loop(loop)
-                try:
-                    loop.run_forever()
-                finally:
-                    try:
-                        shutdown_event_loop(loop)
-                    finally:
-                        asyncio.set_event_loop(None)
-                        with self._state_lock:
-                            if self._loop is loop:
-                                self._loop = None
-                                self._thread = None
-                                self._stopping = False
+        if _LOOP_HEALTH_ENABLED and self._health_label:
+            loop.call_soon_threadsafe(_install_loop_health_monitor, loop, self._health_label)
+        return generation
 
-            thread = threading.Thread(target=_run, daemon=True, name=self._name)
-            self._loop = loop
-            self._thread = thread
-            thread.start()
-
-            if _LOOP_HEALTH_ENABLED and self._health_label:
-                loop.call_soon_threadsafe(_install_loop_health_monitor, loop, self._health_label)
-            return loop
+    def _run_generation(self, generation: _LoopGeneration) -> None:
+        loop = generation.loop
+        asyncio.set_event_loop(loop)
+        try:
+            with self._state_lock:
+                if generation.phase is _LoopPhase.STARTING:
+                    generation.phase = _LoopPhase.RUNNING
+            generation.ready.set()
+            loop.run_forever()
+        finally:
+            try:
+                shutdown_event_loop(loop)
+            finally:
+                asyncio.set_event_loop(None)
+                with self._state_lock:
+                    generation.phase = _LoopPhase.CLOSED
+                    generation.accepts_close_callbacks = False
+                    if self._generation is generation:
+                        self._generation = None
+                generation.stopped.set()
 
     async def run(self, coro: Coroutine[Any, Any, T]) -> T:
         """Run ``coro`` on the owned loop and await it from any event loop."""
         try:
-            loop = self._ensure_started()
+            running_loop = asyncio.get_running_loop()
+            with self._state_lock:
+                generation = self._ensure_generation_locked()
+                run_on_current_loop = running_loop is generation.loop
+                future = None if run_on_current_loop else asyncio.run_coroutine_threadsafe(coro, generation.loop)
         except BaseException:
             coro.close()
             raise
-        if asyncio.get_running_loop() is loop:
+        if run_on_current_loop:
             return await coro
-
-        future = asyncio.run_coroutine_threadsafe(coro, loop)
+        assert future is not None
         return await asyncio.wrap_future(future)
 
     def run_sync(self, coro: Coroutine[Any, Any, T], timeout: Optional[float] = None) -> T:
         """Run ``coro`` on the owned loop and block until it completes."""
         try:
-            loop = self._ensure_started()
+            try:
+                running_loop = asyncio.get_running_loop()
+            except RuntimeError:
+                running_loop = None
+            with self._state_lock:
+                generation = self._ensure_generation_locked()
+                if running_loop is generation.loop:
+                    raise RuntimeError('Cannot synchronously wait on the owned event loop.')
+                future = asyncio.run_coroutine_threadsafe(coro, generation.loop)
         except BaseException:
             coro.close()
             raise
-        try:
-            running_loop = asyncio.get_running_loop()
-        except RuntimeError:
-            running_loop = None
-        if running_loop is loop:
-            coro.close()
-            raise RuntimeError('Cannot synchronously wait on the owned event loop.')
-
-        future = asyncio.run_coroutine_threadsafe(coro, loop)
         try:
             return future.result(timeout=timeout)
         except Exception:
             future.cancel()
             raise
 
-    def add_close_callback(self, cb: Callable[[], Awaitable[None]]) -> None:
+    def add_close_callback(self, cb: Callable[[], Awaitable[None]]) -> bool:
         """Register an async cleanup callback to run before this loop stops."""
-        with self._close_callbacks_lock:
-            self._close_callbacks.append(cb)
+        with self._state_lock:
+            generation = self._generation
+            if generation is None or not generation.accepts_close_callbacks:
+                return False
+            generation.close_callbacks.append(cb)
+            return True
 
-    async def _run_close_callbacks(self, per_cb_timeout: float) -> None:
-        """Run and clear registered close callbacks on the owned loop."""
-        with self._close_callbacks_lock:
-            callbacks = list(self._close_callbacks)
-            self._close_callbacks.clear()
+    async def _run_close_callback_batch(
+        self,
+        generation: _LoopGeneration,
+        *,
+        close_admission_when_empty: bool,
+    ) -> bool:
+        with self._state_lock:
+            callbacks = list(generation.close_callbacks)
+            generation.close_callbacks.clear()
+            if not callbacks and close_admission_when_empty:
+                generation.accepts_close_callbacks = False
+        if not callbacks:
+            return False
+
         for cb in callbacks:
             try:
-                await asyncio.wait_for(cb(), timeout=per_cb_timeout)
-            except Exception as e:
+                await asyncio.wait_for(cb(), timeout=generation.callback_timeout)
+            except BaseException as e:
                 logger.warning(f'loop close callback failed: {e}')
+        return True
 
-    async def _request_stop(self, loop: asyncio.AbstractEventLoop, per_cb_timeout: float) -> None:
+    async def _cancel_application_tasks(self) -> None:
+        current_task = asyncio.current_task()
+        tasks = [task for task in asyncio.all_tasks() if task is not current_task and not task.done()]
+        for task in tasks:
+            task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def _shutdown_generation(self, generation: _LoopGeneration) -> None:
         try:
-            await self._run_close_callbacks(per_cb_timeout)
+            await self._run_close_callback_batch(generation, close_admission_when_empty=False)
+            await self._cancel_application_tasks()
+            while await self._run_close_callback_batch(generation, close_admission_when_empty=True):
+                pass
         finally:
-            loop.call_later(0, loop.stop)
+            generation.loop.stop()
 
-    def stop(self, join_timeout: float = 5.0) -> None:
+    def _schedule_shutdown(self, generation: _LoopGeneration) -> None:
+        def _start_shutdown() -> None:
+            if generation.shutdown_task is None:
+                generation.shutdown_task = asyncio.create_task(self._shutdown_generation(generation))
+
+        try:
+            generation.loop.call_soon_threadsafe(_start_shutdown)
+        except RuntimeError:
+            pass
+
+    def stop(self, join_timeout: float = 5.0) -> bool:
         """Run cleanup callbacks, stop the loop, and join its thread."""
         with self._state_lock:
-            loop = self._loop
-            thread = self._thread
-            already_stopping = self._stopping
-            if loop is not None:
-                self._stopping = True
+            generation = self._generation
+            if generation is None or generation.phase is _LoopPhase.CLOSED:
+                return True
+            first_stop = not generation.shutdown_scheduled
+            if first_stop:
+                generation.phase = _LoopPhase.STOPPING
+                generation.shutdown_scheduled = True
+                generation.callback_timeout = join_timeout
+            thread = generation.thread
+            callback_count = len(generation.close_callbacks)
 
-        if loop is None:
-            return
-        if already_stopping:
-            if thread is not None and thread is not threading.current_thread():
-                thread.join(timeout=join_timeout)
-            return
+        if first_stop:
+            generation.ready.wait(timeout=join_timeout)
+            self._schedule_shutdown(generation)
 
         if thread is threading.current_thread():
-            loop.call_later(0, asyncio.create_task, self._request_stop(loop, join_timeout))
-            return
+            return False
 
-        if loop.is_running():
-            with self._close_callbacks_lock:
-                callback_count = len(self._close_callbacks)
-            future = asyncio.run_coroutine_threadsafe(self._request_stop(loop, join_timeout), loop)
-            try:
-                future.result(timeout=join_timeout * (callback_count + 1))
-            except Exception as e:
-                future.cancel()
-                logger.warning(f'loop shutdown request failed: {e}')
-                try:
-                    loop.call_soon_threadsafe(loop.stop)
-                except RuntimeError:
-                    pass
-        if thread is not None:
-            thread.join(timeout=join_timeout)
-            if thread.is_alive():
-                logger.warning(f'{self._name} did not stop within {join_timeout} seconds')
+        wait_timeout = join_timeout * (callback_count + 2)
+        stopped = generation.stopped.wait(timeout=wait_timeout)
+        if not stopped:
+            logger.warning(f'{self._name} did not stop within {wait_timeout} seconds')
+        return stopped
 
 
 # Health monitor: schedules a periodic call_soon and measures the wall-clock
@@ -368,7 +426,8 @@ class AsyncioLoopRunner:
         handle: Optional[AsyncioLoopThread] = getattr(cls._local, 'handle', None)
         if handle is None:
             return
-        handle.stop(join_timeout=join_timeout)
+        if not handle.stop(join_timeout=join_timeout):
+            return
         cls._local.handle = None
         with cls._all_handles_lock:
             try:
@@ -381,9 +440,13 @@ class AsyncioLoopRunner:
         """Stop every loop ever created by this runner. For atexit only."""
         with cls._all_handles_lock:
             handles = list(cls._all_handles)
-            cls._all_handles.clear()
         for h in handles:
-            h.stop(join_timeout=join_timeout)
+            if h.stop(join_timeout=join_timeout):
+                with cls._all_handles_lock:
+                    try:
+                        cls._all_handles.remove(h)
+                    except ValueError:
+                        pass
 
     @classmethod
     def register_close_callback(cls, cb: Callable[[], Awaitable[None]]) -> bool:
@@ -402,8 +465,7 @@ class AsyncioLoopRunner:
         with cls._all_handles_lock:
             for handle in cls._all_handles:
                 if handle.owns(running):
-                    handle.add_close_callback(cb)
-                    return True
+                    return handle.add_close_callback(cb)
         return False
 
     @classmethod
