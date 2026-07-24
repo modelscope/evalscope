@@ -25,6 +25,7 @@ from evalscope.api.sandbox import (
     SandboxService,
     build_sandbox_config,
     ensure_docker_image_built,
+    get_sandbox_service,
     merge_sandbox_config_dicts,
     normalize_docker_build_context,
     resolve_engine,
@@ -403,6 +404,92 @@ class TestSandboxServiceCache:
         assert start_cancelled.is_set()
         assert manager.stop_calls == 1
 
+    def test_shutdown_rejects_new_manager_while_existing_manager_stops(self, service):
+        stop_entered = threading.Event()
+        release_stop = threading.Event()
+
+        class SlowStopManager:
+
+            async def start(self):
+                return None
+
+            async def stop(self):
+                stop_entered.set()
+                await asyncio.to_thread(release_stop.wait)
+
+        manager = SlowStopManager()
+
+        async def _run():
+            with patch.object(service, '_construct_manager', return_value=manager) as construct:
+                await service.get_or_create_manager(SandboxEngine.DOCKER, {})
+                shutdown_task = asyncio.create_task(service.shutdown_all_async())
+                assert await asyncio.to_thread(stop_entered.wait, 1)
+
+                try:
+                    with pytest.raises(RuntimeError, match='closing|closed'):
+                        await service.get_or_create_manager(SandboxEngine.DOCKER, {'base_url': 'new'})
+                finally:
+                    release_stop.set()
+                    await shutdown_task
+                assert service._managers == {}
+                construct.assert_called_once()
+
+        asyncio.run(_run())
+
+    def test_shutdown_waits_for_accepted_manager_operation(self, service):
+        operation_started = threading.Event()
+        release_operation = threading.Event()
+        stop_entered = threading.Event()
+
+        class BusyManager:
+
+            async def start(self):
+                return None
+
+            async def execute_tool_in_pool(self, tool_name, parameters):
+                operation_started.set()
+                await asyncio.to_thread(release_operation.wait)
+                return 'done'
+
+            async def stop(self):
+                stop_entered.set()
+
+        manager = BusyManager()
+
+        async def _run():
+            with patch.object(service, '_construct_manager', return_value=manager):
+                cached = await service.get_or_create_manager(SandboxEngine.DOCKER, {})
+                handle = PoolHandle(cached, service=service)
+                operation_task = asyncio.create_task(handle.execute_tool('shell_executor', {}))
+                assert await asyncio.to_thread(operation_started.wait, 1)
+
+                shutdown_task = asyncio.create_task(service.shutdown_all_async())
+
+                try:
+
+                    async def _wait_for_closing() -> None:
+                        while service._phase.value == 'open':
+                            await asyncio.sleep(0)
+
+                    await asyncio.wait_for(_wait_for_closing(), timeout=1)
+                    assert not stop_entered.is_set()
+                finally:
+                    release_operation.set()
+                    assert await operation_task == 'done'
+                    await shutdown_task
+                assert stop_entered.is_set()
+
+        asyncio.run(_run())
+
+    def test_closed_service_rejects_reuse(self, service):
+
+        async def _run():
+            await service.shutdown_all_async()
+            with pytest.raises(RuntimeError, match='closed'):
+                await service.get_or_create_manager(SandboxEngine.DOCKER, {})
+
+        asyncio.run(_run())
+
     def test_shutdown_sandbox_service_noop_when_uncreated(self):
         from evalscope.api.sandbox import service as service_module
 
@@ -423,6 +510,22 @@ class TestSandboxServiceCache:
             shutdown_sandbox_service()
             fake.shutdown_all.assert_called_once()
         finally:
+            service_module._SERVICE = old_service
+
+    def test_shutdown_sandbox_service_recreates_singleton(self):
+        from evalscope.api.sandbox import service as service_module
+
+        old_service = service_module._SERVICE
+        service_module._SERVICE = None
+        try:
+            first = get_sandbox_service()
+            shutdown_sandbox_service()
+            second = get_sandbox_service()
+
+            assert second is not first
+            assert service_module._SERVICE is second
+        finally:
+            shutdown_sandbox_service()
             service_module._SERVICE = old_service
 
 

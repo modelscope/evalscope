@@ -17,8 +17,10 @@ import asyncio
 import atexit
 import json
 import threading
+from concurrent.futures import Future
+from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Coroutine, Dict, List, Optional, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Coroutine, Dict, List, Optional, Set, Tuple, TypeVar
 
 from evalscope.utils.function_utils import AsyncioLoopThread
 from evalscope.utils.logger import get_logger
@@ -139,11 +141,18 @@ def _freeze(cfg: Optional[Dict[str, Any]]) -> str:
         return repr(cfg or {})
 
 
+class _ServicePhase(Enum):
+    OPEN = 'open'
+    CLOSING = 'closing'
+    CLOSED = 'closed'
+
+
 class SandboxService:
     """Process-level registry of ms_enclave ``SandboxManager`` instances.
 
-    Access via :func:`get_sandbox_service`; the singleton is installed at
-    import time and cleaned up through ``atexit``.
+    Access via :func:`get_sandbox_service`; the lazily created singleton is
+    cleaned up explicitly after evaluation or through a process-level atexit
+    fallback.
     """
 
     def __init__(self) -> None:
@@ -153,6 +162,10 @@ class SandboxService:
         self._manager_starts: Dict[Tuple[SandboxEngine, str], asyncio.Task['SandboxManager']] = {}
         self._pool_starts: Dict[Tuple[SandboxEngine, str], asyncio.Task[None]] = {}
         self._runtime = AsyncioLoopThread(name='SandboxServiceLoop')
+        self._state_lock = threading.Lock()
+        self._phase = _ServicePhase.OPEN
+        self._operations: Set[Future[Any]] = set()
+        self._shutdown_future: Optional[Future[None]] = None
 
     # ------------------------------------------------------------------
     # Dedicated async runtime
@@ -160,14 +173,35 @@ class SandboxService:
 
     async def _run(self, operation: Coroutine[Any, Any, T]) -> T:
         """Run a manager operation on the loop that owns its async resources."""
-        return await self._runtime.run(operation)
+        future = self._submit_operation(operation)
+        return await asyncio.shield(asyncio.wrap_future(future))
 
     def _run_sync(
         self,
         operation: Coroutine[Any, Any, T],
         timeout: Optional[float] = None,
     ) -> T:
-        return self._runtime.run_sync(operation, timeout)
+        future = self._submit_operation(operation)
+        return future.result(timeout=timeout)
+
+    def _submit_operation(self, operation: Coroutine[Any, Any, T]) -> 'Future[T]':
+        with self._state_lock:
+            if self._phase is not _ServicePhase.OPEN:
+                operation.close()
+                raise RuntimeError(f'SandboxService is {self._phase.value} and cannot accept new work.')
+            future = self._runtime.submit(operation)
+            self._operations.add(future)
+        future.add_done_callback(self._finish_operation)
+        return future
+
+    def _finish_operation(self, future: Future[Any]) -> None:
+        with self._state_lock:
+            self._operations.discard(future)
+
+    @property
+    def _accepting_work(self) -> bool:
+        with self._state_lock:
+            return self._phase is _ServicePhase.OPEN
 
     # ------------------------------------------------------------------
     # Manager cache
@@ -343,32 +377,71 @@ class SandboxService:
     # ------------------------------------------------------------------
 
     async def shutdown_all_async(self) -> None:
-        try:
-            await self._run(self._shutdown_all_async())
-        finally:
-            self._runtime.stop()
+        future = self._begin_shutdown()
+        if future is not None:
+            await asyncio.shield(asyncio.wrap_future(future))
+        await self._stop_runtime_async()
 
-    async def _shutdown_all_async(self) -> None:
+    def _begin_shutdown(self) -> Optional[Future[None]]:
+        with self._state_lock:
+            if self._shutdown_future is not None:
+                return self._shutdown_future
+            if self._phase is _ServicePhase.CLOSED:
+                return None
+
+            self._phase = _ServicePhase.CLOSING
+            operations = list(self._operations)
+            try:
+                future = self._runtime.submit(self._shutdown_on_owner_loop(operations))
+            except BaseException:
+                self._phase = _ServicePhase.OPEN
+                raise
+            self._shutdown_future = future
+        future.add_done_callback(self._finish_shutdown)
+        return future
+
+    def _finish_shutdown(self, future: Future[None]) -> None:
+        self._runtime.stop()
+
+    async def _shutdown_on_owner_loop(self, operations: List[Future[Any]]) -> None:
+        """Drain accepted work and close every manager on the service loop."""
         await self._cancel_tasks(list(self._pool_starts.values()))
         await self._cancel_tasks(list(self._manager_starts.values()))
         self._pool_starts.clear()
         self._manager_starts.clear()
 
-        managers = list(self._managers.values())
-        self._managers.clear()
-        for manager in managers:
-            await self._stop_manager(manager)
+        if operations:
+            await asyncio.gather(*(asyncio.wrap_future(future) for future in operations), return_exceptions=True)
+
+        try:
+            managers = list(self._managers.values())
+            self._managers.clear()
+            for manager in managers:
+                await self._stop_manager(manager)
+        finally:
+            self._pool_starts.clear()
+            self._manager_starts.clear()
+            self._managers.clear()
+            with self._state_lock:
+                self._phase = _ServicePhase.CLOSED
+
+    async def _stop_runtime_async(self) -> None:
+        if self._runtime.owns(asyncio.get_running_loop()):
+            self._runtime.stop()
+            return
+        await asyncio.to_thread(self._runtime.stop)
 
     def shutdown_all(self) -> None:
         """Synchronous wrapper around :meth:`shutdown_all_async`."""
-        if not self._managers and not self._manager_starts and not self._pool_starts and not self._runtime.active:
-            return
+        future = self._begin_shutdown()
         try:
-            self._run_sync(self._shutdown_all_async(), timeout=600)
+            if future is not None:
+                future.result(timeout=600)
         except Exception as exc:
             logger.warning(f'SandboxService: shutdown_all failed: {exc}')
         finally:
-            self._runtime.stop()
+            if future is None or future.done():
+                self._runtime.stop()
 
 
 # ---------------------------------------------------------------------------
@@ -382,12 +455,10 @@ _SERVICE_LOCK = threading.Lock()
 def get_sandbox_service() -> SandboxService:
     """Return the process-wide :class:`SandboxService` singleton."""
     global _SERVICE
-    if _SERVICE is None:
-        with _SERVICE_LOCK:
-            if _SERVICE is None:
-                _SERVICE = SandboxService()
-                atexit.register(_SERVICE.shutdown_all)
-    return _SERVICE
+    with _SERVICE_LOCK:
+        if _SERVICE is None or not _SERVICE._accepting_work:
+            _SERVICE = SandboxService()
+        return _SERVICE
 
 
 def shutdown_sandbox_service() -> None:
@@ -398,9 +469,15 @@ def shutdown_sandbox_service() -> None:
     The atexit hook remains a last-resort fallback for callers that do not
     perform explicit teardown.
     """
-    if _SERVICE is None:
-        return
-    _SERVICE.shutdown_all()
+    global _SERVICE
+    with _SERVICE_LOCK:
+        service = _SERVICE
+        _SERVICE = None
+    if service is not None:
+        service.shutdown_all()
+
+
+atexit.register(shutdown_sandbox_service)
 
 
 # ---------------------------------------------------------------------------

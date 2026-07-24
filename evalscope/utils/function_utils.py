@@ -2,7 +2,7 @@ import asyncio
 import os
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
 from enum import Enum
 from functools import wraps
@@ -249,6 +249,16 @@ class AsyncioLoopThread:
             return await coro
         assert future is not None
         return await asyncio.wrap_future(future)
+
+    def submit(self, coro: Coroutine[Any, Any, T]) -> 'Future[T]':
+        """Atomically admit and submit ``coro`` to the owned loop."""
+        try:
+            with self._state_lock:
+                generation = self._ensure_generation_locked()
+                return asyncio.run_coroutine_threadsafe(coro, generation.loop)
+        except BaseException:
+            coro.close()
+            raise
 
     def run_sync(self, coro: Coroutine[Any, Any, T], timeout: Optional[float] = None) -> T:
         """Run ``coro`` on the owned loop and block until it completes."""
