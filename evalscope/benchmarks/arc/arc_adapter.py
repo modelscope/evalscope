@@ -59,7 +59,11 @@ class ARCAdapter(MultiChoiceAdapter):
     def record_to_sample(self, record) -> Sample:
         # Convert choice labels to indices (A->0, B->1, etc.)
         choice_texts = record['choices']['text']
+        # ARC dataset answerKey is mostly a letter ("A"-"D"), but some entries
+        # use digit strings ("1"-"4"). Normalise everything to letters.
         answer_key = record['answerKey']
+        if answer_key.isdigit():
+            answer_key = chr(ord('A') + int(answer_key) - 1)
 
         return Sample(
             input=record['question'],
