@@ -171,7 +171,6 @@ async def run_benchmark_pipeline(
         if drain_task is not None:
             tasks.append(drain_task)
         await asyncio.gather(*(cancel_and_wait(task) for task in tasks), return_exceptions=True)
-        await asyncio.gather(*tasks, return_exceptions=True)
 
 
 @exception_handler

@@ -329,6 +329,7 @@ class AsyncioLoopThread:
             generation.loop.stop()
 
     def _schedule_shutdown(self, generation: _LoopGeneration) -> None:
+
         def _start_shutdown() -> None:
             if generation.shutdown_task is None:
                 generation.shutdown_task = asyncio.create_task(self._shutdown_generation(generation))

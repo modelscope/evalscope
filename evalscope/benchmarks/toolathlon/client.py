@@ -434,7 +434,6 @@ async def run_ws_proxy(server_url: str, llm_base_url: str, llm_api_key: str, job
                     *(cancel_and_wait(task) for task in active_request_tasks),
                     return_exceptions=True,
                 )
-                await asyncio.gather(*active_request_tasks, return_exceptions=True)
                 active_request_tasks.clear()
 
         async def send_heartbeat() -> None:
@@ -456,4 +455,3 @@ async def run_ws_proxy(server_url: str, llm_base_url: str, llm_api_key: str, job
                     task.result()
             finally:
                 await asyncio.gather(*(cancel_and_wait(task) for task in tasks), return_exceptions=True)
-                await asyncio.gather(*tasks, return_exceptions=True)

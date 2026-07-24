@@ -479,7 +479,6 @@ def shutdown_sandbox_service() -> None:
 
 atexit.register(shutdown_sandbox_service)
 
-
 # ---------------------------------------------------------------------------
 # Convenience helpers used by CodeExecutionSandboxMixin / EnclaveAgentEnvironment
 # ---------------------------------------------------------------------------

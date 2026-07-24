@@ -1,4 +1,5 @@
 import asyncio
+import gc
 import pytest
 from types import SimpleNamespace
 from typing import Any, Iterator
@@ -62,7 +63,7 @@ def test_cancelled_start_waiter_does_not_orphan_shared_instance(monkeypatch: pyt
     async def slow_start(self: ModelProxyServer) -> None:
         start_entered.set()
         await release_start.wait()
-        self._started = True
+        self._phase = type(self._phase).RUNNING
 
     async def run() -> None:
         owner_loop = asyncio.get_running_loop()
@@ -106,6 +107,48 @@ def test_start_failure_cleans_runner_and_registry(monkeypatch: pytest.MonkeyPatc
     asyncio.run(run())
 
     runner.cleanup.assert_awaited_once()
+
+
+def test_get_or_start_waits_for_closing_instance_before_replacing_it() -> None:
+
+    async def run() -> None:
+        owner_loop = asyncio.get_running_loop()
+        first = await ModelProxyServer.get_or_start()
+        assert first._runner is not None
+
+        cleanup_entered = asyncio.Event()
+        release_cleanup = asyncio.Event()
+        original_cleanup = first._runner.cleanup
+        cleanup_calls = 0
+
+        async def blocking_cleanup() -> None:
+            nonlocal cleanup_calls
+            cleanup_calls += 1
+            cleanup_entered.set()
+            await release_cleanup.wait()
+            await original_cleanup()
+
+        first._runner = SimpleNamespace(cleanup=blocking_cleanup)
+        shutdown_task = asyncio.create_task(first.shutdown())
+        await cleanup_entered.wait()
+        second_shutdown_task = asyncio.create_task(first.shutdown())
+
+        replacement_task = asyncio.create_task(ModelProxyServer.get_or_start())
+        await asyncio.sleep(0)
+        assert not replacement_task.done()
+        assert not second_shutdown_task.done()
+        assert ModelProxyServer._instances == {owner_loop: first}
+
+        release_cleanup.set()
+        await asyncio.gather(shutdown_task, second_shutdown_task)
+        assert cleanup_calls == 1
+        replacement = await replacement_task
+
+        assert replacement is not first
+        assert ModelProxyServer._instances == {owner_loop: replacement}
+        await replacement.shutdown()
+
+    asyncio.run(run())
 
 
 @pytest.mark.parametrize('protocol', ['openai', 'anthropic', 'gemini'])
@@ -170,6 +213,57 @@ def test_stream_disconnect_waits_for_generation_task(
 
     monkeypatch.setattr(ModelProxyServer, '_prepare_sse_response', staticmethod(prepare_response))
     asyncio.run(run())
+
+
+def test_stream_disconnect_observes_already_failed_generation_task(monkeypatch: pytest.MonkeyPatch) -> None:
+    unhandled_contexts: list[dict[str, Any]] = []
+
+    class FailingModel:
+
+        async def generate_async(self, **kwargs: Any) -> None:
+            raise RuntimeError('generation failed')
+
+    class DisconnectedResponse:
+
+        async def write(self, chunk: bytes) -> None:
+            await asyncio.sleep(0)
+            raise ConnectionResetError
+
+        async def write_eof(self) -> None:
+            return None
+
+    async def prepare_response(request: Any) -> DisconnectedResponse:
+        return DisconnectedResponse()
+
+    async def run() -> None:
+        loop = asyncio.get_running_loop()
+        loop.set_exception_handler(lambda _loop, context: unhandled_contexts.append(context))
+        proxy = ModelProxyServer('127.0.0.1', None, loop)
+        session = SimpleNamespace(
+            model=FailingModel(),
+            framework='test',
+            trial_id='test-trial',
+            recorder=None,
+        )
+
+        with pytest.raises(RuntimeError, match='generation failed'):
+            await proxy._respond_streaming_openai(
+                None,
+                session,
+                {'model': 'test-model'},
+                [],
+                [],
+                None,
+                GenerateConfig(),
+                include_usage=False,
+            )
+        gc.collect()
+        await asyncio.sleep(0)
+
+    monkeypatch.setattr(ModelProxyServer, '_prepare_sse_response', staticmethod(prepare_response))
+    asyncio.run(run())
+
+    assert unhandled_contexts == []
 
 
 def test_stream_write_disconnect_waits_for_generation_task(monkeypatch: pytest.MonkeyPatch) -> None:
