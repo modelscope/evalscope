@@ -55,23 +55,27 @@ class LoopBoundAsyncClientPool(Generic[_AsyncClientT]):
             return
 
         if loop.is_closed() or not loop.is_running():
-            self._discard(loop, client)
             raise RuntimeError(
                 'Cannot close an async model client after its owner event loop has stopped. '
                 'Call ModelAPI.aclose() before shutting down the loop.'
             )
 
         future = asyncio.run_coroutine_threadsafe(self._close_on_owner_loop(loop, client), loop)
-        await asyncio.wrap_future(future)
+        try:
+            await asyncio.wrap_future(future)
+        except BaseException:
+            if not future.done() or future.cancelled():
+                future.cancel()
+                self._restore(loop, client)
+            raise
 
     async def _close_on_owner_loop(self, loop: asyncio.AbstractEventLoop, client: _AsyncClientT) -> None:
         if not self._take(loop, client):
             return
         try:
             await client.close()
-        except Exception:
-            with self._lock:
-                self._clients.setdefault(loop, client)
+        except BaseException:
+            self._restore(loop, client)
             raise
 
     def _take(self, loop: asyncio.AbstractEventLoop, client: _AsyncClientT) -> bool:
@@ -81,7 +85,6 @@ class LoopBoundAsyncClientPool(Generic[_AsyncClientT]):
             self._clients.pop(loop)
             return True
 
-    def _discard(self, loop: asyncio.AbstractEventLoop, client: _AsyncClientT) -> None:
+    def _restore(self, loop: asyncio.AbstractEventLoop, client: _AsyncClientT) -> None:
         with self._lock:
-            if self._clients.get(loop) is client:
-                self._clients.pop(loop)
+            self._clients.setdefault(loop, client)

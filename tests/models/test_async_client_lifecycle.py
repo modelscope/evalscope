@@ -152,5 +152,50 @@ def test_aclose_rejects_cleanup_after_owner_loop_stops(monkeypatch: pytest.Monke
 
     with pytest.raises(RuntimeError, match='before shutting down the loop'):
         asyncio.run(api.aclose())
+    with pytest.raises(RuntimeError, match='before shutting down the loop'):
+        asyncio.run(api.aclose())
 
     assert client.close_loops == []
+
+
+def test_cancelled_aclose_restores_client_for_retry(monkeypatch: pytest.MonkeyPatch) -> None:
+    created_clients: List[_FakeAsyncClient] = []
+    close_started = asyncio.Event()
+    release_close = asyncio.Event()
+
+    class BlockingAsyncClient(_FakeAsyncClient):
+
+        async def close(self) -> None:
+            self.close_loops.append(asyncio.get_running_loop())
+            close_started.set()
+            await release_close.wait()
+
+    from evalscope.models import openai_compatible
+
+    monkeypatch.setattr(openai_compatible, 'OpenAI', lambda **kwargs: object())
+    monkeypatch.setattr(
+        openai_compatible,
+        'AsyncOpenAI',
+        lambda **kwargs: BlockingAsyncClient(created_clients, **kwargs),
+    )
+    api = openai_compatible.OpenAICompatibleAPI(
+        model_name='test-model',
+        base_url='https://example.test/v1',
+        api_key='test-key',
+    )
+
+    async def _run() -> None:
+        client = api.async_client
+        close_task = asyncio.create_task(api.aclose())
+        await close_started.wait()
+
+        close_task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await close_task
+
+        assert api.async_client is client
+        release_close.set()
+        await api.aclose()
+        assert client.close_loops == [client.owner_loop, client.owner_loop]
+
+    asyncio.run(_run())
