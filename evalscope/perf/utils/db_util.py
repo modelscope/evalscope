@@ -246,9 +246,11 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Percent
             ) if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows],
         }
 
-    # Calculate percentiles for each metric and build transposed dict
-    percentile_labels = [f'{p}%' for p in percentiles] + ['max']
-    all_percentiles = percentiles + [100]
+    # Calculate percentiles for each metric and build transposed dict.
+    # Percentile 0 maps to the sorted minimum, surfaced as the 'min' row so
+    # best-case latency can be read alongside 'max' and the p99 tail.
+    percentile_labels = ['min'] + [f'{p}%' for p in percentiles] + ['max']
+    all_percentiles = [0] + percentiles + [100]
     transposed: Dict[str, list] = {PercentileMetrics.PERCENTILES: percentile_labels}
     for metric_name, data in metrics.items():
         metric_percentiles = calculate_percentiles(data, all_percentiles)
