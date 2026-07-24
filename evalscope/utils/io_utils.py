@@ -392,7 +392,7 @@ def dict_to_yaml(d: dict, yaml_file: str) -> None:
             created automatically.
     """
     _ensure_dir(os.path.dirname(yaml_file))
-    with open(yaml_file, 'w') as f:
+    with open(yaml_file, 'w', encoding='utf-8') as f:
         yaml.dump(d, f, default_flow_style=False, allow_unicode=True, Dumper=yaml.SafeDumper)
 
 
@@ -408,7 +408,7 @@ def json_to_dict(json_file: str) -> Any:
     Raises:
         json.JSONDecodeError: When the file cannot be parsed.
     """
-    with open(json_file, 'r') as f:
+    with open(json_file, 'r', encoding='utf-8') as f:
         try:
             return json.load(f)
         except json.JSONDecodeError as e:
@@ -426,7 +426,7 @@ def dict_to_json(d: dict, json_file: str) -> None:
     """
     json_file = os.path.expanduser(json_file)
     _ensure_dir(os.path.dirname(json_file))
-    with open(json_file, 'w') as f:
+    with open(json_file, 'w', encoding='utf-8') as f:
         json.dump(d, f, indent=4, ensure_ascii=False)
 
 

@@ -36,7 +36,7 @@ class DashScopeApiPlugin(ApiPluginBase):
                 if param.query_template.startswith('@'):
                     file_path = param.query_template[1:]
                     if os.path.exists(file_path):
-                        with open(file_path, 'r') as file:
+                        with open(file_path, 'r', encoding='utf-8') as file:
                             query = json.load(file)
                     else:
                         raise FileNotFoundError(f'{file_path}')

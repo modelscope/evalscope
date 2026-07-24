@@ -91,12 +91,12 @@ class CollectionSchema:
 
     def dump_json(self, file_path: str) -> None:
         d = self.to_dict()
-        with open(file_path, 'w') as f:
+        with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(d, f, ensure_ascii=False, indent=4)
 
     @classmethod
     def from_json(cls, file_path: str) -> 'CollectionSchema':
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         return cls.from_dict(data)
 

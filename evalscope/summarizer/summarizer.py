@@ -26,7 +26,7 @@ class Summarizer:
 
         report_files: list = glob.glob(os.path.join(reports_dir, '**/*.json'))
         for report_file in report_files:
-            with open(report_file, 'r') as f:
+            with open(report_file, 'r', encoding='utf-8') as f:
                 res_list.append(json.load(f))
 
         report_table: str = gen_table(reports_path_list=[reports_dir])

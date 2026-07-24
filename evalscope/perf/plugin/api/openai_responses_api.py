@@ -185,7 +185,7 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
     def _load_query_template(query_template: str) -> Dict:
         if query_template.startswith('@'):
             file_path = query_template[1:]
-            with open(file_path, 'r') as file:
+            with open(file_path, 'r', encoding='utf-8') as file:
                 return json.load(file)
         return json.loads(query_template)
 
