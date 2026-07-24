@@ -140,12 +140,7 @@ class BenchmarkData:
 
 
 # ===========================================================================
-# Layer 2: Metric name constants + API type classification
-# (Defined in perf_constants — single source of truth; imported above)
-# ===========================================================================
-
-# ===========================================================================
-# Layer 3: Real-time metrics accumulator (mutable, updated per request)
+# Layer 2: Real-time metrics accumulator (mutable, updated per request)
 # ===========================================================================
 
 
@@ -399,7 +394,7 @@ class MetricsAccumulator:
 
 
 # ===========================================================================
-# Layer 4: Immutable result snapshot + serialization
+# Layer 3: Immutable result snapshot + serialization
 # ===========================================================================
 
 
