@@ -67,6 +67,27 @@ class _LoopGeneration:
     callback_timeout: float = 5.0
 
 
+# A delayed heartbeat identifies synchronous calls that block an owned loop.
+_LOOP_HEALTH_ENABLED: bool = os.environ.get('EVALSCOPE_LOOP_HEALTH', '0') in ('1', 'true', 'TRUE')
+_LOOP_HEALTH_INTERVAL_S: float = float(os.environ.get('EVALSCOPE_LOOP_HEALTH_INTERVAL', '0.5') or 0.5)
+_LOOP_HEALTH_THRESHOLD_S: float = float(os.environ.get('EVALSCOPE_LOOP_HEALTH_THRESHOLD', '0.5') or 0.5)
+
+
+def _install_loop_health_monitor(loop: asyncio.AbstractEventLoop, label: str) -> None:
+    """Schedule a self-renewing heartbeat on ``loop`` to detect blocking."""
+    state = {'last': time.monotonic()}
+
+    def _tick() -> None:
+        now = time.monotonic()
+        delay = now - state['last'] - _LOOP_HEALTH_INTERVAL_S
+        if delay > _LOOP_HEALTH_THRESHOLD_S:
+            logger.warning(f'[loop-health] {label}: loop blocked for {delay * 1000:.0f}ms')
+        state['last'] = now
+        loop.call_later(_LOOP_HEALTH_INTERVAL_S, _tick)
+
+    loop.call_later(_LOOP_HEALTH_INTERVAL_S, _tick)
+
+
 class AsyncioLoopThread:
     """Long-lived asyncio event loop hosted by one daemon thread.
 
@@ -287,27 +308,6 @@ class AsyncioLoopThread:
         if not stopped:
             logger.warning(f'{self._name} did not stop within {wait_timeout} seconds')
         return stopped
-
-
-# A delayed heartbeat identifies synchronous calls that block an owned loop.
-_LOOP_HEALTH_ENABLED: bool = os.environ.get('EVALSCOPE_LOOP_HEALTH', '0') in ('1', 'true', 'TRUE')
-_LOOP_HEALTH_INTERVAL_S: float = float(os.environ.get('EVALSCOPE_LOOP_HEALTH_INTERVAL', '0.5') or 0.5)
-_LOOP_HEALTH_THRESHOLD_S: float = float(os.environ.get('EVALSCOPE_LOOP_HEALTH_THRESHOLD', '0.5') or 0.5)
-
-
-def _install_loop_health_monitor(loop: asyncio.AbstractEventLoop, label: str) -> None:
-    """Schedule a self-renewing heartbeat on ``loop`` to detect blocking."""
-    state = {'last': time.monotonic()}
-
-    def _tick() -> None:
-        now = time.monotonic()
-        delay = now - state['last'] - _LOOP_HEALTH_INTERVAL_S
-        if delay > _LOOP_HEALTH_THRESHOLD_S:
-            logger.warning(f'[loop-health] {label}: loop blocked for {delay * 1000:.0f}ms')
-        state['last'] = now
-        loop.call_later(_LOOP_HEALTH_INTERVAL_S, _tick)
-
-    loop.call_later(_LOOP_HEALTH_INTERVAL_S, _tick)
 
 
 class AsyncioLoopRunner:
