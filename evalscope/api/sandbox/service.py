@@ -22,7 +22,7 @@ from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Coroutine, Dict, List, Optional, Set, Tuple, TypeVar
 
-from evalscope.utils.function_utils import AsyncioLoopThread
+from evalscope.utils.asyncio_runtime import AsyncioLoopThread
 from evalscope.utils.logger import get_logger
 from .config_builder import build_sandbox_config
 from .engine import SandboxEngine, get_enclave_types, resolve_engine
@@ -32,16 +32,6 @@ if TYPE_CHECKING:
 
 logger = get_logger()
 T = TypeVar('T')
-
-
-async def _run_manager_operation(
-    service: Optional['SandboxService'],
-    operation: Coroutine[Any, Any, T],
-) -> T:
-    if service is None:
-        return await operation
-    return await service._run(operation)
-
 
 # ---------------------------------------------------------------------------
 # Handles: returned to callers instead of raw SandboxManager to keep the
@@ -60,7 +50,7 @@ class PoolHandle:
     def __init__(
         self,
         manager: 'SandboxManager',
-        service: Optional['SandboxService'] = None,
+        service: 'SandboxService',
     ) -> None:
         self._manager = manager
         self._service = service
@@ -70,10 +60,7 @@ class PoolHandle:
         return self._manager
 
     async def execute_tool(self, tool_name: str, parameters: Dict[str, Any]) -> Any:
-        return await _run_manager_operation(
-            self._service,
-            self._manager.execute_tool_in_pool(tool_name, parameters),
-        )
+        return await self._service._run(self._manager.execute_tool_in_pool(tool_name, parameters))
 
 
 class SandboxHandle:
@@ -86,7 +73,7 @@ class SandboxHandle:
         self,
         manager: 'SandboxManager',
         sandbox_id: str,
-        service: Optional['SandboxService'] = None,
+        service: 'SandboxService',
     ) -> None:
         self._manager = manager
         self._sandbox_id: Optional[str] = sandbox_id
@@ -100,27 +87,21 @@ class SandboxHandle:
         if self._sandbox_id is None:
             raise RuntimeError('SandboxHandle already closed')
         sandbox_id = self._sandbox_id
-        return await _run_manager_operation(
-            self._service,
-            self._manager.execute_tool(sandbox_id, tool_name, parameters),
-        )
+        return await self._service._run(self._manager.execute_tool(sandbox_id, tool_name, parameters))
 
     async def put_dir(self, source_dir: str | Path, target_dir: str) -> bool:
         """Copy a host directory into the sandbox via ms_enclave SandboxManager."""
         if self._sandbox_id is None:
             raise RuntimeError('SandboxHandle already closed')
         sandbox_id = self._sandbox_id
-        return await _run_manager_operation(
-            self._service,
-            self._manager.put_dir(sandbox_id, source_dir, target_dir),
-        )
+        return await self._service._run(self._manager.put_dir(sandbox_id, source_dir, target_dir))
 
     async def close(self) -> None:
         if self._sandbox_id is None:
             return
         sandbox_id = self._sandbox_id
         try:
-            await _run_manager_operation(self._service, self._manager.delete_sandbox(sandbox_id))
+            await self._service._run(self._manager.delete_sandbox(sandbox_id))
             logger.debug(f'SandboxService: sandbox {sandbox_id} deleted.')
         except Exception as exc:
             logger.warning(f'SandboxService: error deleting sandbox {sandbox_id}: {exc}')

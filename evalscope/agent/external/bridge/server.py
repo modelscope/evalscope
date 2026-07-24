@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, Optional
 from urllib.parse import urlsplit, urlunsplit
 
 from evalscope.api.model import GenerateConfig, Model
-from evalscope.utils.function_utils import AsyncioLoopRunner, cancel_and_wait
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner, cancel_and_wait
 from evalscope.utils.logger import get_logger
 from ..runners.base import BridgeEndpoint
 from .sse_anthropic import stream_anthropic_response

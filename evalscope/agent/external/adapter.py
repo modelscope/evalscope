@@ -27,7 +27,7 @@ from evalscope.api.messages import ChatMessageAssistant, ChatMessageSystem, Chat
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.model.model_output import ChatCompletionChoice
 from evalscope.api.registry import get_environment
-from evalscope.utils.function_utils import AsyncioLoopRunner
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
 from .bridge import ModelProxyServer
 from .bridge.server import DOCKER_ENV_NAMES

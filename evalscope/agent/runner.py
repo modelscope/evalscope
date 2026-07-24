@@ -25,7 +25,7 @@ from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.model import Model
 from evalscope.api.registry import get_environment, get_strategy, resolve_tool_infos, resolve_tools
-from evalscope.utils.function_utils import AsyncioLoopRunner
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:

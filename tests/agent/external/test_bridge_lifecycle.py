@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 
 from evalscope.agent.external.bridge import ModelProxyServer
 from evalscope.api.model import GenerateConfig
-from evalscope.utils.function_utils import AsyncioLoopRunner
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 
 
 @pytest.fixture(autouse=True)

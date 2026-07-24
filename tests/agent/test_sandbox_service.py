@@ -33,7 +33,7 @@ from evalscope.api.sandbox import (
 )
 from evalscope.config import SandboxTaskConfig, TaskConfig
 from evalscope.run import shutdown_sandbox_service_if_enabled
-from evalscope.utils.function_utils import AsyncioLoopRunner
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 
 
 @pytest.fixture
@@ -551,10 +551,10 @@ class TestSandboxServiceRunTeardown:
 
 class TestHandles:
 
-    def test_pool_handle_execute_delegates(self):
+    def test_pool_handle_execute_delegates(self, service):
         manager = MagicMock()
         manager.execute_tool_in_pool = AsyncMock(return_value='OK')
-        handle = PoolHandle(manager)
+        handle = PoolHandle(manager, service)
 
         out = asyncio.run(handle.execute_tool('shell_executor', {'command': 'ls'}))
         assert out == 'OK'
@@ -562,10 +562,10 @@ class TestHandles:
             'shell_executor', {'command': 'ls'}
         )
 
-    def test_sandbox_handle_close_idempotent(self):
+    def test_sandbox_handle_close_idempotent(self, service):
         manager = MagicMock()
         manager.delete_sandbox = AsyncMock()
-        handle = SandboxHandle(manager, 'sb-1')
+        handle = SandboxHandle(manager, 'sb-1', service)
 
         async def _run():
             await handle.close()
@@ -574,10 +574,10 @@ class TestHandles:
         asyncio.run(_run())
         manager.delete_sandbox.assert_awaited_once_with('sb-1')
 
-    def test_sandbox_handle_execute_after_close_raises(self):
+    def test_sandbox_handle_execute_after_close_raises(self, service):
         manager = MagicMock()
         manager.delete_sandbox = AsyncMock()
-        handle = SandboxHandle(manager, 'sb-1')
+        handle = SandboxHandle(manager, 'sb-1', service)
 
         async def _run():
             await handle.close()
@@ -586,10 +586,10 @@ class TestHandles:
         with pytest.raises(RuntimeError, match='already closed'):
             asyncio.run(_run())
 
-    def test_sandbox_handle_put_dir_delegates_to_manager(self):
+    def test_sandbox_handle_put_dir_delegates_to_manager(self, service):
         manager = MagicMock()
         manager.put_dir = AsyncMock(return_value=True)
-        handle = SandboxHandle(manager, 'sb-1')
+        handle = SandboxHandle(manager, 'sb-1', service)
 
         async def _run():
             return await handle.put_dir('/host/skills', '/skills')

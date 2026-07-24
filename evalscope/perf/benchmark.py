@@ -3,7 +3,8 @@ from typing import TYPE_CHECKING, AsyncGenerator, List, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.http_client import AioHttpClient
-from evalscope.perf.core.metrics_consumer import connect_test, run_benchmark_pipeline
+from evalscope.perf.core.metrics_consumer import connect_test
+from evalscope.perf.core.pipeline import run_benchmark_pipeline
 from evalscope.perf.core.strategies import ClosedLoopStrategy, OpenLoopStrategy
 from evalscope.perf.plugin import ApiRegistry, DatasetRegistry
 from evalscope.perf.utils.db_util import load_prompt, summary_result

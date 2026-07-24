@@ -7,7 +7,7 @@ import time
 from argparse import Namespace
 
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
-from evalscope.utils.function_utils import shutdown_event_loop
+from evalscope.utils.asyncio_runtime import shutdown_event_loop
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm

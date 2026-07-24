@@ -1,10 +1,10 @@
 import asyncio
 import pytest
 import threading
-import time
 from typing import AsyncGenerator
 
-from evalscope.utils.function_utils import AsyncioLoopRunner, AsyncioLoopThread, cancel_and_wait
+from evalscope.utils import asyncio_runtime
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner, AsyncioLoopThread, cancel_and_wait
 
 
 async def _current_loop() -> asyncio.AbstractEventLoop:
@@ -158,9 +158,7 @@ def test_asyncio_loop_thread_stop_from_owner_runs_callbacks() -> None:
         return owner_loop
 
     owner_loop = runtime.run_sync(_stop_from_owner(), timeout=1)
-    deadline = time.monotonic() + 1
-    while not owner_loop.is_closed() and time.monotonic() < deadline:
-        time.sleep(0.01)
+    assert runtime.stop()
 
     assert callback_completed.is_set()
     assert owner_loop.is_closed()
@@ -177,11 +175,21 @@ def test_asyncio_loop_thread_stop_is_idempotent() -> None:
     assert not runtime.active
 
 
-def test_asyncio_loop_thread_rejects_restart_until_previous_generation_stops() -> None:
+def test_asyncio_loop_thread_rejects_restart_until_previous_generation_stops(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     runtime = AsyncioLoopThread(name='TestLoop')
     owner_loop = runtime.run_sync(_current_loop())
     blocker_started = threading.Event()
     release_blocker = threading.Event()
+    shutdown_scheduled = threading.Event()
+    original_schedule_shutdown = AsyncioLoopThread._schedule_shutdown
+
+    def _schedule_shutdown(self, generation) -> None:
+        original_schedule_shutdown(self, generation)
+        shutdown_scheduled.set()
+
+    monkeypatch.setattr(AsyncioLoopThread, '_schedule_shutdown', _schedule_shutdown)
 
     def _block_owner_loop() -> None:
         blocker_started.set()
@@ -192,9 +200,7 @@ def test_asyncio_loop_thread_rejects_restart_until_previous_generation_stops() -
 
     stop_thread = threading.Thread(target=runtime.stop)
     stop_thread.start()
-    deadline = time.monotonic() + 1
-    while runtime.active and time.monotonic() < deadline:
-        time.sleep(0.01)
+    assert shutdown_scheduled.wait(timeout=1)
 
     try:
         with pytest.raises(RuntimeError, match='stopping'):
@@ -224,20 +230,29 @@ def test_asyncio_loop_thread_rejects_restart_until_previous_generation_stops() -
     assert cleanup_loops == [new_loop]
 
 
-def test_asyncio_loop_thread_allows_each_callback_its_timeout_budget() -> None:
+def test_asyncio_loop_thread_allows_each_callback_its_timeout_budget(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     runtime = AsyncioLoopThread(name='TestLoop')
     runtime.run_sync(_current_loop())
     completed: list[str] = []
+    timeout_budgets: list[float] = []
+    original_wait_for = asyncio.wait_for
 
     async def _cleanup(name: str) -> None:
-        await asyncio.sleep(0.15)
         completed.append(name)
 
+    async def _record_wait_for(awaitable, timeout):
+        timeout_budgets.append(timeout)
+        return await original_wait_for(awaitable, timeout=timeout)
+
+    monkeypatch.setattr(asyncio_runtime.asyncio, 'wait_for', _record_wait_for)
     runtime.add_close_callback(lambda: _cleanup('first'))
     runtime.add_close_callback(lambda: _cleanup('second'))
     runtime.stop(join_timeout=0.25)
 
     assert completed == ['first', 'second']
+    assert timeout_budgets == [0.25, 0.25]
 
 
 def test_asyncio_loop_thread_immediate_stop_waits_for_owner_thread(

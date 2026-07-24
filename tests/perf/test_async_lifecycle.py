@@ -6,7 +6,7 @@ from typing import Any, AsyncIterator, Dict, List, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.benchmark import run_benchmark
-from evalscope.perf.core import metrics_consumer
+from evalscope.perf.core import pipeline
 from evalscope.perf.core.http_client import AioHttpClient
 from evalscope.perf.core.strategies.closed_loop import ClosedLoopStrategy
 from evalscope.perf.core.strategies.multi_turn import MultiTurnStrategy
@@ -49,11 +49,11 @@ def test_benchmark_pipelines_own_independent_completion_events(monkeypatch: pyte
         second_queue: asyncio.Queue = asyncio.Queue()
         args = _make_args()
         await asyncio.gather(
-            metrics_consumer.run_benchmark_pipeline(produce(first_queue), first_queue, args, None),
-            metrics_consumer.run_benchmark_pipeline(produce(second_queue), second_queue, args, None),
+            pipeline.run_benchmark_pipeline(produce(first_queue), first_queue, args, None),
+            pipeline.run_benchmark_pipeline(produce(second_queue), second_queue, args, None),
         )
 
-    monkeypatch.setattr(metrics_consumer, 'statistic_benchmark_metric', fake_consumer)
+    monkeypatch.setattr(pipeline, 'statistic_benchmark_metric', fake_consumer)
     asyncio.run(run())
 
     assert len(completion_events) == 2
@@ -94,11 +94,11 @@ def test_benchmark_pipeline_propagates_failure_and_cancels_peer(
         current_task = asyncio.current_task()
         expected_error = ValueError if failure_source == 'producer' else LookupError
         with pytest.raises(expected_error):
-            await metrics_consumer.run_benchmark_pipeline(producer(), asyncio.Queue(), _make_args(), None)
+            await pipeline.run_benchmark_pipeline(producer(), asyncio.Queue(), _make_args(), None)
         assert peer_cancelled.is_set()
         assert all(task is current_task or task.done() for task in asyncio.all_tasks())
 
-    monkeypatch.setattr(metrics_consumer, 'statistic_benchmark_metric', consumer)
+    monkeypatch.setattr(pipeline, 'statistic_benchmark_metric', consumer)
     asyncio.run(run())
 
 

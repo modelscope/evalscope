@@ -2,7 +2,7 @@ import asyncio
 import json
 import sqlite3
 from tqdm import tqdm as tqdm_std
-from typing import TYPE_CHECKING, Any, Coroutine, Optional, Tuple
+from typing import TYPE_CHECKING, Tuple
 
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.perf.arguments import Arguments
@@ -13,7 +13,6 @@ from evalscope.perf.utils.handler import exception_handler
 from evalscope.perf.utils.log_utils import maybe_log_to_visualizer
 from evalscope.perf.utils.trace_metrics import TraceAccumulator, TraceLevelSummary
 from evalscope.perf.utils.workload_timeline import WorkloadTimeline
-from evalscope.utils.function_utils import cancel_and_wait
 from evalscope.utils.logger import get_logger
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 
@@ -133,44 +132,6 @@ async def statistic_benchmark_metric(
         await asyncio.to_thread(con.commit)
 
     return accumulator.to_result(), trace_acc.to_summary(), workload_timeline, result_db_path
-
-
-async def run_benchmark_pipeline(
-    producer: Coroutine[Any, Any, None],
-    benchmark_data_queue: asyncio.Queue,
-    args: Arguments,
-    api_plugin: 'ApiPluginBase',
-) -> Tuple['MetricsAccumulator', 'TraceLevelSummary', 'WorkloadTimeline', str]:
-    """Run one producer and its metrics consumer with coordinated cleanup."""
-    completed_event = asyncio.Event()
-    producer_task = asyncio.create_task(producer)
-    consumer_task = asyncio.create_task(
-        statistic_benchmark_metric(benchmark_data_queue, args, api_plugin, completed_event)
-    )
-    drain_task: Optional[asyncio.Task[None]] = None
-
-    try:
-        done, _ = await asyncio.wait((producer_task, consumer_task), return_when=asyncio.FIRST_COMPLETED)
-        if consumer_task in done:
-            await consumer_task
-            raise RuntimeError('Metrics consumer exited before request production completed.')
-
-        await producer_task
-        drain_task = asyncio.create_task(benchmark_data_queue.join())
-        done, _ = await asyncio.wait((drain_task, consumer_task), return_when=asyncio.FIRST_COMPLETED)
-        if consumer_task in done:
-            await consumer_task
-            raise RuntimeError('Metrics consumer exited before the result queue was drained.')
-
-        await drain_task
-        completed_event.set()
-        return await consumer_task
-    finally:
-        completed_event.set()
-        tasks = [producer_task, consumer_task]
-        if drain_task is not None:
-            tasks.append(drain_task)
-        await asyncio.gather(*(cancel_and_wait(task) for task in tasks), return_exceptions=True)
 
 
 @exception_handler

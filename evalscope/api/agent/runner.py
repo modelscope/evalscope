@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import Model
-from evalscope.utils.function_utils import AsyncioLoopRunner
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
 from .environment import AgentEnvironment
 from .loop import AgentLoop

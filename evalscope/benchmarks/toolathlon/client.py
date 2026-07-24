@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
-from evalscope.utils.function_utils import cancel_and_wait
+from evalscope.utils.asyncio_runtime import cancel_and_wait
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 

@@ -4,7 +4,7 @@ import sys
 from typing import Any, Callable, Dict, Iterable, List
 
 from evalscope.api.messages import ChatMessage, dict_to_chat_message
-from evalscope.utils.function_utils import AsyncioLoopRunner
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 
 DEFAULT_AUTOMATION_BENCH_COMMIT = 'a321764ace3cfbe42289e6a13abef2f0f4f56fad'
 DEFAULT_AUTOMATION_BENCH_PACKAGE = (
