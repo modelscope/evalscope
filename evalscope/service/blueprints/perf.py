@@ -11,6 +11,7 @@ from .. import perf_archive
 from ..perf_archive import PerfArchiveError
 from ..utils import (
     OUTPUT_DIR,
+    TaskStoppedError,
     create_log_file,
     get_log_content,
     run_in_subprocess,
@@ -18,7 +19,6 @@ from ..utils import (
     serialize_result,
     stop_process,
     validate_task_id,
-    TaskStoppedError,
 )
 
 logger = get_logger()

@@ -9,7 +9,14 @@ from .benchmarks import (
     parse_benchmark_description,
 )
 from .log import OUTPUT_DIR, create_log_file, get_log_content, validate_task_id
-from .process import run_eval_wrapper, run_in_subprocess, run_perf_wrapper, serialize_result, stop_process, TaskStoppedError
+from .process import (
+    TaskStoppedError,
+    run_eval_wrapper,
+    run_in_subprocess,
+    run_perf_wrapper,
+    serialize_result,
+    stop_process,
+)
 
 __all__ = [
     'OUTPUT_DIR',
