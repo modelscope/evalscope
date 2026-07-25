@@ -23,6 +23,26 @@ _active_processes: dict[str, multiprocessing.Process] = {}
 
 _active_lock = threading.Lock()
 
+# ---------------------------------------------------------------------------
+# Track tasks stopped by the user so we can distinguish intentional stop
+# from a genuine subprocess crash.
+# ---------------------------------------------------------------------------
+
+_user_stopped_tasks: set[str] = set()
+"""Task IDs that were explicitly stopped by the user via /stop."""
+
+
+class TaskStoppedError(Exception):
+    """Raised when a task is explicitly stopped by the user.
+
+    This is a *normal* termination, not a crash — callers should handle it
+    gracefully (e.g. return ``{'status': 'stopped'}`` instead of 500).
+    """
+
+    def __init__(self, task_id: str):
+        self.task_id = task_id
+        super().__init__(f'Task {task_id} was stopped by the user.')
+
 
 def register_process(task_id: str, proc: multiprocessing.Process) -> None:
     """Register a running subprocess so it can be stopped later."""
@@ -51,6 +71,9 @@ def stop_process(task_id: str) -> bool:
         if proc.is_alive():
             proc.kill()
             proc.join(timeout=2)
+    # Mark as user-stopped so the parent run_in_subprocess knows this is
+    # an intentional termination, not a crash.
+    _user_stopped_tasks.add(task_id)
     logger.info(f'Task {task_id} stopped by user.')
     return True
 
@@ -143,6 +166,12 @@ def run_in_subprocess(func, *args, task_id=None, **kwargs):
             stderr_section = f'\n[stderr]\n{stderr_info}' if stderr_info.strip() else ''
             raise RuntimeError(f"Subprocess error: {res['error']}\n{res.get('traceback', '')}{stderr_section}")
         return res['result']
+
+    # If the task was explicitly stopped by the user, treat it as a graceful
+    # termination — not a crash.
+    if task_id and task_id in _user_stopped_tasks:
+        _user_stopped_tasks.discard(task_id)
+        raise TaskStoppedError(task_id)
 
     # res is still None: the child exited without putting anything in the queue
     # (OOM, SIGKILL, import error, segfault, etc.).

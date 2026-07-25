@@ -18,6 +18,7 @@ from ..utils import (
     serialize_result,
     stop_process,
     validate_task_id,
+    TaskStoppedError,
 )
 
 logger = get_logger()
@@ -104,6 +105,9 @@ def run_performance_test():
             'result': serialize_result(result),
             'table': table_str
         })
+    except TaskStoppedError:
+        logger.info(f'[{task_id}] Task stopped by user.')
+        return jsonify({'status': 'stopped', 'task_id': task_id})
     except Exception as e:
         logger.error(f'[{task_id}] Task failed: {e}')
         return jsonify({'status': 'error', 'task_id': task_id, 'error': str(e)}), 500

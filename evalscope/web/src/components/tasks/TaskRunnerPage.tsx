@@ -91,7 +91,12 @@ export default function TaskRunnerPage({
     interval: 5000,
     onData: (data) => {
       setProgress(data.percent ?? 0)
-      if (data.percent >= 100) setRunning(false)
+      // Stop polling when benchmark finishes (via percent) or when the
+      // backend progress tracker reports error / completed (status key).
+      const status = (data as Record<string, unknown>).status
+      if (data.percent >= 100 || status === 'error' || status === 'completed') {
+        setRunning(false)
+      }
     },
   })
 
