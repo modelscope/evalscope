@@ -23,6 +23,26 @@ _active_processes: dict[str, multiprocessing.Process] = {}
 
 _active_lock = threading.Lock()
 
+# ---------------------------------------------------------------------------
+# Track tasks stopped by the user so we can distinguish intentional stop
+# from a genuine subprocess crash.
+# ---------------------------------------------------------------------------
+
+_user_stopped_tasks: set[str] = set()
+"""Task IDs that were explicitly stopped by the user via /stop."""
+
+
+class TaskStoppedError(Exception):
+    """Raised when a task is explicitly stopped by the user.
+
+    This is a *normal* termination, not a crash — callers should handle it
+    gracefully (e.g. return ``{'status': 'stopped'}`` instead of 500).
+    """
+
+    def __init__(self, task_id: str):
+        self.task_id = task_id
+        super().__init__(f'Task {task_id} was stopped by the user.')
+
 
 def register_process(task_id: str, proc: multiprocessing.Process) -> None:
     """Register a running subprocess so it can be stopped later."""
@@ -45,12 +65,21 @@ def stop_process(task_id: str) -> bool:
         proc = _active_processes.pop(task_id, None)
     if proc is None:
         return False
+    if not proc.is_alive():
+        # Process already exited on its own; do NOT mark as user-stopped, or a
+        # pending success result would be masked as TaskStoppedError. Treat the
+        # stop request as a no-op.
+        logger.info(f'Task {task_id} already finished before stop; ignoring stop request.')
+        return False
+    # Mark as user-stopped BEFORE terminating: the parent thread blocked in
+    # run_in_subprocess polls the child every 0.1s and would otherwise observe
+    # the death first and misreport it as a crash.
+    _user_stopped_tasks.add(task_id)
+    proc.terminate()
+    proc.join(timeout=3)
     if proc.is_alive():
-        proc.terminate()
-        proc.join(timeout=3)
-        if proc.is_alive():
-            proc.kill()
-            proc.join(timeout=2)
+        proc.kill()
+        proc.join(timeout=2)
     logger.info(f'Task {task_id} stopped by user.')
     return True
 
@@ -137,27 +166,40 @@ def run_in_subprocess(func, *args, task_id=None, **kwargs):
     if task_id:
         unregister_process(task_id)
 
+    # Consume the user-stop marker exactly once so it never leaks, regardless
+    # of which branch below handles the outcome.
+    user_stopped = bool(task_id) and task_id in _user_stopped_tasks
+    if task_id:
+        _user_stopped_tasks.discard(task_id)
+
+    if res is None:
+        # The child exited without the poll loop seeing a result. Do one final
+        # non-blocking drain in case the item arrived between the last loop
+        # iteration and p.join() returning — a produced result always takes
+        # priority over the user-stop marker.
+        try:
+            res = result_queue.get_nowait()
+        except queue.Empty:
+            res = None
+
     if res is not None:
         if res['status'] == 'error':
+            # A user-initiated stop may surface as an error result when the
+            # child converts SIGTERM into an exception — still a graceful stop.
+            if user_stopped:
+                raise TaskStoppedError(task_id)
             stderr_info = res.get('stderr', '')
             stderr_section = f'\n[stderr]\n{stderr_info}' if stderr_info.strip() else ''
             raise RuntimeError(f"Subprocess error: {res['error']}\n{res.get('traceback', '')}{stderr_section}")
         return res['result']
+
+    # If the task was explicitly stopped by the user, treat it as a graceful
+    # termination — not a crash.
+    if user_stopped:
+        raise TaskStoppedError(task_id)
 
     # res is still None: the child exited without putting anything in the queue
     # (OOM, SIGKILL, import error, segfault, etc.).
-    # Do one final non-blocking check in case the item arrived between the last
-    # loop iteration and p.join() returning.
-    try:
-        res = result_queue.get_nowait()
-        if res['status'] == 'error':
-            stderr_info = res.get('stderr', '')
-            stderr_section = f'\n[stderr]\n{stderr_info}' if stderr_info.strip() else ''
-            raise RuntimeError(f"Subprocess error: {res['error']}\n{res.get('traceback', '')}{stderr_section}")
-        return res['result']
-    except queue.Empty:
-        pass
-
     raise RuntimeError(
         f'Subprocess terminated unexpectedly (exit code {p.exitcode}). '
         'The child process may have crashed due to OOM, a missing import, '

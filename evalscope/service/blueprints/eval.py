@@ -13,6 +13,7 @@ from ..utils import (
     DEFAULT_MULTIMODAL_BENCHMARKS,
     DEFAULT_TEXT_BENCHMARKS,
     OUTPUT_DIR,
+    TaskStoppedError,
     build_benchmark_entry,
     create_log_file,
     discover_all_benchmarks,
@@ -163,6 +164,9 @@ def _execute_task(task_id: str, task_config: TaskConfig, label: str = 'Task'):
             'result': serialize_result(result),
             'table': table_str
         })
+    except TaskStoppedError:
+        logger.info(f'[{task_id}] {label} stopped by user.')
+        return jsonify({'status': 'stopped', 'task_id': task_id})
     except Exception as e:
         logger.error(f'[{task_id}] {label} failed: {e}')
         return jsonify({'status': 'error', 'task_id': task_id, 'error': str(e)}), 500
