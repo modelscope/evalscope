@@ -127,12 +127,6 @@ export async function apiValidated<T>(path: string, schema: ZodType<T>, options?
   return validate(schema, data)
 }
 
-/**
- * DELETE a resource and validate the JSON response against `schema` at runtime.
- *
- * Mirrors {@link apiValidated} for destructive endpoints: schema mismatch
- * rejects with `DomainError(kind='validation')`.
- */
 export async function apiDeleteValidated<T>(
   path: string,
   schema: ZodType<T>,

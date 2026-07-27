@@ -176,17 +176,12 @@ export default function PerfReportsPage() {
     window.open(getPerfHistoryReportUrl(rootPath, selectedRun.path), '_blank')
   }
 
-  // Delete flow: the tray button opens an in-app confirmation dialog that
-  // enumerates the affected runs; actual deletion happens on confirm.
-  // On partial failure only the already-deleted paths leave the selection.
   const requestDeleteSelected = () => {
     if (selected.length === 0 || deleting) return
     setConfirmOpen(true)
   }
 
   const confirmDeleteSelected = async () => {
-    // Re-entrancy guard: the dialog's busy state only disables the confirm
-    // button on the next render, so a fast double-click could fire twice.
     if (deleting || selected.length === 0) return
     setDeleting(true)
     setError(null)
@@ -207,7 +202,6 @@ export default function PerfReportsPage() {
     }
   }
 
-  // Human-readable identity for each run pending deletion in the dialog.
   const pendingDeleteItems = useMemo(
     () =>
       selected.map((path) => {

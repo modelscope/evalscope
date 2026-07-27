@@ -64,7 +64,6 @@ export default function ReportsPage() {
   // Transient notice shown when the compare-selection cap is reached.
   const [capNotice, setCapNotice] = useState(false)
   const capTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
-  // Delete-confirmation dialog state (mirrors the Performance page flow).
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -222,17 +221,12 @@ export default function ReportsPage() {
     }
   }, [selectedForCompare, rootPath])
 
-  // Delete flow: the tray button opens an in-app confirmation dialog that
-  // enumerates the affected reports; actual deletion happens on confirm.
-  // On partial failure only the already-deleted names leave the selection.
   const requestDeleteSelected = useCallback(() => {
     if (selectedForCompare.length === 0 || deleting) return
     setConfirmOpen(true)
   }, [selectedForCompare, deleting])
 
   const confirmDeleteSelected = useCallback(async () => {
-    // Re-entrancy guard: the dialog's busy state only disables the confirm
-    // button on the next render, so a fast double-click could fire twice.
     if (deleting || selectedForCompare.length === 0) return
     setDeleting(true)
     setError(null)
@@ -253,7 +247,6 @@ export default function ReportsPage() {
     }
   }, [deleting, selectedForCompare, rootPath, clearCompareSelection, setCompareSelection, t])
 
-  // Human-readable identity for each report pending deletion in the dialog.
   const pendingDeleteItems = useMemo(
     () =>
       selectedForCompare.map((name) => {

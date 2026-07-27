@@ -10,9 +10,7 @@ interface SelectionTrayProps {
   onViewHtml: () => void
   onCompare: () => void
   onClear: () => void
-  /** When provided, renders a destructive delete action for the selection. */
   onDelete?: () => void
-  /** Disables the delete action while a deletion is in flight. */
   deleting?: boolean
 }
 

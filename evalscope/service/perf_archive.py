@@ -214,16 +214,6 @@ def _build_identity_metadata(args_dict: dict) -> dict:
     return metadata
 
 
-def _load_summary_dict(run_dir: str, run_name: str) -> dict:
-    """Load the raw benchmark summary for one run, preserving missing-key state."""
-    try:
-        with open(os.path.join(run_dir, run_name, 'benchmark_summary.json'), 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        return data if isinstance(data, dict) else {}
-    except Exception:
-        return {}
-
-
 def _weighted_avg_tokens(run_dir: str, runs) -> tuple[Optional[float], Optional[float]]:
     """Average input/output tokens per request across runs, weighted by successes.
 
@@ -233,7 +223,13 @@ def _weighted_avg_tokens(run_dir: str, runs) -> tuple[Optional[float], Optional[
     """
     token_runs = []
     for run in runs:
-        raw = _load_summary_dict(run_dir, run.dir_name)
+        try:
+            with open(os.path.join(run_dir, run.dir_name, 'benchmark_summary.json'), 'r', encoding='utf-8') as f:
+                raw = json.load(f)
+        except Exception:
+            continue
+        if not isinstance(raw, dict):
+            continue
         if (
             Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST not in raw or Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST not in raw
         ):

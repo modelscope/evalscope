@@ -6,28 +6,16 @@ import Button from '@/components/ui/Button'
 interface ConfirmDialogProps {
   open: boolean
   title: string
-  /** Supporting message rendered under the title. */
   message?: string
-  /** Optional list of affected items, rendered as a scrollable summary. */
   items?: string[]
   confirmLabel: string
   cancelLabel: string
-  /** Styles the confirm button as destructive (danger palette). */
   danger?: boolean
-  /** Disables both actions and shows the busy label while work is in flight. */
   busy?: boolean
   onConfirm: () => void
   onCancel: () => void
 }
 
-/**
- * In-app modal confirmation for destructive or consequential actions.
- *
- * Replaces `window.confirm` so the dialog matches the dashboard theme, can
- * enumerate the affected items, and cannot be suppressed by the browser.
- * Focus starts on the cancel button (safe default for destructive actions),
- * Tab cycles inside the dialog, and Escape / overlay click cancel.
- */
 export default function ConfirmDialog({
   open,
   title,
@@ -45,7 +33,6 @@ export default function ConfirmDialog({
   const panelRef = useRef<HTMLDivElement>(null)
   const cancelRef = useRef<HTMLButtonElement>(null)
 
-  // Initial focus on the cancel button; restore the previous focus on close.
   useEffect(() => {
     if (!open) return
     const previous = document.activeElement as HTMLElement | null
@@ -53,7 +40,6 @@ export default function ConfirmDialog({
     return () => previous?.focus?.()
   }, [open])
 
-  // Escape cancels (unless busy); Tab is trapped inside the dialog.
   useEffect(() => {
     if (!open) return
     const handleKeyDown = (e: KeyboardEvent) => {
