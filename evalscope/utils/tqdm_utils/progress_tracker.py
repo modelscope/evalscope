@@ -131,7 +131,7 @@ class ProgressTracker:
         }
         logger.debug(f'Processed / Total: {processed} / {self._total_count} | {percent}%')
         tmp = self._path + '.tmp'
-        with open(tmp, 'w') as f:
+        with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(state, f, indent=2, ensure_ascii=False)
         os.replace(tmp, self._path)
 

@@ -190,7 +190,7 @@ def get_performance_progress():
 
     progress_file = os.path.join(OUTPUT_DIR, task_id, 'perf', 'progress.json')
     try:
-        with open(progress_file, 'r') as f:
+        with open(progress_file, 'r', encoding='utf-8') as f:
             progress = json.load(f)
         return jsonify(progress), 200
     except FileNotFoundError:
