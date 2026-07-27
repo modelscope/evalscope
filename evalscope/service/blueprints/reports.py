@@ -9,6 +9,7 @@ import mimetypes
 import os
 import plotly.express as px
 import plotly.graph_objects as go
+import shutil
 from datetime import datetime
 from flask import Blueprint, jsonify, request, send_file
 from typing import List
@@ -35,7 +36,7 @@ from evalscope.utils.data_utils import (
 )
 from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import get_logger
-from ..utils import OUTPUT_DIR
+from ..utils import OUTPUT_DIR, active_task_ids
 
 logger = get_logger()
 
@@ -316,6 +317,64 @@ def scan_reports():
         return jsonify({'reports': reports}), 200
     except Exception as e:
         logger.error(f'Failed to scan reports: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@bp_reports.route('/report', methods=['DELETE'])
+def delete_report():
+    """Delete one evaluation report (its per-model artefacts) from disk.
+
+    Removes ``<prefix>/{reports,predictions,reviews}/<model>``. When no other
+    model report remains in the run directory afterwards, the whole
+    ``<prefix>/`` directory (logs/configs included) is removed as well.
+
+    Query params:
+        root_path   (str): output root directory (optional; falls back to config)
+        report_name (str): report identifier ``{prefix}@@{model}::{datasets}``
+
+    Returns 409 when the report belongs to a task that is still executing.
+    """
+    report_name = request.args.get('report_name')
+    if not report_name:
+        return jsonify({'error': 'report_name is required'}), 400
+
+    try:
+        prefix, model_name, _ = process_report_name(report_name)
+    except ValueError:
+        return jsonify({'error': f'Invalid report_name: {report_name}'}), 400
+
+    # Running-task protection: in the service layout the run directory is the
+    # task_id itself, so refuse deletion while that task is still active.
+    if prefix in active_task_ids():
+        return jsonify({'error': f'Task is still running: {prefix}'}), 409
+
+    root_real = os.path.realpath(_root_path())
+    run_dir = os.path.realpath(os.path.join(root_real, prefix))
+    # Reject path traversal and symlinks escaping the outputs root.
+    if run_dir == root_real or not run_dir.startswith(root_real + os.sep):
+        return jsonify({'error': 'Invalid report path'}), 400
+
+    model_report_dir = os.path.realpath(os.path.join(run_dir, OutputsStructure.REPORTS_DIR, model_name))
+    if not model_report_dir.startswith(run_dir + os.sep) or not os.path.isdir(model_report_dir):
+        return jsonify({'error': f'Report not found: {report_name}'}), 404
+
+    try:
+        for sub in (OutputsStructure.REPORTS_DIR, OutputsStructure.PREDICTIONS_DIR, OutputsStructure.REVIEWS_DIR):
+            target = os.path.join(run_dir, sub, model_name)
+            if os.path.isdir(target):
+                shutil.rmtree(target)
+        # Drop the whole run directory once its last model report is gone;
+        # logs/configs are run-level artefacts with no report left to serve.
+        reports_dir = os.path.join(run_dir, OutputsStructure.REPORTS_DIR)
+        has_reports = os.path.isdir(reports_dir) and any(
+            os.path.isdir(os.path.join(reports_dir, name)) for name in os.listdir(reports_dir)
+        )
+        if not has_reports:
+            shutil.rmtree(run_dir)
+        logger.info(f'Deleted eval report {report_name} under {run_dir}')
+        return jsonify({'success': True, 'report_name': report_name}), 200
+    except Exception as e:
+        logger.error(f'Failed to delete report {report_name}: {e}')
         return jsonify({'error': str(e)}), 500
 
 

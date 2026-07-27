@@ -36,6 +36,12 @@ def unregister_process(task_id: str) -> None:
         _active_processes.pop(task_id, None)
 
 
+def active_task_ids() -> set[str]:
+    """Return a snapshot of task_ids with a currently registered subprocess."""
+    with _active_lock:
+        return set(_active_processes.keys())
+
+
 def stop_process(task_id: str) -> bool:
     """Terminate the subprocess associated with *task_id*.
 

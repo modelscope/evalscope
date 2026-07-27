@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 from datetime import datetime
 from types import SimpleNamespace
 from typing import List, Optional
@@ -211,6 +212,22 @@ def _build_identity_metadata(args_dict: dict) -> dict:
     return metadata
 
 
+def _weighted_avg_tokens(runs) -> tuple[float, float]:
+    """Average input/output tokens per request across runs, weighted by successes.
+
+    Falls back to a simple mean when no run has succeeded requests; returns
+    ``(0.0, 0.0)`` when there is no token data at all.
+    """
+    total_weight = sum(r.summary.succeed_requests for r in runs)
+    if total_weight > 0:
+        avg_in = sum(r.summary.avg_input_tokens * r.summary.succeed_requests for r in runs) / total_weight
+        avg_out = sum(r.summary.avg_output_tokens * r.summary.succeed_requests for r in runs) / total_weight
+    else:
+        avg_in = sum(r.summary.avg_input_tokens for r in runs) / len(runs)
+        avg_out = sum(r.summary.avg_output_tokens for r in runs) / len(runs)
+    return round(avg_in, 1), round(avg_out, 1)
+
+
 def build_run_summary(rel_path: str, abs_path: str) -> Optional[dict]:
     """Build lightweight list-item metadata for one perf-run directory."""
     runs = _load_runs(abs_path, with_requests=False)
@@ -242,6 +259,7 @@ def build_run_summary(rel_path: str, abs_path: str) -> Optional[dict]:
     best_rps = max(r.summary.request_throughput for r in runs)
     valid_lat = [r.summary.avg_latency for r in runs if r.summary.avg_latency >= 0]
     best_latency = min(valid_lat) if valid_lat else 0.0
+    avg_input_tokens, avg_output_tokens = _weighted_avg_tokens(runs)
 
     return {
         'path': rel_path,
@@ -253,6 +271,8 @@ def build_run_summary(rel_path: str, abs_path: str) -> Optional[dict]:
         'success_rate': success_rate,
         'best_rps': round(best_rps, 4),
         'best_latency': round(best_latency, 4),
+        'avg_input_tokens': avg_input_tokens,
+        'avg_output_tokens': avg_output_tokens,
         'is_embedding': is_embedding(api_type),
         'has_html': has_html,
         'timestamp': extract_timestamp(rel_path, abs_path),
@@ -535,3 +555,32 @@ def ensure_history_report(root: str, rel_path: str) -> str:
     if not out_path or not os.path.isfile(out_path):
         raise PerfArchiveError('Failed to generate perf report', 500)
     return out_path
+
+
+def delete_run(root: str, rel_path: str) -> None:
+    """Delete a perf-run directory under *root*, rejecting unsafe targets.
+
+    Raises :class:`PerfArchiveError` (400) when the path escapes *root*, is the
+    root itself, or is not a recognized perf-run directory. Empty parent
+    directories left behind (e.g. the CLI ``<timestamp>/`` level) are pruned up
+    to, but excluding, *root*.
+    """
+    run_dir = resolve_run_dir(root, rel_path)
+    if run_dir is None:
+        raise PerfArchiveError('Invalid path', 400)
+    root_real = os.path.realpath(root)
+    if run_dir == root_real:
+        raise PerfArchiveError('Refusing to delete the outputs root', 400)
+    if not is_run_dir(run_dir):
+        raise PerfArchiveError('Not a perf run directory', 400)
+    shutil.rmtree(run_dir)
+    logger.info(f'Deleted perf run directory: {run_dir}')
+
+    # Prune now-empty ancestors so timestamp/task husks don't accumulate.
+    parent = os.path.dirname(run_dir)
+    while parent != root_real and parent.startswith(root_real + os.sep):
+        try:
+            os.rmdir(parent)  # Fails (and stops) when the directory is not empty.
+        except OSError:
+            break
+        parent = os.path.dirname(parent)

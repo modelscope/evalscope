@@ -27,7 +27,14 @@ def _write_json(path: str, obj: object) -> None:
 def _make_run(run_dir: str, *, with_html: bool) -> None:
     """Create a minimal perf-run directory with one parallel_* sub-run."""
     sub = os.path.join(run_dir, 'parallel_1_number_2')
-    _write_json(os.path.join(sub, 'benchmark_summary.json'), {})
+    _write_json(
+        os.path.join(sub, 'benchmark_summary.json'), {
+            'Total Requests': 2,
+            'Success Requests': 2,
+            'Avg Input Tokens': 10000.0,
+            'Avg Output Tokens': 300.0,
+        }
+    )
     _write_json(os.path.join(sub, 'benchmark_percentile.json'), [])
     _write_json(
         os.path.join(sub, 'benchmark_args.json'), {
@@ -189,6 +196,49 @@ class TestPerfArchive(unittest.TestCase):
         failed, failed_total = RunLoader.query_requests(sub, status='failed', offset=0, limit=100)
         self.assertEqual(failed_total, self.n_failed)
         self.assertTrue(all(not r.success for r in failed))
+
+    def test_list_includes_token_fields(self):
+        res = self.client.get('/api/v1/perf/list', query_string={'root_path': self.tmp})
+        self.assertEqual(res.status_code, 200)
+        cli_run = next(run for run in res.get_json()['runs'] if run['path'] == self.cli_rel)
+        self.assertEqual(cli_run['avg_input_tokens'], 10000.0)
+        self.assertEqual(cli_run['avg_output_tokens'], 300.0)
+
+    def test_delete_run(self):
+        res = self.client.delete('/api/v1/perf/run', query_string={'root_path': self.tmp, 'path': self.svc_rel})
+        self.assertEqual(res.status_code, 200)
+        body = res.get_json()
+        self.assertTrue(body['success'])
+        self.assertEqual(body['path'], self.svc_rel)
+        self.assertFalse(os.path.isdir(os.path.join(self.tmp, self.svc_rel)))
+        # The now-empty task_id parent directory is pruned as well.
+        self.assertFalse(os.path.isdir(os.path.join(self.tmp, 'task_abc')))
+        # The outputs root itself is never removed.
+        self.assertTrue(os.path.isdir(self.tmp))
+        # The deleted run no longer shows up in the list.
+        res2 = self.client.get('/api/v1/perf/list', query_string={'root_path': self.tmp})
+        paths = {run['path'] for run in res2.get_json()['runs']}
+        self.assertNotIn(self.svc_rel, paths)
+        self.assertIn(self.cli_rel, paths)
+
+    def test_delete_rejects_traversal_and_non_run_dirs(self):
+        # Path traversal outside the root is rejected.
+        res = self.client.delete('/api/v1/perf/run', query_string={'root_path': self.tmp, 'path': '../../etc'})
+        self.assertEqual(res.status_code, 400)
+        # A directory that is not a perf run (the task_id parent) is rejected.
+        res2 = self.client.delete('/api/v1/perf/run', query_string={'root_path': self.tmp, 'path': 'task_abc'})
+        self.assertEqual(res2.status_code, 400)
+        self.assertTrue(os.path.isdir(os.path.join(self.tmp, 'task_abc')))
+        # Missing path is rejected.
+        res3 = self.client.delete('/api/v1/perf/run', query_string={'root_path': self.tmp})
+        self.assertEqual(res3.status_code, 400)
+
+    def test_delete_rejects_running_task(self):
+        from unittest import mock
+        with mock.patch('evalscope.service.blueprints.perf.active_task_ids', return_value={'task_abc'}):
+            res = self.client.delete('/api/v1/perf/run', query_string={'root_path': self.tmp, 'path': self.svc_rel})
+        self.assertEqual(res.status_code, 409)
+        self.assertTrue(os.path.isdir(os.path.join(self.tmp, self.svc_rel)))
 
 
 if __name__ == '__main__':
