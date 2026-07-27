@@ -48,11 +48,6 @@ const DOM_ORDER: string[] = [
   IDS.tokenizerPath,
 ]
 
-/** Fields hidden behind the "More Parameters" toggle. */
-const MORE_PARAMS_IDS: string[] = [
-  IDS.tokenizerPath,
-]
-
 export default function PerfConfigForm({ onSubmit, disabled }: Props) {
   const { t } = useLocale()
   const [model, setModel] = useState('')
@@ -109,10 +104,6 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
       setErrors(newErrors)
       // Move focus to the first invalid field in DOM order.
       const firstInvalid = computeFirstInvalid(DOM_ORDER, Object.keys(newErrors))
-      // Auto-expand "More Parameters" if a hidden field has an error.
-      if (firstInvalid && MORE_PARAMS_IDS.includes(firstInvalid) && !showMore) {
-        setShowMore(true)
-      }
       if (firstInvalid) {
         requestAnimationFrame(() => document.getElementById(firstInvalid)?.focus())
       }
@@ -140,7 +131,6 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      {/* ── Basic fields ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ModelField
           id={IDS.model}
