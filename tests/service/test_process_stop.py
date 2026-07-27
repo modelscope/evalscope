@@ -5,11 +5,18 @@ Covers the interaction between ``run_in_subprocess`` and ``stop_process``:
 a user-initiated stop must surface as :class:`TaskStoppedError` (graceful),
 while a genuine child crash must still raise ``RuntimeError``.
 """
+import multiprocessing
 import threading
 import time
 import unittest
 
-from evalscope.service.utils.process import TaskStoppedError, run_in_subprocess, stop_process
+from evalscope.service.utils.process import (
+    TaskStoppedError,
+    _user_stopped_tasks,
+    register_process,
+    run_in_subprocess,
+    stop_process,
+)
 
 
 def _sleep_forever() -> str:
@@ -59,6 +66,18 @@ class TestProcessStop(unittest.TestCase):
     def test_stop_unknown_task_returns_false(self):
         """Stopping a non-existent task is a no-op returning False."""
         self.assertFalse(stop_process('test-stop-nonexistent'))
+
+    def test_stop_after_natural_exit_is_noop(self):
+        """Stopping an already-exited (but still registered) process must not
+        set the user-stop marker, so a pending success result is not masked."""
+        task_id = 'test-stop-already-dead'
+        proc = multiprocessing.get_context('spawn').Process(target=_quick_success)
+        proc.start()
+        proc.join()  # let it exit naturally before the stop request
+        register_process(task_id, proc)
+
+        self.assertFalse(stop_process(task_id))
+        self.assertNotIn(task_id, _user_stopped_tasks)
 
 
 if __name__ == '__main__':
