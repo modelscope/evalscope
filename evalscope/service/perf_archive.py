@@ -235,8 +235,7 @@ def _weighted_avg_tokens(run_dir: str, runs) -> tuple[Optional[float], Optional[
     for run in runs:
         raw = _load_summary_dict(run_dir, run.dir_name)
         if (
-            Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST not in raw
-            or Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST not in raw
+            Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST not in raw or Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST not in raw
         ):
             continue
         token_runs.append(run)
