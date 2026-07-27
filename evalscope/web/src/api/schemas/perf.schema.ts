@@ -27,6 +27,8 @@ export const perfRunSummarySchema = z.object({
   success_rate: z.number(),
   best_rps: z.number(),
   best_latency: z.number(),
+  avg_input_tokens: z.number().optional(),
+  avg_output_tokens: z.number().optional(),
   is_embedding: z.boolean(),
   has_html: z.boolean(),
   timestamp: z.string(),
@@ -98,6 +100,12 @@ export const perfRequestsResponseSchema = z.object({
   has_db: z.boolean(),
 })
 
+/** Runtime contract for DELETE /api/v1/perf/run. */
+export const deletePerfRunResponseSchema = z.object({
+  success: z.boolean(),
+  path: z.string(),
+})
+
 // ------------------------------------------------------------------ //
 // Inferred types (schema-as-source-of-truth)                          //
 // ------------------------------------------------------------------ //
@@ -108,3 +116,4 @@ export type PerfDetailResponse = z.infer<typeof perfDetailResponseSchema>
 export type PerfRunItem = z.infer<typeof perfRunItemSchema>
 export type PerfRunsListResponse = z.infer<typeof perfRunsListResponseSchema>
 export type PerfRequestsResponse = z.infer<typeof perfRequestsResponseSchema>
+export type DeletePerfRunResponse = z.infer<typeof deletePerfRunResponseSchema>

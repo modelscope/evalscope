@@ -1,4 +1,4 @@
-import { Eye, GitCompareArrows, X } from 'lucide-react'
+import { Eye, GitCompareArrows, Trash2, X } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { MAX_COMPARE_SELECTION } from '@/domain/compare/compareModel'
 import Button from '@/components/ui/Button'
@@ -10,6 +10,8 @@ interface SelectionTrayProps {
   onViewHtml: () => void
   onCompare: () => void
   onClear: () => void
+  onDelete?: () => void
+  deleting?: boolean
 }
 
 export default function SelectionTray({
@@ -19,6 +21,8 @@ export default function SelectionTray({
   onViewHtml,
   onCompare,
   onClear,
+  onDelete,
+  deleting,
 }: SelectionTrayProps) {
   const { t } = useLocale()
 
@@ -44,6 +48,18 @@ export default function SelectionTray({
         )}
 
         <div className="ml-auto flex items-center gap-2">
+          {onDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={deleting}
+              onClick={onDelete}
+              className="border-[var(--danger-border)] text-[var(--danger)] hover:border-[var(--danger)] hover:text-[var(--danger)]"
+            >
+              <Trash2 size={14} />
+              {t('reports.delete')}
+            </Button>
+          )}
           <Button variant="outline" size="sm" disabled={!canViewHtml} onClick={onViewHtml}>
             <Eye size={14} />
             {t('reports.viewHtml')}

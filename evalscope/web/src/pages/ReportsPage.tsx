@@ -17,6 +17,7 @@ import ReportFiltersBar, { type ReportFilters } from '@/components/reports/Repor
 import ReportCard from '@/components/reports/ReportCard'
 import ReportsTable from '@/components/reports/ReportsTable'
 import SelectionTray from '@/components/reports/SelectionTray'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import {
   addToSelection,
   preserveSelectionAcrossReorder,
@@ -63,6 +64,8 @@ export default function ReportsPage() {
   // Transient notice shown when the compare-selection cap is reached.
   const [capNotice, setCapNotice] = useState(false)
   const capTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   // Debounce search
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -218,6 +221,42 @@ export default function ReportsPage() {
     }
   }, [selectedForCompare, rootPath])
 
+  const requestDeleteSelected = useCallback(() => {
+    if (selectedForCompare.length === 0 || deleting) return
+    setConfirmOpen(true)
+  }, [selectedForCompare, deleting])
+
+  const confirmDeleteSelected = useCallback(async () => {
+    if (deleting || selectedForCompare.length === 0) return
+    setDeleting(true)
+    setError(null)
+    const deleted: string[] = []
+    try {
+      for (const name of selectedForCompare) {
+        await reportsApi.deleteReport(rootPath, name)
+        deleted.push(name)
+      }
+      clearCompareSelection()
+    } catch (err) {
+      setCompareSelection(selectedForCompare.filter((n) => !deleted.includes(n)))
+      setError(t('reports.deleteFailed', { msg: err instanceof Error ? err.message : String(err) }))
+    } finally {
+      setDeleting(false)
+      setConfirmOpen(false)
+      setReloadToken((n) => n + 1)
+    }
+  }, [deleting, selectedForCompare, rootPath, clearCompareSelection, setCompareSelection, t])
+
+  const pendingDeleteItems = useMemo(
+    () =>
+      selectedForCompare.map((name) => {
+        const report = reports.find((r) => r.name === name)
+        if (!report) return name
+        return `${report.model_name} · ${report.dataset_name}`
+      }),
+    [selectedForCompare, reports],
+  )
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   // Distinguish the three empty-state reasons: a load failure, an
@@ -330,6 +369,21 @@ export default function ReportsPage() {
         onViewHtml={handleViewHtml}
         onCompare={handleCompare}
         onClear={clearCompareSelection}
+        onDelete={requestDeleteSelected}
+        deleting={deleting}
+      />
+
+      <ConfirmDialog
+        open={confirmOpen}
+        danger
+        busy={deleting}
+        title={t('reports.deleteConfirmTitle')}
+        message={t('reports.deleteConfirm', { n: selectedForCompare.length })}
+        items={pendingDeleteItems}
+        confirmLabel={t('reports.delete')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={confirmDeleteSelected}
+        onCancel={() => setConfirmOpen(false)}
       />
     </div>
   )

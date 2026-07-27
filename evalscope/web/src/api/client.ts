@@ -127,6 +127,20 @@ export async function apiValidated<T>(path: string, schema: ZodType<T>, options?
   return validate(schema, data)
 }
 
+export async function apiDeleteValidated<T>(
+  path: string,
+  schema: ZodType<T>,
+  options?: RequestOptions,
+): Promise<T> {
+  const res = await doFetch(buildUrl(path, options?.params), {
+    method: 'DELETE',
+    signal: options?.signal,
+  })
+  await ensureOk(res)
+  const data = await parseJson<unknown>(res)
+  return validate(schema, data)
+}
+
 /**
  * POST a JSON body and validate the response against `schema` at runtime.
  *

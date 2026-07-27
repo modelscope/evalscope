@@ -12,6 +12,7 @@ from ..perf_archive import PerfArchiveError
 from ..utils import (
     OUTPUT_DIR,
     TaskStoppedError,
+    active_task_ids,
     create_log_file,
     get_log_content,
     run_in_subprocess,
@@ -379,4 +380,35 @@ def get_perf_history_report():
         return jsonify({'error': e.message}), e.status
     except Exception as e:
         logger.error(f'Failed to serve perf history report for {rel_path}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@bp_perf.route('/run', methods=['DELETE'])
+def delete_perf_run():
+    """Delete a historical perf-run directory under the output root.
+
+    Query params:
+        root_path (str): output root directory (optional; falls back to config)
+        path      (str): run directory path relative to root
+
+    Returns 409 when the run belongs to a task that is still executing.
+    """
+    rel_path = request.args.get('path')
+    if not rel_path:
+        return jsonify({'error': 'path is required'}), 400
+
+    # Running-task protection: in the service layout the run path is
+    # ``<task_id>/perf``, so refuse deletion while that task is still active.
+    segments = set(rel_path.replace('\\', '/').strip('/').split('/'))
+    running = segments & active_task_ids()
+    if running:
+        return jsonify({'error': f'Task is still running: {sorted(running)[0]}'}), 409
+
+    try:
+        perf_archive.delete_run(_root_path(), rel_path)
+        return jsonify({'success': True, 'path': rel_path}), 200
+    except PerfArchiveError as e:
+        return jsonify({'error': e.message}), e.status
+    except Exception as e:
+        logger.error(f'Failed to delete perf run {rel_path}: {e}')
         return jsonify({'error': str(e)}), 500

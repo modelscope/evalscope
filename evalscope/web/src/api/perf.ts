@@ -1,11 +1,13 @@
-import { apiValidated } from './client'
+import { apiDeleteValidated, apiValidated } from './client'
 import {
+  deletePerfRunResponseSchema,
   listPerfRunsResponseSchema,
   perfDetailResponseSchema,
   perfRequestsResponseSchema,
   perfRunsListResponseSchema,
 } from './schemas'
 import type {
+  DeletePerfRunResponse,
   ListPerfRunsResponse,
   PerfDetailResponse,
   PerfRequestsResponse,
@@ -28,6 +30,17 @@ export const stopPerfTask = perfTaskApi.stop
 export async function listPerfRuns(rootPath: string, signal?: AbortSignal): Promise<ListPerfRunsResponse> {
   return apiValidated('/api/v1/perf/list', listPerfRunsResponseSchema, {
     params: { root_path: rootPath },
+    signal,
+  })
+}
+
+export async function deletePerfRun(
+  rootPath: string,
+  path: string,
+  signal?: AbortSignal,
+): Promise<DeletePerfRunResponse> {
+  return apiDeleteValidated('/api/v1/perf/run', deletePerfRunResponseSchema, {
+    params: { root_path: rootPath, path },
     signal,
   })
 }

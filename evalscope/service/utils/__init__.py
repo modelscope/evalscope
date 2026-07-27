@@ -11,6 +11,7 @@ from .benchmarks import (
 from .log import OUTPUT_DIR, create_log_file, get_log_content, validate_task_id
 from .process import (
     TaskStoppedError,
+    active_task_ids,
     run_eval_wrapper,
     run_in_subprocess,
     run_perf_wrapper,
@@ -23,6 +24,7 @@ __all__ = [
     'create_log_file',
     'get_log_content',
     'validate_task_id',
+    'active_task_ids',
     'run_eval_wrapper',
     'run_perf_wrapper',
     'serialize_result',
