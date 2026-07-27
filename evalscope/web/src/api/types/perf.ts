@@ -11,4 +11,5 @@ export type {
   PerfRunItem,
   PerfRunsListResponse,
   PerfRequestsResponse,
+  DeletePerfRunResponse,
 } from '@/api/schemas/perf.schema'

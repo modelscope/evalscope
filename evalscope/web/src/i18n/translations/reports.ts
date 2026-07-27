@@ -33,6 +33,10 @@ export const en: Dict = {
   },
   clearSelection: 'Clear',
   capReached: 'You can compare up to 5 runs.',
+  delete: 'Delete',
+  deleteConfirmTitle: 'Delete records',
+  deleteConfirm: 'Delete ${n} selected record(s)? The corresponding output files will be removed from disk.',
+  deleteFailed: 'Failed to delete: ${msg}',
 }
 
 export const zh: Dict = {
@@ -68,4 +72,8 @@ export const zh: Dict = {
   },
   clearSelection: '清空',
   capReached: '最多可对比 5 个运行。',
+  delete: '删除',
+  deleteConfirmTitle: '删除记录',
+  deleteConfirm: '确定删除选中的 ${n} 条记录？对应输出文件将从磁盘移除。',
+  deleteFailed: '删除失败：${msg}',
 }

@@ -1,7 +1,8 @@
-import { apiValidated } from './client'
+import { apiDeleteValidated, apiValidated } from './client'
 import {
   analysisResponseSchema,
   dataFrameResponseSchema,
+  deleteReportResponseSchema,
   listReportsResponseSchema,
   loadReportResponseSchema,
   predictionsResponseSchema,
@@ -10,6 +11,7 @@ import {
 import type {
   AnalysisResponse,
   DataFrameResponse,
+  DeleteReportResponse,
   ListReportsResponse,
   LoadReportResponse,
   PredictionsResponse,
@@ -55,6 +57,17 @@ export async function scanReports(rootPath: string, signal?: AbortSignal): Promi
     signal,
   })
   return res.reports
+}
+
+export async function deleteReport(
+  rootPath: string,
+  reportName: string,
+  signal?: AbortSignal,
+): Promise<DeleteReportResponse> {
+  return apiDeleteValidated(`${BASE}/report`, deleteReportResponseSchema, {
+    params: { root_path: rootPath, report_name: reportName },
+    signal,
+  })
 }
 
 export async function loadReport(

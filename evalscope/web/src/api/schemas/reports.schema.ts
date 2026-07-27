@@ -244,6 +244,12 @@ export const scanResponseSchema = z.object({
   reports: z.array(z.string()),
 })
 
+/** Runtime contract for DELETE /api/v1/reports/report. */
+export const deleteReportResponseSchema = z.object({
+  success: z.boolean(),
+  report_name: z.string(),
+})
+
 export const analysisResponseSchema = z.object({
   analysis: z.string(),
 })
@@ -266,4 +272,5 @@ export type AgentTrace = z.infer<typeof agentTraceSchema>
 export type PredictionRow = z.infer<typeof predictionRowSchema>
 export type PredictionsResponse = z.infer<typeof predictionsResponseSchema>
 export type ScanResponse = z.infer<typeof scanResponseSchema>
+export type DeleteReportResponse = z.infer<typeof deleteReportResponseSchema>
 export type AnalysisResponse = z.infer<typeof analysisResponseSchema>

@@ -128,6 +128,26 @@ export async function apiValidated<T>(path: string, schema: ZodType<T>, options?
 }
 
 /**
+ * DELETE a resource and validate the JSON response against `schema` at runtime.
+ *
+ * Mirrors {@link apiValidated} for destructive endpoints: schema mismatch
+ * rejects with `DomainError(kind='validation')`.
+ */
+export async function apiDeleteValidated<T>(
+  path: string,
+  schema: ZodType<T>,
+  options?: RequestOptions,
+): Promise<T> {
+  const res = await doFetch(buildUrl(path, options?.params), {
+    method: 'DELETE',
+    signal: options?.signal,
+  })
+  await ensureOk(res)
+  const data = await parseJson<unknown>(res)
+  return validate(schema, data)
+}
+
+/**
  * POST a JSON body and validate the response against `schema` at runtime.
  *
  * Mirrors {@link apiValidated} for mutating endpoints: schema mismatch rejects

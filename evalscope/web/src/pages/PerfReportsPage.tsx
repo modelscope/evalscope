@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useReports } from '@/contexts/ReportsContext'
-import { getPerfHistoryReportUrl, listPerfRuns } from '@/api/perf'
+import { getPerfHistoryReportUrl, listPerfRuns, deletePerfRun } from '@/api/perf'
 import { isDomainError } from '@/api/errors'
 import type { PerfRunSummary } from '@/api/types'
 import Skeleton from '@/components/ui/Skeleton'
@@ -11,6 +11,7 @@ import EmptyStateSystem, { type ResolvedEmptyStateAction } from '@/components/co
 import SearchInput from '@/components/ui/SearchInput'
 import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import ErrorAlert from '@/components/ui/ErrorAlert'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import SelectionTray from '@/components/reports/SelectionTray'
 import { formatMetricByKey } from '@/domain/metric/registry'
 import { formatFull } from '@/utils/perf'
@@ -21,6 +22,15 @@ import { addToSelection, preserveSelectionAcrossReorder } from '@/domain/compare
 type Translate = (key: string, vars?: Record<string, string | number>) => string
 
 type SortKey = 'time' | 'rps' | 'latency'
+
+/** Format the avg input/output token pair as e.g. `10000→300t`; `—` when absent. */
+function formatIoTokens(run: PerfRunSummary): string {
+  const input = run.avg_input_tokens
+  const output = run.avg_output_tokens
+  // Only treat missing fields as "no data"; a legitimate 0 still renders.
+  if (input == null || output == null) return '—'
+  return `${Math.round(input)}→${Math.round(output)}t`
+}
 
 function PerfRunCard({
   run,
@@ -54,7 +64,7 @@ function PerfRunCard({
       <button
         type="button"
         onClick={onClick}
-        className="grid min-h-11 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-left lg:grid-cols-[minmax(11rem,1.5fr)_minmax(10rem,1.2fr)_9.5rem_7rem_6rem_6rem_auto]"
+        className="grid min-h-11 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-left lg:grid-cols-[minmax(11rem,1.5fr)_minmax(10rem,1.2fr)_9.5rem_7rem_7rem_6rem_6rem_auto]"
       >
         <div className="flex min-w-0 flex-col gap-0.5">
           {/* Model alias is the primary identity; fall back to dataset, never
@@ -67,7 +77,7 @@ function PerfRunCard({
             {t('performance.runMeta', { concurrency, requests: run.total_requests, runs: run.num_runs })}
           </span>
           <span className="type-caption-mono text-[var(--text-muted)] break-words lg:hidden">
-            {(run.dataset || '—')} · {formatFull(run.timestamp)}
+            {(run.dataset || '—')} · {formatIoTokens(run)} · {formatFull(run.timestamp)}
           </span>
         </div>
         <div className="hidden min-w-0 flex-col gap-0.5 lg:flex">
@@ -78,6 +88,9 @@ function PerfRunCard({
         </div>
         <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text-muted)] lg:block">
           {formatFull(run.timestamp)}
+        </span>
+        <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text)] lg:block">
+          {formatIoTokens(run)}
         </span>
         {/* Domain metrics render through the shared formatter so the same
             value rounds identically here, in the detail view and per-run
@@ -124,6 +137,8 @@ export default function PerfReportsPage() {
   // Multi-select for cross-run comparison (page-local; independent of eval Compare).
   const [selected, setSelected] = useState<string[]>([])
   const [capNotice, setCapNotice] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const capTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const selectionScope = useRef('')
 
@@ -160,6 +175,48 @@ export default function PerfReportsPage() {
     if (!selectedRun?.has_html) return
     window.open(getPerfHistoryReportUrl(rootPath, selectedRun.path), '_blank')
   }
+
+  // Delete flow: the tray button opens an in-app confirmation dialog that
+  // enumerates the affected runs; actual deletion happens on confirm.
+  // On partial failure only the already-deleted paths leave the selection.
+  const requestDeleteSelected = () => {
+    if (selected.length === 0 || deleting) return
+    setConfirmOpen(true)
+  }
+
+  const confirmDeleteSelected = async () => {
+    // Re-entrancy guard: the dialog's busy state only disables the confirm
+    // button on the next render, so a fast double-click could fire twice.
+    if (deleting || selected.length === 0) return
+    setDeleting(true)
+    setError(null)
+    const deleted: string[] = []
+    try {
+      for (const path of selected) {
+        await deletePerfRun(rootPath, path)
+        deleted.push(path)
+      }
+      setSelected([])
+    } catch (err) {
+      setSelected((prev) => prev.filter((p) => !deleted.includes(p)))
+      setError(t('reports.deleteFailed', { msg: err instanceof Error ? err.message : String(err) }))
+    } finally {
+      setDeleting(false)
+      setConfirmOpen(false)
+      setReloadToken((n) => n + 1)
+    }
+  }
+
+  // Human-readable identity for each run pending deletion in the dialog.
+  const pendingDeleteItems = useMemo(
+    () =>
+      selected.map((path) => {
+        const run = runs.find((r) => r.path === path)
+        if (!run) return path
+        return `${run.model || run.dataset || path} · ${formatFull(run.timestamp)}`
+      }),
+    [selected, runs],
+  )
 
   useEffect(() => () => clearTimeout(capTimer.current), [])
 
@@ -292,11 +349,12 @@ export default function PerfReportsPage() {
 
           {visibleRuns.length > 0 ? (
             <div className="overflow-hidden rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
-              <div className="hidden grid-cols-[2.75rem_minmax(11rem,1.5fr)_minmax(10rem,1.2fr)_9.5rem_7rem_6rem_6rem_1rem] items-center gap-3 border-b border-[var(--border)] px-3 py-3 text-xs font-semibold text-[var(--text-muted)] lg:grid">
+              <div className="hidden grid-cols-[2.75rem_minmax(11rem,1.5fr)_minmax(10rem,1.2fr)_9.5rem_7rem_7rem_6rem_6rem_1rem] items-center gap-3 border-b border-[var(--border)] px-3 py-3 text-xs font-semibold text-[var(--text-muted)] lg:grid">
                 <span />
                 <span>{t('reports.columns.model')}</span>
                 <span>{t('reports.columns.dataset')}</span>
                 <span>{t('reports.columns.time')}</span>
+                <span>{t('performance.ioTokens')}</span>
                 <span>{t('performance.sort_rps')}</span>
                 <span>{t('performance.sort_latency')}</span>
                 <span>{t('performance.successColumn')}</span>
@@ -330,6 +388,21 @@ export default function PerfReportsPage() {
             onViewHtml={viewSelectedHtml}
             onCompare={compareSelected}
             onClear={() => setSelected([])}
+            onDelete={requestDeleteSelected}
+            deleting={deleting}
+          />
+
+          <ConfirmDialog
+            open={confirmOpen}
+            danger
+            busy={deleting}
+            title={t('reports.deleteConfirmTitle')}
+            message={t('reports.deleteConfirm', { n: selected.length })}
+            items={pendingDeleteItems}
+            confirmLabel={t('reports.delete')}
+            cancelLabel={t('common.cancel')}
+            onConfirm={confirmDeleteSelected}
+            onCancel={() => setConfirmOpen(false)}
           />
         </>
       )}

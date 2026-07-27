@@ -8,6 +8,7 @@ export const en: Dict = {
   github: 'Star on GitHub',
   stop: 'Stop',
   retry: 'Retry',
+  cancel: 'Cancel',
   loadError: 'Failed to load data',
 }
 
@@ -19,5 +20,6 @@ export const zh: Dict = {
   github: 'GitHub 加星',
   stop: '停止',
   retry: '重试',
+  cancel: '取消',
   loadError: '数据加载失败',
 }
