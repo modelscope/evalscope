@@ -409,7 +409,7 @@ class SLAAutoTuner:
         formatted = {f'{self.sla_variable}_{val}': res for val, res in self.results_cache.items()}
         json_path = os.path.join(self.args.outputs_dir, 'sla_summary.json')
         try:
-            with open(json_path, 'w') as f:
+            with open(json_path, 'w', encoding='utf-8') as f:
                 json.dump(formatted, f, indent=4)
             logger.info(f'SLA summary saved to: {json_path}')
         except Exception as e:

@@ -157,6 +157,23 @@ class TestPercentileBucketing(unittest.TestCase):
             self.assertNotEqual(tpot, 0.0, f'TPOT at {p} must not be 0 (non-stream excluded)')
             self.assertEqual(row['ITL (ms)'], 30.0, f'ITL at {p} must be 30ms (stream-only)')
 
+    def test_min_row_reports_best_case_latency(self):
+        # The 'min' row (P0) must be present and hold the smallest latency values
+        # for TTFT/TPOT/ITL so best-case latency is readable alongside 'max'.
+        result = get_percentile_results(self.db, api_type='openai')
+        rows = result.to_list()
+        labels = [r['Percentiles'] for r in rows]
+        self.assertEqual(labels[0], 'min', "'min' must be the first percentile row")
+        self.assertIn('max', labels)
+        min_row = rows[0]
+        # Stream TPOT values are 30/60/90/120ms -> min 30ms; TTFT fixed at 500ms; ITL 30ms.
+        self.assertEqual(min_row['TPOT (ms)'], 30.0)
+        self.assertEqual(min_row['TTFT (ms)'], 500.0)
+        self.assertEqual(min_row['ITL (ms)'], 30.0)
+        # min must not exceed the corresponding max for the same metric.
+        max_row = next(r for r in rows if r['Percentiles'] == 'max')
+        self.assertLessEqual(min_row['TPOT (ms)'], max_row['TPOT (ms)'])
+
     def test_pure_non_stream_percentiles_fall_back_to_all_rows(self):
         # Pure non-stream run: no stream rows, so streaming metrics fall back to
         # all rows (backward compatible) instead of producing NaN.
