@@ -375,7 +375,7 @@ def yaml_to_dict(yaml_file: str) -> Any:
     Raises:
         yaml.YAMLError: When the file cannot be parsed.
     """
-    with open(yaml_file, 'r') as f:
+    with open(yaml_file, 'r', encoding='utf-8') as f:
         try:
             return yaml.safe_load(f)
         except yaml.YAMLError as e:
