@@ -202,6 +202,23 @@ def _build_report_meta(report_name: str, root: str) -> dict:
     }
 
 
+def _refresh_html_report(reports_dir: str) -> None:
+    """Refresh a generated report.html, or remove it if regeneration fails."""
+    html_report = os.path.join(reports_dir, 'report.html')
+    if not os.path.isfile(html_report):
+        return
+
+    try:
+        from evalscope.report import gen_html_report_file
+        gen_html_report_file(reports_dir)
+    except Exception as e:
+        logger.warning(f'Failed to refresh report HTML after deletion, removing stale file: {e}')
+        try:
+            os.remove(html_report)
+        except OSError as remove_error:
+            logger.warning(f'Failed to remove stale report HTML {html_report}: {remove_error}')
+
+
 # ------------------------------------------------------------------
 # Endpoints
 # ------------------------------------------------------------------
@@ -371,6 +388,8 @@ def delete_report():
         )
         if not has_reports:
             shutil.rmtree(run_dir)
+        else:
+            _refresh_html_report(reports_dir)
         logger.info(f'Deleted eval report {report_name} under {run_dir}')
         return jsonify({'success': True, 'report_name': report_name}), 200
     except Exception as e:

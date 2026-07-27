@@ -24,17 +24,19 @@ def _write_json(path: str, obj: object) -> None:
         json.dump(obj, f)
 
 
-def _make_run(run_dir: str, *, with_html: bool) -> None:
+def _make_run(run_dir: str, *, with_html: bool, with_tokens: bool = True) -> None:
     """Create a minimal perf-run directory with one parallel_* sub-run."""
     sub = os.path.join(run_dir, 'parallel_1_number_2')
-    _write_json(
-        os.path.join(sub, 'benchmark_summary.json'), {
-            'Total Requests': 2,
-            'Success Requests': 2,
+    summary = {
+        'Total Requests': 2,
+        'Success Requests': 2,
+    }
+    if with_tokens:
+        summary.update({
             'Avg Input Tokens': 10000.0,
             'Avg Output Tokens': 300.0,
-        }
-    )
+        })
+    _write_json(os.path.join(sub, 'benchmark_summary.json'), summary)
     _write_json(os.path.join(sub, 'benchmark_percentile.json'), [])
     _write_json(
         os.path.join(sub, 'benchmark_args.json'), {
@@ -203,6 +205,16 @@ class TestPerfArchive(unittest.TestCase):
         cli_run = next(run for run in res.get_json()['runs'] if run['path'] == self.cli_rel)
         self.assertEqual(cli_run['avg_input_tokens'], 10000.0)
         self.assertEqual(cli_run['avg_output_tokens'], 300.0)
+
+    def test_list_omits_missing_token_fields(self):
+        legacy_rel = os.path.join('20260102_120000', 'legacy-model')
+        _make_run(os.path.join(self.tmp, legacy_rel), with_html=False, with_tokens=False)
+
+        res = self.client.get('/api/v1/perf/list', query_string={'root_path': self.tmp})
+        self.assertEqual(res.status_code, 200)
+        legacy_run = next(run for run in res.get_json()['runs'] if run['path'] == legacy_rel)
+        self.assertNotIn('avg_input_tokens', legacy_run)
+        self.assertNotIn('avg_output_tokens', legacy_run)
 
     def test_delete_run(self):
         res = self.client.delete('/api/v1/perf/run', query_string={'root_path': self.tmp, 'path': self.svc_rel})

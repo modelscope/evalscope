@@ -36,6 +36,8 @@ class TestReportDelete(unittest.TestCase):
         for model in ('model-a', 'model-b'):
             _write_json(os.path.join(run_dir, 'reports', model, 'gsm8k.json'), {})
             _write_json(os.path.join(run_dir, 'predictions', model, 'gsm8k.jsonl'), {})
+        with open(os.path.join(run_dir, 'reports', 'report.html'), 'w', encoding='utf-8') as f:
+            f.write('<html><body>model-a model-b</body></html>')
         os.makedirs(os.path.join(run_dir, 'logs'), exist_ok=True)
         os.makedirs(os.path.join(run_dir, 'configs'), exist_ok=True)
 
@@ -64,6 +66,10 @@ class TestReportDelete(unittest.TestCase):
         self.assertFalse(os.path.isdir(os.path.join(run_dir, 'predictions', 'model-a')))
         self.assertTrue(os.path.isdir(os.path.join(run_dir, 'reports', 'model-b')))
         self.assertTrue(os.path.isdir(run_dir))
+        html_report = os.path.join(run_dir, 'reports', 'report.html')
+        if os.path.isfile(html_report):
+            with open(html_report, 'r', encoding='utf-8') as f:
+                self.assertNotIn('model-a', f.read())
 
     def test_delete_last_model_removes_run_dir(self):
         self._delete(f'{self.prefix}@@model-a::gsm8k')

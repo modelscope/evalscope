@@ -12,6 +12,7 @@ endpoints never pull entire historical request tables into memory.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -21,6 +22,7 @@ from typing import List, Optional
 from urllib.parse import urlsplit
 
 from evalscope.constants import PLOTLY_CDN_URL
+from evalscope.perf.utils.perf_constants import Metrics
 from evalscope.perf.utils.report.summary import (
     build_basic_info,
     build_best_config,
@@ -212,19 +214,43 @@ def _build_identity_metadata(args_dict: dict) -> dict:
     return metadata
 
 
-def _weighted_avg_tokens(runs) -> tuple[float, float]:
+def _load_summary_dict(run_dir: str, run_name: str) -> dict:
+    """Load the raw benchmark summary for one run, preserving missing-key state."""
+    try:
+        with open(os.path.join(run_dir, run_name, 'benchmark_summary.json'), 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _weighted_avg_tokens(run_dir: str, runs) -> tuple[Optional[float], Optional[float]]:
     """Average input/output tokens per request across runs, weighted by successes.
 
-    Falls back to a simple mean when no run has succeeded requests; returns
-    ``(0.0, 0.0)`` when there is no token data at all.
+    Falls back to a simple mean when no run has succeeded requests. Returns
+    ``(None, None)`` when historical summaries do not contain token fields, so
+    callers can distinguish missing data from a legitimate zero-token value.
     """
-    total_weight = sum(r.summary.succeed_requests for r in runs)
+    token_runs = []
+    for run in runs:
+        raw = _load_summary_dict(run_dir, run.dir_name)
+        if (
+            Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST not in raw
+            or Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST not in raw
+        ):
+            continue
+        token_runs.append(run)
+
+    if not token_runs:
+        return None, None
+
+    total_weight = sum(r.summary.succeed_requests for r in token_runs)
     if total_weight > 0:
-        avg_in = sum(r.summary.avg_input_tokens * r.summary.succeed_requests for r in runs) / total_weight
-        avg_out = sum(r.summary.avg_output_tokens * r.summary.succeed_requests for r in runs) / total_weight
+        avg_in = sum(r.summary.avg_input_tokens * r.summary.succeed_requests for r in token_runs) / total_weight
+        avg_out = sum(r.summary.avg_output_tokens * r.summary.succeed_requests for r in token_runs) / total_weight
     else:
-        avg_in = sum(r.summary.avg_input_tokens for r in runs) / len(runs)
-        avg_out = sum(r.summary.avg_output_tokens for r in runs) / len(runs)
+        avg_in = sum(r.summary.avg_input_tokens for r in token_runs) / len(token_runs)
+        avg_out = sum(r.summary.avg_output_tokens for r in token_runs) / len(token_runs)
     return round(avg_in, 1), round(avg_out, 1)
 
 
@@ -259,9 +285,9 @@ def build_run_summary(rel_path: str, abs_path: str) -> Optional[dict]:
     best_rps = max(r.summary.request_throughput for r in runs)
     valid_lat = [r.summary.avg_latency for r in runs if r.summary.avg_latency >= 0]
     best_latency = min(valid_lat) if valid_lat else 0.0
-    avg_input_tokens, avg_output_tokens = _weighted_avg_tokens(runs)
+    avg_input_tokens, avg_output_tokens = _weighted_avg_tokens(abs_path, runs)
 
-    return {
+    summary = {
         'path': rel_path,
         'model': first_args.get('model', first_args.get('model_id', 'N/A')),
         'api_type': api_type,
@@ -271,8 +297,6 @@ def build_run_summary(rel_path: str, abs_path: str) -> Optional[dict]:
         'success_rate': success_rate,
         'best_rps': round(best_rps, 4),
         'best_latency': round(best_latency, 4),
-        'avg_input_tokens': avg_input_tokens,
-        'avg_output_tokens': avg_output_tokens,
         'is_embedding': is_embedding(api_type),
         'has_html': has_html,
         'timestamp': extract_timestamp(rel_path, abs_path),
@@ -281,6 +305,10 @@ def build_run_summary(rel_path: str, abs_path: str) -> Optional[dict]:
                                if r.parallel > 0}),
         **identity,
     }
+    if avg_input_tokens is not None and avg_output_tokens is not None:
+        summary['avg_input_tokens'] = avg_input_tokens
+        summary['avg_output_tokens'] = avg_output_tokens
+    return summary
 
 
 def list_run_summaries(root: str) -> List[dict]:

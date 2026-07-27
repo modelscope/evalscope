@@ -29,6 +29,8 @@ export const progressResponseSchema = z
   .object({
     percent: z.number(),
     current_step: z.string().optional(),
+    /** Tracker lifecycle state written by ProgressTracker: running | completed | error. */
+    status: z.string().optional(),
   })
   .catchall(z.unknown())
 

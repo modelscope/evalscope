@@ -1,9 +1,11 @@
 import { useState, type SyntheticEvent } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import Button from '@/components/ui/Button'
+import Card from '@/components/ui/Card'
 import Field from '@/components/ui/Field'
 import { FORM_INPUT_CLASS, inputClass } from '@/components/ui/formStyles'
 import { computeFirstInvalid, validateNumeric, FORM_MESSAGE_KEYS } from '@/domain/form/validation'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useFormErrors } from '@/hooks/useFormErrors'
 import { ApiKeyField, ApiUrlField, ModelField } from '@/components/tasks/TaskFormFields'
 
@@ -26,6 +28,7 @@ const IDS = {
   dataset: 'perf-dataset',
   maxPromptLen: 'perf-maxPromptLen',
   minPromptLen: 'perf-minPromptLen',
+  tokenizerPath: 'perf-tokenizerPath',
 } as const
 
 /** DOM order of focusable fields, drives first-invalid focus on submit. */
@@ -42,6 +45,7 @@ const DOM_ORDER: string[] = [
   IDS.dataset,
   IDS.maxPromptLen,
   IDS.minPromptLen,
+  IDS.tokenizerPath,
 ]
 
 export default function PerfConfigForm({ onSubmit, disabled }: Props) {
@@ -58,6 +62,8 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
   const [dataset, setDataset] = useState('')
   const [maxPromptLen, setMaxPromptLen] = useState('')
   const [minPromptLen, setMinPromptLen] = useState('')
+  const [tokenizerPath, setTokenizerPath] = useState('')
+  const [showMore, setShowMore] = useState(false)
 
   const { setErrors, errorFor: errMsg, clearError: clearErr } = useFormErrors()
 
@@ -119,6 +125,7 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
     if (dataset) config.dataset = dataset
     if (maxPromptLen) config.max_prompt_length = Number(maxPromptLen)
     if (minPromptLen) config.min_prompt_length = Number(minPromptLen)
+    if (tokenizerPath) config.tokenizer_path = tokenizerPath
     onSubmit(config)
   }
 
@@ -193,6 +200,28 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
           )}
         </Field>
       </div>
+
+      {/* ── More params toggle ── */}
+      <button
+        type="button"
+        onClick={() => setShowMore(!showMore)}
+        className="flex items-center gap-1 text-xs text-[var(--accent)] hover:underline cursor-pointer"
+      >
+        {t('perf.moreParams')}
+        {showMore ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+      </button>
+
+      {showMore && (
+        <Card className="!p-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+            <Field id={IDS.tokenizerPath} name="tokenizer_path" labelKey="perf.tokenizerPath">
+              {(aria) => (
+                <input {...aria} type="text" value={tokenizerPath} onChange={(e) => setTokenizerPath(e.target.value)} className={FORM_INPUT_CLASS} placeholder="/path/to/tokenizer" />
+              )}
+            </Field>
+          </div>
+        </Card>
+      )}
 
       <Button type="submit" variant="primary" disabled={disabled} className="btn-glow">
         {t('perf.startPerf')}
