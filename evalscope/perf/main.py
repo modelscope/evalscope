@@ -12,7 +12,6 @@ from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 from evalscope.utils.tqdm_utils import make_tracker
-from evalscope.utils.tqdm_utils.progress_tracker import ProgressTracker
 from .arguments import Arguments, parse_args
 from .benchmark import run_benchmark
 from .multi_turn_benchmark import run_multi_turn_benchmark
@@ -119,11 +118,6 @@ def run_multi_benchmark(args: Arguments, output_path: str = None):
 
         benchmark_result = run_one_benchmark(args, output_path=cur_output_path)
         results.update(benchmark_result)
-
-        # 每完成一个 benchmark 组合（并发数×请求数），更新前端进度
-        tracker = ProgressTracker.get_current()
-        if tracker is not None:
-            tracker.update(1)
 
         # Auto-advance dataset_offset so the next run starts at a different position
         # in the token vocabulary, preventing KV-cache hits from identical prompts.

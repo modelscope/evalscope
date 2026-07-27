@@ -65,15 +65,16 @@ def stop_process(task_id: str) -> bool:
         proc = _active_processes.pop(task_id, None)
     if proc is None:
         return False
+    # Mark as user-stopped BEFORE terminating: the parent thread blocked in
+    # run_in_subprocess polls the child every 0.1s and would otherwise observe
+    # the death first and misreport it as a crash.
+    _user_stopped_tasks.add(task_id)
     if proc.is_alive():
         proc.terminate()
         proc.join(timeout=3)
         if proc.is_alive():
             proc.kill()
             proc.join(timeout=2)
-    # Mark as user-stopped so the parent run_in_subprocess knows this is
-    # an intentional termination, not a crash.
-    _user_stopped_tasks.add(task_id)
     logger.info(f'Task {task_id} stopped by user.')
     return True
 
@@ -160,8 +161,18 @@ def run_in_subprocess(func, *args, task_id=None, **kwargs):
     if task_id:
         unregister_process(task_id)
 
+    # Consume the user-stop marker exactly once so it never leaks, regardless
+    # of which branch below handles the outcome.
+    user_stopped = bool(task_id) and task_id in _user_stopped_tasks
+    if task_id:
+        _user_stopped_tasks.discard(task_id)
+
     if res is not None:
         if res['status'] == 'error':
+            # A user-initiated stop may surface as an error result when the
+            # child converts SIGTERM into an exception — still a graceful stop.
+            if user_stopped:
+                raise TaskStoppedError(task_id)
             stderr_info = res.get('stderr', '')
             stderr_section = f'\n[stderr]\n{stderr_info}' if stderr_info.strip() else ''
             raise RuntimeError(f"Subprocess error: {res['error']}\n{res.get('traceback', '')}{stderr_section}")
@@ -169,8 +180,7 @@ def run_in_subprocess(func, *args, task_id=None, **kwargs):
 
     # If the task was explicitly stopped by the user, treat it as a graceful
     # termination — not a crash.
-    if task_id and task_id in _user_stopped_tasks:
-        _user_stopped_tasks.discard(task_id)
+    if user_stopped:
         raise TaskStoppedError(task_id)
 
     # res is still None: the child exited without putting anything in the queue
