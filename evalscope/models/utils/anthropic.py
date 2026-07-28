@@ -1,4 +1,5 @@
 import json
+import re
 import time
 from anthropic import APIStatusError
 from anthropic.types import (
@@ -21,6 +22,7 @@ from anthropic.types import (
     ToolUseBlock,
     ToolUseBlockParam,
 )
+from collections import deque
 from copy import copy
 from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 
@@ -41,6 +43,7 @@ from evalscope.utils.url_utils import data_uri_mime_type, data_uri_to_base64, fi
 
 BASE_64_DATA_REMOVED = '<base64-data-removed>'
 NO_CONTENT = '[No content]'
+TOOL_ID_PATTERN = re.compile(r'^[a-zA-Z0-9_-]+$')
 AnthropicCacheStrategy = Literal['evaluation', 'recent_messages']
 AnthropicSystemParam = Union[str, List[TextBlockParam]]
 
@@ -231,6 +234,68 @@ def anthropic_message_param(message: ChatMessage) -> MessageParam:
         return MessageParam(role='user', content=content)
 
 
+def _sanitize_tool_call_ids(messages: List[ChatMessage]) -> List[ChatMessage]:
+    """Rewrite tool call ids so they satisfy Anthropic's ``^[a-zA-Z0-9_-]+$``
+    constraint and are unique across the conversation.
+
+    Dataset-provided histories (e.g. general_fc) may carry ids like
+    ``functions.search:0`` which contain illegal characters and repeat across
+    turns, causing 400 errors from the Anthropic API. Ids that are already
+    legal and unique are kept as-is (model-generated ``toolu_xxx`` ids are
+    unaffected). tool_use/tool_result pairing is preserved by remapping each
+    assistant turn's ids and applying the same mapping to subsequent tool
+    messages; duplicate ids within one turn are disambiguated positionally,
+    pairing each tool_result with its own tool_use in order of appearance.
+    Modified messages are copied; the originals are not mutated.
+    """
+    used_ids: set[str] = set()
+
+    def new_id(old_id: str) -> str:
+        sanitized = re.sub(r'[^a-zA-Z0-9_-]', '_', old_id) or 'tool_call'
+        candidate = sanitized
+        suffix = 1
+        while candidate in used_ids:
+            candidate = f'{sanitized}_{suffix}'
+            suffix += 1
+        return candidate
+
+    result: List[ChatMessage] = []
+    id_map: Dict[str, deque[str]] = {}
+    for message in messages:
+        if isinstance(message, ChatMessageAssistant) and message.tool_calls:
+            # Each assistant turn starts a fresh mapping scope
+            id_map = {}
+            tool_calls: List[ToolCall] = []
+            changed = False
+            for tool_call in message.tool_calls:
+                old_id = str(tool_call.id)
+                mapped_id = old_id if TOOL_ID_PATTERN.match(old_id) and old_id not in used_ids else new_id(old_id)
+                used_ids.add(mapped_id)
+                id_map.setdefault(old_id, deque()).append(mapped_id)
+                if mapped_id != old_id:
+                    tool_calls.append(tool_call.model_copy(update={'id': mapped_id}))
+                    changed = True
+                else:
+                    tool_calls.append(tool_call)
+            message = message.model_copy(update={'tool_calls': tool_calls}) if changed else message
+        elif isinstance(message, ChatMessageTool):
+            old_id = str(message.tool_call_id)
+            if old_id in id_map:
+                # Consume mapped ids positionally so duplicate ids within one
+                # turn pair each tool_result with its own tool_use
+                queue = id_map[old_id]
+                mapped_id = queue.popleft() if len(queue) > 1 else queue[0]
+            elif TOOL_ID_PATTERN.match(old_id):
+                mapped_id = old_id
+            else:
+                # Orphan tool message: sanitize independently
+                mapped_id = new_id(old_id)
+            if mapped_id != old_id:
+                message = message.model_copy(update={'tool_call_id': mapped_id})
+        result.append(message)
+    return result
+
+
 def anthropic_chat_messages(
     messages: List[ChatMessage],
     cache_control: Optional[Dict[str, Any]] = None,
@@ -243,6 +308,9 @@ def anthropic_chat_messages(
     """
     system_message: Optional[AnthropicSystemParam] = None
     message_params: List[MessageParam] = []
+
+    # Normalize tool call ids to satisfy Anthropic's id constraints
+    messages = _sanitize_tool_call_ids(messages)
 
     for message in messages:
         if message.role == 'system':
