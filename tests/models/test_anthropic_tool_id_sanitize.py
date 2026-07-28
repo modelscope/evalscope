@@ -86,6 +86,29 @@ def test_multiple_tool_calls_in_one_turn_keep_distinct_pairing():
     assert tool_result_ids == tool_use_ids
 
 
+def test_duplicate_ids_within_one_turn_pair_positionally():
+    anthropic = _anthropic_utils()
+
+    # Malformed history: one assistant turn reuses the SAME id for two calls
+    _, messages = anthropic.anthropic_chat_messages([
+        ChatMessageUser(content='question'),
+        ChatMessageAssistant(
+            content='',
+            tool_calls=[_tool_call('functions.search:0'), _tool_call('functions.search:0')],
+        ),
+        ChatMessageTool(content='result A', tool_call_id='functions.search:0'),
+        ChatMessageTool(content='result B', tool_call_id='functions.search:0'),
+        ChatMessageUser(content='follow up'),
+    ])
+
+    tool_use_ids = [block['id'] for block in _collect_blocks(messages, 'tool_use')]
+    tool_result_ids = [block['tool_use_id'] for block in _collect_blocks(messages, 'tool_result')]
+
+    # Each tool_use gets a distinct id and is referenced exactly once, in order
+    assert len(set(tool_use_ids)) == 2
+    assert tool_result_ids == tool_use_ids
+
+
 def test_legal_tool_ids_are_kept_unchanged():
     anthropic = _anthropic_utils()
 

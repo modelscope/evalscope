@@ -22,6 +22,7 @@ from anthropic.types import (
     ToolUseBlock,
     ToolUseBlockParam,
 )
+from collections import deque
 from copy import copy
 from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 
@@ -243,7 +244,9 @@ def _sanitize_tool_call_ids(messages: List[ChatMessage]) -> List[ChatMessage]:
     legal and unique are kept as-is (model-generated ``toolu_xxx`` ids are
     unaffected). tool_use/tool_result pairing is preserved by remapping each
     assistant turn's ids and applying the same mapping to subsequent tool
-    messages. Modified messages are copied; the originals are not mutated.
+    messages; duplicate ids within one turn are disambiguated positionally,
+    pairing each tool_result with its own tool_use in order of appearance.
+    Modified messages are copied; the originals are not mutated.
     """
     used_ids: set[str] = set()
 
@@ -257,7 +260,7 @@ def _sanitize_tool_call_ids(messages: List[ChatMessage]) -> List[ChatMessage]:
         return candidate
 
     result: List[ChatMessage] = []
-    id_map: Dict[str, str] = {}
+    id_map: Dict[str, deque[str]] = {}
     for message in messages:
         if isinstance(message, ChatMessageAssistant) and message.tool_calls:
             # Each assistant turn starts a fresh mapping scope
@@ -268,7 +271,7 @@ def _sanitize_tool_call_ids(messages: List[ChatMessage]) -> List[ChatMessage]:
                 old_id = str(tool_call.id)
                 mapped_id = old_id if TOOL_ID_PATTERN.match(old_id) and old_id not in used_ids else new_id(old_id)
                 used_ids.add(mapped_id)
-                id_map[old_id] = mapped_id
+                id_map.setdefault(old_id, deque()).append(mapped_id)
                 if mapped_id != old_id:
                     tool_calls.append(tool_call.model_copy(update={'id': mapped_id}))
                     changed = True
@@ -278,7 +281,10 @@ def _sanitize_tool_call_ids(messages: List[ChatMessage]) -> List[ChatMessage]:
         elif isinstance(message, ChatMessageTool):
             old_id = str(message.tool_call_id)
             if old_id in id_map:
-                mapped_id = id_map[old_id]
+                # Consume mapped ids positionally so duplicate ids within one
+                # turn pair each tool_result with its own tool_use
+                queue = id_map[old_id]
+                mapped_id = queue.popleft() if len(queue) > 1 else queue[0]
             elif TOOL_ID_PATTERN.match(old_id):
                 mapped_id = old_id
             else:
