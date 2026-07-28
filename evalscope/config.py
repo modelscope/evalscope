@@ -60,7 +60,7 @@ DEFAULT_IMAGE_GEN_CONFIG = {
 }
 
 DEFAULT_TEXT_GEN_CHECKPOINT_CONFIG = {
-    'max_tokens': 2048,
+    'max_tokens': 32768,
     'do_sample': False,
     'top_k': 50,
     'top_p': 1.0,
