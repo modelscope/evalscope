@@ -337,11 +337,11 @@ class DatasetDict:
         for key, samples in data_dict.items():
             if key not in subset_list:
                 continue
-            # Apply limit if specified
+            # Apply limit if specified; resolve float limits per subset without
+            # mutating `limit`, so each subset takes its own fraction
             if limit is not None:
-                if isinstance(limit, float):
-                    limit = int(len(samples) * limit)
-                samples = samples[:limit]
+                subset_limit = int(len(samples) * limit) if isinstance(limit, float) else limit
+                samples = samples[:subset_limit]
             # Repeat k times; always deepcopy to avoid mutating the original dataset
             # (repeats=0 yields empty list; repeats=1 yields one isolated copy per sample)
             samples = [copy.deepcopy(sample) for sample in samples for _ in range(repeats)]
