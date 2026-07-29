@@ -25,10 +25,13 @@ RUN git -C /tmp/openenv apply --check /tmp/openenv-miniwob-all.patch && \
 RUN chmod +x /app/env/server/start.sh
 
 ARG EVALSCOPE_PIP_INDEX_URL=https://pypi.org/simple
-RUN pip install --no-cache-dir --index-url "${EVALSCOPE_PIP_INDEX_URL}" "openenv==0.4.1" .
+RUN pip install --no-cache-dir --index-url "${EVALSCOPE_PIP_INDEX_URL}" \
+    "fastmcp==3.0.0" \
+    "gradio==6.20.0" \
+    "openenv==0.4.1" \
+    .
 
-ENV PLAYWRIGHT_BROWSERS_PATH=/usr/local/share/ms-playwright
-RUN python -m playwright install chromium && chmod -R a+rx /usr/local/share/ms-playwright
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 ARG MINIWOB_COMMIT=7fd85d71a4b60325c6585396ec4f48377d049838
 RUN mkdir -p /usr/local/share/miniwob-plusplus && \

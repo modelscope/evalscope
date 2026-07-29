@@ -1,2 +1,4 @@
+fastmcp==3.0.0
+gradio==6.20.0
 ms-enclave[docker]>=0.0.7
 openenv==0.4.1

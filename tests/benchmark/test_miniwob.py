@@ -662,6 +662,19 @@ def test_miniwob_rejects_unsupported_runtime_and_local_image_is_prepared_once():
     adapter_module._RUNTIME_IMAGE_TAG = None
 
 
+def test_runtime_dependencies_pin_openenv_transitive_imports():
+    repo_root = Path(__file__).parents[2]
+    benchmark_dir = repo_root / 'evalscope' / 'benchmarks' / 'miniwob'
+    dockerfile = (benchmark_dir / 'runtime' / 'Dockerfile').read_text(encoding='utf-8')
+    requirements = (repo_root / 'requirements' / 'miniwob.txt').read_text(encoding='utf-8')
+
+    for dependency in ('fastmcp==3.0.0', 'gradio==6.20.0', 'openenv==0.4.1'):
+        assert dependency in dockerfile
+        assert dependency in requirements
+    assert 'PLAYWRIGHT_BROWSERS_PATH=/ms-playwright' in dockerfile
+    assert 'playwright install chromium' not in dockerfile
+
+
 def test_five_parallel_samples_never_activate_more_than_four_environments(tmp_path: Path):
     adapter = _adapter()
     lock = threading.Lock()
