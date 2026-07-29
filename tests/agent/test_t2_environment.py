@@ -2,13 +2,13 @@
 
 Test plan:
   TestEnvironmentRegistry      – registry API surface (environments + tools)
-  TestLocalEnvironmentExec     – LocalAgentRuntime exec
+  TestLocalEnvironmentExec     – LocalAgentEnvironment exec
   TestLocalEnvironmentTools    – bash/python_exec handlers w/ local env
-  TestDockerEnvironmentExec    – EnclaveAgentRuntime (docker engine) exec
+  TestDockerEnvironmentExec    – EnclaveAgentEnvironment (docker engine) exec
   TestDockerEnvironmentTools   – bash + python_exec handlers w/ enclave env
   TestAgentLoopWithEnvironment – full AgentLoop + local env + bash tool
-  TestDefaultAdapterEnvPath    – _on_agent_inference runtime_extra + tool_infos
-  TestNativeAgentConfigEnvironmentExtra – NativeAgentConfig.runtime_extra round-trip
+  TestDefaultAdapterEnvPath    – _on_agent_inference runtime config + tool_infos
+  TestNativeAgentEnvironmentConfig – legacy-compatible Agent environment config
 """
 
 import os
@@ -21,16 +21,24 @@ from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import evalscope  # noqa: F401 – trigger strategy / env / tool registration
-from evalscope.api.agent import AgentContext, AgentLoop, AgentRuntime, AgentTrace, EventType, ExecResult, ToolExecutor
+from evalscope.api.agent import (
+    AgentContext,
+    AgentEnvironment,
+    AgentLoop,
+    AgentTrace,
+    EventType,
+    ExecResult,
+    ToolExecutor,
+)
 from evalscope.api.agent.types import NativeAgentConfig
 from evalscope.api.messages import ChatMessageAssistant, ChatMessageUser
 from evalscope.api.model.model_output import ChatCompletionChoice, ModelOutput
 from evalscope.api.registry import (
     AGENT_TOOL_INFO_REGISTRY,
-    RUNTIME_REGISTRY,
-    get_runtime,
+    ENVIRONMENT_REGISTRY,
+    get_environment,
     list_agent_tools,
-    list_runtimes,
+    list_environments,
     resolve_tool_infos,
     resolve_tools,
 )
@@ -107,7 +115,7 @@ def _install_fake_ms_enclave(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _allow_enclave_construction(monkeypatch: pytest.MonkeyPatch) -> None:
-    from evalscope.agent.runtimes import enclave as enclave_mod
+    from evalscope.agent.environments import enclave as enclave_mod
     monkeypatch.setattr(enclave_mod, 'check_import', lambda *args, **kwargs: None)
 
 
@@ -118,7 +126,7 @@ def _allow_enclave_construction(monkeypatch: pytest.MonkeyPatch) -> None:
 class TestEnvironmentRegistry:
 
     def test_environments_registered(self):
-        envs = list_runtimes()
+        envs = list_environments()
         assert 'local' in envs, f"'local' not in {envs}"
         assert 'docker' in envs, f"'docker' not in {envs}"
 
@@ -151,29 +159,29 @@ class TestEnvironmentRegistry:
         assert infos[0].name == 'bash'
 
     def test_get_runtime_local(self):
-        cls = get_runtime('local')
-        from evalscope.agent.runtimes.local import LocalAgentRuntime
-        assert cls is LocalAgentRuntime
+        cls = get_environment('local')
+        from evalscope.agent.environments.local import LocalAgentEnvironment
+        assert cls is LocalAgentEnvironment
 
     def test_get_runtime_docker(self):
-        cls = get_runtime('docker')
-        from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
-        assert cls is EnclaveAgentRuntime
+        cls = get_environment('docker')
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+        assert cls is EnclaveAgentEnvironment
 
     def test_get_runtime_enclave_alias(self):
-        from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
-        assert get_runtime('enclave') is EnclaveAgentRuntime
-        assert get_runtime('volcengine') is EnclaveAgentRuntime
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+        assert get_environment('enclave') is EnclaveAgentEnvironment
+        assert get_environment('volcengine') is EnclaveAgentEnvironment
 
     def test_get_runtime_unknown_raises(self):
         with pytest.raises(ValueError, match='not registered'):
-            get_runtime('nonexistent_env_xyz')
+            get_environment('nonexistent_env_xyz')
 
     def test_duplicate_environment_registration_raises(self):
-        from evalscope.api.registry import register_runtime
+        from evalscope.api.registry import register_environment
         with pytest.raises(ValueError, match='already registered'):
-            @register_runtime('local')
-            class _Dup(AgentRuntime):
+            @register_environment('local')
+            class _Dup(AgentEnvironment):
                 async def exec(self, *a, **kw): ...
                 async def close(self): ...
 
@@ -200,7 +208,7 @@ class TestEnclaveEnvironmentInterpreter:
     def _env_with_fake_handle(
         self, monkeypatch: pytest.MonkeyPatch, *, interpreter: Optional[List[str]] = None
     ) -> tuple[Any, _FakeSandboxHandle]:
-        from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 
         _allow_enclave_construction(monkeypatch)
         _install_fake_ms_enclave(monkeypatch)
@@ -208,7 +216,7 @@ class TestEnclaveEnvironmentInterpreter:
         kwargs = {}
         if interpreter is not None:
             kwargs['interpreter'] = interpreter
-        env = EnclaveAgentRuntime(
+        env = EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config={'image': 'python:3.11-slim'},
             **kwargs,
@@ -232,10 +240,10 @@ class TestEnclaveEnvironmentInterpreter:
         assert handle.payload['timeout'] == 60.0
 
     def test_none_timeout_uses_environment_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 
         _allow_enclave_construction(monkeypatch)
-        env = EnclaveAgentRuntime(
+        env = EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config={'image': 'python:3.11-slim'},
             timeout=None,
@@ -323,22 +331,22 @@ class TestEnclaveEnvironmentInterpreter:
         assert result.returncode == -1
 
     def test_empty_interpreter_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 
         _allow_enclave_construction(monkeypatch)
         with pytest.raises(ValueError, match='interpreter'):
-            EnclaveAgentRuntime(
+            EnclaveAgentEnvironment(
                 engine='docker',
                 sandbox_config={'image': 'python:3.11-slim'},
                 interpreter=[],
             )
 
     def test_string_interpreter_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 
         _allow_enclave_construction(monkeypatch)
         with pytest.raises(TypeError, match='interpreter'):
-            EnclaveAgentRuntime(
+            EnclaveAgentEnvironment(
                 engine='docker',
                 sandbox_config={'image': 'python:3.11-slim'},
                 interpreter='bash -lc',
@@ -363,7 +371,7 @@ class TestEnclaveEnvironmentInterpreter:
         )
         sample = types.SimpleNamespace(metadata={'docker_image': 'swebench/example:latest', 'instance_id': 'example'})
 
-        env = adapter.build_runtime(sample)
+        env = adapter.build_environment(sample)
 
         assert env._interpreter == ['bash', '-lc']
         assert env._timeout == 45
@@ -389,7 +397,7 @@ class TestEnclaveEnvironmentInterpreter:
             metadata={'docker_image': 'jefzda/sweap-images:example', 'instance_id': 'example'}
         )
 
-        env = adapter.build_runtime(sample)
+        env = adapter.build_environment(sample)
 
         assert env._interpreter == ['bash', '-lc']
         assert env._timeout == 46
@@ -420,7 +428,7 @@ class TestEnclaveEnvironmentInterpreter:
         adapter._host_files_dir = None
         sample = types.SimpleNamespace(metadata={'task_id': 'example'})
 
-        env = adapter.build_runtime(sample)
+        env = adapter.build_environment(sample)
 
         assert env._timeout == 180
         assert 'environment' not in env._sandbox_config_dict
@@ -455,7 +463,7 @@ class TestEnclaveEnvironmentInterpreter:
         adapter._ensure_docker_image = lambda: None
         sample = types.SimpleNamespace(id='example', metadata={'task_id': 'example'})
 
-        env = adapter.build_runtime(sample)
+        env = adapter.build_environment(sample)
 
         sandbox_env = env._env
         assert sandbox_env._timeout == 181
@@ -469,6 +477,21 @@ class TestEnclaveEnvironmentInterpreter:
             'TQDM_DISABLE': '1',
         }
 
+    def test_job_bench_selects_legacy_docker_environment(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalscope.benchmarks.job_bench.job_bench_adapter import JobBenchAdapter
+
+        adapter = object.__new__(JobBenchAdapter)
+        adapter._task_config = TaskConfig(
+            model='dummy',
+            agent_config=NativeAgentConfig(environment='docker'),
+        )
+        expected_runtime = MagicMock(spec=AgentEnvironment)
+        monkeypatch.setattr(adapter, '_build_docker_environment', lambda _: expected_runtime)
+
+        runtime = adapter.build_environment(types.SimpleNamespace(metadata={}))
+
+        assert runtime is expected_runtime
+
 
 # ===========================================================================
 # TestLocalEnvironmentExec
@@ -480,8 +503,8 @@ class TestLocalEnvironmentExec:
         return AsyncioLoopRunner.run(coro)
 
     def _env(self):
-        from evalscope.agent.runtimes.local import LocalAgentRuntime
-        return LocalAgentRuntime()
+        from evalscope.agent.environments.local import LocalAgentEnvironment
+        return LocalAgentEnvironment()
 
     def test_exec_echo(self):
         env = self._env()
@@ -513,8 +536,8 @@ class TestLocalEnvironmentExec:
         assert '/tmp' in result.stdout
 
     def test_exec_with_env_vars(self):
-        from evalscope.agent.runtimes.local import LocalAgentRuntime
-        env = LocalAgentRuntime(env_vars={'MY_VAR': 'hello_from_test'})
+        from evalscope.agent.environments.local import LocalAgentEnvironment
+        env = LocalAgentEnvironment(env_vars={'MY_VAR': 'hello_from_test'})
         result = self._run(env.exec(['bash', '-c', 'echo $MY_VAR']))
         assert 'hello_from_test' in result.stdout
 
@@ -525,8 +548,8 @@ class TestLocalEnvironmentExec:
 
     def test_context_manager(self):
         async def _cm():
-            from evalscope.agent.runtimes.local import LocalAgentRuntime
-            async with LocalAgentRuntime() as env:
+            from evalscope.agent.environments.local import LocalAgentEnvironment
+            async with LocalAgentEnvironment() as env:
                 result = await env.exec(['echo', 'cm'])
             return result
 
@@ -540,7 +563,7 @@ class TestLocalEnvironmentExec:
 
 
 # ===========================================================================
-# TestLocalEnvironmentTools  (tool handlers with LocalAgentRuntime)
+# TestLocalEnvironmentTools  (tool handlers with LocalAgentEnvironment)
 # ===========================================================================
 
 class TestLocalEnvironmentTools:
@@ -549,8 +572,8 @@ class TestLocalEnvironmentTools:
         return AsyncioLoopRunner.run(coro)
 
     def _env(self):
-        from evalscope.agent.runtimes.local import LocalAgentRuntime
-        return LocalAgentRuntime()
+        from evalscope.agent.environments.local import LocalAgentEnvironment
+        return LocalAgentEnvironment()
 
     def test_bash_tool_runs_command(self):
         from evalscope.agent.tools.bash import run_bash
@@ -562,7 +585,7 @@ class TestLocalEnvironmentTools:
     def test_bash_tool_without_env_raises(self):
         from evalscope.agent.tools.bash import run_bash
         call = _tool_call('bash', {'command': 'echo x'})
-        with pytest.raises(PermissionError, match='requires an AgentRuntime'):
+        with pytest.raises(PermissionError, match='requires an AgentEnvironment'):
             self._run(run_bash(call, None))
 
     def test_bash_tool_stderr_in_output(self):
@@ -593,7 +616,7 @@ class TestLocalEnvironmentTools:
 
 @docker_mark
 class TestDockerEnvironmentExec:
-    """Integration tests for ``EnclaveAgentRuntime`` with the docker engine.
+    """Integration tests for ``EnclaveAgentEnvironment`` with the docker engine.
 
     These tests create real Docker containers using the ``python:3.11-slim``
     image.  Each test uses its own environment instance (= its own container).
@@ -603,8 +626,8 @@ class TestDockerEnvironmentExec:
         return AsyncioLoopRunner.run(coro)
 
     def _env(self):
-        from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
-        return EnclaveAgentRuntime(
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+        return EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config={'image': 'python:3.11-slim'},
             timeout=30.0,
@@ -693,8 +716,8 @@ class TestDockerEnvironmentExec:
 
     def test_context_manager(self):
         async def _cm():
-            from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
-            async with EnclaveAgentRuntime(
+            from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+            async with EnclaveAgentEnvironment(
                 engine='docker',
                 sandbox_config={'image': 'python:3.11-slim'},
             ) as env:
@@ -716,8 +739,8 @@ class TestDockerEnvironmentTools:
         return AsyncioLoopRunner.run(coro)
 
     def _env(self):
-        from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
-        return EnclaveAgentRuntime(
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+        return EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config={'image': 'python:3.11-slim'},
             timeout=30.0,
@@ -756,11 +779,11 @@ class TestAgentLoopWithEnvironment:
 
     def test_loop_uses_environment_via_bash_tool(self):
         """Model calls bash → env.exec is invoked → result observed."""
-        from evalscope.agent.runtimes.local import LocalAgentRuntime
+        from evalscope.agent.environments.local import LocalAgentEnvironment
         from evalscope.agent.tools.bash import run_bash
         from evalscope.api.registry import get_strategy
 
-        env = LocalAgentRuntime()
+        env = LocalAgentEnvironment()
         handlers = {'bash': run_bash}
 
         # Model: first call returns a bash tool_call; second call returns submit.
@@ -777,7 +800,7 @@ class TestAgentLoopWithEnvironment:
         model.generate_async = AsyncMock(side_effect=[first_output, second_output])
 
         strategy = get_strategy('function_calling')()
-        tool_executor = ToolExecutor(handlers=handlers, runtime=env)
+        tool_executor = ToolExecutor(handlers=handlers, environment=env)
         ctx = AgentContext(
             sample_id='test-env-loop',
             messages=[ChatMessageUser(content='run bash')],
@@ -788,7 +811,7 @@ class TestAgentLoopWithEnvironment:
             model=model,
             strategy=strategy,
             tool_executor=tool_executor,
-            runtime=env,
+            environment=env,
             max_steps=5,
             trace=trace,
         )
@@ -805,7 +828,7 @@ class TestAgentLoopWithEnvironment:
             f'Expected bash output in tool message, got: {tool_msg.content!r}'
         )
 
-        # ENV_EXEC event should NOT be in trace (bash uses env.exec via AgentRuntime,
+        # ENV_EXEC event should NOT be in trace (bash uses env.exec via AgentEnvironment,
         # not a separate ENV_EXEC emitter); TOOL_RESULT IS expected.
         event_types = {ev.type for ev in result.trace.events}
         assert EventType.TOOL_RESULT in event_types
@@ -852,8 +875,8 @@ class TestDefaultAdapterEnvPath:
         # at minimum verify execution completed without error.
         assert output is not None
 
-    def test_runtime_extra_forwarded(self):
-        """runtime_extra is forwarded to runtime constructor kwargs."""
+    def test_environment_extra_forwarded(self):
+        """environment_extra is forwarded to the environment constructor."""
         from evalscope.api.benchmark.adapters.default_data_adapter import DefaultDataAdapter
         from evalscope.api.dataset import Sample
 
@@ -862,8 +885,10 @@ class TestDefaultAdapterEnvPath:
             strategy='function_calling',
             tools=[],
             max_steps=1,
-            runtime='local',
-            runtime_extra={'working_dir': '/tmp'},
+            environment='local',
+            environment_extra={
+                'working_dir': '/tmp',
+            },
         )
         task_cfg = MagicMock()
         task_cfg.agent_config = cfg
@@ -883,36 +908,87 @@ class TestDefaultAdapterEnvPath:
         # The runtime was created and closed; trace agent-runtime name should match.
         trace = output.trace
         assert trace is not None
-        assert trace.agent_runtime == 'local'
+        assert trace.environment == 'local'
 
 
 # ===========================================================================
-# TestNativeAgentConfigEnvironmentExtra  (NativeAgentConfig schema)
+# TestNativeAgentEnvironmentConfig  (NativeAgentConfig schema)
 # ===========================================================================
 
-class TestNativeAgentConfigEnvironmentExtra:
+class TestNativeAgentEnvironmentConfig:
 
-    def test_default_runtime_extra_is_empty(self):
+    def test_default_environment_is_none(self):
         cfg = NativeAgentConfig()
-        assert cfg.runtime_extra == {}
+        assert cfg.environment is None
+        assert cfg.environment_extra == {}
 
-    def test_runtime_extra_accepted(self):
+    def test_environment_config_accepted(self):
         cfg = NativeAgentConfig(
             strategy='function_calling',
-            runtime='docker',
-            runtime_extra={'image': 'python:3.11-slim', 'working_dir': '/workspace'},
+            environment='docker',
+            environment_extra={
+                'image': 'python:3.11-slim',
+                'working_dir': '/workspace',
+            },
         )
-        assert cfg.runtime_extra['image'] == 'python:3.11-slim'
-        assert cfg.runtime == 'docker'
+        assert cfg.environment_extra['image'] == 'python:3.11-slim'
+        assert cfg.environment == 'docker'
 
-    def test_runtime_extra_serialises(self):
-        cfg = NativeAgentConfig(runtime_extra={'key': 'val'})
+    def test_environment_config_serialises_compatibly(self):
+        cfg = NativeAgentConfig(environment='docker', environment_extra={'key': 'val'})
         d = cfg.model_dump()
-        assert d['runtime_extra'] == {'key': 'val'}
+        assert d['environment'] == 'docker'
+        assert d['environment_extra'] == {'key': 'val'}
+        assert 'runtime' not in d
 
-    def test_kwargs_and_runtime_extra_independent(self):
-        cfg = NativeAgentConfig(kwargs={'system_prompt': 'hi'}, runtime_extra={'image': 'x'})
+    def test_kwargs_and_environment_config_independent(self):
+        cfg = NativeAgentConfig(kwargs={'system_prompt': 'hi'}, environment='docker', environment_extra={'image': 'x'})
         assert 'system_prompt' in cfg.kwargs
-        assert 'system_prompt' not in cfg.runtime_extra
-        assert 'image' in cfg.runtime_extra
+        assert 'system_prompt' not in cfg.environment_extra
+        assert 'image' in cfg.environment_extra
         assert 'image' not in cfg.kwargs
+
+    def test_task_environment_is_nested_and_typed(self):
+        cfg = NativeAgentConfig(
+            task_environment={
+                'backend': 'openenv',
+                'observation_mode': 'axtree',
+                'runtime': {
+                    'name': 'ms_enclave_docker',
+                },
+            }
+        )
+        assert cfg.task_environment.backend == 'openenv'
+        assert cfg.task_environment.observation_mode == 'axtree'
+        assert cfg.task_environment.runtime.name == 'ms_enclave_docker'
+
+    def test_unpublished_runtime_shape_is_rejected(self):
+        with pytest.raises(ValueError, match='Extra inputs are not permitted'):
+            NativeAgentConfig(runtime='docker')
+        with pytest.raises(ValueError, match='Extra inputs are not permitted'):
+            NativeAgentConfig(runtime_extra={'image': 'python:3.11-slim'})
+
+    def test_task_config_rejects_top_level_task_environment(self):
+        with pytest.raises(ValueError, match='must be nested under `agent_config`'):
+            TaskConfig(
+                task_environment={
+                    'backend': 'openenv',
+                    'runtime': {
+                        'name': 'ms_enclave_docker',
+                    },
+                }
+            )
+
+    def test_task_config_update_revalidates_agent_config(self):
+        cfg = TaskConfig(agent_config={'mode': 'native'})
+        cfg.update({
+            'agent_config': {
+                'environment': 'local',
+                'environment_extra': {
+                    'working_dir': '/tmp',
+                },
+            }
+        })
+        assert isinstance(cfg.agent_config, NativeAgentConfig)
+        assert cfg.agent_config.environment == 'local'
+        assert cfg.agent_config.environment_extra == {'working_dir': '/tmp'}

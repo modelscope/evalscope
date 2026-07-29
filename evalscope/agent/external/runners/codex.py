@@ -11,15 +11,15 @@ Responses API — the bridge's ``/openai/v1/responses`` route is the only
 endpoint codex can actually hit.
 
 The prompt is passed as the trailing positional argument (codex ``exec
-"<prompt>"``) so this runner works in both ``LocalAgentRuntime``
-(stdin is fully supported) and ``EnclaveAgentRuntime`` (whose
+"<prompt>"``) so this runner works in both ``LocalAgentEnvironment``
+(stdin is fully supported) and ``EnclaveAgentEnvironment`` (whose
 ``exec`` does not forward ``input=`` to the underlying shell executor).
 """
 
 import tempfile
 from typing import Any, Dict, List, Optional
 
-from evalscope.api.agent import AgentRuntime
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
@@ -37,7 +37,7 @@ _CODEX_OUTPUT_FILE = '/tmp/evalscope-codex-last.txt'
 #: edit files under its CWD + run shell commands while still blocking writes
 #: outside the workspace — safe default for both Local and Enclave runs.
 #: ``danger-full-access`` would lift all in-process limits, which is unsafe
-#: for ``LocalAgentRuntime`` (codex would have full host access). Bench
+#: for ``LocalAgentEnvironment`` (codex would have full host access). Bench
 #: cases that genuinely need full access can be re-introduced behind an
 #: explicit kwarg later; PR2 SWE-bench Pro verified ``workspace-write`` is
 #: sufficient for ``apply_patch`` + ``exec_command``.
@@ -110,7 +110,7 @@ class CodexRunner(AgentRunner):
     # setup
     # ------------------------------------------------------------------
 
-    async def setup(self, env: AgentRuntime) -> None:
+    async def setup(self, env: AgentEnvironment) -> None:
         if await self._codex_present(env):
             return
         if not self._auto_install:
@@ -125,14 +125,14 @@ class CodexRunner(AgentRunner):
                 'Inspect the install logs above for the underlying cause.'
             )
 
-    async def _codex_present(self, env: AgentRuntime) -> bool:
+    async def _codex_present(self, env: AgentEnvironment) -> bool:
         probe = await env.exec(['bash', '-c', 'command -v codex && codex --version'])
         if probe.returncode == 0:
             logger.debug(f'codex probe: {probe.stdout.strip()!r}')
             return True
         return False
 
-    async def _install_codex_cli(self, env: AgentRuntime) -> None:
+    async def _install_codex_cli(self, env: AgentEnvironment) -> None:
         """Install Node.js (when missing) and the ``@openai/codex`` package."""
         await ensure_node_via_apt(
             env,
@@ -157,7 +157,7 @@ class CodexRunner(AgentRunner):
     async def run(
         self,
         task: ExternalAgentTask,
-        env: AgentRuntime,
+        env: AgentEnvironment,
         bridge: BridgeEndpoint,
     ) -> AgentRunResult:
         env_vars: Dict[str, str] = {

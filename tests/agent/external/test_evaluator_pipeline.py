@@ -57,7 +57,7 @@ def test_external_agent_through_evaluator(tmp_path):
                 'subset_list': ['example'],
             },
         },
-        agent_config={'mode': 'external', 'framework': 'mock', 'runtime': 'local'},
+        agent_config={'mode': 'external', 'framework': 'mock', 'environment': 'local'},
         eval_batch_size=1,
         limit=1,
         analysis_report=False,

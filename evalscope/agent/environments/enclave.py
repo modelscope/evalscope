@@ -1,6 +1,6 @@
-"""Unified per-sample agent runtime backed by ms_enclave.
+"""Unified per-sample agent environment backed by ms_enclave.
 
-``EnclaveAgentRuntime`` is the single implementation powering the
+``EnclaveAgentEnvironment`` is the single implementation powering the
 ``enclave`` / ``docker`` / ``volcengine`` registry aliases, supporting any
 engine understood by :class:`evalscope.api.sandbox.SandboxEngine`.
 
@@ -25,9 +25,9 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
 
-from evalscope.api.agent import AgentRuntime
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.agent.types import ExecResult
-from evalscope.api.registry import register_runtime
+from evalscope.api.registry import register_environment
 from evalscope.api.sandbox import (
     SandboxEngine,
     SandboxHandle,
@@ -104,8 +104,8 @@ def _returncode_from_status(status: Any, stderr: str, timed_out: bool, success_s
     return int(match.group(1)) if match else 1
 
 
-@register_runtime(['enclave', 'docker', 'volcengine'])
-class EnclaveAgentRuntime(AgentRuntime):
+@register_environment(['enclave', 'docker', 'volcengine'])
+class EnclaveAgentEnvironment(AgentEnvironment):
     """Per-sample sandbox via :class:`SandboxService`.
 
     Parameters
@@ -146,13 +146,13 @@ class EnclaveAgentRuntime(AgentRuntime):
         # ms_enclave is mandatory for this environment. Fail fast at construction
         # time so missing-dependency errors don't surface as opaque tool errors
         # inside the agent loop (which the model interprets as a broken sandbox).
-        check_import('ms_enclave', extra='sandbox', raise_error=True, feature_name='EnclaveAgentRuntime')
+        check_import('ms_enclave', extra='sandbox', raise_error=True, feature_name='EnclaveAgentEnvironment')
 
         self._engine: SandboxEngine = resolve_engine(engine)
         self._timeout = 60.0 if timeout is None else float(timeout)
         if isinstance(interpreter, str):
             raise TypeError(
-                'EnclaveAgentRuntime.interpreter must be a non-empty sequence of non-empty strings, '
+                'EnclaveAgentEnvironment.interpreter must be a non-empty sequence of non-empty strings, '
                 'not a single string.'
             )
         self._interpreter: List[str] = list(_DEFAULT_INTERPRETER if interpreter is None else interpreter)
@@ -160,7 +160,7 @@ class EnclaveAgentRuntime(AgentRuntime):
             not isinstance(part, str) or not part for part in self._interpreter
         )
         if invalid_interpreter:
-            raise ValueError('EnclaveAgentRuntime.interpreter must be a non-empty sequence of non-empty strings.')
+            raise ValueError('EnclaveAgentEnvironment.interpreter must be a non-empty sequence of non-empty strings.')
         self._manager_config: Dict[str, Any] = dict(manager_config or {})
         self._sandbox_config_dict: Dict[str, Any] = self._apply_engine_defaults(dict(sandbox_config or {}))
         self._handle: Optional[SandboxHandle] = None
@@ -173,7 +173,7 @@ class EnclaveAgentRuntime(AgentRuntime):
         """Fill in engine-specific defaults for fields the caller didn't set.
 
         For ``docker`` we inject ``image`` / ``working_dir`` / ``tools_config``
-        so that a bare ``EnclaveAgentRuntime(engine='docker')`` produces a
+        so that a bare ``EnclaveAgentEnvironment(engine='docker')`` produces a
         usable sandbox out of the box.  User-provided values always win.
         """
         if self._engine is SandboxEngine.DOCKER:
@@ -199,7 +199,7 @@ class EnclaveAgentRuntime(AgentRuntime):
         """
         if self._handle is not None:
             raise RuntimeError(
-                'EnclaveAgentRuntime.merge_sandbox_config: sandbox '
+                'EnclaveAgentEnvironment.merge_sandbox_config: sandbox '
                 f'{self._handle.sandbox_id} is already running; merge before exec.'
             )
         self._sandbox_config_dict = merge_sandbox_config_dicts(self._sandbox_config_dict, overlay)
@@ -214,13 +214,13 @@ class EnclaveAgentRuntime(AgentRuntime):
                 manager_config=self._manager_config or None,
             )
             logger.debug(
-                f'EnclaveAgentRuntime: sandbox {self._handle.sandbox_id} ready '
+                f'EnclaveAgentEnvironment: sandbox {self._handle.sandbox_id} ready '
                 f'(engine={self._engine.value}).'
             )
         return self._handle
 
     # ------------------------------------------------------------------
-    # AgentRuntime interface
+    # AgentEnvironment interface
     # ------------------------------------------------------------------
 
     async def exec(
@@ -280,7 +280,7 @@ class EnclaveAgentRuntime(AgentRuntime):
         handle = await self._ensure_sandbox()
         ok = await handle.put_dir(source_dir, target_dir)
         if not ok:
-            raise RuntimeError(f'EnclaveAgentRuntime.put_dir failed to copy {source_dir} into {target_dir}')
+            raise RuntimeError(f'EnclaveAgentEnvironment.put_dir failed to copy {source_dir} into {target_dir}')
 
     async def close(self) -> None:
         """Release the per-sample sandbox (idempotent)."""
@@ -291,4 +291,4 @@ class EnclaveAgentRuntime(AgentRuntime):
                 self._handle = None
 
 
-__all__ = ['EnclaveAgentRuntime']
+__all__ = ['EnclaveAgentEnvironment']

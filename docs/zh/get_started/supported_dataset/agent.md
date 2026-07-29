@@ -19,7 +19,7 @@
 | `kimi_verifier` | [Kimi-Vendor-Verifier (Param Compliance)](../../benchmarks/kimi_verifier.md) | `Agent`, `FunctionCalling` |
 | `mcp_atlas` | [MCP-Atlas](../../benchmarks/mcp_atlas.md) | `Agent`, `MultiTurn` |
 | `minimax_verifier` | [MiniMax-Vendor-Verifier](../../benchmarks/minimax_verifier.md) | `Agent`, `FunctionCalling` |
-| `miniwob` | [MiniWoB (OpenEnv profile)](../../benchmarks/miniwob.md) | `Agent`, `FunctionCalling`, `MultiModal`, `MultiTurn` |
+| `miniwob` | [MiniWoB](../../benchmarks/miniwob.md) | `Agent`, `FunctionCalling`, `MultiModal`, `MultiTurn` |
 | `officeqa` | [OfficeQA](../../benchmarks/officeqa.md) | `Agent`, `Knowledge`, `QA` |
 | `researchrubrics` | [ResearchRubrics](../../benchmarks/researchrubrics.md) | `Agent`, `MultiTurn`, `Reasoning`, `Retrieval` |
 | `skillsbench` | [SkillsBench](../../benchmarks/skillsbench.md) | `Agent`, `MultiTurn` |

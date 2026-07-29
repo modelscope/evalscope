@@ -15,11 +15,11 @@ references, communication quality, and instruction following.
 - **Dataset**: 101 tasks and 2,593 weighted rubric criteria
 - **Metric**: Binary rubric compliance score
 
-## Agent Runtime
+## Agent Environment
 
-- Uses EvalScope's built-in agent runtime by default and does not require ``agent_config``. The agent can use ``bash``
+- Uses EvalScope's built-in agent environment by default and does not require ``agent_config``. The agent can use ``bash``
   to access the network, gather information, and produce a final report.
-- The default runtime uses the host network and a temporary working directory, but does not provide complete filesystem
+- The default environment uses the host network and a temporary working directory, but does not provide complete filesystem
   isolation. Do not run untrusted models on shared or sensitive machines.
 - The default strategy is ``function_calling`` with a 50-step limit. Use ``NativeAgentConfig`` to override the strategy
   or step limit; ``react`` is also available. Both strategies require native function calling support.

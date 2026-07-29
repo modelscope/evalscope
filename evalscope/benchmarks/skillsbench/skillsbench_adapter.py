@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
+from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 from evalscope.agent.skills import (
     DEFAULT_SKILLS_INSTALL_DIR,
     TASK_BUNDLED_SKILL_SOURCE,
@@ -264,15 +264,15 @@ class SkillsBenchAdapter(AgentAdapter):
 
         agent_config = self._task_config.agent_config
         if isinstance(agent_config, ExternalAgentConfig):
-            env = self._build_runtime(sample)
+            env = self._build_environment(sample)
             try:
                 result = run_external_agent(
                     config=agent_config,
                     model=model,
                     sample=sample,
-                    runtime_override=env,
+                    environment_override=env,
                     instruction_override=sample_instruction(sample),
-                    close_runtime=False,
+                    close_environment=False,
                 )
                 AsyncioLoopRunner.run(self._run_verifier(env, sample))
                 return result
@@ -280,7 +280,7 @@ class SkillsBenchAdapter(AgentAdapter):
                 AsyncioLoopRunner.run(env.close())
 
         if isinstance(agent_config, NativeAgentConfig):
-            env = self._build_runtime(sample)
+            env = self._build_environment(sample)
             try:
                 result = run_native_agent(
                     task_config=self._task_config,
@@ -288,7 +288,7 @@ class SkillsBenchAdapter(AgentAdapter):
                     sample=sample,
                     build_sandbox_config=lambda _: None,
                     extract_final_answer=lambda loop_result, strategy: strategy.extract_final_answer(loop_result),
-                    runtime_override=env,
+                    environment_override=env,
                 )
                 AsyncioLoopRunner.run(self._run_verifier(env, sample))
                 return result
@@ -305,7 +305,7 @@ class SkillsBenchAdapter(AgentAdapter):
             self._current_output_dir = None
 
     async def _run_oracle(self, model: Model, sample: Sample) -> InferenceResult:
-        env = self._build_runtime(sample)
+        env = self._build_environment(sample)
         try:
             await env.put_dir(Path(sample.metadata['task_dir']) / 'oracle', _ORACLE_DIR)
             result = await env.exec(['bash', f'{_ORACLE_DIR}/solve.sh'], timeout=sample.metadata['agent_timeout_sec'])
@@ -345,15 +345,15 @@ class SkillsBenchAdapter(AgentAdapter):
             completed=True,
         )
 
-    def _build_runtime(self, sample: Sample) -> EnclaveAgentRuntime:
-        return EnclaveAgentRuntime(
+    def _build_environment(self, sample: Sample) -> EnclaveAgentEnvironment:
+        return EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config=skillsbench_sandbox_config(sample.metadata),
             timeout=60.0,
             interpreter=['bash', '-lc'],
         )
 
-    async def _run_verifier(self, env: EnclaveAgentRuntime, sample: Sample) -> None:
+    async def _run_verifier(self, env: EnclaveAgentEnvironment, sample: Sample) -> None:
         task_dir = Path(sample.metadata['task_dir'])
         await env.put_dir(task_dir / 'verifier', _VERIFIER_DIR)
         await env.exec(['bash', '-lc', f'rm -rf {_LOGS_VERIFIER_DIR} && mkdir -p {_LOGS_VERIFIER_DIR}'], timeout=30)

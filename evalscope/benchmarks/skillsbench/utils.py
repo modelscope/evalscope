@@ -8,7 +8,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from evalscope.api.agent import AgentRuntime
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.dataset import Sample
 
 SKILL_MODE_NO_SKILL = 'no-skill'
@@ -147,7 +147,7 @@ def skillsbench_sandbox_config(metadata: Dict[str, Any]) -> Dict[str, Any]:
     return config
 
 
-async def read_sandbox_text(env: AgentRuntime, path: str) -> str:
+async def read_sandbox_text(env: AgentEnvironment, path: str) -> str:
     result = await env.exec(['bash', '-lc', f'cat {sh_quote(path)} 2>/dev/null || true'], timeout=30)
     return result.stdout or ''
 

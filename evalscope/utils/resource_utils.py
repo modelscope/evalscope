@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 if TYPE_CHECKING:
     from evalscope.config import TaskConfig
 
+from evalscope.utils.download_utils import download_url
 from evalscope.utils.logger import get_logger
-from evalscope.utils.url_utils import download_url
 
 logger = get_logger()
 

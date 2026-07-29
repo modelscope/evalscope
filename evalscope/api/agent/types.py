@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 
+from evalscope.api.environment import TaskEnvironmentConfig
 from evalscope.api.messages import ChatMessage, Content
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolInfo
@@ -24,8 +25,8 @@ class BaseAgentConfig(BaseModel):
 
     Both :class:`NativeAgentConfig` (the AgentLoop path) and
     :class:`ExternalAgentConfig` (the external-CLI bridge path) need an
-    :class:`AgentRuntime` plus a free-form ``kwargs`` channel; lifting
-    them here avoids duplicating the schema across both subclasses.
+    Agent execution environment plus a free-form ``kwargs`` channel;
+    lifting them here avoids duplicating the schema across both subclasses.
     """
 
     # ``extra='forbid'`` so legacy ``extra=...`` configs (renamed to
@@ -33,11 +34,14 @@ class BaseAgentConfig(BaseModel):
     # silently being dropped — agent_config is a public surface.
     model_config = ConfigDict(extra='forbid')
 
-    runtime: Optional[str] = Field(default=None)
-    """Registered agent runtime name. ``None`` means no command runtime."""
+    environment: Optional[str] = Field(default=None)
+    """Registered Agent execution environment. ``None`` means no environment."""
 
-    runtime_extra: Dict[str, Any] = Field(default_factory=dict)
-    """Free-form runtime-specific options passed to the runtime constructor."""
+    environment_extra: Dict[str, Any] = Field(default_factory=dict)
+    """Options passed to the Agent execution environment constructor."""
+
+    task_environment: Optional[TaskEnvironmentConfig] = Field(default=None)
+    """Stateful task protocol and the runtime hosting its service."""
 
     kwargs: Dict[str, Any] = Field(default_factory=dict)
     """Free-form variant-specific options.  Native: forwarded to the
@@ -105,7 +109,7 @@ class NativeAgentConfig(BaseAgentConfig):
 
 
 class ExecResult(BaseModel):
-    """Result of executing a command in an ``AgentRuntime``."""
+    """Result of executing a command in an ``AgentEnvironment``."""
 
     returncode: int = 0
     stdout: str = ''

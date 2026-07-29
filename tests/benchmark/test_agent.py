@@ -2,6 +2,7 @@
 import json
 import sys
 import tempfile
+import zipfile
 from dotenv import dotenv_values, load_dotenv
 from pathlib import Path
 from types import ModuleType
@@ -26,6 +27,7 @@ from evalscope.benchmarks.claw_eval.claw_eval_adapter import ClawEvalAdapter
 from evalscope.benchmarks.claw_eval.utils import (
     DEFAULT_CLAW_EVAL_SANDBOX_IMAGE,
     ClawEvalAssets,
+    _prepare_official_repo,
     ensure_claw_eval_sandbox_image,
     load_claw_eval_trace,
     materialize_task_root,
@@ -283,7 +285,7 @@ class TestAgentBenchmark(TestBenchmark):
             eval_batch_size=5,
             collect_perf=False,
             debug=False,
-            agent_config=NativeAgentConfig(runtime='docker', max_steps=80),
+            agent_config=NativeAgentConfig(environment='docker', max_steps=80),
             sandbox=SandboxTaskConfig(
                 default_config={
                     'image': 'python:3.11-slim-bookworm',
@@ -780,6 +782,27 @@ class TestAgentBenchmark(TestBenchmark):
 
         self.assertIsInstance(adapter, ClawEvalAdapter)
         check.assert_called_once_with()
+
+    def test_claw_eval_force_redownload_replaces_cached_archive(self):
+        """Test force_redownload reaches the shared downloader."""
+        with tempfile.TemporaryDirectory() as tmp:
+            cache_root = Path(tmp)
+            archive_path = cache_root / 'claw_eval_official.zip'
+            archive_path.write_bytes(b'stale archive')
+
+            def fake_download(url, save_path, **kwargs):
+                with zipfile.ZipFile(save_path, 'w') as archive:
+                    archive.writestr('claw-eval/tasks/T001_task/task.yaml', 'id: T001_task\n')
+
+            with patch('evalscope.benchmarks.claw_eval.utils.download_url', side_effect=fake_download) as download:
+                repo_root = _prepare_official_repo(
+                    cache_root=cache_root,
+                    force_redownload=True,
+                    official_repo_path=None,
+                )
+
+            self.assertTrue((repo_root / 'tasks' / 'T001_task' / 'task.yaml').is_file())
+            self.assertTrue(download.call_args.kwargs['force'])
 
     def test_claw_eval_runner_uses_official_sandbox(self):
         """Test the runner always invokes the official private API sandbox path."""

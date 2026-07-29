@@ -20,7 +20,6 @@ class OpenEnvSession(TaskEnvironmentSession):
         self,
         *,
         base_url: str,
-        runtime_name: str,
         connect_timeout_s: float = 10.0,
         message_timeout_s: float = 60.0,
         max_message_size_mb: float = 100.0,
@@ -29,7 +28,6 @@ class OpenEnvSession(TaskEnvironmentSession):
             raise ValueError('OpenEnv base_url must not be empty.')
         if connect_timeout_s <= 0 or message_timeout_s <= 0 or max_message_size_mb <= 0:
             raise ValueError('OpenEnv timeout and message-size values must be greater than zero.')
-        self.runtime_name = runtime_name
         self._base_url = base_url.rstrip('/')
         self._connect_timeout_s = connect_timeout_s
         self._message_timeout_s = message_timeout_s
@@ -70,7 +68,7 @@ class OpenEnvSession(TaskEnvironmentSession):
         async with self._connect_lock:
             if self._client is not None:
                 return self._client
-            check_import('openenv', extra='openenv', raise_error=True, feature_name='OpenEnv task environment')
+            check_import('openenv', extra='miniwob', raise_error=True, feature_name='OpenEnv task environment')
             from openenv.core import GenericEnvClient
 
             client = GenericEnvClient(
@@ -107,20 +105,18 @@ class OpenEnvSession(TaskEnvironmentSession):
 class OpenEnvBackend(TaskEnvironmentBackend):
     """Create OpenEnv sessions without owning service/container lifecycle."""
 
-    name = 'openenv'
     _ALLOWED_KEYS = {'connect_timeout_s', 'message_timeout_s', 'max_message_size_mb'}
 
     def create_session(
         self,
         *,
         base_url: str,
-        runtime_name: str,
         config: Dict[str, Any],
     ) -> TaskEnvironmentSession:
         unknown = set(config) - self._ALLOWED_KEYS
         if unknown:
             raise ValueError(f'Unsupported OpenEnv backend options: {sorted(unknown)}')
-        return OpenEnvSession(base_url=base_url, runtime_name=runtime_name, **config)
+        return OpenEnvSession(base_url=base_url, **config)
 
 
 __all__ = ['OpenEnvBackend', 'OpenEnvSession']

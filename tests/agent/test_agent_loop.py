@@ -82,7 +82,7 @@ class TestAgentLoopCore(unittest.TestCase):
 
     def _build_loop(self, model, *, handlers=None, max_steps=5, trace=None):
         strategy = get_strategy('function_calling')()
-        executor = ToolExecutor(handlers=handlers or {}, runtime=None)
+        executor = ToolExecutor(handlers=handlers or {}, environment=None)
         return AgentLoop(
             model=model,
             strategy=strategy,
@@ -167,12 +167,21 @@ class TestAgentLoopCore(unittest.TestCase):
             )
 
         loop = self._build_loop(model, handlers={'browser_action': browser_handler})
+        format_observation = loop.strategy.format_observation
+
+        def format_with_strategy_metadata(*args, **kwargs):
+            message = format_observation(*args, **kwargs)
+            message.metadata = {'strategy': 'preserved'}
+            return message
+
+        loop.strategy.format_observation = MagicMock(side_effect=format_with_strategy_metadata)
         ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='click')])
         result = asyncio.run(loop.run(ctx))
 
         self.assertEqual(model.generate_async.call_count, 1)
         self.assertIsInstance(result.messages[2], ChatMessageTool)
         self.assertEqual(result.messages[2].content, 'reward=1')
+        self.assertEqual(result.messages[2].metadata, {'strategy': 'preserved', 'reward': 1.0})
         self.assertIsInstance(result.messages[3], ChatMessageUser)
         self.assertEqual(result.messages[3].content[0].image, '/tmp/step-001.png')
         self.assertEqual(result.messages[3].tool_call_id, ['c1'])
@@ -242,7 +251,7 @@ class TestAgentLoopCore(unittest.TestCase):
 
         model = MagicMock()
         model.generate_async = AsyncMock(return_value=_make_output(content='ok'))
-        executor = ToolExecutor(handlers={}, runtime=None)
+        executor = ToolExecutor(handlers={}, environment=None)
         loop = AgentLoop(
             model=model,
             strategy=_SysStrategy(),

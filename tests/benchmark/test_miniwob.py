@@ -21,7 +21,7 @@ from evalscope.api.model import ModelOutput
 from evalscope.api.model.model_output import ChatCompletionChoice
 from evalscope.api.registry import get_benchmark
 from evalscope.api.tool import ToolCall, ToolFunction
-from evalscope.benchmarks.miniwob.miniwob_adapter import MiniWobAdapter, _MiniWobStrategy
+from evalscope.benchmarks.miniwob.miniwob_adapter import OPENENV_PATCH_SHA256, MiniWobAdapter, _MiniWobStrategy
 from evalscope.benchmarks.miniwob.utils import load_miniwob_records, validate_browser_action
 from evalscope.config import TaskConfig
 from evalscope.models.mockllm import MockLLM
@@ -32,7 +32,6 @@ class FakeMiniWobSession:
     """OpenEnv-shaped task session for deterministic adapter tests."""
 
     backend_name = 'openenv'
-    runtime_name = 'ms_enclave_docker'
 
     def __init__(
         self,
@@ -97,7 +96,6 @@ class FakeEnvironmentLease:
     """Owned service runtime used alongside ``FakeMiniWobSession``."""
 
     name = 'ms_enclave_docker'
-    is_local = True
 
     def __init__(self):
         self.base_url = 'http://127.0.0.1:18123'
@@ -120,6 +118,19 @@ def _environment_pair(session=None, lease=None):
 
 
 def _adapter(*, observation_mode='axtree', agent_config=None, task_environment=None):
+    if task_environment is None and agent_config is None:
+        task_environment = {
+            'backend': 'openenv',
+            'observation_mode': observation_mode,
+            'runtime': {
+                'name': 'ms_enclave_docker',
+            },
+        }
+    if task_environment is not None:
+        assert agent_config is None
+        agent_config = {
+            'task_environment': task_environment,
+        }
     return get_benchmark(
         'miniwob',
         TaskConfig(
@@ -127,8 +138,6 @@ def _adapter(*, observation_mode='axtree', agent_config=None, task_environment=N
             datasets=['miniwob'],
             eval_type='mock_llm',
             agent_config=agent_config,
-            task_environment=task_environment,
-            dataset_args={'miniwob': {'extra_params': {'observation_mode': observation_mode}}},
         ),
     )
 
@@ -142,6 +151,19 @@ def _default_adapter():
             eval_type='mock_llm',
         ),
     )
+
+
+def test_observation_mode_is_task_environment_config_not_dataset_arg():
+    with pytest.raises(KeyError, match='observation_mode'):
+        get_benchmark(
+            'miniwob',
+            TaskConfig(
+                model='mock',
+                datasets=['miniwob'],
+                eval_type='mock_llm',
+                dataset_args={'miniwob': {'extra_params': {'observation_mode': 'axtree'}}},
+            ),
+        )
 
 
 def _records():
@@ -221,27 +243,36 @@ def _metadata_csv(task_count=125):
     return output.getvalue().encode()
 
 
+def _fake_download(csv_bytes):
+    """Stand-in for the shared download helper that writes csv_bytes to save_path."""
+
+    def _download(url, save_path, **kwargs):
+        Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(save_path).write_bytes(csv_bytes)
+
+    return _download
+
+
 def test_schedule_download_cache_and_generation(tmp_path: Path):
     csv_bytes = _metadata_csv()
     checksum = hashlib.sha256(csv_bytes).hexdigest()
-    schedule_checksum = '4a2572c44866c1c7b23a2a55ecdcb55484f3d64572db3c5cb07d036f90cc23a0'
-    response = MagicMock()
-    response.__enter__.return_value.read = MagicMock(side_effect=[csv_bytes, b''])
-    response.__exit__.return_value = None
+    schedule_checksum = '50d15c6da5fb326cd20c06cd0a75f43f7badc2fa21d21ab76e993c4931de2cdb'
 
     with patch('evalscope.benchmarks.miniwob.utils.BROWSERGYM_METADATA_SHA256', checksum), \
             patch('evalscope.benchmarks.miniwob.utils.MINIWOB_SCHEDULE_SHA256', schedule_checksum), \
-            patch('evalscope.benchmarks.miniwob.utils.urllib.request.urlopen', return_value=response) as urlopen:
+            patch(
+                'evalscope.benchmarks.miniwob.utils.download_url', side_effect=_fake_download(csv_bytes)
+            ) as download:
         records, path = load_miniwob_records(tmp_path)
         cached_records, cached_path = load_miniwob_records(tmp_path)
 
     assert len(records) == 625
     assert path == cached_path
     assert records == cached_records
-    assert urlopen.call_count == 1
+    assert download.call_count == 1
     assert records[0]['task_id'] == 'miniwob.task-000'
-    assert [record['seed'] for record in records[:5]] == [28, 14, 7, 20, 18]
-    assert max(record['seed'] for record in records) < (2 ^ 32)
+    assert [record['seed'] for record in records[:5]] == [1608637542, 3421126067, 4083286876, 787846414, 3143890026]
+    assert max(record['seed'] for record in records) < (2**32)
 
 
 def test_schedule_digest_is_stable(tmp_path: Path):
@@ -256,32 +287,29 @@ def test_schedule_digest_is_stable(tmp_path: Path):
     with patch('evalscope.benchmarks.miniwob.utils.BROWSERGYM_METADATA_SHA256', checksum), \
             patch(
                 'evalscope.benchmarks.miniwob.utils.MINIWOB_SCHEDULE_SHA256',
-                '4a2572c44866c1c7b23a2a55ecdcb55484f3d64572db3c5cb07d036f90cc23a0',
+                '50d15c6da5fb326cd20c06cd0a75f43f7badc2fa21d21ab76e993c4931de2cdb',
             ):
         records, _ = load_miniwob_records(tmp_path)
 
     digest = hashlib.sha256(
         '\n'.join(f"{record['task_id']}:{record['seed']}" for record in records).encode()
     ).hexdigest()
-    assert digest == '4a2572c44866c1c7b23a2a55ecdcb55484f3d64572db3c5cb07d036f90cc23a0'
+    assert digest == '50d15c6da5fb326cd20c06cd0a75f43f7badc2fa21d21ab76e993c4931de2cdb'
 
 
 def test_corrupt_cache_is_redownloaded_atomically(tmp_path: Path):
     csv_bytes = _metadata_csv()
     checksum = hashlib.sha256(csv_bytes).hexdigest()
-    schedule_checksum = '4a2572c44866c1c7b23a2a55ecdcb55484f3d64572db3c5cb07d036f90cc23a0'
+    schedule_checksum = '50d15c6da5fb326cd20c06cd0a75f43f7badc2fa21d21ab76e993c4931de2cdb'
     destination = tmp_path / 'sources' / 'browsergym' / (
         '0a785fbed075224ae81ca9c1fe924f66050696fe/miniwob.csv'
     )
     destination.parent.mkdir(parents=True)
     destination.write_bytes(b'corrupt')
-    response = MagicMock()
-    response.__enter__.return_value.read = MagicMock(side_effect=[csv_bytes, b''])
-    response.__exit__.return_value = None
 
     with patch('evalscope.benchmarks.miniwob.utils.BROWSERGYM_METADATA_SHA256', checksum), \
             patch('evalscope.benchmarks.miniwob.utils.MINIWOB_SCHEDULE_SHA256', schedule_checksum), \
-            patch('evalscope.benchmarks.miniwob.utils.urllib.request.urlopen', return_value=response):
+            patch('evalscope.benchmarks.miniwob.utils.download_url', side_effect=_fake_download(csv_bytes)):
         records, path = load_miniwob_records(tmp_path)
 
     assert len(records) == 625
@@ -292,7 +320,7 @@ def test_corrupt_cache_is_redownloaded_atomically(tmp_path: Path):
 def test_offline_cache_hit_and_no_cache_failure(tmp_path: Path):
     csv_bytes = _metadata_csv()
     checksum = hashlib.sha256(csv_bytes).hexdigest()
-    schedule_checksum = '4a2572c44866c1c7b23a2a55ecdcb55484f3d64572db3c5cb07d036f90cc23a0'
+    schedule_checksum = '50d15c6da5fb326cd20c06cd0a75f43f7badc2fa21d21ab76e993c4931de2cdb'
     destination = tmp_path / 'sources' / 'browsergym' / (
         '0a785fbed075224ae81ca9c1fe924f66050696fe/miniwob.csv'
     )
@@ -301,12 +329,12 @@ def test_offline_cache_hit_and_no_cache_failure(tmp_path: Path):
 
     with patch('evalscope.benchmarks.miniwob.utils.BROWSERGYM_METADATA_SHA256', checksum), \
             patch('evalscope.benchmarks.miniwob.utils.MINIWOB_SCHEDULE_SHA256', schedule_checksum), \
-            patch('evalscope.benchmarks.miniwob.utils.urllib.request.urlopen', side_effect=OSError('offline')) as urlopen:
+            patch('evalscope.benchmarks.miniwob.utils.download_url', side_effect=OSError('offline')) as download:
         records, _ = load_miniwob_records(tmp_path)
     assert len(records) == 625
-    urlopen.assert_not_called()
+    download.assert_not_called()
 
-    with patch('evalscope.benchmarks.miniwob.utils.urllib.request.urlopen', side_effect=OSError('offline')):
+    with patch('evalscope.benchmarks.miniwob.utils.download_url', side_effect=OSError('offline')):
         with pytest.raises(RuntimeError, match='No ModelScope or Hugging Face fallback'):
             load_miniwob_records(tmp_path / 'empty')
 
@@ -543,6 +571,8 @@ def test_observation_exposes_screenshot_pixel_size_and_raw_browsergym_action_err
 def test_agent_config_rejects_external_tools_and_non_official_step_count():
     with pytest.raises(ValueError, match='max_steps=20'):
         _adapter(agent_config=NativeAgentConfig(max_steps=9))
+    with pytest.raises(ValueError, match='fixes its internal strategy'):
+        _adapter(agent_config=NativeAgentConfig(strategy='function_calling'))
 
 
 def test_report_contains_fixed_profile_metadata():
@@ -563,9 +593,9 @@ def test_report_contains_fixed_profile_metadata():
     assert report.metadata['official_browsergym_evaluation_protocol'] is False
     assert report.metadata['runtime_mode'] == 'local'
     assert report.metadata['observation_mode'] == 'axtree'
-    assert report.metadata['openenv_patch_sha256'] == (
-        'b90bb3f1b91c60a8d4b7c888cccd78f1834754b696448da039e1bba7addd836a'
-    )
+    patch_path = Path(__file__).parents[2] / 'evalscope/benchmarks/miniwob/runtime/openenv-miniwob-all.patch'
+    assert OPENENV_PATCH_SHA256 == hashlib.sha256(patch_path.read_bytes()).hexdigest()
+    assert report.metadata['openenv_patch_sha256'] == OPENENV_PATCH_SHA256
     assert report.metadata['csv_sha256'] == (
         '37117db27909a17b1b78035528472922c98c479a54619ac398dc256a7d2fef09'
     )
@@ -592,12 +622,12 @@ def test_strategy_rejects_multiple_tool_calls():
     assert parsed.error == 'Call exactly one browser_action tool per turn.'
 
 
-def test_miniwob_rejects_remote_runtime_and_local_image_is_prepared_once():
+def test_miniwob_rejects_unsupported_runtime_and_local_image_is_prepared_once():
     import evalscope.benchmarks.miniwob.miniwob_adapter as adapter_module
 
     adapter_module._RUNTIME_IMAGE_TAG = None
-    with patch.object(MiniWobAdapter, '_prepare_runtime_image') as prepare_remote:
-        with pytest.raises(ValueError, match='capability/profile handshake'):
+    with patch.object(MiniWobAdapter, '_prepare_runtime_image') as prepare_unsupported:
+        with pytest.raises(ValueError, match="supports only task_environment.runtime.name='ms_enclave_docker'"):
             _adapter(
                 task_environment={
                     'backend': 'openenv',
@@ -607,7 +637,7 @@ def test_miniwob_rejects_remote_runtime_and_local_image_is_prepared_once():
                     },
                 }
             )
-    prepare_remote.assert_not_called()
+        prepare_unsupported.assert_not_called()
 
     local = _adapter()
     with patch.object(adapter_module, 'prepare_docker_image', return_value=SimpleNamespace(image_tag='pinned:image')) as build:
@@ -617,7 +647,18 @@ def test_miniwob_rejects_remote_runtime_and_local_image_is_prepared_once():
         spec = build.call_args.args[0]
         assert Path(spec.context_dir).name == 'runtime'
         assert spec.build_args['OPENENV_COMMIT'] == '65c506ef94bb1f7279cb4359673b3ef81031d01f'
-        assert spec.build_args['EVALSCOPE_PIP_INDEX_URL'] == 'https://pypi.tuna.tsinghua.edu.cn/simple'
+        assert spec.build_args['EVALSCOPE_PIP_INDEX_URL'] == 'https://pypi.org/simple'
+
+    adapter_module._RUNTIME_IMAGE_TAG = None
+    with patch.dict(adapter_module.os.environ, {'EVALSCOPE_PIP_INDEX_URL': 'https://mirror.example/simple'}), \
+            patch.object(
+                adapter_module,
+                'prepare_docker_image',
+                return_value=SimpleNamespace(image_tag='custom:index'),
+            ) as build:
+        assert local._prepare_runtime_image() == 'custom:index'
+        spec = build.call_args.args[0]
+        assert spec.build_args['EVALSCOPE_PIP_INDEX_URL'] == 'https://mirror.example/simple'
     adapter_module._RUNTIME_IMAGE_TAG = None
 
 
@@ -721,7 +762,7 @@ def test_mock_model_runs_through_full_evaluator_pipeline(tmp_path: Path, monkeyp
     review = json.loads(review_files[0].read_text().splitlines()[0])
     saved_report = json.loads(report_files[0].read_text())
     assert review['agent_trace']['task_environment'] == 'openenv'
-    assert review['agent_trace']['runtime'] == 'ms_enclave_docker'
-    assert review['agent_trace']['agent_runtime'] is None
+    assert review['agent_trace']['task_environment_runtime'] == 'ms_enclave_docker'
+    assert review['agent_trace']['environment'] is None
     assert saved_report['metadata']['official_browsergym_action_config'] is True
     assert saved_report['metadata']['official_browsergym_evaluation_protocol'] is False

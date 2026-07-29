@@ -11,7 +11,8 @@ from evalscope.api.registry import register_benchmark
 from evalscope.benchmarks.caption.metrics import CAPTION_MAIN_SCORE, CAPTION_METRICS, compute_caption_scores
 from evalscope.constants import HubType, Tags
 from evalscope.utils.logger import get_logger
-from evalscope.utils.url_utils import guess_video_format, is_http_url
+from evalscope.utils.media_utils import guess_video_format
+from evalscope.utils.url_utils import is_http_url
 from .utils import DEFAULT_PROMPT, group_caption_records, optional_float
 
 logger = get_logger()

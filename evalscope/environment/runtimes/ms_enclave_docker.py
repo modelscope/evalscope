@@ -20,7 +20,6 @@ class MsEnclaveDockerLease(EnvironmentRuntimeLease):
     """Owned ms-enclave Docker sandbox exposing an HTTP endpoint."""
 
     name = 'ms_enclave_docker'
-    is_local = True
 
     def __init__(self, *, base_url: str, handle: SandboxHandle, container_id: Optional[str]) -> None:
         self.base_url = base_url
@@ -64,7 +63,6 @@ class MsEnclaveDockerRuntime(EnvironmentRuntime):
     not accept Volcengine configuration.
     """
 
-    name = 'ms_enclave_docker'
     _ALLOWED_KEYS = {'host', 'container_port', 'ready_timeout_s', 'manager_config'}
 
     async def start(
@@ -116,6 +114,10 @@ class MsEnclaveDockerRuntime(EnvironmentRuntime):
 
     @staticmethod
     def _reserve_port(host: str) -> int:
+        # Port mapping below uses an AF_INET socket; reject IPv6 hosts upfront
+        # so the error is actionable instead of an opaque bind failure.
+        if ':' in host:
+            raise ValueError(f'ms_enclave_docker host must be an IPv4 address or hostname, got {host!r}.')
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.bind((host, 0))
             return int(sock.getsockname()[1])

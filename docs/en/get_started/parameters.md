@@ -247,7 +247,7 @@ For full usage including local and remote manager examples, see [Sandbox Environ
 
 ## Agent Parameters
 
-`--agent-config` / `agent_config` enables [Agent Evaluation](../user_guides/agent/index.md): once set, all benchmarks based on `DefaultDataAdapter` switch to [native AgentLoop](../user_guides/agent/native.md) inference, or delegate to a third-party CLI such as Claude Code / Codex via the [external Agent Bridge](../user_guides/agent/bridge.md). `AgentLoopAdapter` subclasses (such as `swe_bench_*_agentic`) ignore this global config and rely on `dataset_args.extra_params` instead.
+`--agent-config` / `agent_config` enables [Agent Evaluation](../user_guides/agent/index.md): once set, all benchmarks based on `DefaultDataAdapter` switch to [native AgentLoop](../user_guides/agent/native.md) inference, or delegate to a third-party CLI such as Claude Code / Codex via the [external Agent Bridge](../user_guides/agent/bridge.md). `AgentLoopAdapter` subclasses (such as `swe_bench_*_agentic`) keep their benchmark defaults but accept supported explicit overrides such as strategy, step limit, tools, and task environment.
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
@@ -259,10 +259,11 @@ For full usage including local and remote manager examples, see [Sandbox Environ
 |-------|------|-------------|---------|
 | `strategy` | `str` | Strategy name: `function_calling` / `react` / `swe_bench_toolcall` / `swe_bench_backticks` | `function_calling` |
 | `tools` | `list[str]` | Tool whitelist: `bash` / `python_exec` (`submit` is auto-injected by the strategy) | `[]` |
-| `runtime` | `str \| None` | Agent command runtime: `local` (subprocess) / `docker` (isolated sandbox) | `None` |
+| `environment` | `str \| None` | Agent command environment, such as `local` or `docker` | `None` |
+| `environment_extra` | `dict` | Agent environment constructor options; Docker images belong in `sandbox_config.image` | `{}` |
+| `task_environment` | `TaskEnvironmentConfig \| None` | Stateful task backend, observation mode, and service runtime | `None` |
 | `max_steps` | `int` | Hard upper bound of loop iterations | `10` |
 | `kwargs` | `dict` | Strategy constructor kwargs, e.g. `{'system_prompt': '...'}` | `{}` |
-| `runtime_extra` | `dict` | Runtime constructor kwargs. `local` supports `working_dir`/`env_vars`; `docker` supports sandbox configuration such as `image`/`timeout` | `{}` |
 
 ```{seealso}
 For full usage, examples and Trace visualization, see [Agent Evaluation](../user_guides/agent/index.md).

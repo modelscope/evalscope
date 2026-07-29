@@ -6,20 +6,20 @@ from evalscope.agent.skills import install_agent_skills, skills_from_sample_meta
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
-    from evalscope.api.agent import AgentRuntime
+    from evalscope.api.agent import AgentEnvironment
     from .base import ExternalAgentTask
 
 logger = get_logger()
 
 
-async def node_present(env: 'AgentRuntime') -> bool:
+async def node_present(env: 'AgentEnvironment') -> bool:
     """Return ``True`` when both ``node`` and ``npm`` are on PATH."""
     probe = await env.exec(['bash', '-c', 'command -v node && command -v npm'])
     return probe.returncode == 0
 
 
 async def ensure_node_via_apt(
-    env: 'AgentRuntime',
+    env: 'AgentEnvironment',
     *,
     node_setup_url: str,
     timeout_s: float,
@@ -67,7 +67,7 @@ async def ensure_node_via_apt(
 
 
 async def install_task_skills(
-    env: 'AgentRuntime',
+    env: 'AgentEnvironment',
     task: 'ExternalAgentTask',
     *,
     home_dir: Optional[str],

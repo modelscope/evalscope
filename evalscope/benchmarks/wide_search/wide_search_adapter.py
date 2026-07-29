@@ -5,9 +5,9 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from evalscope.agent.runtimes.local import TemporaryLocalAgentRuntime
+from evalscope.agent.environments.local import TemporaryLocalAgentEnvironment
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
-from evalscope.api.agent import AgentLoopResult, AgentRuntime
+from evalscope.api.agent import AgentEnvironment, AgentLoopResult
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path
@@ -146,13 +146,13 @@ class WideSearchAdapter(AgentLoopAdapter):
     def build_tools(self, sample: Sample) -> Dict[str, Any]:
         return {'bash': run_bash}
 
-    def build_runtime(self, sample: Sample) -> Optional[AgentRuntime]:
+    def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
         sample_id = sample.metadata.get('instance_id') or sample.id or 'unknown'
         sandbox = self._task_config.sandbox if self._task_config is not None else None
         if sandbox is None or not sandbox.enabled:
-            return TemporaryLocalAgentRuntime(sample_id=sample_id, prefix='evalscope-wide-search-')
+            return TemporaryLocalAgentEnvironment(sample_id=sample_id, prefix='evalscope-wide-search-')
         check_import('ms_enclave', extra='sandbox', raise_error=True, feature_name='WideSearch Docker environment')
-        from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
         sandbox_config = merge_sandbox_config_dicts(
             {
                 'image': self.docker_image_default,
@@ -160,7 +160,7 @@ class WideSearchAdapter(AgentLoopAdapter):
             },
             self._task_sandbox_config(),
         )
-        return EnclaveAgentRuntime(
+        return EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config=sandbox_config,
         )

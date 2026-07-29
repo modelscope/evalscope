@@ -1,4 +1,4 @@
-"""Local subprocess runtime for development and testing.
+"""Local subprocess environment for development and testing.
 
 Runs commands on the host OS via ``asyncio.create_subprocess_exec``.
 No container isolation - suitable only for development and CI tests.
@@ -11,17 +11,17 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from evalscope.api.agent import AgentRuntime
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.agent.types import ExecResult
-from evalscope.api.registry import register_runtime
+from evalscope.api.registry import register_environment
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
 
-@register_runtime('local')
-class LocalAgentRuntime(AgentRuntime):
-    """Per-sample local subprocess runtime.
+@register_environment('local')
+class LocalAgentEnvironment(AgentEnvironment):
+    """Per-sample local subprocess environment.
 
     Executes commands as direct subprocesses on the host OS.
     Intended for **development and testing only** - no filesystem isolation.
@@ -99,8 +99,8 @@ class LocalAgentRuntime(AgentRuntime):
         shutil.copytree(source, target, dirs_exist_ok=True)
 
 
-class TemporaryLocalAgentRuntime(LocalAgentRuntime):
-    """Local runtime backed by a temporary working directory."""
+class TemporaryLocalAgentEnvironment(LocalAgentEnvironment):
+    """Local environment backed by a temporary working directory."""
 
     def __init__(
         self,
@@ -123,4 +123,4 @@ class TemporaryLocalAgentRuntime(LocalAgentRuntime):
         self._temporary_directory.cleanup()
 
 
-__all__ = ['LocalAgentRuntime', 'TemporaryLocalAgentRuntime']
+__all__ = ['LocalAgentEnvironment', 'TemporaryLocalAgentEnvironment']

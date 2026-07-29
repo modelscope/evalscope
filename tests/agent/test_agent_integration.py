@@ -116,7 +116,7 @@ class TestTaskStateAgentTrace(unittest.TestCase):
 
     def test_prediction_cache_roundtrip_preserves_agent_trace(self):
         state = self._make_state()
-        trace = AgentTrace(strategy='function_calling', runtime='local', max_steps=3)
+        trace = AgentTrace(strategy='function_calling', environment='local', max_steps=3)
         trace.add_event(step=0, type=EventType.MODEL_GENERATE)
         state.agent_trace = trace
 
@@ -330,7 +330,7 @@ class TestAgentLoopAdapterOverrides(unittest.TestCase):
     def test_default_build_tools_and_environment(self):
         adapter = AgentLoopAdapter.__new__(AgentLoopAdapter)
         self.assertEqual(adapter.build_tools(Sample(input='x')), {})
-        self.assertIsNone(adapter.build_runtime(Sample(input='x')))
+        self.assertIsNone(adapter.build_environment(Sample(input='x')))
 
     def test_optional_max_steps_finalization_hook(self):
 

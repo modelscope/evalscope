@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from zipfile import BadZipFile, ZipFile
 
-from evalscope.api.agent import AgentRuntime
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.agent.types import ExecResult
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser, ContentImage, ContentText
 from evalscope.utils.io_utils import safe_filename
@@ -38,10 +38,10 @@ VISUAL_RUBRIC_PATTERN = re.compile(
 )
 
 
-class JobBenchArtifactEnvironment(AgentRuntime):
+class JobBenchArtifactEnvironment(AgentEnvironment):
     name = 'job_bench_artifact'
 
-    def __init__(self, env: AgentRuntime, artifact_dir: Path, metadata: Dict[str, Any]) -> None:
+    def __init__(self, env: AgentEnvironment, artifact_dir: Path, metadata: Dict[str, Any]) -> None:
         self._env = env
         self._artifact_dir = artifact_dir
         self._metadata = metadata

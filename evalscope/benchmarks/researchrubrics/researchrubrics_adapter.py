@@ -6,9 +6,9 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional
 
-from evalscope.agent.runtimes.local import TemporaryLocalAgentRuntime
+from evalscope.agent.environments.local import TemporaryLocalAgentEnvironment
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
-from evalscope.api.agent import AgentRuntime
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
@@ -64,11 +64,11 @@ references, communication quality, and instruction following.
 - **Dataset**: 101 tasks and 2,593 weighted rubric criteria
 - **Metric**: Binary rubric compliance score
 
-## Agent Runtime
+## Agent Environment
 
-- Uses EvalScope's built-in agent runtime by default and does not require ``agent_config``. The agent can use ``bash``
+- Uses EvalScope's built-in agent environment by default and does not require ``agent_config``. The agent can use ``bash``
   to access the network, gather information, and produce a final report.
-- The default runtime uses the host network and a temporary working directory, but does not provide complete filesystem
+- The default environment uses the host network and a temporary working directory, but does not provide complete filesystem
   isolation. Do not run untrusted models on shared or sensitive machines.
 - The default strategy is ``function_calling`` with a 50-step limit. Use ``NativeAgentConfig`` to override the strategy
   or step limit; ``react`` is also available. Both strategies require native function calling support.
@@ -175,9 +175,9 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
     def build_tools(self, sample: Sample) -> Dict[str, Any]:
         return {'bash': run_bash}
 
-    def build_runtime(self, sample: Sample) -> Optional[AgentRuntime]:
+    def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
         sample_id = sample.metadata.get('sample_id') or sample.id or 'unknown'
-        return TemporaryLocalAgentRuntime(sample_id=sample_id, prefix='evalscope-researchrubrics-')
+        return TemporaryLocalAgentEnvironment(sample_id=sample_id, prefix='evalscope-researchrubrics-')
 
     def build_max_steps_finalization_message(self, sample: Sample) -> str:
         return (
@@ -299,7 +299,7 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
                 'agent': {
                     'framework': trace.framework if trace else None,
                     'strategy': trace.strategy if trace else self.strategy_name,
-                    'agent_runtime': trace.agent_runtime if trace else 'local',
+                    'environment': trace.environment if trace else 'local',
                     'max_steps': trace.max_steps if trace else self.max_steps,
                     'tools': sorted(tool_names),
                 },

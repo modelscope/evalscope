@@ -1,17 +1,14 @@
 """Tests for the OpenEnv backend and its separated service runtimes."""
 
 import asyncio
+import pytest
 import sys
-from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
-import pytest
-
 from evalscope.api.environment import EnvironmentStepResult
-from evalscope.api.registry import get_environment_runtime, get_task_environment
+from evalscope.api.registry import get_environment_runtime, get_task_environment, list_environment_runtimes
 from evalscope.environment.backends.openenv import OpenEnvBackend, OpenEnvSession
 from evalscope.environment.runtimes.ms_enclave_docker import MsEnclaveDockerRuntime
-from evalscope.environment.runtimes.remote import RemoteEnvironmentRuntime
 
 
 class FakeGenericEnvClient:
@@ -59,17 +56,15 @@ def test_openenv_backend_registry_and_validation():
     with pytest.raises(ValueError, match='Unsupported OpenEnv'):
         OpenEnvBackend().create_session(
             base_url='http://localhost:8000',
-            runtime_name='remote',
             config={'provider': 'forbidden'},
         )
     with pytest.raises(ValueError, match='greater than zero'):
-        OpenEnvSession(base_url='http://localhost:8000', runtime_name='remote', connect_timeout_s=0)
+        OpenEnvSession(base_url='http://localhost:8000', connect_timeout_s=0)
 
 
 def test_openenv_session_lifecycle_and_normalization(fake_openenv):
     session = OpenEnvBackend().create_session(
         base_url='http://localhost:8000/',
-        runtime_name='remote',
         config={},
     )
 
@@ -99,24 +94,9 @@ def test_openenv_session_lifecycle_and_normalization(fake_openenv):
 def test_openenv_session_never_calls_from_env(fake_openenv, monkeypatch):
     from_env = lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError('from_env must not be called'))
     monkeypatch.setattr(FakeGenericEnvClient, 'from_env', from_env, raising=False)
-    session = OpenEnvSession(base_url='http://localhost:8000', runtime_name='remote')
+    session = OpenEnvSession(base_url='http://localhost:8000')
     asyncio.run(session.reset())
     asyncio.run(session.close())
-
-
-def test_remote_environment_runtime():
-    assert get_environment_runtime('remote') is RemoteEnvironmentRuntime
-    lease = asyncio.run(
-        RemoteEnvironmentRuntime().start(
-            image=None,
-            env_vars={},
-            config={'base_url': 'http://trusted.example:8000/'},
-        )
-    )
-    assert lease.base_url == 'http://trusted.example:8000'
-    assert lease.name == 'remote'
-    assert lease.is_local is False
-    asyncio.run(lease.close())
 
 
 def test_ms_enclave_runtime_is_docker_only(monkeypatch):
@@ -163,6 +143,7 @@ def test_ms_enclave_runtime_is_docker_only(monkeypatch):
     )
 
     assert get_environment_runtime('ms_enclave_docker') is MsEnclaveDockerRuntime
+    assert 'remote' not in list_environment_runtimes()
     assert lease.base_url == 'http://127.0.0.1:18123'
     _, engine, sandbox_config, manager_config = calls[0]
     assert engine.value == 'docker'
@@ -171,10 +152,3 @@ def test_ms_enclave_runtime_is_docker_only(monkeypatch):
     assert manager_config == {}
     asyncio.run(lease.close())
     assert calls[-1] == ('close', None)
-
-
-def test_remote_runtime_rejects_local_inputs(tmp_path: Path):
-    with pytest.raises(ValueError, match='does not accept an image'):
-        asyncio.run(RemoteEnvironmentRuntime().start(image='x', env_vars={}, config={'base_url': 'http://x'}))
-    with pytest.raises(ValueError, match='base_url'):
-        asyncio.run(RemoteEnvironmentRuntime().start(image=None, env_vars={}, config={}))

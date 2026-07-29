@@ -1,7 +1,7 @@
 """Typed configuration for stateful task environments."""
 
 from pydantic import ConfigDict, Field
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from evalscope.utils.argument_utils import BaseArgument
 
@@ -22,6 +22,9 @@ class TaskEnvironmentConfig(BaseArgument):
 
     backend: str
     backend_args: Dict[str, Any] = Field(default_factory=dict)
+    observation_mode: Optional[str] = None
+    """Observation representation requested from the task environment."""
+
     runtime: EnvironmentRuntimeConfig
 
 

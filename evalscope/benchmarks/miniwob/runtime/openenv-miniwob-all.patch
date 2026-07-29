@@ -3,7 +3,7 @@ diff --git a/envs/browsergym_env/server/browsergym_environment.py b/envs/browser
 +++ b/envs/browsergym_env/server/browsergym_environment.py
 @@ -14,6 +14,7 @@ from typing import Any, Dict, Optional
  from uuid import uuid4
- 
+
  import gymnasium as gym
 +from browsergym.core.action.highlevel import HighLevelActionSet
  from browsergym_env.models import (
@@ -21,12 +21,12 @@ diff --git a/envs/browsergym_env/server/browsergym_environment.py b/envs/browser
 +                retry_with_force=True,
 +                demo_mode="off",
 +            ).to_python_code
- 
+
          # force import the benchmark module
          benchmark_modules = {
 @@ -195,16 +204,20 @@ class BrowserGymEnvironment(Environment):
          return f"browsergym/{self.benchmark}"
- 
+
      def _create_gym_env(self, env_id: str):
 +        gym_kwargs = dict(self.gym_kwargs)
 +        if self.benchmark != "miniwob":

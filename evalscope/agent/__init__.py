@@ -3,7 +3,7 @@
 Package layout mirrors ``evalscope/api/agent``:
 
 * ``strategies/``    - registered :class:`AgentStrategy` subclasses
-* ``runtimes/``      - registered :class:`AgentRuntime` subclasses (T2+)
+* ``environments/``  - registered :class:`AgentEnvironment` subclasses (T2+)
 * ``tools/``         - registered tool handlers (T2+)
 
 Registries themselves live in :mod:`evalscope.api.registry`.  Importing
@@ -12,9 +12,9 @@ submodules below.
 """
 
 # Trigger tool handler registration (T2).
-# Trigger runtime registration (T2).
+# Trigger environment registration (T2).
 # Trigger strategy registration.
-from . import runtimes  # noqa: F401
+from . import environments  # noqa: F401
 from . import strategies  # noqa: F401
 from . import tools  # noqa: F401
 

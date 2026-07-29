@@ -2,7 +2,7 @@ import asyncio
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from evalscope.agent.runtimes.local import LocalAgentRuntime
+from evalscope.agent.environments.local import LocalAgentEnvironment
 from evalscope.agent.skills import (
     DEFAULT_SKILLS_INSTALL_DIR,
     DEFAULT_SKILLS_SANDBOX_DIR,
@@ -103,6 +103,6 @@ def test_local_environment_put_dir_copies_directory(tmp_path: Path) -> None:
     source.mkdir()
     (source / 'SKILL.md').write_text('skill', encoding='utf-8')
 
-    asyncio.run(LocalAgentRuntime().put_dir(source, str(target)))
+    asyncio.run(LocalAgentEnvironment().put_dir(source, str(target)))
 
     assert (target / 'SKILL.md').read_text(encoding='utf-8') == 'skill'

@@ -34,8 +34,12 @@ task_config = TaskConfig(
     agent_config=NativeAgentConfig(
         strategy='function_calling',
         tools=['python_exec'],
-        runtime='docker',
-        runtime_extra={'image': 'python:3.11-slim'},
+        environment='docker',
+        environment_extra={
+            'sandbox_config': {
+                'image': 'python:3.11-slim',
+            },
+        },
         max_steps=5,
         kwargs={'system_prompt': 'Use python_exec to verify your calculations.'},
     ),
@@ -53,8 +57,9 @@ EvalScope 自动给模型注入 `python_exec` 工具定义，在 Docker 容器�
 |------|------|--------|
 | `strategy` | 交互协议 | `function_calling`（默认）；模型不支持时用 `react` 或 `swe_bench_backticks` |
 | `tools` | 工具白名单 | 按需，如 `['python_exec']` / `['bash']` |
-| `runtime` | 工具执行运行时 | `local`（开发调试）/ `docker`（生产推荐） |
-| `runtime_extra` | 沙箱参数 | `docker` 时常用 `{'image': '...', 'timeout': 60}`；详见 [沙箱环境](../sandbox.md) |
+| `environment` | 工具或外部 Agent 的执行环境 | `local`（开发）/ `docker`（生产） |
+| `environment_extra` | Agent 环境构造参数 | Docker 镜像、超时、挂载等环境专属设置 |
+| `task_environment` | 有状态任务协议及其服务运行时 | 通常由 benchmark 提供；OpenEnv 等环境可显式覆盖 |
 | `max_steps` | 单样本最大轮数 | 数学/QA `5-10`，代码修复 `100+` |
 | `skills_dir` | 可选的本机 Agent Skills 目录 | EvalScope 会在 agent loop 开始前让 skills 可用 |
 | `kwargs` | 策略参数 | 最常用 `{'system_prompt': '...'}` 引导模型行为 |
@@ -78,6 +83,8 @@ EvalScope 自动给模型注入 `python_exec` 工具定义，在 Docker 容器�
 
 ```{tip}
 - `local` 环境无文件系统隔离，生产请改用 `docker`。
+- `environment` 执行 Agent 命令，`task_environment.runtime` 承载有状态任务服务。
+- 任务环境的观测选择放在 `task_environment.observation_mode`，不要放在 `dataset_args`。
 - `agent_config` 也接受字典形式，`TaskConfig` 会自动转成 `NativeAgentConfig`。
 ```
 

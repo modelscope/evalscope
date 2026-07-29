@@ -1,21 +1,21 @@
-"""Route a ``ToolCall`` to its backing Python function or runtime command.
+"""Route a ``ToolCall`` to its backing Python function or environment command.
 
 Tool handlers are registered under ``evalscope/agent/tools/`` via
 ``@register_agent_tool('name')`` and must expose an async
-``run(call: ToolCall, env: AgentRuntime | None) -> str`` callable.
+``run(call: ToolCall, env: AgentEnvironment | None) -> str`` callable.
 """
 
 import time
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 from evalscope.api.tool import ToolCall, ToolCallError
-from .runtime import AgentRuntime
+from .environment import AgentEnvironment
 from .types import ToolExecutionOutput
 
 # Signature for an async tool handler.  Returns the textual observation
 # that will be attached to the next user/tool message.
 ToolObservation = str | ToolExecutionOutput
-ToolHandler = Callable[[ToolCall, Optional[AgentRuntime]], Awaitable[ToolObservation]]
+ToolHandler = Callable[[ToolCall, Optional[AgentEnvironment]], Awaitable[ToolObservation]]
 
 
 class ToolExecutor:
@@ -29,14 +29,14 @@ class ToolExecutor:
     def __init__(
         self,
         handlers: Dict[str, ToolHandler],
-        runtime: Optional[AgentRuntime] = None,
+        environment: Optional[AgentEnvironment] = None,
     ) -> None:
         self._handlers = handlers
-        self._runtime = runtime
+        self._environment = environment
 
     @property
-    def runtime(self) -> Optional[AgentRuntime]:
-        return self._runtime
+    def environment(self) -> Optional[AgentEnvironment]:
+        return self._environment
 
     @property
     def tool_names(self) -> List[str]:
@@ -60,7 +60,7 @@ class ToolExecutor:
             return err.message, err, time.time() - started
 
         try:
-            observation = await handler(call, self._runtime)
+            observation = await handler(call, self._environment)
             return observation, None, time.time() - started
         except TimeoutError as exc:
             return str(exc), ToolCallError(type='timeout', message=str(exc)), time.time() - started

@@ -7,8 +7,8 @@ the same service layer:
 * **Code execution pool** — a warm pool of long-lived sandboxes used by code
   benchmarks (e.g. HumanEval, MBPP) through the
   `CodeExecutionSandboxMixin`.
-* **Per-sample** — one sandbox per sample created by agent runtimes
-  (e.g. `EnclaveAgentRuntime`) for SWE-bench-style benchmarks.
+* **Per-sample** — one sandbox per sample created by Agent environments
+  (e.g. `EnclaveAgentEnvironment`) for SWE-bench-style benchmarks.
 
 Both paths are backed by the process-wide `SandboxService` defined in
 `evalscope.api.sandbox`, which caches `SandboxManager` instances keyed on
@@ -85,14 +85,14 @@ class MyBenchmarkAdapter(DefaultDataAdapter):
 ```
 
 The returned dict is merged on top of `sandbox.default_config` and passed
-to the runtime constructor. `agent_config.runtime_extra` still
+to the runtime constructor. `agent_config.environment_extra` still
 has the final word if the user wants to override per-run.
 
 ## Pool vs per-sample
 
-| Aspect           | Code execution pool                | Per-sample agent runtime      |
+| Aspect           | Code execution pool                | Per-sample Agent environment  |
 |------------------|------------------------------------|-------------------------------|
-| Owner            | `CodeExecutionSandboxMixin`        | `EnclaveAgentRuntime`     |
+| Owner            | `CodeExecutionSandboxMixin`        | `EnclaveAgentEnvironment` |
 | Lifetime         | Reused across samples              | Fresh container per sample    |
 | Warmup           | `manager.initialize_pool`          | None                          |
 | Execution API    | `PoolHandle.execute_tool`          | `SandboxHandle.execute_tool`  |

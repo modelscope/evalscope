@@ -3,7 +3,7 @@
 Unifies the two historical code paths:
 
 * ``CodeExecutionSandboxMixin.EnclaveCodeExecutionBackend`` – one manager per benchmark, pooled.
-* ``EnclaveAgentRuntime`` – one manager per process, per-sample containers.
+* ``EnclaveAgentEnvironment`` – one manager per process, per-sample containers.
 
 Both are now thin wrappers around :class:`SandboxService`.  The service
 caches managers keyed by ``(engine, manager_config)`` so the same
@@ -468,7 +468,7 @@ def shutdown_sandbox_service() -> None:
 atexit.register(shutdown_sandbox_service)
 
 # ---------------------------------------------------------------------------
-# Convenience helpers used by CodeExecutionSandboxMixin / EnclaveAgentRuntime
+# Convenience helpers used by CodeExecutionSandboxMixin / EnclaveAgentEnvironment
 # ---------------------------------------------------------------------------
 
 

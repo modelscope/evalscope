@@ -10,7 +10,6 @@ class TaskEnvironmentSession(ABC):
     """One stateful task episode exposed through reset/step/state."""
 
     backend_name: str = 'base'
-    runtime_name: str = 'base'
 
     @abstractmethod
     async def reset(self, **kwargs: Any) -> EnvironmentStepResult:

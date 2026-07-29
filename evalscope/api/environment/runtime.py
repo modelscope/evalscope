@@ -10,7 +10,6 @@ class EnvironmentRuntimeLease(ABC):
 
     name: str = 'base'
     base_url: str
-    is_local: bool = False
 
     async def capture_logs(self, destination: str | Path) -> bool:
         """Persist service logs when available."""
@@ -23,9 +22,7 @@ class EnvironmentRuntimeLease(ABC):
 
 
 class EnvironmentRuntime(ABC):
-    """Start a service process or resolve an externally hosted endpoint."""
-
-    name: str = 'base'
+    """Start a task-environment service process."""
 
     @abstractmethod
     async def start(

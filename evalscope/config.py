@@ -9,7 +9,6 @@ from typing import Annotated, Any, Dict, List, Optional, Union
 
 from evalscope.agent.external.config import ExternalAgentConfig
 from evalscope.api.agent import NativeAgentConfig
-from evalscope.api.environment import TaskEnvironmentConfig
 from evalscope.api.model import GenerateConfig, Model, ModelAPI
 from evalscope.constants import (
     DEFAULT_DATASET_CACHE_DIR,
@@ -81,7 +80,7 @@ DEFAULT_MODEL_ARGS_CHECKPOINT = {
 
 class SandboxTaskConfig(BaseArgument):
     """Unified sandbox configuration for both pooled (CodeExecutionSandboxMixin) and
-    per-sample (EnclaveAgentRuntime) execution paths.
+    per-sample (EnclaveAgentEnvironment) execution paths.
 
     This is the forward-looking replacement for the legacy top-level
     ``TaskConfig.use_sandbox`` / ``sandbox_type`` / ``sandbox_manager_config``
@@ -259,13 +258,6 @@ class TaskConfig(BaseArgument):
     """[Deprecated] Use ``sandbox.manager_config`` instead.  Kept as an
     alias for backward compatibility; will be removed in a future release."""
 
-    task_environment: Optional[TaskEnvironmentConfig] = None
-    """Stateful task protocol and service runtime configuration.
-
-    This is separate from ``agent_config.runtime``: the latter runs shell
-    tools or external agents, while this field owns reset/step/state semantics.
-    """
-
     # Agent configuration (native AgentLoop OR external-agent bridge,
     # discriminated by the ``mode`` field on the embedded config).
     agent_config: Optional[AgentConfigUnion] = None
@@ -280,14 +272,22 @@ class TaskConfig(BaseArgument):
       delegated to a third-party CLI (claude-code, mock, ...) and the
       bridge captures the LLM traffic into the same :class:`AgentTrace`.
 
-    AgentAdapter subclasses (e.g. SWE-bench_Pro) ignore this field and use
-    their own settings.  ``dict`` inputs accept ``{'mode': 'external',
+    AgentLoopAdapter subclasses keep benchmark defaults and consume supported
+    explicit overrides from this field; adapters with bespoke loops may ignore
+    it. ``dict`` inputs accept ``{'mode': 'external',
     'framework': 'claude-code'}`` style payloads."""
 
     evalscope_version: Optional[str] = _evalscope_version
     """EvalScope version used for the evaluation."""
 
     # --- Field validators (single-field logic) ---
+
+    @model_validator(mode='before')
+    @classmethod
+    def _reject_top_level_task_environment(cls, data: Any) -> Any:
+        if isinstance(data, dict) and 'task_environment' in data:
+            raise ValueError('`task_environment` must be nested under `agent_config`.')
+        return data
 
     @field_validator('limit', mode='before')
     @classmethod
@@ -324,6 +324,10 @@ class TaskConfig(BaseArgument):
     @field_validator('agent_config', mode='before')
     @classmethod
     def _validate_agent_config(cls, v: Any) -> Any:
+        return cls._coerce_agent_config(v)
+
+    @staticmethod
+    def _coerce_agent_config(v: Any) -> Any:
         if v is None or isinstance(v, (NativeAgentConfig, ExternalAgentConfig)):
             return v
         if isinstance(v, dict):
@@ -347,15 +351,6 @@ class TaskConfig(BaseArgument):
     @classmethod
     def _validate_sandbox(cls, v: Any) -> Any:
         return cls._coerce_sandbox_config(v)
-
-    @field_validator('task_environment', mode='before')
-    @classmethod
-    def _validate_task_environment(cls, v: Any) -> Any:
-        if v is None or isinstance(v, TaskEnvironmentConfig):
-            return v
-        if isinstance(v, dict):
-            return TaskEnvironmentConfig.model_validate(v)
-        raise ValueError(f'`task_environment` must be a dict, TaskEnvironmentConfig or None, got {type(v).__name__}.')
 
     # --- Model validator (cross-field logic, replaces __post_init__) ---
 
@@ -496,7 +491,7 @@ class TaskConfig(BaseArgument):
         """Normalise sandbox configuration into ``self.sandbox``.
 
         After this method every consumer (``CodeExecutionSandboxMixin``, data adapters,
-        ``EnclaveAgentRuntime``) reads sandbox settings exclusively from
+        ``EnclaveAgentEnvironment``) reads sandbox settings exclusively from
         ``self.sandbox`` — the legacy ``use_sandbox`` / ``sandbox_type`` /
         ``sandbox_manager_config`` fields are single-source-of-truth inputs
         only and are **not** kept in sync afterwards.
@@ -556,17 +551,16 @@ class TaskConfig(BaseArgument):
             merged['generation_config'] = self._coerce_generation_config(merged['generation_config'])
         if isinstance(merged.get('sandbox'), dict):
             merged['sandbox'] = self._coerce_sandbox_config(merged['sandbox'])
-        if isinstance(merged.get('task_environment'), dict):
-            merged['task_environment'] = TaskEnvironmentConfig.model_validate(merged['task_environment'])
+        if isinstance(merged.get('agent_config'), dict):
+            merged['agent_config'] = self._coerce_agent_config(merged['agent_config'])
         for key, value in merged.items():
             setattr(self, key, value)
 
     def _to_update_dict(self) -> dict:
-        result = self.model_dump(exclude={'model', 'generation_config', 'sandbox', 'task_environment'})
+        result = self.model_dump(exclude={'model', 'generation_config', 'sandbox'})
         result['model'] = self.model
         result['generation_config'] = self._dump_generation_config()
         result['sandbox'] = self.sandbox
-        result['task_environment'] = self.task_environment
         return result
 
     def _dump_generation_config(self, mode: Optional[str] = None) -> Union[dict, GenerateConfig, None]:

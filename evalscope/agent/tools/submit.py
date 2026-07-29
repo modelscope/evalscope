@@ -9,7 +9,7 @@ is only reached if a strategy fails to intercept.
 
 from typing import Optional
 
-from evalscope.api.agent import AgentRuntime
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.registry import register_agent_tool
 from evalscope.api.tool import ToolCall, ToolInfo
 from evalscope.api.tool.tool_info import ToolParams
@@ -35,7 +35,7 @@ SUBMIT_TOOL_INFO = ToolInfo(
 
 
 @register_agent_tool('submit', info=SUBMIT_TOOL_INFO)
-async def run_submit(call: ToolCall, env: Optional[AgentRuntime]) -> str:
+async def run_submit(call: ToolCall, env: Optional[AgentEnvironment]) -> str:
     """Submit the final answer.  Normally intercepted by the strategy before
     execution; this handler exists as a safety fallback."""
     answer = call.function.arguments.get('answer', '')

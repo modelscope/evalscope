@@ -24,7 +24,7 @@ RUN git -C /tmp/openenv apply --check /tmp/openenv-miniwob-all.patch && \
 
 RUN chmod +x /app/env/server/start.sh
 
-ARG EVALSCOPE_PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+ARG EVALSCOPE_PIP_INDEX_URL=https://pypi.org/simple
 RUN pip install --no-cache-dir --index-url "${EVALSCOPE_PIP_INDEX_URL}" "openenv==0.4.1" .
 
 ENV PLAYWRIGHT_BROWSERS_PATH=/usr/local/share/ms-playwright

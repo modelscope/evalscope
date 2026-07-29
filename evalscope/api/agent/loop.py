@@ -1,6 +1,6 @@
 """AgentLoop: the model-agnostic orchestration core.
 
-Takes a model + strategy + runtime + tool executor and drives the
+Takes a model + strategy + environment + tool executor and drives the
 generate → parse → tool_call → observe loop.  It does NOT decide prompt
 formats or termination semantics; those belong to :class:`AgentStrategy`.
 
@@ -22,7 +22,7 @@ from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUs
 from evalscope.api.model import Model, ModelOutput, ModelUsage
 from evalscope.utils.logger import get_logger
 from .constants import NUDGE_PROMPT, LoopMessages, MetadataKeys, SubmissionSources, ToolSchemaModes, TraceSources
-from .runtime import AgentRuntime
+from .environment import AgentEnvironment
 from .strategy import AgentStrategy
 from .tool_executor import ToolExecutor
 from .trace import AgentTrace, EventType
@@ -36,7 +36,7 @@ class AgentLoop:
 
     Intended for use from ``AgentAdapter`` (or ``DefaultDataAdapter`` when a
     global ``agent_config`` is set).  The caller owns the lifecycle of the
-    runtime (create before ``run``, close after).
+    environment (create before ``run``, close after).
     """
 
     def __init__(
@@ -45,19 +45,19 @@ class AgentLoop:
         strategy: AgentStrategy,
         tool_executor: ToolExecutor,
         *,
-        runtime: Optional[AgentRuntime] = None,
+        environment: Optional[AgentEnvironment] = None,
         max_steps: int = 10,
         trace: Optional[AgentTrace] = None,
     ) -> None:
         self.model = model
         self.strategy = strategy
         self.tool_executor = tool_executor
-        self.runtime = runtime
+        self.environment = environment
         self.max_steps = max_steps
         self.trace = trace or AgentTrace(
             framework='native',
             strategy=getattr(strategy, 'name', None),
-            agent_runtime=runtime.name if runtime else None,
+            environment=environment.name if environment else None,
             max_steps=max_steps,
         )
 
@@ -242,7 +242,10 @@ class AgentLoop:
             # below picks it up.
             obs_msg = self.strategy.format_observation(call, observation_text, error, parsed, ctx)
             if rich_output is not None and rich_output.metadata:
-                obs_msg.metadata = rich_output.metadata
+                obs_msg.metadata = {
+                    **(obs_msg.metadata or {}),
+                    **rich_output.metadata,
+                }
             ctx.messages.append(obs_msg)
             attachment_message = None
             if rich_output is not None and rich_output.attachments:

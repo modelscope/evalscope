@@ -1,7 +1,7 @@
 """Shared :class:`AgentLoop` driver helper.
 
 Centralises the async-coroutine wrapping + ``AsyncioLoopRunner`` invocation
-+ ``finally runtime.close()`` boilerplate that is otherwise duplicated
++ ``finally environment.close()`` boilerplate that is otherwise duplicated
 between :meth:`DefaultDataAdapter._on_agent_inference` and
 :meth:`AgentLoopAdapter._on_inference`.
 
@@ -18,8 +18,8 @@ from evalscope.api.messages import ChatMessage
 from evalscope.api.model import Model
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
+from .environment import AgentEnvironment
 from .loop import AgentLoop
-from .runtime import AgentRuntime
 from .strategy import AgentStrategy
 from .tool_executor import ToolExecutor, ToolHandler
 from .trace import AgentTrace
@@ -36,19 +36,19 @@ def run_agent_loop(
     model: Model,
     strategy: AgentStrategy,
     handlers: Dict[str, ToolHandler],
-    runtime: Optional[AgentRuntime],
+    environment: Optional[AgentEnvironment],
     initial_messages: List[ChatMessage],
     all_tools: List[Any],
     max_steps: int,
     sample_id: Optional[Any],
     trace_strategy_name: Optional[str],
-    trace_runtime_name: Optional[str],
+    trace_env_name: Optional[str],
     mcp_configs: Optional[List['MCPServerConfig']] = None,
-    close_runtime: bool = True,
+    close_environment: bool = True,
 ) -> AgentLoopResult:
     """Drive a single :class:`AgentLoop` to completion and return its result.
 
-    The runtime (when provided) is closed in a ``finally`` block by
+    The environment (when provided) is closed in a ``finally`` block by
     default so callers do not have to handle teardown themselves.
     ``AsyncioLoopRunner`` bridges the async loop into a synchronous call site.
 
@@ -56,20 +56,20 @@ def run_agent_loop(
         model: The :class:`Model` driving generation.
         strategy: Pre-built :class:`AgentStrategy` instance.
         handlers: Mapping of tool name to :class:`ToolHandler` callable.
-        runtime: Optional :class:`AgentRuntime`; closed on exit.
+        environment: Optional :class:`AgentEnvironment`; closed on exit.
         initial_messages: Messages seeded into the :class:`AgentContext`.
         all_tools: Tool schemas (``ToolInfo``) advertised to the model.
         max_steps: Upper bound on loop iterations.
         sample_id: Identifier propagated into :class:`AgentContext`.
         trace_strategy_name: Strategy label recorded on :class:`AgentTrace`.
-        trace_runtime_name: Agent runtime label recorded on :class:`AgentTrace`.
+        trace_env_name: Environment label recorded on :class:`AgentTrace`.
         mcp_configs: Optional list of MCP server configs whose advertised
             tools are merged into ``handlers`` / ``all_tools`` for the
             duration of the loop. Servers are spawned per sample (see
             :func:`evalscope.api.agent.mcp.resolve_mcp_tools`).
-        close_runtime: Whether this helper owns and closes ``runtime``.
+        close_environment: Whether this helper owns and closes ``environment``.
             Set to ``False`` when the caller needs to reuse the same
-            runtime after the agent loop, for example to run a verifier.
+            environment after the agent loop, for example to run a verifier.
 
     Returns:
         AgentLoopResult: Completed result with ``messages``, ``trace`` and
@@ -92,7 +92,7 @@ def run_agent_loop(
                 merged_tools.extend(mcp_tool_infos)
 
             try:
-                tool_executor = ToolExecutor(handlers=merged_handlers, runtime=runtime)
+                tool_executor = ToolExecutor(handlers=merged_handlers, environment=environment)
                 ctx = AgentContext(
                     sample_id=sample_id,
                     messages=initial_messages,
@@ -101,20 +101,20 @@ def run_agent_loop(
                 )
                 trace = AgentTrace(
                     strategy=trace_strategy_name,
-                    agent_runtime=trace_runtime_name,
+                    environment=trace_env_name,
                     max_steps=max_steps,
                 )
                 loop = AgentLoop(
                     model=model,
                     strategy=strategy,
                     tool_executor=tool_executor,
-                    runtime=runtime,
+                    environment=environment,
                     max_steps=max_steps,
                     trace=trace,
                 )
                 return await loop.run(ctx)
             finally:
-                if close_runtime and runtime is not None:
-                    await runtime.close()
+                if close_environment and environment is not None:
+                    await environment.close()
 
     return AsyncioLoopRunner.run(_run())

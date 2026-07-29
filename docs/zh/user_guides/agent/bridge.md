@@ -32,7 +32,7 @@ task_config = TaskConfig(
     limit=3,
     agent_config=ExternalAgentConfig(
         framework='claude-code',
-        runtime='local',
+        environment='local',
     ),
 )
 run_task(task_config)
@@ -62,9 +62,10 @@ EvalScope 会在本地子进程里准备 Claude Code(必要时自动 `npm instal
 | 字段 | 说明 | 推荐值 |
 |------|------|--------|
 | `framework` | 选哪个 CLI | `claude-code` / `codex` / `opencode` / `gemini-cli` / `hermes` |
-| `runtime` | 跑在哪里 | `local`(开发)/ `docker`(生产) |
+| `environment` | 运行位置 | `local`（开发）/ `docker`（生产） |
+| `environment_extra` | 环境构造参数 | Docker 镜像、超时、挂载等环境专属设置 |
 | `timeout` | 单样本壁钟超时(秒) | 数学题 120，代码修复 1800+ |
-| `runtime_extra` | 沙箱构造参数(`image`、`timeout` 等)，与内置模式一致 | 见 [沙箱环境](../sandbox.md) |
+| `task_environment` | 有状态任务协议及其服务运行时 | 通常由 benchmark 提供 |
 | `skills_dir` | 可选的本机 Agent Skills 目录 | EvalScope 会在启动 runner 前让 skills 可用 |
 | `kwargs` | 透传给 CLI 的参数，见下 | `{}` |
 
@@ -102,7 +103,7 @@ task_config = TaskConfig(
 run_task(task_config)
 ```
 
-`swe_bench_pro` 会为每个样本自带 Docker 运行时，所以 `runtime` 留空即可。
+`swe_bench_pro` 会为每个样本自带 Docker 环境，所以 `environment` 留空即可。
 
 ## 准备工作
 
@@ -150,7 +151,7 @@ docker build -f evalscope/agent/external/dockerfiles/Dockerfile.hermes \
 
 ### 使用镜像
 
-在 `ExternalAgentConfig` 中指定 `runtime='docker'`，并通过 `runtime_extra` 传入镜像名:
+在 `ExternalAgentConfig` 中设置 `environment='docker'`，并把构造参数放在 `environment_extra`：
 
 ```python
 from evalscope import TaskConfig, run_task
@@ -165,8 +166,8 @@ task_config = TaskConfig(
     limit=5,
     agent_config=ExternalAgentConfig(
         framework='claude-code',
-        runtime='docker',
-        runtime_extra={
+        environment='docker',
+        environment_extra={
             'sandbox_config': {
                 'image': 'evalscope-claude-code:latest',
                 'network_enabled': True,

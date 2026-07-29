@@ -5,9 +5,9 @@ this ``api`` package defines contracts only; concrete implementations
 live in ``evalscope/agent``.
 """
 
+from .environment import AgentEnvironment
 from .loop import AgentLoop
 from .runner import run_agent_loop
-from .runtime import AgentRuntime
 from .strategy import AgentStrategy
 from .tool_executor import ToolExecutor, ToolHandler
 from .trace import AgentTrace, AgentTraceEvent, EventType
@@ -24,7 +24,7 @@ from .types import (
 
 __all__ = [
     'AgentContext',
-    'AgentRuntime',
+    'AgentEnvironment',
     'AgentLoop',
     'AgentLoopResult',
     'AgentStrategy',

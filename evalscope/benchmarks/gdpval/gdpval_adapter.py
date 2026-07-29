@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
 from evalscope.agent.tools.python_exec import PYTHON_EXEC_TOOL_INFO, run_python_exec
-from evalscope.api.agent import AgentRuntime
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import DatasetHub, Sample
@@ -200,8 +200,8 @@ class GDPvalAdapter(AgentLoopAdapter):
             'python_exec': run_python_exec,
         }
 
-    def build_runtime(self, sample: Sample) -> Optional[AgentRuntime]:
-        from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
+    def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
+        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 
         self._ensure_docker_image()
         volumes = build_reference_volumes(sample)
@@ -221,7 +221,7 @@ class GDPvalAdapter(AgentLoopAdapter):
         if volumes:
             sandbox_config['volumes'] = {**sandbox_config.get('volumes', {}), **volumes}
 
-        env = EnclaveAgentRuntime(
+        env = EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config=sandbox_config,
             timeout=self._native_command_timeout(),

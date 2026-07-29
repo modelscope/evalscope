@@ -5,7 +5,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
-from evalscope.api.agent import AgentRuntime
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample, resolve_snapshot_or_local_path
@@ -142,9 +142,9 @@ class OfficeQAAdapter(AgentLoopAdapter):
     def build_tools(self, sample: Sample) -> Dict[str, Any]:
         return {'bash': run_bash}
 
-    def build_runtime(self, sample: Sample) -> Optional[AgentRuntime]:
+    def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
         if self._task_config.sandbox and self._task_config.sandbox.enabled:
-            from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
+            from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
             sandbox_config = {
                 'working_dir': _CONTAINER_CORPUS_DIR,
                 'volumes': {
@@ -154,10 +154,10 @@ class OfficeQAAdapter(AgentLoopAdapter):
                     }
                 },
             }
-            return EnclaveAgentRuntime(engine='docker', sandbox_config=sandbox_config)
+            return EnclaveAgentEnvironment(engine='docker', sandbox_config=sandbox_config)
 
-        from evalscope.agent.runtimes.local import LocalAgentRuntime
-        return LocalAgentRuntime(working_dir=self._corpus_dir)
+        from evalscope.agent.environments.local import LocalAgentEnvironment
+        return LocalAgentEnvironment(working_dir=self._corpus_dir)
 
     def build_initial_messages(self, sample: Sample) -> List[Any]:
         source_files = sample.metadata.get('source_files', '') if sample.metadata else ''

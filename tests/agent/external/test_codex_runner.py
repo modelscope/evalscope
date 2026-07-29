@@ -84,7 +84,7 @@ def test_codex_exec_through_bridge_responses_to_qwen3_max():
         # non-interactive always on, model_name auto-inherited from
         # the Model passed to run_external_agent.
         kwargs={},
-        runtime='local',
+        environment='local',
         timeout=180.0,
     )
     result = run_external_agent(config=config, model=model, sample=sample)

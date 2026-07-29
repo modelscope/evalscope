@@ -34,8 +34,12 @@ task_config = TaskConfig(
     agent_config=NativeAgentConfig(
         strategy='function_calling',
         tools=['python_exec'],
-        runtime='docker',
-        runtime_extra={'image': 'python:3.11-slim'},
+        environment='docker',
+        environment_extra={
+            'sandbox_config': {
+                'image': 'python:3.11-slim',
+            },
+        },
         max_steps=5,
         kwargs={'system_prompt': 'Use python_exec to verify your calculations.'},
     ),
@@ -53,8 +57,9 @@ Most-used `NativeAgentConfig` fields:
 |-------|-------------|-------------|
 | `strategy` | Interaction protocol | `function_calling` (default); use `react` or `swe_bench_backticks` if the model lacks function-calling |
 | `tools` | Tool whitelist | On demand, e.g. `['python_exec']` / `['bash']` |
-| `runtime` | Where tools run | `local` (dev) / `docker` (production) |
-| `runtime_extra` | Sandbox constructor kwargs | For `docker`: `{'image': '...', 'timeout': 60}`; see [Sandbox Environment](../sandbox.md) |
+| `environment` | Where tools or an external agent run | `local` (dev) / `docker` (production) |
+| `environment_extra` | Agent environment constructor options | Docker image, timeout, mounts, and other environment-specific settings |
+| `task_environment` | Stateful task protocol and its service runtime | Usually benchmark-provided; override for environments such as OpenEnv |
 | `max_steps` | Max iterations per sample | Math/QA `5-10`, code fixes `100+` |
 | `skills_dir` | Optional host Agent Skills directory | EvalScope makes the skills available before the agent loop starts |
 | `kwargs` | Strategy kwargs | Most commonly `{'system_prompt': '...'}` to steer the model |
@@ -78,6 +83,8 @@ Available tools (`tools`):
 
 ```{tip}
 - `local` has no filesystem isolation; use `docker` in production.
+- `environment` executes Agent commands, while `task_environment.runtime` hosts a stateful task service.
+- Put task-environment observation selection in `task_environment.observation_mode`, not in `dataset_args`.
 - `agent_config` also accepts a plain dict; `TaskConfig` converts it to `NativeAgentConfig` automatically.
 ```
 

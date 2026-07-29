@@ -26,7 +26,7 @@ import shutil
 import tempfile
 from typing import Any, Dict, List, Optional
 
-from evalscope.api.agent import AgentRuntime
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
@@ -90,7 +90,7 @@ class OpenCodeRunner(AgentRunner):
     # setup
     # ------------------------------------------------------------------
 
-    async def setup(self, env: AgentRuntime) -> None:
+    async def setup(self, env: AgentEnvironment) -> None:
         """Ensure OpenCode is installed inside the environment.
 
         Probes ``opencode --version``.  If the binary is already present
@@ -113,14 +113,14 @@ class OpenCodeRunner(AgentRunner):
                 'still fails.  Inspect the install logs above for the underlying cause.'
             )
 
-    async def _opencode_present(self, env: AgentRuntime) -> bool:
+    async def _opencode_present(self, env: AgentEnvironment) -> bool:
         probe = await env.exec(['bash', '-c', 'command -v opencode && opencode --version'])
         if probe.returncode == 0:
             logger.debug(f'opencode probe: {probe.stdout.strip()!r}')
             return True
         return False
 
-    async def _install_opencode(self, env: AgentRuntime) -> None:
+    async def _install_opencode(self, env: AgentEnvironment) -> None:
         """Install Node.js (when missing) and opencode-ai."""
         await ensure_node_via_apt(
             env,
@@ -145,7 +145,7 @@ class OpenCodeRunner(AgentRunner):
     async def run(
         self,
         task: ExternalAgentTask,
-        env: AgentRuntime,
+        env: AgentEnvironment,
         bridge: BridgeEndpoint,
     ) -> AgentRunResult:
         # Build model name in provider/model format.

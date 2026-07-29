@@ -1,4 +1,4 @@
-# MiniWoB (OpenEnv profile)
+# MiniWoB
 
 
 ## Overview
@@ -14,8 +14,9 @@ BrowserGym service owns the environment lifecycle and reset/step/reward protocol
   No ModelScope or Hugging Face dataset is used.
 - The primary metric is `success_rate`; `error_rate` separately reports OpenEnv runtime failures.
 - Every episode uses a fixed 20-step action budget.
-- The default `observation_mode` is `axtree_screenshot`: every reset and step supplies both the accessibility tree and
-  a PNG screenshot. Use `axtree` only when a text-only diagnostic run is explicitly desired.
+- `agent_config.task_environment.observation_mode` controls the observation representation. Its default is
+  `axtree_screenshot`: every reset and step supplies both the accessibility tree and a PNG screenshot. Use `axtree`
+  only when a text-only diagnostic run is explicitly desired.
 - Screenshot mode requires a model that accepts image input and supports function calling. A text-only model may reject
   the request, ignore the image, or act using only the incomplete accessibility tree; such scores are not representative
   of the default multimodal profile.
@@ -33,16 +34,11 @@ BrowserGym Experiments' official 10-step budget. Reports therefore set `official
 
 ## Requirements
 
-Install with
-`pip install -i https://pypi.tuna.tsinghua.edu.cn/simple 'evalscope[miniwob]'`.
+Install with `pip install 'evalscope[miniwob]'`.
 MiniWoB currently supports only the local `ms_enclave_docker` runtime, which requires Docker and builds the patched
 image from a pinned OpenEnv GitHub commit on first use.
-The image installs Python dependencies from the Tsinghua PyPI mirror. `eval_batch_size=4` is the recommended maximum
-concurrency.
-
-The generic EvalScope `remote` environment runtime remains available to other environment backends. MiniWoB does not
-accept it until EvalScope has a standard capability/profile handshake that can verify the remote action mapping and
-source profile.
+Set `EVALSCOPE_PIP_INDEX_URL` before evaluation to use a custom Python package index while building the image.
+`eval_batch_size=4` is the recommended maximum concurrency.
 
 Local mode:
 
@@ -80,7 +76,7 @@ TaskConfig(model='qwen3-vl-plus', datasets=['miniwob'], eval_batch_size=4)
 {
   "input": [
     {
-      "id": "f2bedbc8",
+      "id": "76c2cf88",
       "content": "The task goal and browser observation are supplied when the OpenEnv episode is reset."
     }
   ],
@@ -113,7 +109,7 @@ TaskConfig(model='qwen3-vl-plus', datasets=['miniwob'], eval_batch_size=4)
     "browsergym_split": "test",
     "task_id": "miniwob.ascending-numbers",
     "openenv_task_name": "ascending-numbers",
-    "seed": 28,
+    "seed": 1608637542,
     "repeat": 0,
     "profile": "openenv_v0.4.1_miniwob_all_20_steps",
     "max_steps": 20,
@@ -121,7 +117,7 @@ TaskConfig(model='qwen3-vl-plus', datasets=['miniwob'], eval_batch_size=4)
     "official_browsergym_evaluation_protocol": false,
     "openenv_version": "0.4.1",
     "openenv_commit": "65c506ef94bb1f7279cb4359673b3ef81031d01f",
-    "openenv_patch_sha256": "b90bb3f1b91c60a8d4b7c888cccd78f1834754b696448da039e1bba7addd836a",
+    "openenv_patch_sha256": "465b23aaf7b3b2cadd681495d694a7dad5ca1b36be0cfb5ce5780b94ac354668",
     "browsergym_version": "0.14.3",
     "browsergym_commit": "0a785fbed075224ae81ca9c1fe924f66050696fe",
     "miniwob_commit": "7fd85d71a4b60325c6585396ec4f48377d049838",
@@ -141,12 +137,6 @@ TaskConfig(model='qwen3-vl-plus', datasets=['miniwob'], eval_batch_size=4)
 {question}
 ```
 
-## Extra Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `observation_mode` | `str` | `axtree_screenshot` | Browser observation supplied after reset and every action. Choices: ['axtree', 'axtree_screenshot'] |
-
 ## Usage
 
 ### Using CLI
@@ -157,30 +147,20 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets miniwob \
-    --agent-config '{"mode":"native","strategy":"miniwob_openenv_function_calling","max_steps":20}' \
     --limit 10  # Remove this line for formal evaluation
 ```
 
 ### Using Python
 
 ```python
-from evalscope import TaskConfig, run_task
-from evalscope.api.agent import NativeAgentConfig
+from evalscope import run_task
+from evalscope.config import TaskConfig
 
 task_cfg = TaskConfig(
     model='YOUR_MODEL',
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['miniwob'],
-    agent_config=NativeAgentConfig(
-        strategy='miniwob_openenv_function_calling',
-        max_steps=20,
-    ),
-    dataset_args={
-        'miniwob': {
-            # extra_params: {}  # uses default extra parameters
-        }
-    },
     limit=10,  # Remove this line for formal evaluation
 )
 

@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from pydantic import BaseModel, Field
 from typing import Any, Dict, Optional
 
-from evalscope.api.agent import AgentRuntime
+from evalscope.api.agent import AgentEnvironment
 
 
 class BridgeEndpoint(BaseModel):
@@ -60,13 +60,13 @@ class AgentRunResult(BaseModel):
 
 
 class AgentRunner(ABC):
-    """Drive one external-agent run inside an :class:`AgentRuntime`."""
+    """Drive one external-agent run inside an :class:`AgentEnvironment`."""
 
     framework: str = 'base'
     """Registered runner name (used by ``ExternalAgentConfig.framework``)."""
 
     @abstractmethod
-    async def setup(self, env: AgentRuntime) -> None:
+    async def setup(self, env: AgentEnvironment) -> None:
         """Install the agent CLI / dependencies inside ``env``.  Called once
         per sample before :meth:`run`.  May be a no-op for pre-baked images."""
 
@@ -74,7 +74,7 @@ class AgentRunner(ABC):
     async def run(
         self,
         task: ExternalAgentTask,
-        env: AgentRuntime,
+        env: AgentEnvironment,
         bridge: BridgeEndpoint,
     ) -> AgentRunResult:
         """Execute the agent CLI for one sample and return its raw output."""

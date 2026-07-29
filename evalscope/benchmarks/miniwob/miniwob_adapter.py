@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import numpy as np
+import os
 import threading
 import time
-from copy import deepcopy
 from pathlib import Path
 from PIL import Image
 from typing import Any, Dict, List, Optional
@@ -52,8 +52,8 @@ logger = get_logger()
 
 OPENENV_VERSION = '0.4.1'
 OPENENV_COMMIT = '65c506ef94bb1f7279cb4359673b3ef81031d01f'
-OPENENV_PATCH_SHA256 = 'b90bb3f1b91c60a8d4b7c888cccd78f1834754b696448da039e1bba7addd836a'
-RUNTIME_PIP_INDEX_URL = 'https://pypi.tuna.tsinghua.edu.cn/simple'
+OPENENV_PATCH_SHA256 = '465b23aaf7b3b2cadd681495d694a7dad5ca1b36be0cfb5ce5780b94ac354668'
+RUNTIME_PIP_INDEX_URL = 'https://pypi.org/simple'
 MINIWOB_COMMIT = '7fd85d71a4b60325c6585396ec4f48377d049838'
 _EPISODE_SEMAPHORE = threading.BoundedSemaphore(4)
 _IMAGE_BUILD_LOCK = threading.Lock()
@@ -82,8 +82,9 @@ BrowserGym service owns the environment lifecycle and reset/step/reward protocol
   No ModelScope or Hugging Face dataset is used.
 - The primary metric is `success_rate`; `error_rate` separately reports OpenEnv runtime failures.
 - Every episode uses a fixed 20-step action budget.
-- The default `observation_mode` is `axtree_screenshot`: every reset and step supplies both the accessibility tree and
-  a PNG screenshot. Use `axtree` only when a text-only diagnostic run is explicitly desired.
+- `agent_config.task_environment.observation_mode` controls the observation representation. Its default is
+  `axtree_screenshot`: every reset and step supplies both the accessibility tree and a PNG screenshot. Use `axtree`
+  only when a text-only diagnostic run is explicitly desired.
 - Screenshot mode requires a model that accepts image input and supports function calling. A text-only model may reject
   the request, ignore the image, or act using only the incomplete accessibility tree; such scores are not representative
   of the default multimodal profile.
@@ -101,16 +102,11 @@ BrowserGym Experiments' official 10-step budget. Reports therefore set `official
 
 ## Requirements
 
-Install with
-`pip install -i https://pypi.tuna.tsinghua.edu.cn/simple 'evalscope[miniwob]'`.
+Install with `pip install 'evalscope[miniwob]'`.
 MiniWoB currently supports only the local `ms_enclave_docker` runtime, which requires Docker and builds the patched
 image from a pinned OpenEnv GitHub commit on first use.
-The image installs Python dependencies from the Tsinghua PyPI mirror. `eval_batch_size=4` is the recommended maximum
-concurrency.
-
-The generic EvalScope `remote` environment runtime remains available to other environment backends. MiniWoB does not
-accept it until EvalScope has a standard capability/profile handshake that can verify the remote action mapping and
-source profile.
+Set `EVALSCOPE_PIP_INDEX_URL` before evaluation to use a custom Python package index while building the image.
+`eval_batch_size=4` is the recommended maximum concurrency.
 
 Local mode:
 
@@ -118,15 +114,6 @@ Local mode:
 TaskConfig(model='qwen3-vl-plus', datasets=['miniwob'], eval_batch_size=4)
 ```
 """
-
-_EXTRA_PARAMS = {
-    'observation_mode': {
-        'type': 'str',
-        'description': 'Browser observation supplied after reset and every action.',
-        'value': 'axtree_screenshot',
-        'choices': ['axtree', 'axtree_screenshot'],
-    },
-}
 
 BROWSER_ACTION_TOOL_INFO = ToolInfo(
     name='browser_action',
@@ -180,7 +167,7 @@ class _MiniWobStrategy(FunctionCallingStrategy):
 @register_benchmark(
     BenchmarkMeta(
         name='miniwob',
-        pretty_name='MiniWoB (OpenEnv profile)',
+        pretty_name='MiniWoB',
         tags=[Tags.AGENT, Tags.FUNCTION_CALLING, Tags.MULTI_MODAL, Tags.MULTI_TURN],
         description=_DESCRIPTION,
         dataset_id='https://github.com/ServiceNow/BrowserGym',
@@ -189,7 +176,6 @@ class _MiniWobStrategy(FunctionCallingStrategy):
         eval_split='test',
         prompt_template='{question}',
         metric_list=['success_rate', 'error_rate'],
-        extra_params=deepcopy(_EXTRA_PARAMS),
     )
 )
 class MiniWobAdapter(AgentLoopAdapter):
@@ -197,14 +183,15 @@ class MiniWobAdapter(AgentLoopAdapter):
 
     strategy_name = 'miniwob_openenv_function_calling'
     max_steps_default = MINIWOB_MAX_STEPS
+    document_agent_config = False
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.observation_mode = self.extra_params.get('observation_mode', 'axtree_screenshot')
-        if self.observation_mode not in {'axtree', 'axtree_screenshot'}:
-            raise ValueError(f'Unsupported MiniWoB observation_mode: {self.observation_mode}')
         self._validate_agent_config()
         self._environment_config = self._resolve_task_environment_config()
+        self.observation_mode = self._environment_config.observation_mode or 'axtree_screenshot'
+        if self.observation_mode not in {'axtree', 'axtree_screenshot'}:
+            raise ValueError(f'Unsupported MiniWoB observation_mode: {self.observation_mode}')
         self._emit_profile_warning()
 
     def load(self) -> tuple[DatasetDict, None]:
@@ -324,7 +311,6 @@ class MiniWobAdapter(AgentLoopAdapter):
             backend_cls = get_task_environment(config.backend)
             session = backend_cls().create_session(
                 base_url=lease.base_url,
-                runtime_name=lease.name,
                 config=dict(config.backend_args),
             )
         except Exception:
@@ -368,14 +354,14 @@ class MiniWobAdapter(AgentLoopAdapter):
                         model=model,
                         strategy=strategy,
                         handlers=self._build_tools_for_session(sample, session),
-                        runtime=None,
+                        environment=None,
                         initial_messages=initial_messages,
                         all_tools=list(sample.tools or []),
                         max_steps=MINIWOB_MAX_STEPS,
                         sample_id=sample.id,
                         trace_strategy_name=strategy.name,
-                        trace_runtime_name=None,
-                        close_runtime=False,
+                        trace_env_name=None,
+                        close_environment=False,
                     )
                 except Exception as exc:
                     failure = self._failure(model, sample, f'Model inference failed: {exc}', source='model')
@@ -400,7 +386,7 @@ class MiniWobAdapter(AgentLoopAdapter):
 
                 initial_metadata = reset_message.metadata or {}
                 result.trace.task_environment = session.backend_name
-                result.trace.runtime = lease.name
+                result.trace.task_environment_runtime = lease.name
                 result.trace.events.insert(
                     0,
                     AgentTraceEvent(
@@ -475,17 +461,13 @@ class MiniWobAdapter(AgentLoopAdapter):
 
     def _on_generate_report(self, scores: Dict[str, List[AggScore]], model_name: str) -> Report:
         report = super()._on_generate_report(scores, model_name)
-        return _MiniWobReport.model_validate(
-            {
-                **report.model_dump(exclude={'num'}),
-                'metadata': self._report_metadata(
-                    {
-                        'runtime_mode': 'local',
-                        'observation_mode': self.observation_mode,
-                    }
-                ),
-            }
-        )
+        return _MiniWobReport.model_validate({
+            **report.model_dump(exclude={'num'}),
+            'metadata': self._report_metadata({
+                'runtime_mode': 'local',
+                'observation_mode': self.observation_mode,
+            }),
+        })
 
     def _validate_agent_config(self) -> None:
         agent_config = self._task_config.agent_config if self._task_config is not None else None
@@ -493,20 +475,24 @@ class MiniWobAdapter(AgentLoopAdapter):
             return
         if not isinstance(agent_config, NativeAgentConfig):
             raise ValueError('MiniWoB supports only EvalScope native AgentLoop agents.')
-        if agent_config.runtime is not None or agent_config.runtime_extra:
-            raise ValueError('MiniWoB does not use an agent runtime; configure TaskConfig.task_environment instead.')
+        if agent_config.environment is not None or agent_config.environment_extra:
+            raise ValueError(
+                'MiniWoB does not use an Agent execution environment; configure agent_config.task_environment instead.'
+            )
         if 'max_steps' in agent_config.model_fields_set and agent_config.max_steps != MINIWOB_MAX_STEPS:
             raise ValueError(f'MiniWoB fixes max_steps={MINIWOB_MAX_STEPS}.')
-        if 'strategy' in agent_config.model_fields_set and agent_config.strategy != 'function_calling':
-            raise ValueError("MiniWoB supports only strategy='function_calling'.")
+        if 'strategy' in agent_config.model_fields_set:
+            raise ValueError('MiniWoB fixes its internal strategy; omit agent_config.strategy.')
         if agent_config.tools or agent_config.mcp_servers:
             raise ValueError('MiniWoB exposes only its benchmark-owned browser_action tool.')
 
     def _resolve_task_environment_config(self) -> TaskEnvironmentConfig:
-        config = self._task_config.task_environment if self._task_config is not None else None
+        agent_config = self._task_config.agent_config if self._task_config is not None else None
+        config = agent_config.task_environment if isinstance(agent_config, NativeAgentConfig) else None
         if config is None:
             return TaskEnvironmentConfig.model_validate({
                 'backend': 'openenv',
+                'observation_mode': 'axtree_screenshot',
                 'runtime': {
                     'name': 'ms_enclave_docker',
                     'config': {},
@@ -515,11 +501,7 @@ class MiniWobAdapter(AgentLoopAdapter):
         if config.backend != 'openenv':
             raise ValueError("MiniWoB task_environment.backend must be 'openenv'.")
         if config.runtime.name != 'ms_enclave_docker':
-            raise ValueError(
-                "MiniWoB currently supports only task_environment.runtime.name='ms_enclave_docker'. "
-                'The generic remote runtime remains available, but MiniWoB requires a capability/profile handshake '
-                'before remote services can be accepted.'
-            )
+            raise ValueError("MiniWoB supports only task_environment.runtime.name='ms_enclave_docker'.")
         return config
 
     def _prepare_runtime_image(self) -> str:
@@ -536,7 +518,10 @@ class MiniWobAdapter(AgentLoopAdapter):
                     build_args={
                         'OPENENV_COMMIT': OPENENV_COMMIT,
                         'MINIWOB_COMMIT': MINIWOB_COMMIT,
-                        'EVALSCOPE_PIP_INDEX_URL': RUNTIME_PIP_INDEX_URL,
+                        'EVALSCOPE_PIP_INDEX_URL': os.environ.get(
+                            'EVALSCOPE_PIP_INDEX_URL',
+                            RUNTIME_PIP_INDEX_URL,
+                        ),
                     },
                 )
             )
@@ -672,7 +657,7 @@ class MiniWobAdapter(AgentLoopAdapter):
         trace = AgentTrace(
             strategy='miniwob_openenv_function_calling',
             task_environment='openenv',
-            runtime=self._environment_config.runtime.name,
+            task_environment_runtime=self._environment_config.runtime.name,
             max_steps=MINIWOB_MAX_STEPS,
         )
         trace.add_event(

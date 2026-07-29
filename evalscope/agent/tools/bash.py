@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List, Optional, Tuple
 
-from evalscope.api.agent import AgentRuntime
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.agent.types import ExecResult
 from evalscope.api.registry import register_agent_tool
 from evalscope.api.tool import ToolCall, ToolInfo
@@ -30,10 +30,10 @@ BASH_TOOL_INFO = ToolInfo(
 
 
 @register_agent_tool('bash', info=BASH_TOOL_INFO)
-async def run_bash(call: ToolCall, env: Optional[AgentRuntime]) -> str:
+async def run_bash(call: ToolCall, env: Optional[AgentEnvironment]) -> str:
     """Execute a bash command in the sandbox environment."""
     if env is None:
-        raise PermissionError("'bash' tool requires an AgentRuntime.")
+        raise PermissionError("'bash' tool requires an AgentEnvironment.")
     args = call.function.arguments
     command: str = args.get('command', '')
     timeout: float = float(args.get('timeout', 60))
@@ -46,7 +46,7 @@ def apply_bash_command_timeout_defaults(
     tools: List[ToolInfo],
     command_timeout: Optional[float],
 ) -> Tuple[Dict[str, Any], List[ToolInfo]]:
-    """Apply a native runtime default timeout to bash calls and schema."""
+    """Apply a native environment default timeout to bash calls and schema."""
     if command_timeout is None:
         return handlers, tools
     updated_handlers = _apply_bash_command_timeout(handlers, command_timeout)
@@ -60,7 +60,7 @@ def _apply_bash_command_timeout(handlers: Dict[str, Any], command_timeout: float
 
     bash_handler = handlers['bash']
 
-    async def run_bash_with_default_timeout(call: ToolCall, env: Optional[AgentRuntime]) -> str:
+    async def run_bash_with_default_timeout(call: ToolCall, env: Optional[AgentEnvironment]) -> str:
         args = dict(call.function.arguments or {})
         if 'timeout' not in args:
             call = call.model_copy(

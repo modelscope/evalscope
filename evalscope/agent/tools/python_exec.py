@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from evalscope.api.agent import AgentRuntime
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.registry import register_agent_tool
 from evalscope.api.tool import ToolCall, ToolInfo
 from evalscope.api.tool.tool_info import ToolParams
@@ -27,10 +27,10 @@ PYTHON_EXEC_TOOL_INFO = ToolInfo(
 
 
 @register_agent_tool('python_exec', info=PYTHON_EXEC_TOOL_INFO)
-async def run_python_exec(call: ToolCall, env: Optional[AgentRuntime]) -> str:
+async def run_python_exec(call: ToolCall, env: Optional[AgentEnvironment]) -> str:
     """Execute Python code inside the sandbox environment."""
     if env is None:
-        raise PermissionError("'python_exec' tool requires an AgentRuntime.")
+        raise PermissionError("'python_exec' tool requires an AgentEnvironment.")
     args = call.function.arguments
     code: str = args.get('code', '')
     timeout: float = float(args.get('timeout', 60))

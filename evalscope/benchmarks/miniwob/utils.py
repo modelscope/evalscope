@@ -6,14 +6,11 @@ import ast
 import csv
 import hashlib
 import numpy as np
-import os
-import tempfile
-import threading
-import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR
+from evalscope.utils.download_utils import download_url, file_sha256
 
 BROWSERGYM_VERSION = '0.14.3'
 BROWSERGYM_COMMIT = '0a785fbed075224ae81ca9c1fe924f66050696fe'
@@ -22,12 +19,12 @@ BROWSERGYM_METADATA_URL = (
     f'https://raw.githubusercontent.com/ServiceNow/BrowserGym/{BROWSERGYM_COMMIT}/'
     'browsergym/experiments/src/browsergym/experiments/benchmark/metadata/miniwob.csv'
 )
-MINIWOB_SCHEDULE_SHA256 = '1c4281f89238d9bded471d39f1c94b8e90be52a722ed371c1949b79c40daec51'
+MINIWOB_SCHEDULE_SHA256 = '2215888dc6b2cf18bbe2f598d747c21c60d11d27d3b42d030ac2e5622fd865de'
 MINIWOB_PROFILE = 'openenv_v0.4.1_miniwob_all_20_steps'
 MINIWOB_TASK_COUNT = 125
 MINIWOB_REPEATS = 5
 MINIWOB_MAX_STEPS = 20
-MINIWOB_SEED_MAX = 2 ^ 32
+MINIWOB_SEED_MAX = 2**32
 MINIWOB_ALL_ACTIONS = (
     'noop',
     'mouse_move',
@@ -50,7 +47,6 @@ _EXPECTED_FIELDS = [
     'similarity_group',
     'browsergym_split',
 ]
-_DOWNLOAD_LOCK = threading.Lock()
 
 
 def load_miniwob_records(cache_root: Optional[str | Path] = None) -> tuple[List[Dict[str, Any]], Path]:
@@ -77,7 +73,7 @@ def load_miniwob_records(cache_root: Optional[str | Path] = None) -> tuple[List[
     rng = np.random.RandomState(42)
     records = []
     for row in rows:
-        for repeat, seed in enumerate(rng.randint(low=0, high=MINIWOB_SEED_MAX, size=MINIWOB_REPEATS)):
+        for repeat, seed in enumerate(rng.randint(low=0, high=MINIWOB_SEED_MAX, size=MINIWOB_REPEATS, dtype=np.int64)):
             task_id = row['task_name']
             records.append({
                 **row,
@@ -99,36 +95,21 @@ def ensure_miniwob_metadata(cache_root: Optional[str | Path] = None) -> Path:
     """Return a verified cached copy of BrowserGym's MiniWoB metadata CSV."""
     root = Path(cache_root or DEFAULT_EVALSCOPE_CACHE_DIR).expanduser()
     destination = root / 'sources' / 'browsergym' / BROWSERGYM_COMMIT / 'miniwob.csv'
-    if _matches_sha256(destination, BROWSERGYM_METADATA_SHA256):
+    if destination.is_file() and file_sha256(str(destination)) == BROWSERGYM_METADATA_SHA256:
         return destination
 
-    with _DOWNLOAD_LOCK:
-        if _matches_sha256(destination, BROWSERGYM_METADATA_SHA256):
-            return destination
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        request = urllib.request.Request(BROWSERGYM_METADATA_URL, headers={'User-Agent': 'EvalScope-MiniWoB/1.0'})
-        temporary_path: Optional[Path] = None
-        try:
-            with urllib.request.urlopen(request, timeout=30) as response:
-                with tempfile.NamedTemporaryFile(dir=destination.parent, delete=False) as temporary_file:
-                    temporary_path = Path(temporary_file.name)
-                    while chunk := response.read(1024 * 1024):
-                        temporary_file.write(chunk)
-            if not _matches_sha256(temporary_path, BROWSERGYM_METADATA_SHA256):
-                raise ValueError(
-                    'Downloaded MiniWoB metadata checksum mismatch. '
-                    f'Expected {BROWSERGYM_METADATA_SHA256} from {BROWSERGYM_METADATA_URL}.'
-                )
-            os.replace(temporary_path, destination)
-            temporary_path = None
-        except Exception as exc:
-            raise RuntimeError(
-                f'Unable to load pinned MiniWoB metadata. Cache path: {destination}; '
-                f'source: {BROWSERGYM_METADATA_URL}. No ModelScope or Hugging Face fallback is configured.'
-            ) from exc
-        finally:
-            if temporary_path is not None:
-                temporary_path.unlink(missing_ok=True)
+    try:
+        download_url(
+            BROWSERGYM_METADATA_URL,
+            str(destination),
+            sha256=BROWSERGYM_METADATA_SHA256,
+            headers={'User-Agent': 'EvalScope-MiniWoB/1.0'},
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            f'Unable to load pinned MiniWoB metadata. Cache path: {destination}; '
+            f'source: {BROWSERGYM_METADATA_URL}. No ModelScope or Hugging Face fallback is configured.'
+        ) from exc
     return destination
 
 
@@ -152,16 +133,6 @@ def validate_browser_action(action: str) -> str:
         if not call.args or not isinstance(call.args[0], ast.Constant) or not isinstance(call.args[0].value, str):
             raise ValueError('click requires a string BID; use mouse_click(x, y) for screenshot coordinates.')
     return text
-
-
-def _matches_sha256(path: Optional[Path], expected: str) -> bool:
-    if path is None or not path.is_file():
-        return False
-    digest = hashlib.sha256()
-    with path.open('rb') as source:
-        for chunk in iter(lambda: source.read(1024 * 1024), b''):
-            digest.update(chunk)
-    return digest.hexdigest() == expected
 
 
 __all__ = [

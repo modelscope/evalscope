@@ -32,7 +32,7 @@ task_config = TaskConfig(
     limit=3,
     agent_config=ExternalAgentConfig(
         framework='claude-code',
-        runtime='local',
+        environment='local',
     ),
 )
 run_task(task_config)
@@ -62,9 +62,10 @@ Most-used `ExternalAgentConfig` fields:
 | Field | Description | Recommended |
 |-------|-------------|-------------|
 | `framework` | Which CLI to drive | `claude-code` / `codex` / `opencode` / `gemini-cli` / `hermes` |
-| `runtime` | Where to run | `local` (dev) / `docker` (production) |
+| `environment` | Where to run | `local` (dev) / `docker` (production) |
+| `environment_extra` | Environment constructor options | Docker image, timeout, mounts, and other environment-specific settings |
 | `timeout` | Per-sample wall-clock budget in seconds | 120 for math, 1800+ for code fixes |
-| `runtime_extra` | Sandbox constructor kwargs (`image`, `timeout`, …); same as native mode | See [Sandbox Environment](../sandbox.md) |
+| `task_environment` | Stateful task protocol and its service runtime | Usually benchmark-provided |
 | `skills_dir` | Optional host Agent Skills directory | EvalScope makes the skills available before launching the runner |
 | `kwargs` | Kwargs forwarded to the CLI, see below | `{}` |
 
@@ -103,7 +104,7 @@ task_config = TaskConfig(
 run_task(task_config)
 ```
 
-`swe_bench_pro` ships its own per-sample Docker runtime, so leaving `runtime` empty is fine.
+`swe_bench_pro` ships its own per-sample Docker environment, so leaving `environment` empty is fine.
 
 ## Prerequisites
 
@@ -151,7 +152,7 @@ docker build -f evalscope/agent/external/dockerfiles/Dockerfile.hermes \
 
 ### Using images
 
-Set `runtime='docker'` in `ExternalAgentConfig` and pass the image name via `runtime_extra`:
+Set `environment='docker'` in `ExternalAgentConfig` and put constructor options under `environment_extra`:
 
 ```python
 from evalscope import TaskConfig, run_task
@@ -166,8 +167,8 @@ task_config = TaskConfig(
     limit=5,
     agent_config=ExternalAgentConfig(
         framework='claude-code',
-        runtime='docker',
-        runtime_extra={
+        environment='docker',
+        environment_extra={
             'sandbox_config': {
                 'image': 'evalscope-claude-code:latest',
                 'network_enabled': True,
