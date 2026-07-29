@@ -91,8 +91,8 @@ class AgentLoopAdapter(AgentAdapter):
         """
         return {}
 
-    def build_environment(self, sample: Any) -> Optional[Any]:
-        """Return an :class:`AgentEnvironment` or ``None`` if not needed."""
+    def build_runtime(self, sample: Any) -> Optional[Any]:
+        """Return an :class:`AgentRuntime` or ``None`` if not needed."""
         return None
 
     def _task_sandbox_config(self) -> Dict[str, Any]:
@@ -158,7 +158,7 @@ class AgentLoopAdapter(AgentAdapter):
             config=ac,
             model=model,
             sample=sample,
-            environment_override=self.build_environment(sample),
+            runtime_override=self.build_runtime(sample),
             instruction_override=instruction,
             post_run_hook=self._external_extract_prediction,
         )
@@ -221,7 +221,7 @@ class AgentLoopAdapter(AgentAdapter):
         mounts and sandbox contracts remain intact.
 
         :class:`ExternalAgentConfig` routes through :func:`run_external_agent`
-        directly, with the adapter's :meth:`build_environment` and
+        directly, with the adapter's :meth:`build_runtime` and
         :meth:`build_initial_messages` supplying the per-sample sandbox
         and prompt, and :meth:`_external_extract_prediction` recovering
         the prediction artifact before the env closes.
@@ -240,19 +240,19 @@ class AgentLoopAdapter(AgentAdapter):
 
         if max_steps <= 0:
             raise ValueError('AgentLoop max_steps must be greater than 0.')
-        environment = self.build_environment(sample)
+        runtime = self.build_runtime(sample)
 
         result: AgentLoopResult = run_agent_loop(
             model=model,
             strategy=strategy,
             handlers=handlers,
-            environment=environment,
+            runtime=runtime,
             initial_messages=self.build_initial_messages(sample),
             all_tools=all_tools,
             max_steps=max_steps,
             sample_id=sample.id,
             trace_strategy_name=getattr(strategy, 'name', None),
-            trace_env_name=environment.name if environment else None,
+            trace_runtime_name=runtime.name if runtime else None,
             mcp_configs=mcp_configs,
         )
 

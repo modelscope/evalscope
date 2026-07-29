@@ -52,24 +52,24 @@ class FakeStrategy:
         pass
 
 
-def test_run_native_agent_keeps_environment_override_open(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_run_native_agent_keeps_runtime_override_open(monkeypatch: pytest.MonkeyPatch) -> None:
     env = FakeEnvironment()
     seen: Dict[str, Any] = {}
 
     def fake_run_agent_loop(**kwargs: Any) -> AgentLoopResult:
-        seen['environment'] = kwargs['environment']
-        seen['close_environment'] = kwargs['close_environment']
-        if kwargs['close_environment']:
-            asyncio.run(kwargs['environment'].close())
+        seen['runtime'] = kwargs['runtime']
+        seen['close_runtime'] = kwargs['close_runtime']
+        if kwargs['close_runtime']:
+            asyncio.run(kwargs['runtime'].close())
         return AgentLoopResult(
             messages=[ChatMessageAssistant(content='raw')],
             final_output=_model_output('raw'),
-            trace=AgentTrace(strategy='fake', environment='fake', max_steps=1),
+            trace=AgentTrace(strategy='fake', agent_runtime='fake', max_steps=1),
         )
 
     monkeypatch.setattr('evalscope.agent.runner.get_strategy', lambda name: FakeStrategy)
     monkeypatch.setattr(
-        'evalscope.agent.runner.get_environment',
+        'evalscope.agent.runner.get_runtime',
         lambda name: (_ for _ in ()).throw(AssertionError('override should skip environment lookup')),
     )
     monkeypatch.setattr('evalscope.agent.runner.resolve_tools', lambda tools: {})
@@ -79,17 +79,17 @@ def test_run_native_agent_keeps_environment_override_open(monkeypatch: pytest.Mo
     result = run_native_agent(
         task_config=TaskConfig(
             datasets=['demo'],
-            agent_config=NativeAgentConfig(strategy='fake', environment='missing-env', max_steps=1),
+            agent_config=NativeAgentConfig(strategy='fake', runtime='missing-env', max_steps=1),
         ),
         model=object(),
         sample=Sample(id=1, input='do work', target='', metadata={}),
         build_sandbox_config=lambda _: None,
         extract_final_answer=lambda loop_result, strategy: 'final',
-        environment_override=env,
+        runtime_override=env,
     )
 
-    assert seen['environment'] is env
-    assert seen['close_environment'] is False
+    assert seen['runtime'] is env
+    assert seen['close_runtime'] is False
     assert env.closed == 0
     assert result.output.message.text == 'final'
 
@@ -159,11 +159,11 @@ def test_run_native_agent_passes_command_timeout_to_environment(monkeypatch: pyt
         return AgentLoopResult(
             messages=[ChatMessageAssistant(content='raw')],
             final_output=_model_output('raw'),
-            trace=AgentTrace(strategy='fake', environment='fake', max_steps=1),
+            trace=AgentTrace(strategy='fake', agent_runtime='fake', max_steps=1),
         )
 
     monkeypatch.setattr('evalscope.agent.runner.get_strategy', lambda name: FakeStrategy)
-    monkeypatch.setattr('evalscope.agent.runner.get_environment', lambda name: FakeEnvironment)
+    monkeypatch.setattr('evalscope.agent.runner.get_runtime', lambda name: FakeEnvironment)
     monkeypatch.setattr('evalscope.agent.runner.resolve_tools', lambda tools: {})
     monkeypatch.setattr('evalscope.agent.runner.resolve_tool_infos', lambda tools: [])
     monkeypatch.setattr('evalscope.agent.runner.run_agent_loop', fake_run_agent_loop)
@@ -173,7 +173,7 @@ def test_run_native_agent_passes_command_timeout_to_environment(monkeypatch: pyt
             datasets=['demo'],
             agent_config=NativeAgentConfig(
                 strategy='fake',
-                environment='fake-env',
+                runtime='fake-env',
                 max_steps=1,
                 command_timeout=42,
             ),
@@ -184,7 +184,7 @@ def test_run_native_agent_passes_command_timeout_to_environment(monkeypatch: pyt
         extract_final_answer=lambda loop_result, strategy: 'final',
     )
 
-    assert seen['environment'].timeout == 42
+    assert seen['runtime'].timeout == 42
 
 
 def test_run_native_agent_closes_owned_environment_when_skill_install_fails(
@@ -203,7 +203,7 @@ description: Demo skill.
     env = FakeEnvironment(exec_returncode=1)
 
     monkeypatch.setattr('evalscope.agent.runner.get_strategy', lambda name: FakeStrategy)
-    monkeypatch.setattr('evalscope.agent.runner.get_environment', lambda name: lambda **kwargs: env)
+    monkeypatch.setattr('evalscope.agent.runner.get_runtime', lambda name: lambda **kwargs: env)
     monkeypatch.setattr('evalscope.agent.runner.resolve_tools', lambda tools: {})
     monkeypatch.setattr('evalscope.agent.runner.resolve_tool_infos', lambda tools: [])
     monkeypatch.setattr(
@@ -217,7 +217,7 @@ description: Demo skill.
                 datasets=['demo'],
                 agent_config=NativeAgentConfig(
                     strategy='fake',
-                    environment='fake-env',
+                    runtime='fake-env',
                     skills_dir=str(tmp_path / 'skills'),
                 ),
             ),
@@ -242,7 +242,7 @@ def test_run_agent_loop_can_leave_caller_owned_environment_open(monkeypatch: pyt
             return AgentLoopResult(
                 messages=[ChatMessageAssistant(content='raw')],
                 final_output=_model_output('raw'),
-                trace=AgentTrace(strategy='fake', environment='fake', max_steps=1),
+                trace=AgentTrace(strategy='fake', agent_runtime='fake', max_steps=1),
             )
 
     monkeypatch.setattr('evalscope.api.agent.runner.AgentLoop', FakeLoop)
@@ -251,14 +251,14 @@ def test_run_agent_loop_can_leave_caller_owned_environment_open(monkeypatch: pyt
         model=object(),
         strategy=FakeStrategy(),
         handlers={},
-        environment=env,
+        runtime=env,
         initial_messages=[],
         all_tools=[],
         max_steps=1,
         sample_id=1,
         trace_strategy_name='fake',
-        trace_env_name='fake',
-        close_environment=False,
+        trace_runtime_name='fake',
+        close_runtime=False,
     )
 
     assert result.final_output.message.text == 'raw'

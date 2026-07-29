@@ -8,7 +8,7 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from evalscope.api.agent import AgentEnvironment
+from evalscope.api.agent import AgentRuntime
 from evalscope.api.agent.types import ExecResult
 from evalscope.api.dataset import Sample
 from evalscope.api.sandbox import DockerImageSpec
@@ -33,10 +33,10 @@ def gdpval_image_spec(*, context_dir: Path, benchmark_name: str) -> DockerImageS
     )
 
 
-class GDPvalArtifactEnvironment(AgentEnvironment):
+class GDPvalArtifactEnvironment(AgentRuntime):
     name = 'gdpval_artifact'
 
-    def __init__(self, env: AgentEnvironment, artifact_dir: Path, metadata: Dict[str, Any]) -> None:
+    def __init__(self, env: AgentRuntime, artifact_dir: Path, metadata: Dict[str, Any]) -> None:
         self._env = env
         self._artifact_dir = artifact_dir
         self._metadata = metadata

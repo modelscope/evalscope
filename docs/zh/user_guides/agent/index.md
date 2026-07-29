@@ -11,6 +11,16 @@ EvalScope 提供 **Agent 评测**，允许模型或成品 Agent CLI 在受控的
 
 两种模式都通过 `TaskConfig.agent_config` 配置，一次评测只能选一种。
 
+## 运行时与任务环境
+
+EvalScope 将两类职责分开建模：
+
+- `agent_config.runtime` 是负责命令执行与文件传输的 `AgentRuntime`，例如 `local` 或 `docker`。
+- `TaskConfig.task_environment` 是提供 `reset` / `step` / `state` 的有状态任务协议，并包含承载服务的运行时配置。
+
+例如，MiniWoB 使用 `openenv` 任务后端，并由 `ms_enclave_docker` 环境运行时在本地承载 OpenEnv 服务；
+OpenEnv 不会作为 shell runtime 注入 AgentLoop 工具。
+
 ## Trace 可视化
 
 启用 Agent 评测后，每条样本都会附带一条 Trace。通过 Web 界面可以按步骤回放完整交互过程:
@@ -38,7 +48,7 @@ Web 仪表盘的整体使用说明(报告对比、预测视图等)请参考 [可
 
 - 想让常规基准(GSM8K、AIME、IFEval、HLE 等)变成多轮工具调用形式 → 在 `TaskConfig.agent_config` 设置 [`AgentConfig`](native.md) 或 [`ExternalAgentConfig`](bridge.md)。
 - 评测基于 `AgentLoopAdapter` 的基准（GAIA、ResearchRubrics、SWE-bench agentic、GDPval 等）→ 基准会提供必需工具和环境；显式设置的 `NativeAgentConfig` 可覆盖 `strategy`、`max_steps`、工具和 MCP servers 等循环配置。`dataset_args.extra_params` 只保留各基准自己的构建、过滤等参数。
-- `swe_bench_pro` 等基准会带自己的样本级环境，可与 [外部 Agent Bridge](bridge.md) 组合，留空 `environment` 即可。
+- `swe_bench_pro` 等基准会带自己的样本级运行时，可与 [外部 Agent Bridge](bridge.md) 组合，留空 `runtime` 即可。
 
 其他模式特定的常见问题请见各自子页:[内置 AgentLoop FAQ](native.md#常见问题) · [外部 Agent Bridge FAQ](bridge.md#常见问题)。
 

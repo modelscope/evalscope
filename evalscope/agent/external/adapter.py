@@ -5,8 +5,8 @@ that the branch added to ``DefaultDataAdapter._on_inference`` stays narrow
 and every benchmark gets external-agent support for free.
 
 ``AgentLoopAdapter`` benchmarks (e.g. SWE-bench Pro) reach the same entry
-point but pass an ``environment_override`` produced by their per-sample
-``build_environment(sample)``, plus a ``post_run_hook`` that recovers the
+point but pass an ``runtime_override`` produced by their per-sample
+``build_runtime(sample)``, plus a ``post_run_hook`` that recovers the
 benchmark's prediction artifact (e.g. ``git diff``) from the sandbox
 before it is closed.
 """
@@ -21,12 +21,12 @@ from evalscope.agent.skills import (
     format_skills_prompt,
     resolve_agent_skills,
 )
-from evalscope.api.agent import AgentEnvironment, AgentTrace
+from evalscope.api.agent import AgentRuntime, AgentTrace
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessageAssistant, ChatMessageSystem, ChatMessageUser
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.model.model_output import ChatCompletionChoice
-from evalscope.api.registry import get_environment
+from evalscope.api.registry import get_runtime
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
 from .bridge import ModelProxyServer
@@ -42,7 +42,7 @@ logger = get_logger()
 #: Type alias for the optional post-run extraction hook. Receives the
 #: still-open environment, the runner result, and the sample; returns the
 #: prediction string used for ``InferenceResult.output``.
-PostRunHook = Callable[[AgentEnvironment, AgentRunResult, 'Sample'], Awaitable[str]]
+PostRunHook = Callable[[AgentRuntime, AgentRunResult, 'Sample'], Awaitable[str]]
 
 
 def run_external_agent(
@@ -50,10 +50,10 @@ def run_external_agent(
     model: Model,
     sample: 'Sample',
     *,
-    environment_override: Optional[AgentEnvironment] = None,
+    runtime_override: Optional[AgentRuntime] = None,
     instruction_override: Optional[str] = None,
     post_run_hook: Optional[PostRunHook] = None,
-    close_environment: bool = True,
+    close_runtime: bool = True,
 ) -> InferenceResult:
     """Synchronously drive one sample through an external agent runner.
 
@@ -65,9 +65,9 @@ def run_external_agent(
 
     Parameters
     ----------
-    environment_override:
-        Pre-built :class:`AgentEnvironment` from the caller. When set,
-        ``config.environment`` / ``config.environment_extra`` are ignored
+    runtime_override:
+        Pre-built :class:`AgentRuntime` from the caller. When set,
+        ``config.runtime`` / ``config.runtime_extra`` are ignored
         — used by :class:`AgentLoopAdapter` benchmarks that need a
         per-sample sandbox (e.g. SWE-bench Pro's per-instance image).
     instruction_override:
@@ -80,9 +80,9 @@ def run_external_agent(
         value replaces ``run_result.output`` as the InferenceResult text
         — the typical use is ``extract_patch(env, cwd)`` for SWE-bench
         adapters that recover a ``git diff`` from the working tree.
-    close_environment:
+    close_runtime:
         Whether this function owns and closes the environment. Set to
-        ``False`` when passing a caller-owned ``environment_override`` that
+        ``False`` when passing a caller-owned ``runtime_override`` that
         must remain open after the external runner finishes.
 
     Uses :class:`AsyncioLoopRunner` to submit the coroutine to the calling
@@ -90,8 +90,8 @@ def run_external_agent(
     samples so the :class:`ModelProxyServer` singleton (which binds to it)
     only spins up once per worker thread instead of once per sample.
     """
-    if environment_override is None and not close_environment:
-        raise ValueError('close_environment=False requires environment_override')
+    if runtime_override is None and not close_runtime:
+        raise ValueError('close_runtime=False requires runtime_override')
 
     instruction = instruction_override if instruction_override is not None else _instruction_from_sample(sample)
     skills = resolve_agent_skills(
@@ -111,9 +111,9 @@ def run_external_agent(
             sample=sample,
             instruction=instruction,
             skills=skills,
-            environment_override=environment_override,
+            runtime_override=runtime_override,
             post_run_hook=post_run_hook,
-            close_environment=close_environment,
+            close_runtime=close_runtime,
         )
     )
 
@@ -124,20 +124,22 @@ async def _run_async(
     sample: 'Sample',
     instruction: str,
     skills: ResolvedSkills,
-    environment_override: Optional[AgentEnvironment],
+    runtime_override: Optional[AgentRuntime],
     post_run_hook: Optional[PostRunHook],
-    close_environment: bool,
+    close_runtime: bool,
 ) -> InferenceResult:
     runner_cls = get_runner(config.framework)
     runner_kwargs = dict(config.kwargs)
     runner_kwargs.setdefault('model_name', getattr(model, 'name', '') or '')
     runner = runner_cls(**runner_kwargs)
 
-    if environment_override is not None:
-        env: AgentEnvironment = environment_override
+    if runtime_override is not None:
+        env: AgentRuntime = runtime_override
     else:
-        env_cls = get_environment(config.environment)
-        env = env_cls(**config.environment_extra)
+        if config.runtime is None:
+            raise ValueError('External agents require agent_config.runtime or a runtime_override.')
+        runtime_cls = get_runtime(config.runtime)
+        env = runtime_cls(**config.runtime_extra)
 
     # Resolve env *before* starting the bridge so a dockerized env can
     # force the bind to 0.0.0.0 — otherwise the bridge would listen on
@@ -204,19 +206,19 @@ async def _run_async(
                 return await post_run_hook(env, result, sample)
             return result.output
 
-        if close_environment:
+        if close_runtime:
             async with env:
                 final_text = await run_in_environment()
         else:
             final_text = await run_in_environment()
 
         trace: AgentTrace = session.recorder.snapshot()
-        # Prefer the env's own ``name`` (set on the AgentEnvironment subclass)
-        # over ``config.environment`` so AgentLoopAdapter-driven runs
-        # (where the env comes from ``build_environment(sample)`` and
-        # ``config.environment`` is ``None``) still record a meaningful
+        # Prefer the env's own ``name`` (set on the AgentRuntime subclass)
+        # over ``config.runtime`` so AgentLoopAdapter-driven runs
+        # (where the env comes from ``build_runtime(sample)`` and
+        # ``config.runtime`` is ``None``) still record a meaningful
         # source on the trace.
-        trace.environment = getattr(env, 'name', None) or config.environment
+        trace.agent_runtime = getattr(env, 'name', None) or config.runtime
         messages = session.recorder.messages()
 
         # For external agents without a post_run_hook, prefer the last
@@ -235,7 +237,7 @@ async def _run_async(
     return InferenceResult(output=output, messages=messages, trace=trace)
 
 
-def _maybe_inject_host_gateway(env: AgentEnvironment) -> None:
+def _maybe_inject_host_gateway(env: AgentRuntime) -> None:
     """On Linux, register ``host.docker.internal:host-gateway`` as an
     extra host entry so the agent inside the container can resolve back
     to the bridge running on the host (Docker Desktop on macOS / Windows

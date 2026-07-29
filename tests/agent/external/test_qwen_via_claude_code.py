@@ -93,7 +93,7 @@ def test_claude_code_through_bridge_to_qwen3_max():
             'model_name': TARGET_MODEL,
             'skip_permissions': True,
         },
-        environment='local',
+        runtime='local',
         timeout=180.0,
     )
     result = run_external_agent(config=config, model=model, sample=sample)

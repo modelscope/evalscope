@@ -7,7 +7,7 @@ file) and is ``None`` for non-agent benchmarks.
 
 import time
 from enum import Enum
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.model import ModelUsage
@@ -27,6 +27,9 @@ class EventType(str, Enum):
 
     ENV_EXEC = 'env_exec'
     """Environment executed a raw command (bash, etc.)."""
+
+    ENV_RESET = 'env_reset'
+    """A stateful environment returned its initial observation."""
 
     ERROR = 'error'
     """Parse error / tool error / timeout etc."""
@@ -89,6 +92,8 @@ class AgentTrace(BaseModel):
     only populated on the external path.
     """
 
+    model_config = ConfigDict(extra='forbid')
+
     framework: Optional[str] = None
     """Where this trace originated: ``'native'`` for AgentLoop runs, the
     registered runner name for external-agent runs."""
@@ -96,8 +101,14 @@ class AgentTrace(BaseModel):
     strategy: Optional[str] = None
     """Registered strategy name used for this run (native only)."""
 
-    environment: Optional[str] = None
-    """Registered environment name used for this run, if any."""
+    task_environment: Optional[str] = None
+    """Stateful task-environment backend used for this run, if any."""
+
+    runtime: Optional[str] = None
+    """Runtime hosting the task-environment service, if any."""
+
+    agent_runtime: Optional[str] = None
+    """Command runtime used by agent tools or an external agent, if any."""
 
     max_steps: int = 0
     """Configured ``max_steps`` cap (native only; 0 for external)."""

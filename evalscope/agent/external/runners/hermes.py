@@ -24,7 +24,7 @@ batch execution.
 import tempfile
 from typing import Any, Dict, List, Optional
 
-from evalscope.api.agent import AgentEnvironment
+from evalscope.api.agent import AgentRuntime
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
@@ -82,7 +82,7 @@ class HermesRunner(AgentRunner):
     # setup
     # ------------------------------------------------------------------
 
-    async def setup(self, env: AgentEnvironment) -> None:
+    async def setup(self, env: AgentRuntime) -> None:
         """Ensure Hermes Agent is installed inside the environment."""
         if await self._hermes_present(env):
             return
@@ -98,14 +98,14 @@ class HermesRunner(AgentRunner):
                 'Inspect the install logs above for the underlying cause.'
             )
 
-    async def _hermes_present(self, env: AgentEnvironment) -> bool:
+    async def _hermes_present(self, env: AgentRuntime) -> bool:
         probe = await env.exec(['bash', '-c', 'command -v hermes && hermes --version'])
         if probe.returncode == 0:
             logger.debug(f'hermes probe: {probe.stdout.strip()!r}')
             return True
         return False
 
-    async def _install_hermes(self, env: AgentEnvironment) -> None:
+    async def _install_hermes(self, env: AgentRuntime) -> None:
         """Install Hermes Agent via the official install script.
 
         Hermes is Python-based and uses ``uv`` for dependency management.
@@ -155,7 +155,7 @@ class HermesRunner(AgentRunner):
     async def run(
         self,
         task: ExternalAgentTask,
-        env: AgentEnvironment,
+        env: AgentRuntime,
         bridge: BridgeEndpoint,
     ) -> AgentRunResult:
         home_dir = self._resolve_home()

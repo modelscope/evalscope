@@ -56,7 +56,7 @@ from .translate_responses import (
 )
 
 if TYPE_CHECKING:
-    from evalscope.api.agent import AgentEnvironment
+    from evalscope.api.agent import AgentRuntime
 
 logger = get_logger()
 
@@ -78,7 +78,7 @@ DOCKER_ENV_NAMES = frozenset({'enclave', 'docker', 'volcengine'})
 _LOOPBACK_HOSTS = frozenset({'127.0.0.1', '0.0.0.0', 'localhost', '::1'})
 
 
-def _rewrite_for_env(base_url: str, env: 'Optional[AgentEnvironment]') -> str:
+def _rewrite_for_env(base_url: str, env: 'Optional[AgentRuntime]') -> str:
     """Return ``base_url`` with the host swapped for a value the agent
     can dial from inside ``env``.
 
@@ -121,7 +121,7 @@ class TrialSession:
         self.recorder = recorder
         self.framework = framework
 
-    def endpoint_view(self, for_env: 'Optional[AgentEnvironment]' = None) -> BridgeEndpoint:
+    def endpoint_view(self, for_env: 'Optional[AgentRuntime]' = None) -> BridgeEndpoint:
         """Return the runner-facing view (base_url + trial_token).
 
         When ``for_env`` is supplied and resolves to a Docker-backed

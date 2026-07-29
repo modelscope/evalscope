@@ -3,7 +3,7 @@
 per-sample environment + ``_external_extract_prediction`` hook.
 
 This pins the wiring SWE-bench Pro relies on: the adapter's
-``build_environment(sample)`` becomes the runner's sandbox, and the
+``build_runtime(sample)`` becomes the runner's sandbox, and the
 ``_external_extract_prediction`` hook fires *inside* that env (so it
 can still query the sandbox before close).
 """
@@ -11,9 +11,9 @@ can still query the sandbox before close).
 import pytest
 from typing import Any
 
-from evalscope.agent.environments.local import LocalAgentEnvironment
 from evalscope.agent.external import ExternalAgentConfig
-from evalscope.api.agent import AgentEnvironment, EventType
+from evalscope.agent.runtimes.local import LocalAgentRuntime
+from evalscope.api.agent import AgentRuntime, EventType
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import InferenceResult
@@ -53,7 +53,7 @@ class _ProbingAdapter(AgentLoopAdapter):
         raise NotImplementedError('use _ProbingAdapter.build() in tests')
 
     @classmethod
-    def build(cls, task_config: TaskConfig, env: LocalAgentEnvironment) -> '_ProbingAdapter':
+    def build(cls, task_config: TaskConfig, env: LocalAgentRuntime) -> '_ProbingAdapter':
         adapter = cls.__new__(cls)
         adapter._task_config = task_config
         adapter.max_steps = AgentLoopAdapter.max_steps_default
@@ -62,12 +62,12 @@ class _ProbingAdapter(AgentLoopAdapter):
         adapter._provided_env = env  # type: ignore[attr-defined]
         return adapter
 
-    def build_environment(self, sample: Sample):  # type: ignore[override]
+    def build_runtime(self, sample: Sample):  # type: ignore[override]
         return self._provided_env  # type: ignore[attr-defined]
 
     async def _external_extract_prediction(  # type: ignore[override]
         self,
-        env: AgentEnvironment,
+        env: AgentRuntime,
         run_result: Any,
         sample: Sample,
     ) -> str:
@@ -86,11 +86,11 @@ def test_agent_loop_adapter_routes_external_config_through_bridge():
     expected = 'mocked-llm-response'
     model = _build_mock_model(expected)
     sample = Sample(input='ignored — overridden by build_initial_messages', id=7)
-    env = LocalAgentEnvironment()
+    env = LocalAgentRuntime()
 
     task_cfg = TaskConfig(
         model='mock_llm',
-        agent_config=ExternalAgentConfig(framework='mock', environment='local'),
+        agent_config=ExternalAgentConfig(framework='mock', runtime='local'),
     )
     adapter = _ProbingAdapter.build(task_cfg, env)
 
@@ -124,7 +124,7 @@ def test_agent_loop_adapter_routes_native_config_to_agent_loop():
         model='mock_llm',
         agent_config={'mode': 'native', 'strategy': 'function_calling'},
     )
-    env = LocalAgentEnvironment()
+    env = LocalAgentRuntime()
     adapter = _ProbingAdapter.build(task_cfg, env)
 
     # Replace ``run_external_agent`` symbol *inside* the adapter module so

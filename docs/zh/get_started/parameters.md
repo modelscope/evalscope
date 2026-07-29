@@ -255,10 +255,10 @@ EvalScope 使用嵌套的 `--sandbox` 配置（对应 `SandboxTaskConfig`）统�
 |------|------|------|--------|
 | `strategy` | `str` | 策略名称：`function_calling` / `react` / `swe_bench_toolcall` / `swe_bench_backticks` | `function_calling` |
 | `tools` | `list[str]` | 工具白名单：`bash` / `python_exec`（`submit` 由策略自动注入） | `[]` |
-| `environment` | `str \| None` | 工具运行环境：`local`（子进程）/ `docker`（隔离沙箱） | `None` |
+| `runtime` | `str \| None` | Agent 命令运行时：`local`（子进程）/ `docker`（隔离沙箱） | `None` |
 | `max_steps` | `int` | 循环迭代硬上限 | `10` |
-| `extra` | `dict` | 策略构造参数，例如 `{'system_prompt': '...'}` | `{}` |
-| `environment_extra` | `dict` | 环境构造参数。`local` 支持 `working_dir`/`env_vars`；`docker` 支持 `image`/`timeout`/`environment` | `{}` |
+| `kwargs` | `dict` | 策略构造参数，例如 `{'system_prompt': '...'}` | `{}` |
+| `runtime_extra` | `dict` | 运行时构造参数。`local` 支持 `working_dir`/`env_vars`；`docker` 支持 `image`/`timeout` 等沙箱配置 | `{}` |
 
 ```{seealso}
 完整使用说明、用例与 Trace 可视化请参见 [Agent 评测](../user_guides/agent/index.md)。

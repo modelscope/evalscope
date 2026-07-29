@@ -9,6 +9,7 @@ from typing import Annotated, Any, Dict, List, Optional, Union
 
 from evalscope.agent.external.config import ExternalAgentConfig
 from evalscope.api.agent import NativeAgentConfig
+from evalscope.api.environment import TaskEnvironmentConfig
 from evalscope.api.model import GenerateConfig, Model, ModelAPI
 from evalscope.constants import (
     DEFAULT_DATASET_CACHE_DIR,
@@ -80,7 +81,7 @@ DEFAULT_MODEL_ARGS_CHECKPOINT = {
 
 class SandboxTaskConfig(BaseArgument):
     """Unified sandbox configuration for both pooled (CodeExecutionSandboxMixin) and
-    per-sample (EnclaveAgentEnvironment) execution paths.
+    per-sample (EnclaveAgentRuntime) execution paths.
 
     This is the forward-looking replacement for the legacy top-level
     ``TaskConfig.use_sandbox`` / ``sandbox_type`` / ``sandbox_manager_config``
@@ -258,6 +259,13 @@ class TaskConfig(BaseArgument):
     """[Deprecated] Use ``sandbox.manager_config`` instead.  Kept as an
     alias for backward compatibility; will be removed in a future release."""
 
+    task_environment: Optional[TaskEnvironmentConfig] = None
+    """Stateful task protocol and service runtime configuration.
+
+    This is separate from ``agent_config.runtime``: the latter runs shell
+    tools or external agents, while this field owns reset/step/state semantics.
+    """
+
     # Agent configuration (native AgentLoop OR external-agent bridge,
     # discriminated by the ``mode`` field on the embedded config).
     agent_config: Optional[AgentConfigUnion] = None
@@ -339,6 +347,15 @@ class TaskConfig(BaseArgument):
     @classmethod
     def _validate_sandbox(cls, v: Any) -> Any:
         return cls._coerce_sandbox_config(v)
+
+    @field_validator('task_environment', mode='before')
+    @classmethod
+    def _validate_task_environment(cls, v: Any) -> Any:
+        if v is None or isinstance(v, TaskEnvironmentConfig):
+            return v
+        if isinstance(v, dict):
+            return TaskEnvironmentConfig.model_validate(v)
+        raise ValueError(f'`task_environment` must be a dict, TaskEnvironmentConfig or None, got {type(v).__name__}.')
 
     # --- Model validator (cross-field logic, replaces __post_init__) ---
 
@@ -479,7 +496,7 @@ class TaskConfig(BaseArgument):
         """Normalise sandbox configuration into ``self.sandbox``.
 
         After this method every consumer (``CodeExecutionSandboxMixin``, data adapters,
-        ``EnclaveAgentEnvironment``) reads sandbox settings exclusively from
+        ``EnclaveAgentRuntime``) reads sandbox settings exclusively from
         ``self.sandbox`` — the legacy ``use_sandbox`` / ``sandbox_type`` /
         ``sandbox_manager_config`` fields are single-source-of-truth inputs
         only and are **not** kept in sync afterwards.
@@ -539,14 +556,17 @@ class TaskConfig(BaseArgument):
             merged['generation_config'] = self._coerce_generation_config(merged['generation_config'])
         if isinstance(merged.get('sandbox'), dict):
             merged['sandbox'] = self._coerce_sandbox_config(merged['sandbox'])
+        if isinstance(merged.get('task_environment'), dict):
+            merged['task_environment'] = TaskEnvironmentConfig.model_validate(merged['task_environment'])
         for key, value in merged.items():
             setattr(self, key, value)
 
     def _to_update_dict(self) -> dict:
-        result = self.model_dump(exclude={'model', 'generation_config', 'sandbox'})
+        result = self.model_dump(exclude={'model', 'generation_config', 'sandbox', 'task_environment'})
         result['model'] = self.model
         result['generation_config'] = self._dump_generation_config()
         result['sandbox'] = self.sandbox
+        result['task_environment'] = self.task_environment
         return result
 
     def _dump_generation_config(self, mode: Optional[str] = None) -> Union[dict, GenerateConfig, None]:

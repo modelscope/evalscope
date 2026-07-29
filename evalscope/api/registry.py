@@ -4,8 +4,9 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type, Typ
 
 if TYPE_CHECKING:
     from evalscope.agent.external.runners.base import AgentRunner
-    from evalscope.api.agent import AgentEnvironment, AgentStrategy, ToolHandler
+    from evalscope.api.agent import AgentRuntime, AgentStrategy, ToolHandler
     from evalscope.api.benchmark import BenchmarkMeta, DataAdapter
+    from evalscope.api.environment import EnvironmentRuntime, TaskEnvironmentBackend
     from evalscope.api.evaluator import Evaluator
     from evalscope.api.filter import Filter
     from evalscope.api.metric import Aggregator, Metric
@@ -220,9 +221,9 @@ def create_evaluator(
 
 # END: Registry for evaluators
 
-# BEGIN: Registry for agent strategies, environments, runners and tools
+# BEGIN: Registry for agent strategies, runtimes, runners and tools
 STRATEGY_REGISTRY: Registry[Type['AgentStrategy']] = Registry('Agent strategy')
-ENVIRONMENT_REGISTRY: Registry[Type['AgentEnvironment']] = Registry('Agent environment')
+RUNTIME_REGISTRY: Registry[Type['AgentRuntime']] = Registry('Agent runtime')
 AGENT_TOOL_REGISTRY: Registry['ToolHandler'] = Registry('Agent tool')
 AGENT_TOOL_INFO_REGISTRY: Dict[str, 'ToolInfo'] = {}
 """Maps tool name → :class:`ToolInfo` schema.  Populated by :func:`register_agent_tool`
@@ -242,17 +243,17 @@ def list_strategies() -> List[str]:
     return STRATEGY_REGISTRY.list_keys()
 
 
-def register_environment(name: Union[str, List[str]]) -> Callable[[Type['AgentEnvironment']], Type['AgentEnvironment']]:
-    """Register an :class:`AgentEnvironment` implementation under one or more names."""
-    return ENVIRONMENT_REGISTRY.register(name)
+def register_runtime(name: Union[str, List[str]]) -> Callable[[Type['AgentRuntime']], Type['AgentRuntime']]:
+    """Register an :class:`AgentRuntime` implementation under one or more names."""
+    return RUNTIME_REGISTRY.register(name)
 
 
-def get_environment(name: str) -> Type['AgentEnvironment']:
-    return ENVIRONMENT_REGISTRY.lookup(name)
+def get_runtime(name: str) -> Type['AgentRuntime']:
+    return RUNTIME_REGISTRY.lookup(name)
 
 
-def list_environments() -> List[str]:
-    return ENVIRONMENT_REGISTRY.list_keys()
+def list_runtimes() -> List[str]:
+    return RUNTIME_REGISTRY.list_keys()
 
 
 # Runner registry: the first registered name becomes the canonical framework
@@ -267,7 +268,7 @@ RUNNER_REGISTRY: Registry[Type['AgentRunner']] = Registry('Agent runner', on_reg
 def register_runner(name: Union[str, List[str]]) -> Callable[[Type['AgentRunner']], Type['AgentRunner']]:
     """Register an :class:`AgentRunner` implementation under one or more names.
 
-    Mirrors :func:`register_environment`.  The first ``name`` becomes the
+    Mirrors :func:`register_runtime`.  The first ``name`` becomes the
     canonical ``cls.framework`` value that :class:`ExternalAgentConfig.framework`
     resolves through :func:`get_runner` at TaskConfig validation time.
     """
@@ -289,7 +290,7 @@ def register_agent_tool(
     """Register an async tool handler under one or more names.
 
     The decorated callable must match :data:`ToolHandler`:
-    ``async def run(call: ToolCall, env: Optional[AgentEnvironment]) -> str``.
+    ``async def run(call: ToolCall, env: Optional[AgentRuntime]) -> str``.
 
     Args:
         name:  Registry key(s) (also used as the tool function name exposed to the model).
@@ -340,4 +341,45 @@ def resolve_tool_infos(names: Optional[List[str]]) -> List['ToolInfo']:
     return [AGENT_TOOL_INFO_REGISTRY[n] for n in names if n in AGENT_TOOL_INFO_REGISTRY]
 
 
-# END: Registry for agent strategies, environments, runners and tools
+# END: Registry for agent strategies, runtimes, runners and tools
+
+# BEGIN: Registries for stateful task environments
+TASK_ENVIRONMENT_REGISTRY: Registry[Type['TaskEnvironmentBackend']] = Registry('Task environment backend')
+ENVIRONMENT_RUNTIME_REGISTRY: Registry[Type['EnvironmentRuntime']] = Registry('Environment runtime')
+
+
+def register_task_environment(
+    name: Union[str, List[str]],
+) -> Callable[[Type['TaskEnvironmentBackend']], Type['TaskEnvironmentBackend']]:
+    """Register a stateful task-environment protocol backend."""
+    return TASK_ENVIRONMENT_REGISTRY.register(name)
+
+
+def get_task_environment(name: str) -> Type['TaskEnvironmentBackend']:
+    """Return a registered task-environment backend."""
+    return TASK_ENVIRONMENT_REGISTRY.lookup(name)
+
+
+def list_task_environments() -> List[str]:
+    """Return registered task-environment backend names."""
+    return TASK_ENVIRONMENT_REGISTRY.list_keys()
+
+
+def register_environment_runtime(
+    name: Union[str, List[str]],
+) -> Callable[[Type['EnvironmentRuntime']], Type['EnvironmentRuntime']]:
+    """Register a runtime that hosts task-environment services."""
+    return ENVIRONMENT_RUNTIME_REGISTRY.register(name)
+
+
+def get_environment_runtime(name: str) -> Type['EnvironmentRuntime']:
+    """Return a registered task-environment service runtime."""
+    return ENVIRONMENT_RUNTIME_REGISTRY.lookup(name)
+
+
+def list_environment_runtimes() -> List[str]:
+    """Return registered task-environment service runtime names."""
+    return ENVIRONMENT_RUNTIME_REGISTRY.list_keys()
+
+
+# END: Registries for stateful task environments

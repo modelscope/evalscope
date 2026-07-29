@@ -6,9 +6,9 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional
 
-from evalscope.agent.environments.local import TemporaryLocalAgentEnvironment
+from evalscope.agent.runtimes.local import TemporaryLocalAgentRuntime
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
-from evalscope.api.agent import AgentEnvironment
+from evalscope.api.agent import AgentRuntime
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
@@ -175,9 +175,9 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
     def build_tools(self, sample: Sample) -> Dict[str, Any]:
         return {'bash': run_bash}
 
-    def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
+    def build_runtime(self, sample: Sample) -> Optional[AgentRuntime]:
         sample_id = sample.metadata.get('sample_id') or sample.id or 'unknown'
-        return TemporaryLocalAgentEnvironment(sample_id=sample_id, prefix='evalscope-researchrubrics-')
+        return TemporaryLocalAgentRuntime(sample_id=sample_id, prefix='evalscope-researchrubrics-')
 
     def build_max_steps_finalization_message(self, sample: Sample) -> str:
         return (
@@ -299,7 +299,7 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
                 'agent': {
                     'framework': trace.framework if trace else None,
                     'strategy': trace.strategy if trace else self.strategy_name,
-                    'environment': trace.environment if trace else 'local',
+                    'agent_runtime': trace.agent_runtime if trace else 'local',
                     'max_steps': trace.max_steps if trace else self.max_steps,
                     'tools': sorted(tool_names),
                 },

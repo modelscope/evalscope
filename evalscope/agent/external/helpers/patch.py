@@ -1,4 +1,4 @@
-"""Extract a unified-diff patch from an :class:`AgentEnvironment`.
+"""Extract a unified-diff patch from an :class:`AgentRuntime`.
 
 Used by SWE-bench-style benchmarks running through an external CLI
 agent: the agent edits files in the sandbox without emitting the
@@ -7,13 +7,13 @@ AgentLoop relies on, so the adapter recovers the patch by diffing the
 working tree against ``HEAD`` after the run finishes.
 """
 
-from evalscope.api.agent import AgentEnvironment
+from evalscope.api.agent import AgentRuntime
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
 
-async def extract_patch(env: AgentEnvironment, cwd: str) -> str:
+async def extract_patch(env: AgentRuntime, cwd: str) -> str:
     """Return the agent's tracked-file changes as a unified ``git diff HEAD``.
 
     Mirrors the SWE-bench ``mini-swe-agent`` Submission step (``git diff

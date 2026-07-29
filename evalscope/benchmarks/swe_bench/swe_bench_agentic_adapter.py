@@ -25,7 +25,7 @@ import json
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
-from evalscope.api.agent import AgentEnvironment
+from evalscope.api.agent import AgentRuntime
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import FieldSpec, RemoteDataLoader, Sample
@@ -320,8 +320,8 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
             return 'linux/arm64'
         return None
 
-    def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
-        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+    def build_runtime(self, sample: Sample) -> Optional[AgentRuntime]:
+        from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
 
         image = sample.metadata.get('docker_image')
         if not image:
@@ -346,7 +346,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
         if forced_platform is not None:
             sandbox_config['platform'] = forced_platform
         sandbox_config = merge_sandbox_config_dicts(self._task_sandbox_config(), sandbox_config)
-        return EnclaveAgentEnvironment(
+        return EnclaveAgentRuntime(
             engine='docker',
             sandbox_config=sandbox_config,
             timeout=self._native_command_timeout(),
@@ -363,9 +363,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
     # External agent prediction (recover patch via git diff)
     # ------------------------------------------------------------------
 
-    async def _external_extract_prediction(
-        self, env: AgentEnvironment, run_result: AgentRunResult, sample: Sample
-    ) -> str:
+    async def _external_extract_prediction(self, env: AgentRuntime, run_result: AgentRunResult, sample: Sample) -> str:
         """Recover the agent's patch from ``self.working_dir`` (``/testbed``).
 
         External CLI agents do not implement the

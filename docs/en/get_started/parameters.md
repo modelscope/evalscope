@@ -259,10 +259,10 @@ For full usage including local and remote manager examples, see [Sandbox Environ
 |-------|------|-------------|---------|
 | `strategy` | `str` | Strategy name: `function_calling` / `react` / `swe_bench_toolcall` / `swe_bench_backticks` | `function_calling` |
 | `tools` | `list[str]` | Tool whitelist: `bash` / `python_exec` (`submit` is auto-injected by the strategy) | `[]` |
-| `environment` | `str \| None` | Tool execution environment: `local` (subprocess) / `docker` (isolated sandbox) | `None` |
+| `runtime` | `str \| None` | Agent command runtime: `local` (subprocess) / `docker` (isolated sandbox) | `None` |
 | `max_steps` | `int` | Hard upper bound of loop iterations | `10` |
-| `extra` | `dict` | Strategy constructor kwargs, e.g. `{'system_prompt': '...'}` | `{}` |
-| `environment_extra` | `dict` | Environment constructor kwargs. `local` supports `working_dir`/`env_vars`; `docker` supports `image`/`timeout`/`environment` | `{}` |
+| `kwargs` | `dict` | Strategy constructor kwargs, e.g. `{'system_prompt': '...'}` | `{}` |
+| `runtime_extra` | `dict` | Runtime constructor kwargs. `local` supports `working_dir`/`env_vars`; `docker` supports sandbox configuration such as `image`/`timeout` | `{}` |
 
 ```{seealso}
 For full usage, examples and Trace visualization, see [Agent Evaluation](../user_guides/agent/index.md).

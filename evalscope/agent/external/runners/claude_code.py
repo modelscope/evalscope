@@ -16,7 +16,7 @@ import shutil
 import tempfile
 from typing import Any, Dict, List, Optional
 
-from evalscope.api.agent import AgentEnvironment
+from evalscope.api.agent import AgentRuntime
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
@@ -94,7 +94,7 @@ class ClaudeCodeRunner(AgentRunner):
         self._node_setup_url = node_setup_url
         self._npm_package = npm_package
 
-    async def setup(self, env: AgentEnvironment) -> None:
+    async def setup(self, env: AgentRuntime) -> None:
         """Make sure the ``claude`` CLI is reachable inside ``env``.
 
         First probes ``claude --version``; if the binary is already on
@@ -122,14 +122,14 @@ class ClaudeCodeRunner(AgentRunner):
                 'Inspect the install logs above for the underlying cause.'
             )
 
-    async def _claude_present(self, env: AgentEnvironment) -> bool:
+    async def _claude_present(self, env: AgentRuntime) -> bool:
         probe = await env.exec(['bash', '-c', 'command -v claude && claude --version'])
         if probe.returncode == 0:
             logger.debug(f'claude-code probe: {probe.stdout.strip()!r}')
             return True
         return False
 
-    async def _install_claude_code(self, env: AgentEnvironment) -> None:
+    async def _install_claude_code(self, env: AgentRuntime) -> None:
         """Install Node.js (when missing) and the claude-code npm package."""
         await ensure_node_via_apt(
             env,
@@ -151,7 +151,7 @@ class ClaudeCodeRunner(AgentRunner):
     async def run(
         self,
         task: ExternalAgentTask,
-        env: AgentEnvironment,
+        env: AgentRuntime,
         bridge: BridgeEndpoint,
     ) -> AgentRunResult:
         env_vars: Dict[str, str] = {

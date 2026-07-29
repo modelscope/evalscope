@@ -1,6 +1,6 @@
 """AgentLoop: the model-agnostic orchestration core.
 
-Takes a model + strategy + environment + tool executor and drives the
+Takes a model + strategy + runtime + tool executor and drives the
 generate → parse → tool_call → observe loop.  It does NOT decide prompt
 formats or termination semantics; those belong to :class:`AgentStrategy`.
 
@@ -22,11 +22,11 @@ from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUs
 from evalscope.api.model import Model, ModelOutput, ModelUsage
 from evalscope.utils.logger import get_logger
 from .constants import NUDGE_PROMPT, LoopMessages, MetadataKeys, SubmissionSources, ToolSchemaModes, TraceSources
-from .environment import AgentEnvironment
+from .runtime import AgentRuntime
 from .strategy import AgentStrategy
 from .tool_executor import ToolExecutor
 from .trace import AgentTrace, EventType
-from .types import AgentContext, AgentLoopResult, ParsedAction
+from .types import AgentContext, AgentLoopResult, ParsedAction, ToolExecutionOutput
 
 logger = get_logger()
 
@@ -36,7 +36,7 @@ class AgentLoop:
 
     Intended for use from ``AgentAdapter`` (or ``DefaultDataAdapter`` when a
     global ``agent_config`` is set).  The caller owns the lifecycle of the
-    environment (create before ``run``, close after).
+    runtime (create before ``run``, close after).
     """
 
     def __init__(
@@ -45,19 +45,19 @@ class AgentLoop:
         strategy: AgentStrategy,
         tool_executor: ToolExecutor,
         *,
-        environment: Optional[AgentEnvironment] = None,
+        runtime: Optional[AgentRuntime] = None,
         max_steps: int = 10,
         trace: Optional[AgentTrace] = None,
     ) -> None:
         self.model = model
         self.strategy = strategy
         self.tool_executor = tool_executor
-        self.environment = environment
+        self.runtime = runtime
         self.max_steps = max_steps
         self.trace = trace or AgentTrace(
             framework='native',
             strategy=getattr(strategy, 'name', None),
-            environment=environment.name if environment else None,
+            agent_runtime=runtime.name if runtime else None,
             max_steps=max_steps,
         )
 
@@ -229,17 +229,29 @@ class AgentLoop:
                 },
             )
             observation, error, duration = await self.tool_executor.execute(call)
+            rich_output = observation if isinstance(observation, ToolExecutionOutput) else None
+            observation_text = rich_output.text if rich_output is not None else observation
             self._dbg(
                 ctx,
                 f'tool={call.function.name} duration={duration*1000:.0f}ms '
                 f'error={error.type if error else None} '
-                f'obs_len={len(observation) if isinstance(observation, str) else 0}',
+                f'obs_len={len(observation_text)}',
             )
             # ``format_observation`` may signal completion by mutating
             # ``parsed.final_answer``; the post-execution ``is_done`` check
             # below picks it up.
-            obs_msg = self.strategy.format_observation(call, observation, error, parsed, ctx)
+            obs_msg = self.strategy.format_observation(call, observation_text, error, parsed, ctx)
+            if rich_output is not None and rich_output.metadata:
+                obs_msg.metadata = rich_output.metadata
             ctx.messages.append(obs_msg)
+            attachment_message = None
+            if rich_output is not None and rich_output.attachments:
+                attachment_message = ChatMessageUser(
+                    content=rich_output.attachments,
+                    tool_call_id=[call.id],
+                    metadata=rich_output.metadata or None,
+                )
+                ctx.messages.append(attachment_message)
             self.trace.add_event(
                 step=ctx.step,
                 type=EventType.TOOL_RESULT,
@@ -249,12 +261,20 @@ class AgentLoop:
                     'name': call.function.name,
                     'id': call.id,
                     'error': error.type if error else None,
-                    'preview': observation[:500] if isinstance(observation, str) else None,
+                    'preview': observation_text[:500],
+                    'metadata': rich_output.metadata if rich_output is not None else {},
+                    'attachments': [
+                        getattr(attachment, 'image', None)
+                        for attachment in (rich_output.attachments if rich_output is not None else [])
+                        if getattr(attachment, 'type', None) == 'image'
+                    ],
                 },
             )
 
+            if rich_output is not None and rich_output.terminate:
+                parsed.final_answer = rich_output.final_answer if rich_output.final_answer is not None else ''
             if self.strategy.is_done(parsed, ctx):
-                self._emit_post_tool_submit(ctx, obs_msg, call, parsed, duration)
+                self._emit_post_tool_submit(ctx, attachment_message or obs_msg, call, parsed, duration)
                 return True
 
         return False

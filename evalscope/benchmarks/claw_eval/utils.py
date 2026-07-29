@@ -300,7 +300,7 @@ def load_claw_eval_trace(trace_path: Optional[str]) -> Tuple[Optional[AgentTrace
     if not path.is_file():
         return None, None
 
-    trace = AgentTrace(framework='claw-eval', environment='docker')
+    trace = AgentTrace(framework='claw-eval', agent_runtime='docker')
     messages: List[ChatMessage] = []
     dispatches: Dict[str, Dict[str, Any]] = {}
     step = 0

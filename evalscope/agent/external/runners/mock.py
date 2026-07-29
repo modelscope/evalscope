@@ -3,7 +3,7 @@
 The runner spawns a subprocess that speaks the Anthropic Messages API
 back to the bridge (single turn, no tools).  It is intentionally
 self-contained — pure ``urllib`` so it inherits zero deps from
-EvalScope — so that running it through ``LocalAgentEnvironment`` is a
+EvalScope — so that running it through ``LocalAgentRuntime`` is a
 real walking-skeleton validation that the bridge is reachable and
 parses Anthropic traffic correctly.
 """

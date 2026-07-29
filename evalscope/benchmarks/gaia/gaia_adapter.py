@@ -23,7 +23,7 @@ import os
 from typing import Any, Dict, Optional
 
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
-from evalscope.api.agent import AgentEnvironment, AgentStrategy
+from evalscope.api.agent import AgentRuntime, AgentStrategy
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
@@ -198,8 +198,8 @@ class GaiaAdapter(AgentLoopAdapter):
     def build_tools(self, sample: Sample) -> Dict[str, Any]:
         return {'bash': run_bash}
 
-    def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
-        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+    def build_runtime(self, sample: Sample) -> Optional[AgentRuntime]:
+        from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
 
         volumes: Dict[str, Dict[str, str]] = {}
         if self._host_files_dir and os.path.isdir(self._host_files_dir):
@@ -220,7 +220,7 @@ class GaiaAdapter(AgentLoopAdapter):
         if volumes:
             sandbox_config['volumes'] = {**sandbox_config.get('volumes', {}), **volumes}
 
-        return EnclaveAgentEnvironment(
+        return EnclaveAgentRuntime(
             engine='docker',
             sandbox_config=sandbox_config,
             timeout=self._native_command_timeout(),

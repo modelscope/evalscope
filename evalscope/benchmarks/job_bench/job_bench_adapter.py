@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
 from evalscope.agent.tools.python_exec import PYTHON_EXEC_TOOL_INFO, run_python_exec
-from evalscope.api.agent import AgentEnvironment
+from evalscope.api.agent import AgentRuntime
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import DatasetHub, Sample
@@ -141,14 +141,14 @@ class JobBenchAdapter(AgentLoopAdapter):
             'python_exec': run_python_exec,
         }
 
-    def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
+    def build_runtime(self, sample: Sample) -> Optional[AgentRuntime]:
         agent_config = self._task_config.agent_config if self._task_config is not None else None
-        if getattr(agent_config, 'environment', None) == 'docker':
+        if getattr(agent_config, 'runtime', None) == 'docker':
             return self._build_docker_environment(sample)
 
-        from evalscope.agent.environments.local import TemporaryLocalAgentEnvironment
+        from evalscope.agent.runtimes.local import TemporaryLocalAgentRuntime
 
-        env = TemporaryLocalAgentEnvironment(sample_id=sample.id, prefix='evalscope-jobbench-')
+        env = TemporaryLocalAgentRuntime(sample_id=sample.id, prefix='evalscope-jobbench-')
         reference_dir = sample.metadata.get('reference_dir')
         if reference_dir:
             shutil.copytree(reference_dir, env.working_dir / SANDBOX_REFERENCE_DIR)
@@ -162,8 +162,8 @@ class JobBenchAdapter(AgentLoopAdapter):
             metadata=sample.metadata,
         )
 
-    def _build_docker_environment(self, sample: Sample) -> AgentEnvironment:
-        from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+    def _build_docker_environment(self, sample: Sample) -> AgentRuntime:
+        from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
 
         defaults: Dict[str, Any] = {
             'image': _DEFAULT_DOCKER_IMAGE,
@@ -188,7 +188,7 @@ class JobBenchAdapter(AgentLoopAdapter):
             }
         sandbox_config['volumes'] = {**sandbox_config.get('volumes', {}), **volumes}
 
-        env = EnclaveAgentEnvironment(
+        env = EnclaveAgentRuntime(
             engine='docker',
             sandbox_config=sandbox_config,
             timeout=self._native_command_timeout(),

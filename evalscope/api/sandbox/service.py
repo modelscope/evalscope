@@ -3,7 +3,7 @@
 Unifies the two historical code paths:
 
 * ``CodeExecutionSandboxMixin.EnclaveCodeExecutionBackend`` – one manager per benchmark, pooled.
-* ``EnclaveAgentEnvironment`` – one manager per process, per-sample containers.
+* ``EnclaveAgentRuntime`` – one manager per process, per-sample containers.
 
 Both are now thin wrappers around :class:`SandboxService`.  The service
 caches managers keyed by ``(engine, manager_config)`` so the same
@@ -95,6 +95,13 @@ class SandboxHandle:
             raise RuntimeError('SandboxHandle already closed')
         sandbox_id = self._sandbox_id
         return await self._service._run(self._manager.put_dir(sandbox_id, source_dir, target_dir))
+
+    async def get_info(self) -> Any:
+        """Return public sandbox metadata while the handle is open."""
+        if self._sandbox_id is None:
+            raise RuntimeError('SandboxHandle already closed')
+        sandbox_id = self._sandbox_id
+        return await self._service._run(self._manager.get_sandbox_info(sandbox_id))
 
     async def close(self) -> None:
         if self._sandbox_id is None:
@@ -461,7 +468,7 @@ def shutdown_sandbox_service() -> None:
 atexit.register(shutdown_sandbox_service)
 
 # ---------------------------------------------------------------------------
-# Convenience helpers used by CodeExecutionSandboxMixin / EnclaveAgentEnvironment
+# Convenience helpers used by CodeExecutionSandboxMixin / EnclaveAgentRuntime
 # ---------------------------------------------------------------------------
 
 

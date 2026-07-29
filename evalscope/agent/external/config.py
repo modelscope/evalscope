@@ -1,7 +1,7 @@
 """Pydantic configuration for external-agent runs.
 
-Lives under the shared :class:`BaseAgentConfig` so ``environment`` /
-``environment_extra`` are not duplicated against :class:`NativeAgentConfig`.
+Lives under the shared :class:`BaseAgentConfig` so ``runtime`` /
+``runtime_extra`` are not duplicated against :class:`NativeAgentConfig`.
 The ``mode`` literal serves as the Pydantic discriminator on the
 :attr:`TaskConfig.agent_config` union.
 """
@@ -48,7 +48,7 @@ class BridgeConfig(BaseModel):
     proxy_host: str = Field(default='127.0.0.1')
     """Host the proxy binds to.  ``0.0.0.0`` is required when the agent
     runs in a container that needs to dial back via ``host.docker.internal``;
-    ``127.0.0.1`` is fine for ``LocalAgentEnvironment``."""
+    ``127.0.0.1`` is fine for ``LocalAgentRuntime``."""
 
     proxy_port: Optional[int] = Field(default=None)
     """Port the proxy binds to.  ``None`` lets the OS pick a free port —

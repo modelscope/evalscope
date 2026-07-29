@@ -188,7 +188,7 @@ class TestGSM8KAgentPythonExecLocal(unittest.TestCase):
     """function_calling strategy with python_exec tool + local subprocess env."""
 
     def test_run_and_trace_with_python_exec(self):
-        """Run succeeds; trace.environment == 'local'; TOOL_CALL paired with TOOL_RESULT."""
+        """Run succeeds; trace.agent_runtime == 'local'; TOOL_CALL paired with TOOL_RESULT."""
         cfg = TaskConfig(
             **_base_cfg(
                 datasets=['gsm8k'],
@@ -196,9 +196,9 @@ class TestGSM8KAgentPythonExecLocal(unittest.TestCase):
                 agent_config=NativeAgentConfig(
                     strategy='function_calling',
                     tools=['python_exec'],
-                    environment='local',
+                    runtime='local',
                     max_steps=5,
-                    extra={'system_prompt': (
+                    kwargs={'system_prompt': (
                         'Always call the python_exec tool to compute the answer.'
                     )},
                 ),
@@ -214,7 +214,7 @@ class TestGSM8KAgentPythonExecLocal(unittest.TestCase):
             trace_dict = r.get('agent_trace')
             self.assertIsNotNone(trace_dict)
             trace = AgentTrace.model_validate(trace_dict)
-            self.assertEqual(trace.environment, 'local')
+            self.assertEqual(trace.agent_runtime, 'local')
             types = [e.type for e in trace.events]
             if EventType.TOOL_CALL in types:
                 any_tool_used = True
@@ -233,7 +233,7 @@ class TestGSM8KAgentBashLocal(unittest.TestCase):
     """function_calling strategy with bash tool + local subprocess env."""
 
     def test_run_and_trace_with_bash(self):
-        """Run succeeds; trace.environment == 'local' and events are present."""
+        """Run succeeds; trace.agent_runtime == 'local' and events are present."""
         cfg = TaskConfig(
             **_base_cfg(
                 datasets=['gsm8k'],
@@ -241,7 +241,7 @@ class TestGSM8KAgentBashLocal(unittest.TestCase):
                 agent_config=NativeAgentConfig(
                     strategy='function_calling',
                     tools=['bash'],
-                    environment='local',
+                    runtime='local',
                     max_steps=5,
                 ),
                 eval_batch_size=1,
@@ -254,7 +254,7 @@ class TestGSM8KAgentBashLocal(unittest.TestCase):
         reviews = _read_review_results('gsm8k', work_dir=cfg.work_dir)
         for r in reviews:
             trace = AgentTrace.model_validate(r['agent_trace'])
-            self.assertEqual(trace.environment, 'local')
+            self.assertEqual(trace.agent_runtime, 'local')
             self.assertGreater(len(trace.events), 0)
 
 
@@ -267,7 +267,7 @@ class TestGSM8KAgentPythonExecDocker(unittest.TestCase):
     """function_calling strategy with python_exec tool + Docker sandbox env."""
 
     def test_run_and_trace_environment_is_docker(self):
-        """Run succeeds, returns score, and AgentTrace.environment == 'docker'."""
+        """Run succeeds, returns score, and AgentTrace.agent_runtime == 'docker'."""
         cfg = TaskConfig(
             **_base_cfg(
                 datasets=['gsm8k'],
@@ -275,10 +275,10 @@ class TestGSM8KAgentPythonExecDocker(unittest.TestCase):
                 agent_config=NativeAgentConfig(
                     strategy='function_calling',
                     tools=['python_exec'],
-                    environment='docker',
-                    environment_extra={'image': 'python:3.11-slim', 'timeout': 60},
+                    runtime='docker',
+                    runtime_extra={'image': 'python:3.11-slim', 'timeout': 60},
                     max_steps=5,
-                    extra={'system_prompt': (
+                    kwargs={'system_prompt': (
                         'You are a math solver. '
                         'Use the python_exec tool to verify your calculations.'
                     )},
@@ -294,7 +294,7 @@ class TestGSM8KAgentPythonExecDocker(unittest.TestCase):
             trace_dict = r.get('agent_trace')
             self.assertIsNotNone(trace_dict)
             trace = AgentTrace.model_validate(trace_dict)
-            self.assertEqual(trace.environment, 'docker')
+            self.assertEqual(trace.agent_runtime, 'docker')
             self.assertGreater(len(trace.events), 0)
             types = [e.type for e in trace.events]
             self.assertIn(EventType.MODEL_GENERATE, types)
@@ -317,7 +317,7 @@ class TestAIMEReActFC(unittest.TestCase):
                 agent_config=NativeAgentConfig(
                     strategy='react',
                     tools=['bash'],
-                    environment='local',
+                    runtime='local',
                     max_steps=10,
                 ),
             )
@@ -332,7 +332,7 @@ class TestAIMEReActFC(unittest.TestCase):
             self.assertIsNotNone(trace_dict)
             trace = AgentTrace.model_validate(trace_dict)
             self.assertEqual(trace.strategy, 'react')
-            self.assertEqual(trace.environment, 'local')
+            self.assertEqual(trace.agent_runtime, 'local')
             types = [e.type for e in trace.events]
             self.assertIn(EventType.MODEL_GENERATE, types)
             # ReAct FC mode should have TOOL_CALL events when tools are used.
@@ -397,10 +397,10 @@ class TestGSM8KExternalClaudeCode(_ScrubAnthropicEnvMixin, unittest.TestCase):
             agent_config={
                 'mode': 'external',
                 'framework': 'claude-code',
-                'environment': 'docker',
+                'runtime': 'docker',
                 # The pre-baked image already has node + claude on PATH;
                 # ``auto_install=False`` short-circuits ``setup()``'s probe.
-                'environment_extra': {
+                'runtime_extra': {
                     'sandbox_config': {
                         'image': _CLAUDE_CODE_IMAGE,
                         'working_dir': '/workspace',
@@ -421,7 +421,7 @@ class TestGSM8KExternalClaudeCode(_ScrubAnthropicEnvMixin, unittest.TestCase):
         self.assertIn('gsm8k', result)
 
         # Trace must reflect the external-agent path (framework='claude-code',
-        # environment='docker') — proves the external dispatch fired and the
+        # runtime='docker') — proves the external dispatch fired and the
         # docker env flowed through.
         reviews = _read_review_results('gsm8k', model=_IDEALAB_MODEL, work_dir=cfg.work_dir)
         self.assertGreater(len(reviews), 0)
@@ -430,9 +430,9 @@ class TestGSM8KExternalClaudeCode(_ScrubAnthropicEnvMixin, unittest.TestCase):
             self.assertIsNotNone(trace_dict, 'external-agent path must populate agent_trace')
             trace = AgentTrace.model_validate(trace_dict)
             self.assertEqual(trace.framework, 'claude-code')
-            # EnclaveAgentEnvironment's instance ``name`` is always 'enclave'
+            # EnclaveAgentRuntime's instance ``name`` is always 'enclave'
             # regardless of the 'docker' / 'volcengine' registry alias used.
-            self.assertEqual(trace.environment, 'enclave')
+            self.assertEqual(trace.agent_runtime, 'enclave')
             types = [e.type for e in trace.events]
             self.assertIn(EventType.RUN_START, types)
             self.assertIn(EventType.MODEL_GENERATE, types)
@@ -486,9 +486,9 @@ class TestSWEBenchProExternalClaudeCode(_ScrubAnthropicEnvMixin, unittest.TestCa
             agent_config={
                 'mode': 'external',
                 'framework': 'claude-code',
-                # ``environment`` / ``environment_extra`` are intentionally
+                # ``runtime`` / ``runtime_extra`` are intentionally
                 # absent: AgentLoopAdapter uses the benchmark's own
-                # ``build_environment(sample)`` (per-instance sweap-image).
+                # ``build_runtime(sample)`` (per-instance sweap-image).
                 # sweap-images ship Node out of the box; auto_install
                 # auto-detects and skips apt+nodesource (only
                 # ``npm install -g claude-code`` runs, ~20s).
@@ -550,7 +550,7 @@ class TestSWEBenchProExternalClaudeCode(_ScrubAnthropicEnvMixin, unittest.TestCa
             self.assertIsNotNone(trace_dict)
             trace = AgentTrace.model_validate(trace_dict)
             self.assertEqual(trace.framework, 'claude-code')
-            self.assertEqual(trace.environment, 'enclave')
+            self.assertEqual(trace.agent_runtime, 'enclave')
 
 
 # ---------------------------------------------------------------------------
@@ -603,7 +603,7 @@ class TestSWEBenchProExternalCodex(unittest.TestCase):
                 'mode': 'external',
                 'framework': 'codex',
                 # AgentLoopAdapter uses the benchmark's per-instance
-                # sweap-image; no environment / environment_extra override
+                # sweap-image; no environment / runtime_extra override
                 # (parity with the claude-code variant). Kwargs are empty:
                 # CodexRunner defaults already cover the SWE-bench Pro path
                 # (sandbox=workspace-write hardcoded, non-interactive,
@@ -657,7 +657,7 @@ class TestSWEBenchProExternalCodex(unittest.TestCase):
             self.assertIsNotNone(trace_dict, 'external-agent path must populate agent_trace')
             trace = AgentTrace.model_validate(trace_dict)
             self.assertEqual(trace.framework, 'codex')
-            self.assertEqual(trace.environment, 'enclave')
+            self.assertEqual(trace.agent_runtime, 'enclave')
             types = [e.type for e in trace.events]
             self.assertIn(EventType.RUN_START, types)
             self.assertIn(EventType.MODEL_GENERATE, types)

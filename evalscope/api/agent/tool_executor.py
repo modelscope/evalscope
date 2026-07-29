@@ -1,19 +1,21 @@
-"""Route a ``ToolCall`` to its backing Python function or environment command.
+"""Route a ``ToolCall`` to its backing Python function or runtime command.
 
 Tool handlers are registered under ``evalscope/agent/tools/`` via
 ``@register_agent_tool('name')`` and must expose an async
-``run(call: ToolCall, env: AgentEnvironment | None) -> str`` callable.
+``run(call: ToolCall, env: AgentRuntime | None) -> str`` callable.
 """
 
 import time
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 from evalscope.api.tool import ToolCall, ToolCallError
-from .environment import AgentEnvironment
+from .runtime import AgentRuntime
+from .types import ToolExecutionOutput
 
 # Signature for an async tool handler.  Returns the textual observation
 # that will be attached to the next user/tool message.
-ToolHandler = Callable[[ToolCall, Optional[AgentEnvironment]], Awaitable[str]]
+ToolObservation = str | ToolExecutionOutput
+ToolHandler = Callable[[ToolCall, Optional[AgentRuntime]], Awaitable[ToolObservation]]
 
 
 class ToolExecutor:
@@ -27,24 +29,25 @@ class ToolExecutor:
     def __init__(
         self,
         handlers: Dict[str, ToolHandler],
-        environment: Optional[AgentEnvironment] = None,
+        runtime: Optional[AgentRuntime] = None,
     ) -> None:
         self._handlers = handlers
-        self._environment = environment
+        self._runtime = runtime
 
     @property
-    def environment(self) -> Optional[AgentEnvironment]:
-        return self._environment
+    def runtime(self) -> Optional[AgentRuntime]:
+        return self._runtime
 
     @property
     def tool_names(self) -> List[str]:
         return list(self._handlers.keys())
 
-    async def execute(self, call: ToolCall) -> Tuple[str, Optional[ToolCallError], float]:
+    async def execute(self, call: ToolCall) -> Tuple[ToolObservation, Optional[ToolCallError], float]:
         """Run one tool call.
 
-        Returns ``(observation, error, duration_seconds)``.  ``observation``
-        is always a string so it can be appended to a ``ChatMessageTool``.
+        Returns ``(observation, error, duration_seconds)``. Existing handlers
+        return strings; attachment-producing tools may return
+        :class:`ToolExecutionOutput`.
         """
         started = time.time()
         handler = self._handlers.get(call.function.name)
@@ -57,7 +60,7 @@ class ToolExecutor:
             return err.message, err, time.time() - started
 
         try:
-            observation = await handler(call, self._environment)
+            observation = await handler(call, self._runtime)
             return observation, None, time.time() - started
         except TimeoutError as exc:
             return str(exc), ToolCallError(type='timeout', message=str(exc)), time.time() - started
@@ -67,4 +70,4 @@ class ToolExecutor:
             return str(exc), ToolCallError(type='unknown', message=str(exc)), time.time() - started
 
 
-__all__ = ['ToolExecutor', 'ToolHandler']
+__all__ = ['ToolExecutor', 'ToolHandler', 'ToolObservation']

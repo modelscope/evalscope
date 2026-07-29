@@ -51,7 +51,7 @@ class BridgeTraceRecorder:
             framework=framework,
             trial_id=trial_id,
             strategy=None,
-            environment=None,
+            agent_runtime=None,
             max_steps=0,
             total_usage=None,
         )

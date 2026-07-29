@@ -1,10 +1,4 @@
-"""Sample-scoped sandboxed execution environment.
-
-``AgentEnvironment`` is deliberately minimal: it exposes a file-system +
-exec surface and knows nothing about agents, strategies or tools.
-Concrete implementations (EnclaveAgentEnvironment, LocalAgentEnvironment)
-live in ``evalscope/agent/environments/``.
-"""
+"""Sample-scoped runtime capabilities used by agent tools and CLI runners."""
 
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -13,17 +7,17 @@ from typing import Dict, List, Optional
 from .types import ExecResult
 
 
-class AgentEnvironment(ABC):
-    """Per-sample isolated execution environment.
+class AgentRuntime(ABC):
+    """Per-sample command runtime.
 
-    Lifecycle: ``__aenter__`` → N × ``exec`` → ``close``.  Created and
-    destroyed per sample by the AgentAdapter.
+    Runtimes provide shell and optional file-transfer capabilities to agent
+    tools and external CLI runners. Stateful task environments are represented
+    separately by :class:`evalscope.api.environment.TaskEnvironmentSession`.
     """
 
     name: str = 'base'
-    """Registered environment name.  Subclasses should override."""
+    """Registered runtime name. Subclasses should override."""
 
-    @abstractmethod
     async def exec(
         self,
         cmd: List[str],
@@ -33,14 +27,14 @@ class AgentEnvironment(ABC):
         timeout: Optional[float] = None,
         env: Optional[Dict[str, str]] = None,
     ) -> ExecResult:
-        """Run a command inside the environment and return its result.
+        """Run a command inside the runtime and return its result.
 
         ``env`` (when provided) is merged on top of the environment's default
         variables before the command runs.  Subclasses that cannot honour
         ``env`` should raise ``NotImplementedError`` rather than silently
         dropping the request.
         """
-        ...
+        raise NotImplementedError(f'{type(self).__name__} does not support exec')
 
     @abstractmethod
     async def close(self) -> None:
@@ -57,11 +51,11 @@ class AgentEnvironment(ABC):
         """
         raise NotImplementedError(f'{type(self).__name__} does not support put_dir')
 
-    async def __aenter__(self) -> 'AgentEnvironment':
+    async def __aenter__(self) -> 'AgentRuntime':
         return self
 
     async def __aexit__(self, exc_type, exc, tb) -> None:
         await self.close()
 
 
-__all__ = ['AgentEnvironment']
+__all__ = ['AgentRuntime']

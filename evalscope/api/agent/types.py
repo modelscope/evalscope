@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 
-from evalscope.api.messages import ChatMessage
+from evalscope.api.messages import ChatMessage, Content
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolInfo
 from .mcp.types import MCPServerConfig
@@ -24,7 +24,7 @@ class BaseAgentConfig(BaseModel):
 
     Both :class:`NativeAgentConfig` (the AgentLoop path) and
     :class:`ExternalAgentConfig` (the external-CLI bridge path) need an
-    :class:`AgentEnvironment` plus a free-form ``kwargs`` channel; lifting
+    :class:`AgentRuntime` plus a free-form ``kwargs`` channel; lifting
     them here avoids duplicating the schema across both subclasses.
     """
 
@@ -33,11 +33,11 @@ class BaseAgentConfig(BaseModel):
     # silently being dropped — agent_config is a public surface.
     model_config = ConfigDict(extra='forbid')
 
-    environment: Optional[str] = Field(default=None)
-    """Registered environment name.  ``None`` means no sandbox (local tools only)."""
+    runtime: Optional[str] = Field(default=None)
+    """Registered agent runtime name. ``None`` means no command runtime."""
 
-    environment_extra: Dict[str, Any] = Field(default_factory=dict)
-    """Free-form environment-specific options (passed to environment constructor)."""
+    runtime_extra: Dict[str, Any] = Field(default_factory=dict)
+    """Free-form runtime-specific options passed to the runtime constructor."""
 
     kwargs: Dict[str, Any] = Field(default_factory=dict)
     """Free-form variant-specific options.  Native: forwarded to the
@@ -105,7 +105,7 @@ class NativeAgentConfig(BaseAgentConfig):
 
 
 class ExecResult(BaseModel):
-    """Result of executing a command in an ``AgentEnvironment``."""
+    """Result of executing a command in an ``AgentRuntime``."""
 
     returncode: int = 0
     stdout: str = ''
@@ -113,6 +113,17 @@ class ExecResult(BaseModel):
     timed_out: bool = False
     duration: float = 0.0
     extra: Dict[str, Any] = Field(default_factory=dict)
+
+
+@dataclass
+class ToolExecutionOutput:
+    """Rich observation returned by tools that produce attachments or termination."""
+
+    text: str
+    attachments: List[Content] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    terminate: bool = False
+    final_answer: Optional[str] = None
 
 
 @dataclass
@@ -176,4 +187,5 @@ __all__ = [
     'NativeAgentConfig',
     'ParsedAction',
     'ToolSchemaMode',
+    'ToolExecutionOutput',
 ]

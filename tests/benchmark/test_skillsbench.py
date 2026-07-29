@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from evalscope.agent.external.config import ExternalAgentConfig
-from evalscope.api.agent import AgentEnvironment
+from evalscope.api.agent import AgentRuntime
 from evalscope.api.agent.types import ExecResult, NativeAgentConfig
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.dataset import Sample
@@ -141,7 +141,7 @@ def test_on_inference_accepts_native_agent_config(monkeypatch) -> None:
     sample = Sample(id=0, input='do task', target='', metadata={'task_id': 'task/one'})
 
     def fake_run_native_agent(**kwargs):  # type: ignore[no-untyped-def]
-        assert kwargs['environment_override'] is env
+        assert kwargs['runtime_override'] is env
         output = ModelOutput(
             model='fake',
             choices=[ChatCompletionChoice.from_content('done')],
@@ -156,7 +156,7 @@ def test_on_inference_accepts_native_agent_config(monkeypatch) -> None:
         assert run_env is env
         run_sample.metadata['reward'] = 1.0
 
-    monkeypatch.setattr(adapter, '_build_environment', lambda _: env)
+    monkeypatch.setattr(adapter, '_build_runtime', lambda _: env)
     monkeypatch.setattr('evalscope.agent.runner.run_native_agent', fake_run_native_agent)
     monkeypatch.setattr(adapter, '_run_verifier', fake_run_verifier)
 
@@ -185,8 +185,8 @@ def test_on_inference_keeps_external_environment_open_until_verifier(monkeypatch
     sample = Sample(id=0, input='do task', target='', metadata={'task_id': 'task/one'})
 
     def fake_run_external_agent(**kwargs):  # type: ignore[no-untyped-def]
-        assert kwargs['environment_override'] is env
-        assert kwargs['close_environment'] is False
+        assert kwargs['runtime_override'] is env
+        assert kwargs['close_runtime'] is False
         assert env.closed is False
         output = ModelOutput(
             model='fake',
@@ -203,7 +203,7 @@ def test_on_inference_keeps_external_environment_open_until_verifier(monkeypatch
         assert env.closed is False
         run_sample.metadata['reward'] = 1.0
 
-    monkeypatch.setattr(adapter, '_build_environment', lambda _: env)
+    monkeypatch.setattr(adapter, '_build_runtime', lambda _: env)
     monkeypatch.setattr('evalscope.agent.external.adapter.run_external_agent', fake_run_external_agent)
     monkeypatch.setattr(adapter, '_run_verifier', fake_run_verifier)
 
@@ -214,7 +214,7 @@ def test_on_inference_keeps_external_environment_open_until_verifier(monkeypatch
     assert env.closed
 
 
-class _FakeSkillsBenchEnv(AgentEnvironment):
+class _FakeSkillsBenchEnv(AgentRuntime):
     name = 'fake'
 
     def __init__(self) -> None:
@@ -227,7 +227,7 @@ class _FakeSkillsBenchEnv(AgentEnvironment):
         self.closed = True
 
 
-class _TimeoutVerifierEnv(AgentEnvironment):
+class _TimeoutVerifierEnv(AgentRuntime):
     name = 'timeout'
 
     async def exec(self, cmd, *, cwd=None, input=None, timeout=None, env=None):  # type: ignore[no-untyped-def]

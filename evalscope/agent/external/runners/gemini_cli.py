@@ -20,7 +20,7 @@ batch execution.
 import tempfile
 from typing import Any, Dict, List, Optional
 
-from evalscope.api.agent import AgentEnvironment
+from evalscope.api.agent import AgentRuntime
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
@@ -78,7 +78,7 @@ class GeminiCliRunner(AgentRunner):
     # setup
     # ------------------------------------------------------------------
 
-    async def setup(self, env: AgentEnvironment) -> None:
+    async def setup(self, env: AgentRuntime) -> None:
         """Ensure Gemini CLI is installed inside the environment."""
         if await self._gemini_present(env):
             return
@@ -94,14 +94,14 @@ class GeminiCliRunner(AgentRunner):
                 'Inspect the install logs above for the underlying cause.'
             )
 
-    async def _gemini_present(self, env: AgentEnvironment) -> bool:
+    async def _gemini_present(self, env: AgentRuntime) -> bool:
         probe = await env.exec(['bash', '-c', 'command -v gemini && gemini --version'])
         if probe.returncode == 0:
             logger.debug(f'gemini-cli probe: {probe.stdout.strip()!r}')
             return True
         return False
 
-    async def _install_gemini_cli(self, env: AgentEnvironment) -> None:
+    async def _install_gemini_cli(self, env: AgentRuntime) -> None:
         """Install Node.js (when missing) and the gemini-cli package."""
         await ensure_node_via_apt(
             env,
@@ -126,7 +126,7 @@ class GeminiCliRunner(AgentRunner):
     async def run(
         self,
         task: ExternalAgentTask,
-        env: AgentEnvironment,
+        env: AgentRuntime,
         bridge: BridgeEndpoint,
     ) -> AgentRunResult:
         env_vars: Dict[str, str] = {

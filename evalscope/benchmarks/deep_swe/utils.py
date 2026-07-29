@@ -197,7 +197,7 @@ def load_pier_trace(result_dict: Dict[str, Any]) -> Tuple[Optional[AgentTrace], 
     agent_info = raw.get('agent', {})
     trace = AgentTrace(
         framework=agent_info.get('name', 'mini-swe-agent'),
-        environment='docker',
+        agent_runtime='docker',
     )
     messages: List[ChatMessage] = []
     for index, step in enumerate(raw.get('steps', [])):

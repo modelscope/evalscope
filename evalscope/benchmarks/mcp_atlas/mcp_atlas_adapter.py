@@ -4,7 +4,7 @@ import asyncio
 import json
 from typing import Any, Dict, List, Optional
 
-from evalscope.api.agent import AgentEnvironment
+from evalscope.api.agent import AgentRuntime
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
@@ -118,7 +118,7 @@ class MCPAtlasAdapter(AgentLoopAdapter):
             handlers[tool_name] = self._make_tool_handler(tool_name, sample_key)
         return handlers
 
-    def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
+    def build_runtime(self, sample: Sample) -> Optional[AgentRuntime]:
         return None
 
     def match_score(
@@ -228,7 +228,7 @@ class MCPAtlasAdapter(AgentLoopAdapter):
 
     def _make_tool_handler(self, tool_name: str, sample_key: int):
 
-        async def _handler(call: ToolCall, env: Optional[AgentEnvironment]) -> str:
+        async def _handler(call: ToolCall, env: Optional[AgentRuntime]) -> str:
             del env
             server_name = tool_name_to_server(tool_name)
             failures = self._server_failures_by_sample.setdefault(sample_key, {})

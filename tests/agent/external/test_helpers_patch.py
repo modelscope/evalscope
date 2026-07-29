@@ -1,6 +1,6 @@
 """Tests for :func:`evalscope.agent.external.helpers.extract_patch`.
 
-Uses :class:`LocalAgentEnvironment` against a real on-disk git repository
+Uses :class:`LocalAgentRuntime` against a real on-disk git repository
 so the helper is exercised through the same ``env.exec`` path adapters
 will use in production (subprocess invocation, ``cwd=`` plumbing, error
 propagation).
@@ -11,8 +11,8 @@ import pytest
 import subprocess
 from pathlib import Path
 
-from evalscope.agent.environments.local import LocalAgentEnvironment
 from evalscope.agent.external.helpers import extract_patch
+from evalscope.agent.runtimes.local import LocalAgentRuntime
 
 
 def _git(args, cwd):
@@ -36,7 +36,7 @@ def test_extract_patch_returns_modifications_against_head(tmp_path):
     # Simulate the agent's edit: fix the bug.
     (repo / 'main.py').write_text('def add(a, b):\n    return a + b\n')
 
-    env = LocalAgentEnvironment()
+    env = LocalAgentRuntime()
     patch = asyncio.run(extract_patch(env, cwd=str(repo)))
 
     assert patch, 'expected a non-empty diff for a real modification'
@@ -54,7 +54,7 @@ def test_extract_patch_excludes_untracked_files(tmp_path):
     _init_repo(repo)
     (repo / 'new_module.py').write_text('VALUE = 42\n')
 
-    env = LocalAgentEnvironment()
+    env = LocalAgentRuntime()
     patch = asyncio.run(extract_patch(env, cwd=str(repo)))
 
     assert patch == ''
@@ -65,7 +65,7 @@ def test_extract_patch_returns_empty_when_clean(tmp_path):
     repo = tmp_path / 'repo'
     _init_repo(repo)
 
-    env = LocalAgentEnvironment()
+    env = LocalAgentRuntime()
     patch = asyncio.run(extract_patch(env, cwd=str(repo)))
 
     assert patch == ''
@@ -79,7 +79,7 @@ def test_extract_patch_handles_non_git_dir(tmp_path, caplog):
     not_a_repo.mkdir()
     (not_a_repo / 'foo.txt').write_text('hello')
 
-    env = LocalAgentEnvironment()
+    env = LocalAgentRuntime()
     patch = asyncio.run(extract_patch(env, cwd=str(not_a_repo)))
 
     assert patch == ''

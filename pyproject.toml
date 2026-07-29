@@ -52,6 +52,8 @@ perf             = {file = ["requirements/perf.txt"]}
 app              = {file = ["requirements/app.txt"]}
 aigc             = {file = ["requirements/aigc.txt"]}
 sandbox          = {file = ["requirements/sandbox.txt"]}
+openenv          = {file = ["requirements/openenv.txt"]}
+miniwob          = {file = ["requirements/miniwob.txt"]}
 service          = {file = ["requirements/service.txt", "requirements/perf.txt"]}
 mcp              = {file = ["requirements/mcp.txt"]}
 dev              = {file = ["requirements/dev.txt"]}

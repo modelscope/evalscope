@@ -109,7 +109,7 @@ def add_argument(parser: argparse.ArgumentParser):
     # by ``mode``).  Native example:
     #   --agent-config '{"mode":"native","strategy":"react","max_steps":5}'
     # External example:
-    #   --agent-config '{"mode":"external","framework":"claude-code","kwargs":{"model_name":"claude-opus-4-6"},"environment":"docker"}'
+    #   --agent-config '{"mode":"external","framework":"claude-code","kwargs":{"model_name":"claude-opus-4-6"},"runtime":"docker"}'
     parser.add_argument('--agent-config', type=json.loads, default=None, help='Agent configuration as a JSON object. Mode discriminated: {"mode":"native", ...} for AgentLoop, {"mode":"external","framework":"claude-code", ...} for external CLI bridge.')  # noqa: E501
 
     # Sandbox-related arguments

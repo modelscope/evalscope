@@ -24,7 +24,7 @@ from evalscope.config import SandboxTaskConfig, TaskConfig
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, JudgeStrategy
 
 try:
-    import evalscope.agent.environments.enclave  # noqa: F401
+    import evalscope.agent.runtimes.enclave  # noqa: F401
     _ENCLAVE_AVAILABLE = True
 except ImportError:
     _ENCLAVE_AVAILABLE = False
@@ -297,8 +297,8 @@ class TestWideSearchAdapter(unittest.TestCase):
         sample = Sample(input='question', metadata={'instance_id': 'docker-test', 'language': 'en'})
 
         with patch('evalscope.benchmarks.wide_search.wide_search_adapter.check_import'
-                   ), patch('evalscope.agent.environments.enclave.EnclaveAgentEnvironment') as environment_cls:
-            adapter.build_environment(sample)
+                   ), patch('evalscope.agent.runtimes.enclave.EnclaveAgentRuntime') as environment_cls:
+            adapter.build_runtime(sample)
 
         environment_cls.assert_called_once_with(
             engine='docker',

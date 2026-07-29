@@ -1,0 +1,2 @@
+openenv==0.4.1
+ms-enclave[docker]>=0.0.7

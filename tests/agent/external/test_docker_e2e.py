@@ -1,7 +1,7 @@
 """Docker-backed end-to-end tests for the external-agent path.
 
 These exercise the parts of the bridge / runner stack that
-``LocalAgentEnvironment`` cannot validate:
+``LocalAgentRuntime`` cannot validate:
 
 * ``host.docker.internal`` URL rewrite + ``extra_hosts`` injection on
   Linux — the bridge must be reachable from inside the container.
@@ -80,14 +80,14 @@ def _build_mock_model(text: str) -> Model:
 def test_extract_patch_inside_enclave(tmp_path):
     """Run ``extract_patch`` against a working tree inside a real Docker
     container. Pins the helper's ``cwd=`` plumbing through ms_enclave's
-    shell_executor (different code path from LocalAgentEnvironment)."""
-    from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+    shell_executor (different code path from LocalAgentRuntime)."""
+    from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
 
     async def _go() -> str:
         # No ``platform`` pin: both python:3.11-slim and ubuntu:22.04 are
         # multi-arch, so docker picks the host-native architecture
         # (matters for Apple Silicon hosts where arm64 is cached).
-        env = EnclaveAgentEnvironment(
+        env = EnclaveAgentRuntime(
             engine='docker',
             sandbox_config={
                 'image': 'python:3.11-slim',
@@ -148,7 +148,7 @@ def test_claude_code_through_docker_bridge_with_mock_llm(tmp_path):
     returns a fixed sentinel and we assert claude-code surfaces that
     same sentinel as its stdout.
     """
-    from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+    from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
 
     expected = 'BRIDGE_OK'
     model = _build_mock_model(expected)
@@ -158,7 +158,7 @@ def test_claude_code_through_docker_bridge_with_mock_llm(tmp_path):
     # apt+nodesource detour is skipped (only ``npm install -g claude-code``
     # runs). Makes the test robust against partial in-container DNS
     # (apt mirrors are flaky on colima / VPN'd machines).
-    env = EnclaveAgentEnvironment(
+    env = EnclaveAgentRuntime(
         engine='docker',
         sandbox_config={
             'image': 'node:20-slim',
@@ -181,7 +181,7 @@ def test_claude_code_through_docker_bridge_with_mock_llm(tmp_path):
         },
         # AgentLoopAdapter normally builds the env; here we wire it
         # directly because we are not exercising a benchmark adapter.
-        environment='enclave',
+        runtime='enclave',
         timeout=300.0,
     )
 
@@ -189,7 +189,7 @@ def test_claude_code_through_docker_bridge_with_mock_llm(tmp_path):
         config=config,
         model=model,
         sample=sample,
-        environment_override=env,
+        runtime_override=env,
     )
 
     text = (result.output.message.text or '').strip()
@@ -270,7 +270,7 @@ def test_swe_bench_pro_real_e2e(tmp_path, monkeypatch):
         agent_config={
             'mode': 'external',
             'framework': 'claude-code',
-            'environment': 'enclave',
+            'runtime': 'enclave',
             'timeout': 1200.0,
             'kwargs': {
                 'model_name': target_model,

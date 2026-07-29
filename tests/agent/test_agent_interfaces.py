@@ -15,9 +15,9 @@ import unittest
 import evalscope  # noqa: F401
 from evalscope.api.agent import (
     AgentContext,
-    AgentEnvironment,
     AgentLoop,
     AgentLoopResult,
+    AgentRuntime,
     AgentStrategy,
     AgentTrace,
     AgentTraceEvent,
@@ -31,15 +31,15 @@ from evalscope.api.agent import (
 )
 from evalscope.api.registry import (
     AGENT_TOOL_REGISTRY,
-    ENVIRONMENT_REGISTRY,
+    RUNTIME_REGISTRY,
     STRATEGY_REGISTRY,
     get_agent_tool,
     get_strategy,
     list_agent_tools,
-    list_environments,
+    list_runtimes,
     list_strategies,
     register_agent_tool,
-    register_environment,
+    register_runtime,
     register_strategy,
     resolve_tools,
 )
@@ -50,7 +50,7 @@ class TestAgentApiSurface(unittest.TestCase):
 
     def test_public_symbols_importable(self):
         # 仅触达一次即可确认 import 层完整;上方 import 成功即通过.
-        self.assertTrue(issubclass(AgentEnvironment, object))
+        self.assertTrue(issubclass(AgentRuntime, object))
         self.assertTrue(callable(AgentLoop))
         self.assertTrue(callable(AgentTrace))
         self.assertIsInstance(EventType.MODEL_GENERATE, EventType)
@@ -89,11 +89,11 @@ class TestRegistryUnification(unittest.TestCase):
             class _Dup:
                 pass
 
-    def test_register_environment_and_agent_tool(self):
+    def test_register_runtime_and_agent_tool(self):
         # 使用临时名字以免污染全局 registry.
 
-        @register_environment('_unit_env')
-        class _Env(AgentEnvironment):
+        @register_runtime('_unit_env')
+        class _Env(AgentRuntime):
             name = '_unit_env'
 
             async def exec(self, cmd, *, cwd=None, input=None, timeout=None):
@@ -103,10 +103,10 @@ class TestRegistryUnification(unittest.TestCase):
                 pass
 
         try:
-            self.assertIn('_unit_env', list_environments())
-            self.assertIn('_unit_env', ENVIRONMENT_REGISTRY)
+            self.assertIn('_unit_env', list_runtimes())
+            self.assertIn('_unit_env', RUNTIME_REGISTRY)
         finally:
-            ENVIRONMENT_REGISTRY.pop('_unit_env', None)
+            RUNTIME_REGISTRY.pop('_unit_env', None)
 
         @register_agent_tool('_unit_tool')
         async def _tool_handler(call, env):
@@ -135,7 +135,7 @@ class TestAgentTypesBehavior(unittest.TestCase):
         self.assertEqual(cfg.tools, [])
         self.assertEqual(cfg.max_steps, 10)
         self.assertIsNone(cfg.command_timeout)
-        self.assertIsNone(cfg.environment)
+        self.assertIsNone(cfg.runtime)
         self.assertEqual(cfg.kwargs, {})
 
     def test_agent_config_dict_validate(self):
@@ -167,7 +167,7 @@ class TestAgentTypesBehavior(unittest.TestCase):
         self.assertEqual(r.duration, 0.0)
 
     def test_agent_trace_add_event_and_step_count(self):
-        trace = AgentTrace(strategy='function_calling', environment=None, max_steps=3)
+        trace = AgentTrace(strategy='function_calling', agent_runtime=None, max_steps=3)
         ev = trace.add_event(step=0, type=EventType.MODEL_GENERATE, latency_ms=12.5)
         self.assertIsInstance(ev, AgentTraceEvent)
         trace.add_event(step=0, type=EventType.SUBMIT, payload={'final_answer': 'x'})
@@ -177,7 +177,7 @@ class TestAgentTypesBehavior(unittest.TestCase):
 
     def test_agent_trace_json_roundtrip(self):
         # 为 ReviewResult 持久化设计, 必须 pydantic 可序列化.
-        trace = AgentTrace(strategy='function_calling', environment=None, max_steps=1)
+        trace = AgentTrace(strategy='function_calling', agent_runtime=None, max_steps=1)
         trace.add_event(step=0, type=EventType.MODEL_GENERATE)
         loaded = AgentTrace.model_validate_json(trace.model_dump_json())
         self.assertEqual(loaded.events[0].type, EventType.MODEL_GENERATE)

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
 
-from evalscope.agent.environments.local import TemporaryLocalAgentEnvironment
+from evalscope.agent.runtimes.local import TemporaryLocalAgentRuntime
 from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
@@ -148,7 +148,7 @@ def test_react_strategy_is_configurable() -> None:
 
 
 def test_temporary_local_environment_cleans_working_directory() -> None:
-    environment = TemporaryLocalAgentEnvironment(sample_id='sample')
+    environment = TemporaryLocalAgentRuntime(sample_id='sample')
     working_dir = environment.working_dir
     (working_dir / 'artifact.txt').write_text('data', encoding='utf-8')
 
@@ -182,7 +182,7 @@ def test_default_agent_loop_runs_bash_without_agent_config() -> None:
 
     assert result.output.completion == '# Report'
     assert result.trace.strategy == 'function_calling'
-    assert result.trace.environment == 'local'
+    assert result.trace.agent_runtime == 'local'
     assert result.trace.max_steps == 50
     tool_message = next(message for message in result.messages if message.role == 'tool')
     working_dir = Path(tool_message.text.strip())

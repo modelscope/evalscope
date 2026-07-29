@@ -34,8 +34,8 @@ task_config = TaskConfig(
     agent_config=NativeAgentConfig(
         strategy='function_calling',
         tools=['python_exec'],
-        environment='docker',
-        environment_extra={'image': 'python:3.11-slim'},
+        runtime='docker',
+        runtime_extra={'image': 'python:3.11-slim'},
         max_steps=5,
         kwargs={'system_prompt': 'Use python_exec to verify your calculations.'},
     ),
@@ -53,8 +53,8 @@ EvalScope 自动给模型注入 `python_exec` 工具定义，在 Docker 容器�
 |------|------|--------|
 | `strategy` | 交互协议 | `function_calling`（默认）；模型不支持时用 `react` 或 `swe_bench_backticks` |
 | `tools` | 工具白名单 | 按需，如 `['python_exec']` / `['bash']` |
-| `environment` | 工具执行环境 | `local`（开发调试）/ `docker`（生产推荐） |
-| `environment_extra` | 沙箱参数 | `docker` 时常用 `{'image': '...', 'timeout': 60}`；详见 [沙箱环境](../sandbox.md) |
+| `runtime` | 工具执行运行时 | `local`（开发调试）/ `docker`（生产推荐） |
+| `runtime_extra` | 沙箱参数 | `docker` 时常用 `{'image': '...', 'timeout': 60}`；详见 [沙箱环境](../sandbox.md) |
 | `max_steps` | 单样本最大轮数 | 数学/QA `5-10`，代码修复 `100+` |
 | `skills_dir` | 可选的本机 Agent Skills 目录 | EvalScope 会在 agent loop 开始前让 skills 可用 |
 | `kwargs` | 策略参数 | 最常用 `{'system_prompt': '...'}` 引导模型行为 |

@@ -6,11 +6,11 @@ Skipped by default — opt-in with ``EVALSCOPE_REAL_QWEN=1`` plus a valid
 Covers two tiers:
 
 * **Tier A (local)**: requires ``opencode`` CLI installed on the host
-  (``npm install -g opencode-ai``). Exercises ``LocalAgentEnvironment``
+  (``npm install -g opencode-ai``). Exercises ``LocalAgentRuntime``
   + bridge round-trip without Docker overhead.
 * **Tier B (Docker)**: requires Docker daemon + pre-built
   ``evalscope-opencode:latest`` image. Exercises the full
-  ``EnclaveAgentEnvironment`` path — container → bridge →
+  ``EnclaveAgentRuntime`` path — container → bridge →
   DashScope → trajectory capture.
 
 OpenCode speaks the OpenAI **Responses API** (``/openai/v1/responses``),
@@ -120,7 +120,7 @@ def test_opencode_local_through_bridge_to_qwen():
             'auto_install': False,
             'home_override': '',
         },
-        environment='local',
+        runtime='local',
         timeout=180.0,
     )
     result = run_external_agent(config=config, model=model, sample=sample)
@@ -152,12 +152,12 @@ def test_opencode_docker_through_bridge_to_qwen():
     Validates the full production path: container sandbox → bridge →
     DashScope → trajectory capture, with a real LLM response.
     """
-    from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+    from evalscope.agent.runtimes.enclave import EnclaveAgentRuntime
 
     model = _build_qwen_model()
     sample = Sample(input='What is 6 * 7? Reply with just the number.', target='42', id=1)
 
-    env = EnclaveAgentEnvironment(
+    env = EnclaveAgentRuntime(
         engine='docker',
         sandbox_config={
             'image': 'evalscope-opencode:latest',
@@ -174,7 +174,7 @@ def test_opencode_docker_through_bridge_to_qwen():
             'auto_install': False,
             'home_override': '',
         },
-        environment='enclave',
+        runtime='enclave',
         timeout=180.0,
     )
 
@@ -182,7 +182,7 @@ def test_opencode_docker_through_bridge_to_qwen():
         config=config,
         model=model,
         sample=sample,
-        environment_override=env,
+        runtime_override=env,
     )
 
     text = (result.output.message.text or '').strip()
@@ -192,7 +192,7 @@ def test_opencode_docker_through_bridge_to_qwen():
     # Trace validation
     trace = result.trace
     assert trace.framework == 'opencode'
-    assert trace.environment == 'enclave'
+    assert trace.agent_runtime == 'enclave'
     assert any(ev.type == EventType.MODEL_GENERATE for ev in trace.events)
     assert any(ev.type == EventType.RUN_START for ev in trace.events)
     assert any(ev.type == EventType.RUN_END for ev in trace.events)

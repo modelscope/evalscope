@@ -1,0 +1,53 @@
+diff --git a/envs/browsergym_env/server/browsergym_environment.py b/envs/browsergym_env/server/browsergym_environment.py
+--- a/envs/browsergym_env/server/browsergym_environment.py
++++ b/envs/browsergym_env/server/browsergym_environment.py
+@@ -14,6 +14,7 @@ from typing import Any, Dict, Optional
+ from uuid import uuid4
+ 
+ import gymnasium as gym
++from browsergym.core.action.highlevel import HighLevelActionSet
+ from browsergym_env.models import (
+     BrowserGymAction,
+     BrowserGymObservation,
+@@ -152,6 +153,14 @@ class BrowserGymEnvironment(Environment):
+         self.timeout = timeout
+         self.include_screenshot = include_screenshot
+         self.gym_kwargs = dict(gym_kwargs)
++        if benchmark == "miniwob":
++            self.gym_kwargs["action_mapping"] = HighLevelActionSet(
++                subsets=["miniwob_all"],
++                multiaction=False,
++                strict=False,
++                retry_with_force=True,
++                demo_mode="off",
++            ).to_python_code
+ 
+         # force import the benchmark module
+         benchmark_modules = {
+@@ -195,16 +204,20 @@ class BrowserGymEnvironment(Environment):
+         return f"browsergym/{self.benchmark}"
+ 
+     def _create_gym_env(self, env_id: str):
++        gym_kwargs = dict(self.gym_kwargs)
++        if self.benchmark != "miniwob":
++            gym_kwargs.update(
++                viewport={
++                    "width": self.viewport_width,
++                    "height": self.viewport_height,
++                },
++                timeout=self.timeout,
++            )
+         try:
+             return gym.make(
+                 env_id,
+                 headless=self.headless,
+-                viewport={
+-                    "width": self.viewport_width,
+-                    "height": self.viewport_height,
+-                },
+-                timeout=self.timeout,
+-                **self.gym_kwargs,
++                **gym_kwargs,
+             )
+         except Exception as e:  # noqa: BLE001 - gym.make
+             message = (

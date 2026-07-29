@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List
 
 if TYPE_CHECKING:
-    from evalscope.api.agent import AgentEnvironment
+    from evalscope.api.agent import AgentRuntime
 
 CONFIG_SKILL_SOURCE = 'config'
 TASK_BUNDLED_SKILL_SOURCE = 'task_bundled'
@@ -144,7 +144,7 @@ def resolve_agent_skills(
 
 
 async def install_agent_skills(
-    environment: 'AgentEnvironment',
+    environment: 'AgentRuntime',
     skills: ResolvedSkills,
     *,
     install_paths: Iterable[str] | None = None,
@@ -166,7 +166,7 @@ async def install_agent_skills(
         raise RuntimeError(f'{runner_name} failed to install skills: {detail}')
 
 
-async def stage_agent_skills(environment: 'AgentEnvironment', skills: ResolvedSkills, *, runner_name: str) -> None:
+async def stage_agent_skills(environment: 'AgentRuntime', skills: ResolvedSkills, *, runner_name: str) -> None:
     """Upload host-configured skills into the environment when needed."""
     if not skills.enabled or skills.source != CONFIG_SKILL_SOURCE:
         return

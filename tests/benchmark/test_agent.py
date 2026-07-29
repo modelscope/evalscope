@@ -283,7 +283,7 @@ class TestAgentBenchmark(TestBenchmark):
             eval_batch_size=5,
             collect_perf=False,
             debug=False,
-            agent_config=NativeAgentConfig(environment='docker', max_steps=80),
+            agent_config=NativeAgentConfig(runtime='docker', max_steps=80),
             sandbox=SandboxTaskConfig(
                 default_config={
                     'image': 'python:3.11-slim-bookworm',
