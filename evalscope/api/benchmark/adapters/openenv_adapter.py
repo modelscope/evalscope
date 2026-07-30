@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from abc import abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -28,11 +29,11 @@ logger = get_logger()
 class OpenEnvAdapter(AgentLoopAdapter):
     """Run an AgentLoop against one stateful OpenEnv episode per sample.
 
-    Subclasses provide benchmark data plus five environment-specific hooks:
-    runtime image, runtime environment variables, reset arguments, model-facing
-    tools and observation formatting. This class owns the common service/session
-    lifecycle, AgentLoop invocation, trace wiring, error classification and
-    reward-based scoring.
+    A direct subclass must provide the default environment configuration,
+    model-facing tools and initial observation messages. Runtime setup, reset
+    arguments and result semantics have optional hooks. This class owns the
+    common service/session lifecycle, AgentLoop invocation, trace wiring, error
+    classification and reward-based scoring.
     """
 
     def __init__(self, **kwargs: Any) -> None:
@@ -41,9 +42,28 @@ class OpenEnvAdapter(AgentLoopAdapter):
         self.task_environment_config = self._resolve_task_environment_config()
         self.validate_task_environment_config(self.task_environment_config)
 
+    # Required subclass hooks
+
+    @abstractmethod
     def default_task_environment_config(self) -> TaskEnvironmentConfig:
         """Return the benchmark's default OpenEnv backend and runtime."""
         raise NotImplementedError
+
+    @abstractmethod
+    def build_task_tools(self, sample: Any, session: TaskEnvironmentSession) -> Dict[str, Any]:
+        """Return model-facing tool handlers bound to the active session."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def task_observation_messages(
+        self,
+        sample: Any,
+        observation: Dict[str, Any],
+    ) -> List[ChatMessage]:
+        """Convert the reset observation into initial AgentLoop messages."""
+        raise NotImplementedError
+
+    # Optional subclass hooks
 
     def validate_task_environment_config(self, config: TaskEnvironmentConfig) -> None:
         """Validate benchmark-specific task-environment constraints."""
@@ -62,18 +82,6 @@ class OpenEnvAdapter(AgentLoopAdapter):
         """Return keyword arguments forwarded to ``session.reset``."""
         return {}
 
-    def build_task_tools(self, sample: Any, session: TaskEnvironmentSession) -> Dict[str, Any]:
-        """Return model-facing tool handlers bound to the active session."""
-        raise NotImplementedError
-
-    def task_observation_messages(
-        self,
-        sample: Any,
-        observation: Dict[str, Any],
-    ) -> List[ChatMessage]:
-        """Convert the reset observation into initial AgentLoop messages."""
-        raise NotImplementedError
-
     def normalize_task_observation(
         self,
         result: EnvironmentStepResult,
@@ -84,6 +92,8 @@ class OpenEnvAdapter(AgentLoopAdapter):
     def is_task_success(self, result: EnvironmentStepResult) -> bool:
         """Return whether an environment result represents task success."""
         return bool(result.done and (result.reward or 0) > 0)
+
+    # Shared episode flow
 
     def process_task_result(
         self,

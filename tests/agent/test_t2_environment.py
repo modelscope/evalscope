@@ -968,17 +968,6 @@ class TestNativeAgentEnvironmentConfig:
         with pytest.raises(ValueError, match='Extra inputs are not permitted'):
             NativeAgentConfig(runtime_extra={'image': 'python:3.11-slim'})
 
-    def test_task_config_rejects_top_level_task_environment(self):
-        with pytest.raises(ValueError, match='must be nested under `agent_config`'):
-            TaskConfig(
-                task_environment={
-                    'backend': 'openenv',
-                    'runtime': {
-                        'name': 'ms_enclave_docker',
-                    },
-                }
-            )
-
     def test_task_config_update_revalidates_agent_config(self):
         cfg = TaskConfig(agent_config={'mode': 'native'})
         cfg.update({

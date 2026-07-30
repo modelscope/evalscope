@@ -282,13 +282,6 @@ class TaskConfig(BaseArgument):
 
     # --- Field validators (single-field logic) ---
 
-    @model_validator(mode='before')
-    @classmethod
-    def _reject_top_level_task_environment(cls, data: Any) -> Any:
-        if isinstance(data, dict) and 'task_environment' in data:
-            raise ValueError('`task_environment` must be nested under `agent_config`.')
-        return data
-
     @field_validator('limit', mode='before')
     @classmethod
     def _validate_limit(cls, v: Any) -> Any:

@@ -2,6 +2,7 @@ from .adapters import (
     AgentAdapter,
     AgentLoopAdapter,
     AudioLanguageAdapter,
+    BrowserGymOpenEnvAdapter,
     DefaultDataAdapter,
     FunctionCallAdapter,
     ImageEditAdapter,
