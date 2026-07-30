@@ -948,20 +948,6 @@ class TestNativeAgentEnvironmentConfig:
         assert 'image' in cfg.environment_extra
         assert 'image' not in cfg.kwargs
 
-    def test_task_environment_is_nested_and_typed(self):
-        cfg = NativeAgentConfig(
-            task_environment={
-                'backend': 'openenv',
-                'observation_mode': 'axtree',
-                'runtime': {
-                    'name': 'ms_enclave_docker',
-                },
-            }
-        )
-        assert cfg.task_environment.backend == 'openenv'
-        assert cfg.task_environment.observation_mode == 'axtree'
-        assert cfg.task_environment.runtime.name == 'ms_enclave_docker'
-
     def test_unpublished_runtime_shape_is_rejected(self):
         with pytest.raises(ValueError, match='Extra inputs are not permitted'):
             NativeAgentConfig(runtime='docker')
@@ -981,3 +967,14 @@ class TestNativeAgentEnvironmentConfig:
         assert isinstance(cfg.agent_config, NativeAgentConfig)
         assert cfg.agent_config.environment == 'local'
         assert cfg.agent_config.environment_extra == {'working_dir': '/tmp'}
+
+    def test_task_config_update_preserves_explicit_agent_fields(self):
+        cfg = TaskConfig(agent_config=NativeAgentConfig(max_steps=7))
+
+        cfg.update({})
+
+        assert isinstance(cfg.agent_config, NativeAgentConfig)
+        assert cfg.agent_config.max_steps == 7
+        assert 'max_steps' in cfg.agent_config.model_fields_set
+        assert 'strategy' not in cfg.agent_config.model_fields_set
+        assert 'kwargs' not in cfg.agent_config.model_fields_set

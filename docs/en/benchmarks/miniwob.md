@@ -1,15 +1,26 @@
 # MiniWoB
 
 
-MiniWoB evaluates multimodal browser agents on 125 short interactive tasks through OpenEnv and BrowserGym.
-The default run uses one deterministic seed per task; set `repeats=5` (or `--repeats 5`) for the full five-seed
-schedule. Each episode has a default budget of 10 model/tool turns.
+## Overview
 
-The primary metric is `success_rate`; `error_rate` reports environment failures separately. The default observation
-contains both an accessibility tree and a screenshot, so the model must support image input and function calling.
+MiniWoB evaluates whether a multimodal agent can complete short browser tasks such as clicking buttons, filling forms,
+scrolling and dragging items.
 
-See the [MiniWoB usage guide](../third_party/miniwob.html) for installation, runtime configuration, protocol details
-and full-schedule examples.
+## Task Description
+
+- **Task Type**: Interactive browser tasks
+- **Input**: A task goal, an accessibility tree and a screenshot
+- **Output**: Browser actions selected through function calling
+- **Dataset**: 125 MiniWoB tasks
+- **Metrics**: `success_rate` for completed tasks and `error_rate` for environment failures
+
+## Evaluation Notes
+
+- The default run evaluates one deterministic episode per task.
+- Set `repeats=5` for the five-episode schedule.
+- Each episode allows up to 10 model/tool turns by default.
+- The model must support image input and function calling.
+- See the [MiniWoB usage guide](../third_party/miniwob.html) for installation and examples.
 
 
 ## Properties
@@ -41,7 +52,7 @@ and full-schedule examples.
 {
   "input": [
     {
-      "id": "481bffa9",
+      "id": "4b7219db",
       "content": "The task goal and browser observation are supplied when the episode is reset."
     }
   ],
@@ -73,15 +84,6 @@ and full-schedule examples.
     "similarity_group": "0",
     "browsergym_split": "test",
     "task_id": "miniwob.ascending-numbers",
-    "openenv_task_name": "ascending-numbers",
-    "observation_mode": "axtree_screenshot",
-    "openenv_version": "0.4.1",
-    "openenv_commit": "65c506ef94bb1f7279cb4359673b3ef81031d01f",
-    "openenv_patch_sha256": "465b23aaf7b3b2cadd681495d694a7dad5ca1b36be0cfb5ce5780b94ac354668",
-    "browsergym_version": "0.14.3",
-    "browsergym_commit": "0a785fbed075224ae81ca9c1fe924f66050696fe",
-    "miniwob_commit": "7fd85d71a4b60325c6585396ec4f48377d049838",
-    "csv_sha256": "37117db27909a17b1b78035528472922c98c479a54619ac398dc256a7d2fef09",
     "seed": 1608637542,
     "repeat": 0
   }

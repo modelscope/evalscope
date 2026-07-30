@@ -2,16 +2,18 @@
 
 import mimetypes
 import os
-from typing import Optional, cast
+from typing import Literal, Optional, cast
 
-from evalscope.utils.url_utils import (
-    SUPPORTED_VIDEO_FORMATS,
-    VIDEO_FORMAT_TO_MIME_TYPE,
-    VideoFormat,
-    data_uri_mime_type,
-    file_as_data_uri,
-    is_data_uri,
-)
+from evalscope.utils.uri_utils import data_uri_mime_type, file_as_data_uri, is_data_uri
+
+VideoFormat = Literal['mp4', 'mpeg', 'mov', 'avi']
+SUPPORTED_VIDEO_FORMATS: tuple[VideoFormat, ...] = ('mp4', 'mpeg', 'mov', 'avi')
+VIDEO_FORMAT_TO_MIME_TYPE: dict[VideoFormat, str] = {
+    'mp4': 'video/mp4',
+    'mpeg': 'video/mpeg',
+    'mov': 'video/quicktime',
+    'avi': 'video/x-msvideo',
+}
 
 
 def video_format_to_mime_type(video_format: VideoFormat) -> str:
@@ -49,3 +51,13 @@ def video_as_data_uri(video: str, video_format: Optional[VideoFormat] = None) ->
         return video
     video_format = video_format or guess_video_format(video)
     return file_as_data_uri(video, default_mime_type=video_format_to_mime_type(video_format))
+
+
+__all__ = [
+    'SUPPORTED_VIDEO_FORMATS',
+    'VIDEO_FORMAT_TO_MIME_TYPE',
+    'VideoFormat',
+    'guess_video_format',
+    'video_as_data_uri',
+    'video_format_to_mime_type',
+]

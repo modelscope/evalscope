@@ -208,8 +208,14 @@ def _serialize_messages(review_result: ReviewResult) -> List[Dict[str, Any]]:
                 'id': m.id,
                 'role': m.role,
                 'content': serialised_content,
+                'source': m.source,
+                'metadata': m.metadata,
                 'perf_metrics': m.perf_metrics.model_dump() if m.perf_metrics else None,
             }
+
+            tool_call_id = getattr(m, 'tool_call_id', None)
+            if tool_call_id:
+                entry['tool_call_id'] = tool_call_id
 
             # Assistant: tool_calls + model name (if any)
             if m.role == 'assistant':
@@ -229,9 +235,6 @@ def _serialize_messages(review_result: ReviewResult) -> List[Dict[str, Any]]:
                 function = getattr(m, 'function', None)
                 if function:
                     entry['function'] = function
-                tool_call_id = getattr(m, 'tool_call_id', None)
-                if tool_call_id:
-                    entry['tool_call_id'] = tool_call_id
                 error = getattr(m, 'error', None)
                 if error:
                     entry['error'] = {

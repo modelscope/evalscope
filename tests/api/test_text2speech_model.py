@@ -5,7 +5,7 @@ from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
 from evalscope.api.model import get_model
 from evalscope.benchmarks.seed_tts_eval.seed_tts_eval_adapter import PROMPT_TEMPLATE
 from evalscope.constants import EvalType
-from evalscope.utils.url_utils import data_uri_to_base64
+from evalscope.utils.uri_utils import data_uri_to_base64
 
 
 def test_text2speech_volcengine_provider_returns_audio(monkeypatch: Any) -> None:

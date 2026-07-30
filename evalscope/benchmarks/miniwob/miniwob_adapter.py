@@ -1,49 +1,44 @@
-"""MiniWoB benchmark evaluated through OpenEnv."""
+"""MiniWoB benchmark evaluated directly through BrowserGym."""
 
 from __future__ import annotations
 
-import os
-import threading
-from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from evalscope.api.agent import NativeAgentConfig
-from evalscope.api.benchmark import BenchmarkMeta, BrowserGymOpenEnvAdapter
+from evalscope.api.benchmark import BenchmarkMeta, BrowserGymAdapter
 from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
-from evalscope.api.environment import TaskEnvironmentConfig
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import DockerImageSpec, prepare_docker_image
 from evalscope.constants import Tags
 from .utils import (
     BROWSER_ACTION_TOOL_INFO,
-    BROWSERGYM_COMMIT,
-    BROWSERGYM_METADATA_SHA256,
-    BROWSERGYM_VERSION,
     MINIWOB_MAX_STEPS,
     MINIWOB_SYSTEM_PROMPT,
+    ensure_miniwob_assets,
     load_miniwob_records,
 )
 from .utils import validate_browser_action as validate_miniwob_action
 
-OPENENV_VERSION = '0.4.1'
-OPENENV_COMMIT = '65c506ef94bb1f7279cb4359673b3ef81031d01f'
-OPENENV_PATCH_SHA256 = '465b23aaf7b3b2cadd681495d694a7dad5ca1b36be0cfb5ce5780b94ac354668'
-MINIWOB_COMMIT = '7fd85d71a4b60325c6585396ec4f48377d049838'
-RUNTIME_PIP_INDEX_URL = 'https://pypi.org/simple'
-
-_IMAGE_BUILD_LOCK = threading.Lock()
-_RUNTIME_IMAGE_TAG: Optional[str] = None
-
 _DESCRIPTION = """
-MiniWoB evaluates multimodal browser agents on 125 short interactive tasks through OpenEnv and BrowserGym.
-The default run uses one deterministic seed per task; set `repeats=5` (or `--repeats 5`) for the full five-seed
-schedule. Each episode has a default budget of 10 model/tool turns.
+## Overview
 
-The primary metric is `success_rate`; `error_rate` reports environment failures separately. The default observation
-contains both an accessibility tree and a screenshot, so the model must support image input and function calling.
+MiniWoB evaluates whether a multimodal agent can complete short browser tasks such as clicking buttons, filling forms,
+scrolling and dragging items.
 
-See the [MiniWoB usage guide](../third_party/miniwob.html) for installation, runtime configuration, protocol details
-and full-schedule examples.
+## Task Description
+
+- **Task Type**: Interactive browser tasks
+- **Input**: A task goal, an accessibility tree and a screenshot
+- **Output**: Browser actions selected through function calling
+- **Dataset**: 125 MiniWoB tasks
+- **Metrics**: `success_rate` for completed tasks and `error_rate` for environment failures
+
+## Evaluation Notes
+
+- The default run evaluates one deterministic episode per task.
+- Set `repeats=5` for the five-episode schedule.
+- Each episode allows up to 10 model/tool turns by default.
+- The model must support image input and function calling.
+- See the [MiniWoB usage guide](../third_party/miniwob.html) for installation and examples.
 """
 
 
@@ -61,10 +56,11 @@ and full-schedule examples.
         metric_list=['success_rate', 'error_rate'],
     )
 )
-class MiniWobAdapter(BrowserGymOpenEnvAdapter):
-    """MiniWoB declarations on top of the reusable OpenEnv episode flow."""
+class MiniWobAdapter(BrowserGymAdapter):
+    """Run the pinned MiniWoB schedule through BrowserGym."""
 
-    browsergym_benchmark = 'miniwob'
+    browsergym_module = 'browsergym.miniwob'
+    browsergym_action_subset = 'miniwob_all'
     browsergym_system_prompt = MINIWOB_SYSTEM_PROMPT
     strategy_name = 'function_calling'
     max_steps_default = MINIWOB_MAX_STEPS
@@ -93,63 +89,18 @@ class MiniWobAdapter(BrowserGymOpenEnvAdapter):
         return DatasetDict({'default': dataset}), None
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        """Convert one task record into an OpenEnv episode sample."""
+        """Convert one task record into a BrowserGym episode sample."""
         return Sample(
             input='The task goal and browser observation are supplied when the episode is reset.',
             target='1',
             tools=[BROWSER_ACTION_TOOL_INFO],
-            metadata={
-                **record,
-                'observation_mode': self.observation_mode,
-                'openenv_version': OPENENV_VERSION,
-                'openenv_commit': OPENENV_COMMIT,
-                'openenv_patch_sha256': OPENENV_PATCH_SHA256,
-                'browsergym_version': BROWSERGYM_VERSION,
-                'browsergym_commit': BROWSERGYM_COMMIT,
-                'miniwob_commit': MINIWOB_COMMIT,
-                'csv_sha256': BROWSERGYM_METADATA_SHA256,
-            },
+            metadata=dict(record),
         )
 
-    def default_task_environment_config(self) -> TaskEnvironmentConfig:
-        return TaskEnvironmentConfig.model_validate({
-            'backend': 'openenv',
-            'observation_mode': 'axtree_screenshot',
-            'runtime': {
-                'name': 'ms_enclave_docker',
-                'config': {},
-            },
-        })
-
-    def validate_task_environment_config(self, config: TaskEnvironmentConfig) -> None:
-        super().validate_task_environment_config(config)
-        if config.runtime.name != 'ms_enclave_docker':
-            raise ValueError("MiniWoB supports only task_environment.runtime.name='ms_enclave_docker'.")
-
-    def prepare_task_environment_image(self) -> str:
-        """Build the pinned patched OpenEnv image once per process."""
-        global _RUNTIME_IMAGE_TAG
-        with _IMAGE_BUILD_LOCK:
-            if _RUNTIME_IMAGE_TAG is not None:
-                return _RUNTIME_IMAGE_TAG
-            runtime_dir = Path(__file__).parent / 'runtime'
-            result = prepare_docker_image(
-                DockerImageSpec(
-                    name_prefix='evalscope-openenv-browsergym',
-                    context_dir=str(runtime_dir),
-                    dockerfile='Dockerfile',
-                    build_args={
-                        'OPENENV_COMMIT': OPENENV_COMMIT,
-                        'MINIWOB_COMMIT': MINIWOB_COMMIT,
-                        'EVALSCOPE_PIP_INDEX_URL': os.environ.get(
-                            'EVALSCOPE_PIP_INDEX_URL',
-                            RUNTIME_PIP_INDEX_URL,
-                        ),
-                    },
-                )
-            )
-            _RUNTIME_IMAGE_TAG = result.image_tag
-            return result.image_tag
+    def browsergym_task_kwargs(self, sample: Sample) -> Dict[str, Any]:
+        """Use the checksum-verified local MiniWoB pages."""
+        assets_dir = ensure_miniwob_assets()
+        return {'base_url': f'{assets_dir.as_uri()}/'}
 
     def _validate_agent_config(self) -> None:
         super()._validate_agent_config()

@@ -1,16 +1,18 @@
 # MiniWoB
 
 MiniWoB evaluates multimodal browser agents on short tasks such as clicking, form filling, scrolling and
-drag-and-drop. EvalScope runs each episode through an OpenEnv service backed by BrowserGym.
+drag-and-drop. EvalScope runs BrowserGym directly and uses the environment reward as the success signal.
 
 ## Installation
 
 ```bash
 pip install 'evalscope[miniwob]'
+playwright install chromium
 ```
 
-Docker is required. The first run builds a pinned local image; later runs reuse it. Set
-`EVALSCOPE_PIP_INDEX_URL` before evaluation if the image build must use a custom Python package index.
+The first command installs the Python dependencies. Chromium is a platform-specific browser managed by Playwright, so
+it cannot be included in the Python extra and must be installed once with the second command. On first use, EvalScope
+also downloads and caches the MiniWoB task pages. Docker is not required.
 
 ## Quick start
 
@@ -22,11 +24,11 @@ evalscope eval \
   --eval-batch-size 4
 ```
 
-The default observation contains an accessibility tree and a screenshot. Use a model that accepts images and
-supports function calling.
+The observation contains an accessibility tree and a screenshot. Use a model that accepts images and supports
+function calling.
 
-The default dataset has one deterministic episode for each of the 125 tasks. Use `--repeats 5` for the full
-five-seed schedule:
+The default dataset has one deterministic episode for each of the 125 tasks. Use `--repeats 5` for the full five-seed
+schedule:
 
 ```bash
 evalscope eval \
@@ -40,66 +42,21 @@ evalscope eval \
 
 ## Configuration
 
-Most users only need the top-level evaluation parameters:
-
 | Parameter | Default | Description |
 | --- | --- | --- |
 | `repeats` | `1` | Deterministic episodes per task |
-| `eval_batch_size` | `1` | Concurrent episodes; do not exceed `4` on typical local machines |
+| `eval_batch_size` | `1` | Concurrent model calls; BrowserGym operations remain serialized |
 | `limit` | unset | Number of tasks selected before repetition |
-
-Advanced environment options live under `agent_config.task_environment`. `max_steps` remains a native agent option:
-
-```python
-from evalscope import TaskConfig, run_task
-from evalscope.api.agent import NativeAgentConfig
-
-run_task(
-    TaskConfig(
-        model='qwen3-vl-plus',
-        datasets=['miniwob'],
-        repeats=5,
-        eval_batch_size=4,
-        agent_config=NativeAgentConfig(
-            max_steps=10,
-            task_environment={
-                'backend': 'openenv',
-                'observation_mode': 'axtree_screenshot',
-                'runtime': {
-                    'name': 'ms_enclave_docker',
-                },
-            },
-        ),
-    )
-)
-```
-
-Use `observation_mode='axtree'` only for text-only diagnostics. It does not represent the default multimodal
-evaluation.
-
-## Integration structure
-
-`OpenEnvAdapter` owns the reusable episode flow:
-
-1. Start the configured service runtime and obtain its endpoint.
-2. Create an OpenEnv session and reset the episode.
-3. Run the standard EvalScope AgentLoop.
-4. Forward tool actions to `session.step(...)`.
-5. Record reward, trace and errors, then close the session and runtime handle.
-
-A benchmark subclass supplies only its dataset schedule, image/environment variables, reset arguments, action mapping
-and observation formatting. Action mapping cannot be universal: MiniWoB v0.4.1 accepts a BrowserGym expression in
-`action_str`, while other OpenEnv environments such as OpenApp use structured action fields.
+| `agent_config.max_steps` | `10` | Model/tool turns per episode |
 
 The model sees one `browser_action` function. Its `action` argument contains one BrowserGym `miniwob_all` expression,
 such as `click("13")`, `fill("7", "text")` or `mouse_click(420, 260)`. Coordinate actions use absolute screenshot
 pixels.
 
-## Reproducibility
+## Evaluation protocol
 
-This integration pins OpenEnv v0.4.1 and BrowserGym v0.14.3. The local image applies a checksum-pinned compatibility
-patch so the service uses BrowserGym's `miniwob_all` action configuration and preserves task viewport and timeout
-settings.
+Each episode runs in a fresh browser context. The task is successful when MiniWoB returns a positive reward.
+`success_rate` reports completed tasks, while `error_rate` reports episodes that could not run normally.
 
-BrowserGym's full evaluation schedule uses five deterministic seeds per task and a 10-step budget. A limited run,
-the default one-seed schedule, or a custom step budget should not be compared directly with full-schedule results.
+The full schedule uses five deterministic episodes per task and a 10-step budget. Results from a limited run, the
+default one-episode schedule or a custom step budget should not be compared directly with full-schedule results.

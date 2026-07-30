@@ -208,6 +208,40 @@ class TestAgentLoopCore(unittest.TestCase):
         self.assertEqual(tool_event.payload['metadata']['reward'], 1.0)
         self.assertEqual(tool_event.payload['attachments'], ['/tmp/step-001.png'])
 
+    def test_rich_tool_attachments_follow_all_tool_results(self):
+        model = MagicMock()
+        submit_call = ToolCall(id='submit', function=ToolFunction(name='submit', arguments={'answer': 'done'}))
+        model.generate_async = AsyncMock(side_effect=[
+            _make_output(tool_calls=[
+                _tool_call(name='echo', call_id='one'),
+                _tool_call(name='echo', call_id='two'),
+            ]),
+            _make_output(tool_calls=[submit_call]),
+        ])
+
+        async def rich_handler(call, env):
+            return ToolExecutionOutput(
+                text=f'output:{call.id}',
+                attachments=[ContentImage(image=f'/tmp/{call.id}.png')],
+            )
+
+        loop = self._build_loop(model, handlers={'echo': rich_handler})
+        ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='run both')])
+        result = asyncio.run(loop.run(ctx))
+
+        self.assertEqual([message.role for message in result.messages[:6]], [
+            'user',
+            'assistant',
+            'tool',
+            'tool',
+            'user',
+            'user',
+        ])
+        self.assertEqual(result.messages[2].tool_call_id, 'one')
+        self.assertEqual(result.messages[3].tool_call_id, 'two')
+        self.assertEqual(result.messages[4].tool_call_id, ['one'])
+        self.assertEqual(result.messages[5].tool_call_id, ['two'])
+
     def test_unknown_tool_yields_error_observation_without_aborting(self):
         model = MagicMock()
         submit_call = ToolCall(id='sc1', function=ToolFunction(name='submit', arguments={'answer': 'recovered'}))

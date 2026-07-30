@@ -164,6 +164,13 @@
   --bubble-tool-icon-bg: rgba(245, 158, 11, 0.15);
   --bubble-tool-icon-border: rgba(245, 158, 11, 0.30);
   --bubble-tool-color: #fbbf24;
+  --bubble-environment-bg: rgba(14, 165, 233, 0.08);
+  --bubble-environment-bg-hl: rgba(14, 165, 233, 0.16);
+  --bubble-environment-border: rgba(14, 165, 233, 0.28);
+  --bubble-environment-border-hl: rgba(14, 165, 233, 0.55);
+  --bubble-environment-icon-bg: rgba(14, 165, 233, 0.14);
+  --bubble-environment-icon-border: rgba(14, 165, 233, 0.30);
+  --bubble-environment-color: #38bdf8;
   --bubble-system-bg: rgba(148, 163, 184, 0.06);
   --bubble-system-bg-hl: rgba(148, 163, 184, 0.12);
   --bubble-system-border: rgba(148, 163, 184, 0.20);
@@ -313,6 +320,13 @@
   --bubble-tool-icon-bg: rgba(180, 100, 0, 0.12);
   --bubble-tool-icon-border: rgba(180, 100, 0, 0.32);
   --bubble-tool-color: #b26200;
+  --bubble-environment-bg: rgba(2, 132, 199, 0.08);
+  --bubble-environment-bg-hl: rgba(2, 132, 199, 0.16);
+  --bubble-environment-border: rgba(2, 132, 199, 0.28);
+  --bubble-environment-border-hl: rgba(2, 132, 199, 0.55);
+  --bubble-environment-icon-bg: rgba(2, 132, 199, 0.12);
+  --bubble-environment-icon-border: rgba(2, 132, 199, 0.30);
+  --bubble-environment-color: #0284c7;
   --bubble-system-bg: rgba(90, 99, 120, 0.08);
   --bubble-system-bg-hl: rgba(90, 99, 120, 0.14);
   --bubble-system-border: rgba(90, 99, 120, 0.22);

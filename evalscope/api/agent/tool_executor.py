@@ -2,7 +2,7 @@
 
 Tool handlers are registered under ``evalscope/agent/tools/`` via
 ``@register_agent_tool('name')`` and must expose an async
-``run(call: ToolCall, env: AgentEnvironment | None) -> str`` callable.
+``run(call: ToolCall, env: AgentEnvironment | None) -> ToolObservation`` callable.
 """
 
 import time

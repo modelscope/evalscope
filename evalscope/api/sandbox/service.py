@@ -96,13 +96,6 @@ class SandboxHandle:
         sandbox_id = self._sandbox_id
         return await self._service._run(self._manager.put_dir(sandbox_id, source_dir, target_dir))
 
-    async def get_info(self) -> Any:
-        """Return public sandbox metadata while the handle is open."""
-        if self._sandbox_id is None:
-            raise RuntimeError('SandboxHandle already closed')
-        sandbox_id = self._sandbox_id
-        return await self._service._run(self._manager.get_sandbox_info(sandbox_id))
-
     async def close(self) -> None:
         if self._sandbox_id is None:
             return

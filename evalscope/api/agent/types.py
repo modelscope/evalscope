@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 
-from evalscope.api.environment import TaskEnvironmentConfig
 from evalscope.api.messages import ChatMessage, Content
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolInfo
@@ -63,9 +62,6 @@ class NativeAgentConfig(BaseAgentConfig):
 
     mode: Literal['native'] = Field(default='native')
     """Union discriminator — fixed value for the native AgentLoop path."""
-
-    task_environment: Optional[TaskEnvironmentConfig] = Field(default=None)
-    """Stateful task protocol and the runtime hosting its service."""
 
     strategy: str = Field(default='function_calling')
     """Registered strategy name (``function_calling`` / ``react`` / ...)."""

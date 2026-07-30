@@ -1,4 +1,10 @@
-"""Sample-scoped execution environment used by agent tools and CLI runners."""
+"""Sample-scoped sandboxed execution environment.
+
+``AgentEnvironment`` is deliberately minimal: it exposes a file-system +
+exec surface and knows nothing about agents, strategies or tools.
+Concrete implementations (EnclaveAgentEnvironment, LocalAgentEnvironment)
+live in ``evalscope/agent/environments/``.
+"""
 
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -8,15 +14,14 @@ from .types import ExecResult
 
 
 class AgentEnvironment(ABC):
-    """Per-sample command execution environment.
+    """Per-sample isolated execution environment.
 
-    Environments provide shell and optional file-transfer capabilities to agent
-    tools and external CLI runners. Stateful task environments are represented
-    separately by :class:`evalscope.api.environment.TaskEnvironmentSession`.
+    Lifecycle: ``__aenter__`` → N × ``exec`` → ``close``.  Created and
+    destroyed per sample by the AgentAdapter.
     """
 
     name: str = 'base'
-    """Registered environment name. Subclasses should override."""
+    """Registered environment name.  Subclasses should override."""
 
     @abstractmethod
     async def exec(

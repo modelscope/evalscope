@@ -243,7 +243,7 @@ EvalScope 使用嵌套的 `--sandbox` 配置（对应 `SandboxTaskConfig`）统�
 
 ## Agent 参数
 
-`--agent-config` / `agent_config` 用于启用 [Agent 评测](../user_guides/agent/index.md)：当设置后，所有基于 `DefaultDataAdapter` 的基准会改用 [内置 AgentLoop](../user_guides/agent/native.md) 进行推理，或通过 [外部 Agent Bridge](../user_guides/agent/bridge.md) 转交给 Claude Code / Codex 等成品 CLI。`AgentLoopAdapter` 子类（如 `swe_bench_*_agentic`）保留 benchmark 默认值，同时接受其支持的显式覆盖，例如策略、步数、工具和任务环境。
+`--agent-config` / `agent_config` 用于启用 [Agent 评测](../user_guides/agent/index.md)：当设置后，所有基于 `DefaultDataAdapter` 的基准会改用 [内置 AgentLoop](../user_guides/agent/native.md) 进行推理，或通过 [外部 Agent Bridge](../user_guides/agent/bridge.md) 转交给 Claude Code / Codex 等成品 CLI。`AgentLoopAdapter` 子类（如 `swe_bench_*_agentic`）保留 benchmark 默认值，同时接受其支持的显式覆盖，例如策略、步数和工具。
 
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
@@ -257,7 +257,6 @@ EvalScope 使用嵌套的 `--sandbox` 配置（对应 `SandboxTaskConfig`）统�
 | `tools` | `list[str]` | 工具白名单：`bash` / `python_exec`（`submit` 由策略自动注入） | `[]` |
 | `environment` | `str \| None` | Agent 命令执行环境，例如 `local` 或 `docker` | `None` |
 | `environment_extra` | `dict` | Agent 环境构造参数；Docker 镜像放在 `sandbox_config.image` | `{}` |
-| `task_environment` | `TaskEnvironmentConfig \| None` | 有状态任务后端、观测模式及其服务运行时 | `None` |
 | `max_steps` | `int` | 循环迭代硬上限 | `10` |
 | `kwargs` | `dict` | 策略构造参数，例如 `{'system_prompt': '...'}` | `{}` |
 

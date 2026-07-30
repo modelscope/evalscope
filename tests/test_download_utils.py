@@ -8,9 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from evalscope.utils.download_utils import download_url, file_sha256
-from evalscope.utils.url_utils import SUPPORTED_VIDEO_FORMATS
-from evalscope.utils.url_utils import download_url as legacy_download_url
-from evalscope.utils.url_utils import guess_video_format, video_as_data_uri
+from evalscope.utils.media_utils import SUPPORTED_VIDEO_FORMATS, guess_video_format, video_as_data_uri
 
 PAYLOAD = b'hello evalscope'
 PAYLOAD_SHA256 = hashlib.sha256(PAYLOAD).hexdigest()
@@ -108,8 +106,7 @@ def test_concurrent_downloads_fetch_once(tmp_path: Path):
     assert save_path.read_bytes() == PAYLOAD
 
 
-def test_url_utils_keeps_legacy_download_and_video_exports():
-    assert legacy_download_url is download_url
+def test_media_utils_exposes_video_helpers():
     assert 'mp4' in SUPPORTED_VIDEO_FORMATS
     assert guess_video_format('clip.mov') == 'mov'
     assert video_as_data_uri('data:video/mp4;base64,AA==') == 'data:video/mp4;base64,AA=='

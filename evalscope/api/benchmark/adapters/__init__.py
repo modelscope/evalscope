@@ -1,12 +1,11 @@
 from .agent_adapter import AgentAdapter, AgentLoopAdapter
 from .audio_language_adapter import AudioLanguageAdapter
-from .browsergym_adapter import BrowserGymOpenEnvAdapter
+from .browsergym_adapter import BrowserGymAdapter
 from .default_data_adapter import DefaultDataAdapter
 from .function_call_adapter import FunctionCallAdapter
 from .image_edit_adapter import ImageEditAdapter
 from .multi_choice_adapter import MultiChoiceAdapter
 from .multi_turn_adapter import MultiTurnAdapter
 from .ner_adapter import NERAdapter
-from .openenv_adapter import OpenEnvAdapter
 from .text2image_adapter import Text2ImageAdapter
 from .vision_language_adapter import VisionLanguageAdapter

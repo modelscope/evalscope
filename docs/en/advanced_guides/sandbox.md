@@ -85,7 +85,7 @@ class MyBenchmarkAdapter(DefaultDataAdapter):
 ```
 
 The returned dict is merged on top of `sandbox.default_config` and passed
-to the runtime constructor. `agent_config.environment_extra` still
+to the environment constructor. `agent_config.environment_extra` still
 has the final word if the user wants to override per-run.
 
 ## Pool vs per-sample

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { loadFixture } from '@/test/loadFixture'
-import { loadReportResponseSchema } from './reports.schema'
+import { agentTraceSchema, chatMessageSchema, loadReportResponseSchema } from './reports.schema'
 
 describe('loadReportResponseSchema real report compatibility', () => {
   const fixture = loadFixture<unknown>('report-real-single-sample')
@@ -22,5 +22,46 @@ describe('loadReportResponseSchema real report compatibility', () => {
     invalid.report_list[0].perf_metrics!.summary.latency.mean = null
 
     expect(loadReportResponseSchema.safeParse(invalid).success).toBe(false)
+  })
+
+  it('accepts the BrowserGym environment reset event emitted by the backend', () => {
+    const result = agentTraceSchema.safeParse({
+      strategy: 'function_calling',
+      environment: 'browsergym',
+      max_steps: 10,
+      events: [
+        {
+          step: 0,
+          timestamp: 1_700_000_000,
+          type: 'env_reset',
+          message_id: 'browser-observation-0',
+          latency_ms: 120,
+          payload: {
+            backend: 'browsergym',
+            reward: 0,
+            done: false,
+            screenshot_path: '/tmp/miniwob/step-000.png',
+          },
+        },
+      ],
+    })
+
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts tool-linked environment attachments emitted as user messages', () => {
+    const result = chatMessageSchema.safeParse({
+      id: 'browser-observation-1',
+      role: 'user',
+      content: [{ type: 'image', image: '/tmp/miniwob/step-001.png' }],
+      tool_call_id: ['browser-call-0'],
+      metadata: {
+        reward: 1,
+        done: true,
+        screenshot_path: '/tmp/miniwob/step-001.png',
+      },
+    })
+
+    expect(result.success).toBe(true)
   })
 })

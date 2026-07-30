@@ -110,7 +110,7 @@ def add_argument(parser: argparse.ArgumentParser):
     #   --agent-config '{"mode":"native","strategy":"react","max_steps":5}'
     # External example:
     #   --agent-config '{"mode":"external","framework":"claude-code","kwargs":{"model_name":"claude-opus-4-6"},"environment":"docker"}'
-    parser.add_argument('--agent-config', type=json.loads, default=None, help='Agent configuration as a JSON object. Use environment + environment_extra for Agent command execution, and nest stateful task services under task_environment. Mode discriminated: {"mode":"native", ...} for AgentLoop, {"mode":"external","framework":"claude-code", ...} for external CLI bridge.')  # noqa: E501
+    parser.add_argument('--agent-config', type=json.loads, default=None, help='Agent configuration as a JSON object. Mode discriminated: {"mode":"native", ...} for AgentLoop, {"mode":"external","framework":"claude-code", ...} for external CLI bridge.')  # noqa: E501
 
     # Sandbox-related arguments
     parser.add_argument('--sandbox', type=json.loads, default=None, help='Unified sandbox configuration as a JSON string, e.g. \'{"enabled": true, "engine": "docker"}\'. Maps to TaskConfig.sandbox / SandboxTaskConfig.')  # noqa: E501

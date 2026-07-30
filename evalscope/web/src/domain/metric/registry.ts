@@ -100,6 +100,27 @@ export const EVALUATION_METRIC_SPECS: MetricRegistry = {
     percentPrecision: DEFAULT_PERCENT_PRECISION,
     storedAsHundred: true,
   },
+  // EvalScope evaluation reports aggregate these metrics from per-sample
+  // 0-1 values. Keep the explicit `mean_` keys so they do not resolve to the
+  // performance-domain `success_rate`, which is stored as 0-100.
+  mean_success_rate: {
+    key: 'mean_success_rate',
+    labelKey: 'metrics.success_rate',
+    boundedness: 'bounded',
+    direction: 'higher-is-better',
+    unit: null,
+    rawPrecision: DEFAULT_RAW_PRECISION,
+    percentPrecision: DEFAULT_PERCENT_PRECISION,
+  },
+  mean_error_rate: {
+    key: 'mean_error_rate',
+    labelKey: 'metrics.error_rate',
+    boundedness: 'bounded',
+    direction: 'lower-is-better',
+    unit: null,
+    rawPrecision: DEFAULT_RAW_PRECISION,
+    percentPrecision: DEFAULT_PERCENT_PRECISION,
+  },
 }
 
 /**

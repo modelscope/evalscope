@@ -1,14 +1,25 @@
 # MiniWoB
 
 
-MiniWoB 通过 OpenEnv 和 BrowserGym 对多模态浏览器智能体在 125 个简短交互任务上的表现进行评估。
-默认运行时每个任务使用一个确定性随机种子；若要运行完整的五种子评估，请设置 `repeats=5`（或 `--repeats 5`）。
-每个 episode 默认最多允许 10 次模型/工具调用。
+## 概述
 
-主要评估指标为 `success_rate`；`error_rate` 单独报告环境失败情况。默认观测包含可访问性树（accessibility tree）和截图，因此模型必须支持图像输入和函数调用。
+MiniWoB 用于评估多模态智能体是否能够完成简短的浏览器任务，例如点击按钮、填写表单、滚动页面以及拖拽元素。
 
-有关安装、运行时配置、协议细节以及完整评估示例，请参阅 [MiniWoB 使用指南](../third_party/miniwob.html)。
+## 任务描述
 
+- **任务类型**：交互式浏览器任务
+- **输入**：任务目标、无障碍树（accessibility tree）和屏幕截图
+- **输出**：通过函数调用选择的浏览器操作
+- **数据集**：125 个 MiniWoB 任务
+- **指标**：任务完成率（`success_rate`）和环境错误率（`error_rate`）
+
+## 评估说明
+
+- 默认运行对每个任务评估一个确定性回合（episode）。
+- 设置 `repeats=5` 可启用五回合评估计划。
+- 每个回合默认最多允许 10 次模型/工具交互。
+- 模型必须支持图像输入和函数调用。
+- 安装与示例请参阅 [MiniWoB 使用指南](../third_party/miniwob.html)。
 
 ## 属性
 
@@ -19,7 +30,7 @@ MiniWoB 通过 OpenEnv 和 BrowserGym 对多模态浏览器智能体在 125 个�
 | **论文** | N/A |
 | **标签** | `Agent`, `FunctionCalling`, `MultiModal`, `MultiTurn` |
 | **指标** | `success_rate`, `error_rate` |
-| **默认示例数量** | 0-shot |
+| **默认提示方式** | 0-shot |
 | **评估划分** | `test` |
 
 
@@ -39,7 +50,7 @@ MiniWoB 通过 OpenEnv 和 BrowserGym 对多模态浏览器智能体在 125 个�
 {
   "input": [
     {
-      "id": "481bffa9",
+      "id": "4b7219db",
       "content": "The task goal and browser observation are supplied when the episode is reset."
     }
   ],
@@ -71,15 +82,6 @@ MiniWoB 通过 OpenEnv 和 BrowserGym 对多模态浏览器智能体在 125 个�
     "similarity_group": "0",
     "browsergym_split": "test",
     "task_id": "miniwob.ascending-numbers",
-    "openenv_task_name": "ascending-numbers",
-    "observation_mode": "axtree_screenshot",
-    "openenv_version": "0.4.1",
-    "openenv_commit": "65c506ef94bb1f7279cb4359673b3ef81031d01f",
-    "openenv_patch_sha256": "465b23aaf7b3b2cadd681495d694a7dad5ca1b36be0cfb5ce5780b94ac354668",
-    "browsergym_version": "0.14.3",
-    "browsergym_commit": "0a785fbed075224ae81ca9c1fe924f66050696fe",
-    "miniwob_commit": "7fd85d71a4b60325c6585396ec4f48377d049838",
-    "csv_sha256": "37117db27909a17b1b78035528472922c98c479a54619ac398dc256a7d2fef09",
     "seed": 1608637542,
     "repeat": 0
   }

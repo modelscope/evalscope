@@ -99,14 +99,8 @@ class AgentTrace(BaseModel):
     strategy: Optional[str] = None
     """Registered strategy name used for this run (native only)."""
 
-    task_environment: Optional[str] = None
-    """Stateful task-environment backend used for this run, if any."""
-
-    task_environment_runtime: Optional[str] = None
-    """Runtime hosting the task-environment service, if any."""
-
     environment: Optional[str] = None
-    """Agent execution environment used by tools or an external agent, if any."""
+    """Registered environment name used for this run, if any."""
 
     max_steps: int = 0
     """Configured ``max_steps`` cap (native only; 0 for external)."""

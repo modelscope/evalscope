@@ -59,7 +59,7 @@ from evalscope.api.model import (
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, parse_tool_call
 from evalscope.utils import get_logger, get_secret_value
 from evalscope.utils.media_utils import guess_video_format, video_as_data_uri
-from evalscope.utils.url_utils import data_uri_to_base64, file_as_data_uri, is_data_uri, is_http_url
+from evalscope.utils.uri_utils import data_uri_to_base64, file_as_data_uri, is_data_uri, is_http_url
 
 logger = get_logger()
 

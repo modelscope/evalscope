@@ -15,7 +15,7 @@ from evalscope.api.registry import get_metric, register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64, safe_filename
 from evalscope.utils.logger import get_logger
-from evalscope.utils.url_utils import data_uri_to_base64, is_data_uri, is_http_url
+from evalscope.utils.uri_utils import data_uri_to_base64, is_data_uri, is_http_url
 
 logger = get_logger()
 

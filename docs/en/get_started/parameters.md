@@ -247,7 +247,7 @@ For full usage including local and remote manager examples, see [Sandbox Environ
 
 ## Agent Parameters
 
-`--agent-config` / `agent_config` enables [Agent Evaluation](../user_guides/agent/index.md): once set, all benchmarks based on `DefaultDataAdapter` switch to [native AgentLoop](../user_guides/agent/native.md) inference, or delegate to a third-party CLI such as Claude Code / Codex via the [external Agent Bridge](../user_guides/agent/bridge.md). `AgentLoopAdapter` subclasses (such as `swe_bench_*_agentic`) keep their benchmark defaults but accept supported explicit overrides such as strategy, step limit, tools, and task environment.
+`--agent-config` / `agent_config` enables [Agent Evaluation](../user_guides/agent/index.md): once set, all benchmarks based on `DefaultDataAdapter` switch to [native AgentLoop](../user_guides/agent/native.md) inference, or delegate to a third-party CLI such as Claude Code / Codex via the [external Agent Bridge](../user_guides/agent/bridge.md). `AgentLoopAdapter` subclasses (such as `swe_bench_*_agentic`) keep their benchmark defaults but accept supported explicit overrides such as strategy, step limit, and tools.
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
@@ -261,7 +261,6 @@ For full usage including local and remote manager examples, see [Sandbox Environ
 | `tools` | `list[str]` | Tool whitelist: `bash` / `python_exec` (`submit` is auto-injected by the strategy) | `[]` |
 | `environment` | `str \| None` | Agent command environment, such as `local` or `docker` | `None` |
 | `environment_extra` | `dict` | Agent environment constructor options; Docker images belong in `sandbox_config.image` | `{}` |
-| `task_environment` | `TaskEnvironmentConfig \| None` | Stateful task backend, observation mode, and service runtime | `None` |
 | `max_steps` | `int` | Hard upper bound of loop iterations | `10` |
 | `kwargs` | `dict` | Strategy constructor kwargs, e.g. `{'system_prompt': '...'}` | `{}` |
 

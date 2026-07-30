@@ -217,6 +217,7 @@ class AgentLoop:
             f'executing {len(parsed.tool_calls)} tool call(s): '
             f'{[c.function.name for c in parsed.tool_calls]}',
         )
+        attachment_messages = []
         for call in parsed.tool_calls:
             self.trace.add_event(
                 step=ctx.step,
@@ -254,7 +255,7 @@ class AgentLoop:
                     tool_call_id=[call.id],
                     metadata=rich_output.metadata or None,
                 )
-                ctx.messages.append(attachment_message)
+                attachment_messages.append(attachment_message)
             self.trace.add_event(
                 step=ctx.step,
                 type=EventType.TOOL_RESULT,
@@ -277,9 +278,11 @@ class AgentLoop:
             if rich_output is not None and rich_output.terminate:
                 parsed.final_answer = rich_output.final_answer if rich_output.final_answer is not None else ''
             if self.strategy.is_done(parsed, ctx):
+                ctx.messages.extend(attachment_messages)
                 self._emit_post_tool_submit(ctx, attachment_message or obs_msg, call, parsed, duration)
                 return True
 
+        ctx.messages.extend(attachment_messages)
         return False
 
     # ------------------------------------------------------------------

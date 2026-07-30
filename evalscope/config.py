@@ -539,7 +539,14 @@ class TaskConfig(BaseArgument):
         if isinstance(other, TaskConfig):
             other = other._to_update_dict()
         other = _secretize_api_keys(other)
-        merged = self._deep_merge(self._to_update_dict(), other)
+        current = self._to_update_dict()
+        incoming_agent_config = other.get('agent_config')
+        current_agent_config = current.get('agent_config')
+        if isinstance(incoming_agent_config, dict) and isinstance(current_agent_config, dict):
+            incoming_mode = incoming_agent_config.get('mode')
+            if incoming_mode is not None and incoming_mode != current_agent_config.get('mode'):
+                current['agent_config'] = {}
+        merged = self._deep_merge(current, other)
         if isinstance(merged.get('generation_config'), dict):
             merged['generation_config'] = self._coerce_generation_config(merged['generation_config'])
         if isinstance(merged.get('sandbox'), dict):
@@ -550,10 +557,11 @@ class TaskConfig(BaseArgument):
             setattr(self, key, value)
 
     def _to_update_dict(self) -> dict:
-        result = self.model_dump(exclude={'model', 'generation_config', 'sandbox'})
+        result = self.model_dump(exclude={'model', 'generation_config', 'sandbox', 'agent_config'})
         result['model'] = self.model
         result['generation_config'] = self._dump_generation_config()
         result['sandbox'] = self.sandbox
+        result['agent_config'] = self._dump_agent_config()
         return result
 
     def _dump_generation_config(self, mode: Optional[str] = None) -> Union[dict, GenerateConfig, None]:
@@ -564,6 +572,13 @@ class TaskConfig(BaseArgument):
         if mode is not None:
             kwargs['mode'] = mode
         return self.generation_config.model_dump(**kwargs)
+
+    def _dump_agent_config(self) -> Union[dict, NativeAgentConfig, ExternalAgentConfig, None]:
+        if not isinstance(self.agent_config, (NativeAgentConfig, ExternalAgentConfig)):
+            return self.agent_config
+        fields = set(self.agent_config.model_fields_set)
+        fields.add('mode')
+        return self.agent_config.model_dump(include=fields)
 
     def dump_yaml(self, output_dir: str) -> None:
         """Dump the task configuration to a YAML file."""

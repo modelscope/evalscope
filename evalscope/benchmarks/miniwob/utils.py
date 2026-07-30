@@ -4,8 +4,13 @@ from __future__ import annotations
 
 import ast
 import csv
-import hashlib
+import inspect
 import numpy as np
+import os
+import shutil
+import tarfile
+import tempfile
+import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -15,22 +20,18 @@ from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR
 from evalscope.utils.download_utils import download_url, file_sha256
 from evalscope.utils.json_schema import JSONSchema
 
-BROWSERGYM_VERSION = '0.14.3'
 BROWSERGYM_COMMIT = '0a785fbed075224ae81ca9c1fe924f66050696fe'
 BROWSERGYM_METADATA_SHA256 = '37117db27909a17b1b78035528472922c98c479a54619ac398dc256a7d2fef09'
 BROWSERGYM_METADATA_URL = (
     f'https://raw.githubusercontent.com/ServiceNow/BrowserGym/{BROWSERGYM_COMMIT}/'
     'browsergym/experiments/src/browsergym/experiments/benchmark/metadata/miniwob.csv'
 )
-MINIWOB_SCHEDULE_SHA256_BY_REPEATS = {
-    1: '7e8487ae966899585f6c1aac78fee869d746cf2c983aae55783356bf5be66926',
-    5: '2215888dc6b2cf18bbe2f598d747c21c60d11d27d3b42d030ac2e5622fd865de',
-}
-MINIWOB_TASK_COUNT = 125
-MINIWOB_REPEATS = 5
+MINIWOB_COMMIT = '7fd85d71a4b60325c6585396ec4f48377d049838'
+MINIWOB_ARCHIVE_SHA256 = '89cc878fc4769d8815630f5367c5c53b0ad4ae0a98b6fa9663eba83cf99a3807'
+MINIWOB_ARCHIVE_URL = f'https://github.com/Farama-Foundation/miniwob-plusplus/archive/{MINIWOB_COMMIT}.tar.gz'
 MINIWOB_MAX_STEPS = 10
 MINIWOB_SEED_MAX = 2**32
-MINIWOB_ALL_ACTIONS = (
+_MINIWOB_ALL_ACTIONS = (
     'noop',
     'mouse_move',
     'mouse_click',
@@ -43,7 +44,7 @@ MINIWOB_ALL_ACTIONS = (
     'keyboard_type',
     'fill',
 )
-MINIWOB_ACTION_SIGNATURES = (
+_MINIWOB_ACTION_SIGNATURES = (
     'noop(wait_ms=1000), mouse_move(x, y), mouse_click(x, y, button="left"), '
     'mouse_dblclick(x, y, button="left"), mouse_down(x, y, button="left"), '
     'mouse_up(x, y, button="left"), scroll(delta_x, delta_y), click(bid, button="left"), '
@@ -54,7 +55,7 @@ BROWSER_ACTION_TOOL_INFO = ToolInfo(
     name='browser_action',
     description=(
         'Execute exactly one BrowserGym MiniWoB action. '
-        f'Supported signatures: {MINIWOB_ACTION_SIGNATURES}. '
+        f'Supported signatures: {_MINIWOB_ACTION_SIGNATURES}. '
         'click accepts a string BID, for example click("13"); use mouse_click(x, y) for visual targets. '
         'Coordinates are absolute screenshot pixels, not normalized 0-1000 coordinates.'
     ),
@@ -83,6 +84,7 @@ _EXPECTED_FIELDS = [
     'similarity_group',
     'browsergym_split',
 ]
+_ASSET_LOCK = threading.Lock()
 
 
 def load_miniwob_records(
@@ -103,8 +105,6 @@ def load_miniwob_records(
         rows = list(reader)
 
     task_names = [row['task_name'] for row in rows]
-    if len(rows) != MINIWOB_TASK_COUNT:
-        raise ValueError(f'Expected {MINIWOB_TASK_COUNT} MiniWoB tasks, found {len(rows)}.')
     if len(set(task_names)) != len(task_names):
         raise ValueError('MiniWoB metadata contains duplicate task_name values.')
     if task_names != sorted(task_names):
@@ -120,19 +120,8 @@ def load_miniwob_records(
         records.append({
             **row,
             'task_id': task_id,
-            'openenv_task_name': task_id.removeprefix('miniwob.'),
             '_episode_seeds': episode_seeds,
         })
-
-    schedule_sha256 = hashlib.sha256(
-        '\n'.join(f"{record['task_id']}:{seed}" for record in records for seed in record['_episode_seeds']).encode()
-    ).hexdigest()
-    expected_schedule_sha256 = MINIWOB_SCHEDULE_SHA256_BY_REPEATS.get(repeats)
-    if expected_schedule_sha256 is not None and schedule_sha256 != expected_schedule_sha256:
-        raise ValueError(
-            f'MiniWoB schedule checksum mismatch for repeats={repeats}: '
-            f'expected {expected_schedule_sha256}, found {schedule_sha256}.'
-        )
     return records, metadata_path
 
 
@@ -158,6 +147,52 @@ def ensure_miniwob_metadata(cache_root: Optional[str | Path] = None) -> Path:
     return destination
 
 
+def ensure_miniwob_assets(cache_root: Optional[str | Path] = None) -> Path:
+    """Return checksum-verified MiniWoB HTML assets for direct BrowserGym use."""
+    root = Path(cache_root or DEFAULT_EVALSCOPE_CACHE_DIR).expanduser()
+    source_parent = root / 'sources' / 'miniwob'
+    source_dir = source_parent / MINIWOB_COMMIT
+    html_dir = source_dir / 'miniwob' / 'html' / 'miniwob'
+    sentinel = html_dir / 'click-dialog.html'
+    if sentinel.is_file():
+        return html_dir
+
+    with _ASSET_LOCK:
+        if sentinel.is_file():
+            return html_dir
+        archive_path = source_parent / f'{MINIWOB_COMMIT}.tar.gz'
+        download_url(
+            MINIWOB_ARCHIVE_URL,
+            str(archive_path),
+            sha256=MINIWOB_ARCHIVE_SHA256,
+            headers={'User-Agent': 'EvalScope-MiniWoB/1.0'},
+        )
+        source_parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix='extract-', dir=source_parent) as temp_dir:
+            temp_path = Path(temp_dir)
+            with tarfile.open(archive_path, 'r:gz') as archive:
+                base = temp_path.resolve()
+                members = archive.getmembers()
+                if any(member.issym() or member.islnk() for member in members):
+                    raise ValueError('MiniWoB archive must not contain symbolic or hard links.')
+                if any(not (temp_path / member.name).resolve().is_relative_to(base) for member in members):
+                    raise ValueError('MiniWoB archive contains a path outside its extraction directory.')
+                extract_kwargs = {}
+                if 'filter' in inspect.signature(archive.extractall).parameters:
+                    extract_kwargs['filter'] = 'data'
+                archive.extractall(temp_path, members=members, **extract_kwargs)
+            extracted_roots = [path for path in temp_path.iterdir() if path.is_dir()]
+            if len(extracted_roots) != 1:
+                raise ValueError('MiniWoB archive must contain exactly one top-level directory.')
+            extracted_source = extracted_roots[0]
+            if not (extracted_source / 'miniwob' / 'html' / 'miniwob' / 'click-dialog.html').is_file():
+                raise ValueError('MiniWoB archive does not contain the expected HTML assets.')
+            if source_dir.exists():
+                shutil.rmtree(source_dir)
+            os.replace(extracted_source, source_dir)
+    return html_dir
+
+
 def validate_browser_action(action: str) -> str:
     """Require one plain function-call expression per browser tool invocation."""
     text = action.strip()
@@ -170,7 +205,7 @@ def validate_browser_action(action: str) -> str:
     call = tree.body[0].value
     if not isinstance(call.func, ast.Name):
         raise ValueError('browser_action requires a direct BrowserGym function name.')
-    if call.func.id not in MINIWOB_ALL_ACTIONS:
+    if call.func.id not in _MINIWOB_ALL_ACTIONS:
         raise ValueError(f'Unsupported BrowserGym miniwob_all action: {call.func.id}.')
     if sum(isinstance(node, ast.Call) for node in ast.walk(call)) != 1:
         raise ValueError('browser_action cannot contain nested function calls.')
@@ -182,15 +217,9 @@ def validate_browser_action(action: str) -> str:
 
 __all__ = [
     'BROWSER_ACTION_TOOL_INFO',
-    'BROWSERGYM_COMMIT',
-    'BROWSERGYM_METADATA_SHA256',
-    'BROWSERGYM_METADATA_URL',
-    'BROWSERGYM_VERSION',
-    'MINIWOB_ACTION_SIGNATURES',
-    'MINIWOB_ALL_ACTIONS',
     'MINIWOB_MAX_STEPS',
-    'MINIWOB_SCHEDULE_SHA256_BY_REPEATS',
     'MINIWOB_SYSTEM_PROMPT',
+    'ensure_miniwob_assets',
     'ensure_miniwob_metadata',
     'load_miniwob_records',
     'validate_browser_action',

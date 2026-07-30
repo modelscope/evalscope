@@ -43,7 +43,7 @@ class ImagePairMixin:
         from io import BytesIO
         from PIL import Image
 
-        from evalscope.utils.url_utils import file_as_data
+        from evalscope.utils.uri_utils import file_as_data
 
         if image is None or (isinstance(image, str) and image.strip() == ''):
             raise ValueError('Image value is required for image pair metrics.')

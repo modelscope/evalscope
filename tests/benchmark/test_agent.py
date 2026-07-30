@@ -12,11 +12,12 @@ load_dotenv('.env')
 
 env = dotenv_values('.env')
 
+import numpy as np
 import unittest
 
 from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.agent.mcp import MCPServerConfigStdio
-from evalscope.api.environment import EnvironmentStepResult
+from evalscope.api.benchmark.adapters.browsergym_adapter import BrowserGymStep
 from evalscope.api.messages import ChatMessageAssistant
 from evalscope.api.metric import SampleScore, Score
 from evalscope.api.model import ModelOutput
@@ -44,6 +45,7 @@ from evalscope.config import SandboxTaskConfig, TaskConfig
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
 from evalscope.models.mockllm import MockLLM
 from evalscope.run import run_task
+from evalscope.utils.data_utils import get_model_prediction
 from evalscope.utils.logger import get_logger
 from tests.common import TestBenchmark
 
@@ -98,7 +100,9 @@ class TestAgentBenchmark(TestBenchmark):
                 'temperature': 0.7,
                 'parallel_tool_calls': True,
                 'retries': 3,
-                'extra_body': {'enable_thinking': True},
+                'extra_body': {
+                    'enable_thinking': True
+                },
                 'stream': True
             },
             'judge_strategy': JudgeStrategy.AUTO,
@@ -108,7 +112,9 @@ class TestAgentBenchmark(TestBenchmark):
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
                     'temperature': 0.0,
-                    'extra_body': {'enable_thinking': False}
+                    'extra_body': {
+                        'enable_thinking': False
+                    }
                 }
             },
             'debug': True,
@@ -154,46 +160,34 @@ class TestAgentBenchmark(TestBenchmark):
         self.assertIn('answer_type', review['sample_score']['sample_metadata'])
 
     def test_miniwob(self):
-        """Run dataset repeats, FC, OpenEnv reward and reporting end to end."""
-
-        class FakeHandle:
-            name = 'ms_enclave_docker'
-            base_url = 'http://127.0.0.1:18123'
-
-            async def capture_logs(self, destination):
-                return False
-
-            async def close(self):
-                return None
+        """Run the BrowserGym agent, reward and reporting flow end to end."""
 
         class FakeSession:
-            backend_name = 'openenv'
 
-            async def reset(self, **kwargs):
-                return EnvironmentStepResult(
+            async def reset(self):
+                return BrowserGymStep(
                     observation={
                         'goal': 'Click OK',
                         'url': 'http://miniwob/click-dialog.html',
                         'axtree_txt': '[1] button "OK"',
                         'last_action_error': False,
+                        'screenshot': np.zeros((8, 8, 3), dtype=np.uint8),
                     },
                 )
 
             async def step(self, action):
-                assert action == {'action_str': 'click("1")'}
-                return EnvironmentStepResult(
+                assert action == 'click("1")'
+                return BrowserGymStep(
                     observation={
                         'goal': 'Click OK',
                         'url': 'http://miniwob/click-dialog.html',
                         'axtree_txt': '[1] button "OK"',
                         'last_action_error': False,
+                        'screenshot': np.zeros((8, 8, 3), dtype=np.uint8),
                     },
                     reward=1.0,
                     done=True,
                 )
-
-            async def state(self):
-                return {'benchmark': 'miniwob'}
 
             async def close(self):
                 return None
@@ -206,7 +200,6 @@ class TestAgentBenchmark(TestBenchmark):
             'similarity_group': '0',
             'browsergym_split': 'test',
             'task_id': 'miniwob.click-dialog',
-            'openenv_task_name': 'click-dialog',
             '_episode_seeds': [28, 29, 30, 31, 32],
         }
         call = ToolCall(
@@ -229,10 +222,11 @@ class TestAgentBenchmark(TestBenchmark):
             original_init(model_self, *args, **kwargs)
 
         with tempfile.TemporaryDirectory() as work_dir, \
+                patch('evalscope.api.benchmark.adapters.browsergym_adapter.check_import'), \
                 patch('evalscope.benchmarks.miniwob.miniwob_adapter.load_miniwob_records',
                       return_value=([record], Path('/cache/miniwob.csv'))), \
-                patch('evalscope.benchmarks.miniwob.miniwob_adapter.MiniWobAdapter.start_task_environment',
-                      side_effect=lambda sample: (FakeHandle(), FakeSession())), \
+                patch('evalscope.benchmarks.miniwob.miniwob_adapter.MiniWobAdapter.create_browsergym_session',
+                      side_effect=lambda sample: FakeSession()), \
                 patch.object(MockLLM, '__init__', patched_init):
             reports = run_task(
                 TaskConfig(
@@ -247,13 +241,6 @@ class TestAgentBenchmark(TestBenchmark):
                     agent_config=NativeAgentConfig(
                         strategy='function_calling',
                         max_steps=10,
-                        task_environment={
-                            'backend': 'openenv',
-                            'observation_mode': 'axtree',
-                            'runtime': {
-                                'name': 'ms_enclave_docker'
-                            },
-                        }
                     ),
                 )
             )
@@ -263,7 +250,24 @@ class TestAgentBenchmark(TestBenchmark):
             rows = [json.loads(line) for line in reviews[0].read_text(encoding='utf-8').splitlines()]
             self.assertEqual(len(rows), 5)
             self.assertEqual([row['sample_score']['sample_metadata']['seed'] for row in rows], [28, 29, 30, 31, 32])
-            self.assertTrue(all(row['agent_trace']['task_environment'] == 'openenv' for row in rows))
+            self.assertTrue(all(row['agent_trace']['events'][0]['payload']['backend'] == 'browsergym' for row in rows))
+
+            prediction_rows = get_model_prediction(work_dir, 'mock_llm', 'miniwob', 'default')
+            browser_trace = prediction_rows.iloc[0]['AgentTrace']
+            self.assertEqual(browser_trace['environment'], 'browsergym')
+            self.assertEqual(browser_trace['events'][0]['type'], 'env_reset')
+            self.assertIn(
+                browser_trace['events'][0]['message_id'],
+                {message['id']
+                 for message in prediction_rows.iloc[0]['Messages']}
+            )
+            submit_event = next(event for event in browser_trace['events'] if event['type'] == 'submit')
+            terminal_observation = next(
+                message for message in prediction_rows.iloc[0]['Messages']
+                if message['id'] == submit_event['message_id']
+            )
+            self.assertEqual(terminal_observation['tool_call_id'], ['browser-1'])
+            self.assertTrue(terminal_observation['metadata']['done'])
 
     def test_swe_bench_verified_agentic(self):
         """Test SWE-bench-verified agentic dataset using docker environment."""
@@ -314,7 +318,9 @@ class TestAgentBenchmark(TestBenchmark):
                 'temperature': 0.0,
                 'parallel_tool_calls': False,
                 'retries': 3,
-                'extra_body': {'enable_thinking': True},
+                'extra_body': {
+                    'enable_thinking': True
+                },
                 'stream': True
             },
         )
@@ -333,7 +339,11 @@ class TestAgentBenchmark(TestBenchmark):
             use_cache='outputs/20260519_155200',
             rerun_review=True,
             sandbox=SandboxTaskConfig(
-                default_config={'platform': 'linux/amd64', 'memory_limit': '12g', 'cpu_limit': 4.0},
+                default_config={
+                    'platform': 'linux/amd64',
+                    'memory_limit': '12g',
+                    'cpu_limit': 4.0
+                },
             ),
         )
 
@@ -346,7 +356,10 @@ class TestAgentBenchmark(TestBenchmark):
             'gaia',
             dataset_args,
             limit=1,
-            sandbox=SandboxTaskConfig(default_config={'image': 'python:3.11', 'network_enabled': True}),
+            sandbox=SandboxTaskConfig(default_config={
+                'image': 'python:3.11',
+                'network_enabled': True
+            }),
         )
 
     def test_gaia_with_mcp(self):
@@ -377,7 +390,10 @@ class TestAgentBenchmark(TestBenchmark):
             dataset_args,
             limit=1,
             agent_config=agent_config,
-            sandbox=SandboxTaskConfig(default_config={'image': 'python:3.11', 'network_enabled': True}),
+            sandbox=SandboxTaskConfig(default_config={
+                'image': 'python:3.11',
+                'network_enabled': True
+            }),
         )
 
     def test_researchrubrics(self):
@@ -405,12 +421,10 @@ class TestAgentBenchmark(TestBenchmark):
             collect_perf=False,
             debug=False,
             agent_config=NativeAgentConfig(environment='docker', max_steps=80),
-            sandbox=SandboxTaskConfig(
-                default_config={
-                    'image': 'python:3.11-slim-bookworm',
-                    'network_enabled': True,
-                }
-            ),
+            sandbox=SandboxTaskConfig(default_config={
+                'image': 'python:3.11-slim-bookworm',
+                'network_enabled': True,
+            }),
         )
 
     def test_wide_search(self):
@@ -431,7 +445,9 @@ class TestAgentBenchmark(TestBenchmark):
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
                     'temperature': 0.0,
-                    'extra_body': {'enable_thinking': False}
+                    'extra_body': {
+                        'enable_thinking': False
+                    }
                 }
             },
             agent_config=NativeAgentConfig(
@@ -450,7 +466,9 @@ class TestAgentBenchmark(TestBenchmark):
         dataset_args = {
             'extra_params': {
                 'timeout_multiplier': 3,
-                'environment_kwargs': {'override_cpus': 2},
+                'environment_kwargs': {
+                    'override_cpus': 2
+                },
             },
         }
         self._run_dataset_test('terminal_bench_v2_1', dataset_args, limit=3, eval_batch_size=3)
@@ -781,7 +799,9 @@ class TestAgentBenchmark(TestBenchmark):
         self.assertEqual(review['sample_score']['score']['value']['partial_credit'], 0.5)
         self.assertEqual(review['sample_score']['sample_metadata']['domain'], 'sales')
         self.assertNotIn('automation_bench_result', review['sample_score']['sample_metadata'])
-        prediction_file = next(Path('outputs/test_agent_automation_bench').glob('predictions/*/automation_bench_sales.jsonl'))
+        prediction_file = next(
+            Path('outputs/test_agent_automation_bench').glob('predictions/*/automation_bench_sales.jsonl')
+        )
         prediction = json.loads(prediction_file.read_text().splitlines()[-1])
         self.assertNotIn('automation_bench_result', prediction['metadata'])
         self.assertNotIn('messages', prediction['model_output']['metadata'])
@@ -818,13 +838,15 @@ class TestAgentBenchmark(TestBenchmark):
         def simple_score(completed, partial_credit, error=None):
             task_state = Mock(
                 metadata={'domain': 'simple'},
-                output=Mock(metadata={
-                    'metrics': {
-                        'task_completed_correctly': completed,
-                        'partial_credit': partial_credit,
-                    },
-                    'error': error,
-                }),
+                output=Mock(
+                    metadata={
+                        'metrics': {
+                            'task_completed_correctly': completed,
+                            'partial_credit': partial_credit,
+                        },
+                        'error': error,
+                    }
+                ),
             )
             return adapter.match_score('', '', '', task_state)
 
@@ -934,17 +956,19 @@ class TestAgentBenchmark(TestBenchmark):
             task_dir = root / 'tasks' / 'T001_task'
             task_dir.mkdir(parents=True)
             (task_dir / 'task.yaml').write_text('id: T001_task\n', encoding='utf-8')
-            run = Mock(return_value={
-                'task_id': 'T001_task',
-                'task_name': 'Task 1',
-                'difficulty': 'easy',
-                'trials': [{
-                    'trace': str(trace_root / 'T001_task_abc.jsonl'),
-                    'task_score': 1.0,
-                    'passed': True,
-                }],
-                'error': None,
-            })
+            run = Mock(
+                return_value={
+                    'task_id': 'T001_task',
+                    'task_name': 'Task 1',
+                    'difficulty': 'easy',
+                    'trials': [{
+                        'trace': str(trace_root / 'T001_task_abc.jsonl'),
+                        'task_score': 1.0,
+                        'passed': True,
+                    }],
+                    'error': None,
+                }
+            )
             with patch('evalscope.benchmarks.claw_eval.utils.validate_claw_eval_private_api', return_value=None), \
                     patch.dict(sys.modules, _fake_claw_eval_cli_modules(run)):
                 parsed = run_claw_eval_task(

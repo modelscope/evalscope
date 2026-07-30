@@ -6,7 +6,6 @@ if TYPE_CHECKING:
     from evalscope.agent.external.runners.base import AgentRunner
     from evalscope.api.agent import AgentEnvironment, AgentStrategy, ToolHandler
     from evalscope.api.benchmark import BenchmarkMeta, DataAdapter
-    from evalscope.api.environment import EnvironmentRuntime, TaskEnvironmentBackend
     from evalscope.api.evaluator import Evaluator
     from evalscope.api.filter import Filter
     from evalscope.api.metric import Aggregator, Metric
@@ -290,7 +289,7 @@ def register_agent_tool(
     """Register an async tool handler under one or more names.
 
     The decorated callable must match :data:`ToolHandler`:
-    ``async def run(call: ToolCall, env: Optional[AgentEnvironment]) -> str``.
+    ``async def run(call: ToolCall, env: Optional[AgentEnvironment]) -> ToolObservation``.
 
     Args:
         name:  Registry key(s) (also used as the tool function name exposed to the model).
@@ -342,34 +341,3 @@ def resolve_tool_infos(names: Optional[List[str]]) -> List['ToolInfo']:
 
 
 # END: Registry for agent strategies, environments, runners and tools
-
-# BEGIN: Registries for stateful task environments
-TASK_ENVIRONMENT_REGISTRY: Registry[Type['TaskEnvironmentBackend']] = Registry('Task environment backend')
-ENVIRONMENT_RUNTIME_REGISTRY: Registry[Type['EnvironmentRuntime']] = Registry('Environment runtime')
-
-
-def register_task_environment(
-    name: Union[str, List[str]],
-) -> Callable[[Type['TaskEnvironmentBackend']], Type['TaskEnvironmentBackend']]:
-    """Register a stateful task-environment protocol backend."""
-    return TASK_ENVIRONMENT_REGISTRY.register(name)
-
-
-def get_task_environment(name: str) -> Type['TaskEnvironmentBackend']:
-    """Return a registered task-environment backend."""
-    return TASK_ENVIRONMENT_REGISTRY.lookup(name)
-
-
-def register_environment_runtime(
-    name: Union[str, List[str]],
-) -> Callable[[Type['EnvironmentRuntime']], Type['EnvironmentRuntime']]:
-    """Register a runtime that hosts task-environment services."""
-    return ENVIRONMENT_RUNTIME_REGISTRY.register(name)
-
-
-def get_environment_runtime(name: str) -> Type['EnvironmentRuntime']:
-    """Return a registered task-environment service runtime."""
-    return ENVIRONMENT_RUNTIME_REGISTRY.lookup(name)
-
-
-# END: Registries for stateful task environments

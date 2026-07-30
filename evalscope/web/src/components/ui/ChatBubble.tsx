@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
-export type BubbleRole = 'user' | 'bot' | 'tool' | 'reasoning' | 'system'
+export type BubbleRole = 'user' | 'bot' | 'tool' | 'environment' | 'reasoning' | 'system'
 
 interface ChatBubbleProps {
   role: BubbleRole
@@ -41,6 +41,12 @@ const ROLE_TOKENS: Record<BubbleRole, { bg: string; bgHl: string; border: string
     border: 'var(--bubble-tool-border)',
     borderHl: 'var(--bubble-tool-border-hl)',
   },
+  environment: {
+    bg: 'var(--bubble-environment-bg)',
+    bgHl: 'var(--bubble-environment-bg-hl)',
+    border: 'var(--bubble-environment-border)',
+    borderHl: 'var(--bubble-environment-border-hl)',
+  },
   reasoning: {
     bg: 'var(--bubble-reasoning-bg)',
     bgHl: 'var(--bubble-reasoning-bg-hl)',
@@ -59,6 +65,7 @@ const ROLE_ACCENT: Record<BubbleRole, string> = {
   user: 'var(--bubble-user-color)',
   bot: 'var(--bubble-bot-color)',
   tool: 'var(--bubble-tool-color)',
+  environment: 'var(--bubble-environment-color)',
   reasoning: 'var(--bubble-reasoning-color)',
   system: 'var(--bubble-system-color)',
 }
