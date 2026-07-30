@@ -22,7 +22,7 @@ from evalscope.api.agent import (
     ToolExecutionOutput,
 )
 from evalscope.api.benchmark import BenchmarkMeta
-from evalscope.api.benchmark.adapters import AgentLoopAdapter
+from evalscope.api.benchmark.adapters import AgentAdapter
 from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
 from evalscope.api.environment import EnvironmentRuntimeLease, TaskEnvironmentConfig, TaskEnvironmentSession
 from evalscope.api.evaluator import InferenceResult, TaskState
@@ -43,6 +43,7 @@ from .utils import (
     BROWSERGYM_METADATA_SHA256,
     BROWSERGYM_VERSION,
     MINIWOB_MAX_STEPS,
+    MINIWOB_REPEATS,
     load_miniwob_records,
     miniwob_profile,
     validate_browser_action,
@@ -77,7 +78,9 @@ BrowserGym service owns the environment lifecycle and reset/step/reward protocol
 
 ## Evaluation
 
-- The schedule contains 625 procedural episodes: 125 BrowserGym 0.14.3 tasks and five deterministic seeds per task.
+- The default schedule contains 125 procedural episodes: 125 BrowserGym 0.14.3 tasks and one deterministic seed per
+  task. Set `TaskConfig.repeats=5` (or pass `--repeats 5` on the CLI) to run the full BrowserGym schedule of 625
+  episodes with five distinct deterministic seeds per task.
 - The task catalog is downloaded once from a pinned BrowserGym GitHub commit, checksum-verified, and cached locally.
   No ModelScope or Hugging Face dataset is used.
 - The primary metric is `success_rate`; `error_rate` separately reports OpenEnv runtime failures.
@@ -97,10 +100,10 @@ official `miniwob_all` action configuration and preserves each MiniWoB task's na
 overriding them with OpenEnv server defaults. BrowserGym itself is not forked or modified. Reports record the OpenEnv
 source commit and patch checksum.
 
-The default action configuration and 10-step budget match BrowserGym 0.14.3. Reports therefore set
-`official_browsergym_action_config=true` and `official_browsergym_evaluation_protocol=true`. Overriding `max_steps`
-sets `official_browsergym_evaluation_protocol=false`; scores from such custom runs must not be compared directly with
-the official leaderboard.
+The default action configuration and 10-step budget match BrowserGym 0.14.3. The full BrowserGym evaluation protocol
+also requires `TaskConfig.repeats=5` and an untruncated schedule; reports set
+`official_browsergym_evaluation_protocol=true` only when all three conditions match. Scores from the lighter one-seed
+default, a limited run, or a custom step budget must not be compared directly with the official leaderboard.
 
 ## Requirements
 
@@ -114,6 +117,12 @@ Local mode:
 
 ```python
 TaskConfig(model='qwen3-vl-plus', datasets=['miniwob'], eval_batch_size=4)
+```
+
+Full five-seed schedule:
+
+```python
+TaskConfig(model='qwen3-vl-plus', datasets=['miniwob'], repeats=5, eval_batch_size=4)
 ```
 """
 
@@ -180,18 +189,20 @@ class _MiniWobStrategy(FunctionCallingStrategy):
         metric_list=['success_rate', 'error_rate'],
     )
 )
-class MiniWobAdapter(AgentLoopAdapter):
+class MiniWobAdapter(AgentAdapter):
     """Run the pinned MiniWoB schedule through OpenEnv v0.4.1."""
 
     strategy_name = 'miniwob_openenv_function_calling'
     max_steps_default = MINIWOB_MAX_STEPS
-    document_agent_config = False
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._validate_agent_config()
         agent_config = self._task_config.agent_config if self._task_config is not None else None
-        self.max_steps = self._resolve_max_steps(agent_config)
+        if isinstance(agent_config, NativeAgentConfig) and 'max_steps' in agent_config.model_fields_set:
+            self.max_steps = agent_config.max_steps
+        else:
+            self.max_steps = self.max_steps_default
         self._environment_config = self._resolve_task_environment_config()
         self.observation_mode = self._environment_config.observation_mode or 'axtree_screenshot'
         if self.observation_mode not in {'axtree', 'axtree_screenshot'}:
@@ -200,17 +211,24 @@ class MiniWobAdapter(AgentLoopAdapter):
 
     def load(self) -> tuple[DatasetDict, None]:
         """Generate the deterministic episode schedule from pinned BrowserGym metadata."""
-        records, metadata_path = load_miniwob_records()
+        records, metadata_path = load_miniwob_records(repeats=self.repeats)
         dataset = build_dataset_from_records(
             records=records,
             sample_fields=self.record_to_sample,
             name='test',
             location=str(metadata_path),
             limit=self.limit,
-            repeats=1,
+            repeats=self.repeats,
             shuffle=self.shuffle,
             seed=self.seed,
         )
+        for sample in dataset:
+            repeat = sample.id % self.repeats
+            episode_seeds = sample.metadata.pop('_episode_seeds')
+            sample.metadata.update({
+                'seed': episode_seeds[repeat],
+                'repeat': repeat,
+            })
         return DatasetDict({'default': dataset}), None
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
@@ -678,8 +696,11 @@ class MiniWobAdapter(AgentLoopAdapter):
         return {
             'profile': miniwob_profile(self.max_steps),
             'max_steps': self.max_steps,
+            'repeats': self.repeats,
             'official_browsergym_action_config': True,
-            'official_browsergym_evaluation_protocol': self.max_steps == MINIWOB_MAX_STEPS,
+            'official_browsergym_evaluation_protocol': (
+                self.max_steps == MINIWOB_MAX_STEPS and self.repeats == MINIWOB_REPEATS and self.limit is None
+            ),
             'openenv_version': OPENENV_VERSION,
             'openenv_commit': OPENENV_COMMIT,
             'openenv_patch_sha256': OPENENV_PATCH_SHA256,

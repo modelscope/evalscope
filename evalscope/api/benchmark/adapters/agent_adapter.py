@@ -66,11 +66,6 @@ class AgentLoopAdapter(AgentAdapter):
     #: ``NativeAgentConfig.max_steps``.
     max_steps_default: int = 30
 
-    #: Whether generated benchmark usage examples should include an explicit
-    #: ``NativeAgentConfig``. Benchmarks with a fixed, internal loop set this
-    #: to ``False`` so their zero-config path remains the documented path.
-    document_agent_config: bool = True
-
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.max_steps = self.max_steps_default

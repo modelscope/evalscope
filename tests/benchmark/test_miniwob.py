@@ -14,6 +14,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from evalscope.api.agent import AgentContext, EventType, NativeAgentConfig
+from evalscope.api.benchmark.adapters import AgentAdapter, AgentLoopAdapter
 from evalscope.api.environment import EnvironmentStepResult
 from evalscope.api.messages import ChatMessageAssistant
 from evalscope.api.metric import AggScore
@@ -26,6 +27,7 @@ from evalscope.benchmarks.miniwob.utils import load_miniwob_records, validate_br
 from evalscope.config import TaskConfig
 from evalscope.models.mockllm import MockLLM
 from evalscope.run import run_task
+from evalscope.utils.doc_utils.generate_dataset_md import extract_adapter_meta
 
 
 class FakeMiniWobSession:
@@ -117,7 +119,7 @@ def _environment_pair(session=None, lease=None):
     return lease or FakeEnvironmentLease(), session
 
 
-def _adapter(*, observation_mode='axtree', agent_config=None, task_environment=None):
+def _adapter(*, observation_mode='axtree', agent_config=None, task_environment=None, repeats=1):
     if task_environment is None and agent_config is None:
         task_environment = {
             'backend': 'openenv',
@@ -138,6 +140,7 @@ def _adapter(*, observation_mode='axtree', agent_config=None, task_environment=N
             datasets=['miniwob'],
             eval_type='mock_llm',
             agent_config=agent_config,
+            repeats=repeats,
         ),
     )
 
@@ -166,7 +169,7 @@ def test_observation_mode_is_task_environment_config_not_dataset_arg():
         )
 
 
-def _records():
+def _records(repeats=1):
     return [{
         'task_name': 'miniwob.click-dialog',
         'miniwob_category': 'test',
@@ -176,6 +179,7 @@ def _records():
         'browsergym_split': 'test',
         'task_id': 'miniwob.click-dialog',
         'openenv_task_name': 'click-dialog',
+        '_episode_seeds': list(range(28, 28 + repeats)),
         'seed': 28,
         'repeat': 0,
     }]
@@ -256,23 +260,29 @@ def _fake_download(csv_bytes):
 def test_schedule_download_cache_and_generation(tmp_path: Path):
     csv_bytes = _metadata_csv()
     checksum = hashlib.sha256(csv_bytes).hexdigest()
-    schedule_checksum = '50d15c6da5fb326cd20c06cd0a75f43f7badc2fa21d21ab76e993c4931de2cdb'
+    schedule_checksum = '64c3fbbacc44bf05c6d23b916a0fd01f5c7d71612cc732cb68c79242edb2c1e7'
 
     with patch('evalscope.benchmarks.miniwob.utils.BROWSERGYM_METADATA_SHA256', checksum), \
-            patch('evalscope.benchmarks.miniwob.utils.MINIWOB_SCHEDULE_SHA256', schedule_checksum), \
+            patch('evalscope.benchmarks.miniwob.utils.MINIWOB_SCHEDULE_SHA256_BY_REPEATS', {1: schedule_checksum}), \
             patch(
                 'evalscope.benchmarks.miniwob.utils.download_url', side_effect=_fake_download(csv_bytes)
             ) as download:
         records, path = load_miniwob_records(tmp_path)
         cached_records, cached_path = load_miniwob_records(tmp_path)
 
-    assert len(records) == 625
+    assert len(records) == 125
     assert path == cached_path
     assert records == cached_records
     assert download.call_count == 1
     assert records[0]['task_id'] == 'miniwob.task-000'
-    assert [record['seed'] for record in records[:5]] == [1608637542, 3421126067, 4083286876, 787846414, 3143890026]
-    assert max(record['seed'] for record in records) < (2**32)
+    assert [record['_episode_seeds'][0] for record in records[:5]] == [
+        1608637542,
+        3421126067,
+        4083286876,
+        787846414,
+        3143890026,
+    ]
+    assert max(seed for record in records for seed in record['_episode_seeds']) < (2**32)
 
 
 def test_schedule_digest_is_stable(tmp_path: Path):
@@ -286,13 +296,13 @@ def test_schedule_digest_is_stable(tmp_path: Path):
 
     with patch('evalscope.benchmarks.miniwob.utils.BROWSERGYM_METADATA_SHA256', checksum), \
             patch(
-                'evalscope.benchmarks.miniwob.utils.MINIWOB_SCHEDULE_SHA256',
-                '50d15c6da5fb326cd20c06cd0a75f43f7badc2fa21d21ab76e993c4931de2cdb',
+                'evalscope.benchmarks.miniwob.utils.MINIWOB_SCHEDULE_SHA256_BY_REPEATS',
+                {5: '50d15c6da5fb326cd20c06cd0a75f43f7badc2fa21d21ab76e993c4931de2cdb'},
             ):
-        records, _ = load_miniwob_records(tmp_path)
+        records, _ = load_miniwob_records(tmp_path, repeats=5)
 
     digest = hashlib.sha256(
-        '\n'.join(f"{record['task_id']}:{record['seed']}" for record in records).encode()
+        '\n'.join(f"{record['task_id']}:{seed}" for record in records for seed in record['_episode_seeds']).encode()
     ).hexdigest()
     assert digest == '50d15c6da5fb326cd20c06cd0a75f43f7badc2fa21d21ab76e993c4931de2cdb'
 
@@ -300,7 +310,7 @@ def test_schedule_digest_is_stable(tmp_path: Path):
 def test_corrupt_cache_is_redownloaded_atomically(tmp_path: Path):
     csv_bytes = _metadata_csv()
     checksum = hashlib.sha256(csv_bytes).hexdigest()
-    schedule_checksum = '50d15c6da5fb326cd20c06cd0a75f43f7badc2fa21d21ab76e993c4931de2cdb'
+    schedule_checksum = '64c3fbbacc44bf05c6d23b916a0fd01f5c7d71612cc732cb68c79242edb2c1e7'
     destination = tmp_path / 'sources' / 'browsergym' / (
         '0a785fbed075224ae81ca9c1fe924f66050696fe/miniwob.csv'
     )
@@ -308,11 +318,11 @@ def test_corrupt_cache_is_redownloaded_atomically(tmp_path: Path):
     destination.write_bytes(b'corrupt')
 
     with patch('evalscope.benchmarks.miniwob.utils.BROWSERGYM_METADATA_SHA256', checksum), \
-            patch('evalscope.benchmarks.miniwob.utils.MINIWOB_SCHEDULE_SHA256', schedule_checksum), \
+            patch('evalscope.benchmarks.miniwob.utils.MINIWOB_SCHEDULE_SHA256_BY_REPEATS', {1: schedule_checksum}), \
             patch('evalscope.benchmarks.miniwob.utils.download_url', side_effect=_fake_download(csv_bytes)):
         records, path = load_miniwob_records(tmp_path)
 
-    assert len(records) == 625
+    assert len(records) == 125
     assert path.read_bytes() == csv_bytes
     assert not list(destination.parent.glob('tmp*'))
 
@@ -320,7 +330,7 @@ def test_corrupt_cache_is_redownloaded_atomically(tmp_path: Path):
 def test_offline_cache_hit_and_no_cache_failure(tmp_path: Path):
     csv_bytes = _metadata_csv()
     checksum = hashlib.sha256(csv_bytes).hexdigest()
-    schedule_checksum = '50d15c6da5fb326cd20c06cd0a75f43f7badc2fa21d21ab76e993c4931de2cdb'
+    schedule_checksum = '64c3fbbacc44bf05c6d23b916a0fd01f5c7d71612cc732cb68c79242edb2c1e7'
     destination = tmp_path / 'sources' / 'browsergym' / (
         '0a785fbed075224ae81ca9c1fe924f66050696fe/miniwob.csv'
     )
@@ -328,10 +338,10 @@ def test_offline_cache_hit_and_no_cache_failure(tmp_path: Path):
     destination.write_bytes(csv_bytes)
 
     with patch('evalscope.benchmarks.miniwob.utils.BROWSERGYM_METADATA_SHA256', checksum), \
-            patch('evalscope.benchmarks.miniwob.utils.MINIWOB_SCHEDULE_SHA256', schedule_checksum), \
+            patch('evalscope.benchmarks.miniwob.utils.MINIWOB_SCHEDULE_SHA256_BY_REPEATS', {1: schedule_checksum}), \
             patch('evalscope.benchmarks.miniwob.utils.download_url', side_effect=OSError('offline')) as download:
         records, _ = load_miniwob_records(tmp_path)
-    assert len(records) == 625
+    assert len(records) == 125
     download.assert_not_called()
 
     with patch('evalscope.benchmarks.miniwob.utils.download_url', side_effect=OSError('offline')):
@@ -348,9 +358,28 @@ def test_adapter_registers_only_full_miniwob():
         dataset = adapter.load_dataset()['default']
 
     assert isinstance(adapter, MiniWobAdapter)
+    assert isinstance(adapter, AgentAdapter)
+    assert not isinstance(adapter, AgentLoopAdapter)
+    assert 'agent_config' not in extract_adapter_meta(adapter)
     assert len(dataset) == 1
     with pytest.raises(ValueError, match='not found'):
         get_benchmark('miniwob_tiny', TaskConfig(model='mock', datasets=['miniwob_tiny'], eval_type='mock_llm'))
+
+
+def test_repeats_generate_distinct_seeded_episodes():
+    adapter = _adapter(repeats=5)
+    with patch(
+        'evalscope.benchmarks.miniwob.miniwob_adapter.load_miniwob_records',
+        return_value=(_records(repeats=5), Path('/cache/miniwob.csv')),
+    ) as load_records:
+        dataset = adapter.load_dataset()['default']
+
+    load_records.assert_called_once_with(repeats=5)
+    assert len(dataset) == 5
+    assert [sample.metadata['seed'] for sample in dataset] == [28, 29, 30, 31, 32]
+    assert [sample.metadata['repeat'] for sample in dataset] == [0, 1, 2, 3, 4]
+    assert [sample.group_id for sample in dataset] == [0, 0, 0, 0, 0]
+    assert all('_episode_seeds' not in sample.metadata for sample in dataset)
 
 
 def test_reset_step_reward_and_score(tmp_path: Path):
@@ -575,7 +604,7 @@ def test_agent_config_allows_step_count_override_but_rejects_strategy_override()
 
 
 def test_report_contains_fixed_profile_metadata():
-    adapter = _adapter()
+    adapter = _adapter(repeats=5)
     report = adapter._on_generate_report(
         {
             'default': [
@@ -588,6 +617,7 @@ def test_report_contains_fixed_profile_metadata():
 
     assert report.metadata['profile'] == 'openenv_v0.4.1_miniwob_all_10_steps'
     assert report.metadata['max_steps'] == 10
+    assert report.metadata['repeats'] == 5
     assert report.metadata['official_browsergym_action_config'] is True
     assert report.metadata['official_browsergym_evaluation_protocol'] is True
     assert report.metadata['runtime_mode'] == 'local'
@@ -614,6 +644,32 @@ def test_report_marks_custom_step_count_as_non_official():
 
     assert report.metadata['profile'] == 'openenv_v0.4.1_miniwob_all_9_steps'
     assert report.metadata['max_steps'] == 9
+    assert report.metadata['repeats'] == 1
+    assert report.metadata['official_browsergym_evaluation_protocol'] is False
+
+
+def test_report_marks_limited_five_seed_run_as_non_official():
+    adapter = get_benchmark(
+        'miniwob',
+        TaskConfig(
+            model='mock',
+            datasets=['miniwob'],
+            eval_type='mock_llm',
+            repeats=5,
+            limit=10,
+        ),
+    )
+    report = adapter._on_generate_report(
+        {
+            'default': [
+                AggScore(metric_name='success_rate', aggregation_name='mean', score=0.0, num=50),
+                AggScore(metric_name='error_rate', aggregation_name='mean', score=0.0, num=50),
+            ]
+        },
+        model_name='mock',
+    )
+
+    assert report.metadata['repeats'] == 5
     assert report.metadata['official_browsergym_evaluation_protocol'] is False
 
 
@@ -757,7 +813,7 @@ def test_mock_model_runs_through_full_evaluator_pipeline(tmp_path: Path, monkeyp
     monkeypatch.setattr(MockLLM, '__init__', patched_init)
     monkeypatch.setattr(
         'evalscope.benchmarks.miniwob.miniwob_adapter.load_miniwob_records',
-        lambda: (_records(), Path('/cache/miniwob.csv')),
+        lambda repeats=1: (_records(repeats=repeats), Path('/cache/miniwob.csv')),
     )
     monkeypatch.setattr(
         MiniWobAdapter,
@@ -794,4 +850,5 @@ def test_mock_model_runs_through_full_evaluator_pipeline(tmp_path: Path, monkeyp
     assert review['agent_trace']['task_environment_runtime'] == 'ms_enclave_docker'
     assert review['agent_trace']['environment'] is None
     assert saved_report['metadata']['official_browsergym_action_config'] is True
-    assert saved_report['metadata']['official_browsergym_evaluation_protocol'] is True
+    assert saved_report['metadata']['repeats'] == 1
+    assert saved_report['metadata']['official_browsergym_evaluation_protocol'] is False

@@ -19,7 +19,10 @@ BROWSERGYM_METADATA_URL = (
     f'https://raw.githubusercontent.com/ServiceNow/BrowserGym/{BROWSERGYM_COMMIT}/'
     'browsergym/experiments/src/browsergym/experiments/benchmark/metadata/miniwob.csv'
 )
-MINIWOB_SCHEDULE_SHA256 = '2215888dc6b2cf18bbe2f598d747c21c60d11d27d3b42d030ac2e5622fd865de'
+MINIWOB_SCHEDULE_SHA256_BY_REPEATS = {
+    1: '7e8487ae966899585f6c1aac78fee869d746cf2c983aae55783356bf5be66926',
+    5: '2215888dc6b2cf18bbe2f598d747c21c60d11d27d3b42d030ac2e5622fd865de',
+}
 MINIWOB_PROFILE_PREFIX = 'openenv_v0.4.1_miniwob_all'
 MINIWOB_TASK_COUNT = 125
 MINIWOB_REPEATS = 5
@@ -49,8 +52,14 @@ _EXPECTED_FIELDS = [
 ]
 
 
-def load_miniwob_records(cache_root: Optional[str | Path] = None) -> tuple[List[Dict[str, Any]], Path]:
-    """Download/cache official metadata and materialize the 625-episode schedule."""
+def load_miniwob_records(
+    cache_root: Optional[str | Path] = None,
+    repeats: int = 1,
+) -> tuple[List[Dict[str, Any]], Path]:
+    """Download/cache official metadata and attach deterministic episode seeds."""
+    if repeats < 1:
+        raise ValueError('MiniWoB repeats must be at least 1.')
+
     metadata_path = ensure_miniwob_metadata(cache_root)
     with metadata_path.open(encoding='utf-8', newline='') as metadata_file:
         reader = csv.DictReader(metadata_file)
@@ -73,20 +82,23 @@ def load_miniwob_records(cache_root: Optional[str | Path] = None) -> tuple[List[
     rng = np.random.RandomState(42)
     records = []
     for row in rows:
-        for repeat, seed in enumerate(rng.randint(low=0, high=MINIWOB_SEED_MAX, size=MINIWOB_REPEATS, dtype=np.int64)):
-            task_id = row['task_name']
-            records.append({
-                **row,
-                'task_id': task_id,
-                'openenv_task_name': task_id.removeprefix('miniwob.'),
-                'seed': int(seed),
-                'repeat': repeat,
-            })
-    schedule_sha256 = hashlib.sha256('\n'.join(f"{record['task_id']}:{record['seed']}" for record in records).encode()
-                                     ).hexdigest()
-    if schedule_sha256 != MINIWOB_SCHEDULE_SHA256:
+        task_id = row['task_name']
+        episode_seeds = [int(seed) for seed in rng.randint(low=0, high=MINIWOB_SEED_MAX, size=repeats, dtype=np.int64)]
+        records.append({
+            **row,
+            'task_id': task_id,
+            'openenv_task_name': task_id.removeprefix('miniwob.'),
+            '_episode_seeds': episode_seeds,
+        })
+
+    schedule_sha256 = hashlib.sha256(
+        '\n'.join(f"{record['task_id']}:{seed}" for record in records for seed in record['_episode_seeds']).encode()
+    ).hexdigest()
+    expected_schedule_sha256 = MINIWOB_SCHEDULE_SHA256_BY_REPEATS.get(repeats)
+    if expected_schedule_sha256 is not None and schedule_sha256 != expected_schedule_sha256:
         raise ValueError(
-            f'MiniWoB schedule checksum mismatch: expected {MINIWOB_SCHEDULE_SHA256}, found {schedule_sha256}.'
+            f'MiniWoB schedule checksum mismatch for repeats={repeats}: '
+            f'expected {expected_schedule_sha256}, found {schedule_sha256}.'
         )
     return records, metadata_path
 
@@ -148,7 +160,7 @@ __all__ = [
     'MINIWOB_ALL_ACTIONS',
     'MINIWOB_MAX_STEPS',
     'MINIWOB_PROFILE_PREFIX',
-    'MINIWOB_SCHEDULE_SHA256',
+    'MINIWOB_SCHEDULE_SHA256_BY_REPEATS',
     'ensure_miniwob_metadata',
     'load_miniwob_records',
     'miniwob_profile',

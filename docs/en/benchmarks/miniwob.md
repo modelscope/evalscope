@@ -9,7 +9,9 @@ BrowserGym service owns the environment lifecycle and reset/step/reward protocol
 
 ## Evaluation
 
-- The schedule contains 625 procedural episodes: 125 BrowserGym 0.14.3 tasks and five deterministic seeds per task.
+- The default schedule contains 125 procedural episodes: 125 BrowserGym 0.14.3 tasks and one deterministic seed per
+  task. Set `TaskConfig.repeats=5` (or pass `--repeats 5` on the CLI) to run the full BrowserGym schedule of 625
+  episodes with five distinct deterministic seeds per task.
 - The task catalog is downloaded once from a pinned BrowserGym GitHub commit, checksum-verified, and cached locally.
   No ModelScope or Hugging Face dataset is used.
 - The primary metric is `success_rate`; `error_rate` separately reports OpenEnv runtime failures.
@@ -29,10 +31,10 @@ official `miniwob_all` action configuration and preserves each MiniWoB task's na
 overriding them with OpenEnv server defaults. BrowserGym itself is not forked or modified. Reports record the OpenEnv
 source commit and patch checksum.
 
-The default action configuration and 10-step budget match BrowserGym 0.14.3. Reports therefore set
-`official_browsergym_action_config=true` and `official_browsergym_evaluation_protocol=true`. Overriding `max_steps`
-sets `official_browsergym_evaluation_protocol=false`; scores from such custom runs must not be compared directly with
-the official leaderboard.
+The default action configuration and 10-step budget match BrowserGym 0.14.3. The full BrowserGym evaluation protocol
+also requires `TaskConfig.repeats=5` and an untruncated schedule; reports set
+`official_browsergym_evaluation_protocol=true` only when all three conditions match. Scores from the lighter one-seed
+default, a limited run, or a custom step budget must not be compared directly with the official leaderboard.
 
 ## Requirements
 
@@ -46,6 +48,12 @@ Local mode:
 
 ```python
 TaskConfig(model='qwen3-vl-plus', datasets=['miniwob'], eval_batch_size=4)
+```
+
+Full five-seed schedule:
+
+```python
+TaskConfig(model='qwen3-vl-plus', datasets=['miniwob'], repeats=5, eval_batch_size=4)
 ```
 
 
@@ -66,7 +74,7 @@ TaskConfig(model='qwen3-vl-plus', datasets=['miniwob'], eval_batch_size=4)
 
 | Metric | Value |
 |--------|-------|
-| Total Samples | 625 |
+| Total Samples | 125 |
 | Prompt Length (Mean) | 85 chars |
 | Prompt Length (Min/Max) | 85 / 85 chars |
 
@@ -78,7 +86,7 @@ TaskConfig(model='qwen3-vl-plus', datasets=['miniwob'], eval_batch_size=4)
 {
   "input": [
     {
-      "id": "df2fa4ce",
+      "id": "6f138905",
       "content": "The task goal and browser observation are supplied when the OpenEnv episode is reset."
     }
   ],
@@ -111,12 +119,11 @@ TaskConfig(model='qwen3-vl-plus', datasets=['miniwob'], eval_batch_size=4)
     "browsergym_split": "test",
     "task_id": "miniwob.ascending-numbers",
     "openenv_task_name": "ascending-numbers",
-    "seed": 1608637542,
-    "repeat": 0,
     "profile": "openenv_v0.4.1_miniwob_all_10_steps",
     "max_steps": 10,
+    "repeats": 1,
     "official_browsergym_action_config": true,
-    "official_browsergym_evaluation_protocol": true,
+    "official_browsergym_evaluation_protocol": false,
     "openenv_version": "0.4.1",
     "openenv_commit": "65c506ef94bb1f7279cb4359673b3ef81031d01f",
     "openenv_patch_sha256": "465b23aaf7b3b2cadd681495d694a7dad5ca1b36be0cfb5ce5780b94ac354668",
@@ -125,7 +132,9 @@ TaskConfig(model='qwen3-vl-plus', datasets=['miniwob'], eval_batch_size=4)
     "miniwob_commit": "7fd85d71a4b60325c6585396ec4f48377d049838",
     "csv_sha256": "37117db27909a17b1b78035528472922c98c479a54619ac398dc256a7d2fef09",
     "runtime_mode": null,
-    "observation_mode": "axtree_screenshot"
+    "observation_mode": "axtree_screenshot",
+    "seed": 1608637542,
+    "repeat": 0
   }
 }
 ```

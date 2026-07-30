@@ -203,7 +203,7 @@ def extract_adapter_meta(adapter) -> Dict[str, Any]:
 
     meta = adapter._benchmark_meta
     agent_config = None
-    if isinstance(adapter, AgentLoopAdapter) and adapter.document_agent_config:
+    if isinstance(adapter, AgentLoopAdapter):
         agent_config = {
             'strategy': adapter.strategy_name,
             'max_steps': adapter.max_steps,
