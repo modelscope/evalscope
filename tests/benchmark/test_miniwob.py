@@ -568,9 +568,8 @@ def test_observation_exposes_screenshot_pixel_size_and_raw_browsergym_action_err
     assert 'Environment message: TypeError: click expects a string BID' in text
 
 
-def test_agent_config_rejects_external_tools_and_non_official_step_count():
-    with pytest.raises(ValueError, match='max_steps=20'):
-        _adapter(agent_config=NativeAgentConfig(max_steps=9))
+def test_agent_config_allows_step_count_override_but_rejects_strategy_override():
+    assert _adapter(agent_config=NativeAgentConfig(max_steps=9)).max_steps == 9
     with pytest.raises(ValueError, match='fixes its internal strategy'):
         _adapter(agent_config=NativeAgentConfig(strategy='function_calling'))
 
@@ -587,10 +586,10 @@ def test_report_contains_fixed_profile_metadata():
         model_name='mock',
     )
 
-    assert report.metadata['profile'] == 'openenv_v0.4.1_miniwob_all_20_steps'
-    assert report.metadata['max_steps'] == 20
+    assert report.metadata['profile'] == 'openenv_v0.4.1_miniwob_all_10_steps'
+    assert report.metadata['max_steps'] == 10
     assert report.metadata['official_browsergym_action_config'] is True
-    assert report.metadata['official_browsergym_evaluation_protocol'] is False
+    assert report.metadata['official_browsergym_evaluation_protocol'] is True
     assert report.metadata['runtime_mode'] == 'local'
     assert report.metadata['observation_mode'] == 'axtree'
     patch_path = Path(__file__).parents[2] / 'evalscope/benchmarks/miniwob/runtime/openenv-miniwob-all.patch'
@@ -599,6 +598,23 @@ def test_report_contains_fixed_profile_metadata():
     assert report.metadata['csv_sha256'] == (
         '37117db27909a17b1b78035528472922c98c479a54619ac398dc256a7d2fef09'
     )
+
+
+def test_report_marks_custom_step_count_as_non_official():
+    adapter = _adapter(agent_config=NativeAgentConfig(max_steps=9))
+    report = adapter._on_generate_report(
+        {
+            'default': [
+                AggScore(metric_name='success_rate', aggregation_name='mean', score=0.0, num=1),
+                AggScore(metric_name='error_rate', aggregation_name='mean', score=0.0, num=1),
+            ]
+        },
+        model_name='mock',
+    )
+
+    assert report.metadata['profile'] == 'openenv_v0.4.1_miniwob_all_9_steps'
+    assert report.metadata['max_steps'] == 9
+    assert report.metadata['official_browsergym_evaluation_protocol'] is False
 
 
 def test_strategy_rejects_multiple_tool_calls():
@@ -764,7 +780,7 @@ def test_mock_model_runs_through_full_evaluator_pipeline(tmp_path: Path, monkeyp
 
     report = reports['miniwob']
     assert report.score == 1.0
-    assert report.metadata['profile'] == 'openenv_v0.4.1_miniwob_all_20_steps'
+    assert report.metadata['profile'] == 'openenv_v0.4.1_miniwob_all_10_steps'
     assert report.metadata['observation_mode'] == 'axtree_screenshot'
     prediction_files = list(tmp_path.glob('predictions/**/*.jsonl'))
     review_files = list(tmp_path.glob('reviews/**/*.jsonl'))
@@ -778,4 +794,4 @@ def test_mock_model_runs_through_full_evaluator_pipeline(tmp_path: Path, monkeyp
     assert review['agent_trace']['task_environment_runtime'] == 'ms_enclave_docker'
     assert review['agent_trace']['environment'] is None
     assert saved_report['metadata']['official_browsergym_action_config'] is True
-    assert saved_report['metadata']['official_browsergym_evaluation_protocol'] is False
+    assert saved_report['metadata']['official_browsergym_evaluation_protocol'] is True

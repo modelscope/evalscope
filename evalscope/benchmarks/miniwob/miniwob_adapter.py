@@ -43,8 +43,8 @@ from .utils import (
     BROWSERGYM_METADATA_SHA256,
     BROWSERGYM_VERSION,
     MINIWOB_MAX_STEPS,
-    MINIWOB_PROFILE,
     load_miniwob_records,
+    miniwob_profile,
     validate_browser_action,
 )
 
@@ -81,7 +81,8 @@ BrowserGym service owns the environment lifecycle and reset/step/reward protocol
 - The task catalog is downloaded once from a pinned BrowserGym GitHub commit, checksum-verified, and cached locally.
   No ModelScope or Hugging Face dataset is used.
 - The primary metric is `success_rate`; `error_rate` separately reports OpenEnv runtime failures.
-- Every episode uses a fixed 20-step action budget.
+- Every episode uses a 10-step action budget by default, matching BrowserGym Experiments. Override it with
+  `NativeAgentConfig.max_steps` only for diagnostic or custom runs.
 - `agent_config.task_environment.observation_mode` controls the observation representation. Its default is
   `axtree_screenshot`: every reset and step supplies both the accessibility tree and a PNG screenshot. Use `axtree`
   only when a text-only diagnostic run is explicitly desired.
@@ -96,9 +97,10 @@ official `miniwob_all` action configuration and preserves each MiniWoB task's na
 overriding them with OpenEnv server defaults. BrowserGym itself is not forked or modified. Reports record the OpenEnv
 source commit and patch checksum.
 
-The action configuration matches BrowserGym 0.14.3, but the EvalScope profile uses a 20-step budget instead of
-BrowserGym Experiments' official 10-step budget. Reports therefore set `official_browsergym_action_config=true` and
-`official_browsergym_evaluation_protocol=false`; scores must not be compared directly with the official leaderboard.
+The default action configuration and 10-step budget match BrowserGym 0.14.3. Reports therefore set
+`official_browsergym_action_config=true` and `official_browsergym_evaluation_protocol=true`. Overriding `max_steps`
+sets `official_browsergym_evaluation_protocol=false`; scores from such custom runs must not be compared directly with
+the official leaderboard.
 
 ## Requirements
 
@@ -188,6 +190,8 @@ class MiniWobAdapter(AgentLoopAdapter):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._validate_agent_config()
+        agent_config = self._task_config.agent_config if self._task_config is not None else None
+        self.max_steps = self._resolve_max_steps(agent_config)
         self._environment_config = self._resolve_task_environment_config()
         self.observation_mode = self._environment_config.observation_mode or 'axtree_screenshot'
         if self.observation_mode not in {'axtree', 'axtree_screenshot'}:
@@ -357,7 +361,7 @@ class MiniWobAdapter(AgentLoopAdapter):
                         environment=None,
                         initial_messages=initial_messages,
                         all_tools=list(sample.tools or []),
-                        max_steps=MINIWOB_MAX_STEPS,
+                        max_steps=self.max_steps,
                         sample_id=sample.id,
                         trace_strategy_name=strategy.name,
                         trace_env_name=None,
@@ -479,8 +483,6 @@ class MiniWobAdapter(AgentLoopAdapter):
             raise ValueError(
                 'MiniWoB does not use an Agent execution environment; configure agent_config.task_environment instead.'
             )
-        if 'max_steps' in agent_config.model_fields_set and agent_config.max_steps != MINIWOB_MAX_STEPS:
-            raise ValueError(f'MiniWoB fixes max_steps={MINIWOB_MAX_STEPS}.')
         if 'strategy' in agent_config.model_fields_set:
             raise ValueError('MiniWoB fixes its internal strategy; omit agent_config.strategy.')
         if agent_config.tools or agent_config.mcp_servers:
@@ -622,8 +624,8 @@ class MiniWobAdapter(AgentLoopAdapter):
         Image.fromarray(array).save(path, format='PNG')
         return path
 
-    @staticmethod
     def _observation_metadata(
+        self,
         sample: Sample,
         observation: Dict[str, Any],
         screenshot: Optional[Path],
@@ -636,7 +638,7 @@ class MiniWobAdapter(AgentLoopAdapter):
             'last_action_error': bool(observation.get('last_action_error')),
             'error': str(observation.get('error') or ''),
             'screenshot_path': str(screenshot) if screenshot is not None else None,
-            'profile': MINIWOB_PROFILE,
+            'profile': miniwob_profile(self.max_steps),
         }
 
     def _failure(self, model: Model, sample: Sample, error: str, *, source: str) -> InferenceResult:
@@ -658,7 +660,7 @@ class MiniWobAdapter(AgentLoopAdapter):
             strategy='miniwob_openenv_function_calling',
             task_environment='openenv',
             task_environment_runtime=self._environment_config.runtime.name,
-            max_steps=MINIWOB_MAX_STEPS,
+            max_steps=self.max_steps,
         )
         trace.add_event(
             step=int(sample.metadata.get('browser_step', 0)),
@@ -671,14 +673,13 @@ class MiniWobAdapter(AgentLoopAdapter):
         )
         return InferenceResult(output=output, messages=[message], trace=trace)
 
-    @staticmethod
-    def _report_metadata(sample_or_metadata: Sample | Dict[str, Any]) -> Dict[str, Any]:
+    def _report_metadata(self, sample_or_metadata: Sample | Dict[str, Any]) -> Dict[str, Any]:
         metadata = sample_or_metadata.metadata if isinstance(sample_or_metadata, Sample) else sample_or_metadata
         return {
-            'profile': MINIWOB_PROFILE,
-            'max_steps': MINIWOB_MAX_STEPS,
+            'profile': miniwob_profile(self.max_steps),
+            'max_steps': self.max_steps,
             'official_browsergym_action_config': True,
-            'official_browsergym_evaluation_protocol': False,
+            'official_browsergym_evaluation_protocol': self.max_steps == MINIWOB_MAX_STEPS,
             'openenv_version': OPENENV_VERSION,
             'openenv_commit': OPENENV_COMMIT,
             'openenv_patch_sha256': OPENENV_PATCH_SHA256,
@@ -690,16 +691,17 @@ class MiniWobAdapter(AgentLoopAdapter):
             'observation_mode': metadata.get('observation_mode'),
         }
 
-    @staticmethod
-    def _emit_profile_warning() -> None:
+    def _emit_profile_warning(self) -> None:
         global _PROFILE_WARNING_EMITTED
+        if self.max_steps == MINIWOB_MAX_STEPS:
+            return
         with _PROFILE_WARNING_LOCK:
             if _PROFILE_WARNING_EMITTED:
                 return
             logger.warning(
                 'MiniWoB uses BrowserGym 0.14.3 miniwob_all actions through a pinned EvalScope patch to OpenEnv v0.4.1, '
-                'but its 20-step budget differs from BrowserGym Experiments. Scores are not directly comparable with '
-                'the official leaderboard protocol.'
+                f'but its configured {self.max_steps}-step budget differs from BrowserGym Experiments. Scores are not '
+                'directly comparable with the official leaderboard protocol.'
             )
             _PROFILE_WARNING_EMITTED = True
 

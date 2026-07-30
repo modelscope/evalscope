@@ -13,7 +13,8 @@ BrowserGym service owns the environment lifecycle and reset/step/reward protocol
 - The task catalog is downloaded once from a pinned BrowserGym GitHub commit, checksum-verified, and cached locally.
   No ModelScope or Hugging Face dataset is used.
 - The primary metric is `success_rate`; `error_rate` separately reports OpenEnv runtime failures.
-- Every episode uses a fixed 20-step action budget.
+- Every episode uses a 10-step action budget by default, matching BrowserGym Experiments. Override it with
+  `NativeAgentConfig.max_steps` only for diagnostic or custom runs.
 - `agent_config.task_environment.observation_mode` controls the observation representation. Its default is
   `axtree_screenshot`: every reset and step supplies both the accessibility tree and a PNG screenshot. Use `axtree`
   only when a text-only diagnostic run is explicitly desired.
@@ -28,9 +29,10 @@ official `miniwob_all` action configuration and preserves each MiniWoB task's na
 overriding them with OpenEnv server defaults. BrowserGym itself is not forked or modified. Reports record the OpenEnv
 source commit and patch checksum.
 
-The action configuration matches BrowserGym 0.14.3, but the EvalScope profile uses a 20-step budget instead of
-BrowserGym Experiments' official 10-step budget. Reports therefore set `official_browsergym_action_config=true` and
-`official_browsergym_evaluation_protocol=false`; scores must not be compared directly with the official leaderboard.
+The default action configuration and 10-step budget match BrowserGym 0.14.3. Reports therefore set
+`official_browsergym_action_config=true` and `official_browsergym_evaluation_protocol=true`. Overriding `max_steps`
+sets `official_browsergym_evaluation_protocol=false`; scores from such custom runs must not be compared directly with
+the official leaderboard.
 
 ## Requirements
 
@@ -76,7 +78,7 @@ TaskConfig(model='qwen3-vl-plus', datasets=['miniwob'], eval_batch_size=4)
 {
   "input": [
     {
-      "id": "76c2cf88",
+      "id": "df2fa4ce",
       "content": "The task goal and browser observation are supplied when the OpenEnv episode is reset."
     }
   ],
@@ -111,10 +113,10 @@ TaskConfig(model='qwen3-vl-plus', datasets=['miniwob'], eval_batch_size=4)
     "openenv_task_name": "ascending-numbers",
     "seed": 1608637542,
     "repeat": 0,
-    "profile": "openenv_v0.4.1_miniwob_all_20_steps",
-    "max_steps": 20,
+    "profile": "openenv_v0.4.1_miniwob_all_10_steps",
+    "max_steps": 10,
     "official_browsergym_action_config": true,
-    "official_browsergym_evaluation_protocol": false,
+    "official_browsergym_evaluation_protocol": true,
     "openenv_version": "0.4.1",
     "openenv_commit": "65c506ef94bb1f7279cb4359673b3ef81031d01f",
     "openenv_patch_sha256": "465b23aaf7b3b2cadd681495d694a7dad5ca1b36be0cfb5ce5780b94ac354668",

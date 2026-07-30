@@ -20,10 +20,10 @@ BROWSERGYM_METADATA_URL = (
     'browsergym/experiments/src/browsergym/experiments/benchmark/metadata/miniwob.csv'
 )
 MINIWOB_SCHEDULE_SHA256 = '2215888dc6b2cf18bbe2f598d747c21c60d11d27d3b42d030ac2e5622fd865de'
-MINIWOB_PROFILE = 'openenv_v0.4.1_miniwob_all_20_steps'
+MINIWOB_PROFILE_PREFIX = 'openenv_v0.4.1_miniwob_all'
 MINIWOB_TASK_COUNT = 125
 MINIWOB_REPEATS = 5
-MINIWOB_MAX_STEPS = 20
+MINIWOB_MAX_STEPS = 10
 MINIWOB_SEED_MAX = 2**32
 MINIWOB_ALL_ACTIONS = (
     'noop',
@@ -135,6 +135,11 @@ def validate_browser_action(action: str) -> str:
     return text
 
 
+def miniwob_profile(max_steps: int) -> str:
+    """Return the MiniWoB runtime profile name for a step budget."""
+    return f'{MINIWOB_PROFILE_PREFIX}_{max_steps}_steps'
+
+
 __all__ = [
     'BROWSERGYM_COMMIT',
     'BROWSERGYM_METADATA_SHA256',
@@ -142,9 +147,10 @@ __all__ = [
     'BROWSERGYM_VERSION',
     'MINIWOB_ALL_ACTIONS',
     'MINIWOB_MAX_STEPS',
-    'MINIWOB_PROFILE',
+    'MINIWOB_PROFILE_PREFIX',
     'MINIWOB_SCHEDULE_SHA256',
     'ensure_miniwob_metadata',
     'load_miniwob_records',
+    'miniwob_profile',
     'validate_browser_action',
 ]
