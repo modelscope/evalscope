@@ -65,7 +65,6 @@ Most-used `ExternalAgentConfig` fields:
 | `environment` | Where to run | `local` (dev) / `docker` (production) |
 | `environment_extra` | Environment constructor options | Docker image, timeout, mounts, and other environment-specific settings |
 | `timeout` | Per-sample wall-clock budget in seconds | 120 for math, 1800+ for code fixes |
-| `task_environment` | Stateful task protocol and its service runtime | Usually benchmark-provided |
 | `skills_dir` | Optional host Agent Skills directory | EvalScope makes the skills available before launching the runner |
 | `kwargs` | Kwargs forwarded to the CLI, see below | `{}` |
 

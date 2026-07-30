@@ -8,6 +8,7 @@ from .adapters import (
     MultiChoiceAdapter,
     MultiTurnAdapter,
     NERAdapter,
+    OpenEnvAdapter,
     Text2ImageAdapter,
     VisionLanguageAdapter,
 )

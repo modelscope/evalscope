@@ -76,6 +76,25 @@ class TestFunctionCallingStrategy(unittest.TestCase):
     def test_tool_schema_mode_is_function_calling(self):
         self.assertEqual(self.strategy.tool_schema_mode(), 'function_calling')
 
+    def test_optional_submit_tool(self):
+        strategy = get_strategy('function_calling')(include_submit_tool=False)
+        self.assertEqual(strategy.tools(self.ctx), [])
+        parsed = strategy.parse_output(
+            _make_output(tool_calls=[_tool_call(name='submit', args={'answer': 'done'})]),
+            self.ctx,
+        )
+        self.assertIsNone(parsed.final_answer)
+        self.assertEqual(parsed.tool_calls[0].function.name, 'submit')
+
+    def test_max_tool_calls_per_turn(self):
+        strategy = get_strategy('function_calling')(max_tool_calls_per_turn=1)
+        parsed = strategy.parse_output(
+            _make_output(tool_calls=[_tool_call(call_id='one'), _tool_call(call_id='two')]),
+            self.ctx,
+        )
+        self.assertEqual(parsed.tool_calls, [])
+        self.assertEqual(parsed.error, 'Call at most 1 tool call per turn.')
+
 
 class TestAgentLoopCore(unittest.TestCase):
     """AgentLoop 主循环语义."""

@@ -10,13 +10,13 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from evalscope.api.environment import EnvironmentRuntime, EnvironmentRuntimeLease
+from evalscope.api.environment import EnvironmentRuntime, EnvironmentRuntimeHandle
 from evalscope.api.registry import register_environment_runtime
 from evalscope.api.sandbox import SandboxEngine, SandboxHandle, get_sandbox_service
 from evalscope.utils.import_utils import check_import
 
 
-class MsEnclaveDockerLease(EnvironmentRuntimeLease):
+class MsEnclaveDockerHandle(EnvironmentRuntimeHandle):
     """Owned ms-enclave Docker sandbox exposing an HTTP endpoint."""
 
     name = 'ms_enclave_docker'
@@ -71,7 +71,7 @@ class MsEnclaveDockerRuntime(EnvironmentRuntime):
         image: Optional[str],
         env_vars: Dict[str, str],
         config: Dict[str, Any],
-    ) -> EnvironmentRuntimeLease:
+    ) -> EnvironmentRuntimeHandle:
         if not image:
             raise ValueError('ms_enclave_docker environment runtime requires an image.')
         unknown = set(config) - self._ALLOWED_KEYS
@@ -110,7 +110,7 @@ class MsEnclaveDockerRuntime(EnvironmentRuntime):
         except Exception:
             await handle.close()
             raise
-        return MsEnclaveDockerLease(base_url=base_url, handle=handle, container_id=container_id)
+        return MsEnclaveDockerHandle(base_url=base_url, handle=handle, container_id=container_id)
 
     @staticmethod
     def _reserve_port(host: str) -> int:
@@ -137,4 +137,4 @@ class MsEnclaveDockerRuntime(EnvironmentRuntime):
         raise TimeoutError(f'Task environment at {base_url} did not become ready within {timeout_s}s: {last_error}')
 
 
-__all__ = ['MsEnclaveDockerLease', 'MsEnclaveDockerRuntime']
+__all__ = ['MsEnclaveDockerHandle', 'MsEnclaveDockerRuntime']

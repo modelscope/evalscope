@@ -6,7 +6,7 @@ import sys
 from types import ModuleType, SimpleNamespace
 
 from evalscope.api.environment import EnvironmentStepResult
-from evalscope.api.registry import get_environment_runtime, get_task_environment, list_environment_runtimes
+from evalscope.api.registry import get_environment_runtime, get_task_environment
 from evalscope.environment.backends.openenv import OpenEnvBackend, OpenEnvSession
 from evalscope.environment.runtimes.ms_enclave_docker import MsEnclaveDockerRuntime
 
@@ -134,7 +134,7 @@ def test_ms_enclave_runtime_is_docker_only(monkeypatch):
     monkeypatch.setattr(MsEnclaveDockerRuntime, '_wait_for_ready', staticmethod(lambda base_url, timeout_s: None))
 
     runtime = MsEnclaveDockerRuntime()
-    lease = asyncio.run(
+    handle = asyncio.run(
         runtime.start(
             image='browsergym:latest',
             env_vars={'BROWSERGYM_BENCHMARK': 'miniwob'},
@@ -143,12 +143,11 @@ def test_ms_enclave_runtime_is_docker_only(monkeypatch):
     )
 
     assert get_environment_runtime('ms_enclave_docker') is MsEnclaveDockerRuntime
-    assert 'remote' not in list_environment_runtimes()
-    assert lease.base_url == 'http://127.0.0.1:18123'
+    assert handle.base_url == 'http://127.0.0.1:18123'
     _, engine, sandbox_config, manager_config = calls[0]
     assert engine.value == 'docker'
     assert sandbox_config.kwargs['ports'] == {'8000/tcp': ('127.0.0.1', 18123)}
     assert sandbox_config.kwargs['tools_config'] == {}
     assert manager_config == {}
-    asyncio.run(lease.close())
+    asyncio.run(handle.close())
     assert calls[-1] == ('close', None)

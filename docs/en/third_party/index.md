@@ -8,6 +8,7 @@ Before using these benchmarks, please follow the instructions in each benchmark'
 :maxdepth: 1
 
 terminal_bench.md
+miniwob.md
 skillsbench.md
 toolathlon.md
 gaia.md

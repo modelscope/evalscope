@@ -65,7 +65,6 @@ EvalScope 会在本地子进程里准备 Claude Code(必要时自动 `npm instal
 | `environment` | 运行位置 | `local`（开发）/ `docker`（生产） |
 | `environment_extra` | 环境构造参数 | Docker 镜像、超时、挂载等环境专属设置 |
 | `timeout` | 单样本壁钟超时(秒) | 数学题 120，代码修复 1800+ |
-| `task_environment` | 有状态任务协议及其服务运行时 | 通常由 benchmark 提供 |
 | `skills_dir` | 可选的本机 Agent Skills 目录 | EvalScope 会在启动 runner 前让 skills 可用 |
 | `kwargs` | 透传给 CLI 的参数，见下 | `{}` |
 

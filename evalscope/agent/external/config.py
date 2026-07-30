@@ -1,7 +1,7 @@
 """Pydantic configuration for external-agent runs.
 
-Lives under the shared :class:`BaseAgentConfig` so Agent environment and
-task-environment configuration are not duplicated against :class:`NativeAgentConfig`.
+Lives under the shared :class:`BaseAgentConfig` so ``environment`` /
+``environment_extra`` are not duplicated against :class:`NativeAgentConfig`.
 The ``mode`` literal serves as the Pydantic discriminator on the
 :attr:`TaskConfig.agent_config` union.
 """

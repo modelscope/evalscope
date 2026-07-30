@@ -40,9 +40,6 @@ class BaseAgentConfig(BaseModel):
     environment_extra: Dict[str, Any] = Field(default_factory=dict)
     """Options passed to the Agent execution environment constructor."""
 
-    task_environment: Optional[TaskEnvironmentConfig] = Field(default=None)
-    """Stateful task protocol and the runtime hosting its service."""
-
     kwargs: Dict[str, Any] = Field(default_factory=dict)
     """Free-form variant-specific options.  Native: forwarded to the
     strategy constructor.  External: forwarded to the runner constructor."""
@@ -66,6 +63,9 @@ class NativeAgentConfig(BaseAgentConfig):
 
     mode: Literal['native'] = Field(default='native')
     """Union discriminator — fixed value for the native AgentLoop path."""
+
+    task_environment: Optional[TaskEnvironmentConfig] = Field(default=None)
+    """Stateful task protocol and the runtime hosting its service."""
 
     strategy: str = Field(default='function_calling')
     """Registered strategy name (``function_calling`` / ``react`` / ...)."""

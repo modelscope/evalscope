@@ -29,8 +29,19 @@ class FunctionCallingStrategy(AgentStrategy):
 
     name: str = 'function_calling'
 
-    def __init__(self, *, system_prompt: Optional[str] = None, **_: object) -> None:
+    def __init__(
+        self,
+        *,
+        system_prompt: Optional[str] = None,
+        include_submit_tool: bool = True,
+        max_tool_calls_per_turn: Optional[int] = None,
+        **_: object,
+    ) -> None:
+        if max_tool_calls_per_turn is not None and max_tool_calls_per_turn <= 0:
+            raise ValueError('max_tool_calls_per_turn must be greater than 0.')
         self._system_prompt = system_prompt
+        self._include_submit_tool = include_submit_tool
+        self._max_tool_calls_per_turn = max_tool_calls_per_turn
 
     def build_system_prompt(self, ctx: AgentContext) -> Optional[str]:
         return self._system_prompt
@@ -43,10 +54,17 @@ class FunctionCallingStrategy(AgentStrategy):
         tool_calls = list(message.tool_calls or [])
 
         # Intercept ``submit`` → treat as final answer.
-        submit_calls = [tc for tc in tool_calls if tc.function.name == 'submit']
+        submit_calls = [tc for tc in tool_calls if self._include_submit_tool and tc.function.name == 'submit']
         if submit_calls:
             answer = submit_calls[0].function.arguments.get('answer', '')
             return ParsedAction(final_answer=answer, raw_text=message.text)
+
+        if self._max_tool_calls_per_turn is not None and len(tool_calls) > self._max_tool_calls_per_turn:
+            label = 'tool call' if self._max_tool_calls_per_turn == 1 else 'tool calls'
+            return ParsedAction(
+                error=f'Call at most {self._max_tool_calls_per_turn} {label} per turn.',
+                raw_text=message.text,
+            )
 
         if tool_calls:
             return ParsedAction(tool_calls=tool_calls, raw_text=message.text)
@@ -72,7 +90,7 @@ class FunctionCallingStrategy(AgentStrategy):
         # Auto-inject the submit tool so the model can explicitly signal
         # completion regardless of the user's tool configuration.
         tool_list = list(ctx.tools)
-        if not any(t.name == 'submit' for t in tool_list):
+        if self._include_submit_tool and not any(t.name == 'submit' for t in tool_list):
             tool_list.append(SUBMIT_TOOL_INFO)
         return tool_list
 

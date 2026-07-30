@@ -16,8 +16,13 @@ import unittest
 
 from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.agent.mcp import MCPServerConfigStdio
+from evalscope.api.environment import EnvironmentStepResult
+from evalscope.api.messages import ChatMessageAssistant
 from evalscope.api.metric import SampleScore, Score
+from evalscope.api.model import ModelOutput
+from evalscope.api.model.model_output import ChatCompletionChoice
 from evalscope.api.registry import get_benchmark
+from evalscope.api.tool import ToolCall, ToolFunction
 from evalscope.benchmarks.automation_bench.utils import (
     _create_automation_bench_env,
     _normalize_result,
@@ -37,6 +42,8 @@ from evalscope.benchmarks.claw_eval.utils import (
 from evalscope.benchmarks.toolathlon.toolathlon_adapter import ToolathlonAdapter
 from evalscope.config import SandboxTaskConfig, TaskConfig
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
+from evalscope.models.mockllm import MockLLM
+from evalscope.run import run_task
 from evalscope.utils.logger import get_logger
 from tests.common import TestBenchmark
 
@@ -145,6 +152,118 @@ class TestAgentBenchmark(TestBenchmark):
         self.assertEqual(len(review_files), 1)
         review = json.loads(review_files[0].read_text(encoding='utf-8').strip())
         self.assertIn('answer_type', review['sample_score']['sample_metadata'])
+
+    def test_miniwob(self):
+        """Run dataset repeats, FC, OpenEnv reward and reporting end to end."""
+
+        class FakeHandle:
+            name = 'ms_enclave_docker'
+            base_url = 'http://127.0.0.1:18123'
+
+            async def capture_logs(self, destination):
+                return False
+
+            async def close(self):
+                return None
+
+        class FakeSession:
+            backend_name = 'openenv'
+
+            async def reset(self, **kwargs):
+                return EnvironmentStepResult(
+                    observation={
+                        'goal': 'Click OK',
+                        'url': 'http://miniwob/click-dialog.html',
+                        'axtree_txt': '[1] button "OK"',
+                        'last_action_error': False,
+                    },
+                )
+
+            async def step(self, action):
+                assert action == {'action_str': 'click("1")'}
+                return EnvironmentStepResult(
+                    observation={
+                        'goal': 'Click OK',
+                        'url': 'http://miniwob/click-dialog.html',
+                        'axtree_txt': '[1] button "OK"',
+                        'last_action_error': False,
+                    },
+                    reward=1.0,
+                    done=True,
+                )
+
+            async def state(self):
+                return {'benchmark': 'miniwob'}
+
+            async def close(self):
+                return None
+
+        record = {
+            'task_name': 'miniwob.click-dialog',
+            'miniwob_category': 'test',
+            'comment': '',
+            'webgum_subset': 'False',
+            'similarity_group': '0',
+            'browsergym_split': 'test',
+            'task_id': 'miniwob.click-dialog',
+            'openenv_task_name': 'click-dialog',
+            '_episode_seeds': [28, 29, 30, 31, 32],
+        }
+        call = ToolCall(
+            id='browser-1',
+            function=ToolFunction(name='browser_action', arguments={'action': 'click("1")'}),
+        )
+        output = ModelOutput(
+            model='mock_llm',
+            choices=[
+                ChatCompletionChoice(
+                    message=ChatMessageAssistant(content='', tool_calls=[call]),
+                    stop_reason='tool_calls',
+                )
+            ],
+        )
+        original_init = MockLLM.__init__
+
+        def patched_init(model_self, *args, **kwargs):
+            kwargs['custom_outputs'] = [output.model_copy(deep=True) for _ in range(5)]
+            original_init(model_self, *args, **kwargs)
+
+        with tempfile.TemporaryDirectory() as work_dir, \
+                patch('evalscope.benchmarks.miniwob.miniwob_adapter.load_miniwob_records',
+                      return_value=([record], Path('/cache/miniwob.csv'))), \
+                patch('evalscope.benchmarks.miniwob.miniwob_adapter.MiniWobAdapter.start_task_environment',
+                      side_effect=lambda sample: (FakeHandle(), FakeSession())), \
+                patch.object(MockLLM, '__init__', patched_init):
+            reports = run_task(
+                TaskConfig(
+                    model='mock_llm',
+                    datasets=['miniwob'],
+                    eval_type='mock_llm',
+                    repeats=5,
+                    eval_batch_size=1,
+                    work_dir=work_dir,
+                    no_timestamp=True,
+                    analysis_report=False,
+                    agent_config=NativeAgentConfig(
+                        strategy='function_calling',
+                        max_steps=10,
+                        task_environment={
+                            'backend': 'openenv',
+                            'observation_mode': 'axtree',
+                            'runtime': {
+                                'name': 'ms_enclave_docker'
+                            },
+                        }
+                    ),
+                )
+            )
+
+            self.assertEqual(reports['miniwob'].score, 1.0)
+            reviews = list(Path(work_dir).glob('reviews/**/*.jsonl'))
+            rows = [json.loads(line) for line in reviews[0].read_text(encoding='utf-8').splitlines()]
+            self.assertEqual(len(rows), 5)
+            self.assertEqual([row['sample_score']['sample_metadata']['seed'] for row in rows], [28, 29, 30, 31, 32])
+            self.assertTrue(all(row['agent_trace']['task_environment'] == 'openenv' for row in rows))
 
     def test_swe_bench_verified_agentic(self):
         """Test SWE-bench-verified agentic dataset using docker environment."""

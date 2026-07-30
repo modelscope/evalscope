@@ -5,8 +5,12 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 
-class EnvironmentRuntimeLease(ABC):
-    """Endpoint and lifecycle for one hosted task-environment service."""
+class EnvironmentRuntimeHandle(ABC):
+    """One running task-environment service owned by the caller.
+
+    A runtime is a reusable service factory. Each ``start`` call returns a
+    separate handle carrying that service's endpoint, logs and cleanup.
+    """
 
     name: str = 'base'
     base_url: str
@@ -31,9 +35,9 @@ class EnvironmentRuntime(ABC):
         image: Optional[str],
         env_vars: Dict[str, str],
         config: Dict[str, Any],
-    ) -> EnvironmentRuntimeLease:
+    ) -> EnvironmentRuntimeHandle:
         """Start or attach to one task-environment service."""
         ...
 
 
-__all__ = ['EnvironmentRuntime', 'EnvironmentRuntimeLease']
+__all__ = ['EnvironmentRuntime', 'EnvironmentRuntimeHandle']

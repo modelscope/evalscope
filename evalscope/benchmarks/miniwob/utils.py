@@ -9,8 +9,11 @@ import numpy as np
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from evalscope.api.tool import ToolInfo
+from evalscope.api.tool.tool_info import ToolParams
 from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR
 from evalscope.utils.download_utils import download_url, file_sha256
+from evalscope.utils.json_schema import JSONSchema
 
 BROWSERGYM_VERSION = '0.14.3'
 BROWSERGYM_COMMIT = '0a785fbed075224ae81ca9c1fe924f66050696fe'
@@ -23,7 +26,6 @@ MINIWOB_SCHEDULE_SHA256_BY_REPEATS = {
     1: '7e8487ae966899585f6c1aac78fee869d746cf2c983aae55783356bf5be66926',
     5: '2215888dc6b2cf18bbe2f598d747c21c60d11d27d3b42d030ac2e5622fd865de',
 }
-MINIWOB_PROFILE_PREFIX = 'openenv_v0.4.1_miniwob_all'
 MINIWOB_TASK_COUNT = 125
 MINIWOB_REPEATS = 5
 MINIWOB_MAX_STEPS = 10
@@ -40,6 +42,37 @@ MINIWOB_ALL_ACTIONS = (
     'keyboard_press',
     'keyboard_type',
     'fill',
+)
+MINIWOB_ACTION_SIGNATURES = (
+    'noop(wait_ms=1000), mouse_move(x, y), mouse_click(x, y, button="left"), '
+    'mouse_dblclick(x, y, button="left"), mouse_down(x, y, button="left"), '
+    'mouse_up(x, y, button="left"), scroll(delta_x, delta_y), click(bid, button="left"), '
+    'keyboard_press(key), keyboard_type(text), fill(bid, value)'
+)
+
+BROWSER_ACTION_TOOL_INFO = ToolInfo(
+    name='browser_action',
+    description=(
+        'Execute exactly one BrowserGym MiniWoB action. '
+        f'Supported signatures: {MINIWOB_ACTION_SIGNATURES}. '
+        'click accepts a string BID, for example click("13"); use mouse_click(x, y) for visual targets. '
+        'Coordinates are absolute screenshot pixels, not normalized 0-1000 coordinates.'
+    ),
+    parameters=ToolParams(
+        properties={
+            'action': JSONSchema(
+                type='string',
+                description='One BrowserGym function-call expression.',
+            ),
+        },
+        required=['action'],
+    ),
+)
+
+MINIWOB_SYSTEM_PROMPT = (
+    'Complete the browser task using browser_action. Inspect the screenshot and accessibility tree before acting. '
+    'Use click with a string BID, or mouse_click with absolute screenshot pixel coordinates. '
+    'The environment reward determines success.'
 )
 
 _EXPECTED_FIELDS = [
@@ -147,22 +180,18 @@ def validate_browser_action(action: str) -> str:
     return text
 
 
-def miniwob_profile(max_steps: int) -> str:
-    """Return the MiniWoB runtime profile name for a step budget."""
-    return f'{MINIWOB_PROFILE_PREFIX}_{max_steps}_steps'
-
-
 __all__ = [
+    'BROWSER_ACTION_TOOL_INFO',
     'BROWSERGYM_COMMIT',
     'BROWSERGYM_METADATA_SHA256',
     'BROWSERGYM_METADATA_URL',
     'BROWSERGYM_VERSION',
+    'MINIWOB_ACTION_SIGNATURES',
     'MINIWOB_ALL_ACTIONS',
     'MINIWOB_MAX_STEPS',
-    'MINIWOB_PROFILE_PREFIX',
     'MINIWOB_SCHEDULE_SHA256_BY_REPEATS',
+    'MINIWOB_SYSTEM_PROMPT',
     'ensure_miniwob_metadata',
     'load_miniwob_records',
-    'miniwob_profile',
     'validate_browser_action',
 ]

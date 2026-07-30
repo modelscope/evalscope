@@ -360,11 +360,6 @@ def get_task_environment(name: str) -> Type['TaskEnvironmentBackend']:
     return TASK_ENVIRONMENT_REGISTRY.lookup(name)
 
 
-def list_task_environments() -> List[str]:
-    """Return registered task-environment backend names."""
-    return TASK_ENVIRONMENT_REGISTRY.list_keys()
-
-
 def register_environment_runtime(
     name: Union[str, List[str]],
 ) -> Callable[[Type['EnvironmentRuntime']], Type['EnvironmentRuntime']]:
@@ -375,11 +370,6 @@ def register_environment_runtime(
 def get_environment_runtime(name: str) -> Type['EnvironmentRuntime']:
     """Return a registered task-environment service runtime."""
     return ENVIRONMENT_RUNTIME_REGISTRY.lookup(name)
-
-
-def list_environment_runtimes() -> List[str]:
-    """Return registered task-environment service runtime names."""
-    return ENVIRONMENT_RUNTIME_REGISTRY.list_keys()
 
 
 # END: Registries for stateful task environments
