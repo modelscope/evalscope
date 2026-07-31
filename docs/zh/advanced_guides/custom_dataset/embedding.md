@@ -148,7 +148,7 @@ python run_eval.py
 | `eval_splits` | List[str] | `["test"]` | 评测分割列表 |
 
 ```{note}
-其他评测参数（如 `models`、`limits`、`overwrite_results` 等）与默认配置一致，详见 [MTEB 评测参数说明](../../user_guides/backend/rageval_backend/mteb.md#参数说明)。
+其他评测参数（如 `models`、`limits`、`overwrite_results` 等）与默认配置一致，详见 [MTEB 评测参数说明](../../user_guides/backend/rageval_backend/mteb.md#完整参数参考)。
 ```
 
 ## 常见问题

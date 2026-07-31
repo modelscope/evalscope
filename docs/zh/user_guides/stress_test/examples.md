@@ -1,151 +1,76 @@
 # 使用示例
 
-## 使用本地模型推理
+本文按「压测对象 → 输入数据 → 请求参数 → 负载模式 → 结果观测」的顺序给出可直接复制运行的命令。完整参数含义见[参数说明](./parameters.md)，多轮对话场景见[多轮对话压测](./multi_turn.md)。
 
-本项目支持本地transformers进行推理和vllm推理（需先安装vllm）， `--model`可以填入modelscope模型名称，例如`Qwen/Qwen2.5-0.5B-Instruct`；也可以直接指定模型权重路径，例如`/path/to/model_weights`，无需指定`--url`参数。
+## 本地模型推理
 
-**1. 使用transformers进行推理**
+支持本地 transformers 推理和 vLLM 推理（需先安装 vllm），无需指定 `--url`。`--model` 可填 ModelScope 模型名称（如 `Qwen/Qwen2.5-0.5B-Instruct`），也可直接指定模型权重路径（如 `/path/to/model_weights`）。
 
-指定`--api local`：
-```bash
-evalscope perf \
- --model 'Qwen/Qwen2.5-0.5B-Instruct' \
- --attn-implementation flash_attention_2 \  # 可不填，或选[flash_attention_2|eager|sdpa]
- --number 20 \
- --parallel 2 \
- --api local \
- --dataset openqa
-```
-
-**2. 使用vllm进行推理**
-
-指定`--api local_vllm`：
-```bash
-evalscope perf \
- --model 'Qwen/Qwen2.5-0.5B-Instruct' \
- --number 20 \
- --parallel 2 \
- --api local_vllm \
- --dataset openqa
-```
-
-## 使用`prompt`
-```bash
-evalscope perf \
- --url 'http://127.0.0.1:8000/v1/chat/completions' \
- --parallel 2 \
- --model 'qwen2.5' \
- --log-every-n-query 10 \
- --number 20 \
- --api openai \
- --temperature 0.9 \
- --max-tokens 1024 \
- --prompt '写一个科幻小说，请开始你的表演'
-```
-也可以使用本地文件作为prompt：
-```bash
-evalscope perf \
- --url 'http://127.0.0.1:8000/v1/chat/completions' \
- --parallel 2 \
- --model 'qwen2.5' \
- --log-every-n-query 10 \
- --number 20 \
- --api openai \
- --temperature 0.9 \
- --max-tokens 1024 \
- --prompt @prompt.txt
-```
-
-## 复杂请求
-使用`stop`，`stream`，`temperature`等：
+**transformers 推理**：指定 `--api local`。
 
 ```bash
 evalscope perf \
- --url 'http://127.0.0.1:8000/v1/chat/completions' \
- --parallel 2 \
- --model 'qwen2.5' \
- --log-every-n-query 10 \
- --read-timeout 120 \
- --connect-timeout 120 \
- --number 20 \
- --max-prompt-length 128000 \
- --min-prompt-length 128 \
- --api openai \
- --temperature 0.7 \
- --max-tokens 1024 \
- --stop '<|im_end|>' \
- --dataset openqa \
- --stream
+  --model 'Qwen/Qwen2.5-0.5B-Instruct' \
+  --number 20 \
+  --parallel 2 \
+  --api local \
+  --dataset openqa
 ```
 
-## 使用`query-template`
+可选追加 `--attn-implementation`，取值 `flash_attention_2`、`eager` 或 `sdpa`。
 
-您可以在`query-template`中设置请求参数：
+**vLLM 推理**：指定 `--api local_vllm`。
 
 ```bash
 evalscope perf \
- --url 'http://127.0.0.1:8000/v1/chat/completions' \
- --parallel 2 \
- --model 'qwen2.5' \
- --log-every-n-query 10 \
- --read-timeout 120 \
- --connect-timeout 120 \
- --number 20 \
- --max-prompt-length 128000 \
- --min-prompt-length 128 \
- --api openai \
- --query-template '{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true, "skip_special_tokens": false, "stop": ["<|im_end|>"], "temperature": 0.7, "max_tokens": 1024}' \
- --dataset openqa 
+  --model 'Qwen/Qwen2.5-0.5B-Instruct' \
+  --number 20 \
+  --parallel 2 \
+  --api local_vllm \
+  --dataset openqa
 ```
-其中`%m`和`%p`会被替换为模型名称和prompt。
 
-您也可以使用本地`query-template.json`文件：
+## 输入数据构造
 
-```{code-block} json
-:caption: template.json
+### 固定 prompt
 
-{
-   "model":"%m",
-   "messages":[
-      {
-         "role":"user",
-         "content":"%p"
-      }
-   ],
-   "stream":true,
-   "skip_special_tokens":false,
-   "stop":[
-      "<|im_end|>"
-   ],
-   "temperature":0.7,
-   "max_tokens":1024
-}
-```
+用 `--prompt` 指定单条固定 prompt，所有请求发送相同内容，无需数据集。
+
 ```bash
 evalscope perf \
- --url 'http://127.0.0.1:8000/v1/chat/completions' \
- --parallel 2 \
- --model 'qwen2.5' \
- --log-every-n-query 10 \
- --read-timeout 120 \
- --connect-timeout 120 \
- --number 20 \
- --max-prompt-length 128000 \
- --min-prompt-length 128 \
- --api openai \
- --query-template @template.json \
- --dataset openqa 
+  --url 'http://127.0.0.1:8000/v1/chat/completions' \
+  --parallel 2 \
+  --model 'qwen2.5' \
+  --log-every-n-query 10 \
+  --number 20 \
+  --api openai \
+  --temperature 0.9 \
+  --max-tokens 1024 \
+  --prompt '写一个科幻小说，请开始你的表演'
 ```
 
-## 使用random数据集
+也可以用 `@` 前缀从本地文件读取：
 
-根据`prefix-length`，`max-prompt-length`和`min-prompt-length`随机生成prompt，必需指定`tokenizer-path`。生成prompt的token数量在`prefix_length + min-prompt-length`和`prefix_length + max-prompt-length`之间均匀分布，在一次测试中所有请求prefix部分相同。
+```bash
+evalscope perf \
+  --url 'http://127.0.0.1:8000/v1/chat/completions' \
+  --parallel 2 \
+  --model 'qwen2.5' \
+  --log-every-n-query 10 \
+  --number 20 \
+  --api openai \
+  --temperature 0.9 \
+  --max-tokens 1024 \
+  --prompt @prompt.txt
+```
+
+### 随机数据集
+
+根据 `prefix-length`、`max-prompt-length` 和 `min-prompt-length` 随机生成 prompt，必需指定 `tokenizer-path`。生成 prompt 的 token 数量在 `prefix_length + min-prompt-length` 和 `prefix_length + max-prompt-length` 之间均匀分布，在一次测试中所有请求 prefix 部分相同。
 
 ```{note}
-由于chat_template以及tokenize算法的影响，生成的prompt的token数量可能有些误差，不是精确的指定token数量。
+由于 chat_template 以及 tokenize 算法的影响，生成的 prompt 的 token 数量可能有些误差，不是精确的指定 token 数量。
 ```
-
-执行以下命令即可：
 
 ```bash
 evalscope perf \
@@ -170,8 +95,9 @@ evalscope perf \
 服务端将收到恰好 `prefix_length + inner_seq_length` 个 token，落在 `[min-prompt-length, max-prompt-length]` 范围内。适用于 vLLM、SGLang、LMDeploy 等支持接收 token ID 的推理框架；不支持 `random_vl` 数据集。
 ```
 
-## 使用random图文数据集
-使用`random_vl`数据集，随机生成图像和文本输入，在`random`基础上增加了图像相关参数（`image-width`，`image-height`，`image-format`，`image-num`）。
+### 随机图文数据集
+
+使用 `random_vl` 数据集，随机生成图像和文本输入，在 `random` 基础上增加了图像相关参数（`image-width`、`image-height`、`image-format`、`image-num`）。
 
 ```bash
 evalscope perf \
@@ -194,48 +120,186 @@ evalscope perf \
   --debug
 ```
 
-## Embedding模型压测
+### 长上下文前缀注入
 
-使用`openai_embedding` API模式和`random_embedding`数据集进行压测。使用随机数据集时需指定`tokenizer-path`用于生成指定长度范围的query文本。
+想用**真实语料**压测 128K/256K 级长上下文时，`random` 数据集虽然能定长，但生成的是高熵无意义 token，无法反映 Prefix-Cache 命中率、MTP 接受率等真实特征；而真实指令集大多只有 4K-8K token，直接把 `target_input_len` 设成 128K 会导致数据被筛空或长短不一。
 
-```bash
-evalscope perf \
- --parallel 2 \
- --number 10 \
- --model 'text-embedding-v4' \
- --url 'https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings' \
- --api-key ${DASHSCOPE_API_KEY} \
- --api openai_embedding \
- --dataset random_embedding \
- --min-prompt-length 256 \
- --max-prompt-length 256 \
- --tokenizer-path 'Qwen/Qwen3-Embedding-0.6B'
-```
+`prefix_file` 解决这个问题：指定一份长文本语料（书籍、文档、代码库等），框架按 token 预算把它精确切成 `target_input_len − prompt 长度` 的前缀，与短 prompt 拼接，使**每条请求的输入恰好等于目标长度**，同时保持真实人类语言的低熵特征。参数说明见[长上下文前缀注入](./parameters.md#长上下文前缀注入)。
 
-## Rerank模型压测
-
-使用`openai_rerank` API模式和`random_rerank`数据集进行压测。使用随机数据集时需指定`tokenizer-path`用于生成指定长度范围的query文本。
-
-可以通过`extra-args`指定生成数据的参数：
-- `num_documents`: 每条query对应的文档数量
-- `document_length_ratio`: 文档长度相对于query长度的倍数
+**前缀注入到 system 角色**（推荐，贴近真实 RAG 流量）：
 
 ```bash
 evalscope perf \
- --parallel 2 \
- --number 10 \
- --model 'qwen3-rerank' \
- --url 'https://dashscope.aliyuncs.com/compatible-api/v1/reranks' \
- --api-key ${DASHSCOPE_API_KEY} \
- --api openai_rerank \
- --dataset random_rerank \
- --min-prompt-length 256 \
- --max-prompt-length 256 \
- --tokenizer-path 'Qwen/Qwen3-Embedding-0.6B' \
- --extra-args '{"num_documents": 5, "document_length_ratio": 3}'
+  --parallel 4 \
+  --model Qwen2.5-0.5B-Instruct \
+  --url http://127.0.0.1:8801/v1/chat/completions \
+  --api openai \
+  --dataset openqa \
+  --tokenizer-path Qwen/Qwen2.5-0.5B-Instruct \
+  --dataset-args '{"target_input_len": 8192, "prefix_file": "long_text.txt", "prefix_role": "system"}' \
+  --max-tokens 128 \
+  --number 20
 ```
 
-## Open-loop 开放环路模式
+每条请求被构造成 `[{"role": "system", "content": "<长前缀>"}, {"role": "user", "content": "<原始问题>"}]`，服务端上报的 `Input Tokens` 各条完全一致（`avg` = `p50` = `p99` = `max`），便于做单一长度点的性能对照。
+
+**前缀拼进 user 消息**：把 `prefix_role` 改为 `user`，前缀直接拼在用户问题前面，产出单条 user 消息。适用于不希望引入 system 角色的场景。
+
+```bash
+evalscope perf \
+  --parallel 2 \
+  --model Qwen2.5-0.5B-Instruct \
+  --url http://127.0.0.1:8801/v1/chat/completions \
+  --api openai \
+  --dataset openqa \
+  --tokenizer-path Qwen/Qwen2.5-0.5B-Instruct \
+  --dataset-args '{"target_input_len": 131072, "prefix_file": "long_text.txt", "prefix_role": "user"}' \
+  --number 10
+```
+
+```{note}
+**实操要点**
+
+- **前缀语料准备**：任意 UTF-8 纯文本文件即可。语料 token 数不足以填满预算时会自动循环重复（tile）补齐并打 warning——想完全避免重复，准备一份 token 数大于 `target_input_len` 的语料。
+- **别超过服务端上限**：`target_input_len` 需小于服务端的 `max_model_len`（vLLM 可用 `--max-model-len` 调整），否则请求会被拒绝。注意 chat template 本身还会额外占用十几个 token。
+- **适用数据集**：`openqa`、`longalpaca`、`line_by_line`、单轮 ShareGPT（`share_gpt_zh` / `share_gpt_en`）；均需 `--tokenizer-path`。
+- **Prefix-Cache 效果**：所有请求共享同一段前缀开头，重复跑同一配置时可观察到 TTFT 显著下降（推理框架命中前缀缓存）。反之，若要测**无缓存**的冷启动性能，请改用 `random` 数据集（它有 `--dataset-offset` 机制保证各轮 prompt 不同）。
+- **`/v1/completions` 端点**：该端点不应用 chat template，`prefix_role="system"` 会自动降级为纯文本拼接并打 warning；此时前缀与 prompt 直接相接，拼接处可能发生 token 合并，实测总长与目标相差 ±1 token。
+```
+
+## 请求参数配置
+
+### 生成参数与超时
+
+组合使用 `stop`、`stream`、`temperature` 以及读写超时等参数：
+
+```bash
+evalscope perf \
+  --url 'http://127.0.0.1:8000/v1/chat/completions' \
+  --parallel 2 \
+  --model 'qwen2.5' \
+  --log-every-n-query 10 \
+  --read-timeout 120 \
+  --connect-timeout 120 \
+  --number 20 \
+  --max-prompt-length 128000 \
+  --min-prompt-length 128 \
+  --api openai \
+  --temperature 0.7 \
+  --max-tokens 1024 \
+  --stop '<|im_end|>' \
+  --dataset openqa \
+  --stream
+```
+
+### 自定义请求体
+
+用 `--query-template` 直接定义完整的请求体 JSON，其中 `%m` 和 `%p` 会被替换为模型名称和 prompt：
+
+```bash
+evalscope perf \
+  --url 'http://127.0.0.1:8000/v1/chat/completions' \
+  --parallel 2 \
+  --model 'qwen2.5' \
+  --log-every-n-query 10 \
+  --read-timeout 120 \
+  --connect-timeout 120 \
+  --number 20 \
+  --max-prompt-length 128000 \
+  --min-prompt-length 128 \
+  --api openai \
+  --query-template '{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true, "skip_special_tokens": false, "stop": ["<|im_end|>"], "temperature": 0.7, "max_tokens": 1024}' \
+  --dataset openqa
+```
+
+模板较长时，可写入本地 JSON 文件后用 `@` 前缀引用：
+
+```{code-block} json
+:caption: template.json
+
+{
+   "model":"%m",
+   "messages":[
+      {
+         "role":"user",
+         "content":"%p"
+      }
+   ],
+   "stream":true,
+   "skip_special_tokens":false,
+   "stop":[
+      "<|im_end|>"
+   ],
+   "temperature":0.7,
+   "max_tokens":1024
+}
+```
+
+```bash
+evalscope perf \
+  --url 'http://127.0.0.1:8000/v1/chat/completions' \
+  --parallel 2 \
+  --model 'qwen2.5' \
+  --log-every-n-query 10 \
+  --read-timeout 120 \
+  --connect-timeout 120 \
+  --number 20 \
+  --max-prompt-length 128000 \
+  --min-prompt-length 128 \
+  --api openai \
+  --query-template @template.json \
+  --dataset openqa
+```
+
+## 负载模式
+
+### Warmup 预热
+
+在正式压测前发送一批预热请求，消除冷启动影响（如 KV-cache 填充、JIT 编译、连接池初始化等），使性能指标更准确。
+
+预热请求使用与正式压测相同的并发和速率发送，但**不计入性能指标**（延迟、吞吐、百分位等均排除预热数据）。
+
+**绝对数量模式**：`--warmup-num` 取 `>= 1` 的整数，表示预热请求的绝对条数。
+
+```bash
+evalscope perf \
+  --url 'http://127.0.0.1:8000/v1/chat/completions' \
+  --parallel 10 \
+  --model 'qwen2.5' \
+  --number 100 \
+  --warmup-num 10 \
+  --api openai \
+  --dataset openqa \
+  --stream
+```
+
+上述命令会先发送 10 个预热请求，再发送 100 个正式压测请求，指标仅统计后 100 个请求。
+
+**比例模式**：`--warmup-num` 取 0~1 之间的浮点数，按 `--number` 的比例计算预热数量，适用于 sweep 模式（多轮 `--number` 不同时自动适配）。
+
+```bash
+evalscope perf \
+  --url 'http://127.0.0.1:8000/v1/chat/completions' \
+  --parallel 10 \
+  --model 'qwen2.5' \
+  --number 100 \
+  --warmup-num 0.1 \
+  --api openai \
+  --dataset openqa \
+  --stream
+```
+
+`--warmup-num 0.1` 表示预热数量为 `--number` 的 10%，即 `max(1, int(0.1 * 100)) = 10` 个预热请求。
+
+```{note}
+**注意事项**
+
+- 预热请求与正式请求使用相同的数据集和请求参数。
+- 预热期间的进度条会单独显示（`Warmup[...]`），完成后自动切换到正式压测进度条（`Processing[...]`）。
+- 多轮对话模式下，`--warmup-num` 表示预热的对话数量（与 `--number` 语义一致），预热对话内的所有 turn 均不计入指标。
+```
+
+### Open-loop 开放环路
 
 Open-loop 模式下，请求按泊松到达调度（由 `--rate` 控制）立即发出，不等待服务端返回，从而模拟真实流量中请求到达与服务时间无关的场景。通过一次命令指定多个速率点，可自动扫描吞吐-延迟曲线。
 
@@ -264,13 +328,13 @@ evalscope perf \
 - 本模式与 closed-loop（默认）模式的核心区别：closed-loop 每个 worker 等待响应后再发下一条（背压保护），open-loop 不等待、按调度直接发出（更接近真实流量）。
 ```
 
-## 生产流量回放（workload_trace）
+### 生产流量回放
 
 `workload_trace` 数据集把录制的生产流量按**原始到达节奏**逐字回放，贴近真实负载——突发到达、异构请求形状、多模型混合路由，这些是合成数据集（`random`、`openqa` 等）难以复现的。它基于 open-loop 调度，但到达时刻由 trace 里的 `timestamp` 决定，**无需 `--rate`**。
 
-准备一个 JSONL trace 文件（每行一条请求），字段说明见[参数说明 · 场景三](./parameters.md#dataset-args数据集专属参数)：
+准备一个 JSONL trace 文件（每行一条请求），字段说明见[参数说明 · 生产流量回放](./parameters.md#生产流量回放)：
 
-```jsonl
+```json
 {"body": {"model": "qwen-plus", "messages": [{"role": "user", "content": "你好"}]}, "timestamp": 1700000000.0}
 {"body": {"model": "qwen-max", "messages": [{"role": "user", "content": "写一首诗"}]}, "timestamp": 1700000001.5, "request_id": "req-42"}
 ```
@@ -317,60 +381,55 @@ evalscope perf \
 - 建议用 `--name` 指定有意义的输出目录名（不传 `--model` 时目录名默认取数据集名）。
 ```
 
-## Warmup 预热压测
+## Embedding 与 Rerank
 
-在正式压测前发送一批预热请求，消除冷启动影响（如 KV-cache 填充、JIT 编译、连接池初始化等），使性能指标更准确。
+### Embedding 模型
 
-预热请求使用与正式压测相同的并发和速率发送，但**不计入性能指标**（延迟、吞吐、百分位等均排除预热数据）。
-
-**1. 绝对数量模式**
-
-指定预热请求的绝对数量：
+使用 `openai_embedding` API 模式和 `random_embedding` 数据集进行压测。使用随机数据集时需指定 `tokenizer-path` 用于生成指定长度范围的 query 文本。
 
 ```bash
 evalscope perf \
-  --url 'http://127.0.0.1:8000/v1/chat/completions' \
-  --parallel 10 \
-  --model 'qwen2.5' \
-  --number 100 \
-  --warmup-num 10 \
-  --api openai \
-  --dataset openqa \
-  --stream
+  --parallel 2 \
+  --number 10 \
+  --model 'text-embedding-v4' \
+  --url 'https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings' \
+  --api-key ${DASHSCOPE_API_KEY} \
+  --api openai_embedding \
+  --dataset random_embedding \
+  --min-prompt-length 256 \
+  --max-prompt-length 256 \
+  --tokenizer-path 'Qwen/Qwen3-Embedding-0.6B'
 ```
 
-上述命令会先发送 10 个预热请求，再发送 100 个正式压测请求，指标仅统计后 100 个请求。
+### Rerank 模型
 
-**2. 比例模式**
+使用 `openai_rerank` API 模式和 `random_rerank` 数据集进行压测。使用随机数据集时需指定 `tokenizer-path` 用于生成指定长度范围的 query 文本。
 
-使用 0~1 之间的浮点数，按 `--number` 的比例计算预热数量，适用于 sweep 模式（多轮 `--number` 不同时自动适配）：
+可以通过 `extra-args` 指定生成数据的参数：
+
+- `num_documents`：每条 query 对应的文档数量
+- `document_length_ratio`：文档长度相对于 query 长度的倍数
 
 ```bash
 evalscope perf \
-  --url 'http://127.0.0.1:8000/v1/chat/completions' \
-  --parallel 10 \
-  --model 'qwen2.5' \
-  --number 100 \
-  --warmup-num 0.1 \
-  --api openai \
-  --dataset openqa \
-  --stream
-```
-
-`--warmup-num 0.1` 表示预热数量为 `--number` 的 10%，即 `max(1, int(0.1 * 100)) = 10` 个预热请求。
-
-```{note}
-**注意事项**
-
-- 预热请求与正式请求使用相同的数据集和请求参数。
-- 预热期间的进度条会单独显示（`Warmup[...]`），完成后自动切换到正式压测进度条（`Processing[...]`）。
-- 多轮对话模式下，`--warmup-num` 表示预热的对话数量（与 `--number` 语义一致），预热对话内的所有 turn 均不计入指标。
+  --parallel 2 \
+  --number 10 \
+  --model 'qwen3-rerank' \
+  --url 'https://dashscope.aliyuncs.com/compatible-api/v1/reranks' \
+  --api-key ${DASHSCOPE_API_KEY} \
+  --api openai_rerank \
+  --dataset random_rerank \
+  --min-prompt-length 256 \
+  --max-prompt-length 256 \
+  --tokenizer-path 'Qwen/Qwen3-Embedding-0.6B' \
+  --extra-args '{"num_documents": 5, "document_length_ratio": 3}'
 ```
 
 ## 调试请求
+
 使用 `--debug` 选项，我们将输出请求和响应，输出示例如下：
 
-**非`stream`模式输出示例**
+**非 `stream` 模式输出示例**
 
 ```text
 2024-11-27 11:25:34,161 - evalscope - http_client.py - on_request_start - 116 - DEBUG - Starting request: <TraceRequestStartParams(method='POST', url=URL('http://127.0.0.1:8000/v1/completions'), headers=<CIMultiDict('Content-Type': 'application/json', 'user-agent': 'modelscope_bench', 'Authorization': 'Bearer EMPTY')>)>
@@ -378,7 +437,7 @@ evalscope perf \
 2024-11-27 11:25:38,172 - evalscope - http_client.py - on_response_chunk_received - 140 - DEBUG - Request received: <method='POST',  url=URL('http://127.0.0.1:8000/v1/completions'), truncated_chunk='{"id":"cmpl-a4565eb4fc6b4a5697f38c0adaf9b70b","object":"text_completion","created":1732677934,"model":"qwen2.5","choices":[{"index":0,"text":"，everyone！今天我给您撒个谎哦。 ))\\n\\n今天开心的事。","logprobs":null,"finish_reason":"length","stop_reason":null,"prompt_logprobs":null}],"usage":{"prompt_tokens":1,"total_tokens":17,"completion_tokens":16}}'>
 ```
 
-**`stream`模式输出示例**
+**`stream` 模式输出示例**
 
 ```text
 2024-11-27 20:02:24,760 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: {"model":"Qwen2.5-0.5B-Instruct","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"重要的"},"finish_reason":null}],"usage":null}
@@ -395,14 +454,18 @@ evalscope perf \
 2024-11-27 20:02:25,113 - evalscope - http_client.py - _handle_stream - 57 - DEBUG - Response recevied: data: [DONE]
 ```
 
-## 可视化测试结果
+## 结果可视化
 
-### 使用WandB
-请使用如下命令安装wandb:
+### WandB
+
+请使用如下命令安装 wandb：
+
 ```bash
 pip install wandb
 ```
-启动测试前添加如下参数:
+
+启动测试前添加如下参数：
+
 ```bash
 --visualizer wandb
 --name 'name_of_wandb_log'
@@ -410,36 +473,40 @@ pip install wandb
 
 ![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
 
+### SwanLab
 
-### 使用SwanLab
+请使用如下命令安装 SwanLab：
 
-请使用如下命令安装SwanLab:
 ```bash
 pip install swanlab
 ```
 
-启动测试前添加如下参数:
+启动测试前添加如下参数：
+
 ```bash
 # 可使用 SWANLAB_PROJ_NAME 环境变量指定项目名称
 --visualizer swanlab
 --name 'name_of_swanlab_log'
-```  
+```
 
 ![swanlab sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/swanlab.png)
 
+### ClearML
 
-### 使用ClearML
-请使用如下命令安装ClearML:
+请使用如下命令安装 ClearML：
+
 ```bash
 pip install clearml
 ```
 
-初始化ClearML服务器:
+初始化 ClearML 服务器：
+
 ```bash
 clearml-init
 ```
 
-启动测试前添加如下参数:
+启动测试前添加如下参数：
+
 ```bash
 # 可使用 CLEARML_PROJECT_NAME 环境变量指定项目名称
 --visualizer clearml

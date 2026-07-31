@@ -125,4 +125,4 @@ evalscope eval \
 
 - [论文](https://storage.googleapis.com/deepmind-media/DeepSearchQA/DeepSearchQA_benchmark_paper.pdf)
 - [ModelScope 数据集](https://modelscope.cn/datasets/google/deepsearchqa/summary)
-- [Agent MCP 配置指南](../user_guides/agent/native.md#mcp-server-tools)
+- [Agent MCP 配置指南](../user_guides/agent/native.md#mcp-工具接入)

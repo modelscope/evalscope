@@ -79,7 +79,7 @@ results = run_perf_benchmark(task_cfg)
 - `url`: 请求的URL地址
 - `model`: 使用的模型名称
 - `api`: 使用的API服务，默认为`openai`
-- `dataset`: 数据集名称，此处为`random`，表示随机生成数据集，具体使用说明[参考](./examples.md#使用random数据集)；更多可用的(多模态)数据集请参考[数据集配置](./parameters.md#数据集配置)
+- `dataset`: 数据集名称，此处为`random`，表示随机生成数据集，具体使用说明[参考](./examples.md#随机数据集)；更多可用的(多模态)数据集请参考[数据集配置](./parameters.md#数据集配置)
 - `tokenizer-path`: 模型的tokenizer路径，用于计算token数量（在random数据集中是必须的）
 - `extra-args`: 请求中的额外的参数，传入json格式的字符串，例如`{"ignore_eos": true}`表示忽略结束token
 
@@ -204,7 +204,7 @@ Percentile results:
 
 #### Per-Trace 与 Workload Throughput 指标
 
-多轮对话模式下还会输出 **Per-Trace Metrics**（对话级分布指标）和 **Workload Throughput**（全局时间维度token吞吐率）两张表，详细说明请参考[多轮对话压测 — 多轮专属输出指标](./multi_turn.md#多轮专属输出指标)。
+多轮对话模式下还会输出 **Per-Trace Metrics**（对话级分布指标）和 **Workload Throughput**（全局时间维度token吞吐率）两张表，详细说明请参考[多轮对话压测 — 输出指标](./multi_turn.md#输出指标)。
 
 
 ## 可视化测试结果
