@@ -1,7 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # flake8: noqa: E501
 import re
-import urllib.request
 import zipfile
 from pathlib import Path
 from typing import Any, Dict
@@ -13,6 +12,7 @@ from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, Tags
+from evalscope.utils.download_utils import download_url
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -136,7 +136,7 @@ class AALCRAdapter(DefaultDataAdapter):
 
         try:
             logger.info(f'Downloading AA-LCR documents from {DOWNLOAD_URL} to {zip_path}...')
-            urllib.request.urlretrieve(DOWNLOAD_URL, zip_path)
+            download_url(DOWNLOAD_URL, str(zip_path))
 
             logger.info(f'Extracting {zip_path} to {cache_root}...')
             with zipfile.ZipFile(zip_path, 'r') as zf:

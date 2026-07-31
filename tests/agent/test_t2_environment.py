@@ -7,8 +7,8 @@ Test plan:
   TestDockerEnvironmentExec    – EnclaveAgentEnvironment (docker engine) exec
   TestDockerEnvironmentTools   – bash + python_exec handlers w/ enclave env
   TestAgentLoopWithEnvironment – full AgentLoop + local env + bash tool
-  TestDefaultAdapterEnvPath    – _on_agent_inference environment_extra + tool_infos
-  TestNativeAgentConfigEnvironmentExtra – NativeAgentConfig.environment_extra round-trip
+  TestDefaultAdapterEnvPath    – _on_agent_inference runtime config + tool_infos
+  TestNativeAgentEnvironmentConfig – legacy-compatible Agent environment config
 """
 
 import os
@@ -158,22 +158,22 @@ class TestEnvironmentRegistry:
         assert len(infos) == 1
         assert infos[0].name == 'bash'
 
-    def test_get_environment_local(self):
+    def test_get_runtime_local(self):
         cls = get_environment('local')
         from evalscope.agent.environments.local import LocalAgentEnvironment
         assert cls is LocalAgentEnvironment
 
-    def test_get_environment_docker(self):
+    def test_get_runtime_docker(self):
         cls = get_environment('docker')
         from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
         assert cls is EnclaveAgentEnvironment
 
-    def test_get_environment_enclave_alias(self):
+    def test_get_runtime_enclave_alias(self):
         from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
         assert get_environment('enclave') is EnclaveAgentEnvironment
         assert get_environment('volcengine') is EnclaveAgentEnvironment
 
-    def test_get_environment_unknown_raises(self):
+    def test_get_runtime_unknown_raises(self):
         with pytest.raises(ValueError, match='not registered'):
             get_environment('nonexistent_env_xyz')
 
@@ -476,6 +476,21 @@ class TestEnclaveEnvironmentInterpreter:
             'PIP_PROGRESS_BAR': 'off',
             'TQDM_DISABLE': '1',
         }
+
+    def test_job_bench_selects_legacy_docker_environment(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from evalscope.benchmarks.job_bench.job_bench_adapter import JobBenchAdapter
+
+        adapter = object.__new__(JobBenchAdapter)
+        adapter._task_config = TaskConfig(
+            model='dummy',
+            agent_config=NativeAgentConfig(environment='docker'),
+        )
+        expected_runtime = MagicMock(spec=AgentEnvironment)
+        monkeypatch.setattr(adapter, '_build_docker_environment', lambda _: expected_runtime)
+
+        runtime = adapter.build_environment(types.SimpleNamespace(metadata={}))
+
+        assert runtime is expected_runtime
 
 
 # ===========================================================================
@@ -861,7 +876,7 @@ class TestDefaultAdapterEnvPath:
         assert output is not None
 
     def test_environment_extra_forwarded(self):
-        """environment_extra is forwarded to environment constructor kwargs."""
+        """environment_extra is forwarded to the environment constructor."""
         from evalscope.api.benchmark.adapters.default_data_adapter import DefaultDataAdapter
         from evalscope.api.dataset import Sample
 
@@ -871,7 +886,9 @@ class TestDefaultAdapterEnvPath:
             tools=[],
             max_steps=1,
             environment='local',
-            environment_extra={'working_dir': '/tmp'},
+            environment_extra={
+                'working_dir': '/tmp',
+            },
         )
         task_cfg = MagicMock()
         task_cfg.agent_config = cfg
@@ -888,39 +905,76 @@ class TestDefaultAdapterEnvPath:
 
         output = adapter._on_inference(model, sample)
         assert output is not None
-        # The environment was created and closed; trace environment name should match
+        # The runtime was created and closed; trace agent-runtime name should match.
         trace = output.trace
         assert trace is not None
         assert trace.environment == 'local'
 
 
 # ===========================================================================
-# TestNativeAgentConfigEnvironmentExtra  (NativeAgentConfig schema)
+# TestNativeAgentEnvironmentConfig  (NativeAgentConfig schema)
 # ===========================================================================
 
-class TestNativeAgentConfigEnvironmentExtra:
+class TestNativeAgentEnvironmentConfig:
 
-    def test_default_environment_extra_is_empty(self):
+    def test_default_environment_is_none(self):
         cfg = NativeAgentConfig()
+        assert cfg.environment is None
         assert cfg.environment_extra == {}
 
-    def test_environment_extra_accepted(self):
+    def test_environment_config_accepted(self):
         cfg = NativeAgentConfig(
             strategy='function_calling',
             environment='docker',
-            environment_extra={'image': 'python:3.11-slim', 'working_dir': '/workspace'},
+            environment_extra={
+                'image': 'python:3.11-slim',
+                'working_dir': '/workspace',
+            },
         )
         assert cfg.environment_extra['image'] == 'python:3.11-slim'
         assert cfg.environment == 'docker'
 
-    def test_environment_extra_serialises(self):
-        cfg = NativeAgentConfig(environment_extra={'key': 'val'})
+    def test_environment_config_serialises_compatibly(self):
+        cfg = NativeAgentConfig(environment='docker', environment_extra={'key': 'val'})
         d = cfg.model_dump()
+        assert d['environment'] == 'docker'
         assert d['environment_extra'] == {'key': 'val'}
+        assert 'runtime' not in d
 
-    def test_kwargs_and_environment_extra_independent(self):
-        cfg = NativeAgentConfig(kwargs={'system_prompt': 'hi'}, environment_extra={'image': 'x'})
+    def test_kwargs_and_environment_config_independent(self):
+        cfg = NativeAgentConfig(kwargs={'system_prompt': 'hi'}, environment='docker', environment_extra={'image': 'x'})
         assert 'system_prompt' in cfg.kwargs
         assert 'system_prompt' not in cfg.environment_extra
         assert 'image' in cfg.environment_extra
         assert 'image' not in cfg.kwargs
+
+    def test_unpublished_runtime_shape_is_rejected(self):
+        with pytest.raises(ValueError, match='Extra inputs are not permitted'):
+            NativeAgentConfig(runtime='docker')
+        with pytest.raises(ValueError, match='Extra inputs are not permitted'):
+            NativeAgentConfig(runtime_extra={'image': 'python:3.11-slim'})
+
+    def test_task_config_update_revalidates_agent_config(self):
+        cfg = TaskConfig(agent_config={'mode': 'native'})
+        cfg.update({
+            'agent_config': {
+                'environment': 'local',
+                'environment_extra': {
+                    'working_dir': '/tmp',
+                },
+            }
+        })
+        assert isinstance(cfg.agent_config, NativeAgentConfig)
+        assert cfg.agent_config.environment == 'local'
+        assert cfg.agent_config.environment_extra == {'working_dir': '/tmp'}
+
+    def test_task_config_update_preserves_explicit_agent_fields(self):
+        cfg = TaskConfig(agent_config=NativeAgentConfig(max_steps=7))
+
+        cfg.update({})
+
+        assert isinstance(cfg.agent_config, NativeAgentConfig)
+        assert cfg.agent_config.max_steps == 7
+        assert 'max_steps' in cfg.agent_config.model_fields_set
+        assert 'strategy' not in cfg.agent_config.model_fields_set
+        assert 'kwargs' not in cfg.agent_config.model_fields_set

@@ -171,6 +171,8 @@ class AgentLoopAdapter(AgentAdapter):
         explicit_fields = ac.model_fields_set
         if 'strategy' not in explicit_fields and 'kwargs' not in explicit_fields:
             return strategy
+        if 'kwargs' not in explicit_fields and ac.strategy == strategy.name:
+            return strategy
 
         # Keep the benchmark strategy name when the user only supplies kwargs.
         strategy_name = ac.strategy if 'strategy' in explicit_fields else strategy.name

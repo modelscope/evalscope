@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 
-from evalscope.api.messages import ChatMessage
+from evalscope.api.messages import ChatMessage, Content
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolInfo
 from .mcp.types import MCPServerConfig
@@ -24,8 +24,8 @@ class BaseAgentConfig(BaseModel):
 
     Both :class:`NativeAgentConfig` (the AgentLoop path) and
     :class:`ExternalAgentConfig` (the external-CLI bridge path) need an
-    :class:`AgentEnvironment` plus a free-form ``kwargs`` channel; lifting
-    them here avoids duplicating the schema across both subclasses.
+    Agent execution environment plus a free-form ``kwargs`` channel;
+    lifting them here avoids duplicating the schema across both subclasses.
     """
 
     # ``extra='forbid'`` so legacy ``extra=...`` configs (renamed to
@@ -34,10 +34,10 @@ class BaseAgentConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     environment: Optional[str] = Field(default=None)
-    """Registered environment name.  ``None`` means no sandbox (local tools only)."""
+    """Registered Agent execution environment. ``None`` means no environment."""
 
     environment_extra: Dict[str, Any] = Field(default_factory=dict)
-    """Free-form environment-specific options (passed to environment constructor)."""
+    """Options passed to the Agent execution environment constructor."""
 
     kwargs: Dict[str, Any] = Field(default_factory=dict)
     """Free-form variant-specific options.  Native: forwarded to the
@@ -116,6 +116,17 @@ class ExecResult(BaseModel):
 
 
 @dataclass
+class ToolExecutionOutput:
+    """Rich observation returned by tools that produce attachments or termination."""
+
+    text: str
+    attachments: List[Content] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    terminate: bool = False
+    final_answer: Optional[str] = None
+
+
+@dataclass
 class ParsedAction:
     """Structured output produced by :class:`AgentStrategy.parse_output`.
 
@@ -176,4 +187,5 @@ __all__ = [
     'NativeAgentConfig',
     'ParsedAction',
     'ToolSchemaMode',
+    'ToolExecutionOutput',
 ]

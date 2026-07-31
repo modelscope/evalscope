@@ -2,7 +2,6 @@ import json
 import os
 import shutil
 import tarfile
-import urllib.request
 import uuid
 import yaml
 import zipfile
@@ -20,6 +19,7 @@ from evalscope.api.model import ModelUsage
 from evalscope.api.sandbox import build_docker_image, should_build_docker_image
 from evalscope.api.tool import ToolCall, ToolFunction
 from evalscope.constants import HubType
+from evalscope.utils.download_utils import download_url
 from evalscope.utils.logger import get_logger
 
 DEFAULT_CLAW_EVAL_DATASET_ID = 'claw-eval/Claw-Eval'
@@ -448,13 +448,7 @@ def _prepare_official_repo(
     cache_root.mkdir(parents=True, exist_ok=True)
     archive_path = cache_root / 'claw_eval_official.zip'
     if force_redownload or not archive_path.is_file():
-        tmp_archive_path = archive_path.with_suffix(f'{archive_path.suffix}.tmp')
-        try:
-            urllib.request.urlretrieve(DEFAULT_CLAW_EVAL_REPO_ARCHIVE, tmp_archive_path)
-            tmp_archive_path.replace(archive_path)
-        except Exception:
-            tmp_archive_path.unlink(missing_ok=True)
-            raise
+        download_url(DEFAULT_CLAW_EVAL_REPO_ARCHIVE, str(archive_path), force=force_redownload)
 
     if extract_root.exists():
         shutil.rmtree(extract_root)

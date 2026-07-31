@@ -8,7 +8,6 @@ their existing sandbox/environment layer.
 from __future__ import annotations
 
 import hashlib
-import os
 from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import Any, Dict, List

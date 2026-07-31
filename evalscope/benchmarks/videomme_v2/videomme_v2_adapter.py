@@ -10,8 +10,8 @@ from evalscope.api.messages import ChatMessageUser, Content, ContentText, Conten
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+from evalscope.utils.media_utils import guess_video_format
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, prompt
-from evalscope.utils.url_utils import guess_video_format
 from .utils import (
     archive_name,
     build_question,

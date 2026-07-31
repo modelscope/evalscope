@@ -391,7 +391,7 @@ class DefaultDataAdapter(DataAdapter):
         """Return a per-sample sandbox config dict.
 
         The result is merged on top of ``TaskConfig.sandbox.default_config``
-        before being passed to the Agent environment constructor.  Override
+        before being passed to the Agent environment constructor. Override
         this hook in benchmarks that need per-sample sandbox customisation
         (e.g. SWE-bench Pro which pins a specific image per instance).
 
@@ -458,10 +458,10 @@ class DefaultDataAdapter(DataAdapter):
         :meth:`run_inference` then assigns these to the resulting
         :class:`TaskState`.
 
-        When ``agent_config.environment`` is set the environment is
+        When ``agent_config.environment`` is set the Agent environment is
         instantiated, used for the full sample, and closed in a ``finally``
-        block regardless of loop outcome.  ``agent_config.environment_extra``
-        is forwarded as keyword arguments to the environment constructor.
+        block regardless of loop outcome. ``agent_config.environment_extra``
+        is forwarded as keyword arguments to its constructor.
         """
         # Local import to keep orchestration imports out of the adapter module.
         from evalscope.agent.runner import run_native_agent

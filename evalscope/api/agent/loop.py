@@ -26,7 +26,7 @@ from .environment import AgentEnvironment
 from .strategy import AgentStrategy
 from .tool_executor import ToolExecutor
 from .trace import AgentTrace, EventType
-from .types import AgentContext, AgentLoopResult, ParsedAction
+from .types import AgentContext, AgentLoopResult, ParsedAction, ToolExecutionOutput
 
 logger = get_logger()
 
@@ -217,6 +217,7 @@ class AgentLoop:
             f'executing {len(parsed.tool_calls)} tool call(s): '
             f'{[c.function.name for c in parsed.tool_calls]}',
         )
+        attachment_messages = []
         for call in parsed.tool_calls:
             self.trace.add_event(
                 step=ctx.step,
@@ -229,17 +230,32 @@ class AgentLoop:
                 },
             )
             observation, error, duration = await self.tool_executor.execute(call)
+            rich_output = observation if isinstance(observation, ToolExecutionOutput) else None
+            observation_text = rich_output.text if rich_output is not None else observation
             self._dbg(
                 ctx,
                 f'tool={call.function.name} duration={duration*1000:.0f}ms '
                 f'error={error.type if error else None} '
-                f'obs_len={len(observation) if isinstance(observation, str) else 0}',
+                f'obs_len={len(observation_text)}',
             )
             # ``format_observation`` may signal completion by mutating
             # ``parsed.final_answer``; the post-execution ``is_done`` check
             # below picks it up.
-            obs_msg = self.strategy.format_observation(call, observation, error, parsed, ctx)
+            obs_msg = self.strategy.format_observation(call, observation_text, error, parsed, ctx)
+            if rich_output is not None and rich_output.metadata:
+                obs_msg.metadata = {
+                    **(obs_msg.metadata or {}),
+                    **rich_output.metadata,
+                }
             ctx.messages.append(obs_msg)
+            attachment_message = None
+            if rich_output is not None and rich_output.attachments:
+                attachment_message = ChatMessageUser(
+                    content=rich_output.attachments,
+                    tool_call_id=[call.id],
+                    metadata=rich_output.metadata or None,
+                )
+                attachment_messages.append(attachment_message)
             self.trace.add_event(
                 step=ctx.step,
                 type=EventType.TOOL_RESULT,
@@ -249,14 +265,24 @@ class AgentLoop:
                     'name': call.function.name,
                     'id': call.id,
                     'error': error.type if error else None,
-                    'preview': observation[:500] if isinstance(observation, str) else None,
+                    'preview': observation_text[:500],
+                    'metadata': rich_output.metadata if rich_output is not None else {},
+                    'attachments': [
+                        getattr(attachment, 'image', None)
+                        for attachment in (rich_output.attachments if rich_output is not None else [])
+                        if getattr(attachment, 'type', None) == 'image'
+                    ],
                 },
             )
 
+            if rich_output is not None and rich_output.terminate:
+                parsed.final_answer = rich_output.final_answer if rich_output.final_answer is not None else ''
             if self.strategy.is_done(parsed, ctx):
-                self._emit_post_tool_submit(ctx, obs_msg, call, parsed, duration)
+                ctx.messages.extend(attachment_messages)
+                self._emit_post_tool_submit(ctx, attachment_message or obs_msg, call, parsed, duration)
                 return True
 
+        ctx.messages.extend(attachment_messages)
         return False
 
     # ------------------------------------------------------------------

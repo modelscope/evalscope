@@ -74,7 +74,7 @@ class AudioWER(Metric):
         return self._transcribe_with_transcriptions(audio)
 
     def _transcribe_with_transcriptions(self, audio: str) -> str:
-        from evalscope.utils.url_utils import file_as_data, is_data_uri
+        from evalscope.utils.uri_utils import file_as_data, is_data_uri
 
         endpoint = self._transcription_endpoint()
         audio_bytes, mime_type = file_as_data(audio, default_mime_type='audio/wav')
@@ -163,7 +163,7 @@ class AudioWER(Metric):
 
     @staticmethod
     def _audio_url(audio: str) -> str:
-        from evalscope.utils.url_utils import file_as_data_uri, is_data_uri, is_http_url
+        from evalscope.utils.uri_utils import file_as_data_uri, is_data_uri, is_http_url
 
         if is_data_uri(audio) or is_http_url(audio):
             return audio

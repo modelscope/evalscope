@@ -1,0 +1,1 @@
+browsergym-miniwob==0.14.3

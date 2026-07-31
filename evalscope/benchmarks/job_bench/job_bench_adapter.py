@@ -143,7 +143,7 @@ class JobBenchAdapter(AgentLoopAdapter):
 
     def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
         agent_config = self._task_config.agent_config if self._task_config is not None else None
-        if getattr(agent_config, 'environment', None) == 'docker':
+        if agent_config is not None and agent_config.environment == 'docker':
             return self._build_docker_environment(sample)
 
         from evalscope.agent.environments.local import TemporaryLocalAgentEnvironment

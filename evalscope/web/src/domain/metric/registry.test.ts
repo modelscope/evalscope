@@ -74,6 +74,12 @@ describe('formatMetricByKey', () => {
     expect(formatMetricByKey('AverageOutputTps', 512, t).primary).toBe('512.00 tokens/s')
   })
 
+  it('distinguishes evaluation aggregate rates from performance percentages', () => {
+    expect(formatMetricByKey('mean_success_rate', 1, t).primary).toBe('100.0%')
+    expect(formatMetricByKey('mean_error_rate', 0.25, t).primary).toBe('25.0%')
+    expect(formatMetricByKey('success_rate', 100, t).primary).toBe('100.0%')
+  })
+
   it('does not convert a value greater than 1 to a percentage for unbounded metrics', () => {
     const result = formatMetricByKey('latency', 12.5, t)
     expect(result.primary).toBe('12.50 s')
@@ -101,6 +107,7 @@ describe('getBoundedMetricRatio', () => {
   it('normalizes only metrics whose registered contract is bounded', () => {
     expect(getBoundedMetricRatio('accuracy', 0.815)).toBe(0.815)
     expect(getBoundedMetricRatio('WeightedScorePercent', 81.5)).toBe(0.815)
+    expect(getBoundedMetricRatio('mean_success_rate', 1)).toBe(1)
     expect(getBoundedMetricRatio('AverageOutputTps', 512)).toBeNull()
     expect(getBoundedMetricRatio('unknown_metric', 0.5)).toBeNull()
   })

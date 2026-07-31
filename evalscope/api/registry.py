@@ -267,7 +267,7 @@ RUNNER_REGISTRY: Registry[Type['AgentRunner']] = Registry('Agent runner', on_reg
 def register_runner(name: Union[str, List[str]]) -> Callable[[Type['AgentRunner']], Type['AgentRunner']]:
     """Register an :class:`AgentRunner` implementation under one or more names.
 
-    Mirrors :func:`register_environment`.  The first ``name`` becomes the
+    Mirrors :func:`register_environment`. The first ``name`` becomes the
     canonical ``cls.framework`` value that :class:`ExternalAgentConfig.framework`
     resolves through :func:`get_runner` at TaskConfig validation time.
     """
@@ -289,7 +289,7 @@ def register_agent_tool(
     """Register an async tool handler under one or more names.
 
     The decorated callable must match :data:`ToolHandler`:
-    ``async def run(call: ToolCall, env: Optional[AgentEnvironment]) -> str``.
+    ``async def run(call: ToolCall, env: Optional[AgentEnvironment]) -> ToolObservation``.
 
     Args:
         name:  Registry key(s) (also used as the tool function name exposed to the model).

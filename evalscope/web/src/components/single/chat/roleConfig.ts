@@ -1,8 +1,8 @@
 import React from 'react'
-import { User, Bot, Shield, Wrench } from 'lucide-react'
+import { User, Bot, Monitor, Shield, Wrench } from 'lucide-react'
 import { bubbleAccent, type BubbleRole } from '@/components/ui/ChatBubble'
 
-export type Role = 'system' | 'user' | 'assistant' | 'tool'
+export type Role = 'system' | 'user' | 'assistant' | 'tool' | 'environment'
 
 export interface RolePalette {
   icon: React.FC<{ size?: number; style?: React.CSSProperties; className?: string }>
@@ -17,6 +17,7 @@ export function roleToBubble(role: Role): BubbleRole {
     case 'assistant': return 'bot'
     case 'user': return 'user'
     case 'tool': return 'tool'
+    case 'environment': return 'environment'
     case 'system':
     default: return 'system'
   }
@@ -30,6 +31,12 @@ export function rolePalette(role: Role, t: (k: string) => string): RolePalette {
       return { icon: Bot, labelColor: bubbleAccent('bot'), label: 'Assistant' }
     case 'tool':
       return { icon: Wrench, labelColor: bubbleAccent('tool'), label: t('prediction.toolResult') }
+    case 'environment':
+      return {
+        icon: Monitor,
+        labelColor: bubbleAccent('environment'),
+        label: t('trace.environmentObservation'),
+      }
     case 'system':
     default:
       return { icon: Shield, labelColor: 'var(--text-muted)', label: t('prediction.systemPrompt') }

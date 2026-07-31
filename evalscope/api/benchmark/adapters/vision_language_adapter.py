@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from evalscope.api.messages.content import Content, ContentImage, ContentText, ContentVideo
 from evalscope.utils.io_utils import bytes_to_base64, compress_image_to_limit, parse_size
-from evalscope.utils.url_utils import guess_video_format
+from evalscope.utils.media_utils import guess_video_format
 from .default_data_adapter import DefaultDataAdapter
 
 

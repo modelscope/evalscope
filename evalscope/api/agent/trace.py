@@ -28,6 +28,9 @@ class EventType(str, Enum):
     ENV_EXEC = 'env_exec'
     """Environment executed a raw command (bash, etc.)."""
 
+    ENV_RESET = 'env_reset'
+    """A stateful environment returned its initial observation."""
+
     ERROR = 'error'
     """Parse error / tool error / timeout etc."""
 

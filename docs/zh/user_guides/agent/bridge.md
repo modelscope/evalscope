@@ -62,9 +62,9 @@ EvalScope 会在本地子进程里准备 Claude Code(必要时自动 `npm instal
 | 字段 | 说明 | 推荐值 |
 |------|------|--------|
 | `framework` | 选哪个 CLI | `claude-code` / `codex` / `opencode` / `gemini-cli` / `hermes` |
-| `environment` | 跑在哪里 | `local`(开发)/ `docker`(生产) |
+| `environment` | 运行位置 | `local`（开发）/ `docker`（生产） |
+| `environment_extra` | 环境构造参数 | Docker 镜像、超时、挂载等环境专属设置 |
 | `timeout` | 单样本壁钟超时(秒) | 数学题 120，代码修复 1800+ |
-| `environment_extra` | 沙箱构造参数(`image`、`timeout` 等)，与内置模式一致 | 见 [沙箱环境](../sandbox.md) |
 | `skills_dir` | 可选的本机 Agent Skills 目录 | EvalScope 会在启动 runner 前让 skills 可用 |
 | `kwargs` | 透传给 CLI 的参数，见下 | `{}` |
 
@@ -150,7 +150,7 @@ docker build -f evalscope/agent/external/dockerfiles/Dockerfile.hermes \
 
 ### 使用镜像
 
-在 `ExternalAgentConfig` 中指定 `environment='docker'`，并通过 `environment_extra` 传入镜像名:
+在 `ExternalAgentConfig` 中设置 `environment='docker'`，并把构造参数放在 `environment_extra`：
 
 ```python
 from evalscope import TaskConfig, run_task

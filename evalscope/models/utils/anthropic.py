@@ -39,7 +39,7 @@ from evalscope.api.messages import (
 )
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelOutput, ModelUsage, StopReason
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, parse_tool_call
-from evalscope.utils.url_utils import data_uri_mime_type, data_uri_to_base64, file_as_data_uri, is_http_url
+from evalscope.utils.uri_utils import data_uri_mime_type, data_uri_to_base64, file_as_data_uri, is_http_url
 
 BASE_64_DATA_REMOVED = '<base64-data-removed>'
 NO_CONTENT = '[No content]'

@@ -13,7 +13,7 @@ from evalscope.api.messages import (
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelOutput, ModelUsage, StopReason
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, parse_tool_call
 from evalscope.utils import get_secret_value
-from evalscope.utils.url_utils import file_as_data_uri, is_data_uri, is_http_url
+from evalscope.utils.uri_utils import file_as_data_uri, is_data_uri, is_http_url
 from .openai import openai_assistant_content
 
 try:

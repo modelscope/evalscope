@@ -14,6 +14,7 @@ export const en: Dict = {
   rps: 'Requests/s',
   tokens: 'Tokens',
   success_rate: 'Success Rate',
+  error_rate: 'Error Rate',
   undefined_display: 'Display form undefined; raw value shown',
 }
 
@@ -31,5 +32,6 @@ export const zh: Dict = {
   rps: '请求/秒',
   tokens: 'Token',
   success_rate: '成功率',
+  error_rate: '错误率',
   undefined_display: '展示形式未定义，已显示原始值',
 }

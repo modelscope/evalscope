@@ -315,6 +315,22 @@ class TestAgentLoopAdapterOverrides(unittest.TestCase):
 
         self.assertEqual(run_loop.call_args.kwargs['strategy'].name, 'swe_bench_backticks')
 
+    def test_explicit_same_strategy_preserves_benchmark_options(self):
+
+        class ConfiguredStrategyAdapter(AgentLoopAdapter):
+
+            def build_strategy(self, sample):
+                self.built_strategy = super().build_strategy(sample)
+                return self.built_strategy
+
+        cfg = TaskConfig(model='dummy', agent_config=NativeAgentConfig(strategy='function_calling'))
+        adapter = ConfiguredStrategyAdapter.__new__(ConfiguredStrategyAdapter)
+        adapter._task_config = cfg
+
+        strategy = adapter._resolve_strategy(Sample(input='hi'), cfg.agent_config)
+
+        self.assertIs(strategy, adapter.built_strategy)
+
     def test_build_initial_messages_handles_str_and_list(self):
         adapter = AgentLoopAdapter.__new__(AgentLoopAdapter)
         s_str = Sample(input='hello')

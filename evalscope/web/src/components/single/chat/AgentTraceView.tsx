@@ -68,6 +68,15 @@ export function NudgeRow({ msg }: { msg: ChatMessage }) {
 
 /* ─── StructuredMessages ───────────────────────────────────── */
 
+function toolCallIds(message: ChatMessage): string[] {
+  if (Array.isArray(message.tool_call_id)) return message.tool_call_id
+  return message.tool_call_id ? [message.tool_call_id] : []
+}
+
+function isEnvironmentAttachment(message: ChatMessage): boolean {
+  return message.role === 'user' && toolCallIds(message).length > 0
+}
+
 export function StructuredMessages({
   messages,
   highlightId,
@@ -78,7 +87,9 @@ export function StructuredMessages({
   // Build id->message for tool_call_id resolution
   const byToolCallId = new Map<string, ChatMessage>()
   for (const m of messages) {
-    if (m.role === 'tool' && m.tool_call_id) byToolCallId.set(m.tool_call_id, m)
+    if (m.role === 'tool' && typeof m.tool_call_id === 'string') {
+      byToolCallId.set(m.tool_call_id, m)
+    }
   }
 
   // Each entry pairs a stable key with its rendered node so the list can be
@@ -98,7 +109,14 @@ export function StructuredMessages({
     if (msg.role === 'user') {
       rendered.push({
         key: `user-${idx}`,
-        node: <MessageRow role="user" content={msg.content} msgId={msg.id} highlightId={highlightId} />,
+        node: (
+          <MessageRow
+            role={isEnvironmentAttachment(msg) ? 'environment' : 'user'}
+            content={msg.content}
+            msgId={msg.id}
+            highlightId={highlightId}
+          />
+        ),
       })
       return
     }
@@ -216,7 +234,7 @@ export function buildTraceContext(
 ): TraceContext {
   const toolMsgByCallId = new Map<string, ChatMessage>()
   for (const m of messages) {
-    if (m.role === 'tool' && m.tool_call_id) {
+    if (m.role === 'tool' && typeof m.tool_call_id === 'string') {
       toolMsgByCallId.set(m.tool_call_id, m)
     }
   }
@@ -305,6 +323,27 @@ export function buildStepGroups(messages: ChatMessage[], trace: AgentTrace): Ste
     })
   }
 
+  const groupByStep = new Map(groups.filter(group => group.step >= 0).map(group => [group.step, group]))
+  const stepByToolCallId = new Map<string, number>()
+  for (const [step, events] of stepEvents) {
+    for (const event of events) {
+      const callId = event.type === 'tool_call' && typeof event.payload.id === 'string'
+        ? event.payload.id
+        : null
+      if (callId) stepByToolCallId.set(callId, step)
+    }
+  }
+  for (const message of messages) {
+    if (!isEnvironmentAttachment(message)) continue
+    const step = toolCallIds(message)
+      .map(callId => stepByToolCallId.get(callId))
+      .find(candidate => candidate !== undefined)
+    if (step === undefined) continue
+    const group = groupByStep.get(step)
+    if (!group || group.tools.some(tool => tool.id === message.id)) continue
+    group.tools.push(message)
+  }
+
   return groups
 }
 
@@ -322,6 +361,8 @@ export function TraceEventPill({ event }: { event: AgentTraceEvent }) {
         return { Icon: Wrench, color: bubbleAccent('tool'), labelKey: 'trace.toolResult' }
       case 'env_exec':
         return { Icon: Cpu, color: 'var(--text-muted)', labelKey: 'trace.envExec' }
+      case 'env_reset':
+        return { Icon: Play, color: 'var(--text-muted)', labelKey: 'trace.envReset' }
       case 'error':
         return { Icon: AlertTriangle, color: 'var(--danger)', labelKey: 'trace.error' }
       case 'nudge':
@@ -397,6 +438,12 @@ export function StepBlock({
   const toolResultEvents = group.traceEvents.filter(e => e.type === 'tool_result')
   const envExecs = group.traceEvents.filter(e => e.type === 'env_exec')
   const loopErrors = group.traceEvents.filter(e => e.type === 'error')
+  const resetMessageIds = new Set(
+    group.traceEvents
+      .filter(e => e.type === 'env_reset' && e.message_id)
+      .map(e => e.message_id as string)
+  )
+  const resetMessages = group.tools.filter(m => m.id && resetMessageIds.has(m.id))
 
   // Build assistant header perf info from model_generate event (preferred)
   const mg = modelGen
@@ -437,7 +484,9 @@ export function StepBlock({
   const toolMsgByCallId = ctx?.toolMsgByCallId ?? (() => {
     const m = new Map<string, ChatMessage>()
     for (const tm of group.tools) {
-      if (tm.tool_call_id) m.set(tm.tool_call_id, tm)
+      if (tm.role === 'tool' && typeof tm.tool_call_id === 'string') {
+        m.set(tm.tool_call_id, tm)
+      }
     }
     // Also link via trace tool_result events (for mini-swe where observations
     // are ChatMessageUser without tool_call_id).
@@ -486,6 +535,7 @@ export function StepBlock({
   const linkedToolIds = new Set<string>()
   for (const e of entries) if (e.result?.id) linkedToolIds.add(e.result.id)
   const residualTools = group.tools.filter(m => {
+    if (m.id && resetMessageIds.has(m.id)) return false
     if (!m.id) return true
     if (linkedToolIds.has(m.id)) return false
     if (ctx?.consumedToolMsgIds.has(m.id)) return false
@@ -528,6 +578,17 @@ export function StepBlock({
       </button>
 
       <div className="flex flex-col gap-2">
+        {/* Initial environment observation precedes the first model turn. */}
+        {resetMessages.map((m, i) => (
+          <MessageRow
+            key={`reset-${m.id ?? i}`}
+            role="environment"
+            content={m.content}
+            msgId={m.id}
+            highlightId={highlightId}
+          />
+        ))}
+
         {/* Assistant row */}
         {group.assistant && (
           <MessageRow
@@ -561,10 +622,13 @@ export function StepBlock({
           if (isNudge) {
             return <NudgeRow key={`nudge-${m.id ?? i}`} msg={m} />
           }
+          const role = isEnvironmentAttachment(m)
+            ? 'environment'
+            : m.role === 'tool' ? 'tool' : 'user'
           return (
             <MessageRow
               key={`residual-${m.id ?? i}`}
-              role={m.role === 'tool' ? 'tool' : 'user'}
+              role={role}
               content={m.content}
               msgId={m.id}
               highlightId={highlightId}

@@ -18,6 +18,7 @@ from .types import (
     ExecResult,
     NativeAgentConfig,
     ParsedAction,
+    ToolExecutionOutput,
     ToolSchemaMode,
 )
 
@@ -35,6 +36,7 @@ __all__ = [
     'NativeAgentConfig',
     'ParsedAction',
     'ToolExecutor',
+    'ToolExecutionOutput',
     'ToolHandler',
     'ToolSchemaMode',
     'run_agent_loop',

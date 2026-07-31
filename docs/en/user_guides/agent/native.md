@@ -35,7 +35,11 @@ task_config = TaskConfig(
         strategy='function_calling',
         tools=['python_exec'],
         environment='docker',
-        environment_extra={'image': 'python:3.11-slim'},
+        environment_extra={
+            'sandbox_config': {
+                'image': 'python:3.11-slim',
+            },
+        },
         max_steps=5,
         kwargs={'system_prompt': 'Use python_exec to verify your calculations.'},
     ),
@@ -53,8 +57,8 @@ Most-used `NativeAgentConfig` fields:
 |-------|-------------|-------------|
 | `strategy` | Interaction protocol | `function_calling` (default); use `react` or `swe_bench_backticks` if the model lacks function-calling |
 | `tools` | Tool whitelist | On demand, e.g. `['python_exec']` / `['bash']` |
-| `environment` | Where tools run | `local` (dev) / `docker` (production) |
-| `environment_extra` | Sandbox constructor kwargs | For `docker`: `{'image': '...', 'timeout': 60}`; see [Sandbox Environment](../sandbox.md) |
+| `environment` | Where tools or an external agent run | `local` (dev) / `docker` (production) |
+| `environment_extra` | Agent environment constructor options | Docker image, timeout, mounts, and other environment-specific settings |
 | `max_steps` | Max iterations per sample | Math/QA `5-10`, code fixes `100+` |
 | `skills_dir` | Optional host Agent Skills directory | EvalScope makes the skills available before the agent loop starts |
 | `kwargs` | Strategy kwargs | Most commonly `{'system_prompt': '...'}` to steer the model |

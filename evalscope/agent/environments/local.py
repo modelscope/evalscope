@@ -1,4 +1,4 @@
-"""Local (subprocess) environment for development and testing.
+"""Local subprocess environment for development and testing.
 
 Runs commands on the host OS via ``asyncio.create_subprocess_exec``.
 No container isolation - suitable only for development and CI tests.

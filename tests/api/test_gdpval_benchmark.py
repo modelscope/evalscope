@@ -148,7 +148,7 @@ def test_relative_deliverable_path_rejects_unsafe_paths() -> None:
     assert relative_deliverable_path('deliverable_files/../report.pdf') == ''
 
 
-def test_artifact_environment_extracts_deliverables(tmp_path: Path) -> None:
+def test_artifact_runtime_extracts_deliverables(tmp_path: Path) -> None:
     metadata: Dict[str, Any] = {}
     fake_env = FakeEnvironment({
         'deliverable_files/report.txt': b'hello',

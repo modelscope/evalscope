@@ -15,8 +15,16 @@ from typing import List, Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import evalscope  # noqa: F401 - trigger strategy registration
-from evalscope.api.agent import AgentContext, AgentLoop, AgentTrace, EventType, ParsedAction, ToolExecutor
-from evalscope.api.messages import ChatMessageAssistant, ChatMessageTool, ChatMessageUser
+from evalscope.api.agent import (
+    AgentContext,
+    AgentLoop,
+    AgentTrace,
+    EventType,
+    ParsedAction,
+    ToolExecutionOutput,
+    ToolExecutor,
+)
+from evalscope.api.messages import ChatMessageAssistant, ChatMessageTool, ChatMessageUser, ContentImage
 from evalscope.api.model.model_output import ChatCompletionChoice, ModelOutput
 from evalscope.api.registry import get_strategy
 from evalscope.api.tool import ToolCall, ToolCallError
@@ -67,6 +75,25 @@ class TestFunctionCallingStrategy(unittest.TestCase):
 
     def test_tool_schema_mode_is_function_calling(self):
         self.assertEqual(self.strategy.tool_schema_mode(), 'function_calling')
+
+    def test_optional_submit_tool(self):
+        strategy = get_strategy('function_calling')(include_submit_tool=False)
+        self.assertEqual(strategy.tools(self.ctx), [])
+        parsed = strategy.parse_output(
+            _make_output(tool_calls=[_tool_call(name='submit', args={'answer': 'done'})]),
+            self.ctx,
+        )
+        self.assertIsNone(parsed.final_answer)
+        self.assertEqual(parsed.tool_calls[0].function.name, 'submit')
+
+    def test_max_tool_calls_per_turn(self):
+        strategy = get_strategy('function_calling')(max_tool_calls_per_turn=1)
+        parsed = strategy.parse_output(
+            _make_output(tool_calls=[_tool_call(call_id='one'), _tool_call(call_id='two')]),
+            self.ctx,
+        )
+        self.assertEqual(parsed.tool_calls, [])
+        self.assertEqual(parsed.error, 'Call at most 1 tool call per turn.')
 
 
 class TestAgentLoopCore(unittest.TestCase):
@@ -142,6 +169,78 @@ class TestAgentLoopCore(unittest.TestCase):
                 EventType.SUBMIT,
             ],
         )
+
+    def test_rich_tool_output_appends_attachment_and_terminates(self):
+        model = MagicMock()
+        model.generate_async = AsyncMock(
+            return_value=_make_output(tool_calls=[_tool_call(name='browser_action', args={'action': 'click("1")'})])
+        )
+
+        async def browser_handler(call, env):
+            return ToolExecutionOutput(
+                text='reward=1',
+                attachments=[ContentImage(image='/tmp/step-001.png')],
+                metadata={'reward': 1.0},
+                terminate=True,
+                final_answer='1',
+            )
+
+        loop = self._build_loop(model, handlers={'browser_action': browser_handler})
+        format_observation = loop.strategy.format_observation
+
+        def format_with_strategy_metadata(*args, **kwargs):
+            message = format_observation(*args, **kwargs)
+            message.metadata = {'strategy': 'preserved'}
+            return message
+
+        loop.strategy.format_observation = MagicMock(side_effect=format_with_strategy_metadata)
+        ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='click')])
+        result = asyncio.run(loop.run(ctx))
+
+        self.assertEqual(model.generate_async.call_count, 1)
+        self.assertIsInstance(result.messages[2], ChatMessageTool)
+        self.assertEqual(result.messages[2].content, 'reward=1')
+        self.assertEqual(result.messages[2].metadata, {'strategy': 'preserved', 'reward': 1.0})
+        self.assertIsInstance(result.messages[3], ChatMessageUser)
+        self.assertEqual(result.messages[3].content[0].image, '/tmp/step-001.png')
+        self.assertEqual(result.messages[3].tool_call_id, ['c1'])
+        tool_event = next(event for event in result.trace.events if event.type == EventType.TOOL_RESULT)
+        self.assertEqual(tool_event.payload['metadata']['reward'], 1.0)
+        self.assertEqual(tool_event.payload['attachments'], ['/tmp/step-001.png'])
+
+    def test_rich_tool_attachments_follow_all_tool_results(self):
+        model = MagicMock()
+        submit_call = ToolCall(id='submit', function=ToolFunction(name='submit', arguments={'answer': 'done'}))
+        model.generate_async = AsyncMock(side_effect=[
+            _make_output(tool_calls=[
+                _tool_call(name='echo', call_id='one'),
+                _tool_call(name='echo', call_id='two'),
+            ]),
+            _make_output(tool_calls=[submit_call]),
+        ])
+
+        async def rich_handler(call, env):
+            return ToolExecutionOutput(
+                text=f'output:{call.id}',
+                attachments=[ContentImage(image=f'/tmp/{call.id}.png')],
+            )
+
+        loop = self._build_loop(model, handlers={'echo': rich_handler})
+        ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='run both')])
+        result = asyncio.run(loop.run(ctx))
+
+        self.assertEqual([message.role for message in result.messages[:6]], [
+            'user',
+            'assistant',
+            'tool',
+            'tool',
+            'user',
+            'user',
+        ])
+        self.assertEqual(result.messages[2].tool_call_id, 'one')
+        self.assertEqual(result.messages[3].tool_call_id, 'two')
+        self.assertEqual(result.messages[4].tool_call_id, ['one'])
+        self.assertEqual(result.messages[5].tool_call_id, ['two'])
 
     def test_unknown_tool_yields_error_observation_without_aborting(self):
         model = MagicMock()

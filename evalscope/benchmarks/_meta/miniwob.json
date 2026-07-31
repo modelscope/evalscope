@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "pretty_name": "MiniWoB",
+    "dataset_id": "https://github.com/ServiceNow/BrowserGym",
+    "paper_url": null,
+    "tags": [
+      "Agent",
+      "FunctionCalling",
+      "MultiModal",
+      "MultiTurn"
+    ],
+    "metrics": [
+      "success_rate",
+      "error_rate"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nMiniWoB evaluates whether a multimodal agent can complete short browser tasks such as clicking buttons, filling forms,\nscrolling and dragging items.\n\n## Task Description\n\n- **Task Type**: Interactive browser tasks\n- **Input**: A task goal, an accessibility tree and a screenshot\n- **Output**: Browser actions selected through function calling\n- **Dataset**: 125 MiniWoB tasks\n- **Metrics**: `success_rate` for completed tasks and `error_rate` for environment failures\n\n## Evaluation Notes\n\n- The default run evaluates one deterministic episode per task.\n- Set `repeats=5` for the five-episode schedule.\n- Each episode allows up to 10 model/tool turns by default.\n- The model must support image input and function calling.\n- See the [MiniWoB usage guide](../third_party/miniwob.html) for installation and examples.\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "agent",
+    "agent_config": {
+      "strategy": "function_calling",
+      "max_steps": 10
+    }
+  },
+  "statistics": {
+    "total_samples": 125,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 125,
+        "prompt_length_mean": 77,
+        "prompt_length_min": 77,
+        "prompt_length_max": 77,
+        "prompt_length_std": null,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 77,
+      "min": 77,
+      "max": 77,
+      "std": null
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-07-30T16:25:30.572781"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "4b7219db",
+          "content": "The task goal and browser observation are supplied when the episode is reset."
+        }
+      ],
+      "target": "1",
+      "id": 0,
+      "group_id": 0,
+      "tools": [
+        {
+          "name": "browser_action",
+          "description": "Execute exactly one BrowserGym MiniWoB action. Supported signatures: noop(wait_ms=1000), mouse_move(x, y), mouse_click(x, y, button=\"left\"), mouse_dblclick(x, y, button=\"left\"), mouse_down(x, y, button=\"left\"), mouse_up(x, y, button=\"left\"),  ... [TRUNCATED 44 chars] ... \"left\"), keyboard_press(key), keyboard_type(text), fill(bid, value). click accepts a string BID, for example click(\"13\"); use mouse_click(x, y) for visual targets. Coordinates are absolute screenshot pixels, not normalized 0-1000 coordinates.",
+          "parameters": {
+            "properties": {
+              "action": {
+                "type": "string",
+                "description": "One BrowserGym function-call expression."
+              }
+            },
+            "required": [
+              "action"
+            ]
+          }
+        }
+      ],
+      "metadata": {
+        "task_name": "miniwob.ascending-numbers",
+        "miniwob_category": "hidden test",
+        "comment": "",
+        "webgum_subset": "False",
+        "similarity_group": "0",
+        "browsergym_split": "test",
+        "task_id": "miniwob.ascending-numbers",
+        "seed": 1608637542,
+        "repeat": 0
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# MiniWoB\n\n\n## Overview\n\nMiniWoB evaluates whether a multimodal agent can complete short browser tasks such as clicking buttons, filling forms,\nscrolling and dragging items.\n\n## Task Description\n\n- **Task Type**: Interactive browser tasks\n- **Input**: A task goal, an accessibility tree and a screenshot\n- **Output**: Browser actions selected through function calling\n- **Dataset**: 125 MiniWoB tasks\n- **Metrics**: `success_rate` for completed tasks and `error_rate` for environment failures\n\n## Evaluation Notes\n\n- The default run evaluates one deterministic episode per task.\n- Set `repeats=5` for the five-episode schedule.\n- Each episode allows up to 10 model/tool turns by default.\n- The model must support image input and function calling.\n- See the [MiniWoB usage guide](../third_party/miniwob.html) for installation and examples.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `miniwob` |\n| **Dataset ID** | [BrowserGym](https://github.com/ServiceNow/BrowserGym) |\n| **Paper** | N/A |\n| **Tags** | `Agent`, `FunctionCalling`, `MultiModal`, `MultiTurn` |\n| **Metrics** | `success_rate`, `error_rate` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 125 |\n| Prompt Length (Mean) | 77 chars |\n| Prompt Length (Min/Max) | 77 / 77 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"4b7219db\",\n      \"content\": \"The task goal and browser observation are supplied when the episode is reset.\"\n    }\n  ],\n  \"target\": \"1\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"tools\": [\n    {\n      \"name\": \"browser_action\",\n      \"description\": \"Execute exactly one BrowserGym MiniWoB action. Supported signatures: noop(wait_ms=1000), mouse_move(x, y), mouse_click(x, y, button=\\\"left\\\"), mouse_dblclick(x, y, button=\\\"left\\\"), mouse_down(x, y, button=\\\"left\\\"), mouse_up(x, y, button=\\\"left\\\"),  ... [TRUNCATED 44 chars] ... \\\"left\\\"), keyboard_press(key), keyboard_type(text), fill(bid, value). click accepts a string BID, for example click(\\\"13\\\"); use mouse_click(x, y) for visual targets. Coordinates are absolute screenshot pixels, not normalized 0-1000 coordinates.\",\n      \"parameters\": {\n        \"properties\": {\n          \"action\": {\n            \"type\": \"string\",\n            \"description\": \"One BrowserGym function-call expression.\"\n          }\n        },\n        \"required\": [\n          \"action\"\n        ]\n      }\n    }\n  ],\n  \"metadata\": {\n    \"task_name\": \"miniwob.ascending-numbers\",\n    \"miniwob_category\": \"hidden test\",\n    \"comment\": \"\",\n    \"webgum_subset\": \"False\",\n    \"similarity_group\": \"0\",\n    \"browsergym_split\": \"test\",\n    \"task_id\": \"miniwob.ascending-numbers\",\n    \"seed\": 1608637542,\n    \"repeat\": 0\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets miniwob \\\n    --agent-config '{\"mode\":\"native\",\"strategy\":\"function_calling\",\"max_steps\":10}' \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import TaskConfig, run_task\nfrom evalscope.api.agent import NativeAgentConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['miniwob'],\n    agent_config=NativeAgentConfig(\n        strategy='function_calling',\n        max_steps=10,\n    ),\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MiniWoB\n\n\n## 概述\n\nMiniWoB 用于评估多模态智能体是否能够完成简短的浏览器任务，例如点击按钮、填写表单、滚动页面以及拖拽元素。\n\n## 任务描述\n\n- **任务类型**：交互式浏览器任务\n- **输入**：任务目标、无障碍树（accessibility tree）和屏幕截图\n- **输出**：通过函数调用选择的浏览器操作\n- **数据集**：125 个 MiniWoB 任务\n- **指标**：任务完成率（`success_rate`）和环境错误率（`error_rate`）\n\n## 评估说明\n\n- 默认运行对每个任务评估一个确定性回合（episode）。\n- 设置 `repeats=5` 可启用五回合评估计划。\n- 每个回合默认最多允许 10 次模型/工具交互。\n- 模型必须支持图像输入和函数调用。\n- 安装与示例请参阅 [MiniWoB 使用指南](../third_party/miniwob.html)。\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `miniwob` |\n| **数据集 ID** | [BrowserGym](https://github.com/ServiceNow/BrowserGym) |\n| **论文** | N/A |\n| **标签** | `Agent`, `FunctionCalling`, `MultiModal`, `MultiTurn` |\n| **指标** | `success_rate`, `error_rate` |\n| **默认提示方式** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 125 |\n| 提示词长度（平均） | 77 字符 |\n| 提示词长度（最小/最大） | 77 / 77 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"4b7219db\",\n      \"content\": \"The task goal and browser observation are supplied when the episode is reset.\"\n    }\n  ],\n  \"target\": \"1\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"tools\": [\n    {\n      \"name\": \"browser_action\",\n      \"description\": \"Execute exactly one BrowserGym MiniWoB action. Supported signatures: noop(wait_ms=1000), mouse_move(x, y), mouse_click(x, y, button=\\\"left\\\"), mouse_dblclick(x, y, button=\\\"left\\\"), mouse_down(x, y, button=\\\"left\\\"), mouse_up(x, y, button=\\\"left\\\"),  ... [TRUNCATED 44 chars] ... \\\"left\\\"), keyboard_press(key), keyboard_type(text), fill(bid, value). click accepts a string BID, for example click(\\\"13\\\"); use mouse_click(x, y) for visual targets. Coordinates are absolute screenshot pixels, not normalized 0-1000 coordinates.\",\n      \"parameters\": {\n        \"properties\": {\n          \"action\": {\n            \"type\": \"string\",\n            \"description\": \"One BrowserGym function-call expression.\"\n          }\n        },\n        \"required\": [\n          \"action\"\n        ]\n      }\n    }\n  ],\n  \"metadata\": {\n    \"task_name\": \"miniwob.ascending-numbers\",\n    \"miniwob_category\": \"hidden test\",\n    \"comment\": \"\",\n    \"webgum_subset\": \"False\",\n    \"similarity_group\": \"0\",\n    \"browsergym_split\": \"test\",\n    \"task_id\": \"miniwob.ascending-numbers\",\n    \"seed\": 1608637542,\n    \"repeat\": 0\n  }\n}\n```\n\n*注：部分内容因显示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets miniwob \\\n    --agent-config '{\"mode\":\"native\",\"strategy\":\"function_calling\",\"max_steps\":10}' \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import TaskConfig, run_task\nfrom evalscope.api.agent import NativeAgentConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['miniwob'],\n    agent_config=NativeAgentConfig(\n        strategy='function_calling',\n        max_steps=10,\n    ),\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "7c9a3336d6ebb3f3e6dc1d0bb0cb6378",
+    "needs_translation": false
+  },
+  "updated_at": "2026-07-30T16:25:30.577736",
+  "translation_updated_at": "2026-07-30T16:25:41"
+}

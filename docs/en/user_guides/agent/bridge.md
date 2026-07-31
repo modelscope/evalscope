@@ -63,8 +63,8 @@ Most-used `ExternalAgentConfig` fields:
 |-------|-------------|-------------|
 | `framework` | Which CLI to drive | `claude-code` / `codex` / `opencode` / `gemini-cli` / `hermes` |
 | `environment` | Where to run | `local` (dev) / `docker` (production) |
+| `environment_extra` | Environment constructor options | Docker image, timeout, mounts, and other environment-specific settings |
 | `timeout` | Per-sample wall-clock budget in seconds | 120 for math, 1800+ for code fixes |
-| `environment_extra` | Sandbox constructor kwargs (`image`, `timeout`, …); same as native mode | See [Sandbox Environment](../sandbox.md) |
 | `skills_dir` | Optional host Agent Skills directory | EvalScope makes the skills available before launching the runner |
 | `kwargs` | Kwargs forwarded to the CLI, see below | `{}` |
 
@@ -151,7 +151,7 @@ docker build -f evalscope/agent/external/dockerfiles/Dockerfile.hermes \
 
 ### Using images
 
-Set `environment='docker'` in `ExternalAgentConfig` and pass the image name via `environment_extra`:
+Set `environment='docker'` in `ExternalAgentConfig` and put constructor options under `environment_extra`:
 
 ```python
 from evalscope import TaskConfig, run_task

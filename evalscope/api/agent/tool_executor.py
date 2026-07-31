@@ -2,7 +2,7 @@
 
 Tool handlers are registered under ``evalscope/agent/tools/`` via
 ``@register_agent_tool('name')`` and must expose an async
-``run(call: ToolCall, env: AgentEnvironment | None) -> str`` callable.
+``run(call: ToolCall, env: AgentEnvironment | None) -> ToolObservation`` callable.
 """
 
 import time
@@ -10,10 +10,12 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 from evalscope.api.tool import ToolCall, ToolCallError
 from .environment import AgentEnvironment
+from .types import ToolExecutionOutput
 
 # Signature for an async tool handler.  Returns the textual observation
 # that will be attached to the next user/tool message.
-ToolHandler = Callable[[ToolCall, Optional[AgentEnvironment]], Awaitable[str]]
+ToolObservation = str | ToolExecutionOutput
+ToolHandler = Callable[[ToolCall, Optional[AgentEnvironment]], Awaitable[ToolObservation]]
 
 
 class ToolExecutor:
@@ -40,11 +42,12 @@ class ToolExecutor:
     def tool_names(self) -> List[str]:
         return list(self._handlers.keys())
 
-    async def execute(self, call: ToolCall) -> Tuple[str, Optional[ToolCallError], float]:
+    async def execute(self, call: ToolCall) -> Tuple[ToolObservation, Optional[ToolCallError], float]:
         """Run one tool call.
 
-        Returns ``(observation, error, duration_seconds)``.  ``observation``
-        is always a string so it can be appended to a ``ChatMessageTool``.
+        Returns ``(observation, error, duration_seconds)``. Existing handlers
+        return strings; attachment-producing tools may return
+        :class:`ToolExecutionOutput`.
         """
         started = time.time()
         handler = self._handlers.get(call.function.name)
@@ -67,4 +70,4 @@ class ToolExecutor:
             return str(exc), ToolCallError(type='unknown', message=str(exc)), time.time() - started
 
 
-__all__ = ['ToolExecutor', 'ToolHandler']
+__all__ = ['ToolExecutor', 'ToolHandler', 'ToolObservation']

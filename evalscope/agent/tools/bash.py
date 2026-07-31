@@ -46,7 +46,7 @@ def apply_bash_command_timeout_defaults(
     tools: List[ToolInfo],
     command_timeout: Optional[float],
 ) -> Tuple[Dict[str, Any], List[ToolInfo]]:
-    """Apply a native runtime default timeout to bash calls and schema."""
+    """Apply a native environment default timeout to bash calls and schema."""
     if command_timeout is None:
         return handlers, tools
     updated_handlers = _apply_bash_command_timeout(handlers, command_timeout)

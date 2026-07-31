@@ -1,4 +1,4 @@
-"""Unified per-sample sandbox environment backed by ms_enclave.
+"""Unified per-sample agent environment backed by ms_enclave.
 
 ``EnclaveAgentEnvironment`` is the single implementation powering the
 ``enclave`` / ``docker`` / ``volcengine`` registry aliases, supporting any
@@ -123,7 +123,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         (e.g. ``base_url`` / ``region`` / credentials).
     timeout:
         Default command timeout (seconds) used when :meth:`exec` is called
-        without an explicit timeout. ``None`` uses the environment default.
+        without an explicit timeout. ``None`` uses the runtime default.
     interpreter:
         Command interpreter argv prefix. The rendered command string is
         appended as the final argument. Defaults to ``['bash', '-c']`` for

@@ -117,6 +117,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--use-sandbox', action='store_true', default=False, help='[Deprecated] Use --sandbox instead. Whether to use sandbox for model evaluation.')  # noqa: E501
     parser.add_argument('--sandbox-type', type=str, default='docker', help='[Deprecated] Use --sandbox instead. The sandbox type to use (e.g., docker, volcengine).')  # noqa: E501
     parser.add_argument('--sandbox-manager-config', type=json.loads, default='{}', help='[Deprecated] Use --sandbox instead. The sandbox manager config, should be a json string.')  # noqa: E501
+
     # yapf: enable
 
 
