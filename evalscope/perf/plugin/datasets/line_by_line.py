@@ -67,13 +67,9 @@ class LineByLineDatasetPlugin(DatasetPluginBase):
             parsed = self._try_parse_json(line)
 
             if isinstance(parsed, str):
-                prompt = self.prepare_prompt(parsed)
-                if prompt is None:
+                result = self.prepare_messages(parsed)
+                if result is None:
                     continue
-                if self.query_parameters.apply_chat_template:
-                    result = [self.create_message(prompt)]
-                else:
-                    result = prompt
             else:
                 result = parsed
             yield result

@@ -85,7 +85,7 @@ class ShareGPTDatasetPluginBase(DatasetPluginBase):
             if prepared is None:
                 continue
             messages[-1]['content'] = prepared
-            yield messages
+            yield self.apply_prefix_to_messages(messages)
 
 
 @register_dataset('share_gpt_zh')

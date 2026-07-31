@@ -25,10 +25,7 @@ class LongAlpacaDatasetPlugin(DatasetPluginBase):
             ds = self.load_hub_dataset(dataset_id='AI-ModelScope/LongAlpaca-12k', split='train')
         for item in ds:
             prompt = item['instruction'].strip()
-            prompt = self.prepare_prompt(prompt)
-            if prompt is None:
+            result = self.prepare_messages(prompt)
+            if result is None:
                 continue
-            if self.query_parameters.apply_chat_template:
-                yield [self.create_message(prompt)]
-            else:
-                yield prompt
+            yield result

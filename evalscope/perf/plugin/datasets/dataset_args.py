@@ -12,7 +12,7 @@ This module must NOT import any dataset plugin module (they import
 safe because it has no such dependency.
 """
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 from typing import Literal, Optional
 
 from evalscope.perf.multi_turn_args import MultiTurnArgs
@@ -49,12 +49,37 @@ class TextLengthArgs(BaseDatasetArgs):
       yielded prompt is exactly ``target_input_len`` (drops data).
     """
 
+    prefix_file: Optional[str] = None
+    """Path to a UTF-8 plain-text file used as a long-context prefix (issue #1524).
+
+    When set, the file content is tokenized once and, for every request, sliced
+    to exactly ``target_input_len - len(prompt_tokens)`` tokens so the total
+    input hits the target length with real low-entropy text.  If the file is
+    shorter than the remaining budget it is repeated (tiled) to cover it.
+    Requires ``target_input_len``.
+    """
+
+    prefix_role: Literal['system', 'user'] = 'system'
+    """Role used to inject the long prefix.
+
+    - ``system`` (default): the prefix goes into a leading system message,
+      matching real RAG traffic and inference-engine prefix-cache handling.
+      Falls back to plain-text concatenation when no chat template is applied.
+    - ``user``: the prefix is prepended to the (first) user message content.
+    """
+
     @field_validator('target_input_len')
     @classmethod
     def _validate_target_input_len(cls, v: Optional[int]) -> Optional[int]:
         if v is not None and v <= 0:
             raise ValueError(f'target_input_len must be > 0, got {v}')
         return v
+
+    @model_validator(mode='after')
+    def _validate_prefix_file(self) -> 'TextLengthArgs':
+        if self.prefix_file is not None and self.target_input_len is None:
+            raise ValueError('`prefix_file` requires `target_input_len` to be set.')
+        return self
 
 
 class TextDatasetArgs(TextLengthArgs):

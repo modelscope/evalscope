@@ -28,10 +28,7 @@ class OpenqaDatasetPlugin(DatasetPluginBase):
         for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
             item = json.loads(item)
             prompt = item['question'].strip()
-            prompt = self.prepare_prompt(prompt)
-            if prompt is None:
+            result = self.prepare_messages(prompt)
+            if result is None:
                 continue
-            if self.query_parameters.apply_chat_template:
-                yield [self.create_message(prompt)]
-            else:
-                yield prompt
+            yield result
