@@ -30,6 +30,12 @@ class ShareGPTDatasetPluginBase(DatasetPluginBase):
     ]
 
     Dataset: https://www.modelscope.cn/datasets/swift/sharegpt
+
+    Length control: with a ``prefix_file`` the budget is measured over the whole
+    conversation (conversations longer than the target are skipped, shorter ones
+    padded by the prefix, no turn is truncated).  Without a prefix, only the last
+    user turn is fit / filtered (``target_input_len`` cap/drop or the legacy
+    ``min/max_prompt_length`` filter), matching the pre-prefix behavior.
     """
 
     # Subclasses must set this
@@ -79,13 +85,19 @@ class ShareGPTDatasetPluginBase(DatasetPluginBase):
             if not messages:
                 continue
 
-            # Fit / filter using the last user turn content.
-            last_user_content = messages[-1]['content']
-            prepared = self.prepare_prompt(last_user_content)
-            if prepared is None:
-                continue
-            messages[-1]['content'] = prepared
-            yield messages
+            if self._prefix_ids is not None:
+                # Prefix injection: budget measured over the whole conversation.
+                prepared = self.prepare_conversation(messages)
+                if prepared is None:
+                    continue
+                yield prepared
+            else:
+                # Legacy behavior: fit / filter on the last user turn only.
+                last = self.prepare_prompt(messages[-1]['content'])
+                if last is None:
+                    continue
+                messages[-1]['content'] = last
+                yield messages
 
 
 @register_dataset('share_gpt_zh')

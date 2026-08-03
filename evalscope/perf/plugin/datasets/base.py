@@ -8,7 +8,15 @@ from evalscope.api.dataset.hub import download_dataset_file, load_dataset_from_h
 from evalscope.constants import HubType
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.dataset_args import BaseDatasetArgs, TextLengthArgs
-from evalscope.perf.plugin.datasets.utils import fit_text_to_token_len, load_tokenizer, tokenize_chat_messages
+from evalscope.perf.plugin.datasets.utils import (
+    fit_prefix_to_budget,
+    fit_text_to_token_len,
+    load_tokenizer,
+    tokenize_chat_messages,
+)
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 Message = Dict[str, Any]  # single OpenAI message: {"role": ..., "content": ...}
 Messages = List[Message]  # delta messages for one turn
@@ -70,6 +78,10 @@ class DatasetPluginBase:
             and self.tokenizer is None
         ):
             raise ValueError('`target_input_len` requires a tokenizer; please set --tokenizer-path.')
+        self._prefix_ids: Optional[List[int]] = None
+        if isinstance(self.dataset_args, TextLengthArgs) and self.dataset_args.prefix_file is not None:
+            self._prefix_ids = self._load_prefix_ids(self.dataset_args.prefix_file)
+        self._warned_conversation_dropped: bool = False
 
     def __next__(self):
         for item in self.build_messages():
@@ -199,6 +211,122 @@ class DatasetPluginBase:
         if self.tokenizer is None:
             raise ValueError('`target_input_len` requires a tokenizer; please set --tokenizer-path.')
         return fit_text_to_token_len(prompt, args.target_input_len, args.input_len_mode, self.tokenizer)
+
+    def _load_prefix_ids(self, prefix_file: str) -> List[int]:
+        """Read and tokenize the long-context prefix file once at construction time.
+
+        Emits one-shot warnings for the tiling and no-chat-template downgrade
+        cases so per-request generation stays silent.
+        """
+        args = self.dataset_args
+        if not os.path.isfile(prefix_file):
+            raise FileNotFoundError(f"The specified prefix_file '{prefix_file}' does not exist.")
+        with open(prefix_file, 'r', encoding='utf-8') as f:
+            prefix_text = f.read()
+        ids = self.tokenizer.encode(prefix_text, add_special_tokens=False)
+        if not ids:
+            raise ValueError(f"The specified prefix_file '{prefix_file}' is empty.")
+        if len(ids) < args.target_input_len:
+            logger.warning(
+                f'prefix_file has {len(ids)} tokens, fewer than target_input_len={args.target_input_len}; '
+                'the prefix will be repeated (tiled) to fill the remaining budget when needed.'
+            )
+        if args.prefix_role == 'system' and not self.query_parameters.apply_chat_template:
+            logger.warning(
+                "prefix_role='system' requires a chat template; falling back to plain-text "
+                'prefix concatenation because apply_chat_template is disabled.'
+            )
+        return ids
+
+    def content_token_len(self, content: str) -> int:
+        """Return the bare content token count of one message (no special tokens)."""
+        return len(self.tokenizer.encode(content, add_special_tokens=False))
+
+    def measure_messages_len(self, messages: Messages) -> int:
+        """Return the total bare content token count of a messages list.
+
+        Every message counts, so multi-turn history is included in the length
+        measurement instead of only the last user turn.
+        """
+        return sum(self.content_token_len(message['content']) for message in messages)
+
+    def apply_prefix_to_messages(self, messages: Messages) -> Messages:
+        """Inject the configured long-context prefix into an OpenAI messages list.
+
+        The prefix budget is ``target_input_len`` minus the bare content tokens
+        of **all** messages, so prefix plus conversation together occupy the
+        target length.  ``prefix_role='system'`` prepends a system message
+        (chat-template mode only), whose content is separated from the prompt by
+        template markers; otherwise the prefix is prepended to the first message
+        content so it stays at the very front of the token stream (prefix-cache
+        friendly).  The prefix and prompt are counted independently, so on BPE
+        tokenizers the total may differ from the target by ~1 token when
+        characters merge across the join (chat-template mode is exact).  No-op
+        when ``prefix_file`` is not configured or the remaining budget is zero.
+        """
+        if self._prefix_ids is None:
+            return messages
+        budget = self.dataset_args.target_input_len - self.measure_messages_len(messages)
+        if budget <= 0:
+            return messages
+        prefix = fit_prefix_to_budget(self._prefix_ids, budget, self.tokenizer)
+        if not prefix:
+            return messages
+        if self.dataset_args.prefix_role == 'system' and self.query_parameters.apply_chat_template:
+            return [self.create_message(prefix, role='system')] + messages
+        messages[0]['content'] = prefix + messages[0]['content']
+        return messages
+
+    def prepare_messages(self, prompt: str) -> Optional[Union[str, Messages]]:
+        """Apply length policy, prefix injection and chat wrapping to one prompt.
+
+        Combines :meth:`prepare_prompt` (cap/drop fitting) with the long-context
+        prefix injection (issue #1524).  Returns ``None`` when the prompt should
+        be skipped, a plain string when ``apply_chat_template`` is off,
+        otherwise an OpenAI messages list.
+        """
+        prepared = self.prepare_prompt(prompt)
+        if prepared is None:
+            return None
+        if not self.query_parameters.apply_chat_template:
+            if self._prefix_ids is None:
+                return prepared
+            # Plain-text endpoint: fill the remaining budget with the prefix. The
+            # prefix and prompt are counted independently, so the total may drift
+            # by ~1 token when characters merge across the join.
+            budget = self.dataset_args.target_input_len - self.content_token_len(prepared)
+            return fit_prefix_to_budget(self._prefix_ids, budget, self.tokenizer) + prepared
+        return self.apply_prefix_to_messages([self.create_message(prepared)])
+
+    def prepare_conversation(self, messages: Messages) -> Optional[Messages]:
+        """Fit a whole conversation to ``target_input_len`` by prepending the prefix.
+
+        Called only when a ``prefix_file`` is configured (which requires
+        ``target_input_len``).  The length is measured over **every** message
+        content, so multi-turn history counts towards the budget.  A conversation
+        already exceeding the target is dropped rather than truncated: cutting the
+        history or the last user turn would either destroy the dialogue or
+        silently change what is being benchmarked.  Shorter conversations are
+        filled up by the prefix.
+
+        Args:
+            messages (Messages): The conversation, ending with a user message.
+
+        Returns:
+            Optional[Messages]: The adjusted conversation, or ``None`` to skip it.
+        """
+        target_input_len = self.dataset_args.target_input_len
+        total_len = self.measure_messages_len(messages)
+        if total_len > target_input_len:
+            if not self._warned_conversation_dropped:
+                self._warned_conversation_dropped = True
+                logger.warning(
+                    f'Dropping conversations whose total content length exceeds target_input_len='
+                    f'{target_input_len} (first one had {total_len} tokens); the length is measured '
+                    'over all turns, so long histories are skipped instead of truncated.'
+                )
+            return None
+        return self.apply_prefix_to_messages(messages)
 
     def check_prompt_length(self, prompt: str) -> Tuple[bool, int]:
         """Check if the prompt length is within the specified range.

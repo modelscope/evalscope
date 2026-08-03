@@ -44,7 +44,7 @@ task_cfg = {
 }
 ```
 ```{seealso}
-[全部参数说明](../../user_guides/backend/rageval_backend/clip_benchmark.md#配置评测参数)
+[完整参数参考](../../user_guides/backend/rageval_backend/clip_benchmark.md#完整参数参考)
 ```
 其中：
 - `dataset_name`: 数据集名称，必须指定为`custom`。

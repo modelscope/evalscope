@@ -46,7 +46,7 @@ task_cfg = {
 }
 ```
 ```{seealso}
-[Full Parameter Explanation](../../user_guides/backend/rageval_backend/clip_benchmark.md#configure-evaluation-parameters)
+[Full Parameter Reference](../../user_guides/backend/rageval_backend/clip_benchmark.md#full-parameter-reference)
 ```
 
 Where:

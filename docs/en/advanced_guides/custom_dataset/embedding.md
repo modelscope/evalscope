@@ -148,7 +148,7 @@ Each task in the `custom_tasks` list corresponds to a `CustomTaskConfig` with th
 | `eval_splits` | List[str] | `["test"]` | Evaluation splits list |
 
 ```{note}
-Other evaluation parameters (such as `models`, `limits`, `overwrite_results`, etc.) are consistent with the default configuration. See [MTEB Evaluation Parameter Reference](../../user_guides/backend/rageval_backend/mteb.md#parameter-explanation) for details.
+Other evaluation parameters (such as `models`, `limits`, `overwrite_results`, etc.) are consistent with the default configuration. See [MTEB Evaluation Parameter Reference](../../user_guides/backend/rageval_backend/mteb.md#full-parameter-reference) for details.
 ```
 
 ## FAQ

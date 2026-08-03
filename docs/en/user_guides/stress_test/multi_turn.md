@@ -1,50 +1,12 @@
 # Multi-turn Conversation Benchmark
 
-The multi-turn conversation benchmark allows you to test a model service in realistic multi-turn interaction scenarios. Unlike a standard benchmark, multi-turn mode appends the model's **actual replies** to the conversation context so that every subsequent request carries the full history — faithfully simulating a user's continuous conversation with the model, and enabling measurement of latency, throughput, and KV-cache utilization as context grows.
+The multi-turn conversation benchmark tests a model service in realistic multi-turn interaction scenarios: after each successful turn, the model's **actual reply** is appended to the context, and the next request carries the full history rather than just the current user message. This makes it possible to measure latency and throughput as context grows.
 
-## Features
+Based on client-side token counts, the framework also estimates the proportion of history tokens relative to the total input tokens in each request — i.e. the theoretical upper bound of tokens that could benefit from server-side prefix caching. Whether caching actually occurs depends on whether the server has prefix caching enabled and has retained the relevant cache.
 
-- **Real context accumulation**: After each successful turn, the model's actual output is appended to the conversation history; the next turn sends the complete history rather than just the current user message.
-- **Approx KV cache hit rate estimation**: Based on client-side token counts, estimates the proportion of history tokens relative to the total input tokens in each request — i.e., the theoretical upper bound of tokens that could benefit from server-side prefix caching. Whether caching actually occurs depends on whether the server has prefix caching enabled and has retained the relevant cache.
-- **Multiple dataset support**: Provides random synthetic (`random_multi_turn`), real conversations (`share_gpt_zh_multi_turn` / `share_gpt_en_multi_turn`), custom local data (`custom_multi_turn`), real Agent trajectories (`swe_smith`), and production agentic trace replay (`trie_agentic_coding` / `trie_code_qa` / `trie_office_work`) datasets.
-- **Consistent parameter semantics**: `--number` is the total number of conversations and `--parallel` is the number of concurrent conversations, keeping the same semantics as standard benchmark mode.
+`--number` is the total number of conversations and `--parallel` is the number of concurrent conversations, keeping the same semantics as single-turn benchmarks.
 
-## Parameters
-
-### Multi-turn Specific Parameters
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `--multi-turn` | `bool` | Enable multi-turn conversation benchmark mode | `False` |
-| `--min-turns` | `int` | Minimum number of user turns per conversation; used by `random_multi_turn` only | `1` |
-| `--max-turns` | `int` | Maximum number of user turns per conversation; **required** for `random_multi_turn`; optional for ShareGPT / `custom_multi_turn` datasets to truncate long conversations; for `swe_smith` live construction, the per-conversation turn count is sampled from `[min_turns, max_turns]` | `None` |
-| `--dataset-offset` | `int` | Skip the first N conversations in the dataset; useful for sharded testing or avoiding cache hits | `0` |
-
-### `multi_turn_args` (swe_smith-specific parameters)
-
-```{note}
-`--multi-turn-args` is **deprecated**; pass the same parameters via the unified `--dataset-args` instead. The old flag still works and its content is automatically folded into `--dataset-args` (on a key conflict, `--dataset-args` takes precedence). The parameter key names below are unchanged.
-```
-
-The `swe_smith` dataset's live construction mode supports fine-grained control of conversation structure and token-length targets via `--dataset-args`.
-
-The number of turns per conversation is sampled from `[--min-turns, --max-turns]`; the amount of content filled per turn is controlled by the token-length parameters below.
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `first_turn_length` | `int` | Target prompt token count for turn 1; trajectory messages are sliced until this length is reached | `65000` |
-| `subsequent_turn_length` | `int` | Target token increment per subsequent turn; controls the delta size added each round | `500` |
-| `chars_per_token` | `float` | Characters-per-token estimate used for pre-filtering trajectories when no tokenizer is available | `3.0` |
-| `num_workers` | `int` | **Deprecated**. Use top-level `--num-workers` instead. Previously controlled parallel workers for live conversation building. | `4` |
-
-### Semantics of Existing Parameters in Multi-turn Mode
-
-| Parameter | Meaning in multi-turn mode |
-|-----------|---------------------------|
-| `--number` | Total number of **conversations** to run; all workers stop once this many conversations have been completed |
-| `--parallel` | Number of concurrently active conversations (each worker owns one conversation) |
-
-## Workflow
+## How It Works
 
 1. **Load conversation pool**: At startup, conversations are read sequentially from the dataset file and pre-loaded into memory, up to a maximum of `--number` conversations (to avoid excessive memory usage with large datasets).
 
@@ -91,11 +53,46 @@ The number of turns per conversation is sampled from `[--min-turns, --max-turns]
 
 7. **Metrics aggregation**: After all workers finish, all latency, throughput, and multi-turn-specific metrics (average context turns, KV cache hit rate) are aggregated and output.
 
-> **Note**: When the request success rate is below 100%, interrupted conversations do not contribute subsequent turns to the context, which may result in lower reported KV cache hit rates.
+```{note}
+When the request success rate is below 100%, interrupted conversations do not contribute subsequent turns to the context, which may result in lower reported KV cache hit rates.
+```
+
+## Parameters
+
+### Multi-turn Specific Parameters
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--multi-turn` | `bool` | Enable multi-turn conversation benchmark mode | `False` |
+| `--min-turns` | `int` | Minimum number of user turns per conversation; used by `random_multi_turn` only | `1` |
+| `--max-turns` | `int` | Maximum number of user turns per conversation; **required** for `random_multi_turn`; optional for ShareGPT / `custom_multi_turn` datasets to truncate long conversations; for `swe_smith` live construction, the per-conversation turn count is sampled from `[min_turns, max_turns]` | `None` |
+| `--dataset-offset` | `int` | Skip the first N conversations in the dataset; useful for sharded testing or avoiding cache hits | `0` |
+
+### Multi-turn Semantics of Common Parameters
+
+The following parameters mean different things in single-turn and multi-turn mode; in multi-turn mode they are all counted in **conversations**:
+
+| Parameter | Meaning in multi-turn mode |
+|-----------|---------------------------|
+| `--number` | Total number of **conversations** to run; all workers stop once this many conversations have been completed |
+| `--parallel` | Number of concurrently active conversations (each worker owns one conversation) |
+| `--warmup-num` | Number of warmup **conversations**; all turns within a warmup conversation are excluded from metrics |
+| `--duration` | **Soft exit**: once the deadline elapses no new conversations are claimed, but already in-flight conversations run every remaining turn before exit |
+| `--tokenize-prompt` | **Not supported**; silently ignored. Multi-turn conversations are always sent as message dicts to `/v1/chat/completions` |
+
+The soft-exit semantics of `--duration` keep every conversation complete, so partial conversations don't skew statistics. Three cap combinations:
+
+| Command | Meaning |
+|---|---|
+| `--number 50` | run 50 conversations, no time limit |
+| `--duration 300` | run for 300 seconds, however many conversations fit |
+| `--number 50 --duration 300` | both caps; **whichever is reached first** ends the run (recommended) |
+
+Side effect: actual wall_time may overshoot `--duration` slightly — the overshoot equals the time needed for in-flight conversations to finish.
 
 ## Datasets
 
-evalscope provides the following multi-turn datasets:
+evalscope provides the following multi-turn datasets: synthetic data (`random_multi_turn`), real conversations (`share_gpt_*_multi_turn`), custom local data (`custom_multi_turn`), real Agent trajectories (`swe_smith`), and production agentic trace replay (`trie_*`).
 
 ### random_multi_turn
 
@@ -114,9 +111,7 @@ Each conversation produced by the dataset has the following structure:
 ]
 ```
 
-> **Note**: `--tokenize-prompt` is not supported in multi-turn mode and will be silently ignored. Multi-turn conversations are always sent as message dicts to the `/v1/chat/completions` endpoint.
-
-**Usage example**: Quickly evaluate service performance at a specified prompt length distribution and conversation depth without a real dataset.
+**When to use**: Quickly evaluate service performance at a specified prompt length distribution and conversation depth without a real dataset.
 
 ```bash
 evalscope perf \
@@ -189,9 +184,11 @@ Runtime context structure (when sending turn 2):
 ]
 ```
 
-> **Note**: The reference assistant replies in the dataset are included for structural completeness only and are never sent directly to the model. At runtime, workers always append the model's **actual output** to the context to ensure accurate history.
+```{note}
+The reference assistant replies in the dataset are included for structural completeness only and are never sent directly to the model. At runtime, workers always append the model's **actual output** to the context to ensure accurate history.
+```
 
-**Usage example**: Evaluate service performance using a realistic user conversation distribution, better reflecting production environment behavior.
+**When to use**: Evaluate service performance using a realistic user conversation distribution, better reflecting production environment behavior.
 
 ```bash
 evalscope perf \
@@ -267,6 +264,7 @@ Uses a local JSONL file as a custom multi-turn conversation dataset. Each line s
 ```
 
 Each line must satisfy:
+
 - Must be a JSON array.
 - Every element must have `role` and `content` fields.
 - `role` must be either `user` or `assistant`.
@@ -282,18 +280,11 @@ Runtime context structure (when sending turn 2):
 ]
 ```
 
-> **Note**: The `assistant` messages in the dataset are used only to identify conversation structure and are **never** sent directly to the model. At runtime, workers always append the model's actual output to the context to ensure accurate history.
-
-**Usage example**: You have conversation data already in OpenAI messages format and want to benchmark directly without any format conversion.
-
-First, prepare the JSONL data file (one conversation per line):
-
-```json
-[{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi! How can I help you?"}, {"role": "user", "content": "Write me a poem"}, {"role": "assistant", "content": "Sure, ..."}, {"role": "user", "content": "Write another one"}]
-[{"role": "user", "content": "What is the capital of France?"}, {"role": "assistant", "content": "Paris."}, {"role": "user", "content": "What are some famous landmarks there?"}]
+```{note}
+The `assistant` messages in the dataset are used only to identify conversation structure and are **never** sent directly to the model. At runtime, workers always append the model's actual output to the context to ensure accurate history.
 ```
 
-Then run the benchmark:
+**When to use**: You have conversation data already in OpenAI messages format and want to benchmark directly without any format conversion.
 
 ```bash
 evalscope perf \
@@ -318,16 +309,26 @@ Two data source modes are supported:
 - **Pre-built JSON mode** (recommended): Specify `--dataset-path` to load a pre-generated `agentic_dataset.json`. No tokenizer is required and startup is fast.
 - **Live construction mode** (no `--dataset-path`): Pulls raw trajectories from ModelScope at runtime and dynamically builds conversations. `--tokenizer-path` is **required** for accurate token counting.
 
-Common features of both modes:
-- **Offset support**: Skip the first N conversations via `--dataset-offset`, useful for sharded testing or avoiding KV cache hot-spots.
+Both modes support `--dataset-offset` to skip the first N conversations, useful for sharded testing or avoiding KV cache hot-spots.
 
-> **Note**: The turn count for each conversation is sampled from `[--min-turns, --max-turns]`; the amount of content per turn is determined by `first_turn_length` / `subsequent_turn_length`.
+**Length Control Parameters**
 
-**Building the Dataset**
+In live construction mode, the number of turns per conversation is sampled from `[--min-turns, --max-turns]`, and each turn is filled according to the token-length parameters below. Pass them via `--dataset-args`:
 
-It is recommended to pre-build `agentic_dataset.json` using `examples/perf/build_swe_smith_dataset.py` before running a benchmark — build once, reuse many times, avoiding repeated downloads and on-the-fly construction.
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `first_turn_length` | `int` or `[int, int]` | Target prompt token count for turn 1; trajectory messages are sliced until this length is reached<br>• A single integer: fixed value, e.g. `65000`<br>• A two-element list: `[min, max]`, sampled uniformly at random per conversation, e.g. `[32000, 65000]` | `65000` |
+| `subsequent_turn_length` | `int` or `[int, int]` | Target token increment per subsequent turn; controls the delta size added each round<br>• A single integer: fixed value<br>• A two-element list: `[min, max]`, sampled uniformly at random per conversation | `500` |
+| `chars_per_token` | `float` | Characters-per-token estimate used for pre-filtering trajectories when no tokenizer is available | `3.0` |
+| `num_workers` | `int` | **Deprecated**. Use top-level `--num-workers` instead. Previously controlled parallel workers for live conversation building. | `4` |
 
-**Key parameters**:
+```{note}
+`--multi-turn-args` is **deprecated**; pass the parameters above via the unified `--dataset-args` instead. The old flag still works and its content is automatically folded into `--dataset-args` (on a key conflict, `--dataset-args` takes precedence). The parameter key names are unchanged.
+```
+
+**Pre-building the Dataset**
+
+It is recommended to pre-build `agentic_dataset.json` using `examples/perf/build_swe_smith_dataset.py` before running a benchmark — build once, reuse many times, avoiding repeated downloads and on-the-fly construction. Note that the script takes CLI dashed flags, which map one-to-one onto the underscored `--dataset-args` keys above:
 
 | Parameter | Description | Default |
 |-----------|-------------|--------|
@@ -349,7 +350,7 @@ python examples/perf/build_swe_smith_dataset.py \
   --min-turns 3 \
   --max-turns 8 \
   --number 128 \
-  --output-path agentic_dataset.json \
+  --output-path outputs/agentic_dataset.json \
   --seed 42 \
   --num-workers 8
 ```
@@ -372,8 +373,6 @@ evalscope perf \
   --parallel 20
 ```
 
-> **Note**: `--dataset-offset` skips the first N conversations in the dataset, making it suitable for multi-machine sharded benchmarking or avoiding KV cache hot-spots.
-
 **Usage Example: Live Construction Mode**
 
 Automatically pulls SWE-smith-trajectories from ModelScope and constructs conversations at runtime. `--tokenizer-path` is required:
@@ -385,12 +384,12 @@ evalscope perf \
   --api openai \
   --dataset swe_smith \
   --tokenizer-path YOUR_MODEL \
-  --max-tokens 512 \
+  --max-tokens 512 1024 \
   --min-tokens 512 \
   --multi-turn \
   --dataset-args '{
-      "first_turn_length": 8192,
-      "subsequent_turn_length": 1024
+      "first_turn_length": [4096, 8192],
+      "subsequent_turn_length": [512, 1024]
   }' \
   --min-turns 3 \
   --max-turns 8 \
@@ -424,8 +423,6 @@ evalscope perf ... --dataset trie_office_work --dataset-path /path/to/your_trace
 
 **Required**: `--tokenizer-path` (for synthesizing prompts to exact target lengths)
 
-**Usage example**:
-
 ```bash
 evalscope perf \
   --model qwen-plus \
@@ -442,11 +439,13 @@ evalscope perf \
   --stream
 ```
 
-> **Note**: trie trace replay relies on `ignore_eos` to force the model to generate to the exact recorded length. vLLM and SGLang support this parameter; DashScope / OpenAI API and most cloud services do not — the model stops at natural EOS, so actual output will be shorter than the recorded length. This does not affect latency / cache hit / decode TPS correctness.
+```{note}
+trie trace replay relies on `ignore_eos` to force the model to generate to the exact recorded length. vLLM and SGLang support this parameter; DashScope / OpenAI API and most cloud services do not — the model stops at natural EOS, so actual output will be shorter than the recorded length. This does not affect latency / cache hit / decode TPS correctness.
+```
 
-## Multi-turn Output Metrics
+## Output Metrics
 
-In addition to the Performance Overview and Per-Request Metrics tables, multi-turn mode outputs the following additional tables.
+In addition to the Performance Overview and Per-Request Metrics tables, multi-turn mode outputs the following.
 
 ### Per-Trace Metrics
 
@@ -462,6 +461,10 @@ Per-conversation (trace) metrics, aggregated as mean / p50 / p90 / p99 / max acr
 | **Eligible Cache Hit Rate (%)** | Denominator only counts the theoretically cacheable prefix, excluding turn 1 and the current turn's new content | Both this and Cache Hit Rate low → cache off; this high but Cache Hit low → cache enabled but capacity-bound |
 
 Also outputs `trace_summary.json` to the results directory.
+
+```{note}
+When using the `/v1/chat/completions` endpoint, the chat template adds 10-50 extra tokens per turn (role markers, special tokens, etc.), causing Cache Hit Rate to be 2-3pp lower than raw completions. This is expected behaviour.
+```
 
 ### Workload Throughput
 
@@ -495,29 +498,7 @@ Steady-state is the fairest number for "how fast can this endpoint sustainably r
 
 ### First-Turn vs Subsequent-Turn TTFT
 
-The `TTFT (ms)` in the Per-Request Metrics table averages every turn. In multi-turn scenarios, the first turn is a cold prefill while subsequent turns benefit heavily from prefix cache, so the two TTFT types can differ by 2-10x. The Per-Request Metrics table shows:
+The `TTFT (ms)` in the Per-Request Metrics table averages every turn. In multi-turn scenarios, the first turn is a cold prefill while subsequent turns benefit heavily from prefix cache, so the two TTFT types can differ by 2-10x. The Per-Request Metrics table therefore shows two extra rows, which appear only in multi-turn runs:
 
 - `First-Turn TTFT (ms)`
 - `Subsequent-Turn TTFT (ms)`
-
-These appear only in multi-turn runs; single-turn benchmarks omit them.
-
-## `--duration` Soft Exit
-
-In multi-turn mode, `--duration` uses soft-exit semantics: once the deadline elapses, **no new conversations are claimed**, but **already in-flight conversations run every remaining turn** before exit. This keeps every conversation complete, so partial conversations don't skew statistics.
-
-Three cap combinations:
-
-| Command | Meaning |
-|---|---|
-| `--number 50` | run 50 conversations, no time limit |
-| `--duration 300` | run for 300 seconds, however many conversations fit |
-| `--number 50 --duration 300` | both caps; **whichever is reached first** ends the run (recommended) |
-
-Side effect: actual wall_time may overshoot `--duration` slightly (the overshoot equals the time needed for in-flight conversations to finish).
-
-## FAQs
-
-### Chat-template token overhead
-
-When using the `/v1/chat/completions` endpoint, the chat template adds 10-50 extra tokens per turn (role markers, special tokens, etc.), causing Cache Hit Rate to be 2-3pp lower than raw completions. This is expected behaviour.
