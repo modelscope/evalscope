@@ -4,7 +4,7 @@ from typing import Dict, Iterator, List
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
-from evalscope.perf.plugin.datasets.dataset_args import TextDatasetArgs, TextLengthArgs
+from evalscope.perf.plugin.datasets.dataset_args import TextDatasetArgs
 from evalscope.perf.plugin.registry import register_dataset
 
 
@@ -31,9 +31,11 @@ class ShareGPTDatasetPluginBase(DatasetPluginBase):
 
     Dataset: https://www.modelscope.cn/datasets/swift/sharegpt
 
-    Length control (``target_input_len`` / ``prefix_file``) is applied over the
-    whole conversation: conversations longer than the target are skipped and
-    shorter ones are filled up by the prefix, so no turn is ever truncated.
+    Length control: with a ``prefix_file`` the budget is measured over the whole
+    conversation (conversations longer than the target are skipped, shorter ones
+    padded by the prefix, no turn is truncated).  Without a prefix, only the last
+    user turn is fit / filtered (``target_input_len`` cap/drop or the legacy
+    ``min/max_prompt_length`` filter), matching the pre-prefix behavior.
     """
 
     # Subclasses must set this
@@ -43,17 +45,6 @@ class ShareGPTDatasetPluginBase(DatasetPluginBase):
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
-        # `drop` keeps only inputs whose length already equals target_input_len.
-        # For a multi-turn conversation that means the summed content of every
-        # turn must hit the target exactly, which essentially never happens on
-        # real data, so it would silently drop the whole dataset.
-        args = self.dataset_args
-        if (isinstance(args, TextLengthArgs) and args.target_input_len is not None and args.input_len_mode == 'drop'):
-            raise ValueError(
-                "`input_len_mode='drop'` is not supported for multi-turn ShareGPT datasets: a conversation's "
-                'total content almost never equals target_input_len exactly, so every record would be dropped. '
-                "Use `input_len_mode='cap'` (optionally with `prefix_file` to pad up to the target)."
-            )
 
     def _convert_to_openai_messages(self, conversation: List[Dict]) -> List[Dict]:
         """Convert swift sharegpt conversation to OpenAI messages format.
@@ -94,11 +85,19 @@ class ShareGPTDatasetPluginBase(DatasetPluginBase):
             if not messages:
                 continue
 
-            # Length is measured over the whole conversation (see prepare_conversation).
-            prepared = self.prepare_conversation(messages)
-            if prepared is None:
-                continue
-            yield prepared
+            if self._prefix_ids is not None:
+                # Prefix injection: budget measured over the whole conversation.
+                prepared = self.prepare_conversation(messages)
+                if prepared is None:
+                    continue
+                yield prepared
+            else:
+                # Legacy behavior: fit / filter on the last user turn only.
+                last = self.prepare_prompt(messages[-1]['content'])
+                if last is None:
+                    continue
+                messages[-1]['content'] = last
+                yield messages
 
 
 @register_dataset('share_gpt_zh')

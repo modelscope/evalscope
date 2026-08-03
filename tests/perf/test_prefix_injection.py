@@ -214,11 +214,30 @@ class TestConversationInjection:
         )
         assert list(plugin.build_messages()) == []
 
-    def test_drop_mode_rejected_for_multi_turn(self, tmp_path, monkeypatch):
-        # A conversation's summed content almost never equals the target exactly,
-        # so `drop` would empty the dataset; the plugin refuses it at construction.
-        with pytest.raises(ValueError, match='is not supported for multi-turn'):
-            self._build_plugin(tmp_path, monkeypatch, target_input_len=TARGET, input_len_mode='drop')
+    def test_no_prefix_fits_last_turn_only(self, tmp_path, monkeypatch):
+        # Without a prefix_file the legacy path applies: only the last user turn
+        # is capped, the history is neither counted nor dropped.
+        plugin = self._build_plugin(
+            tmp_path,
+            monkeypatch,
+            conversation=[{'human': 'a' * 8, 'assistant': 'b' * 8}, {'human': 'abcdefghijkl', 'assistant': ''}],
+            target_input_len=TARGET,
+        )
+        (messages, ) = list(plugin.build_messages())
+        assert messages[0]['content'] == 'a' * 8  # history untouched, not counted
+        assert messages[-1]['content'] == 'abcdefghij'  # last turn capped to TARGET
+
+    def test_no_prefix_drop_filters_last_turn(self, tmp_path, monkeypatch):
+        # drop is allowed without a prefix and, per legacy behavior, skips a
+        # conversation whose last turn is shorter than the target.
+        plugin = self._build_plugin(
+            tmp_path,
+            monkeypatch,
+            conversation=[{'human': 'hi', 'assistant': 'yo'}, {'human': 'abc', 'assistant': ''}],
+            target_input_len=TARGET,
+            input_len_mode='drop',
+        )
+        assert list(plugin.build_messages()) == []
 
 
 class TestNoInjection:

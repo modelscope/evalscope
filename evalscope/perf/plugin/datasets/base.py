@@ -299,19 +299,15 @@ class DatasetPluginBase:
         return self.apply_prefix_to_messages([self.create_message(prepared)])
 
     def prepare_conversation(self, messages: Messages) -> Optional[Messages]:
-        """Apply the input-length policy and prefix injection to a conversation.
+        """Fit a whole conversation to ``target_input_len`` by prepending the prefix.
 
-        Unlike :meth:`prepare_messages` the length is measured over every message
-        content, so the history counts towards ``target_input_len``.  A
-        conversation already exceeding the target is dropped rather than
-        truncated: cutting the history or the last user turn would either
-        destroy the dialogue or silently change what is being benchmarked.
-        Shorter conversations are filled up by the configured prefix.
-
-        ``input_len_mode='drop'`` is intentionally not honoured here: a
-        conversation whose summed content lands on the target exactly is so rare
-        that it would drop the whole dataset, so callers reject that combination
-        up front (see ``ShareGPTDatasetPluginBase``).
+        Called only when a ``prefix_file`` is configured (which requires
+        ``target_input_len``).  The length is measured over **every** message
+        content, so multi-turn history counts towards the budget.  A conversation
+        already exceeding the target is dropped rather than truncated: cutting the
+        history or the last user turn would either destroy the dialogue or
+        silently change what is being benchmarked.  Shorter conversations are
+        filled up by the prefix.
 
         Args:
             messages (Messages): The conversation, ending with a user message.
@@ -319,21 +315,14 @@ class DatasetPluginBase:
         Returns:
             Optional[Messages]: The adjusted conversation, or ``None`` to skip it.
         """
-        args = self.dataset_args
-        if not isinstance(args, TextLengthArgs) or args.target_input_len is None:
-            # Legacy path: filter on the last user turn only.
-            is_valid, _ = self.check_prompt_length(messages[-1]['content'])
-            return messages if is_valid else None
-        if self.tokenizer is None:
-            raise ValueError('`target_input_len` requires a tokenizer; please set --tokenizer-path.')
-
+        target_input_len = self.dataset_args.target_input_len
         total_len = self.measure_messages_len(messages)
-        if total_len > args.target_input_len:
+        if total_len > target_input_len:
             if not self._warned_conversation_dropped:
                 self._warned_conversation_dropped = True
                 logger.warning(
                     f'Dropping conversations whose total content length exceeds target_input_len='
-                    f'{args.target_input_len} (first one had {total_len} tokens); the length is measured '
+                    f'{target_input_len} (first one had {total_len} tokens); the length is measured '
                     'over all turns, so long histories are skipped instead of truncated.'
                 )
             return None

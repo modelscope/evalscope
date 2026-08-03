@@ -170,7 +170,7 @@ evalscope perf \
   --dataset-args '{"target_input_len": 2048}'
 ```
 
-长度口径为不含 chat template 开销的裸内容 token 数。多轮数据集（ShareGPT）按**整段对话所有消息内容之和**计量：总长超过目标的样本整条丢弃（截断历史或最后一轮会破坏对话语义），不足目标时按 `input_len_mode` 处理或由前缀补齐。`line_by_line` 的 JSON 行（messages 数组 / 完整 request body）不走长度控制，同时设置本节参数会直接报错。
+长度口径为不含 chat template 开销的裸内容 token 数。ShareGPT 等多轮数据集默认只对**最后一轮 user 内容**做截断/过滤（与单轮一致）；仅当配置了 `prefix_file` 时才改为按整段对话所有消息内容之和计量、超长丢弃、不足由前缀补齐（见[长上下文前缀注入](#长上下文前缀注入)）。`line_by_line` 的 JSON 行（messages 数组 / 完整 request body）不走长度控制，同时设置本节参数会直接报错。
 
 它和 `--max/min-prompt-length` 的区别：
 - `--max/min-prompt-length` 只**筛选**、不改内容——长度不在区间内的样本被丢弃，你得到的是长短不一的真实样本；

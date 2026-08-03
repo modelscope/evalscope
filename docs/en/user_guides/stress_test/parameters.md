@@ -170,7 +170,7 @@ evalscope perf \
   --dataset-args '{"target_input_len": 2048}'
 ```
 
-Lengths are counted as bare content tokens, without chat-template overhead. Multi-turn datasets (ShareGPT) are measured over the **sum of all message contents**: a conversation whose total exceeds the target is skipped entirely (truncating the history or the last turn would destroy the dialogue), while a shorter one follows `input_len_mode` or is filled up by the prefix. JSON lines in `line_by_line` (messages array / full request body) do not go through length control, so combining them with these keys raises an error.
+Lengths are counted as bare content tokens, without chat-template overhead. Multi-turn datasets like ShareGPT fit/filter only the **last user turn** by default (same as single-turn); the whole-conversation budget (sum of all message contents, over-long dropped, short padded by the prefix) applies only when a `prefix_file` is configured (see [Long-context Prefix Injection](#long-context-prefix-injection)). JSON lines in `line_by_line` (messages array / full request body) do not go through length control, so combining them with these keys raises an error.
 
 How it differs from `--max/min-prompt-length`:
 - `--max/min-prompt-length` only **filters** and never changes content — samples outside the range are dropped, so you get real samples of varying lengths;
