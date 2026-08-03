@@ -3,28 +3,29 @@
 
 ## 概述
 
-C-MMLU（Chinese Massive Multitask Language Understanding，中文大规模多任务语言理解）是一个全面的中文评估基准，涵盖 STEM、人文、社会科学以及中国特有主题等 67 个学科领域，用于评估模型在中文语境下的知识与推理能力。
+C-MMLU（Chinese Massive Multitask Language Understanding，中文大规模多任务语言理解）是一个全面的中文评估基准，涵盖 STEM、人文、社会科学以及中国特有主题等共计 67 个学科领域，用于评估模型在中文语境下的知识储备与推理能力。
 
 ## 任务描述
 
-- **任务类型**：多项选择题问答（中文）
-- **输入**：一道包含四个选项（A、B、C、D）的中文问题
-- **输出**：单个正确答案的字母
+- **任务类型**：中文多项选择题问答（Multiple-Choice Question Answering）
+- **输入**：一道中文问题，附带四个选项（A、B、C、D）
+- **输出**：单个正确答案字母
 - **学科范围**：67 个学科，按类别组织，包括中国特有主题
 
 ## 主要特点
 
 - 覆盖 67 个多样化的中文知识领域
-- 包含中国特有主题（如中国历史、文学、公务员考试等）
+- 包含中国特有主题（如中国历史、中国文学、公务员考试等）
 - 题目难度从基础教育到专业水平不等
-- 同时考察通用知识与中国特有的文化知识
+- 同时考察通用知识与中国特有文化知识
 - 是中文语言模型评估的标准基准之一
 
 ## 评估说明
 
-- 默认配置使用 **0-shot** 评估方式
+- 默认配置采用 **0-shot** 评估方式
+- 设置 `few_shot_num=5` 可使用开发集（dev split）中每个学科的五个示例
 - 使用中文思维链（Chain-of-Thought, CoT）提示模板
-- 结果可按学科或类别进行聚合
+- 结果可按学科或类别进行汇总
 - 类别包括：STEM、人文、社会科学、中国特有、其他
 - 在测试集（test split）上进行评估
 
@@ -33,12 +34,13 @@ C-MMLU（Chinese Massive Multitask Language Understanding，中文大规模多�
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `cmmlu` |
-| **数据集 ID** | [evalscope/cmmlu](https://modelscope.cn/datasets/evalscope/cmmlu/summary) |
+| **数据集ID** | [evalscope/cmmlu](https://modelscope.cn/datasets/evalscope/cmmlu/summary) |
 | **论文** | N/A |
 | **标签** | `Chinese`, `Knowledge`, `MCQ` |
 | **指标** | `acc` |
-| **默认示例数** | 0-shot |
+| **默认样本数（Shots）** | 0-shot |
 | **评估分割** | `test` |
+| **训练分割** | `dev` |
 
 ## 数据统计
 
@@ -48,7 +50,7 @@ C-MMLU（Chinese Massive Multitask Language Understanding，中文大规模多�
 | 提示词长度（平均） | 197.87 字符 |
 | 提示词长度（最小/最大） | 134 / 999 字符 |
 
-**各子集统计信息：**
+**各子集统计数据：**
 
 | 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
 |--------|---------|-------------|------------|------------|
@@ -128,7 +130,7 @@ C-MMLU（Chinese Massive Multitask Language Understanding，中文大规模多�
 {
   "input": [
     {
-      "id": "4e04de48",
+      "id": "11d46811",
       "content": "回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 A,B,C,D 中的一个。请在回答前进行一步步思考。\n\n问题：在农业生产中被当作极其重要的劳动对象发挥作用，最主要的不可替代的基本生产资料是\n选项：\nA) 农业生产工具\nB) 土地\nC) 劳动力\nD) 资金\n"
     }
   ],
@@ -160,9 +162,27 @@ C-MMLU（Chinese Massive Multitask Language Understanding，中文大规模多�
 
 ```
 
+<details>
+<summary>少样本（Few-shot）模板</summary>
+
+```text
+以下是一些示例问题：
+
+{fewshot}
+
+回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：[LETTER]"（不带引号），其中 [LETTER] 是 {letters} 中的一个。请在回答前进行一步步思考。
+
+问题：{question}
+选项：
+{choices}
+
+```
+
+</details>
+
 ## 使用方法
 
-### 使用 CLI
+### 使用命令行（CLI）
 
 ```bash
 evalscope eval \

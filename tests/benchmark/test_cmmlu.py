@@ -39,6 +39,9 @@ def test_cmmlu_few_shot_uses_dev_split() -> None:
         loaded = adapter.load_dataset()
 
     prompt = loaded['agronomy'][0].input[-1].content
+    assert prompt.startswith('以下是一些示例问题：')
     assert prompt.count('dev question') == 5
+    assert prompt.count('答案：A') == 5
+    assert 'ANSWER:' not in prompt
     assert 'test question' in prompt
     assert '{fewshot}' not in prompt
