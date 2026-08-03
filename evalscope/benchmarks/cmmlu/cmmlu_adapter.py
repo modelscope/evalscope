@@ -119,7 +119,7 @@ C-MMLU (Chinese Massive Multitask Language Understanding) is a comprehensive Chi
         metric_list=['acc'],
         subset_list=list(SUBJECT_MAPPING.keys()),
         few_shot_num=0,
-        train_split=None,
+        train_split='dev',
         eval_split='test',
         prompt_template=MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT,
     )
