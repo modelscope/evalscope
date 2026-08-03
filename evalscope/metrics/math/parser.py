@@ -174,8 +174,8 @@ def strip_answer_string(string):
     string = re.sub(r'\\mbox{.*?}', '', string)
 
     # quote
-    string.replace("'", '')
-    string.replace('"', '')
+    string = string.replace("'", '')
+    string = string.replace('"', '')
 
     # i, j
     if 'j' in string and 'i' not in string:
