@@ -142,7 +142,7 @@ class DefaultDataAdapter(DataAdapter):
         """
         input_text = self.process_sample_input(sample, subset=subset)
         input_messages = [ChatMessageUser(content=input_text)]
-        if self.system_prompt:
+        if self.system_prompt is not None:
             input_messages.insert(0, ChatMessageSystem(content=self.system_prompt))
         return input_messages
 
@@ -151,7 +151,7 @@ class DefaultDataAdapter(DataAdapter):
         Normalize a sample's existing List[ChatMessage] input and ensure system prompt is set once.
         """
         messages = list(sample.input)  # shallow copy to avoid in-place mutations
-        if self.system_prompt and not any(isinstance(m, ChatMessageSystem) for m in messages):
+        if self.system_prompt is not None and not any(isinstance(m, ChatMessageSystem) for m in messages):
             messages = [ChatMessageSystem(content=self.system_prompt)] + messages
         return messages
 

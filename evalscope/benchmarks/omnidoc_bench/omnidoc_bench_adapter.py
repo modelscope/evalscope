@@ -123,8 +123,10 @@ class OmniDocBenchAdapter(VisionLanguageAdapter):
         )
 
     def record_to_sample(self, record) -> Sample:
-        content_list: List[Content] = [ContentText(text=self.prompt_template)]
-        content_list.append(ContentImage(image=f'data:image/png;base64,{record["image"]}'))
+        content_list: List[Content] = [
+            ContentImage(image=f'data:image/png;base64,{record["image"]}'),
+            ContentText(text=self.prompt_template),
+        ]
 
         try:
             metadata = json.loads(record['answer'])
