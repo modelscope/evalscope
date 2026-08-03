@@ -110,6 +110,7 @@ C-MMLU (Chinese Massive Multitask Language Understanding) is a comprehensive Chi
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation
+- Set `few_shot_num=5` to use five examples per subject from the dev split
 - Uses Chinese Chain-of-Thought (CoT) prompting template
 - Results can be aggregated by subject or category
 - Categories: STEM, Humanities, Social Science, China-specific, Other
@@ -119,9 +120,12 @@ C-MMLU (Chinese Massive Multitask Language Understanding) is a comprehensive Chi
         metric_list=['acc'],
         subset_list=list(SUBJECT_MAPPING.keys()),
         few_shot_num=0,
-        train_split=None,
+        train_split='dev',
         eval_split='test',
         prompt_template=MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT,
+        few_shot_prompt_template=(
+            MultipleChoiceTemplate.CHINESE_FEW_SHOT_TEMPLATE + MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT
+        ),
     )
 )
 class CMMLUAdapter(MultiChoiceAdapter):
@@ -146,3 +150,8 @@ class CMMLUAdapter(MultiChoiceAdapter):
             subset_key=record['category'],
             metadata={'subject': record['category']},
         )
+
+    def sample_to_fewshot(self, sample: Sample) -> str:
+        """Format a CMMLU demonstration using the Chinese answer convention."""
+        choices = '\n'.join([f'{chr(65 + index)}) {choice}' for index, choice in enumerate(sample.choices or [])])
+        return f'问题：{sample.input}\n选项：\n{choices}\n答案：{sample.target}'

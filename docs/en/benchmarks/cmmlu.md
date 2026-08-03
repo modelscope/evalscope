@@ -23,6 +23,7 @@ C-MMLU (Chinese Massive Multitask Language Understanding) is a comprehensive Chi
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation
+- Set `few_shot_num=5` to use five examples per subject from the dev split
 - Uses Chinese Chain-of-Thought (CoT) prompting template
 - Results can be aggregated by subject or category
 - Categories: STEM, Humanities, Social Science, China-specific, Other
@@ -40,6 +41,7 @@ C-MMLU (Chinese Massive Multitask Language Understanding) is a comprehensive Chi
 | **Metrics** | `acc` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
+| **Train Split** | `dev` |
 
 
 ## Data Statistics
@@ -130,7 +132,7 @@ C-MMLU (Chinese Massive Multitask Language Understanding) is a comprehensive Chi
 {
   "input": [
     {
-      "id": "4e04de48",
+      "id": "11d46811",
       "content": "回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 A,B,C,D 中的一个。请在回答前进行一步步思考。\n\n问题：在农业生产中被当作极其重要的劳动对象发挥作用，最主要的不可替代的基本生产资料是\n选项：\nA) 农业生产工具\nB) 土地\nC) 劳动力\nD) 资金\n"
     }
   ],
@@ -161,6 +163,24 @@ C-MMLU (Chinese Massive Multitask Language Understanding) is a comprehensive Chi
 {choices}
 
 ```
+
+<details>
+<summary>Few-shot Template</summary>
+
+```text
+以下是一些示例问题：
+
+{fewshot}
+
+回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：[LETTER]"（不带引号），其中 [LETTER] 是 {letters} 中的一个。请在回答前进行一步步思考。
+
+问题：{question}
+选项：
+{choices}
+
+```
+
+</details>
 
 ## Usage
 
