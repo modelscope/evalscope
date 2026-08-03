@@ -27,7 +27,7 @@
 
 EvalScope支持RAG和多模态RAG的**独立评测**和**端到端评测**：
 
-*   **独立评测**：单独评测检索模块，评测指标包括指标包括 **命中率**(Hit Rate)、**平均排名倒数**(Mean Reciprocal Rank, MRR)、**归一化折扣累积增益**(Normalized Discounted Cumulative Gain, NDCG)、**准确率**(Precision) 等，这些指标用于测量系统在根据查询或任务排名项目方面的有效性。
+*   **独立评测**：单独评测检索模块，评测指标包括 **命中率**(Hit Rate)、**平均排名倒数**(Mean Reciprocal Rank, MRR)、**归一化折扣累积增益**(Normalized Discounted Cumulative Gain, NDCG)、**准确率**(Precision) 等，这些指标用于测量系统在根据查询或任务排名项目方面的有效性。
     
 *   **端到端评测**：评测RAG模型对给定输入生成的输出内容，包括模型生成答案与输入查询的相关性和对齐程度。从内容生成目标视角来评测可以将评测划分为**无参考答案**和**有参考答案**：无参考答案评测指标包括**上下文相关性**(Context Relevance)、**忠实度**(Faithfulness) 等；而有参考答案评测指标包括**正确性**(Answer Correctness)、**BLEU**、**ROUGE**等。
     

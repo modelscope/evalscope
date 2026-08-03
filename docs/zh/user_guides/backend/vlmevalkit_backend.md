@@ -113,7 +113,7 @@ VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.opena
 ```
 
 ```{tip}
-如遇到`ValueError: At most 1 image(s) may be provided in one request`错误，可尝试将设置`--limit-mm-per-prompt "image=5"`参数，并可以将image设置为更大的值。
+如遇到`ValueError: At most 1 image(s) may be provided in one request`错误，可尝试设置`--limit-mm-per-prompt "image=5"`参数，并可以将image设置为更大的值。
 ```
 :::
 
@@ -295,7 +295,7 @@ task_cfg_dict = TaskConfig(
   - `limit`：整数，评测的数据数量，默认值为 `None`，表示运行所有示例。
   - `reuse`：布尔值，是否重用评测结果，否则将删除所有评测临时文件。
     ```{note}
-    对与`ms-vlmeval>=0.0.11`参数`rerun` 更名为`reuse`，默认值为`False`。设置为`True`时需要在task_cfg_dict中添加`use_cache`来指定使用的缓存目录。
+    对于`ms-vlmeval>=0.0.11`参数`rerun` 更名为`reuse`，默认值为`False`。设置为`True`时需要在task_cfg_dict中添加`use_cache`来指定使用的缓存目录。
     ```
   - `nproc`：整数，并行调用 API 的数量。
   - `nframe`：整数，视频数据集的视频帧数，默认值为 `8`，
@@ -307,7 +307,7 @@ task_cfg_dict = TaskConfig(
 部署本地语言模型作为评判 / 选择提取器，同样使用ms-swift部署模型服务，具体可参考：[ms-swift LLM 部署指南](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html)
 。
 ````{note}
-在未部署裁判员模型模型时，将使用后处理+精确匹配进行评判；且**必须配置裁判员模型环境变量才能正确调用模型**。
+在未部署裁判员模型时，将使用后处理+精确匹配进行评判；且**必须配置裁判员模型环境变量才能正确调用模型**。
 ````
 
 #### 部署裁判员模型
