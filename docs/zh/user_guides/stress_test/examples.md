@@ -162,9 +162,10 @@ evalscope perf \
 
 - **前缀语料准备**：任意 UTF-8 纯文本文件即可。语料 token 数不足以填满预算时会自动循环重复（tile）补齐并打 warning——想完全避免重复，准备一份 token 数大于 `target_input_len` 的语料。
 - **别超过服务端上限**：`target_input_len` 需小于服务端的 `max_model_len`（vLLM 可用 `--max-model-len` 调整），否则请求会被拒绝。注意 chat template 本身还会额外占用十几个 token。
-- **适用数据集**：`openqa`、`longalpaca`、`line_by_line`、单轮 ShareGPT（`share_gpt_zh` / `share_gpt_en`）；均需 `--tokenizer-path`。
+- **适用数据集**：`openqa`、`longalpaca`、`line_by_line`（仅纯文本行）、ShareGPT（`share_gpt_zh` / `share_gpt_en`）；均需 `--tokenizer-path`。ShareGPT 按整段对话所有消息内容计量预算，总长已超过 `target_input_len` 的对话会被整条丢弃。
+- **不能配 `drop`**：`prefix_file` 与 `input_len_mode="drop"` 互斥（`drop` 只留下已填满目标长度的 prompt，前缀预算恒为 0），配置时会直接报错；定长请用默认的 `cap` 并由前缀补齐。
 - **Prefix-Cache 效果**：所有请求共享同一段前缀开头，重复跑同一配置时可观察到 TTFT 显著下降（推理框架命中前缀缓存）。反之，若要测**无缓存**的冷启动性能，请改用 `random` 数据集（它有 `--dataset-offset` 机制保证各轮 prompt 不同）。
-- **`/v1/completions` 端点**：该端点不应用 chat template，`prefix_role="system"` 会自动降级为纯文本拼接并打 warning；此时前缀与 prompt 直接相接，拼接处可能发生 token 合并，实测总长与目标相差 ±1 token。
+- **`/v1/completions` 端点**：该端点不应用 chat template，`prefix_role="system"` 会自动降级为纯文本拼接并打 warning；此时前缀与 prompt 直接相接，拼接处可能发生 token 合并/拆分，实测总长与目标相差约 ±1 token（`prefix_role="user"` 同理，详见[参数说明](./parameters.md#长上下文前缀注入)的“拼接边界”）。
 ```
 
 ## 请求参数配置

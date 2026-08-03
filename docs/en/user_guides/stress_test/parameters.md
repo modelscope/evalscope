@@ -155,12 +155,12 @@ Controls the content and length of the input sent to the model. Below, `--xxx` e
 | `--max-prompt-length` | `int` | Maximum input prompt length<br>Prompts exceeding this length will be discarded | `131072` |
 | `--min-prompt-length` | `int` | Minimum input prompt length<br>Prompts shorter than this will be discarded | `0` |
 
-To benchmark a **fixed input length** with real data (instead of `random`), use the following `--dataset-args` keys. Supported on `openqa`, `longalpaca`, `line_by_line`, and single-turn ShareGPT (`share_gpt_zh` / `share_gpt_en`). **Requires `--tokenizer-path`**.
+To benchmark a **fixed input length** with real data (instead of `random`), use the following `--dataset-args` keys. Supported on `openqa`, `longalpaca`, `line_by_line` (plain-text lines only), and ShareGPT (`share_gpt_zh` / `share_gpt_en`). **Requires `--tokenizer-path`**.
 
 | Key | Description | Default |
 |-----|-------------|--------|
 | `target_input_len` | Target input length in tokens. When set, every prompt is truncated to this length | disabled |
-| `input_len_mode` | What to do with prompts **shorter than** the target: `cap` (keep as-is; that prompt may be shorter than the target); `drop` (discard it, so every emitted prompt is exactly the target) | `cap` |
+| `input_len_mode` | What to do with prompts **shorter than** the target: `cap` (keep as-is; that prompt may be shorter than the target); `drop` (discard it, so every emitted prompt is exactly the target). `drop` cannot be combined with `prefix_file` (see [Long-context Prefix Injection](#long-context-prefix-injection)) | `cap` |
 
 ```bash
 # Truncate every input to 2048 tokens
@@ -169,6 +169,8 @@ evalscope perf \
   --dataset share_gpt_zh --tokenizer-path /path/to/tokenizer \
   --dataset-args '{"target_input_len": 2048}'
 ```
+
+Lengths are counted as bare content tokens, without chat-template overhead. Multi-turn datasets (ShareGPT) are measured over the **sum of all message contents**: a conversation whose total exceeds the target is skipped entirely (truncating the history or the last turn would destroy the dialogue), while a shorter one follows `input_len_mode` or is filled up by the prefix. JSON lines in `line_by_line` (messages array / full request body) do not go through length control, so combining them with these keys raises an error.
 
 How it differs from `--max/min-prompt-length`:
 - `--max/min-prompt-length` only **filters** and never changes content — samples outside the range are dropped, so you get real samples of varying lengths;
@@ -182,7 +184,7 @@ Real instruction datasets are mostly 4K-8K tokens, so setting `target_input_len`
 
 | Key | Description | Default |
 |-----|-------------|--------|
-| `prefix_file` | Path to the long prefix text file (UTF-8 plain text). **Requires `target_input_len`** | disabled |
+| `prefix_file` | Path to the long prefix text file (UTF-8 plain text). **Requires `target_input_len`** and cannot be combined with `input_len_mode="drop"` | disabled |
 | `prefix_role` | Injection role for the prefix: `system` (injected as a leading system message, matching real RAG traffic; inference engines usually have dedicated prefix-cache handling for system prompts); `user` (prepended directly to the user message content) | `system` |
 
 ```bash
@@ -194,9 +196,11 @@ evalscope perf \
 ```
 
 Behavior notes:
-- **Budget split**: the prompt is kept as-is (over-length prompts still follow `input_len_mode`); the prefix is sliced to exactly `target_input_len − prompt tokens`, so the total equals the target. Lengths are counted as bare content tokens without chat-template overhead (ShareGPT counts only the last user turn).
+- **Budget split**: the prompt is kept as-is (over-length prompts are truncated per `input_len_mode`); the prefix is sliced to exactly `target_input_len − tokens of all message contents`, so the total equals the target. Multi-turn history counts towards the budget (see the length convention in [Length Control](#length-control)).
+- **Incompatible with `drop`**: `drop` only keeps prompts that already fill `target_input_len`, leaving a zero prefix budget, so the injection could never take effect — the combination is rejected at config time. Use `cap` plus prefix filling for fixed lengths.
 - **Short prefix**: when the prefix file has fewer tokens than the remaining budget, it is repeated (tiled) to cover it and then truncated precisely, with a warning.
-- **Fallback**: when `apply_chat_template` is off (e.g. the `/v1/completions` endpoint), a system message cannot be injected, so the prefix falls back to plain-text concatenation with a warning. In this mode the prefix and the prompt are directly adjacent, so the tokenizer may merge (or split) characters across the join, making the total differ from the target by ±1 token in practice; chat-template mode is unaffected because message markers separate the two.
+- **Fallback**: when `apply_chat_template` is off (e.g. the `/v1/completions` endpoint), a system message cannot be injected, so the prefix falls back to plain-text concatenation with a warning.
+- **Join boundary**: with `prefix_role="user"` and in the plain-text fallback the prefix sits directly next to the prompt. The prefix and prompt are counted independently, so when the tokenizer merges or splits characters across the join the measured total can differ from the target by about ±1 token. `prefix_role="system"` (chat-template mode) is separated by message markers and is always exact.
 - **Cache friendly**: all requests share the same prefix head (lengths differ slightly per prompt), which naturally suits prefix-cache hit testing.
 
 ```{note}

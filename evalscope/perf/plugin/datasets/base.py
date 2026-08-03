@@ -81,6 +81,7 @@ class DatasetPluginBase:
         self._prefix_ids: Optional[List[int]] = None
         if isinstance(self.dataset_args, TextLengthArgs) and self.dataset_args.prefix_file is not None:
             self._prefix_ids = self._load_prefix_ids(self.dataset_args.prefix_file)
+        self._warned_conversation_dropped: bool = False
 
     def __next__(self):
         for item in self.build_messages():
@@ -237,31 +238,38 @@ class DatasetPluginBase:
             )
         return ids
 
-    def build_prefix_text(self, prompt: str) -> str:
-        """Return the prefix text filling the remaining token budget for ``prompt``.
+    def content_token_len(self, content: str) -> int:
+        """Return the bare content token count of one message (no special tokens)."""
+        return len(self.tokenizer.encode(content, add_special_tokens=False))
 
-        The budget is ``target_input_len - len(prompt_tokens)`` (bare content
-        tokens, ``add_special_tokens=False``), so prefix + prompt together
-        occupy exactly ``target_input_len`` tokens.  An empty string is
-        returned when the prompt already consumes the whole target.
+    def measure_messages_len(self, messages: Messages) -> int:
+        """Return the total bare content token count of a messages list.
+
+        Every message counts, so multi-turn history is included in the length
+        measurement instead of only the last user turn.
         """
-        args = self.dataset_args
-        budget = args.target_input_len - len(self.tokenizer.encode(prompt, add_special_tokens=False))
-        return fit_prefix_to_budget(self._prefix_ids, budget, self.tokenizer)
+        return sum(self.content_token_len(message['content']) for message in messages)
 
     def apply_prefix_to_messages(self, messages: Messages) -> Messages:
         """Inject the configured long-context prefix into an OpenAI messages list.
 
-        The prefix budget is measured against the last (user) message content,
-        consistent with ``prepare_prompt``.  ``prefix_role='system'`` prepends a
-        system message (chat-template mode only); otherwise the prefix is
-        prepended to the first message content so it stays at the very front of
-        the token stream (prefix-cache friendly).  No-op when ``prefix_file``
-        is not configured or the remaining budget is zero.
+        The prefix budget is ``target_input_len`` minus the bare content tokens
+        of **all** messages, so prefix plus conversation together occupy the
+        target length.  ``prefix_role='system'`` prepends a system message
+        (chat-template mode only), whose content is separated from the prompt by
+        template markers; otherwise the prefix is prepended to the first message
+        content so it stays at the very front of the token stream (prefix-cache
+        friendly).  The prefix and prompt are counted independently, so on BPE
+        tokenizers the total may differ from the target by ~1 token when
+        characters merge across the join (chat-template mode is exact).  No-op
+        when ``prefix_file`` is not configured or the remaining budget is zero.
         """
         if self._prefix_ids is None:
             return messages
-        prefix = self.build_prefix_text(messages[-1]['content'])
+        budget = self.dataset_args.target_input_len - self.measure_messages_len(messages)
+        if budget <= 0:
+            return messages
+        prefix = fit_prefix_to_budget(self._prefix_ids, budget, self.tokenizer)
         if not prefix:
             return messages
         if self.dataset_args.prefix_role == 'system' and self.query_parameters.apply_chat_template:
@@ -283,8 +291,53 @@ class DatasetPluginBase:
         if not self.query_parameters.apply_chat_template:
             if self._prefix_ids is None:
                 return prepared
-            return self.build_prefix_text(prepared) + prepared
+            # Plain-text endpoint: fill the remaining budget with the prefix. The
+            # prefix and prompt are counted independently, so the total may drift
+            # by ~1 token when characters merge across the join.
+            budget = self.dataset_args.target_input_len - self.content_token_len(prepared)
+            return fit_prefix_to_budget(self._prefix_ids, budget, self.tokenizer) + prepared
         return self.apply_prefix_to_messages([self.create_message(prepared)])
+
+    def prepare_conversation(self, messages: Messages) -> Optional[Messages]:
+        """Apply the input-length policy and prefix injection to a conversation.
+
+        Unlike :meth:`prepare_messages` the length is measured over every message
+        content, so the history counts towards ``target_input_len``.  A
+        conversation already exceeding the target is dropped rather than
+        truncated: cutting the history or the last user turn would either
+        destroy the dialogue or silently change what is being benchmarked.
+        Shorter conversations are filled up by the configured prefix.
+
+        ``input_len_mode='drop'`` is intentionally not honoured here: a
+        conversation whose summed content lands on the target exactly is so rare
+        that it would drop the whole dataset, so callers reject that combination
+        up front (see ``ShareGPTDatasetPluginBase``).
+
+        Args:
+            messages (Messages): The conversation, ending with a user message.
+
+        Returns:
+            Optional[Messages]: The adjusted conversation, or ``None`` to skip it.
+        """
+        args = self.dataset_args
+        if not isinstance(args, TextLengthArgs) or args.target_input_len is None:
+            # Legacy path: filter on the last user turn only.
+            is_valid, _ = self.check_prompt_length(messages[-1]['content'])
+            return messages if is_valid else None
+        if self.tokenizer is None:
+            raise ValueError('`target_input_len` requires a tokenizer; please set --tokenizer-path.')
+
+        total_len = self.measure_messages_len(messages)
+        if total_len > args.target_input_len:
+            if not self._warned_conversation_dropped:
+                self._warned_conversation_dropped = True
+                logger.warning(
+                    f'Dropping conversations whose total content length exceeds target_input_len='
+                    f'{args.target_input_len} (first one had {total_len} tokens); the length is measured '
+                    'over all turns, so long histories are skipped instead of truncated.'
+                )
+            return None
+        return self.apply_prefix_to_messages(messages)
 
     def check_prompt_length(self, prompt: str) -> Tuple[bool, int]:
         """Check if the prompt length is within the specified range.

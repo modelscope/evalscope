@@ -56,7 +56,8 @@ class TextLengthArgs(BaseDatasetArgs):
     to exactly ``target_input_len - len(prompt_tokens)`` tokens so the total
     input hits the target length with real low-entropy text.  If the file is
     shorter than the remaining budget it is repeated (tiled) to cover it.
-    Requires ``target_input_len``.
+    Requires ``target_input_len`` and is incompatible with
+    ``input_len_mode='drop'``.
     """
 
     prefix_role: Literal['system', 'user'] = 'system'
@@ -79,6 +80,14 @@ class TextLengthArgs(BaseDatasetArgs):
     def _validate_prefix_file(self) -> 'TextLengthArgs':
         if self.prefix_file is not None and self.target_input_len is None:
             raise ValueError('`prefix_file` requires `target_input_len` to be set.')
+        # `drop` already forces every prompt to exactly `target_input_len`, leaving a
+        # zero prefix budget, so the prefix would silently never be injected.
+        if self.prefix_file is not None and self.input_len_mode == 'drop':
+            raise ValueError(
+                "`prefix_file` is incompatible with `input_len_mode='drop'`: `drop` keeps only prompts that "
+                "already fill `target_input_len`, so no prefix budget is left. Use `input_len_mode='cap'` "
+                'and let the prefix fill the remaining budget.'
+            )
         return self
 
 

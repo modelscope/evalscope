@@ -162,9 +162,10 @@ evalscope perf \
 
 - **Preparing the prefix corpus**: any UTF-8 plain-text file works. When the corpus has fewer tokens than the budget it is automatically repeated (tiled) with a warning — to avoid repetition entirely, use a corpus with more tokens than `target_input_len`.
 - **Stay under the server limit**: `target_input_len` must be smaller than the server's `max_model_len` (adjustable via `--max-model-len` in vLLM), otherwise requests are rejected. Note that the chat template itself also consumes a dozen or so extra tokens.
-- **Supported datasets**: `openqa`, `longalpaca`, `line_by_line`, and single-turn ShareGPT (`share_gpt_zh` / `share_gpt_en`); all require `--tokenizer-path`.
+- **Supported datasets**: `openqa`, `longalpaca`, `line_by_line` (plain-text lines only), and ShareGPT (`share_gpt_zh` / `share_gpt_en`); all require `--tokenizer-path`. ShareGPT budgets against the whole conversation, so a conversation already longer than `target_input_len` is skipped entirely.
+- **Not compatible with `drop`**: `prefix_file` and `input_len_mode="drop"` are mutually exclusive (`drop` only keeps prompts that already fill the target, leaving a zero prefix budget) and the combination is rejected at config time; use the default `cap` and let the prefix fill the rest.
 - **Prefix-cache effect**: all requests share the same prefix head, so re-running the same configuration shows a clear TTFT drop (the engine hits its prefix cache). Conversely, to measure **cache-free** cold-start performance, use the `random` dataset instead (its `--dataset-offset` mechanism keeps prompts distinct across runs).
-- **`/v1/completions` endpoint**: this endpoint does not apply a chat template, so `prefix_role="system"` automatically falls back to plain-text concatenation with a warning; the prefix and prompt then sit directly adjacent and tokens may merge across the join, making the total differ from the target by ±1 token in practice.
+- **`/v1/completions` endpoint**: this endpoint does not apply a chat template, so `prefix_role="system"` automatically falls back to plain-text concatenation with a warning; the prefix and prompt then sit directly adjacent and tokens may merge or split across the join, making the measured total differ from the target by about ±1 token (the same applies to `prefix_role="user"`; see "Join boundary" in the [parameter reference](./parameters.md#long-context-prefix-injection)).
 ```
 
 ## Request Configuration

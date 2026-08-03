@@ -155,13 +155,13 @@ class TestSingleMessageInjection:
 
 
 class TestConversationInjection:
-    """share_gpt: multi-message conversation, budget measured on the last user turn."""
+    """share_gpt: multi-message conversation, budget measured over all turns."""
 
-    def _build_plugin(self, tmp_path, monkeypatch, **dataset_args):
+    def _build_plugin(self, tmp_path, monkeypatch, conversation=None, **dataset_args):
         monkeypatch.setattr(base_mod, 'load_tokenizer', lambda path: FakeTokenizer())
-        record = {'conversation': [{'human': 'hi', 'assistant': 'yo'}, {'human': 'abc', 'assistant': ''}]}
+        conversation = conversation or [{'human': 'hi', 'assistant': 'yo'}, {'human': 'abc', 'assistant': ''}]
         path = tmp_path / 'sharegpt.jsonl'
-        path.write_text(json.dumps(record) + '\n', encoding='utf-8')
+        path.write_text(json.dumps({'conversation': conversation}) + '\n', encoding='utf-8')
         args = Arguments(
             model='test-model',
             url='http://localhost:8080/v1/chat/completions',
@@ -173,7 +173,7 @@ class TestConversationInjection:
         )
         return ShareGPTZhDatasetPlugin(args)
 
-    def test_system_prefix_prepended_to_conversation(self, tmp_path, monkeypatch):
+    def test_system_prefix_fills_whole_conversation_budget(self, tmp_path, monkeypatch):
         plugin = self._build_plugin(
             tmp_path,
             monkeypatch,
@@ -182,8 +182,9 @@ class TestConversationInjection:
         )
         (messages, ) = list(plugin.build_messages())
         assert [m['role'] for m in messages] == ['system', 'user', 'assistant', 'user']
-        # Budget is measured against the last user turn only ('abc' -> 3 tokens).
-        assert _tok_len(messages[0]['content']) == TARGET - 3
+        # History counts towards the budget: 'hi' + 'yo' + 'abc' = 7 tokens.
+        assert _tok_len(messages[0]['content']) == TARGET - 7
+        assert sum(_tok_len(m['content']) for m in messages) == TARGET
         assert messages[-1]['content'] == 'abc'
 
     def test_user_prefix_goes_to_first_message(self, tmp_path, monkeypatch):
@@ -196,9 +197,28 @@ class TestConversationInjection:
         )
         (messages, ) = list(plugin.build_messages())
         assert [m['role'] for m in messages] == ['user', 'assistant', 'user']
-        assert messages[0]['content'].startswith('PREFIX')
-        assert messages[0]['content'].endswith('hi')
+        # 3 tokens of budget are left after the 7 tokens of conversation content.
+        assert messages[0]['content'] == 'PREhi'
+        assert sum(_tok_len(m['content']) for m in messages) == TARGET
         assert messages[-1]['content'] == 'abc'
+
+    def test_conversation_longer_than_target_is_dropped(self, tmp_path, monkeypatch):
+        # 'hi' + 'yo' + 12 chars = 16 tokens > TARGET; truncating a turn would
+        # silently change the dialogue, so the whole record is skipped.
+        plugin = self._build_plugin(
+            tmp_path,
+            monkeypatch,
+            conversation=[{'human': 'hi', 'assistant': 'yo'}, {'human': 'abcdefghijkl', 'assistant': ''}],
+            target_input_len=TARGET,
+            prefix_file=_write_prefix(tmp_path, PREFIX_CORPUS),
+        )
+        assert list(plugin.build_messages()) == []
+
+    def test_drop_mode_rejected_for_multi_turn(self, tmp_path, monkeypatch):
+        # A conversation's summed content almost never equals the target exactly,
+        # so `drop` would empty the dataset; the plugin refuses it at construction.
+        with pytest.raises(ValueError, match='is not supported for multi-turn'):
+            self._build_plugin(tmp_path, monkeypatch, target_input_len=TARGET, input_len_mode='drop')
 
 
 class TestNoInjection:
@@ -226,14 +246,50 @@ class TestNoInjection:
         assert out == [[{'role': 'user', 'content': 'abcde'}], [{'role': 'user', 'content': 'abc'}]]
 
 
+class TestLineByLineJsonLines:
+    """JSON lines bypass prepare_messages, so length control must fail fast."""
+
+    MESSAGES_LINE = '[{"role": "user", "content": "abc"}]'
+    BODY_LINE = '{"messages": [{"role": "user", "content": "abc"}], "max_tokens": 8}'
+
+    @pytest.mark.parametrize('json_line', [MESSAGES_LINE, BODY_LINE], ids=['messages_array', 'request_body'])
+    def test_json_line_rejected_with_length_control(self, tmp_path, monkeypatch, json_line):
+        plugin = _build_line_plugin(
+            tmp_path,
+            monkeypatch,
+            lines=['abc', json_line],
+            target_input_len=TARGET,
+            prefix_file=_write_prefix(tmp_path, PREFIX_CORPUS),
+        )
+        with pytest.raises(ValueError, match='only support plain-text lines'):
+            list(plugin.build_messages())
+
+    def test_json_line_rejected_with_target_input_len_only(self, tmp_path, monkeypatch):
+        plugin = _build_line_plugin(tmp_path, monkeypatch, lines=[self.MESSAGES_LINE], target_input_len=TARGET)
+        with pytest.raises(ValueError, match='only support plain-text lines'):
+            list(plugin.build_messages())
+
+    def test_json_line_passthrough_without_length_control(self, tmp_path, monkeypatch):
+        plugin = _build_line_plugin(tmp_path, monkeypatch, lines=[self.MESSAGES_LINE, self.BODY_LINE])
+        assert list(plugin.build_messages()) == [json.loads(self.MESSAGES_LINE), json.loads(self.BODY_LINE)]
+
+
 @pytest.mark.parametrize(
     ('make_args', 'expected'),
     [
         (lambda p: {'target_input_len': TARGET, 'prefix_file': str(p / 'nope.txt')}, FileNotFoundError),
         (lambda p: {'target_input_len': TARGET, 'prefix_file': _write_prefix(p, '')}, ValueError),
         (lambda p: {'prefix_file': _write_prefix(p, PREFIX_CORPUS)}, ValidationError),
+        (
+            lambda p: {
+                'target_input_len': TARGET,
+                'prefix_file': _write_prefix(p, PREFIX_CORPUS),
+                'input_len_mode': 'drop',
+            },
+            ValidationError,
+        ),
     ],
-    ids=['missing_file', 'empty_file', 'without_target_input_len'],
+    ids=['missing_file', 'empty_file', 'without_target_input_len', 'drop_mode'],
 )
 def test_invalid_prefix_config_is_rejected(tmp_path, monkeypatch, make_args, expected):
     with pytest.raises(expected):

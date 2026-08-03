@@ -155,12 +155,12 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `--max-prompt-length` | `int` | 最大输入prompt长度<br>超过该值时将丢弃prompt | `131072` |
 | `--min-prompt-length` | `int` | 最小输入prompt长度<br>小于该值时将丢弃prompt | `0` |
 
-想用真实数据（而非 `random`）压测某个**固定输入长度**时，用 `--dataset-args` 的下列键。支持 `openqa`、`longalpaca`、`line_by_line`、单轮 ShareGPT（`share_gpt_zh` / `share_gpt_en`），**需配合 `--tokenizer-path`**。
+想用真实数据（而非 `random`）压测某个**固定输入长度**时，用 `--dataset-args` 的下列键。支持 `openqa`、`longalpaca`、`line_by_line`（仅纯文本行）、ShareGPT（`share_gpt_zh` / `share_gpt_en`），**需配合 `--tokenizer-path`**。
 
 | 键 | 说明 | 默认值 |
 |------|------|--------|
 | `target_input_len` | 目标输入 token 数。设置后每条 prompt 都会被截断到该长度 | 不启用 |
-| `input_len_mode` | 对**短于目标**的 prompt 怎么处理：`cap`（原样保留，该条长度可能小于目标）；`drop`（丢弃，保证产出的每条都恰好等于目标） | `cap` |
+| `input_len_mode` | 对**短于目标**的 prompt 怎么处理：`cap`（原样保留，该条长度可能小于目标）；`drop`（丢弃，保证产出的每条都恰好等于目标）。`drop` 不能与 `prefix_file` 同用（见[长上下文前缀注入](#长上下文前缀注入)） | `cap` |
 
 ```bash
 # 把每条输入截断到 2048 token
@@ -169,6 +169,8 @@ evalscope perf \
   --dataset share_gpt_zh --tokenizer-path /path/to/tokenizer \
   --dataset-args '{"target_input_len": 2048}'
 ```
+
+长度口径为不含 chat template 开销的裸内容 token 数。多轮数据集（ShareGPT）按**整段对话所有消息内容之和**计量：总长超过目标的样本整条丢弃（截断历史或最后一轮会破坏对话语义），不足目标时按 `input_len_mode` 处理或由前缀补齐。`line_by_line` 的 JSON 行（messages 数组 / 完整 request body）不走长度控制，同时设置本节参数会直接报错。
 
 它和 `--max/min-prompt-length` 的区别：
 - `--max/min-prompt-length` 只**筛选**、不改内容——长度不在区间内的样本被丢弃，你得到的是长短不一的真实样本；
@@ -182,7 +184,7 @@ evalscope perf \
 
 | 键 | 说明 | 默认值 |
 |------|------|--------|
-| `prefix_file` | 长前缀文本文件路径（UTF-8 纯文本）。**必须同时设置 `target_input_len`** | 不启用 |
+| `prefix_file` | 长前缀文本文件路径（UTF-8 纯文本）。**必须同时设置 `target_input_len`**，且不能与 `input_len_mode="drop"` 同用 | 不启用 |
 | `prefix_role` | 前缀注入角色：`system`（作为开头的 system 消息注入，贴近真实 RAG 流量，推理框架对 system 的 Prefix-Cache 管理通常有专门优化）；`user`（直接拼在 user 消息内容最前面） | `system` |
 
 ```bash
@@ -194,9 +196,11 @@ evalscope perf \
 ```
 
 行为说明：
-- **预算分配**：prompt 保持原样（超长时仍按 `input_len_mode` 处理），前缀精确切到 `target_input_len − prompt token 数`，总长恰为目标值；长度口径为不含 chat template 开销的裸内容 token 数（ShareGPT 只计最后一轮 user 内容）。
+- **预算分配**：prompt 保持原样（超长时按 `input_len_mode` 截断），前缀精确切到 `target_input_len − 所有消息内容 token 数`，总长恰为目标值；多轮对话的历史一并计入（见[长度控制](#长度控制)的长度口径）。
+- **与 `drop` 互斥**：`drop` 只保留已经填满 `target_input_len` 的 prompt，前缀预算恒为 0，注入必然失效，因此配置时直接报错。要定长请用 `cap` + 前缀补齐。
 - **前缀不足**：前缀文件 token 数不足以填满剩余预算时，会循环重复（tile）补齐后再精确截断，并打 warning 提示。
-- **降级规则**：`apply_chat_template` 关闭（如 `/v1/completions` 端点）时无法注入 system 消息，自动降级为纯文本前缀拼接并打 warning。此模式下前缀与 prompt 直接相接，拼接处两侧字符可能被 tokenizer 合并（或拆分）为不同的 token，实测总长可能与目标相差 ±1 token；chat template 模式下消息标记天然隔断边界，不受此影响。
+- **降级规则**：`apply_chat_template` 关闭（如 `/v1/completions` 端点）时无法注入 system 消息，自动降级为纯文本前缀拼接并打 warning。
+- **拼接边界**：`prefix_role="user"` 和纯文本降级模式下前缀与 prompt 直接相接，前缀与 prompt 的 token 数是分别计算的，拼接处两侧字符可能被 tokenizer 合并或拆分，因此实测总长可能与目标相差约 ±1 token。`prefix_role="system"`（chat template 模式）有消息标记隔断边界，不受此影响，始终精确。
 - **缓存友好**：所有请求共享同一段前缀开头（长度随各条 prompt 略有差异），天然适配 Prefix-Cache 命中测试。
 
 ```{note}
