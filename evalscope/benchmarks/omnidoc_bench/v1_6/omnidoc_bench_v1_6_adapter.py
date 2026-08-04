@@ -82,7 +82,7 @@ OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tabl
     )
 )
 class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
-    """OmniDocBench adapter pinned to the official v1.6 dataset and Docker scorer."""
+    """OmniDocBench v1.6 adapter using the official Docker scorer."""
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
@@ -90,7 +90,7 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
         self.add_overall_metric = False
 
     def load_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
-        """Load the pinned v1.6 annotation and delegate selection to the standard loader."""
+        """Load the v1.6 annotation and delegate selection to the standard loader."""
         annotation_path = Path(
             download_dataset_file(
                 data_id_or_path=self.dataset_id,
