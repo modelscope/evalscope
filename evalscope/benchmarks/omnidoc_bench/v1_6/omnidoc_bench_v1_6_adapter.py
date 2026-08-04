@@ -185,7 +185,7 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
             value=metrics,
             prediction=original_prediction,
             extracted_prediction=filtered_prediction,
-            main_score_name=next(iter(metrics)),
+            main_score_name=next(name for name in PAGE_METRICS if name in metrics),
         )
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:

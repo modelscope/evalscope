@@ -25,7 +25,7 @@ This adapter preserves EvalScope's original 981-page OmniDocBench TSV integratio
 - For new evaluations, use the recommended `omni_doc_bench_v1_6` benchmark.
 - Implements the existing `end2end` and `quick_match` scoring paths.
 - Metrics: Edit_dist, BLEU, METEOR (text), TEDS (tables)
-- Requires: apted, distance, lxml, Polygon3, zss, rapidfuzz packages
+- Install the `evalscope[omnidoc_bench]` extra for legacy scoring dependencies.
 - Output format: Markdown with LaTeX formulas and HTML tables
 - Scores from this legacy integration are not directly comparable with v1.6 scores.
 
@@ -69,7 +69,7 @@ This adapter preserves EvalScope's original 981-page OmniDocBench TSV integratio
 {
   "input": [
     {
-      "id": "97920109",
+      "id": "e564022f",
       "content": [
         {
           "image": "[BASE64_IMAGE: png, ~321.8KB]"
