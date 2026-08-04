@@ -27,6 +27,7 @@ def check_nltk_data(name: str) -> None:
     import nltk
 
     GITEE_MIRROR = 'https://gitee.com/yzy0612/nltk_data/raw/gh-pages/packages'
+    NLTK_DATA_RAW = 'https://raw.githubusercontent.com/nltk/nltk_data/gh-pages/packages'
 
     MIRROR_MAP = {
         'punkt_tab': {
@@ -47,11 +48,11 @@ def check_nltk_data(name: str) -> None:
             ],
         },
         'averaged_perceptron_tagger_eng': {
-            'resource_path': 'taggers/averaged_perceptron_tagger',
-            'zip_name': 'averaged_perceptron_tagger.zip',
+            'resource_path': 'taggers/averaged_perceptron_tagger_eng/',
+            'zip_name': 'averaged_perceptron_tagger_eng.zip',
             'extract_dir': 'taggers',
             'urls': [
-                f'{GITEE_MIRROR}/taggers/averaged_perceptron_tagger.zip',
+                f'{NLTK_DATA_RAW}/taggers/averaged_perceptron_tagger_eng.zip',
             ],
         },
     }
@@ -83,14 +84,14 @@ def check_nltk_data(name: str) -> None:
                     os.remove(zip_path)
         raise RuntimeError(f'All mirrors failed for "{meta["zip_name"]}": {last_error}')
 
-    try:
-        if name in MIRROR_MAP:
-            meta = MIRROR_MAP[name]
-            if not has_resource(meta['resource_path']):
-                logger.warning(f'NLTK resource "{name}" not found, downloading from mirror.')
-                download_from_mirrors(meta)
-    except Exception as e:
-        logger.error(f'NLTK data setup failed: {e}')
+    meta = MIRROR_MAP.get(name)
+    if meta is None or has_resource(meta['resource_path']):
+        return
+
+    logger.warning(f'NLTK resource "{name}" not found, downloading from mirror.')
+    download_from_mirrors(meta)
+    if not has_resource(meta['resource_path']):
+        raise RuntimeError(f'NLTK resource "{name}" is still unavailable after download.')
 
 
 def _create_empty_benchmark_entry() -> Dict[str, Any]:
