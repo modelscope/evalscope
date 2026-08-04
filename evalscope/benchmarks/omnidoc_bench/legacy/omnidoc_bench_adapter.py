@@ -44,12 +44,12 @@ PROMPT_TEMPLATE = r""" You are an AI assistant specialized in converting PDF ima
 @register_benchmark(
     BenchmarkMeta(
         name='omni_doc_bench',
-        pretty_name='OmniDocBench',
+        pretty_name='OmniDocBench (Legacy)',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
         description="""
 ## Overview
 
-OmniDocBench is an evaluation dataset for diverse document parsing in real-world scenarios, covering 9 document types, 4 layout types, and 3 language types with 1,355 PDF pages.
+This adapter preserves EvalScope's original 981-page OmniDocBench TSV integration for compatibility with existing evaluations.
 
 ## Task Description
 
@@ -60,20 +60,20 @@ OmniDocBench is an evaluation dataset for diverse document parsing in real-world
 
 ## Key Features
 
-- 1,355 PDF pages across 9 document types
-- Rich annotations: 15 block-level and 4 span-level element types
-- Over 20k block-level and 80k span-level annotations
-- Reading order annotations
-- Coverage: academic papers, financial reports, newspapers, textbooks, handwritten notes
+- Uses the legacy `evalscope/OmniDocBench_tsv` dataset with 981 PDF pages
+- Covers text blocks, formulas, tables, and reading order
+- Keeps the existing local Python scoring implementation and metric names unchanged
+- Remains available for reproducing existing EvalScope results
 
 ## Evaluation Notes
 
-- This adapter preserves the legacy OmniDocBench v1.5 integration. For new evaluations, use the recommended `omni_doc_bench_v1_6` benchmark.
-- Implements `end2end` and `quick_match` methods from official OmniDocBench-v1.5
+- This legacy TSV dataset is not labeled as a specific upstream OmniDocBench release.
+- For new evaluations, use the recommended `omni_doc_bench_v1_6` benchmark.
+- Implements the existing `end2end` and `quick_match` scoring paths.
 - Metrics: Edit_dist, BLEU, METEOR (text), TEDS (tables)
 - Requires: apted, distance, lxml, Polygon3, zss, rapidfuzz packages
 - Output format: Markdown with LaTeX formulas and HTML tables
-- Scores from this v1.5 integration are not directly comparable with v1.6 scores.
+- Scores from this legacy integration are not directly comparable with v1.6 scores.
 """,  # noqa: E501
         dataset_id='evalscope/OmniDocBench_tsv',
         metric_list=[
@@ -130,19 +130,20 @@ class OmniDocBenchAdapter(VisionLanguageAdapter):
             ContentText(text=self.prompt_template),
         ]
 
-        try:
-            metadata = json.loads(record['answer'])
-        except json.JSONDecodeError:
-            metadata = ast.literal_eval(record['answer'])
-
-        return Sample(input=[ChatMessageUser(content=content_list)], target='', metadata=metadata)
+        return Sample(input=[ChatMessageUser(content=content_list)], target=record['answer'])
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
         # Dummy implementation to comply with the interface
 
+        try:
+            reference = json.loads(reference)
+        except json.JSONDecodeError:
+            reference = ast.literal_eval(reference)
+
         score = Score(
             prediction=original_prediction,
             extracted_prediction=filtered_prediction,
+            metadata={'reference': reference},
         )
 
         return score
@@ -154,7 +155,7 @@ class OmniDocBenchAdapter(VisionLanguageAdapter):
             return []
 
         predictions = [s.score.prediction for s in sample_scores]
-        references = [s.sample_metadata for s in sample_scores]
+        references = [(s.score.metadata or {}).get('reference', s.sample_metadata) for s in sample_scores]
 
         metric_dict = {
             metric_name: metric_params

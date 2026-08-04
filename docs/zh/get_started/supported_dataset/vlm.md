@@ -45,7 +45,7 @@
 | `ocr_bench_v2` | [OCRBench-v2](../../benchmarks/ocr_bench_v2.md) | `Knowledge`, `MultiModal`, `QA` |
 | `olympiad_bench` | [OlympiadBench](../../benchmarks/olympiad_bench.md) | `Math`, `Reasoning` |
 | `omni_bench` | [OmniBench](../../benchmarks/omni_bench.md) | `Knowledge`, `MCQ`, `MultiModal` |
-| `omni_doc_bench` | [OmniDocBench](../../benchmarks/omni_doc_bench.md) | `Knowledge`, `MultiModal`, `QA` |
+| `omni_doc_bench` | [OmniDocBench (Legacy)](../../benchmarks/omni_doc_bench.md) | `Knowledge`, `MultiModal`, `QA` |
 | `omni_doc_bench_v1_6` | [OmniDocBench-v1.6](../../benchmarks/omni_doc_bench_v1_6.md) | `Knowledge`, `MultiModal`, `QA` |
 | `pope` | [POPE](../../benchmarks/pope.md) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](../../benchmarks/real_world_qa.md) | `Knowledge`, `MultiModal`, `QA` |

@@ -2,7 +2,7 @@
 
 import hashlib
 import json
-from collections import Counter, defaultdict
+from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Type
 
@@ -14,25 +14,17 @@ from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from ..v1_5.omnidoc_bench_adapter import PROMPT_TEMPLATE
+from ..legacy.omnidoc_bench_adapter import PROMPT_TEMPLATE
 from .sandbox_scorer import PAGE_METRICS, build_scoring_program, parse_scoring_result
 
 # v1.6-only pins: the ModelScope revision and annotation digest identify the supported dataset;
-# the scorer commit and image digest identify the official runtime used for every page.
+# the image digest identifies the official runtime used for every page.
 DATASET_REVISION = '297ee5063d6ecc36fe14f3eb4f456607cc895f4a'
 ANNOTATION_SHA256 = 'a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496'
-OFFICIAL_SCORER_COMMIT = '147cd5ac9472002f5751221d390bf00abdbc0d2f'
 OFFICIAL_IMAGE = (
     'ghcr.io/zeng-weijun/omnidocbench-eval'
     '@sha256:6116ad72172e763b5c43e963d5efebf2093f2362b975f58156ce4f6c9142e617'
 )
-EXPECTED_SAMPLE_COUNT = 1651
-EXPECTED_SUBSET_COUNTS = {
-    'v1.5': 1355,
-    'equation_hard': 100,
-    'layout_hard': 99,
-    'table_hard': 97,
-}
 REVIEW_TIMEOUT = 900
 DEFAULT_SANDBOX_CONFIG = {
     'image': OFFICIAL_IMAGE,
@@ -61,7 +53,7 @@ OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tabl
 ## Key Features
 
 - Uses `OpenDataLab/OmniDocBench` at the pinned ModelScope revision `297ee5063d6ecc36fe14f3eb4f456607cc895f4a`
-- Contains 1,651 pages: the 1,355-page v1.5 set plus 100 equation-hard, 99 layout-hard, and 97 table-hard pages
+- Contains 1,651 pages: 1,355 base pages plus 100 equation-hard, 99 layout-hard, and 97 table-hard pages
 - Accepts only the verified v1.6 annotation and rejects other releases and the legacy TSV format
 - Scores each page independently with the official v1.6 evaluator in a reusable ms-enclave Docker sandbox
 
@@ -72,9 +64,10 @@ OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tabl
 - Edit-distance metrics use the 0-1 scale.
 - CDM, TEDS, TEDS-S, and Overall use the 0-100 scale.
 - Docker with amd64 support and `evalscope[sandbox]` are required.
+- The default image is pinned; custom image overrides are allowed, but incompatible images fail during scoring.
 - The sandbox pool defaults to one container; increase `sandbox.pool_size` only when sufficient memory is available.
 - The official image is large; ensure sufficient disk and memory before evaluation.
-- Scores are not directly comparable with the legacy `omni_doc_bench` v1.5 integration.
+- Scores are not directly comparable with the legacy `omni_doc_bench` integration.
 """  # noqa: E501
 
 
@@ -102,7 +95,7 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
         self.add_overall_metric = False
 
     def load_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
-        """Validate v1.6 records, then delegate selection and conversion to the standard loader."""
+        """Load the pinned v1.6 annotation and delegate selection to the standard loader."""
         annotation_path = Path(
             download_dataset_file(
                 data_id_or_path=self.dataset_id,
@@ -113,7 +106,7 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
                 cache_dir=self.dataset_dir,
             )
         )
-        records = self._load_and_validate_annotation(annotation_path)
+        records = self._load_annotation(annotation_path)
         return DictDataLoader(
             dict_list=records,
             sample_fields=self.record_to_sample,
@@ -125,7 +118,7 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
             seed=self.seed,
         ).load()
 
-    def _load_and_validate_annotation(self, annotation_path: Path) -> List[Dict[str, Any]]:
+    def _load_annotation(self, annotation_path: Path) -> List[Dict[str, Any]]:
         annotation_bytes = annotation_path.read_bytes()
         digest = hashlib.sha256(annotation_bytes).hexdigest()
         if digest != ANNOTATION_SHA256:
@@ -135,42 +128,9 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
             )
 
         records = json.loads(annotation_bytes)
-        if not isinstance(records, list) or len(records) != EXPECTED_SAMPLE_COUNT:
-            actual_count = len(records) if isinstance(records, list) else type(records).__name__
-            raise ValueError(
-                f'Invalid OmniDocBench v1.6 sample count: expected {EXPECTED_SAMPLE_COUNT}, got {actual_count}.'
-            )
-
-        required_fields = {'layout_dets', 'page_info', 'extra'}
-        subset_counts = Counter()
-        for index, record in enumerate(records):
-            if not isinstance(record, dict) or not required_fields.issubset(record):
-                raise ValueError(
-                    'Invalid OmniDocBench v1.6 schema: every page must contain layout_dets, page_info, and extra; '
-                    f'first invalid record index is {index}.'
-                )
-            page_info = record.get('page_info')
-            page_attribute = page_info.get('page_attribute') if isinstance(page_info, dict) else None
-            if (
-                not isinstance(record.get('layout_dets'), list) or not isinstance(page_info, dict)
-                or not isinstance(page_attribute, dict) or not isinstance(record.get('extra'), dict)
-            ):
-                raise ValueError(f'Invalid OmniDocBench v1.6 structure at record index {index}.')
-            self._validate_image_name(page_info.get('image_path', ''))
-            subset = page_attribute.get('subset', 'v1.5')
-            subset_counts[subset] += 1
-
-        if dict(subset_counts) != EXPECTED_SUBSET_COUNTS:
-            raise ValueError(
-                f'Invalid OmniDocBench v1.6 subset counts: expected {EXPECTED_SUBSET_COUNTS}, '
-                f'got {dict(subset_counts)}.'
-            )
+        if not isinstance(records, list):
+            raise ValueError('Invalid OmniDocBench v1.6 annotation: expected a list of page records.')
         return records
-
-    @staticmethod
-    def _validate_image_name(image_name: str) -> None:
-        if not image_name or image_name in ('.', '..') or '/' in image_name or '\\' in image_name:
-            raise ValueError(f'Invalid OmniDocBench v1.6 image path: {image_name}')
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         image_name = record['page_info']['image_path']
@@ -192,13 +152,11 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
         ]
         return Sample(
             input=[ChatMessageUser(content=content)],
-            target='',
+            target=json.dumps(record, ensure_ascii=False),
             metadata={
                 'omnidocbench_version': 'v1.6',
                 'dataset_revision': DATASET_REVISION,
-                'annotation_sha256': ANNOTATION_SHA256,
                 'image_name': image_name,
-                'annotation': record,
             },
         )
 
@@ -212,11 +170,13 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
         """Score one page with the official v1.6 evaluator in the sandbox pool."""
         if not self.use_sandbox:
             raise RuntimeError('OmniDocBench v1.6 requires ms-enclave sandbox scoring. Enable TaskConfig.sandbox.')
-        metadata = task_state.metadata
-        annotation = metadata.get('annotation')
-        image_name = metadata.get('image_name')
+        try:
+            annotation = json.loads(reference)
+        except (TypeError, json.JSONDecodeError) as error:
+            raise ValueError('OmniDocBench v1.6 scoring requires a valid page annotation reference.') from error
+        image_name = task_state.metadata.get('image_name')
         if not isinstance(annotation, dict) or not image_name:
-            raise ValueError('OmniDocBench v1.6 scoring requires annotation and image_name metadata.')
+            raise ValueError('OmniDocBench v1.6 scoring requires a page annotation and image_name metadata.')
 
         program = build_scoring_program(annotation, image_name, original_prediction)
         result = self.execute_code_in_sandbox(program, timeout=int(self.review_timeout), language='python')
@@ -226,11 +186,6 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
             prediction=original_prediction,
             extracted_prediction=filtered_prediction,
             main_score_name=next(iter(metrics)),
-            metadata={
-                'image_name': image_name,
-                'official_scorer_commit': OFFICIAL_SCORER_COMMIT,
-                'official_image': OFFICIAL_IMAGE,
-            },
         )
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:

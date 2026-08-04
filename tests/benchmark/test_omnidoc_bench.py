@@ -18,28 +18,17 @@ from evalscope.config import TaskConfig
 from evalscope.run import run_task
 
 
-def make_records() -> list[dict]:
-    records = []
-    subset_counts = (
-        ('v1.5', 1355),
-        ('equation_hard', 100),
-        ('layout_hard', 99),
-        ('table_hard', 97),
-    )
-    for subset, count in subset_counts:
-        for _ in range(count):
-            index = len(records)
-            records.append({
-                'layout_dets': [],
-                'page_info': {
-                    'image_path': f'page_{index}.png',
-                    'page_attribute': {
-                        'subset': subset
-                    },
-                },
-                'extra': {},
-            })
-    return records
+def make_records(count: int = 1) -> list[dict]:
+    return [
+        {
+            'layout_dets': [],
+            'page_info': {
+                'image_path': f'page_{index}.png',
+                'page_attribute': {},
+            },
+            'extra': {},
+        } for index in range(count)
+    ]
 
 
 def write_dataset(root: Path, records: list[dict], image_count: int = 1) -> str:
@@ -86,7 +75,7 @@ def test_omnidoc_bench_versions_are_registered_separately() -> None:
     assert current.sandbox_config == v16.DEFAULT_SANDBOX_CONFIG
 
 
-def test_v16_local_load_validates_and_selects_before_reading_images(tmp_path: Path, monkeypatch) -> None:
+def test_v16_local_load_selects_before_reading_images(tmp_path: Path, monkeypatch) -> None:
     records = make_records()
     digest = write_dataset(tmp_path, records, image_count=1)
     monkeypatch.setattr(v16, 'ANNOTATION_SHA256', digest)
@@ -100,18 +89,19 @@ def test_v16_local_load_validates_and_selects_before_reading_images(tmp_path: Pa
     sample = datasets['default'][0]
     assert [content.type for content in sample.input[0].content] == ['image', 'text']
     assert sample.metadata['image_name'] == 'page_0.png'
-    assert sample.metadata['annotation'] == records[0]
+    assert json.loads(sample.target) == records[0]
+    assert 'annotation' not in sample.metadata
     assert sample.metadata['omnidocbench_version'] == 'v1.6'
 
 
 def test_v16_shuffle_is_deterministic_before_limit(tmp_path: Path, monkeypatch) -> None:
-    records = make_records()
+    records = make_records(11)
     digest = write_dataset(tmp_path, records, image_count=11)
     monkeypatch.setattr(v16, 'ANNOTATION_SHA256', digest)
 
     datasets, _ = make_adapter(tmp_path, limit=1, shuffle=True, seed=1238).load()
 
-    assert datasets['default'][0].metadata['image_name'] == 'page_10.png'
+    assert datasets['default'][0].metadata['image_name'] == 'page_8.png'
 
 
 def test_v16_rejects_wrong_digest(tmp_path: Path) -> None:
@@ -122,65 +112,24 @@ def test_v16_rejects_wrong_digest(tmp_path: Path) -> None:
         adapter.load()
 
 
-def test_v16_rejects_invalid_schema_count_and_path(tmp_path: Path, monkeypatch) -> None:
-    adapter = make_adapter(tmp_path)
-    cases = [
-        ([{'layout_dets': [], 'page_info': {}, 'extra': {}}], 'sample count'),
-        ([{}] * v16.EXPECTED_SAMPLE_COUNT, 'must contain layout_dets'),
-    ]
-    for index, (records, message) in enumerate(cases):
-        path = tmp_path / f'invalid_{index}.json'
-        content = json.dumps(records).encode('utf-8')
-        path.write_bytes(content)
-        monkeypatch.setattr(v16, 'ANNOTATION_SHA256', hashlib.sha256(content).hexdigest())
-        with pytest.raises(ValueError, match=message):
-            adapter._load_and_validate_annotation(path)
-
-    records = make_records()
-    records[0]['page_info']['image_path'] = '../escape.png'
-    path = tmp_path / 'invalid_path.json'
-    content = json.dumps(records).encode('utf-8')
-    path.write_bytes(content)
-    monkeypatch.setattr(v16, 'ANNOTATION_SHA256', hashlib.sha256(content).hexdigest())
-    with pytest.raises(ValueError, match='Invalid OmniDocBench v1.6 image path'):
-        adapter._load_and_validate_annotation(path)
-
-    records[0]['page_info']['image_path'] = '..\\escape.png'
-    content = json.dumps(records).encode('utf-8')
-    path.write_bytes(content)
-    monkeypatch.setattr(v16, 'ANNOTATION_SHA256', hashlib.sha256(content).hexdigest())
-    with pytest.raises(ValueError, match='Invalid OmniDocBench v1.6 image path'):
-        adapter._load_and_validate_annotation(path)
-
-
-def test_v16_rejects_invalid_subset_counts_and_missing_selected_image(tmp_path: Path, monkeypatch) -> None:
-    records = make_records()
-    records[0]['page_info']['page_attribute']['subset'] = 'other'
-    digest = write_dataset(tmp_path, records, image_count=0)
-    monkeypatch.setattr(v16, 'ANNOTATION_SHA256', digest)
-    with pytest.raises(ValueError, match='subset counts'):
-        make_adapter(tmp_path, limit=1).load()
-
-    records[0]['page_info']['page_attribute']['subset'] = 'v1.5'
-    content = json.dumps(records).encode('utf-8')
-    (tmp_path / 'OmniDocBench.json').write_bytes(content)
-    monkeypatch.setattr(v16, 'ANNOTATION_SHA256', hashlib.sha256(content).hexdigest())
-    with pytest.raises(FileNotFoundError, match='page_0.png'):
-        make_adapter(tmp_path, limit=1).load()
-
-
 def test_v16_remote_loader_pins_modelscope_revision(tmp_path: Path) -> None:
     annotation_path = tmp_path / 'OmniDocBench.json'
     annotation_path.write_text('[]', encoding='utf-8')
     with patch.object(v16, 'download_dataset_file', return_value=str(annotation_path)) as download_file:
         adapter = make_adapter()
-        with patch.object(adapter, '_load_and_validate_annotation', return_value=[]):
+        with patch.object(adapter, '_load_annotation', return_value=[]):
             dataset = adapter.load_subset('default', v16.DictDataLoader)
 
     assert len(dataset) == 0
     assert download_file.call_args.kwargs['data_id_or_path'] == 'OpenDataLab/OmniDocBench'
     assert download_file.call_args.kwargs['file_path'] == 'OmniDocBench.json'
     assert download_file.call_args.kwargs['revision'] == v16.DATASET_REVISION
+
+
+def test_v16_allows_sandbox_image_override() -> None:
+    adapter = make_adapter(sandbox={'enabled': True, 'default_config': {'image': 'custom/image:latest'}})
+
+    assert adapter._get_backend()._resolve_sandbox_config_dict()['image'] == 'custom/image:latest'
 
 
 def test_v16_scores_each_page_with_one_sandbox_call() -> None:
@@ -190,29 +139,23 @@ def test_v16_scores_each_page_with_one_sandbox_call() -> None:
         'display_formula_CDM': 80.0,
         'table_TEDS': 70.0,
     }
-    sample = Sample(
-        input='question',
-        target='',
-        metadata={
-            'annotation': {
-                'layout_dets': [],
-                'page_info': {
-                    'image_path': 'page.png'
-                },
-                'extra': {},
-            },
-            'image_name': 'page.png',
+    annotation = {
+        'layout_dets': [],
+        'page_info': {
+            'image_path': 'page.png'
         },
-    )
+        'extra': {},
+    }
+    reference = json.dumps(annotation)
+    sample = Sample(input='question', target=reference, metadata={'image_name': 'page.png'})
     task_state = TaskState(model='model', sample=sample)
     result = {'status': 'success', 'output': f'official logs\n{RESULT_SENTINEL}{json.dumps(metrics)}\n'}
 
     with patch.object(adapter, 'execute_code_in_sandbox', return_value=result) as execute:
-        score = adapter.match_score('# page', '# page', '', task_state)
+        score = adapter.match_score('# page', '# page', reference, task_state)
 
     execute.assert_called_once()
     assert score.value == metrics
-    assert score.metadata['official_scorer_commit'] == v16.OFFICIAL_SCORER_COMMIT
 
 
 def test_v16_scoring_program_is_valid_python() -> None:
