@@ -156,7 +156,7 @@ class TestRun(unittest.TestCase):
             eval_type=EvalType.OPENAI_API,
             datasets=datasets,
             dataset_args=dataset_args,
-            eval_batch_size=1,
+            eval_batch_size=10,
             limit=1,
             stream=True,
             generation_config={
