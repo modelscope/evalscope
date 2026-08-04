@@ -16,7 +16,6 @@ from evalscope.constants import Tags
 from ..legacy.omnidoc_bench_adapter import PROMPT_TEMPLATE
 from .sandbox_scorer import PAGE_METRICS, build_scoring_program, parse_scoring_result
 
-DATASET_REVISION = '297ee5063d6ecc36fe14f3eb4f456607cc895f4a'
 OFFICIAL_IMAGE = (
     'ghcr.io/zeng-weijun/omnidocbench-eval'
     '@sha256:6116ad72172e763b5c43e963d5efebf2093f2362b975f58156ce4f6c9142e617'
@@ -48,7 +47,7 @@ OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tabl
 
 ## Key Features
 
-- Uses `OpenDataLab/OmniDocBench` at the pinned ModelScope revision `297ee5063d6ecc36fe14f3eb4f456607cc895f4a`
+- Uses the latest `OpenDataLab/OmniDocBench` revision available from ModelScope
 - Contains 1,651 pages: 1,355 base pages plus 100 equation-hard, 99 layout-hard, and 97 table-hard pages
 - Uses the official v1.6 data format; other releases and the legacy TSV format are not supported
 - Scores each page independently with the official v1.6 evaluator in a reusable ms-enclave Docker sandbox
@@ -97,7 +96,6 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
                 data_id_or_path=self.dataset_id,
                 file_path='OmniDocBench.json',
                 data_source=self.dataset_hub,
-                revision=DATASET_REVISION,
                 force_redownload=self.force_redownload,
                 cache_dir=self.dataset_dir,
             )
@@ -121,7 +119,6 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
                 data_id_or_path=self.dataset_id,
                 file_path=f'images/{image_name}',
                 data_source=self.dataset_hub,
-                revision=DATASET_REVISION,
                 force_redownload=self.force_redownload,
                 cache_dir=self.dataset_dir,
             )
@@ -137,7 +134,6 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
             target=json.dumps(record, ensure_ascii=False),
             metadata={
                 'omnidocbench_version': 'v1.6',
-                'dataset_revision': DATASET_REVISION,
                 'image_name': image_name,
             },
         )
