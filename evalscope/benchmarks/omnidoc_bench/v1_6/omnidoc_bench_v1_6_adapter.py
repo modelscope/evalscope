@@ -16,8 +16,6 @@ from evalscope.constants import Tags
 from ..legacy.omnidoc_bench_adapter import PROMPT_TEMPLATE
 from .sandbox_scorer import PAGE_METRICS, build_scoring_program, parse_scoring_result
 
-# v1.6-only pins: the ModelScope revision identifies the default dataset and the image digest identifies the
-# official runtime used for every page.
 DATASET_REVISION = '297ee5063d6ecc36fe14f3eb4f456607cc895f4a'
 OFFICIAL_IMAGE = (
     'ghcr.io/zeng-weijun/omnidocbench-eval'

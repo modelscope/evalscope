@@ -1,4 +1,4 @@
-# OmniDocBench (Legacy)
+# OmniDocBench
 
 
 ## Overview
@@ -69,7 +69,7 @@ This adapter preserves EvalScope's original 981-page OmniDocBench TSV integratio
 {
   "input": [
     {
-      "id": "e564022f",
+      "id": "7c6fda98",
       "content": [
         {
           "image": "[BASE64_IMAGE: png, ~321.8KB]"

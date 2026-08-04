@@ -1,9 +1,9 @@
-# OmniDocBench (Legacy)
+# OmniDocBench
 
 
 ## 概述
 
-该适配器保留了 EvalScope 原始的 981 页 OmniDocBench TSV 集成，以确保与现有评估结果的兼容性。
+此适配器保留了 EvalScope 原始的 981 页 OmniDocBench TSV 集成，以确保与现有评估结果兼容。
 
 ## 任务描述
 
@@ -15,20 +15,19 @@
 ## 主要特性
 
 - 使用旧版 `evalscope/OmniDocBench_tsv` 数据集，包含 981 个 PDF 页面
-- 覆盖文本块、公式、表格及阅读顺序
+- 覆盖文本块、公式、表格和阅读顺序
 - 保留现有的本地 Python 评分实现和指标名称不变
 - 可用于复现现有的 EvalScope 评估结果
 
 ## 评估说明
 
-- 此旧版 TSV 数据集未标记为特定上游 OmniDocBench 版本。
+- 此旧版 TSV 数据集未标记为特定的上游 OmniDocBench 发布版本。
 - 对于新评估，请使用推荐的 `omni_doc_bench_v1_6` 基准测试。
 - 实现了现有的 `end2end` 和 `quick_match` 评分路径。
 - 指标：Edit_dist、BLEU、METEOR（文本）、TEDS（表格）
 - 安装 `evalscope[omnidoc_bench]` 额外依赖项以支持旧版评分功能。
 - 输出格式：包含 LaTeX 公式和 HTML 表格的 Markdown
-- 此旧版集成产生的分数无法直接与 v1.6 分数进行比较。
-
+- 此旧版集成产生的分数无法直接与 v1.6 版本的分数进行比较。
 
 ## 属性
 
@@ -39,7 +38,7 @@
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MultiModal`, `QA` |
 | **指标** | `text_block`, `display_formula`, `table`, `reading_order` |
-| **默认示例数量** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `train` |
 
 
@@ -69,7 +68,7 @@
 {
   "input": [
     {
-      "id": "e564022f",
+      "id": "7c6fda98",
       "content": [
         {
           "image": "[BASE64_IMAGE: png, ~321.8KB]"

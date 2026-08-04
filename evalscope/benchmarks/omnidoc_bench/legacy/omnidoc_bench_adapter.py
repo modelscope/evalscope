@@ -44,7 +44,7 @@ PROMPT_TEMPLATE = r""" You are an AI assistant specialized in converting PDF ima
 @register_benchmark(
     BenchmarkMeta(
         name='omni_doc_bench',
-        pretty_name='OmniDocBench (Legacy)',
+        pretty_name='OmniDocBench',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
         description="""
 ## Overview
