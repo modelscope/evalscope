@@ -5,7 +5,7 @@ from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.benchmarks.ocr_bench.ocr_bench.ocr_bench_adapter import OCRBenchAdapter
-from evalscope.benchmarks.omnidoc_bench.omnidoc_bench_adapter import OmniDocBenchAdapter
+from evalscope.benchmarks.omnidoc_bench.v1_5.omnidoc_bench_adapter import OmniDocBenchAdapter
 from evalscope.config import TaskConfig
 
 
@@ -68,7 +68,7 @@ def test_omnidoc_bench_uses_image_first_content_order() -> None:
         eval_split='train',
         prompt_template='Parse this document.',
     )
-    with patch('evalscope.benchmarks.omnidoc_bench.omnidoc_bench_adapter.check_import'):
+    with patch('evalscope.benchmarks.omnidoc_bench.v1_5.omnidoc_bench_adapter.check_import'):
         adapter = OmniDocBenchAdapter(
             benchmark_meta=benchmark_meta,
             task_config=TaskConfig(datasets=['omni_doc_bench']),

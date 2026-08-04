@@ -58,7 +58,7 @@ dev              = {file = ["requirements/dev.txt"]}
 docs             = {file = ["requirements/docs.txt"]}
 
 ocr_bench        = {file = ["evalscope/benchmarks/ocr_bench/requirements.txt"]}
-omnidoc_bench    = {file = ["evalscope/benchmarks/omnidoc_bench/requirements.txt"]}
+omnidoc_bench    = {file = ["evalscope/benchmarks/omnidoc_bench/v1_5/requirements.txt"]}
 maritime_ocr_bench = {file = ["evalscope/benchmarks/maritime_ocr_bench/requirements.txt"]}
 miniwob          = {file = ["evalscope/benchmarks/miniwob/requirements.txt"]}
 ifeval           = {file = ["evalscope/benchmarks/ifeval/requirements.txt"]}

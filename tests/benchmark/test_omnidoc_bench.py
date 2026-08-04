@@ -8,8 +8,8 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import SampleScore, Score
 from evalscope.api.registry import get_benchmark
-from evalscope.benchmarks.omnidoc_bench_v1_6 import omnidoc_bench_v1_6_adapter as v16
-from evalscope.benchmarks.omnidoc_bench_v1_6.sandbox_scorer import (
+from evalscope.benchmarks.omnidoc_bench.v1_6 import omnidoc_bench_v1_6_adapter as v16
+from evalscope.benchmarks.omnidoc_bench.v1_6.sandbox_scorer import (
     RESULT_SENTINEL,
     build_scoring_program,
     parse_scoring_result,
@@ -172,7 +172,7 @@ def test_v16_rejects_invalid_subset_counts_and_missing_selected_image(tmp_path: 
 def test_v16_remote_loader_pins_modelscope_revision(tmp_path: Path) -> None:
     annotation_path = tmp_path / 'OmniDocBench.json'
     annotation_path.write_text('[]', encoding='utf-8')
-    source_hub = patch('evalscope.benchmarks.omnidoc_bench_v1_6.omnidoc_bench_v1_6_adapter.DatasetHub')
+    source_hub = patch('evalscope.benchmarks.omnidoc_bench.v1_6.omnidoc_bench_v1_6_adapter.DatasetHub')
     with source_hub as hub_cls:
         hub_cls.return_value.download_file.return_value = str(annotation_path)
         adapter = make_adapter()
