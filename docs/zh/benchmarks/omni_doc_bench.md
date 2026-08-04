@@ -1,8 +1,9 @@
 # OmniDocBench
 
+
 ## 概述
 
-OmniDocBench 是一个面向真实场景的多样化文档解析评测数据集，涵盖 9 种文档类型、4 种布局类型和 3 种语言类型，共包含 1,355 页 PDF 文档。
+OmniDocBench 是一个面向真实场景的多样化文档解析评测数据集，涵盖 9 种文档类型、4 种布局类型和 3 种语言类型，共包含 1,355 个 PDF 页面。
 
 ## 任务描述
 
@@ -11,20 +12,22 @@ OmniDocBench 是一个面向真实场景的多样化文档解析评测数据集�
 - **输出**：以 Markdown 格式表示的解析后文档结构
 - **领域**：文档理解、OCR、版面分析
 
-## 核心特性
+## 主要特性
 
-- 覆盖 9 类文档类型的 1,355 页 PDF
+- 覆盖 9 种文档类型的 1,355 个 PDF 页面
 - 丰富的标注信息：15 种块级元素类型和 4 种跨度级（span-level）元素类型
 - 超过 2 万个块级标注和 8 万个跨度级标注
-- 阅读顺序标注
-- 覆盖范围包括：学术论文、财务报告、报纸、教科书、手写笔记等
+- 包含阅读顺序标注
+- 覆盖范围：学术论文、财务报告、报纸、教科书、手写笔记等
 
 ## 评测说明
 
+- 此适配器保留了旧版 OmniDocBench v1.5 的集成方式。对于新评测，请使用推荐的 `omni_doc_bench_v1_6` 基准测试。
 - 实现了官方 OmniDocBench-v1.5 中的 `end2end` 和 `quick_match` 方法
 - 评测指标：Edit_dist、BLEU、METEOR（文本）、TEDS（表格）
 - 依赖包：apted、distance、lxml、Polygon3、zss、rapidfuzz
 - 输出格式：包含 LaTeX 公式和 HTML 表格的 Markdown
+- 此 v1.5 集成所得分数与 v1.6 分数不可直接比较。
 
 ## 属性
 
@@ -38,6 +41,7 @@ OmniDocBench 是一个面向真实场景的多样化文档解析评测数据集�
 | **默认示例数** | 0-shot |
 | **评测划分** | `train` |
 
+
 ## 数据统计
 
 | 指标 | 值 |
@@ -50,10 +54,11 @@ OmniDocBench 是一个面向真实场景的多样化文档解析评测数据集�
 
 | 指标 | 值 |
 |--------|-------|
-| 总图像数 | 981 |
+| 图像总数 | 981 |
 | 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |
 | 分辨率范围 | 516x729 - 10142x14342 |
-| 图像格式 | jpeg |
+| 格式 | jpeg |
+
 
 ## 样例示例
 
@@ -63,13 +68,13 @@ OmniDocBench 是一个面向真实场景的多样化文档解析评测数据集�
 {
   "input": [
     {
-      "id": "fa523475",
+      "id": "03ec9d31",
       "content": [
         {
-          "text": " You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n    1. Text Processing:\n    - Accurately recognize all text content in the PDF image without guessing or i ... [TRUNCATED] ... sible.\n\n    Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\n"
+          "image": "[BASE64_IMAGE: png, ~321.8KB]"
         },
         {
-          "image": "[BASE64_IMAGE: png, ~321.8KB]"
+          "text": " You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n    1. Text Processing:\n    - Accurately recognize all text content in the PDF image without guessing or i ... [TRUNCATED 924 chars] ... sible.\n\n    Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\n"
         }
       ]
     }
@@ -463,44 +468,7 @@ OmniDocBench 是一个面向真实场景的多样化文档解析评测数据集�
         "order": null,
         "anno_id": 10
       },
-      {
-        "category_type": "footer",
-        "poly": [
-          180.18207532211585,
-          1404.2778174322868,
-          289.9793827860912,
-          1404.2778174322868,
-          289.9793827860912,
-          1462.652231000048,
-          180.18207532211585,
-          1462.652231000048
-        ],
-        "ignore": false,
-        "order": null,
-        "anno_id": 0,
-        "text": "CVINFO 投中信息",
-        "line_with_spans": [
-          {
-            "category_type": "text_span",
-            "poly": [
-              178.18192276049803,
-              1409.8767302579377,
-              288.0868232114207,
-              1409.8767302579377,
-              288.0868232114207,
-              1467.2607048296584,
-              178.18192276049803,
-              1467.2607048296584
-            ],
-            "text": "CVINFO 投中信息"
-          }
-        ],
-        "attribute": {
-          "text_language": "text_en_ch_mixed",
-          "text_background": "white",
-          "text_rotate": "normal"
-        }
-      }
+      "... [TRUNCATED 1 more items] ..."
     ],
     "extra": {
       "relation": [
@@ -571,7 +539,7 @@ OmniDocBench 是一个面向真实场景的多样化文档解析评测数据集�
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `match_method` | `str` | `quick_match` | 评测所用的匹配方法。可选项：['quick_match', 'simple_match', 'no_split'] |
+| `match_method` | `str` | `quick_match` | 评测所用的匹配方法。可选值：['quick_match', 'simple_match', 'no_split'] |
 
 ## 使用方法
 
@@ -583,7 +551,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets omni_doc_bench \
-    --limit 10  # 正式评测时请移除此行
+    --limit 10  # 正式评测时请删除此行
 ```
 
 ### 使用 Python
@@ -602,7 +570,7 @@ task_cfg = TaskConfig(
             # extra_params: {}  # 使用默认额外参数
         }
     },
-    limit=10,  # 正式评测时请移除此行
+    limit=10,  # 正式评测时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

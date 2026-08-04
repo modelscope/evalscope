@@ -22,10 +22,12 @@ OmniDocBench is an evaluation dataset for diverse document parsing in real-world
 
 ## Evaluation Notes
 
+- This adapter preserves the legacy OmniDocBench v1.5 integration. For new evaluations, use the recommended `omni_doc_bench_v1_6` benchmark.
 - Implements `end2end` and `quick_match` methods from official OmniDocBench-v1.5
 - Metrics: Edit_dist, BLEU, METEOR (text), TEDS (tables)
 - Requires: apted, distance, lxml, Polygon3, zss, rapidfuzz packages
 - Output format: Markdown with LaTeX formulas and HTML tables
+- Scores from this v1.5 integration are not directly comparable with v1.6 scores.
 
 
 ## Properties
@@ -67,13 +69,13 @@ OmniDocBench is an evaluation dataset for diverse document parsing in real-world
 {
   "input": [
     {
-      "id": "fa523475",
+      "id": "03ec9d31",
       "content": [
         {
-          "text": " You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n    1. Text Processing:\n    - Accurately recognize all text content in the PDF image without guessing or i ... [TRUNCATED] ... sible.\n\n    Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\n"
+          "image": "[BASE64_IMAGE: png, ~321.8KB]"
         },
         {
-          "image": "[BASE64_IMAGE: png, ~321.8KB]"
+          "text": " You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n    1. Text Processing:\n    - Accurately recognize all text content in the PDF image without guessing or i ... [TRUNCATED 924 chars] ... sible.\n\n    Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\n"
         }
       ]
     }
@@ -467,44 +469,7 @@ OmniDocBench is an evaluation dataset for diverse document parsing in real-world
         "order": null,
         "anno_id": 10
       },
-      {
-        "category_type": "footer",
-        "poly": [
-          180.18207532211585,
-          1404.2778174322868,
-          289.9793827860912,
-          1404.2778174322868,
-          289.9793827860912,
-          1462.652231000048,
-          180.18207532211585,
-          1462.652231000048
-        ],
-        "ignore": false,
-        "order": null,
-        "anno_id": 0,
-        "text": "CVINFO 投中信息",
-        "line_with_spans": [
-          {
-            "category_type": "text_span",
-            "poly": [
-              178.18192276049803,
-              1409.8767302579377,
-              288.0868232114207,
-              1409.8767302579377,
-              288.0868232114207,
-              1467.2607048296584,
-              178.18192276049803,
-              1467.2607048296584
-            ],
-            "text": "CVINFO 投中信息"
-          }
-        ],
-        "attribute": {
-          "text_language": "text_en_ch_mixed",
-          "text_background": "white",
-          "text_rotate": "normal"
-        }
-      }
+      "... [TRUNCATED 1 more items] ..."
     ],
     "extra": {
       "relation": [

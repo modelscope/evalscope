@@ -68,10 +68,12 @@ OmniDocBench is an evaluation dataset for diverse document parsing in real-world
 
 ## Evaluation Notes
 
+- This adapter preserves the legacy OmniDocBench v1.5 integration. For new evaluations, use the recommended `omni_doc_bench_v1_6` benchmark.
 - Implements `end2end` and `quick_match` methods from official OmniDocBench-v1.5
 - Metrics: Edit_dist, BLEU, METEOR (text), TEDS (tables)
 - Requires: apted, distance, lxml, Polygon3, zss, rapidfuzz packages
 - Output format: Markdown with LaTeX formulas and HTML tables
+- Scores from this v1.5 integration are not directly comparable with v1.6 scores.
 """,  # noqa: E501
         dataset_id='evalscope/OmniDocBench_tsv',
         metric_list=[
