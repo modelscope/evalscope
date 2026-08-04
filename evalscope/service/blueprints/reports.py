@@ -169,22 +169,26 @@ def _build_report_meta(report_name: str, root: str) -> dict:
     total_num = 0
     dataset_names = []
     score_sum = 0.0
+    primary_metrics = []
     for r in report_list:
         dataset_names.append(r.dataset_name)
         total_num += r.num or 0
-        score_sum += r.score
+        primary_metric = r.primary_metric
+        primary_metrics.append(primary_metric)
+        score_sum += primary_metric.score if primary_metric else r.score
 
     avg_score = round(score_sum / len(report_list), 4) if report_list else 0.0
     timestamp = _extract_timestamp(report_name, root)
-    metric_names = [r.metrics[0].name for r in report_list if r.metrics]
+    metric_names = [metric.name for metric in primary_metrics if metric]
     metric_name = metric_names[0] if len(metric_names) == len(report_list) and all(
         name == metric_names[0] for name in metric_names
     ) else ''
 
     # Preserve each metric's native scale; consumers use metric_name to format it.
     dataset_scores = {}
-    for r in report_list:
-        dataset_scores[r.dataset_name] = round(r.score, 4) if r.score is not None else None
+    for r, primary_metric in zip(report_list, primary_metrics):
+        score = primary_metric.score if primary_metric else r.score
+        dataset_scores[r.dataset_name] = round(score, 4) if score is not None else None
 
     return {
         'name': report_name,
@@ -198,8 +202,16 @@ def _build_report_meta(report_name: str, root: str) -> dict:
         'timestamp': timestamp,
         # keep individual scores for per-dataset filtering
         '_datasets': dataset_names,
-        '_scores': [r.score for r in report_list],
+        '_scores': [metric.score if metric else report.score for report, metric in zip(report_list, primary_metrics)],
     }
+
+
+def _report_to_service_dict(report: Report) -> dict:
+    """Serialize a report with the primary metric as its display score."""
+    data = report.to_dict()
+    if report.primary_metric:
+        data['score'] = report.primary_metric.score
+    return data
 
 
 def _refresh_html_report(reports_dir: str) -> None:
@@ -413,7 +425,7 @@ def load_report():
         root = _root_path()
         report_list, datasets, task_cfg = load_single_report(root, report_name)
         return jsonify({
-            'report_list': [r.to_dict() for r in report_list],
+            'report_list': [_report_to_service_dict(r) for r in report_list],
             'datasets': datasets,
             'task_config': task_cfg,
         }), 200
@@ -439,7 +451,7 @@ def load_multi():
         root = _root_path()
         report_list = load_multi_report(root, names)
         return jsonify({
-            'report_list': [r.to_dict() for r in report_list],
+            'report_list': [_report_to_service_dict(r) for r in report_list],
         }), 200
     except Exception as e:
         logger.error(f'Failed to load multi reports: {e}')

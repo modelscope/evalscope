@@ -96,11 +96,12 @@ def get_acc_report_df(report_list: List[Report]):
                     }
                     data_dict.append(item)
         else:
+            primary_metric = report.primary_metric
             item = {
                 ReportKey.model_name: report.model_name,
                 ReportKey.dataset_name: report.dataset_name,
-                ReportKey.score: report.score,
-                ReportKey.num: report.metrics[0].num,
+                ReportKey.score: primary_metric.score if primary_metric else report.score,
+                ReportKey.num: primary_metric.num if primary_metric else 0,
             }
             data_dict.append(item)
     df = pd.DataFrame.from_dict(data_dict, orient='columns')

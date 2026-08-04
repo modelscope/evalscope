@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 
 from evalscope.constants import DEFAULT_LANGUAGE, PLOTLY_CDN_URL
 from evalscope.report.combinator import get_report_list
-from evalscope.report.report import Metric, Report, ReportKey
+from evalscope.report.report import Report, ReportKey
 from evalscope.report.visualization import (
     plot_single_dataset_scores,
     plot_single_report_scores,
@@ -138,11 +138,6 @@ def _overview_chart_div(labels: List[str], scores: List[float]) -> str:
     return fig.to_html(full_html=False, include_plotlyjs=False, config=_PLOTLY_CDN_CONFIG)
 
 
-def _primary_metric(report: Report) -> Metric:
-    """Prefer an explicit Overall metric, otherwise preserve the first-metric behavior."""
-    return next((metric for metric in report.metrics if metric.name.lower() == 'overall'), report.metrics[0])
-
-
 def _subset_chart_div(
     ds: str,
     model: str,
@@ -228,14 +223,14 @@ def gen_html_report_file(
             rpt: Optional[Report] = info['model_reports'].get(model)
             if rpt is None:
                 continue
-            primary_metric = _primary_metric(rpt) if rpt.metrics else None
+            primary_metric = rpt.primary_metric
             metric_name = primary_metric.name if primary_metric else 'N/A'
             score = primary_metric.score if primary_metric else 0.0
             num = primary_metric.num if primary_metric else 0
             summary_rows.append(dict(dataset=pretty, model=model, metric=metric_name, score=score, num=num))
         first: Optional[Report] = next(iter(info['model_reports'].values()), None)
         if first is not None and first.metrics:
-            primary_metric = _primary_metric(first)
+            primary_metric = first.primary_metric
             overview_labels.append(pretty)
             overview_scores.append(primary_metric.score)
 
@@ -257,7 +252,8 @@ def gen_html_report_file(
             rpt = info['model_reports'].get(model)
             if rpt is None:
                 continue
-            overall_score = _primary_metric(rpt).score if rpt.metrics else 0.0
+            primary_metric = rpt.primary_metric
+            overall_score = primary_metric.score if primary_metric else 0.0
 
             if not rpt.metrics:
                 model_sections.append(
